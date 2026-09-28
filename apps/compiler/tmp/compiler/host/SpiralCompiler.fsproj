@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The compiler executable. Build with -p:SpiralCore=single-flight (default) or -p:SpiralCore=hopac.
+    Program.fs talks to the core only through SupervisorReq (built by reflection), new_server and
+    startupParse, which both cores expose; PortableBackends.fs lowers C residuals to Rust/Delphi and
+    does not depend on the core at all. The core is a separate assembly (../core), so editing these
+    files rebuilds in seconds even in hopac mode.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SpiralCompiler</AssemblyName>
+    <RootNamespace>Polyglot</RootNamespace>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'single-flight'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_SINGLE_FLIGHT</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="PortableUnionNormalizer.fs" />
+    <Compile Include="TuplePrune.fs" />
+    <Compile Include="PortableBackends.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../runtime-compat/SpiralCompilerRuntimeCompat.fsproj" />
+    <ProjectReference Include="../core/SpiralCompilerCore.fsproj" />
+  </ItemGroup>
+  <Import Project="../lib/References.props" />
+</Project>

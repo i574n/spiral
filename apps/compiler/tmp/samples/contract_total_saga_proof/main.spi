@@ -1,0 +1,77 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+union document state =
+    | Draft :: document draft
+    | Signed :: document signed
+    | Authorized :: document authorized
+
+union forward from to =
+    | Sign :: forward draft signed
+    | Authorize :: forward signed authorized
+
+union compensate from to =
+    | Unauthorize :: compensate authorized signed
+    | Unsign :: compensate signed draft
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+nominal total_saga from to =
+    {
+        forward_plan : chain forward from to
+        rollback_plan : chain compensate to from
+    }
+
+inl apply_forward forall from to.
+    (operation : forward from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Sign, Draft => Signed
+    | Authorize, Signed => Authorized
+
+inl apply_compensation forall from to.
+    (operation : compensate from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Unauthorize, Authorized => Signed
+    | Unsign, Signed => Draft
+
+inl rec fold_chain forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        inl exists middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl saga () : total_saga draft authorized =
+    total_saga {
+        forward_plan =
+            ChainCompose (exists (
+                ChainStep Sign,
+                ChainStep Authorize
+            ))
+        rollback_plan =
+            ChainCompose (exists (
+                ChainStep Unauthorize,
+                ChainStep Unsign
+            ))
+    }
+
+inl main () : string =
+    inl plan = saga ()
+    inl authorized = fold_chain `$apply_forward plan.forward_plan Draft
+    inl rolled_back = fold_chain `$apply_compensation plan.rollback_plan authorized
+    match rolled_back with
+    | Draft => "rolled-back"

@@ -1,0 +1,7 @@
+inl impossible_erp_p2p_unit_outbox_detached_message () :
+    erp_p2p_unit_outbox requisition_drafted budget_reserved =
+    inl event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+    ErpP2PUnitOutbox (event, "forged-unit-outbox-message")
+
+inl main () =
+    impossible_erp_p2p_unit_outbox_detached_message ()

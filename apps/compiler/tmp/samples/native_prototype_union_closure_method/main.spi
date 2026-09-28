@@ -1,0 +1,21 @@
+union outcome =
+    | Idle
+    | Hit : i32
+    | Flag : bool
+
+prototype score a : a -> i32
+
+instance score outcome = fun x =>
+    match x with
+    | Idle => 3i32
+    | Hit value => value
+    | Flag value => if value then 11i32 else 5i32
+
+inl main () : i32 =
+    inl ~selector = 2i32
+    inl captured =
+        if selector =. 0i32 then Idle
+        elif selector =. 1i32 then Hit 7i32
+        else Flag true
+    inl ~apply = (fun addend => score captured +. addend) : i32 -> i32
+    join apply 31i32

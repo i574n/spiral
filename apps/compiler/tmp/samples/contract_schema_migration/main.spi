@@ -1,0 +1,48 @@
+nominal schema_v4 = ()
+nominal schema_v5 = ()
+nominal schema_v6 = ()
+
+nominal nfe_payload = { xml : string; schema_tag : string }
+
+union document schema =
+    | Document :: forall schema. nfe_payload -> document schema
+
+union migration from to =
+    | UpgradeV4V5 :: migration schema_v4 schema_v5
+    | UpgradeV5V6 :: migration schema_v5 schema_v6
+
+inl migrate forall from to.
+    (migration : migration from to)
+    (document : document from)
+    : document to =
+    match migration, document with
+    | UpgradeV4V5, Document payload =>
+        Document (nfe_payload { xml = payload.xml; schema_tag = "v5" })
+    | UpgradeV5V6, Document payload =>
+        Document (nfe_payload { xml = payload.xml; schema_tag = "v6" })
+
+union rec migration_path from to =
+    | MigrationStep :: forall from to. migration from to -> migration_path from to
+    | MigrationCompose :: forall from to.
+        (exists middle. migration_path from middle * migration_path middle to)
+        -> migration_path from to
+
+inl rec run_migration forall from to.
+    (path : migration_path from to)
+    (document : document from)
+    : document to =
+    match path with
+    | MigrationStep step => migrate step document
+    | MigrationCompose pair =>
+        inl exists middle. first, second = pair
+        run_migration second (run_migration first document)
+
+inl v4_to_v6 () : migration_path schema_v4 schema_v6 =
+    MigrationCompose (exists (MigrationStep UpgradeV4V5, MigrationStep UpgradeV5V6))
+
+inl main () : string =
+    inl original : document schema_v4 =
+        Document (nfe_payload { xml = "NFE-08"; schema_tag = "v4" })
+    inl migrated = run_migration (v4_to_v6 ()) original
+    match migrated with
+    | Document payload => payload.schema_tag

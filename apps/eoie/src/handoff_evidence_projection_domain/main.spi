@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl toolchain_ok = (=.) (handoff_toolchain_projection (fixture_toolchain ())) "spiral_compiler=spiral-compile sha256=abcdef bytes=67952"
+    inl cold_ok = (=.) (handoff_cold_projection (fixture_cold ())) "cold_proof=closed replay_flags=15 binary_sha256=deadbeef"
+    $"RustExportStringUnary(\"eoie_handoff_toolchain_projection\",\"handoff_toolchain_projection\")" : ()
+    $"RustExportStringUnary(\"eoie_handoff_cold_projection\",\"handoff_cold_projection\")" : ()
+    $"RustLibrary()" : ()
+    if toolchain_ok then if cold_ok then 0i32 else 2i32 else 1i32

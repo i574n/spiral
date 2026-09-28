@@ -1,0 +1,71 @@
+nominal nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+union rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+union rec validation result =
+    | Pure :: forall result. result -> validation result
+    | Lift :: forall result. rule result -> validation result
+    | Zip :: forall a b. validation a * validation b -> validation (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * validation input)
+        -> validation result
+
+inl run_rule forall result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    match rule with
+    | IssuerRule => document.issuer
+    | RecipientRule => document.recipient
+    | TotalRule => document.total_cents
+
+inl rec run_validation forall result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    match program with
+    | Pure value => value
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        inl exists input. mapping, source = packed
+        mapping (run_validation document source)
+
+inl describe_schedule forall result.
+    (program : validation result)
+    : string =
+    match program with
+    | Map packed =>
+        inl exists input. _, source = packed
+        match source with
+        | Zip (Zip (Lift _, Lift _), Lift _) => "parallel-plan"
+        | _ => "other-map"
+    | Zip _ => "parallel"
+    | Lift _ => "leaf"
+    | Pure _ => "pure"
+
+inl summarize (_ : (string * string) * i32) : string = "validated"
+
+inl plan () : validation string =
+    Map (exists (
+        summarize,
+        Zip (
+            Zip (Lift IssuerRule, Lift RecipientRule),
+            Lift TotalRule
+        )
+    ))
+
+inl main () : string =
+    inl program = plan ()
+    inl document = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    inl _ = run_validation document program
+    describe_schedule program

@@ -1,0 +1,4 @@
+packages:
+    dogfood_shim_contract
+modules:
+    main

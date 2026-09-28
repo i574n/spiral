@@ -1,0 +1,6 @@
+open main
+
+inl main () =
+    inl verification : derivative_verification_capability bit_alphabet = derivative_verification_capability_default
+    inl raw : derivative_pipeline bit_alphabet derivative_unchecked = derivative_pipeline_begin (ends_with_zero ()) (zero ())
+    derivative_pipeline_verify verification raw

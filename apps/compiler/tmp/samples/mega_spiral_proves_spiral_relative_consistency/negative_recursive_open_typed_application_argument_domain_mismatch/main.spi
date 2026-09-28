@@ -1,0 +1,32 @@
+inl impossible_recursive_open_typed_application_argument_domain_mismatch () :
+    exact_linear_indexed_recursive_open_typed_substitution
+        exact_linear_indexed_open_unit_substitution_context
+        exact_linear_indexed_open_unit_substitution_source_usage
+        exact_linear_indexed_open_unit_substitution_target_usage
+        exact_linear_unit_type exact_linear_bool_type =
+    ExactLinearIndexedRecursiveOpenTypedSubstitutionApplicationArgument (exists (
+        ExactLinearIndexedLambda (
+            ExactLinearIndexedVariable (exists (
+                ExactLinearFreeContextMembershipHere
+                    "the-negative-function-binds-a-Bool",
+                ExactLinearIndexedSingleUseHere (
+                    exact_linear_indexed_open_unit_substitution_all_unused (),
+                    "the-bound-Bool-is-used-once"),
+                "this-is-a-Bool-identity-function")),
+            "the-negative-function-has-domain-Bool"),
+        exact_linear_indexed_recursive_open_typed_substitution_variable (),
+        ExactLinearIndexedUsageMergeUnusedUnused (
+            ExactLinearIndexedUsageMergeUnusedUsed (
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-source-merge-starts-empty",
+                "the-selected-Unit-is-used-only-by-the-argument"),
+            "the-newer-Unit-is-unused-in-the-source"),
+        ExactLinearIndexedUsageMergeUnusedUsed (
+            ExactLinearIndexedUsageMergeUnusedUnused (
+                ExactLinearIndexedUsageMergeEmpty
+                    "the-negative-target-merge-starts-empty",
+                "the-selected-Unit-is-unused-in-the-target"),
+            "the-newer-Unit-is-used-only-by-the-target-argument"),
+        "a-Bool-function-cannot-consume-the-Unit-substitution-argument"))
+
+inl main () = impossible_recursive_open_typed_application_argument_domain_mismatch ()

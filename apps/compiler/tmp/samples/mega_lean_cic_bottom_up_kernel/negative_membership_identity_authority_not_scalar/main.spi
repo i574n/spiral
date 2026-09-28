@@ -1,0 +1,7 @@
+inl impossible_membership_identity_authority_not_scalar
+    forall ctx sort source target expected.
+    (membership : corrected_cic_meta_open_membership ctx sort source target)
+    (expected : corrected_cic_typed_meta_id expected) : i64 =
+    corrected_cic_meta_open_membership_identity_authority_make membership expected
+
+inl main () = ()

@@ -1,0 +1,24 @@
+nominal schema_v5 = ()
+nominal operator = ()
+nominal auditor = ()
+
+union capability role =
+    | OperatorCapability :: capability operator
+    | AuditorCapability :: capability auditor
+
+union document schema =
+    | V5Document :: string -> document schema_v5
+
+union query role schema result =
+    | DigestQuery :: query auditor schema_v5 string
+
+inl run_query forall role schema result.
+    (capability : capability role)
+    (query : query role schema result)
+    (document : document schema)
+    : result =
+    match capability, query, document with
+    | AuditorCapability, DigestQuery, V5Document digest => digest
+
+inl main () : string =
+    run_query OperatorCapability DigestQuery (V5Document "sha256")

@@ -1,0 +1,27 @@
+nominal pending = ()
+nominal committed = ()
+nominal persisted = ()
+nominal published = ()
+
+union status_receipt phase =
+    | PendingReceipt :: string -> status_receipt pending
+    | CommittedReceipt :: string -> status_receipt committed
+
+union event_box phase =
+    | EventBox :: forall phase. string -> event_box phase
+
+union outbox_op from to =
+    | PublishCommitted :: status_receipt committed -> outbox_op persisted published
+
+inl execute forall from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    match operation, box with
+    | PublishCommitted (CommittedReceipt _), EventBox _ => EventBox "published"
+
+inl main () : string =
+    inl pending = PendingReceipt "not-committed"
+    inl result = execute (PublishCommitted pending) (EventBox "persisted" : event_box persisted)
+    match result with
+    | EventBox trace => trace

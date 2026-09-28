@@ -1,0 +1,35 @@
+// Runtime regression for specialized GADT constructors whose payload becomes
+// structurally uninhabited. The predecessor compiler typechecked this program,
+// but kept the impossible recursive branch and failed during codegen.
+nominal payload_zero = ()
+nominal payload_succ previous = previous
+
+union rec payload_index count =
+    | PayloadZero :: forall previous. payload_index (payload_succ previous)
+    | PayloadSucc :: forall previous. payload_index previous -> payload_index (payload_succ previous)
+
+union rec payload_row state_count symbol_count =
+    | PayloadRowNil :: forall state_count. payload_row state_count payload_zero
+    | PayloadRowCons :: forall state_count symbol_count.
+        payload_index state_count * payload_row state_count symbol_count
+        -> payload_row state_count (payload_succ symbol_count)
+
+inl rec payload_lookup forall state_count symbol_count.
+    (symbol : payload_index symbol_count)
+    (row : payload_row state_count symbol_count) : payload_index state_count =
+    match symbol, row with
+    | PayloadZero, PayloadRowCons (target, _) => target
+    | PayloadSucc previous, PayloadRowCons (_, rest) => payload_lookup previous rest
+
+inl payload_is_zero forall previous. (x : payload_index (payload_succ previous)) : bool =
+    match x with
+    | PayloadZero => true
+    | PayloadSucc _ => false
+
+inl main () : bool =
+    inl one : payload_index (payload_succ payload_zero) = PayloadZero
+    inl row : payload_row (payload_succ payload_zero) (payload_succ payload_zero) =
+        PayloadRowCons (one, PayloadRowNil)
+    inl ~runtime_symbol = one
+    inl ~runtime_row = row
+    payload_is_zero (payload_lookup runtime_symbol runtime_row)

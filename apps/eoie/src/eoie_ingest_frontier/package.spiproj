@@ -1,0 +1,6 @@
+packages:
+    ingest_frontier_contract
+modules:
+    model
+    ingest
+    main

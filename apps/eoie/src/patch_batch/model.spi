@@ -1,0 +1,59 @@
+open patch_model.model
+
+type two_file_paths = { target_a : string; stage_a : string; backup_a : string; target_b : string; stage_b : string; backup_b : string }
+type two_file_contents = { original_a : string; original_b : string; changed_a : string; changed_b : string }
+
+inl cleanup (paths : two_file_paths) : bool =
+    rust_std_fs.model.remove_file (paths.target_a)
+        && rust_std_fs.model.remove_file (paths.stage_a)
+        && rust_std_fs.model.remove_file (paths.backup_a)
+        && rust_std_fs.model.remove_file (paths.target_b)
+        && rust_std_fs.model.remove_file (paths.stage_b)
+        && rust_std_fs.model.remove_file (paths.backup_b)
+
+inl stage_all (contents : two_file_contents) (paths : two_file_paths) : bool =
+    rust_std_fs.model.write_text (paths.target_a) (contents.original_a)
+        && rust_std_fs.model.write_text (paths.target_b) (contents.original_b)
+        && rust_std_fs.model.write_text (paths.backup_a) (contents.original_a)
+        && rust_std_fs.model.write_text (paths.backup_b) (contents.original_b)
+        && rust_std_fs.model.write_text (paths.stage_a) (contents.changed_a)
+        && rust_std_fs.model.write_text (paths.stage_b) (contents.changed_b)
+
+inl originals_restored (contents : two_file_contents) (paths : two_file_paths) : bool =
+    rust_std_fs.model.text_equals (contents.original_a) (paths.target_a)
+        && rust_std_fs.model.text_equals (contents.original_b) (paths.target_b)
+
+inl residues_removed (paths : two_file_paths) : bool =
+    rust_std_fs.model.file_missing (paths.stage_a)
+        && rust_std_fs.model.file_missing (paths.stage_b)
+        && rust_std_fs.model.file_missing (paths.backup_a)
+        && rust_std_fs.model.file_missing (paths.backup_b)
+
+inl rollback_after_first_promotion (contents : two_file_contents) (paths : two_file_paths) : bool =
+    rust_std_fs.model.rename (paths.target_a) (paths.backup_a)
+        && rust_std_fs.model.remove_file (paths.stage_b)
+        && rust_std_fs.model.remove_file (paths.backup_b)
+        && originals_restored contents paths
+        && residues_removed paths
+
+inl fail_between_promotions (contents : two_file_contents) (paths : two_file_paths) : bool =
+    if cleanup paths then
+        if stage_all contents paths
+            && rust_std_fs.model.rename (paths.target_a) (paths.stage_a)
+            && rust_std_fs.model.text_equals (contents.changed_a) (paths.target_a)
+            && rust_std_fs.model.text_equals (contents.original_b) (paths.target_b)
+        then rollback_after_first_promotion contents paths
+        else false
+    else false
+
+inl run_fault (fault : patch_fault) (contents : two_file_contents) (paths : two_file_paths) : bool =
+    match fault with
+    | FailBetweenPromotions => fail_between_promotions contents paths
+    | _ => false
+
+inl static_probe_result () : i32 =
+    inl plan : patch_plan patch_scope validated =
+        ValidatedPlan (validated_patch { count = 2i32 })
+    match transact FailBetweenPromotions plan with
+    | TransactionRolledBack (RolledBackPlan _) => 0i32
+    | _ => 1i32

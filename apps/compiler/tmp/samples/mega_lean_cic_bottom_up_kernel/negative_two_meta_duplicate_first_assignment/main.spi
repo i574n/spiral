@@ -1,0 +1,17 @@
+inl impossible_corrected_cic_meta_stale_membership_reassignment () :
+    corrected_cic_meta_environment
+        (corrected_cic_meta_states_open empty_ctx bool_sort
+            (corrected_cic_meta_states_open
+                empty_ctx (universe_sort universe_one)
+                (corrected_cic_meta_states_solved empty_ctx bool_sort
+                    corrected_cic_meta_states_empty))) =
+    assign_corrected_cic_meta_open_slot
+        (assign_corrected_cic_meta_open_slot
+            (corrected_cic_three_open_heterogeneous_meta_environment ())
+            (corrected_cic_oldest_bool_open_membership ())
+            (CorrectedCicMetaAssignmentPlanRigid (corrected_cic_true ())))
+        (corrected_cic_oldest_bool_open_membership ())
+        (CorrectedCicMetaAssignmentPlanRigid (corrected_cic_false ()))
+
+inl main () =
+    impossible_corrected_cic_meta_stale_membership_reassignment ()

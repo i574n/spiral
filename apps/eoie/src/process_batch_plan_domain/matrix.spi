@@ -1,0 +1,88 @@
+let matrix_row_policy_binding (required_code : i32) (policy_code : i32) : i32 =
+    if (!!!!EQ(required_code,0i32) || !!!!EQ(required_code,1i32)) && (!!!!EQ(policy_code,0i32) || !!!!EQ(policy_code,1i32)) then 1i32 else -1i32
+
+let matrix_dependency_binding (has_dependency : i32) (dependency_passed : i32) : i32 =
+    if !!!!EQ(has_dependency,0i32) then 1i32
+    elif !!!!EQ(has_dependency,1i32) then if !!!!EQ(dependency_passed,1i32) then 1i32 else 0i32
+    else -1i32
+
+let matrix_observed_accept_binding (required_code : i32) (exit_code : i32) : i32 =
+    if !!!!EQ(required_code,0i32) then if !!!!EQ(exit_code,0i32) then 1i32 else 0i32
+    elif !!!!EQ(required_code,1i32) then if !!!!EQ(exit_code,0i32) then 0i32 else 1i32
+    else -1i32
+
+let matrix_resume_action_binding (accepted : i32) (policy_code : i32) : i32 =
+    if !!!!EQ(policy_code,0i32) then if !!!!EQ(accepted,1i32) then 0i32 else 2i32
+    elif !!!!EQ(policy_code,1i32) then if !!!!EQ(accepted,1i32) then 0i32 else 1i32
+    else -1i32
+
+inl matrix_auto_chain_budget_policy (work_remaining_ms : i32) (timeout_ms : i32) : i32 =
+    if !!!!LT(work_remaining_ms,30000i32) then 0i32
+    elif !!!!LT(timeout_ms,1i32) then -1i32
+    elif !!!!LT(timeout_ms,5001i32) then 12i32
+    elif !!!!LT(timeout_ms,10001i32) then 8i32
+    elif !!!!LT(timeout_ms,15001i32) then 6i32
+    else 1i32
+
+let matrix_auto_chain_budget_binding (work_remaining_ms : i32) (timeout_ms : i32) : i32 =
+    matrix_auto_chain_budget_policy work_remaining_ms timeout_ms
+
+union matrix_auto_chain_action =
+    | AutoChainStop
+    | AutoChainReinvoke
+
+inl matrix_auto_chain_action_policy (work_budget : i32) : matrix_auto_chain_action =
+    if !!!!LT(0i32,work_budget) then AutoChainReinvoke else AutoChainStop
+
+union matrix_auto_checkpoint_action =
+    | AutoCheckpointSkip
+    | AutoCheckpointCreate
+
+inl matrix_auto_checkpoint_action_code = function
+    | AutoCheckpointSkip => 0i32
+    | AutoCheckpointCreate => 1i32
+
+let matrix_auto_checkpoint_binding (mode : i32) (evidence : i32) : i32 =
+    if !!!!EQ(mode,0i32) then
+        if !!!!LT(evidence,0i32) then -1i32 elif !!!!LT(0i32,evidence) then 1i32 else 0i32
+    elif !!!!EQ(mode,1i32) then
+        if !!!!LT(evidence,0i32) || !!!!LT(3i32,evidence) then -1i32
+        elif !!!!EQ(evidence,1i32) then 1i32
+        else 0i32
+    else -1i32
+
+inl matrix_auto_budget_status () : i32 =
+    inl wrap = matrix_auto_chain_budget_policy 29999i32 14000i32
+    inl fast = matrix_auto_chain_budget_policy 60000i32 5000i32
+    inl mid = matrix_auto_chain_budget_policy 60000i32 10000i32
+    inl bounded = matrix_auto_chain_budget_policy 60000i32 14000i32
+    inl slow = matrix_auto_chain_budget_policy 60000i32 16000i32
+    if !!!!EQ(wrap,0i32) then
+        if !!!!EQ(fast,12i32) then
+            if !!!!EQ(mid,8i32) then
+                if !!!!EQ(bounded,6i32) then
+                    if !!!!EQ(slow,1i32) then 1i32 else 0i32
+                else 0i32
+            else 0i32
+        else 0i32
+    else 0i32
+
+inl matrix_authority_status () : i32 = matrix_auto_budget_status ()
+
+
+union command_workspace_policy =
+    | RequestedWorkingDirectory
+    | NestedCargoWorkspace
+
+inl command_workspace_policy_code = function
+    | RequestedWorkingDirectory => 0i32
+    | NestedCargoWorkspace => 1i32
+
+let matrix_workspace_policy_binding (program_requested_code : i32) (nested_manifest : i32) : i32 =
+    if !!!!LT(program_requested_code,0i32) then -1i32
+    elif !!!!LT(3i32,program_requested_code) then -1i32
+    elif !!!!EQ(program_requested_code,2i32) then
+        if !!!!EQ(nested_manifest,1i32) then command_workspace_policy_code NestedCargoWorkspace
+        elif !!!!EQ(nested_manifest,0i32) then command_workspace_policy_code RequestedWorkingDirectory
+        else -1i32
+    else command_workspace_policy_code RequestedWorkingDirectory

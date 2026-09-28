@@ -1,0 +1,15 @@
+inl impossible_recursive_child_refusal_without_strict_descent () =
+    inl four = positive_positional_four_value ()
+    inl child_refusal =
+        CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailable (exists (
+            classify_certified_interval_positive_positional_sealed_factor four,
+            CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
+                (positive_positional_equal_reflexive four)))
+    CertifiedIntervalPositivePositionalLegacyCompletionRefused (
+        CertifiedIntervalPositivePositionalLegacyCompletionRefusalRecursiveChild (exists (
+            classify_certified_interval_positive_positional_sealed_factor
+                (positive_positional_twelve_value ()),
+            child_refusal)))
+
+inl main () =
+    impossible_recursive_child_refusal_without_strict_descent ()

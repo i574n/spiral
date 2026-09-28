@@ -58,9 +58,6 @@ Samples
 - Spiral CLI notebook  
 <https://i574n.github.io/spiral/apps/spiral/spiral.dib.html>
 
-- Spiral compiler notebook  
-<https://i574n.github.io/spiral/apps/compiler/spiral_compiler.dib.html>
-
 - Parsing library  
 <https://i574n.github.io/spiral/lib/spiral/parsing.dib.html>
 

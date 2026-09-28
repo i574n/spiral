@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-forwarded-return"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/forwarded_return.rs"

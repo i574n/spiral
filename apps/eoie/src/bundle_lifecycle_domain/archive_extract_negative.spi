@@ -1,0 +1,22 @@
+inl rust_global (x : string) : () = real
+    typecase `(!!!!LitToTypeLit(x)) with ~x =>
+    $"RustGlobal(@x)" : ()
+
+union archive_extract_negative_fixture =
+    | DestinationAlreadyExists
+    | UnsafeArchiveEntry
+    | UnconfinedStaging
+    | PayloadCountMismatch
+
+inl main () : i32 =
+    rust_global "#![allow(clippy::needless_return, clippy::needless_late_init)]"
+    inl _ = native_extract_plan ()
+    inl destination_exists = archive_extract_preflight_binding 1i32 1i32
+    inl unsafe_entry = archive_extract_preflight_binding 0i32 0i32
+    inl unconfined_stage = archive_extract_process_binding 1i32 0i32
+    inl count_mismatch = archive_extract_complete_binding 4i32 3i32
+    if !!!!LT(0i32,destination_exists) then 1i32
+    elif !!!!LT(0i32,unsafe_entry) then 1i32
+    elif !!!!LT(0i32,unconfined_stage) then 1i32
+    elif !!!!LT(0i32,count_mismatch) then 1i32
+    else 0i32

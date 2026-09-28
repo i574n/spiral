@@ -1,0 +1,22 @@
+[package]
+name = "eoie-rust-std-fs"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+eoie-rust-std-fs-mutation = { path = "../rust_std_fs_mutation" }
+
+[lib]
+name = "eoie_rust_std_fs"
+path = "rust_std_fs_runtime.rs"
+
+[lints.rust]
+dead_code = "allow"
+
+[lints.clippy]
+needless_return = "allow"
+needless_late_init = "allow"
+needless_bool_assign = "allow"
+items_after_test_module = "allow"

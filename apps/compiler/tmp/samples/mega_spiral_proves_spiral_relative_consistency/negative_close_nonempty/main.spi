@@ -1,0 +1,11 @@
+inl impossible_close_nonempty () :
+    exact_linear_indexed_closed_term exact_linear_unit_type =
+    match exact_linear_indexed_fully_used_variable_term () with
+    | ExactLinearIndexedFullyUsedTerm payload =>
+        inl exists usage. term, all_used, _ = payload
+        ExactLinearIndexedClosedTerm (exists (
+            term,
+            all_used,
+            "a-nonempty-context-cannot-enter-the-empty-context-closed-wrapper"))
+
+inl main () = impossible_close_nonempty ()

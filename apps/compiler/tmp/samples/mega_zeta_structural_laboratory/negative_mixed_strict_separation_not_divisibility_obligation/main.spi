@@ -1,0 +1,6 @@
+inl impossible_mixed_strict_separation_not_divisibility_obligation forall root.
+    (strict : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_strict_after_singleton_head root) :
+    certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_divisibility_obligation root =
+    strict
+
+inl main () = ()

@@ -1,0 +1,21 @@
+[package]
+name = "eoie-patch-compat-driver"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_patch_compat_driver"
+path = "compat_driver.rs"
+
+[features]
+test-support = []
+
+[dependencies]
+eoie-backup-domain = { path = "../backup_domain" }
+eoie-patch-control-domain = { path = "../patch_control_domain" }
+eoie-patch-effect-domain = { path = "../patch_effect_domain" }
+eoie-patch-orchestration-domain = { path = "../patch_orchestration_domain" }
+eoie-patch-source-adapter = { path = "../patch_source_adapter" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }

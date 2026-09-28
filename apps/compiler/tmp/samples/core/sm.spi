@@ -1,0 +1,311 @@
+// Minimal string primitives shared by portable backend fixtures.
+
+inl index forall t{int}. (str : string) (i : t) : char = !!!!StringIndex(str,i)
+inl length forall t{int}. (str : string) : t = !!!!StringLength(`t,str)
+inl slice forall t{int}. (str : string) {from=(a : t) to=(b : t)} = !!!!StringSlice(str,a,b)
+inl concat (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+// UTF-8 scalar helpers layered over the stable byte-indexed primitives.
+// Keeping boundary indexing behind a non-inline function prevents high bytes
+// from becoming non-portable C character literals during partial evaluation.
+let runtime_byte (str : string) (i : i32) : char = index str i
+
+inl is_continuation_byte (lower : char) (upper : char) (value : char) : bool =
+    if !!!!LT(value,lower) then false
+    else !!!!LT(value,upper)
+
+let rec codepoint_length_loop (str : string) (lower : char) (upper : char) (byte_index : i32) (count : i32) (byte_length : i32) : i32 =
+    if (=.) byte_index byte_length then count
+    else
+        inl value = index str byte_index
+        inl count = if is_continuation_byte lower upper value then count else (+.) count 1i32
+        codepoint_length_loop str lower upper ((+.) byte_index 1i32) count byte_length
+
+inl codepoint_length (str : string) : i32 =
+    inl lower = runtime_byte "À" 1i32 // 0x80
+    inl upper = runtime_byte "©" 0i32 // 0xC2, first valid multibyte lead byte
+    codepoint_length_loop str lower upper 0i32 0i32 (length str : i32)
+
+let rec codepoint_byte_offset_loop (str : string) (lower : char) (upper : char) (target : i32) (byte_index : i32) (codepoint_index : i32) (byte_length : i32) : i32 =
+    if (=.) byte_index byte_length then byte_length
+    else
+        inl value = index str byte_index
+        if is_continuation_byte lower upper value then
+            codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) codepoint_index byte_length
+        elif (=.) codepoint_index target then byte_index
+        else
+            codepoint_byte_offset_loop str lower upper target ((+.) byte_index 1i32) ((+.) codepoint_index 1i32) byte_length
+
+inl codepoint_byte_offset (str : string) (target : i32) : i32 =
+    inl lower = runtime_byte "À" 1i32
+    inl upper = runtime_byte "©" 0i32
+    codepoint_byte_offset_loop str lower upper target 0i32 0i32 (length str : i32)
+
+inl codepoint_index (str : string) (target : i32) : string =
+    inl from = codepoint_byte_offset str target
+    inl near_to = codepoint_byte_offset str ((+.) target 1i32)
+    slice str {from; to=(-.) near_to 1i32}
+
+inl codepoint_slice (str : string) {from=(from_codepoint : i32) to=(to_codepoint : i32)} : string =
+    if !!!!LT(to_codepoint,from_codepoint) then ""
+    else
+        inl from = codepoint_byte_offset str from_codepoint
+        inl near_to = codepoint_byte_offset str ((+.) to_codepoint 1i32)
+        slice str {from; to=(-.) near_to 1i32}
+
+inl byte_to_i32 (value : char) : i32 = $'((uint8_t)!value)'
+
+inl valid_continuation_i32 (value : i32) : bool =
+    if value < 128i32 then false
+    else value < 192i32
+
+inl utf8_fail forall t. (message : string) : t = !!!!FailWith(`t,message)
+
+let utf8_scalar_at_byte_offset (str : string) (byte_offset : i32) : i32 =
+    inl byte_length = length str : i32
+    if byte_offset < 0i32 then utf8_fail "UTF-8 byte offset is negative."
+    elif byte_offset >= byte_length then utf8_fail "UTF-8 byte offset is outside the string."
+    else
+        inl b0 = byte_to_i32 (runtime_byte str byte_offset)
+        if b0 < 128i32 then b0
+        elif b0 < 194i32 then utf8_fail "UTF-8 scalar starts with an invalid lead byte."
+        elif b0 < 224i32 then
+            if ((+.) byte_offset 1i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
+            else
+                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                if valid_continuation_i32 b1 then
+                    (+.) ((*.) ((-.) b0 192i32) 64i32) ((-.) b1 128i32)
+                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        elif b0 < 240i32 then
+            if ((+.) byte_offset 2i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
+            else
+                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                inl b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
+                if valid_continuation_i32 b1 then
+                    if valid_continuation_i32 b2 then
+                        inl scalar =
+                            (+.)
+                                ((+.) ((*.) ((-.) b0 224i32) 4096i32) ((*.) ((-.) b1 128i32) 64i32))
+                                ((-.) b2 128i32)
+                        if scalar < 2048i32 then utf8_fail "UTF-8 sequence is overlong."
+                        elif scalar >= 55296i32 then
+                            if scalar <= 57343i32 then utf8_fail "UTF-8 sequence encodes a surrogate."
+                            else scalar
+                        else scalar
+                    else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        elif b0 < 245i32 then
+            if ((+.) byte_offset 3i32) >= byte_length then utf8_fail "UTF-8 sequence is truncated."
+            else
+                inl b1 = byte_to_i32 (runtime_byte str ((+.) byte_offset 1i32))
+                inl b2 = byte_to_i32 (runtime_byte str ((+.) byte_offset 2i32))
+                inl b3 = byte_to_i32 (runtime_byte str ((+.) byte_offset 3i32))
+                if valid_continuation_i32 b1 then
+                    if valid_continuation_i32 b2 then
+                        if valid_continuation_i32 b3 then
+                            inl scalar =
+                                (+.)
+                                    ((+.)
+                                        ((+.) ((*.) ((-.) b0 240i32) 262144i32) ((*.) ((-.) b1 128i32) 4096i32))
+                                        ((*.) ((-.) b2 128i32) 64i32))
+                                    ((-.) b3 128i32)
+                            if scalar < 65536i32 then utf8_fail "UTF-8 sequence is overlong."
+                            elif scalar > 1114111i32 then utf8_fail "UTF-8 scalar is above U+10FFFF."
+                            else scalar
+                        else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                    else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+                else utf8_fail "UTF-8 sequence has an invalid continuation byte."
+        else utf8_fail "UTF-8 scalar starts with an invalid lead byte."
+
+inl utf8_scalar_width (scalar : i32) : i32 =
+    if scalar < 128i32 then 1i32
+    elif scalar < 2048i32 then 2i32
+    elif scalar < 65536i32 then 3i32
+    else 4i32
+
+let rec utf8_validate_loop (str : string) (byte_offset : i32) (scalar_count : i32) (byte_length : i32) : i32 =
+    if (=.) byte_offset byte_length then scalar_count
+    elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
+    else
+        inl scalar = utf8_scalar_at_byte_offset str byte_offset
+        inl width = utf8_scalar_width scalar
+        utf8_validate_loop str ((+.) byte_offset width) ((+.) scalar_count 1i32) byte_length
+
+inl utf8_validate_from_byte_offset (str : string) (byte_offset : i32) : i32 =
+    utf8_validate_loop str byte_offset 0i32 (length str : i32)
+
+inl utf8_validate (str : string) : i32 =
+    utf8_validate_from_byte_offset str 0i32
+
+inl utf8_fold_from_byte_offset forall s. folder (state : s) (str : string) (byte_offset : i32) : s =
+    inl byte_length = length str : i32
+    let rec loop (byte_offset : i32) (state : s) : s =
+        if (=.) byte_offset byte_length then state
+        elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
+        else
+            inl scalar = utf8_scalar_at_byte_offset str byte_offset
+            inl width = utf8_scalar_width scalar
+            loop ((+.) byte_offset width) (folder state scalar)
+    loop byte_offset state
+
+inl utf8_fold forall s. folder (state : s) (str : string) : s =
+    utf8_fold_from_byte_offset folder state str 0i32
+
+// Bounded grapheme contract derived from mature grapheme-list surfaces.
+// A cluster is a base scalar followed by zero or more explicitly supported
+// extending scalars. ZWJ sequences, regional-indicator pairing and contextual
+// UAX #29 rules remain outside this deliberately narrow portable contract.
+inl utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
+    if scalar >= 768i32 then
+        if scalar <= 879i32 then true // U+0300..U+036F Combining Diacritical Marks
+        elif scalar >= 6832i32 then
+            if scalar <= 6911i32 then true // U+1AB0..U+1AFF Extended
+            elif scalar >= 7616i32 then
+                if scalar <= 7679i32 then true // U+1DC0..U+1DFF Supplement
+                elif scalar >= 8400i32 then
+                    if scalar <= 8447i32 then true // U+20D0..U+20FF Symbols
+                    elif scalar >= 65024i32 then
+                        if scalar <= 65039i32 then true // U+FE00..U+FE0F variation selectors
+                        elif scalar >= 65056i32 then
+                            if scalar <= 65071i32 then true // U+FE20..U+FE2F Half Marks
+                            elif scalar >= 127995i32 then
+                                if scalar <= 127999i32 then true // emoji modifiers
+                                elif scalar >= 917760i32 then scalar <= 917999i32 // supplementary variation selectors
+                                else false
+                            else false
+                        else false
+                    else false
+                else false
+            else false
+        else false
+    else false
+
+let rec utf8_grapheme_count_bounded_loop (str : string) (byte_offset : i32) (cluster_count : i32) (byte_length : i32) : i32 =
+    if (=.) byte_offset byte_length then cluster_count
+    elif byte_offset > byte_length then utf8_fail "UTF-8 scalar width exceeds the string."
+    else
+        inl scalar = utf8_scalar_at_byte_offset str byte_offset
+        inl width = utf8_scalar_width scalar
+        inl cluster_count =
+            if utf8_is_grapheme_extend_bounded scalar then
+                if (=.) cluster_count 0i32 then 1i32 else cluster_count
+            else (+.) cluster_count 1i32
+        utf8_grapheme_count_bounded_loop str ((+.) byte_offset width) cluster_count byte_length
+
+inl utf8_grapheme_count_bounded_from_byte_offset (str : string) (byte_offset : i32) : i32 =
+    inl byte_length = length str : i32
+    if byte_offset < 0i32 then utf8_fail "UTF-8 grapheme byte offset is negative."
+    elif byte_offset > byte_length then utf8_fail "UTF-8 grapheme byte offset is outside the string."
+    elif (=.) byte_offset byte_length then 0i32
+    elif byte_offset > 0i32 then
+        inl first_scalar = utf8_scalar_at_byte_offset str byte_offset
+        if utf8_is_grapheme_extend_bounded first_scalar then
+            utf8_fail "UTF-8 grapheme byte offset is inside a bounded grapheme cluster."
+        else utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
+    else utf8_grapheme_count_bounded_loop str byte_offset 0i32 byte_length
+
+inl utf8_grapheme_count_bounded (str : string) : i32 =
+    utf8_grapheme_count_bounded_from_byte_offset str 0i32
+
+// Bounded canonical normalization table derived from mature Unicode string
+// surfaces. Only the pairs declared below are normalized. Unsupported scalars
+// and pairs pass through unchanged so this cannot be confused with full UAX #15.
+inl utf8_decompose_canonical_bounded (scalar : i32) : i32 * i32 =
+    if (=.) scalar 192i32 then 65i32, 768i32       // À = A + grave
+    elif (=.) scalar 193i32 then 65i32, 769i32    // Á = A + acute
+    elif (=.) scalar 195i32 then 65i32, 771i32    // Ã = A + tilde
+    elif (=.) scalar 196i32 then 65i32, 776i32    // Ä = A + diaeresis
+    elif (=.) scalar 199i32 then 67i32, 807i32    // Ç = C + cedilla
+    elif (=.) scalar 201i32 then 69i32, 769i32    // É = E + acute
+    elif (=.) scalar 211i32 then 79i32, 769i32    // Ó = O + acute
+    elif (=.) scalar 213i32 then 79i32, 771i32    // Õ = O + tilde
+    elif (=.) scalar 224i32 then 97i32, 768i32    // à = a + grave
+    elif (=.) scalar 225i32 then 97i32, 769i32    // á = a + acute
+    elif (=.) scalar 227i32 then 97i32, 771i32    // ã = a + tilde
+    elif (=.) scalar 228i32 then 97i32, 776i32    // ä = a + diaeresis
+    elif (=.) scalar 231i32 then 99i32, 807i32    // ç = c + cedilla
+    elif (=.) scalar 233i32 then 101i32, 769i32   // é = e + acute
+    elif (=.) scalar 243i32 then 111i32, 769i32   // ó = o + acute
+    elif (=.) scalar 245i32 then 111i32, 771i32   // õ = o + tilde
+    else scalar, -1i32
+
+inl utf8_compose_canonical_bounded (starter : i32) (extend : i32) : i32 =
+    if (=.) starter 65i32 then
+        if (=.) extend 768i32 then 192i32
+        elif (=.) extend 769i32 then 193i32
+        elif (=.) extend 771i32 then 195i32
+        elif (=.) extend 776i32 then 196i32
+        else -1i32
+    elif (=.) starter 67i32 then if (=.) extend 807i32 then 199i32 else -1i32
+    elif (=.) starter 69i32 then if (=.) extend 769i32 then 201i32 else -1i32
+    elif (=.) starter 79i32 then
+        if (=.) extend 769i32 then 211i32
+        elif (=.) extend 771i32 then 213i32
+        else -1i32
+    elif (=.) starter 97i32 then
+        if (=.) extend 768i32 then 224i32
+        elif (=.) extend 769i32 then 225i32
+        elif (=.) extend 771i32 then 227i32
+        elif (=.) extend 776i32 then 228i32
+        else -1i32
+    elif (=.) starter 99i32 then if (=.) extend 807i32 then 231i32 else -1i32
+    elif (=.) starter 101i32 then if (=.) extend 769i32 then 233i32 else -1i32
+    elif (=.) starter 111i32 then
+        if (=.) extend 769i32 then 243i32
+        elif (=.) extend 771i32 then 245i32
+        else -1i32
+    else -1i32
+
+inl utf8_normalize_scalar_nfd_bounded (scalar : i32) : i32 * i32 =
+    utf8_decompose_canonical_bounded scalar
+
+inl utf8_normalize_pair_nfc_bounded (starter : i32) (extend : i32) : i32 * i32 =
+    inl composed = utf8_compose_canonical_bounded starter extend
+    if composed < 0i32 then starter, extend else composed, -1i32
+
+// Allocation-free bounded canonical equivalence. Each side is streamed as a
+// virtual NFD sequence. A precomposed scalar can leave one pending combining
+// mark, so no intermediate string, array or callback is required.
+inl utf8_nfd_next_bounded (str : string) (byte_offset : i32) (pending : i32) (byte_length : i32) : i32 * i32 * i32 =
+    if pending >= 0i32 then pending, byte_offset, -1i32
+    elif (=.) byte_offset byte_length then -1i32, byte_offset, -1i32
+    elif byte_offset > byte_length then utf8_fail "UTF-8 canonical stream offset exceeds the string."
+    else
+        inl scalar = utf8_scalar_at_byte_offset str byte_offset
+        inl width = utf8_scalar_width scalar
+        inl starter, extend = utf8_decompose_canonical_bounded scalar
+        starter, ((+.) byte_offset width), extend
+
+let rec utf8_canonical_equal_bounded_loop
+    (left : string)
+    (right : string)
+    (left_offset : i32)
+    (right_offset : i32)
+    (left_pending : i32)
+    (right_pending : i32)
+    (left_length : i32)
+    (right_length : i32)
+    : bool
+    =
+    inl left_scalar, left_offset, left_pending =
+        utf8_nfd_next_bounded left left_offset left_pending left_length
+    inl right_scalar, right_offset, right_pending =
+        utf8_nfd_next_bounded right right_offset right_pending right_length
+    if left_scalar < 0i32 then (=.) right_scalar -1i32
+    elif right_scalar < 0i32 then false
+    elif (=.) left_scalar right_scalar then
+        utf8_canonical_equal_bounded_loop
+            left right
+            left_offset right_offset
+            left_pending right_pending
+            left_length right_length
+    else false
+
+inl utf8_canonical_equal_bounded (left : string) (right : string) : bool =
+    utf8_canonical_equal_bounded_loop
+        left right
+        0i32 0i32
+        -1i32 -1i32
+        (length left : i32)
+        (length right : i32)
+

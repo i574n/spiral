@@ -1,0 +1,4 @@
+packages:
+    handoff_active_work_projection_source
+modules:
+    active_work_projection

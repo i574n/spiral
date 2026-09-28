@@ -1,0 +1,6 @@
+inl impossible_intrinsic_constraint_from_raw_relation forall ctx domain.
+    (relation : corrected_cic_scoped_pi_dependent_application_structural_relation ctx domain) :
+    corrected_cic_scoped_pi_dependent_application_constraint ctx domain =
+    CorrectedCicScopedPiDependentApplicationConstraintIntrinsic relation
+
+inl main () = 0i32

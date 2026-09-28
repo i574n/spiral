@@ -1,0 +1,3 @@
+let target_global (directive : string) : () =
+    inl n : i32 = sm.length directive
+    ()

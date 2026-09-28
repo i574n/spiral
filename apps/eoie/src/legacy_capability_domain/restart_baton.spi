@@ -1,0 +1,59 @@
+nominal restart_baton_empty = ()
+nominal restart_baton_validated = ()
+nominal restart_baton_written = ()
+nominal restart_baton_verified = ()
+union restart_baton_fault =
+    | NoRestartBatonFault
+    | FailBeforeBatonCommit
+    | FailAfterBatonCommit
+union restart_baton_receipt_schema =
+    | RestartBatonReceiptV2
+union restart_baton_receipt_status =
+    | RestartBatonReady
+union restart_baton_receipt =
+    | RestartBatonReceipt : restart_baton_receipt_schema * restart_baton_receipt_status * u32 * string * u64 * string * string * string * string * string
+inl restart_baton_receipt_shape () : restart_baton_receipt =
+    RestartBatonReceipt (RestartBatonReceiptV2, RestartBatonReady, 987u32, "bundle.zip", 1u64, "bundle-sha256", "lease-sha256", "workstream", "touched-sources", "next-gate")
+union restart_baton_op from to =
+    | ValidateRestartBaton :: restart_baton_op restart_baton_empty restart_baton_validated
+    | WriteRestartBaton :: restart_baton_op restart_baton_validated restart_baton_written
+    | VerifyRestartBaton :: restart_baton_op restart_baton_written restart_baton_verified
+union rec restart_baton_plan from to =
+    | RestartBatonStep :: forall from to. restart_baton_op from to -> restart_baton_plan from to
+    | RestartBatonThen :: forall from to. (exists middle. restart_baton_plan from middle * restart_baton_plan middle to) -> restart_baton_plan from to
+inl restart_baton_complete_plan () : restart_baton_plan restart_baton_empty restart_baton_verified =
+    RestartBatonThen (exists (
+        RestartBatonStep ValidateRestartBaton,
+        RestartBatonThen (exists (
+            RestartBatonStep WriteRestartBaton,
+            RestartBatonStep VerifyRestartBaton
+        ))
+    ))
+inl restart_baton_fault_code = function
+    | NoRestartBatonFault => 0i32
+    | FailBeforeBatonCommit => 1i32
+    | FailAfterBatonCommit => 2i32
+let restart_baton_preflight_binding (root_safe : i32) (bundle_safe : i32) : i32 =
+    if !!!!LT(root_safe,1i32) then 0i32
+    elif !!!!LT(1i32,root_safe) then 0i32
+    elif !!!!LT(bundle_safe,1i32) then 0i32
+    elif !!!!LT(1i32,bundle_safe) then 0i32
+    else 1i32
+let restart_baton_migration_binding (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,1i32) then 0i32
+    elif !!!!LT(1000i32,expected) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+let restart_baton_fault_binding (configured : i32) (observed : i32) : i32 =
+    if !!!!LT(configured,1i32) then 0i32
+    elif !!!!LT(2i32,configured) then 0i32
+    elif !!!!LT(configured,observed) then 0i32
+    elif !!!!LT(observed,configured) then 0i32
+    else 1i32
+let restart_baton_complete_binding (regular_receipt : i32) (bytes_match : i32) : i32 =
+    if !!!!LT(regular_receipt,1i32) then 0i32
+    elif !!!!LT(1i32,regular_receipt) then 0i32
+    elif !!!!LT(bytes_match,1i32) then 0i32
+    elif !!!!LT(1i32,bytes_match) then 0i32
+    else 1i32

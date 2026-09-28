@@ -1,0 +1,24 @@
+nominal app_scope = ()
+nominal epoch7 = ()
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal sealed = ()
+nominal unsealed = ()
+nominal live = ()
+
+union callset_authority state sample build contig =
+    | CallsetAuthority :: forall state sample build contig. string -> callset_authority state sample build contig
+
+union resource scope epoch lifecycle sample build contig =
+    | Resource :: forall scope epoch lifecycle sample build contig. string -> resource scope epoch lifecycle sample build contig
+
+inl publish forall scope epoch sample build contig.
+    (proof : callset_authority sealed sample build contig)
+    : resource scope epoch live sample build contig =
+    match proof with
+    | CallsetAuthority calls => Resource calls
+
+inl main () : resource app_scope epoch7 live sample_a hg38 chr1 =
+    inl proof : callset_authority unsealed sample_a hg38 chr1 = CallsetAuthority "42-variants"
+    publish proof

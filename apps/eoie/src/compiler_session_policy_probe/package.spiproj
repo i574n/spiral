@@ -1,0 +1,4 @@
+packages:
+    compiler_session_contract
+modules:
+    main

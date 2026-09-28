@@ -1,0 +1,66 @@
+nominal schema_v4 = ()
+nominal schema_v5 = ()
+
+nominal v4_payload = { issuer : string }
+nominal v5_payload = { issuer : string; technical_responsible : string }
+
+union document schema =
+    | V4Document :: v4_payload -> document schema_v4
+    | V5Document :: v5_payload -> document schema_v5
+
+union wire schema =
+    | V4Wire :: string -> wire schema_v4
+    | V5Wire :: string -> wire schema_v5
+
+union codec schema =
+    | V4Codec :: codec schema_v4
+    | V5Codec :: codec schema_v5
+
+inl encode forall schema.
+    (codec : codec schema)
+    (document : document schema)
+    : wire schema =
+    match codec, document with
+    | V4Codec, V4Document payload => V4Wire payload.issuer
+    | V5Codec, V5Document payload => V5Wire payload.technical_responsible
+
+inl decode forall schema.
+    (codec : codec schema)
+    (wire : wire schema)
+    : document schema =
+    match codec, wire with
+    | V4Codec, V4Wire issuer =>
+        V4Document (v4_payload { issuer })
+    | V5Codec, V5Wire technical_responsible =>
+        V5Document (v5_payload {
+            issuer = "ACME"
+            technical_responsible
+        })
+
+union packed_codec =
+    | PackedCodec :: (exists schema. codec schema) -> packed_codec
+
+inl inspect
+    (visitor : forall schema. codec schema -> string)
+    (packed : packed_codec)
+    : string =
+    match packed with
+    | PackedCodec value =>
+        inl exists schema. codec = value
+        visitor codec
+
+inl codec_name forall schema. (codec : codec schema) : string =
+    match codec with
+    | V4Codec => "v4"
+    | V5Codec => "v5"
+
+inl main () : string =
+    inl original = V5Document (v5_payload {
+        issuer = "ACME"
+        technical_responsible = "codec-roundtrip"
+    })
+    inl encoded = encode V5Codec original
+    inl decoded = decode V5Codec encoded
+    inl _ = inspect `$codec_name (PackedCodec (exists V5Codec))
+    match decoded with
+    | V5Document payload => payload.technical_responsible

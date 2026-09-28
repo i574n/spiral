@@ -1,0 +1,19 @@
+inl main () : i32 =
+    inl ~n = 4i32
+    inl ~buffer : array u8 = create n
+    set buffer 0i32 0
+    set buffer 1i32 0
+    set buffer 2i32 0
+    set buffer 3i32 0
+    inl ~byte_value = 65i32
+    inl ~count = 3i32
+    inl ~written = $"spiral_abi_libc_memset(!buffer,!byte_value,!count)" : i32
+    if (=.) written 3i32 then
+        if (=.) (index buffer 0i32) 65 then
+            if (=.) (index buffer 1i32) 65 then
+                if (=.) (index buffer 2i32) 65 then
+                    if (=.) (index buffer 3i32) 0 then 0i32 else 4i32
+                else 3i32
+            else 2i32
+        else 1i32
+    else 5i32

@@ -1,0 +1,13 @@
+[package]
+name = "spiral-split-cross-stage-relink"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/cross_stage_relink.rs"
+
+[dependencies]
+spiral-split-lift-rewrite.workspace = true
+spiral-split-cross-stage-thread.workspace = true

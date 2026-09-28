@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-funnel-rollback"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/funnel_rollback.rs"

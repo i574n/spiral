@@ -1,0 +1,322 @@
+union bundle_profile_request =
+    | AutoProfileRequest
+    | GenericProfileRequest
+    | EoieProfileRequest
+
+union bundle_signature_requirement =
+    | BundleBinarySignature
+    | StatePackageSignature
+    | StateCoreSignature
+    | StateAgileSignature
+    | SourceCargoSignature
+
+union bundle_root_entry =
+    | BundleBinaryRoot
+    | EvidenceRoot
+    | SourceRoot
+    | StateRoot
+
+union bundle_source_root_file =
+    | SourceCargoToml
+    | SourceCargoLock
+    | SourcePackageProject
+    | SourceRustfmtToml
+
+union bundle_source_required_file =
+    | SourceRequiredCargoToml
+    | SourceRequiredPackageProject
+
+nominal bundle_manifest_unobserved = ()
+nominal bundle_manifest_observed = ()
+nominal bundle_manifest_authoritative = ()
+
+union bundle_manifest_mapping_step from to =
+    | ObserveWorkspaceMembers :: bundle_manifest_mapping_step bundle_manifest_unobserved bundle_manifest_observed
+    | VerifyWorkspaceBijection :: bundle_manifest_mapping_step bundle_manifest_observed bundle_manifest_authoritative
+
+union rec bundle_manifest_mapping_plan from to =
+    | ManifestMappingStep :: forall from to. bundle_manifest_mapping_step from to -> bundle_manifest_mapping_plan from to
+    | ManifestMappingThen :: forall from to. (exists middle. bundle_manifest_mapping_plan from middle * bundle_manifest_mapping_plan middle to) -> bundle_manifest_mapping_plan from to
+
+inl bundle_manifest_authority_plan () : bundle_manifest_mapping_plan bundle_manifest_unobserved bundle_manifest_authoritative =
+    ManifestMappingThen (exists (ManifestMappingStep ObserveWorkspaceMembers, ManifestMappingStep VerifyWorkspaceBijection))
+
+let bundle_manifest_mapping_binding (manifest_parsed : i32) (members_bijective : i32) : i32 =
+    if !!!!EQ(manifest_parsed,1i32) && !!!!EQ(members_bijective,1i32) then 1i32 else 0i32
+
+union bundle_state_required_file =
+    | StateRequiredPackageProject
+    | StateRequiredCoreSource
+    | StateRequiredAgileSource
+
+union bundle_source_special_directory =
+    | SourceCargoConfigDirectory
+    | SourceVendorDirectory
+
+union bundle_source_special_file =
+    | SourceCargoConfigFile
+    | SourceVendorChecksumFile
+
+union bundle_crate_allowed_file =
+    | CrateCargoToml
+    | CratePackageProject
+
+union bundle_crate_forbidden_file =
+    | CrateLibRsForbidden
+
+union bundle_source_extension =
+    | RustSourceExtension
+    | SpiralSourceExtension
+
+union bundle_evidence_path =
+    | CoverageDirectoryPath
+    | CoverageCurrentFilePath
+
+union bundle_state_witness_file =
+    | StateCoverageWitnessFile
+    | StateConsolidationFixturesFile
+    | StateDogfoodExitFile
+
+union bundle_runtime_limit =
+    | BundleArchiveByteLimit
+    | BundleExtractByteLimit
+    | BundleCrateLineLimit
+    | BundlePublicBinaryCount
+
+inl bundle_profile_label = function
+    | AutoProfileRequest => "auto"
+    | GenericProfileRequest => "generic"
+    | EoieProfileRequest => "eoie"
+
+inl bundle_profile_code_text = function
+    | AutoProfileRequest => "0"
+    | GenericProfileRequest => "1"
+    | EoieProfileRequest => "2"
+
+inl bundle_signature_label = function
+    | BundleBinarySignature => "eoie"
+    | StatePackageSignature => "state/package.spiproj"
+    | StateCoreSignature => "state/core.spi"
+    | StateAgileSignature => "state/agile.spi"
+    | SourceCargoSignature => "src/Cargo.toml"
+
+inl bundle_root_entry_label = function
+    | BundleBinaryRoot => "eoie"
+    | EvidenceRoot => "evidence"
+    | SourceRoot => "src"
+    | StateRoot => "state"
+
+inl bundle_source_root_file_label = function
+    | SourceCargoToml => "Cargo.toml"
+    | SourceCargoLock => "Cargo.lock"
+    | SourcePackageProject => "package.spiproj"
+    | SourceRustfmtToml => "rustfmt.toml"
+
+inl bundle_source_required_file_label = function
+    | SourceRequiredCargoToml => "Cargo.toml"
+    | SourceRequiredPackageProject => "package.spiproj"
+
+inl bundle_state_required_file_label = function
+    | StateRequiredPackageProject => "package.spiproj"
+    | StateRequiredCoreSource => "core.spi"
+    | StateRequiredAgileSource => "agile.spi"
+
+inl bundle_source_special_directory_label = function
+    | SourceCargoConfigDirectory => ".cargo"
+    | SourceVendorDirectory => "vendor"
+
+inl bundle_source_special_file_label = function
+    | SourceCargoConfigFile => "config.toml"
+    | SourceVendorChecksumFile => ".cargo-checksum.json"
+
+inl bundle_crate_allowed_file_label = function
+    | CrateCargoToml => "Cargo.toml"
+    | CratePackageProject => "package.spiproj"
+
+inl bundle_crate_forbidden_file_label = function
+    | CrateLibRsForbidden => "lib.rs"
+
+inl bundle_source_extension_label = function
+    | RustSourceExtension => "rs"
+    | SpiralSourceExtension => "spi"
+
+inl bundle_evidence_path_label = function
+    | CoverageDirectoryPath => "coverage"
+    | CoverageCurrentFilePath => "current.lcov"
+
+inl bundle_state_witness_file_label = function
+    | StateCoverageWitnessFile => "coverage.spi"
+    | StateConsolidationFixturesFile => "consolidation_fixtures.spi"
+    | StateDogfoodExitFile => "dogfood_exit.spi"
+
+inl bundle_runtime_limit_rust = function
+    | BundleArchiveByteLimit => "30_000_000"
+    | BundleExtractByteLimit => "268_435_456"
+    | BundleCrateLineLimit => "1000"
+    | BundlePublicBinaryCount => "1"
+
+inl rust_quote value =
+    sm.concat "\"" (sm.concat value "\"")
+
+inl rust_array2 a b =
+    inl x0 = sm.concat "[" (rust_quote a)
+    inl x1 = sm.concat x0 ", "
+    inl x2 = sm.concat x1 (rust_quote b)
+    sm.concat x2 "]"
+
+inl rust_array3 a b c =
+    inl x0 = sm.concat "[" (rust_quote a)
+    inl x1 = sm.concat x0 ", "
+    inl x2 = sm.concat x1 (rust_quote b)
+    inl x3 = sm.concat x2 ", "
+    inl x4 = sm.concat x3 (rust_quote c)
+    sm.concat x4 "]"
+
+inl rust_array4 a b c d =
+    inl x0 = sm.concat "[" (rust_quote a)
+    inl x1 = sm.concat x0 ", "
+    inl x2 = sm.concat x1 (rust_quote b)
+    inl x3 = sm.concat x2 ", "
+    inl x4 = sm.concat x3 (rust_quote c)
+    inl x5 = sm.concat x4 ", "
+    inl x6 = sm.concat x5 (rust_quote d)
+    sm.concat x6 "]"
+
+inl rust_array5 a b c d e =
+    inl x0 = sm.concat "[" (rust_quote a)
+    inl x1 = sm.concat x0 ", "
+    inl x2 = sm.concat x1 (rust_quote b)
+    inl x3 = sm.concat x2 ", "
+    inl x4 = sm.concat x3 (rust_quote c)
+    inl x5 = sm.concat x4 ", "
+    inl x6 = sm.concat x5 (rust_quote d)
+    inl x7 = sm.concat x6 ", "
+    inl x8 = sm.concat x7 (rust_quote e)
+    sm.concat x8 "]"
+
+inl profile_match_arm profile =
+    inl x0 = sm.concat "        " (rust_quote (bundle_profile_label profile))
+    inl x1 = sm.concat x0 " => "
+    inl x2 = sm.concat x1 (bundle_profile_code_text profile)
+    sm.concat x2 ",\n"
+
+inl bundle_profile_match_arms_rust () =
+    inl p0 = profile_match_arm AutoProfileRequest
+    inl p1 = profile_match_arm GenericProfileRequest
+    inl p2 = profile_match_arm EoieProfileRequest
+    sm.concat p0 (sm.concat p1 p2)
+
+inl bundle_signature_array_rust () =
+    rust_array4
+        (bundle_signature_label BundleBinarySignature)
+        (bundle_signature_label StatePackageSignature)
+        (bundle_signature_label StateCoreSignature)
+        (bundle_signature_label SourceCargoSignature)
+
+inl bundle_rehydrate_agile_path_rust () =
+    rust_quote (bundle_signature_label StateAgileSignature)
+
+inl bundle_root_entries_array_rust () =
+    rust_array4
+        (bundle_root_entry_label BundleBinaryRoot)
+        (bundle_root_entry_label EvidenceRoot)
+        (bundle_root_entry_label SourceRoot)
+        (bundle_root_entry_label StateRoot)
+
+inl bundle_archive_directory_roots_array_rust () =
+    rust_array3
+        (sm.concat (bundle_root_entry_label EvidenceRoot) "/")
+        (sm.concat (bundle_root_entry_label SourceRoot) "/")
+        (sm.concat (bundle_root_entry_label StateRoot) "/")
+
+inl bundle_source_root_files_array_rust () =
+    rust_array4
+        (bundle_source_root_file_label SourceCargoToml)
+        (bundle_source_root_file_label SourceCargoLock)
+        (bundle_source_root_file_label SourcePackageProject)
+        (bundle_source_root_file_label SourceRustfmtToml)
+
+inl bundle_source_required_files_array_rust () =
+    rust_array2
+        (bundle_source_required_file_label SourceRequiredCargoToml)
+        (bundle_source_required_file_label SourceRequiredPackageProject)
+
+inl bundle_state_required_files_array_rust () =
+    rust_array3
+        (bundle_state_required_file_label StateRequiredPackageProject)
+        (bundle_state_required_file_label StateRequiredCoreSource)
+        (bundle_state_required_file_label StateRequiredAgileSource)
+
+inl bundle_source_special_directories_array_rust () =
+    rust_array2
+        (bundle_source_special_directory_label SourceCargoConfigDirectory)
+        (bundle_source_special_directory_label SourceVendorDirectory)
+
+inl bundle_crate_allowed_files_array_rust () =
+    rust_array2
+        (bundle_crate_allowed_file_label CrateCargoToml)
+        (bundle_crate_allowed_file_label CratePackageProject)
+
+inl bundle_source_extensions_array_rust () =
+    rust_array2
+        (bundle_source_extension_label RustSourceExtension)
+        (bundle_source_extension_label SpiralSourceExtension)
+
+inl bundle_evidence_paths_array_rust () =
+    rust_array2
+        (bundle_evidence_path_label CoverageDirectoryPath)
+        (bundle_evidence_path_label CoverageCurrentFilePath)
+
+inl bundle_state_witness_files_array_rust () =
+    rust_array3
+        (bundle_state_witness_file_label StateCoverageWitnessFile)
+        (bundle_state_witness_file_label StateConsolidationFixturesFile)
+        (bundle_state_witness_file_label StateDogfoodExitFile)
+
+inl bundle_layout_runtime_rust () =
+    inl crate_allowed = bundle_crate_allowed_files_array_rust ()
+    inl crate_forbidden = rust_quote (bundle_crate_forbidden_file_label CrateLibRsForbidden)
+    inl source_extensions = bundle_source_extensions_array_rust ()
+    inl source_root_files = bundle_source_root_files_array_rust ()
+    inl source_required_files = bundle_source_required_files_array_rust ()
+    inl state_required_files = bundle_state_required_files_array_rust ()
+    inl source_special_directories = bundle_source_special_directories_array_rust ()
+    inl evidence_paths = bundle_evidence_paths_array_rust ()
+    inl state_witness_files = bundle_state_witness_files_array_rust ()
+    inl cargo_config_file = rust_quote (bundle_source_special_file_label SourceCargoConfigFile)
+    inl vendor_checksum_file = rust_quote (bundle_source_special_file_label SourceVendorChecksumFile)
+    inl archive_directory_roots = bundle_archive_directory_roots_array_rust ()
+    inl archive_limit = bundle_runtime_limit_rust BundleArchiveByteLimit
+    inl extract_limit = bundle_runtime_limit_rust BundleExtractByteLimit
+    inl crate_line_limit = bundle_runtime_limit_rust BundleCrateLineLimit
+    inl public_binary_count = bundle_runtime_limit_rust BundlePublicBinaryCount
+    inl x0 = sm.concat "const BUNDLE_CRATE_ALLOWED_FILES: [&str; 2] = " (sm.concat crate_allowed ";\nconst BUNDLE_CRATE_FORBIDDEN_FILE: &str = ")
+    inl x0a = sm.concat x0 (sm.concat crate_forbidden ";\nconst BUNDLE_SOURCE_EXTENSIONS: [&str; 2] = ")
+    inl x1 = sm.concat x0a (sm.concat source_extensions ";\nconst BUNDLE_SOURCE_ROOT_FILES: [&str; 4] = ")
+    inl x2 = sm.concat x1 (sm.concat source_root_files ";\nconst BUNDLE_SOURCE_REQUIRED_FILES: [&str; 2] = ")
+    inl x3 = sm.concat x2 (sm.concat source_required_files ";\nconst BUNDLE_STATE_REQUIRED_FILES: [&str; 3] = ")
+    inl x4 = sm.concat x3 (sm.concat state_required_files ";\nconst BUNDLE_SOURCE_SPECIAL_DIRECTORIES: [&str; 2] = ")
+    inl x5 = sm.concat x4 (sm.concat source_special_directories ";\nconst BUNDLE_EVIDENCE_PATHS: [&str; 2] = ")
+    inl x6 = sm.concat x5 (sm.concat evidence_paths ";\nconst BUNDLE_STATE_WITNESS_FILES: [&str; 3] = ")
+    inl x7 = sm.concat x6 (sm.concat state_witness_files ";\nconst BUNDLE_CARGO_CONFIG_FILE: &str = ")
+    inl x8 = sm.concat x7 (sm.concat cargo_config_file ";\nconst BUNDLE_VENDOR_CHECKSUM_FILE: &str = ")
+    inl x9 = sm.concat x8 (sm.concat vendor_checksum_file ";\nconst BUNDLE_ARCHIVE_DIRECTORY_ROOTS: [&str; 3] = ")
+    inl x10 = sm.concat x9 (sm.concat archive_directory_roots ";\nconst BUNDLE_ARCHIVE_MAX_BYTES: u64 = ")
+    inl x11 = sm.concat x10 (sm.concat archive_limit ";\nconst BUNDLE_EXTRACT_MAX_BYTES: u64 = ")
+    inl x12 = sm.concat x11 (sm.concat extract_limit ";\nconst BUNDLE_CRATE_LINE_LIMIT: usize = ")
+    inl x13 = sm.concat x12 (sm.concat crate_line_limit ";\nconst BUNDLE_PUBLIC_BINARY_COUNT: usize = ")
+    sm.concat x13 (sm.concat public_binary_count ";\n\n")
+
+inl bundle_profile_runtime_rust () =
+    inl profile_arms = bundle_profile_match_arms_rust ()
+    inl signature = bundle_signature_array_rust ()
+    inl agile_path = bundle_rehydrate_agile_path_rust ()
+    inl roots = bundle_root_entries_array_rust ()
+    inl x0a = sm.concat "const BUNDLE_ROOT_ENTRIES: [&str; 4] = " (sm.concat roots ";\nconst BUNDLE_EOIE_AGILE_PATH: &str = ")
+    inl x0 = sm.concat x0a (sm.concat agile_path ";\nconst BUNDLE_PROFILE_SIGNATURE: [&str; 4] = ")
+    inl x1 = sm.concat x0 (sm.concat signature ";\n\nfn bundle_profile_signature(root: &Path) -> i32 {\n    let bootstrap_mask = i32::from(rooted_open_regular_read(&root.join(BUNDLE_PROFILE_SIGNATURE[0])).is_ok()) | (i32::from(rooted_open_regular_read(&root.join(BUNDLE_PROFILE_SIGNATURE[1])).is_ok()) << 1);\n    let model_mask = i32::from(rooted_open_regular_read(&root.join(BUNDLE_PROFILE_SIGNATURE[2])).is_ok()) | (i32::from(rooted_open_regular_read(&root.join(BUNDLE_PROFILE_SIGNATURE[3])).is_ok()) << 1);\n    eoie_bundle_profile_signature_binding(bootstrap_mask, model_mask)\n}\n\nfn resolve_bundle_profile_code(requested: Option<&str>, signature: i32) -> Result<i32, String> {\n    let requested_code = match requested.unwrap_or(\"auto\") {\n")
+    inl x2 = x1
+    inl x3 = sm.concat x2 profile_arms
+    inl x4 = sm.concat x3 "        other => return Err(format!(\"unknown bundle profile: {other}; expected auto, generic or eoie\")),\n    };\n    let resolved = eoie_bundle_profile_resolve_binding(requested_code, signature);\n    if resolved == 1 || resolved == 2 { Ok(resolved) } else { Err(\"typed bundle profile resolution rejected\".to_owned()) }\n}\n\nfn resolve_bundle_profile(requested: Option<&str>, root: &Path) -> Result<i32, String> { resolve_bundle_profile_code(requested, bundle_profile_signature(root)) }\n\nfn resolve_bundle_archive_profile(requested: Option<&str>, archive: &Path) -> Result<i32, String> {\n    let entries = zip_entries(archive)?;\n    let bootstrap_mask = i32::from(entries.iter().any(|entry| entry == BUNDLE_PROFILE_SIGNATURE[0])) | (i32::from(entries.iter().any(|entry| entry == BUNDLE_PROFILE_SIGNATURE[1])) << 1);\n    let model_mask = i32::from(entries.iter().any(|entry| entry == BUNDLE_PROFILE_SIGNATURE[2])) | (i32::from(entries.iter().any(|entry| entry == BUNDLE_PROFILE_SIGNATURE[3])) << 1);\n"
+    inl profile_runtime = sm.concat x4 "    resolve_bundle_profile_code(requested, eoie_bundle_profile_signature_binding(bootstrap_mask, model_mask))\n}\n\n"
+    sm.concat profile_runtime (bundle_layout_runtime_rust ())

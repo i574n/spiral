@@ -1,0 +1,10 @@
+[package]
+name = "eoie-patch-scan"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_patch_scan"
+path = "scan.rs"

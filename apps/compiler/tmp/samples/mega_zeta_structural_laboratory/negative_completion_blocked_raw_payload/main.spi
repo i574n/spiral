@@ -1,0 +1,7 @@
+inl impossible_completion_blocked_raw_payload () =
+    CertifiedIntervalPositivePositionalCompletionBlocked (
+        positive_positional_twelve_value (),
+        "forged-raw-blocked-payload-without-sealed-classification")
+
+inl main () =
+    impossible_completion_blocked_raw_payload ()

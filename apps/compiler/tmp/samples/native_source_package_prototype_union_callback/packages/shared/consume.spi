@@ -1,0 +1,17 @@
+open model.state
+
+prototype score s : s -> i32
+
+instance score outcome_t = fun result =>
+    match result with
+    | Idle => 3i32
+    | Hit value => value
+    | Flag value => if value then 11i32 else 5i32
+
+inl evaluate forall a {score}. (derive : i32 -> a) (seed : i32) : i32 =
+    score (join derive seed)
+
+inl run () : i32 =
+    inl ~selector = 2i32
+    inl ~derive = (fun seed => Flag (seed =. selector)) : i32 -> outcome_t
+    evaluate derive selector +. 31i32

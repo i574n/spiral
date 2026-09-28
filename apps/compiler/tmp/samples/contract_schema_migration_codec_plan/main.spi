@@ -1,0 +1,63 @@
+nominal v4 = ()
+nominal v5 = ()
+nominal v6 = ()
+
+union document schema =
+    | DocumentV4 :: string -> document v4
+    | DocumentV5 :: string -> document v5
+    | DocumentV6 :: string -> document v6
+
+union migration from to =
+    | Upgrade45 :: migration v4 v5
+    | Upgrade56 :: migration v5 v6
+
+union codec schema =
+    | CodecV4 :: codec v4
+    | CodecV5 :: codec v5
+    | CodecV6 :: codec v6
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl migrate forall from to.
+    (operation : migration from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Upgrade45, DocumentV4 payload => DocumentV5 payload
+    | Upgrade56, DocumentV5 payload => DocumentV6 payload
+
+inl rec fold_chain forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        inl exists middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl encode forall schema.
+    (codec : codec schema)
+    (document : document schema)
+    : string =
+    match codec, document with
+    | CodecV4, DocumentV4 payload => payload
+    | CodecV5, DocumentV5 payload => payload
+    | CodecV6, DocumentV6 _ => "v6-codec"
+
+inl plan () : chain migration v4 v6 =
+    ChainCompose (exists (
+        ChainStep Upgrade45,
+        ChainStep Upgrade56
+    ))
+
+inl main () : string =
+    inl migrated =
+        fold_chain `$migrate (plan ()) (DocumentV4 "payload")
+    encode CodecV6 migrated

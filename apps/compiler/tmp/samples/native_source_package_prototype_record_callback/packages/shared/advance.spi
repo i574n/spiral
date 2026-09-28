@@ -1,0 +1,30 @@
+open model.state
+
+prototype shift s : forall ds. ds -> s -> s
+
+instance shift state_t = fun ds (state_t s) =>
+    inl dposition, dvelocity =
+        real
+            match ds with
+            | delta_t d => d.position, d.velocity
+            | state_t d => d.position, d.velocity
+    state_t {
+        position = s.position +. dposition
+        velocity = s.velocity +. dvelocity
+    }
+
+inl advance forall s {shift} ds. (derive : s -> ds) (current : s) : s =
+    shift (join derive current) current
+
+inl run () : i32 =
+    inl initial = state_t { position = 10i32; velocity = 20i32 }
+    inl ~bias = 1i32
+    inl ~derive =
+        (fun (state_t s) =>
+            delta_t {
+                position = s.position -. 8i32 +. bias
+                velocity = s.velocity -. 18i32
+            }
+        ) : state_t -> delta_t
+    inl (state_t next) = advance derive initial
+    next.position +. next.velocity +. 7i32

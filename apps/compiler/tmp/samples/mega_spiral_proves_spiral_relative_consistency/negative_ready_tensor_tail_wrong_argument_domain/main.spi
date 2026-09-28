@@ -1,0 +1,25 @@
+inl impossible_ready_tensor_tail_accepts_wrong_domain () =
+    inl function_source :
+        exact_linear_indexed_closed_value_source
+            (exact_linear_indexed_closed_source_lambda
+                exact_linear_bool_type
+                (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type))
+            (exact_linear_arrow_type exact_linear_bool_type
+                (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type)) =
+        ExactLinearIndexedClosedValueSourceLambda (
+            exact_linear_indexed_closed_lambda_value_source (
+                exact_linear_indexed_closed_tensor_tail_lambda_value,
+                "the-TensorTail-function-is-a-closed-Bool-to-Bool-tensor-Unit-Lambda"))
+    inl wrong_argument :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_unit
+            exact_linear_unit_type =
+        ExactLinearIndexedClosedValueSourceUnit
+            "Unit-is-a-closed-value-but-not-the-Bool-domain-required-by-this-TensorTail-Lambda"
+    ExactLinearIndexedClosedReadyBetaTensorTail (
+        function_source,
+        wrong_argument,
+        "this-construction-must-be-rejected-because-TensorTail-Ready-keeps-the-Lambda-domain-and-argument-type-identical")
+
+inl main () =
+    impossible_ready_tensor_tail_accepts_wrong_domain ()

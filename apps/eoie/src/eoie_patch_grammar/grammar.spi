@@ -1,0 +1,11 @@
+open patch_domain.context
+
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    rust_global "#![allow(dead_code)]"
+    $"RustLibrary()" : ()
+    inl source = "inl p () = PatchExact (\"a.txt\", \"old\", \"new\")\n"
+    match parse_patch source 11i32 (source_len source) with
+    | ParsedPatch next_index => next_index
+    | InvalidPatch => -1i32

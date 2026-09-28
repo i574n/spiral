@@ -1,0 +1,11 @@
+inl impossible_open_lambda_beta_cross_wrapper_tensor () :
+    exact_linear_indexed_open_lambda_beta_step =
+    ExactLinearIndexedOpenLambdaBetaStep (
+        exact_linear_indexed_open_lambda_beta_source_term (),
+        ExactLinearIndexedOpenLambdaBetaTargetWitness (
+            exact_linear_indexed_open_lambda_beta_inner_target_term (),
+            exact_linear_indexed_open_tensor_beta_substitution_strengthening ()),
+        "forged-cross-wrapper-Tensor-proof-inside-the-fused-target-witness")
+
+inl main () =
+    impossible_open_lambda_beta_cross_wrapper_tensor ()

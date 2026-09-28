@@ -1,0 +1,4 @@
+packages:
+    backup_domain
+modules:
+    main

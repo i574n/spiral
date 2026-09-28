@@ -1,0 +1,4 @@
+packages:
+    state_receipt_codec_model-
+modules:
+    policy

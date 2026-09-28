@@ -1,0 +1,11 @@
+inl impossible_beta_step_target_type_mismatch
+    (step : exact_linear_indexed_beta_step)
+    : exact_linear_indexed_term
+        exact_linear_indexed_beta_outer_context
+        exact_linear_indexed_beta_outer_usage
+        exact_linear_bool_type =
+    exact_linear_indexed_beta_step_target step
+
+inl main () =
+    impossible_beta_step_target_type_mismatch
+        (exact_linear_indexed_beta_step_witness ())

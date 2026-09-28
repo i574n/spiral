@@ -1,0 +1,14 @@
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~outer : array (array i32) = create n
+    inl ~left : array i32 = create n
+    inl ~right : array i32 = create n
+    set left 0i32 3i32
+    set left 1i32 4i32
+    set right 0i32 5i32
+    set right 1i32 6i32
+    set outer 0i32 left
+    set outer 1i32 right
+    inl ~a = index outer 0i32
+    inl ~b = index outer 1i32
+    index a 0i32 +. index a 1i32 +. index b 0i32 +. index b 1i32 -. 18i32

@@ -1,0 +1,20 @@
+[package]
+name = "process-batch-plan-policy-probe"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[example]]
+name = "process-batch-plan-policy-probe"
+path = "policy_probe.rs"
+
+[dependencies]
+process-batch-plan-domain = { path = "../process_batch_plan_domain" }
+
+[lints.rust]
+dead_code = "allow"
+
+[lints.clippy]
+needless_return = "allow"
+needless_late_init = "allow"

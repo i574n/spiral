@@ -1,0 +1,2 @@
+inl main () : i32 = real
+    $"spiral_abi_libc_qsort3_pack(3,1,2)" : i32

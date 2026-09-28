@@ -1,0 +1,23 @@
+inl main () : i32 =
+    inl _ = toolchain_program_profile_binding 1i32 0i32
+    inl _ = toolchain_argument_profile_binding 1i32 0i32
+    inl _ = toolchain_environment_profile_binding 7i32 0i32
+    inl _ = toolchain_timeout_profile_binding 2i32 0i32
+    inl _ = toolchain_success_profile_binding 2i32 0i32
+    inl _ = toolchain_execution_plan_binding 4i32 0i32
+    inl _ = toolchain_resume_profile_binding 5i32 0i32
+    inl _ = toolchain_resume_retry_binding 4i32 3i32
+    inl _ = toolchain_environment_entry_count_binding 3i32 0i32
+    inl _ = toolchain_environment_entry_binding 3i32 7i32
+    $"RustExportI32Binary(\"eoie_toolchain_program_profile\",\"toolchain_program_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_argument_profile\",\"toolchain_argument_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_environment_profile\",\"toolchain_environment_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_timeout_profile\",\"toolchain_timeout_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_success_profile\",\"toolchain_success_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_execution_plan\",\"toolchain_execution_plan_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_resume_profile\",\"toolchain_resume_profile_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_resume_retry\",\"toolchain_resume_retry_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_environment_entry_count\",\"toolchain_environment_entry_count_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_environment_entry\",\"toolchain_environment_entry_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

@@ -1,0 +1,10 @@
+inl main () =
+    inl a = !!!!LayoutToStackRefs({slot=!!!!RecursiveChain(11i32,13i32); q=5i32; w=6i32})
+    inl b = !!!!LayoutIndex(a)
+    if !!!!Equal(a.q,5i32) then
+        a.slot <- !!!!RecursiveChain(19i32,23i32)
+    else
+        a.slot <- !!!!RecursiveNone
+    a.q <- !!!!OptionalValue(b.slot)
+    a.w <- !!!!OptionalNextValue(a.slot)
+    !!!!Add(a.q,a.w)

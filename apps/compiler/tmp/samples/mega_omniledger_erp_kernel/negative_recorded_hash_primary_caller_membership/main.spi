@@ -1,0 +1,12 @@
+inl impossible_recorded_hash_primary_caller_membership
+    (membership :
+        typed_fx_hashed_statement_history_contains
+            typed_fx_statement_command_identity_primary
+            typed_fx_statement_aggregate_identity_primary
+            typed_fx_statement_payload_hash_primary
+            typed_fx_hashed_primary_history)
+    : typed_fx_hashed_statement_closed_recorded_hash_fact =
+    TypedFxHashedStatementClosedRecordedHashPrimary membership
+
+inl main () =
+    impossible_recorded_hash_primary_caller_membership

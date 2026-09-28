@@ -1,0 +1,10 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl emit_atomic_write () : () =
+    rust_global "pub use eoie_rust_std_fs_mutation::atomic_write;"
+
+inl emit_runtime () : () =
+    rust_global "#[rustfmt::skip]"
+    rust_global "mod dense {"
+    rust_global "use std::path::{Path, PathBuf};"
+    rust_global "pub use eoie_rust_std_fs_mutation::{discard_stage, mutation_boundary_capability, promote_stage, promote_stage_receipted, restore_text, stage_new_text, stage_text, stage_text_receipted, stage_text_receipted_bound, PromotionReceipt, StagedWriteReceipt};"

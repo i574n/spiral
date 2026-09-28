@@ -1,0 +1,51 @@
+nominal homologation = ()
+nominal production = ()
+nominal schema_v4 = ()
+nominal normal = ()
+nominal contingency = ()
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+nominal nfe_draft = { id : string; issuer : string }
+nominal nfe_signed = { xml : string; digest : string }
+nominal nfe_authorized = { xml : string; protocol : string; reconciled : bool }
+
+union document env schema state mode =
+    | Draft :: forall env schema mode. nfe_draft -> document env schema draft mode
+    | Signed :: forall env schema mode. nfe_signed -> document env schema signed mode
+    | Authorized :: forall env schema mode. nfe_authorized -> document env schema authorized mode
+
+union transition env schema from to mode_from mode_to =
+    | SignTransition :: forall env schema mode. transition env schema draft signed mode mode
+    | EnterContingency :: forall env schema. transition env schema signed signed normal contingency
+    | AuthorizeNormal :: forall env schema. transition env schema signed authorized normal normal
+    | AuthorizeContingency :: forall env schema. transition env schema signed authorized contingency contingency
+    | Reconcile :: forall env schema. transition env schema authorized authorized contingency normal
+
+inl execute forall env schema from to mode_from mode_to.
+    (transition : transition env schema from to mode_from mode_to)
+    (document : document env schema from mode_from)
+    : document env schema to mode_to =
+    match transition, document with
+    | SignTransition, Draft payload =>
+        Signed (nfe_signed { xml = payload.id; digest = "sha256" })
+    | EnterContingency, Signed payload =>
+        Signed payload
+    | AuthorizeNormal, Signed payload =>
+        Authorized (nfe_authorized { xml = payload.xml; protocol = "normal"; reconciled = true })
+    | AuthorizeContingency, Signed payload =>
+        Authorized (nfe_authorized { xml = payload.xml; protocol = "contingency"; reconciled = false })
+    | Reconcile, Authorized payload =>
+        Authorized (nfe_authorized { xml = payload.xml; protocol = payload.protocol; reconciled = true })
+
+inl main () : string =
+    inl draft_document : document production schema_v4 draft normal =
+        Draft (nfe_draft { id = "NFE-07"; issuer = "ACME" })
+    inl signed_document = execute SignTransition draft_document
+    inl contingency_document = execute EnterContingency signed_document
+    inl authorized_document = execute AuthorizeContingency contingency_document
+    inl reconciled_document = execute Reconcile authorized_document
+    match reconciled_document with
+    | Authorized payload =>
+        if payload.reconciled then "contingency-reconciled" else "invalid"

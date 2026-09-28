@@ -1,0 +1,52 @@
+open dogfood_shim_bindings
+open exact_replace_contract.model
+
+nominal operations_idle = ()
+nominal operations_completed = ()
+union operations_family = | BundleFamily | ProxyFamily
+union operations_op from to = | DispatchOperations :: operations_family -> operations_op operations_idle operations_completed
+union rec operations_plan from to = | OperationsStep :: forall from to. operations_op from to -> operations_plan from to | OperationsChoice :: forall from to. operations_plan from to * operations_plan from to -> operations_plan from to
+inl migration_frontier () : operations_plan operations_idle operations_completed = OperationsChoice (OperationsStep (DispatchOperations BundleFamily), OperationsStep (DispatchOperations ProxyFamily))
+
+let proxy_exact_replace_preflight_binding (regular_and_nonempty : i32) (distinct_payloads : i32) : i32 =
+    bool_pair_binding regular_and_nonempty distinct_payloads
+
+let proxy_exact_replace_authorize_binding (match_count : i32) (mode_valid : i32) : i32 =
+    bool_pair_binding (unique_match_binding match_count) mode_valid
+
+let proxy_exact_replace_verify_binding (candidate_exact : i32) (rollback_available : i32) : i32 =
+    verification_binding candidate_exact 0i32 rollback_available
+
+let proxy_run_token_code (~input : string) : u64 =
+    rust_std_string.model.pipe_index "--timeout-ms|--cwd|--program|--env|--unset|--" input
+
+let proxy_write_token_code (~input : string) : u64 =
+    rust_std_string.model.pipe_index "--replace-existing|--expect-hash|--expect-nonempty|--" input
+
+let proxy_usage_bridge (~input : string) : string =
+    command_spec_domain.model.proxy_usage input
+
+inl emit_main () : i32 =
+    dogfood_shim_terminal.emit_runtime ()
+    legacy_terminal.emit_runtime ()
+    restart_baton_terminal.emit_runtime ()
+    inl _ = proxy_dogfood_shim_decision_packed_binding 0i32 0i32
+    inl _ = proxy_dogfood_shim_install_packed_binding 9i32 0i32
+    inl _ = proxy_dogfood_shim_uninstall_binding 1i32 4i32
+    inl _ = proxy_exact_replace_preflight_binding 1i32 1i32
+    inl _ = proxy_exact_replace_authorize_binding 1i32 1i32
+    inl _ = proxy_exact_replace_verify_binding 1i32 1i32
+    inl _ = proxy_run_token_code "--cwd"
+    inl _ = proxy_write_token_code "--expect-hash"
+    inl _ = proxy_usage_bridge "fs-read"
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_decision_packed_binding\",\"proxy_dogfood_shim_decision_packed_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_install_packed_binding\",\"proxy_dogfood_shim_install_packed_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_dogfood_shim_uninstall_binding\",\"proxy_dogfood_shim_uninstall_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_preflight_binding\",\"proxy_exact_replace_preflight_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_authorize_binding\",\"proxy_exact_replace_authorize_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_operations_proxy_exact_replace_verify_binding\",\"proxy_exact_replace_verify_binding\")" : ()
+    $"RustExportU64Unary(\"eoie_legacy_operations_proxy_run_token_code\",\"proxy_run_token_code\")" : ()
+    $"RustExportU64Unary(\"eoie_legacy_operations_proxy_write_token_code\",\"proxy_write_token_code\")" : ()
+    $"RustExportStringUnary(\"eoie_legacy_operations_proxy_usage\",\"proxy_usage_bridge\")" : ()
+    $"RustLibrary()" : ()
+    0i32

@@ -1,0 +1,6 @@
+inl impossible_three_owner_physical_takeover_authority_wrong_endpoint
+    (authority : erp_p2p_three_owner_physical_takeover_authority) :
+    erp_p2p_fence_takeover_program nat_one nat_four =
+    erp_p2p_three_owner_physical_takeover_authority_program authority
+
+inl main () = ()

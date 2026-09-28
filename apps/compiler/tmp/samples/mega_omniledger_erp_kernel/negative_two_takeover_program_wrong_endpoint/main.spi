@@ -1,0 +1,6 @@
+inl impossible_two_takeover_program_wrong_endpoint () :
+    erp_p2p_fence_takeover_program nat_one nat_four =
+    erp_p2p_two_takeover_program_from_owners "owner-b" "owner-c"
+
+inl main () =
+    impossible_two_takeover_program_wrong_endpoint ()

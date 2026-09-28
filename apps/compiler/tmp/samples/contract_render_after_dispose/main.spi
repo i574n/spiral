@@ -1,0 +1,18 @@
+nominal component_scope = ()
+nominal live = ()
+nominal disposed = ()
+
+union resource scope state =
+    | Resource :: forall scope state. string -> resource scope state
+
+inl dispose forall scope. (resource : resource scope live) : resource scope disposed =
+    match resource with
+    | Resource _ => Resource "disposed"
+
+inl render forall scope. (resource : resource scope live) : string =
+    match resource with
+    | Resource value => value
+
+inl main () : string =
+    inl resource : resource component_scope live = Resource "live"
+    render (dispose resource)

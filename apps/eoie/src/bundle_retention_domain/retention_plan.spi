@@ -1,0 +1,68 @@
+nominal retention_idle = ()
+nominal retention_candidates_collected = ()
+nominal retention_current_confirmed = ()
+nominal retention_window_planned = ()
+nominal retention_dry_run_verified = ()
+nominal retention_delete_authorized = ()
+nominal retention_complete = ()
+
+union retention_op from to =
+    | CollectVersionCandidates :: retention_op retention_idle retention_candidates_collected
+    | ConfirmCurrentIsLatest :: retention_op retention_candidates_collected retention_current_confirmed
+    | KeepCurrentAndTwoPrior :: retention_op retention_current_confirmed retention_window_planned
+    | VerifyDryRun :: retention_op retention_window_planned retention_dry_run_verified
+    | AuthorizeExplicitDelete :: retention_op retention_dry_run_verified retention_delete_authorized
+    | ConfirmRetentionWindow :: retention_op retention_delete_authorized retention_complete
+
+union rec retention_plan from to =
+    | RetentionStep :: forall from to. retention_op from to -> retention_plan from to
+    | RetentionThen :: forall from to. (exists middle. retention_plan from middle * retention_plan middle to) -> retention_plan from to
+
+inl current_plus_two_plan () : retention_plan retention_idle retention_complete =
+    RetentionThen (exists (
+        RetentionStep CollectVersionCandidates,
+        RetentionThen (exists (
+            RetentionStep ConfirmCurrentIsLatest,
+            RetentionThen (exists (
+                RetentionStep KeepCurrentAndTwoPrior,
+                RetentionThen (exists (
+                    RetentionStep VerifyDryRun,
+                    RetentionThen (exists (
+                        RetentionStep AuthorizeExplicitDelete,
+                        RetentionStep ConfirmRetentionWindow
+                    ))
+                ))
+            ))
+        ))
+    ))
+
+let retention_window_binding (candidate_count : i32) (keep_count : i32) : i32 =
+    if !!!!LT(candidate_count,1i32) then -1i32
+    elif !!!!LT(keep_count,3i32) then -1i32
+    elif !!!!LT(3i32,keep_count) then -1i32
+    elif !!!!LT(candidate_count,keep_count) then 0i32
+    else !!!!Sub(candidate_count,keep_count)
+
+let retention_current_binding (current_is_latest : i32) (series_matches : i32) : i32 =
+    if !!!!LT(current_is_latest,1i32) then 0i32
+    elif !!!!LT(1i32,current_is_latest) then 0i32
+    elif !!!!LT(series_matches,1i32) then 0i32
+    elif !!!!LT(1i32,series_matches) then 0i32
+    else 1i32
+
+let retention_dry_run_binding (planned_deletes : i32) (observed_deletes : i32) : i32 =
+    if !!!!LT(planned_deletes,0i32) then 0i32
+    elif !!!!LT(observed_deletes,0i32) then 0i32
+    elif !!!!LT(planned_deletes,observed_deletes) then 0i32
+    elif !!!!LT(observed_deletes,planned_deletes) then 0i32
+    else 1i32
+
+let retention_apply_binding (dry_run_verified : i32) (explicit_apply : i32) : i32 =
+    retention_current_binding dry_run_verified explicit_apply
+
+let retention_complete_binding (expected_remaining : i32) (observed_remaining : i32) : i32 =
+    if !!!!LT(expected_remaining,1i32) then 0i32
+    elif !!!!LT(observed_remaining,1i32) then 0i32
+    elif !!!!LT(expected_remaining,observed_remaining) then 0i32
+    elif !!!!LT(observed_remaining,expected_remaining) then 0i32
+    else 1i32

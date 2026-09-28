@@ -1,0 +1,15 @@
+nominal model_a = ()
+nominal round_9 = ()
+nominal client_a = ()
+nominal budget_a = ()
+nominal available = ()
+nominal spent = ()
+nominal aggregated = ()
+union privacy_budget client budget state = | Budget :: forall client budget state. string -> privacy_budget client budget state
+union clipped_update model round client budget state = | Update :: forall model round client budget state. string -> clipped_update model round client budget state
+union aggregate model round state = | Aggregate :: forall model round state. string -> aggregate model round state
+inl consume forall model round client budget. (budget : privacy_budget client budget available) (update : clipped_update model round client budget available) : aggregate model round aggregated = Aggregate "ok"
+inl main () =
+    inl exhausted : privacy_budget client_a budget_a spent = Budget "spent"
+    inl update : clipped_update model_a round_9 client_a budget_a available = Update "gradient"
+    consume exhausted update

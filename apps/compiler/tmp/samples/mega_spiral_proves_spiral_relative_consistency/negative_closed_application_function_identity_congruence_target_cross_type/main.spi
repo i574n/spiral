@@ -1,0 +1,28 @@
+inl impossible_closed_application_function_identity_congruence_target_cross_type () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_bool_type =
+    inl function_relation :
+        exact_linear_indexed_closed_identity_beta_relation
+            (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+        ExactLinearIndexedClosedIdentityBetaRelation (
+            exact_linear_indexed_identity_term (),
+            "the-function-child-reduces-by-higher-order-identity")
+    inl argument_term :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedUnit (
+            exact_linear_indexed_empty_usage (),
+            "the-fixed-argument-is-Unit")
+    exact_linear_indexed_reduction_target
+        (ExactLinearIndexedReductionClosedApplicationFunction (exists (
+            ExactLinearIndexedReductionClosedAtomic (
+                ExactLinearIndexedClosedAtomicReductionIdentity function_relation),
+            argument_term,
+            "the-real-congruence-target-has-Unit-not-Bool")))
+
+inl main () =
+    impossible_closed_application_function_identity_congruence_target_cross_type ()

@@ -1,0 +1,4 @@
+inl bottom forall a. () : a =
+    $"failwith \"trust-boundary-host-failwith-bottom\""
+
+inl main () = "forall-a-a-via-host-failwith-defined"

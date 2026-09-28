@@ -1,0 +1,10 @@
+open main
+
+inl checked_only (state : derivative_runtime_state bit_alphabet derivative_runtime_checked) : bool =
+    derivative_runtime_checked_value state
+
+inl main () =
+    inl ~suffix = input_110 ()
+    inl raw : derivative_runtime_state bit_alphabet derivative_runtime_raw =
+        DerivativeRuntimeRaw (ends_with_zero (), zero (), suffix)
+    checked_only raw

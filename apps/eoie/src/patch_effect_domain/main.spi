@@ -1,0 +1,27 @@
+inl rust_library () : () = $"RustLibrary()" : ()
+
+inl main () : i32 =
+    inl _ = native_patch_effect_plan ()
+    inl _ = patch_read_limit_binding 1i32 1i32
+    inl _ = patch_read_receipt_binding 1i32 1i32
+    inl _ = patch_stage_identity 0i32 0i32
+    inl _ = patch_write_bytes_authorized 1i32 1i32
+    inl _ = patch_write_slot_binding 0i32 1i32
+    inl _ = patch_rename_stage_authorized 0i32 0i32
+    inl _ = patch_rename_slot_authorized 0i32 0i32
+    inl _ = patch_authority_pair 1i32 1i32
+    inl _ = patch_rename_slot_binding 0i32 1i32
+    inl _ = patch_remove_receipt_binding 0i32 1i32
+    $"RustExportI32Binary(\"eoie_patch_read_limit_binding\",\"patch_read_limit_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_read_receipt_binding\",\"patch_read_receipt_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_stage_identity\",\"patch_stage_identity\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_write_bytes_authorized\",\"patch_write_bytes_authorized\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_write_slot_binding\",\"patch_write_slot_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_rename_stage_authorized\",\"patch_rename_stage_authorized\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_rename_slot_authorized\",\"patch_rename_slot_authorized\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_authority_pair\",\"patch_authority_pair\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_rename_slot_binding\",\"patch_rename_slot_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_remove_receipt_binding\",\"patch_remove_receipt_binding\")" : ()
+
+    rust_library ()
+    0i32

@@ -1,0 +1,94 @@
+nominal authored = ()
+nominal negative_proven = ()
+nominal shared_proven = ()
+nominal cold_proven = ()
+nominal settled = ()
+
+union consolidation_stage state =
+    | Authored :: consolidation_stage authored
+    | NegativeProven :: consolidation_stage negative_proven
+    | SharedProven :: consolidation_stage shared_proven
+    | ColdProven :: consolidation_stage cold_proven
+    | Settled :: consolidation_stage settled
+
+union consolidation_transition from to_ =
+    | AddNegativeFixtures :: consolidation_transition authored negative_proven
+    | AddTwoMainConsumers :: consolidation_transition negative_proven shared_proven
+    | AddColdProof :: consolidation_transition shared_proven cold_proven
+    | MarkSettled :: consolidation_transition cold_proven settled
+
+union consolidation_rule =
+    | SpiralAuthoredRule
+    | NegativeFixturesRule
+    | TwoIndependentMainsRule
+    | ColdRoundtripRule
+    | AmendmentBeforeResetRule
+    | PreserveColdHistoryRule
+    | VersionStandardsRule
+
+union source_growth_policy =
+    | TotalSourceGrowthUnbounded
+    | PerRustFileAndCargoCrateLimit :: u32 -> source_growth_policy
+    | ShrinkageEvidenceAdvisory
+    | PerOwnerGrowthGatePartial :: u32 -> source_growth_policy
+    | PerOwnerGrowthGateSettled :: string -> source_growth_policy
+
+inl current_growth_policy () : source_growth_policy = TotalSourceGrowthUnbounded
+inl current_owner_limit () : source_growth_policy = PerRustFileAndCargoCrateLimit 1000u32
+inl current_shrinkage_policy () : source_growth_policy = PerOwnerGrowthGateSettled "predecessor-bundle-sha256+all-owner-receipts+net-rust-shrink"
+
+union settlement_standard =
+    | SettlementV1RecoveredCold
+    | SettlementV2SpiralOnly
+
+union settlement_record =
+    | SettlementRecord :: string * settlement_standard * u32 * u32 * string -> settlement_record
+
+union standard_amendment =
+    | StandardAmendment :: settlement_standard * settlement_standard * string * string * bool -> standard_amendment
+
+union restart_history =
+    | RestartHistory :: u32 * bool * string -> restart_history
+
+union standard_change_decision =
+    | AcceptInitialStandard
+    | PreserveVersionedHistory
+    | RejectUnversionedReset
+
+inl v1_recovered_cold () : settlement_record =
+    SettlementRecord ("recovered-cold-foundation", SettlementV1RecoveredCold, 21u32, 304u32, "twenty-one cold-proven capabilities remain historically settled under the standard that accepted generated Rust plus cold physical evidence")
+
+inl v2_spiral_only () : settlement_record =
+    SettlementRecord ("spiral-only-current", SettlementV2SpiralOnly, 32u32, 460u32, "roundtrip copy move directory bundle output bundle verification manifest stability deterministic Deflate flat product packaging generic ZIP verification owned by the manifest crate with workspace-wide Rustfmt source topology source map diff mnemonic path tags append-only typed rating plus benchmark history direct-route dogfood shims deterministic Rayon search plus manifest typed parallel-readiness consumer fresh V2 coverage union mutation-free patch preflight transactional source authoring staged binary install typed provenance release closeout multi-file patch specification Cargo crate growth guard per-owner shrinkage guard exact unique text replacement dogfood resumable patch typecheck receipts generic TAR TGZ TXZ and TBZ2 extraction with traversal special-entry budget and rollback evidence and Rust-backend v184 empty-union single-switch plus dead-tuple repairs satisfy Spiral-authored positive negative physical parity instrumentation rollback and cold replay gates; bundle has six partial routes proxy has eleven partial authority families agile record patch check text-replace source-author binary-install release-closeout and archive-extract and incident-recovery have narrow authority")
+
+inl retroactive_third_restart_amendment () : standard_amendment =
+    StandardAmendment (
+        SettlementV1RecoveredCold,
+        SettlementV2SpiralOnly,
+        "the prior standard allowed recovered Rust behavior to count as settlement even when application semantics were not authored in reusable Spiral packages",
+        "the third restart is accepted only as a versioned standard amendment; it cannot erase the twenty-one cold-proven v1 records",
+        true)
+
+inl restart_count () : restart_history =
+    RestartHistory (3u32, true, "three strategic restarts are recorded; a fourth reset is structurally denied when it would erase cold-proven history")
+
+inl standard_change_gate has_prior_cold has_amendment preserves_history : standard_change_decision =
+    if has_prior_cold then
+        if has_amendment && preserves_history then PreserveVersionedHistory
+        else RejectUnversionedReset
+    else AcceptInitialStandard
+
+inl fourth_restart_is_denied () : bool =
+    match standard_change_gate true true false with
+    | RejectUnversionedReset => true
+    | AcceptInitialStandard => false
+    | PreserveVersionedHistory => false
+
+inl historical_settlement_is_preserved () : bool =
+    match standard_change_gate true true true with
+    | PreserveVersionedHistory => true
+    | AcceptInitialStandard => false
+    | RejectUnversionedReset => false
+
+inl main () : i32 =
+    if fourth_restart_is_denied () && historical_settlement_is_preserved () then 0i32 else 1i32

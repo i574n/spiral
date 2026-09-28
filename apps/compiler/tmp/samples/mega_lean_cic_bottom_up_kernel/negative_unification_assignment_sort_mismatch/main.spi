@@ -1,0 +1,7 @@
+inl impossible_corrected_cic_unification_assignment_sort_mismatch () : i64 =
+    solve_corrected_cic_unification_constraints
+        (CorrectedCicUnificationRigid (corrected_cic_sort_zero ()))
+        (corrected_cic_unification_constraint_program_accepted ())
+
+inl main () =
+    impossible_corrected_cic_unification_assignment_sort_mismatch ()

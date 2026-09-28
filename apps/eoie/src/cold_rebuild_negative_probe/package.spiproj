@@ -1,0 +1,4 @@
+packages:
+    cold_rebuild_contract
+modules:
+    main

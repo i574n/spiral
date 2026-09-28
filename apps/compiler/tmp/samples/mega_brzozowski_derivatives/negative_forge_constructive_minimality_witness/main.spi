@@ -1,0 +1,18 @@
+open main
+open minimality_witnesses
+
+inl main () : bool =
+    inl pairwise :
+        indexed_dfa_pairwise_distinguishing_witnesses bit_alphabet one_state_count =
+        IndexedDfaPairwiseDistinguishingWitnessesCons (
+            IndexedDfaDistinguishingAgainstNil,
+            IndexedDfaPairwiseDistinguishingWitnessesNil)
+    inl forged :
+        indexed_dfa_minimality_witness bit_alphabet bit_finite_length one_state_count =
+        indexed_dfa_minimality_witness (
+            indexed_dfa_bisimulation_capability_default,
+            bit_finite_symbol_vector (),
+            one_bit_state_for_control (),
+            one_bit_row_for_negative (),
+            pairwise)
+    require_minimality_witness forged

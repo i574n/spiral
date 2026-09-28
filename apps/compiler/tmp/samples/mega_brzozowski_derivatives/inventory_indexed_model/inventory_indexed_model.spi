@@ -1,0 +1,1466 @@
+open main
+
+// Capabilities are captured before crossing a length-indexed GADT boundary.
+// The indexed core never asks the compiler to recover symbol_compare again.
+nominal finite_symbol_equality_capability alphabet = alphabet -> alphabet -> bool
+nominal inventory_regex_equality_capability alphabet = regex alphabet -> regex alphabet -> bool
+nominal inventory_reference_acceptance_capability alphabet = regex alphabet -> linear_input alphabet -> bool
+nominal inventory_acceptance_capability alphabet = regex alphabet -> linear_input alphabet -> bool
+nominal inventory_canonical_derivative_capability alphabet = regex alphabet -> alphabet -> regex alphabet
+nominal inventory_raw_dfa_closure_capability alphabet = regex alphabet -> regex_list alphabet
+
+inl finite_symbol_equality_capability_default forall alphabet {symbol_compare}.
+    : finite_symbol_equality_capability alphabet =
+    finite_symbol_equality_capability symbol_equal
+
+inl inventory_regex_equality_capability_default forall alphabet {symbol_compare}.
+    : inventory_regex_equality_capability alphabet =
+    inventory_regex_equality_capability regex_equal
+
+inl inventory_reference_acceptance_capability_default forall alphabet {symbol_compare}.
+    : inventory_reference_acceptance_capability alphabet =
+    inventory_reference_acceptance_capability reference_accepts
+
+inl inventory_acceptance_capability_default forall alphabet {symbol_compare}.
+    : inventory_acceptance_capability alphabet =
+    inventory_acceptance_capability accepts
+
+inl inventory_canonical_derivative_capability_default forall alphabet {symbol_compare}.
+    : inventory_canonical_derivative_capability alphabet =
+    inventory_canonical_derivative_capability canonical_derivative
+
+inl inventory_raw_dfa_closure_capability_default forall alphabet {symbol_compare; finite_alphabet}.
+    : inventory_raw_dfa_closure_capability alphabet =
+    inventory_raw_dfa_closure_capability dfa_closure
+
+union finite_symbol_search_result length =
+    | FiniteSymbolMissing :: forall length. finite_symbol_search_result length
+    | FiniteSymbolFound :: forall length. finite_symbol_index length -> finite_symbol_search_result length
+
+inl rec finite_symbol_vector_find forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbol : alphabet)
+    (values : finite_symbol_vector alphabet length)
+    : finite_symbol_search_result length =
+    match equality, values with
+    | finite_symbol_equality_capability equal, FiniteSymbolVectorNil => FiniteSymbolMissing
+    | finite_symbol_equality_capability equal, FiniteSymbolVectorCons (head, tail) =>
+        if equal symbol head then FiniteSymbolFound FiniteSymbolIndexZero
+        else
+            match finite_symbol_vector_find equality symbol tail with
+            | FiniteSymbolMissing => FiniteSymbolMissing
+            | FiniteSymbolFound index => FiniteSymbolFound (FiniteSymbolIndexSucc index)
+
+inl rec finite_symbol_index_same forall length.
+    (left : finite_symbol_index length)
+    (right : finite_symbol_index length) : bool =
+    match left, right with
+    | FiniteSymbolIndexZero, FiniteSymbolIndexZero => true
+    | FiniteSymbolIndexSucc left_previous, FiniteSymbolIndexSucc right_previous =>
+        finite_symbol_index_same left_previous right_previous
+    | _ => false
+
+// Alphabet-erased, inventory-indexed regex. Every Char is an inhabitant of the
+// exact vector length selected at the boundary; an out-of-inventory Char has no
+// constructor here.
+union rec inventory_regex length =
+    | InventoryRegexEmpty :: forall length. inventory_regex length
+    | InventoryRegexEpsilon :: forall length. inventory_regex length
+    | InventoryRegexChar :: forall length. finite_symbol_index length -> inventory_regex length
+    | InventoryRegexAlt :: forall length. inventory_regex length * inventory_regex length -> inventory_regex length
+    | InventoryRegexCat :: forall length. inventory_regex length * inventory_regex length -> inventory_regex length
+    | InventoryRegexStar :: forall length. inventory_regex length -> inventory_regex length
+
+union inventory_regex_validation length =
+    | InventoryRegexRejected :: forall length. inventory_regex_validation length
+    | InventoryRegexCertified :: forall length. inventory_regex length -> inventory_regex_validation length
+
+inl rec inventory_regex_index forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    : inventory_regex_validation length =
+    match value with
+    | RegexEmpty => InventoryRegexCertified InventoryRegexEmpty
+    | RegexEpsilon => InventoryRegexCertified InventoryRegexEpsilon
+    | RegexChar symbol =>
+        match finite_symbol_vector_find equality symbol symbols with
+        | FiniteSymbolMissing => InventoryRegexRejected
+        | FiniteSymbolFound index => InventoryRegexCertified (InventoryRegexChar index)
+    | RegexAlt (left, right) =>
+        match inventory_regex_index equality left symbols with
+        | InventoryRegexRejected => InventoryRegexRejected
+        | InventoryRegexCertified left_indexed =>
+            match inventory_regex_index equality right symbols with
+            | InventoryRegexRejected => InventoryRegexRejected
+            | InventoryRegexCertified right_indexed =>
+                InventoryRegexCertified (InventoryRegexAlt (left_indexed, right_indexed))
+    | RegexCat (left, right) =>
+        match inventory_regex_index equality left symbols with
+        | InventoryRegexRejected => InventoryRegexRejected
+        | InventoryRegexCertified left_indexed =>
+            match inventory_regex_index equality right symbols with
+            | InventoryRegexRejected => InventoryRegexRejected
+            | InventoryRegexCertified right_indexed =>
+                InventoryRegexCertified (InventoryRegexCat (left_indexed, right_indexed))
+    | RegexStar inner =>
+        match inventory_regex_index equality inner symbols with
+        | InventoryRegexCertified inner_indexed => InventoryRegexCertified (InventoryRegexStar inner_indexed)
+        | InventoryRegexRejected => InventoryRegexRejected
+
+inl rec inventory_regex_reify forall alphabet length.
+    (symbols : finite_symbol_vector alphabet length)
+    (value : inventory_regex length) : regex alphabet =
+    match value with
+    | InventoryRegexEmpty => RegexEmpty
+    | InventoryRegexEpsilon => RegexEpsilon
+    | InventoryRegexChar index => RegexChar (finite_symbol_vector_lookup index symbols)
+    | InventoryRegexAlt (left, right) => RegexAlt (inventory_regex_reify symbols left, inventory_regex_reify symbols right)
+    | InventoryRegexCat (left, right) => RegexCat (inventory_regex_reify symbols left, inventory_regex_reify symbols right)
+    | InventoryRegexStar inner => RegexStar (inventory_regex_reify symbols inner)
+
+inl rec inventory_nullable forall length.
+    (value : inventory_regex length) : nullable_evidence =
+    match value with
+    | InventoryRegexEmpty => NonNullable
+    | InventoryRegexEpsilon => Nullable
+    | InventoryRegexChar _ => NonNullable
+    | InventoryRegexAlt (left, right) =>
+        match inventory_nullable left, inventory_nullable right with
+        | Nullable, _ => Nullable
+        | _, Nullable => Nullable
+        | _ => NonNullable
+    | InventoryRegexCat (left, right) =>
+        match inventory_nullable left, inventory_nullable right with
+        | Nullable, Nullable => Nullable
+        | _ => NonNullable
+    | InventoryRegexStar _ => Nullable
+
+inl rec inventory_derivative forall length.
+    (value : inventory_regex length)
+    (symbol : finite_symbol_index length)
+    : inventory_regex length =
+    match value with
+    | InventoryRegexEmpty => InventoryRegexEmpty
+    | InventoryRegexEpsilon => InventoryRegexEmpty
+    | InventoryRegexChar expected =>
+        if finite_symbol_index_same expected symbol then InventoryRegexEpsilon else InventoryRegexEmpty
+    | InventoryRegexAlt (left, right) =>
+        InventoryRegexAlt (inventory_derivative left symbol, inventory_derivative right symbol)
+    | InventoryRegexCat (left, right) =>
+        match inventory_nullable left with
+        | Nullable =>
+            InventoryRegexAlt (
+                InventoryRegexCat (inventory_derivative left symbol, right),
+                inventory_derivative right symbol)
+        | NonNullable => InventoryRegexCat (inventory_derivative left symbol, right)
+    | InventoryRegexStar inner =>
+        InventoryRegexCat (inventory_derivative inner symbol, InventoryRegexStar inner)
+
+inl rec finite_symbol_index_compare forall length.
+    (left : finite_symbol_index length)
+    (right : finite_symbol_index length) : symbol_ordering =
+    match left, right with
+    | FiniteSymbolIndexZero, FiniteSymbolIndexZero => SymbolSame
+    | FiniteSymbolIndexZero, FiniteSymbolIndexSucc _ => SymbolLess
+    | FiniteSymbolIndexSucc _, FiniteSymbolIndexZero => SymbolGreater
+    | FiniteSymbolIndexSucc left_previous, FiniteSymbolIndexSucc right_previous =>
+        finite_symbol_index_compare left_previous right_previous
+
+inl rec inventory_regex_compare forall length.
+    (left : inventory_regex length)
+    (right : inventory_regex length) : symbol_ordering =
+    match left with
+    | InventoryRegexEmpty =>
+        match right with
+        | InventoryRegexEmpty => SymbolSame
+        | _ => SymbolLess
+    | InventoryRegexEpsilon =>
+        match right with
+        | InventoryRegexEmpty => SymbolGreater
+        | InventoryRegexEpsilon => SymbolSame
+        | _ => SymbolLess
+    | InventoryRegexChar left_symbol =>
+        match right with
+        | InventoryRegexEmpty => SymbolGreater
+        | InventoryRegexEpsilon => SymbolGreater
+        | InventoryRegexChar right_symbol => finite_symbol_index_compare left_symbol right_symbol
+        | _ => SymbolLess
+    | InventoryRegexCat (left_head, left_tail) =>
+        match right with
+        | InventoryRegexEmpty => SymbolGreater
+        | InventoryRegexEpsilon => SymbolGreater
+        | InventoryRegexChar _ => SymbolGreater
+        | InventoryRegexCat (right_head, right_tail) =>
+            match inventory_regex_compare left_head right_head with
+            | SymbolSame => inventory_regex_compare left_tail right_tail
+            | order => order
+        | _ => SymbolLess
+    | InventoryRegexStar left_inner =>
+        match right with
+        | InventoryRegexAlt _ => SymbolLess
+        | InventoryRegexStar right_inner => inventory_regex_compare left_inner right_inner
+        | _ => SymbolGreater
+    | InventoryRegexAlt (left_head, left_tail) =>
+        match right with
+        | InventoryRegexAlt (right_head, right_tail) =>
+            match inventory_regex_compare left_head right_head with
+            | SymbolSame => inventory_regex_compare left_tail right_tail
+            | order => order
+        | _ => SymbolGreater
+
+inl rec inventory_regex_equal forall length.
+    (left : inventory_regex length)
+    (right : inventory_regex length) : bool =
+    match left, right with
+    | InventoryRegexEmpty, InventoryRegexEmpty => true
+    | InventoryRegexEpsilon, InventoryRegexEpsilon => true
+    | InventoryRegexChar left_symbol, InventoryRegexChar right_symbol => finite_symbol_index_same left_symbol right_symbol
+    | InventoryRegexAlt (left_a, left_b), InventoryRegexAlt (right_a, right_b) =>
+        if inventory_regex_equal left_a right_a then inventory_regex_equal left_b right_b else false
+    | InventoryRegexCat (left_a, left_b), InventoryRegexCat (right_a, right_b) =>
+        if inventory_regex_equal left_a right_a then inventory_regex_equal left_b right_b else false
+    | InventoryRegexStar left_inner, InventoryRegexStar right_inner => inventory_regex_equal left_inner right_inner
+    | _ => false
+
+inl rec inventory_alt_insert_sorted forall length.
+    (term : inventory_regex length)
+    (value : inventory_regex length) : inventory_regex length =
+    match value with
+    | InventoryRegexEmpty => term
+    | InventoryRegexAlt (head, tail) =>
+        match inventory_regex_compare term head with
+        | SymbolLess => InventoryRegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => InventoryRegexAlt (head, inventory_alt_insert_sorted term tail)
+    | _ =>
+        match inventory_regex_compare term value with
+        | SymbolLess => InventoryRegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => InventoryRegexAlt (value, term)
+
+inl rec inventory_make_alt forall length.
+    (left : inventory_regex length)
+    (right : inventory_regex length) : inventory_regex length =
+    match left with
+    | InventoryRegexEmpty => right
+    | InventoryRegexAlt (head, tail) => inventory_make_alt tail (inventory_alt_insert_sorted head right)
+    | _ => inventory_alt_insert_sorted left right
+
+inl rec inventory_make_cat forall length.
+    (left : inventory_regex length)
+    (right : inventory_regex length) : inventory_regex length =
+    match left, right with
+    | InventoryRegexEmpty, _ => InventoryRegexEmpty
+    | _, InventoryRegexEmpty => InventoryRegexEmpty
+    | InventoryRegexEpsilon, value => value
+    | value, InventoryRegexEpsilon => value
+    | InventoryRegexStar left_inner, InventoryRegexStar right_inner =>
+        if inventory_regex_equal left_inner right_inner then InventoryRegexStar left_inner else InventoryRegexCat (left, right)
+    | InventoryRegexCat (head, tail), value => InventoryRegexCat (head, inventory_make_cat tail value)
+    | _ => InventoryRegexCat (left, right)
+
+inl inventory_make_star forall length. (value : inventory_regex length) : inventory_regex length =
+    match value with
+    | InventoryRegexEmpty => InventoryRegexEpsilon
+    | InventoryRegexEpsilon => InventoryRegexEpsilon
+    | InventoryRegexStar inner => InventoryRegexStar inner
+    | _ => InventoryRegexStar value
+
+inl rec inventory_normalize forall length.
+    (value : inventory_regex length) : inventory_regex length =
+    match value with
+    | InventoryRegexEmpty => InventoryRegexEmpty
+    | InventoryRegexEpsilon => InventoryRegexEpsilon
+    | InventoryRegexChar symbol => InventoryRegexChar symbol
+    | InventoryRegexAlt (left, right) => inventory_make_alt (inventory_normalize left) (inventory_normalize right)
+    | InventoryRegexCat (left, right) => inventory_make_cat (inventory_normalize left) (inventory_normalize right)
+    | InventoryRegexStar inner => inventory_make_star (inventory_normalize inner)
+
+inl inventory_canonical_derivative forall length.
+    (value : inventory_regex length)
+    (symbol : finite_symbol_index length) : inventory_regex length =
+    inventory_normalize (inventory_derivative (inventory_normalize value) symbol)
+
+// Generate the exact finite index domain from the vector shape. Unlike the old
+// list, the second GADT index is the number of entries, so the full domain has
+// type finite_index_vector length length: not only is every element in range,
+// there are exactly as many domain entries as inventory slots.
+union rec finite_index_vector total_length row_count =
+    | FiniteIndexVectorNil :: forall total_length.
+        finite_index_vector total_length finite_length_zero
+    | FiniteIndexVectorCons :: forall total_length row_count.
+        finite_symbol_index total_length * finite_index_vector total_length row_count ->
+        finite_index_vector total_length (finite_length_succ row_count)
+
+inl rec finite_index_vector_lift forall total_length row_count.
+    (values : finite_index_vector total_length row_count)
+    : finite_index_vector (finite_length_succ total_length) row_count =
+    match values with
+    | FiniteIndexVectorNil => FiniteIndexVectorNil
+    | FiniteIndexVectorCons (head, tail) =>
+        FiniteIndexVectorCons (
+            FiniteSymbolIndexSucc head,
+            finite_index_vector_lift tail)
+
+inl rec finite_all_indices forall alphabet length.
+    (symbols : finite_symbol_vector alphabet length)
+    : finite_index_vector length length =
+    match symbols with
+    | FiniteSymbolVectorNil => FiniteIndexVectorNil
+    | FiniteSymbolVectorCons (_, tail) =>
+        FiniteIndexVectorCons (
+            FiniteSymbolIndexZero,
+            finite_index_vector_lift (finite_all_indices tail))
+
+union rec inventory_regex_list length =
+    | InventoryRegexListNil :: forall length. inventory_regex_list length
+    | InventoryRegexListCons :: forall length.
+        inventory_regex length * inventory_regex_list length -> inventory_regex_list length
+
+inl rec inventory_regex_list_contains forall length.
+    (value : inventory_regex length)
+    (values : inventory_regex_list length) : bool =
+    match values with
+    | InventoryRegexListNil => false
+    | InventoryRegexListCons (head, tail) =>
+        if inventory_regex_equal value head then true else inventory_regex_list_contains value tail
+
+inl rec inventory_dfa_enqueue_indices forall length row_count.
+    (state : inventory_regex length)
+    (indices : finite_index_vector length row_count)
+    (seen : inventory_regex_list length)
+    (pending : inventory_regex_list length)
+    : inventory_regex_list length * inventory_regex_list length =
+    match indices with
+    | FiniteIndexVectorNil => seen, pending
+    | FiniteIndexVectorCons (index, rest) =>
+        inl next = inventory_canonical_derivative state index
+        if inventory_regex_list_contains next seen then
+            inventory_dfa_enqueue_indices state rest seen pending
+        else
+            inventory_dfa_enqueue_indices
+                state
+                rest
+                (InventoryRegexListCons (next, seen))
+                (InventoryRegexListCons (next, pending))
+
+inl rec inventory_dfa_closure_loop forall length.
+    (indices : finite_index_vector length length)
+    (seen : inventory_regex_list length)
+    (pending : inventory_regex_list length)
+    : inventory_regex_list length =
+    match pending with
+    | InventoryRegexListNil => seen
+    | InventoryRegexListCons (state, rest) =>
+        inl seen_next, pending_next = inventory_dfa_enqueue_indices state indices seen rest
+        inventory_dfa_closure_loop indices seen_next pending_next
+
+inl inventory_dfa_closure_with_indices forall length.
+    (indices : finite_index_vector length length)
+    (start : inventory_regex length)
+    : inventory_regex_list length =
+    inl normalized = inventory_normalize start
+    inl initial = InventoryRegexListCons (normalized, InventoryRegexListNil)
+    inventory_dfa_closure_loop indices initial initial
+
+
+inl rec inventory_regex_list_reify forall alphabet length.
+    (symbols : finite_symbol_vector alphabet length)
+    (values : inventory_regex_list length)
+    : regex_list alphabet =
+    match values with
+    | InventoryRegexListNil => RegexListNil
+    | InventoryRegexListCons (head, tail) =>
+        RegexListCons (
+            inventory_regex_reify symbols head,
+            inventory_regex_list_reify symbols tail)
+
+inl rec raw_regex_list_contains_with forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (value : regex alphabet)
+    (values : regex_list alphabet) : bool =
+    match equal_regex, values with
+    | inventory_regex_equality_capability equal, RegexListNil => false
+    | inventory_regex_equality_capability equal, RegexListCons (head, tail) =>
+        if equal value head then true else raw_regex_list_contains_with equal_regex value tail
+
+inl rec raw_regex_list_subset_with forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (left : regex_list alphabet)
+    (right : regex_list alphabet) : bool =
+    match left with
+    | RegexListNil => true
+    | RegexListCons (head, tail) =>
+        if raw_regex_list_contains_with equal_regex head right then
+            raw_regex_list_subset_with equal_regex tail right
+        else false
+
+inl raw_regex_list_set_equal_with forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (left : regex_list alphabet)
+    (right : regex_list alphabet) : bool =
+    raw_regex_list_subset_with equal_regex left right &&
+    raw_regex_list_subset_with equal_regex right left
+
+inl inventory_dfa_closure_reifies forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_closure : inventory_raw_dfa_closure_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length) : bool =
+    match production_closure with
+    | inventory_raw_dfa_closure_capability raw_closure =>
+        match inventory_regex_index equality value symbols with
+        | InventoryRegexRejected => false
+        | InventoryRegexCertified indexed_value =>
+            inl indices = finite_all_indices symbols
+            inl indexed_closure = inventory_dfa_closure_with_indices indices indexed_value
+            inl reified = inventory_regex_list_reify symbols indexed_closure
+            raw_regex_list_set_equal_with equal_regex reified (raw_closure value)
+
+// Strong closed-DFA surface for the alphabet-erased inventory model.
+// States are indexed by an exact state_count, every row has exactly symbol_count
+// targets, and every target is a finite index into that same state vector. Once
+// sealed, an out-of-inventory symbol, a short/long row, or a target outside the
+// closure has no representation in the transition matrix.
+union rec inventory_dfa_state_vector symbol_count state_count =
+    | InventoryDfaStateVectorNil :: forall symbol_count.
+        inventory_dfa_state_vector symbol_count finite_length_zero
+    | InventoryDfaStateVectorCons :: forall symbol_count state_count.
+        inventory_regex symbol_count * inventory_dfa_state_vector symbol_count state_count ->
+        inventory_dfa_state_vector symbol_count (finite_length_succ state_count)
+
+nominal packed_inventory_dfa_state_vector symbol_count =
+    exists state_count. inventory_dfa_state_vector symbol_count state_count
+
+inl rec inventory_dfa_state_vector_pack forall symbol_count.
+    (states : inventory_regex_list symbol_count)
+    : packed_inventory_dfa_state_vector symbol_count =
+    match states with
+    | InventoryRegexListNil =>
+        packed_inventory_dfa_state_vector (exists InventoryDfaStateVectorNil)
+    | InventoryRegexListCons (state, rest) =>
+        match inventory_dfa_state_vector_pack rest with
+        | packed_inventory_dfa_state_vector hidden =>
+            inl exists state_count. packed_rest = hidden
+            packed_inventory_dfa_state_vector (exists (
+                InventoryDfaStateVectorCons (state, packed_rest)))
+
+inl rec inventory_dfa_state_lookup forall symbol_count state_count.
+    (index : finite_symbol_index state_count)
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    : inventory_regex symbol_count =
+    match index, states with
+    | FiniteSymbolIndexZero, InventoryDfaStateVectorCons (state, _) => state
+    | FiniteSymbolIndexSucc previous, InventoryDfaStateVectorCons (_, rest) =>
+        inventory_dfa_state_lookup previous rest
+
+// Exact accepting-state labeling. The vector shares state_count with the state
+// vector and transition matrix, so the executable DFA core does not need to
+// inspect regex structure after sealing.
+union rec inventory_dfa_acceptance_vector state_count =
+    | InventoryDfaAcceptanceVectorNil :: inventory_dfa_acceptance_vector finite_length_zero
+    | InventoryDfaAcceptanceVectorCons :: forall state_count.
+        bool * inventory_dfa_acceptance_vector state_count ->
+        inventory_dfa_acceptance_vector (finite_length_succ state_count)
+
+inl rec inventory_dfa_acceptance_vector_build forall symbol_count state_count.
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    : inventory_dfa_acceptance_vector state_count =
+    match states with
+    | InventoryDfaStateVectorNil => InventoryDfaAcceptanceVectorNil
+    | InventoryDfaStateVectorCons (state, rest) =>
+        inl accepting =
+            match inventory_nullable state with
+            | Nullable => true
+            | NonNullable => false
+        InventoryDfaAcceptanceVectorCons (
+            accepting,
+            inventory_dfa_acceptance_vector_build rest)
+
+inl rec inventory_dfa_acceptance_lookup forall state_count.
+    (index : finite_symbol_index state_count)
+    (acceptance : inventory_dfa_acceptance_vector state_count) : bool =
+    match index, acceptance with
+    | FiniteSymbolIndexZero, InventoryDfaAcceptanceVectorCons (value, _) => value
+    | FiniteSymbolIndexSucc previous, InventoryDfaAcceptanceVectorCons (_, rest) =>
+        inventory_dfa_acceptance_lookup previous rest
+
+inl rec inventory_dfa_acceptance_vector_reifies forall alphabet symbol_count state_count.
+    (production : inventory_acceptance_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    (acceptance : inventory_dfa_acceptance_vector state_count) : bool =
+    match production, states, acceptance with
+    | inventory_acceptance_capability production_accept,
+      InventoryDfaStateVectorNil,
+      InventoryDfaAcceptanceVectorNil => true
+    | inventory_acceptance_capability production_accept,
+      InventoryDfaStateVectorCons (state, state_rest),
+      InventoryDfaAcceptanceVectorCons (accepting, acceptance_rest) =>
+        inl raw_state = inventory_regex_reify symbols state
+        if bool_same accepting (production_accept raw_state InputEmpty) then
+            inventory_dfa_acceptance_vector_reifies production symbols state_rest acceptance_rest
+        else false
+
+
+union inventory_dfa_state_index_search_result state_count =
+    | InventoryDfaStateIndexMissing :: forall state_count.
+        inventory_dfa_state_index_search_result state_count
+    | InventoryDfaStateIndexFound :: forall state_count.
+        finite_symbol_index state_count -> inventory_dfa_state_index_search_result state_count
+
+inl rec inventory_dfa_state_vector_find forall symbol_count state_count.
+    (value : inventory_regex symbol_count)
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    : inventory_dfa_state_index_search_result state_count =
+    match states with
+    | InventoryDfaStateVectorNil => InventoryDfaStateIndexMissing
+    | InventoryDfaStateVectorCons (head, rest) =>
+        if inventory_regex_equal value head then InventoryDfaStateIndexFound FiniteSymbolIndexZero
+        else
+            match inventory_dfa_state_vector_find value rest with
+            | InventoryDfaStateIndexMissing => InventoryDfaStateIndexMissing
+            | InventoryDfaStateIndexFound index =>
+                InventoryDfaStateIndexFound (FiniteSymbolIndexSucc index)
+
+// The first index is the state domain; the second is the exact row cardinality.
+union rec inventory_dfa_target_vector state_count row_count =
+    | InventoryDfaTargetVectorNil :: forall state_count.
+        inventory_dfa_target_vector state_count finite_length_zero
+    | InventoryDfaTargetVectorCons :: forall state_count row_count.
+        finite_symbol_index state_count * inventory_dfa_target_vector state_count row_count ->
+        inventory_dfa_target_vector state_count (finite_length_succ row_count)
+
+union inventory_dfa_target_row_validation state_count row_count =
+    | InventoryDfaTargetRowRejected :: forall state_count row_count.
+        inventory_dfa_target_row_validation state_count row_count
+    | InventoryDfaTargetRowCertified :: forall state_count row_count.
+        inventory_dfa_target_vector state_count row_count ->
+        inventory_dfa_target_row_validation state_count row_count
+
+inl rec inventory_dfa_target_row_build forall symbol_count state_count row_count.
+    (state : inventory_regex symbol_count)
+    (remaining_indices : finite_index_vector symbol_count row_count)
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    : inventory_dfa_target_row_validation state_count row_count =
+    match remaining_indices with
+    | FiniteIndexVectorNil => InventoryDfaTargetRowCertified InventoryDfaTargetVectorNil
+    | FiniteIndexVectorCons (symbol_index, rest) =>
+        inl target = inventory_canonical_derivative state symbol_index
+        match inventory_dfa_state_vector_find target states with
+        | InventoryDfaStateIndexMissing => InventoryDfaTargetRowRejected
+        | InventoryDfaStateIndexFound target_index =>
+            match inventory_dfa_target_row_build state rest states with
+            | InventoryDfaTargetRowRejected => InventoryDfaTargetRowRejected
+            | InventoryDfaTargetRowCertified tail =>
+                InventoryDfaTargetRowCertified (
+                    InventoryDfaTargetVectorCons (target_index, tail))
+
+// total_state_count is the target domain shared by every row; source_count tracks
+// exactly how many source-state rows remain to be constructed.
+union rec inventory_dfa_closed_rows total_state_count symbol_count source_count =
+    | InventoryDfaClosedRowsNil :: forall total_state_count symbol_count.
+        inventory_dfa_closed_rows total_state_count symbol_count finite_length_zero
+    | InventoryDfaClosedRowsCons :: forall total_state_count symbol_count source_count.
+        inventory_dfa_target_vector total_state_count symbol_count *
+        inventory_dfa_closed_rows total_state_count symbol_count source_count ->
+        inventory_dfa_closed_rows total_state_count symbol_count (finite_length_succ source_count)
+
+union inventory_dfa_closed_rows_validation total_state_count symbol_count source_count =
+    | InventoryDfaClosedRowsRejected :: forall total_state_count symbol_count source_count.
+        inventory_dfa_closed_rows_validation total_state_count symbol_count source_count
+    | InventoryDfaClosedRowsCertified :: forall total_state_count symbol_count source_count.
+        inventory_dfa_closed_rows total_state_count symbol_count source_count ->
+        inventory_dfa_closed_rows_validation total_state_count symbol_count source_count
+
+inl rec inventory_dfa_closed_rows_build forall symbol_count total_state_count source_count.
+    (indices : finite_index_vector symbol_count symbol_count)
+    (all_states : inventory_dfa_state_vector symbol_count total_state_count)
+    (remaining_states : inventory_dfa_state_vector symbol_count source_count)
+    : inventory_dfa_closed_rows_validation total_state_count symbol_count source_count =
+    match remaining_states with
+    | InventoryDfaStateVectorNil => InventoryDfaClosedRowsCertified InventoryDfaClosedRowsNil
+    | InventoryDfaStateVectorCons (state, rest) =>
+        match inventory_dfa_target_row_build state indices all_states with
+        | InventoryDfaTargetRowRejected => InventoryDfaClosedRowsRejected
+        | InventoryDfaTargetRowCertified row =>
+            match inventory_dfa_closed_rows_build indices all_states rest with
+            | InventoryDfaClosedRowsRejected => InventoryDfaClosedRowsRejected
+            | InventoryDfaClosedRowsCertified row_rest =>
+                InventoryDfaClosedRowsCertified (InventoryDfaClosedRowsCons (row, row_rest))
+
+// Independent replay against the production derivative: rows themselves contain
+// only state indices, so this check reifies each indexed target and compares it to
+// the production canonical derivative for the corresponding raw symbol.
+inl rec inventory_dfa_target_row_reifies forall alphabet symbol_count state_count row_count.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production : inventory_canonical_derivative_capability alphabet)
+    (all_symbols : finite_symbol_vector alphabet symbol_count)
+    (remaining_symbols : finite_symbol_vector alphabet row_count)
+    (source : inventory_regex symbol_count)
+    (states : inventory_dfa_state_vector symbol_count state_count)
+    (row : inventory_dfa_target_vector state_count row_count) : bool =
+    match equal_regex, production, remaining_symbols, row with
+    | inventory_regex_equality_capability equal,
+      inventory_canonical_derivative_capability production_derivative,
+      FiniteSymbolVectorNil,
+      InventoryDfaTargetVectorNil => true
+    | inventory_regex_equality_capability equal,
+      inventory_canonical_derivative_capability production_derivative,
+      FiniteSymbolVectorCons (symbol, symbol_rest),
+      InventoryDfaTargetVectorCons (target_index, row_rest) =>
+        inl raw_source = inventory_regex_reify all_symbols source
+        inl expected = production_derivative raw_source symbol
+        inl actual = inventory_regex_reify all_symbols (inventory_dfa_state_lookup target_index states)
+        if equal expected actual then
+            inventory_dfa_target_row_reifies
+                equal_regex production all_symbols symbol_rest source states row_rest
+        else false
+
+inl rec inventory_dfa_closed_rows_reify forall alphabet symbol_count state_count source_count.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production : inventory_canonical_derivative_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (all_states : inventory_dfa_state_vector symbol_count state_count)
+    (remaining_states : inventory_dfa_state_vector symbol_count source_count)
+    (rows : inventory_dfa_closed_rows state_count symbol_count source_count) : bool =
+    match remaining_states, rows with
+    | InventoryDfaStateVectorNil, InventoryDfaClosedRowsNil => true
+    | InventoryDfaStateVectorCons (state, state_rest), InventoryDfaClosedRowsCons (row, row_rest) =>
+        if inventory_dfa_target_row_reifies equal_regex production symbols symbols state all_states row then
+            inventory_dfa_closed_rows_reify equal_regex production symbols all_states state_rest row_rest
+        else false
+
+// Alphabet-erased executable core. Once sealed, execution needs only an exact
+// start-state index, one acceptance bit per state, and one exact target row per
+// state/symbol pair. Regex states remain outside this nominal as audit evidence.
+nominal inventory_dfa_compiled_core symbol_count state_count =
+    finite_symbol_index state_count *
+    inventory_dfa_acceptance_vector state_count *
+    inventory_dfa_closed_rows state_count symbol_count state_count
+
+nominal inventory_dfa_closed_surface alphabet symbol_count state_count =
+    finite_symbol_vector alphabet symbol_count *
+    inventory_dfa_state_vector symbol_count state_count *
+    inventory_dfa_compiled_core symbol_count state_count
+
+union packed_inventory_dfa_closed_surface alphabet =
+    | PackedInventoryDfaClosedSurface :
+        (exists symbol_count state_count. inventory_dfa_closed_surface alphabet symbol_count state_count)
+
+union packed_inventory_dfa_closed_surface_validation alphabet =
+    | PackedInventoryDfaClosedSurfaceRejected
+    | PackedInventoryDfaClosedSurfaceCertified : packed_inventory_dfa_closed_surface alphabet
+
+inl seal_inventory_dfa_closed_surface forall alphabet symbol_count.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    : packed_inventory_dfa_closed_surface_validation alphabet =
+    match inventory_regex_index equality value symbols with
+    | InventoryRegexRejected => PackedInventoryDfaClosedSurfaceRejected
+    | InventoryRegexCertified indexed_value =>
+        inl indices = finite_all_indices symbols
+        inl closure = inventory_dfa_closure_with_indices indices indexed_value
+        match inventory_dfa_state_vector_pack closure with
+        | packed_inventory_dfa_state_vector packed_states =>
+            inl exists state_count. states = packed_states
+            inl normalized_start = inventory_normalize indexed_value
+            match inventory_dfa_state_vector_find normalized_start states with
+            | InventoryDfaStateIndexMissing => PackedInventoryDfaClosedSurfaceRejected
+            | InventoryDfaStateIndexFound start_index =>
+                inl acceptance = inventory_dfa_acceptance_vector_build states
+                match inventory_dfa_closed_rows_build indices states states with
+                | InventoryDfaClosedRowsRejected => PackedInventoryDfaClosedSurfaceRejected
+                | InventoryDfaClosedRowsCertified rows =>
+                    PackedInventoryDfaClosedSurfaceCertified (
+                        PackedInventoryDfaClosedSurface (exists (
+                            inventory_dfa_closed_surface (symbols, states, inventory_dfa_compiled_core (start_index, acceptance, rows)))))
+
+inl packed_inventory_dfa_closed_surface_reifies forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_derivative : inventory_canonical_derivative_capability alphabet)
+    (production_acceptance : inventory_acceptance_capability alphabet)
+    (packed : packed_inventory_dfa_closed_surface alphabet) : bool =
+    match packed with
+    | PackedInventoryDfaClosedSurface hidden =>
+        inl exists symbol_count state_count. surface = hidden
+        match surface with
+        | inventory_dfa_closed_surface (symbols, states, inventory_dfa_compiled_core (_, acceptance, rows)) =>
+            inventory_dfa_acceptance_vector_reifies production_acceptance symbols states acceptance &&
+            inventory_dfa_closed_rows_reify equal_regex production_derivative symbols states states rows
+
+// Post-validation typestate: a structurally closed matrix is not yet trusted by
+// consumers. Only independent replay of accepting labels and every transition
+// against the production semantics can produce this nominal witness.
+nominal inventory_dfa_verified_closed_surface alphabet =
+    packed_inventory_dfa_closed_surface alphabet
+
+union inventory_dfa_verified_closed_surface_validation alphabet =
+    | InventoryDfaVerifiedClosedSurfaceRejected
+    | InventoryDfaVerifiedClosedSurfaceCertified : inventory_dfa_verified_closed_surface alphabet
+
+inl verify_inventory_dfa_closed_surface forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_derivative : inventory_canonical_derivative_capability alphabet)
+    (production_acceptance : inventory_acceptance_capability alphabet)
+    (packed : packed_inventory_dfa_closed_surface alphabet)
+    : inventory_dfa_verified_closed_surface_validation alphabet =
+    if packed_inventory_dfa_closed_surface_reifies
+        equal_regex production_derivative production_acceptance packed
+    then InventoryDfaVerifiedClosedSurfaceCertified (inventory_dfa_verified_closed_surface packed)
+    else InventoryDfaVerifiedClosedSurfaceRejected
+
+
+
+
+// Seal vector, indexed start state and index-only closure under one hidden
+// length. A consumer cannot recombine a closure with a different alphabet
+// cardinality without first leaving this typestate.
+nominal inventory_dfa_surface alphabet length =
+    finite_symbol_vector alphabet length *
+    inventory_regex length *
+    inventory_regex_list length
+
+union packed_inventory_dfa_surface alphabet =
+    | PackedInventoryDfaSurface : (exists length. inventory_dfa_surface alphabet length)
+
+union packed_inventory_dfa_surface_validation alphabet =
+    | PackedInventoryDfaSurfaceRejected
+    | PackedInventoryDfaSurfaceCertified : packed_inventory_dfa_surface alphabet
+
+inl seal_inventory_dfa_surface forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    : packed_inventory_dfa_surface_validation alphabet =
+    match inventory_regex_index equality value symbols with
+    | InventoryRegexRejected => PackedInventoryDfaSurfaceRejected
+    | InventoryRegexCertified indexed_value =>
+        inl indices = finite_all_indices symbols
+        inl closure = inventory_dfa_closure_with_indices indices indexed_value
+        PackedInventoryDfaSurfaceCertified (
+            PackedInventoryDfaSurface (exists (
+                inventory_dfa_surface (symbols, indexed_value, closure))))
+
+inl packed_inventory_dfa_surface_reifies forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_closure : inventory_raw_dfa_closure_capability alphabet)
+    (source : regex alphabet)
+    (packed : packed_inventory_dfa_surface alphabet) : bool =
+    match equal_regex, production_closure, packed with
+    | inventory_regex_equality_capability equal,
+      inventory_raw_dfa_closure_capability raw_closure,
+      PackedInventoryDfaSurface hidden =>
+        inl exists length. surface = hidden
+        match surface with
+        | inventory_dfa_surface (symbols, indexed_source, indexed_closure) =>
+            inl source_ok = equal source (inventory_regex_reify symbols indexed_source)
+            inl closure_ok =
+                raw_regex_list_set_equal_with
+                    equal_regex
+                    (inventory_regex_list_reify symbols indexed_closure)
+                    (raw_closure source)
+            source_ok && closure_ok
+
+nominal inventory_dfa_program alphabet =
+    capability_program regex packed_inventory_dfa_surface_validation alphabet
+
+inl capture_inventory_dfa_program forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    (value : regex alphabet)
+    : inventory_dfa_program alphabet =
+    inl interpret (program_value : regex alphabet) : packed_inventory_dfa_surface_validation alphabet =
+        seal_inventory_dfa_surface equality program_value symbols
+    inventory_dfa_program (capability_program_make value interpret)
+
+inl run_inventory_dfa_program forall alphabet.
+    (program : inventory_dfa_program alphabet)
+    : packed_inventory_dfa_surface_validation alphabet =
+    match program with
+    | inventory_dfa_program generic_program => capability_program_run generic_program
+
+inl inventory_dfa_program_passes forall alphabet.
+    (program : inventory_dfa_program alphabet) : bool =
+    match run_inventory_dfa_program program with
+    | PackedInventoryDfaSurfaceRejected => false
+    | PackedInventoryDfaSurfaceCertified _ => true
+
+union rec inventory_input length =
+    | InventoryInputEmpty :: forall length. inventory_input length
+    | InventoryInputCons :: forall length. finite_symbol_index length * inventory_input length -> inventory_input length
+
+union inventory_input_validation length =
+    | InventoryInputRejected :: forall length. inventory_input_validation length
+    | InventoryInputCertified :: forall length. inventory_input length -> inventory_input_validation length
+
+inl inventory_input_index forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (input : linear_input alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    : inventory_input_validation length =
+    let rec loop (input : linear_input alphabet) : inventory_input_validation length =
+        match input with
+        | InputEmpty => InventoryInputCertified InventoryInputEmpty
+        | InputCons (symbol, rest) =>
+            match finite_symbol_vector_find equality symbol symbols with
+            | FiniteSymbolMissing => InventoryInputRejected
+            | FiniteSymbolFound index =>
+                match loop rest with
+                | InventoryInputRejected => InventoryInputRejected
+                | InventoryInputCertified indexed_rest =>
+                    InventoryInputCertified (InventoryInputCons (index, indexed_rest))
+    loop input
+
+inl rec inventory_accepts forall length.
+    (value : inventory_regex length)
+    (input : inventory_input length) : bool =
+    match input with
+    | InventoryInputEmpty =>
+        match inventory_nullable value with
+        | Nullable => true
+        | NonNullable => false
+    | InventoryInputCons (symbol, rest) =>
+        inventory_accepts (inventory_derivative value symbol) rest
+
+inl rec inventory_canonical_accepts forall length.
+    (value : inventory_regex length)
+    (input : inventory_input length) : bool =
+    match input with
+    | InventoryInputEmpty =>
+        match inventory_nullable (inventory_normalize value) with
+        | Nullable => true
+        | NonNullable => false
+    | InventoryInputCons (symbol, rest) =>
+        inventory_canonical_accepts (inventory_canonical_derivative value symbol) rest
+
+// Capture the two length-dependent operations before hiding length. This
+// avoids recovering a GADT refinement through a generic helper after an
+// existential unpack: the runner merely connects capabilities that already
+// share the same hidden index.
+nominal inventory_input_index_capability alphabet length =
+    linear_input alphabet -> inventory_input_validation length
+
+nominal inventory_bound_acceptance_capability length =
+    inventory_input length -> bool
+
+nominal inventory_dfa_runner_surface alphabet length =
+    inventory_dfa_surface alphabet length *
+    inventory_input_index_capability alphabet length *
+    inventory_bound_acceptance_capability length
+
+union packed_inventory_dfa_runner alphabet =
+    | PackedInventoryDfaRunner : (exists length. inventory_dfa_runner_surface alphabet length)
+
+union packed_inventory_dfa_runner_validation alphabet =
+    | PackedInventoryDfaRunnerRejected
+    | PackedInventoryDfaRunnerCertified : packed_inventory_dfa_runner alphabet
+
+inl seal_inventory_dfa_runner forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    : packed_inventory_dfa_runner_validation alphabet =
+    match inventory_regex_index equality value symbols with
+    | InventoryRegexRejected => PackedInventoryDfaRunnerRejected
+    | InventoryRegexCertified indexed_value =>
+        inl indices = finite_all_indices symbols
+        inl closure = inventory_dfa_closure_with_indices indices indexed_value
+        inl surface : inventory_dfa_surface alphabet length =
+            inventory_dfa_surface (symbols, indexed_value, closure)
+        inl index_input : inventory_input_index_capability alphabet length =
+            inventory_input_index_capability (fun input => inventory_input_index equality input symbols)
+        inl decide : inventory_bound_acceptance_capability length =
+            inventory_bound_acceptance_capability (fun input => inventory_canonical_accepts indexed_value input)
+        PackedInventoryDfaRunnerCertified (
+            PackedInventoryDfaRunner (exists (
+                inventory_dfa_runner_surface (surface, index_input, decide))))
+
+union inventory_dfa_run_result =
+    | InventoryDfaAccepted
+    | InventoryDfaRejected
+    | InventoryDfaInputOutsideInventory
+
+inl packed_inventory_dfa_run forall alphabet.
+    (packed : packed_inventory_dfa_runner alphabet)
+    (input : linear_input alphabet) : inventory_dfa_run_result =
+    match packed with
+    | PackedInventoryDfaRunner hidden =>
+        inl exists length. runner = hidden
+        match runner with
+        | inventory_dfa_runner_surface (_, index_input, decide) =>
+            match index_input, decide with
+            | inventory_input_index_capability index,
+              inventory_bound_acceptance_capability accept =>
+                match index input with
+                | InventoryInputRejected => InventoryDfaInputOutsideInventory
+                | InventoryInputCertified indexed_input =>
+                    if accept indexed_input then InventoryDfaAccepted else InventoryDfaRejected
+
+inl packed_inventory_dfa_run_agrees forall alphabet.
+    (production : inventory_acceptance_capability alphabet)
+    (source : regex alphabet)
+    (input : linear_input alphabet)
+    (packed : packed_inventory_dfa_runner alphabet) : bool =
+    match production, packed_inventory_dfa_run packed input with
+    | inventory_acceptance_capability production_accept, InventoryDfaAccepted => production_accept source input
+    | inventory_acceptance_capability production_accept, InventoryDfaRejected => bool_same (production_accept source input) false
+    | _, InventoryDfaInputOutsideInventory => false
+
+// Matrix lookup is total over both indices: a symbol can only select one of the
+// exact row slots, and a state can only select one of the exact source rows.
+inl rec inventory_dfa_target_lookup forall state_count symbol_count.
+    (symbol : finite_symbol_index symbol_count)
+    (row : inventory_dfa_target_vector state_count symbol_count)
+    : finite_symbol_index state_count =
+    match symbol, row with
+    | FiniteSymbolIndexZero, InventoryDfaTargetVectorCons (target, _) => target
+    | FiniteSymbolIndexSucc previous, InventoryDfaTargetVectorCons (_, rest) =>
+        inventory_dfa_target_lookup previous rest
+
+inl rec inventory_dfa_closed_row_lookup forall total_state_count symbol_count source_count.
+    (state : finite_symbol_index source_count)
+    (rows : inventory_dfa_closed_rows total_state_count symbol_count source_count)
+    : inventory_dfa_target_vector total_state_count symbol_count =
+    match state, rows with
+    | FiniteSymbolIndexZero, InventoryDfaClosedRowsCons (row, _) => row
+    | FiniteSymbolIndexSucc previous, InventoryDfaClosedRowsCons (_, rest) =>
+        inventory_dfa_closed_row_lookup previous rest
+
+// Execute only through finite state/symbol indices. There is no regex transition
+// lookup and no closure-membership branch in the recursive step: an escaped target
+// cannot be constructed by the sealed matrix in the first place.
+inl inventory_dfa_closed_accepts forall symbol_count state_count.
+    (acceptance : inventory_dfa_acceptance_vector state_count)
+    (rows : inventory_dfa_closed_rows state_count symbol_count state_count)
+    (current : finite_symbol_index state_count)
+    (input : inventory_input symbol_count) : bool =
+    let rec loop
+        (current : finite_symbol_index state_count)
+        (input : inventory_input symbol_count) : bool =
+        match input with
+        | InventoryInputEmpty => inventory_dfa_acceptance_lookup current acceptance
+        | InventoryInputCons (symbol, rest) =>
+            inl row = inventory_dfa_closed_row_lookup current rows
+            inl next = inventory_dfa_target_lookup symbol row
+            loop next rest
+    loop current input
+
+nominal inventory_dfa_closed_runner_surface alphabet symbol_count state_count =
+    inventory_dfa_closed_surface alphabet symbol_count state_count *
+    inventory_input_index_capability alphabet symbol_count *
+    inventory_bound_acceptance_capability symbol_count
+
+union packed_inventory_dfa_closed_runner alphabet =
+    | PackedInventoryDfaClosedRunner :
+        (exists symbol_count state_count. inventory_dfa_closed_runner_surface alphabet symbol_count state_count)
+
+union packed_inventory_dfa_closed_runner_validation alphabet =
+    | PackedInventoryDfaClosedRunnerRejected
+    | PackedInventoryDfaClosedRunnerCertified : packed_inventory_dfa_closed_runner alphabet
+
+inl seal_inventory_dfa_closed_runner forall alphabet symbol_count.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    : packed_inventory_dfa_closed_runner_validation alphabet =
+    match seal_inventory_dfa_closed_surface equality value symbols with
+    | PackedInventoryDfaClosedSurfaceRejected => PackedInventoryDfaClosedRunnerRejected
+    | PackedInventoryDfaClosedSurfaceCertified packed =>
+        match packed with
+        | PackedInventoryDfaClosedSurface hidden =>
+            inl exists hidden_symbol_count state_count. surface = hidden
+            match surface with
+            | inventory_dfa_closed_surface (hidden_symbols, _, inventory_dfa_compiled_core (start_index, acceptance, rows)) =>
+                inl index_input : inventory_input_index_capability alphabet hidden_symbol_count =
+                    inventory_input_index_capability (
+                        fun input => inventory_input_index equality input hidden_symbols)
+                inl decide : inventory_bound_acceptance_capability hidden_symbol_count =
+                    inventory_bound_acceptance_capability (
+                        fun input => inventory_dfa_closed_accepts acceptance rows start_index input)
+                PackedInventoryDfaClosedRunnerCertified (
+                    PackedInventoryDfaClosedRunner (exists (
+                        inventory_dfa_closed_runner_surface (surface, index_input, decide))))
+
+inl packed_inventory_dfa_closed_run forall alphabet.
+    (packed : packed_inventory_dfa_closed_runner alphabet)
+    (input : linear_input alphabet) : inventory_dfa_run_result =
+    match packed with
+    | PackedInventoryDfaClosedRunner hidden =>
+        inl exists symbol_count state_count. runner = hidden
+        match runner with
+        | inventory_dfa_closed_runner_surface (_, index_input, decide) =>
+            match index_input, decide with
+            | inventory_input_index_capability index,
+              inventory_bound_acceptance_capability accept =>
+                match index input with
+                | InventoryInputRejected => InventoryDfaInputOutsideInventory
+                | InventoryInputCertified indexed_input =>
+                    if accept indexed_input then InventoryDfaAccepted else InventoryDfaRejected
+
+inl packed_inventory_dfa_closed_runner_replays forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_derivative : inventory_canonical_derivative_capability alphabet)
+    (production_acceptance : inventory_acceptance_capability alphabet)
+    (packed : packed_inventory_dfa_closed_runner alphabet) : bool =
+    match packed with
+    | PackedInventoryDfaClosedRunner hidden =>
+        inl exists symbol_count state_count. runner = hidden
+        match runner with
+        | inventory_dfa_closed_runner_surface (surface, _, _) =>
+            match surface with
+            | inventory_dfa_closed_surface (symbols, states, inventory_dfa_compiled_core (_, acceptance, rows)) =>
+                inventory_dfa_acceptance_vector_reifies production_acceptance symbols states acceptance &&
+                inventory_dfa_closed_rows_reify equal_regex production_derivative symbols states states rows
+
+inl packed_inventory_dfa_closed_run_agrees forall alphabet.
+    (production : inventory_acceptance_capability alphabet)
+    (source : regex alphabet)
+    (input : linear_input alphabet)
+    (packed : packed_inventory_dfa_closed_runner alphabet) : bool =
+    match production, packed_inventory_dfa_closed_run packed input with
+    | inventory_acceptance_capability production_accept, InventoryDfaAccepted => production_accept source input
+    | inventory_acceptance_capability production_accept, InventoryDfaRejected => bool_same (production_accept source input) false
+    | _, InventoryDfaInputOutsideInventory => false
+
+
+inl rec packed_inventory_dfa_closed_run_agrees_inputs forall alphabet.
+    (production : inventory_acceptance_capability alphabet)
+    (source : regex alphabet)
+    (inputs : input_list alphabet)
+    (packed : packed_inventory_dfa_closed_runner alphabet) : bool =
+    match inputs with
+    | InputListNil => true
+    | InputListCons (input, rest) =>
+        if packed_inventory_dfa_closed_run_agrees production source input packed then
+            packed_inventory_dfa_closed_run_agrees_inputs production source rest packed
+        else false
+
+nominal inventory_closed_dfa_program alphabet =
+    capability_program regex packed_inventory_dfa_closed_runner_validation alphabet
+
+inl capture_inventory_closed_dfa_program forall alphabet symbol_count.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (value : regex alphabet)
+    : inventory_closed_dfa_program alphabet =
+    inl interpret (program_value : regex alphabet) : packed_inventory_dfa_closed_runner_validation alphabet =
+        seal_inventory_dfa_closed_runner equality program_value symbols
+    inventory_closed_dfa_program (capability_program_make value interpret)
+
+inl run_inventory_closed_dfa_program forall alphabet.
+    (program : inventory_closed_dfa_program alphabet)
+    : packed_inventory_dfa_closed_runner_validation alphabet =
+    match program with
+    | inventory_closed_dfa_program generic_program => capability_program_run generic_program
+
+inl inventory_closed_dfa_program_passes forall alphabet.
+    (program : inventory_closed_dfa_program alphabet) : bool =
+    match run_inventory_closed_dfa_program program with
+    | PackedInventoryDfaClosedRunnerRejected => false
+    | PackedInventoryDfaClosedRunnerCertified _ => true
+
+// Higher-ranked program whose result is the semantic post-validation typestate,
+// not merely a structurally closed matrix. The hidden symbol/state counts remain
+// existential while independent production replay is mandatory before success.
+nominal inventory_verified_closed_dfa_program alphabet =
+    capability_program regex inventory_dfa_verified_closed_surface_validation alphabet
+
+inl capture_inventory_verified_closed_dfa_program forall alphabet symbol_count.
+    (equality : finite_symbol_equality_capability alphabet)
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production_derivative : inventory_canonical_derivative_capability alphabet)
+    (production_acceptance : inventory_acceptance_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (value : regex alphabet)
+    : inventory_verified_closed_dfa_program alphabet =
+    inl interpret (program_value : regex alphabet) : inventory_dfa_verified_closed_surface_validation alphabet =
+        match seal_inventory_dfa_closed_surface equality program_value symbols with
+        | PackedInventoryDfaClosedSurfaceRejected => InventoryDfaVerifiedClosedSurfaceRejected
+        | PackedInventoryDfaClosedSurfaceCertified surface =>
+            verify_inventory_dfa_closed_surface equal_regex production_derivative production_acceptance surface
+    inventory_verified_closed_dfa_program (capability_program_make value interpret)
+
+inl run_inventory_verified_closed_dfa_program forall alphabet.
+    (program : inventory_verified_closed_dfa_program alphabet)
+    : inventory_dfa_verified_closed_surface_validation alphabet =
+    match program with
+    | inventory_verified_closed_dfa_program generic_program => capability_program_run generic_program
+
+inl inventory_verified_closed_dfa_program_passes forall alphabet.
+    (program : inventory_verified_closed_dfa_program alphabet) : bool =
+    match run_inventory_verified_closed_dfa_program program with
+    | InventoryDfaVerifiedClosedSurfaceRejected => false
+    | InventoryDfaVerifiedClosedSurfaceCertified _ => true
+
+
+// Existentially bind the exact vector to the alphabet-erased indexed core.
+nominal inventory_indexed_regex alphabet length =
+    finite_symbol_vector alphabet length * inventory_regex length
+
+union packed_inventory_indexed_regex alphabet =
+    | PackedInventoryIndexedRegex : (exists length. inventory_indexed_regex alphabet length)
+
+union packed_inventory_indexed_regex_validation alphabet =
+    | PackedInventoryIndexedRegexRejected
+    | PackedInventoryIndexedRegexCertified : packed_inventory_indexed_regex alphabet
+
+inl inventory_indexed_regex_pack forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (value : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    : packed_inventory_indexed_regex_validation alphabet =
+    match inventory_regex_index equality value symbols with
+    | InventoryRegexRejected => PackedInventoryIndexedRegexRejected
+    | InventoryRegexCertified indexed =>
+        PackedInventoryIndexedRegexCertified (
+            PackedInventoryIndexedRegex (exists (inventory_indexed_regex (symbols, indexed))))
+
+inl packed_inventory_indexed_regex_reifies forall alphabet.
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (source : regex alphabet)
+    (packed : packed_inventory_indexed_regex alphabet) : bool =
+    match equal_regex, packed with
+    | inventory_regex_equality_capability equal, PackedInventoryIndexedRegex hidden =>
+        inl exists length. indexed = hidden
+        match indexed with
+        | inventory_indexed_regex (symbols, core) =>
+            equal source (inventory_regex_reify symbols core)
+
+inl indexed_match_agrees forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (reference : inventory_reference_acceptance_capability alphabet)
+    (value : regex alphabet)
+    (input : linear_input alphabet)
+    (symbols : finite_symbol_vector alphabet length) : bool =
+    match reference with
+    | inventory_reference_acceptance_capability reference_accept =>
+        match inventory_regex_index equality value symbols, inventory_input_index equality input symbols with
+        | InventoryRegexCertified indexed_value, InventoryInputCertified indexed_input =>
+            bool_same (inventory_accepts indexed_value indexed_input) (reference_accept value input)
+        | _ => false
+
+inl indexed_canonical_match_agrees forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (production : inventory_acceptance_capability alphabet)
+    (value : regex alphabet)
+    (input : linear_input alphabet)
+    (symbols : finite_symbol_vector alphabet length) : bool =
+    match production with
+    | inventory_acceptance_capability production_accept =>
+        match inventory_regex_index equality value symbols, inventory_input_index equality input symbols with
+        | InventoryRegexCertified indexed_value, InventoryInputCertified indexed_input =>
+            bool_same (inventory_canonical_accepts indexed_value indexed_input) (production_accept value input)
+        | _ => false
+
+inl indexed_canonical_derivative_reifies forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (equal_regex : inventory_regex_equality_capability alphabet)
+    (production : inventory_canonical_derivative_capability alphabet)
+    (value : regex alphabet)
+    (symbol : alphabet)
+    (symbols : finite_symbol_vector alphabet length) : bool =
+    match equal_regex, production with
+    | inventory_regex_equality_capability equal, inventory_canonical_derivative_capability production_derivative =>
+        match inventory_regex_index equality value symbols, finite_symbol_vector_find equality symbol symbols with
+        | InventoryRegexCertified indexed_value, FiniteSymbolFound indexed_symbol =>
+            equal
+                (production_derivative value symbol)
+                (inventory_regex_reify symbols (inventory_canonical_derivative indexed_value indexed_symbol))
+        | _ => false
+
+nominal inventory_indexing_program alphabet =
+    capability_program regex packed_inventory_indexed_regex_validation alphabet
+
+inl capture_inventory_indexing_program forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    (value : regex alphabet)
+    : inventory_indexing_program alphabet =
+    inl interpret (program_value : regex alphabet) : packed_inventory_indexed_regex_validation alphabet =
+        inventory_indexed_regex_pack equality program_value symbols
+    inventory_indexing_program (capability_program_make value interpret)
+
+inl run_inventory_indexing_program forall alphabet.
+    (program : inventory_indexing_program alphabet)
+    : packed_inventory_indexed_regex_validation alphabet =
+    match program with
+    | inventory_indexing_program generic_program => capability_program_run generic_program
+
+inl inventory_indexing_program_passes forall alphabet.
+    (program : inventory_indexing_program alphabet) : bool =
+    match run_inventory_indexing_program program with
+    | PackedInventoryIndexedRegexRejected => false
+    | PackedInventoryIndexedRegexCertified _ => true
+
+// Third local alphabet deliberately has a three-value domain and a truncated
+// two-slot vector. It demonstrates that indexing rejects escaping characters
+// even though its equality capability itself knows about the omitted value.
+union model_symbol =
+    | ModelA
+    | ModelB
+    | ModelC
+nominal model_alphabet = model_symbol
+instance symbol_compare model_alphabet = fun (model_alphabet left) (model_alphabet right) =>
+    match left, right with
+    | ModelA, ModelA => SymbolSame
+    | ModelA, _ => SymbolLess
+    | _, ModelA => SymbolGreater
+    | ModelB, ModelB => SymbolSame
+    | ModelB, ModelC => SymbolLess
+    | ModelC, ModelB => SymbolGreater
+    | ModelC, ModelC => SymbolSame
+
+type model_two_length = finite_length_succ (finite_length_succ finite_length_zero)
+inl model_two_vector () : finite_symbol_vector model_alphabet model_two_length =
+    FiniteSymbolVectorCons (
+        model_alphabet ModelA,
+        FiniteSymbolVectorCons (model_alphabet ModelB, FiniteSymbolVectorNil))
+
+inl bit_inventory_zero_core () : inventory_regex bit_finite_length =
+    InventoryRegexChar FiniteSymbolIndexZero
+
+inl require_inventory_core_pair forall alphabet length.
+    (_ : finite_symbol_vector alphabet length)
+    (_ : inventory_regex length) : bool = true
+
+inl inventory_indexed_model_contract () : string =
+    inl bit_equality : finite_symbol_equality_capability bit_alphabet = finite_symbol_equality_capability_default
+    inl tri_equality : finite_symbol_equality_capability tri_alphabet = finite_symbol_equality_capability_default
+    inl model_equality : finite_symbol_equality_capability model_alphabet = finite_symbol_equality_capability_default
+    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_default
+    inl bit_reference : inventory_reference_acceptance_capability bit_alphabet = inventory_reference_acceptance_capability_default
+    inl tri_reference : inventory_reference_acceptance_capability tri_alphabet = inventory_reference_acceptance_capability_default
+    inl bit_production : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_default
+    inl tri_production : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_default
+    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_default
+    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_default
+    inl bit_closure : inventory_raw_dfa_closure_capability bit_alphabet = inventory_raw_dfa_closure_capability_default
+    inl tri_closure : inventory_raw_dfa_closure_capability tri_alphabet = inventory_raw_dfa_closure_capability_default
+    inl model_production : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_default
+
+    inl bit_symbols = bit_finite_symbol_vector ()
+    inl tri_symbols = tri_finite_symbol_vector ()
+    inl bit_value = ends_with_zero ()
+    inl bit_input = input_110 ()
+    inl tri_value = tri_ab_star_then_c ()
+    inl tri_input = InputCons (tri_a (), InputCons (tri_b (), InputCons (tri_c (), InputEmpty)))
+
+    assert_static
+        (indexed_match_agrees bit_equality bit_reference bit_value bit_input bit_symbols)
+        "alphabet-erased indexed bit matcher must preserve independent reference acceptance"
+    assert_static
+        (indexed_match_agrees tri_equality tri_reference tri_value tri_input tri_symbols)
+        "alphabet-erased indexed ternary matcher must preserve independent reference acceptance"
+    assert_static
+        (indexed_canonical_match_agrees bit_equality bit_production bit_value bit_input bit_symbols)
+        "index-only canonical bit matcher must agree with production acceptance"
+    assert_static
+        (indexed_canonical_match_agrees tri_equality tri_production tri_value tri_input tri_symbols)
+        "index-only canonical ternary matcher must agree with production acceptance"
+    assert_static
+        (indexed_canonical_derivative_reifies bit_equality bit_regex_equal bit_derivative bit_value (zero ()) bit_symbols)
+        "index-only bit canonical derivative must reify to the production derivative"
+    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_default
+    assert_static
+        (indexed_canonical_derivative_reifies tri_equality tri_regex_equal tri_derivative tri_value (tri_b ()) tri_symbols)
+        "index-only ternary canonical derivative must reify to the production derivative"
+
+    assert_static
+        (inventory_dfa_closure_reifies bit_equality bit_regex_equal bit_closure bit_value bit_symbols)
+        "index-only bit DFA closure must reify to the production closure as a set"
+    assert_static
+        (inventory_dfa_closure_reifies tri_equality tri_regex_equal tri_closure tri_value tri_symbols)
+        "index-only ternary DFA closure must reify to the production closure as a set"
+
+    assert_static
+        (match seal_inventory_dfa_closed_surface bit_equality bit_value bit_symbols with
+         | PackedInventoryDfaClosedSurfaceRejected => false
+         | PackedInventoryDfaClosedSurfaceCertified surface =>
+            match verify_inventory_dfa_closed_surface bit_regex_equal bit_derivative bit_production surface with
+            | InventoryDfaVerifiedClosedSurfaceRejected => false
+            | InventoryDfaVerifiedClosedSurfaceCertified _ => true)
+        "bit closed DFA must become trusted only after exact acceptance and transition replay"
+
+    assert_static
+        (match seal_inventory_dfa_closed_surface tri_equality tri_value tri_symbols with
+         | PackedInventoryDfaClosedSurfaceRejected => false
+         | PackedInventoryDfaClosedSurfaceCertified surface =>
+            match verify_inventory_dfa_closed_surface tri_regex_equal tri_derivative tri_production surface with
+            | InventoryDfaVerifiedClosedSurfaceRejected => false
+            | InventoryDfaVerifiedClosedSurfaceCertified _ => true)
+        "ternary closed DFA must become trusted only after exact acceptance and transition replay"
+
+    inl bit_dfa_surface_validation = seal_inventory_dfa_surface bit_equality bit_value bit_symbols
+    inl tri_dfa_surface_validation = seal_inventory_dfa_surface tri_equality tri_value tri_symbols
+    assert_static
+        (match bit_dfa_surface_validation with
+         | PackedInventoryDfaSurfaceRejected => false
+         | PackedInventoryDfaSurfaceCertified surface =>
+            packed_inventory_dfa_surface_reifies bit_regex_equal bit_closure bit_value surface)
+        "bit existential DFA surface must retain one exact vector/core/closure length"
+    assert_static
+        (match tri_dfa_surface_validation with
+         | PackedInventoryDfaSurfaceRejected => false
+         | PackedInventoryDfaSurfaceCertified surface =>
+            packed_inventory_dfa_surface_reifies tri_regex_equal tri_closure tri_value surface)
+        "ternary existential DFA surface must retain one exact vector/core/closure length"
+    inl bit_dfa_program = capture_inventory_dfa_program bit_equality bit_symbols bit_value
+    inl tri_dfa_program = capture_inventory_dfa_program tri_equality tri_symbols tri_value
+    inl dfa_program_batch : matcher_batch inventory_dfa_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (MatchBatchSingle bit_dfa_program, MatchBatchSingle tri_dfa_program)
+    assert_static
+        (matcher_batch_forall `$inventory_dfa_program_passes dfa_program_batch)
+        "higher-ranked heterogeneous DFA programs must preserve hidden inventory lengths"
+    inl bit_closed_program = capture_inventory_closed_dfa_program bit_equality bit_symbols bit_value
+    inl tri_closed_program = capture_inventory_closed_dfa_program tri_equality tri_symbols tri_value
+    inl closed_program_batch : matcher_batch inventory_closed_dfa_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (MatchBatchSingle bit_closed_program, MatchBatchSingle tri_closed_program)
+    assert_static
+        (matcher_batch_forall `$inventory_closed_dfa_program_passes closed_program_batch)
+        "higher-ranked heterogeneous closed DFA programs must preserve hidden symbol/state cardinalities and total transition matrices"
+    inl bit_verified_program =
+        capture_inventory_verified_closed_dfa_program
+            bit_equality bit_regex_equal bit_derivative bit_production bit_symbols bit_value
+    inl tri_verified_program =
+        capture_inventory_verified_closed_dfa_program
+            tri_equality tri_regex_equal tri_derivative tri_production tri_symbols tri_value
+    inl verified_program_batch : matcher_batch inventory_verified_closed_dfa_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (MatchBatchSingle bit_verified_program, MatchBatchSingle tri_verified_program)
+    assert_static
+        (matcher_batch_forall `$inventory_verified_closed_dfa_program_passes verified_program_batch)
+        "higher-ranked heterogeneous DFA programs must carry only independently replay-verified closed surfaces"
+
+    assert_static
+        (match seal_inventory_dfa_runner bit_equality bit_value bit_symbols with
+         | PackedInventoryDfaRunnerRejected => false
+         | PackedInventoryDfaRunnerCertified runner =>
+            packed_inventory_dfa_run_agrees bit_production bit_value bit_input runner)
+        "capability-captured bit DFA runner must agree with production"
+    assert_static
+        (match seal_inventory_dfa_runner tri_equality tri_value tri_symbols with
+         | PackedInventoryDfaRunnerRejected => false
+         | PackedInventoryDfaRunnerCertified runner =>
+            packed_inventory_dfa_run_agrees tri_production tri_value tri_input runner)
+        "capability-captured ternary DFA runner must agree with production"
+
+    assert_static
+        (match seal_inventory_dfa_closed_runner bit_equality bit_value bit_symbols with
+         | PackedInventoryDfaClosedRunnerRejected => false
+         | PackedInventoryDfaClosedRunnerCertified runner =>
+            packed_inventory_dfa_closed_run_agrees_inputs
+                bit_production bit_value
+                (input_corpus_depth_two (finite_symbol_vector_to_list bit_symbols))
+                runner)
+        "closed-matrix bit runner must agree with production across the complete depth-two inventory corpus"
+    assert_static
+        (match seal_inventory_dfa_closed_runner tri_equality tri_value tri_symbols with
+         | PackedInventoryDfaClosedRunnerRejected => false
+         | PackedInventoryDfaClosedRunnerCertified runner =>
+            packed_inventory_dfa_closed_run_agrees_inputs
+                tri_production tri_value
+                (input_corpus_depth_two (finite_symbol_vector_to_list tri_symbols))
+                runner)
+        "closed-matrix ternary runner must agree with production across the complete depth-two inventory corpus"
+
+    match inventory_indexed_regex_pack bit_equality bit_value bit_symbols with
+    | PackedInventoryIndexedRegexRejected => "inventory-indexed-unexpected-reject"
+    | PackedInventoryIndexedRegexCertified packed =>
+        assert_static
+            (packed_inventory_indexed_regex_reifies bit_regex_equal bit_value packed)
+            "existential vector/core seal must reify to its source"
+
+        inl model_valid_regex : regex model_alphabet = RegexStar (RegexChar (model_alphabet ModelA))
+        inl rogue_input : linear_input model_alphabet = InputCons (model_alphabet ModelC, InputEmpty)
+        assert_static
+            (match seal_inventory_dfa_closed_runner model_equality model_valid_regex (model_two_vector ()) with
+             | PackedInventoryDfaClosedRunnerRejected => false
+             | PackedInventoryDfaClosedRunnerCertified runner =>
+                match packed_inventory_dfa_closed_run runner rogue_input with
+                | InventoryDfaInputOutsideInventory => true
+                | _ => false)
+            "closed-matrix runner must classify an omitted-domain input as outside inventory before automaton execution"
+        inl rogue_regex : regex model_alphabet = RegexChar (model_alphabet ModelC)
+        match inventory_regex_index model_equality rogue_regex (model_two_vector ()),
+              inventory_input_index model_equality rogue_input (model_two_vector ()) with
+        | InventoryRegexRejected, InventoryInputRejected =>
+            inl bit_program = capture_inventory_indexing_program bit_equality bit_symbols bit_value
+            inl tri_program = capture_inventory_indexing_program tri_equality tri_symbols tri_value
+            inl batch : matcher_batch inventory_indexing_program (bit_alphabet * tri_alphabet) =
+                MatchBatchPair (MatchBatchSingle bit_program, MatchBatchSingle tri_program)
+            assert_static
+                (matcher_batch_forall `$inventory_indexing_program_passes batch)
+                "higher-ranked heterogeneous batch must preserve captured inventory capabilities and existential lengths"
+            "inventory-indexed-model-green"
+        | _ => "inventory-indexed-rogue-accepted"
+
+// Mandatory integration boundary: the normal proof suite and the inventory-indexed
+// model are validated by one package-owned entrypoint. This avoids relying on
+// transitive module visibility while keeping the model in the release proof gate.
+inl inventory_indexed_full_proof_contract () : string =
+    inl _ = run_proof_suite ()
+    inventory_indexed_model_contract ()
+
+// Runtime sentinel owned by the refinement site. The raw inputs are dyned only
+// after the exact symbol/state counts, input-index capability and closed DFA
+// runner have been captured together. There is no fallback transition or cast.
+inl packed_inventory_dfa_closed_run_agrees_runtime_corpus forall alphabet.
+    (production : inventory_acceptance_capability alphabet)
+    (source : regex alphabet)
+    (packed : packed_inventory_dfa_closed_runner alphabet)
+    (inputs : input_list alphabet) : bool =
+    let rec loop (inputs : input_list alphabet) : bool =
+        match inputs with
+        | InputListNil => true
+        | InputListCons (input, rest) =>
+            if packed_inventory_dfa_closed_run_agrees production source input packed then loop rest
+            else false
+    loop inputs
+
+inl inventory_indexed_closed_dfa_runtime_probe () : bool =
+    inl bit_equality : finite_symbol_equality_capability bit_alphabet = finite_symbol_equality_capability_default
+    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_default
+    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_default
+    inl bit_production : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_default
+    inl bit_symbols = bit_finite_symbol_vector ()
+    inl bit_source = ends_with_zero ()
+    inl tri_equality : finite_symbol_equality_capability tri_alphabet = finite_symbol_equality_capability_default
+    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_default
+    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_default
+    inl tri_production : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_default
+    inl tri_symbols = tri_finite_symbol_vector ()
+    inl tri_source = tri_ab_star_then_c ()
+    inl model_equality : finite_symbol_equality_capability model_alphabet = finite_symbol_equality_capability_default
+    inl model_regex_equal : inventory_regex_equality_capability model_alphabet = inventory_regex_equality_capability_default
+    inl model_derivative : inventory_canonical_derivative_capability model_alphabet = inventory_canonical_derivative_capability_default
+    inl model_production : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_default
+    inl model_symbols = model_two_vector ()
+    inl model_source : regex model_alphabet = RegexStar (RegexChar (model_alphabet ModelA))
+    match seal_inventory_dfa_closed_runner bit_equality bit_source bit_symbols,
+          seal_inventory_dfa_closed_runner tri_equality tri_source tri_symbols,
+          seal_inventory_dfa_closed_runner model_equality model_source model_symbols with
+    | PackedInventoryDfaClosedRunnerCertified bit_runner,
+      PackedInventoryDfaClosedRunnerCertified tri_runner,
+      PackedInventoryDfaClosedRunnerCertified model_runner =>
+        inl replay_ok =
+            packed_inventory_dfa_closed_runner_replays bit_regex_equal bit_derivative bit_production bit_runner &&
+            packed_inventory_dfa_closed_runner_replays tri_regex_equal tri_derivative tri_production tri_runner &&
+            packed_inventory_dfa_closed_runner_replays model_regex_equal model_derivative model_production model_runner
+        inl ~bit_inputs = input_corpus_depth_two (finite_symbol_vector_to_list bit_symbols)
+        inl ~tri_inputs = input_corpus_depth_two (finite_symbol_vector_to_list tri_symbols)
+        inl ~rogue_input : linear_input model_alphabet = InputCons (model_alphabet ModelC, InputEmpty)
+        if replay_ok then
+            if packed_inventory_dfa_closed_run_agrees_runtime_corpus bit_production bit_source bit_runner bit_inputs then
+                if packed_inventory_dfa_closed_run_agrees_runtime_corpus tri_production tri_source tri_runner tri_inputs then
+                    match packed_inventory_dfa_closed_run model_runner rogue_input with
+                    | InventoryDfaInputOutsideInventory => true
+                    | _ => false
+                else false
+            else false
+        else false
+    | _ => false
+
+

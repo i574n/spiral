@@ -1,0 +1,21 @@
+nominal retryable = ()
+nominal non_retryable = ()
+
+union request effect result =
+    | QueryStatus :: string -> request retryable string
+    | SubmitNfe :: string -> request non_retryable string
+
+inl run_request forall effect result.
+    (request : request effect result)
+    : result =
+    match request with
+    | QueryStatus protocol => protocol
+    | SubmitNfe payload => payload
+
+inl retry forall result.
+    (request : request retryable result)
+    : result =
+    run_request request
+
+inl main () : string =
+    retry (SubmitNfe "duplicate-risk")

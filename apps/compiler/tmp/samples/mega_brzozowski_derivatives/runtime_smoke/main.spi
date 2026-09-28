@@ -1,0 +1,12 @@
+open main
+
+inl main () : string =
+    inl ~accepted_input = input_110 ()
+    inl ~rejected_input = input_111 ()
+    assert_true (accepts (ends_with_zero ()) accepted_input)
+    assert_false (accepts (ends_with_zero ()) rejected_input)
+    inl accepted_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), accepted_input))
+    inl rejected_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), rejected_input))
+    assert_true (bit_match_value accepted_state)
+    assert_false (bit_match_value rejected_state)
+    "brzozowski-runtime-smoke-green"

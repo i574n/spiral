@@ -1,0 +1,17 @@
+[package]
+name = "legacy-capability-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+path = "legacy_surface.rs"
+
+[dependencies]
+eoie-process-observation = { path = "../eoie_process_observation" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }
+
+[lints.clippy]
+needless_return = "allow"
+needless_late_init = "allow"

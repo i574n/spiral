@@ -1,0 +1,9 @@
+inl impossible_recoverable_fenced_lock_receipt_owner_mismatch () :
+    erp_p2p_recoverable_fenced_lock_receipt nat_four requisition_drafted goods_partially_received =
+    inl store, outbox = erp_p2p_four_event_commit ()
+    erp_p2p_recoverable_fenced_lock_receipt
+        (erp_p2p_owner_a_fence_one "owner-a:fence-one", store, outbox,
+         "forged-stale-owner-receipt")
+
+inl main () =
+    impossible_recoverable_fenced_lock_receipt_owner_mismatch ()

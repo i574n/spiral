@@ -1,0 +1,20 @@
+[package]
+name = "spiral-split-lift-probe"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "spiral-split-lift-probe"
+path = "src/lift_probe.rs"
+
+[dependencies]
+rayon.workspace = true
+spiral-split-model.workspace = true
+spiral-split-source.workspace = true
+spiral-split-scan.workspace = true
+spiral-split-symbols.workspace = true
+spiral-split-plan.workspace = true
+spiral-split-lift.workspace = true
+spiral-split-lift-funnel.workspace = true

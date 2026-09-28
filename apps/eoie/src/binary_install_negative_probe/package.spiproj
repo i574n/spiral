@@ -1,0 +1,4 @@
+packages:
+    binary_install_contract
+modules:
+    main

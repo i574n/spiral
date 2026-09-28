@@ -1,0 +1,14 @@
+open cold_rebuild_contract.model
+open cold_rebuild_contract.bindings
+
+inl main () : i32 =
+    inl _ = cold_rebuild_public_plan ()
+    if !!!!NEQ(cold_rebuild_expected_shards_binding 90i32 2i32,45i32) then 1i32
+    elif !!!!NEQ(cold_rebuild_shape_binding 90i32 2i32 45i32,1i32) then 2i32
+    elif !!!!NEQ(cold_rebuild_shape_binding 86i32 4i32 21i32,0i32) then 3i32
+    elif !!!!NEQ(cold_rebuild_shape_binding 87i32 5i32 22i32,0i32) then 4i32
+    elif !!!!NEQ(cold_rebuild_shape_binding 87i32 4i32 21i32,0i32) then 5i32
+    elif !!!!NEQ(cold_rebuild_shape_binding 90i32 0i32 0i32,0i32) then 6i32
+    elif !!!!NEQ(cold_rebuild_gate_binding 62i32,0i32) then 7i32
+    elif !!!!NEQ(cold_rebuild_product_binding 1i32 0i32,0i32) then 8i32
+    else 0i32

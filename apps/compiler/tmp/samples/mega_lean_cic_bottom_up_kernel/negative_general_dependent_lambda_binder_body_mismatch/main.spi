@@ -1,0 +1,21 @@
+inl impossible_corrected_cic_general_dependent_lambda_binder_body_mismatch () :
+    corrected_cic_term empty_ctx (universe_sort universe_one) =
+    inl bool_binder : binder empty_ctx bool_sort =
+        identity_binder ()
+    inl universe_binder :
+        binder empty_ctx (universe_sort universe_one) =
+        binder (
+            empty_ctx "negative-general-dependent-lambda-empty",
+            universe_sort (universe_one "u1"),
+            "the-dependent-lambda-body-is-bound-under-a-universe-domain")
+    inl universe_body :
+        corrected_cic_term
+            (ctx_extend empty_ctx (universe_sort universe_one))
+            (universe_sort universe_one) =
+        CorrectedBoundHere universe_binder
+    CorrectedDependentLambda (exists (
+        bool_binder,
+        universe_body))
+
+inl main () =
+    impossible_corrected_cic_general_dependent_lambda_binder_body_mismatch ()

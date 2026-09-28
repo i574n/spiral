@@ -1,0 +1,5 @@
+inl impossible_legacy_let_function_result () :
+    legacy_cic_term empty_ctx identity_sort =
+    LetTerm (exists (identity_binder (), true_term (), identity_body ()))
+
+inl main () = impossible_legacy_let_function_result ()

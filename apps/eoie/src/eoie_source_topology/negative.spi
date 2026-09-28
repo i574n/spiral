@@ -1,0 +1,21 @@
+inl main () : i32 =
+    inl rust_over = model.topology_limit_binding 1001i32 1000i32
+    inl crate_over = model.topology_limit_binding 1000i32 1001i32
+    inl confused = model.topology_package_only_binding 22i32 21i32
+    inl invalid_surface = model.source_surface_binding 2i32 0i32
+    inl impossible_main = model.source_map_files_binding 1i32 2i32
+    inl negative_edge = model.source_map_edges_binding -1i32 0i32
+    inl impossible_diff = model.source_diff_record_binding 11i32 10i32
+    if !!!!LT(rust_over,1i32) then
+        if !!!!LT(crate_over,1i32) then
+            if !!!!LT(confused,1i32) then
+                if !!!!LT(invalid_surface,0i32) then
+                    if !!!!LT(impossible_main,1i32) then
+                        if !!!!LT(negative_edge,1i32) then
+                            if !!!!LT(impossible_diff,1i32) then 0i32 else 1i32
+                        else 1i32
+                    else 1i32
+                else 1i32
+            else 1i32
+        else 1i32
+    else 1i32

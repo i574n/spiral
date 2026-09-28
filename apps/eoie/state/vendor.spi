@@ -1,0 +1,21 @@
+union vendor_source =
+    | UserSuppliedArchive :: vendor_source
+    | BundleLocalDirectory :: vendor_source
+
+union vendor_crate =
+    | Rayon :: vendor_crate
+    | RayonCore :: vendor_crate
+    | CrossbeamDeque :: vendor_crate
+    | CrossbeamEpoch :: vendor_crate
+    | CrossbeamUtils :: vendor_crate
+    | Either :: vendor_crate
+
+union vendor_evidence =
+    | Vendored :: vendor_crate * string * vendor_source * bool -> vendor_evidence
+
+inl rayon_evidence () : vendor_evidence = Vendored (Rayon, "1.12.0", BundleLocalDirectory, true)
+inl rayon_core_evidence () : vendor_evidence = Vendored (RayonCore, "1.13.0", BundleLocalDirectory, true)
+inl crossbeam_deque_evidence () : vendor_evidence = Vendored (CrossbeamDeque, "0.8.7", BundleLocalDirectory, true)
+inl either_evidence () : vendor_evidence = Vendored (Either, "1.16.0", BundleLocalDirectory, true)
+
+inl main () : i32 = 0i32

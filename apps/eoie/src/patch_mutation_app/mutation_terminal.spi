@@ -1,0 +1,3 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl emit_runtime () : () = rust_global "use eoie_patch_compat_driver::{patch_apply_context_owned, patch_check_context_owned, patch_plan_error, patch_prepare_source_owned};\n\n#[must_use]\nfn patch_mutation_error(message: &str) -> i32 {\n    eprintln!(\"eoie error: {message}\");\n    2\n}\n\n#[must_use]\nfn patch_check_success(count: i32) -> i32 {\n    println!(\"eoie patch check ok operations={count} mutation=false\");\n    0\n}\n\n#[must_use]\nfn patch_preflight_error() -> i32 {\n    eprintln!(\"eoie error: patch preflight contract rejected the validated plan\");\n    2\n}\n"

@@ -1,0 +1,15 @@
+inl impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch () :
+    erp_p2p_three_owner_fenced_lock_receipt
+        nat_three nat_four requisition_drafted goods_partially_received =
+    inl store, outbox = erp_p2p_four_event_commit ()
+    inl history =
+        erp_p2p_apply_fence_takeover_program
+            (erp_p2p_fence_history_one ())
+            (erp_p2p_two_takeover_program_from_owners "owner-b" "owner-c")
+    erp_p2p_three_owner_fenced_lock_receipt
+        (history, store, outbox,
+         erp_p2p_stale_one_three (), erp_p2p_stale_one_three (),
+         "forged-stale-b-witness-starts-at-fence-one-instead-of-fence-two")
+
+inl main () =
+    impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch ()

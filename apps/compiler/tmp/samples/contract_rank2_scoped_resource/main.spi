@@ -1,0 +1,23 @@
+nominal region_a = ()
+
+union resource region =
+    | ResourceA :: string -> resource region_a
+
+union scoped_resource =
+    | ScopedResource :: (exists region. resource region) -> scoped_resource
+
+inl use_and_render forall region. (resource : resource region) : string =
+    match resource with
+    | ResourceA _ => "rank2-resource-safe"
+
+inl with_resource forall result.
+    (visitor : forall region. resource region -> result)
+    : result =
+    inl packed = ScopedResource (exists (ResourceA "nfe.xml"))
+    match packed with
+    | ScopedResource resource =>
+        inl exists region. resource = resource
+        visitor resource
+
+inl main () : string =
+    with_resource `$use_and_render

@@ -1,0 +1,23 @@
+nominal retryable = ()
+nominal non_retryable = ()
+
+union request effect result =
+    | QueryStatus :: string -> request retryable string
+    | ReconcileReceipt :: i32 -> request retryable i32
+    | SubmitNfe :: string -> request non_retryable string
+
+inl run_request forall effect result.
+    (request : request effect result)
+    : result =
+    match request with
+    | QueryStatus _ => "retry-safe"
+    | ReconcileReceipt attempts => attempts
+    | SubmitNfe payload => payload
+
+inl retry forall result.
+    (request : request retryable result)
+    : result =
+    run_request request
+
+inl main () : string =
+    retry (QueryStatus "protocol-135")

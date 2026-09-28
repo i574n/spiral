@@ -1,0 +1,14 @@
+[package]
+name = "eoie-patch-mutation-contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+autotests = false
+
+[[test]]
+name = "mutation_contracts"
+path = "mutation_contracts.rs"
+
+[dependencies]
+eoie-patch-mutation = { path = "../eoie_patch_mutation" }

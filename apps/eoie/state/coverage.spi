@@ -1,0 +1,148 @@
+nominal test_profile = ()
+nominal smoke_profile = ()
+nominal mutation_profile = ()
+nominal covered = ()
+nominal uncovered = ()
+nominal candidate = ()
+nominal retained = ()
+nominal pruned = ()
+nominal tool_passed = ()
+nominal tool_blocked = ()
+nominal coverage_target_fresh = ()
+nominal coverage_target_stale = ()
+nominal smoke_passed = ()
+nominal smoke_blocked = ()
+nominal owner_profile_ready = ()
+nominal owner_profile_blocked = ()
+nominal promotion_denied = ()
+nominal canonical_release_basis = ()
+nominal owner_visibility_basis = ()
+
+union coverage_measurement basis =
+    | CanonicalReleaseMeasurement :: string * u32 * u32 * u32 * u32 * u32 * u32 * u32 * string -> coverage_measurement canonical_release_basis
+    | OwnerVisibilityMeasurement :: string * u32 * u32 * u32 * u32 * string -> coverage_measurement owner_visibility_basis
+
+union coverage_comparison basis =
+    | CoverageComparable :: forall basis. coverage_measurement basis * coverage_measurement basis * i32 -> coverage_comparison basis
+
+union coverage_mode mode =
+    | TestProfile :: coverage_mode test_profile
+    | SmokeProfile :: coverage_mode smoke_profile
+    | MutationProfile :: coverage_mode mutation_profile
+
+union line_evidence state =
+    | CoveredLine :: u32 -> line_evidence covered
+    | UncoveredLine :: u32 -> line_evidence uncovered
+
+union prune_decision state =
+    | Candidate :: string * line_evidence uncovered * line_evidence uncovered -> prune_decision candidate
+    | Retained :: string -> prune_decision retained
+    | Pruned :: string * string -> prune_decision pruned
+
+union coverage_floor =
+    | CoverageFloor :: u32 * u32 * u32 -> coverage_floor
+
+union coverage_observation =
+    | CoverageObservation :: string * u32 * u32 * u32 * u32 -> coverage_observation
+
+union coverage_union =
+    | CoverageUnion :: string * u32 * u32 * u32 * u32 -> coverage_union
+
+union smoke_kind =
+    | PublicProcess :: smoke_kind
+    | GeneratedExample :: smoke_kind
+
+union smoke_target state =
+    | SmokePassed :: string * string * smoke_kind -> smoke_target smoke_passed
+    | SmokeBlocked :: string * string * smoke_kind -> smoke_target smoke_blocked
+
+union coverage_tool state =
+    | ToolPassed :: string * string -> coverage_tool tool_passed
+    | ToolBlocked :: string * string -> coverage_tool tool_blocked
+
+union coverage_target state =
+    | CoverageTargetFresh :: string * u32 * string -> coverage_target coverage_target_fresh
+    | CoverageTargetStale :: string * string -> coverage_target coverage_target_stale
+
+union coverage_checkpoint_durability =
+    | CoverageCheckpointDurable :: u32 * string -> coverage_checkpoint_durability
+    | CoverageCheckpointMissing :: u32 * string * string -> coverage_checkpoint_durability
+
+union coverage_replay_seed =
+    | CoverageReplaySeed :: u32 * u32 * string * string -> coverage_replay_seed
+
+union owner_shard state =
+    | OwnerShardReady :: string * u32 * u32 * string -> owner_shard owner_profile_ready
+    | OwnerShardBlocked :: string * string -> owner_shard owner_profile_blocked
+
+union dogfood_blocker =
+    | CoverageBelowFloor :: string -> dogfood_blocker
+    | IncompletePillars :: string -> dogfood_blocker
+
+union dogfood_decision state =
+    | DogfoodDenied :: coverage_floor * coverage_observation * dogfood_blocker -> dogfood_decision promotion_denied
+
+union coverage_cost_summary =
+    | CoverageCostSummary :: u32 * u32 * u32 * u32 * u32 -> coverage_cost_summary
+
+union coverage_owner_cost =
+    | CoverageOwnerCost :: string * u32 * u32 * u32 -> coverage_owner_cost
+
+inl current_cost_summary () : coverage_cost_summary = CoverageCostSummary (17303u32, 13922u32, 3381u32, 786u32, 1651u32)
+inl cost_patch_rehearsal () : coverage_owner_cost = CoverageOwnerCost ("eoie_patch_rehearsal", 328u32, 778u32, 578u32)
+inl cost_patch_mutation () : coverage_owner_cost = CoverageOwnerCost ("eoie_patch_mutation", 324u32, 779u32, 584u32)
+inl cost_patch_compat () : coverage_owner_cost = CoverageOwnerCost ("patch_compat_driver", 194u32, 656u32, 704u32)
+inl cost_release_hygiene () : coverage_owner_cost = CoverageOwnerCost ("eoie_release_hygiene", 183u32, 527u32, 652u32)
+inl cost_legacy_operations () : coverage_owner_cost = CoverageOwnerCost ("eoie_legacy_operations", 144u32, 704u32, 795u32)
+inl cost_handoff () : coverage_owner_cost = CoverageOwnerCost ("eoie_handoff", 130u32, 709u32, 816u32)
+inl cost_legacy_surface () : coverage_owner_cost = CoverageOwnerCost ("legacy_capability_domain", 122u32, 544u32, 775u32)
+inl cost_agile_state () : coverage_owner_cost = CoverageOwnerCost ("eoie_agile_state", 110u32, 668u32, 835u32)
+inl cost_bundle_manifest () : coverage_owner_cost = CoverageOwnerCost ("eoie_bundle_manifest", 109u32, 727u32, 850u32)
+inl cost_fs_actions () : coverage_owner_cost = CoverageOwnerCost ("eoie_fs_actions", 108u32, 472u32, 771u32)
+inl cost_state_parser () : coverage_owner_cost = CoverageOwnerCost ("state_receipt_parser", 104u32, 419u32, 751u32)
+inl cost_proxy_search () : coverage_owner_cost = CoverageOwnerCost ("eoie_proxy_search", 102u32, 765u32, 866u32)
+inl coverage_cost_policy () : string = "one-permille-costs-about-seventeen-point-three-new-lines;eight-hundred-fifty-needs-seven-hundred-eighty-six-new-lines;the-nine-hundred checkpoint needs-one-thousand-six-hundred-fifty-one and is retained as a quality target rather than a legacy-binary retirement gate"
+
+inl promotion_target () : coverage_floor = CoverageFloor (850u32, 600u32, 900u32)
+inl historical_canonical_measurement () : coverage_measurement canonical_release_basis = CanonicalReleaseMeasurement ("release-workspace-public-smoke", 398u32, 301u32, 360u32, 496u32, 193u32, 125u32, 125u32, "historical comparable basis preserved from the settled release benchmark")
+inl previous_canonical_measurement () : coverage_measurement canonical_release_basis = CanonicalReleaseMeasurement ("release-workspace-public-smoke", 395u32, 289u32, 394u32, 519u32, 197u32, 122u32, 134u32, "previous comparable canonical basis over twenty-seven-thousand-sixty-three lines")
+inl current_canonical_measurement () : coverage_measurement canonical_release_basis = CanonicalReleaseMeasurement ("release-owner-union-author-only", 400u32, 360u32, 469u32, 804u32, 201u32, 122u32, 132u32, "fresh incremental current-tree replay advances from checkpoint eight-hundred to eight-hundred-four on the reproducible seventeen-thousand-three-hundred-three author-product universe; instrumented candidate self-coverage of workspace and smoke executors plus cumulative fail-closed proxy routes supplies four comparable points and evidence/coverage/current.lcov stores the exact superset")
+inl legacy_mixed_progress () : coverage_comparison canonical_release_basis = CoverageComparable (historical_canonical_measurement (), previous_canonical_measurement (), 23i32)
+inl current_owner_visibility_measurement () : coverage_measurement owner_visibility_basis = OwnerVisibilityMeasurement ("public-smoke-source-topology-proxy-search", 334u32, 400u32, 461u32, 21720u32, "retained as a narrower owner-visibility basis and never compared directly with canonical release coverage")
+inl current_observation () : coverage_observation = CoverageObservation ("author-product-current-canonical-maximum-with-current-pillars", 360u32, 469u32, 804u32, 17303u32)
+inl current_smoke_union () : coverage_union = CoverageUnion ("fresh-public-and-smoke-author-product-only", 360u32, 469u32, 564u32, 17303u32)
+inl current_author_floor_union () : coverage_union = CoverageUnion ("author-product-current-canonical-maximum", 360u32, 469u32, 804u32, 17303u32)
+inl current_replayed_route_union () : coverage_union = CoverageUnion ("fresh-current-production-route-replay", 360u32, 469u32, 804u32, 17303u32)
+inl current_v2_owner_union () : coverage_union = CoverageUnion ("public-smoke-source-topology-proxy-search-max-hit-union", 334u32, 400u32, 461u32, 21720u32)
+inl current_coverage_target () : coverage_target coverage_target_fresh = CoverageTargetFresh ("llvm-release-instrumented-shared-target-author-product-only", 804u32, "fresh current-tree replay is stored at evidence/coverage/current.lcov and matches the durable checkpoint SHA; checkpoint eight-hundred-four is current and incremental progress now resumes toward eight-hundred-fifty while nine-hundred remains a quality checkpoint decoupled from legacy-binary retirement")
+inl current_checkpoint_durability () : coverage_checkpoint_durability = CoverageCheckpointDurable (804u32, "4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4")
+inl current_replay_seed () : coverage_replay_seed = CoverageReplaySeed (725u32, 17303u32, "58312f60fc1f54efa05b305f045504b8fbaf202f4fd81e5837748ffe61b74689", "evidence/coverage/replay-seed.lcov")
+inl normal_contract_matrix () : coverage_tool tool_passed = ToolPassed ("normal-cargo-contract-matrix", "workspace-public-smoke-and-direct-patch-contracts-pass-offline-locked-after-dead-export-pruning")
+inl instrumented_workspace_matrix () : coverage_tool tool_passed = ToolPassed ("native-llvm-release-author-product-matrix", "the reproducible seventeen-thousand-three-hundred-three-line universe is authoritative; the current instrumented build warmed through the full workspace and public contracts remain three-hundred-sixty while comparable production routes reach checkpoint eight-hundred-four")
+inl public_contracts () : smoke_target smoke_passed = SmokePassed ("instrumented-public-contracts", "fourteen-of-fourteen-including-reversible-self-patch-complete-under-bounded-LLVM-run", PublicProcess)
+inl public_five_verb_smoke () : smoke_target smoke_passed = SmokePassed ("five-verb-public-smoke", "status-patch-agile-bundle-proxy-eight-direct-toolchain-actions-and-native-source-stats-execute-through-the-instrumented-binary", PublicProcess)
+inl transaction_owner_shard () : owner_shard owner_profile_ready = OwnerShardReady ("eoie_patch_transaction_contracts", 15u32, 15u32, "adversarial-rollback-guard-witness-three-promotion-and-promotion-contracts")
+inl mutation_owner_shard () : owner_shard owner_profile_ready = OwnerShardReady ("eoie_patch_mutation_contracts", 8u32, 8u32, "regenerated owner contracts cover usage missing-plan zero-witness unsafe-path repeated-match and one-or-two mutation commits without compatibility aliases")
+inl source_topology_v2_owner_shard () : owner_shard owner_profile_ready = OwnerShardReady ("eoie_source_topology", 2u32, 2u32, "fresh release owner shard proves Cargo-versus-Spiral package classification and stable source-map diff")
+inl proxy_search_v2_owner_shard () : owner_shard owner_profile_ready = OwnerShardReady ("eoie_proxy_search", 1u32, 1u32, "fresh release owner shard proves stable mnemonic path tags and fail-closed collision rejection")
+inl agile_state_v2_owner_shard () : owner_shard owner_profile_blocked = OwnerShardBlocked ("eoie_agile_state", "instrumented owner compiles but exposes zero direct tests; public smoke and agile-record evidence cover the route without granting empty owner credit")
+inl bootstrap_probe () : smoke_target smoke_passed = SmokePassed ("bootstrap_probe", "generated main executed with LLVM profile", GeneratedExample)
+inl domain_probe () : smoke_target smoke_passed = SmokePassed ("domain_probe", "shared package main executed", GeneratedExample)
+inl policy_probe () : smoke_target smoke_passed = SmokePassed ("policy_probe", "authority policy main executed", GeneratedExample)
+inl patch_domain_probe () : smoke_target smoke_passed = SmokePassed ("patch_domain", "indexed transaction main executed", GeneratedExample)
+inl rust_std_env_probe () : smoke_target smoke_passed = SmokePassed ("rust_std_env", "environment mappings executed", GeneratedExample)
+inl rust_std_fs_probe () : smoke_target smoke_passed = SmokePassed ("rust_std_fs", "filesystem mappings executed", GeneratedExample)
+inl patch_batch_probe () : smoke_target smoke_passed = SmokePassed ("patch_batch", "two-file rollback main executed", GeneratedExample)
+inl restart_baton_probe () : smoke_target smoke_passed = SmokePassed ("restart_baton", "typed policy main and atomic physical receipt transaction execute under the instrumented candidate", GeneratedExample)
+inl native_llvm_runner () : coverage_tool tool_passed = ToolPassed ("eoie-proxy-coverage-run", "builds-instrumented-binary-runs-public-workspace-or-owner-targets-and-emits-profile-receipts")
+inl grcov_status () : coverage_tool tool_passed = ToolPassed ("grcov", "canonical eight-hundred-four over seventeen-thousand-three-hundred-three author-product lines is current with sha 4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4; the durable LCOV payload is bundled and incremental unions are comparable; vendor rustc and owner-expanded universes remain excluded")
+inl native_lcov_export () : coverage_tool tool_passed = ToolPassed ("eoie-proxy-coverage-export", "current-tree exports are stable at seventeen-thousand-three-hundred-three author-product lines; canonical eight-hundred-four and sha 4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4 are persisted as durable authority and incremental union is enabled; owner-only coverage-prune remains excluded")
+inl cargo_llvm_cov_status () : coverage_tool tool_blocked = ToolBlocked ("cargo-llvm-cov", "not-bundled; native-LLVM-plus-grcov-is-the-current-canonical-route")
+inl tarpaulin_status () : coverage_tool tool_blocked = ToolBlocked ("cargo-tarpaulin", "llvm-engine-rejects-current-nightly-and-ptrace-cannot-start-the-cargo-chain")
+inl instrumented_public_status () : coverage_tool tool_passed = ToolPassed ("instrumented-public-contract-suite", "fourteen-of-fourteen-complete-with-explicit-binary-compiler-and-target-environment")
+inl current_dogfood_decision () : dogfood_decision promotion_denied = DogfoodDenied (promotion_target (), current_observation (), CoverageBelowFloor "author-public-360-below-850-author-smoke-469-below-600-current-canonical-production-804-below-quality-target-900;this-quality-denial-does-not-authorize-legacy-binary-retention")
+inl tests_mode () : coverage_mode test_profile = TestProfile
+inl smoke_mode () : coverage_mode smoke_profile = SmokeProfile
+inl mutation_mode () : coverage_mode mutation_profile = MutationProfile
+
+inl main () : i32 = 0i32

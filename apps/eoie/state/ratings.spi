@@ -1,0 +1,98 @@
+union rating_key =
+    | TurnFruitfulness
+    | TurnSatisfaction
+    | EoieSota
+    | ProjectSota
+    | RecoveredPrototypeMaturity
+    | SettledRewriteMaturity
+    | MigrationCompleteness
+    | WorkflowPrecision
+    | SpiralAuthority
+    | ParallelReadiness
+    | VerificationMachinery
+    | VerificationAttainment
+    | CoverageAttainment
+    | HandoffContinuity
+    | LegacyCatalogCompleteness
+    | LegacyAbsorptionMaturity
+    | ToolchainResilience
+    | RuntimeDriftVisibility
+    | ConsolidationDefinitionStability
+    | StateHygiene
+
+union rating_role =
+    | ActiveSignal
+    | HistoricalEvidence
+    | ObjectiveDenominator
+
+union rating =
+    | Rating :: rating_key * u32 * i32 -> rating
+
+inl role (key : rating_key) : rating_role =
+    match key with
+    | RecoveredPrototypeMaturity | SettledRewriteMaturity | MigrationCompleteness | LegacyCatalogCompleteness | LegacyAbsorptionMaturity => HistoricalEvidence
+    | CoverageAttainment => ObjectiveDenominator
+    | _ => ActiveSignal
+
+inl contributes_to_active_progress (key : rating_key) : bool =
+    match role key with
+    | ActiveSignal => true
+    | HistoricalEvidence | ObjectiveDenominator => false
+
+union calibration_basis =
+    | CalibrationBasis :: u32 * u32 * u32 * u32 * u32 * string -> calibration_basis
+
+inl active_patch_attainment () : u32 = 700u32
+inl active_coverage_attainment () : u32 = 804u32
+inl active_four_pillar_readiness () : u32 = 550u32
+inl active_codebase_readiness () : u32 = 550u32
+inl next_phase_workstream_count () : u32 = 16u32
+inl subjective_phase_ceiling () : u32 = 620u32
+inl phase_entry_absolute_reference () : u32 = 475u32
+
+union phase_dimension =
+    | PhaseDimension :: string * u32 * u32 -> phase_dimension
+
+inl phase_runtime_drift () : phase_dimension = PhaseDimension ("runtime-drift-burndown", 850u32, 12u32)
+inl phase_agile_boundary () : phase_dimension = PhaseDimension ("agile-rustglobal-boundary", 710u32, 2u32)
+inl phase_coverage_quality () : phase_dimension = PhaseDimension ("coverage-quality", 804u32, 8u32)
+inl phase_parallel_readiness () : phase_dimension = PhaseDimension ("parallel-readiness", 550u32, 8u32)
+inl phase_plan_ir () : phase_dimension = PhaseDimension ("canonical-plan-ir", 1000u32, 10u32)
+inl phase_physical_hardening () : phase_dimension = PhaseDimension ("physical-boundary-hardening", 825u32, 8u32)
+inl phase_cold_build () : phase_dimension = PhaseDimension ("cold-build-toolchain", 925u32, 5u32)
+inl phase_evidence_currentness () : phase_dimension = PhaseDimension ("evidence-currentness", 925u32, 5u32)
+inl phase_generic_workspace () : phase_dimension = PhaseDimension ("generic-workspace-fit", 700u32, 5u32)
+inl phase_command_spec () : phase_dimension = PhaseDimension ("reflected-command-spec", 800u32, 4u32)
+inl phase_immutable_journal () : phase_dimension = PhaseDimension ("immutable-journal-receipts", 0u32, 6u32)
+inl phase_confined_io () : phase_dimension = PhaseDimension ("confined-io-codecs", 0u32, 6u32)
+inl phase_autopoietic_agent () : phase_dimension = PhaseDimension ("autopoietic-agent-authority", 0u32, 7u32)
+inl phase_sensor_policy () : phase_dimension = PhaseDimension ("sensor-policy-feedback", 0u32, 5u32)
+inl phase_causal_delta () : phase_dimension = PhaseDimension ("causal-delta-store", 0u32, 4u32)
+inl phase_onboarding () : phase_dimension = PhaseDimension ("onboarding-doctor-orient-tutorial", 0u32, 5u32)
+
+inl basis () : calibration_basis =
+    CalibrationBasis (987u32, 20365u32, 34052u32, 86u32, 95u32, "objective migration and coverage remain separate;Coverage stays eight-hundred-four;EvidenceRef remains eighteen-of-eighteen with whole-src and self-reference-safe whole-state proofs;the current source-matched compiler proves five-string tuple exports and portable refcount batch lowering;canonical receipt row framing is owned by state-receipt-tuple-domain and malformed tab-shaped rows fail closed;the executable ActiveSignal ceiling is owned by a package-only Spiral policy and rejects score six-hundred-twenty-one;owner-growth reuses the canonical source-topology package graph with predecessor-bound changed-owner receipts as report-only size telemetry; positive growth no longer blocks settlement and consumer-proof pruning remains the deletion authority;active-phase-readiness is five-hundred-forty-eight from sixteen weighted dimensions after zero-credit autonomous journal confined-IO sensor causal-delta and onboarding fronts receive explicit weight;high settled migration legacy-catalog and legacy-absorption values are scoped ObjectiveDenominator evidence excluded from active progress rather than claims that EOIE is nearly complete;canonical Plan IR is complete with typed stages a GADT composition model an eight-operation descriptor ABI public inspect and whole-provider check plus compiler-lowered providers consumed directly by patch batch-write fs-actions toolchain and patch while the shared decoder remains authoritative before effects; immutable journal receipts confined IO internal-agent authority sensor-policy feedback causal delta history and onboarding remain unimplemented while reflected CommandSpec is complete;generic bundle profiles classified source census and package-only attestation improve workspace fit but do not award credit to those absent fronts;the differential catalog now dereferences four current hashes plus the ten-scenario nine-receipt five-evidence settlement and thirty-six-of-thirty-six legacy catalog before live status removes its blocker;expired prompt leases can be renewed by agile begin without releasing any other mutating effect;runtime-drift-burndown is eight-hundred-forty because release hygiene filename classification remains Spiral-owned and toolchain receipt timeout and portable-identity decimal decoding now reuse state_receipt_codec_core with explicit u64 u32 and signed-i32 bounds;  process-streaming policy, toolchain checkpoint execution and observed outcome classification, public verb classification, typed public dispatch, proxy subverb routing, help flag classification, help synopses, and receipt action-name classification are now compiled Spiral decisions;live handoff ratings census toolchain ColdProof section and Active-work parsing now live in four Spiral-authored projection domains; the census projection validates and labels all ten fields in Spiral while the Rust renderer only consumes the projected line, and the owned handoff wrapper is fused into the existing render boundary without semantic credit; split owners preserve the one-thousand-line ceiling;runtime-drift inventory visibility is five-hundred-seventy after all non-retired owner paths are reconciled against the live package graph with zero missing paths while historical patch-facade source-stats patch-grammar patch-scan and handoff-owned entries are explicitly retired;formal authority blocker labels and their bit assignments now originate in authority_state_domain rather than a duplicated CLI string-and-bit table;the consolidated command_spec_domain and reusable rust_std_string equality boundary preserve the one-thousand-line ceiling while removing the separate action-name crate; toolchain decimal decoding now lives in shared Spiral while the Rust terminal retains physical field framing argument and environment decoding identity traversal receipt IO path resolution process launch and narrow typed transport; Agile series and migration u32 suffix classification, decimal decoding, overflow checks, mnemonic source-tag dash shape, MigrationDenominator constructor/payload framing, SeriesRecord discovery/payload/strict append-only sequence validation, and Bundle ZIP coverage durable/missing/absent witness plus expected-SHA interpretation now call the shared Spiral receipt codec model; the lexical model is package-only; the saturated shared codec owner remains byte-identical while recovered topology assignment and recovered-fixture ledger parsing residualize in an independent eight-hundred-ninety-two-line generated crate; the Spiral lexical main preserves the prior twenty-two checks and adds recovered-fixture valid duplicate malformed and empty-path edges; workspace Cargo member uniqueness is also Spiral-owned while Rust retains only set materialization for physical bijection; EOIE archive root-shape conjunction is now a Spiral-owned mask decision regenerated by v213 while Rust only observes physical ZIP entry presence; post-rehydrate structure acceptance is likewise a topology-codec mask decision over observed EOIE signature Agile-file and generic-manifest presence, with the direct bundle residual rejected by the density gate and the shared topology owner preserving the global crate ceiling; EOIE profile signature acceptance for live roots and ZIP entries now consumes two topology-codec presence masks instead of Rust iter-all composition, and the source-matched v213 ELF passes fourteen-of-fourteen public contracts;physical boundary hardening is eighty percent: rooted regular reads and mutating filesystem operations are descriptor-relative with no-follow on Linux;rust_std_fs_mutation owns atomic staging and promotion, copy, unlink and recursive removal, with generated negative tests for symlink ancestors, parent-swap races and tree-removal escape;the independent mutation owner and the new eoie-process-streaming crate keep the one-thousand-line crate ceiling while generated Rust shrinks versus the predecessor;the prior split reduced eoie-process from nine-hundred-ninety-eight to two-hundred-forty-seven LOC and the current facade is two-hundred-thirty-three generated Rust LOC while the streaming owner remains three-hundred-fifty LOC;rooted directory listing now enumerates through the already-open Linux descriptor and a rename-plus-symlink fixture proves descriptor binding;non-Linux rooted reads fail closed instead of racing a symlink check against File::open;the public run_bounded path delegates to eoie_process_streaming and a delayed grandchild marker proves public timeout kills the descendant process group;non-Linux descriptor-relative read and mutation parity plus native non-Unix process-tree supervision remain open;ParallelReadiness is rebaselined to five-hundred-fifty because a cold focused check measured eleven seconds on the predecessor and eleven-point-two-seven seconds on the candidate, so the split earns no speed credit;lease effect authority is now executable before dispatch: mutating verbs are blocked when should_yield is true while inspect and wrap surfaces remain available;the lease runtime lives in eoie-agile-lease and the CLI remains below the one-thousand-line owner ceiling;ColdProofV4 now dereferences five fixed hashes plus the live ten-field census and the rootless and live status paths share one proof-flags-to-mask function; portable-toolchain-resolution-now-pins-three-external-payloads-and-seven-observed-tools-distinguishes-ready-missing-and-mismatch-and-replays-ready-from-two-current-roots-without-fixed-workspace-paths; broader RustGlobal burndown, coverage nine-hundred, immutable journal receipts, confined IO, internal-agent authority, sensor-policy feedback, causal delta history and onboarding remain open; public two-root cold rebuild is closed with ninety-four owners regenerated in each independent root and byte-identical source and ELF products;fifty-six simultaneous compiler chains exceed the fourteen-second owner budget under host contention while resumable eight-chain execution closes all sixty-two dependency chains without inflating the owner budget")
+
+inl fruitfulness () = Rating (TurnFruitfulness, 620u32, 0i32) // active_rating
+inl satisfaction () = Rating (TurnSatisfaction, 620u32, 0i32) // active_rating
+inl eoie_sota () = Rating (EoieSota, 585u32, 2i32) // active_rating
+inl project_sota () = Rating (ProjectSota, 539u32, 1i32) // active_rating
+inl recovered_prototype () = Rating (RecoveredPrototypeMaturity, 304u32, 0i32)
+inl recovered_prototype_status () : string = "retired-historical;excluded-from-active-progress-rollup"
+inl settled_rewrite () = Rating (SettledRewriteMaturity, 987u32, 0i32)
+inl migration () = Rating (MigrationCompleteness, 987u32, 0i32)
+inl precision () = Rating (WorkflowPrecision, 620u32, 0i32) // active_rating
+inl spiral_authority () = Rating (SpiralAuthority, 620u32, 0i32) // active_rating
+inl parallel_readiness () = Rating (ParallelReadiness, 550u32, 0i32) // active_rating
+inl verification_machinery () = Rating (VerificationMachinery, 620u32, 0i32) // active_rating
+inl verification_attainment () = Rating (VerificationAttainment, 620u32, 0i32) // active_rating
+inl coverage_attainment () = Rating (CoverageAttainment, 804u32, 0i32)
+inl handoff_continuity () = Rating (HandoffContinuity, 620u32, 0i32) // active_rating
+inl legacy_catalog_completeness () = Rating (LegacyCatalogCompleteness, 1000u32, 0i32)
+inl legacy_absorption_maturity () = Rating (LegacyAbsorptionMaturity, 1000u32, 0i32)
+inl toolchain_resilience () = Rating (ToolchainResilience, 620u32, 0i32) // active_rating
+inl runtime_drift_visibility () = Rating (RuntimeDriftVisibility, 570u32, 0i32) // active_rating
+inl consolidation_definition_stability () = Rating (ConsolidationDefinitionStability, 620u32, 0i32) // active_rating
+inl state_hygiene () = Rating (StateHygiene, 620u32, 0i32) // active_rating
+
+inl main () : i32 = 0i32

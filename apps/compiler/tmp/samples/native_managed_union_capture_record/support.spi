@@ -1,0 +1,14 @@
+type item =
+    {
+        text : string
+        values : array i32
+    }
+
+union payload =
+    | Empty
+    | Item : item
+
+inl score x : i32 =
+    match x with
+    | Empty => 3i32
+    | Item {text values} => sm.length text +. length values +. index values 0i32 +. index values 1i32

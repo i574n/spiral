@@ -1,0 +1,16 @@
+inl impossible_closed_normalizing_progress_authority_cross_type () :
+    exact_linear_indexed_closed_normalizing_progress_authority
+        exact_linear_false_type =
+    inl unit_fragment :
+        exact_linear_indexed_closed_normalizing_fragment exact_linear_unit_type =
+        ExactLinearIndexedClosedNormalizingFragmentValue (
+            ExactLinearIndexedValueUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-authority-payload-is-Unit"),
+            "the-negative-fragment-is-Unit-indexed")
+    ExactLinearIndexedClosedNormalizingProgressAuthority (
+        unit_fragment,
+        "a-Unit-fragment-cannot-be-relabelled-as-a-False-authority")
+
+inl main () =
+    impossible_closed_normalizing_progress_authority_cross_type ()

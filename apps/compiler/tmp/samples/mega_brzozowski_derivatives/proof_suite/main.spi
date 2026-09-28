@@ -1,0 +1,3 @@
+open inventory_indexed_model
+
+inl main () : string = inventory_indexed_full_proof_contract ()

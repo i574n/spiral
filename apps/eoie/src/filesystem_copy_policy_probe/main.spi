@@ -1,0 +1,7 @@
+open filesystem_copy_contract.model
+
+inl main () : i32 =
+    match policy_copy "/tmp/eoie-copy-source.txt" "/tmp/eoie-copy-target.txt" "copy-exact" with
+    | CopyAccepted _ => 0i32
+    | CopyRejected _ => 1i32
+    | CopyFailed _ => 2i32

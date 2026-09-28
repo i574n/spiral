@@ -1,0 +1,4 @@
+packages:
+    cold_proof_bindings
+modules:
+    model

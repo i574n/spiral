@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-assembly-refs"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/assembly_refs.rs"

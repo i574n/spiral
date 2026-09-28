@@ -1,0 +1,21 @@
+inl while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((join cond()),(body()))
+
+inl set' forall t. (a : t) ~(b : t) : () =
+    $"!a = !b"
+
+inl break' () : () = $"break"
+inl continue' () : () = $"continue"
+
+inl main () : i32 =
+    inl ~i = 0i32
+    inl ~acc = 0i32
+    while' (fun () => true) fun () =>
+        set' i (i +. 1i32)
+        if i < 3i32 then
+            continue' ()
+        elif i >= 6i32 then
+            break' ()
+        else
+            set' acc (acc +. i)
+    acc -. 12i32

@@ -1,0 +1,18 @@
+inl impossible_membership_strict_path_identity () =
+    inl twelve =
+        classify_certified_interval_positive_positional_sealed_factor
+            (positive_positional_twelve_value ())
+    match twelve with
+    | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+        inl exists length divisor quotient.
+            root, _, _, membership, _, _ = payload
+        inl impossible :
+            positive_positional_strict_predecessor_path root root =
+            certified_interval_positive_positional_factor_membership_to_strict_path
+                membership
+        impossible
+    | _ =>
+        failwith "twelve-must-be-composite-for-the-negative-boundary"
+
+inl main () =
+    impossible_membership_strict_path_identity ()

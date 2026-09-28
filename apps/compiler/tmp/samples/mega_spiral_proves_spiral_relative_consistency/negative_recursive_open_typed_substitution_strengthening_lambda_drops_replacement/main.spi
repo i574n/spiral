@@ -1,0 +1,13 @@
+inl impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement () :
+    exact_linear_indexed_recursive_open_typed_substitution_strengthening
+        exact_linear_indexed_open_unit_substitution_context
+        exact_linear_indexed_open_unit_substitution_source_usage
+        exact_linear_indexed_open_unit_substitution_target_usage
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type
+        (exact_linear_arrow_type exact_linear_unit_type
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+    exact_linear_indexed_open_unit_lambda_substitution_strengthening ()
+
+inl main () = impossible_recursive_open_typed_substitution_strengthening_lambda_drops_replacement ()

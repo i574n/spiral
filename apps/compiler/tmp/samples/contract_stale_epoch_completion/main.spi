@@ -1,0 +1,22 @@
+nominal worker_a = ()
+nominal epoch_1 = ()
+nominal epoch_2 = ()
+
+union lease worker epoch =
+    | Lease1 :: lease worker_a epoch_1
+    | Lease2 :: lease worker_a epoch_2
+
+union completion worker epoch =
+    | Completion1 :: string -> completion worker_a epoch_1
+    | Completion2 :: string -> completion worker_a epoch_2
+
+inl accept forall worker epoch.
+    (lease : lease worker epoch)
+    (completion : completion worker epoch)
+    : string =
+    match lease, completion with
+    | Lease1, Completion1 payload => payload
+    | Lease2, Completion2 payload => payload
+
+inl main () : string =
+    accept Lease2 (Completion1 "stale")

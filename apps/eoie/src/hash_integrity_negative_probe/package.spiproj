@@ -1,0 +1,4 @@
+packages:
+    hash_integrity_contract
+modules:
+    main

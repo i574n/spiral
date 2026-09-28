@@ -1,0 +1,20 @@
+nominal signer_a = ()
+nominal signer_b = ()
+nominal key_a = ()
+nominal digest_a = ()
+nominal verified = ()
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal app_scope = ()
+nominal epoch1 = ()
+nominal live = ()
+union signed_authority signer key digest state = | SignedAuthority :: forall signer key digest state. string -> signed_authority signer key digest state
+union genome_batch signer digest sample build contig = | GenomeBatch :: forall signer digest sample build contig. string -> genome_batch signer digest sample build contig
+union resource scope epoch signer digest sample build contig state = | Resource :: forall scope epoch signer digest sample build contig state. string -> resource scope epoch signer digest sample build contig state
+inl publish forall scope epoch signer key digest sample build contig. (authority : signed_authority signer key digest verified) (batch : genome_batch signer digest sample build contig) : resource scope epoch signer digest sample build contig live = Resource "published"
+inl main () =
+    inl foreign : signed_authority signer_b key_a digest_a verified = SignedAuthority "foreign"
+    inl batch : genome_batch signer_a digest_a sample_a hg38 chr1 = GenomeBatch "variants"
+    inl resource : resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live = publish foreign batch
+    resource

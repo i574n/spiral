@@ -1,0 +1,5 @@
+packageDir: packages
+packages:
+    consumer
+modules:
+    main

@@ -1,0 +1,29 @@
+inl impossible_closed_tensor_right_conditional_congruence_target_cross_type () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        (exact_linear_tensor_type exact_linear_bool_type exact_linear_bool_type) =
+    inl left_term :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_bool_type =
+        ExactLinearIndexedBoolFalse (
+            exact_linear_indexed_empty_usage (),
+            "the-general-left-child-is-Bool")
+    inl right_reduction :
+        exact_linear_indexed_reduction
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedReductionConditional
+            (exact_linear_indexed_conditional_true_unit_step ())
+    exact_linear_indexed_reduction_target
+        (ExactLinearIndexedReductionClosedTensorRight (
+            left_term,
+            right_reduction,
+            "the-real-general-target-is-Tensor-Bool-Unit-not-Tensor-Bool-Bool"))
+
+inl main () =
+    impossible_closed_tensor_right_conditional_congruence_target_cross_type ()

@@ -1,0 +1,120 @@
+nominal patch_effect_idle = ()
+nominal patch_effect_read_authorized = ()
+nominal patch_effect_read_receipted = ()
+nominal patch_effect_staged = ()
+nominal patch_effect_written = ()
+nominal patch_effect_renamed = ()
+nominal patch_effect_removed = ()
+
+union patch_effect_step from to =
+    | AuthorizeRead :: patch_effect_step patch_effect_idle patch_effect_read_authorized
+    | BindReadReceipt :: patch_effect_step patch_effect_read_authorized patch_effect_read_receipted
+    | BindStageIdentity :: patch_effect_step patch_effect_read_receipted patch_effect_staged
+    | BindWriteReceipt :: patch_effect_step patch_effect_staged patch_effect_written
+    | BindRenameReceipt :: patch_effect_step patch_effect_written patch_effect_renamed
+    | BindRemoveReceipt :: patch_effect_step patch_effect_renamed patch_effect_removed
+
+union rec patch_effect_plan from to =
+    | PatchEffectStep :: forall from to. patch_effect_step from to -> patch_effect_plan from to
+    | PatchEffectThen :: forall from to. (exists middle. patch_effect_plan from middle * patch_effect_plan middle to) -> patch_effect_plan from to
+
+inl native_patch_effect_plan () : patch_effect_plan patch_effect_idle patch_effect_removed =
+    PatchEffectThen (exists (
+        PatchEffectStep AuthorizeRead,
+        PatchEffectThen (exists (
+            PatchEffectStep BindReadReceipt,
+            PatchEffectThen (exists (
+                PatchEffectStep BindStageIdentity,
+                PatchEffectThen (exists (
+                    PatchEffectStep BindWriteReceipt,
+                    PatchEffectThen (exists (
+                        PatchEffectStep BindRenameReceipt,
+                        PatchEffectStep BindRemoveReceipt
+                    ))
+                ))
+            ))
+        ))
+    ))
+
+let patch_guard_identity (operation : i32) (path_slot : i32) : i32 =
+    if !!!!LT(operation,0i32) then -1i32
+    elif !!!!LT(path_slot,0i32) then -1i32
+    else operation
+
+let patch_guard_needle_binding (identity : i32) (needle_bytes : i32) : i32 =
+    if !!!!LT(identity,0i32) then -1i32
+    elif !!!!LT(needle_bytes,1i32) then -1i32
+    else identity
+
+let patch_guard_match_binding (identity : i32) (observed_matches : i32) : i32 =
+    if !!!!LT(identity,0i32) then -1i32
+    elif !!!!LT(observed_matches,1i32) then -1i32
+    elif !!!!LT(1i32,observed_matches) then -1i32
+    else identity
+
+let patch_guard_operation_binding (identity : i32) (operation_authorized : i32) : i32 =
+    if !!!!LT(identity,0i32) then -1i32
+    elif !!!!LT(operation_authorized,1i32) then -1i32
+    elif !!!!LT(1i32,operation_authorized) then -1i32
+    else identity
+
+let patch_read_limit_binding (limit : i32) (metadata_bytes : i32) : i32 =
+    if !!!!LT(limit,1i32) then -1i32
+    elif !!!!LT(metadata_bytes,0i32) then -1i32
+    elif !!!!LT(limit,metadata_bytes) then -1i32
+    else metadata_bytes
+
+let patch_read_receipt_binding (metadata_bytes : i32) (observed_bytes : i32) : i32 =
+    if !!!!LT(metadata_bytes,0i32) then -1i32
+    elif !!!!LT(observed_bytes,0i32) then -1i32
+    elif !!!!LT(metadata_bytes,observed_bytes) then -1i32
+    elif !!!!LT(observed_bytes,metadata_bytes) then -1i32
+    else observed_bytes
+
+let patch_stage_identity (stage_index : i32) (backup_slot : i32) : i32 =
+    if !!!!LT(stage_index,0i32) then -1i32
+    elif !!!!LT(backup_slot,0i32) then -1i32
+    else backup_slot
+
+let patch_write_bytes_authorized (expected_bytes : i32) (observed_bytes : i32) : i32 =
+    if !!!!LT(expected_bytes,0i32) then 0i32
+    elif !!!!LT(observed_bytes,0i32) then 0i32
+    elif !!!!LT(expected_bytes,observed_bytes) then 0i32
+    elif !!!!LT(observed_bytes,expected_bytes) then 0i32
+    else 1i32
+
+let patch_write_slot_binding (backup_slot : i32) (write_authorized : i32) : i32 =
+    if !!!!LT(backup_slot,0i32) then -1i32
+    elif !!!!LT(write_authorized,1i32) then -1i32
+    elif !!!!LT(1i32,write_authorized) then -1i32
+    else backup_slot
+
+let patch_rename_stage_authorized (expected_stage : i32) (observed_stage : i32) : i32 =
+    if !!!!LT(expected_stage,0i32) then 0i32
+    elif !!!!LT(observed_stage,0i32) then 0i32
+    elif !!!!LT(expected_stage,observed_stage) then 0i32
+    elif !!!!LT(observed_stage,expected_stage) then 0i32
+    else 1i32
+
+let patch_rename_slot_authorized (expected_slot : i32) (observed_slot : i32) : i32 =
+    if !!!!LT(expected_slot,0i32) then 0i32
+    elif !!!!LT(observed_slot,0i32) then 0i32
+    elif !!!!LT(expected_slot,observed_slot) then 0i32
+    elif !!!!LT(observed_slot,expected_slot) then 0i32
+    else 1i32
+
+let patch_authority_pair (left : i32) (right : i32) : i32 =
+    if !!!!LT(left,1i32) then 0i32
+    elif !!!!LT(1i32,left) then 0i32
+    elif !!!!LT(right,1i32) then 0i32
+    elif !!!!LT(1i32,right) then 0i32
+    else 1i32
+
+let patch_rename_slot_binding (expected_slot : i32) (authorized : i32) : i32 =
+    patch_write_slot_binding expected_slot authorized
+
+let patch_remove_receipt_binding (expected_stage : i32) (outcome : i32) : i32 =
+    if !!!!LT(expected_stage,0i32) then -1i32
+    elif !!!!LT(outcome,1i32) then -1i32
+    elif !!!!LT(1i32,outcome) then -1i32
+    else expected_stage

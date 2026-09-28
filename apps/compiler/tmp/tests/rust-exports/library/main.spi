@@ -1,0 +1,11 @@
+let admitted (value : i32) (reserved : i32) : i32 =
+    if !!!!NEQ(reserved,0i32) then 0i32
+    elif !!!!LT(value,0i32) then 0i32
+    elif !!!!LT(4095i32,value) then 0i32
+    else 1i32
+
+inl main () : i32 =
+    inl _ = admitted 493i32 0i32
+    $"RustExportI32Binary(\"export_admitted\",\"admitted\")" : ()
+    $"RustLibrary()" : ()
+    0i32

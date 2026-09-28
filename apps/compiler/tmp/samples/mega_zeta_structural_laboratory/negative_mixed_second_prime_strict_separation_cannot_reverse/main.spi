@@ -1,0 +1,9 @@
+inl impossible_mixed_second_prime_strict_separation_cannot_reverse forall root.
+    (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_strict_after_singleton_head root) : () =
+    match authority with
+    | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_strict_after_singleton_head packed =>
+        inl exists singleton_factor second_factor. strict, _ = packed
+        inl reversed : positive_positional_less second_factor singleton_factor = strict
+        ()
+
+inl main () = ()

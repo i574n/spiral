@@ -1,0 +1,21 @@
+open source_authoring_contract.bindings
+
+inl rust_library () : () = $"RustLibrary()" : ()
+
+inl main () : i32 =
+    source_authoring_terminal.emit_runtime ()
+    inl _ = source_authoring_shape_binding 1i32 1i32
+    inl _ = source_authoring_template_binding 1i32 1i32
+    inl _ = source_authoring_render_binding 1i32 0i32
+    inl _ = source_authoring_freshness_binding 1i32 1i32
+    inl _ = source_authoring_mode_binding 0i32 0i32
+    inl _ = source_authoring_commit_binding 1i32 1i32
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_shape_binding\",\"source_authoring_shape_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_template_binding\",\"source_authoring_template_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_render_binding\",\"source_authoring_render_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_freshness_binding\",\"source_authoring_freshness_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_mode_binding\",\"source_authoring_mode_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_patch_driver_source_authoring_commit_binding\",\"source_authoring_commit_binding\")" : ()
+
+    rust_library ()
+    0i32

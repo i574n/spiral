@@ -1,0 +1,15 @@
+union rec int_list =
+    | Nil
+    | Cons : i32 * int_list
+
+let rec sum xs : i32 =
+    match xs with
+    | Nil => 0i32
+    | Cons (head, tail) => head +. sum tail
+
+inl main () : i32 =
+    inl ~a = 1i32
+    inl ~b = 2i32
+    inl ~c = 3i32
+    inl xs = Cons (a, Cons (b, Cons (c, Nil)))
+    sum xs -. 6i32

@@ -1,0 +1,1 @@
+inl consumer_marker () = selector_marker () + 1i32

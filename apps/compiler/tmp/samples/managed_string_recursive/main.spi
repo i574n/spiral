@@ -1,0 +1,15 @@
+union rec text_tree =
+    | Empty
+    | Node : string * text_tree * text_tree
+
+let rec score tree : i32 =
+    match tree with
+    | Empty => 0i32
+    | Node (text, left, right) => sm.length text +. score left +. score right
+
+inl main () : i32 =
+    inl leaf = Empty
+    inl branch = Node ("qwe", leaf, leaf)
+    inl root = Node ("ab", branch, branch)
+    inl alias = root
+    score root +. score alias -. 16i32

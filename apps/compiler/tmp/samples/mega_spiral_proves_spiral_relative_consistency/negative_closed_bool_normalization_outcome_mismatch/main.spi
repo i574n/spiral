@@ -1,0 +1,8 @@
+inl impossible_closed_bool_normalization_outcome_mismatch ()
+    : exact_linear_indexed_closed_bool_normalization
+        exact_linear_closed_bool_true_normal =
+    ExactLinearIndexedClosedBoolNormalizationFalse
+        "a-normalization-ending-in-False-cannot-be-reclassified-as-ending-in-True"
+
+inl main () =
+    impossible_closed_bool_normalization_outcome_mismatch ()

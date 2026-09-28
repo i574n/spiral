@@ -1,0 +1,50 @@
+nominal lineage_a = ()
+nominal alice = ()
+nominal bob = ()
+nominal prepared = ()
+nominal entangled = ()
+nominal measured = ()
+nominal corrected = ()
+nominal outcome_01 = ()
+
+union qubit lineage owner stage =
+    | Qubit :: forall lineage owner stage. string -> qubit lineage owner stage
+
+union teleport_session lineage stage =
+    | TeleportSession :: forall lineage stage. string -> teleport_session lineage stage
+
+union classical_bits lineage outcome =
+    | ClassicalBits :: forall lineage outcome. string -> classical_bits lineage outcome
+
+inl entangle forall lineage.
+    (source : qubit lineage alice prepared)
+    (target : qubit lineage bob prepared)
+    : teleport_session lineage entangled * qubit lineage bob entangled =
+    match source, target with
+    | Qubit _, Qubit label => TeleportSession "shared-epr", Qubit label
+
+inl bell_measure forall lineage.
+    (session : teleport_session lineage entangled)
+    : teleport_session lineage measured * classical_bits lineage outcome_01 =
+    match session with
+    | TeleportSession _ => TeleportSession "bell-measured", ClassicalBits "01"
+
+inl correct forall lineage.
+    (session : teleport_session lineage measured)
+    (bits : classical_bits lineage outcome_01)
+    (target : qubit lineage bob entangled)
+    : teleport_session lineage corrected * qubit lineage bob corrected =
+    match session, bits, target with
+    | TeleportSession _, ClassicalBits _, Qubit _ => TeleportSession "teleportation-corrected", Qubit "teleported"
+
+inl label forall lineage. (session : teleport_session lineage corrected) : string =
+    match session with
+    | TeleportSession value => value
+
+inl main () : string =
+    inl source : qubit lineage_a alice prepared = Qubit "psi"
+    inl target : qubit lineage_a bob prepared = Qubit "zero"
+    inl session, entangled_target = entangle source target
+    inl measured_session, bits = bell_measure session
+    inl corrected_session, _ = correct measured_session bits entangled_target
+    label corrected_session

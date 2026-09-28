@@ -1,0 +1,6 @@
+union binary_install_source = BinaryInstallSource : string * string * string
+union binary_install_target = BinaryInstallTarget : string * string * string * i32
+union binary_install_provenance = BinaryInstallProvenance : binary_install_source * binary_install_target
+inl current_binary_install_provenance () : binary_install_provenance =
+    BinaryInstallProvenance (BinaryInstallSource ("state/eoie.release.candidate", "honest-valley-tool", "0674da56dc90caa6feda0ae8f562019e7a248856e6eb739d58a978302eab16cd"), BinaryInstallTarget ("eoie", "eager-kernel-log", "0674da56dc90caa6feda0ae8f562019e7a248856e6eb739d58a978302eab16cd", 493i32))
+inl main () : i32 = 0i32

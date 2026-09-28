@@ -1,0 +1,15 @@
+inl impossible_descent_unavailable_divisor_blocked_equal_root () =
+    inl root_value = positive_positional_twelve_value ()
+    match classify_certified_interval_positive_positional_sealed_factor root_value with
+    | CertifiedIntervalPositivePositionalSealedCompositeClass composite_payload =>
+        inl exists divisor quotient. children =
+            certified_interval_positive_positional_sealed_composite_children_from_witness
+                (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
+        CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailableDivisor (exists (
+            children,
+            CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
+                (positive_positional_equal_reflexive root_value)))
+    | _ => failwith "twelve-must-classify-as-composite-before-the-negative-boundary"
+
+inl main () =
+    impossible_descent_unavailable_divisor_blocked_equal_root ()

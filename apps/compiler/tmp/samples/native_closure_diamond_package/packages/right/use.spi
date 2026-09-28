@@ -1,0 +1,1 @@
+inl add_right ~g ~x : i32 = join (fun x => foundation.transport.apply g x +. 2i32) x

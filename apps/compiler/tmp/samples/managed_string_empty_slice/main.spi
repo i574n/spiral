@@ -1,0 +1,25 @@
+let empty_middle (x : string) : string =
+    sm.slice x { from = 2i32; to = 1i32 }
+
+let empty_end (x : string) : string =
+    sm.slice x { from = 5i32; to = 4i32 }
+
+let empty_source (x : string) : string =
+    sm.slice x { from = 0i32; to = 0i32 -. 1i32 }
+
+inl main () =
+    inl a = empty_middle "alpha"
+    inl b = empty_end "alpha"
+    inl c = empty_source ""
+    inl value = sm.concat (sm.concat a b) (sm.concat c "ok")
+    if (=.) (sm.length a : i32) 0i32 then
+        if (=.) (sm.length b : i32) 0i32 then
+            if (=.) (sm.length c : i32) 0i32 then
+                if (=.) (sm.length value : i32) 2i32 then
+                    if (=.) (sm.index value 0i32) 'o' then
+                        if (=.) (sm.index value 1i32) 'k' then 0i32 else 1i32
+                    else 2i32
+                else 3i32
+            else 4i32
+        else 5i32
+    else 6i32

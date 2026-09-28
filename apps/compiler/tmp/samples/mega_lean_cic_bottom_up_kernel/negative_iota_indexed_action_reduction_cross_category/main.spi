@@ -1,0 +1,8 @@
+inl impossible_iota_indexed_action_reduction_cross_category () :
+    cic_verified_inductive_iota_indexed_directed_reduction
+        cic_verified_inductive_iota_parameter_conclusion_category =
+    derive_cic_verified_inductive_iota_action_directed_reduction
+        (CicVerifiedInductiveIotaRecursiveHypothesisAction
+            "a-recursive-action-cannot-produce-a-parameter-directed-reduction")
+
+inl main () = impossible_iota_indexed_action_reduction_cross_category ()

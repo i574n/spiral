@@ -1,0 +1,49 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+nominal nfe_draft = { id : string }
+nominal nfe_signed = { xml : string; digest : string }
+nominal nfe_authorized = { xml : string; protocol : string }
+
+union document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+
+inl sign (document : document draft) : document signed =
+    match document with
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+
+inl authorize (document : document signed) : document authorized =
+    match document with
+    | Signed payload => Authorized (nfe_authorized { xml = payload.xml; protocol = "135240000000003" })
+
+union rec workflow a c =
+    | Step :: forall a c. (a -> c) -> workflow a c
+    | Compose :: forall a c. (exists b. workflow a b * workflow b c) -> workflow a c
+
+inl rec run forall a c. (workflow : workflow a c) (input : a) : c =
+    match workflow with
+    | Step transform => transform input
+    | Compose pair =>
+        inl exists middle. first, second = pair
+        run second (run first input)
+
+inl issue () : workflow (document draft) (document authorized) =
+    Compose (exists (Step sign, Step authorize))
+
+inl with_policy forall state. (policy : forall t. t -> t) (document : document state) : document state =
+    match document with
+    | Draft payload => Draft (policy payload)
+    | Signed payload => Signed (policy payload)
+    | Authorized payload => Authorized (policy payload)
+
+inl identity forall t. (value : t) : t = value
+
+inl main () : string =
+    inl draft = Draft (nfe_draft { id = "3" })
+    inl governed = with_policy `$identity draft
+    inl authorized = run (issue ()) governed
+    match authorized with
+    | Authorized payload => payload.protocol

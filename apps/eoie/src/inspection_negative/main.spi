@@ -1,0 +1,6 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    rust_global "#![allow(clippy::needless_return, clippy::needless_late_init)]"
+    rust_global "fn inspection_negative_run() -> i32 {\n    if eoie_proxy_search::inspection_tree_sha256(std::path::Path::new(\"/tmp\"), \"../escape\").is_err() { 0 } else { 1 }\n}\n"
+    $"inspection_negative_run()" : i32

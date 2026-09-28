@@ -1,0 +1,12 @@
+inl impossible_erp_p2p_three_event_skipped_middle () :
+    erp_p2p_event_store nat_two requisition_drafted purchase_order_issued =
+    inl reserve_event =
+        erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+    inl purchase_order_event =
+        erp_p2p_unit_event_from_plan (erp_p2p_issue_purchase_order_plan ())
+    inl reserve_store, _ = erp_p2p_event_commit_one reserve_event
+    inl purchase_order_store, _ = erp_p2p_event_commit_one purchase_order_event
+    erp_p2p_event_store_then reserve_store purchase_order_store (v65_add_one_one_two ())
+
+inl main () =
+    impossible_erp_p2p_three_event_skipped_middle ()

@@ -1,0 +1,7 @@
+open model
+
+inl main () : i32 =
+    inl _ = bootstrap_probe_result ()
+    inl _ = policy_probe_result ()
+    inl _ = primary_fallback_probe_result ()
+    secondary_fallback_probe_result ()

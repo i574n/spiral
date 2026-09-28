@@ -1,0 +1,9 @@
+inl impossible_specialized_observation_wrong_history () =
+    inl _, recorded_history =
+        typed_fx_hashed_statement_closed_history_values ()
+    decide_typed_fx_hashed_statement_closed_empty_primary_at_zero
+        recorded_history
+        TypedFxHashedStatementClosedEmptyPrimaryAtZeroObservation
+
+inl main () =
+    impossible_specialized_observation_wrong_history ()

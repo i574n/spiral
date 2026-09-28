@@ -1,0 +1,14 @@
+inl main () =
+    inl a = !!!!LayoutToHeapRefs({name="seed"; q=11i32; w=13i32})
+    if !!!!Equal(a.name,"seed") then
+        a.name <- "grown"
+        a.q <- 19i32
+    else
+        a.name <- "wrong"
+        a.q <- 29i32
+    inl b = !!!!LayoutIndex(a)
+    if !!!!Equal(b.name,"grown") then
+        b.w <- 23i32
+    else
+        b.w <- 31i32
+    !!!!Add(a.q,b.w)

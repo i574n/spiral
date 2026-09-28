@@ -1,0 +1,19 @@
+nominal stripe_a = ()
+nominal shard_a = ()
+nominal shard_b = ()
+nominal available = ()
+nominal distinct = ()
+nominal recovered = ()
+
+union shard stripe identity state = | Shard :: forall stripe identity state. string -> shard stripe identity state
+union distinct_witness left right state = | Distinct :: forall left right state. string -> distinct_witness left right state
+union stripe stripe_id state = | Stripe :: forall stripe_id state. string -> stripe stripe_id state
+
+inl recover forall stripe_id left right. (left : shard stripe_id left available) (right : shard stripe_id right available) (proof : distinct_witness left right distinct) : stripe stripe_id recovered =
+    match left, right, proof with | Shard _, Shard _, Distinct _ => Stripe "erasure-stripe-recovered"
+
+inl main () : string =
+    inl left : shard stripe_a shard_a available = Shard "a"
+    inl right : shard stripe_a shard_b available = Shard "b"
+    inl proof : distinct_witness shard_a shard_b distinct = Distinct "a-ne-b"
+    match recover left right proof with | Stripe label => label

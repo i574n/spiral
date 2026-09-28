@@ -1,0 +1,9 @@
+inl impossible_closed_source_code_bool_mismatch () :
+    exact_linear_indexed_closed_value_source
+        exact_linear_indexed_closed_source_bool_false
+        exact_linear_bool_type =
+    ExactLinearIndexedClosedValueSourceBoolTrue
+        "the-BoolTrue-structural-source-code-cannot-be-reindexed-as-BoolFalse"
+
+inl main () =
+    impossible_closed_source_code_bool_mismatch ()

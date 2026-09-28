@@ -1,0 +1,18 @@
+
+inl main () : i32 =
+    inl _ = state_receipt_u64_decimal_valid "42", state_receipt_u64_decimal_value "42", state_receipt_u32_decimal_valid "42", state_receipt_u32_spi_literal_valid "42u32", state_receipt_u32_spi_literal_value "42u32", state_receipt_dash_shape "ratings-spi-alpha", state_receipt_migration_denominator_payload "MigrationDenominator (69u32, 69u32, 1000u32, 987u32)"
+    inl _ = state_receipt_series_records_valid_u64 "SeriesRecord (1u32, 69u32, 987u32)", state_receipt_last_series_record_payload_export "SeriesRecord (1u32, 69u32, 987u32)"
+    inl _ = state_receipt_coverage_checkpoint_kind "CoverageCheckpointMissing (0u32, \"missing\", \"reason\")", state_receipt_coverage_checkpoint_sha "CoverageCheckpointDurable (804u32, \"abc\")"
+    $"RustExportU64Unary(\"eoie_state_receipt_u64_decimal_valid\",\"state_receipt_u64_decimal_valid\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_u64_decimal_value\",\"state_receipt_u64_decimal_value\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_u32_decimal_valid\",\"state_receipt_u32_decimal_valid\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_u32_spi_literal_valid\",\"state_receipt_u32_spi_literal_valid\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_u32_spi_literal_value\",\"state_receipt_u32_spi_literal_value\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_dash_shape\",\"state_receipt_dash_shape\")" : ()
+    $"RustExportStringUnary(\"eoie_state_receipt_migration_denominator_payload\",\"state_receipt_migration_denominator_payload\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_series_records_valid\",\"state_receipt_series_records_valid_u64\")" : ()
+    $"RustExportStringUnary(\"eoie_state_receipt_last_series_record_payload\",\"state_receipt_last_series_record_payload_export\")" : ()
+    $"RustExportU64Unary(\"eoie_state_receipt_coverage_checkpoint_kind\",\"state_receipt_coverage_checkpoint_kind\")" : ()
+    $"RustExportStringUnary(\"eoie_state_receipt_coverage_checkpoint_sha\",\"state_receipt_coverage_checkpoint_sha\")" : ()
+    $"RustLibrary()" : ()
+    0i32

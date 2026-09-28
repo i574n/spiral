@@ -1,0 +1,12 @@
+packages:
+    backup_domain
+    patch_model
+    patch_domain
+    patch_batch
+    rust_std_fs
+    patch_compat_test_support
+    patch_compat_receipts
+    patch_compat_runtime
+modules:
+    compat_terminal-
+    main

@@ -1,0 +1,15 @@
+inl impossible_discarded_linear_binder () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        (exact_linear_arrow_type exact_linear_unit_type exact_linear_unit_type) =
+    ExactLinearIndexedLambda (
+        ExactLinearIndexedUnit (
+            ExactLinearIndexedAllUnusedExtend (
+                ExactLinearIndexedAllUnusedEmpty
+                    "the-outer-context-is-empty",
+                "the-bound-cell-is-marked-unused"),
+            "a-constant-body-would-discard-the-linear-binder"),
+        "this-lambda-must-be-rejected-because-its-body-usage-head-is-unused")
+
+inl main () = impossible_discarded_linear_binder ()

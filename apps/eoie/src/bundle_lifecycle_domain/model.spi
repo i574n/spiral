@@ -1,0 +1,128 @@
+nominal bundle_idle = ()
+nominal bundle_root_validated = ()
+nominal bundle_files_collected = ()
+nominal bundle_archive_created = ()
+nominal bundle_archive_verified = ()
+nominal bundle_archive_extracted = ()
+nominal bundle_rehydrated = ()
+
+union bundle_lifecycle_step from to =
+    | ValidateRoot :: bundle_lifecycle_step bundle_idle bundle_root_validated
+    | CollectFiles :: bundle_lifecycle_step bundle_root_validated bundle_files_collected
+    | CreateArchive :: bundle_lifecycle_step bundle_files_collected bundle_archive_created
+    | VerifyArchive :: bundle_lifecycle_step bundle_archive_created bundle_archive_verified
+    | ExtractArchive :: bundle_lifecycle_step bundle_archive_verified bundle_archive_extracted
+    | ConfirmRehydration :: bundle_lifecycle_step bundle_archive_extracted bundle_rehydrated
+
+union rec bundle_lifecycle_plan from to =
+    | BundleLifecycleStep :: forall from to. bundle_lifecycle_step from to -> bundle_lifecycle_plan from to
+    | BundleLifecycleThen :: forall from to. (exists middle. bundle_lifecycle_plan from middle * bundle_lifecycle_plan middle to) -> bundle_lifecycle_plan from to
+
+inl lifecycle_plan () : bundle_lifecycle_plan bundle_idle bundle_rehydrated =
+    BundleLifecycleThen (exists (
+        BundleLifecycleStep ValidateRoot,
+        BundleLifecycleThen (exists (
+            BundleLifecycleStep CollectFiles,
+            BundleLifecycleThen (exists (
+                BundleLifecycleStep CreateArchive,
+                BundleLifecycleThen (exists (
+                    BundleLifecycleStep VerifyArchive,
+                    BundleLifecycleThen (exists (
+                        BundleLifecycleStep ExtractArchive,
+                        BundleLifecycleStep ConfirmRehydration
+                    ))
+                ))
+            ))
+        ))
+    ))
+
+let bundle_root_binding (expected_roots : i32) (observed_roots : i32) : i32 =
+    if !!!!LT(expected_roots,1i32) then 0i32
+    elif !!!!LT(observed_roots,1i32) then 0i32
+    elif !!!!LT(expected_roots,observed_roots) then 0i32
+    elif !!!!LT(observed_roots,expected_roots) then 0i32
+    else 1i32
+
+nominal coverage_checkpoint_missing = ()
+nominal coverage_checkpoint_durable = ()
+
+union coverage_checkpoint_claim state =
+    | CoverageCheckpointClaimMissing :: coverage_checkpoint_claim coverage_checkpoint_missing
+    | CoverageCheckpointClaimDurable :: u32 * string -> coverage_checkpoint_claim coverage_checkpoint_durable
+
+let coverage_checkpoint_binding (declared_durable : i32) (evidence_code : i32) : i32 =
+    if !!!!LT(declared_durable,0i32) then 0i32
+    elif !!!!LT(1i32,declared_durable) then 0i32
+    elif !!!!LT(evidence_code,0i32) then 0i32
+    elif !!!!LT(2i32,evidence_code) then 0i32
+    elif !!!!LT(declared_durable,1i32) then 1i32
+    elif !!!!LT(evidence_code,2i32) then 0i32
+    else 1i32
+
+let bundle_entry_binding (expected_entries : i32) (observed_entries : i32) : i32 =
+    bundle_root_binding expected_entries observed_entries
+
+let bundle_size_binding (limit_bytes : i32) (observed_bytes : i32) : i32 =
+    if !!!!LT(limit_bytes,1i32) then 0i32
+    elif !!!!LT(observed_bytes,1i32) then 0i32
+    elif !!!!LT(limit_bytes,observed_bytes) then 0i32
+    else 1i32
+
+let bundle_extract_binding (expected_entries : i32) (extracted_entries : i32) : i32 =
+    bundle_entry_binding expected_entries extracted_entries
+
+let bundle_payload_count_binding (archive_entries : i32) (explicit_directories : i32) : i32 =
+    if !!!!LT(archive_entries,1i32) then 0i32
+    elif !!!!LT(explicit_directories,0i32) then 0i32
+    elif !!!!LT(archive_entries,explicit_directories) then 0i32
+    else !!!!Sub(archive_entries,explicit_directories)
+
+let bundle_rehydration_binding (structure_ok : i32) (state_ok : i32) : i32 =
+    if !!!!LT(structure_ok,1i32) then 0i32
+    elif !!!!LT(1i32,structure_ok) then 0i32
+    elif !!!!LT(state_ok,1i32) then 0i32
+    elif !!!!LT(1i32,state_ok) then 0i32
+    else 1i32
+
+let bundle_complete_binding (archive_ok : i32) (rehydration_ok : i32) : i32 =
+    bundle_rehydration_binding archive_ok rehydration_ok
+
+nominal bundle_rehydrate_idle = ()
+nominal bundle_rehydrate_preflighted = ()
+nominal bundle_rehydrate_extracted = ()
+nominal bundle_rehydrate_validated = ()
+nominal bundle_rehydrate_committed = ()
+
+union bundle_rehydrate_step from to =
+    | RehydratePreflight :: bundle_rehydrate_step bundle_rehydrate_idle bundle_rehydrate_preflighted
+    | RehydrateExtract :: bundle_rehydrate_step bundle_rehydrate_preflighted bundle_rehydrate_extracted
+    | RehydrateValidate :: bundle_rehydrate_step bundle_rehydrate_extracted bundle_rehydrate_validated
+    | RehydrateCommit :: bundle_rehydrate_step bundle_rehydrate_validated bundle_rehydrate_committed
+
+union rec bundle_rehydrate_plan from to =
+    | BundleRehydrateStep :: forall from to. bundle_rehydrate_step from to -> bundle_rehydrate_plan from to
+    | BundleRehydrateThen :: forall from to. (exists middle. bundle_rehydrate_plan from middle * bundle_rehydrate_plan middle to) -> bundle_rehydrate_plan from to
+
+inl rehydrate_plan () : bundle_rehydrate_plan bundle_rehydrate_idle bundle_rehydrate_committed =
+    BundleRehydrateThen (exists (
+        BundleRehydrateStep RehydratePreflight,
+        BundleRehydrateThen (exists (
+            BundleRehydrateStep RehydrateExtract,
+            BundleRehydrateThen (exists (
+                BundleRehydrateStep RehydrateValidate,
+                BundleRehydrateStep RehydrateCommit
+            ))
+        ))
+    ))
+
+let bundle_rehydrate_preflight_binding (archive_verified : i32) (destination_absent : i32) : i32 =
+    bundle_rehydration_binding archive_verified destination_absent
+
+let bundle_rehydrate_extract_binding (entries_match : i32) (destination_created : i32) : i32 =
+    bundle_rehydration_binding entries_match destination_created
+
+let bundle_rehydrate_validate_binding (contract_ok : i32) (structure_ok : i32) : i32 =
+    bundle_rehydration_binding contract_ok structure_ok
+
+let bundle_rehydrate_receipt_binding (preflight_extract_ok : i32) (validate_ok : i32) : i32 =
+    bundle_complete_binding preflight_extract_ok validate_ok

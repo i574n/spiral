@@ -1,0 +1,18 @@
+nominal approver_a = ()
+nominal approver_b = ()
+nominal missing = ()
+nominal present = ()
+
+union approval who =
+    | ApprovalA :: approval approver_a
+    | ApprovalB :: approval approver_b
+
+union rec approval_quorum a b =
+    | EmptyQuorum :: approval_quorum missing missing
+    | AddA :: forall b. approval_quorum missing b * approval approver_a -> approval_quorum present b
+    | AddB :: forall a. approval_quorum a missing * approval approver_b -> approval_quorum a present
+
+inl main () : string =
+    inl once = AddA (EmptyQuorum, ApprovalA)
+    inl _ = AddA (once, ApprovalA)
+    "unreachable"

@@ -1,0 +1,10 @@
+nominal signer_a = ()
+nominal key_old = ()
+nominal epoch0 = ()
+nominal active = ()
+nominal retired = ()
+union public_key signer key epoch state = | PublicKey :: forall signer key epoch state. string -> public_key signer key epoch state
+inl authorize forall signer key epoch. (key : public_key signer key epoch active) : string = "authorized"
+inl main () =
+    inl retired_key : public_key signer_a key_old epoch0 retired = PublicKey "retired"
+    authorize retired_key

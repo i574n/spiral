@@ -1,0 +1,4 @@
+packages:
+    incident_recovery_contract
+modules:
+    main

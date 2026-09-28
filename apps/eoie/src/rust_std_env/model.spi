@@ -1,0 +1,17 @@
+inl (~!\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl args_len_is (~expected : i32) : bool =
+    !\(expected, $'"i32::try_from(std::env::args().skip(2).count()).unwrap_or(i32::MAX) == $0"')
+
+inl argument_len (~index : i32) : i32 =
+    !\(index, $'"usize::try_from($0).ok().and_then(|index| std::env::args().skip(2).nth(index)).map_or(-1, |value| i32::try_from(value.len()).unwrap_or(i32::MAX))"')
+
+inl argument_byte (~index : i32) (~offset : i32) : i32 =
+    !\((index, offset), $'"usize::try_from($0).ok().and_then(|index| std::env::args().skip(2).nth(index)).and_then(|value| usize::try_from($1).ok().and_then(|offset| value.as_bytes().get(offset).copied())).map_or(-1, i32::from)"')
+
+inl argument_equals (~index : i32) (~expected : string) : bool =
+    !\((index, expected), $'"usize::try_from($0).ok().and_then(|index| std::env::args().skip(2).nth(index)).is_some_and(|value| value.as_str() == $1.as_ref())"')
+
+inl argument_owned (~index : i32) : string =
+    !\(index, $'"usize::try_from($0).ok().and_then(|index| std::env::args().skip(2).nth(index)).map_or_else(std::rc::Rc::<str>::default, std::rc::Rc::<str>::from)"')

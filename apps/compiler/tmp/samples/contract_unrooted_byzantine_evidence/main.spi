@@ -1,0 +1,83 @@
+nominal transfer_a = ()
+nominal manifest_a = ()
+nominal round_29 = ()
+nominal epoch_3 = ()
+nominal registry_digest_29 = ()
+nominal evidence_root_29 = ()
+nominal snapshot_digest_30 = ()
+nominal snapshot_digest_fork = ()
+nominal merkle_root_30 = ()
+nominal leaf_0 = ()
+nominal durable = ()
+nominal authenticated = ()
+nominal committed = ()
+
+union public_registry round epoch registry state =
+    | PublicRegistry :: forall round epoch registry state.
+        string -> public_registry round epoch registry state
+
+union equivocation_evidence round epoch evidence state =
+    | EquivocationEvidence :: forall round epoch evidence state.
+        string -> equivocation_evidence round epoch evidence state
+
+union public_byzantine_commit transfer manifest round epoch registry evidence state =
+    | PublicByzantineCommit :: forall transfer manifest round epoch registry evidence state.
+        public_registry round epoch registry authenticated *
+        equivocation_evidence round epoch evidence authenticated *
+        string -> public_byzantine_commit transfer manifest round epoch registry evidence state
+
+union transparency_leaf epoch snapshot registry evidence state =
+    | TransparencyLeaf :: forall epoch snapshot registry evidence state.
+        string -> transparency_leaf epoch snapshot registry evidence state
+
+union inclusion_proof leaf snapshot root state =
+    | InclusionProof :: forall leaf snapshot root state.
+        string -> inclusion_proof leaf snapshot root state
+
+union rooted_byzantine_authority transfer manifest round epoch registry evidence leaf snapshot root state =
+    | RootedByzantineAuthority :: forall transfer manifest round epoch registry evidence leaf snapshot root state.
+        public_byzantine_commit transfer manifest round epoch registry evidence committed *
+        transparency_leaf epoch snapshot registry evidence authenticated *
+        inclusion_proof leaf snapshot root authenticated *
+        string -> rooted_byzantine_authority transfer manifest round epoch registry evidence leaf snapshot root state
+
+union packed_rooted_authority transfer manifest =
+    | PackedRootedAuthority :: forall transfer manifest.
+        (exists round epoch registry evidence leaf snapshot root.
+            rooted_byzantine_authority transfer manifest round epoch registry evidence leaf snapshot root durable)
+        -> packed_rooted_authority transfer manifest
+
+inl with_packed_rooted_authority forall transfer manifest result.
+    (visit : forall round epoch registry evidence leaf snapshot root.
+        rooted_byzantine_authority transfer manifest round epoch registry evidence leaf snapshot root durable -> result)
+    (packed : packed_rooted_authority transfer manifest) : result =
+    match packed with
+    | PackedRootedAuthority payload =>
+        inl exists round epoch registry evidence leaf snapshot root. authority = payload
+        visit authority
+
+inl registry () : public_registry round_29 epoch_3 registry_digest_29 authenticated =
+    PublicRegistry "registry-digest-verified"
+
+inl evidence () : equivocation_evidence round_29 epoch_3 evidence_root_29 authenticated =
+    EquivocationEvidence "two-equivocation-files-verified"
+
+inl commit () : public_byzantine_commit transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 committed =
+    PublicByzantineCommit (registry (), evidence (), "public-quorum-commit")
+
+inl leaf () : transparency_leaf epoch_3 snapshot_digest_30 registry_digest_29 evidence_root_29 authenticated =
+    TransparencyLeaf "registry-membership-commit-and-evidence-content-bound"
+
+inl proof () : inclusion_proof leaf_0 snapshot_digest_fork merkle_root_30 authenticated =
+    InclusionProof "proof-for-a-different-snapshot"
+
+inl rooted () : rooted_byzantine_authority transfer_a manifest_a round_29 epoch_3 registry_digest_29 evidence_root_29 leaf_0 snapshot_digest_30 merkle_root_30 durable =
+    RootedByzantineAuthority (commit (), leaf (), proof (), "transparent-byzantine-authority")
+
+inl inspect forall round epoch registry evidence leaf snapshot root.
+    (_ : rooted_byzantine_authority transfer_a manifest_a round epoch registry evidence leaf snapshot root durable) : string =
+    "transparency-rooted-public-byzantine-commit"
+
+inl main () : string =
+    inl packed : packed_rooted_authority transfer_a manifest_a = PackedRootedAuthority (exists (rooted ()))
+    with_packed_rooted_authority `$inspect packed

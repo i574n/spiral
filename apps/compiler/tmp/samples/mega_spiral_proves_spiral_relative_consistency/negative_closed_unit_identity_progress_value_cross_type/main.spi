@@ -1,0 +1,15 @@
+inl impossible_closed_unit_identity_progress_value_cross_type () :
+    exact_linear_indexed_value
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_bool_type =
+    inl authority =
+        ExactLinearIndexedClosedUnitIdentityProgressAuthority (
+            ExactLinearIndexedValueUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-authority-final-value-is-Unit"),
+            "the-negative-attempts-to-reclassify-the-authority-value")
+    exact_linear_indexed_closed_unit_identity_progress_value authority
+
+inl main () =
+    impossible_closed_unit_identity_progress_value_cross_type ()

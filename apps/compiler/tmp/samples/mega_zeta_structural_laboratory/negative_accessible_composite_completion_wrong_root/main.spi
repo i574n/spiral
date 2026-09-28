@@ -1,0 +1,13 @@
+inl impossible_accessible_composite_completion_wrong_root () :
+    certified_interval_positive_positional_complete_factorization_tree
+        (positional_one_bit (positional_one_bit positional_one)) =
+    inl six_value :
+        positive_positional_nat
+            (positional_zero_bit (positional_one_bit positional_one)) =
+        PositivePositionalZeroBit (positive_positional_three_value ())
+    certified_interval_positive_positional_accessible_child_completion
+        six_value
+        (derive_positive_positional_predecessor_accessibility six_value)
+
+inl main () =
+    impossible_accessible_composite_completion_wrong_root ()

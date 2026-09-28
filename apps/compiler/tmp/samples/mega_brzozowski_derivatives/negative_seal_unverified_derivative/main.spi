@@ -1,0 +1,7 @@
+open main
+
+inl main () =
+    inl normalization : derivative_normalization_capability bit_alphabet = derivative_normalization_capability_default
+    inl raw : derivative_pipeline bit_alphabet derivative_unchecked = derivative_pipeline_begin (ends_with_zero ()) (zero ())
+    inl normalized : derivative_pipeline bit_alphabet derivative_normalized = derivative_pipeline_normalize normalization raw
+    seal_verified_derivative normalized

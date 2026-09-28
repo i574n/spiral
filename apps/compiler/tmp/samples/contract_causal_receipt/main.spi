@@ -1,0 +1,47 @@
+nominal signed = ()
+nominal authorized = ()
+nominal contingency = ()
+nominal normal = ()
+nominal pending = ()
+nominal committed = ()
+nominal authorization_evidence = ()
+
+nominal phase state mode = state * mode
+
+union document index =
+    | SignedDocument :: string -> document (phase signed contingency)
+    | AuthorizedContingencyDocument :: string -> document (phase authorized contingency)
+    | AuthorizedNormalDocument :: string -> document (phase authorized normal)
+
+union receipt evidence status =
+    | PendingReceipt :: forall evidence. string -> receipt evidence pending
+    | CommittedReceipt :: forall evidence. string -> receipt evidence committed
+
+inl authorize
+    (document : document (phase signed contingency))
+    : document (phase authorized contingency) * receipt authorization_evidence pending =
+    match document with
+    | SignedDocument id =>
+        AuthorizedContingencyDocument id,
+        PendingReceipt "authorization"
+
+inl commit forall evidence.
+    (receipt : receipt evidence pending)
+    : receipt evidence committed =
+    match receipt with
+    | PendingReceipt id => CommittedReceipt id
+
+inl reconcile
+    (input : document (phase authorized contingency) * receipt authorization_evidence committed)
+    : document (phase authorized normal) =
+    match input with
+    | AuthorizedContingencyDocument id, CommittedReceipt _ =>
+        AuthorizedNormalDocument id
+
+inl main () : string =
+    inl authorized_document, pending_receipt =
+        authorize (SignedDocument "NFE-25")
+    inl committed_receipt = commit pending_receipt
+    inl reconciled = reconcile (authorized_document, committed_receipt)
+    match reconciled with
+    | AuthorizedNormalDocument _ => "causal-receipt"

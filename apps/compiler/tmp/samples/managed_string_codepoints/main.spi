@@ -1,0 +1,24 @@
+inl main () =
+    inl value = "Aéλ🙂Z"
+    inl count = sm.codepoint_length value
+    inl second = sm.codepoint_index value 1i32
+    inl fourth = sm.codepoint_index value 3i32
+    inl middle = sm.codepoint_slice value {from=1i32; to=3i32}
+    inl fourth_offset = sm.codepoint_byte_offset value 3i32
+    inl second_head = sm.runtime_byte second 0i32
+    inl expected_second_head = sm.runtime_byte "é" 0i32
+    inl fourth_tail = sm.runtime_byte fourth 3i32
+    inl expected_fourth_tail = sm.runtime_byte "🙂" 3i32
+    if (=.) count 5i32 then
+        if (=.) (sm.length second : i32) 2i32 then
+            if (=.) second_head expected_second_head then
+                if (=.) (sm.length fourth : i32) 4i32 then
+                    if (=.) fourth_tail expected_fourth_tail then
+                        if (=.) (sm.length middle : i32) 8i32 then
+                            if (=.) fourth_offset 5i32 then 0i32 else 1i32
+                        else 2i32
+                    else 3i32
+                else 4i32
+            else 5i32
+        else 6i32
+    else 7i32

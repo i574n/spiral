@@ -1,0 +1,12 @@
+inl rust_library () : () = $"RustLibrary()" : ()
+
+inl main () : i32 =
+    filesystem_terminal.emit_runtime ()
+    filesystem_terminal.emit_atomic_write ()
+    rooted_terminal.emit_rooted ()
+    presence_terminal.emit_presence ()
+    path_terminal.emit_paths ()
+    filesystem_terminal.rust_global "}"
+    filesystem_terminal.rust_global "pub use dense::*;"
+    rust_library ()
+    0i32

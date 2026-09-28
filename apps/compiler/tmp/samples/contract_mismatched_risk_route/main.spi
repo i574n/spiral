@@ -1,0 +1,19 @@
+nominal low = ()
+nominal high = ()
+
+union risk band =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+union authorization band =
+    | Automatic :: authorization low
+    | ManualReview :: authorization high
+
+union packed_assessment =
+    | PackAssessment ::
+        (exists band. risk band * authorization band)
+        -> packed_assessment
+
+inl main () : string =
+    inl _ = PackAssessment (exists (LowRisk, ManualReview))
+    "unreachable"

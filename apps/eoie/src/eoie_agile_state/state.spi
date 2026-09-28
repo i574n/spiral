@@ -1,0 +1,195 @@
+open state_series_contract.model
+nominal agile_state_idle = ()
+nominal agile_state_loaded = ()
+nominal agile_state_validated = ()
+nominal agile_state_receipts_committed = ()
+nominal agile_state_sessions_closed = ()
+
+nominal agile_module_unchecked = ()
+nominal agile_module_committed = ()
+
+union agile_state_op from to =
+    | LoadAgileState :: agile_state_op agile_state_idle agile_state_loaded
+    | ValidateAgileModules :: agile_state_op agile_state_loaded agile_state_validated
+    | CommitModuleReceipts :: agile_state_op agile_state_validated agile_state_receipts_committed
+    | CloseAgileSessions :: agile_state_op agile_state_receipts_committed agile_state_sessions_closed
+
+union module_receipt_op from to =
+    | CommitModuleReceipt :: string * u64 * u64 -> module_receipt_op agile_module_unchecked agile_module_committed
+
+union rec agile_state_plan from to =
+    | AgileStateStep :: forall from to. agile_state_op from to -> agile_state_plan from to
+    | AgileStateThen :: forall from to. (exists middle. agile_state_plan from middle * agile_state_plan middle to) -> agile_state_plan from to
+
+union rec module_receipt_plan from to =
+    | ModuleReceiptStep :: forall from to. module_receipt_op from to -> module_receipt_plan from to
+
+inl module_receipt path bytes fingerprint : module_receipt_plan agile_module_unchecked agile_module_committed =
+    ModuleReceiptStep (CommitModuleReceipt (path, bytes, fingerprint))
+
+inl validation_plan () : agile_state_plan agile_state_idle agile_state_receipts_committed =
+    AgileStateThen (exists (
+        AgileStateThen (exists (AgileStateStep LoadAgileState, AgileStateStep ValidateAgileModules)),
+        AgileStateStep CommitModuleReceipts
+    ))
+
+inl shutdown_plan () : agile_state_plan agile_state_receipts_committed agile_state_sessions_closed =
+    AgileStateStep CloseAgileSessions
+
+inl full_state_plan () : agile_state_plan agile_state_idle agile_state_sessions_closed =
+    AgileStateThen (exists (validation_plan (), shutdown_plan ()))
+
+union agile_state_entry_kind =
+    | StaticPackageModule
+    | TransientTypedReceipt
+    | InvalidStateEntry
+
+inl classify_state_entry package_owned transient_known =
+    match package_owned, transient_known with
+    | true, false => StaticPackageModule
+    | false, true => TransientTypedReceipt
+    | _ => InvalidStateEntry
+
+let agile_state_entry_kind_binding (package_owned : i32) (transient_known : i32) : i32 =
+    if !!!!EQ(package_owned,1i32) then
+        if !!!!EQ(transient_known,1i32) then 0i32 else 1i32
+    else
+        if !!!!EQ(transient_known,1i32) then 2i32 else 0i32
+
+union agile_state_module_name_class =
+    | StableStateModuleName
+    | TransientStateReceiptName
+
+inl agile_state_module_name_class_code = function
+    | StableStateModuleName => 0u64
+    | TransientStateReceiptName => 1u64
+
+let agile_transient_state_name_code (~name : string) : u64 =
+    if rust_std_string.model.pipe_member "patch_resume.spi|toolchain_process_receipt.spi" name then
+        agile_state_module_name_class_code TransientStateReceiptName
+    else
+        agile_state_module_name_class_code StableStateModuleName
+
+union agile_record_requirement =
+    | HistoryStateRecord
+    | RatingsStateRecord
+    | BenchStateRecord
+    | MigrationStateRecord
+
+inl agile_record_requirement_bit = function
+    | HistoryStateRecord => 1u64
+    | RatingsStateRecord => 2u64
+    | BenchStateRecord => 4u64
+    | MigrationStateRecord => 8u64
+
+let agile_record_required_name_bit (~name : string) : u64 =
+    if rust_std_string.model.equals name "history.spi" then agile_record_requirement_bit HistoryStateRecord
+    elif rust_std_string.model.equals name "ratings.spi" then agile_record_requirement_bit RatingsStateRecord
+    elif rust_std_string.model.equals name "bench.spi" then agile_record_requirement_bit BenchStateRecord
+    elif rust_std_string.model.equals name "migration.spi" then agile_record_requirement_bit MigrationStateRecord
+    else 0u64
+
+let agile_record_required_catalog (~version : string) : string =
+    if rust_std_string.model.equals version "v1" then "history.spi|ratings.spi|bench.spi|migration.spi" else ""
+
+let agile_record_preflight_binding (observed_mask : i32) (reserved : i32) : i32 =
+    if !!!!LT(observed_mask,0i32) || !!!!LT(15i32,observed_mask) || !!!!LT(reserved,0i32) || !!!!LT(0i32,reserved) then -1i32
+    elif !!!!EQ(observed_mask,15i32) then 1i32
+    else 0i32
+
+union agile_attestation_decision =
+    | RejectUnknownStateEntry
+    | SkipCurrentAttestation
+    | RuntimeAttestTransient
+    | BuildAttestStatic
+    | RequireBuildCompiler
+
+inl agile_attestation_decision_code = function
+    | RejectUnknownStateEntry => 0i32
+    | SkipCurrentAttestation => 1i32
+    | RuntimeAttestTransient => 2i32
+    | BuildAttestStatic => 3i32
+    | RequireBuildCompiler => 4i32
+
+let agile_attestation_decision_binding (kind_code : i32) (observation_mask : i32) : i32 =
+    if !!!!LT(observation_mask,0i32) || !!!!LT(7i32,observation_mask) || !!!!EQ(observation_mask,4i32) || !!!!EQ(observation_mask,5i32) then
+        agile_attestation_decision_code RejectUnknownStateEntry
+    elif !!!!EQ(kind_code,2i32) then
+        if !!!!EQ(observation_mask,1i32) || !!!!EQ(observation_mask,3i32) || !!!!EQ(observation_mask,7i32) then
+            agile_attestation_decision_code SkipCurrentAttestation
+        else
+            agile_attestation_decision_code RuntimeAttestTransient
+    elif !!!!EQ(kind_code,1i32) then
+        if !!!!EQ(observation_mask,7i32) || !!!!EQ(observation_mask,1i32) then
+            agile_attestation_decision_code SkipCurrentAttestation
+        elif !!!!EQ(observation_mask,2i32) || !!!!EQ(observation_mask,3i32) || !!!!EQ(observation_mask,6i32) then
+            agile_attestation_decision_code BuildAttestStatic
+        elif !!!!EQ(observation_mask,0i32) then
+            agile_attestation_decision_code RequireBuildCompiler
+        else
+            agile_attestation_decision_code RejectUnknownStateEntry
+    else
+        agile_attestation_decision_code RejectUnknownStateEntry
+
+let agile_series_sequence_binding (previous : i32) (next : i32) : i32 =
+    series_sequence_binding previous next
+
+let agile_series_source_binding (path_length : i32) (packed_shape : i32) : i32 =
+    series_source_binding path_length packed_shape
+
+let agile_series_pair_binding (ratings_present : i32) (bench_present : i32) : i32 =
+    series_pair_binding ratings_present bench_present
+
+let agile_series_monotonic_binding (previous : i32) (next : i32) : i32 =
+    series_monotonic_binding previous next
+
+let agile_series_fingerprint_binding (ratings_nonzero : i32) (bench_nonzero : i32) : i32 =
+    series_fingerprint_binding ratings_nonzero bench_nonzero
+
+inl main () : i32 =
+    agile_state_runtime.state_terminal.emit_runtime ()
+    agile_state_runtime.check_runtime.emit_runtime ()
+    agile_state_runtime.series_terminal.emit_runtime ()
+    agile_state_runtime.owned_runtime.emit_runtime ()
+    $"RustExportI32Binary(\"eoie_agile_state_series_sequence_binding\",\"agile_series_sequence_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_series_source_binding\",\"agile_series_source_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_series_pair_binding\",\"agile_series_pair_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_series_monotonic_binding\",\"agile_series_monotonic_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_series_fingerprint_binding\",\"agile_series_fingerprint_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_entry_kind_binding\",\"agile_state_entry_kind_binding\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_state_transient_name_code\",\"agile_transient_state_name_code\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_state_record_required_name_bit\",\"agile_record_required_name_bit\")" : ()
+    $"RustExportStringUnary(\"eoie_agile_state_record_required_catalog\",\"agile_record_required_catalog\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_record_preflight_binding\",\"agile_record_preflight_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_state_attestation_decision_binding\",\"agile_attestation_decision_binding\")" : ()
+    $"RustLibrary()" : ()
+    inl _ = module_receipt "state/example.spi" 1u64 1u64
+    inl _ = validation_plan ()
+    inl _ = full_state_plan ()
+    inl _ = append_only_series_plan ()
+    inl _ = agile_series_sequence_binding 0i32 1i32
+    inl _ = agile_series_source_binding 17i32 32i32
+    inl _ = agile_series_pair_binding 1i32 1i32
+    inl _ = agile_series_monotonic_binding 0i32 1i32
+    inl _ = agile_series_fingerprint_binding 1i32 1i32
+    inl _ = agile_state_entry_kind_binding 1i32 0i32
+    inl _ = agile_transient_state_name_code "patch_resume.spi"
+    inl _ = agile_transient_state_name_code "toolchain_process_receipt.spi"
+    inl _ = agile_transient_state_name_code "ratings.spi"
+    inl _ = agile_record_required_name_bit "history.spi"
+    inl _ = agile_record_required_name_bit "ratings.spi"
+    inl _ = agile_record_required_name_bit "bench.spi"
+    inl _ = agile_record_required_name_bit "migration.spi"
+    inl _ = agile_record_required_name_bit "other.spi"
+    inl _ = agile_record_required_catalog "v1"
+    inl _ = agile_record_preflight_binding 15i32 0i32
+    inl _ = agile_record_preflight_binding 7i32 0i32
+    inl _ = agile_attestation_decision_binding 0i32 0i32
+    inl _ = agile_attestation_decision_binding 2i32 1i32
+    inl _ = agile_attestation_decision_binding 2i32 0i32
+    inl _ = agile_attestation_decision_binding 1i32 1i32
+    inl _ = agile_attestation_decision_binding 1i32 7i32
+    inl _ = agile_attestation_decision_binding 1i32 2i32
+    inl _ = agile_attestation_decision_binding 1i32 0i32
+    inl _ = classify_state_entry true false
+    0i32

@@ -1,0 +1,14 @@
+inl impossible_fact_derived_observation_cross_outcome () :
+    typed_fx_hashed_statement_closed_decision =
+    inl _, recorded_history =
+        typed_fx_hashed_statement_closed_history_values ()
+    decide_typed_fx_hashed_statement_closed_recorded_primary_at_head
+        recorded_history
+        (TypedFxHashedStatementClosedRecordedChangedAtHeadObservation (
+            TypedFxHashedStatementIdentityCollisionHere (
+                TypedFxStatementPayloadHashPrimaryChanged
+                    "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation",
+                "the-negative-collision-proof-is-indexed-by-the-recorded-primary-history")))
+
+inl main () =
+    impossible_fact_derived_observation_cross_outcome ()

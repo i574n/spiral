@@ -1,0 +1,60 @@
+nominal app_scope = ()
+nominal epoch1 = ()
+nominal owner_a = ()
+nominal pending = ()
+nominal running = ()
+nominal cancelled = ()
+nominal fresh = ()
+nominal used = ()
+
+union suspense_task scope epoch owner state =
+    | PendingTask :: forall scope epoch owner. string -> suspense_task scope epoch owner pending
+    | RunningTask :: forall scope epoch owner. string -> suspense_task scope epoch owner running
+    | CancelledTask :: forall scope epoch owner. string -> suspense_task scope epoch owner cancelled
+
+union cancel_token scope epoch owner state =
+    | FreshCancelToken :: forall scope epoch owner. string -> cancel_token scope epoch owner fresh
+    | UsedCancelToken :: forall scope epoch owner. string -> cancel_token scope epoch owner used
+
+union task_step scope epoch owner from to =
+    | StartTask :: forall scope epoch owner. task_step scope epoch owner pending running
+    | CancelRunning :: forall scope epoch owner. cancel_token scope epoch owner fresh -> task_step scope epoch owner running cancelled
+
+union rec task_plan scope epoch owner from to =
+    | TaskLeaf :: forall scope epoch owner from to.
+        task_step scope epoch owner from to
+        -> task_plan scope epoch owner from to
+    | TaskThen :: forall scope epoch owner from to.
+        (exists middle.
+            task_plan scope epoch owner from middle
+            * task_step scope epoch owner middle to)
+        -> task_plan scope epoch owner from to
+
+inl apply_step forall scope epoch owner from to.
+    (step : task_step scope epoch owner from to)
+    (task : suspense_task scope epoch owner from)
+    : suspense_task scope epoch owner to =
+    match step, task with
+    | StartTask, PendingTask label => RunningTask label
+    | CancelRunning (FreshCancelToken _), RunningTask _ => CancelledTask "suspense-cancelled"
+
+inl rec execute forall scope epoch owner from to.
+    (plan : task_plan scope epoch owner from to)
+    (task : suspense_task scope epoch owner from)
+    : suspense_task scope epoch owner to =
+    match plan with
+    | TaskLeaf step => apply_step step task
+    | TaskThen payload =>
+        inl exists middle. prefix, step = payload
+        apply_step step (execute prefix task)
+
+inl label forall scope epoch owner. (task : suspense_task scope epoch owner cancelled) : string =
+    match task with
+    | CancelledTask value => value
+
+inl main () : string =
+    inl task : suspense_task app_scope epoch1 owner_a pending = PendingTask "fetch"
+    inl token : cancel_token app_scope epoch1 owner_a fresh = FreshCancelToken "cancel"
+    inl plan : task_plan app_scope epoch1 owner_a pending cancelled =
+        TaskThen (exists (TaskLeaf StartTask, CancelRunning token))
+    label (execute plan task)

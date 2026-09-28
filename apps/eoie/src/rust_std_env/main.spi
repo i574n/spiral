@@ -1,0 +1,6 @@
+open model
+
+inl main () : i32 =
+    if model.args_len_is 0i32 then
+        if model.argument_equals 0i32 "missing" then 1i32 else 0i32
+    else 1i32

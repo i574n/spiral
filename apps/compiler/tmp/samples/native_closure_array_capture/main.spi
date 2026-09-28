@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl ~items : array i32 = create 2i32
+    inl f (z : i32) : i32 = length items +. z
+    inl ~g = f
+    g 40i32

@@ -1,0 +1,16 @@
+inl rust_global (x : string) : () = real
+    typecase `(!!!!LitToTypeLit(x)) with ~x =>
+    $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    rust_global "#![allow(clippy::needless_return, clippy::needless_late_init)]"
+    rust_global "use eoie_bundle_retention::{apply_retention, plan_retention};"
+    rust_global "use std::collections::BTreeSet;"
+    rust_global "use std::fs;"
+    rust_global "use std::path::{Path, PathBuf};"
+    rust_global "use std::time::{SystemTime, UNIX_EPOCH};"
+    rust_global "fn retention_probe_root() -> PathBuf { let stamp = SystemTime::now().duration_since(UNIX_EPOCH).expect(\"clock\").as_nanos(); std::env::temp_dir().join(format!(\"eoie-retention-probe-{}-{stamp}\", std::process::id())) }"
+    rust_global "fn retention_probe_name(index: usize) -> String { format!(\"bundle_eoie_alpha{index}.zip\") }"
+    rust_global "fn retention_probe_prepare(root: &Path) { fs::create_dir_all(root.join(\"state\")).expect(\"state\"); fs::write(root.join(\"state/package.spiproj\"), \"modules:\\n    retention_receipt\\n\").expect(\"package\"); for index in 1usize..=5 { fs::write(root.join(retention_probe_name(index)), vec![u8::try_from(index).expect(\"index\"); index * 3]).expect(\"bundle\"); } }"
+    rust_global "fn physical_probe() -> i32 { let root = retention_probe_root(); retention_probe_prepare(&root); let receipt = root.join(\"state/retention_receipt.spi\"); let current = retention_probe_name(5); let plan = plan_retention(&root, &current, &receipt).expect(\"plan\"); assert_eq!(plan.candidate_count, 5); assert_eq!(plan.delete_count, 2); assert_eq!(plan.keep, vec![retention_probe_name(3), retention_probe_name(4), retention_probe_name(5)]); let applied = apply_retention(&root, &current, &receipt, &plan.fingerprint).expect(\"apply\"); assert_eq!(applied.fingerprint, plan.fingerprint); let observed = fs::read_dir(&root).expect(\"read root\").filter_map(Result::ok).map(|entry| entry.file_name().to_string_lossy().into_owned()).filter(|name| name.ends_with(\".zip\")).collect::<BTreeSet<_>>(); let expected = [retention_probe_name(3), retention_probe_name(4), retention_probe_name(5)].into_iter().collect::<BTreeSet<_>>(); assert_eq!(observed, expected); let receipt_text = fs::read_to_string(receipt).expect(\"receipt\"); assert!(receipt_text.contains(\"status=applied\")); assert!(receipt_text.contains(\"remaining=3\")); assert!(!root.join(retention_probe_name(1)).exists()); assert!(!root.join(retention_probe_name(2)).exists()); assert!(!fs::read_dir(&root).expect(\"read root\").filter_map(Result::ok).any(|entry| entry.file_name().to_string_lossy().starts_with(\".eoie-retention-stage-\"))); fs::remove_dir_all(root).expect(\"cleanup\"); 0 }"
+    $"physical_probe()" : i32

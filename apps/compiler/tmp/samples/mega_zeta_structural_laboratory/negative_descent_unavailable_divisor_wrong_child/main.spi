@@ -1,0 +1,10 @@
+inl impossible_descent_unavailable_divisor_wrong_child forall natural divisor quotient.
+    (children : certified_interval_positive_positional_sealed_composite_children natural divisor quotient)
+    (wrong_blocked : certified_interval_positive_positional_recursive_descent_blocked natural quotient)
+    : certified_interval_positive_positional_legacy_completion_refusal natural =
+    CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailableDivisor (exists (
+        children,
+        wrong_blocked))
+
+inl main () =
+    impossible_descent_unavailable_divisor_wrong_child

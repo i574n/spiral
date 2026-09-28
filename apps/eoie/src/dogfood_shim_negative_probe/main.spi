@@ -1,0 +1,18 @@
+open dogfood_shim_contract.model
+
+inl main () : i32 =
+    match shim_decision_packed_binding 3i32 1i32 with
+    | -1 =>
+        match shim_decision_packed_binding 0i32 2i32 with
+        | 0 =>
+            match shim_decision_packed_binding 0i32 7i32 with
+            | 0 =>
+                match shim_install_packed_binding 8i32 0i32 with
+                | 0 =>
+                    match shim_uninstall_binding 0i32 4i32 with
+                    | 0 => 0i32
+                    | _ => 5i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

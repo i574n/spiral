@@ -1,0 +1,13 @@
+inl impossible_p2p_commit_tree_skipped_middle () :
+    erp_p2p_event_commit_tree nat_two requisition_drafted purchase_order_issued =
+    inl reserve_event =
+        erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
+    inl purchase_order_event =
+        erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ())
+    ErpP2PEventCommitTreeThen (exists (
+        ErpP2PEventCommitTreeOne reserve_event,
+        ErpP2PEventCommitTreeOne purchase_order_event,
+        v65_add_one_one_two ()))
+
+inl main () =
+    impossible_p2p_commit_tree_skipped_middle ()

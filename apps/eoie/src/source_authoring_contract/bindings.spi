@@ -1,0 +1,42 @@
+open model
+
+let source_authoring_shape_binding (target_safe : i32) (template_safe : i32) : i32 =
+    if !!!!LT(target_safe,1i32) then 0i32
+    elif !!!!LT(template_safe,1i32) then 0i32
+    else 1i32
+
+let source_authoring_template_binding (expected_match : i32) (template_nonempty : i32) : i32 =
+    if !!!!LT(expected_match,1i32) then 0i32
+    elif !!!!LT(template_nonempty,1i32) then 0i32
+    else 1i32
+
+let source_authoring_render_binding (binding_count : i32) (unresolved_count : i32) : i32 =
+    if !!!!LT(binding_count,1i32) then 0i32
+    elif !!!!LT(unresolved_count,0i32) then 0i32
+    elif !!!!LT(0i32,unresolved_count) then 0i32
+    else 1i32
+
+let source_authoring_freshness_binding (expected_code : i32) (observed_code : i32) : i32 =
+    if !!!!LT(expected_code,0i32) then 0i32
+    elif !!!!LT(observed_code,0i32) then 0i32
+    elif !!!!LT(1i32,expected_code) then 0i32
+    elif !!!!LT(1i32,observed_code) then 0i32
+    elif !!!!LT(expected_code,observed_code) then 0i32
+    elif !!!!LT(observed_code,expected_code) then 0i32
+    else 1i32
+
+let source_authoring_mode_binding (mode_code : i32) (write_count : i32) : i32 =
+    if !!!!LT(mode_code,0i32) then 0i32
+    elif !!!!LT(1i32,mode_code) then 0i32
+    elif !!!!LT(write_count,0i32) then 0i32
+    elif !!!!LT(mode_code,1i32) then
+        if !!!!LT(write_count,1i32) then 1i32 else 0i32
+    else
+        if !!!!LT(write_count,1i32) then 0i32
+        elif !!!!LT(1i32,write_count) then 0i32
+        else 1i32
+
+let source_authoring_commit_binding (write_ok : i32) (verify_ok : i32) : i32 =
+    if !!!!LT(write_ok,1i32) then 0i32
+    elif !!!!LT(verify_ok,1i32) then 0i32
+    else 1i32

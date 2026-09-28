@@ -1,0 +1,4 @@
+packages:
+    source_authoring_contract
+modules:
+    main

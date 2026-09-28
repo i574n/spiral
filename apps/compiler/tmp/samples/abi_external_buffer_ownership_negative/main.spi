@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl ~n = 4i32
+    inl ~buffer : array u8 = create n
+    inl ~byte_value = 65i32
+    inl ~count = 3i32
+    $"spiral_abi_libc_memset_owned(!buffer,!byte_value,!count)" : i32

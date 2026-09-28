@@ -1,0 +1,18 @@
+[package]
+name = "toolchain-argument-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "toolchain_argument_domain"
+path = "arguments.rs"
+
+[lints.rust]
+dead_code = "allow"
+
+[lints.clippy]
+needless_return = "allow"
+needless_late_init = "allow"
+needless_bool_assign = "allow"

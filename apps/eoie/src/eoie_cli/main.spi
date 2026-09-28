@@ -1,0 +1,3 @@
+inl main () : i32 =
+    eoie_cli_routing.routing_terminal.emit_runtime ()
+    eoie_cli_model.model.run ()

@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-critical-path-witness"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/critical_path_witness.rs"
+
+[dependencies]
+spiral-split-gears.workspace = true

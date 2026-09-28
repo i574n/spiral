@@ -1,0 +1,14 @@
+inl impossible_erp_p2p_three_event_wrong_version_sum () :
+    erp_p2p_event_store nat_three requisition_drafted purchase_order_issued =
+    inl reserve_event =
+        erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+    inl approvals_event =
+        erp_p2p_unit_event_from_plan (erp_p2p_collect_approvals_plan ())
+    inl purchase_order_event =
+        erp_p2p_unit_event_from_plan (erp_p2p_issue_purchase_order_plan ())
+    inl first_store, _ = erp_p2p_event_commit_then reserve_event approvals_event
+    inl final_store, _ = erp_p2p_event_commit_one purchase_order_event
+    erp_p2p_event_store_then first_store final_store (v65_add_one_one_two ())
+
+inl main () =
+    impossible_erp_p2p_three_event_wrong_version_sum ()

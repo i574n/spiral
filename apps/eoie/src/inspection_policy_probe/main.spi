@@ -1,0 +1,6 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    rust_global "#![allow(clippy::needless_late_init)]"
+    rust_global "fn inspection_policy_run() -> i32 {\n    let path = std::env::temp_dir().join(format!(\"eoie-inspection-policy-{}\", std::process::id()));\n    let _ = std::fs::remove_file(&path);\n    if std::fs::write(&path, b\"abc\").is_err() { return 10; }\n    let hash = eoie_proxy_search::inspection_file_sha256(&path);\n    let _ = std::fs::remove_file(&path);\n    if hash.as_deref() == Ok(\"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\") { 0 } else { 1 }\n}\n"
+    $"inspection_policy_run()" : i32

@@ -1,0 +1,39 @@
+union payload =
+    | Empty
+    | Nested : array (array i32)
+
+inl reserve_inner ~(xs : array i32) ~(capacity : i32) : () =
+    $'DynamicArrayReserve1(!xs,!capacity)'
+
+inl resize_inner ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize1(!xs,!new_length)'
+
+inl capacity_inner ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity1(!xs)'
+
+let score x : i32 =
+    match x with
+    | Empty => 0i32
+    | Nested outer =>
+        inl ~a = index outer 0i32
+        inl ~b = index outer 1i32
+        join reserve_inner a 3i32
+        join resize_inner b 1i32
+        join resize_inner b 2i32
+        set b 1i32 8i32
+        inl ~capacity = join capacity_inner a
+        length outer +. capacity +. index a 0i32 +. index a 1i32 +. index b 0i32 +. index b 1i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~outer : array (array i32) = create n
+    inl ~left : array i32 = create n
+    inl ~right : array i32 = create n
+    set left 0i32 3i32
+    set left 1i32 4i32
+    set right 0i32 5i32
+    set right 1i32 6i32
+    set outer 0i32 left
+    set outer 1i32 right
+    inl wrapped = Nested outer
+    score wrapped -. 26i32

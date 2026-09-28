@@ -1,0 +1,37 @@
+let receipt_row_tuple (line : string) : string * string * string * string * string =
+    inl empty = codec_empty ()
+    inl line_len = sm.length line : i32
+    inl first = find_char line 0i32 (char_tab ())
+    if (=.) first line_len then empty, empty, empty, empty, empty
+    else
+        inl kind = slice_exclusive line 0i32 first
+        if (=.) kind "snapshot" then
+            inl second = find_char line ((+.) first 1i32) (char_tab ())
+            if (<) second line_len then empty, empty, empty, empty, empty
+            else
+                inl value = slice_exclusive line ((+.) first 1i32) line_len
+                if (=.) value "" then empty, empty, empty, empty, empty
+                else "snapshot", value, empty, empty, empty
+        elif (=.) kind "module" then
+            inl second = find_char line ((+.) first 1i32) (char_tab ())
+            if (=.) second line_len then empty, empty, empty, empty, empty
+            else
+                inl third = find_char line ((+.) second 1i32) (char_tab ())
+                if (=.) third line_len then empty, empty, empty, empty, empty
+                else
+                    inl fourth = find_char line ((+.) third 1i32) (char_tab ())
+                    if (=.) fourth line_len then empty, empty, empty, empty, empty
+                    else
+                        inl fifth = find_char line ((+.) fourth 1i32) (char_tab ())
+                        if (<) fifth line_len then empty, empty, empty, empty, empty
+                        else
+                            inl path = slice_exclusive line ((+.) first 1i32) second
+                            inl bytes = slice_exclusive line ((+.) second 1i32) third
+                            inl fingerprint = slice_exclusive line ((+.) third 1i32) fourth
+                            inl attestation = slice_exclusive line ((+.) fourth 1i32) line_len
+                            if (=.) path "" then empty, empty, empty, empty, empty
+                            elif (=.) bytes "" then empty, empty, empty, empty, empty
+                            elif (=.) fingerprint "" then empty, empty, empty, empty, empty
+                            elif (=.) attestation "" then empty, empty, empty, empty, empty
+                            else "module", path, bytes, fingerprint, attestation
+        else empty, empty, empty, empty, empty

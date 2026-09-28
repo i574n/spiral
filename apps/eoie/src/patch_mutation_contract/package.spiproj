@@ -1,0 +1,7 @@
+packages:
+    rust_std_env
+    patch_model
+    patch_domain
+    patch_preflight_contract
+modules:
+    model

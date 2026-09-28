@@ -1,0 +1,78 @@
+let rec projection_find_digit_loop (text : string) (at : i32) (text_len : i32) : i32 =
+    if (=.) at text_len then text_len
+    else
+        inl digit = codec_decimal_digit_value (sm.index text at)
+        if (<) digit 10u64 then at
+        else projection_find_digit_loop text ((+.) at 1i32) text_len
+
+let rec projection_digit_start_loop (text : string) (at : i32) : i32 =
+    if (=.) at 0i32 then 0i32
+    else
+        inl before = (-.) at 1i32
+        inl digit = codec_decimal_digit_value (sm.index text before)
+        if (<) digit 10u64 then projection_digit_start_loop text before else at
+
+inl projection_first_u32_literal (line : string) (from : i32) : string =
+    inl line_len = sm.length line : i32
+    inl marker_at = find_text line from "u32"
+    if (=.) marker_at line_len then codec_empty ()
+    else
+        inl digit_from = projection_digit_start_loop line marker_at
+        if (=.) digit_from marker_at then codec_empty ()
+        else codec_u64_decimal_normalize (slice_exclusive line digit_from marker_at)
+
+inl projection_active_item (line : string) : string =
+    inl line_len = sm.length line : i32
+    inl quote0 = find_char line 0i32 (char_quote ())
+    if (=.) quote0 line_len then codec_empty ()
+    else
+        inl task_id, after_id, id_ok = parse_quoted line quote0
+        if id_ok then
+            inl quote1 = find_char line after_id (char_quote ())
+            if (=.) quote1 line_len then codec_empty ()
+            else
+                inl title, after_title, title_ok = parse_quoted line quote1
+                if title_ok && (<=) after_title line_len then
+                    inl progress = projection_first_u32_literal line after_title
+                    if (=.) progress "" then codec_empty ()
+                    else
+                        inl priority =
+                            if (<) (find_text line 0i32 ", P0,") line_len then "P0"
+                            elif (<) (find_text line 0i32 ", P1,") line_len then "P1"
+                            elif (<) (find_text line 0i32 ", P2,") line_len then "P2"
+                            else "P3+"
+                        inl status = if (<) (find_text line 0i32 ", Blocked,") line_len then "Blocked" else "Active"
+                        inl out0 = sm.concat priority " "
+                        inl out1 = sm.concat out0 status
+                        inl out2 = sm.concat out1 " "
+                        inl out3 = sm.concat out2 progress
+                        inl out4 = sm.concat out3 "% "
+                        inl out5 = sm.concat out4 task_id
+                        inl out6 = sm.concat out5 " — "
+                        sm.concat out6 title
+                else codec_empty ()
+        else codec_empty ()
+
+let rec handoff_active_work_projection_loop (source : string) (at : i32) (source_len : i32) (out : string) : string =
+    if (=.) at source_len then out
+    else
+        inl line_near_to = find_char source at (char_newline ())
+        inl line = slice_exclusive source at line_near_to
+        inl line_len = sm.length line : i32
+        inl next_at = if (=.) line_near_to source_len then source_len else (+.) line_near_to 1i32
+        inl is_task = (<) (find_text line 0i32 "Task (") line_len
+        inl is_active = (<) (find_text line 0i32 ", Active,") line_len
+        inl is_blocked = (<) (find_text line 0i32 ", Blocked,") line_len
+        if is_task && (is_active || is_blocked) then
+            inl item = projection_active_item line
+            if (=.) item "" then codec_empty ()
+            else
+                inl with_newline = sm.concat out "\n"
+                handoff_active_work_projection_loop source next_at source_len (sm.concat with_newline item)
+        else handoff_active_work_projection_loop source next_at source_len out
+
+let handoff_active_work_projection (source : string) : string =
+    handoff_active_work_projection_loop source 0i32 (sm.length source : i32) "ok"
+
+inl fixture_agile () : string =
+    "inl active () = Task (\"ACTIVE-WORK\", \"Do u32 active work\", TaskKind, P0, D4, 55u32, Active, \"\", \"x\", \"current\", \"current\")\ninl done () = Task (\"DONE-WORK\", \"Done work\", TaskKind, P0, D4, 100u32, Done, \"\", \"x\", \"current\", \"settled\")\ninl blocked () = Task (\"BLOCKED-WORK\", \"Wait for evidence\", TaskKind, P1, D6, 7u32, Blocked, \"\", \"x\", \"current\", \"current\")\n"

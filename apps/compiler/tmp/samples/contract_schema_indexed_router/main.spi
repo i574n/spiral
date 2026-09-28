@@ -1,0 +1,17 @@
+nominal no_params = ()
+nominal user_params = ()
+
+union route schema =
+    | HomeRoute :: route no_params
+    | UserRoute :: route user_params
+
+union route_params schema =
+    | NoParams :: route_params no_params
+    | UserId :: string -> route_params user_params
+
+inl href forall schema. (route : route schema) (parameters : route_params schema) : string =
+    match route, parameters with
+    | HomeRoute, NoParams => "/"
+    | UserRoute, UserId _ => "/users/42"
+
+inl main () : string = href UserRoute (UserId "42")

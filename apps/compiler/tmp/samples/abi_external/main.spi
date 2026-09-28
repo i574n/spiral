@@ -1,0 +1,3 @@
+inl main () : i32 = real
+    inl ~x = -42i32
+    $"spiral_abi_libc_abs(!x)" : i32

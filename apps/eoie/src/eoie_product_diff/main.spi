@@ -1,0 +1,18 @@
+open product_diff_contract.model
+open product_diff_contract.bindings
+open source_recovery_contract.model
+
+inl main () : i32 =
+    inl _ = product_diff_public_plan ()
+    inl _ = source_recovery_public_plan ()
+    inl _ = (proxy_product_diff_request_binding 1i32 1i32, proxy_product_diff_summary_binding 0i32 1i32, proxy_product_diff_worker_binding 1i32 56i32)
+    inl _ = (source_recovery_provenance_binding 0i32 0i32, source_recovery_warning_binding 0i32 1i32)
+    product_diff_contract.terminal.emit_runtime ()
+    recovery_terminal.emit_runtime ()
+    $"RustExportI32Binary(\"eoie_product_diff_request_binding\",\"proxy_product_diff_request_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_product_diff_summary_binding\",\"proxy_product_diff_summary_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_product_diff_worker_binding\",\"proxy_product_diff_worker_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_source_recovery_provenance_binding\",\"source_recovery_provenance_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_source_recovery_warning_binding\",\"source_recovery_warning_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

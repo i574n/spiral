@@ -1,0 +1,25 @@
+open path_tag_contract.model
+open path_tag_contract.path_tag_bindings
+open parallel_search_contract.model
+open parallel_search_contract.parallel_search_bindings
+inl emit_main () : i32 =
+    inl _ = path_tag_public_plan ()
+    inl _ = parallel_search_public_plan ()
+    inl _ = (proxy_path_tag_relative_packed_binding 0i32 1i32, proxy_path_tag_packed_indices_binding 0i32 64i32, proxy_path_tag_shape_binding 3i32 2i32, proxy_path_tag_determinism_binding 1i32 1i32, proxy_path_tag_collision_binding 0i32 0i32, proxy_parallel_search_request_binding 0i32 1i32, proxy_parallel_search_worker_binding 1i32 56i32, proxy_parallel_search_parity_binding 0i32 0i32, proxy_parallel_manifest_order_binding 1i32 1i32, proxy_parallel_manifest_parity_binding 1i32 1i32, proxy_parallel_consumer_mode_binding 1i32 1i32, proxy_parallel_consumer_output_binding 1i32 1i32, proxy_hash_tree_request_binding 1i32 1i32)
+    parallel_search_contract.search_terminal.emit_runtime ()
+    path_tag_contract.path_tag_terminal.emit_runtime ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_path_tag_relative_packed_binding\",\"proxy_path_tag_relative_packed_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_path_tag_packed_indices_binding\",\"proxy_path_tag_packed_indices_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_path_tag_shape_binding\",\"proxy_path_tag_shape_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_path_tag_determinism_binding\",\"proxy_path_tag_determinism_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_path_tag_collision_binding\",\"proxy_path_tag_collision_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_search_request_binding\",\"proxy_parallel_search_request_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_search_worker_binding\",\"proxy_parallel_search_worker_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_search_parity_binding\",\"proxy_parallel_search_parity_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_manifest_order_binding\",\"proxy_parallel_manifest_order_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_manifest_parity_binding\",\"proxy_parallel_manifest_parity_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_consumer_mode_binding\",\"proxy_parallel_consumer_mode_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_parallel_consumer_output_binding\",\"proxy_parallel_consumer_output_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_proxy_search_proxy_hash_tree_request_binding\",\"proxy_hash_tree_request_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

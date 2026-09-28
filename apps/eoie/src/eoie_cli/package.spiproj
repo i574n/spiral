@@ -1,0 +1,5 @@
+packages:
+    eoie_cli_model
+    eoie_cli_routing
+modules:
+    main

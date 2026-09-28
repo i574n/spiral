@@ -1,0 +1,13 @@
+inl impossible_recursive_beta_domain_mismatch () :
+    exact_linear_indexed_closed_recursive_beta_relation
+        exact_linear_bool_type exact_linear_bool_type =
+    ExactLinearIndexedClosedRecursiveBetaRelation (
+        ExactLinearIndexedClosedRecursiveBetaBodyBound
+            "the-negative-body-binds-Bool",
+        ExactLinearIndexedUnit (
+            ExactLinearIndexedAllUnusedEmpty
+                "the-negative-argument-is-closed",
+            "the-negative-tries-to-feed-Unit-to-a-Bool-domain-body"),
+        "the-recursive-relation-requires-the-body-domain-and-argument-type-to-match")
+
+inl main () = impossible_recursive_beta_domain_mismatch ()

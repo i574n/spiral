@@ -1,0 +1,51 @@
+nominal parallel = ()
+nominal serial = ()
+nominal validation_capability = ()
+nominal publication_capability = ()
+nominal ready = ()
+nominal committed = ()
+
+union validation_evidence status =
+    | ReadyEvidence :: validation_evidence ready
+
+union receipt status =
+    | CommittedReceipt :: receipt committed
+
+union job effect capability result =
+    | ValidateJob ::
+        job parallel validation_capability (validation_evidence ready)
+    | PublishJob ::
+        job serial publication_capability (receipt committed)
+
+union executable_job =
+    | ExecutableJob ::
+        (exists effect. exists capability. exists result.
+            job effect capability result * (result -> string))
+        -> executable_job
+
+inl run_job forall effect capability result.
+    (job : job effect capability result)
+    : result =
+    match job with
+    | ValidateJob => ReadyEvidence
+    | PublishJob => CommittedReceipt
+
+inl run_executable (packed : executable_job) : string =
+    match packed with
+    | ExecutableJob packed =>
+        inl exists effect. exists capability. exists result. job, render = packed
+        render (run_job job)
+
+inl render_validation (evidence : validation_evidence ready) : string =
+    match evidence with
+    | ReadyEvidence => "validated-job"
+
+inl render_publication (receipt : receipt committed) : string =
+    match receipt with
+    | CommittedReceipt => "heterogeneous-jobs"
+
+inl main () : string =
+    inl first = ExecutableJob (exists (exists (exists (ValidateJob, render_validation))))
+    inl second = ExecutableJob (exists (exists (exists (PublishJob, render_publication))))
+    inl _ = run_executable first
+    run_executable second

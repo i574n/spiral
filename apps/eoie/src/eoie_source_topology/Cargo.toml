@@ -1,0 +1,11 @@
+[package]
+name = "eoie-source-topology"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "topology.rs"
+
+[dependencies]
+eoie-proxy-search = { path = "../eoie_proxy_search" }

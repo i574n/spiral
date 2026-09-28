@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~left_name = "abc"
+    inl ~right_name = "wxyz"
+    inl left = (fun z => sm.length left_name +. z) : i32 -> i32
+    inl right = (fun z => sm.length right_name +. z -. 1i32) : i32 -> i32
+    inl ~flag = true
+    inl ~selected = if flag then left else right
+    join selected 39i32

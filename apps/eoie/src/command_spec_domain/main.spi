@@ -1,0 +1,31 @@
+inl main () : i32 =
+    inl _ = model.command_code "status"
+    inl _ = model.command_effect_code "status"
+    inl _ = model.command_subcommand_effect_code "patch:check"
+    inl _ = model.command_descriptor_by_index "0"
+    inl _ = model.command_descriptor_json_by_index "0"
+    inl _ = model.command_count ()
+    inl _ = model.command_catalog_witness ()
+    inl _ = model.command_schema_witness ()
+    inl _ = model.diagnostic_catalog_witness ()
+    inl _ = model.toolchain_action_code "cargo-check"
+    inl _ = model.proxy_usage "fs-read"
+    inl _ = model.proxy_route_code "plan-ir-check"
+    inl _ = model.proxy_route_witness ()
+    inl _ = model.help_flag_code "--schema"
+    inl _ = model.help_flag_witness ()
+    $"RustExportU64Unary(\"eoie_command_code\",\"command_code\")" : ()
+    $"RustExportU64Unary(\"eoie_command_effect_code\",\"command_effect_code\")" : ()
+    $"RustExportU64Unary(\"eoie_command_subcommand_effect_code\",\"command_subcommand_effect_code\")" : ()
+    $"RustExportStringTuple5Unary(\"eoie_command_descriptor\",\"command_descriptor_by_index\")" : ()
+    $"RustExportStringUnary(\"eoie_command_descriptor_json\",\"command_descriptor_json_by_index\")" : ()
+    $"RustExportI32(\"eoie_command_count\",\"command_count\")" : ()
+    $"RustExportI32(\"eoie_command_schema_witness\",\"command_schema_witness\")" : ()
+    $"RustExportU64Unary(\"eoie_toolchain_action_name_code\",\"toolchain_action_code\")" : ()
+    $"RustExportStringUnary(\"eoie_command_proxy_usage\",\"proxy_usage\")" : ()
+    $"RustExportU64Unary(\"eoie_proxy_route_code\",\"proxy_route_code\")" : ()
+    $"RustExportI32(\"eoie_proxy_route_witness\",\"proxy_route_witness\")" : ()
+    $"RustExportU64Unary(\"eoie_help_flag_code\",\"help_flag_code\")" : ()
+    $"RustExportI32(\"eoie_help_flag_witness\",\"help_flag_witness\")" : ()
+    $"RustLibrary()" : ()
+    0i32

@@ -1,0 +1,46 @@
+nominal vector_zero = ()
+nominal vector_succ n = ()
+
+union rec finite_vector alphabet length =
+    | FiniteVectorNil :: forall alphabet. finite_vector alphabet vector_zero
+    | FiniteVectorCons :: forall alphabet length. alphabet * finite_vector alphabet length -> finite_vector alphabet (vector_succ length)
+
+union rec finite_rank length =
+    | FiniteRankZero :: forall length. finite_rank (vector_succ length)
+    | FiniteRankSucc :: forall length. finite_rank length -> finite_rank (vector_succ length)
+
+inl rec finite_vector_lookup forall alphabet length.
+    (rank : finite_rank length)
+    (values : finite_vector alphabet length)
+    : alphabet =
+    match rank, values with
+    | FiniteRankZero, FiniteVectorCons (head, _) => head
+    | FiniteRankSucc previous, FiniteVectorCons (_, tail) =>
+        finite_vector_lookup previous tail
+
+union bit_symbol = BitZero | BitOne
+nominal bit_alphabet = bit_symbol
+
+type bit_length = vector_succ (vector_succ vector_zero)
+
+inl bit_values () : finite_vector bit_alphabet bit_length =
+    FiniteVectorCons (
+        bit_alphabet BitZero,
+        FiniteVectorCons (bit_alphabet BitOne, FiniteVectorNil))
+
+inl bit_rank_zero () : finite_rank bit_length = FiniteRankZero
+inl bit_rank_one () : finite_rank bit_length = FiniteRankSucc FiniteRankZero
+
+inl bit_is_zero (bit_alphabet symbol) : bool =
+    match symbol with
+    | BitZero => true
+    | BitOne => false
+
+inl bit_is_one (bit_alphabet symbol) : bool =
+    match symbol with
+    | BitZero => false
+    | BitOne => true
+
+inl main () : bool =
+    bit_is_zero (finite_vector_lookup (bit_rank_zero ()) (bit_values ())) &&
+    bit_is_one (finite_vector_lookup (bit_rank_one ()) (bit_values ()))

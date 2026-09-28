@@ -1,0 +1,156 @@
+open main
+
+nominal indexed_symbol_equality alphabet = alphabet -> alphabet -> bool
+
+inl make_indexed_symbol_equality forall alphabet {symbol_compare}. () : indexed_symbol_equality alphabet =
+    indexed_symbol_equality symbol_equal
+
+inl indexed_regex_same forall alphabet.
+    (capability : indexed_dfa_capability alphabet)
+    (left : regex alphabet)
+    (right : regex alphabet)
+    : bool =
+    match capability with
+    | indexed_dfa_capability (_, _, contains, _, _, _) =>
+        contains left (RegexListCons (right, RegexListNil))
+
+inl rec indexed_dfa_transition_vector_sound forall alphabet length.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_symbol_equality alphabet)
+    (closure : regex_list alphabet)
+    (expected_source : regex alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    (values : indexed_dfa_transition_vector alphabet length)
+    : bool =
+    match symbols with
+    | FiniteSymbolVectorNil =>
+        match values with
+        | IndexedDfaTransitionVectorNil => true
+    | FiniteSymbolVectorCons (expected_symbol, symbol_rest) =>
+        match values with
+        | IndexedDfaTransitionVectorCons (dfa_transition (source, actual_symbol, target), value_rest) =>
+            match capability, symbol_equality with
+            | indexed_dfa_capability (_, derive, contains, _, _, _), indexed_symbol_equality symbol_same =>
+                inl expected_target = derive expected_source expected_symbol
+                if symbol_same actual_symbol expected_symbol &&
+                   indexed_regex_same capability source expected_source &&
+                   indexed_regex_same capability target expected_target &&
+                   contains target closure then
+                    indexed_dfa_transition_vector_sound capability symbol_equality closure expected_source symbol_rest value_rest
+                else false
+
+inl rec indexed_dfa_transition_rows_sound forall alphabet length.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_symbol_equality alphabet)
+    (closure : regex_list alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    (states : regex_list alphabet)
+    (rows : indexed_dfa_transition_rows alphabet length)
+    : bool =
+    match states, rows with
+    | RegexListNil, IndexedDfaTransitionRowsNil => true
+    | RegexListNil, IndexedDfaTransitionRowsCons _ => false
+    | RegexListCons _, IndexedDfaTransitionRowsNil => false
+    | RegexListCons (state, state_rest), IndexedDfaTransitionRowsCons (row, row_rest) =>
+        if indexed_dfa_transition_vector_sound capability symbol_equality closure state symbols row then
+            indexed_dfa_transition_rows_sound capability symbol_equality closure symbols state_rest row_rest
+        else false
+
+union indexed_sound_dfa_surface_validation =
+    | IndexedSoundDfaSurfaceRejected
+    | IndexedSoundDfaSurfaceCertified : (exists alphabet length. indexed_dfa_surface alphabet length)
+
+inl seal_sound_indexed_dfa_surface forall alphabet.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_symbol_equality alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_sound_dfa_surface_validation =
+    if indexed_finite_alphabet_descriptor_certified capability descriptor then
+        match descriptor with
+        | indexed_finite_alphabet_descriptor packed =>
+            inl exists length. symbols = packed
+            inl closure = indexed_dfa_closure_with_vector capability start symbols
+            inl rows = indexed_dfa_rows_from_states capability symbols closure
+            if indexed_dfa_transition_rows_sound capability symbol_equality closure symbols closure rows then
+                IndexedSoundDfaSurfaceCertified (exists (
+                    indexed_dfa_surface (start, closure, rows)))
+            else IndexedSoundDfaSurfaceRejected
+    else IndexedSoundDfaSurfaceRejected
+
+nominal indexed_dfa_sound_case alphabet =
+    indexed_dfa_capability alphabet * indexed_symbol_equality alphabet * regex alphabet * indexed_finite_alphabet_descriptor alphabet
+nominal indexed_dfa_sound_check alphabet = bool
+nominal indexed_dfa_sound_program alphabet = capability_program indexed_dfa_sound_case indexed_dfa_sound_check alphabet
+
+inl capture_indexed_dfa_sound_program forall alphabet.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_symbol_equality alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_dfa_sound_program alphabet =
+    inl interpret (item : indexed_dfa_sound_case alphabet) : indexed_dfa_sound_check alphabet =
+        match item with
+        | indexed_dfa_sound_case (program_capability, program_symbol_equality, program_start, program_descriptor) =>
+            match seal_sound_indexed_dfa_surface program_capability program_symbol_equality program_start program_descriptor with
+            | IndexedSoundDfaSurfaceCertified _ => indexed_dfa_sound_check true
+            | IndexedSoundDfaSurfaceRejected => indexed_dfa_sound_check false
+    indexed_dfa_sound_program (
+        capability_program_make
+            (indexed_dfa_sound_case (capability, symbol_equality, start, descriptor))
+            interpret)
+
+inl run_indexed_dfa_sound_program forall alphabet.
+    (program : indexed_dfa_sound_program alphabet) : indexed_dfa_sound_check alphabet =
+    match program with
+    | indexed_dfa_sound_program generic_program => capability_program_run generic_program
+
+inl indexed_dfa_sound_program_passes forall alphabet.
+    (program : indexed_dfa_sound_program alphabet) : bool =
+    match run_indexed_dfa_sound_program program with
+    | indexed_dfa_sound_check result => result
+
+inl forged_target_bit_row () : indexed_dfa_transition_vector bit_alphabet bit_finite_length =
+    inl foreign_target = RegexStar (RegexChar (zero ()))
+    IndexedDfaTransitionVectorCons (
+        dfa_transition (ends_with_zero (), zero (), foreign_target),
+        IndexedDfaTransitionVectorCons (
+            dfa_transition (ends_with_zero (), one (), foreign_target),
+            IndexedDfaTransitionVectorNil))
+
+inl swapped_symbol_bit_row (capability : indexed_dfa_capability bit_alphabet) : indexed_dfa_transition_vector bit_alphabet bit_finite_length =
+    match capability with
+    | indexed_dfa_capability (_, derive, _, _, _, _) =>
+        IndexedDfaTransitionVectorCons (
+            dfa_transition (ends_with_zero (), one (), derive (ends_with_zero ()) (zero ())),
+            IndexedDfaTransitionVectorCons (
+                dfa_transition (ends_with_zero (), zero (), derive (ends_with_zero ()) (one ())),
+                IndexedDfaTransitionVectorNil))
+
+inl main () : string =
+    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+    inl bit_symbol_equality = make_indexed_symbol_equality `bit_alphabet ()
+    inl bit_descriptor = bit_indexed_finite_alphabet_descriptor ()
+    inl bit_closure = indexed_dfa_closure bit_capability (ends_with_zero ()) bit_descriptor
+    inl bit_symbols = bit_finite_symbol_vector ()
+    inl bit_rows = indexed_dfa_rows_from_states bit_capability bit_symbols bit_closure
+    assert_static (indexed_dfa_transition_rows_sound bit_capability bit_symbol_equality bit_closure bit_symbols bit_closure bit_rows) "constructed bit indexed DFA rows must be source-symbol-target sound and closed"
+    inl forged_target_rows = IndexedDfaTransitionRowsCons (forged_target_bit_row (), IndexedDfaTransitionRowsNil)
+    assert_static (bool_same (indexed_dfa_transition_rows_sound bit_capability bit_symbol_equality bit_closure bit_symbols bit_closure forged_target_rows) false) "out-of-closure or wrong-derivative target must fail soundness"
+    inl swapped_symbol_rows = IndexedDfaTransitionRowsCons (swapped_symbol_bit_row bit_capability, IndexedDfaTransitionRowsNil)
+    assert_static (bool_same (indexed_dfa_transition_rows_sound bit_capability bit_symbol_equality bit_closure bit_symbols bit_closure swapped_symbol_rows) false) "row with swapped symbol positions must fail soundness"
+    match seal_sound_indexed_dfa_surface bit_capability bit_symbol_equality (ends_with_zero ()) bit_descriptor with
+    | IndexedSoundDfaSurfaceCertified _ => ()
+    | IndexedSoundDfaSurfaceRejected => failwith "bit-sound-indexed-surface-must-certify"
+    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
+    inl tri_symbol_equality = make_indexed_symbol_equality `tri_alphabet ()
+    inl tri_descriptor = tri_indexed_finite_alphabet_descriptor ()
+    match seal_sound_indexed_dfa_surface tri_capability tri_symbol_equality (tri_ab_star_then_c ()) tri_descriptor with
+    | IndexedSoundDfaSurfaceCertified _ => ()
+    | IndexedSoundDfaSurfaceRejected => failwith "tri-sound-indexed-surface-must-certify"
+    inl sound_program_batch : matcher_batch indexed_dfa_sound_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (capture_indexed_dfa_sound_program bit_capability bit_symbol_equality (ends_with_zero ()) bit_descriptor),
+            MatchBatchSingle (capture_indexed_dfa_sound_program tri_capability tri_symbol_equality (tri_ab_star_then_c ()) tri_descriptor))
+    assert_static (matcher_batch_forall `$indexed_dfa_sound_program_passes sound_program_batch) "higher-ranked DFA certificate programs must preserve alphabet-indexed soundness"
+    "brzozowski-indexed-sound-dfa-certificate-green"

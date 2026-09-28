@@ -1,0 +1,12 @@
+[package]
+name = "eoie-cold-rebuild-matrix"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+path = "matrix.rs"
+
+[dependencies]
+eoie-source-map = { path = "../eoie_source_map" }

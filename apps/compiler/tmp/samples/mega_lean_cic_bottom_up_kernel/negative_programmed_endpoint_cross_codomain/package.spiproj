@@ -1,0 +1,6 @@
+---
+packageDir: ../..
+packages:
+    mega_lean_cic_bottom_up_kernel-
+modules:
+    main

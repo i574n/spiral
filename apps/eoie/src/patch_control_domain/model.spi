@@ -1,0 +1,92 @@
+nominal patch_plan_parsed = ()
+nominal patch_plan_witnessed = ()
+nominal patch_operation_ordered = ()
+nominal patch_guard_authorized = ()
+nominal patch_commit_authorized = ()
+
+union patch_control_step from to =
+    | WitnessPatchPlan :: patch_control_step patch_plan_parsed patch_plan_witnessed
+    | AuthorizePatchOperation :: patch_control_step patch_plan_witnessed patch_operation_ordered
+    | AuthorizePatchGuard :: patch_control_step patch_operation_ordered patch_guard_authorized
+    | AuthorizePatchCommit :: patch_control_step patch_guard_authorized patch_commit_authorized
+
+union rec patch_control_plan from to =
+    | PatchControlStep :: forall from to. patch_control_step from to -> patch_control_plan from to
+    | PatchControlThen :: forall from to. (exists middle. patch_control_plan from middle * patch_control_plan middle to) -> patch_control_plan from to
+
+inl native_patch_control_plan () : patch_control_plan patch_plan_parsed patch_commit_authorized =
+    PatchControlThen (exists (
+        PatchControlStep WitnessPatchPlan,
+        PatchControlThen (exists (
+            PatchControlStep AuthorizePatchOperation,
+            PatchControlThen (exists (
+                PatchControlStep AuthorizePatchGuard,
+                PatchControlStep AuthorizePatchCommit
+            ))
+        ))
+    ))
+
+let patch_witness_authorized (validated : i32) (parsed : i32) : i32 =
+    if !!!!LT(validated,1i32) then 0i32
+    elif !!!!LT(parsed,1i32) then 0i32
+    elif !!!!LT(validated,parsed) then 0i32
+    elif !!!!LT(parsed,validated) then 0i32
+    else 1i32
+
+let patch_operation_authorized (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+let patch_operation_next (cursor : i32) (total : i32) : i32 =
+    if !!!!LT(cursor,0i32) then -1i32
+    elif !!!!LT(total,1i32) then -1i32
+    elif !!!!LT(cursor,total) then !!!!Add(cursor,1i32)
+    else -1i32
+
+let patch_match_authorized (count : i32) (operation_authorized : i32) : i32 =
+    if !!!!LT(operation_authorized,1i32) then 0i32
+    elif !!!!LT(1i32,operation_authorized) then 0i32
+    elif !!!!LT(count,1i32) then 0i32
+    elif !!!!LT(1i32,count) then 0i32
+    else 1i32
+
+let patch_commit_authorized (expected : i32) (committed : i32) : i32 =
+    patch_witness_authorized expected committed
+
+nominal restoration_attempt_pending = ()
+nominal restoration_attempt_recorded = ()
+
+union restoration_attempt_outcome =
+    | RestorationSucceeded
+    | RestorationFailed
+
+union restoration_attempt_step from to =
+    | RecordRestorationSuccess :: restoration_attempt_step restoration_attempt_pending restoration_attempt_recorded
+    | RecordRestorationFailure :: restoration_attempt_step restoration_attempt_pending restoration_attempt_recorded
+
+inl restoration_attempt_witness outcome : restoration_attempt_step restoration_attempt_pending restoration_attempt_recorded =
+    match outcome with
+    | RestorationSucceeded => RecordRestorationSuccess
+    | RestorationFailed => RecordRestorationFailure
+
+let restoration_payload_identity (selected : i32) (observed_stage : i32) : i32 =
+    if !!!!LT(selected,0i32) then -1i32
+    elif !!!!LT(observed_stage,0i32) then -1i32
+    elif !!!!LT(selected,observed_stage) then -1i32
+    elif !!!!LT(observed_stage,selected) then -1i32
+    else selected
+
+let restoration_payload_slot_binding (identity : i32) (slot_authorized : i32) : i32 =
+    if !!!!LT(identity,0i32) then -1i32
+    elif !!!!LT(slot_authorized,1i32) then -1i32
+    elif !!!!LT(1i32,slot_authorized) then -1i32
+    else identity
+
+let restoration_payload_outcome_binding (identity : i32) (outcome : i32) : i32 =
+    if !!!!LT(identity,0i32) then -1i32
+    elif !!!!LT(outcome,1i32) then -1i32
+    elif !!!!LT(2i32,outcome) then -1i32
+    else identity

@@ -1,0 +1,36 @@
+inl (~!\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl concat5 (~a : string) (~b : string) (~c : string) (~d : string) (~e : string) : string =
+    !\((a,b,c,d,e), $'"std::rc::Rc::<str>::from([&*$0, &*$1, &*$2, &*$3, &*$4].concat())"')
+
+inl equals (a : string) (b : string) : bool =
+    $'!a == !b '
+
+inl pipe_member (~members : string) (~value : string) : bool =
+    !\((members,value), $'"$0.split(\"|\").any(|item| item == &*$1)"')
+
+inl pipe_index (~members : string) (~value : string) : u64 =
+    !\((members,value), $'"$0.split(\"|\").position(|item| item == &*$1).map(|index| index as u64).unwrap_or(u64::MAX)"')
+
+inl pipe_lookup (~members : string) (~values : string) (~value : string) : string =
+    !\((members,values,value), $'"$0.split(\"|\").zip($1.split(char::from(10u8))).find_map(|(key,item)| if key == &*$2 { Some(std::rc::Rc::<str>::from(item)) } else { None }).unwrap_or_else(|| std::rc::Rc::<str>::from(\"\"))"')
+
+
+inl starts_with (text : string) (prefix : string) : bool =
+    !\((text,prefix), $'"$0.starts_with(&*$1)"')
+
+inl ends_with (text : string) (suffix : string) : bool =
+    !\((text,suffix), $'"$0.ends_with(&*$1)"')
+
+inl contains (text : string) (needle : string) : bool =
+    !\((text,needle), $'"$0.contains(&*$1)"')
+
+inl replace (text : string) (from : string) (into : string) : string =
+    !\((text,from,into), $'"std::rc::Rc::<str>::from($0.replace(&*$1, &$2))"')
+
+inl trim (text : string) : string =
+    !\(text, $'"std::rc::Rc::<str>::from($0.trim())"')
+
+inl trim_end_matches (text : string) (suffix : string) : string =
+    !\((text,suffix), $'"std::rc::Rc::<str>::from($0.trim_end_matches(&*$1))"')

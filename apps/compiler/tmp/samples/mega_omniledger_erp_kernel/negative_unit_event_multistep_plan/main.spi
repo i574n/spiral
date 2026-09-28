@@ -1,0 +1,9 @@
+inl impossible_unit_event_multistep_plan () :
+    erp_p2p_unit_event requisition_drafted approvals_collected =
+    ErpP2PUnitEvent (exists (
+        ErpThen (exists (
+            erp_p2p_reserve_budget_plan (),
+            erp_p2p_collect_approvals_plan ()))))
+
+inl main () =
+    impossible_unit_event_multistep_plan ()

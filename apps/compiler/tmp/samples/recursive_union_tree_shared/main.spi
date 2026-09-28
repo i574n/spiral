@@ -1,0 +1,14 @@
+union rec int_tree =
+    | Leaf
+    | Node : i32 * int_tree * int_tree
+
+let rec sum tree : i32 =
+    match tree with
+    | Leaf => 0i32
+    | Node (value, left, right) => value +. (sum left +. sum right)
+
+inl main () : i32 =
+    inl leaf = Leaf
+    inl branch = Node (2i32, leaf, leaf)
+    inl tree = Node (1i32, branch, branch)
+    sum tree -. 5i32

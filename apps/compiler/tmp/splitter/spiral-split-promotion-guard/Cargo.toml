@@ -1,0 +1,10 @@
+[package]
+name = "spiral-split-promotion-guard"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "spiral-performance-gate"
+path = "src/promotion_guard.rs"

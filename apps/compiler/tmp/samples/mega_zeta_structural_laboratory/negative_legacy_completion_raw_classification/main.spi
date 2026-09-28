@@ -1,0 +1,8 @@
+inl impossible_legacy_completion_raw_classification () =
+    CertifiedIntervalPositivePositionalLegacyCompletionRefused (
+        classify_certified_interval_positive_positional_sealed_factor
+            (positive_positional_twelve_value ()),
+        "a-sealed-classification-alone-can-no-longer-forge-a-completion-refusal")
+
+inl main () =
+    impossible_legacy_completion_raw_classification ()

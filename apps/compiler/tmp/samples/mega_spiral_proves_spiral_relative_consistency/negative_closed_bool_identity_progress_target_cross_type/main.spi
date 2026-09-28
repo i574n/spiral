@@ -1,0 +1,16 @@
+inl impossible_closed_bool_identity_progress_target_cross_type () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type =
+    inl relation :
+        exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type =
+        ExactLinearIndexedClosedIdentityBetaRelation (
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-Bool-identity-argument-is-BoolTrue"),
+            "the-negative-attempts-to-observe-a-Bool-target-as-Unit")
+    exact_linear_indexed_closed_identity_beta_target relation
+
+inl main () =
+    impossible_closed_bool_identity_progress_target_cross_type ()

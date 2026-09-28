@@ -1,0 +1,13 @@
+open product_diff_contract.model
+
+inl main () : i32 =
+    inl _ = product_diff_public_plan ()
+    match product_diff_request_binding 1i32 1i32 with
+    | 1 =>
+        match product_diff_summary_binding 0i32 1i32 with
+        | 1 =>
+            match product_diff_summary_binding 3i32 7i32 with
+            | 1 => 0i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

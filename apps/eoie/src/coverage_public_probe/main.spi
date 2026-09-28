@@ -1,0 +1,54 @@
+open rust_std_env.model
+open rust_std_process.model
+open rust_std_fs.model
+open rust_std_fs.rooted_effects
+open rust_std_string.model
+
+nominal probe_start = ()
+nominal probe_fixtures = ()
+nominal probe_union = ()
+nominal probe_assess_ok = ()
+nominal probe_assess_floor = ()
+nominal probe_assess_parse = ()
+nominal probe_done = ()
+
+union coverage_public_probe from to =
+    | PrepareCoverageFixtures :: coverage_public_probe probe_start probe_fixtures
+    | UnionCoverage :: coverage_public_probe probe_fixtures probe_union
+    | AssessCoverage :: coverage_public_probe probe_union probe_assess_ok
+    | RejectCoverageFloor :: coverage_public_probe probe_assess_ok probe_assess_floor
+    | RejectCoverageParse :: coverage_public_probe probe_assess_floor probe_assess_parse
+    | FinishCoverageProbe :: coverage_public_probe probe_assess_parse probe_done
+
+inl main () : i32 =
+    inl eoie = argument_owned 0i32
+    inl base = "/mnt/data/eoie-coverage-public-probe"
+    inl first = "/mnt/data/eoie-coverage-public-probe/first.lcov"
+    inl second = "/mnt/data/eoie-coverage-public-probe/second.lcov"
+    inl merged = "/mnt/data/eoie-coverage-public-probe/merged.lcov"
+    inl comma = ","
+    inl first_text = concat5 "TN:\nSF:src/example.rs\nDA:1" comma "1\nDA:2" comma "0\nLF:2\nLH:1\nend_of_record\n"
+    inl second_text = concat5 "TN:\nSF:src/example.rs\nDA:1" comma "0\nDA:2" comma "2\nLF:2\nLH:1\nend_of_record\n"
+    inl _ = cleanup_tree base
+    inl _ : coverage_public_probe probe_start probe_fixtures = PrepareCoverageFixtures
+    if create_dir base && write_text first first_text && write_text second second_text then
+        inl _ : coverage_public_probe probe_fixtures probe_union = UnionCoverage
+        inl union_code = status_code5 eoie "proxy" "coverage-union" merged first second
+        if !!!!EQ(union_code,0i32) then
+            inl _ : coverage_public_probe probe_union probe_assess_ok = AssessCoverage
+            inl assess_ok = status_code7 eoie "proxy" "coverage-assess" first second "500" "500" "1000"
+            if !!!!EQ(assess_ok,0i32) then
+                inl _ : coverage_public_probe probe_assess_ok probe_assess_floor = RejectCoverageFloor
+                inl assess_floor = status_code7 eoie "proxy" "coverage-assess" first second "1000" "1000" "1000"
+                if !!!!NEQ(assess_floor,0i32) then
+                    inl _ : coverage_public_probe probe_assess_floor probe_assess_parse = RejectCoverageParse
+                    inl assess_parse = status_code7 eoie "proxy" "coverage-assess" first second "bad" "500" "500"
+                    if !!!!NEQ(assess_parse,0i32) then
+                        inl _ : coverage_public_probe probe_assess_parse probe_done = FinishCoverageProbe
+                        inl _ = cleanup_tree base
+                        0i32
+                    else 51i32
+                else 41i32
+            else 31i32
+        else 21i32
+    else 11i32

@@ -1,0 +1,25 @@
+open release_closeout_contract.model
+open release_closeout_contract.bindings
+
+inl main () : i32 =
+    match release_closeout_shape_binding 63i32 6i32 with
+    | 1 =>
+        match release_closeout_migration_binding 259i32 259i32 with
+        | 1 =>
+            match release_closeout_evidence_binding 7i32 7i32 with
+            | 1 =>
+                match release_closeout_mode_binding 0i32 0i32 with
+                | 1 =>
+                    match release_closeout_mode_binding 1i32 3i32 with
+                    | 1 =>
+                        match release_closeout_commit_binding 7i32 7i32 with
+                        | 1 =>
+                            match release_closeout_refresh_binding 127i32 127i32 with
+                            | 1 => 0i32
+                            | _ => 7i32
+                        | _ => 6i32
+                    | _ => 5i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

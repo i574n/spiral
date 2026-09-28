@@ -1,0 +1,63 @@
+nominal observation_idle = ()
+nominal observation_running = ()
+nominal observation_done = ()
+
+union observation_input =
+    | ObservationNoInput
+    | ObservationInputText :: string -> observation_input
+
+union observation_plan from to =
+    | ObservationLaunch :: observation_input * u64 -> observation_plan observation_idle observation_running
+    | ObservationFinish :: observation_plan observation_running observation_done
+
+union process_receipt_outcome =
+    | ReceiptPassed
+    | ReceiptNonzeroExit
+    | ReceiptSignaled
+    | ReceiptTimedOut
+    | ReceiptSpawnRejected
+    | ReceiptWrapperError
+
+union process_receipt_wrapper_status =
+    | WrapperPassed
+    | WrapperFailed
+    | WrapperTimedOut
+    | WrapperRejected
+
+union process_receipt_retryability =
+    | ReceiptRetryable
+    | ReceiptNotRetryable
+
+inl smoke_outcome () : process_receipt_outcome = ReceiptPassed
+inl smoke_wrapper_status () : process_receipt_wrapper_status = WrapperPassed
+inl smoke_retryability () : process_receipt_retryability = ReceiptNotRetryable
+
+let process_receipt_policy_export (outcome_code : i32) (field_code : i32) : i32 =
+    if !!!!EQ(field_code,0i32) then
+        if !!!!EQ(outcome_code,0i32) then 0i32
+        elif !!!!EQ(outcome_code,3i32) then 2i32
+        elif !!!!EQ(outcome_code,4i32) then 3i32
+        else 1i32
+    elif !!!!EQ(field_code,1i32) then
+        if !!!!EQ(outcome_code,3i32) || !!!!EQ(outcome_code,4i32) || !!!!EQ(outcome_code,5i32) then 1i32
+        else 0i32
+    else -1i32
+
+inl smoke_plan () : observation_plan observation_idle observation_running =
+    ObservationLaunch (ObservationInputText "observation-smoke", 5000u64)
+
+inl rust_global (x : string) : () = real
+    typecase `(!!!!LitToTypeLit(x)) with ~x =>
+    $"RustGlobal(@x)" : ()
+
+inl emit_policy_exports () : () =
+    inl _ = process_receipt_policy_export 0i32 0i32
+    inl _ = process_receipt_policy_export 3i32 1i32
+    $"RustExportI32Binary(\"eoie_process_receipt_policy_binding\",\"process_receipt_policy_export\")" : ()
+
+inl emit_runtime () : () =
+    rust_global "use eoie_process::{\n    run_bounded_capture_with_input, run_bounded_streaming, ProcessStreamKind,\n};\n\npub fn run_bounded_observed_with_input(\n    command: &mut std::process::Command,\n    timeout_ms: u64,\n    input: Option<&[u8]>,\n) -> Result<ProcessObservation, String> {\n    let started = std::time::Instant::now();\n    let capture = run_bounded_capture_with_input(command, timeout_ms, input)?;\n    let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);\n    Ok(ProcessObservation {\n        status: capture.status,\n        termination: capture.termination,\n        elapsed_ms,\n        stdout: capture.stdout,\n        stderr: capture.stderr,\n    })\n}\n\nfn replay_process_chunk(kind: ProcessStreamKind, bytes: &[u8]) -> Result<(), String> {\n    match kind {\n        ProcessStreamKind::Stdout => std::io::Write::write_all(&mut std::io::stdout(), bytes)\n            .map_err(|error| format!(\"stream stdout: {error}\")),\n        ProcessStreamKind::Stderr => std::io::Write::write_all(&mut std::io::stderr(), bytes)\n            .map_err(|error| format!(\"stream stderr: {error}\")),\n    }\n}\n\npub fn run_bounded_streaming_observed(\n    command: &mut std::process::Command,\n    timeout_ms: u64,\n    input: Option<&[u8]>,\n) -> Result<ProcessObservation, String> {\n    let started = std::time::Instant::now();\n    let capture = run_bounded_streaming(command, timeout_ms, input, replay_process_chunk)?;\n    let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);\n    Ok(ProcessObservation {\n        status: capture.status,\n        termination: capture.termination,\n        elapsed_ms,\n        stdout: capture.stdout,\n        stderr: capture.stderr,\n    })\n}\n\nfn process_receipt_digest(bytes: &[u8]) -> String {\n    let hash = bytes.iter().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3));\n    format!(\"fnv1a64:{hash:016x}\")\n}\n\nfn process_receipt_env_name_allowed(name: &str) -> bool {\n    let upper = name.to_ascii_uppercase();\n    ![\"SECRET\", \"TOKEN\", \"PASSWORD\", \"CREDENTIAL\", \"PRIVATE\", \"AUTH\", \"KEY\"]\n        .iter()\n        .any(|marker| upper.contains(marker))\n}\n\nfn process_receipt_env_names(command: &std::process::Command) -> String {\n    let mut names = command\n        .get_envs()\n        .filter_map(|(name, _)| name.to_str())\n        .filter(|name| process_receipt_env_name_allowed(name))\n        .map(str::to_owned)\n        .collect::<Vec<_>>();\n    names.sort();\n    names.dedup();\n    if names.is_empty() { \"none\".to_owned() } else { names.join(\",\") }\n}\n\nfn process_receipt_outcome_code(observation: &ProcessObservation) -> i32 {\n    if observation.termination == ProcessTermination::TimedOut { return 3; }\n    match observation.termination {\n        ProcessTermination::Signaled(_) => 2,\n        _ if observation.status.success() => 0,\n        _ => 1,\n    }\n}\n\nfn process_receipt_status_name(code: i32) -> &'static str {\n    match code { 0 => \"passed\", 1 => \"failed\", 2 => \"timed_out\", 3 => \"rejected\", _ => \"invalid\" }\n}\n\nfn process_receipt_retry_name(code: i32) -> &'static str {\n    match code { 0 => \"not_retryable\", 1 => \"retryable\", _ => \"invalid\" }\n}\n\nfn process_receipt_command_fields(command: &std::process::Command) -> (String, String, String) {\n    let cwd = command.get_current_dir().map_or_else(|| \"<inherit>\".to_owned(), |path| path.display().to_string());\n    let program = command.get_program().to_string_lossy().into_owned();\n    (cwd, program, process_receipt_env_names(command))\n}\n\nfn emit_process_exit_receipt(command: &std::process::Command, label: &str, observation: &ProcessObservation) {\n    let outcome = process_receipt_outcome_code(observation);\n    let wrapper_status = eoie_process_receipt_policy_binding(outcome, 0);\n    let retryability = eoie_process_receipt_policy_binding(outcome, 1);\n    let child_exit = observation.status.code().map_or_else(|| \"none\".to_owned(), |code| code.to_string());\n    let signal = match observation.termination { ProcessTermination::Signaled(signal) => signal.to_string(), _ => \"none\".to_owned() };\n    let timeout = i32::from(observation.termination == ProcessTermination::TimedOut);\n    let (cwd, program, env_names) = process_receipt_command_fields(command);\n    println!(\"eoie process-exit receipt label={label} wrapper_status={} child_exit={} signal={} timeout={} stderr_digest={} retryability={} cwd={:?} program={:?} env_names={} elapsed_ms={} stdout_bytes={} stderr_bytes={}\", process_receipt_status_name(wrapper_status), child_exit, signal, timeout, process_receipt_digest(&observation.stderr), process_receipt_retry_name(retryability), cwd, program, env_names, observation.elapsed_ms, observation.stdout.len(), observation.stderr.len());\n}\n\nfn emit_process_error_receipt(command: &std::process::Command, label: &str, elapsed_ms: u64, error: &str) {\n    let outcome = if error.starts_with(\"spawn process:\") { 4 } else { 5 };\n    let wrapper_status = eoie_process_receipt_policy_binding(outcome, 0);\n    let retryability = eoie_process_receipt_policy_binding(outcome, 1);\n    let (cwd, program, env_names) = process_receipt_command_fields(command);\n    println!(\"eoie process-exit receipt label={label} wrapper_status={} child_exit=none signal=none timeout=0 stderr_digest={} retryability={} cwd={:?} program={:?} env_names={} elapsed_ms={} stdout_bytes=0 stderr_bytes={}\", process_receipt_status_name(wrapper_status), process_receipt_digest(error.as_bytes()), process_receipt_retry_name(retryability), cwd, program, env_names, elapsed_ms, error.len());\n}\n\npub fn run_bounded_receipted_observed(\n    command: &mut std::process::Command,\n    timeout_ms: u64,\n    label: &str,\n) -> Result<ProcessObservation, String> {\n    let started = std::time::Instant::now();\n    match run_bounded_observed(command, timeout_ms) {\n        Ok(observation) => { emit_process_exit_receipt(command, label, &observation); Ok(observation) }\n        Err(error) => {\n            let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);\n            emit_process_error_receipt(command, label, elapsed_ms, &error);\n            Err(error)\n        }\n    }\n}\n\npub fn run_bounded_streaming_receipted_observed(\n    command: &mut std::process::Command,\n    timeout_ms: u64,\n    label: &str,\n    input: Option<&[u8]>,\n) -> Result<ProcessObservation, String> {\n    let started = std::time::Instant::now();\n    match run_bounded_streaming_observed(command, timeout_ms, input) {\n        Ok(observation) => { emit_process_exit_receipt(command, label, &observation); Ok(observation) }\n        Err(error) => {\n            let elapsed_ms = u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX);\n            emit_process_error_receipt(command, label, elapsed_ms, &error);\n            Err(error)\n        }\n    }\n}\n\npub fn run_bounded_streaming_checked(\n    command: &mut std::process::Command,\n    timeout_ms: u64,\n    label: &str,\n    input: Option<&[u8]>,\n) -> Result<ProcessObservation, String> {\n    let observation = run_bounded_streaming_receipted_observed(command, timeout_ms, label, input)?;\n    if observation.termination == ProcessTermination::TimedOut {\n        return Err(format!(\n            \"{label} timed out after {timeout_ms} ms; stderr={}\",\n            process_output_preview(&observation.stderr)\n        ));\n    }\n    if !observation.status.success() {\n        return Err(format!(\n            \"{label} failed: {} termination={:?} stderr={}\",\n            observation.status, observation.termination, process_output_preview(&observation.stderr)\n        ));\n    }\n    println!(\n        \"eoie process plan={label} status=passed termination={:?} elapsed_ms={} stdout_bytes={} stderr_bytes={} streamed=true input_bytes={}\",\n        observation.termination,\n        observation.elapsed_ms,\n        observation.stdout.len(),\n        observation.stderr.len(),\n        input.map_or(0, <[u8]>::len)\n    );\n    Ok(observation)\n}\n"
+
+inl main () : i32 =
+    inl _ = smoke_plan ()
+    0i32

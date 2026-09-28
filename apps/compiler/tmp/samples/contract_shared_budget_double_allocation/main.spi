@@ -1,0 +1,30 @@
+nominal nat_zero = ()
+nominal nat_one = ()
+nominal nat_two = ()
+nominal nat_three = ()
+nominal nat_five = ()
+nominal company_a = string
+nominal usd = string
+nominal department_alpha = string
+nominal department_beta = string
+
+union nat_add left right total =
+    | AddTwoThreeFive :: string -> nat_add nat_two nat_three nat_five
+    | AddTwoOneThree :: string -> nat_add nat_two nat_one nat_three
+
+nominal shared_budget_certificate entity currency left_department right_department left right remaining intermediate total =
+    entity * currency * left_department * right_department * nat_add left intermediate total * nat_add right remaining intermediate
+
+inl wrong_second_split () : nat_add nat_two nat_two nat_three =
+    AddTwoOneThree "beta-attempts-two-but-only-one-remains"
+
+inl main () : string =
+    inl certificate : shared_budget_certificate company_a usd department_alpha department_beta nat_two nat_two nat_two nat_three nat_five =
+        shared_budget_certificate (
+            company_a "company-a",
+            usd "usd",
+            department_alpha "alpha",
+            department_beta "beta",
+            AddTwoThreeFive "alpha-reserves-two",
+            wrong_second_split ())
+    "should-not-compile-double-allocation"

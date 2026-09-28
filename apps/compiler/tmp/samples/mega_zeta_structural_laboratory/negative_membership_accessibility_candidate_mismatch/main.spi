@@ -1,0 +1,18 @@
+inl impossible_factor_membership_accessibility_candidate_mismatch () :
+    positive_positional_nat positional_one *
+    positive_positional_predecessor_accessibility positional_one =
+    inl membership :
+        certified_interval_positive_positional_factor_membership
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        CertifiedIntervalPositivePositionalFactorMembershipHere (
+            positive_positional_two_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorOneBit PositivePositionalOne,
+            "the-membership-is-rooted-at-three-and-indexed-by-factor-two")
+    derive_certified_interval_positive_positional_factor_membership_accessibility
+        membership
+
+inl main () =
+    impossible_factor_membership_accessibility_candidate_mismatch ()

@@ -1,0 +1,47 @@
+nominal product_diff_raw = ()
+nominal product_diff_rooted = ()
+nominal product_diff_manifested = ()
+nominal product_diff_compared = ()
+nominal product_diff_reported = ()
+
+union product_diff_policy =
+    | RejectInvalidRoots
+    | RejectSymlinks
+    | ReuseDeterministicManifest
+    | CompareByRelativeIdentity
+    | HashRegularFiles
+    | ClassifyAddedRemovedChangedUnchanged
+    | ReportDeterministically
+
+union product_diff_op from to =
+    | ValidateProductRoots :: product_diff_op product_diff_raw product_diff_rooted
+    | ManifestProductTrees :: product_diff_op product_diff_rooted product_diff_manifested
+    | CompareProductEntries :: product_diff_op product_diff_manifested product_diff_compared
+    | ReportProductDiff :: product_diff_op product_diff_compared product_diff_reported
+
+union rec product_diff_plan from to =
+    | ProductDiffStep :: forall from to. product_diff_op from to -> product_diff_plan from to
+    | ProductDiffThen :: forall from to. (exists middle. product_diff_plan from middle * product_diff_plan middle to) -> product_diff_plan from to
+
+inl product_diff_public_plan () : product_diff_plan product_diff_raw product_diff_reported =
+    ProductDiffThen (exists (
+        ProductDiffStep ValidateProductRoots,
+        ProductDiffThen (exists (
+            ProductDiffStep ManifestProductTrees,
+            ProductDiffThen (exists (
+                ProductDiffStep CompareProductEntries,
+                ProductDiffStep ReportProductDiff
+            ))
+        ))
+    ))
+
+let product_diff_request_binding (left_valid : i32) (right_valid : i32) : i32 =
+    if !!!!EQ(left_valid,1i32) then
+        if !!!!EQ(right_valid,1i32) then 1i32 else 0i32
+    else 0i32
+
+let product_diff_summary_binding (changed_entries : i32) (total_entries : i32) : i32 =
+    if !!!!LT(changed_entries,0i32) then 0i32
+    elif !!!!LT(total_entries,0i32) then 0i32
+    elif !!!!LT(total_entries,changed_entries) then 0i32
+    else 1i32

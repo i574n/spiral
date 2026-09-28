@@ -1,0 +1,21 @@
+inl impossible_ready_unit_tensor_accepts_bool_argument () =
+    inl function_source :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_unit_tensor_lambda
+            (exact_linear_arrow_type exact_linear_unit_type
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+        ExactLinearIndexedClosedValueSourceUnitTensorLambda
+            "the-unit-tensor-Lambda-is-a-closed-value"
+    inl bool_argument :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_bool_true
+            exact_linear_bool_type =
+        ExactLinearIndexedClosedValueSourceBoolTrue
+            "the-Bool-argument-is-a-closed-value-but-has-the-wrong-domain-for-this-Ready-beta"
+    ExactLinearIndexedClosedReadyBetaUnitTensor (
+        function_source,
+        bool_argument,
+        "this-construction-must-be-rejected-because-Ready-beta-keeps-the-function-domain-and-argument-type-aligned")
+
+inl main () =
+    impossible_ready_unit_tensor_accepts_bool_argument ()

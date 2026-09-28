@@ -1,0 +1,8 @@
+inl impossible_quotient_accessible_parent_root_mismatch () :
+    certified_interval_positive_positional_completion_decision
+        (positional_zero_bit positional_one) =
+    synthesize_certified_interval_positive_positional_quotient_accessible_parent_factorization
+        (positive_positional_three_value ())
+
+inl main () =
+    impossible_quotient_accessible_parent_root_mismatch ()

@@ -1,0 +1,21 @@
+nominal v5 = ()
+nominal v6 = ()
+
+union document schema =
+    | DocumentV5 :: string -> document v5
+    | DocumentV6 :: string -> document v6
+
+union codec schema =
+    | CodecV5 :: codec v5
+    | CodecV6 :: codec v6
+
+inl encode forall schema.
+    (codec : codec schema)
+    (document : document schema)
+    : string =
+    match codec, document with
+    | CodecV5, DocumentV5 payload => payload
+    | CodecV6, DocumentV6 payload => payload
+
+inl main () : string =
+    encode CodecV5 (DocumentV6 "wrong")

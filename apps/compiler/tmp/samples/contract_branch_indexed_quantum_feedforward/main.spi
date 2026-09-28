@@ -1,0 +1,18 @@
+nominal program_a = ()
+nominal epoch_4 = ()
+nominal qubit_a = ()
+nominal branch_zero = ()
+nominal measured = ()
+nominal corrected = ()
+
+union measurement program epoch qubit branch state = | Measurement :: forall program epoch qubit branch state. string -> measurement program epoch qubit branch state
+union classical_bit program epoch branch state = | Bit :: forall program epoch branch state. string -> classical_bit program epoch branch state
+union correction program epoch qubit branch state = | Correction :: forall program epoch qubit branch state. string -> correction program epoch qubit branch state
+
+inl feed_forward forall program epoch qubit branch. (measurement : measurement program epoch qubit branch measured) (bit : classical_bit program epoch branch measured) : correction program epoch qubit branch corrected =
+    match measurement, bit with | Measurement _, Bit _ => Correction "quantum-feedforward-corrected"
+
+inl main () : string =
+    inl measurement : measurement program_a epoch_4 qubit_a branch_zero measured = Measurement "m0"
+    inl bit : classical_bit program_a epoch_4 branch_zero measured = Bit "0"
+    match feed_forward measurement bit with | Correction label => label

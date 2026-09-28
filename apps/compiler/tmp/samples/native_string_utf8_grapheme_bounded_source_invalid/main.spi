@@ -1,0 +1,2 @@
+inl main () : i32 =
+    sm.utf8_grapheme_count_bounded_from_byte_offset "éZ" 1i32

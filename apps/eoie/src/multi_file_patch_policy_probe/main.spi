@@ -1,0 +1,22 @@
+open multi_file_patch_contract.model
+
+inl main () : i32 =
+    inl _ = multi_patch_public_plan ()
+    match multi_patch_shape_binding 3i32 5i32 5i32 with
+    | 1 =>
+        match multi_patch_topology_binding 0i32 0i32 with
+        | 1 =>
+            match multi_patch_freshness_binding 5i32 5i32 with
+            | 1 =>
+                match multi_patch_mode_binding 1i32 0i32 with
+                | 1 =>
+                    match multi_patch_rollback_binding 3i32 3i32 with
+                    | 1 =>
+                        match multi_patch_commit_binding 1i32 5i32 with
+                        | 5 => 0i32
+                        | _ => 6i32
+                    | _ => 5i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

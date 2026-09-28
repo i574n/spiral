@@ -1,0 +1,10 @@
+[package]
+name = "patch-model"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "patch_model"
+path = "patch_model.rs"

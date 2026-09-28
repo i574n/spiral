@@ -1,0 +1,8 @@
+inl impossible_membership_accessible_child_mismatch () =
+    certified_interval_positive_positional_accessible_child_completion
+        (positive_positional_two_value ())
+        (derive_positive_positional_predecessor_accessibility
+            (positive_positional_three_value ()))
+
+inl main () =
+    impossible_membership_accessible_child_mismatch ()

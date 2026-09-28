@@ -1,0 +1,15 @@
+union payload =
+    | Text : string
+    | Number : i32
+
+let score x : i32 =
+    match x with
+    | Text value => sm.length value
+    | Number value => value
+
+inl main () =
+    inl ~choose_number = false
+    inl value = if choose_number then Number 7i32 else Text "qwe"
+    inl a = score value
+    inl b = score value
+    (-.) ((+.) a b) 6i32

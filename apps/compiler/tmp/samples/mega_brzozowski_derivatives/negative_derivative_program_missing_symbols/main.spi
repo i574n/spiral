@@ -1,0 +1,11 @@
+open main
+
+union law_only_symbol =
+    | LawOnly
+
+nominal law_only_alphabet = law_only_symbol
+
+instance symbol_compare law_only_alphabet = fun _ _ => SymbolSame
+
+inl main () =
+    capture_derivative_language_program (RegexChar (law_only_alphabet LawOnly))

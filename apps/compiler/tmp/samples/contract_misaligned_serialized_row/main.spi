@@ -1,0 +1,19 @@
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+nominal idempotent = ()
+
+union operation from to effect =
+    | Validate :: operation draft validated idempotent
+
+union row from to effect =
+    | Row :: forall from to effect. string -> row from to effect
+
+union typed_node from to =
+    | TypedNode :: forall from to.
+        (exists effect. operation from to effect * row from to effect)
+        -> typed_node from to
+
+inl main () : typed_node draft validated =
+    inl wrong_row : row validated authorized idempotent = Row "wrong-transition"
+    TypedNode (exists (Validate, wrong_row))

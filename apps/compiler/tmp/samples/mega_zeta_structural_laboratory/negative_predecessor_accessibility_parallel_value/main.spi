@@ -1,0 +1,13 @@
+inl impossible_predecessor_accessibility_parallel_value () :
+    positive_positional_predecessor_accessibility
+        (positional_zero_bit positional_one) =
+    PositivePositionalPredecessorAccessibilityStep (exists (
+        PositivePositionalOne,
+        PositivePositionalPredecessorTwo,
+        PositivePositionalLessOneZeroBit PositivePositionalOne,
+        PositivePositionalPredecessorAccessibilityOne
+            "one-closes-the-forged-chain",
+        "the-value-is-deliberately-supplied-in-parallel-with-the-predecessor-proof"))
+
+inl main () =
+    impossible_predecessor_accessibility_parallel_value ()

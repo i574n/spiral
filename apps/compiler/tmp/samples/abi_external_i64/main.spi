@@ -1,0 +1,5 @@
+inl main () : i32 = real
+    inl ~x = -5000000000i64
+    inl y = $"spiral_abi_libc_llabs(!x)" : i64
+    inl ok = $"!y == 5000000000" : bool
+    if ok then 0i32 else 1i32

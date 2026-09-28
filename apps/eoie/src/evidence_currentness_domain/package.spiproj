@@ -1,0 +1,4 @@
+modules:
+    model
+    terminal
+    main

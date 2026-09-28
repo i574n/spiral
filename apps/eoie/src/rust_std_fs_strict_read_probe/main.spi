@@ -1,0 +1,15 @@
+inl main () : i32 =
+    inl root = "/tmp/eoie-strict-read-spiral-probe"
+    inl path = "/tmp/eoie-strict-read-spiral-probe/value.txt"
+    inl minus_one = !!!!Neg(1i32)
+    inl clean_before = rust_std_fs.rooted_effects.cleanup_tree root
+    inl created = rust_std_fs.rooted_effects.create_dir root
+    inl written = rust_std_fs.model.write_text path "abcdef"
+    inl over_limit = rust_std_fs.rooted_effects.read_regular_len path 5
+    inl exact_len = rust_std_fs.rooted_effects.read_regular_len path 6
+    inl exact_text = rust_std_fs.rooted_effects.read_regular_text_equals path 6 "abcdef"
+    inl directory_rejected = rust_std_fs.rooted_effects.read_regular_len root 16
+    inl clean_after = rust_std_fs.rooted_effects.cleanup_tree root
+    if clean_before && created && written && !!!!EQ(over_limit,minus_one) && !!!!EQ(exact_len,6i32) && exact_text && !!!!EQ(directory_rejected,minus_one) && clean_after
+    then 0i32
+    else 1i32

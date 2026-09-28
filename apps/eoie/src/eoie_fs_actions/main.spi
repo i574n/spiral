@@ -1,0 +1,28 @@
+open filesystem_action_batch_contract.bindings
+
+inl rust_library () : () = $"RustLibrary()" : ()
+
+// Octal permissions must fit the POSIX permission field on every host.
+let fs_action_mode_valid_binding (mode : i32) (reserved : i32) : i32 =
+    if !!!!NEQ(reserved,0i32) then 0i32
+    elif !!!!LT(mode,0i32) then 0i32
+    elif !!!!LT(4095i32,mode) then 0i32
+    else 1i32
+
+inl main () : i32 =
+    fs_actions_terminal.emit_fs_actions_runtime ()
+    inl _ = fs_action_shape_binding 1i32 0i32
+    inl _ = fs_action_freshness_binding 0i32 1i32
+    inl _ = fs_action_apply_binding 1i32 1i32
+    inl _ = fs_action_verify_binding 1i32 1i32
+    inl _ = fs_action_rollback_binding 1i32 1i32
+    $"RustExportI32Binary(\"eoie_fs_actions_shape_binding\",\"fs_action_shape_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_fs_actions_freshness_binding\",\"fs_action_freshness_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_fs_actions_apply_binding\",\"fs_action_apply_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_fs_actions_verify_binding\",\"fs_action_verify_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_fs_actions_rollback_binding\",\"fs_action_rollback_binding\")" : ()
+    inl _ = fs_action_mode_valid_binding 493i32 0i32
+    $"RustExportI32Binary(\"eoie_fs_actions_mode_valid_binding\",\"fs_action_mode_valid_binding\")" : ()
+    fs_actions_terminal.rust_global "#[cfg(test)] #[path = \"regression_tests.rs\"] mod regression_tests;"
+    rust_library ()
+    0i32

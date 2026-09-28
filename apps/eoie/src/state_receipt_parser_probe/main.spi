@@ -1,0 +1,9 @@
+open rust_std_env.model
+
+inl parse_exit (~input : string) (~expected : string) : i32 =
+    !\((input,expected), $'"if state_receipt_parser_domain::eoie_state_receipt_parse($0.as_ref()).as_ref() == $1.as_ref() { 0 } else { 1 }"')
+
+inl main () : i32 =
+    inl source = "union state_check_snapshot = | StateCheckSnapshot :: u64 -> state_check_snapshot\nunion module_attestation = | RuntimeAttestation | BuildAttestation :: u64 -> module_attestation\nunion module_typecheck_receipt = | ModuleTypecheckReceipt :: string * u64 * u64 * module_attestation -> module_typecheck_receipt\n\ninl snapshot () : state_check_snapshot = StateCheckSnapshot 42u64\ninl receipt_0000 () : module_typecheck_receipt = ModuleTypecheckReceipt (\"alpha.spi\", 12u64, 34u64, BuildAttestation 99u64)\ninl main () : i32 = 0i32\n"
+    inl expected = "snapshot\t42\nmodule\talpha.spi\t12\t34\tbuild:99\n"
+    parse_exit source expected

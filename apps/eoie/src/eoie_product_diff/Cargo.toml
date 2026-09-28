@@ -1,0 +1,15 @@
+[package]
+name = "eoie-product-diff"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_product_diff"
+path = "product_diff.rs"
+
+[dependencies]
+eoie-proxy-search = { path = "../eoie_proxy_search" }
+eoie-source-map = { path = "../eoie_source_map" }
+rayon = "1.12.0"

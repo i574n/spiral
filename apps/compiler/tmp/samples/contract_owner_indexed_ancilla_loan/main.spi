@@ -1,0 +1,31 @@
+nominal owner_a = ()
+nominal clean = ()
+nominal borrowed = ()
+
+union ancilla owner state =
+    | Ancilla :: forall owner state. string -> ancilla owner state
+
+union loan owner =
+    | Loan :: forall owner. string -> loan owner
+
+inl borrow forall owner.
+    (ancilla : ancilla owner clean)
+    : ancilla owner borrowed * loan owner =
+    match ancilla with
+    | Ancilla label => Ancilla label, Loan "loan"
+
+inl release forall owner.
+    (ancilla : ancilla owner borrowed)
+    (loan : loan owner)
+    : ancilla owner clean =
+    match ancilla, loan with
+    | Ancilla _, Loan _ => Ancilla "ancilla-clean"
+
+inl label forall owner state. (ancilla : ancilla owner state) : string =
+    match ancilla with
+    | Ancilla value => value
+
+inl main () : string =
+    inl ancilla : ancilla owner_a clean = Ancilla "clean"
+    inl borrowed, loan = borrow ancilla
+    label (release borrowed loan)

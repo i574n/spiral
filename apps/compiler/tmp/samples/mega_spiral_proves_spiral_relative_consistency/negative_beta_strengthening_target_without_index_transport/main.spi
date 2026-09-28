@@ -1,0 +1,13 @@
+inl impossible_beta_strengthening_target_without_index_transport
+    (step : exact_linear_indexed_beta_step) :
+    exact_linear_indexed_term
+        exact_linear_indexed_beta_outer_context
+        exact_linear_indexed_beta_outer_usage
+        exact_linear_unit_type =
+    match step with
+    | ExactLinearIndexedBetaStep (proof, _) =>
+        exact_linear_indexed_recursive_open_typed_substitution_strengthening_target proof
+
+inl main () =
+    impossible_beta_strengthening_target_without_index_transport
+        (exact_linear_indexed_beta_step_witness ())

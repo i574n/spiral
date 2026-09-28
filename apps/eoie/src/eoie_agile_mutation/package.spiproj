@@ -1,0 +1,7 @@
+packages:
+    rust_std_env
+    rust_std_string
+    agile_mutation_policy
+modules:
+    agile_terminal
+    agile_mutation

@@ -1,0 +1,8 @@
+open model
+
+inl main () : i32 =
+    inl _ = ingest_authority_binding 1i32 1i32
+    $"RustExportI32Binary(\"eoie_ingest_authority_binding\",\"ingest_authority_binding\")" : ()
+    ingest.emit_runtime ()
+    $"RustLibrary()" : ()
+    0i32

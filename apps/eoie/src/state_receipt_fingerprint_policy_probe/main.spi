@@ -1,0 +1,17 @@
+open rust_std_env.model
+
+inl mix_low (~low : i32) (~byte : i32) : i32 =
+    !\((low,byte), $'"state_receipt_fingerprint_domain::eoie_state_receipt_mix_low($0, $1)"')
+
+inl low_step (~mixed_low : i32) : i32 =
+    !\(mixed_low, $'"state_receipt_fingerprint_domain::eoie_state_receipt_low_step($0, 0)"')
+
+inl high_step (~high : i32) (~mixed_low : i32) : i32 =
+    !\((high,mixed_low), $'"state_receipt_fingerprint_domain::eoie_state_receipt_high_step($0, $1)"')
+
+inl pair_exit (~high : i32) (~low : i32) : i32 =
+    !\((high,low), $'"if $0 == -1352410036 && $1 == -2046694260 { 0 } else { 1 }"')
+
+inl main () : i32 =
+    inl mixed_low = mix_low -2078137563i32 97i32
+    pair_exit (high_step -873292572i32 mixed_low) (low_step mixed_low)

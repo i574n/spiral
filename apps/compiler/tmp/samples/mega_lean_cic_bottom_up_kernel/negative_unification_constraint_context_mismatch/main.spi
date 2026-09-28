@@ -1,0 +1,12 @@
+inl impossible_corrected_cic_unification_constraint_context_mismatch () :
+    corrected_cic_unification_constraint_program
+        empty_ctx bool_sort
+        (cic_chain_succ cic_chain_zero) =
+    CorrectedCicUnificationConstraintProgramMore (
+        CorrectedCicUnificationRigid (corrected_cic_bound_here ()),
+        CorrectedCicUnificationRigid (corrected_cic_true ()),
+        CorrectedCicUnificationConstraintProgramDone,
+        "a-single-unification-cell-cannot-pair-different-contexts")
+
+inl main () =
+    impossible_corrected_cic_unification_constraint_context_mismatch ()

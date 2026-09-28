@@ -1,0 +1,47 @@
+nominal plan_raw = ()
+nominal plan_canonical = ()
+nominal plan_consumed = ()
+
+union plan_stage from to =
+    | Canonicalize :: plan_stage plan_raw plan_canonical
+    | Consume :: plan_stage plan_canonical plan_consumed
+
+union rec typed_plan from to =
+    | PlanStep :: forall from to. plan_stage from to -> typed_plan from to
+    | PlanThen :: forall from to. (exists middle. typed_plan from middle * typed_plan middle to) -> typed_plan from to
+
+union plan_effect =
+    | InspectEffect
+    | WriteEffect
+    | ProcessEffect
+    | ToolchainEffect
+
+union plan_op =
+    | CreateFile : string * string
+    | ReplaceFile : string * string * string
+    | PatchExact : string * string * string
+    | MakeDir : string
+    | CopyFile : string * string * string
+    | Chmod : string * string * string
+    | Symlink : string * string
+    | ToolchainAction : string
+
+inl effect_name = function
+    | InspectEffect => "inspect"
+    | WriteEffect => "write"
+    | ProcessEffect => "process"
+    | ToolchainEffect => "toolchain"
+
+inl op_descriptor = function
+    | CreateFile (path, payload) => "create", path, "-", payload, effect_name WriteEffect
+    | ReplaceFile (path, expected, payload) => "replace", path, expected, payload, effect_name WriteEffect
+    | PatchExact (path, expected, payload) => "patch-exact", path, expected, payload, effect_name WriteEffect
+    | MakeDir path => "mkdir", path, "-", "-", effect_name WriteEffect
+    | CopyFile (source, expected, target) => "copy", target, expected, source, effect_name WriteEffect
+    | Chmod (path, expected, replacement) => "chmod", path, expected, replacement, effect_name WriteEffect
+    | Symlink (path, target) => "symlink", path, "-", target, effect_name WriteEffect
+    | ToolchainAction action => "toolchain", action, "-", "-", effect_name ToolchainEffect
+
+inl emit_plan_op op : () =
+    inl op, target, expected, payload, effect = op_descriptor op
+    $"RustPlanOp(!op,!target,!expected,!payload,!effect)" : ()

@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl ratings_ok = (=.) (handoff_ratings_projection (fixture_ratings ())) "active_readiness=477/1000 subjective_ceiling=620/1000 coverage=804/1000 runtime_drift=510/1000 parallel_readiness=550/1000 canonical_plan_ir=750/1000 migration_historical=987/1000"
+    inl census_ok = (=.) (handoff_census_projection (fixture_census ())) "spiral_files=446 generated_rust_files=90 rust_global_sites=2141 spiral_loc=19236 generated_rust_loc=27530 cargo_crates=81 spiral_packages=239 package_only=158 max_crate_loc=996 max_rust_file_loc=957"
+    $"RustExportStringUnary(\"eoie_handoff_ratings_projection\",\"handoff_ratings_projection\")" : ()
+    $"RustExportStringUnary(\"eoie_handoff_census_projection\",\"handoff_census_projection\")" : ()
+    $"RustLibrary()" : ()
+    if ratings_ok then if census_ok then 0i32 else 2i32 else 1i32

@@ -1,0 +1,65 @@
+nominal coverage_idle = ()
+nominal coverage_profiles_loaded = ()
+nominal coverage_assessed = ()
+nominal prune_candidate_verified = ()
+nominal prune_staged = ()
+nominal prune_committed = ()
+
+union coverage_op from to =
+    | LoadCoverageProfiles :: coverage_op coverage_idle coverage_profiles_loaded
+    | AssessCoverageFloors :: coverage_op coverage_profiles_loaded coverage_assessed
+    | VerifyPruneCandidate :: coverage_op coverage_idle prune_candidate_verified
+    | StagePruneCandidate :: coverage_op prune_candidate_verified prune_staged
+    | CommitPruneReceipt :: coverage_op prune_staged prune_committed
+
+union rec coverage_plan from to =
+    | CoverageStep :: forall from to. coverage_op from to -> coverage_plan from to
+    | CoverageThen :: forall from to. (exists middle. coverage_plan from middle * coverage_plan middle to) -> coverage_plan from to
+
+inl assess_plan () : coverage_plan coverage_idle coverage_assessed =
+    CoverageThen (exists (
+        CoverageStep LoadCoverageProfiles,
+        CoverageStep AssessCoverageFloors
+    ))
+
+inl prune_plan () : coverage_plan coverage_idle prune_committed =
+    CoverageThen (exists (
+        CoverageStep VerifyPruneCandidate,
+        CoverageThen (exists (
+            CoverageStep StagePruneCandidate,
+            CoverageStep CommitPruneReceipt
+        ))
+    ))
+
+nominal coverage_harness_idle = ()
+nominal coverage_harness_configured = ()
+nominal coverage_binary_instrumented = ()
+nominal coverage_contracts_executed = ()
+nominal coverage_profiles_emitted = ()
+
+union coverage_contract_scope =
+    | PublicContracts :: coverage_contract_scope
+    | WorkspaceContracts :: coverage_contract_scope
+    | SmokePublic :: coverage_contract_scope
+
+union coverage_harness_op from to =
+    | ConfigureCoverageHarness :: coverage_contract_scope -> coverage_harness_op coverage_harness_idle coverage_harness_configured
+    | BuildInstrumentedBinary :: coverage_harness_op coverage_harness_configured coverage_binary_instrumented
+    | ExecuteInstrumentedContracts :: coverage_harness_op coverage_binary_instrumented coverage_contracts_executed
+    | EmitCoverageProfiles :: coverage_harness_op coverage_contracts_executed coverage_profiles_emitted
+
+union rec coverage_harness_plan from to =
+    | CoverageHarnessStep :: forall from to. coverage_harness_op from to -> coverage_harness_plan from to
+    | CoverageHarnessThen :: forall from to. (exists middle. coverage_harness_plan from middle * coverage_harness_plan middle to) -> coverage_harness_plan from to
+
+inl instrumented_workspace_plan () : coverage_harness_plan coverage_harness_idle coverage_profiles_emitted =
+    CoverageHarnessThen (exists (
+        CoverageHarnessStep (ConfigureCoverageHarness WorkspaceContracts),
+        CoverageHarnessThen (exists (
+            CoverageHarnessStep BuildInstrumentedBinary,
+            CoverageHarnessThen (exists (
+                CoverageHarnessStep ExecuteInstrumentedContracts,
+                CoverageHarnessStep EmitCoverageProfiles
+            ))
+        ))
+    ))

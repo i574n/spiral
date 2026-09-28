@@ -1,0 +1,81 @@
+nominal session_unassigned = ()
+nominal session_lane_owned = ()
+nominal session_revision_planned = ()
+nominal session_cache_classified = ()
+nominal session_request_completed = ()
+nominal session_shutdown_verified = ()
+
+union lane_evidence = | LaneEvidence :: i32 * i32 -> lane_evidence
+union revision_evidence = | RevisionEvidence :: i32 * i32 * i32 -> revision_evidence
+union cache_evidence = | CacheEvidence :: i32 * i32 -> cache_evidence
+union request_evidence = | RequestEvidence :: i32 -> request_evidence
+union shutdown_evidence = | ShutdownEvidence :: i32 -> shutdown_evidence
+
+union compiler_session_op from to =
+    | AssignLane :: lane_evidence -> compiler_session_op session_unassigned session_lane_owned
+    | PlanRevision :: revision_evidence -> compiler_session_op session_lane_owned session_revision_planned
+    | ClassifyCache :: cache_evidence -> compiler_session_op session_revision_planned session_cache_classified
+    | CompleteRequest :: request_evidence -> compiler_session_op session_cache_classified session_request_completed
+    | VerifyShutdown :: shutdown_evidence -> compiler_session_op session_request_completed session_shutdown_verified
+
+union rec compiler_session_plan from to =
+    | SessionStep :: forall from to. compiler_session_op from to -> compiler_session_plan from to
+    | SessionThen :: forall from to. (exists middle. compiler_session_plan from middle * compiler_session_plan middle to) -> compiler_session_plan from to
+
+let lane_binding (lanes : i32) (lane : i32) : i32 =
+    if !!!!LT(lanes,1i32) then 0i32
+    elif !!!!LT(lane,0i32) then 0i32
+    elif !!!!LT(lane,lanes) then 1i32
+    else 0i32
+
+let revision_binding (seen_before : i32) (same_source : i32) (kind_code : i32) : i32 =
+    if !!!!EQ(seen_before,0i32) then if !!!!EQ(kind_code,0i32) then 1i32 else 0i32
+    elif !!!!EQ(same_source,1i32) then if !!!!EQ(kind_code,1i32) then 1i32 else 0i32
+    elif !!!!EQ(kind_code,2i32) then 1i32
+    else 0i32
+
+let cache_binding (revision_code : i32) (cache_code : i32) : i32 =
+    if !!!!EQ(cache_code,0i32) then 1i32
+    elif !!!!EQ(cache_code,1i32) then if !!!!EQ(revision_code,1i32) then 1i32 else 0i32
+    else 0i32
+
+let request_binding (status : i32) : i32 = if !!!!EQ(status,0i32) then 1i32 else 0i32
+let shutdown_binding (survivors : i32) : i32 = if !!!!EQ(survivors,0i32) then 1i32 else 0i32
+
+let authority_binding (lane_ok : i32) (revision_ok : i32) (cache_ok : i32) (request_ok : i32) (shutdown_ok : i32) : i32 =
+    inl a = !!!!Mult(lane_ok,revision_ok)
+    inl b = !!!!Mult(cache_ok,request_ok)
+    !!!!Mult(!!!!Mult(a,b),shutdown_ok)
+
+inl build_session_plan () : compiler_session_plan session_unassigned session_shutdown_verified =
+    inl lane = LaneEvidence (8i32,5i32)
+    inl revision = RevisionEvidence (1i32,0i32,2i32)
+    inl cache = CacheEvidence (1i32,1i32)
+    inl request = RequestEvidence 0i32
+    inl shutdown = ShutdownEvidence 0i32
+    SessionThen (exists (
+        SessionStep (AssignLane lane),
+        SessionThen (exists (
+            SessionStep (PlanRevision revision),
+            SessionThen (exists (
+                SessionStep (ClassifyCache cache),
+                SessionThen (exists (
+                    SessionStep (CompleteRequest request),
+                    SessionStep (VerifyShutdown shutdown)
+                ))
+            ))
+        ))
+    ))
+
+inl authority_status () : i32 =
+    inl _ = build_session_plan ()
+    inl open_ok = revision_binding 0i32 0i32 0i32
+    inl change_ok = revision_binding 1i32 0i32 2i32
+    inl unchanged_ok = revision_binding 1i32 1i32 1i32
+    inl revision_ok = !!!!Mult(open_ok, !!!!Mult(change_ok,unchanged_ok))
+    authority_binding
+        (lane_binding 8i32 5i32)
+        revision_ok
+        (cache_binding 1i32 1i32)
+        (request_binding 0i32)
+        (shutdown_binding 0i32)

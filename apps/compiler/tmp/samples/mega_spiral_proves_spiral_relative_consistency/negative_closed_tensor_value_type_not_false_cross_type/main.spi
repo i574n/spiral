@@ -1,0 +1,21 @@
+inl impossible_closed_tensor_value_type_not_false_cross_type () :
+    exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
+    inl tensor_value :
+        exact_linear_indexed_value
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+        ExactLinearIndexedValueTensor (exists (
+            ExactLinearIndexedValueUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-left-cell-is-Unit"),
+            ExactLinearIndexedValueUnit (
+                exact_linear_indexed_empty_usage (),
+                "the-negative-right-cell-is-Unit"),
+            ExactLinearIndexedUsageMergeEmpty
+                "the-negative-Tensor-merges-empty-usages",
+            "the-negative-builds-one-valid-closed-Tensor-value"))
+    derive_exact_linear_indexed_closed_value_type_not_false tensor_value
+
+inl main () =
+    impossible_closed_tensor_value_type_not_false_cross_type ()

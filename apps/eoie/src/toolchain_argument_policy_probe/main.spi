@@ -1,0 +1,16 @@
+open rust_std_env.model
+
+inl argument_count (~action : i32) (~witness : i32) : i32 =
+    !\((action,witness), $'"toolchain_argument_domain::eoie_toolchain_argument_count($0, $1)"')
+
+inl argument_chunk (~token : i32) (~chunk : i32) : i32 =
+    !\((token,chunk), $'"toolchain_argument_domain::eoie_toolchain_argument_token_chunk($0, $1)"')
+
+inl triple_exit (~a : i32) (~b : i32) (~c : i32) (~d : i32) (~e : i32) (~f : i32) : i32 =
+    !\((a,b,c,d,e,f), $'"if $0 == $1 && $2 == $3 && $4 == $5 { 0 } else { 1 }"')
+
+inl main () : i32 =
+    triple_exit
+        (argument_count 4i32 0i32) 6i32
+        (argument_chunk 0i32 0i32) 17970310i32
+        (argument_chunk -1i32 0i32) -1i32

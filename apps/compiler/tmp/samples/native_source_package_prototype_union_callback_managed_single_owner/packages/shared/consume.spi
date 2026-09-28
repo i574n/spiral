@@ -1,0 +1,15 @@
+open model.state
+
+prototype score s : s -> i32
+
+instance score outcome_t = fun result =>
+    match result with
+    | Idle => 3i32
+    | Text _ => 11i32
+
+inl evaluate forall a {score}. (derive : i32 -> a) (seed : i32) : i32 =
+    score (join derive seed)
+
+inl run () : i32 =
+    inl ~derive = (fun (_ : i32) => Text "managed") : i32 -> outcome_t
+    evaluate derive 2i32 +. 31i32

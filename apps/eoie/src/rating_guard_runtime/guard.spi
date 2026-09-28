@@ -1,0 +1,14 @@
+let active_rating_ceiling_binding (score : i32) (ceiling : i32) : i32 =
+    rating_guard_contract.model.active_rating_ceiling_binding score ceiling
+
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl emit_runtime () : () =
+    rust_global "pub fn active_rating_receipt_check(root: &std::path::Path) -> Result<(), String> {\n    let path = root.join(\"state/ratings.spi\");\n    let source = std::fs::read_to_string(&path).map_err(|error| format!(\"read {}: {error}\", path.display()))?;\n    let mut observed = 0usize;\n    for line in source.lines().filter(|line| line.contains(\"// active_rating\")) {\n        let score_text = line.split(',').nth(1).map(str::trim).ok_or_else(|| format!(\"malformed active rating row: {line}\"))?;\n        let score = score_text.trim_end_matches(\"u32\").parse::<i32>().map_err(|_| format!(\"invalid active rating score: {score_text}\"))?;\n        if rating_guard_active_rating_ceiling_binding(score, 620) != 1 { return Err(format!(\"active rating ceiling rejected score={score} ceiling=620 row={line}\")); }\n        observed += 1;\n    }\n    if observed != 14 { return Err(format!(\"active rating marker count mismatch observed={observed} expected=14\")); }\n    Ok(())\n}\n"
+
+inl main () : i32 =
+    inl _ = rating_guard_contract.model.active_rating_ceiling_binding 620i32 620i32
+    emit_runtime ()
+    $"RustExportI32Binary(\"rating_guard_active_rating_ceiling_binding\",\"active_rating_ceiling_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

@@ -1,0 +1,26 @@
+inl impossible_sealed_composite_children_direct_forged_divisor forall length.
+    (membership :
+        certified_interval_positive_positional_factor_membership
+            (positional_zero_bit (positional_one_bit positional_one))
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            length)
+    (division :
+        value_synthesized_structural_division
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit (positional_one_bit positional_one))
+            (positional_zero_bit positional_one)
+            positional_zero)
+    : certified_interval_positive_positional_sealed_composite_children
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        (positional_zero_bit positional_one) =
+    CertifiedIntervalPositivePositionalSealedCompositeChildren (exists (
+        positive_positional_twelve_value (),
+        positive_positional_twelve_value (),
+        positive_positional_two_value (),
+        membership,
+        division,
+        "the-public-constructor-must-not-accept-root-as-divisor-when-the-evidence-proves-six-divides-twelve"))
+
+inl main () =
+    impossible_sealed_composite_children_direct_forged_divisor

@@ -1,0 +1,5 @@
+open main
+open minimality_witnesses
+
+inl main () : bool =
+    require_minimality_witness (one_bit_state_for_control ())

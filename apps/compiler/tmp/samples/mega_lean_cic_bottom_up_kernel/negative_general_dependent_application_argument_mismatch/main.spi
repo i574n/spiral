@@ -1,0 +1,12 @@
+inl impossible_corrected_cic_general_dependent_application_argument_mismatch () :
+    corrected_cic_term empty_ctx (universe_sort universe_one) =
+    match corrected_cic_general_pi_identity_value () with
+    | corrected_cic_general_pi_identity (
+        type_binder, codomain_body, _) =>
+        CorrectedDependentApplication (exists (
+            type_binder,
+            codomain_body,
+            corrected_cic_true ()))
+
+inl main () =
+    impossible_corrected_cic_general_dependent_application_argument_mismatch ()

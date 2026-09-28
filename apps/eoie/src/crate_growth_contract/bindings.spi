@@ -1,0 +1,28 @@
+open model
+
+let crate_growth_partition_binding (cargo_crates : i32) (spiral_only_packages : i32) : i32 =
+    if !!!!LT(cargo_crates,0i32) then 0i32
+    elif !!!!LT(spiral_only_packages,1i32) then 0i32
+    else 1i32
+
+let crate_growth_default_binding (observed_cargo_crates : i32) (exception_authorized : i32) : i32 =
+    if !!!!LT(observed_cargo_crates,0i32) then 0i32
+    elif !!!!LT(observed_cargo_crates,75i32) then 1i32
+    elif !!!!LT(exception_authorized,1i32) then 0i32
+    else 1i32
+
+let crate_growth_exception_binding (reason_present : i32) (ticket_present : i32) : i32 =
+    if !!!!LT(reason_present,1i32) then 0i32
+    elif !!!!LT(ticket_present,1i32) then 0i32
+    else 1i32
+
+let crate_growth_unit_binding (previous_owner_lines : i32) (observed_owner_lines : i32) : i32 =
+    if !!!!LT(previous_owner_lines,0i32) then 0i32
+    elif !!!!LT(observed_owner_lines,0i32) then 0i32
+    elif !!!!LT(previous_owner_lines,observed_owner_lines) then 0i32
+    else 1i32
+
+let owner_growth_compensation_binding (growth_lines : i32) (retired_lines : i32) : i32 =
+    if !!!!LT(growth_lines,0i32) then 0i32
+    elif !!!!LT(retired_lines,growth_lines) then 0i32
+    else 1i32

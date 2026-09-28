@@ -1,0 +1,10 @@
+inl impossible_complete_reconstruction_prime_four () :
+    certified_interval_positive_positional_complete_reconstruction
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    CertifiedIntervalPositivePositionalCompleteReconstructionPrime (
+        positive_positional_four_value (),
+        PositivePositionalFactorCandidateNonunitZeroBit
+            (positive_positional_two_value ()),
+        "complete-reconstruction-prime-four-must-carry-complete-rejection-evidence")
+
+inl main () = impossible_complete_reconstruction_prime_four ()

@@ -1,0 +1,19 @@
+nominal missing = ()
+nominal present = ()
+
+union session certificate endpoint =
+    | Session :: string -> session certificate endpoint
+
+union action from to =
+    | Authorize :: action (session present present) (session present present)
+
+inl execute forall from to.
+    (action : action from to)
+    (session : from)
+    : to =
+    match action, session with
+    | Authorize, Session _ => Session "authorized"
+
+inl main () : string =
+    inl Session result = execute Authorize (Session "missing-endpoint" : session present missing)
+    result

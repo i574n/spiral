@@ -1,0 +1,9 @@
+let patch_rehearsal_entry_public () : i32 = patch_mutation_contract.model.patch_rehearse_entry ()
+
+inl emit () : () =
+    rehearsal_terminal.emit_runtime ()
+    $"RustExportI32(\"eoie_patch_rehearse_run\",\"patch_rehearsal_entry_public\")" : ()
+    $"RustLibrary()" : ()
+    inl _ = patch_mutation_contract.model.typed_patch_rehearsal_plan ()
+    inl _ = patch_rehearsal_entry_public ()
+    ()

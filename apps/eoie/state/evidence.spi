@@ -1,0 +1,55 @@
+inl current_coverage () : core.evidence_ref =
+    core.EvidenceRef ("evidence/coverage/current.lcov", "4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4", 166535u64, core.CoverageLcovMedia, core.BundlePath)
+
+inl current_coverage_receipt () : core.evidence_ref =
+    core.EvidenceRef ("evidence/coverage/current.lcov.receipt", "a2e2bbb8817a3e6c0241a0a77d295cd512d75a956b9506596245dac3d9103607", 235u64, core.ReceiptTextMedia, core.BundlePath)
+
+inl replay_seed () : core.evidence_ref =
+    core.EvidenceRef ("evidence/coverage/replay-seed.lcov", "58312f60fc1f54efa05b305f045504b8fbaf202f4fd81e5837748ffe61b74689", 161390u64, core.CoverageLcovMedia, core.BundlePath)
+
+inl replay_seed_receipt () : core.evidence_ref =
+    core.EvidenceRef ("evidence/coverage/replay-seed.receipt", "b0284cfa9c270ac7322cb3daae40b46786973ebc6144dd0f1e70e5d5eb2495c2", 196u64, core.ReceiptTextMedia, core.BundlePath)
+
+inl release_closeout () : core.evidence_ref =
+    core.EvidenceRef ("state/release_closeout.spi", "547378f02a50b86496cc744198c8f7200c8efdedf71973b927bfcebf3ad9eddf", 1578u64, core.Utf8TextMedia, core.BundlePath)
+
+inl state_core () : core.evidence_ref =
+    core.EvidenceRef ("state/core.spi", "7018c0e131c9434eaea0d14b24e82f6e2d615afe028fe5d818a899fcaa805a81", 4277u64, core.Utf8TextMedia, core.BundlePath)
+
+inl workspace_manifest () : core.evidence_ref =
+    core.EvidenceRef ("src/Cargo.toml", "d2869080a428f7d799f324c9e7b80a407672e8379b1a714411bf1d34e6e5d6a4", 2295u64, core.Utf8TextMedia, core.BundlePath)
+
+inl cold_proof () : core.evidence_ref =
+    core.EvidenceRef ("state/cold_proof.spi", "eea019ae949b1534aef1ddcf54ae2c0f3b8c3b7d84dcdd67b2110e2307262a96", 2784u64, core.Utf8TextMedia, core.BundlePath)
+
+inl bundle_contract () : core.evidence_ref =
+    core.EvidenceRef ("state/bundle.spi", "fe33bdce5cf4cc091ddf9382b798c4649427950d91a2bbced016369636dd2719", 3145u64, core.Utf8TextMedia, core.BundlePath)
+
+inl fallback_retirement () : core.evidence_ref =
+    core.EvidenceRef ("state/fallback_retirement.spi", "6bb667b771072a61c75d71c5612ac1c906c4c584f40a988202c720591ff851ce", 2321u64, core.Utf8TextMedia, core.BundlePath)
+
+inl migration_ledger () : core.evidence_ref =
+    core.EvidenceRef ("state/migration.spi", "7cab87a7453c7f64f60ce0df8137b8859697e6623d9a6d8f5ab8253fb1fbbcee", 63450u64, core.Utf8TextMedia, core.BundlePath)
+
+inl spiral_workspace_manifest () : core.evidence_ref =
+    core.EvidenceRef ("src/package.spiproj", "eed19a428bfa9b95b93b7c12c5cc8e94112776ce6481051339a0008ada58eb84", 9u64, core.Utf8TextMedia, core.BundlePath)
+
+inl cargo_lock () : core.evidence_ref =
+    core.EvidenceRef ("src/Cargo.lock", "d4e2a00a81e8a8c0dbf003ebd23168332aa0d95a4367bb45b9d205244a25f192", 14217u64, core.Utf8TextMedia, core.BundlePath)
+
+inl state_manifest () : core.evidence_ref =
+    core.EvidenceRef ("state/package.spiproj", "cb449f23566e4c2594ba5b877a7f79d672e749774d1fdd0cf6e2bad816fd4b63", 1253u64, core.Utf8TextMedia, core.BundlePath)
+
+inl toolchain_identity () : core.evidence_ref =
+    core.EvidenceRef ("state/toolchain_identity.spi", "0f6e6bf77fa2242a2dd843a2f019cb2262a8d431efa172cdf6716c5889c85770", 1891u64, core.Utf8TextMedia, core.BundlePath)
+
+inl eoie_binary () : core.evidence_ref =
+    core.EvidenceRef ("eoie", "33b0aad1d5e12d5625d7769938843538f1b99393b4df1655744bfd658c1a8d94", 3261632u64, core.BinaryMedia, core.BundlePath)
+
+inl source_tree () : core.evidence_tree_ref =
+    core.EvidenceTreeRef ("src", "f9d2447a04edfac7444cc57cbf5d7c33566bcf3458adbdb32a62b1e7218bfa33", core.ExactTree)
+
+inl state_tree () : core.evidence_tree_ref =
+    core.EvidenceTreeRef ("state", "61a459c73f1ec14ba8274e8d07b7bfcd5f069c3f7f80a19bc5a8d2157358c29c", core.StateTreeWithoutMetaManifests)
+
+inl main () : i32 = 0i32

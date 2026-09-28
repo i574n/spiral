@@ -1,0 +1,8 @@
+// Isolated archive-link contract owner.
+inl main () : i32 =
+    rust_library ()
+    emit_archive_contract_harness ()
+    emit_archive_link_contracts ()
+    emit_archive_fault_contracts ()
+    emit_archive_writer_contract ()
+    0i32

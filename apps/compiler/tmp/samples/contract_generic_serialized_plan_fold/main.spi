@@ -1,0 +1,106 @@
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+nominal published = ()
+nominal archived = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+
+union operation from to effect =
+    | Validate :: operation draft validated idempotent
+    | Authorize :: operation validated authorized idempotent
+    | Publish :: operation authorized published non_idempotent
+    | Archive :: operation published archived idempotent
+
+union row from to effect =
+    | Row :: forall from to effect. string -> row from to effect
+
+union typed_node from to =
+    | TypedNode :: forall from to.
+        (exists effect. operation from to effect * row from to effect)
+        -> typed_node from to
+
+union rec typed_plan from to =
+    | PlanLeaf :: forall from to. typed_node from to -> typed_plan from to
+    | PlanThen :: forall from to.
+        (exists middle. typed_plan from middle * typed_node middle to)
+        -> typed_plan from to
+
+union serialized_node from to =
+    | SerializedNode :: forall from to.
+        (exists effect. row from to effect)
+        -> serialized_node from to
+
+union rec serialized_plan from to =
+    | SerializedLeaf :: forall from to. serialized_node from to -> serialized_plan from to
+    | SerializedThen :: forall from to.
+        (exists middle. serialized_plan from middle * serialized_node middle to)
+        -> serialized_plan from to
+
+union rec nat =
+    | Z
+    | S : nat
+
+inl serialize_node forall from to.
+    (node : typed_node from to)
+    : serialized_node from to =
+    match node with
+    | TypedNode payload =>
+        inl exists effect. _, row = payload
+        SerializedNode (exists row)
+
+inl rec serialize_plan forall from to.
+    (plan : typed_plan from to)
+    : serialized_plan from to =
+    match plan with
+    | PlanLeaf node => SerializedLeaf (serialize_node node)
+    | PlanThen payload =>
+        inl exists middle. prefix, node = payload
+        SerializedThen (exists (serialize_plan prefix, serialize_node node))
+
+inl rec count forall from to. (plan : serialized_plan from to) : nat =
+    match plan with
+    | SerializedLeaf _ => S Z
+    | SerializedThen payload =>
+        inl exists middle. prefix, _ = payload
+        S (count prefix)
+
+inl rec last_row forall from to. (plan : serialized_plan from to) : string =
+    match plan with
+    | SerializedLeaf (SerializedNode payload) =>
+        inl exists effect. Row label = payload
+        label
+    | SerializedThen payload =>
+        inl exists middle. _, SerializedNode row_payload = payload
+        inl exists effect. Row label = row_payload
+        label
+
+inl plan () : typed_plan draft archived =
+    PlanThen (exists (
+        PlanThen (exists (
+            PlanThen (exists (
+                PlanLeaf (TypedNode (exists (Validate, Row "validate"))),
+                TypedNode (exists (Authorize, Row "authorize"))
+            )),
+            TypedNode (exists (Publish, Row "publish"))
+        )),
+        TypedNode (exists (Archive, Row "generic-authority-fold-4"))
+    ))
+
+inl main () : string =
+    inl serialized = serialize_plan (plan ())
+    match count serialized with
+    | S a =>
+        match a with
+        | S b =>
+            match b with
+            | S c =>
+                match c with
+                | S d =>
+                    match d with
+                    | Z => last_row serialized
+                    | _ => "invalid-count"
+                | _ => "invalid-count"
+            | _ => "invalid-count"
+        | _ => "invalid-count"
+    | _ => "invalid-count"

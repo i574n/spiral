@@ -1,0 +1,8 @@
+inl impossible_erp_p2p_unit_commit_cross_stage () :
+    erp_p2p_unit_store requisition_drafted requisition_drafted *
+        (erp_p2p_unit_event requisition_drafted requisition_drafted * string) =
+    inl event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+    erp_p2p_unit_commit_project event
+
+inl main () =
+    impossible_erp_p2p_unit_commit_cross_stage ()

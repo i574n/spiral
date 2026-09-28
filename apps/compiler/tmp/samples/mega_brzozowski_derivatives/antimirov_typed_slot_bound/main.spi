@@ -1,0 +1,375 @@
+open main
+
+let rec antimirov_insert_unique forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (values : regex_list alphabet)
+    : regex_list alphabet =
+    inl normalized = normalize value
+    if regex_list_contains normalized values then values
+    else RegexListCons (normalized, values)
+
+let rec antimirov_union forall alphabet {symbol_compare}.
+    (left : regex_list alphabet)
+    (right : regex_list alphabet)
+    : regex_list alphabet =
+    match left with
+    | RegexListNil => right
+    | RegexListCons (head, tail) =>
+        antimirov_union tail (antimirov_insert_unique head right)
+
+let rec antimirov_map_cat_right forall alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (right : regex alphabet)
+    : regex_list alphabet =
+    match values with
+    | RegexListNil => RegexListNil
+    | RegexListCons (head, tail) =>
+        antimirov_insert_unique
+            (make_cat head right)
+            (antimirov_map_cat_right tail right)
+
+let rec antimirov_residual_support forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    : regex_list alphabet =
+    match value with
+    | RegexEmpty => RegexListNil
+    | RegexEpsilon => RegexListNil
+    | RegexChar _ => RegexListCons (RegexEpsilon, RegexListNil)
+    | RegexAlt (left, right) =>
+        antimirov_union
+            (antimirov_residual_support left)
+            (antimirov_residual_support right)
+    | RegexCat (left, right) =>
+        antimirov_union
+            (antimirov_map_cat_right (antimirov_residual_support left) right)
+            (antimirov_residual_support right)
+    | RegexStar body =>
+        antimirov_map_cat_right
+            (antimirov_residual_support body)
+            (RegexStar body)
+
+inl antimirov_support forall alphabet {symbol_compare}.
+    (value : regex alphabet) : regex_list alphabet =
+    inl normalized = normalize value
+    antimirov_insert_unique normalized (antimirov_residual_support normalized)
+
+nominal position_shape_empty = ()
+nominal position_shape_epsilon = ()
+nominal position_shape_char = ()
+nominal position_shape_alt left right = ()
+nominal position_shape_cat left right = ()
+nominal position_shape_star inner = ()
+
+union rec antimirov_position_tree alphabet shape =
+    | PositionTreeEmpty :: forall alphabet.
+        antimirov_position_tree alphabet position_shape_empty
+    | PositionTreeEpsilon :: forall alphabet.
+        antimirov_position_tree alphabet position_shape_epsilon
+    | PositionTreeChar :: forall alphabet.
+        alphabet -> antimirov_position_tree alphabet position_shape_char
+    | PositionTreeAlt :: forall alphabet left right.
+        antimirov_position_tree alphabet left * antimirov_position_tree alphabet right ->
+        antimirov_position_tree alphabet (position_shape_alt left right)
+    | PositionTreeCat :: forall alphabet left right.
+        antimirov_position_tree alphabet left * antimirov_position_tree alphabet right ->
+        antimirov_position_tree alphabet (position_shape_cat left right)
+    | PositionTreeStar :: forall alphabet inner.
+        antimirov_position_tree alphabet inner ->
+        antimirov_position_tree alphabet (position_shape_star inner)
+
+inl rec antimirov_position_tree_regex forall alphabet shape.
+    (tree : antimirov_position_tree alphabet shape) : regex alphabet =
+    match tree with
+    | PositionTreeEmpty => RegexEmpty
+    | PositionTreeEpsilon => RegexEpsilon
+    | PositionTreeChar symbol => RegexChar symbol
+    | PositionTreeAlt (left, right) =>
+        RegexAlt (antimirov_position_tree_regex left, antimirov_position_tree_regex right)
+    | PositionTreeCat (left, right) =>
+        RegexCat (antimirov_position_tree_regex left, antimirov_position_tree_regex right)
+    | PositionTreeStar inner =>
+        RegexStar (antimirov_position_tree_regex inner)
+
+let rec antimirov_position_tree_budget forall alphabet shape.
+    (tree : antimirov_position_tree alphabet shape) : state_budget =
+    match tree with
+    | PositionTreeEmpty => StateBudgetZero
+    | PositionTreeEpsilon => StateBudgetZero
+    | PositionTreeChar _ => StateBudgetSucc StateBudgetZero
+    | PositionTreeAlt (left, right) =>
+        state_budget_add
+            (antimirov_position_tree_budget left)
+            (antimirov_position_tree_budget right)
+    | PositionTreeCat (left, right) =>
+        state_budget_add
+            (antimirov_position_tree_budget left)
+            (antimirov_position_tree_budget right)
+    | PositionTreeStar inner =>
+        antimirov_position_tree_budget inner
+
+let rec state_budget_same
+    (left : state_budget)
+    (right : state_budget) : bool =
+    match left, right with
+    | StateBudgetZero, StateBudgetZero => true
+    | StateBudgetSucc left_rest, StateBudgetSucc right_rest =>
+        state_budget_same left_rest right_rest
+    | _ => false
+
+union rec antimirov_origin_slot shape =
+    | OriginSlotChar :: antimirov_origin_slot position_shape_char
+    | OriginSlotAltLeft :: forall left right.
+        antimirov_origin_slot left ->
+        antimirov_origin_slot (position_shape_alt left right)
+    | OriginSlotAltRight :: forall left right.
+        antimirov_origin_slot right ->
+        antimirov_origin_slot (position_shape_alt left right)
+    | OriginSlotCatLeft :: forall left right.
+        antimirov_origin_slot left ->
+        antimirov_origin_slot (position_shape_cat left right)
+    | OriginSlotCatRight :: forall left right.
+        antimirov_origin_slot right ->
+        antimirov_origin_slot (position_shape_cat left right)
+    | OriginSlotStar :: forall inner.
+        antimirov_origin_slot inner ->
+        antimirov_origin_slot (position_shape_star inner)
+
+union antimirov_origin_slot_lookup shape =
+    | OriginSlotMissing :: forall shape. antimirov_origin_slot_lookup shape
+    | OriginSlotFound :: forall shape.
+        antimirov_origin_slot shape ->
+        antimirov_origin_slot_lookup shape
+
+nominal antimirov_slot_cat_capability alphabet =
+    regex alphabet -> regex alphabet -> regex alphabet
+
+inl antimirov_slot_cat_capability_default forall alphabet {symbol_compare}.
+    : antimirov_slot_cat_capability alphabet =
+    antimirov_slot_cat_capability (fun left right => normalize (make_cat left right))
+
+nominal antimirov_slot_equal_capability alphabet =
+    regex alphabet -> regex alphabet -> bool
+
+inl antimirov_slot_equal_capability_default forall alphabet {symbol_compare}.
+    : antimirov_slot_equal_capability alphabet =
+    antimirov_slot_equal_capability regex_equal
+
+inl rec antimirov_origin_slot_value_with_context forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (slot : antimirov_origin_slot shape)
+    (context : regex alphabet)
+    : regex alphabet =
+    match cat_capability, tree, slot with
+    | antimirov_slot_cat_capability cat, PositionTreeChar _, OriginSlotChar =>
+        cat RegexEpsilon context
+    | antimirov_slot_cat_capability cat, PositionTreeAlt (left, _), OriginSlotAltLeft child =>
+        antimirov_origin_slot_value_with_context cat_capability left child context
+    | antimirov_slot_cat_capability cat, PositionTreeAlt (_, right), OriginSlotAltRight child =>
+        antimirov_origin_slot_value_with_context cat_capability right child context
+    | antimirov_slot_cat_capability cat, PositionTreeCat (left, right), OriginSlotCatLeft child =>
+        inl right_context = cat (antimirov_position_tree_regex right) context
+        antimirov_origin_slot_value_with_context cat_capability left child right_context
+    | antimirov_slot_cat_capability cat, PositionTreeCat (_, right), OriginSlotCatRight child =>
+        antimirov_origin_slot_value_with_context cat_capability right child context
+    | antimirov_slot_cat_capability cat, PositionTreeStar inner, OriginSlotStar child =>
+        inl star_context = cat (RegexStar (antimirov_position_tree_regex inner)) context
+        antimirov_origin_slot_value_with_context cat_capability inner child star_context
+
+inl antimirov_origin_slot_value forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (slot : antimirov_origin_slot shape)
+    : regex alphabet =
+    antimirov_origin_slot_value_with_context cat_capability tree slot RegexEpsilon
+
+inl rec antimirov_origin_slot_find_with_context forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (target : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (context : regex alphabet)
+    : antimirov_origin_slot_lookup shape =
+    match equal_capability, cat_capability, tree with
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeEmpty =>
+        OriginSlotMissing
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeEpsilon =>
+        OriginSlotMissing
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeChar _ =>
+        inl candidate = cat RegexEpsilon context
+        if equal target candidate then OriginSlotFound OriginSlotChar
+        else OriginSlotMissing
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeAlt (left, right) =>
+        match antimirov_origin_slot_find_with_context cat_capability equal_capability target left context with
+        | OriginSlotFound child => OriginSlotFound (OriginSlotAltLeft child)
+        | OriginSlotMissing =>
+            match antimirov_origin_slot_find_with_context cat_capability equal_capability target right context with
+            | OriginSlotFound child => OriginSlotFound (OriginSlotAltRight child)
+            | OriginSlotMissing => OriginSlotMissing
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeCat (left, right) =>
+        inl right_context = cat (antimirov_position_tree_regex right) context
+        match antimirov_origin_slot_find_with_context cat_capability equal_capability target left right_context with
+        | OriginSlotFound child => OriginSlotFound (OriginSlotCatLeft child)
+        | OriginSlotMissing =>
+            match antimirov_origin_slot_find_with_context cat_capability equal_capability target right context with
+            | OriginSlotFound child => OriginSlotFound (OriginSlotCatRight child)
+            | OriginSlotMissing => OriginSlotMissing
+    | antimirov_slot_equal_capability equal, antimirov_slot_cat_capability cat, PositionTreeStar inner =>
+        inl star_context = cat (RegexStar (antimirov_position_tree_regex inner)) context
+        match antimirov_origin_slot_find_with_context cat_capability equal_capability target inner star_context with
+        | OriginSlotFound child => OriginSlotFound (OriginSlotStar child)
+        | OriginSlotMissing => OriginSlotMissing
+
+inl antimirov_origin_slot_find forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (target : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    : antimirov_origin_slot_lookup shape =
+    antimirov_origin_slot_find_with_context
+        cat_capability equal_capability target tree RegexEpsilon
+
+union antimirov_support_slot shape =
+    | SupportSlotRoot :: forall shape. antimirov_support_slot shape
+    | SupportSlotOrigin :: forall shape.
+        antimirov_origin_slot shape ->
+        antimirov_support_slot shape
+
+union antimirov_support_slot_lookup shape =
+    | SupportSlotMissing :: forall shape. antimirov_support_slot_lookup shape
+    | SupportSlotFound :: forall shape.
+        antimirov_support_slot shape ->
+        antimirov_support_slot_lookup shape
+
+inl antimirov_support_slot_find forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (root : regex alphabet)
+    (target : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    : antimirov_support_slot_lookup shape =
+    match equal_capability with
+    | antimirov_slot_equal_capability equal =>
+        if equal root target then SupportSlotFound SupportSlotRoot
+        else
+            match antimirov_origin_slot_find cat_capability equal_capability target tree with
+            | OriginSlotFound slot => SupportSlotFound (SupportSlotOrigin slot)
+            | OriginSlotMissing => SupportSlotMissing
+
+inl antimirov_support_slot_value forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (root : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (slot : antimirov_support_slot shape)
+    : regex alphabet =
+    match slot with
+    | SupportSlotRoot => root
+    | SupportSlotOrigin origin =>
+        antimirov_origin_slot_value cat_capability tree origin
+
+let rec antimirov_support_covered_by_typed_slots forall alphabet shape.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (root : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (support : regex_list alphabet)
+    : bool =
+    match equal_capability, support with
+    | antimirov_slot_equal_capability equal, RegexListNil => true
+    | antimirov_slot_equal_capability equal, RegexListCons (head, tail) =>
+        match antimirov_support_slot_find cat_capability equal_capability root head tree with
+        | SupportSlotMissing => false
+        | SupportSlotFound slot =>
+            if equal head (antimirov_support_slot_value cat_capability root tree slot) then
+                antimirov_support_covered_by_typed_slots
+                    cat_capability equal_capability root tree tail
+            else false
+
+inl antimirov_typed_slot_bound_certificate forall alphabet {symbol_compare} shape.
+    (tree : antimirov_position_tree alphabet shape)
+    (value : regex alphabet)
+    : bool =
+    inl normalized = normalize value
+    inl support = antimirov_support normalized
+    inl support_distinct = regex_list_distinct support
+    inl cat_capability : antimirov_slot_cat_capability alphabet =
+        antimirov_slot_cat_capability_default
+    inl equal_capability : antimirov_slot_equal_capability alphabet =
+        antimirov_slot_equal_capability_default
+    match equal_capability with
+    | antimirov_slot_equal_capability equal =>
+        equal (normalize (antimirov_position_tree_regex tree)) normalized &&
+        state_budget_same
+            (antimirov_position_tree_budget tree)
+            (regex_position_count normalized) &&
+        support_distinct &&
+        antimirov_support_covered_by_typed_slots
+            cat_capability equal_capability normalized tree support
+
+type bit_ends_with_zero_shape =
+    position_shape_cat
+        (position_shape_star (position_shape_alt position_shape_char position_shape_char))
+        position_shape_char
+
+inl bit_ends_with_zero_position_tree ()
+    : antimirov_position_tree bit_alphabet bit_ends_with_zero_shape =
+    PositionTreeCat (
+        PositionTreeStar (
+            PositionTreeAlt (
+                PositionTreeChar (zero ()),
+                PositionTreeChar (one ()))),
+        PositionTreeChar (zero ()))
+
+inl bit_ends_with_one_forged_position_tree ()
+    : antimirov_position_tree bit_alphabet bit_ends_with_zero_shape =
+    PositionTreeCat (
+        PositionTreeStar (
+            PositionTreeAlt (
+                PositionTreeChar (zero ()),
+                PositionTreeChar (one ()))),
+        PositionTreeChar (one ()))
+
+type tri_ab_star_then_c_shape =
+    position_shape_cat
+        (position_shape_star (position_shape_alt position_shape_char position_shape_char))
+        position_shape_char
+
+inl tri_ab_star_then_c_position_tree ()
+    : antimirov_position_tree tri_alphabet tri_ab_star_then_c_shape =
+    PositionTreeCat (
+        PositionTreeStar (
+            PositionTreeAlt (
+                PositionTreeChar (tri_a ()),
+                PositionTreeChar (tri_b ()))),
+        PositionTreeChar (tri_c ()))
+
+type tri_a_star_shape = position_shape_star position_shape_char
+
+inl tri_a_star_position_tree ()
+    : antimirov_position_tree tri_alphabet tri_a_star_shape =
+    PositionTreeStar (PositionTreeChar (tri_a ()))
+
+inl main () : string =
+    assert_static
+        (antimirov_typed_slot_bound_certificate
+            (bit_ends_with_zero_position_tree ())
+            (ends_with_zero ()))
+        "bit Antimirov support must fit the typed root-plus-position slot universe"
+    assert_static
+        (bool_same
+            (antimirov_typed_slot_bound_certificate
+                (bit_ends_with_one_forged_position_tree ())
+                (ends_with_zero ()))
+            false)
+        "same-cardinality forged typed position tree must not certify the source regex"
+    assert_static
+        (antimirov_typed_slot_bound_certificate
+            (tri_a_star_position_tree ())
+            (tri_a_star ()))
+        "ternary star support must fit the typed root-plus-position slot universe"
+    assert_static
+        (antimirov_typed_slot_bound_certificate
+            (tri_ab_star_then_c_position_tree ())
+            (tri_ab_star_then_c ()))
+        "ternary cat/alt/star support must fit the typed root-plus-position slot universe"
+    "brzozowski-antimirov-typed-slot-bound-green"

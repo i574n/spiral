@@ -1,0 +1,6 @@
+packages:
+    multi_file_patch_contract
+modules:
+    multi_file_contracts
+    resume_contracts
+    main

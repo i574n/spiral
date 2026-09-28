@@ -1,0 +1,12 @@
+[package]
+name = "eoie-patch-batch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[example]]
+name = "eoie-patch-batch"
+path = "patch_batch.rs"
+test = false
+doc = false

@@ -1,0 +1,4 @@
+open main
+
+inl main () =
+    accepts (ends_with_zero ()) (InputCons (tri_a (), InputEmpty))

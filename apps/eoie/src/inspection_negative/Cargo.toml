@@ -1,0 +1,13 @@
+[package]
+name = "inspection-negative"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[example]]
+name = "inspection-negative"
+path = "inspection_negative.rs"
+
+[dependencies]
+eoie-proxy-search = { path = "../eoie_proxy_search" }

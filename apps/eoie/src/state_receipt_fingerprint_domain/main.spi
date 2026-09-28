@@ -1,0 +1,11 @@
+inl main () : i32 =
+    inl _ = fingerprint_byte_valid_binding 97i32 0i32
+    inl mixed_low = fingerprint_mix_low_binding -2078137563i32 97i32
+    inl _ = fingerprint_low_step_binding mixed_low 0i32
+    inl _ = fingerprint_high_step_binding -873292572i32 mixed_low
+    $"RustExportI32Binary(\"eoie_state_receipt_byte_valid\",\"fingerprint_byte_valid_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_state_receipt_mix_low\",\"fingerprint_mix_low_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_state_receipt_low_step\",\"fingerprint_low_step_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_state_receipt_high_step\",\"fingerprint_high_step_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

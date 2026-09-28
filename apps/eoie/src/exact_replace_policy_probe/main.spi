@@ -1,0 +1,16 @@
+open exact_replace_contract.model
+
+inl one_is (value : i32) : bool =
+    if !!!!LT(value,1i32) then false
+    elif !!!!LT(1i32,value) then false
+    else true
+
+inl main () : i32 =
+    inl _ = policy_plan ()
+    if one_is (preflight_binding 1i32 1i32 1i32) then
+        if one_is (unique_match_binding 1i32) then
+            if one_is (mode_binding 1i32 1i32) then
+                if one_is (verification_binding 1i32 0i32 1i32) then 0i32 else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

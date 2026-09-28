@@ -1,0 +1,56 @@
+union recovered_capability_fixture =
+    | RecoveredCapabilityFixture :: string * string * string * string -> recovered_capability_fixture
+
+inl toolchain_action_domain_fixture () = RecoveredCapabilityFixture ("ToolchainActionDomain", "src/toolchain_command_domain/model.spi", "src/bootstrap_policy_probe/main.spi", "src/toolchain_argument_agile_probe/main.spi")
+// recovered-fixture|ToolchainActionDomain|src/toolchain_command_domain/model.spi|src/bootstrap_policy_probe/main.spi|src/toolchain_argument_agile_probe/main.spi
+inl toolchain_command_plan_fixture () = RecoveredCapabilityFixture ("ToolchainCommandPlan", "src/toolchain_command_domain/negative_main.spi", "src/bootstrap_policy_probe/main.spi", "src/toolchain_argument_agile_probe/main.spi")
+// recovered-fixture|ToolchainCommandPlan|src/toolchain_command_domain/negative_main.spi|src/bootstrap_policy_probe/main.spi|src/toolchain_argument_agile_probe/main.spi
+inl state_receipt_fingerprint_fixture () = RecoveredCapabilityFixture ("StateReceiptFingerprint", "src/state_receipt_fingerprint_agile_probe/main.spi", "src/state_receipt_fingerprint_policy_probe/main.spi", "src/state_receipt_fingerprint_agile_probe/main.spi")
+// recovered-fixture|StateReceiptFingerprint|src/state_receipt_fingerprint_agile_probe/main.spi|src/state_receipt_fingerprint_policy_probe/main.spi|src/state_receipt_fingerprint_agile_probe/main.spi
+inl state_receipt_codec_fixture () = RecoveredCapabilityFixture ("StateReceiptCodec", "src/state_receipt_parser_domain/main.spi", "src/state_receipt_parser_probe/main.spi", "src/state_receipt_serializer_probe/main.spi")
+// recovered-fixture|StateReceiptCodec|src/state_receipt_parser_domain/main.spi|src/state_receipt_parser_probe/main.spi|src/state_receipt_serializer_probe/main.spi
+inl filesystem_transaction_fixture () = RecoveredCapabilityFixture ("FilesystemTransaction", "src/rust_std_fs/negative_main.spi", "src/bootstrap_policy_probe/main.spi", "src/rust_std_fs/rooted_main.spi")
+// recovered-fixture|FilesystemTransaction|src/rust_std_fs/negative_main.spi|src/bootstrap_policy_probe/main.spi|src/rust_std_fs/rooted_main.spi
+inl patch_transaction_core_fixture () = RecoveredCapabilityFixture ("PatchTransactionCore", "src/eoie_patch_transaction_contracts/main.spi", "src/patch_batch/main.spi", "src/eoie_patch_mutation_contracts/main.spi")
+// recovered-fixture|PatchTransactionCore|src/eoie_patch_transaction_contracts/main.spi|src/patch_batch/main.spi|src/eoie_patch_mutation_contracts/main.spi
+inl bundle_cold_roundtrip_fixture () = RecoveredCapabilityFixture ("BundleColdRoundtrip", "src/bundle_lifecycle_probe/main.spi", "src/bundle_lifecycle_domain/main.spi", "src/eoie_bundle_zip/bundle.spi")
+// recovered-fixture|BundleColdRoundtrip|src/bundle_lifecycle_probe/main.spi|src/bundle_lifecycle_domain/main.spi|src/eoie_bundle_zip/bundle.spi
+inl candidate_self_patch_fixture () = RecoveredCapabilityFixture ("CandidateSelfPatch", "state/self_patch_negative.spi", "state/self_patch_apply.spi", "state/self_patch_restore.spi")
+// recovered-fixture|CandidateSelfPatch|state/self_patch_negative.spi|state/self_patch_apply.spi|state/self_patch_restore.spi
+inl deterministic_bundle_manifest_fixture () = RecoveredCapabilityFixture ("DeterministicBundleManifest", "src/bundle_manifest_negative_probe_v2/main.spi", "src/bundle_manifest_policy_probe_v2/main.spi", "src/eoie_bundle_zip/bundle.spi")
+// recovered-fixture|DeterministicBundleManifest|src/bundle_manifest_negative_probe_v2/main.spi|src/bundle_manifest_policy_probe_v2/main.spi|src/eoie_bundle_zip/bundle.spi
+inl process_streaming_fixture () = RecoveredCapabilityFixture ("ProcessStreaming", "src/eoie_process_streaming/negative.spi", "src/eoie_process_streaming/policy_probe.spi", "src/eoie_process_observation/process_observation.spi")
+// recovered-fixture|ProcessStreaming|src/eoie_process_streaming/negative.spi|src/eoie_process_streaming/policy_probe.spi|src/eoie_process_observation/process_observation.spi
+inl rooted_filesystem_operations_fixture () = RecoveredCapabilityFixture ("RootedFilesystemOperations", "src/rust_std_fs/rooted_negative.spi", "src/rust_std_fs/rooted_policy_probe.spi", "src/eoie_legacy_operations/operations.spi")
+// recovered-fixture|RootedFilesystemOperations|src/rust_std_fs/rooted_negative.spi|src/rust_std_fs/rooted_policy_probe.spi|src/eoie_legacy_operations/operations.spi
+inl native_archive_extraction_fixture () = RecoveredCapabilityFixture ("NativeArchiveExtraction", "src/bundle_lifecycle_domain/archive_extract_negative.spi", "src/bundle_lifecycle_domain/archive_extract_policy_probe.spi", "src/eoie_bundle_zip/bundle.spi")
+// recovered-fixture|NativeArchiveExtraction|src/bundle_lifecycle_domain/archive_extract_negative.spi|src/bundle_lifecycle_domain/archive_extract_policy_probe.spi|src/eoie_bundle_zip/bundle.spi
+inl physical_bundle_retention_fixture () = RecoveredCapabilityFixture ("PhysicalBundleRetention", "src/bundle_retention_domain/retention_negative.spi", "src/bundle_retention_domain/retention_policy_probe.spi", "src/eoie_bundle_retention/retention_terminal.spi")
+// recovered-fixture|PhysicalBundleRetention|src/bundle_retention_domain/retention_negative.spi|src/bundle_retention_domain/retention_policy_probe.spi|src/eoie_bundle_retention/retention_terminal.spi
+inl archive_deflate_extraction_fixture () = RecoveredCapabilityFixture ("ArchiveDeflateExtraction", "src/archive_deflate_negative/main.spi", "src/archive_deflate_policy_probe/main.spi", "src/archive_deflate_domain/archive_terminal.spi")
+// recovered-fixture|ArchiveDeflateExtraction|src/archive_deflate_negative/main.spi|src/archive_deflate_policy_probe/main.spi|src/archive_deflate_domain/archive_terminal.spi
+inl inspection_authority_fixture () = RecoveredCapabilityFixture ("InspectionAuthority", "src/inspection_negative/main.spi", "src/inspection_policy_probe/main.spi", "src/parallel_search_contract/search_terminal.spi")
+// recovered-fixture|InspectionAuthority|src/inspection_negative/main.spi|src/inspection_policy_probe/main.spi|src/parallel_search_contract/search_terminal.spi
+inl process_batch_plan_fixture () = RecoveredCapabilityFixture ("ProcessBatchPlan", "src/process_batch_plan_policy_probe/main.spi", "src/process_batch_plan_resume_probe/main.spi", "src/eoie_toolchain_proxy/toolchain_terminal.spi")
+// recovered-fixture|ProcessBatchPlan|src/process_batch_plan_policy_probe/main.spi|src/process_batch_plan_resume_probe/main.spi|src/eoie_toolchain_proxy/toolchain_terminal.spi
+
+inl multi_owner_coverage_union_fixture () = RecoveredCapabilityFixture ("MultiOwnerCoverageUnion", "src/eoie_coverage_prune/coverage.spi", "src/eoie_coverage_smoke/smoke.spi", "src/eoie_cli_routing/routing_terminal.spi")
+// recovered-fixture|MultiOwnerCoverageUnion|src/eoie_coverage_prune/coverage.spi|src/eoie_coverage_smoke/smoke.spi|src/eoie_cli_routing/routing_terminal.spi
+
+inl self_install_cutover_fixture () = RecoveredCapabilityFixture ("SelfInstallCutover", "src/legacy_capability_domain/self_install.spi", "src/legacy_capability_probes/self_install_probe/main.spi", "src/eoie_cli_routing/routing_terminal.spi")
+// recovered-fixture|SelfInstallCutover|src/legacy_capability_domain/self_install.spi|src/legacy_capability_probes/self_install_probe/main.spi|src/eoie_cli_routing/routing_terminal.spi
+
+inl patch_mutation_regeneration_cutover_fixture () = RecoveredCapabilityFixture ("PatchMutationRegenerationCutover", "src/eoie_patch_mutation/patch_mutation.spi", "src/eoie_patch_mutation_contracts/main.spi", "src/eoie_patch_transaction_contracts/main.spi")
+// recovered-fixture|PatchMutationRegenerationCutover|src/eoie_patch_mutation/patch_mutation.spi|src/eoie_patch_mutation_contracts/main.spi|src/eoie_patch_transaction_contracts/main.spi
+
+inl release_hygiene_classifier_cutover_fixture () = RecoveredCapabilityFixture ("ReleaseHygieneClassifierCutover", "src/eoie_release_hygiene/hygiene_policy.spi", "src/eoie_release_hygiene/hygiene_policy_probe/main.spi", "src/eoie_release_hygiene/hygiene_terminal.spi")
+// recovered-fixture|ReleaseHygieneClassifierCutover|src/eoie_release_hygiene/hygiene_policy.spi|src/eoie_release_hygiene/hygiene_policy_probe/main.spi|src/eoie_release_hygiene/hygiene_terminal.spi
+
+inl restart_baton_recovery_cutover_fixture () = RecoveredCapabilityFixture ("RestartBatonRecoveryCutover", "src/legacy_capability_domain/restart_baton.spi", "src/legacy_capability_probes/restart_baton_probe/main.spi", "src/eoie_legacy_operations/restart_baton_terminal.spi")
+// recovered-fixture|RestartBatonRecoveryCutover|src/legacy_capability_domain/restart_baton.spi|src/legacy_capability_probes/restart_baton_probe/main.spi|src/eoie_legacy_operations/restart_baton_terminal.spi
+
+inl exact_replace_dogfood_fixture () = RecoveredCapabilityFixture ("ExactReplaceDogfood", "src/exact_replace_negative_probe/main.spi", "src/exact_replace_policy_probe/main.spi", "src/eoie_legacy_operations/operations.spi")
+// recovered-fixture|ExactReplaceDogfood|src/exact_replace_negative_probe/main.spi|src/exact_replace_policy_probe/main.spi|src/eoie_legacy_operations/operations.spi
+
+inl recovered_capability_fixture_count () : u32 = 22u32
+inl main () : i32 = 0i32

@@ -1,0 +1,10 @@
+let state_path_candidate_code (~name : string) : u64 =
+    if rust_std_string.model.equals name "typecheck_receipts.spi" then 0u64
+    elif rust_std_string.model.ends_with name ".spi" then 1u64
+    else 0u64
+
+inl main () : i32 =
+    inl _ = state_path_candidate_code "ratings.spi"
+    inl _ = state_path_candidate_code "typecheck_receipts.spi"
+    inl _ = state_path_candidate_code "notes.txt"
+    0i32

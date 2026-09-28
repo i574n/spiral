@@ -1,0 +1,4 @@
+packages:
+    parallel_workstream_contract
+modules:
+    main

@@ -1,0 +1,29 @@
+nominal issuer = ()
+nominal total = ()
+nominal status = ()
+
+union shard key result =
+    | IssuerShard :: shard issuer string
+    | TotalShard :: shard total i32
+    | StatusShard :: shard status bool
+
+union completed key result =
+    | Completed :: forall key result. result -> completed key result
+
+union rec fanout result =
+    | Leaf :: forall key result.
+        shard key result -> fanout (completed key result)
+    | Zip :: forall a b. fanout a * fanout b -> fanout (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * fanout input)
+        -> fanout result
+
+inl wrong_reduce
+    (data : completed total i32 * completed issuer string)
+    : string = "wrong"
+
+inl main () : fanout string =
+    Map (exists (
+        wrong_reduce,
+        Zip (Leaf IssuerShard, Leaf TotalShard)
+    ))

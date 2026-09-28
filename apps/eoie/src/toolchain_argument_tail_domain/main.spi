@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl _ = toolchain_argument_token_high_binding 4i32 5i32
+    $"RustExportI32Binary(\"eoie_toolchain_argument_token_high\",\"toolchain_argument_token_high_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

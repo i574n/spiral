@@ -1,0 +1,119 @@
+inl (~!\\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl write_text (path : string) (text : string) : bool =
+    !\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"')
+
+inl rename (to : string) (path : string) : bool =
+    !\\((path, to), $'"std::fs::rename(&*$0, &*$1).is_ok()"')
+
+inl remove_file (path : string) : bool =
+    !\\(path, $'"std::fs::remove_file(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+
+inl text_equals (expected : string) (path : string) : bool =
+    !\\((path, expected), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| value == *$1)"')
+
+inl file_exists (path : string) : bool =
+    !\\(path, $'"std::path::Path::new(&*$0).is_file()"')
+
+inl file_missing (path : string) : bool =
+    !\\(path, $'"\!std::path::Path::new(&*$0).is_file()"')
+
+nominal patch_text = string
+nominal original_text = string
+nominal staged_path = string
+nominal target_path = string
+
+nominal backup_ready = { target : target_path; original : original_text }
+union backup_restored =
+    | BackupRestored
+
+union restoration_transition from to =
+    | RestoreBackup :: restoration_transition backup_ready backup_restored
+
+union restoration_result state =
+    | RestorationSucceeded :: restoration_result backup_restored
+    | RestorationFailed :: forall state. restoration_result state
+
+inl restoration_succeeded forall state. (result : restoration_result state) : bool =
+    match result with
+    | RestorationSucceeded => true
+    | RestorationFailed => false
+
+inl backup (target : target_path) (original : original_text) : backup_ready =
+    backup_ready { target original }
+
+inl patch_body (text : string) : patch_text = patch_text text
+inl original_body (text : string) : original_text = original_text text
+inl staged (path : string) : staged_path = staged_path path
+inl target (path : string) : target_path = target_path path
+
+inl stage (target_path target) (patch_text text) : staged_path =
+    staged (!\\((target, text), $'"eoie_rust_std_fs::stage_text(std::path::Path::new(&*$0), &$1).unwrap().display().to_string().into()"'))
+
+inl promote (target_path target) (staged_path temporary) : bool =
+    rename target temporary
+
+inl restore (target_path target) (original_text text) : bool =
+    !\\((target, text), $'"eoie_rust_std_fs::restore_text(std::path::Path::new(&*$0), &$1).is_ok()"')
+
+union restoration_authority =
+    | RestorationAuthority
+
+inl grant_restoration () : restoration_authority = RestorationAuthority
+
+inl require_restoration (authority : restoration_authority) : () =
+    match authority with
+    | RestorationAuthority => ()
+
+inl execute_restoration forall from to.
+    (authority : restoration_authority)
+    (transition : restoration_transition from to)
+    (snapshot : from)
+    : restoration_result to =
+    require_restoration authority
+    match transition, snapshot with
+    | RestoreBackup, backup_ready { target original } =>
+        if restore target original then RestorationSucceeded
+        else RestorationFailed
+
+inl discard (staged_path temporary) : bool =
+    !\\(temporary, $'"eoie_rust_std_fs::discard_stage(std::path::Path::new(&*$0)).is_ok()"')
+
+inl staged_missing (staged_path temporary) : bool = file_missing temporary
+
+nominal unchecked_path = string
+nominal readable_file = string
+nominal missing_path = string
+nominal loaded_text = string
+
+union file_probe =
+    | FileReadable : readable_file
+    | FileMissing : missing_path
+
+inl unchecked (path : string) : unchecked_path = unchecked_path path
+
+inl probe (unchecked_path path) : file_probe =
+    if file_exists path
+    then FileReadable (readable_file path)
+    else FileMissing (missing_path path)
+
+inl read_text (readable_file path) : loaded_text =
+    loaded_text (!\\(path, $'"std::fs::read_to_string(&*$0).unwrap_or_default().into()"'))
+
+inl snapshot (path : readable_file) : loaded_text = read_text path
+
+inl loaded_nonempty (loaded_text text) : bool =
+    !\\(text, $'"\!$0.is_empty()"')
+
+inl missing_path_nonempty (missing_path path) : bool =
+    !\\(path, $'"\!$0.is_empty()"')
+
+inl readable_path (readable_file path) : string = path
+inl missing_value (missing_path path) : string = path
+
+inl text_contains (needle : string) (path : string) : bool =
+    !\\((path, needle), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| value.contains($1.as_ref()))"')
+
+inl text_excludes (needle : string) (path : string) : bool =
+    !\\((path, needle), $'"std::fs::read_to_string(&*$0).is_ok_and(|value| \!value.contains($1.as_ref()))"')

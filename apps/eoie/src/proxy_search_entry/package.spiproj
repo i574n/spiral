@@ -1,0 +1,5 @@
+packages:
+    path_tag_contract
+    parallel_search_contract
+modules:
+    entry

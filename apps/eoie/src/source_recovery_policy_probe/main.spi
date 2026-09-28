@@ -1,0 +1,16 @@
+open source_recovery_contract.model
+
+inl main () : i32 =
+    inl _ = source_recovery_public_plan ()
+    match source_recovery_provenance_binding 0i32 0i32 with
+    | 1 =>
+        match source_recovery_provenance_binding 0i32 1i32 with
+        | 2 =>
+            match source_recovery_provenance_binding 1i32 0i32 with
+            | 3 =>
+                match source_recovery_warning_binding 2i32 5i32 with
+                | 1 => 0i32
+                | _ => 1i32
+            | _ => 1i32
+        | _ => 1i32
+    | _ => 1i32

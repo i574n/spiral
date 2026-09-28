@@ -1,0 +1,9 @@
+inl main () : i32 =
+    inl rejected_action = toolchain_execution_plan_binding -1i32 0i32
+    inl rejected_witness = toolchain_execution_plan_binding 0i32 1i32
+    inl rejected_negative_index = toolchain_environment_entry_binding 0i32 -1i32
+    inl rejected_past_end = toolchain_environment_entry_binding 0i32 5i32
+    inl rejected_clean_entry = toolchain_environment_entry_binding 7i32 0i32
+    inl cargo_test_count = toolchain_environment_entry_count_binding 3i32 0i32
+    inl cargo_test_dotnet = toolchain_environment_entry_binding 3i32 7i32
+    if !!!!LT(rejected_action,0i32) && !!!!LT(rejected_witness,0i32) && !!!!LT(rejected_negative_index,0i32) && !!!!LT(rejected_past_end,0i32) && !!!!LT(rejected_clean_entry,0i32) && !!!!EQ(cargo_test_count,8i32) && !!!!EQ(cargo_test_dotnet,103i32) then 0i32 else 61i32

@@ -1,0 +1,18 @@
+nominal lineage_a = ()
+nominal epoch0 = ()
+nominal epoch1 = ()
+nominal owner_a = ()
+nominal coherent = ()
+nominal fresh = ()
+nominal used = ()
+
+union qstate lineage epoch phase = | QState :: forall lineage epoch phase. string -> qstate lineage epoch phase
+union qcontinuation lineage from_epoch to_epoch owner state = | QContinuation :: forall lineage from_epoch to_epoch owner state. string -> qcontinuation lineage from_epoch to_epoch owner state
+
+inl resume forall lineage from_epoch to_epoch owner. (state : qstate lineage from_epoch coherent) (continuation : qcontinuation lineage from_epoch to_epoch owner fresh) : qstate lineage to_epoch coherent * qcontinuation lineage from_epoch to_epoch owner used =
+    match state, continuation with | QState _, QContinuation _ => QState "one-shot-quantum-resumed", QContinuation "used"
+
+inl main () : string =
+    inl state : qstate lineage_a epoch0 coherent = QState "psi"
+    inl continuation : qcontinuation lineage_a epoch0 epoch1 owner_a fresh = QContinuation "k"
+    match resume state continuation with | QState label, QContinuation _ => label

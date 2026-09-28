@@ -1,0 +1,7 @@
+inl impossible_context_capture () :
+    corrected_cic_term
+        (ctx_extend empty_ctx identity_sort)
+        bool_sort =
+    corrected_cic_bound_here ()
+
+inl main () = impossible_context_capture ()

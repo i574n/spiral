@@ -1,0 +1,10 @@
+inl impossible_iota_indexed_conclusion_cross_category () :
+    existential_cic_verified_inductive_iota_indexed_conclusion =
+    ExistentialCicVerifiedInductiveIotaIndexedConclusion (exists (
+        CicVerifiedInductiveIotaIndexedParameterConclusion (
+            corrected_cic_generic_bool_beta_step (),
+            CicVerifiedInductiveIotaParameterTypingObligationExact
+                "a-recursive-beta-step-cannot-be-repackaged-as-a-parameter-conclusion",
+            "forged-cross-category-conclusion")))
+
+inl main () = impossible_iota_indexed_conclusion_cross_category ()

@@ -1,0 +1,28 @@
+nominal approver_a = ()
+nominal approver_b = ()
+nominal missing = ()
+nominal present = ()
+
+union approval who =
+    | ApprovalA :: approval approver_a
+    | ApprovalB :: approval approver_b
+
+union rec approval_quorum a b =
+    | EmptyQuorum :: approval_quorum missing missing
+    | AddA :: forall b. approval_quorum missing b * approval approver_a -> approval_quorum present b
+    | AddB :: forall a. approval_quorum a missing * approval approver_b -> approval_quorum a present
+
+union authorization =
+    | Authorized :: approval_quorum present present -> authorization
+
+inl authorize (quorum : approval_quorum present present) : authorization =
+    Authorized quorum
+
+inl render (authorization : authorization) : string =
+    match authorization with
+    | Authorized _ => "distinct-recursive-quorum"
+
+inl main () : string =
+    inl with_a = AddA (EmptyQuorum, ApprovalA)
+    inl with_b = AddB (with_a, ApprovalB)
+    render (authorize with_b)

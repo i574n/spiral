@@ -1,0 +1,6 @@
+inl add ~a ~b = a +. b
+
+inl main () : i32 =
+    inl ~x = 20i32
+    inl ~y = 22i32
+    join add x y -. 42i32

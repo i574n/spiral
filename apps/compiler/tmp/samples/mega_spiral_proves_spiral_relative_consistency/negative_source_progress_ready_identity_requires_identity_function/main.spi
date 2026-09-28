@@ -1,0 +1,21 @@
+inl impossible_source_progress_ready_identity_requires_identity_function () =
+    inl function_source :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_unit_tensor_lambda
+            (exact_linear_arrow_type exact_linear_unit_type
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+        ExactLinearIndexedClosedValueSourceUnitTensorLambda
+            "the-nonidentity-Unit-to-Tensor-Lambda-is-a-real-closed-value-but-not-an-identity-Lambda-source"
+    inl argument_source :
+        exact_linear_indexed_closed_value_source
+            exact_linear_indexed_closed_source_unit
+            exact_linear_unit_type =
+        ExactLinearIndexedClosedValueSourceUnit
+            "the-Unit-argument-has-the-domain-needed-by-the-nonidentity-Lambda"
+    ExactLinearIndexedClosedSourceProgressApplicationReadyIdentity (
+        function_source,
+        argument_source,
+        "this-must-be-rejected-because-the-curated-Ready-identity-source-requires-the-canonical-identity-Lambda-not-an-arbitrary-closed-Lambda")
+
+inl main () =
+    impossible_source_progress_ready_identity_requires_identity_function ()

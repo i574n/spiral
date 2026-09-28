@@ -1,0 +1,11 @@
+inl impossible_recorded_hash_changed_caller_collision
+    (collision :
+        typed_fx_hashed_statement_identity_collision
+            typed_fx_statement_command_identity_primary
+            typed_fx_statement_payload_hash_changed
+            typed_fx_hashed_primary_history)
+    : typed_fx_hashed_statement_closed_recorded_hash_fact =
+    TypedFxHashedStatementClosedRecordedHashChanged collision
+
+inl main () =
+    impossible_recorded_hash_changed_caller_collision

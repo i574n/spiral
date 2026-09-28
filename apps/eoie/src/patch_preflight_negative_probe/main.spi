@@ -1,0 +1,21 @@
+open patch_preflight_contract.model
+
+inl main () : i32 =
+    match patch_preflight_witness_binding 2i32 1i32 with
+    | 0 =>
+        match patch_preflight_witness_binding 0i32 0i32 with
+        | 0 =>
+            match patch_preflight_mode_binding 1i32 1i32 with
+            | 0 =>
+                match patch_preflight_mode_binding 0i32 0i32 with
+                | 0 =>
+                    match patch_preflight_check_binding 1i32 0i32 with
+                    | 0 =>
+                        match patch_preflight_check_binding 0i32 1i32 with
+                        | 0 => 0i32
+                        | _ => 6i32
+                    | _ => 5i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

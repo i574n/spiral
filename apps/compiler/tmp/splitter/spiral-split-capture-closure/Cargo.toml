@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-capture-closure"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+path = "src/capture_closure.rs"

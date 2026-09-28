@@ -1,0 +1,13 @@
+[package]
+name = "eoie-compiler-discovery"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_compiler_discovery"
+path = "compiler_discovery.rs"
+
+[dependencies]
+eoie-proxy-search = { path = "../eoie_proxy_search" }

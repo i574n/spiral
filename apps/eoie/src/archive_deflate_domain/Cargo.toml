@@ -1,0 +1,15 @@
+[package]
+name = "archive-deflate-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "archive_deflate_domain"
+path = "archive_deflate.rs"
+
+[dependencies]
+zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+eoie-rust-std-fs = { path = "../rust_std_fs" }
+eoie-rust-std-fs-mutation = { path = "../rust_std_fs_mutation" }

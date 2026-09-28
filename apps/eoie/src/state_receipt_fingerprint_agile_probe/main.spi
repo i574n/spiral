@@ -1,0 +1,9 @@
+open rust_std_env.model
+
+inl byte_valid (~byte : i32) : i32 =
+    !\(byte, $'"state_receipt_fingerprint_domain::eoie_state_receipt_byte_valid($0, 0)"')
+
+inl rejected_exit (~below : i32) (~above : i32) : i32 =
+    !\((below,above), $'"if $0 == 0 && $1 == 0 { 0 } else { 1 }"')
+
+inl main () : i32 = rejected_exit (byte_valid -1i32) (byte_valid 256i32)

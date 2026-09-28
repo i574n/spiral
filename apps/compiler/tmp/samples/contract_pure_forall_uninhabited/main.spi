@@ -1,0 +1,3 @@
+inl closed_inhabitant forall a. () : a = ()
+
+inl main () : i64 = 0i64

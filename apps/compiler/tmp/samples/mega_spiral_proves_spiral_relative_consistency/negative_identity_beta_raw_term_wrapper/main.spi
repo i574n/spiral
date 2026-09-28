@@ -1,0 +1,9 @@
+inl impossible_identity_beta_raw_term_wrapper () :
+    exact_linear_indexed_closed_identity_beta_step =
+    ExactLinearIndexedClosedIdentityBetaStep (exists (
+        ExactLinearIndexedBoolTrue (
+            exact_linear_indexed_empty_usage (),
+            "the-negative-presents-a-raw-closed-Bool-term-instead-of-an-explicit-beta-relation"),
+        "the-old-raw-term-wrapper-contract-must-no-longer-typecheck"))
+
+inl main () = impossible_identity_beta_raw_term_wrapper ()

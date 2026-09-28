@@ -1,0 +1,47 @@
+open hygiene_policy
+open hygiene_terminal
+open incident_recovery_contract.model
+open incident_recovery_terminal
+open runtime_guard
+
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    inl _ = hygiene_primary_binding 1i32 0i32
+    inl _ = hygiene_secondary_binding 0i32 1i32
+    inl _ = hygiene_root_file_binding 1i32 0i32
+    inl _ = hygiene_root_aux_binding 0i32 1i32
+    inl _ = hygiene_root_directory_binding 1i32 0i32
+    inl _ = hygiene_name_classification ".spiral-entry"
+    inl _ = hygiene_name_classification ".eoie-typecheck-7.rs"
+    inl _ = hygiene_name_classification ".eoie-typecheck-7.rs.eoie-1.tmp"
+    inl _ = hygiene_name_classification "probe9.rs"
+    inl _ = hygiene_name_classification ".cold-rebuild-a"
+    inl _ = hygiene_name_classification ".cargo"
+    inl _ = incident_recovery_complete_plan ()
+    inl _ = incident_recovery_leaf_binding 1i32 1i32
+    inl _ = incident_recovery_fault_binding 1i32 1i32
+    inl _ = incident_recovery_scope_mask_binding 15i32 0i32
+    inl _ = incident_recovery_snapshot_mask_binding 15i32 0i32
+    inl _ = incident_recovery_restore_mask_binding 15i32 0i32
+    inl _ = incident_recovery_rollback_mask_binding 7i32 0i32
+    inl _ = incident_recovery_completion_mask_binding 7i32 0i32
+    rust_global "#![allow(dead_code)]"
+    $"RustLibrary()" : ()
+    hygiene_terminal.emit_runtime ()
+    incident_recovery_terminal.emit_runtime ()
+    runtime_guard.emit_runtime ()
+    $"RustExportI32Binary(\"eoie_hygiene_primary_binding\",\"hygiene_primary_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_hygiene_secondary_binding\",\"hygiene_secondary_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_hygiene_root_file_binding\",\"hygiene_root_file_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_hygiene_root_aux_binding\",\"hygiene_root_aux_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_hygiene_root_directory_binding\",\"hygiene_root_directory_binding\")" : ()
+    $"RustExportU64Unary(\"eoie_hygiene_name_classification\",\"hygiene_name_classification\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_scope_mask_binding\",\"incident_recovery_scope_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_leaf_binding\",\"incident_recovery_leaf_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_snapshot_mask_binding\",\"incident_recovery_snapshot_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_restore_mask_binding\",\"incident_recovery_restore_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_fault_binding\",\"incident_recovery_fault_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_rollback_mask_binding\",\"incident_recovery_rollback_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_incident_recovery_completion_mask_binding\",\"incident_recovery_completion_mask_binding\")" : ()
+    0i32

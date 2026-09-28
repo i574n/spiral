@@ -1,0 +1,79 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+union document state =
+    | DraftDocument :: string -> document draft
+    | SignedDocument :: string -> document signed
+    | AuthorizedDocument :: string -> document authorized
+
+union forward from to =
+    | SignForward :: forward draft signed
+    | AuthorizeForward :: forward signed authorized
+
+union backward from to =
+    | UnsignBackward :: backward signed draft
+    | RevokeBackward :: backward authorized signed
+
+union reversible from to =
+    | Reversible :: forall from to.
+        forward from to * backward to from
+        -> reversible from to
+
+union rec saga from to =
+    | SagaStep :: forall from to.
+        reversible from to -> saga from to
+    | SagaCompose :: forall from to.
+        (exists middle. saga from middle * saga middle to)
+        -> saga from to
+
+inl run_forward forall from to.
+    (step : forward from to)
+    (document : document from)
+    : document to =
+    match step, document with
+    | SignForward, DraftDocument id => SignedDocument id
+    | AuthorizeForward, SignedDocument id => AuthorizedDocument id
+
+inl run_backward forall from to.
+    (step : backward from to)
+    (document : document from)
+    : document to =
+    match step, document with
+    | UnsignBackward, SignedDocument id => DraftDocument id
+    | RevokeBackward, AuthorizedDocument id => SignedDocument id
+
+inl rec execute_saga forall from to.
+    (program : saga from to)
+    (document : document from)
+    : document to =
+    match program with
+    | SagaStep (Reversible (forward, _)) =>
+        run_forward forward document
+    | SagaCompose pair =>
+        inl exists middle. first, second = pair
+        execute_saga second (execute_saga first document)
+
+inl rec rollback_saga forall from to.
+    (program : saga from to)
+    (document : document to)
+    : document from =
+    match program with
+    | SagaStep (Reversible (_, backward)) =>
+        run_backward backward document
+    | SagaCompose pair =>
+        inl exists middle. first, second = pair
+        rollback_saga first (rollback_saga second document)
+
+inl plan () : saga draft authorized =
+    SagaCompose (exists (
+        SagaStep (Reversible (SignForward, RevokeBackward)),
+        SagaStep (Reversible (AuthorizeForward, RevokeBackward))
+    ))
+
+inl main () : string =
+    inl program = plan ()
+    inl final_document = execute_saga program (DraftDocument "NFE-22")
+    inl restored = rollback_saga program final_document
+    match restored with
+    | DraftDocument _ => "saga-rollback"

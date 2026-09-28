@@ -1,0 +1,5 @@
+packages:
+    patch_model
+    patch_domain
+modules:
+    scan

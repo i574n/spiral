@@ -1,0 +1,85 @@
+union coverage_scope =
+    | ProductAndVendor :: coverage_scope
+    | AuthorProductOnly :: coverage_scope
+
+union coverage_basis =
+    | CoverageBasis :: coverage_scope * u32 * u32 * u32 * u32 -> coverage_basis
+
+union coverage_pillar =
+    | WorkspacePillar
+    | PublicPillar
+    | SmokePillar
+
+union coverage_pillar_observation =
+    | CoveragePillarObservation :: coverage_scope * coverage_pillar * u32 * u32 * u32 -> coverage_pillar_observation
+
+union coverage_owner_observation =
+    | CoverageOwnerObservation :: string * u32 * u32 * string -> coverage_owner_observation
+
+union coverage_refresh_outcome =
+    | CoverageRefreshImproved :: u32 * u32 -> coverage_refresh_outcome
+    | CoverageRefreshRegressed :: u32 * u32 -> coverage_refresh_outcome
+    | CoverageRefreshUnchanged :: u32 -> coverage_refresh_outcome
+    | CoverageRefreshRebased :: coverage_scope * u32 * coverage_scope * u32 -> coverage_refresh_outcome
+
+union coverage_refresh_state =
+    | CoverageRefreshComparable :: coverage_basis * coverage_pillar_observation * coverage_pillar_observation * coverage_pillar_observation * coverage_owner_observation * u32 * u32 * string * coverage_refresh_outcome -> coverage_refresh_state
+
+union coverage_refresh_pending =
+    | CoverageRefreshPending :: coverage_scope * u32 * u32 * u32 * string -> coverage_refresh_pending
+
+inl historical_mixed_basis () : coverage_basis =
+    CoverageBasis (ProductAndVendor, 27063u32, 197u32, 122u32, 134u32)
+
+inl current_author_basis () : coverage_basis =
+    CoverageBasis (AuthorProductOnly, 17303u32, 201u32, 122u32, 132u32)
+
+inl post_prune_refresh_pending () : coverage_refresh_pending =
+    CoverageRefreshPending (AuthorProductOnly, 17219u32, 399u32, 359u32, "fresh alpha replay now completes the workspace shard with two-hundred-one profiles and workspace attainment three-hundred-ninety-nine, proving that the eighteen-line denominator difference is not caused by the earlier timeout; binary-install release-closeout coverage-union handoff validators bundle check create-flat verify-flat rehydrate and retention rejection routes extend the same seventeen-thousand-two-hundred-nineteen-line fresh source union from seven-hundred-fifty-two to seven-hundred-sixty-eight with sha e90108cdf8741ed8af64882e8054792b0e372c723665f1d5fdd6f0c52671f359; an owner-only coverage-prune experiment expands the denominator to seventeen-thousand-two-hundred-sixty-six and is therefore explicitly excluded; canonical CoverageAttainment seven-hundred-seventy-eight on seventeen-thousand-two-hundred-thirty-seven remains unchanged with zero credit until the source-universe discrepancy is reconciled")
+
+inl workspace_observation () : coverage_pillar_observation =
+    CoveragePillarObservation (AuthorProductOnly, WorkspacePillar, 17303u32, 201u32, 400u32)
+
+inl public_observation () : coverage_pillar_observation =
+    CoveragePillarObservation (AuthorProductOnly, PublicPillar, 17303u32, 122u32, 360u32)
+
+inl smoke_observation () : coverage_pillar_observation =
+    CoveragePillarObservation (AuthorProductOnly, SmokePillar, 17303u32, 132u32, 469u32)
+
+inl retention_owner_observation () : coverage_owner_observation =
+    CoverageOwnerObservation ("bundle_retention_domain", 947u32, 473u32, "retention-physical-probe-profile-mapped-to-production-only;probe-source-excluded")
+
+inl coverage_public_api_observation () : coverage_owner_observation =
+    CoverageOwnerObservation ("coverage-public-api-unioned", 17549u32, 21u32, "four-instrumented-profiles;union-assess-success-floor-failure-parse-failure;compiler-v189-comma-string-regression-fixed;production-union-reconciled")
+
+inl current_union_observation () : coverage_owner_observation =
+    CoverageOwnerObservation ("author-product-current-production-max", 17303u32, 804u32, "fresh incremental replay advances the durable current-tree checkpoint from eight-hundred-three to eight-hundred-four on the reproducible seventeen-thousand-three-hundred-three-line universe with sha 4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4; instrumented candidate binary-install update and batch-write routes add one comparable point and evidence/coverage/current.lcov remains lossless")
+
+inl toolchain_resume_current_observation () : coverage_owner_observation =
+    CoverageOwnerObservation ("toolchain-resume-fresh-noncanonical", 17219u32, 59u32, "three current-candidate profiles exercise spawn fault, resumable typed checkpoints and terminal completion; shard sha 58829cc5d82d31da344cfcdf80c8b1c400d184b504c84d1c08cb481e039e41c9; historical evidence-only shard retained for audit; the durable current LCOV payload is now present in the bundle and supersedes this shard for incremental work")
+
+inl replay_seed_observation () : coverage_owner_observation =
+    CoverageOwnerObservation ("bundled-coverage-replay-progress", 17303u32, 804u32, "the bundled replay first reconstructed seven-hundred-twenty-five to the durable historical floor seven-hundred-ninety-four, then fail-closed routes advanced through eight-hundred and the current binary-install plus batch-write campaign now reaches eight-hundred-four; evidence/coverage/current.lcov now has sha 4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4")
+
+inl checkpoint_durability_pending () : coverage_refresh_pending =
+    CoverageRefreshPending (AuthorProductOnly, 17303u32, 850u32, 804u32, "checkpoint eight-hundred-four is durable on the unchanged current-tree denominator; the next active quality gap is forty-six permille to eight-hundred-fifty, the nine-hundred checkpoint remains a later quality target rather than a legacy-retirement gate, and future credit remains contingent on comparable current-source LCOV")
+
+inl current () : coverage_refresh_state =
+    CoverageRefreshComparable (
+        current_author_basis (),
+        workspace_observation (),
+        public_observation (),
+        smoke_observation (),
+        current_union_observation (),
+        803u32,
+        804u32,
+        "4c9e577c4bd1d3c799f59773337c38e47f45d2e025f9810c5b059f01fd4116b4",
+        CoverageRefreshImproved (803u32, 804u32)
+    )
+
+inl previous_mixed_attainment () : u32 = 519u32
+inl author_triad_attainment () : u32 = 597u32
+inl current_replayed_attainment () : u32 = 804u32
+inl previous_author_attainment () : u32 = 800u32
+inl canonical_attainment () : u32 = 804u32
+inl main () : i32 = 0i32

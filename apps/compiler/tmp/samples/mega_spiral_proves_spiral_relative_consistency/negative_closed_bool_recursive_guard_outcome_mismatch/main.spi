@@ -1,0 +1,15 @@
+inl impossible_closed_bool_recursive_guard_outcome_mismatch ()
+    : exact_linear_indexed_closed_bool_program
+        exact_linear_closed_bool_true_normal =
+    ExactLinearIndexedClosedBoolProgramIfProgramTrue (
+        ExactLinearIndexedClosedBoolProgramFalse
+            "a-recursive-guard-normalizing-to-False-cannot-select-the-True-guard-constructor",
+        ExactLinearIndexedClosedBoolProgramTrue
+            "the-selected-then-program-normalizes-to-True",
+        ExactLinearIndexedBoolFalse (
+            exact_linear_indexed_empty_usage (),
+            "the-unselected-else-branch-does-not-change-the-selected-program-outcome"),
+        "the-recursive-guard-outcome-must-drive-the-conditional-constructor")
+
+inl main () =
+    impossible_closed_bool_recursive_guard_outcome_mismatch ()

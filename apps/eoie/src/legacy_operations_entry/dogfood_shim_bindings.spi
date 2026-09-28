@@ -1,0 +1,10 @@
+open dogfood_shim_contract.model
+
+let proxy_dogfood_shim_decision_packed_binding (mode : i32) (flags : i32) : i32 =
+    shim_decision_packed_binding mode flags
+
+let proxy_dogfood_shim_install_packed_binding (shape : i32) (mode : i32) : i32 =
+    shim_install_packed_binding shape mode
+
+let proxy_dogfood_shim_uninstall_binding (manifest_present : i32) (wrapper_count : i32) : i32 =
+    shim_uninstall_binding manifest_present wrapper_count

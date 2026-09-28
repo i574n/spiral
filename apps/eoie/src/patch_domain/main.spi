@@ -1,0 +1,7 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    rust_global "#![allow(dead_code)]"
+    $"RustLibrary()" : ()
+    inl probe = context.context "." "inl p () = PatchExact (\"a.txt\", \"old\", \"new\")\n"
+    patch_model.model.validation_witness (context.validate_context probe)

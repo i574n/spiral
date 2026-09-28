@@ -1,0 +1,4 @@
+packages:
+    filesystem_move_contract
+modules:
+    main

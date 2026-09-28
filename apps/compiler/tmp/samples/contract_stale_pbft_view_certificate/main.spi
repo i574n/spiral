@@ -1,0 +1,13 @@
+nominal view_7 = ()
+nominal view_8 = ()
+nominal epoch_11 = ()
+nominal request_42 = ()
+
+union new_view_certificate view epoch request =
+    | NewView7 :: string -> new_view_certificate view_7 epoch_11 request_42
+    | NewView8 :: string -> new_view_certificate view_8 epoch_11 request_42
+
+inl main () : new_view_certificate view_8 epoch_11 request_42 =
+    inl stale : new_view_certificate view_7 epoch_11 request_42 = NewView7 "stale-view-7"
+    inl required : new_view_certificate view_8 epoch_11 request_42 = stale
+    required

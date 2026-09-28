@@ -1,0 +1,7 @@
+let measure (x : string) : i32 = sm.length x
+
+inl main () =
+    inl ~x = "qwe"
+    inl a = measure x
+    inl b = measure x
+    (-.) ((+.) a b) 6i32

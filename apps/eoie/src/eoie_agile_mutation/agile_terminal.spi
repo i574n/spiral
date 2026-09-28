@@ -1,0 +1,3 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl emit_runtime () : () = rust_global "use eoie_agile_lease::eoie_lease_title_words;\nuse eoie_agile_state::{agile_begin_owned as mutation_agile_begin_owned, agile_check_owned as mutation_agile_check_owned, agile_lease_status_owned as mutation_agile_lease_status_owned, agile_list_owned as mutation_agile_list_owned, agile_record_owned as mutation_agile_record_owned, agile_set_validated_owned as mutation_agile_set_owned};\nuse eoie_handoff::handoff_render_owned;\n\n#[must_use]\nfn agile_mutation_error(message: &str) -> i32 {\n    eprintln!(\"eoie error: {message}\");\n    2\n}\n"

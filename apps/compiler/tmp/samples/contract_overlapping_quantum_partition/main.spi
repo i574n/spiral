@@ -1,0 +1,12 @@
+nominal lineage_a = ()
+nominal whole = ()
+nominal left_slots = ()
+nominal right_slots = ()
+nominal coherent = ()
+union qregister lineage slots phase = | QRegister :: forall lineage slots phase. string -> qregister lineage slots phase
+union partition lineage whole left right = | Partition :: forall lineage whole left right. string -> partition lineage whole left right
+inl merge forall lineage. (left : qregister lineage left_slots coherent) (right : qregister lineage right_slots coherent) (proof : partition lineage whole left_slots right_slots) : qregister lineage whole coherent = QRegister "merged"
+inl main () =
+    inl left : qregister lineage_a left_slots coherent = QRegister "left"
+    inl proof : partition lineage_a whole left_slots right_slots = Partition "disjoint"
+    merge left left proof

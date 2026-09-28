@@ -1,0 +1,27 @@
+open model
+
+let cold_rebuild_expected_shards_binding (owners : i32) (shard_width : i32) : i32 =
+    if !!!!LT(owners,1i32) then -1i32
+    elif !!!!EQ(shard_width,1i32) then owners
+    elif !!!!EQ(shard_width,2i32) then !!!!Div(!!!!Add(owners,1i32),2i32)
+    elif !!!!EQ(shard_width,4i32) then !!!!Div(!!!!Add(owners,3i32),4i32)
+    else -1i32
+
+let cold_rebuild_shape_binding (owners : i32) (shard_width : i32) (shards : i32) : i32 =
+    inl expected = cold_rebuild_expected_shards_binding owners shard_width
+    if !!!!LT(expected,1i32) then 0i32
+    elif !!!!LT(shards,1i32) then 0i32
+    elif !!!!EQ(shards,expected) then 1i32
+    else 0i32
+
+let cold_rebuild_gate_binding (flags : i32) : i32 =
+    if !!!!LT(flags,63i32) then 0i32
+    elif !!!!LT(63i32,flags) then 0i32
+    else 1i32
+
+let cold_rebuild_product_binding (source_equal : i32) (product_equal : i32) : i32 =
+    if !!!!LT(source_equal,1i32) then 0i32
+    elif !!!!LT(1i32,source_equal) then 0i32
+    elif !!!!LT(product_equal,1i32) then 0i32
+    elif !!!!LT(1i32,product_equal) then 0i32
+    else 1i32

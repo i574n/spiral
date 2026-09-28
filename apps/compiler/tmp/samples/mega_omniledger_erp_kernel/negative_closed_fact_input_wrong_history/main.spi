@@ -1,0 +1,16 @@
+inl impossible_closed_fact_input_wrong_history () :
+    typed_fx_hashed_statement_closed_fact_input
+        typed_fx_hashed_statement_history_empty
+        typed_fx_statement_stream_position_zero =
+    inl _, recorded_history =
+        typed_fx_hashed_statement_closed_history_values ()
+    TypedFxHashedStatementClosedFactInput (
+        recorded_history,
+        TypedFxHashedStatementClosedFactPosition
+            (TypedFxHashedStatementClosedPositionFactEmptyAtZero (
+                TypedFxStatementExpectedStreamPosition (
+                    TypedFxStatementStreamPositionZeroValue,
+                    "the-empty-position-proof-cannot-pair-with-a-recorded-history"))))
+
+inl main () =
+    impossible_closed_fact_input_wrong_history ()

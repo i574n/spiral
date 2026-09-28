@@ -1,0 +1,8 @@
+packageDir: ../..
+packages:
+    mega_brzozowski_derivatives-
+modules:
+    main
+    semantic_witnesses
+    minimality_witnesses
+    exact_soundness_witnesses

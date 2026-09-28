@@ -1,0 +1,145 @@
+open command_spec_domain.model
+
+nominal cold = ()
+nominal embodied = ()
+nominal patched = ()
+nominal planned = ()
+nominal bundled = ()
+nominal evidenced = ()
+nominal tree_removed = ()
+nominal process_bounded = ()
+nominal sessions_closed = ()
+nominal pruned = ()
+nominal admin = ()
+nominal mutator = ()
+nominal inspector = ()
+
+union authority scope =
+    | Admin :: authority admin
+    | Mutator :: authority mutator
+    | Inspector :: authority inspector
+
+union timeout_budget = | Milliseconds :: u32 -> timeout_budget
+
+union eoie_op from to result =
+    | Bootstrap :: authority admin -> eoie_op cold embodied string
+    | PatchBatch :: authority mutator * string -> eoie_op embodied patched string
+    | AgileUpdate :: authority mutator * string -> eoie_op patched planned string
+    | BundleClose :: authority inspector * string -> eoie_op planned bundled string
+    | EvidenceGate :: authority inspector * string -> eoie_op bundled evidenced string
+    | ProxyRemoveTree :: authority mutator * string -> eoie_op evidenced tree_removed string
+    | ProxyRunBounded :: authority mutator * timeout_budget -> eoie_op tree_removed process_bounded string
+    | CompilerSessionsClosed :: authority mutator * timeout_budget -> eoie_op process_bounded sessions_closed string
+    | CoveragePrune :: authority mutator * string -> eoie_op sessions_closed pruned string
+
+nominal audit_interpreter from to result = eoie_op from to result
+nominal receipt_interpreter from to result = eoie_op from to result
+nominal authority_interpreter from to result = eoie_op from to result
+prototype interpret interpreter from to result : interpreter from to result -> string
+
+instance interpret audit_interpreter = fun (audit_interpreter op) => match op with | Bootstrap _ => "audit-bootstrap" | PatchBatch _ => "audit-patch" | AgileUpdate _ => "audit-agile" | BundleClose _ => "audit-bundle" | EvidenceGate _ => "audit-evidence" | ProxyRemoveTree _ => "audit-remove-tree" | ProxyRunBounded _ => "audit-run-bounded" | CompilerSessionsClosed _ => "audit-session-shutdown" | CoveragePrune _ => "audit-prune"
+instance interpret receipt_interpreter = fun (receipt_interpreter op) => match op with | Bootstrap _ => "receipt-bootstrap" | PatchBatch _ => "receipt-patch" | AgileUpdate _ => "receipt-agile" | BundleClose _ => "receipt-bundle" | EvidenceGate _ => "receipt-evidence" | ProxyRemoveTree _ => "receipt-remove-tree" | ProxyRunBounded _ => "receipt-run-bounded" | CompilerSessionsClosed _ => "receipt-session-shutdown" | CoveragePrune _ => "receipt-prune"
+instance interpret authority_interpreter = fun (authority_interpreter op) => match op with | Bootstrap _ => "authority-admin" | PatchBatch _ => "authority-mutator" | AgileUpdate _ => "authority-mutator" | BundleClose _ => "authority-inspector" | EvidenceGate _ => "authority-inspector" | ProxyRemoveTree _ => "authority-mutator" | ProxyRunBounded _ => "authority-mutator" | CompilerSessionsClosed _ => "authority-mutator" | CoveragePrune _ => "authority-mutator"
+
+union rec eoie_plan from to =
+    | EoieStep :: forall from to. (exists result. eoie_op from to result * result) -> eoie_plan from to
+    | EoieThen :: forall from to. (exists middle. eoie_plan from middle * eoie_plan middle to) -> eoie_plan from to
+
+inl bootstrap_plan () : eoie_plan cold embodied = EoieStep (exists (Bootstrap Admin, "embodied"))
+inl mutation_plan () : eoie_plan embodied planned = EoieThen (exists (EoieStep (exists (PatchBatch (Mutator, "typed-batch"), "patched")), EoieStep (exists (AgileUpdate (Mutator, "typed-state"), "planned"))))
+inl release_plan () : eoie_plan planned evidenced = EoieThen (exists (EoieStep (exists (BundleClose (Inspector, "flat-zip"), "bundled")), EoieStep (exists (EvidenceGate (Inspector, "coverage-and-smoke"), "evidenced"))))
+inl cleanup_plan () : eoie_plan evidenced process_bounded = EoieThen (exists (EoieStep (exists (ProxyRemoveTree (Mutator, "rooted-real-directory"), "tree-removed")), EoieStep (exists (ProxyRunBounded (Mutator, Milliseconds 30000u32), "process-bounded"))))
+inl close_sessions_plan () : eoie_plan process_bounded sessions_closed = EoieStep (exists (CompilerSessionsClosed (Mutator, Milliseconds 30000u32), "sessions-closed"))
+inl prune_plan () : eoie_plan sessions_closed pruned = EoieStep (exists (CoveragePrune (Mutator, "zero-hit-both-profiles"), "pruned"))
+inl shim_argv0_code () : i32 = $"EoieShimArgv0Code()"
+inl shim_run () : i32 = $"EoieShimDispatch()"
+inl process_verb_code () : i32 = $"EoieProcessVerbCode()"
+inl process_tail_count () : i32 = $"EoieProcessTailCount()"
+inl status_ok (migration : i32) : i32 = $"EoieStatusOk(!migration)"
+inl status_live (migration : i32) : i32 = $"EoieStatusLive(!migration)"
+inl status_arity_error () : i32 = $"EoieStatusArityError()"
+inl status_authority_error () : i32 = $"EoieStatusAuthorityError()"
+inl patch_run () : i32 = $"EoiePatchAdapter()"
+inl agile_run () : i32 = $"EoieAgileAdapter()"
+inl bundle_run () : i32 = $"EoieBundleAdapter()"
+inl proxy_run () : i32 = $"EoieProxyAdapter()"
+inl help_rejected () : i32 = $"EoieHelpRejected()"
+inl unknown_rejected () : i32 = $"EoieUnknownRejected()"
+
+union lease_effect =
+    | LeaseInspect
+    | LeaseWrap
+    | LeaseMutate
+    | LeaseEffectUnknown
+
+union lease_clock_state =
+    | LeaseClockOpen
+    | LeaseClockYield
+    | LeaseClockInvalid
+
+inl lease_effect_code () : i32 = $"lease_effect_code()"
+inl lease_clock_code () : i32 = $"lease_clock_code()"
+inl lease_rejected () : i32 = $"lease_rejected()"
+inl lease_guard_error () : i32 = $"lease_guard_error()"
+
+inl decode_lease_effect code =
+    match code with
+    | 0 => LeaseInspect
+    | 1 => LeaseWrap
+    | 2 => LeaseMutate
+    | _ => LeaseEffectUnknown
+
+inl decode_lease_clock code =
+    match code with
+    | 0 => LeaseClockOpen
+    | 1 => LeaseClockYield
+    | _ => LeaseClockInvalid
+
+inl lease_preflight () : i32 = 0i32
+
+inl migration_status () : i32 = bootstrap_policy.model.settled_migration_status_code ()
+inl workspace_state_status () : i32 = bootstrap_policy.model.workspace_state_candidate_status ()
+inl compiler_session_status () : i32 = bootstrap_policy.model.compiler_session_candidate_status ()
+inl legacy_bundle_writer_status () : i32 = bootstrap_policy.model.legacy_bundle_writer_candidate_status ()
+inl ingest_frontier_status () : i32 = bootstrap_policy.model.ingest_frontier_candidate_status ()
+inl process_batch_status () : i32 = $"EoieProcessBatchStatus()"
+
+inl run_status () : i32 =
+    match process_tail_count () with
+    | 0 =>
+        match workspace_state_status () with
+        | 1 =>
+            match compiler_session_status () with
+            | 1 =>
+                match legacy_bundle_writer_status () with
+                | 1 =>
+                    match ingest_frontier_status () with
+                    | 1 =>
+                        match process_batch_status () with
+                        | 1 => status_ok (migration_status ())
+                        | _ => status_authority_error ()
+                    | _ => status_authority_error ()
+                | _ => status_authority_error ()
+            | _ => status_authority_error ()
+        | _ => status_authority_error ()
+    | 1 => status_live (migration_status ())
+    | _ => status_arity_error ()
+
+inl run_public_verb () : i32 =
+    match command_catalog_witness () with
+    | 1 =>
+        match handler_from_code (process_verb_code ()) with
+        | StatusHandler => run_status ()
+        | PatchHandler => patch_run ()
+        | AgileHandler => agile_run ()
+        | BundleHandler => bundle_run ()
+        | ProxyHandler => proxy_run ()
+        | HelpHandler => help_rejected ()
+        | UnknownHandler => unknown_rejected ()
+        | LeaseDeniedHandler => 2i32
+    | _ => 2i32
+
+inl run () : i32 =
+    match shim_argv0_code () with
+    | 0 => run_public_verb ()
+    | _ => shim_run ()

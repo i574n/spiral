@@ -1,0 +1,4 @@
+union outcome_t =
+    | Idle
+    | Hit : i32
+    | Flag : bool

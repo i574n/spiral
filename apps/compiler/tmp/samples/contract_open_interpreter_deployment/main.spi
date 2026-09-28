@@ -1,0 +1,73 @@
+nominal draft = ()
+nominal discovered = ()
+nominal compiled = ()
+nominal validated = ()
+nominal deployed = ()
+nominal observed = ()
+
+nominal artifact = string
+
+union deployment_op from to result =
+    | Discover :: string -> deployment_op draft discovered string
+    | Compile :: string -> deployment_op discovered compiled artifact
+    | Validate :: artifact -> deployment_op compiled validated bool
+    | Deploy :: artifact -> deployment_op validated deployed string
+    | Observe :: string -> deployment_op deployed observed i32
+
+nominal audit from to result = deployment_op from to result
+nominal execute from to result = deployment_op from to result
+
+prototype interpret interpreter from to result : interpreter from to result -> string
+
+instance interpret audit = fun (audit op) =>
+    match op with
+    | Discover _ => "audit-discover"
+    | Compile _ => "audit-compile"
+    | Validate _ => "audit-validate"
+    | Deploy _ => "audit-deploy"
+    | Observe _ => "audit-observe"
+
+instance interpret execute = fun (execute op) =>
+    match op with
+    | Discover _ => "execute-discover"
+    | Compile _ => "execute-compile"
+    | Validate _ => "execute-validate"
+    | Deploy _ => "execute-deploy"
+    | Observe _ => "execute-observe"
+
+union rec deployment_plan from to =
+    | DeploymentStep :: forall from to.
+        (exists result. deployment_op from to result * result) -> deployment_plan from to
+    | DeploymentThen :: forall from to.
+        (exists middle. deployment_plan from middle * deployment_plan middle to) -> deployment_plan from to
+
+inl rec terminal forall from to. (value : deployment_plan from to) : string =
+    match value with
+    | DeploymentStep payload =>
+        inl exists result. op, _ = payload
+        match op with
+        | Discover _ => "discovered"
+        | Compile _ => "compiled"
+        | Validate _ => "validated"
+        | Deploy _ => "deployed"
+        | Observe _ => "observed"
+    | DeploymentThen payload =>
+        inl exists middle. _, right = payload
+        terminal right
+
+inl plan () : deployment_plan draft observed =
+    inl discover : deployment_plan draft discovered = DeploymentStep (exists (Discover "tenant-orbit", "tenant-orbit"))
+    inl compile : deployment_plan discovered compiled = DeploymentStep (exists (Compile "kernel.spi", artifact "artifact-v1"))
+    inl validate : deployment_plan compiled validated = DeploymentStep (exists (Validate (artifact "artifact-v1"), true))
+    inl deploy : deployment_plan validated deployed = DeploymentStep (exists (Deploy (artifact "artifact-v1"), "deployment-42"))
+    inl observe : deployment_plan deployed observed = DeploymentStep (exists (Observe "deployment-42", 7))
+    DeploymentThen (exists (discover, DeploymentThen (exists (compile, DeploymentThen (exists (validate, DeploymentThen (exists (deploy, observe))))))))
+
+inl serialize_authority (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tdiscover\tDiscover\tdraft\tdiscovered\t\tidempotent\tdiscovery\t2\n1\tcompile\tCompile\tdiscovered\tcompiled\tdiscover\tnon_idempotent\tcompiler\t0\n1\tvalidate\tValidate\tcompiled\tvalidated\tcompile\tidempotent\tvalidator\t1\n1\tdeploy\tDeploy\tvalidated\tdeployed\tvalidate\tnon_idempotent\tdeployer\t0\n1\tobserve\tObserve\tdeployed\tobserved\tdeploy\tidempotent\tobserver\t1\n"
+
+inl main () : string =
+    inl audited = interpret (audit (Discover "tenant-orbit"))
+    inl executed = interpret (execute (Deploy (artifact "artifact-v1")))
+    inl state = terminal (plan ())
+    serialize_authority audited executed state

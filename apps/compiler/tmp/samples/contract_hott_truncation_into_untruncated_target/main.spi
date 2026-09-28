@@ -1,0 +1,129 @@
+nominal groupoid_g = ()
+nominal object_a = ()
+nominal object_b = ()
+nominal object_c = ()
+nominal arrow_ab = ()
+nominal arrow_bc = ()
+nominal arrow_ac = ()
+nominal composite_abc = ()
+nominal associator_alpha = ()
+nominal quotient_q = ()
+nominal target_set = ()
+nominal target_level_set = ()
+nominal target_level_one = ()
+nominal image_a = ()
+nominal image_b = ()
+nominal image_c = ()
+nominal image_ab = ()
+nominal image_bc = ()
+nominal image_ac = ()
+nominal image_composite = ()
+nominal image_alpha = ()
+nominal descent_section = ()
+
+union groupoid_object groupoid object_id =
+    | GroupoidObject :: forall groupoid object_id. string -> groupoid_object groupoid object_id
+
+union groupoid_arrow groupoid source target arrow_id =
+    | GroupoidArrow :: forall groupoid source target arrow_id. string -> groupoid_arrow groupoid source target arrow_id
+
+union arrow_composition groupoid first middle last left right composite =
+    | ArrowComposition :: forall groupoid first middle last left right composite.
+        groupoid_arrow groupoid first middle left *
+        groupoid_arrow groupoid middle last right *
+        groupoid_arrow groupoid first last composite *
+        string -> arrow_composition groupoid first middle last left right composite
+
+union groupoid_2cell groupoid first middle last left right direct composite filler =
+    | Groupoid2Cell :: forall groupoid first middle last left right direct composite filler.
+        arrow_composition groupoid first middle last left right composite *
+        groupoid_arrow groupoid first last direct *
+        string -> groupoid_2cell groupoid first middle last left right direct composite filler
+
+union set_truncation groupoid quotient =
+    | SetTruncation :: forall groupoid quotient. string -> set_truncation groupoid quotient
+
+union sethood target level =
+    | Sethood :: forall target level. string -> sethood target level
+
+union target_point target source_object image =
+    | TargetPoint :: forall target source_object image. string -> target_point target source_object image
+
+union target_path target source_arrow source_image target_image image_path =
+    | TargetPath :: forall target source_arrow source_image target_image image_path. string -> target_path target source_arrow source_image target_image image_path
+
+union target_path_composition target image_a image_b image_c path_ab path_bc path_ac composite =
+    | TargetPathComposition :: forall target image_a image_b image_c path_ab path_bc path_ac composite.
+        target_path target arrow_ab image_a image_b path_ab *
+        target_path target arrow_bc image_b image_c path_bc *
+        target_path target arrow_ac image_a image_c path_ac *
+        string -> target_path_composition target image_a image_b image_c path_ab path_bc path_ac composite
+
+union target_2coherence target source_filler image_a image_b image_c path_ab path_bc path_ac composite image_filler =
+    | Target2Coherence :: forall target source_filler image_a image_b image_c path_ab path_bc path_ac composite image_filler.
+        target_path_composition target image_a image_b image_c path_ab path_bc path_ac composite *
+        string -> target_2coherence target source_filler image_a image_b image_c path_ab path_bc path_ac composite image_filler
+
+union groupoid_descent_datum groupoid target first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler =
+    | GroupoidDescentDatum :: forall groupoid target first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler.
+        groupoid_2cell groupoid first middle last left right direct composite source_filler *
+        target_point target first first_image *
+        target_point target middle middle_image *
+        target_point target last last_image *
+        target_path target left first_image middle_image left_image *
+        target_path target right middle_image last_image right_image *
+        target_path target direct first_image last_image direct_image *
+        target_2coherence target source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler *
+        string -> groupoid_descent_datum groupoid target first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler
+
+union set_truncation_eliminator groupoid quotient target level first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section =
+    | SetTruncationEliminator :: forall groupoid quotient target level first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section.
+        set_truncation groupoid quotient *
+        sethood target level *
+        groupoid_descent_datum groupoid target first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler *
+        string -> set_truncation_eliminator groupoid quotient target level first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section
+
+union packed_set_descent groupoid quotient target level =
+    | PackedSetDescent :: forall groupoid quotient target level.
+        (exists first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section.
+            set_truncation_eliminator groupoid quotient target level first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section)
+        -> packed_set_descent groupoid quotient target level
+
+inl with_set_descent forall groupoid quotient target level result.
+    (visit : forall first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section.
+        set_truncation_eliminator groupoid quotient target level first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section -> result)
+    (packed : packed_set_descent groupoid quotient target level) : result =
+    match packed with
+    | PackedSetDescent payload =>
+        inl exists first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section. eliminator = payload
+        visit eliminator
+
+inl source_ab () : groupoid_arrow groupoid_g object_a object_b arrow_ab = GroupoidArrow "a-to-b"
+inl source_bc () : groupoid_arrow groupoid_g object_b object_c arrow_bc = GroupoidArrow "b-to-c"
+inl source_ac () : groupoid_arrow groupoid_g object_a object_c arrow_ac = GroupoidArrow "a-to-c"
+
+inl source_alpha () : groupoid_2cell groupoid_g object_a object_b object_c arrow_ab arrow_bc arrow_ac composite_abc associator_alpha =
+    Groupoid2Cell (ArrowComposition (source_ab (), source_bc (), GroupoidArrow "composite-a-c", "compose-source-arrows"), source_ac (), "source-associator")
+
+inl target_ab () : target_path target_set arrow_ab image_a image_b image_ab = TargetPath "image-ab"
+inl target_bc () : target_path target_set arrow_bc image_b image_c image_bc = TargetPath "image-bc"
+inl target_ac () : target_path target_set arrow_ac image_a image_c image_ac = TargetPath "image-ac"
+
+inl target_alpha () : target_2coherence target_set associator_alpha image_a image_b image_c image_ab image_bc image_ac image_composite image_alpha =
+    Target2Coherence (TargetPathComposition (target_ab (), target_bc (), target_ac (), "compose-target-paths"), "target-higher-path-collapses-by-sethood")
+
+inl descent_datum () : groupoid_descent_datum groupoid_g target_set object_a object_b object_c arrow_ab arrow_bc arrow_ac composite_abc associator_alpha image_a image_b image_c image_ab image_bc image_ac image_composite image_alpha =
+    GroupoidDescentDatum (source_alpha (), TargetPoint "image-a", TargetPoint "image-b", TargetPoint "image-c", target_ab (), target_bc (), target_ac (), target_alpha (), "coherent-groupoid-descent")
+
+inl one_type_witness () : sethood target_set target_level_one = Sethood "target-still-has-nontrivial-higher-paths"
+
+inl set_eliminator () : set_truncation_eliminator groupoid_g quotient_q target_set target_level_set object_a object_b object_c arrow_ab arrow_bc arrow_ac composite_abc associator_alpha image_a image_b image_c image_ab image_bc image_ac image_composite image_alpha descent_section =
+    SetTruncationEliminator (SetTruncation "zero-truncate-groupoid", one_type_witness (), descent_datum (), "illegal-elimination-into-one-type")
+
+inl descent_label forall first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section.
+    (_ : set_truncation_eliminator groupoid_g quotient_q target_set target_level_set first middle last left right direct composite source_filler first_image middle_image last_image left_image right_image direct_image image_composite image_filler section) : string =
+    "hott-set-truncation-groupoid-descent"
+
+inl main () : string =
+    inl packed : packed_set_descent groupoid_g quotient_q target_set target_level_set = PackedSetDescent (exists (set_eliminator ()))
+    with_set_descent `$descent_label packed

@@ -1,0 +1,5 @@
+modules:
+    coverage_terminal
+    toolchain_smoke
+    coverage_export_smoke
+    smoke

@@ -1,0 +1,10 @@
+inl impossible_corrected_cic_recursive_codomain_application_depth_mismatch () :
+    corrected_cic_recursive_codomain_application
+        (corrected_cic_substituted_codomain
+            (corrected_cic_recursive_codomain_unary
+                corrected_cic_recursive_codomain_identity)
+            corrected_cic_closed_type_code_bool) =
+    corrected_cic_recursive_double_unary_bool_application ()
+
+inl main () =
+    impossible_corrected_cic_recursive_codomain_application_depth_mismatch ()

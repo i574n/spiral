@@ -1,0 +1,7 @@
+open bundle_verify_contract.model
+
+inl main () : i32 =
+    match verify_corrupt_fixture "/tmp/eoie-bundle-verify-negative.zip" with
+    | BundleVerifyRejected _ => 0i32
+    | BundleVerifyAccepted _ => 1i32
+    | BundleVerifyFailed _ => 2i32

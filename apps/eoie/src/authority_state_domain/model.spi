@@ -1,0 +1,49 @@
+union formal_authority_blocker =
+    | SemanticCloseoutPending
+    | ColdProofV4Pending
+    | DifferentialCatalogPending
+    | FamilyContractsPending
+    | ColdRebuildPending
+
+union formal_authority_state =
+    | FormalAuthorityBlocked : i32
+    | FormalAuthorityExclusive
+
+inl current_formal_blocker_mask () : i32 = 0i32
+inl current_formal_authority () : formal_authority_state = FormalAuthorityExclusive
+inl operational_replacement_ready () : bool = true
+inl legacy_fallback_execution_allowed () : bool = false
+
+let authority_declared_mask_binding (reserved_a : i32) (reserved_b : i32) : i32 =
+    if !!!!EQ(reserved_a,0i32) then
+        if !!!!EQ(reserved_b,0i32) then current_formal_blocker_mask () else -1i32
+    else -1i32
+
+let authority_state_binding (mask : i32) (reserved : i32) : i32 =
+    if !!!!EQ(reserved,0i32) then
+        if !!!!EQ(mask,0i32) then 1i32 else 0i32
+    else -1i32
+
+let authority_live_mask_binding (proof_flags : i32) (reserved : i32) : i32 =
+    if !!!!EQ(reserved,0i32) then
+        if !!!!LT(proof_flags,0i32) then -1i32
+        elif !!!!LT(31i32,proof_flags) then -1i32
+        else !!!!Sub(31i32,proof_flags)
+    else -1i32
+
+let authority_blocker_bit_binding (index : i32) (reserved : i32) : i32 =
+    if !!!!EQ(reserved,0i32) then
+        if !!!!EQ(index,0i32) then 1i32
+        elif !!!!EQ(index,1i32) then 2i32
+        elif !!!!EQ(index,2i32) then 4i32
+        elif !!!!EQ(index,3i32) then 8i32
+        elif !!!!EQ(index,4i32) then 16i32
+        else -1i32
+    else -1i32
+
+let authority_blocker_labels (~input : string) : string * string * string * string * string =
+    rust_std_string.model.pipe_lookup "v1" "semantic-closeout" input,
+    rust_std_string.model.pipe_lookup "v1" "cold-proof-v4" input,
+    rust_std_string.model.pipe_lookup "v1" "differential-catalog" input,
+    rust_std_string.model.pipe_lookup "v1" "family-contracts" input,
+    rust_std_string.model.pipe_lookup "v1" "cold-rebuild" input

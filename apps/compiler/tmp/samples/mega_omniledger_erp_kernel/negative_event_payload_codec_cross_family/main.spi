@@ -1,0 +1,5 @@
+inl impossible_erp_event_payload_codec_cross_family () : string =
+    erp_collect_approvals_payload_frame (erp_p2p_issue_purchase_order_plan ())
+
+inl main () =
+    impossible_erp_event_payload_codec_cross_family ()

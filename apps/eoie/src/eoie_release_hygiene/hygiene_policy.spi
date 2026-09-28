@@ -1,0 +1,67 @@
+union hygiene_candidate =
+    | KeepReleaseFile
+    | RemoveCompilerSidecar
+
+let hygiene_primary_binding (spiral_entry : i32) (typecheck_rs : i32) : i32 =
+    if !!!!LT(0i32,spiral_entry) then 1i32
+    elif !!!!LT(0i32,typecheck_rs) then 1i32
+    else 0i32
+
+let hygiene_secondary_binding (typecheck_tmp : i32) (c_with_spi : i32) : i32 =
+    if !!!!LT(0i32,typecheck_tmp) then 1i32
+    elif !!!!LT(0i32,c_with_spi) then 1i32
+    else 0i32
+
+union hygiene_root_transient =
+    | RootReceiptFile
+    | RootReleaseCandidateFile
+    | RootProbeSourceFile
+    | RootColdRebuildDirectory
+    | RootCargoDirectory
+
+inl hygiene_root_transient_label = function
+    | RootReceiptFile => ".receipt"
+    | RootReleaseCandidateFile => ".release-eoie-candidate"
+    | RootProbeSourceFile => "probe"
+    | RootColdRebuildDirectory => ".cold-rebuild"
+    | RootCargoDirectory => ".cargo"
+
+let hygiene_root_file_binding (receipt : i32) (release_candidate : i32) : i32 =
+    if !!!!LT(0i32,receipt) then 1i32
+    elif !!!!LT(0i32,release_candidate) then 1i32
+    else 0i32
+
+let hygiene_root_aux_binding (probe_source : i32) (cold_rebuild : i32) : i32 =
+    if !!!!LT(0i32,probe_source) then 1i32
+    elif !!!!LT(0i32,cold_rebuild) then 1i32
+    else 0i32
+
+let hygiene_root_directory_binding (cold_rebuild : i32) (toolchain_config : i32) : i32 =
+    if !!!!LT(0i32,cold_rebuild) then 1i32
+    elif !!!!LT(0i32,toolchain_config) then 1i32
+    else 0i32
+
+
+union hygiene_name_class =
+    | HygieneKeep
+    | HygieneCompilerSidecar
+    | HygieneRootTransientFile
+    | HygieneRootTransientDirectory
+
+inl hygiene_name_classify (name : string) : hygiene_name_class =
+    if rust_std_string.model.ends_with name ".spiral-entry" then HygieneCompilerSidecar
+    elif rust_std_string.model.contains name ".eoie-typecheck-" && rust_std_string.model.ends_with name ".rs" then HygieneCompilerSidecar
+    elif rust_std_string.model.contains name ".eoie-typecheck-" && rust_std_string.model.contains name ".rs.eoie-" && rust_std_string.model.ends_with name ".tmp" then HygieneCompilerSidecar
+    elif rust_std_string.model.ends_with name ".receipt" then HygieneRootTransientFile
+    elif rust_std_string.model.starts_with name ".release-eoie-candidate" then HygieneRootTransientFile
+    elif rust_std_string.model.starts_with name "probe" && rust_std_string.model.ends_with name ".rs" then HygieneRootTransientFile
+    elif rust_std_string.model.starts_with name ".cold-rebuild" then HygieneRootTransientDirectory
+    elif rust_std_string.model.equals name ".cargo" then HygieneRootTransientDirectory
+    else HygieneKeep
+
+let hygiene_name_classification (~name : string) : u64 =
+    match hygiene_name_classify name with
+    | HygieneKeep => 0u64
+    | HygieneCompilerSidecar => 1u64
+    | HygieneRootTransientFile => 2u64
+    | HygieneRootTransientDirectory => 3u64

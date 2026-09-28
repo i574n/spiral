@@ -1,0 +1,11 @@
+inl impossible_corrected_cic_ordinary_identity_beta_target_sort_mismatch () :
+    corrected_cic_term empty_ctx (universe_sort universe_one) =
+    inl step :
+        corrected_cic_ordinary_identity_whnf_step empty_ctx bool_sort =
+        CorrectedCicOrdinaryIdentityWhnfStep (
+            corrected_cic_generic_bool_beta_step (),
+            "the-negative-attacks-the-new-ordinary-WHNF-step-target")
+    corrected_cic_ordinary_identity_whnf_target step
+
+inl main () =
+    impossible_corrected_cic_ordinary_identity_beta_target_sort_mismatch ()

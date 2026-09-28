@@ -1,0 +1,19 @@
+nominal parallel = ()
+nominal serial = ()
+
+union task effect result =
+    | ValidateIssuer :: task parallel string
+    | Publish :: string -> task serial string
+
+union rec dag result =
+    | ParallelNode :: forall result. task parallel result -> dag result
+    | SerialNode :: forall result. task serial result -> dag result
+    | Then :: forall result.
+        (exists input. dag input * (input -> dag result))
+        -> dag result
+
+inl main () : dag string =
+    Then (exists (
+        ParallelNode ValidateIssuer,
+        fun (total : i32) => SerialNode (Publish "invalid")
+    ))

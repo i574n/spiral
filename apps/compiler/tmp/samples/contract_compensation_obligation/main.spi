@@ -1,0 +1,28 @@
+nominal no_compensation = ()
+nominal requires_compensation = ()
+
+union effect obligation =
+    | Idempotent :: effect no_compensation
+    | NonIdempotent :: effect requires_compensation
+
+union compensation_proof obligation =
+    | NoCompensationNeeded :: compensation_proof no_compensation
+    | CompensationReceipt :: string -> compensation_proof requires_compensation
+
+union sealed_operation obligation =
+    | Sealed :: forall obligation.
+        effect obligation * compensation_proof obligation
+        -> sealed_operation obligation
+
+inl seal forall obligation.
+    (effect : effect obligation)
+    (proof : compensation_proof obligation)
+    : sealed_operation obligation =
+    Sealed (effect, proof)
+
+inl render (operation : sealed_operation requires_compensation) : string =
+    match operation with
+    | Sealed _ => "compensation-obligation-sealed"
+
+inl main () : string =
+    render (seal NonIdempotent (CompensationReceipt "rollback-publish"))

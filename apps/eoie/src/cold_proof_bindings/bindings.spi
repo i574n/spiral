@@ -1,0 +1,25 @@
+let cold_proof_equal_binding (expected : i32) (observed : i32) : i32 =
+    if !!!!EQ(expected,observed) then 1i32 else 0i32
+
+inl cold_proof_header_binding (schema : i32) (status : i32) : i32 =
+    if !!!!EQ(schema,4i32) then
+        if !!!!EQ(status,1i32) then 1i32 else 0i32
+    else 0i32
+
+inl cold_proof_shape_binding (gate_mask : i32) (gate_count : i32) : i32 =
+    if !!!!EQ(gate_mask,31i32) then
+        if !!!!EQ(gate_count,5i32) then 1i32 else 0i32
+    else 0i32
+
+inl cold_proof_evidence_binding (observed_mask : i32) (expected_mask : i32) : i32 =
+    if !!!!EQ(observed_mask,7i32) then
+        if !!!!EQ(expected_mask,7i32) then 1i32 else 0i32
+    else 0i32
+
+inl cold_proof_count_binding (expected : i32) (observed : i32) : i32 =
+    if !!!!EQ(expected,observed) then 1i32 else 0i32
+
+inl cold_proof_replay_binding (observed_flags : i32) (expected_flags : i32) : i32 =
+    if !!!!EQ(observed_flags,15i32) then
+        if !!!!EQ(expected_flags,15i32) then 1i32 else 0i32
+    else 0i32

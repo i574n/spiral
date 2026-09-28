@@ -1,0 +1,8 @@
+inl impossible_scalar_defeq_cannot_be_pair_authority () :
+    corrected_cic_structural_defeq_pair_authority empty_ctx bool_sort =
+    inl true_term = corrected_cic_true ()
+    inl decision = decide_corrected_cic_structural_defeq true_term true_term
+    decision
+
+inl main () =
+    impossible_scalar_defeq_cannot_be_pair_authority ()

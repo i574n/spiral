@@ -1,0 +1,20 @@
+nominal root_a = ()
+nominal root_b = ()
+nominal signer_a = ()
+nominal digest_a = ()
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal scope_a = ()
+nominal epoch1 = ()
+nominal verified = ()
+nominal mounted = ()
+union rooted_authority root signer digest state = | RootedAuthority :: forall root signer digest state. string -> rooted_authority root signer digest state
+union genome_resource root signer digest sample build contig = | GenomeResource :: forall root signer digest sample build contig. string -> genome_resource root signer digest sample build contig
+union dashboard scope epoch root state = | Dashboard :: forall scope epoch root state. string -> dashboard scope epoch root state
+inl mount forall root signer digest sample build contig scope epoch. (authority : rooted_authority root signer digest verified) (resource : genome_resource root signer digest sample build contig) (dashboard : dashboard scope epoch root mounted) : string = "mounted"
+inl main () =
+    inl authority : rooted_authority root_a signer_a digest_a verified = RootedAuthority "authority"
+    inl resource : genome_resource root_a signer_a digest_a sample_a hg38 chr1 = GenomeResource "resource"
+    inl stale_dashboard : dashboard scope_a epoch1 root_b mounted = Dashboard "stale"
+    mount authority resource stale_dashboard

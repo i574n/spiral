@@ -1,0 +1,39 @@
+union agile_transient_schema_verdict =
+    | ValidTransientSchema
+    | InvalidTransientSchema
+
+inl agile_transient_schema_verdict_code = function
+    | ValidTransientSchema => 1u64
+    | InvalidTransientSchema => 0u64
+
+let agile_transient_schema_code (~projection : string) : u64 =
+    if rust_std_string.model.starts_with projection "patch_resume.spi\n" then
+        if rust_std_string.model.contains projection "PatchResumeReceipt ("
+            && rust_std_string.model.contains projection "inl main () : i32 = 0i32" then
+            agile_transient_schema_verdict_code ValidTransientSchema
+        else
+            agile_transient_schema_verdict_code InvalidTransientSchema
+    elif rust_std_string.model.starts_with projection "toolchain_process_receipt.spi\n" then
+        if rust_std_string.model.contains projection "\n// toolchain-process-receipt|"
+            && rust_std_string.model.contains projection "ToolchainProcessReceipt ("
+            && rust_std_string.model.contains projection "inl main () : i32 = 0i32" then
+            agile_transient_schema_verdict_code ValidTransientSchema
+        else
+            agile_transient_schema_verdict_code InvalidTransientSchema
+    else
+        agile_transient_schema_verdict_code InvalidTransientSchema
+
+let agile_state_path_candidate_code (~name : string) : u64 =
+    agile_state_path_policy.model.state_path_candidate_code name
+
+inl main () : i32 =
+    $"RustLibrary()" : ()
+    $"RustExportU64Unary(\"eoie_agile_state_transient_schema_code\",\"agile_transient_schema_code\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_state_path_candidate_code\",\"agile_state_path_candidate_code\")" : ()
+    inl _ = agile_transient_schema_code "patch_resume.spi\nPatchResumeReceipt (x)\ninl main () : i32 = 0i32"
+    inl _ = agile_transient_schema_code "toolchain_process_receipt.spi\n// toolchain-process-receipt|ok\nToolchainProcessReceipt (x)\ninl main () : i32 = 0i32"
+    inl _ = agile_transient_schema_code "toolchain_process_receipt.spi\nToolchainProcessReceipt (x)\ninl main () : i32 = 0i32"
+    inl _ = agile_state_path_candidate_code "ratings.spi"
+    inl _ = agile_state_path_candidate_code "typecheck_receipts.spi"
+    inl _ = agile_state_path_candidate_code "notes.txt"
+    0i32

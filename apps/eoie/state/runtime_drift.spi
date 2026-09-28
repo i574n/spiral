@@ -1,0 +1,236 @@
+union runtime_surface =
+    | ExactRuntimeFile
+    | AuxiliaryRuntimeFile
+
+union runtime_debt =
+    | ImportOnlyTerminal
+    | LocalizedBridge
+    | BroadRuntimeLogic
+    | LegacyQuarryLogic
+
+union rewrite_stage =
+    | Inventoried
+    | Ranked
+    | FixtureReady
+    | MappingActive
+    | SharedByTwoMains
+    | PillarIntegrated
+    | Retired
+
+union runtime_owner =
+    | RuntimeOwner :: string * string * runtime_surface * runtime_debt * u32 * u32 * rewrite_stage * string -> runtime_owner
+
+union runtime_inventory =
+    | RuntimeInventory :: u32 * u32 * u32 * u32 -> runtime_inventory
+
+union rust_global_baseline =
+    | RustGlobalBaseline :: u32 * u32 * u32 * u32 * string -> rust_global_baseline
+
+union experiment_result =
+    | ExperimentPassed
+    | ExperimentBlocked
+    | ExperimentRejected
+
+union runtime_experiment =
+    | RuntimeExperiment :: string * experiment_result * string -> runtime_experiment
+
+inl historical_inventory_baseline () : runtime_inventory = RuntimeInventory (8u32, 0u32, 0u32, 53795u32)
+inl historical_rust_global_baseline () : rust_global_baseline = RustGlobalBaseline (87u32, 1379u32, 4u32, 0u32, "historical-baseline-only;not-current-authority")
+inl runtime_census_authority () : string = "eoie-proxy-source-stats-source-topology-is-the-only-current-authority-for-Spiral-source-files-Rust-source-files-rust-global-sites-lines-crates-packages-and-density;state-baselines-are-historical-only"
+
+inl patch_facade () = RuntimeOwner ("src/eoie_patch_facade/facade_runtime.spi", "patch", AuxiliaryRuntimeFile, LocalizedBridge, 260u32, 1u32, Retired, "historical facade owner is absent from the live tree and has no package or source consumer; current patch context paths are owned by the settled patch source/control/compat owners")
+inl source_stats () = RuntimeOwner ("src/eoie_source_stats/stats_terminal.spi", "proxy", AuxiliaryRuntimeFile, BroadRuntimeLogic, 8096u32, 1u32, Retired, "historical source-stats owner was consolidated into eoie_source_topology_core/terminal.spi and the eoie-source-topology package; the standalone path is absent and unreferenced")
+inl agile_state_owned () = RuntimeOwner ("src/agile_state_runtime/owned_runtime.spi", "agile", AuxiliaryRuntimeFile, LocalizedBridge, 2391u32, 1u32, Ranked, "live package route is eoie-agile-state -> agile_state_runtime; remove owned argument vector bridge after state entrypoints accept typed values")
+inl agile_state () = RuntimeOwner ("src/agile_state_runtime/state_terminal.spi", "agile", AuxiliaryRuntimeFile, BroadRuntimeLogic, 15250u32, 1u32, SharedByTwoMains, "deployed Agile begin set record and clean check are compiler-independent; SeriesRecord and MigrationDenominator u32 suffix classification, decimal decoding, and overflow checks now use the shared state_receipt_codec_core Cargo boundary; mnemonic source-tag dash-shape classification also uses the shared codec; MigrationDenominator constructor location and payload delimiting plus SeriesRecord discovery, payload delimiting, and strict append-only sequence validation are now Spiral-owned while the existing tuple parser remains authoritative; the lexical model lives in a package-only sibling so the shared Cargo codec stays under the one-thousand-line crate ceiling; an independent thirteen-case lexical package main covers tag shape, constructor edges, empty/single/increasing SeriesRecord streams, duplicate sequence rejection, and malformed payload rejection; attestation action selection delegates compact physical observations to a typed Spiral decision union; transient receipt-name and state-path candidate classification are Spiral-owned; agile_state_runtime_policy_domain now also owns mutation-target authorization, lease-budget acceptance, lease-readback equality, prompt-title classification, Task-line lexical candidacy, status-name serialization, while shared snapshot/module receipt row-kind decode/emit labels and runtime/build attestation wire classification plus canonical emission live in state_receipt_codec_model for both runtime policy and serializer; PromptLease marker/status/shape interpretation, and WORK-WRAP-YIELD clock phase selection; existing eoie-agile-policy remains the Spiral authority for attestation normalization/value decoding while Rust retains filesystem and clock observation, prompt tuple slicing and numeric decode, BTreeMap and narrow numeric transport, atomic receipt IO, and effect execution as the next RustGlobal boundary debt")
+inl patch_mutation () = RuntimeOwner ("src/patch_mutation_app/mutation_terminal.spi", "patch", AuxiliaryRuntimeFile, LocalizedBridge, 692u32, 1u32, FixtureReady, "live package route is eoie-patch-mutation -> patch_mutation_app; the terminal error helper remains localized debt")
+inl compat_owned () = RuntimeOwner ("src/patch_compat_runtime/owned_runtime.spi", "patch", AuxiliaryRuntimeFile, LocalizedBridge, 2186u32, 1u32, Ranked, "live package route is patch_compat_driver -> patch_compat_runtime; retire the owned bridge with typed compatibility driver entrypoints")
+inl compat_rollback () = RuntimeOwner ("src/patch_compat_runtime/rollback_runtime.spi", "patch", AuxiliaryRuntimeFile, BroadRuntimeLogic, 14491u32, 0u32, Ranked, "live package route is patch_compat_driver -> patch_compat_runtime; move rollback effects behind filesystem receipts and typed restoration plan")
+inl compat_driver () = RuntimeOwner ("src/patch_compat_driver/compat_terminal.spi", "patch", AuxiliaryRuntimeFile, BroadRuntimeLogic, 18037u32, 0u32, MappingActive, "the compatibility driver now consumes the settled patch-source parser; transaction effects and rollback coordination remain named terminal debt")
+inl cli_runtime () = RuntimeOwner ("src/eoie_cli_routing/routing_terminal.spi", "proxy", AuxiliaryRuntimeFile, BroadRuntimeLogic, 21779u32, 0u32, MappingActive, "the CLI bridge consumes command-spec-owned verb route and help codes plus authority-state-owned blocker labels and index-to-bit mapping; Rust retains argument collection, generic blocker iteration, numeric dispatch to physical crate entrypoints, presentation formatting and the legacy fallback bridge")
+inl patch_grammar () = RuntimeOwner ("src/eoie_patch_grammar/runtime.spi", "patch", ExactRuntimeFile, LocalizedBridge, 694u32, 1u32, Retired, "orphan runtime surface removed after reference search and workspace check")
+inl patch_scan () = RuntimeOwner ("src/eoie_patch_scan/runtime.spi", "patch", ExactRuntimeFile, ImportOnlyTerminal, 288u32, 4u32, Retired, "orphan import surface removed after reference search and workspace check")
+inl rust_filesystem () = RuntimeOwner ("src/rust_std_fs/filesystem_terminal.spi", "patch,bundle,proxy", AuxiliaryRuntimeFile, BroadRuntimeLogic, 4468u32, 4u32, SharedByTwoMains, "stage promote restore discard atomic write sorted listing limited read atomic copy regular removal and bounded tree removal are compiler-generated; standalone mains and the public proxy share the authority while patch rollback and Agile iteration remain")
+inl patch_control () = RuntimeOwner ("src/patch_control_domain/control_terminal.spi", "patch", AuxiliaryRuntimeFile, BroadRuntimeLogic, 3828u32, 0u32, Ranked, "the control bridge now has an explicit terminal name; move control receipts and tests into compiled Spiral bindings")
+inl coverage_prune () = RuntimeOwner ("src/eoie_coverage_prune/prune_terminal.spi", "shrinkage", AuxiliaryRuntimeFile, BroadRuntimeLogic, 10923u32, 3u32, Ranked, "generic runtime filename retired; coverage pruning remains a named terminal debt")
+inl handoff_owned () = RuntimeOwner ("src/eoie_handoff/owned_runtime.spi", "agile", AuxiliaryRuntimeFile, LocalizedBridge, 535u32, 2u32, Retired, "owned handoff bridge fused into render_terminal; v211 regenerated handoff.rs byte-identically and the standalone module was removed; structural consolidation carries no semantic progress credit")
+inl handoff_runtime () = RuntimeOwner ("src/eoie_handoff/render_terminal.spi", "agile", AuxiliaryRuntimeFile, BroadRuntimeLogic, 6069u32, 1u32, MappingActive, "the renderer reads physical state and invokes typed projections; the ten-field authority census shape and labels are now Spiral-projected instead of Rust split/format logic, while output ordering authority-state presentation and filesystem reads remain terminal debt")
+inl agile_mutation () = RuntimeOwner ("src/eoie_agile_mutation/agile_terminal.spi", "agile", AuxiliaryRuntimeFile, LocalizedBridge, 580u32, 1u32, MappingActive, "the multi-union façade regenerates the real Agile owner and the crate passes check Clippy and tests; the terminal error helper remains localized debt")
+inl release_hygiene () = RuntimeOwner ("src/eoie_release_hygiene/hygiene_terminal.spi", "bundle", AuxiliaryRuntimeFile, BroadRuntimeLogic, 4453u32, 1u32, MappingActive, "filename classification for compiler sidecars and root release transients now originates in a Spiral hygiene_name_class union lowered through one generated name classifier; the Rust terminal retains physical directory traversal, symlink metadata, c-with-spi sibling observation, sorting and deletion effects")
+inl toolchain_proxy () = RuntimeOwner ("src/eoie_toolchain_proxy/toolchain_terminal.spi", "proxy", AuxiliaryRuntimeFile, BroadRuntimeLogic, 3814u32, 3u32, PillarIntegrated, "toolchain actions checkpoints outcomes payloads profiles programs environment keys and modes receipt protocol fields and source-identity policy are modeled by unions and total mappings in compiled Spiral; the catalog is assembled from typed lists while the generated policy and probe stay byte-identical to the predecessor; toolchain decimal parsing now reuses the shared state_receipt_codec_core; the Rust terminal retains generic catalog lookup, physical metadata traversal, receipt filesystem IO, sibling path existence, concrete environment effects, and process launch as broad debt")
+inl bundle_zip () = RuntimeOwner ("src/eoie_bundle_zip/archive_terminal.spi", "bundle", AuxiliaryRuntimeFile, BroadRuntimeLogic, 19116u32, 0u32, MappingActive, "package-only Spiral unions and total mappings now own and feed profile resolution, EOIE archive and hydrated-root signatures, canonical root/archive entries, source/state/evidence/crate whitelists, size/extraction/density/public-binary limits, .cargo/vendor names, coverage/state witness paths, and the forbidden lib.rs invariant; positive strict rehydrate, missing-Agile, forbidden-root-file, and missing-evidence fixtures remain fail-closed; profile resolution is generated once instead of twice, archive-manifest parity is shared through eoie-bundle-manifest, and semantic closeout consumes the migration observed from typed state instead of a duplicated bundle-terminal literal, shrinking the bundle owner by seven generated Rust lines while the reusable manifest owner grows six, net minus one across touched Cargo owners; workspace Cargo member mapping is now fail-closed against the physical Cargo-crate set through a Spiral-owned manifest typestate and bijection binding with declared-missing and physical-undeclared negative fixtures; coverage checkpoint durable missing and absent witness classification plus expected-SHA extraction now reuse the package-only state receipt codec model while Rust retains only physical state/checkpoint reads nofollow hashing and byte comparison; bundle-policy and bundle consumers now import the package-only codec model instead of the main-bearing codec crate, restoring byte-identical predecessor regeneration under v212; create-flat and verify-flat max-bytes decimal validation/value now reuse state_receipt_codec_core instead of Rust parse::<u64>; recovered capability and dogfood topology-count assignments now reuse the package-only receipt codec model through an independent state-recovered-topology-codec residual, removing Rust lines/find/split/u32 suffix parsing while preserving physical evidence checks and count comparison; recovered-fixture row shape record counting duplicate-capability rejection and normalized evidence-path projection now use that same codec, and workspace Cargo member uniqueness is rejected by the Spiral manifest parser before Rust materializes the set; archive root-shape composition for eoie/evidence/src/state now uses a v213-regenerated Spiral mask binding while Rust only observes exact/prefix presence in physical ZIP entries; post-rehydrate structure validity now uses a state-recovered-topology-codec mask binding so Rust observes EOIE signature, Agile-file, and generic-manifest presence without owning the profile-dependent acceptance rule; archive IO, physical recovered-fixture evidence-path traversal, rehydration physical effects, metadata traversal and lower-level filesystem effects remain broad debt")
+inl proxy_search () = RuntimeOwner ("src/parallel_search_contract/search_terminal.spi", "proxy", AuxiliaryRuntimeFile, BroadRuntimeLogic, 19043u32, 1u32, PillarIntegrated, "deterministic serial-parallel search and manifest parity are compiled through a shared Spiral package; remaining runtime text is the terminal filesystem and Rayon boundary")
+inl legacy_operations () = RuntimeOwner ("src/legacy_operations_entry/legacy_terminal.spi", "quarry", AuxiliaryRuntimeFile, LegacyQuarryLogic, 44392u32, 4u32, MappingActive, "live package route is eoie-legacy-operations -> legacy_operations_entry; mine the remaining process archive coverage and compatibility contracts before deletion")
+inl coverage_smoke () = RuntimeOwner ("src/eoie_coverage_smoke/coverage_terminal.spi", "verification", AuxiliaryRuntimeFile, ImportOnlyTerminal, 239u32, 4u32, Retired, "runtime-named surface retired and its active residual regenerated byte-identically through the corrected RustLibrary lowering")
+
+inl next_runtime_owner () : runtime_owner = agile_state ()
+inl next_pillar_runtime_owner () : runtime_owner = agile_state ()
+
+inl granular_error_mapping_attempt () : runtime_experiment =
+    RuntimeExperiment ("mutation-error-expression", ExperimentBlocked, "portable Rust compiler rejected the granular interop expression; source and residual were restored without manual Rust edits")
+
+inl toolchain_action_mapping () : runtime_experiment =
+    RuntimeExperiment ("toolchain-action-domain-merged", ExperimentPassed, "the duplicate action package and stale command-plan package were retired; toolchain_command_domain now owns the union codes command profiles negative fixture and both bootstrap consumers")
+
+inl toolchain_command_profile_mapping () : runtime_experiment =
+    RuntimeExperiment ("toolchain-command-profiles", ExperimentPassed, "program timeout success policy token text and indexed environment entries are packed into Spiral descriptors; all eight public actions plus invalid action witness and index fixtures pass, while generic decoding path resolution environment effects and process launch remain runtime debt")
+
+inl toolchain_negative_fixture_gap () : runtime_experiment =
+    RuntimeExperiment ("toolchain-empty-union-negative-fixture", ExperimentBlocked, "reachable parsed-or-unknown union fixture exposed portable backend payload access for an empty case; the product mapping uses a fail-closed minus-one code instead")
+
+inl state_receipt_fingerprint_mapping () : runtime_experiment =
+    RuntimeExperiment ("state-receipt-fingerprint", ExperimentPassed, "byte validation mixing and two-half FNV-1a multiplication are compiled from Spiral and preserve receipts created by the previous Rust implementation")
+
+inl filesystem_transaction_mapping () : runtime_experiment =
+    RuntimeExperiment ("filesystem-stage-promote-restore-discard", ExperimentPassed, "positive and negative Spiral mains plus the public patch owner share the same library; no application Rust was authored")
+
+inl filesystem_identity_fixture_gap () : runtime_experiment =
+    RuntimeExperiment ("filesystem-invalid-stage-identity-fixture", ExperimentBlocked, "a stronger granular negative call lost a portable interop variable; the source was reverted and the missing-stage negative remains fail-closed")
+
+inl cli_proxy_result_dedup () : runtime_experiment =
+    RuntimeExperiment ("cli-proxy-result-bridge-dedup", ExperimentPassed, "one generated helper now owns the identical Result error exit path for compiler-sidecar coverage-export and coverage-union proxy branches; the CLI runtime shrinks without behavior change")
+
+inl cli_routing_expression_gap () : runtime_experiment =
+    RuntimeExperiment ("cli-granular-routing-expression", ExperimentBlocked, "the current portable Rust expression parser rejects block match and if forms with trailing tokens; both experiments were reverted before residual acceptance")
+
+inl toolchain_library_regeneration_gap () : runtime_experiment =
+    RuntimeExperiment ("toolchain-library-regeneration", ExperimentPassed, "the portable facade removes RustLibrary entrypoints validates I32 I32Binary and StringUnary signatures rejects exports without library authority and compiles coverage plus toolchain owners without manual Rust")
+
+inl multi_union_backend_candidate () : runtime_experiment = RuntimeExperiment ("portable-multi-union-fsharp-shard", ExperimentPassed, "compiler v182 lowers the C semantic oracle without the unbounded monolithic Rust path, fuses adjacent declaration assignments, normalizes bounded expressions and promotes patch-domain at seven hundred seventeen Rust lines while Agile archive and batch-plan probes remain green")
+inl shared_rooted_path_validation () : runtime_experiment = RuntimeExperiment ("shared-rooted-path-validation", ExperimentPassed, "legacy operations imports patch-rooted and patch-safe-relative directly from the patch-control domain; the duplicate implementation is removed and workspace gates pass")
+inl shared_atomic_write_mapping () : runtime_experiment = RuntimeExperiment ("shared-atomic-write", ExperimentPassed, "rust-std-fs emits one atomic writer consumed directly by Agile state and legacy operations; both residual owners regenerate through v179 and pass check Clippy and focused tests")
+inl filesystem_source_package_route () : runtime_experiment = RuntimeExperiment ("filesystem-source-to-package-route", ExperimentPassed, "runtime-main referenced the retired runtime module; switching to filesystem-terminal lets v179 close the package and emit the shared library without manual Rust")
+inl coverage_source_package_gap () : runtime_experiment = RuntimeExperiment ("coverage-source-to-package-route", ExperimentBlocked, "v179 loses metadata records and hash variables in unrelated union and late-initialization paths; source Cargo and residual are restored before gates")
+
+inl classifier_package_route_gap () : runtime_experiment = RuntimeExperiment ("release-hygiene-classifier-package-route", ExperimentBlocked, "both v177 and v179 discover the new package but fail to close the source-to-package route without a generated residual; the experiment was removed before workspace gates and no Rust was hand-authored")
+
+inl multi_file_burnin () : runtime_experiment = RuntimeExperiment ("candidate-multi-file-burnin", ExperimentPassed, "an invalid second operation leaves both files unchanged; two valid files then mutate typecheck and restore their original SHA-256 values")
+inl multi_hunk_burnin () : runtime_experiment = RuntimeExperiment ("candidate-multi-hunk-burnin", ExperimentPassed, "an invalid second hunk leaves the owner unchanged; two valid hunks mutate typecheck and restore the original SHA-256")
+inl runtime_name_burndown () : runtime_experiment = RuntimeExperiment ("runtime-name-burndown-18-to-0", ExperimentPassed, "all exact runtime.spi owners now use domain-specific terminal names and the release guard rejects any new generic runtime filename")
+inl compat_parser_dedup () : runtime_experiment = RuntimeExperiment ("compat-patch-parser-dedup", ExperimentPassed, "patch-compat-driver now consumes parse_patch_exact_source from the settled patch-control domain; the duplicate host parser is retired and generated Rust falls by eighteen lines")
+
+inl release_hygiene_walk_dedup () : runtime_experiment = RuntimeExperiment ("release-hygiene-recursive-walk-dedup", ExperimentPassed, "one Spiral-authored recursive filesystem walker now serves both compiler-sidecar pruning and runtime filename rejection; the generated owner drops nine Rust lines and focused check test and Clippy pass")
+inl toolchain_bootstrap_regeneration_gap () : runtime_experiment = RuntimeExperiment ("toolchain-bootstrap-rc-reuse", ExperimentPassed, "both bootstrap probes now prove filesystem readability or absence through nominal states without transporting a reusable reference-counted path inside a union; compiler v183 regenerates and executes both owners and two orphan residuals are retired")
+
+inl agile_runtime_compiler_independence () : runtime_experiment = RuntimeExperiment ("agile-runtime-compiler-independence", ExperimentPassed, "clean begin check set and record are runtime validated and receipt-attested without a Spiral compiler; externally edited static state still fails closed and requires build-time attestation")
+
+inl toolchain_receipt_label_catalog () : runtime_experiment = RuntimeExperiment ("toolchain-receipt-label-catalog", ExperimentPassed, "action checkpoint outcome payload and profile receipt constructors are emitted by one versioned compiled Spiral catalog; the Rust terminal performs only generic key lookup plus physical numeric and IO formatting; candidate receipt round-trip resumed without reexecution")
+
+inl toolchain_program_environment_catalog () : runtime_experiment = RuntimeExperiment ("toolchain-program-environment-label-catalog", ExperimentPassed, "cargo self cargo-fmt and cargo-clippy program-selection labels plus all eight environment-key names are emitted by the same versioned compiled Spiral catalog; Rust retains sibling-path existence checks environment effect modes and process launch; cargo-fmt-check receipt resumed without reexecution")
+inl toolchain_identity_catalog () : runtime_experiment = RuntimeExperiment ("toolchain-identity-catalog", ExperimentPassed, "source-root marker and fallback, excluded directories, included filenames and extensions, extra hash files, CARGO_TARGET_DIR key, and target fallback are emitted by the versioned Spiral catalog; the functional probe resumes across an ignored .tmp and reexecutes after a new .spi changes identity")
+inl toolchain_environment_protocol_catalog () : runtime_experiment = RuntimeExperiment ("toolchain-environment-protocol-catalog", ExperimentPassed, "all seven environment-mode semantics plus the receipt marker, receipt path, bundle-state marker, and atomic staging prefix are emitted by the versioned Spiral catalog; the candidate cargo-fmt-check receipt round-trip executes once and then resumes without spawn")
+inl toolchain_typed_catalog_model () : runtime_experiment = RuntimeExperiment ("toolchain-typed-catalog-model", ExperimentPassed, "receipt and identity catalog now derives from explicit unions and exhaustive label mappings; generated policy and probe products remain byte-identical while the monolithic raw catalog string is retired")
+inl bundle_profile_name_binding_attempt () : runtime_experiment = RuntimeExperiment ("bundle-profile-name-binding", ExperimentRejected, "string-to-profile binding removed duplicate runtime matches but grew the generated bundle owner by twenty-three Rust lines; source and residual were restored before settlement")
+inl bundle_static_policy_package () : runtime_experiment = RuntimeExperiment ("bundle-static-policy-package", ExperimentPassed, "bundle profile names and codes, EOIE signature requirements, and canonical root entries are modeled by package-only Spiral unions and total mappings; eoie-bundle-zip consumes the compile-time policy without a new Cargo crate, generated bundle.rs remains at the predecessor seven-hundred-twenty-two LOC, and focused plus full workspace gates pass")
+inl bundle_layout_policy_mapping () : runtime_experiment = RuntimeExperiment ("bundle-layout-policy-mapping", ExperimentPassed, "crate source extensions and allowed auxiliary files move from Rust matches into package-only Spiral unions and generated arrays; four dead state-budget no-op lines are retired, the bundle owner shrinks from seven-hundred-twenty-two to seven-hundred-twenty-one Rust LOC, focused and full workspace gates pass, and a forbidden source-root file remains fail-closed")
+
+inl bundle_long_policy_round () : runtime_experiment = RuntimeExperiment ("bundle-long-policy-round", ExperimentPassed, "package-only Spiral now feeds source state evidence crate vendor archive-root and forbidden-lib.rs policies plus size extraction density and public-binary limits; strict rehydrate, missing Agile, forbidden source-root and missing evidence fixtures remain fail-closed while the bundle owner shrinks from seven-hundred-twenty-one to seven-hundred-fourteen generated Rust lines")
+inl bundle_manifest_parity_reuse () : runtime_experiment = RuntimeExperiment ("bundle-manifest-parity-reuse", ExperimentPassed, "create and create-flat now share archive-manifest parity through eoie-bundle-manifest; the bundle owner shrinks seven generated Rust lines, the reusable manifest owner grows six, and the touched Cargo owners are net minus one")
+inl bundle_profile_helper_attempt () : runtime_experiment = RuntimeExperiment ("bundle-profile-helper-attempt", ExperimentRejected, "centralizing profile-name and is-eoie runtime helpers expanded the bundle owner from seven-hundred-thirteen to seven-hundred-twenty-eight Rust lines after rustfmt; the experiment was fully reverted before settlement")
+
+inl bundle_recovered_topology_count_mapping () : runtime_experiment = RuntimeExperiment ("bundle-recovered-topology-count-mapping", ExperimentPassed, "recovered_capability_fixture_count and dogfood_recovered_topology_count assignment lookup suffix validation decimal decoding overflow and missing or malformed classification move from the bundle Rust terminal into the shared package-only Spiral receipt model; direct residualization in bundle.rs was rejected at one-thousand-two-hundred-thirty LOC and extending the saturated shared codec was rejected at one-thousand-thirty-four generated LOC, so an independent five-hundred-fifty-six-line generated state-recovered-topology-codec keeps bundle.rs at eight-hundred-one LOC and the global crate ceiling at nine-hundred-ninety-seven; Cargo check locked Clippy and the twenty-two-assertion lexical probe pass")
+
+inl bundle_recovered_fixture_ledger_mapping () : runtime_experiment = RuntimeExperiment ("bundle-recovered-fixture-ledger-mapping", ExperimentPassed, "recovered-fixture row discovery five-field shape record count duplicate capability rejection and normalized three-path projection move from Rust trim split and BTreeSet interpretation into state-recovered-topology-codec over the shared package-only lexical model; Rust retains only descriptor-relative evidence-path existence checks and count comparison; the topology residual grows to eight-hundred-nineteen generated Rust LOC while bundle.rs remains below the ceiling and the lexical probe covers valid duplicate malformed and empty-path ledgers")
+
+inl bundle_workspace_member_uniqueness_mapping () : runtime_experiment = RuntimeExperiment ("bundle-workspace-member-uniqueness-mapping", ExperimentPassed, "workspace Cargo member duplicate and empty-member rejection now occurs inside bundle_workspace_members_parse in Spiral; the Rust helper only materializes the already validated newline projection into a BTreeSet for physical bijection comparison; bundle.rs remains eight-hundred-eleven LOC and focused Cargo check Clippy plus release-mode touched-owner build pass")
+
+inl bundle_rehydrate_structure_mapping () : runtime_experiment = RuntimeExperiment ("bundle-rehydrate-structure-mapping", ExperimentPassed, "post-extraction structure acceptance moves from a Rust profile branch into state-recovered-topology-codec; Rust records EOIE signature Agile-file and generic-manifest presence as a compact mask, v213 regenerates both touched owners, direct residualization in bundle_zip is rejected by the one-thousand-fifty-nine-line density gate, shared-codec residualization settles with topology core at eight-hundred-seventy-one generated LOC and bundle.rs at eight-hundred-thirty-three, and focused Cargo check plus Clippy pass while the full release build remains source-ahead-of-binary after one bounded attempt")
+
+inl bundle_profile_signature_mapping () : runtime_experiment = RuntimeExperiment ("bundle-profile-signature-mapping", ExperimentPassed, "EOIE profile signature acceptance for both live roots and ZIP entries moves from Rust iter-all composition into state-recovered-topology-codec; bundle_policy_domain still emits the four canonical required paths, Rust records two compact presence masks, v213 regenerates both touched owners, the bundle crate remains exactly at the one-thousand-line density ceiling, Cargo check and Clippy pass, a source-matched release ELF is promoted transactionally, and public contracts pass fourteen-of-fourteen")
+inl handoff_active_work_progress_projection_fix () : runtime_experiment = RuntimeExperiment ("handoff-active-work-progress-projection-fix", ExperimentPassed, "zero-credit repair of an already Spiral-owned handoff projection: the source package edge is corrected from the main-bearing receipt codec crate to the package-only receipt codec model, v213 restores byte-exact predecessor generation, progress-literal search now begins after the quoted task title so u32 text inside task descriptions cannot shadow the real progress field, a regression fixture contains u32 in the title, focused Cargo check and Clippy pass, the rebuilt ELF is promoted transactionally, and live agile handoff returns the active-work queue successfully")
+
+inl handoff_owned_bridge_fusion () : runtime_experiment = RuntimeExperiment ("handoff-owned-bridge-fusion", ExperimentPassed, "owned_runtime was fused into render_terminal and v211 regenerated the same handoff.rs SHA-256 d544682f470407d8146faa218ba0ec91cd61344afaa65a881dc6580d54581b79 at five-hundred-eight LOC before the census extraction; focused check test and Clippy pass; this is structural consolidation without semantic score credit")
+inl handoff_census_projection_format () : runtime_experiment = RuntimeExperiment ("handoff-census-projection-format", ExperimentPassed, "handoff_state_projection_source now validates exactly ten census fields and emits the named public census line; Rust no longer splits tabs counts fields or labels positions, handoff.rs drops from five-hundred-eight to five-hundred-five LOC, and before-after public census text is identical")
+
+inl agile_series_tag_shape_mapping () : runtime_experiment = RuntimeExperiment ("agile-series-tag-shape-mapping", ExperimentPassed, "source-tag word/separator shape leaves Rust split and char iteration and is computed by shared Spiral codec; library and independent six-case package main both consume it; generated Agile owner shrinks six lines while codec grows forty-five")
+
+inl agile_migration_payload_mapping () : runtime_experiment = RuntimeExperiment ("agile-migration-denominator-payload-mapping", ExperimentPassed, "MigrationDenominator line discovery and parenthesized payload delimiting move from Rust lines/find/rfind into the shared Spiral lexical codec; the eight-case lexical main proves valid and missing constructors; generated Agile owner remains below six-hundred LOC")
+
+inl agile_series_stream_mapping () : runtime_experiment = RuntimeExperiment ("agile-series-record-stream-mapping", ExperimentPassed, "SeriesRecord discovery payload delimiting and strictly increasing sequence validation move out of Rust line scanning into the shared Spiral lexical model; the thirteen-case package-only probe covers empty single increasing duplicate and malformed streams; the model is split from the Cargo owner so the one-thousand-line crate ceiling remains intact")
+
+inl runtime_inventory_path_reconciliation () : runtime_experiment = RuntimeExperiment ("runtime-inventory-path-reconciliation", ExperimentPassed, "every non-retired RuntimeOwner path now resolves to a live Spiral source; five renamed package routes are rebound to current owners, source-stats and patch-facade are classified retired only after package/source reference search, and already-retired patch grammar scan and handoff-owned entries remain historical")
+
+inl authority_blocker_catalog_mapping () : runtime_experiment = RuntimeExperiment ("authority-blocker-catalog-mapping", ExperimentPassed, "formal authority blocker names and index-to-bit mapping move into authority_state_domain; v211 exports five runtime labels plus typed bits, the CLI residual contains none of the five blocker names, focused check and Clippy pass, and rootless status preserves exclusive mask-zero blockers-none output")
+
+inl agile_attestation_decision_mapping () : runtime_experiment = RuntimeExperiment ("agile-attestation-decision-mapping", ExperimentPassed, "module kind and compact same-content compiler-present build-equal observations now enter one Spiral-owned decision union selecting reject skip runtime-attest build-attest or require-compiler; Rust retains hashing compiler discovery schema validation typecheck execution and receipt IO; current compilerless state skips cleanly, static drift fails closed without a compiler and build-attests with one, transient drift runtime-attests without a compiler, focused Cargo check test and Clippy are green")
+
+inl agile_record_preflight_mapping () : runtime_experiment = RuntimeExperiment ("agile-record-preflight-mapping", ExperimentPassed, "history ratings bench and migration record prerequisites now originate in a Spiral-owned requirement union, string catalog, name-to-bit mapping and typed complete-mask decision; Rust only observes physical state paths and reports missing names; v213 regenerates eoie-agile-state at seven-hundred-eighty-two Rust LOC, focused check test and Clippy pass, live agile check reports ready one, and the source-matched release ELF passes public contracts fourteen-of-fourteen")
+
+inl agile_transient_schema_mapping () : runtime_experiment = RuntimeExperiment ("agile-transient-schema-mapping", ExperimentPassed, "patch-resume and toolchain-process transient receipt textual schema validation now originates in a Spiral-owned verdict over the observed name-plus-source projection; Rust retains bounded UTF-8 file reading and error transport only; the first residual exposed a one-thousand-fifty-nine combined owner density breach, so the schema was split into agile-state-transient-schema-domain at sixty-one generated Rust LOC while eoie-agile-state returned to seven-hundred-seventy-eight; v214 regenerates both owners byte-exactly, focused check test and Clippy pass for both crates, valid changed receipt runtime-attests compilerless, a broken receipt marker fails closed, the source-matched release ELF is promoted transactionally, and public contracts pass fourteen-of-fourteen")
+
+inl agile_state_path_candidate_mapping () : runtime_experiment = RuntimeExperiment ("agile-state-path-candidate-mapping", ExperimentPassed, "state-path candidate lexical policy now originates in package-only agile_state_path_policy and is exported through the shared Agile observation residual: typecheck_receipts.spi is excluded and dot-spi candidates are accepted in Spiral while Rust retains physical read_dir filename observation sorting and PathBuf transport; the eoie-agile-state residual no longer contains extension matching or receipt-path inequality, a non-state txt entry is ignored compilerless, focused check test and Clippy remain green, the source-matched release ELF is promoted transactionally, and public contracts pass fourteen-of-fourteen")
+
+inl agile_runtime_policy_mapping () : runtime_experiment = RuntimeExperiment ("agile-runtime-policy-mapping", ExperimentPassed, "mutation-target authorization, lease-budget acceptance, lease-readback equality, prompt-title classification, Task-line lexical candidacy, and Planned/Active/Blocked/Paused/Done status serialization now originate in agile_state_runtime_policy_domain; Rust retains parent/path existence, clock and environment observation, argument transport and physical state effects; v214 regenerates the policy owner at one-hundred-thirty-six Rust LOC and eoie-agile-state at seven-hundred-eighty-four, focused Cargo check test and Clippy pass, invalid budget fails closed without mutating prompt state, valid begin runtime-attests, task-list count remains exact, final agile set consumes the Spiral-owned status text on a predecessor fixture, and the source-matched release ELF is promoted transactionally")
+
+inl agile_receipt_row_kind_mapping () : runtime_experiment = RuntimeExperiment ("agile-receipt-row-kind-mapping", ExperimentPassed, "snapshot and module receipt row-kind recognition plus canonical emission labels now originate in agile_state_runtime_policy_domain; Rust keeps parser tuple transport numeric decoding BTreeMap materialization attestation value formatting and atomic filesystem write; v214 regenerates the policy owner at one-hundred-eighty-one Rust LOC and eoie-agile-state at seven-hundred-eighty-seven while the combined owners remain below one thousand LOC, focused Cargo check test and Clippy pass, and live agile set loads the predecessor receipt then rewrites and validates it through the Spiral-owned row kinds")
+
+inl agile_receipt_attestation_wire_mapping () : runtime_experiment = RuntimeExperiment ("agile-receipt-attestation-wire-mapping", ExperimentPassed, "runtime versus build receipt-attestation classification and canonical wire emission now originate in agile_state_runtime_policy_domain while eoie-agile-policy remains the Spiral normalization and numeric-value authority; Rust retains only Option-u64 observation, decimal transport, BTreeMap materialization and atomic write for this boundary; v214 regenerates the policy owner at two-hundred-twenty Rust LOC and eoie-agile-state at seven-hundred-ninety-six with zero tail repairs, focused Cargo check test and Clippy pass, the real root writes and reloads BuildAttestation under one compiler batch, a compilerless transient fixture writes RuntimeAttestation and reloads it cleanly, and the deeper tuple/serializer mains remain reproducibly compiler-blocked on their unchanged baseline rather than being patched around")
+
+inl agile_prompt_lease_policy_mapping () : runtime_experiment = RuntimeExperiment ("agile-prompt-lease-policy-mapping", ExperimentPassed, "PromptLease marker text, LeaseActive status recognition, seven-field shape acceptance, and WORK-WRAP-YIELD phase priority now originate in agile_state_runtime_policy_domain; eoie-agile-lease keeps bounded prompt-file reading, tuple slicing, u64 parsing, deadline arithmetic and physical clock observation; v214 regenerates the policy residual at two-hundred-ninety Rust LOC and eoie-agile-lease at two-hundred-fifty-eight with zero tail repairs, the only Cargo.lock delta is the local policy-domain edge, focused check test and Clippy pass for policy lease and state consumers, a live lease remains WORK, LeaseClosed fails closed through the typed shape/status verdict, and the fourteen public contracts remain green including expired-lease mutation blocking and renewal")
+
+inl agile_spi_escape_policy_mapping () : runtime_experiment = RuntimeExperiment ("agile-spi-escape-policy-mapping", ExperimentPassed, "canonical escaping of backslash quote newline and carriage-return for prompt Agile-task and SeriesRecord mutations now originates in agile_state_runtime_policy_domain over the reusable package-only rust_std_string replacement mapping; eoie-agile-lease keeps only the String ABI shim and all existing begin set and record consumers reuse it; v215 regenerates policy and lease with zero tail repairs, focused check test and Clippy pass, and a fixture with quote-plus-backslash title and prompt id survives begin set record and receipt-first agile check")
+
+inl agile_state_package_lexical_mapping () : runtime_experiment = RuntimeExperiment ("agile-state-package-lexical-mapping", ExperimentPassed, "state package.spiproj header comment indentation boundary suffix normalization flat-module rejection and dot-spi name emission now originate in agile_state_runtime_policy_domain; eoie-agile-lease retains bounded physical package-file reading sequential in-modules state and PathBuf/BTreeSet materialization; v215 regenerates policy and lease with zero tail repairs, focused check test and Clippy pass, the live package parses compilerlessly, an inline-suffix ratings- fixture remains accepted as ratings.spi, and invalid/path fails closed")
+
+inl receipt_attestation_shared_codec_mapping () : runtime_experiment = RuntimeExperiment ("receipt-attestation-shared-codec-mapping", ExperimentPassed, "v215 reproduces the previously blocked tuple and serializer mains after both domains declare direct state_receipt_codec_model ownership; their pre-consolidation regenerated residuals are byte-identical to the historical Rust, proving the blocker was package topology rather than codegen. Runtime/build attestation kind, build payload extraction and canonical wire text are then centralized in package-only state_receipt_codec_model and consumed by both agile runtime policy and state receipt serializer; v215 regenerates both changed owners with zero tail repairs, focused check test and Clippy pass for serializer policy state and lease consumers, and the final ELF drives agile set plus receipt-first checks that preserve RuntimeAttestation and BuildAttestation semantics")
+
+inl main () : i32 =
+    inl _ = historical_inventory_baseline ()
+    inl _ = historical_rust_global_baseline ()
+    inl _ = runtime_census_authority ()
+    inl _ = next_runtime_owner ()
+    inl _ = next_pillar_runtime_owner ()
+    inl _ = granular_error_mapping_attempt ()
+    inl _ = toolchain_action_mapping ()
+    inl _ = toolchain_command_profile_mapping ()
+    inl _ = toolchain_negative_fixture_gap ()
+    inl _ = state_receipt_fingerprint_mapping ()
+    inl _ = toolchain_library_regeneration_gap ()
+    inl _ = multi_union_backend_candidate ()
+    inl _ = shared_rooted_path_validation ()
+    inl _ = shared_atomic_write_mapping ()
+    inl _ = filesystem_source_package_route ()
+    inl _ = coverage_source_package_gap ()
+    inl _ = classifier_package_route_gap ()
+    inl _ = multi_file_burnin ()
+    inl _ = multi_hunk_burnin ()
+    inl _ = runtime_name_burndown ()
+    inl _ = compat_parser_dedup ()
+    inl _ = release_hygiene_walk_dedup ()
+    inl _ = toolchain_bootstrap_regeneration_gap ()
+    inl _ = agile_runtime_compiler_independence ()
+    inl _ = toolchain_receipt_label_catalog ()
+    inl _ = toolchain_program_environment_catalog ()
+    inl _ = toolchain_identity_catalog ()
+    inl _ = toolchain_environment_protocol_catalog ()
+    inl _ = toolchain_typed_catalog_model ()
+    inl _ = bundle_profile_name_binding_attempt ()
+    inl _ = bundle_static_policy_package ()
+    inl _ = bundle_layout_policy_mapping ()
+    inl _ = bundle_long_policy_round ()
+    inl _ = bundle_manifest_parity_reuse ()
+    inl _ = bundle_profile_helper_attempt ()
+    inl _ = bundle_recovered_topology_count_mapping ()
+    inl _ = bundle_recovered_fixture_ledger_mapping ()
+    inl _ = bundle_workspace_member_uniqueness_mapping ()
+    inl _ = bundle_rehydrate_structure_mapping ()
+    inl _ = bundle_profile_signature_mapping ()
+    inl _ = handoff_active_work_progress_projection_fix ()
+    inl _ = handoff_owned_bridge_fusion ()
+    inl _ = handoff_census_projection_format ()
+    inl _ = agile_series_tag_shape_mapping ()
+    inl _ = agile_migration_payload_mapping ()
+    inl _ = agile_series_stream_mapping ()
+    inl _ = runtime_inventory_path_reconciliation ()
+    inl _ = authority_blocker_catalog_mapping ()
+    inl _ = agile_attestation_decision_mapping ()
+    inl _ = agile_record_preflight_mapping ()
+    inl _ = agile_transient_schema_mapping ()
+    inl _ = agile_state_path_candidate_mapping ()
+    inl _ = agile_runtime_policy_mapping ()
+    inl _ = agile_receipt_row_kind_mapping ()
+    inl _ = agile_receipt_attestation_wire_mapping ()
+    inl _ = agile_prompt_lease_policy_mapping ()
+    inl _ = agile_spi_escape_policy_mapping ()
+    inl _ = agile_state_package_lexical_mapping ()
+    inl _ = receipt_attestation_shared_codec_mapping ()
+    0i32

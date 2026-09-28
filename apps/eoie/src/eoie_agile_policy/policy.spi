@@ -1,0 +1,38 @@
+open agile_mutation_policy.model
+
+let agile_set_decision_binding (progress : i32) (status_code : i32) : i32 =
+    agile_set_decision progress status_code
+
+let agile_task_identity_binding (field_count : i32) (id_equal : i32) : i32 =
+    agile_task_identity_decision field_count id_equal
+
+let agile_receipt_content_binding (bytes_equal : i32) (fingerprint_equal : i32) : i32 =
+    agile_receipt_content_decision bytes_equal fingerprint_equal
+
+let agile_receipt_snapshot_binding (snapshot_equal : i32) (reserved : i32) : i32 =
+    agile_receipt_snapshot_decision snapshot_equal reserved
+
+let agile_receipt_build_current_binding (content_current : i32) (build_fingerprint_equal : i32) : i32 =
+    agile_receipt_build_current_decision content_current build_fingerprint_equal
+
+inl main () : i32 =
+    inl _ = agile_tuple_parse "  \"a,b\", 12u64, runtime  ", agile_attestation_normalize "build:42", agile_attestation_value "build:42", agile_u64_decimal_value "42", agile_u64_literal_value "42u64"
+    $"RustExportI32Binary(\"eoie_agile_set_decision_binding\",\"agile_set_decision_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_task_identity_binding\",\"agile_task_identity_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_receipt_content_binding\",\"agile_receipt_content_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_receipt_snapshot_binding\",\"agile_receipt_snapshot_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_agile_receipt_build_current_binding\",\"agile_receipt_build_current_binding\")" : ()
+    $"RustExportStringUnary(\"eoie_agile_tuple_parse_binding\",\"agile_tuple_parse\")" : ()
+    $"RustExportStringUnary(\"eoie_agile_attestation_normalize_binding\",\"agile_attestation_normalize\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_attestation_value_binding\",\"agile_attestation_value\")" : ()
+    $"RustExportStringUnary(\"eoie_agile_u64_decimal_normalize_binding\",\"agile_u64_decimal_normalize\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_u64_decimal_value_binding\",\"agile_u64_decimal_value\")" : ()
+    $"RustExportStringUnary(\"eoie_agile_u64_literal_normalize_binding\",\"agile_u64_literal_normalize\")" : ()
+    $"RustExportU64Unary(\"eoie_agile_u64_literal_value_binding\",\"agile_u64_literal_value\")" : ()
+    $"RustLibrary()" : ()
+    inl _ = agile_set_decision_binding 50i32 1i32
+    inl _ = agile_task_identity_binding 11i32 1i32
+    inl _ = agile_receipt_content_binding 1i32 1i32
+    inl _ = agile_receipt_snapshot_binding 1i32 0i32
+    inl _ = agile_receipt_build_current_binding 1i32 1i32
+    0i32

@@ -1,0 +1,19 @@
+nominal compiler_v1 = ()
+nominal compiler_v2 = ()
+nominal source_main = ()
+
+union compilation compiler source result =
+    | CompileV1 :: compilation compiler_v1 source_main string
+    | CompileV2 :: compilation compiler_v2 source_main string
+
+union cache_key compiler source result =
+    | KeyV1 :: string -> cache_key compiler_v1 source_main string
+    | KeyV2 :: string -> cache_key compiler_v2 source_main string
+
+inl restore forall compiler source result.
+    (_ : compilation compiler source result)
+    (_ : cache_key compiler source result)
+    : result = "restored"
+
+inl main () : string =
+    restore CompileV2 (KeyV1 "stale-v1")

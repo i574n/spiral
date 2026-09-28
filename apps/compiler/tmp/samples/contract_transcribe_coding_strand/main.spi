@@ -1,0 +1,19 @@
+nominal coding = ()
+nominal template = ()
+nominal five_to_three = ()
+nominal three_to_five = ()
+
+union dna_strand role direction =
+    | CodingStrand :: string -> dna_strand coding five_to_three
+    | TemplateStrand :: string -> dna_strand template three_to_five
+
+union transcript direction =
+    | MessengerRna :: string -> transcript five_to_three
+
+inl transcribe (strand : dna_strand template three_to_five) : transcript five_to_three =
+    match strand with
+    | TemplateStrand sequence => MessengerRna sequence
+
+inl main () : string =
+    inl _ = transcribe (CodingStrand "ATG")
+    "unreachable"

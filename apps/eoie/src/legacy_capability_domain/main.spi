@@ -1,0 +1,45 @@
+let legacy_surface_status_export (family_code : i32) (status_code : i32) : i32 =
+    legacy_capability_model.catalog.legacy_surface_status_binding family_code status_code
+
+let legacy_surface_summary_export (equivalent_families : i32) (fallback_required : i32) : i32 =
+    legacy_capability_model.catalog.legacy_surface_summary_binding equivalent_families fallback_required
+
+inl main () : i32 =
+    inl _ = self_install_complete_plan ()
+    inl _ = self_install_link_state_code LinkAbsent
+    inl _ = self_install_link_state_code LinkSymlink
+    inl _ = self_install_link_state_code LinkRegularFile
+    inl _ = self_install_link_state_code LinkDirectory
+    inl _ = self_install_fault_code NoSelfInstallFault
+    inl _ = restart_baton_complete_plan ()
+    inl _ = restart_baton_fault_code NoRestartBatonFault
+    inl _ = restart_baton_receipt_shape ()
+    inl _ = self_install_preflight_binding 1i32 1i32
+    inl _ = self_install_target_binding 1i32 0i32
+    inl _ = self_install_target_binding 1i32 1i32
+    inl _ = self_install_target_binding 1i32 2i32
+    inl _ = self_install_target_binding 1i32 3i32
+    inl _ = self_install_fault_binding 1i32 1i32
+    inl _ = self_install_fault_binding 3i32 3i32
+    inl _ = self_install_complete_binding 1i32 1i32
+    inl _ = restart_baton_preflight_binding 1i32 1i32
+    inl _ = restart_baton_migration_binding 290i32 290i32
+    inl _ = restart_baton_fault_binding 1i32 1i32
+    inl _ = restart_baton_complete_binding 1i32 1i32
+    inl _ = legacy_capability_model.catalog.legacy_surface_model_witness ()
+    inl _ = legacy_surface_status_export 0i32 2i32
+    inl _ = legacy_surface_summary_export 9i32 0i32
+    legacy_terminal.emit_runtime ()
+    legacy_terminal.emit_self_install_runtime ()
+    $"RustExportI32Binary(\"eoie_self_install_preflight_binding\",\"self_install_preflight_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_self_install_target_binding\",\"self_install_target_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_self_install_fault_binding\",\"self_install_fault_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_self_install_complete_binding\",\"self_install_complete_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_restart_baton_preflight_binding\",\"restart_baton_preflight_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_restart_baton_migration_binding\",\"restart_baton_migration_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_restart_baton_fault_binding\",\"restart_baton_fault_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_restart_baton_complete_binding\",\"restart_baton_complete_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_surface_status_binding\",\"legacy_surface_status_export\")" : ()
+    $"RustExportI32Binary(\"eoie_legacy_surface_summary_binding\",\"legacy_surface_summary_export\")" : ()
+    $"RustLibrary()" : ()
+    0i32

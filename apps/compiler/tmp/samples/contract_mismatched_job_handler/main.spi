@@ -1,0 +1,26 @@
+nominal parallel = ()
+nominal validation_capability = ()
+nominal ready = ()
+nominal committed = ()
+
+union validation_evidence status =
+    | ReadyEvidence :: validation_evidence ready
+
+union receipt status =
+    | CommittedReceipt :: receipt committed
+
+union job effect capability result =
+    | ValidateJob ::
+        job parallel validation_capability (validation_evidence ready)
+
+union executable_job =
+    | ExecutableJob ::
+        (exists effect. exists capability. exists result.
+            job effect capability result * (result -> string))
+        -> executable_job
+
+inl render_receipt (receipt : receipt committed) : string =
+    "wrong-handler"
+
+inl main () : executable_job =
+    ExecutableJob (exists (exists (exists (ValidateJob, render_receipt))))

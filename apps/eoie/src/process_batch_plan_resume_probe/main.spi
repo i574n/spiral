@@ -1,0 +1,44 @@
+open rust_std_env.model
+
+inl advance (~checkpoint : i32) (~event : i32) : i32 =
+    !\((checkpoint,event), $'"process_batch_plan_domain::eoie_batch_plan_advance($0, $1)"')
+
+inl row_policy (~required : i32) (~policy : i32) : i32 =
+    !\((required,policy), $'"process_batch_plan_domain::eoie_batch_matrix_row_policy($0, $1)"')
+
+inl dependency (~has_dependency : i32) (~dependency_passed : i32) : i32 =
+    !\((has_dependency,dependency_passed), $'"process_batch_plan_domain::eoie_batch_matrix_dependency($0, $1)"')
+
+inl observed (~required : i32) (~exit_code : i32) : i32 =
+    !\((required,exit_code), $'"process_batch_plan_domain::eoie_batch_matrix_observed_accept($0, $1)"')
+
+inl resume (~accepted : i32) (~policy : i32) : i32 =
+    !\((accepted,policy), $'"process_batch_plan_domain::eoie_batch_matrix_resume_action($0, $1)"')
+
+inl main () : i32 =
+    inl timeout_event = 3i32
+    inl timeout_checkpoint = advance 2i32 timeout_event
+    inl completion_event = 4i32
+    inl completion_checkpoint = advance timeout_checkpoint completion_event
+    inl invalid_row = row_policy 2i32 0i32
+    inl missing_dep = dependency 1i32 0i32
+    inl rejected_pass = observed 0i32 1i32
+    inl tolerate = resume 0i32 1i32
+    inl rerun = resume 0i32 0i32
+    if !!!!EQ(timeout_event,3i32) then
+        if !!!!EQ(timeout_checkpoint,4i32) then
+            if !!!!EQ(completion_event,4i32) then
+                if !!!!EQ(completion_checkpoint,5i32) then
+                    if !!!!LT(invalid_row,0i32) then
+                        if !!!!EQ(missing_dep,0i32) then
+                            if !!!!EQ(rejected_pass,0i32) then
+                                if !!!!EQ(tolerate,1i32) then
+                                    if !!!!EQ(rerun,2i32) then 0i32 else 1i32
+                                else 1i32
+                            else 1i32
+                        else 1i32
+                    else 1i32
+                else 1i32
+            else 1i32
+        else 1i32
+    else 1i32

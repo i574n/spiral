@@ -1,0 +1,10 @@
+inl impossible_reapply
+    (applied : typed_fx_statement_command typed_fx_statement_command_applied)
+    : typed_fx_statement_command_transition
+        typed_fx_statement_command_fresh
+        typed_fx_statement_command_applied =
+    TypedFxStatementCommandApply (
+        applied,
+        "an-applied-command-cannot-enter-the-only-fresh-to-applied-transition")
+
+inl main () = impossible_reapply

@@ -1,0 +1,30 @@
+open ingest_frontier_contract.model
+
+inl is_zero (value : i32) : bool =
+    if !!!!LT(value,0i32) then false
+    elif !!!!LT(0i32,value) then false
+    else true
+
+inl main () : i32 =
+    inl _ = negative_plan ()
+    inl missing_manifest_code = manifest_binding 0i32 2i32
+    inl trim_ok = trim_binding 0i32
+    inl extracted_ok = extracted_binding 1i32 1i32 0i32
+    inl targets_ok = targets_binding 1i32 1i32
+    inl frontier_ok = frontier_binding 2i32 2i32
+    inl missing_manifest = complete_binding missing_manifest_code trim_ok extracted_ok targets_ok frontier_ok
+
+    inl manifest_ok = manifest_binding 1i32 2i32
+    inl bad_trim = trim_binding 1i32
+    inl bad_extracted = extracted_binding 1i32 1i32 1i32
+    inl toolchain_present = complete_binding manifest_ok bad_trim bad_extracted targets_ok frontier_ok
+
+    inl no_targets_binding = targets_binding 0i32 0i32
+    inl no_frontier_binding = frontier_binding 0i32 1i32
+    inl no_targets = complete_binding manifest_ok trim_ok extracted_ok no_targets_binding no_frontier_binding
+
+    if is_zero missing_manifest then
+        if is_zero toolchain_present then
+            if is_zero no_targets then 0i32 else 1i32
+        else 1i32
+    else 1i32

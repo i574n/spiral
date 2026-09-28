@@ -1,0 +1,17 @@
+[package]
+name = "command-spec-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "command_spec_domain"
+path = "command_spec.rs"
+
+
+[lints.rust]
+dead_code = "allow"
+
+[lints.clippy]
+needless_late_init = "allow"

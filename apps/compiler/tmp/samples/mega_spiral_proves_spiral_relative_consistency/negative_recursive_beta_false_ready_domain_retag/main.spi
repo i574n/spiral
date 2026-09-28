@@ -1,0 +1,8 @@
+inl impossible_recursive_beta_false_ready_domain_retag
+    (derivation : exact_linear_indexed_closed_recursive_beta_derivation
+        exact_linear_bool_type exact_linear_bool_type) :
+    exact_linear_indexed_closed_recursive_beta_derivation
+        exact_linear_unit_type exact_linear_bool_type =
+    derivation
+
+inl main () = ()

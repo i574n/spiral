@@ -1,0 +1,8 @@
+inl impossible_open_application_beta_cross_wrapper_identity () :
+    exact_linear_indexed_open_application_beta_step exact_linear_unit_type =
+    ExactLinearIndexedOpenApplicationBetaStep (
+        exact_linear_indexed_open_identity_beta_substitution_strengthening (),
+        "forged-cross-wrapper-identity-proof")
+
+inl main () =
+    impossible_open_application_beta_cross_wrapper_identity ()

@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Minimal stand-in for polyglot's Supervisor assembly: the Lib/Common/Trace surface both cores need. -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>Supervisor</AssemblyName>
+    <RootNamespace></RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Trace.fs" />
+    <Compile Include="CommonRoot.fs" />
+    <Compile Include="Lib.fs" />
+    <Compile Include="PolyglotCommon.fs" />
+  </ItemGroup>
+</Project>

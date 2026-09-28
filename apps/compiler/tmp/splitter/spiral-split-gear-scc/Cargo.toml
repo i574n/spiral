@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-gear-scc"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/gear_scc.rs"
+
+[dependencies]
+spiral-split-model.workspace = true

@@ -1,0 +1,6 @@
+inl main () =
+    inl a = !!!!LayoutToStackRefs({q=5i32; w=6i32})
+    inl b = !!!!LayoutIndex(a)
+    a.q <- 7i32
+    b.w <- 8i32
+    !!!!Add(a.q,b.w)

@@ -1,0 +1,10 @@
+inl impossible_multi_prime_decision_relabels_as_prime_power forall root.
+    (decision : certified_arithmetic_rooted_prime_power_decision root) :
+    certified_arithmetic_rooted_prime_power_decision root =
+    match decision with
+    | CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload =>
+        CertifiedArithmeticRootedPrimePowerDecisionPrimePower payload
+    | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes obstruction =>
+        CertifiedArithmeticRootedPrimePowerDecisionPrimePower obstruction
+
+inl main () = ()

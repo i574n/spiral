@@ -1,0 +1,17 @@
+open rust_std_env.model
+
+let fingerprint_byte_valid_binding (byte : i32) (witness : i32) : i32 =
+    if !!!!LT(byte, 0i32) then 0i32
+    elif !!!!LT(255i32, byte) then 0i32
+    elif !!!!LT(witness, 0i32) then 0i32
+    elif !!!!LT(0i32, witness) then 0i32
+    else 1i32
+
+let fingerprint_mix_low_binding (~low : i32) (~byte : i32) : i32 =
+    !\((low,byte), $'"$0 ^ $1"')
+
+let fingerprint_low_step_binding (~mixed_low : i32) (~witness : i32) : i32 =
+    !\((mixed_low,witness), $'"if $1 == 0 { (($0 as u32).wrapping_mul(435)) as i32 } else { $0 }"')
+
+let fingerprint_high_step_binding (~high : i32) (~mixed_low : i32) : i32 =
+    !\((high,mixed_low), $'"((((($0 as u32 as u64) * 435) + (($1 as u32 as u64) * 256) + ((($1 as u32 as u64) * 435) >> 32)) & 0xffff_ffff) as u32) as i32"')

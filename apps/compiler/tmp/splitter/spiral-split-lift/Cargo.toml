@@ -1,0 +1,15 @@
+[package]
+name = "spiral-split-lift"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/local_lift.rs"
+
+[dependencies]
+rayon.workspace = true
+spiral-split-binding-header.workspace = true
+spiral-split-capture-parameter.workspace = true
+spiral-split-model.workspace = true

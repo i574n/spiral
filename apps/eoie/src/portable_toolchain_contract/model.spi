@@ -1,0 +1,41 @@
+nominal portable_toolchain_raw = ()
+nominal portable_toolchain_payload_verified = ()
+nominal portable_toolchain_tools_verified = ()
+nominal portable_toolchain_ready = ()
+
+union portable_toolchain_resolution =
+    | PortableToolchainMissing
+    | PortableToolchainMismatch
+    | PortableToolchainReady
+
+union portable_toolchain_op from to =
+    | InspectPortablePayloads :: portable_toolchain_op portable_toolchain_raw portable_toolchain_payload_verified
+    | VerifyPortableTools :: portable_toolchain_op portable_toolchain_payload_verified portable_toolchain_tools_verified
+    | ClosePortableToolchain :: portable_toolchain_op portable_toolchain_tools_verified portable_toolchain_ready
+
+union rec portable_toolchain_plan from to =
+    | PortableToolchainStep :: forall from to. portable_toolchain_op from to -> portable_toolchain_plan from to
+    | PortableToolchainThen :: forall from to. (exists middle. portable_toolchain_plan from middle * portable_toolchain_plan middle to) -> portable_toolchain_plan from to
+
+inl portable_toolchain_public_plan () : portable_toolchain_plan portable_toolchain_raw portable_toolchain_ready =
+    PortableToolchainThen (exists (
+        PortableToolchainStep InspectPortablePayloads,
+        PortableToolchainThen (exists (
+            PortableToolchainStep VerifyPortableTools,
+            PortableToolchainStep ClosePortableToolchain
+        ))
+    ))
+
+let portable_toolchain_resolution_binding (payload_present : i32) (payload_match : i32) (tools_match : i32) : i32 =
+    if !!!!EQ(payload_present,0i32) then 0i32
+    else
+        if !!!!EQ(payload_match,1i32) then
+            if !!!!EQ(tools_match,1i32) then 2i32 else 1i32
+        else 1i32
+
+let portable_toolchain_shape_binding (payload_count : i32) (tool_count : i32) (root_count : i32) : i32 =
+    if !!!!EQ(payload_count,3i32) then
+        if !!!!EQ(tool_count,7i32) then
+            if !!!!EQ(root_count,2i32) then 1i32 else 0i32
+        else 0i32
+    else 0i32

@@ -1,0 +1,35 @@
+inl impossible_recursive_beta_source_argument_mismatch () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        (exact_linear_tensor_type
+            exact_linear_bool_type
+            exact_linear_unit_type) =
+    inl open_body :
+        exact_linear_indexed_term
+            (exact_linear_free_context_extend
+                exact_linear_free_context_empty
+                exact_linear_bool_type)
+            (exact_linear_indexed_usage_used
+                exact_linear_indexed_usage_empty)
+            (exact_linear_tensor_type
+                exact_linear_bool_type
+                exact_linear_unit_type) =
+        exact_linear_indexed_closed_recursive_beta_open_body
+            (ExactLinearIndexedClosedRecursiveBetaBodyTensorLeftUnit (
+                ExactLinearIndexedClosedRecursiveBetaBodyBound
+                    "the-negative-source-body-binds-Bool",
+                "the-negative-source-body-returns-Tensor-Bool-Unit"))
+    ExactLinearIndexedApplication (exists (
+        ExactLinearIndexedLambda (
+            open_body,
+            "the-negative-source-lambda-domain-is-Bool"),
+        ExactLinearIndexedUnit (
+            ExactLinearIndexedAllUnusedEmpty
+                "the-negative-source-argument-is-closed",
+            "the-negative-source-tries-to-apply-Unit-to-a-Bool-lambda"),
+        ExactLinearIndexedUsageMergeEmpty
+            "the-negative-source-uses-the-closed-empty-merge",
+        "the-Application-constructor-must-reject-the-wrong-argument-domain"))
+
+inl main () = impossible_recursive_beta_source_argument_mismatch ()

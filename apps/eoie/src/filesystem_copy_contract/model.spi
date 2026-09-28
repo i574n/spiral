@@ -1,0 +1,87 @@
+open rust_std_fs.model
+
+nominal policy_owner = string
+nominal agile_owner = string
+nominal copy_pending owner = owner
+nominal copy_absent owner = owner
+nominal copy_source_ready owner = owner
+nominal copy_verified owner = owner
+nominal copy_cleaned owner = owner
+
+union file_copy_transition from to =
+    | EnsureCopyAbsent :: forall owner. string -> file_copy_transition (copy_pending owner) (copy_absent owner)
+    | WriteCopySource :: forall owner. string -> file_copy_transition (copy_absent owner) (copy_source_ready owner)
+    | CopyAndVerify :: forall owner. string -> file_copy_transition (copy_source_ready owner) (copy_verified owner)
+    | CleanupCopy :: forall owner. string -> file_copy_transition (copy_verified owner) (copy_cleaned owner)
+
+union rec file_copy_plan from to =
+    | FileCopyStep :: forall from to. file_copy_transition from to -> file_copy_plan from to
+    | FileCopyThen :: forall from to. (exists middle. file_copy_plan from middle * file_copy_plan middle to) -> file_copy_plan from to
+
+union copy_outcome =
+    | CopyAccepted : string
+    | CopyRejected : string
+    | CopyFailed : string
+
+inl ensure_absent_step forall owner. () : file_copy_plan (copy_pending owner) (copy_absent owner) =
+    FileCopyStep (EnsureCopyAbsent "ensure-copy-absent")
+
+inl write_source_step forall owner. () : file_copy_plan (copy_absent owner) (copy_source_ready owner) =
+    FileCopyStep (WriteCopySource "write-copy-source")
+
+inl copy_verify_step forall owner. () : file_copy_plan (copy_source_ready owner) (copy_verified owner) =
+    FileCopyStep (CopyAndVerify "copy-and-verify")
+
+inl cleanup_copy_step forall owner. () : file_copy_plan (copy_verified owner) (copy_cleaned owner) =
+    FileCopyStep (CleanupCopy "cleanup-copy")
+
+inl full_plan forall owner. () : file_copy_plan (copy_pending owner) (copy_cleaned owner) =
+    FileCopyThen (
+        exists (
+            ensure_absent_step (),
+            FileCopyThen (
+                exists (
+                    write_source_step (),
+                    FileCopyThen (
+                        exists (
+                            copy_verify_step (),
+                            cleanup_copy_step ()))))))
+
+inl policy_plan () : file_copy_plan (copy_pending policy_owner) (copy_cleaned policy_owner) = full_plan ()
+inl agile_plan () : file_copy_plan (copy_pending agile_owner) (copy_cleaned agile_owner) = full_plan ()
+
+inl copy_exact (source : string) (target : string) : bool =
+    if file_exists source then
+        match read_text (readable_file source) with
+        | loaded_text text => write_text target text
+    else false
+
+inl cleanup (source : string) (target : string) : bool =
+    remove_file source && remove_file target && file_missing source && file_missing target
+
+inl run (source : string) (target : string) (expected : string) (actual : string) : copy_outcome =
+    if cleanup source target then
+        if write_text source actual then
+            if copy_exact source target then
+                if file_exists source && file_exists target && text_equals expected target then
+                    if cleanup source target
+                    then CopyAccepted "exact-copy-accepted"
+                    else CopyFailed "accepted-copy-cleanup-failed"
+                else
+                    if cleanup source target
+                    then CopyRejected "exact-copy-readback-mismatch"
+                    else CopyFailed "rejected-copy-cleanup-failed"
+            else
+                if cleanup source target
+                then CopyFailed "exact-copy-commit-failed"
+                else CopyFailed "exact-copy-failure-cleanup-failed"
+        else CopyFailed "copy-source-write-failed"
+    else CopyFailed "copy-ensure-absent-failed"
+
+inl policy_copy (source : string) (target : string) (text : string) : copy_outcome =
+    inl _ = policy_plan ()
+    run source target text text
+
+inl agile_rejection (source : string) (target : string) (expected : string) (actual : string) : copy_outcome =
+    inl _ = agile_plan ()
+    run source target expected actual

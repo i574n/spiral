@@ -1,0 +1,5 @@
+packageDir: ..
+packages:
+    antimirov_certificate-
+modules:
+    main

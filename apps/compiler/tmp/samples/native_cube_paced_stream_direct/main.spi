@@ -1,0 +1,146 @@
+nominal rotation =
+    {
+        a : f64
+        b : f64
+        c : f64
+    }
+
+nominal cube =
+    {
+        cube_width : f64
+        horizontal_offset : f64
+        marker : i32
+    }
+
+union projected =
+    | Hidden
+    | Visible : f64 * f64 * f64
+
+inl get_width () = 160i32
+inl get_height () = 44i32
+inl get_distance_from_cam () = 100f64
+inl get_k1 () = 40f64
+
+inl while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((join cond()),(body()))
+
+inl set' forall t. (a : t) ~(b : t) : () =
+    $"!a = !b"
+
+inl sin64 (x : f64) : f64 = !!!!Sin(x)
+inl cos64 (x : f64) : f64 = !!!!Cos(x)
+inl to_i32 (x : f64) : i32 = !!!!Conv(`i32, x)
+
+inl calculate_x (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b, c = rot.a, rot.b, rot.c
+    j *. sin64 a *. sin64 b *. cos64 c -. k *. cos64 a *. sin64 b *. cos64 c +.
+    j *. cos64 a *. sin64 c +. k *. sin64 a *. sin64 c +. i *. cos64 b *. cos64 c
+
+inl calculate_y (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b, c = rot.a, rot.b, rot.c
+    j *. cos64 a *. cos64 c +. k *. sin64 a *. cos64 c -.
+    j *. sin64 a *. sin64 b *. sin64 c +. k *. cos64 a *. sin64 b *. sin64 c -.
+    i *. cos64 b *. sin64 c
+
+inl calculate_z (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b = rot.a, rot.b
+    k *. cos64 a *. cos64 b -. j *. sin64 a *. cos64 b +. i *. sin64 b
+
+inl calculate_for_surface cube_x cube_y cube_z rot horizontal_offset =
+    inl x = calculate_x cube_x cube_y cube_z rot
+    inl y = calculate_y cube_x cube_y cube_z rot
+    inl z = calculate_z cube_x cube_y cube_z rot +. get_distance_from_cam ()
+    inl ooz = 1f64 /. z
+    inl xp = 80f64 +. horizontal_offset +. get_k1 () *. ooz *. x *. 2f64
+    inl yp = 22f64 +. get_k1 () *. ooz *. y
+    if xp >= 0f64 && xp < 160f64 && yp >= 0f64 && yp < 44f64
+    then Visible (xp, yp, ooz)
+    else Hidden
+
+inl clear_frame (frame : array i32) (size : i32) : () =
+    inl ~i = 0i32
+    while' (fun () => i < size) fun () =>
+        set frame i 46i32
+        set' i (i +. 1i32)
+
+inl draw_cube (frame : array i32) rot (cube value) : i32 =
+    inl cw = value.cube_width
+    match calculate_for_surface cw cw (0f64 -. cw) rot value.horizontal_offset with
+    | Visible (xp, yp, depth) when xp >= 0f64 && yp >= 0f64 && depth > 0f64 =>
+        inl ix = to_i32 xp
+        inl iy = to_i32 yp
+        inl idx = ix +. iy *. get_width ()
+        set frame idx value.marker
+        idx
+    | _ => 0i32
+
+inl frame_cell_text (value : i32) : string =
+    if value =. 35i32 then "#"
+    elif value =. 43i32 then "+"
+    elif value =. 64i32 then "@"
+    else "."
+
+let rec frame_text_loop (frame : array i32) (width : i32) (size : i32) (i : i32) (text : string) : string =
+    if i =. size then text
+    else
+        inl text = sm.concat text (frame_cell_text (index frame i))
+        inl next = i +. 1i32
+        if i %. width =. width -. 1i32 && next < size
+        then frame_text_loop frame width size next (sm.concat text "\n")
+        else frame_text_loop frame width size next text
+
+inl frame_text (frame : array i32) : string =
+    inl width = get_width ()
+    frame_text_loop frame width (width *. get_height ()) 0i32 ""
+
+inl terminal_prefix () : string = "[H"
+inl terminal_write (text : string) : () = !!!!Printf("%s", text)
+
+inl get_pace_ticks () : i32 = 4096i32
+
+inl pace_work (step : i32) : i32 =
+    inl ~i = 0i32
+    inl ~state = step +. 1i32
+    while' (fun () => i < get_pace_ticks ()) fun () =>
+        set' state ((state +. (i %. 17i32) +. 1i32) %. 997i32)
+        set' i (i +. 1i32)
+    state
+
+inl render_frame_checksum (frame : array i32) rot : i32 =
+    inl frame_size = get_width () *. get_height ()
+    clear_frame frame frame_size
+    inl draw = (fun value => draw_cube frame rot value) : cube -> i32
+    inl i0 = join draw (cube { cube_width = 20f64; horizontal_offset = 0f64 -. 40f64; marker = 35i32 })
+    inl i1 = join draw (cube { cube_width = 10f64; horizontal_offset = 10f64; marker = 64i32 })
+    inl i2 = join draw (cube { cube_width = 5f64; horizontal_offset = 40f64; marker = 43i32 })
+    inl text = frame_text frame
+    inl text_length = sm.length text : i32
+    inl text_checksum = sm.utf8_fold (fun state scalar => state +. scalar) 0i32 text
+    inl output = sm.concat (terminal_prefix ()) text
+    terminal_write output
+    inl spatial_checksum = i0 +. i1 *. 3i32 +. i2 *. 7i32
+    if text_length =. 7083i32 && text_checksum =. 324274i32
+    then spatial_checksum
+    else 0i32
+
+inl rotation_for_step step =
+    if step =. 0i32 then rotation { a = 0f64; b = 0f64; c = 0f64 }
+    elif step =. 1i32 then rotation { a = 0.1f64; b = 0.05f64; c = 0.02f64 }
+    else rotation { a = 0.2f64; b = 0.1f64; c = 0.04f64 }
+
+inl main () : i32 =
+    inl frame_size = get_width () *. get_height ()
+    inl ~frame : array i32 = create frame_size
+    inl ~checksums : array i32 = create 3i32
+    inl ~pace_checksum = 0i32
+    inl ~step = 0i32
+    while' (fun () => step < 3i32) fun () =>
+        set checksums step (render_frame_checksum frame (rotation_for_step step))
+        if step < 2i32 then set' pace_checksum (pace_checksum +. pace_work step)
+        set' step (step +. 1i32)
+    inl c0 = index checksums 0i32
+    inl c1 = index checksums 1i32
+    inl c2 = index checksums 2i32
+    if c0 =. 45702i32 && c1 =. 43786i32 && c2 =. 43631i32 && pace_checksum =. 1931i32
+    then 42i32
+    else 1i32

@@ -1,0 +1,38 @@
+inl (~!\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl create_dir (path : string) : bool =
+    !\(path, $'"std::fs::create_dir_all(&*$0).is_ok()"')
+
+inl copy_atomic (source : string) (target : string) : bool =
+    !\((source, target), $'"eoie_rust_std_fs::rooted_copy_atomic(std::path::Path::new(&*$0), std::path::Path::new(&*$1)).is_ok()"')
+
+inl remove_regular (path : string) : bool =
+    !\(path, $'"eoie_rust_std_fs::rooted_remove_regular(std::path::Path::new(&*$0)).is_ok()"')
+
+inl remove_tree_within (root : string) (path : string) : bool =
+    !\((root, path), $'"eoie_rust_std_fs::rooted_remove_tree_within(std::path::Path::new(&*$0), std::path::Path::new(&*$1)).is_ok()"')
+
+inl read_limited_len (path : string) (limit : int) : int =
+    !\((path, limit), $'"eoie_rust_std_fs::rooted_read_limited(std::path::Path::new(&*$0), usize::try_from($1).unwrap_or(0)).map_or(-1, |bytes| i32::try_from(bytes.len()).unwrap_or(-1))"')
+
+inl read_regular_len (path : string) (limit : int) : int =
+    !\((path, limit), $'"eoie_rust_std_fs::read_regular_limited(std::path::Path::new(&*$0), usize::try_from($1).unwrap_or(0)).map_or(-1, |bytes| i32::try_from(bytes.len()).unwrap_or(-1))"')
+
+inl read_regular_text_equals (path : string) (limit : int) (expected : string) : bool =
+    !\((path, limit, expected), $'"eoie_rust_std_fs::read_regular_text_limited(std::path::Path::new(&*$0), usize::try_from($1).unwrap_or(0)).is_ok_and(|value| value == *$2)"')
+
+inl descriptor_nofollow_native () : bool =
+    !\(0i32, $'"{ let _ = $0; eoie_rust_std_fs::descriptor_nofollow_capability() == \"descriptor-relative-nofollow\" }"')
+
+inl create_symlink (source : string) (target : string) : bool =
+    !\((source, target), $'"std::os::unix::fs::symlink(&*$0, &*$1).is_ok()"')
+
+inl list_len (path : string) : int =
+    !\(path, $'"eoie_rust_std_fs::rooted_list_names(std::path::Path::new(&*$0)).map_or(-1, |names| i32::try_from(names.len()).unwrap_or(-1))"')
+
+inl tree_missing (path : string) : bool =
+    !\(path, $'"\!std::path::Path::new(&*$0).exists()"')
+
+inl cleanup_tree (path : string) : bool =
+    !\(path, $'"std::fs::remove_dir_all(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')

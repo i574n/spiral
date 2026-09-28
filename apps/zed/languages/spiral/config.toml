@@ -1,0 +1,15 @@
+name = "Spiral"
+grammar = "rust"
+path_suffixes = ["spi", "spir", "spiproj", "dib"]
+line_comments = ["// "]
+block_comment = { start = "(* ", prefix = "", end = " *)", tab_size = 0 }
+autoclose_before = " }])\n"
+tab_size = 4
+hard_tabs = false
+word_characters = ["_"]
+
+brackets = [
+    { start = "{", end = "}", close = true, newline = true },
+    { start = "[", end = "]", close = true, newline = true },
+    { start = "(", end = ")", close = true, newline = true },
+]

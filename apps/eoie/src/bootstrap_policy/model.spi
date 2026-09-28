@@ -1,0 +1,99 @@
+nominal recovered_prototype = ()
+nominal shared_policy_typechecked = ()
+nominal two_mains_compiled = ()
+nominal cold_proven = ()
+nominal settled_foundation = ()
+
+nominal spiral_source = ()
+nominal manual_rust = ()
+
+
+nominal candidate_experimental = ()
+nominal candidate_primary = ()
+nominal fallback_recovery = ()
+nominal candidate_exclusive = ()
+
+union authority_mode state =
+    | CandidateExperimental :: string -> authority_mode candidate_experimental
+    | CandidatePrimary :: string -> authority_mode candidate_primary
+    | FallbackRecoveryOnly :: string -> authority_mode fallback_recovery
+    | CandidateExclusive :: string -> authority_mode candidate_exclusive
+
+inl current_authority () : authority_mode candidate_experimental = CandidateExperimental "candidate-is-an-experimental-compiler-coproduct"
+inl fallback_authority () : authority_mode fallback_recovery = FallbackRecoveryOnly "fallback-binaries-are-explicit-recovery-routes"
+
+union source_authority source =
+    | SpiralAuthored :: source_authority spiral_source
+    | ManualRustDebt :: source_authority manual_rust
+
+union policy_op from to result =
+    | ReuseIndexedDomain :: source_authority spiral_source * i32 * i32 -> policy_op recovered_prototype shared_policy_typechecked string
+    | CompileTwoMains :: string -> policy_op shared_policy_typechecked two_mains_compiled string
+    | ProveCold :: string -> policy_op two_mains_compiled cold_proven string
+    | SettleFoundation :: string -> policy_op cold_proven settled_foundation string
+
+union rec policy_plan from to =
+    | PolicyStep :: forall from to. (exists result. policy_op from to result * result) -> policy_plan from to
+    | PolicyThen :: forall from to. (exists middle. policy_plan from middle * policy_plan middle to) -> policy_plan from to
+
+inl reuse_step () : policy_plan recovered_prototype shared_policy_typechecked =
+    PolicyStep (
+        exists (
+            ReuseIndexedDomain (
+                SpiralAuthored,
+                domain.model.bootstrap_probe_result (),
+                domain.model.policy_probe_result ()
+            ),
+            "shared-policy-typechecked"
+        )
+    )
+
+inl compile_step () : policy_plan shared_policy_typechecked two_mains_compiled =
+    PolicyStep (exists (CompileTwoMains "two-independent-main-functions", "two-mains-compiled"))
+
+inl cold_step () : policy_plan two_mains_compiled cold_proven =
+    PolicyStep (exists (ProveCold "cold-probes-required", "cold-proven"))
+
+inl settle_step () : policy_plan cold_proven settled_foundation =
+    PolicyStep (exists (SettleFoundation "spiral-first-foundation", "settled"))
+
+inl build_plan () : policy_plan recovered_prototype settled_foundation =
+    PolicyThen (
+        exists (
+            reuse_step (),
+            PolicyThen (
+                exists (
+                    compile_step (),
+                    PolicyThen (exists (cold_step (), settle_step ()))
+                )
+            )
+        )
+    )
+
+inl rec terminal forall from to. (plan : policy_plan from to) : i32 =
+    match plan with
+    | PolicyStep payload =>
+        inl exists result. op, _ = payload
+        match op with
+        | ReuseIndexedDomain _ => 3i32
+        | CompileTwoMains _ => 2i32
+        | ProveCold _ => 1i32
+        | SettleFoundation _ => 0i32
+    | PolicyThen payload =>
+        inl exists middle. _, right = payload
+        terminal right
+
+inl patch_probe_result () : i32 = terminal (build_plan ())
+inl agile_probe_result () : i32 = terminal (build_plan ())
+inl workspace_state_candidate_status () : i32 = workspace_state_contract.model.authority_status ()
+inl compiler_session_candidate_status () : i32 = compiler_session_contract.model.authority_status ()
+inl legacy_bundle_writer_candidate_status () : i32 = legacy_cpp_bundle_writer_contract.model.authority_status ()
+inl ingest_frontier_candidate_status () : i32 = ingest_frontier_contract.model.authority_status ()
+inl settled_migration_score_0_1000 () : u32 = 987u32
+inl settled_migration_status_code () : i32 = 987i32
+inl migration_total_capability_equivalents () : u32 = 69u32
+inl migration_settled_capability_equivalents () : u32 = 69u32
+inl migration_remaining_capability_equivalents () : u32 = 0u32
+inl recovered_prototype_score_0_1000 () : u32 = 304u32
+inl candidate_is_promotable (typed : bool) (two_mains : bool) (cold : bool) : bool = typed && two_mains && cold
+inl candidate_primary_is_promotable (typed : bool) (two_mains : bool) (cold : bool) (hot_burnin : bool) (cold_burnin : bool) (growth_accounted : bool) : bool = typed && two_mains && cold && hot_burnin && cold_burnin && growth_accounted

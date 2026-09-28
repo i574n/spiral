@@ -1,0 +1,16 @@
+[package]
+name = "eoie-patch-driver-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_patch_driver_domain"
+path = "driver.rs"
+
+[dependencies]
+eoie-patch-control-domain = { path = "../patch_control_domain" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }
+eoie-proxy-search = { path = "../eoie_proxy_search" }
+eoie-process = { path = "../eoie_process" }

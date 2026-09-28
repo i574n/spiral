@@ -1,0 +1,109 @@
+open main
+
+// Exact transition soundness over state_count-indexed states/rows. Shape mismatch
+// is not a runtime case: both inputs share the same state_count by construction.
+inl rec indexed_dfa_state_vector_to_list forall alphabet state_count.
+    (states : indexed_dfa_state_vector alphabet state_count)
+    : regex_list alphabet =
+    match states with
+    | IndexedDfaStateVectorNil => RegexListNil
+    | IndexedDfaStateVectorCons (state, rest) =>
+        RegexListCons (state, indexed_dfa_state_vector_to_list rest)
+
+nominal indexed_dfa_exact_symbol_equality alphabet = alphabet -> alphabet -> bool
+
+inl make_indexed_dfa_exact_symbol_equality forall alphabet {symbol_compare}. ()
+    : indexed_dfa_exact_symbol_equality alphabet =
+    indexed_dfa_exact_symbol_equality symbol_equal
+
+inl rec indexed_dfa_exact_transition_vector_sound forall alphabet symbol_count.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_dfa_exact_symbol_equality alphabet)
+    (closure : regex_list alphabet)
+    (expected_source : regex alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (row : indexed_dfa_transition_vector alphabet symbol_count)
+    : bool =
+    match symbols, row with
+    | FiniteSymbolVectorNil, IndexedDfaTransitionVectorNil => true
+    | FiniteSymbolVectorCons (expected_symbol, symbol_rest), IndexedDfaTransitionVectorCons (dfa_transition (source, actual_symbol, target), row_rest) =>
+        match capability, symbol_equality with
+        | indexed_dfa_capability (_, derive, contains, _, _, _), indexed_dfa_exact_symbol_equality symbol_same =>
+            inl expected_target = derive expected_source expected_symbol
+            if symbol_same actual_symbol expected_symbol &&
+               contains source (RegexListCons (expected_source, RegexListNil)) &&
+               contains target (RegexListCons (expected_target, RegexListNil)) &&
+               contains target closure then
+                indexed_dfa_exact_transition_vector_sound capability symbol_equality closure expected_source symbol_rest row_rest
+            else false
+
+inl rec indexed_dfa_exact_transition_rows_sound forall alphabet symbol_count state_count.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_dfa_exact_symbol_equality alphabet)
+    (closure : regex_list alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (states : indexed_dfa_state_vector alphabet state_count)
+    (rows : indexed_dfa_exact_transition_rows alphabet symbol_count state_count)
+    : bool =
+    match states, rows with
+    | IndexedDfaStateVectorNil, IndexedDfaExactTransitionRowsNil => true
+    | IndexedDfaStateVectorCons (state, state_rest), IndexedDfaExactTransitionRowsCons (row, row_rest) =>
+        if indexed_dfa_exact_transition_vector_sound capability symbol_equality closure state symbols row then
+            indexed_dfa_exact_transition_rows_sound capability symbol_equality closure symbols state_rest row_rest
+        else false
+
+nominal indexed_dfa_exact_soundness_witness alphabet symbol_count state_count =
+    finite_symbol_vector alphabet symbol_count *
+    indexed_dfa_state_vector alphabet state_count *
+    indexed_dfa_exact_transition_rows alphabet symbol_count state_count
+
+union indexed_dfa_exact_soundness_validation =
+    | IndexedDfaExactSoundnessRejected
+    | IndexedDfaExactSoundnessCertified :
+        (exists alphabet symbol_count state_count.
+            indexed_dfa_exact_soundness_witness alphabet symbol_count state_count)
+
+inl seal_indexed_dfa_exact_soundness forall alphabet.
+    (capability : indexed_dfa_capability alphabet)
+    (symbol_equality : indexed_dfa_exact_symbol_equality alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_dfa_exact_soundness_validation =
+    if indexed_finite_alphabet_descriptor_certified capability descriptor then
+        match descriptor with
+        | indexed_finite_alphabet_descriptor packed_symbols =>
+            inl exists symbol_count. symbols = packed_symbols
+            inl closure_list = indexed_dfa_closure_with_vector capability start symbols
+            match indexed_dfa_state_vector_pack closure_list with
+            | packed_indexed_dfa_state_vector packed_states =>
+                inl exists state_count. states = packed_states
+                inl rows = indexed_dfa_exact_rows_from_states capability symbols states
+                inl closure = indexed_dfa_state_vector_to_list states
+                if indexed_dfa_exact_transition_rows_sound capability symbol_equality closure symbols states rows then
+                    IndexedDfaExactSoundnessCertified (exists (
+                        indexed_dfa_exact_soundness_witness (symbols, states, rows)))
+                else IndexedDfaExactSoundnessRejected
+    else IndexedDfaExactSoundnessRejected
+
+inl require_exact_soundness_witness forall alphabet symbol_count state_count.
+    (_ : indexed_dfa_exact_soundness_witness alphabet symbol_count state_count)
+    : bool = true
+
+inl main () : string =
+    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+    inl bit_equality = make_indexed_dfa_exact_symbol_equality `bit_alphabet ()
+    match seal_indexed_dfa_exact_soundness
+        bit_capability bit_equality (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaExactSoundnessRejected => failwith "bit exact-sound surface should certify"
+    | IndexedDfaExactSoundnessCertified packed =>
+        inl exists alphabet symbol_count state_count. witness = packed
+        assert_static
+            (require_exact_soundness_witness witness)
+            "exact soundness typestate must preserve transition law and shared state-row cardinality"
+    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
+    inl tri_equality = make_indexed_dfa_exact_symbol_equality `tri_alphabet ()
+    match seal_indexed_dfa_exact_soundness
+        tri_capability tri_equality (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaExactSoundnessRejected => failwith "ternary exact-sound surface should certify"
+    | IndexedDfaExactSoundnessCertified _ => ()
+    "brzozowski-indexed-dfa-exact-soundness-green"

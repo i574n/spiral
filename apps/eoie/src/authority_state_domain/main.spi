@@ -1,0 +1,13 @@
+inl main () : i32 =
+    inl _ = authority_state_binding 28i32 0i32
+    inl _ = authority_live_mask_binding 3i32 0i32
+    inl _ = authority_declared_mask_binding 0i32 0i32
+    inl _ = authority_blocker_bit_binding 4i32 0i32
+    inl _ = authority_blocker_labels "v1"
+    $"RustExportI32Binary(\"eoie_authority_state\",\"authority_state_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_authority_declared_mask\",\"authority_declared_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_authority_live_mask\",\"authority_live_mask_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_authority_blocker_bit\",\"authority_blocker_bit_binding\")" : ()
+    $"RustExportStringTuple5Unary(\"eoie_authority_blocker_labels\",\"authority_blocker_labels\")" : ()
+    $"RustLibrary()" : ()
+    0i32

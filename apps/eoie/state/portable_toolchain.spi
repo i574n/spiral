@@ -1,0 +1,39 @@
+open core
+
+union portable_toolchain_schema =
+    | PortableToolchainV1
+
+union portable_toolchain_status =
+    | PortableToolchainCandidate
+    | PortableToolchainReady
+
+union portable_payload_kind =
+    | PortableRustPayload
+    | PortableSpiralPayload
+    | PortableDotnetPayload
+
+union portable_payload =
+    | PortablePayload :: portable_payload_kind * string * string * u64 -> portable_payload
+
+inl current_portable_toolchain_schema () : portable_toolchain_schema = PortableToolchainV1
+inl current_portable_toolchain_status () : portable_toolchain_status = PortableToolchainReady
+
+inl rust_payload () : portable_payload =
+    PortablePayload (PortableRustPayload, "rust-nightly-x86_64-unknown-linux-gnu.tar.xz", "31780d574473286e847c112f7936af21dc03f0eebd078cd4111ce8e336906a34", 240502048u64)
+
+inl spiral_payload () : portable_payload =
+    PortablePayload (PortableSpiralPayload, "bundle_spiral-bin_v200_eoie.zip", "8a0969c242fe74dfe74ea021e6dfff4dc574b54c318494ab537cede60108eeaf", 11514786u64)
+
+inl dotnet_payload () : portable_payload =
+    PortablePayload (PortableDotnetPayload, "dotnet-sdk-linux-x64.tar.gz", "f9475f1b5ffa40db427e765774a03529f11d62795140e8653be36dc5d4fc6a2a", 193946003u64)
+
+inl dotnet_host_gate () = "30da77f96cb6c595c9e6e2ac4eab1a71fc018e8edf362274858fed9e57c87438", 36856u64
+
+inl expected_payload_count () : u32 = 3u32
+inl expected_tool_count () : u32 = 7u32
+inl expected_root_count () : u32 = 2u32
+inl current_payload_count () : u32 = 3u32
+inl current_tool_count () : u32 = 7u32
+inl current_root_count () : u32 = 2u32
+inl current_negative_resolution_flags () : u32 = 3u32
+inl main () : i32 = 0i32

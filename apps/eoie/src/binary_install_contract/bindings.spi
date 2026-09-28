@@ -1,0 +1,49 @@
+open model
+
+let binary_install_shape_binding (path_count_ok : i32) (distinct_paths : i32) : i32 =
+    if !!!!LT(path_count_ok,1i32) then 0i32
+    elif !!!!LT(distinct_paths,1i32) then 0i32
+    else 1i32
+
+let binary_install_source_binding (expected_match : i32) (source_state : i32) : i32 =
+    if !!!!LT(expected_match,1i32) then 0i32
+    elif !!!!LT(source_state,3i32) then 0i32
+    elif !!!!LT(3i32,source_state) then 0i32
+    else 1i32
+
+let binary_install_freshness_binding (expected_code : i32) (observed_code : i32) : i32 =
+    if !!!!LT(expected_code,0i32) then 0i32
+    elif !!!!LT(observed_code,0i32) then 0i32
+    elif !!!!LT(1i32,expected_code) then 0i32
+    elif !!!!LT(1i32,observed_code) then 0i32
+    elif !!!!LT(expected_code,observed_code) then 0i32
+    elif !!!!LT(observed_code,expected_code) then 0i32
+    else 1i32
+
+let binary_install_running_destination_binding (same_as_current : i32) (guard_enabled : i32) : i32 =
+    if !!!!LT(guard_enabled,1i32) then 0i32
+    elif !!!!LT(same_as_current,0i32) then 0i32
+    elif !!!!LT(0i32,same_as_current) then 0i32
+    else 1i32
+
+let binary_install_permission_binding (mode_valid : i32) (executable : i32) : i32 =
+    if !!!!LT(mode_valid,1i32) then 0i32
+    elif !!!!LT(executable,1i32) then 0i32
+    else 1i32
+
+let binary_install_mode_binding (mode_code : i32) (effect_mask : i32) : i32 =
+    if !!!!LT(mode_code,0i32) then 0i32
+    elif !!!!LT(1i32,mode_code) then 0i32
+    elif !!!!LT(effect_mask,0i32) then 0i32
+    elif !!!!LT(mode_code,1i32) then
+        if !!!!LT(effect_mask,1i32) then 1i32 else 0i32
+    else
+        if !!!!LT(effect_mask,7i32) then 0i32
+        elif !!!!LT(7i32,effect_mask) then 0i32
+        else 1i32
+
+let binary_install_commit_binding (payload_hash_ok : i32) (evidence_mask : i32) : i32 =
+    if !!!!LT(payload_hash_ok,1i32) then 0i32
+    elif !!!!LT(evidence_mask,7i32) then 0i32
+    elif !!!!LT(7i32,evidence_mask) then 0i32
+    else 1i32

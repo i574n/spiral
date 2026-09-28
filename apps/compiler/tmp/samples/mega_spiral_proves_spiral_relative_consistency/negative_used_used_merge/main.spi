@@ -1,0 +1,14 @@
+inl impossible_used_used_merge () :
+    exact_linear_indexed_usage_merge
+        (exact_linear_free_context_extend
+            exact_linear_free_context_empty
+            exact_linear_unit_type)
+        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
+        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) =
+    ExactLinearIndexedUsageMergeUnusedUsed (
+        ExactLinearIndexedUsageMergeEmpty
+            "the-empty-tail-merges-empty-usages",
+        "a-single-linear-resource-cannot-be-used-by-both-branches")
+
+inl main () = impossible_used_used_merge ()

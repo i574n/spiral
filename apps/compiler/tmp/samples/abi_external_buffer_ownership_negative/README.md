@@ -1,0 +1,3 @@
+# Mutable ABI ownership negative
+
+This negative fixture calls an ABI binding whose contract requires an owned byte buffer while Spiral supplies an ordinary managed array. Rust and Delphi lowering must fail before native compilation, report `managed-u8-buffer-owned` versus `managed-u8-buffer-borrowed-mutable`, and leave no residue. It proves that ownership transfer is never inferred from a mutable borrow.

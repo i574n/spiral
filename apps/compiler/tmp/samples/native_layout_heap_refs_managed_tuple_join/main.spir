@@ -1,0 +1,10 @@
+inl main () =
+    inl a = !!!!LayoutToHeapRefs({pair=!!!!ManagedTuple(!!!!RecursiveSome(11i32),13i32); q=5i32; w=6i32})
+    inl b = !!!!LayoutIndex(a)
+    if !!!!Equal(a.q,5i32) then
+        a.pair <- !!!!ManagedTuple(!!!!RecursiveSome(19i32),23i32)
+    else
+        a.pair <- !!!!ManagedTuple(!!!!RecursiveNone,31i32)
+    a.q <- !!!!TupleOptionalValue(b.pair)
+    a.w <- !!!!TupleScalar(a.pair)
+    !!!!Add(a.q,a.w)

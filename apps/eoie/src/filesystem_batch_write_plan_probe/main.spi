@@ -1,0 +1,6 @@
+open filesystem_batch_write_contract.model
+
+inl main () : i32 =
+    emit_plan_op (CreateFile ("a.txt", "alpha"))
+    emit_plan_op (ReplaceFile ("b.txt", "01d09d19c2139a46aebfb577780d123d7396e97201bc7ead210a2ebff8239dee", "beta"))
+    0i32

@@ -1,0 +1,9 @@
+inl main () : i32 =
+    inl run_gate = toolchain_execution_gate_binding 1i32 0i32
+    inl hold_gate = toolchain_execution_gate_binding 2i32 0i32
+    inl invalid_gate = toolchain_execution_gate_binding 6i32 0i32
+    inl timeout = toolchain_observed_outcome_binding 1i32 0i32
+    inl passed = toolchain_observed_outcome_binding 0i32 1i32
+    inl failed = toolchain_observed_outcome_binding 0i32 0i32
+    inl invalid = toolchain_observed_outcome_binding 2i32 0i32
+    if !!!!EQ(run_gate,1i32) && !!!!EQ(hold_gate,0i32) && !!!!LT(invalid_gate,0i32) && !!!!EQ(timeout,3i32) && !!!!EQ(passed,1i32) && !!!!EQ(failed,2i32) && !!!!LT(invalid,0i32) then 0i32 else 70i32

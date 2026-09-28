@@ -1,0 +1,9 @@
+inl make ~x = {left = x; right = x +. 2i32; active = x > 0i32}
+
+inl score ~{left right active} : i32 =
+    if active then left +. right -. 4i32 else 1i32
+
+inl main () : i32 =
+    inl ~x = 1i32
+    inl state = join make x
+    join score state

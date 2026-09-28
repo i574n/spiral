@@ -1,0 +1,60 @@
+nominal exact_replace_policy_owner = string
+nominal exact_replace_negative_owner = string
+nominal replace_pending owner = owner
+nominal replace_inspected owner = owner
+nominal replace_unique owner = owner
+nominal replace_committed owner = owner
+nominal replace_verified owner = owner
+
+union exact_replace_transition from to =
+    | InspectReplaceTarget :: forall owner. exact_replace_transition (replace_pending owner) (replace_inspected owner)
+    | RequireUniqueMatch :: forall owner. exact_replace_transition (replace_inspected owner) (replace_unique owner)
+    | CommitExactReplace :: forall owner. exact_replace_transition (replace_unique owner) (replace_committed owner)
+    | VerifyExactReplace :: forall owner. exact_replace_transition (replace_committed owner) (replace_verified owner)
+
+union rec exact_replace_plan from to =
+    | ExactReplaceStep :: forall from to. exact_replace_transition from to -> exact_replace_plan from to
+    | ExactReplaceThen :: forall from to. (exists middle. exact_replace_plan from middle * exact_replace_plan middle to) -> exact_replace_plan from to
+
+let bool_pair_binding (left : i32) (right : i32) : i32 =
+    if !!!!LT(left,1i32) then 0i32
+    elif !!!!LT(1i32,left) then 0i32
+    elif !!!!LT(right,1i32) then 0i32
+    elif !!!!LT(1i32,right) then 0i32
+    else 1i32
+
+let preflight_binding (regular_file : i32) (old_nonempty : i32) (distinct_payloads : i32) : i32 =
+    inl first = bool_pair_binding regular_file old_nonempty
+    bool_pair_binding first distinct_payloads
+
+let unique_match_binding (match_count : i32) : i32 =
+    if !!!!LT(match_count,1i32) then 0i32
+    elif !!!!LT(1i32,match_count) then 0i32
+    else 1i32
+
+let mode_binding (known_mode : i32) (side_effect_policy_valid : i32) : i32 =
+    bool_pair_binding known_mode side_effect_policy_valid
+
+let zero_binding (value : i32) : i32 =
+    if !!!!LT(value,0i32) then 0i32
+    elif !!!!LT(0i32,value) then 0i32
+    else 1i32
+
+let verification_binding (candidate_exact : i32) (old_remaining : i32) (rollback_available : i32) : i32 =
+    inl exact_and_rollback = bool_pair_binding candidate_exact rollback_available
+    bool_pair_binding exact_and_rollback (zero_binding old_remaining)
+
+inl full_plan forall owner. () : exact_replace_plan (replace_pending owner) (replace_verified owner) =
+    ExactReplaceThen (exists (
+        ExactReplaceStep InspectReplaceTarget,
+        ExactReplaceThen (exists (
+            ExactReplaceStep RequireUniqueMatch,
+            ExactReplaceThen (exists (
+                ExactReplaceStep CommitExactReplace,
+                ExactReplaceStep VerifyExactReplace
+            ))
+        ))
+    ))
+
+inl policy_plan () : exact_replace_plan (replace_pending exact_replace_policy_owner) (replace_verified exact_replace_policy_owner) = full_plan ()
+inl negative_plan () : exact_replace_plan (replace_pending exact_replace_negative_owner) (replace_verified exact_replace_negative_owner) = full_plan ()

@@ -1,0 +1,8 @@
+let patch_gated_entry_public () : i32 = patch_mutation_contract.model.patch_gated_entry ()
+
+inl emit () : () =
+    gated_terminal.emit_runtime ()
+    $"RustExportI32(\"eoie_patch_gated_run\",\"patch_gated_entry_public\")" : ()
+    inl _ = patch_mutation_contract.model.typed_patch_plan ()
+    inl _ = patch_gated_entry_public ()
+    ()

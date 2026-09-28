@@ -1,0 +1,13 @@
+open rooted_domain
+
+inl copy_allowed () : bool =
+    policy_accepted (transition_allowed (CopyRegular : rooted_transition (regular_path * absent_path) regular_path))
+
+inl remove_file_allowed () : bool =
+    policy_accepted (transition_allowed (RemoveRegular : rooted_transition regular_path absent_path))
+
+inl remove_tree_allowed () : bool =
+    policy_accepted (transition_allowed (RemoveDirectory : rooted_transition directory_path absent_path))
+
+inl main () : i32 =
+    if copy_allowed () && remove_file_allowed () && remove_tree_allowed () then 0i32 else 1i32

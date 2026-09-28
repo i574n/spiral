@@ -1,0 +1,15 @@
+inl impossible_false_has_canonical_value
+    (unused : exact_linear_indexed_all_unused
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty)
+    : exact_linear_indexed_value
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_false_type =
+    ExactLinearIndexedValueUnit (
+        unused,
+        "Unit-cannot-be-reclassified-as-a-canonical-False-value")
+
+inl main () =
+    impossible_false_has_canonical_value
+        (exact_linear_indexed_empty_usage ())

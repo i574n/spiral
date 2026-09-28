@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-binding-header"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/binding_header.rs"

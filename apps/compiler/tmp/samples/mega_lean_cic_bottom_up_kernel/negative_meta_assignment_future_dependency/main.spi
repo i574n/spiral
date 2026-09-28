@@ -1,0 +1,27 @@
+inl impossible_corrected_cic_meta_assignment_future_dependency () :
+    corrected_cic_meta_assignment_program
+        (corrected_cic_meta_states_open empty_ctx bool_sort
+            (corrected_cic_meta_states_open
+                empty_ctx (universe_sort universe_one)
+                (corrected_cic_meta_states_open empty_ctx bool_sort
+                    corrected_cic_meta_states_empty)))
+        (corrected_cic_meta_states_open empty_ctx bool_sort
+            (corrected_cic_meta_states_open
+                empty_ctx (universe_sort universe_one)
+                (corrected_cic_meta_states_solved empty_ctx bool_sort
+                    corrected_cic_meta_states_empty)))
+        (cic_chain_succ cic_chain_zero) =
+    CorrectedCicMetaAssignmentProgramMore (exists (
+        corrected_cic_oldest_bool_open_membership (),
+        CorrectedCicMetaAssignmentPlanSolved (
+            CorrectedCicMetaSolvedMembershipUnderOpen (
+                CorrectedCicMetaSolvedMembershipUnderOpen (
+                    CorrectedCicMetaSolvedMembershipHere
+                        "the-future-oldest-solution-does-not-exist-before-the-first-step",
+                    "the-invalid-future-membership-crosses-the-universe-slot"),
+                "the-invalid-future-membership-crosses-the-newest-Bool-slot")),
+        CorrectedCicMetaAssignmentProgramDone,
+        "a-program-step-cannot-depend-on-a-solution-created-by-that-step-or-any-later-step"))
+
+inl main () =
+    impossible_corrected_cic_meta_assignment_future_dependency ()

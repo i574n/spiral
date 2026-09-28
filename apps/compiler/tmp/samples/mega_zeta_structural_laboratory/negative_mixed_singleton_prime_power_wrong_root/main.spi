@@ -1,0 +1,6 @@
+inl impossible_mixed_singleton_prime_power_wrong_root forall root.
+    (mixed : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_obstruction root) :
+    exists factor count. certified_arithmetic_prime_power factor count positional_one * string =
+    certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_singleton_prime_power_root_authority_make mixed
+
+inl main () = ()

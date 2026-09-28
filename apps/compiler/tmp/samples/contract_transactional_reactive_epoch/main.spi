@@ -1,0 +1,44 @@
+nominal app_scope = ()
+nominal epoch0 = ()
+nominal epoch1 = ()
+nominal dirty = ()
+nominal clean = ()
+nominal live = ()
+
+union signal scope epoch value =
+    | Signal :: forall scope epoch value. value -> signal scope epoch value
+
+union memo scope epoch state value =
+    | Memo :: forall scope epoch state value. value -> memo scope epoch state value
+
+union render_ticket scope epoch =
+    | RenderTicket :: forall scope epoch. string -> render_ticket scope epoch
+
+inl transact forall scope value.
+    (source : signal scope epoch0 value)
+    (cached : memo scope epoch0 clean value)
+    : signal scope epoch1 value * memo scope epoch0 dirty value =
+    match source, cached with
+    | Signal value, Memo _ => Signal value, Memo value
+
+inl recompute forall scope value.
+    (source : signal scope epoch1 value)
+    (stale : memo scope epoch0 dirty value)
+    : memo scope epoch1 clean value =
+    match source, stale with
+    | Signal value, Memo _ => Memo value
+
+inl render forall scope epoch value.
+    (memo : memo scope epoch clean value)
+    (ticket : render_ticket scope epoch)
+    : string =
+    match memo, ticket with
+    | Memo _, RenderTicket label => label
+
+inl main () : string =
+    inl source : signal app_scope epoch0 i32 = Signal 41
+    inl cached : memo app_scope epoch0 clean i32 = Memo 40
+    inl source', stale = transact source cached
+    inl fresh = recompute source' stale
+    inl ticket : render_ticket app_scope epoch1 = RenderTicket "reactive-transaction-committed"
+    render fresh ticket

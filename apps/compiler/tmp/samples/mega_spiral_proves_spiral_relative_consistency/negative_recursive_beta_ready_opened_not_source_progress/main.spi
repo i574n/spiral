@@ -1,0 +1,7 @@
+inl impossible_recursive_beta_ready_opened_not_source_progress forall domain result_ty.
+    (opened : exact_linear_indexed_closed_recursive_beta_ready_opened domain result_ty) :
+    exact_linear_indexed_closed_source_progress
+        exact_linear_indexed_closed_source_unit result_ty =
+    opened
+
+inl main () = ()

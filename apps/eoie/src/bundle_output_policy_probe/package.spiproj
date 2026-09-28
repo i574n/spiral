@@ -1,0 +1,4 @@
+packages:
+    bundle_output_contract
+modules:
+    main

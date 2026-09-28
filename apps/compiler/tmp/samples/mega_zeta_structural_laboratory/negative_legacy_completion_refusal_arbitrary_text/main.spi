@@ -1,0 +1,9 @@
+inl impossible_legacy_completion_refusal_arbitrary_text () =
+    CertifiedIntervalPositivePositionalLegacyCompletionRefused
+        (CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailable (
+            classify_certified_interval_positive_positional_sealed_factor
+                (positive_positional_twelve_value ()),
+            "arbitrary-text-can-no-longer-be-attached-to-a-structural-refusal"))
+
+inl main () =
+    impossible_legacy_completion_refusal_arbitrary_text ()

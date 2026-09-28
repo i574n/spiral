@@ -1,0 +1,16 @@
+[package]
+name = "eoie-agile-lease"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_agile_lease"
+path = "lease.rs"
+
+[dependencies]
+agile-state-runtime-policy-domain = { path = "../agile_state_runtime_policy_domain" }
+command-spec-domain = { path = "../command_spec_domain" }
+eoie-agile-policy = { path = "../eoie_agile_policy" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }

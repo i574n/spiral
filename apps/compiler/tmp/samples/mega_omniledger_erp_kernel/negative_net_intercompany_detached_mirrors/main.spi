@@ -1,0 +1,18 @@
+inl impossible_net_intercompany_detached_mirrors () =
+    inl invoice_value :
+        invoice_match company_a usd widget_a warehouse_north tax_brazil po_1001 =
+        invoice_match (
+            company_a "company-a",
+            usd "USD",
+            widget_a "widget-a",
+            warehouse_north "warehouse-north",
+            tax_brazil "BR",
+            po_1001 "po-1001",
+            "invoice-match-1001")
+    inl left_mirror : mirror_entry company_a company_b usd po_1001 =
+        mirror_entry (company_a "company-a", company_b "company-b", usd "USD", po_1001 "po-1001", 830i64, "left")
+    inl right_mirror : mirror_entry company_b company_a usd po_1001 =
+        mirror_entry (company_b "company-b", company_a "company-a", usd "USD", po_1001 "po-1001", 830i64, "forged-plus-plus")
+    NetIntercompany (invoice_value, left_mirror, right_mirror)
+
+inl main () = impossible_net_intercompany_detached_mirrors ()

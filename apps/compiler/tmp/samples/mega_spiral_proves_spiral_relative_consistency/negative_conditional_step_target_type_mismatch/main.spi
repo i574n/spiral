@@ -1,0 +1,13 @@
+inl impossible_conditional_step_target_type_mismatch
+    (step : exact_linear_indexed_small_step
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type)
+    : exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_bool_type =
+    exact_linear_indexed_small_step_target step
+
+inl main () = impossible_conditional_step_target_type_mismatch (exact_linear_indexed_conditional_true_unit_step ())

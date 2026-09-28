@@ -1,0 +1,11 @@
+inl impossible_recursive_beta_application_identity_cannot_change_result
+    (derivation : exact_linear_indexed_closed_recursive_beta_derivation
+        exact_linear_bool_type
+        (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type)) :
+    exact_linear_indexed_closed_recursive_beta_derivation
+        exact_linear_bool_type exact_linear_unit_type =
+    ExactLinearIndexedClosedRecursiveBetaDerivationApplicationIdentity (
+        derivation,
+        "ApplicationIdentity-must-preserve-the-recursive-beta-result-type")
+
+inl main () = ()

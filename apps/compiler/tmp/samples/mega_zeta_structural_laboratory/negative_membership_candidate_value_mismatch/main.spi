@@ -1,0 +1,12 @@
+inl impossible_factor_membership_candidate_value_mismatch () :
+    certified_interval_positive_positional_factor_membership
+        (positional_zero_bit positional_one)
+        (positional_one_bit positional_one)
+        (z_nat_succ z_nat_zero) =
+    CertifiedIntervalPositivePositionalFactorMembershipHere (
+        positive_positional_three_value (),
+        PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+        PositivePositionalPredecessorOneBit PositivePositionalOne,
+        "a-membership-for-factor-two-cannot-store-three-as-the-indexed-candidate-value")
+
+inl main () = impossible_factor_membership_candidate_value_mismatch ()

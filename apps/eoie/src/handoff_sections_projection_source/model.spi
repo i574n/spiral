@@ -1,0 +1,81 @@
+let rec projection_has_content_loop (text : string) (at : i32) (text_len : i32) : bool =
+    if (=.) at text_len then false
+    else
+        inl current = sm.index text at
+        inl space = codec_runtime_char " "
+        if (=.) current space || (=.) current (char_tab ()) || (=.) current (char_newline ()) || (=.) current (char_carriage_return ()) then
+            projection_has_content_loop text ((+.) at 1i32) text_len
+        else true
+
+inl projection_has_content (text : string) : bool =
+    projection_has_content_loop text 0i32 (sm.length text : i32)
+
+inl projection_handoff_title (line : string) : string =
+    inl line_len = sm.length line : i32
+    inl quote0 = find_char line 0i32 (char_quote ())
+    if (=.) quote0 line_len then codec_empty ()
+    else
+        inl title, after_title, title_ok = parse_quoted line quote0
+        if title_ok && (<=) after_title line_len && projection_has_content title then title else codec_empty ()
+
+inl projection_handoff_body (line : string) : string =
+    inl line_len = sm.length line : i32
+    inl quote0 = find_char line 0i32 (char_quote ())
+    if (=.) quote0 line_len then codec_empty ()
+    else
+        inl title, after_title, title_ok = parse_quoted line quote0
+        if title_ok && projection_has_content title then
+            inl quote1 = find_char line after_title (char_quote ())
+            if (=.) quote1 line_len then codec_empty ()
+            else
+                inl body, after_body, body_ok = parse_quoted line quote1
+                inl quote2 = find_char line after_body (char_quote ())
+                if body_ok && (<=) after_body line_len && (=.) quote2 line_len && projection_has_content body then body else codec_empty ()
+        else codec_empty ()
+
+let rec projection_handoff_title_seen_loop (source : string) (at : i32) (stop_at : i32) (source_len : i32) (title : string) : bool =
+    if (<) at stop_at then
+        inl line_near_to = find_char source at (char_newline ())
+        inl line = slice_exclusive source at line_near_to
+        inl line_len = sm.length line : i32
+        inl next_at = if (=.) line_near_to source_len then source_len else (+.) line_near_to 1i32
+        if (<) (find_text line 0i32 "HandoffSection (") line_len then
+            inl prior_title = projection_handoff_title line
+            if (=.) prior_title title then true else projection_handoff_title_seen_loop source next_at stop_at source_len title
+        else projection_handoff_title_seen_loop source next_at stop_at source_len title
+    else false
+
+inl projection_handoff_title_seen_before (source : string) (stop_at : i32) (title : string) : bool =
+    projection_handoff_title_seen_loop source 0i32 stop_at (sm.length source : i32) title
+
+let rec handoff_sections_projection_loop (source : string) (at : i32) (source_len : i32) (count : i32) (out : string) : string =
+    if (=.) at source_len then
+        if (<) count 4i32 then codec_empty ()
+        elif (<) 10i32 count then codec_empty ()
+        else out
+    else
+        inl line_near_to = find_char source at (char_newline ())
+        inl line = slice_exclusive source at line_near_to
+        inl line_len = sm.length line : i32
+        inl next_at = if (=.) line_near_to source_len then source_len else (+.) line_near_to 1i32
+        if (<) (find_text line 0i32 "HandoffSection (") line_len then
+            inl title = projection_handoff_title line
+            inl body = projection_handoff_body line
+            if (=.) title "" || (=.) body "" || projection_handoff_title_seen_before source at title then codec_empty ()
+            else
+                inl section_prefix = if (=.) count 0i32 then "\n## " else "\n\n## "
+                inl out0 = sm.concat out section_prefix
+                inl out1 = sm.concat out0 title
+                inl out2 = sm.concat out1 "\n\n"
+                inl out3 = sm.concat out2 body
+                handoff_sections_projection_loop source next_at source_len ((+.) count 1i32) out3
+        else handoff_sections_projection_loop source next_at source_len count out
+
+let handoff_sections_projection (source : string) : string =
+    handoff_sections_projection_loop source 0i32 (sm.length source : i32) 0i32 "ok"
+
+inl fixture_handoff () : string =
+    "inl a () = HandoffSection (\"A\", \"one\")\ninl b () = HandoffSection (\"B\", \"two\")\ninl c () = HandoffSection (\"C\", \"three\")\ninl d () = HandoffSection (\"D\", \"four\")\n"
+
+inl fixture_handoff_duplicate () : string =
+    "inl a () = HandoffSection (\"A\", \"one\")\ninl b () = HandoffSection (\"B\", \"two\")\ninl c () = HandoffSection (\"A\", \"three\")\ninl d () = HandoffSection (\"D\", \"four\")\n"

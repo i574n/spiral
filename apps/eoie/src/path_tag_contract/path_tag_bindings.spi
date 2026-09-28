@@ -1,0 +1,16 @@
+open model
+
+let proxy_path_tag_relative_packed_binding (flags : i32) (segments : i32) : i32 =
+    path_tag_relative_packed_binding flags segments
+
+let proxy_path_tag_packed_indices_binding (packed : i32) (bank_size : i32) : i32 =
+    path_tag_packed_indices_binding packed bank_size
+
+let proxy_path_tag_shape_binding (words : i32) (separators : i32) : i32 =
+    path_tag_shape_binding words separators
+
+let proxy_path_tag_determinism_binding (same_normalized_path : i32) (same_tag : i32) : i32 =
+    path_tag_determinism_binding same_normalized_path same_tag
+
+let proxy_path_tag_collision_binding (same_tag : i32) (same_normalized_path : i32) : i32 =
+    path_tag_collision_binding same_tag same_normalized_path

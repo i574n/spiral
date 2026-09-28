@@ -1,0 +1,58 @@
+nominal schema_v4 = ()
+nominal schema_v5 = ()
+
+nominal nfe_v4 = { issuer : string; total_cents : i64 }
+nominal nfe_v5 = { issuer : string; total_cents : i64; technical_responsible : string }
+
+union document schema =
+    | V4Document :: nfe_v4 -> document schema_v4
+    | V5Document :: nfe_v5 -> document schema_v5
+
+union field schema value =
+    | Issuer :: forall schema. field schema string
+    | TotalCents :: forall schema. field schema i64
+    | TechnicalResponsible :: field schema_v5 string
+
+inl read_field forall schema value.
+    (field : field schema value)
+    (document : document schema)
+    : value =
+    match field, document with
+    | Issuer, V4Document payload => payload.issuer
+    | Issuer, V5Document payload => payload.issuer
+    | TotalCents, V4Document payload => payload.total_cents
+    | TotalCents, V5Document payload => payload.total_cents
+    | TechnicalResponsible, V5Document payload => payload.technical_responsible
+
+union rec query schema result =
+    | Get :: forall schema result. field schema result -> query schema result
+    | Zip :: forall schema a b. query schema a * query schema b -> query schema (a * b)
+    | Map :: forall schema result.
+        (exists input. (input -> result) * query schema input)
+        -> query schema result
+
+inl rec eval forall schema result.
+    (query : query schema result)
+    (document : document schema)
+    : result =
+    match query with
+    | Get field => read_field field document
+    | Zip (left, right) => eval left document, eval right document
+    | Map pair =>
+        inl exists input. transform, inner = pair
+        transform (eval inner document)
+
+inl select_technical (pair : string * string) : string =
+    inl _, technical = pair
+    technical
+
+inl main () : string =
+    inl document =
+        V5Document (nfe_v5 {
+            issuer = "ACME"
+            total_cents = 4200i64
+            technical_responsible = "typed-query"
+        })
+    inl projection : query schema_v5 string =
+        Map (exists (select_technical, Zip (Get Issuer, Get TechnicalResponsible)))
+    eval projection document

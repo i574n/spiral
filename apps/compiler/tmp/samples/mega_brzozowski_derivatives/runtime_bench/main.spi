@@ -1,0 +1,12 @@
+open main
+
+inl main () : string =
+    inl ~bit_accept = input_110 ()
+    inl ~bit_reject = input_111 ()
+    inl ~tri_accept = input_aaa ()
+    inl ~tri_reject = input_aab ()
+    assert_true (accepts (ends_with_zero ()) bit_accept)
+    assert_false (accepts (ends_with_zero ()) bit_reject)
+    assert_true (accepts (tri_a_star ()) tri_accept)
+    assert_false (accepts (tri_a_star ()) tri_reject)
+    "brzozowski-runtime-bench-green"

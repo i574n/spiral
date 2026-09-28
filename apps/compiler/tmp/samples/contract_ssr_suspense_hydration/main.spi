@@ -1,0 +1,53 @@
+nominal app_tree = ()
+nominal checksum_a = ()
+nominal pending = ()
+nominal ready = ()
+nominal app_scope = ()
+
+union server_view tree checksum =
+    | ServerView :: forall tree checksum. string -> server_view tree checksum
+
+union serialized_view tree checksum =
+    | SerializedView :: forall tree checksum. string -> serialized_view tree checksum
+
+union client_checksum checksum =
+    | ClientChecksum :: forall checksum. string -> client_checksum checksum
+
+union resource scope state value =
+    | Resource :: forall scope state value. value -> resource scope state value
+
+union hydrated_view tree checksum scope state =
+    | HydratedView :: forall tree checksum scope state. string -> hydrated_view tree checksum scope state
+
+inl serialize forall tree checksum.
+    (view : server_view tree checksum)
+    : serialized_view tree checksum =
+    match view with
+    | ServerView html => SerializedView html
+
+inl resolve forall scope value.
+    (resource : resource scope pending value)
+    : resource scope ready value =
+    match resource with
+    | Resource value => Resource value
+
+inl hydrate forall tree checksum scope value.
+    (serialized : serialized_view tree checksum)
+    (client : client_checksum checksum)
+    (resource : resource scope ready value)
+    : hydrated_view tree checksum scope ready =
+    match serialized, client, resource with
+    | SerializedView _, ClientChecksum _, Resource _ => HydratedView "ssr-suspense-hydrated"
+
+inl reveal forall tree checksum scope.
+    (view : hydrated_view tree checksum scope ready)
+    : string =
+    match view with
+    | HydratedView label => label
+
+inl main () : string =
+    inl server : server_view app_tree checksum_a = ServerView "<main>loading</main>"
+    inl checksum : client_checksum checksum_a = ClientChecksum "a"
+    inl pending_resource : resource app_scope pending i32 = Resource 42
+    inl ready_resource = resolve pending_resource
+    reveal (hydrate (serialize server) checksum ready_resource)

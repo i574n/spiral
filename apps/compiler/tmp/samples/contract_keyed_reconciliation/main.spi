@@ -1,0 +1,68 @@
+nominal ui_scope = ()
+nominal item_key = ()
+nominal mounted = ()
+nominal reconciling = ()
+nominal reconciled = ()
+
+union keyed_child key value =
+    | InsertedChild :: forall key value. value -> keyed_child key value
+    | UpdatedChild :: forall key value. value -> keyed_child key value
+    | RemovedChild :: forall key value. string -> keyed_child key value
+
+union mounted_list scope key state =
+    | MountedList :: forall scope key. string -> mounted_list scope key mounted
+    | ReconcilingList :: forall scope key. string -> mounted_list scope key reconciling
+    | ReconciledList :: forall scope key. string -> mounted_list scope key reconciled
+
+union reconcile_step scope key from to =
+    | BeginReconcile :: forall scope key. reconcile_step scope key mounted reconciling
+    | ApplyInserted :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
+    | ApplyUpdated :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
+    | ApplyRemoved :: forall scope key. (exists value. keyed_child key value) -> reconcile_step scope key reconciling reconciled
+
+union rec reconcile_plan scope key from to =
+    | ReconcileLeaf :: forall scope key from to.
+        reconcile_step scope key from to
+        -> reconcile_plan scope key from to
+    | ReconcileThen :: forall scope key from to.
+        (exists middle.
+            reconcile_plan scope key from middle
+            * reconcile_step scope key middle to)
+        -> reconcile_plan scope key from to
+
+inl apply_step forall scope key from to.
+    (step : reconcile_step scope key from to)
+    (list : mounted_list scope key from)
+    : mounted_list scope key to =
+    match step, list with
+    | BeginReconcile, MountedList _ => ReconcilingList "reconciling"
+    | ApplyInserted payload, ReconcilingList _ =>
+        inl exists value. InsertedChild _ = payload
+        ReconciledList "keyed-inserted"
+    | ApplyUpdated payload, ReconcilingList _ =>
+        inl exists value. UpdatedChild _ = payload
+        ReconciledList "keyed-updated"
+    | ApplyRemoved payload, ReconcilingList _ =>
+        inl exists value. RemovedChild _ = payload
+        ReconciledList "keyed-removed"
+
+inl rec execute forall scope key from to.
+    (plan : reconcile_plan scope key from to)
+    (list : mounted_list scope key from)
+    : mounted_list scope key to =
+    match plan with
+    | ReconcileLeaf step => apply_step step list
+    | ReconcileThen payload =>
+        inl exists middle. prefix, step = payload
+        apply_step step (execute prefix list)
+
+inl label forall scope key. (list : mounted_list scope key reconciled) : string =
+    match list with
+    | ReconciledList value => value
+
+inl main () : string =
+    inl list : mounted_list ui_scope item_key mounted = MountedList "mounted"
+    inl child : keyed_child item_key i32 = UpdatedChild 7
+    inl plan : reconcile_plan ui_scope item_key mounted reconciled =
+        ReconcileThen (exists (ReconcileLeaf BeginReconcile, ApplyUpdated (exists child)))
+    label (execute plan list)

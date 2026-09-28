@@ -1,0 +1,69 @@
+nominal batch_idle = ()
+nominal batch_spawned = ()
+nominal batch_running = ()
+nominal batch_linked = ()
+nominal batch_timed_out = ()
+nominal batch_complete = ()
+
+union batch_step from to =
+    | BatchSpawn :: string -> batch_step batch_idle batch_spawned
+    | BatchRun :: batch_step batch_spawned batch_running
+    | BatchLink :: string -> batch_step batch_running batch_linked
+    | BatchTimeout :: u32 -> batch_step batch_running batch_timed_out
+    | BatchComplete :: i32 -> batch_step batch_linked batch_complete
+    | BatchTimeoutComplete :: batch_step batch_timed_out batch_complete
+
+union batch_checkpoint =
+    | BatchNotStarted
+    | BatchSpawnCommitted
+    | BatchRunCommitted
+    | BatchLinkCommitted
+    | BatchTimeoutCommitted
+    | BatchCompletionCommitted
+
+union batch_event =
+    | SpawnEvent
+    | RunEvent
+    | LinkEvent
+    | TimeoutEvent
+    | CompletionEvent
+
+inl checkpoint_code = function
+    | BatchNotStarted => 0i32
+    | BatchSpawnCommitted => 1i32
+    | BatchRunCommitted => 2i32
+    | BatchLinkCommitted => 3i32
+    | BatchTimeoutCommitted => 4i32
+    | BatchCompletionCommitted => 5i32
+
+inl event_code = function
+    | SpawnEvent => 0i32
+    | RunEvent => 1i32
+    | LinkEvent => 2i32
+    | TimeoutEvent => 3i32
+    | CompletionEvent => 4i32
+
+inl checkpoint_from_code code : batch_checkpoint =
+    if !!!!EQ(code,0i32) then BatchNotStarted
+    elif !!!!EQ(code,1i32) then BatchSpawnCommitted
+    elif !!!!EQ(code,2i32) then BatchRunCommitted
+    elif !!!!EQ(code,3i32) then BatchLinkCommitted
+    elif !!!!EQ(code,4i32) then BatchTimeoutCommitted
+    else BatchCompletionCommitted
+
+inl event_from_code code : batch_event =
+    if !!!!EQ(code,0i32) then SpawnEvent
+    elif !!!!EQ(code,1i32) then RunEvent
+    elif !!!!EQ(code,2i32) then LinkEvent
+    elif !!!!EQ(code,3i32) then TimeoutEvent
+    else CompletionEvent
+
+inl valid_checkpoint_code code : bool =
+    if !!!!LT(code,0i32) then false
+    elif !!!!LT(5i32,code) then false
+    else true
+
+inl valid_event_code code : bool =
+    if !!!!LT(code,0i32) then false
+    elif !!!!LT(4i32,code) then false
+    else true

@@ -1,0 +1,19 @@
+open model
+
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+inl main () : i32 =
+    inl _ = source_map_public_plan ()
+    inl _ = source_map_files_binding 1i32 1i32
+    inl _ = source_map_edges_binding 1i32 0i32
+    inl _ = source_diff_record_binding 0i32 1i32
+    inl _ = source_rebuild_count_binding 1i32 1i32
+    $"RustExportI32Binary(\"eoie_source_map_files_binding\",\"source_map_files_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_source_map_edges_binding\",\"source_map_edges_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_source_diff_record_binding\",\"source_diff_record_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_source_rebuild_count_binding\",\"source_rebuild_count_binding\")" : ()
+    rust_global "use eoie_proxy_search::mnemonic_path_tag;\nuse std::collections::{BTreeMap, BTreeSet};\n"
+    rust_global "#[cfg(test)]\nfn topology_test_temporary(label: &str) -> std::path::PathBuf { std::env::temp_dir().join(format!(\"eoie-source-map-{}-{}\", label, std::process::id())) }\n"
+    terminal.emit_runtime_map ()
+    $"RustLibrary()" : ()
+    0i32

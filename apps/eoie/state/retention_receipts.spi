@@ -1,0 +1,12 @@
+// retention-receipt|schema=1|fingerprint=pending|current=pending|candidates=0|deletes=0|remaining=0|status=planned
+union retention_receipt_status =
+    | RetentionDryRun
+    | RetentionApplied
+
+union retention_receipt =
+    | RetentionReceipt :: string * string * i32 * i32 * i32 * retention_receipt_status -> retention_receipt
+
+inl latest_retention_receipt () : retention_receipt =
+    RetentionReceipt ("pending", "pending", 0i32, 0i32, 0i32, RetentionDryRun)
+
+inl main () : i32 = 0i32

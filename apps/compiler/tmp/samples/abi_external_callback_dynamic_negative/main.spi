@@ -1,0 +1,2 @@
+inl main () : i32 = real
+    $"spiral_abi_callback_dynamic(0,1,2)" : i32

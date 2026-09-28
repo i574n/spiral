@@ -1,0 +1,19 @@
+nominal zero = ()
+nominal succ n = n
+
+union rec budget n =
+    | ZeroBudget :: budget zero
+    | MoreBudget :: forall n. budget n -> budget (succ n)
+
+inl spend_one forall n. (budget : budget (succ n)) : budget n =
+    match budget with
+    | MoreBudget rest => rest
+
+inl render (budget : budget (succ zero)) : string =
+    match budget with
+    | MoreBudget rest =>
+        match rest with
+        | ZeroBudget => "static-budget-preserved"
+
+inl main () : string =
+    render (spend_one (spend_one (MoreBudget (MoreBudget (MoreBudget ZeroBudget)))))

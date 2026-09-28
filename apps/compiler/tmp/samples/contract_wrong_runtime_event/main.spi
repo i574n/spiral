@@ -1,0 +1,21 @@
+nominal validate_node = ()
+nominal publish_node = ()
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+
+union planned_node id from to =
+    | ValidatePlan :: planned_node validate_node draft validated
+    | PublishPlan :: planned_node publish_node validated authorized
+
+union runtime_event id from to =
+    | ValidateEvent :: runtime_event validate_node draft validated
+    | PublishEvent :: runtime_event publish_node validated authorized
+
+inl attest forall id from to.
+    (_ : planned_node id from to)
+    (_ : runtime_event id from to)
+    : string = "attested"
+
+inl main () : string =
+    attest ValidatePlan PublishEvent

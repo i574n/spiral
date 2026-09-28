@@ -1,0 +1,4 @@
+#ifndef SPIRAL_PORTABLE_ARRAY_REFCOUNT_C_SHIM_H
+#define SPIRAL_PORTABLE_ARRAY_REFCOUNT_C_SHIM_H
+#define DynamicArrayRefCount0(data) (1)
+#endif

@@ -1,0 +1,10 @@
+[package]
+name = "eoie-contracts"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_contracts"
+path = "contracts.rs"

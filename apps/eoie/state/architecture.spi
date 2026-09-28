@@ -1,0 +1,47 @@
+union source_authority =
+    | SpiralSource :: source_authority
+    | GeneratedRustMirror :: source_authority
+    | TemporaryCompatibilityAdapter :: source_authority
+
+union application_shape =
+    | SharedSpiralPackage :: application_shape
+    | MainOwnedApplication :: application_shape
+    | CargoCrate :: application_shape
+    | PublicBinary :: application_shape
+
+union semantic_status =
+    | Settled :: semantic_status
+    | Experimental :: semantic_status
+    | CompatibilityDebt :: semantic_status
+    | RejectedDrift :: semantic_status
+    | BlockedByCompiler :: semantic_status
+
+union architecture_receipt =
+    | ArchitectureReceipt :: string * application_shape * source_authority * semantic_status * string -> architecture_receipt
+
+inl indexed_bootstrap_domain () : architecture_receipt = ArchitectureReceipt ("indexed-bootstrap-domain", SharedSpiralPackage, SpiralSource, Experimental, "GADT operations constrain requested paused compiled proven and bundled transitions across candidate self-patch and two fallback routes")
+inl bootstrap_main () : architecture_receipt = ArchitectureReceipt ("bootstrap-main", MainOwnedApplication, SpiralSource, Experimental, "one main consumes the shared candidate route and residualizes to a tiny Rust program")
+inl policy_main () : architecture_receipt = ArchitectureReceipt ("policy-main", MainOwnedApplication, SpiralSource, Experimental, "one main consumes the self-patch route without application Rust")
+inl domain_main () : architecture_receipt = ArchitectureReceipt ("fallback-domain-main", MainOwnedApplication, SpiralSource, Experimental, "one main instantiates candidate self-patch primary fallback and secondary fallback plans")
+inl granular_argument_mapping () : architecture_receipt = ArchitectureReceipt ("granular-argument-mapping", SharedSpiralPackage, SpiralSource, Experimental, "lease patch and Agile owners reuse explicit environment mappings after the generic compiler gaps were repaired")
+inl patch_control_domain () : architecture_receipt = ArchitectureReceipt ("patch_control_domain", CargoCrate, SpiralSource, Experimental, "a dedicated crate owns witness ordering exactly-one-match guard and commit authority")
+inl patch_effect_domain () : architecture_receipt = ArchitectureReceipt ("patch_effect_domain", CargoCrate, SpiralSource, Experimental, "a dedicated crate composes binary bindings for guard read stage write rename and remove receipts without higher-arity Rust wrappers")
+inl patch_driver_domain () : architecture_receipt = ArchitectureReceipt ("patch_driver_domain", CargoCrate, SpiralSource, Experimental, "a dedicated crate binds witness operation stage promotion and completion receipts while the physical loop remains a compatibility adapter")
+inl raw_runtime_adapters () : architecture_receipt = ArchitectureReceipt ("broad-runtime-adapters", CargoCrate, TemporaryCompatibilityAdapter, RejectedDrift, "large RustGlobal bodies remain behavior quarries only and may not count as settled migration; the physical baseline is eighty-seven helper-defining Spiral files and one-thousand-three-hundred-seventy-nine emissions, so zero hand-edited .rs files must not be misreported as zero raw Rust debt")
+inl compiler_patch_policy () : architecture_receipt = ArchitectureReceipt ("generic-compiler-patch-policy", MainOwnedApplication, SpiralSource, Experimental, "compiler changes require a minimal fixture and reusable lowering with no EOIE business logic")
+inl generated_rust_policy () : architecture_receipt = ArchitectureReceipt ("generated-rust-mirror-policy", CargoCrate, GeneratedRustMirror, Experimental, "Rust mirrors are compiler outputs and must never be edited directly")
+inl versionless_source_policy () : architecture_receipt = ArchitectureReceipt ("versionless-source-policy", SharedSpiralPackage, SpiralSource, Experimental, "bundle identifiers live only in external artifact names; source and typed state use semantic roles")
+inl dogfood_freeze () : architecture_receipt = ArchitectureReceipt ("dogfood-freeze-retired", PublicBinary, SpiralSource, Settled, "cold candidate tests recovery bundling and thirty-six-of-thirty-six legacy capability decisions already proved exclusive authority; fallback binaries are historical evidence only and must not be reintroduced as deployed runtime dependencies")
+
+inl bootstrap_policy_foundation () : architecture_receipt = ArchitectureReceipt ("bootstrap-policy-foundation", SharedSpiralPackage, SpiralSource, Settled, "indexed states compose the recovered domain and two independent main-owned applications compile from the same package")
+inl session_clock_foundation () : architecture_receipt = ArchitectureReceipt ("session-clock-foundation", SharedSpiralPackage, SpiralSource, Settled, "granular SystemTime expressions define one four-thousand-two-hundred-second deadline consumed by two independent main-owned applications as both the alpha publication floor and semantic hard stop")
+inl toolchain_action_foundation () : architecture_receipt = ArchitectureReceipt ("toolchain-action-domain-merged", SharedSpiralPackage, SpiralSource, Settled, "toolchain_command_domain is the single owner of action union code mapping and command profiles; the physical proxy and two independent bootstrap probes remain fail-closed")
+inl state_receipt_codec_foundation () : architecture_receipt = ArchitectureReceipt ("state-receipt-codec", SharedSpiralPackage, SpiralSource, Settled, "separate parser serializer and shared core crates provide malformed-input fixtures two independent mains Agile integration and cold replay")
+inl toolchain_command_foundation () : architecture_receipt = ArchitectureReceipt ("toolchain_command_domain", SharedSpiralPackage, SpiralSource, Settled, "program argument environment timeout and success profiles are consumed by the physical proxy and two independent mains with a compiled invalid-action fixture")
+
+inl archive_lifecycle_foundation () : architecture_receipt = ArchitectureReceipt ("archive-single-physical-authority", SharedSpiralPackage, SpiralSource, Settled, "archive_deflate_domain is the sole Stored-and-Deflate staged extraction authority for proxy and bundle rehydration; typed faults after the first payload and before commit prove exact rollback")
+
+inl self_install_cutover_foundation () : architecture_receipt = ArchitectureReceipt ("self-install-cutover", SharedSpiralPackage, SpiralSource, Settled, "legacy_capability_domain owns the indexed plan and bindings; the candidate-primary CLI plus generated policy example consume them and cold physical faults restore exact state")
+inl parallel_workstream_foundation () : architecture_receipt = ArchitectureReceipt ("parallel-workstream-foundation", SharedSpiralPackage, SpiralSource, Settled, "BUILD-PARALLEL is closed; deterministic Cargo and manifest parity concurrent owner receipts fault cancellation process-group sibling kill cancel-before-promotion and byte-exact three-worktree merge remain preserved in benchmark evidence rather than a duplicate standalone state module")
+
+inl main () : i32 = 0i32

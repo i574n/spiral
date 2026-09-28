@@ -1,0 +1,320 @@
+inl rust_library () : () = $"RustLibrary()" : ()
+
+nominal existing_backup_slot = i32
+nominal next_backup_slot = i32
+nominal backup_slot = i32
+nominal backup_count = i32
+nominal validated_stage_index = i32
+nominal captured_original_slot = i32
+nominal staged_backup_slot = i32
+nominal promoted_backup_slot = i32
+nominal rollback_backup_slot = i32
+nominal capture_limit = i32
+nominal observed_content_length = i32
+nominal capture_authorization = i32
+nominal captured_content_slot = i32
+nominal expected_temporary_length = i32
+nominal observed_temporary_length = i32
+nominal temporary_write_authorization = i32
+nominal temporary_write_slot = i32
+nominal expected_promotion_stage = i32
+nominal observed_promotion_stage = i32
+nominal expected_promotion_slot = i32
+nominal observed_promotion_slot = i32
+nominal promotion_authorization = i32
+nominal promotion_slot = i32
+
+union promotion_decision =
+    | PromotionAuthorized
+    | PromotionDenied
+
+union temporary_write_decision =
+    | TemporaryWriteAuthorized
+    | TemporaryWriteDenied
+
+union capture_decision =
+    | CaptureAuthorized
+    | CaptureDenied
+
+inl plan_capture (observed_content_length observed) (capture_limit limit) : capture_decision =
+    if !!!!LT(observed,0i32) then CaptureDenied
+    elif !!!!LT(limit,0i32) then CaptureDenied
+    elif !!!!LT(limit,observed) then CaptureDenied
+    else CaptureAuthorized
+
+let capture_authorized (observed : i32) (limit : i32) : i32 =
+    if !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(limit,0i32) then 0i32
+    elif !!!!LT(limit,observed) then 0i32
+    else 1i32
+
+let capture_binding_slot (slot : i32) (authorized : i32) : i32 =
+    if !!!!LT(slot,0i32) then -1i32
+    elif !!!!LT(authorized,1i32) then -1i32
+    elif !!!!LT(1i32,authorized) then -1i32
+    else slot
+
+inl plan_temporary_write (expected_temporary_length expected) (observed_temporary_length observed) : temporary_write_decision =
+    if !!!!LT(expected,0i32) then TemporaryWriteDenied
+    elif !!!!LT(observed,0i32) then TemporaryWriteDenied
+    elif !!!!LT(expected,observed) then TemporaryWriteDenied
+    elif !!!!LT(observed,expected) then TemporaryWriteDenied
+    else TemporaryWriteAuthorized
+
+let temporary_write_authorized (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+let temporary_write_binding_slot (slot : i32) (authorized : i32) : i32 =
+    if !!!!LT(slot,0i32) then -1i32
+    elif !!!!LT(authorized,1i32) then -1i32
+    elif !!!!LT(1i32,authorized) then -1i32
+    else slot
+
+inl plan_promotion
+    (expected_promotion_stage expected_stage)
+    (observed_promotion_stage observed_stage)
+    (expected_promotion_slot expected_slot)
+    (observed_promotion_slot observed_slot)
+    : promotion_decision =
+    if !!!!LT(expected_stage,0i32) then PromotionDenied
+    elif !!!!LT(observed_stage,0i32) then PromotionDenied
+    elif !!!!LT(expected_stage,observed_stage) then PromotionDenied
+    elif !!!!LT(observed_stage,expected_stage) then PromotionDenied
+    elif !!!!LT(expected_slot,0i32) then PromotionDenied
+    elif !!!!LT(observed_slot,0i32) then PromotionDenied
+    elif !!!!LT(expected_slot,observed_slot) then PromotionDenied
+    elif !!!!LT(observed_slot,expected_slot) then PromotionDenied
+    else PromotionAuthorized
+
+let promotion_stage_authorized (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+let promotion_slot_authorized (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+let promotion_authorized (stage_authorized : i32) (slot_authorized : i32) : i32 =
+    if !!!!LT(stage_authorized,1i32) then 0i32
+    elif !!!!LT(1i32,stage_authorized) then 0i32
+    elif !!!!LT(slot_authorized,1i32) then 0i32
+    elif !!!!LT(1i32,slot_authorized) then 0i32
+    else 1i32
+
+let promotion_binding_slot (slot : i32) (authorized : i32) : i32 =
+    if !!!!LT(slot,0i32) then -1i32
+    elif !!!!LT(authorized,1i32) then -1i32
+    elif !!!!LT(1i32,authorized) then -1i32
+    else slot
+
+inl capture_original_slot (backup_slot slot) (validated_stage_index stage) : captured_original_slot =
+    captured_original_slot (
+        if !!!!LT(slot,0i32) then -1i32
+        elif !!!!LT(stage,0i32) then -1i32
+        else slot
+    )
+
+inl stage_backup_slot (captured_original_slot slot) : staged_backup_slot = staged_backup_slot slot
+inl promote_backup_slot (staged_backup_slot slot) : promoted_backup_slot = promoted_backup_slot slot
+inl select_rollback_slot (promoted_backup_slot slot) : rollback_backup_slot = rollback_backup_slot slot
+
+let backup_binding_slot (slot : i32) (stage : i32) : i32 =
+    inl (captured_original_slot captured) = capture_original_slot (backup_slot slot) (validated_stage_index stage)
+    inl (staged_backup_slot staged) = stage_backup_slot (captured_original_slot captured)
+    inl (promoted_backup_slot promoted) = promote_backup_slot (staged_backup_slot staged)
+    inl (rollback_backup_slot rollback) = select_rollback_slot (promoted_backup_slot promoted)
+    rollback
+
+union backup_collection =
+    | CaptureBackup
+    | ReuseBackup
+
+inl collect_backup (existing_backup_slot existing) (next_backup_slot next) : backup_collection =
+    if !!!!LT(existing,0i32) then CaptureBackup else ReuseBackup
+
+let backup_slot_for (existing : i32) (next : i32) : i32 =
+    if !!!!LT(existing,0i32) then next else existing
+
+let backup_next_count (existing : i32) (next : i32) : i32 =
+    if !!!!LT(existing,0i32) then !!!!Add(next,1i32) else next
+
+let backup_should_capture (existing : i32) (next : i32) : i32 =
+    if !!!!LT(next,0i32) then 0i32
+    elif !!!!LT(existing,0i32) then 1i32
+    else 0i32
+
+nominal committed_prefix = i32
+nominal rollback_cursor = i32
+nominal rollback_index = i32
+
+inl next_rollback (committed_prefix committed) (rollback_cursor cursor) : rollback_index =
+    rollback_index (
+        if !!!!LT(cursor,committed)
+        then !!!!Sub(!!!!Sub(committed,cursor),1i32)
+        else !!!!Neg(1i32)
+    )
+
+let rollback_next (committed : i32) (cursor : i32) : i32 =
+    inl (rollback_index code) = next_rollback (committed_prefix committed) (rollback_cursor cursor)
+    code
+
+nominal restoration_candidate = i32
+nominal restoration_observed = i32
+nominal restoration_expected_count = i32
+nominal restoration_receipt_count = i32
+
+let restoration_select (committed : i32) (cursor : i32) : i32 =
+    rollback_next committed cursor
+
+let restoration_bind (selected : i32) (observed : i32) : i32 =
+    if !!!!LT(selected,0i32) then -1i32
+    elif !!!!LT(observed,0i32) then -1i32
+    elif !!!!LT(selected,observed) then -1i32
+    elif !!!!LT(observed,selected) then -1i32
+    else selected
+
+let restoration_complete (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+nominal restoration_expected_attempts = i32
+nominal restoration_success_count = i32
+nominal restoration_failure_count = i32
+nominal restoration_attempt_count = i32
+nominal restoration_attempt_authorization = i32
+
+nominal restoration_accumulator_open = ()
+nominal restoration_accumulator_succeeded = ()
+nominal restoration_accumulator_partial_failure = ()
+
+union restoration_accumulator_step from to =
+    | AccumulateRestorationSuccess :: restoration_accumulator_step restoration_accumulator_open restoration_accumulator_open
+    | AccumulateRestorationFailure :: restoration_accumulator_step restoration_accumulator_open restoration_accumulator_open
+    | FinishRestorationSuccess :: restoration_accumulator_step restoration_accumulator_open restoration_accumulator_succeeded
+    | FinishRestorationWithFailures :: restoration_accumulator_step restoration_accumulator_open restoration_accumulator_partial_failure
+
+let restoration_attempt_count (successes : i32) (failures : i32) : i32 =
+    if !!!!LT(successes,0i32) then -1i32
+    elif !!!!LT(failures,0i32) then -1i32
+    elif !!!!LT(!!!!Sub(2147483647i32,successes),failures) then -1i32
+    else !!!!Add(successes,failures)
+
+let restoration_attempt_authorized (expected : i32) (attempted : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(attempted,0i32) then 0i32
+    elif !!!!LT(attempted,expected) then 1i32
+    else 0i32
+
+let restoration_counter_next (current : i32) (authorized : i32) : i32 =
+    if !!!!LT(current,0i32) then -1i32
+    elif !!!!LT(authorized,1i32) then -1i32
+    elif !!!!LT(1i32,authorized) then -1i32
+    elif !!!!LT(current,2147483647i32) then !!!!Add(current,1i32)
+    else -1i32
+
+let restoration_accumulator_outcome (complete : i32) (failures : i32) : i32 =
+    if !!!!LT(failures,0i32) then -1i32
+    elif !!!!LT(complete,0i32) then -1i32
+    elif !!!!LT(1i32,complete) then -1i32
+    elif !!!!LT(complete,1i32) then 0i32
+    elif !!!!LT(failures,1i32) then 1i32
+    else 2i32
+
+inl export_backup_slot () : () =
+    $"RustExportI32Binary(\"eoie_patch_backup_slot\",\"backup_slot_for\")" : ()
+
+inl export_backup_next_count () : () =
+    $"RustExportI32Binary(\"eoie_patch_backup_next_count\",\"backup_next_count\")" : ()
+
+inl export_backup_capture_flag () : () =
+    $"RustExportI32Binary(\"eoie_patch_backup_should_capture\",\"backup_should_capture\")" : ()
+
+inl export_backup_binding_slot () : () =
+    $"RustExportI32Binary(\"eoie_patch_backup_binding_slot\",\"backup_binding_slot\")" : ()
+
+inl export_capture_authorized () : () =
+    $"RustExportI32Binary(\"eoie_patch_capture_authorized\",\"capture_authorized\")" : ()
+
+inl export_capture_binding_slot () : () =
+    $"RustExportI32Binary(\"eoie_patch_capture_binding_slot\",\"capture_binding_slot\")" : ()
+
+inl export_promotion_slot_authorized () : () =
+    $"RustExportI32Binary(\"eoie_patch_promotion_slot_authorized\",\"promotion_slot_authorized\")" : ()
+
+inl export_restoration_select () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_select\",\"restoration_select\")" : ()
+
+inl export_restoration_bind () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_bind\",\"restoration_bind\")" : ()
+
+inl export_restoration_complete () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_complete\",\"restoration_complete\")" : ()
+
+inl export_restoration_attempt_count () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_attempt_count\",\"restoration_attempt_count\")" : ()
+
+inl export_restoration_attempt_authorized () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_attempt_authorized\",\"restoration_attempt_authorized\")" : ()
+
+inl export_restoration_counter_next () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_counter_next\",\"restoration_counter_next\")" : ()
+
+inl export_restoration_accumulator_outcome () : () =
+    $"RustExportI32Binary(\"eoie_patch_restoration_accumulator_outcome\",\"restoration_accumulator_outcome\")" : ()
+
+inl main () : i32 =
+    inl backup_probe = collect_backup (existing_backup_slot -1i32) (next_backup_slot 0i32)
+    inl capture_probe = plan_capture (observed_content_length 5i32) (capture_limit 5i32)
+    inl promotion_probe = plan_promotion (expected_promotion_stage 0i32) (observed_promotion_stage 0i32) (expected_promotion_slot 0i32) (observed_promotion_slot 0i32)
+    inl ~existing = -1i32
+    inl ~next = 0i32
+    inl ~stage_index = 0i32
+    inl ~committed = 3i32
+    inl ~cursor = 0i32
+    inl _ = backup_slot_for existing next
+    inl _ = backup_next_count existing next
+    inl _ = backup_should_capture existing next
+    inl _ = backup_binding_slot next stage_index
+    inl _ = capture_authorized 5i32 5i32
+    inl _ = capture_binding_slot next 1i32
+    inl _ = promotion_slot_authorized 0i32 0i32
+    inl _ = restoration_select committed cursor
+    inl _ = restoration_bind 0i32 0i32
+    inl _ = restoration_complete 1i32 1i32
+    inl _ = restoration_attempt_count 1i32 1i32
+    inl _ = restoration_attempt_authorized 2i32 1i32
+    inl _ = restoration_counter_next 1i32 1i32
+    inl _ = restoration_accumulator_outcome 1i32 0i32
+    inl _ = AccumulateRestorationSuccess
+    inl _ = AccumulateRestorationFailure
+    inl _ = FinishRestorationSuccess
+    inl _ = FinishRestorationWithFailures
+    export_backup_slot ()
+    export_backup_next_count ()
+    export_backup_capture_flag ()
+    export_backup_binding_slot ()
+    export_capture_authorized ()
+    export_capture_binding_slot ()
+    export_promotion_slot_authorized ()
+    export_restoration_select ()
+    export_restoration_bind ()
+    export_restoration_complete ()
+    export_restoration_attempt_count ()
+    export_restoration_attempt_authorized ()
+    export_restoration_counter_next ()
+    export_restoration_accumulator_outcome ()
+    rust_library ()
+    0i32

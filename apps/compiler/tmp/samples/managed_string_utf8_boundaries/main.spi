@@ -1,0 +1,18 @@
+let first_codepoint (x : string) : string =
+    sm.slice x { from = 0i32; to = 1i32 }
+
+let second_codepoint (x : string) : string =
+    sm.slice x { from = 2i32; to = 3i32 }
+
+inl main () =
+    inl source = "éλ"
+    inl first = first_codepoint source
+    inl second = second_codepoint source
+    inl joined = sm.concat first second
+    if (=.) (sm.length source : i32) 4i32 then
+        if (=.) (sm.length first : i32) 2i32 then
+            if (=.) (sm.length second : i32) 2i32 then
+                if (=.) (sm.length joined : i32) 4i32 then 0i32 else 1i32
+            else 2i32
+        else 3i32
+    else 4i32

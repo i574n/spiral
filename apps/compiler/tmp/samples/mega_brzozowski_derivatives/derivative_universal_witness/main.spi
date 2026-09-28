@@ -1,0 +1,168 @@
+open main
+
+union derivative_equation_cat_branch =
+    | EquationCatNullable
+    | EquationCatNonNullable
+
+inl derivative_equation_cat_branch_of forall alphabet. (left : regex alphabet) : derivative_equation_cat_branch =
+    match nullable left with
+    | Nullable => EquationCatNullable
+    | NonNullable => EquationCatNonNullable
+
+inl derivative_equation_cat_branch_same (left : derivative_equation_cat_branch) (right : derivative_equation_cat_branch) : bool =
+    match left, right with
+    | EquationCatNullable, EquationCatNullable => true
+    | EquationCatNonNullable, EquationCatNonNullable => true
+    | _ => false
+
+union rec derivative_equation_proof alphabet =
+    | DerivativeEquationProofEmpty : alphabet
+    | DerivativeEquationProofEpsilon : alphabet
+    | DerivativeEquationProofChar : alphabet * alphabet
+    | DerivativeEquationProofAlt : alphabet * derivative_equation_proof alphabet * derivative_equation_proof alphabet
+    | DerivativeEquationProofCat : alphabet * derivative_equation_cat_branch * derivative_equation_proof alphabet * derivative_equation_proof alphabet
+    | DerivativeEquationProofStar : alphabet * derivative_equation_proof alphabet
+
+let rec derivative_equation_proof_source forall alphabet. (proof : derivative_equation_proof alphabet) : regex alphabet =
+    match proof with
+    | DerivativeEquationProofEmpty _ => RegexEmpty
+    | DerivativeEquationProofEpsilon _ => RegexEpsilon
+    | DerivativeEquationProofChar (expected, _) => RegexChar expected
+    | DerivativeEquationProofAlt (_, left, right) => RegexAlt (derivative_equation_proof_source left, derivative_equation_proof_source right)
+    | DerivativeEquationProofCat (_, _, left, right) => RegexCat (derivative_equation_proof_source left, derivative_equation_proof_source right)
+    | DerivativeEquationProofStar (_, inner) => RegexStar (derivative_equation_proof_source inner)
+
+let rec derivative_equation_proof_symbol forall alphabet. (proof : derivative_equation_proof alphabet) : alphabet =
+    match proof with
+    | DerivativeEquationProofEmpty symbol => symbol
+    | DerivativeEquationProofEpsilon symbol => symbol
+    | DerivativeEquationProofChar (_, symbol) => symbol
+    | DerivativeEquationProofAlt (symbol, _, _) => symbol
+    | DerivativeEquationProofCat (symbol, _, _, _) => symbol
+    | DerivativeEquationProofStar (symbol, _) => symbol
+
+inl derivative_equation_proof_context_same forall alphabet {symbol_compare}. (parent : derivative_equation_proof alphabet) (child : derivative_equation_proof alphabet) : bool =
+    symbol_equal (derivative_equation_proof_symbol parent) (derivative_equation_proof_symbol child)
+
+let rec derivative_equation_proof_make forall alphabet. (value : regex alphabet) (symbol : alphabet) : derivative_equation_proof alphabet =
+    match value with
+    | RegexEmpty => DerivativeEquationProofEmpty symbol
+    | RegexEpsilon => DerivativeEquationProofEpsilon symbol
+    | RegexChar expected => DerivativeEquationProofChar (expected, symbol)
+    | RegexAlt (left, right) => DerivativeEquationProofAlt (symbol, derivative_equation_proof_make left symbol, derivative_equation_proof_make right symbol)
+    | RegexCat (left, right) => DerivativeEquationProofCat (symbol, derivative_equation_cat_branch_of left, derivative_equation_proof_make left symbol, derivative_equation_proof_make right symbol)
+    | RegexStar inner => DerivativeEquationProofStar (symbol, derivative_equation_proof_make inner symbol)
+
+let rec derivative_equation_proof_candidate forall alphabet {symbol_compare}. (proof : derivative_equation_proof alphabet) : regex alphabet =
+    match proof with
+    | DerivativeEquationProofEmpty _ => RegexEmpty
+    | DerivativeEquationProofEpsilon _ => RegexEmpty
+    | DerivativeEquationProofChar (expected, symbol) => if symbol_equal expected symbol then RegexEpsilon else RegexEmpty
+    | DerivativeEquationProofAlt (_, left, right) => RegexAlt (derivative_equation_proof_candidate left, derivative_equation_proof_candidate right)
+    | DerivativeEquationProofCat (_, branch, left, right) =>
+        inl left_candidate = derivative_equation_proof_candidate left
+        inl right_candidate = derivative_equation_proof_candidate right
+        inl right_source = derivative_equation_proof_source right
+        match branch with
+        | EquationCatNullable => RegexAlt (RegexCat (left_candidate, right_source), right_candidate)
+        | EquationCatNonNullable => RegexCat (left_candidate, right_source)
+    | DerivativeEquationProofStar (_, inner) => RegexCat (derivative_equation_proof_candidate inner, RegexStar (derivative_equation_proof_source inner))
+
+let rec derivative_equation_proof_valid forall alphabet {symbol_compare}. (proof : derivative_equation_proof alphabet) : bool =
+    inl source = derivative_equation_proof_source proof
+    inl symbol = derivative_equation_proof_symbol proof
+    inl candidate = derivative_equation_proof_candidate proof
+    inl canonical = canonical_derivative source symbol
+    inl reference = normalize (reference_derivative source symbol)
+    inl local_equation =
+        regex_equal (normalize candidate) canonical &&
+        regex_equal (normalize candidate) reference &&
+        canonical_derivative_coherent source symbol
+    if local_equation then
+        match proof with
+        | DerivativeEquationProofEmpty _ => true
+        | DerivativeEquationProofEpsilon _ => true
+        | DerivativeEquationProofChar _ => true
+        | DerivativeEquationProofAlt (_, left, right) =>
+            derivative_equation_proof_context_same proof left && derivative_equation_proof_context_same proof right && derivative_equation_proof_valid left && derivative_equation_proof_valid right
+        | DerivativeEquationProofCat (_, branch, left, right) =>
+            derivative_equation_cat_branch_same branch (derivative_equation_cat_branch_of (derivative_equation_proof_source left)) && derivative_equation_proof_context_same proof left && derivative_equation_proof_context_same proof right && derivative_equation_proof_valid left && derivative_equation_proof_valid right
+        | DerivativeEquationProofStar (_, inner) => derivative_equation_proof_context_same proof inner && derivative_equation_proof_valid inner
+    else false
+
+nominal derivative_equation_certificate alphabet = regex alphabet * alphabet * derivative_equation_proof alphabet
+
+inl derivative_equation_certificate_make forall alphabet. (value : regex alphabet) (symbol : alphabet) : derivative_equation_certificate alphabet =
+    derivative_equation_certificate (value, symbol, derivative_equation_proof_make value symbol)
+
+inl derivative_equation_certificate_valid forall alphabet {symbol_compare}. (certificate : derivative_equation_certificate alphabet) : bool =
+    match certificate with
+    | derivative_equation_certificate (claimed_source, claimed_symbol, proof) =>
+        if regex_equal claimed_source (derivative_equation_proof_source proof) then
+            if symbol_equal claimed_symbol (derivative_equation_proof_symbol proof) then derivative_equation_proof_valid proof
+            else false
+        else false
+
+nominal derivative_universal_remainder_family alphabet = linear_input alphabet -> matcher_check alphabet
+
+inl capture_derivative_universal_remainder_family forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : derivative_universal_remainder_family alphabet =
+    inl certificate = derivative_equation_certificate_make value symbol
+    inl structure_valid = derivative_equation_certificate_valid certificate
+    inl candidate = canonical_derivative value symbol
+    derivative_universal_remainder_family (
+        fun suffix => matcher_check (if structure_valid then derivative_remainder_candidate_law value symbol suffix candidate else false))
+
+inl derivative_universal_remainder_family_check forall alphabet. (family : derivative_universal_remainder_family alphabet) (suffix : linear_input alphabet) : matcher_check alphabet =
+    match family with
+    | derivative_universal_remainder_family verify => verify suffix
+
+let rec derivative_universal_remainder_family_suffixes forall alphabet. (family : derivative_universal_remainder_family alphabet) (suffixes : input_list alphabet) : bool =
+    match suffixes with
+    | InputListNil => true
+    | InputListCons (suffix, rest) =>
+        if matcher_check_value (derivative_universal_remainder_family_check family suffix) then derivative_universal_remainder_family_suffixes family rest
+        else false
+
+inl main () : string =
+    inl bit_proof = derivative_equation_proof_make (ends_with_zero ()) (zero ())
+    inl tri_proof = derivative_equation_proof_make (tri_ab_star_then_c ()) (tri_a ())
+    inl bit_certificate = derivative_equation_certificate_make (ends_with_zero ()) (zero ())
+    inl tri_certificate = derivative_equation_certificate_make (tri_ab_star_then_c ()) (tri_a ())
+    assert_static (derivative_equation_proof_valid bit_proof) "suffix-independent bit derivative equation proof must validate"
+    assert_static (derivative_equation_proof_valid tri_proof) "suffix-independent ternary derivative equation proof must validate"
+    assert_static (derivative_equation_certificate_valid bit_certificate) "bit derivative equation certificate must bind source and symbol"
+    assert_static (derivative_equation_certificate_valid tri_certificate) "ternary derivative equation certificate must bind source and symbol"
+
+    inl bit_family = capture_derivative_universal_remainder_family (ends_with_zero ()) (zero ())
+    inl tri_family = capture_derivative_universal_remainder_family (tri_ab_star_then_c ()) (tri_a ())
+    inl bit_suffixes = input_corpus_depth_two (finite_alphabet_symbols (finite_alphabet ()))
+    inl tri_suffixes : input_list tri_alphabet = input_corpus_depth_two (finite_alphabet_symbols (finite_alphabet ()))
+    assert_static (derivative_universal_remainder_family_suffixes bit_family bit_suffixes) "one bit structural certificate must instantiate over every finite suffix probe"
+    assert_static (derivative_universal_remainder_family_suffixes tri_family tri_suffixes) "one ternary structural certificate must instantiate over every finite suffix probe"
+
+    inl ~bit_runtime_suffix = input_110 ()
+    inl ~tri_runtime_suffix = InputCons (tri_b (), InputCons (tri_c (), InputEmpty))
+    assert_true (matcher_check_value (derivative_universal_remainder_family_check bit_family bit_runtime_suffix))
+    assert_true (matcher_check_value (derivative_universal_remainder_family_check tri_family tri_runtime_suffix))
+
+    inl forged_equation_context : derivative_equation_proof bit_alphabet =
+        DerivativeEquationProofAlt (
+            zero (),
+            DerivativeEquationProofChar (zero (), zero ()),
+            DerivativeEquationProofChar (one (), one ()))
+    inl forged_equation_branch : derivative_equation_proof bit_alphabet =
+        DerivativeEquationProofCat (
+            zero (),
+            EquationCatNonNullable,
+            derivative_equation_proof_make RegexEpsilon (zero ()),
+            derivative_equation_proof_make (RegexChar (zero ())) (zero ()))
+    inl forged_equation_source : derivative_equation_certificate bit_alphabet =
+        derivative_equation_certificate (
+            RegexEmpty,
+            zero (),
+            derivative_equation_proof_make RegexEpsilon (zero ()))
+    assert_static (bool_same (derivative_equation_proof_valid forged_equation_context) false) "a child proof from another symbol context must be rejected"
+    assert_static (bool_same (derivative_equation_proof_valid forged_equation_branch) false) "a forged nullable concatenation branch must be rejected"
+    assert_static (bool_same (derivative_equation_certificate_valid forged_equation_source) false) "a forged source binding must be rejected"
+
+    "brzozowski-derivative-universal-witness-green"

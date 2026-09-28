@@ -1,0 +1,4 @@
+packages:
+    parallel_search_contract
+modules:
+    main

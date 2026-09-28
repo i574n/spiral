@@ -1,0 +1,10 @@
+inl impossible_closed_beta_relation_result_mismatch () :
+    exact_linear_indexed_closed_beta_relation exact_linear_unit_type =
+    ExactLinearIndexedClosedBetaTensor (
+        ExactLinearIndexedUnit (
+            ExactLinearIndexedAllUnusedEmpty
+                "the-negative-argument-is-a-closed-Unit-term",
+            "the-negative-tries-to-hide-a-Tensor-beta-relation-behind-a-Unit-result-index"),
+        "the-Tensor-case-produces-Tensor-Unit-Unit-not-Unit")
+
+inl main () = impossible_closed_beta_relation_result_mismatch ()

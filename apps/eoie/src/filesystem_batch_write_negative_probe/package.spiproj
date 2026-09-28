@@ -1,0 +1,4 @@
+packages:
+    filesystem_batch_write_contract
+modules:
+    main

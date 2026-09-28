@@ -1,0 +1,41 @@
+nominal family_contract_raw = ()
+nominal family_contract_catalog_verified = ()
+nominal family_contract_decisions_verified = ()
+nominal family_contract_runtime_verified = ()
+nominal family_contract_closed = ()
+
+union family_contract_gate =
+    | FamilyCatalogGate
+    | FamilyMigrationGate
+    | FamilyRuntimeDriftGate
+    | FamilyAdapterInventoryGate
+
+union family_contract_policy =
+    | RejectFamilyContractHeader
+    | RejectFamilyContractGateShape
+    | RejectFamilyNameDrift
+    | RejectFamilyDecisionDrift
+    | RejectUnsettledFamily
+    | AuthorizeFamilyContractClosure
+
+union family_contract_op from to =
+    | InspectFamilyCatalog :: family_contract_op family_contract_raw family_contract_catalog_verified
+    | VerifyFamilyDecisions :: family_contract_op family_contract_catalog_verified family_contract_decisions_verified
+    | VerifyFamilyRuntime :: family_contract_op family_contract_decisions_verified family_contract_runtime_verified
+    | CloseFamilyContracts :: family_contract_op family_contract_runtime_verified family_contract_closed
+
+union rec family_contract_plan from to =
+    | FamilyContractStep :: forall from to. family_contract_op from to -> family_contract_plan from to
+    | FamilyContractThen :: forall from to. (exists middle. family_contract_plan from middle * family_contract_plan middle to) -> family_contract_plan from to
+
+inl family_contract_public_plan () : family_contract_plan family_contract_raw family_contract_closed =
+    FamilyContractThen (exists (
+        FamilyContractStep InspectFamilyCatalog,
+        FamilyContractThen (exists (
+            FamilyContractStep VerifyFamilyDecisions,
+            FamilyContractThen (exists (
+                FamilyContractStep VerifyFamilyRuntime,
+                FamilyContractStep CloseFamilyContracts
+            ))
+        ))
+    ))

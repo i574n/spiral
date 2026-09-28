@@ -1,0 +1,66 @@
+nominal shim_idle = ()
+nominal shim_classified = ()
+nominal shim_decided = ()
+nominal shim_installed = ()
+
+union shim_route =
+    | PythonRoute
+    | ShellRoute
+
+union shim_mode =
+    | ShimBlock
+    | ShimWarn
+    | ShimPass
+
+union shim_op from to =
+    | ClassifyDirectRoute :: shim_op shim_idle shim_classified
+    | DecideDirectRoute :: shim_op shim_classified shim_decided
+    | InstallDirectRouteWrappers :: shim_op shim_decided shim_installed
+
+union rec shim_plan from to =
+    | ShimStep :: forall from to. shim_op from to -> shim_plan from to
+    | ShimThen :: forall from to. (exists middle. shim_plan from middle * shim_plan middle to) -> shim_plan from to
+
+inl dogfood_shim_plan () : shim_plan shim_idle shim_installed =
+    ShimThen (exists (
+        ShimStep ClassifyDirectRoute,
+        ShimThen (exists (ShimStep DecideDirectRoute, ShimStep InstallDirectRouteWrappers))
+    ))
+
+// Result codes: 0=reject, 1=explicit fallback, 2=pass-through, -1=invalid input.
+let shim_decision_binding (mode : i32) (native_equivalent : i32) (allow_real : i32) (gap_present : i32) : i32 =
+    if !!!!LT(mode,0i32) then -1i32
+    elif !!!!LT(2i32,mode) then -1i32
+    elif !!!!LT(native_equivalent,0i32) then -1i32
+    elif !!!!LT(1i32,native_equivalent) then -1i32
+    elif !!!!LT(allow_real,0i32) then -1i32
+    elif !!!!LT(1i32,allow_real) then -1i32
+    elif !!!!LT(gap_present,0i32) then -1i32
+    elif !!!!LT(1i32,gap_present) then -1i32
+    elif !!!!EQ(mode,2i32) then 2i32
+    elif !!!!EQ(native_equivalent,1i32) then 0i32
+    elif !!!!EQ(allow_real,1i32) then
+        if !!!!EQ(gap_present,1i32) then 1i32 else 0i32
+    else 0i32
+
+// Packed flags: bit0=native equivalent, bit1=allow real, bit2=gap present.
+let shim_decision_packed_binding (mode : i32) (flags : i32) : i32 =
+    if !!!!LT(flags,0i32) then -1i32
+    elif !!!!LT(7i32,flags) then -1i32
+    else
+        inl native_equivalent = !!!!Mod(flags,2i32)
+        inl allow_real = !!!!Mod(!!!!Div(flags,2i32),2i32)
+        inl gap_present = !!!!Mod(!!!!Div(flags,4i32),2i32)
+        shim_decision_binding mode native_equivalent allow_real gap_present
+
+// Packed install shape: absolute-target + wrapper-count * 2. Four absolute wrappers = 9.
+let shim_install_packed_binding (shape : i32) (mode : i32) : i32 =
+    if !!!!NEQ(shape,9i32) then 0i32
+    elif !!!!LT(mode,0i32) then 0i32
+    elif !!!!LT(2i32,mode) then 0i32
+    else 1i32
+
+let shim_uninstall_binding (manifest_present : i32) (wrapper_count : i32) : i32 =
+    if !!!!NEQ(manifest_present,1i32) then 0i32
+    elif !!!!NEQ(wrapper_count,4i32) then 0i32
+    else 1i32

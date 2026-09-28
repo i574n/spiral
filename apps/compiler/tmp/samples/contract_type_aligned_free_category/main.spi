@@ -1,0 +1,68 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+nominal nfe_draft = { id : string }
+nominal nfe_signed = { xml : string }
+nominal nfe_authorized = { protocol : string }
+
+union document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+
+union transition from to =
+    | SignTransition :: transition draft signed
+    | AuthorizeTransition :: transition signed authorized
+
+inl execute forall from to.
+    (transition : transition from to)
+    (document : document from)
+    : document to =
+    match transition, document with
+    | SignTransition, Draft payload =>
+        Signed (nfe_signed { xml = payload.id })
+    | AuthorizeTransition, Signed _ =>
+        Authorized (nfe_authorized { protocol = "free-category-authorized" })
+
+union trace state =
+    | Trace :: forall state. string -> trace state
+
+inl trace_transition forall from to.
+    (transition : transition from to)
+    (trace : trace from)
+    : trace to =
+    match transition, trace with
+    | SignTransition, Trace _ => Trace "signed"
+    | AuthorizeTransition, Trace _ => Trace "authorized"
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl rec fold_chain
+    forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl issue () : chain transition draft authorized =
+    ChainCompose (exists (ChainStep SignTransition, ChainStep AuthorizeTransition))
+
+inl main () : string =
+    inl program = issue ()
+    inl initial_document = Draft (nfe_draft { id = "NFE-09" })
+    inl final_document = fold_chain `$execute program initial_document
+    inl final_trace = fold_chain `$trace_transition program (Trace "draft")
+    match final_document, final_trace with
+    | Authorized _, Trace _ =>
+        "typed-free-category"

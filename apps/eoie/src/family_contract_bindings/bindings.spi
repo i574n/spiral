@@ -1,0 +1,21 @@
+let family_contract_equal_binding (expected : i32) (observed : i32) : i32 =
+    if !!!!EQ(expected,observed) then 1i32 else 0i32
+
+inl family_contract_shape_binding (gate_mask : i32) (gate_count : i32) : i32 =
+    if !!!!EQ(gate_mask,15i32) then
+        if !!!!EQ(gate_count,4i32) then 1i32 else 0i32
+    else 0i32
+
+inl family_contract_catalog_binding (families : i32) (decisions : i32) (unique_families : i32) (unique_decisions : i32) : i32 =
+    if !!!!EQ(families,36i32) then
+        if !!!!EQ(decisions,36i32) then
+            if !!!!EQ(unique_families,36i32) then
+                if !!!!EQ(unique_decisions,36i32) then 1i32 else 0i32
+            else 0i32
+        else 0i32
+    else 0i32
+
+inl family_contract_set_binding (matched : i32) (unsettled : i32) : i32 =
+    if !!!!EQ(matched,36i32) then
+        if !!!!EQ(unsettled,0i32) then 1i32 else 0i32
+    else 0i32

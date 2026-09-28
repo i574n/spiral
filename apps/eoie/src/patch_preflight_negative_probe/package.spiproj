@@ -1,0 +1,4 @@
+packages:
+    patch_preflight_contract
+modules:
+    main

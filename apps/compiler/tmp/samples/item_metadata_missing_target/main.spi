@@ -1,0 +1,3 @@
+inl main () =
+    inl _ = portable.target_global "SPIRAL_ITEM_METADATA_TEST_missing-item"
+    0i32

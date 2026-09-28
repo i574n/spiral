@@ -1,0 +1,7 @@
+inl impossible_corrected_cic_atomic_defeq_sort_mismatch () : i64 =
+    decide_corrected_cic_atomic_defeq
+        (corrected_cic_sort_zero ())
+        (corrected_cic_true ())
+
+inl main () =
+    impossible_corrected_cic_atomic_defeq_sort_mismatch ()

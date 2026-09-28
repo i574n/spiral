@@ -1,0 +1,18 @@
+nominal query_status = ()
+nominal publish_nfe = ()
+
+union operation op result =
+    | QueryStatus :: operation query_status string
+    | PublishNfe :: operation publish_nfe string
+
+union receipt op result =
+    | QueryReceipt :: string -> receipt query_status string
+    | PublishReceipt :: string -> receipt publish_nfe string
+
+inl accept forall op result.
+    (_ : operation op result)
+    (_ : receipt op result)
+    : string = "accepted"
+
+inl main () : string =
+    accept QueryStatus (PublishReceipt "wrong-operation")

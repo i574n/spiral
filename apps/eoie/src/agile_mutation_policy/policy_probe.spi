@@ -1,0 +1,3 @@
+open model
+
+inl main () : i32 = agile_set_decision 101i32 0i32

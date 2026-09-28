@@ -1,0 +1,14 @@
+open patch_resume_contract.model
+
+inl one_is (value : i32) : bool =
+    if !!!!LT(value,1i32) then false
+    elif !!!!LT(1i32,value) then false
+    else true
+
+inl main () : i32 =
+    inl _ = policy_plan ()
+    if one_is (receipt_shape_binding 1i32 1i32 1i32 1i32) then
+        if one_is (resume_decision_binding 1i32 1i32) then
+            if one_is (completion_binding 1i32 1i32) then 0i32 else 3i32
+        else 2i32
+    else 1i32

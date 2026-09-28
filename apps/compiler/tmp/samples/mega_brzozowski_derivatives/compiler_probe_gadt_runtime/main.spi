@@ -1,0 +1,15 @@
+nominal raw_phase = ()
+nominal decided_phase = ()
+
+union phase_state phase =
+    | RawState :: i32 -> phase_state raw_phase
+    | DecidedState :: i32 * bool -> phase_state decided_phase
+
+let decide_state (state : phase_state raw_phase) : phase_state decided_phase =
+    match state with
+    | RawState value => DecidedState (value, true)
+
+inl main () : bool =
+    inl state = decide_state (RawState 7i32)
+    match state with
+    | DecidedState (_, accepted) => accepted

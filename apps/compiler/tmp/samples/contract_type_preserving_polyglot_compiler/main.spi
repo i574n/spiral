@@ -1,0 +1,191 @@
+nominal source_module_a = ()
+nominal schema_hash_a = ()
+nominal backend_fsharp = ()
+nominal abi_net11 = ()
+nominal memory_gc = ()
+nominal capability_managed = ()
+nominal registry_root_a = ()
+nominal observer_a = ()
+nominal artifact_hash_a = ()
+
+nominal raw_source = ()
+nominal parsed = ()
+nominal elaborated = ()
+nominal normalized = ()
+nominal scheduled = ()
+nominal lowered = ()
+nominal linked = ()
+nominal attested = ()
+nominal available = ()
+nominal observed = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+
+union source_text source schema state =
+    | SourceText :: forall source schema state. string -> source_text source schema state
+
+union typed_ir source schema stage state =
+    | TypedIr :: forall source schema stage state. string -> typed_ir source schema stage state
+
+union backend_capability backend abi memory capability state =
+    | BackendCapability :: forall backend abi memory capability state. string -> backend_capability backend abi memory capability state
+
+union linked_artifact source schema backend abi memory artifact_hash state =
+    | LinkedArtifact :: forall source schema backend abi memory artifact_hash state. string -> linked_artifact source schema backend abi memory artifact_hash state
+
+union transparency_checkpoint root observer artifact_hash state =
+    | TransparencyCheckpoint :: forall root observer artifact_hash state. string -> transparency_checkpoint root observer artifact_hash state
+
+union compiler_op source schema backend abi memory capability root observer artifact_hash from to effect =
+    | Parse :: forall source schema backend abi memory capability root observer artifact_hash.
+        source_text source schema raw_source ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash raw_source parsed idempotent
+    | Elaborate :: forall source schema backend abi memory capability root observer artifact_hash.
+        typed_ir source schema parsed available ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash parsed elaborated idempotent
+    | Normalize :: forall source schema backend abi memory capability root observer artifact_hash.
+        typed_ir source schema elaborated available ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash elaborated normalized idempotent
+    | Schedule :: forall source schema backend abi memory capability root observer artifact_hash.
+        typed_ir source schema normalized available * backend_capability backend abi memory capability available ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash normalized scheduled idempotent
+    | Lower :: forall source schema backend abi memory capability root observer artifact_hash.
+        typed_ir source schema scheduled available * backend_capability backend abi memory capability available ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash scheduled lowered idempotent
+    | Link :: forall source schema backend abi memory capability root observer artifact_hash.
+        linked_artifact source schema backend abi memory artifact_hash lowered ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash lowered linked non_idempotent
+    | Attest :: forall source schema backend abi memory capability root observer artifact_hash.
+        linked_artifact source schema backend abi memory artifact_hash linked *
+        transparency_checkpoint root observer artifact_hash observed ->
+        compiler_op source schema backend abi memory capability root observer artifact_hash linked attested non_idempotent
+
+union compiler_row source schema backend abi memory capability from to effect =
+    | CompilerRow :: forall source schema backend abi memory capability from to effect. string -> compiler_row source schema backend abi memory capability from to effect
+
+union compiler_node source schema backend abi memory capability root observer artifact_hash from to =
+    | CompilerNode :: forall source schema backend abi memory capability root observer artifact_hash from to.
+        (exists effect.
+            compiler_op source schema backend abi memory capability root observer artifact_hash from to effect *
+            compiler_row source schema backend abi memory capability from to effect)
+        -> compiler_node source schema backend abi memory capability root observer artifact_hash from to
+
+union rec compiler_plan source schema backend abi memory capability root observer artifact_hash from to =
+    | CompilerLeaf :: forall source schema backend abi memory capability root observer artifact_hash from to.
+        compiler_node source schema backend abi memory capability root observer artifact_hash from to ->
+        compiler_plan source schema backend abi memory capability root observer artifact_hash from to
+    | CompilerThen :: forall source schema backend abi memory capability root observer artifact_hash from to.
+        (exists middle.
+            compiler_plan source schema backend abi memory capability root observer artifact_hash from middle *
+            compiler_node source schema backend abi memory capability root observer artifact_hash middle to)
+        -> compiler_plan source schema backend abi memory capability root observer artifact_hash from to
+
+union emitted_node source schema backend abi memory capability from to =
+    | EmittedNode :: forall source schema backend abi memory capability from to.
+        (exists effect. compiler_row source schema backend abi memory capability from to effect)
+        -> emitted_node source schema backend abi memory capability from to
+
+union rec emitted_plan source schema backend abi memory capability from to =
+    | EmittedLeaf :: forall source schema backend abi memory capability from to.
+        emitted_node source schema backend abi memory capability from to ->
+        emitted_plan source schema backend abi memory capability from to
+    | EmittedThen :: forall source schema backend abi memory capability from to.
+        (exists middle.
+            emitted_plan source schema backend abi memory capability from middle *
+            emitted_node source schema backend abi memory capability middle to)
+        -> emitted_plan source schema backend abi memory capability from to
+
+union packed_artifact source schema backend abi memory artifact_hash =
+    | PackedArtifact :: forall source schema backend abi memory artifact_hash.
+        (exists state. linked_artifact source schema backend abi memory artifact_hash state)
+        -> packed_artifact source schema backend abi memory artifact_hash
+
+inl emit_node forall source schema backend abi memory capability root observer artifact_hash from to.
+    (node : compiler_node source schema backend abi memory capability root observer artifact_hash from to)
+    : emitted_node source schema backend abi memory capability from to =
+    match node with
+    | CompilerNode payload =>
+        inl exists effect. _, row = payload
+        EmittedNode (exists row)
+
+inl rec emit_plan forall source schema backend abi memory capability root observer artifact_hash from to.
+    (plan : compiler_plan source schema backend abi memory capability root observer artifact_hash from to)
+    : emitted_plan source schema backend abi memory capability from to =
+    match plan with
+    | CompilerLeaf node => EmittedLeaf (emit_node node)
+    | CompilerThen payload =>
+        inl exists middle. prefix, node = payload
+        EmittedThen (exists (emit_plan prefix, emit_node node))
+
+inl rec terminal_row forall source schema backend abi memory capability from to.
+    (plan : emitted_plan source schema backend abi memory capability from to) : string =
+    match plan with
+    | EmittedLeaf (EmittedNode payload) =>
+        inl exists effect. CompilerRow label = payload
+        label
+    | EmittedThen payload =>
+        inl exists middle. _, EmittedNode row = payload
+        inl exists effect. CompilerRow label = row
+        label
+
+inl inspect_artifact forall source schema backend abi memory artifact_hash state.
+    (artifact : linked_artifact source schema backend abi memory artifact_hash state) : string =
+    match artifact with | LinkedArtifact label => label
+
+inl with_artifact forall source schema backend abi memory artifact_hash result.
+    (visitor : forall source schema backend abi memory artifact_hash state. linked_artifact source schema backend abi memory artifact_hash state -> result)
+    (packed : packed_artifact source schema backend abi memory artifact_hash) : result =
+    match packed with
+    | PackedArtifact payload =>
+        inl exists state. artifact = payload
+        visitor artifact
+
+inl parse_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a raw_source parsed =
+    CompilerNode (exists (Parse (SourceText "spiral-source"), CompilerRow "parse"))
+
+inl elaborate_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a parsed elaborated =
+    CompilerNode (exists (Elaborate (TypedIr "elaborated-ir"), CompilerRow "elaborate"))
+
+inl normalize_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a elaborated normalized =
+    CompilerNode (exists (Normalize (TypedIr "normalized-ir"), CompilerRow "normalize"))
+
+inl schedule_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a normalized scheduled =
+    CompilerNode (exists (Schedule (TypedIr "normalized-ir", BackendCapability "managed-backend"), CompilerRow "schedule"))
+
+inl lower_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a scheduled lowered =
+    CompilerNode (exists (Lower (TypedIr "scheduled-ir", BackendCapability "managed-backend"), CompilerRow "lower"))
+
+inl link_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a lowered linked =
+    CompilerNode (exists (Link (LinkedArtifact "linked-net11-artifact"), CompilerRow "link"))
+
+inl attest_node () : compiler_node source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a linked attested =
+    CompilerNode (exists (Attest (LinkedArtifact "linked-net11-artifact", TransparencyCheckpoint "observer-checkpoint"), CompilerRow "type-preserving-polyglot-compiler"))
+
+inl plan () : compiler_plan source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc capability_managed registry_root_a observer_a artifact_hash_a raw_source attested =
+    CompilerThen (exists (
+        CompilerThen (exists (
+            CompilerThen (exists (
+                CompilerThen (exists (
+                    CompilerThen (exists (
+                        CompilerThen (exists (
+                            CompilerLeaf (parse_node ()),
+                            elaborate_node ()
+                        )),
+                        normalize_node ()
+                    )),
+                    schedule_node ()
+                )),
+                lower_node ()
+            )),
+            link_node ()
+        )),
+        attest_node ()
+    ))
+
+inl main () : string =
+    inl emitted = emit_plan (plan ())
+    inl artifact : linked_artifact source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc artifact_hash_a linked = LinkedArtifact "linked-net11-artifact"
+    inl packed : packed_artifact source_module_a schema_hash_a backend_fsharp abi_net11 memory_gc artifact_hash_a = PackedArtifact (exists artifact)
+    inl inspected = with_artifact `$inspect_artifact packed
+    inl _ = inspected
+    terminal_row emitted

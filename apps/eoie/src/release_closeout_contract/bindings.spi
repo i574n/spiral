@@ -1,0 +1,47 @@
+open model
+
+let release_closeout_shape_binding (observed_mask : i32) (gate_count : i32) : i32 =
+    if !!!!LT(observed_mask,63i32) then 0i32
+    elif !!!!LT(63i32,observed_mask) then 0i32
+    elif !!!!LT(gate_count,6i32) then 0i32
+    elif !!!!LT(6i32,gate_count) then 0i32
+    else 1i32
+
+let release_closeout_migration_binding (expected : i32) (observed : i32) : i32 =
+    if !!!!LT(expected,0i32) then 0i32
+    elif !!!!LT(observed,0i32) then 0i32
+    elif !!!!LT(expected,observed) then 0i32
+    elif !!!!LT(observed,expected) then 0i32
+    else 1i32
+
+let release_closeout_evidence_binding (evidence_mask : i32) (expected_mask : i32) : i32 =
+    if !!!!LT(evidence_mask,7i32) then 0i32
+    elif !!!!LT(7i32,evidence_mask) then 0i32
+    elif !!!!LT(expected_mask,7i32) then 0i32
+    elif !!!!LT(7i32,expected_mask) then 0i32
+    else 1i32
+
+let release_closeout_mode_binding (mode_code : i32) (effect_mask : i32) : i32 =
+    if !!!!LT(mode_code,0i32) then 0i32
+    elif !!!!LT(1i32,mode_code) then 0i32
+    elif !!!!LT(effect_mask,0i32) then 0i32
+    elif !!!!LT(mode_code,1i32) then
+        if !!!!LT(effect_mask,1i32) then 1i32 else 0i32
+    else
+        if !!!!LT(effect_mask,3i32) then 0i32
+        elif !!!!LT(3i32,effect_mask) then 0i32
+        else 1i32
+
+let release_closeout_commit_binding (commit_mask : i32) (expected_mask : i32) : i32 =
+    if !!!!LT(commit_mask,7i32) then 0i32
+    elif !!!!LT(7i32,commit_mask) then 0i32
+    elif !!!!LT(expected_mask,7i32) then 0i32
+    elif !!!!LT(7i32,expected_mask) then 0i32
+    else 1i32
+
+let release_closeout_refresh_binding (refresh_mask : i32) (expected_mask : i32) : i32 =
+    if !!!!LT(refresh_mask,127i32) then 0i32
+    elif !!!!LT(127i32,refresh_mask) then 0i32
+    elif !!!!LT(expected_mask,127i32) then 0i32
+    elif !!!!LT(127i32,expected_mask) then 0i32
+    else 1i32

@@ -1,0 +1,6 @@
+packages:
+    state_series_contract
+    agile_state_runtime
+    rust_std_string
+modules:
+    state

@@ -1,0 +1,15 @@
+[package]
+name = "eoie-agile-mutation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_agile_mutation"
+path = "agile_mutation.rs"
+
+[dependencies]
+eoie-agile-state = { path = "../eoie_agile_state" }
+eoie-agile-lease = { path = "../eoie_agile_lease" }
+eoie-handoff = { path = "../eoie_handoff" }

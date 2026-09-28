@@ -1,0 +1,5 @@
+inl impossible_legacy_application_function_result () :
+    legacy_cic_term empty_ctx identity_sort =
+    ApplicationTerm (exists (identity_term (), true_term ()))
+
+inl main () = impossible_legacy_application_function_result ()

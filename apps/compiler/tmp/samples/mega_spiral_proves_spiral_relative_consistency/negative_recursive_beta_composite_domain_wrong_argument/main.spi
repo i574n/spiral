@@ -1,0 +1,13 @@
+inl impossible_recursive_beta_composite_domain_accepts_Unit_argument () :
+    exact_linear_indexed_closed_recursive_beta_derivation
+        (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)
+        (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type) =
+    ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+        ExactLinearIndexedUnit (
+            ExactLinearIndexedAllUnusedEmpty
+                "Unit-is-closed-but-does-not-have-the-composite-Unit-Bool-Tensor-domain",
+            "this-argument-has-Unit-type-not-the-required-composite-domain"),
+        "this-construction-must-be-rejected-because-recursive-beta-Bound-keeps-domain-and-argument-type-identical")
+
+inl main () =
+    impossible_recursive_beta_composite_domain_accepts_Unit_argument ()

@@ -1,0 +1,16 @@
+inl main () : i32 =
+    inl value = "Aéλ🙂Z"
+    inl a = sm.utf8_scalar_at_byte_offset value 0i32
+    inl e = sm.utf8_scalar_at_byte_offset value 1i32
+    inl lambda = sm.utf8_scalar_at_byte_offset value 3i32
+    inl smile = sm.utf8_scalar_at_byte_offset value 5i32
+    inl z = sm.utf8_scalar_at_byte_offset value 9i32
+    if (=.) a 65i32 then
+        if (=.) e 233i32 then
+            if (=.) lambda 955i32 then
+                if (=.) smile 128578i32 then
+                    if (=.) z 90i32 then 0i32 else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

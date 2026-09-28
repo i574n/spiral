@@ -1,0 +1,11 @@
+inl impossible_corrected_cic_conversion_constraint_sort_mismatch () :
+    corrected_cic_conversion_constraint_program
+        (cic_chain_succ cic_chain_zero) =
+    CorrectedCicConversionConstraintProgramMore (exists (
+        corrected_cic_true (),
+        corrected_cic_sort_zero (),
+        CorrectedCicConversionConstraintProgramDone,
+        "a-single-conversion-cell-cannot-pair-Bool-with-Sort-one"))
+
+inl main () =
+    impossible_corrected_cic_conversion_constraint_sort_mismatch ()

@@ -1,0 +1,48 @@
+nominal archive_extract_idle = ()
+nominal archive_extract_preflighted = ()
+nominal archive_extract_running = ()
+nominal archive_extract_observed = ()
+nominal archive_extract_confined = ()
+
+union archive_extract_op from to =
+    | RejectExistingDestination :: archive_extract_op archive_extract_idle archive_extract_preflighted
+    | LaunchNativeExtractor :: archive_extract_op archive_extract_preflighted archive_extract_running
+    | ObserveNativeExtractor :: archive_extract_op archive_extract_running archive_extract_observed
+    | ValidateExtractedArchive :: archive_extract_op archive_extract_observed archive_extract_confined
+
+union rec archive_extract_plan from to =
+    | ArchiveExtractStep :: forall from to. archive_extract_op from to -> archive_extract_plan from to
+    | ArchiveExtractThen :: forall from to. (exists middle. archive_extract_plan from middle * archive_extract_plan middle to) -> archive_extract_plan from to
+
+inl native_extract_plan () : archive_extract_plan archive_extract_idle archive_extract_confined =
+    ArchiveExtractThen (exists (
+        ArchiveExtractStep RejectExistingDestination,
+        ArchiveExtractThen (exists (
+            ArchiveExtractStep LaunchNativeExtractor,
+            ArchiveExtractThen (exists (
+                ArchiveExtractStep ObserveNativeExtractor,
+                ArchiveExtractStep ValidateExtractedArchive
+            ))
+        ))
+    ))
+
+let archive_extract_preflight_binding (destination_exists : i32) (archive_entries_safe : i32) : i32 =
+    if !!!!LT(destination_exists,0i32) then 0i32
+    elif !!!!LT(1i32,destination_exists) then 0i32
+    elif !!!!LT(archive_entries_safe,1i32) then 0i32
+    elif !!!!LT(1i32,archive_entries_safe) then 0i32
+    elif !!!!LT(destination_exists,1i32) then 1i32
+    else 0i32
+
+let archive_extract_process_binding (extractor_ok : i32) (staging_confined : i32) : i32 =
+    if !!!!LT(extractor_ok,1i32) then 0i32
+    elif !!!!LT(1i32,extractor_ok) then 0i32
+    elif !!!!LT(staging_confined,1i32) then 0i32
+    elif !!!!LT(1i32,staging_confined) then 0i32
+    else 1i32
+
+let archive_extract_complete_binding (expected_payloads : i32) (observed_payloads : i32) : i32 =
+    bundle_extract_binding expected_payloads observed_payloads
+
+let archive_extract_receipt_binding (preflight_ok : i32) (completion_ok : i32) : i32 =
+    bundle_complete_binding preflight_ok completion_ok

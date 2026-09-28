@@ -1,0 +1,16 @@
+inl impossible_scoped_application_obstruction_not_intrinsic () =
+    inl identity_term = corrected_cic_identity ()
+    inl true_term = corrected_cic_true ()
+    inl false_term = corrected_cic_false ()
+    inl scope = corrected_cic_shared_domain_scope_of_binder (identity_binder ())
+    inl obstruction =
+        corrected_cic_scoped_application_term_authority_make
+            scope
+            identity_term
+            true_term
+            identity_term
+            false_term
+    CorrectedCicScopedApplicationConstraintIntrinsic obstruction
+
+inl main () =
+    impossible_scoped_application_obstruction_not_intrinsic ()

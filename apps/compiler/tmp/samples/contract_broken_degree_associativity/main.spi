@@ -1,0 +1,25 @@
+nominal n_zero = ()
+nominal n_one = ()
+nominal n_two = ()
+nominal n_three = ()
+nominal n_four = ()
+
+union n_add left right total =
+    | AddOneOneTwo :: string -> n_add n_one n_one n_two
+    | AddTwoTwoFour :: string -> n_add n_two n_two n_four
+    | AddOneTwoThree :: string -> n_add n_one n_two n_three
+    | AddOneThreeFour :: string -> n_add n_one n_three n_four
+
+nominal associativity a b c ab bc total =
+    n_add a b ab * n_add ab c total * n_add b c bc * n_add a bc total
+
+inl broken () : associativity n_one n_one n_two n_two n_three n_three =
+    associativity (
+        AddOneOneTwo "1+1=2",
+        AddTwoTwoFour "2+2=4",
+        AddOneTwoThree "1+2=3",
+        AddOneThreeFour "1+3=4")
+
+inl main () : string =
+    inl proof = broken ()
+    "should-not-compile-broken-associativity"

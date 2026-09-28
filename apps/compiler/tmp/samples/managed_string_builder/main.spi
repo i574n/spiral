@@ -1,0 +1,13 @@
+inl rec build ~count (value : string) : string =
+    if count =. 0i32 then value
+    else
+        inl piece = if count %. 2i32 =. 0i32 then "ab" else "c"
+        join build (count -. 1i32) (sm.concat value piece)
+
+inl main () =
+    inl value = join build 4i32 ""
+    if (=.) (sm.length value : i32) 6i32 then
+        if (=.) (sm.index value 0i32) 'a' then
+            if (=.) (sm.index value 5i32) 'c' then 0i32 else 1i32
+        else 2i32
+    else 3i32

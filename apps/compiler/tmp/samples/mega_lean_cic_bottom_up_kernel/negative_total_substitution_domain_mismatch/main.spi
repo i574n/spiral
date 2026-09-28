@@ -1,0 +1,23 @@
+inl impossible_total_substitution_domain_mismatch () :
+    corrected_cic_term empty_ctx (function_sort bool_sort bool_sort) =
+    inl source :
+        corrected_cic_term
+            (ctx_extend empty_ctx (function_sort bool_sort bool_sort))
+            (function_sort bool_sort bool_sort) =
+        CorrectedBoundHere (
+            binder (
+                empty_ctx "negative-total-substitution-empty",
+                function_sort (bool_sort "Bool", bool_sort "Bool"),
+                "the-source-binder-has-a-function-domain"))
+    inl substitution :
+        cic_corrected_substitution
+            (ctx_extend empty_ctx bool_sort)
+            empty_ctx =
+        CicCorrectedSubstitutionDropNewest (
+            empty_ctx "negative-total-substitution-empty",
+            bool_sort "Bool",
+            corrected_cic_true (),
+            "the-substitution-eliminates-a-Bool-domain")
+    apply_cic_corrected_substitution substitution source
+
+inl main () = impossible_total_substitution_domain_mismatch ()

@@ -1,0 +1,17 @@
+inl impossible_top_collision_wrong_identity
+    (recorded :
+        typed_fx_hashed_statement_event_log
+            typed_fx_hashed_secondary_position
+            typed_fx_hashed_secondary_history)
+    (difference :
+        typed_fx_statement_payload_hash_not_equal
+            typed_fx_statement_payload_hash_changed
+            typed_fx_statement_payload_hash_primary)
+    : typed_fx_hashed_statement_identity_collision
+        typed_fx_statement_command_identity_primary
+        typed_fx_statement_payload_hash_changed
+        typed_fx_hashed_secondary_history =
+    typed_fx_hashed_statement_top_collision_from_recorded_log recorded difference
+
+inl main () =
+    impossible_top_collision_wrong_identity

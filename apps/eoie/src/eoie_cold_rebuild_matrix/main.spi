@@ -1,0 +1,47 @@
+inl rust_global (x : string) : () = real typecase `(!!!!LitToTypeLit(x)) with ~x => $"RustGlobal(@x)" : ()
+
+union cold_compile_lane =
+    | FastBatchLane
+    | SoloCompileLane
+
+inl cold_compile_lane_code = function
+    | FastBatchLane => 0i32
+    | SoloCompileLane => 1i32
+
+let cold_compile_lane_binding (owner_code : i32) (reserved : i32) : i32 =
+    if !!!!EQ(reserved,0i32) then
+        if !!!!EQ(owner_code,0i32) then cold_compile_lane_code FastBatchLane
+        elif !!!!LT(owner_code,1i32) then -1i32
+        elif !!!!LT(16i32,owner_code) then -1i32
+        else cold_compile_lane_code SoloCompileLane
+    else -1i32
+
+union cold_format_lane =
+    | PreserveCompilerLayout
+    | DensityFormatLane
+
+inl cold_format_lane_code = function
+    | PreserveCompilerLayout => 0i32
+    | DensityFormatLane => 1i32
+
+let cold_format_lane_binding (owner_code : i32) (reserved : i32) : i32 =
+    if !!!!EQ(reserved,0i32) then
+        if !!!!LT(owner_code,0i32) then -1i32
+        elif !!!!LT(16i32,owner_code) then -1i32
+        elif !!!!EQ(owner_code,10i32) then cold_format_lane_code PreserveCompilerLayout
+        elif !!!!EQ(owner_code,14i32) then cold_format_lane_code PreserveCompilerLayout
+        elif !!!!LT(6i32,owner_code) then cold_format_lane_code DensityFormatLane
+        else cold_format_lane_code PreserveCompilerLayout
+    else -1i32
+
+inl emit_runtime () : () = rust_global "use eoie_source_map::source_rebuild_pairs;\nuse std::fs;\nuse std::path::Path;\n\nfn cold_relative(root: &Path, path: &Path) -> Result<String,String> {\n    let relative = path.strip_prefix(root).map_err(|_| format!(\"cold rebuild path escapes root: {}\", path.display()))?;\n    Ok(relative.to_string_lossy().replace('\\\\', \"/\"))\n}\n\nfn cold_no_space(value: &str, label: &str) -> Result<(),String> {\n    if value.chars().any(char::is_whitespace) { Err(format!(\"cold rebuild {label} contains whitespace: {value}\")) } else { Ok(()) }\n}\n\nfn cold_matrix_write(root: &Path, relative: &str, eoie: &str, compiler: &str, dotnet: &str, rustfmt: &str) -> Result<(), String> {\n    for (label,value) in [(\"eoie\",eoie),(\"compiler\",compiler),(\"dotnet\",dotnet),(\"rustfmt\",rustfmt)] { cold_no_space(value,label)?; }\n    cold_no_space(&root.to_string_lossy(),\"root\")?;\n    let pairs = source_rebuild_pairs(root)?;\n    let target = root.join(relative);\n    let matrix_dir = target.parent().unwrap_or(root);\n    fs::create_dir_all(matrix_dir).map_err(|e|format!(\"mkdir {}: {e}\",matrix_dir.display()))?;\n    let header = \"id\\tprogram\\targs\\tcwd\\tenv\\trequired_status\\ton_error\\tdepends_on\\treceipt\\n\";\n    let mut out = String::from(header);\n    let mut batch_count = 0usize;\n    let mut solo_count = 0usize;\n    let mut format_count = 0usize;\n    for (shard_index, group) in pairs.chunks(2).enumerate() {\n        let mut batch = String::new();\n        let mut fast_count = 0usize;\n        for (input,output) in group {\n            let input_rel = cold_relative(root,input)?;\n            let output_rel = cold_relative(root,output)?;\n            cold_no_space(&input_rel,\"input\")?; cold_no_space(&output_rel,\"output\")?;\n            cold_no_space(&input.to_string_lossy(),\"input absolute\")?; cold_no_space(&output.to_string_lossy(),\"output absolute\")?;\n            let owner_code = if input_rel == \"src/backup_domain/main.spi\" { 1 } else if input_rel == \"src/eoie_agile_mutation/agile_mutation.spi\" { 2 } else if input_rel == \"src/eoie_agile_policy/policy.spi\" { 3 } else if input_rel == \"src/eoie_agile_state/state.spi\" { 4 } else if input_rel == \"src/eoie_process/process.spi\" { 5 } else if input_rel == \"src/eoie_agile_lease/lease.spi\" { 6 } else if input_rel == \"src/patch_compat_driver/main.spi\" { 7 } else if input_rel == \"src/eoie_proxy_search/search.spi\" { 8 } else if input_rel == \"src/bundle_retention_domain/main.spi\" { 9 } else if input_rel == \"src/eoie_release_hygiene/main.spi\" { 10 } else if input_rel == \"src/cold_proof_domain/main.spi\" { 11 } else if input_rel == \"src/eoie_coverage_prune/coverage.spi\" { 12 } else if input_rel == \"src/eoie_bundle_retention/main.spi\" { 13 } else if input_rel == \"src/eoie_bundle_zip/bundle.spi\" { 14 } else if input_rel == \"src/archive_deflate_domain/main.spi\" { 15 } else if input_rel == \"src/eoie_cold_rebuild_matrix/main.spi\" { 16 } else { 0 };\n            let lane = eoie_cold_compile_lane(owner_code,0);\n            let format_lane = eoie_cold_format_lane(owner_code,0);\n            if lane < 0 || format_lane < 0 { return Err(format!(\"typed cold lane rejected owner: {input_rel}\")); }\n            if lane == 1 {\n                let compile_id = format!(\"compile-solo-{shard_index:02}-{solo_count:02}\");\n                let row_compile = format!(\"{compile_id}\\t{compiler}\\t--backend Rust --dotnet {dotnet} --timeout-ms 14000 {} {}\\t.\\t\\tpass\\tstop\\t\\t.cold-rebuild/receipts/{compile_id}.txt\\n\", input.display(), output.display());\n                out.push_str(&row_compile);\n                if format_lane == 1 {\n                    let fmt_id = format!(\"fmt-density-{shard_index:02}-{solo_count:02}\");\n                    let row_fmt = format!(\"{fmt_id}\\t{rustfmt}\\t--edition 2024 --config-path {}/src/rustfmt.toml {}\\t.\\t\\tpass\\tstop\\t{compile_id}\\t.cold-rebuild/receipts/{fmt_id}.txt\\n\", root.display(), output.display());\n                    out.push_str(&row_fmt);\n                    format_count += 1;\n                }\n                solo_count += 1;\n            } else {\n                batch.push_str(&format!(\"{}\\t{}\\n\", input.display(), output.display()));\n                fast_count += 1;\n            }\n        }\n        if fast_count > 0 {\n            let batch_path = matrix_dir.join(format!(\"compiler-batch-{shard_index:02}.tsv\"));\n            cold_no_space(&batch_path.to_string_lossy(),\"batch manifest\")?;\n            fs::write(&batch_path,batch.as_bytes()).map_err(|e|format!(\"write {}: {e}\",batch_path.display()))?;\n            let compile_id = format!(\"compile-batch-{shard_index:02}\");\n            let row_compile = format!(\"{compile_id}\\t{compiler}\\t--backend Rust --dotnet {dotnet} --timeout-ms 14000 --batch {}\\t.\\t\\tpass\\tstop\\t\\t.cold-rebuild/receipts/{compile_id}.txt\\n\", batch_path.display());\n            out.push_str(&row_compile);\n            batch_count += 1;\n        }\n    }\n    fs::write(&target,out.as_bytes()).map_err(|e|format!(\"write {}: {e}\",target.display()))?;\n    println!(\"eoie proxy cold-rebuild-matrix ok pairs={} rows={} shard_width=2 batch_chains={} solo_chains={} density_formats={} path={}\", pairs.len(), batch_count+solo_count+format_count, batch_count, solo_count, format_count, target.display());\n    Ok(())\n}\n\npub fn cold_rebuild_matrix_run(args: &[String]) -> Result<(), String> {\n    if args.len() != 7 { return Err(\"cold-rebuild-matrix expects root matrix-relative eoie compiler dotnet rustfmt\".to_owned()); }\n    cold_matrix_write(Path::new(&args[1]), &args[2], &args[3], &args[4], &args[5], &args[6])\n}\n"
+
+inl main () : i32 =
+    rust_global "#![allow(dead_code)]"
+    inl _ = cold_compile_lane_binding 0i32 0i32
+    inl _ = cold_format_lane_binding 0i32 0i32
+    $"RustExportI32Binary(\"eoie_cold_compile_lane\",\"cold_compile_lane_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_cold_format_lane\",\"cold_format_lane_binding\")" : ()
+    $"RustLibrary()" : ()
+    emit_runtime ()
+    0i32

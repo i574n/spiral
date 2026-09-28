@@ -1,0 +1,4 @@
+packages:
+    bundle_verify_contract
+modules:
+    main

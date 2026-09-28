@@ -1,0 +1,18 @@
+inl impossible_corrected_cic_context_sort_indexed_membership_sort_mismatch () :
+    corrected_cic_context_sort_indexed_selected_meta
+        empty_ctx bool_sort
+        (corrected_cic_meta_states_open empty_ctx bool_sort
+            (corrected_cic_meta_states_open
+                empty_ctx (universe_sort universe_one)
+                (corrected_cic_meta_states_solved empty_ctx bool_sort
+                    corrected_cic_meta_states_empty)))
+        (corrected_cic_meta_states_open empty_ctx bool_sort
+            (corrected_cic_meta_states_solved
+                empty_ctx (universe_sort universe_one)
+                (corrected_cic_meta_states_solved empty_ctx bool_sort
+                    corrected_cic_meta_states_empty))) =
+    corrected_cic_context_sort_indexed_selected_meta_from_membership
+        (corrected_cic_middle_universe_open_membership_after_oldest ())
+
+inl main () =
+    impossible_corrected_cic_context_sort_indexed_membership_sort_mismatch ()

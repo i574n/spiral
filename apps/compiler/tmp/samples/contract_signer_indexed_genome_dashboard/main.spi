@@ -1,0 +1,37 @@
+nominal signer_a = ()
+nominal key_a = ()
+nominal digest_a = ()
+nominal verified = ()
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal app_scope = ()
+nominal epoch1 = ()
+nominal live = ()
+nominal hydrated = ()
+
+union signed_authority signer key digest state = | SignedAuthority :: forall signer key digest state. string -> signed_authority signer key digest state
+union genome_batch signer digest sample build contig = | GenomeBatch :: forall signer digest sample build contig. string -> genome_batch signer digest sample build contig
+union resource scope epoch signer digest sample build contig state = | Resource :: forall scope epoch signer digest sample build contig state. string -> resource scope epoch signer digest sample build contig state
+union view scope epoch signer digest state = | View :: forall scope epoch signer digest state. string -> view scope epoch signer digest state
+
+inl publish forall scope epoch signer key digest sample build contig.
+    (authority : signed_authority signer key digest verified)
+    (batch : genome_batch signer digest sample build contig)
+    : resource scope epoch signer digest sample build contig live =
+    match authority, batch with
+    | SignedAuthority _, GenomeBatch label => Resource label
+
+inl mount forall scope epoch signer digest sample build contig.
+    (resource : resource scope epoch signer digest sample build contig live)
+    (view : view scope epoch signer digest hydrated)
+    : string =
+    match resource, view with
+    | Resource _, View label => label
+
+inl main () : string =
+    inl authority : signed_authority signer_a key_a digest_a verified = SignedAuthority "signed"
+    inl batch : genome_batch signer_a digest_a sample_a hg38 chr1 = GenomeBatch "variants"
+    inl view : view app_scope epoch1 signer_a digest_a hydrated = View "signed-genome-dashboard-mounted"
+    inl resource : resource app_scope epoch1 signer_a digest_a sample_a hg38 chr1 live = publish authority batch
+    mount resource view

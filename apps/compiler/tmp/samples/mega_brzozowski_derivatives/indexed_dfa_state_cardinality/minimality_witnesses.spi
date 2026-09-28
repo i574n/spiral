@@ -1,0 +1,319 @@
+open main
+open semantic_witnesses
+
+// Retain one concrete distinguishing word for every unordered representative
+// pair. The nested GADT shape is triangular: a vector with n representatives
+// carries n-1 witnesses for its head, then the complete witness surface for the
+// remaining n-1 representatives.
+nominal indexed_dfa_pair_distinguishing_witness alphabet =
+    regex alphabet * regex alphabet * linear_input alphabet
+
+union rec indexed_dfa_distinguishing_against alphabet tail_count =
+    | IndexedDfaDistinguishingAgainstNil :: forall alphabet.
+        indexed_dfa_distinguishing_against alphabet finite_length_zero
+    | IndexedDfaDistinguishingAgainstCons :: forall alphabet tail_count.
+        indexed_dfa_pair_distinguishing_witness alphabet *
+        indexed_dfa_distinguishing_against alphabet tail_count ->
+        indexed_dfa_distinguishing_against alphabet (finite_length_succ tail_count)
+
+union rec indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count =
+    | IndexedDfaPairwiseDistinguishingWitnessesNil :: forall alphabet.
+        indexed_dfa_pairwise_distinguishing_witnesses alphabet finite_length_zero
+    | IndexedDfaPairwiseDistinguishingWitnessesCons :: forall alphabet tail_count.
+        indexed_dfa_distinguishing_against alphabet tail_count *
+        indexed_dfa_pairwise_distinguishing_witnesses alphabet tail_count ->
+        indexed_dfa_pairwise_distinguishing_witnesses
+            alphabet
+            (finite_length_succ tail_count)
+
+union indexed_dfa_distinguishing_against_validation alphabet tail_count =
+    | IndexedDfaDistinguishingAgainstRejected :: forall alphabet tail_count.
+        indexed_dfa_distinguishing_against_validation alphabet tail_count
+    | IndexedDfaDistinguishingAgainstCertified :: forall alphabet tail_count.
+        indexed_dfa_distinguishing_against alphabet tail_count ->
+        indexed_dfa_distinguishing_against_validation alphabet tail_count
+
+inl rec indexed_dfa_build_distinguishing_against forall alphabet tail_count {symbol_compare}.
+    (head : regex alphabet)
+    (tail : indexed_dfa_state_vector alphabet tail_count)
+    (symbols : symbol_list alphabet)
+    : indexed_dfa_distinguishing_against_validation alphabet tail_count =
+    match tail with
+    | IndexedDfaStateVectorNil =>
+        IndexedDfaDistinguishingAgainstCertified
+            IndexedDfaDistinguishingAgainstNil
+    | IndexedDfaStateVectorCons (state, rest) =>
+        inl result =
+            dfa_constructive_distinguishing_result head state symbols
+        match result with
+        | DfaConstructiveEquivalent =>
+            IndexedDfaDistinguishingAgainstRejected
+        | DfaConstructiveDistinguished input =>
+            if dfa_constructive_distinguishing_result_valid
+                head state symbols result then
+                match indexed_dfa_build_distinguishing_against
+                    head rest symbols with
+                | IndexedDfaDistinguishingAgainstRejected =>
+                    IndexedDfaDistinguishingAgainstRejected
+                | IndexedDfaDistinguishingAgainstCertified witnesses =>
+                    inl witness :
+                        indexed_dfa_pair_distinguishing_witness alphabet =
+                        indexed_dfa_pair_distinguishing_witness (
+                            head,
+                            state,
+                            input)
+                    IndexedDfaDistinguishingAgainstCertified (
+                        IndexedDfaDistinguishingAgainstCons (
+                            witness,
+                            witnesses))
+            else IndexedDfaDistinguishingAgainstRejected
+
+union indexed_dfa_pairwise_distinguishing_validation alphabet representative_count =
+    | IndexedDfaPairwiseDistinguishingRejected :: forall alphabet representative_count.
+        indexed_dfa_pairwise_distinguishing_validation alphabet representative_count
+    | IndexedDfaPairwiseDistinguishingCertified :: forall alphabet representative_count.
+        indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count ->
+        indexed_dfa_pairwise_distinguishing_validation alphabet representative_count
+
+inl rec indexed_dfa_build_pairwise_distinguishing_witnesses forall alphabet representative_count {symbol_compare}.
+    (representatives : indexed_dfa_state_vector alphabet representative_count)
+    (symbols : symbol_list alphabet)
+    : indexed_dfa_pairwise_distinguishing_validation alphabet representative_count =
+    match representatives with
+    | IndexedDfaStateVectorNil =>
+        IndexedDfaPairwiseDistinguishingCertified
+            IndexedDfaPairwiseDistinguishingWitnessesNil
+    | IndexedDfaStateVectorCons (head, tail) =>
+        match indexed_dfa_build_distinguishing_against head tail symbols with
+        | IndexedDfaDistinguishingAgainstRejected =>
+            IndexedDfaPairwiseDistinguishingRejected
+        | IndexedDfaDistinguishingAgainstCertified head_witnesses =>
+            match indexed_dfa_build_pairwise_distinguishing_witnesses
+                tail symbols with
+            | IndexedDfaPairwiseDistinguishingRejected =>
+                IndexedDfaPairwiseDistinguishingRejected
+            | IndexedDfaPairwiseDistinguishingCertified tail_witnesses =>
+                IndexedDfaPairwiseDistinguishingCertified (
+                    IndexedDfaPairwiseDistinguishingWitnessesCons (
+                        head_witnesses,
+                        tail_witnesses))
+
+inl indexed_dfa_pairwise_distinguishing_shape forall alphabet representative_count.
+    (_ : indexed_dfa_state_vector alphabet representative_count)
+    (_ : indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count)
+    : bool = true
+
+// The base minimized seal checks quotient closure and bisimulation minimality.
+// This stronger typestate additionally retains a constructive separating word
+// for every representative pair, so consumers do not have to trust/replay a
+// minimality boolean.
+nominal indexed_dfa_minimality_witness alphabet symbol_count representative_count =
+    indexed_dfa_bisimulation_capability alphabet *
+    finite_symbol_vector alphabet symbol_count *
+    indexed_dfa_state_vector alphabet representative_count *
+    indexed_dfa_exact_transition_rows alphabet symbol_count representative_count *
+    indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count
+
+inl with_indexed_dfa_minimality_witness forall alphabet symbol_count representative_count result.
+    (witness : indexed_dfa_minimality_witness alphabet symbol_count representative_count)
+    (consumer :
+        indexed_dfa_bisimulation_capability alphabet ->
+        finite_symbol_vector alphabet symbol_count ->
+        indexed_dfa_state_vector alphabet representative_count ->
+        indexed_dfa_exact_transition_rows alphabet symbol_count representative_count ->
+        indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count ->
+        result)
+    : result =
+    match witness with
+    | indexed_dfa_minimality_witness (
+        bisimulation_capability,
+        symbols,
+        representatives,
+        rows,
+        pairwise_witnesses) =>
+        consumer
+            bisimulation_capability
+            symbols
+            representatives
+            rows
+            pairwise_witnesses
+
+nominal indexed_dfa_fully_semantic_minimized_surface alphabet symbol_count closure_count representative_count =
+    indexed_dfa_semantic_minimized_surface alphabet symbol_count closure_count representative_count *
+    indexed_dfa_minimality_witness alphabet symbol_count representative_count
+
+union indexed_dfa_fully_semantic_minimized_surface_validation =
+    | IndexedDfaFullySemanticMinimizedSurfaceRejected
+    | IndexedDfaFullySemanticMinimizedSurfaceCertified :
+        (exists alphabet symbol_count closure_count representative_count.
+            indexed_dfa_fully_semantic_minimized_surface
+                alphabet symbol_count closure_count representative_count)
+
+inl seal_indexed_dfa_fully_semantic_minimized_surface forall alphabet {symbol_compare; finite_alphabet}.
+    (capability : indexed_dfa_capability alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_dfa_fully_semantic_minimized_surface_validation =
+    match seal_indexed_dfa_semantic_minimized_surface capability start descriptor with
+    | IndexedDfaSemanticMinimizedSurfaceRejected =>
+        IndexedDfaFullySemanticMinimizedSurfaceRejected
+    | IndexedDfaSemanticMinimizedSurfaceCertified packed =>
+        inl exists sealed_alphabet symbol_count closure_count representative_count. surface = packed
+        match surface with
+        | indexed_dfa_semantic_minimized_surface (
+            _,
+            bisimulation_capability,
+            symbols,
+            _,
+            representatives,
+            _,
+            rows) =>
+            inl symbol_list = finite_symbol_vector_to_list symbols
+            match indexed_dfa_build_pairwise_distinguishing_witnesses
+                representatives symbol_list with
+            | IndexedDfaPairwiseDistinguishingRejected =>
+                IndexedDfaFullySemanticMinimizedSurfaceRejected
+            | IndexedDfaPairwiseDistinguishingCertified pairwise_witnesses =>
+                // The semantic seal already established quotient closure. This
+                // layer adds constructive minimality evidence and then seals it
+                // as nominal typestate.
+                inl minimality_witness :
+                    indexed_dfa_minimality_witness
+                        sealed_alphabet symbol_count representative_count =
+                    indexed_dfa_minimality_witness (
+                        bisimulation_capability,
+                        symbols,
+                        representatives,
+                        rows,
+                        pairwise_witnesses)
+                IndexedDfaFullySemanticMinimizedSurfaceCertified (exists (
+                    indexed_dfa_fully_semantic_minimized_surface (
+                        surface,
+                        minimality_witness)))
+
+inl indexed_dfa_fully_semantic_surface_contract forall alphabet symbol_count closure_count representative_count.
+    (surface :
+        indexed_dfa_fully_semantic_minimized_surface
+            alphabet symbol_count closure_count representative_count)
+    : bool =
+    match surface with
+    | indexed_dfa_fully_semantic_minimized_surface (semantic_surface, minimality_witness) =>
+        match semantic_surface with
+        | indexed_dfa_semantic_minimized_surface (_, _, _, _, _, partition_witness, _) =>
+            // Partition, minimality and quotient closure are now all typestate.
+            // Exact row/state cardinality is carried by the shared indices.
+            with_indexed_dfa_semantic_partition_witness partition_witness (fun coverage origins =>
+                inl _ = coverage
+                inl _ = origins
+                with_indexed_dfa_minimality_witness minimality_witness
+                    (fun bisimulation_capability symbols representatives rows pairwise_witnesses =>
+                        inl _ = bisimulation_capability
+                        inl _ = symbols
+                        inl _ = rows
+                        indexed_dfa_pairwise_distinguishing_shape
+                            representatives
+                            pairwise_witnesses))
+
+inl require_minimality_witness forall alphabet symbol_count representative_count.
+    (witness : indexed_dfa_minimality_witness alphabet symbol_count representative_count)
+    : bool =
+    with_indexed_dfa_minimality_witness witness
+        (fun bisimulation_capability symbols representatives rows pairwise_witnesses =>
+            inl _ = bisimulation_capability
+            inl _ = symbols
+            inl _ = rows
+            indexed_dfa_pairwise_distinguishing_shape
+                representatives
+                pairwise_witnesses)
+
+nominal indexed_dfa_fully_semantic_case alphabet =
+    indexed_dfa_capability alphabet *
+    regex alphabet *
+    indexed_finite_alphabet_descriptor alphabet
+
+nominal indexed_dfa_fully_semantic_check alphabet = bool
+
+nominal indexed_dfa_fully_semantic_program alphabet =
+    capability_program
+        indexed_dfa_fully_semantic_case
+        indexed_dfa_fully_semantic_check
+        alphabet
+
+inl capture_indexed_dfa_fully_semantic_program forall alphabet {symbol_compare; finite_alphabet}.
+    (capability : indexed_dfa_capability alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_dfa_fully_semantic_program alphabet =
+    inl interpret (item : indexed_dfa_fully_semantic_case alphabet)
+        : indexed_dfa_fully_semantic_check alphabet =
+        match item with
+        | indexed_dfa_fully_semantic_case (program_capability, program_start, program_descriptor) =>
+            match seal_indexed_dfa_fully_semantic_minimized_surface
+                program_capability program_start program_descriptor with
+            | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
+                indexed_dfa_fully_semantic_check false
+            | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>
+                inl exists sealed_alphabet symbol_count closure_count representative_count. surface = packed
+                indexed_dfa_fully_semantic_check (
+                    indexed_dfa_fully_semantic_surface_contract surface)
+    indexed_dfa_fully_semantic_program (
+        capability_program_make
+            (indexed_dfa_fully_semantic_case (capability, start, descriptor))
+            interpret)
+
+inl run_indexed_dfa_fully_semantic_program forall alphabet.
+    (program : indexed_dfa_fully_semantic_program alphabet)
+    : indexed_dfa_fully_semantic_check alphabet =
+    match program with
+    | indexed_dfa_fully_semantic_program generic_program =>
+        capability_program_run generic_program
+
+inl indexed_dfa_fully_semantic_program_passes forall alphabet.
+    (program : indexed_dfa_fully_semantic_program alphabet) : bool =
+    match run_indexed_dfa_fully_semantic_program program with
+    | indexed_dfa_fully_semantic_check result => result
+
+inl main () : string =
+    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+    match seal_indexed_dfa_fully_semantic_minimized_surface
+        bit_capability
+        (ends_with_zero ())
+        (bit_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
+        failwith "bit fully semantic minimized surface should certify"
+    | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>
+        inl exists alphabet symbol_count closure_count representative_count. surface = packed
+        assert_static
+            (indexed_dfa_fully_semantic_surface_contract surface)
+            "bit fully semantic surface must consume partition/minimality typestate without replay"
+
+    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
+    match seal_indexed_dfa_fully_semantic_minimized_surface
+        tri_capability
+        (tri_ab_star_then_c ())
+        (tri_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
+        failwith "ternary fully semantic minimized surface should certify"
+    | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>
+        inl exists alphabet symbol_count closure_count representative_count. surface = packed
+        assert_static
+            (indexed_dfa_fully_semantic_surface_contract surface)
+            "ternary fully semantic surface must retain minimality and quotient closure as typestate"
+
+    inl fully_semantic_batch :
+        matcher_batch indexed_dfa_fully_semantic_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (
+                capture_indexed_dfa_fully_semantic_program
+                    bit_capability
+                    (ends_with_zero ())
+                    (bit_indexed_finite_alphabet_descriptor ())),
+            MatchBatchSingle (
+                capture_indexed_dfa_fully_semantic_program
+                    tri_capability
+                    (tri_ab_star_then_c ())
+                    (tri_indexed_finite_alphabet_descriptor ())))
+    assert_static
+        (matcher_batch_forall `$indexed_dfa_fully_semantic_program_passes fully_semantic_batch)
+        "higher-ranked fully semantic programs must preserve alphabet-indexed minimality typestate"
+    "brzozowski-indexed-dfa-minimality-witnesses-green"

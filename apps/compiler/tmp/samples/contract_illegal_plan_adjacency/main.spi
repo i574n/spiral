@@ -1,0 +1,38 @@
+nominal production = ()
+nominal schema_v4 = ()
+nominal normal = ()
+nominal contingency = ()
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+nominal phase env schema state mode = env * schema * state * mode
+
+union fiscal_op from to =
+    | Sign :: forall env schema mode.
+        fiscal_op
+            (phase env schema draft mode)
+            (phase env schema signed mode)
+    | AuthorizeContingency :: forall env schema.
+        fiscal_op
+            (phase env schema signed contingency)
+            (phase env schema authorized contingency)
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl illegal_plan () :
+    chain fiscal_op
+        (phase production schema_v4 draft normal)
+        (phase production schema_v4 authorized contingency) =
+    ChainCompose (exists (
+        ChainStep Sign,
+        ChainStep AuthorizeContingency
+    ))
+
+inl main () : string =
+    inl _ = illegal_plan ()
+    "unreachable"

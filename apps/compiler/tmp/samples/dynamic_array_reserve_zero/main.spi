@@ -1,0 +1,26 @@
+inl reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+inl resize ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+inl capacity ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+inl main () : i32 =
+    inl ~xs : array i32 = create 0i32
+    join reserve xs 3i32
+    inl ~alias = xs
+    inl ~reserved = join capacity alias
+    if reserved < 3i32 then 10i32 else
+        join reserve alias 2i32
+        inl ~reserved_again = join capacity xs
+        if reserved_again =. reserved then
+            join resize alias 3i32
+            set xs 0i32 4i32
+            set xs 1i32 5i32
+            set xs 2i32 6i32
+            join resize xs 0i32
+            join resize alias 3i32
+            length xs +. index xs 0i32 +. index xs 1i32 +. index xs 2i32 -. 3i32
+        else 11i32

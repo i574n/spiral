@@ -1,0 +1,26 @@
+<Project>
+  <!--
+    One host, two compiler cores. `SpiralCore` selects which monolith is compiled into the host:
+      single-flight  ../../spiral_compiler.fs (apps/compiler; stable; C/F#/Rust/Delphi)
+      hopac          cores/hopac/spiral_compiler.fs (parallel Hopac evaluator; in progress)
+    All build output goes to an external cache so the bundle never contains obj/bin trees.
+  -->
+  <PropertyGroup>
+    <SpiralCore Condition="'$(SpiralCore)' == ''">single-flight</SpiralCore>
+    <SpiralCacheDir Condition="'$(SpiralCacheDir)' == '' and '$(SPIRAL_BIN_CACHE_DIR)' != ''">$(SPIRAL_BIN_CACHE_DIR)</SpiralCacheDir>
+    <SpiralCacheDir Condition="'$(SpiralCacheDir)' == '' and '$(LOCALAPPDATA)' != ''">$(LOCALAPPDATA)/spiral-bin</SpiralCacheDir>
+    <SpiralCacheDir Condition="'$(SpiralCacheDir)' == ''">$(HOME)/.cache/spiral-bin</SpiralCacheDir>
+    <BaseIntermediateOutputPath>$(SpiralCacheDir)/obj/$(SpiralCore)/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <MSBuildProjectExtensionsPath>$(BaseIntermediateOutputPath)</MSBuildProjectExtensionsPath>
+    <BaseOutputPath>$(SpiralCacheDir)/bin/$(SpiralCore)/$(MSBuildProjectName)/</BaseOutputPath>
+    <TargetFramework>net11.0</TargetFramework>
+    <LangVersion>preview</LangVersion>
+    <RollForward>Major</RollForward>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <RestoreIgnoreFailedSources>true</RestoreIgnoreFailedSources>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);FS0064;FS3370;FS0025;FS0049;FS1182;FS3560</NoWarn>
+  </PropertyGroup>
+</Project>

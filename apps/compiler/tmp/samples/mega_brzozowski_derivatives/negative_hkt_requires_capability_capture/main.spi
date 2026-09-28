@@ -1,0 +1,13 @@
+open main
+
+inl constrained_acceptance_transform forall alphabet {symbol_compare}. (item : matcher_case alphabet) : matcher_check alphabet =
+    match item with
+    | matcher_case (value, input) => matcher_check (accepts value input)
+
+inl main () =
+    inl batch : matcher_batch matcher_case (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (matcher_case (ends_with_zero (), input_110 ())),
+            MatchBatchSingle (matcher_case (tri_a_star (), input_aaa ()))
+        )
+    matcher_batch_map `$constrained_acceptance_transform batch

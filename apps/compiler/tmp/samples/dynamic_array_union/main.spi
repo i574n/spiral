@@ -1,0 +1,16 @@
+union payload =
+    | Empty
+    | Values : array i32
+
+let score x : i32 =
+    match x with
+    | Empty => 0i32
+    | Values values => length values +. index values 0i32 +. index values 1i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~values : array i32 = create n
+    set values 0i32 4i32
+    set values 1i32 5i32
+    inl wrapped = Values values
+    score wrapped -. 11i32

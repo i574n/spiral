@@ -1,0 +1,91 @@
+nominal ingest_frontier_policy_owner = string
+nominal ingest_frontier_negative_owner = string
+
+nominal ingest_unmapped owner = owner
+nominal ingest_manifest_classified owner = owner
+nominal ingest_trim_classified owner = owner
+nominal ingest_extracted_classified owner = owner
+nominal ingest_targets_derived owner = owner
+nominal ingest_frontier_ranked owner = owner
+nominal ingest_frontier_settled owner = owner
+
+union ingest_frontier_transition from to =
+    | MapIngest :: forall owner. ingest_frontier_transition (ingest_unmapped owner) (ingest_manifest_classified owner)
+    | ClassifyTrim :: forall owner. ingest_frontier_transition (ingest_manifest_classified owner) (ingest_trim_classified owner)
+    | ClassifyExtracted :: forall owner. ingest_frontier_transition (ingest_trim_classified owner) (ingest_extracted_classified owner)
+    | DeriveTargets :: forall owner. ingest_frontier_transition (ingest_extracted_classified owner) (ingest_targets_derived owner)
+    | RankFrontier :: forall owner. ingest_frontier_transition (ingest_targets_derived owner) (ingest_frontier_ranked owner)
+    | SettleIngestFrontier :: forall owner. ingest_frontier_transition (ingest_frontier_ranked owner) (ingest_frontier_settled owner)
+
+union rec ingest_frontier_plan from to =
+    | IngestFrontierStep :: forall from to. ingest_frontier_transition from to -> ingest_frontier_plan from to
+    | IngestFrontierThen :: forall from to. (exists middle. ingest_frontier_plan from middle * ingest_frontier_plan middle to) -> ingest_frontier_plan from to
+
+let manifest_binding (has_manifest : i32) (payload_files : i32) : i32 =
+    if !!!!LT(has_manifest,1i32) then 0i32
+    elif !!!!LT(payload_files,0i32) then 0i32
+    elif !!!!LT(payload_files,1i32) then 1i32
+    else 2i32
+
+let trim_binding (toolchain_tarballs : i32) : i32 =
+    if !!!!LT(toolchain_tarballs,0i32) then 0i32
+    elif !!!!LT(0i32,toolchain_tarballs) then 0i32
+    else 1i32
+
+let extracted_binding (has_ingest_md : i32) (has_extracted_manifest : i32) (toolchain_tarballs : i32) : i32 =
+    inl trim_ok = trim_binding toolchain_tarballs
+    if !!!!LT(has_ingest_md,1i32) then 0i32
+    elif !!!!LT(has_extracted_manifest,1i32) then 0i32
+    elif !!!!LT(trim_ok,1i32) then 0i32
+    else 1i32
+
+let targets_binding (manual_targets : i32) (derived_targets : i32) : i32 =
+    if !!!!LT(manual_targets,0i32) then 0i32
+    elif !!!!LT(derived_targets,0i32) then 0i32
+    elif !!!!LT(manual_targets,1i32) then
+        if !!!!LT(derived_targets,1i32) then 0i32 else 1i32
+    else 1i32
+
+let frontier_binding (frontier_count : i32) (top_priority : i32) : i32 =
+    if !!!!LT(frontier_count,1i32) then 0i32
+    elif !!!!LT(top_priority,1i32) then 0i32
+    elif !!!!LT(3i32,top_priority) then 0i32
+    else 1i32
+
+let complete_binding (manifest_code : i32) (trim_ok : i32) (extracted_ok : i32) (targets_ok : i32) (frontier_ok : i32) : i32 =
+    if !!!!LT(manifest_code,1i32) then 0i32
+    elif !!!!LT(trim_ok,1i32) then 0i32
+    elif !!!!LT(extracted_ok,1i32) then 0i32
+    elif !!!!LT(targets_ok,1i32) then 0i32
+    elif !!!!LT(frontier_ok,1i32) then 0i32
+    else 1i32
+
+inl full_plan forall owner. () : ingest_frontier_plan (ingest_unmapped owner) (ingest_frontier_settled owner) =
+    IngestFrontierThen (exists (
+        IngestFrontierStep MapIngest,
+        IngestFrontierThen (exists (
+            IngestFrontierStep ClassifyTrim,
+            IngestFrontierThen (exists (
+                IngestFrontierStep ClassifyExtracted,
+                IngestFrontierThen (exists (
+                    IngestFrontierStep DeriveTargets,
+                    IngestFrontierThen (exists (
+                        IngestFrontierStep RankFrontier,
+                        IngestFrontierStep SettleIngestFrontier
+                    ))
+                ))
+            ))
+        ))
+    ))
+
+inl policy_plan () : ingest_frontier_plan (ingest_unmapped ingest_frontier_policy_owner) (ingest_frontier_settled ingest_frontier_policy_owner) = full_plan ()
+inl negative_plan () : ingest_frontier_plan (ingest_unmapped ingest_frontier_negative_owner) (ingest_frontier_settled ingest_frontier_negative_owner) = full_plan ()
+
+inl authority_status () : i32 =
+    inl _ = policy_plan ()
+    inl manifest = manifest_binding 1i32 2i32
+    inl trim = trim_binding 0i32
+    inl extracted = extracted_binding 1i32 1i32 0i32
+    inl targets = targets_binding 1i32 2i32
+    inl frontier = frontier_binding 3i32 3i32
+    complete_binding manifest trim extracted targets frontier

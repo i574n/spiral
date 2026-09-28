@@ -1,0 +1,12 @@
+inl impossible_variable_strengthening_drops_preserved () :
+    exact_linear_indexed_variable_strengthening
+        exact_linear_indexed_open_unit_substitution_context
+        exact_linear_zero
+        exact_linear_indexed_open_unit_substitution_target_usage
+        exact_linear_free_context_empty
+        exact_linear_zero
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type =
+    exact_linear_indexed_open_unit_variable_strengthening ()
+
+inl main () = impossible_variable_strengthening_drops_preserved ()

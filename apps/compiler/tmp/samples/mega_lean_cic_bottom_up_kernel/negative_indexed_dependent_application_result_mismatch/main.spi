@@ -1,0 +1,10 @@
+inl impossible_corrected_cic_indexed_dependent_application_result_mismatch () :
+    corrected_cic_instantiated_codomain
+        (corrected_cic_substituted_codomain
+            corrected_cic_identity_codomain_code
+            corrected_cic_closed_type_code_sort_zero) =
+    corrected_cic_indexed_dependent_application_target
+        (corrected_cic_indexed_bool_type_application ())
+
+inl main () =
+    impossible_corrected_cic_indexed_dependent_application_result_mismatch ()

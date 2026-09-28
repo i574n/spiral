@@ -1,0 +1,28 @@
+open model
+
+inl target_path () = "/tmp/eoie-rust-std-fs-target.txt"
+
+inl cleanup () : bool = model.remove_file (target_path ())
+
+inl stage_promote_restore_discard () : bool =
+    if model.write_text (target_path ()) "original" then
+        inl target = model.target (target_path ())
+        inl backup = model.backup target (model.original_body "original")
+        inl staged = model.stage target (model.patch_body "probe")
+        if model.promote target staged
+            && model.text_equals "probe" (target_path ()) then
+            inl restoration =
+                model.execute_restoration (model.grant_restoration ()) RestoreBackup backup
+            if model.restoration_succeeded restoration
+                && model.text_equals "original" (target_path ()) then
+                inl pending = model.stage target (model.patch_body "pending")
+                model.discard pending
+                    && model.staged_missing pending
+                    && model.text_equals "original" (target_path ())
+            else false
+        else false
+    else false
+
+inl main () : i32 =
+    inl passed = cleanup () && stage_promote_restore_discard ()
+    if passed && cleanup () then 0i32 else 1i32

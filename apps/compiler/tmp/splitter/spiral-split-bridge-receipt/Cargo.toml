@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-bridge-receipt"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/bridge_receipt.rs"
+
+[dependencies]
+spiral-split-gear-bridge.workspace = true

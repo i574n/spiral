@@ -1,0 +1,24 @@
+union receipt_row_kind =
+    | UnknownReceiptRow
+    | SnapshotReceiptRow
+    | ModuleReceiptRow
+
+inl receipt_row_kind_code_value = function
+    | UnknownReceiptRow => 0u64
+    | SnapshotReceiptRow => 1u64
+    | ModuleReceiptRow => 2u64
+
+inl receipt_row_kind_text_value = function
+    | UnknownReceiptRow => ""
+    | SnapshotReceiptRow => "snapshot"
+    | ModuleReceiptRow => "module"
+
+let receipt_row_kind_code (kind : string) : u64 =
+    if (=.) kind "snapshot" then receipt_row_kind_code_value SnapshotReceiptRow
+    elif (=.) kind "module" then receipt_row_kind_code_value ModuleReceiptRow
+    else receipt_row_kind_code_value UnknownReceiptRow
+
+let receipt_row_kind_text (code : string) : string =
+    if (=.) code "1" then receipt_row_kind_text_value SnapshotReceiptRow
+    elif (=.) code "2" then receipt_row_kind_text_value ModuleReceiptRow
+    else receipt_row_kind_text_value UnknownReceiptRow

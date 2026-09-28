@@ -1,0 +1,20 @@
+inl impossible_erp_step_detached_result () :
+    erp_plan requisition_drafted budget_reserved =
+    inl requisition_value : requisition company_a usd widget_a =
+        requisition (
+            company_a "company-a",
+            usd "USD",
+            widget_a "widget-a",
+            "detached-result-requisition")
+    inl budget_value : budget_token company_a usd =
+        budget_token (
+            company_a "company-a",
+            usd "USD",
+            1000i64,
+            "detached-result-budget")
+    ErpStep (exists (
+        ReserveBudget (requisition_value, budget_value),
+        (requisition_value, budget_value)))
+
+inl main () =
+    impossible_erp_step_detached_result ()

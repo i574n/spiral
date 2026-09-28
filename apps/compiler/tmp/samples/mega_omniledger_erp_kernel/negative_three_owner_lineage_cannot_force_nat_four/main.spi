@@ -1,0 +1,18 @@
+inl impossible_three_owner_lineage_cannot_force_nat_four () :
+    erp_p2p_fence_history nat_four =
+    inl program : erp_p2p_fence_takeover_program nat_one nat_three =
+        ErpP2PFenceTakeoverProgramThen
+            (exists
+                (ErpP2PFenceTakeoverProgramOne "owner-b",
+                 ErpP2PFenceTakeoverProgramOne "owner-c"))
+    inl physical_lineage =
+        erp_p2p_physical_owner_lineage_from_takeover_program
+            "owner-a"
+            program
+    match erp_p2p_physical_owner_lineage_history_make physical_lineage with
+    | erp_p2p_physical_owner_lineage_history payload =>
+        inl exists fence. history = payload
+        history
+
+inl main () =
+    impossible_three_owner_lineage_cannot_force_nat_four ()

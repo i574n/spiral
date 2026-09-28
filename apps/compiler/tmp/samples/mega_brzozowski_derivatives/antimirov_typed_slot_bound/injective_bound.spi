@@ -1,0 +1,189 @@
+open main
+open positioned_bound
+open indexed_assignment
+
+// Classical Antimirov gives |support(r)| <= positions(r)+1.  Instead of asking
+// the current compiler to normalize Peano sums or nested HKT type functions,
+// this module proves the same bound constructively: every support state is
+// assigned to a fresh typed slot.  `SupportSlotRoot` is the +1 and every
+// `SupportSlotOrigin` is indexed by one concrete Char-origin path in `shape`.
+union antimirov_injective_assignment_validation shape support_count =
+    | AntimirovInjectiveAssignmentRejected :: forall shape support_count.
+        antimirov_injective_assignment_validation shape support_count
+    | AntimirovInjectiveAssignmentCertified :: forall shape support_count.
+        antimirov_support_slot_assignment shape support_count ->
+        antimirov_injective_assignment_validation shape support_count
+
+// Build slot coverage and injectivity in one recursive GADT refinement scope.
+// `seen_values` is the image already consumed in the typed slot universe; a
+// second support state may not consume a slot with the same denotation.
+let rec antimirov_build_injective_support_slot_assignment forall alphabet {symbol_compare} shape support_count.
+    (cat_capability : antimirov_slot_cat_capability alphabet)
+    (equal_capability : antimirov_slot_equal_capability alphabet)
+    (root : regex alphabet)
+    (tree : antimirov_position_tree alphabet shape)
+    (seen_values : regex_list alphabet)
+    (support : antimirov_support_vector alphabet support_count)
+    : antimirov_injective_assignment_validation shape support_count =
+    match support with
+    | AntimirovSupportVectorNil =>
+        AntimirovInjectiveAssignmentCertified AntimirovSupportSlotAssignmentNil
+    | AntimirovSupportVectorCons (head, rest) =>
+        match antimirov_support_slot_find cat_capability equal_capability root head tree with
+        | SupportSlotMissing => AntimirovInjectiveAssignmentRejected
+        | SupportSlotFound slot =>
+            match equal_capability with
+            | antimirov_slot_equal_capability equal =>
+                inl slot_value =
+                    antimirov_support_slot_value cat_capability root tree slot
+                if equal head slot_value &&
+                   bool_same (regex_list_contains slot_value seen_values) false then
+                    match antimirov_build_injective_support_slot_assignment
+                        cat_capability
+                        equal_capability
+                        root
+                        tree
+                        (RegexListCons (slot_value, seen_values))
+                        rest with
+                    | AntimirovInjectiveAssignmentRejected =>
+                        AntimirovInjectiveAssignmentRejected
+                    | AntimirovInjectiveAssignmentCertified assignment_rest =>
+                        inl assignment :
+                            antimirov_support_slot_assignment shape (finite_length_succ support_count) =
+                            AntimirovSupportSlotAssignmentCons (slot, assignment_rest)
+                        AntimirovInjectiveAssignmentCertified assignment
+                else
+                    AntimirovInjectiveAssignmentRejected
+
+let rec antimirov_support_list_same forall alphabet {symbol_compare}.
+    (left : regex_list alphabet)
+    (right : regex_list alphabet)
+    : bool =
+    match left, right with
+    | RegexListNil, RegexListNil => true
+    | RegexListCons (left_head, left_rest), RegexListCons (right_head, right_rest) =>
+        if regex_equal left_head right_head then
+            antimirov_support_list_same left_rest right_rest
+        else
+            false
+    | _, _ => false
+
+// Post-validation typestate keeps the exact support_count while the position
+// shape witnesses the finite target universe.  Downstream consumers need not
+// replay coverage or distinct-image checks.
+nominal antimirov_structural_support_bound alphabet shape support_count =
+    antimirov_positioned_regex alphabet shape *
+    antimirov_support_vector alphabet support_count *
+    antimirov_support_slot_assignment shape support_count
+
+union antimirov_structural_support_bound_validation alphabet shape support_count =
+    | AntimirovStructuralSupportBoundRejected :: forall alphabet shape support_count.
+        antimirov_structural_support_bound_validation alphabet shape support_count
+    | AntimirovStructuralSupportBoundCertified :: forall alphabet shape support_count.
+        antimirov_structural_support_bound alphabet shape support_count ->
+        antimirov_structural_support_bound_validation alphabet shape support_count
+
+inl certify_antimirov_structural_support_bound_with_support forall alphabet {symbol_compare} shape support_count.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    (support : antimirov_support_vector alphabet support_count)
+    : antimirov_structural_support_bound_validation alphabet shape support_count =
+    inl tree = antimirov_positioned_regex_tree positioned
+    inl normalized = antimirov_positioned_regex_value positioned
+    inl cat_capability : antimirov_slot_cat_capability alphabet =
+        antimirov_slot_cat_capability_default
+    inl equal_capability : antimirov_slot_equal_capability alphabet =
+        antimirov_slot_equal_capability_default
+    if antimirov_support_list_same
+        (antimirov_support_vector_to_list support)
+        (antimirov_support normalized) then
+        match antimirov_build_injective_support_slot_assignment
+            cat_capability
+            equal_capability
+            normalized
+            tree
+            RegexListNil
+            support with
+        | AntimirovInjectiveAssignmentRejected =>
+            AntimirovStructuralSupportBoundRejected
+        | AntimirovInjectiveAssignmentCertified assignment =>
+            AntimirovStructuralSupportBoundCertified
+                (antimirov_structural_support_bound (positioned, support, assignment))
+    else
+        AntimirovStructuralSupportBoundRejected
+
+inl require_antimirov_structural_support_bound forall alphabet shape support_count.
+    (_ : antimirov_structural_support_bound alphabet shape support_count)
+    : bool = true
+
+inl structural_support_bound_assignment_is_aligned forall alphabet shape support_count.
+    (antimirov_structural_support_bound (_, support, assignment) :
+        antimirov_structural_support_bound alphabet shape support_count)
+    : bool =
+    require_support_assignment_alignment support assignment
+
+inl bit_structural_support_bound_certificate ()
+    : antimirov_structural_support_bound bit_alphabet bit_ends_with_zero_shape two_support_count =
+    inl positioned :
+        antimirov_positioned_regex bit_alphabet bit_ends_with_zero_shape =
+        antimirov_positioned_regex_from_tree (bit_ends_with_zero_position_tree ())
+    match certify_antimirov_structural_support_bound_with_support
+        positioned
+        (two_bit_support_vector_for_certificate ()) with
+    | AntimirovStructuralSupportBoundRejected =>
+        failwith "bit-structural-support-bound-rejected"
+    | AntimirovStructuralSupportBoundCertified certificate => certificate
+
+inl tri_structural_support_bound_certificate ()
+    : antimirov_structural_support_bound tri_alphabet tri_ab_star_then_c_shape two_support_count =
+    inl positioned :
+        antimirov_positioned_regex tri_alphabet tri_ab_star_then_c_shape =
+        antimirov_positioned_regex_from_tree (tri_ab_star_then_c_position_tree ())
+    match certify_antimirov_structural_support_bound_with_support
+        positioned
+        (two_tri_support_vector_for_certificate ()) with
+    | AntimirovStructuralSupportBoundRejected =>
+        failwith "tri-structural-support-bound-rejected"
+    | AntimirovStructuralSupportBoundCertified certificate => certificate
+
+inl duplicate_bit_support_vector_for_rejection ()
+    : antimirov_support_vector bit_alphabet two_support_count =
+    inl root = normalize (ends_with_zero ())
+    AntimirovSupportVectorCons (
+        root,
+        AntimirovSupportVectorCons (
+            root,
+            AntimirovSupportVectorNil))
+
+inl main () : string =
+    assert_static
+        (require_antimirov_structural_support_bound
+            (bit_structural_support_bound_certificate ()))
+        "bit support must have a structural root-plus-position injection witness"
+    assert_static
+        (require_antimirov_structural_support_bound
+            (tri_structural_support_bound_certificate ()))
+        "ternary support must have a structural root-plus-position injection witness"
+    assert_static
+        (structural_support_bound_assignment_is_aligned
+            (bit_structural_support_bound_certificate ()))
+        "bit structural bound must retain its exact-count assignment witness"
+    assert_static
+        (structural_support_bound_assignment_is_aligned
+            (tri_structural_support_bound_certificate ()))
+        "ternary structural bound must retain its exact-count assignment witness"
+    inl bit_positioned :
+        antimirov_positioned_regex bit_alphabet bit_ends_with_zero_shape =
+        antimirov_positioned_regex_from_tree (bit_ends_with_zero_position_tree ())
+    match certify_antimirov_structural_support_bound_with_support
+        bit_positioned
+        (duplicate_bit_support_vector_for_rejection ()) with
+    | AntimirovStructuralSupportBoundRejected => ()
+    | AntimirovStructuralSupportBoundCertified _ =>
+        failwith "duplicate-support-must-not-certify-structural-bound"
+    match certify_antimirov_structural_support_bound_with_support
+        bit_positioned
+        (one_bit_support_vector_for_control ()) with
+    | AntimirovStructuralSupportBoundRejected => ()
+    | AntimirovStructuralSupportBoundCertified _ =>
+        failwith "truncated-actual-support-must-not-certify-structural-bound"
+    "brzozowski-antimirov-structural-support-bound-green"

@@ -1,0 +1,20 @@
+open main
+
+inl main () : string =
+    inl bit_descriptor : indexed_finite_alphabet_descriptor bit_alphabet =
+        indexed_finite_alphabet_descriptor_from_symbols
+            (bit_finite_alphabet_symbols ())
+    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+    assert_static
+        (indexed_finite_alphabet_descriptor_certified bit_capability bit_descriptor)
+        "generic bit inventory pack must certify"
+
+    inl tri_descriptor : indexed_finite_alphabet_descriptor tri_alphabet =
+        indexed_finite_alphabet_descriptor_from_symbols
+            (tri_finite_alphabet_symbols ())
+    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
+    assert_static
+        (indexed_finite_alphabet_descriptor_certified tri_capability tri_descriptor)
+        "generic ternary inventory pack must certify"
+
+    "generic-inventory-pack-green"

@@ -1,0 +1,120 @@
+nominal production = ()
+nominal schema_v4 = ()
+nominal draft_state = ()
+nominal validated_state = ()
+nominal authorized_state = ()
+nominal pending = ()
+nominal ready = ()
+
+nominal nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+union rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+union rec validation result =
+    | Lift :: forall result. rule result -> validation result
+    | Zip :: forall a b. validation a * validation b -> validation (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * validation input)
+        -> validation result
+
+union validation_evidence status =
+    | PendingEvidence :: string -> validation_evidence pending
+    | ReadyEvidence :: string -> validation_evidence ready
+
+inl run_rule forall result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    match rule with
+    | IssuerRule => document.issuer
+    | RecipientRule => document.recipient
+    | TotalRule => document.total_cents
+
+inl rec run_validation forall result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    match program with
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        inl exists input. mapping, source = packed
+        mapping (run_validation document source)
+
+inl evidence_from_fields (_ : (string * string) * i32) : validation_evidence ready =
+    ReadyEvidence "three-independent-checks"
+
+inl validation_plan () : validation (validation_evidence ready) =
+    Map (exists (
+        evidence_from_fields,
+        Zip (
+            Zip (Lift IssuerRule, Lift RecipientRule),
+            Lift TotalRule
+        )
+    ))
+
+union endpoint env schema =
+    | ProductionV4Endpoint :: endpoint production schema_v4
+
+union document state =
+    | DraftDocument :: nfe -> document draft_state
+    | ValidatedDocument :: nfe -> document validated_state
+    | AuthorizedDocument :: string -> document authorized_state
+
+union fiscal_op from to =
+    | Validate :: validation_evidence ready -> fiscal_op draft_state validated_state
+    | Authorize :: endpoint production schema_v4 -> fiscal_op validated_state authorized_state
+
+inl execute forall from to.
+    (operation : fiscal_op from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Validate (ReadyEvidence _), DraftDocument payload =>
+        ValidatedDocument payload
+    | Authorize _, ValidatedDocument _ =>
+        AuthorizedDocument "validated-then-authorized"
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl rec fold_chain
+    forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl transition_plan
+    (evidence : validation_evidence ready)
+    : chain fiscal_op draft_state authorized_state =
+    ChainCompose (exists (
+        ChainStep (Validate evidence),
+        ChainStep (Authorize ProductionV4Endpoint)
+    ))
+
+inl main () : string =
+    inl payload = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    inl evidence = run_validation payload (validation_plan ())
+    inl program = transition_plan evidence
+    inl result = fold_chain `$execute program (DraftDocument payload)
+    match result with
+    | AuthorizedDocument protocol => protocol

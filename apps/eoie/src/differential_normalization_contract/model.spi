@@ -1,0 +1,51 @@
+nominal differential_raw = ()
+nominal differential_normalized = ()
+nominal differential_compared = ()
+nominal differential_receipted = ()
+
+nominal differential_equal = ()
+nominal differential_mismatch = ()
+
+union differential_relation relation =
+    | DifferentialEqual :: differential_relation differential_equal
+    | DifferentialMismatch :: differential_relation differential_mismatch
+
+union normalization_kind =
+    | TextLineNormalization :: normalization_kind
+
+union differential_op from to =
+    | NormalizeText :: normalization_kind -> differential_op differential_raw differential_normalized
+    | CompareNormalized :: differential_relation differential_equal -> differential_op differential_normalized differential_compared
+    | CommitDifferentialReceipt :: differential_op differential_compared differential_receipted
+
+union rec differential_plan from to =
+    | DifferentialStep :: forall from to. differential_op from to -> differential_plan from to
+    | DifferentialThen :: forall from to. (exists middle. differential_plan from middle * differential_plan middle to) -> differential_plan from to
+
+inl public_differential_plan () : differential_plan differential_raw differential_receipted =
+    DifferentialThen (exists (
+        DifferentialStep (NormalizeText TextLineNormalization),
+        DifferentialThen (exists (
+            DifferentialStep (CompareNormalized DifferentialEqual),
+            DifferentialStep CommitDifferentialReceipt
+        ))
+    ))
+
+let normalization_binding (canonical_lines : i32) (nonexpanding : i32) : i32 =
+    if !!!!EQ(canonical_lines,1i32) then
+        if !!!!EQ(nonexpanding,1i32) then 1i32 else 0i32
+    else 0i32
+
+let comparison_binding (equal : i32) (mismatch_valid : i32) : i32 =
+    if !!!!EQ(mismatch_valid,1i32) then
+        if !!!!EQ(equal,1i32) then 1i32 else 2i32
+    else 0i32
+
+let receipt_binding (comparison_code : i32) (receipt_shape_valid : i32) : i32 =
+    if !!!!EQ(comparison_code,1i32) then
+        if !!!!EQ(receipt_shape_valid,1i32) then 1i32 else 0i32
+    else 0i32
+
+let settlement_binding (normalization_ok : i32) (comparison_ok : i32) (receipt_ok : i32) : i32 =
+    inl gate = !!!!Mult(normalization_ok,comparison_ok)
+    !!!!Mult(gate,receipt_ok)

@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl _ = semantic_closeout_verdict_binding 63i32 7i32
+    emit_runtime ()
+    $"RustExportI32Binary(\"eoie_semantic_closeout_verdict\",\"semantic_closeout_verdict_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

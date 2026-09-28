@@ -1,0 +1,86 @@
+# Spiral compiler workbench
+
+The build, test harness and fixtures around the Spiral compiler, plus its two development lanes.
+
+| Mode | Core | State | Use it for |
+|---|---|---|---|
+| `single-flight` | `../spiral_compiler.fs` (apps/compiler, 0.9 MB) | stable | F#, C, **Rust** and **Delphi** output; the oracle every test is scored against |
+| `hopac` | `compiler/cores/hopac/spiral_compiler.fs` (13 MB) | in progress | the parallel Hopac evaluator; advanced one frontier fixture at a time |
+
+Both modes build the **same host** (`compiler/host`) around a different core. The host talks to the core
+through `SupervisorReq` (`FileOpen`, `BuildFile`, …, built by reflection), `new_server`, `startupParse`
+and, in `warmModulePipeline`, `wdiff_module_init_all` plus its parser/bundler state. Both cores expose
+all of these, so every script, test and backend works identically in either mode; renaming any of them
+in a core breaks the host build for that mode. Rust and Delphi are lowered from the core's C residual by
+`compiler/host/PortableBackends.fs`, independent of the core.
+
+## Quickstart (Windows or Linux, PowerShell 7)
+
+```powershell
+pwsh scripts/install-dotnet.ps1             # once: .NET 11 SDK into the cache dir (no system changes)
+pwsh scripts/build.ps1                      # single-flight            (~2 min)
+pwsh scripts/build.ps1 -Mode hopac          # hopac                    (~4-5 min for a core change, ~35 s for a host change)
+pwsh scripts/test.ps1                       # smoke suite, single-flight
+pwsh scripts/test.ps1 -Mode hopac -Suite frontier   # the hopac inner loop
+pwsh scripts/test.ps1 -Suite all -Native    # everything, with native C/Rust/Delphi builds and runs
+pwsh scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
+pwsh scripts/build-splitter.ps1             # spiral-split (Rust), for split core builds
+pwsh scripts/bench-split.ps1                # time the split core against the monolith
+```
+
+Native builds need `gcc` or `clang`, `rustc` and `fpc` (Free Pascal) on `PATH`; missing tools are
+reported as `no-toolchain`, not as failures. Managed dependencies come from NuGet
+(`compiler/lib/Packages.props`); nothing binary is checked in.
+
+## Layout
+
+```text
+compiler/
+  cores/hopac/           the Hopac core (the single-flight core is ../spiral_compiler.fs)
+  core/                  project that compiles the selected core into SpiralCompilerCore.dll
+  host/                  SpiralCompiler.exe: CLI, --batch runner, portable Rust/Delphi lowering
+  runtime-compat/        minimal Supervisor stand-in (Lib/Common/Trace) both cores need
+  lib/                   Packages.props (pinned NuGet dependencies) and Dependencies.fsproj
+samples/                 every fixture, one flat directory each:
+  <name>/                  backend fixtures with F#/C/Rust/Delphi goldens (frontier_* for hopac)
+  contract_<name>/         type-system contract cases (F#)
+  mega_<name>/             the five megaprojects and their sub-packages
+  core/                    the portable `core-` package the fixtures share
+tests/                   harness.psd1 (smoke list, known failures, megaproject roots, C flags),
+                         native-shims/ (C shims for native builds), rust-exports/
+lanes/                   per-lane docs: single-flight (backends), hopac (frontier), splitter
+splitter/                Rust workspace `spiral-split`: splits a monolith into parallel-buildable projects
+scripts/                 env, build, test, bench (pwsh, cross-platform)
+```
+
+Everything generated (build output, staged corpora, residuals, logs, toolchains, the flat dependency
+directory, the single-flight oracle `baseline/EXPECTED.tsv` and the lane scoreboards) lives in the
+cache directory: `%LOCALAPPDATA%\spiral-bin` on Windows, `~/.cache/spiral-bin` on
+Linux, or `$SPIRAL_BIN_CACHE_DIR`.
+
+## Compiler CLI
+
+```text
+SpiralCompiler [--backend Fsharp|C|Rust|Delphi] <input.spi> <output.fsx|.c|.rs|.pas>
+SpiralCompiler --check INPUT.spi
+SpiralCompiler --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir
+SpiralCompiler --batch JOBS.tsv RESULTS.tsv [--timeout-ms N]    one warm process, many compiles
+SpiralCompiler --lower-portable Rust|Delphi INPUT.c OUTPUT       C residual -> Rust/Delphi
+SpiralCompiler --version
+```
+
+`JOBS.tsv` rows are `id  backend  input.spi  output  [timeout_ms]`. Results are appended per job, so a
+crash or hang loses only that job. Environment switches: `SPIRAL_WORKSPACE_ROOT`,
+`SPIRAL_COMPILER_PACKAGE_DIR` (where `|core-` resolves), `SPIRAL_HOST_TRACE_DIAGNOSTICS=1` (echo every
+diagnostic), `SPIRAL_HOST_FATAL_GRACE_MS`.
+
+## Rust libraries
+
+The Rust lowering turns a program into a library when it carries `RustLibrary()`, and publishes retained
+join points through `RustExport*` markers, e.g. `RustExportI32Binary("public_name", "join_point")`. A
+library omits the executable entry point. Each export must resolve to exactly one retained function of
+the marker's signature; missing, ambiguous, duplicate and unsupported exports fail compilation. Keep an
+explicit call to the Spiral function in `main` so specialization retains it.
+`scripts/test-rust-exports.ps1` proves the six export ABIs through a real Rust consumer.
+
+Development workflow, lane rules and how progress is measured: [AGENTS.md](AGENTS.md).

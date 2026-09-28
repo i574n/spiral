@@ -1,0 +1,8 @@
+inl impossible_structural_division_quotient_projection_mismatch () :
+    nonnegative_positional_nat (positional_zero_bit positional_one) =
+    value_synthesized_structural_division_quotient_value
+        (ValueSynthesizedStructuralDivisionEqual (
+            PositivePositionalEqualZeroBit PositivePositionalEqualOne))
+
+inl main () =
+    impossible_structural_division_quotient_projection_mismatch ()

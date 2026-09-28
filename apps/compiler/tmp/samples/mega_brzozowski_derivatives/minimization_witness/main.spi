@@ -1,0 +1,96 @@
+open main
+
+// Constructive distinguishing-word search is shared by the root matcher module.
+
+let rec dfa_state_distinct_with_witness_against forall alphabet {symbol_compare}.
+    (head : regex alphabet)
+    (tail : regex_list alphabet)
+    (symbols : symbol_list alphabet)
+    : bool =
+    match tail with
+    | RegexListNil => true
+    | RegexListCons (state, rest) =>
+        inl result = dfa_constructive_distinguishing_result head state symbols
+        match result with
+        | DfaConstructiveEquivalent => false
+        | DfaConstructiveDistinguished _ =>
+            if dfa_constructive_distinguishing_result_valid head state symbols result then
+                dfa_state_distinct_with_witness_against head rest symbols
+            else false
+
+let rec dfa_minimal_with_distinguishing_witnesses forall alphabet {symbol_compare}.
+    (states : regex_list alphabet)
+    (symbols : symbol_list alphabet)
+    : bool =
+    match states with
+    | RegexListNil => true
+    | RegexListCons (head, tail) =>
+        if dfa_state_distinct_with_witness_against head tail symbols then
+            dfa_minimal_with_distinguishing_witnesses tail symbols
+        else false
+
+let rec regex_list_exact_budget forall alphabet.
+    (states : regex_list alphabet)
+    (budget : state_budget)
+    : bool =
+    match states, budget with
+    | RegexListNil, StateBudgetZero => true
+    | RegexListCons (_, rest), StateBudgetSucc remaining => regex_list_exact_budget rest remaining
+    | _ => false
+
+inl state_budget_two_local () : state_budget =
+    StateBudgetSucc (StateBudgetSucc StateBudgetZero)
+
+inl state_budget_three_local () : state_budget =
+    StateBudgetSucc (state_budget_two_local ())
+
+inl minimized_representative_count_matches forall alphabet {symbol_compare; finite_alphabet}.
+    (start : regex alphabet)
+    (expected : state_budget)
+    : bool =
+    inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
+    match certify_alphabet_inventory descriptor with
+    | AlphabetInventoryRejected => false
+    | AlphabetInventoryCertified inventory =>
+        inl certified_symbols = certified_alphabet_inventory_symbols inventory
+        match dfa_closure_bounded_with_inventory (normalize start) certified_symbols with
+        | DfaClosureBudgetExceeded _ => false
+        | DfaClosureComplete closure =>
+            inl representatives = dfa_minimize_states closure certified_symbols
+            regex_list_exact_budget representatives expected
+
+inl minimized_witness_surface forall alphabet {symbol_compare; finite_alphabet}.
+    (start : regex alphabet) : bool =
+    inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
+    match certify_alphabet_inventory descriptor with
+    | AlphabetInventoryRejected => false
+    | AlphabetInventoryCertified inventory =>
+        inl certified_symbols = certified_alphabet_inventory_symbols inventory
+        match dfa_closure_bounded_with_inventory (normalize start) certified_symbols with
+        | DfaClosureBudgetExceeded _ => false
+        | DfaClosureComplete closure =>
+            inl representatives = dfa_minimize_states closure certified_symbols
+            dfa_minimal_with_distinguishing_witnesses representatives certified_symbols
+
+inl main () : string =
+    assert_static (minimized_witness_surface (ends_with_zero ())) "bit minimized DFA representatives should carry independent distinguishing words"
+    assert_static (minimized_witness_surface (tri_a_star ())) "ternary star minimized DFA representatives should carry independent distinguishing words"
+    assert_static (minimized_witness_surface (tri_cyclic_nonminimal ())) "cyclic quotient representatives should carry independent distinguishing words"
+    assert_static (minimized_representative_count_matches (ends_with_zero ()) (state_budget_two_local ())) "bit minimized DFA should match the independent two-state reference quotient"
+    assert_static (minimized_representative_count_matches (tri_a_star ()) (state_budget_two_local ())) "ternary star minimized DFA should match the independent two-state reference quotient"
+    assert_static (minimized_representative_count_matches (tri_cyclic_nonminimal ()) (state_budget_three_local ())) "cyclic minimized DFA should match the independent three-state reference quotient"
+
+    inl bit_symbols : symbol_list bit_alphabet = finite_alphabet_symbols (finite_alphabet ())
+    inl epsilon_bit : regex bit_alphabet = RegexEpsilon
+    inl empty_bit : regex bit_alphabet = RegexEmpty
+    inl epsilon_vs_empty = dfa_constructive_distinguishing_result epsilon_bit empty_bit bit_symbols
+    assert_static (dfa_constructive_distinguishing_result_valid epsilon_bit empty_bit bit_symbols epsilon_vs_empty) "nullable mismatch should produce a language-valid distinguishing word"
+    inl forged_nonwitness : dfa_constructive_distinguishing_result bit_alphabet = DfaConstructiveDistinguished (InputCons (zero (), InputEmpty))
+    assert_static (bool_same (dfa_constructive_distinguishing_result_valid epsilon_bit empty_bit bit_symbols forged_nonwitness) false) "independent language semantics must reject a forged non-distinguishing word"
+
+    inl duplicate_alt : regex bit_alphabet = RegexAlt (RegexChar (zero ()), RegexChar (zero ()))
+    inl single_zero : regex bit_alphabet = RegexChar (zero ())
+    inl equivalent_result = dfa_constructive_distinguishing_result duplicate_alt single_zero bit_symbols
+    assert_static (dfa_constructive_distinguishing_result_valid duplicate_alt single_zero bit_symbols equivalent_result) "normalized language-equivalent states should remain bisimilar"
+
+    "brzozowski-minimization-witness-green"

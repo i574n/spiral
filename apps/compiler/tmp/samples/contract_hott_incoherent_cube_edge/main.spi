@@ -1,0 +1,137 @@
+nominal space_x = ()
+nominal family_f = ()
+
+nominal a = ()
+nominal b = ()
+nominal c = ()
+nominal d = ()
+nominal e = ()
+nominal f = ()
+nominal g = ()
+nominal h = ()
+
+nominal fa = ()
+nominal fb = ()
+nominal fc = ()
+nominal fd = ()
+nominal fe = ()
+nominal ff = ()
+nominal fg = ()
+nominal fh = ()
+
+nominal edge_ab = ()
+nominal edge_cd = ()
+nominal edge_ac = ()
+nominal edge_bd = ()
+nominal edge_ef = ()
+nominal edge_gh = ()
+nominal edge_eg = ()
+nominal edge_fh = ()
+nominal edge_ae = ()
+nominal edge_bf = ()
+nominal edge_bf_wrong = ()
+nominal edge_cg = ()
+nominal edge_dh = ()
+
+nominal po_ab = ()
+nominal po_cd = ()
+nominal po_ac = ()
+nominal po_bd = ()
+nominal po_ef = ()
+nominal po_gh = ()
+nominal po_eg = ()
+nominal po_fh = ()
+nominal po_ae = ()
+nominal po_bf = ()
+nominal po_cg = ()
+nominal po_dh = ()
+
+nominal front = ()
+nominal back = ()
+nominal left = ()
+nominal right = ()
+nominal top = ()
+nominal bottom = ()
+nominal volume = ()
+
+union point space point_id =
+    | Point :: forall space point_id. string -> point space point_id
+
+union fiber family point_id fiber_id =
+    | Fiber :: forall family point_id fiber_id. string -> fiber family point_id fiber_id
+
+union path space from to witness =
+    | Path :: forall space from to witness. string -> path space from to witness
+
+union pathover family space from to base_path source target witness =
+    | Pathover :: forall family space from to base_path source target witness.
+        path space from to base_path *
+        fiber family from source *
+        fiber family to target *
+        string -> pathover family space from to base_path source target witness
+
+union dependent_square family space p00 p10 p01 p11 f00 f10 f01 f11 top bottom left right top_po bottom_po left_po right_po filler =
+    | DependentSquare :: forall family space p00 p10 p01 p11 f00 f10 f01 f11 top bottom left right top_po bottom_po left_po right_po filler.
+        pathover family space p00 p10 top f00 f10 top_po *
+        pathover family space p01 p11 bottom f01 f11 bottom_po *
+        pathover family space p00 p01 left f00 f01 left_po *
+        pathover family space p10 p11 right f10 f11 right_po *
+        string -> dependent_square family space p00 p10 p01 p11 f00 f10 f01 f11 top bottom left right top_po bottom_po left_po right_po filler
+
+union cube_3cell family space p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume =
+    | Cube3Cell :: forall family space p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume.
+        dependent_square family space p000 p100 p010 p110 f000 f100 f010 f110 ab cd ac bd poab pocd poac pobd front *
+        dependent_square family space p001 p101 p011 p111 f001 f101 f011 f111 ef gh eg fh poef pogh poeg pofh back *
+        dependent_square family space p000 p010 p001 p011 f000 f010 f001 f011 ac eg ae cg poac poeg poae pocg left *
+        dependent_square family space p100 p110 p101 p111 f100 f110 f101 f111 bd fh bf dh pobd pofh pobf podh right *
+        dependent_square family space p000 p100 p001 p101 f000 f100 f001 f101 ab ef ae bf poab poef poae pobf top *
+        dependent_square family space p010 p110 p011 p111 f010 f110 f011 f111 cd gh cg dh pocd pogh pocg podh bottom *
+        string -> cube_3cell family space p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume
+
+union packed_cube family space =
+    | PackedCube :: forall family space.
+        (exists p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume.
+            cube_3cell family space p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume)
+        -> packed_cube family space
+
+inl with_packed_cube forall family space result.
+    (visit : forall p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume.
+        cube_3cell family space p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume -> result)
+    (packed : packed_cube family space) : result =
+    match packed with
+    | PackedCube payload =>
+        inl exists p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front back left right top bottom volume. cube = payload
+        visit cube
+
+inl po forall from to base_path source target witness.
+    (label : string) : pathover family_f space_x from to base_path source target witness =
+    Pathover (Path label, Fiber label, Fiber label, label)
+
+inl front_square () : dependent_square family_f space_x a b c d fa fb fc fd edge_ab edge_cd edge_ac edge_bd po_ab po_cd po_ac po_bd front =
+    DependentSquare (po "ab", po "cd", po "ac", po "bd", "front")
+
+inl back_square () : dependent_square family_f space_x e f g h fe ff fg fh edge_ef edge_gh edge_eg edge_fh po_ef po_gh po_eg po_fh back =
+    DependentSquare (po "ef", po "gh", po "eg", po "fh", "back")
+
+inl left_square () : dependent_square family_f space_x a c e g fa fc fe fg edge_ac edge_eg edge_ae edge_cg po_ac po_eg po_ae po_cg left =
+    DependentSquare (po "ac", po "eg", po "ae", po "cg", "left")
+
+inl right_square () : dependent_square family_f space_x b d f h fb fd ff fh edge_bd edge_fh edge_bf_wrong edge_dh po_bd po_fh po_bf po_dh right =
+    DependentSquare (po "bd", po "fh", po "bf", po "dh", "right")
+
+inl top_square () : dependent_square family_f space_x a b e f fa fb fe ff edge_ab edge_ef edge_ae edge_bf po_ab po_ef po_ae po_bf top =
+    DependentSquare (po "ab", po "ef", po "ae", po "bf", "top")
+
+inl bottom_square () : dependent_square family_f space_x c d g h fc fd fg fh edge_cd edge_gh edge_cg edge_dh po_cd po_gh po_cg po_dh bottom =
+    DependentSquare (po "cd", po "gh", po "cg", po "dh", "bottom")
+
+inl coherent_cube () : cube_3cell family_f space_x a b c d e f g h fa fb fc fd fe ff fg fh edge_ab edge_cd edge_ac edge_bd edge_ef edge_gh edge_eg edge_fh edge_ae edge_bf edge_cg edge_dh po_ab po_cd po_ac po_bd po_ef po_gh po_eg po_fh po_ae po_bf po_cg po_dh front back left right top bottom volume =
+    Cube3Cell (front_square (), back_square (), left_square (), right_square (), top_square (), bottom_square (), "dependent-cube-volume")
+
+inl cube_label forall p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front' back' left' right' top' bottom' volume'.
+    (_ : cube_3cell family_f space_x p000 p100 p010 p110 p001 p101 p011 p111 f000 f100 f010 f110 f001 f101 f011 f111 ab cd ac bd ef gh eg fh ae bf cg dh poab pocd poac pobd poef pogh poeg pofh poae pobf pocg podh front' back' left' right' top' bottom' volume') : string =
+    "hott-dependent-cube-coherent"
+
+inl main () : string =
+    inl packed : packed_cube family_f space_x = PackedCube (exists (coherent_cube ()))
+    with_packed_cube `$cube_label packed

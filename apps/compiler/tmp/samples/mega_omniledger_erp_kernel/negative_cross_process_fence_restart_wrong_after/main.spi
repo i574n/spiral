@@ -1,0 +1,8 @@
+inl impossible_cross_process_fence_restart_wrong_after () :
+    erp_p2p_cross_process_fence_restart_receipt nat_two nat_four =
+    erp_p2p_cross_process_fence_restart_from_history
+        (erp_p2p_fence_history_two ())
+        "owner-c"
+
+inl main () =
+    impossible_cross_process_fence_restart_wrong_after ()

@@ -1,0 +1,473 @@
+open main
+
+let rec antimirov_insert_unique forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (values : regex_list alphabet)
+    : regex_list alphabet =
+    inl normalized = normalize value
+    if regex_list_contains normalized values then values
+    else RegexListCons (normalized, values)
+
+let rec antimirov_union forall alphabet {symbol_compare}.
+    (left : regex_list alphabet)
+    (right : regex_list alphabet)
+    : regex_list alphabet =
+    match left with
+    | RegexListNil => right
+    | RegexListCons (head, tail) =>
+        antimirov_union tail (antimirov_insert_unique head right)
+
+let rec antimirov_map_cat_right forall alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (right : regex alphabet)
+    : regex_list alphabet =
+    match values with
+    | RegexListNil => RegexListNil
+    | RegexListCons (head, tail) =>
+        antimirov_insert_unique
+            (make_cat head right)
+            (antimirov_map_cat_right tail right)
+
+let rec antimirov_partial_derivative forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    : regex_list alphabet =
+    match value with
+    | RegexEmpty => RegexListNil
+    | RegexEpsilon => RegexListNil
+    | RegexChar expected =>
+        if symbol_equal expected symbol then RegexListCons (RegexEpsilon, RegexListNil)
+        else RegexListNil
+    | RegexAlt (left, right) =>
+        antimirov_union
+            (antimirov_partial_derivative left symbol)
+            (antimirov_partial_derivative right symbol)
+    | RegexCat (left, right) =>
+        inl left_terms =
+            antimirov_map_cat_right
+                (antimirov_partial_derivative left symbol)
+                right
+        match nullable left with
+        | Nullable => antimirov_union left_terms (antimirov_partial_derivative right symbol)
+        | NonNullable => left_terms
+    | RegexStar body =>
+        antimirov_map_cat_right
+            (antimirov_partial_derivative body symbol)
+            (RegexStar body)
+
+let rec antimirov_partial_state_step forall alphabet {symbol_compare}.
+    (state : regex_list alphabet)
+    (symbol : alphabet)
+    : regex_list alphabet =
+    match state with
+    | RegexListNil => RegexListNil
+    | RegexListCons (head, tail) =>
+        antimirov_union
+            (antimirov_partial_derivative head symbol)
+            (antimirov_partial_state_step tail symbol)
+
+let rec antimirov_state_regex forall alphabet {symbol_compare}.
+    (state : regex_list alphabet) : regex alphabet =
+    match state with
+    | RegexListNil => RegexEmpty
+    | RegexListCons (head, tail) => make_alt head (antimirov_state_regex tail)
+
+let rec antimirov_subset forall alphabet {symbol_compare}.
+    (left : regex_list alphabet)
+    (right : regex_list alphabet)
+    : bool =
+    match left with
+    | RegexListNil => true
+    | RegexListCons (head, tail) =>
+        if regex_list_contains (normalize head) right then antimirov_subset tail right
+        else false
+
+let rec antimirov_residual_support forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    : regex_list alphabet =
+    match value with
+    | RegexEmpty => RegexListNil
+    | RegexEpsilon => RegexListNil
+    | RegexChar _ => RegexListCons (RegexEpsilon, RegexListNil)
+    | RegexAlt (left, right) =>
+        antimirov_union
+            (antimirov_residual_support left)
+            (antimirov_residual_support right)
+    | RegexCat (left, right) =>
+        antimirov_union
+            (antimirov_map_cat_right (antimirov_residual_support left) right)
+            (antimirov_residual_support right)
+    | RegexStar body =>
+        antimirov_map_cat_right
+            (antimirov_residual_support body)
+            (RegexStar body)
+
+inl antimirov_support forall alphabet {symbol_compare}.
+    (value : regex alphabet) : regex_list alphabet =
+    inl normalized = normalize value
+    antimirov_insert_unique normalized (antimirov_residual_support normalized)
+
+let rec antimirov_origin_append forall alphabet.
+    (left : regex_list alphabet)
+    (right : regex_list alphabet)
+    : regex_list alphabet =
+    match left with
+    | RegexListNil => right
+    | RegexListCons (head, tail) =>
+        RegexListCons (head, antimirov_origin_append tail right)
+
+let rec antimirov_origin_map_cat_right forall alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (right : regex alphabet)
+    : regex_list alphabet =
+    match values with
+    | RegexListNil => RegexListNil
+    | RegexListCons (head, tail) =>
+        RegexListCons (
+            normalize (make_cat head right),
+            antimirov_origin_map_cat_right tail right)
+
+let rec antimirov_position_origins forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    : regex_list alphabet =
+    match value with
+    | RegexEmpty => RegexListNil
+    | RegexEpsilon => RegexListNil
+    | RegexChar _ => RegexListCons (RegexEpsilon, RegexListNil)
+    | RegexAlt (left, right) =>
+        antimirov_origin_append
+            (antimirov_position_origins left)
+            (antimirov_position_origins right)
+    | RegexCat (left, right) =>
+        antimirov_origin_append
+            (antimirov_origin_map_cat_right (antimirov_position_origins left) right)
+            (antimirov_position_origins right)
+    | RegexStar body =>
+        antimirov_origin_map_cat_right
+            (antimirov_position_origins body)
+            (RegexStar body)
+
+let rec regex_list_exact_budget forall alphabet.
+    (values : regex_list alphabet)
+    (budget : state_budget)
+    : bool =
+    match values, budget with
+    | RegexListNil, StateBudgetZero => true
+    | RegexListCons (_, rest), StateBudgetSucc remaining =>
+        regex_list_exact_budget rest remaining
+    | _ => false
+
+inl antimirov_position_origin_candidate_valid forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (origins : regex_list alphabet) : bool =
+    inl normalized = normalize value
+    inl structural_support = RegexListCons (normalized, origins)
+    inl residual_support = antimirov_residual_support normalized
+    inl support = antimirov_support normalized
+    regex_list_distinct support &&
+    antimirov_subset residual_support origins &&
+    antimirov_subset origins residual_support &&
+    antimirov_subset support structural_support &&
+    regex_list_exact_budget origins (regex_position_count normalized) &&
+    regex_list_exact_budget
+        structural_support
+        (StateBudgetSucc (regex_position_count normalized))
+
+inl antimirov_structural_position_certificate forall alphabet {symbol_compare}.
+    (value : regex alphabet) : bool =
+    antimirov_position_origin_candidate_valid
+        value
+        (antimirov_position_origins (normalize value))
+
+
+
+inl antimirov_partial_derivative_origin_supported forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet) : bool =
+    inl normalized = normalize value
+    antimirov_subset
+        (antimirov_partial_derivative normalized symbol)
+        (antimirov_position_origins normalized)
+
+let rec antimirov_partial_derivatives_origin_supported forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet) : bool =
+    match symbols with
+    | SymbolListNil => true
+    | SymbolListCons (symbol, rest) =>
+        if antimirov_partial_derivative_origin_supported value symbol then
+            antimirov_partial_derivatives_origin_supported value rest
+        else false
+
+
+
+inl antimirov_partial_derivative_supported forall alphabet {symbol_compare}.
+    (root : regex alphabet)
+    (value : regex alphabet)
+    (symbol : alphabet)
+    : bool =
+    antimirov_subset
+        (antimirov_partial_derivative (normalize value) symbol)
+        (antimirov_support root)
+
+let rec antimirov_value_supported_for_symbols forall alphabet {symbol_compare}.
+    (root : regex alphabet)
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet)
+    : bool =
+    match symbols with
+    | SymbolListNil => true
+    | SymbolListCons (symbol, rest) =>
+        if antimirov_partial_derivative_supported root value symbol then
+            antimirov_value_supported_for_symbols root value rest
+        else false
+
+let rec antimirov_support_closed forall alphabet {symbol_compare}.
+    (root : regex alphabet)
+    (values : regex_list alphabet)
+    (symbols : symbol_list alphabet)
+    : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        if antimirov_value_supported_for_symbols root value symbols then
+            antimirov_support_closed root rest symbols
+        else false
+
+inl antimirov_reconstruction_law forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    : bool =
+    inl normalized = normalize value
+    regex_equal
+        (normalize (antimirov_state_regex (antimirov_partial_derivative normalized symbol)))
+        (canonical_derivative normalized symbol)
+
+let rec antimirov_reconstruction_symbols forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet)
+    : bool =
+    match symbols with
+    | SymbolListNil => true
+    | SymbolListCons (symbol, rest) =>
+        if antimirov_reconstruction_law value symbol then
+            antimirov_reconstruction_symbols value rest
+        else false
+
+inl antimirov_certificate forall alphabet {symbol_compare; finite_alphabet}.
+    (value : regex alphabet) : bool =
+    inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
+    inl symbols = finite_alphabet_symbols descriptor
+    inl support = antimirov_support value
+    finite_alphabet_descriptor_certified descriptor &&
+    if antimirov_structural_position_certificate value then
+        if antimirov_partial_derivatives_origin_supported value symbols then
+            if antimirov_support_closed value support symbols then
+                antimirov_reconstruction_symbols value symbols
+            else false
+        else false
+    else false
+
+let rec antimirov_corpus_certificate forall alphabet {symbol_compare; finite_alphabet}.
+    (values : regex_list alphabet)
+    : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        if antimirov_certificate value then
+            antimirov_corpus_certificate rest
+        else false
+
+nominal antimirov_certificate_program alphabet =
+    capability_program regex matcher_check alphabet
+
+inl capture_antimirov_certificate_program forall alphabet {symbol_compare; finite_alphabet}.
+    (value : regex alphabet)
+    : antimirov_certificate_program alphabet =
+    inl interpret (program_regex : regex alphabet) : matcher_check alphabet =
+        matcher_check (antimirov_certificate program_regex)
+    antimirov_certificate_program (capability_program_make value interpret)
+
+inl run_antimirov_certificate_program forall alphabet.
+    (program : antimirov_certificate_program alphabet)
+    : matcher_check alphabet =
+    match program with
+    | antimirov_certificate_program generic_program => capability_program_run generic_program
+
+inl antimirov_certificate_program_passes forall alphabet.
+    (program : antimirov_certificate_program alphabet)
+    : bool =
+    matcher_check_value (run_antimirov_certificate_program program)
+
+nominal derivative_unchecked = ()
+nominal derivative_normalized = ()
+nominal derivative_verified = ()
+
+union derivative_pipeline alphabet phase =
+    | DerivativeUnchecked :: forall alphabet. regex alphabet * alphabet -> derivative_pipeline alphabet derivative_unchecked
+    | DerivativeNormalized :: forall alphabet. regex alphabet * alphabet -> derivative_pipeline alphabet derivative_normalized
+    | DerivativeVerified :: forall alphabet. regex alphabet * alphabet * regex alphabet -> derivative_pipeline alphabet derivative_verified
+
+nominal derivative_normalization_capability alphabet = regex alphabet -> regex alphabet
+
+inl derivative_normalization_capability_default forall alphabet {symbol_compare}.
+    : derivative_normalization_capability alphabet =
+    derivative_normalization_capability normalize
+
+inl derivative_pipeline_begin forall alphabet.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    : derivative_pipeline alphabet derivative_unchecked =
+    DerivativeUnchecked (value, symbol)
+
+inl derivative_pipeline_normalize forall alphabet.
+    (capability : derivative_normalization_capability alphabet)
+    (state : derivative_pipeline alphabet derivative_unchecked)
+    : derivative_pipeline alphabet derivative_normalized =
+    match capability, state with
+    | derivative_normalization_capability normalize_value, DerivativeUnchecked (value, symbol) =>
+        DerivativeNormalized (normalize_value value, symbol)
+
+nominal derivative_verification_result alphabet = regex alphabet * bool
+nominal derivative_verification_capability alphabet = regex alphabet -> alphabet -> derivative_verification_result alphabet
+
+inl derivative_verification_capability_default forall alphabet {symbol_compare; finite_alphabet}.
+    : derivative_verification_capability alphabet =
+    inl verify (normalized : regex alphabet) (symbol : alphabet) : derivative_verification_result alphabet =
+        inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
+        inl symbols = finite_alphabet_symbols descriptor
+        inl canonical = canonical_derivative normalized symbol
+        inl reference = normalize (reference_derivative normalized symbol)
+        inl reconstructed = normalize (antimirov_state_regex (antimirov_partial_derivative normalized symbol))
+        inl certified =
+            finite_alphabet_descriptor_certified descriptor &&
+            input_symbols_covered (InputCons (symbol, InputEmpty)) symbols &&
+            antimirov_structural_position_certificate normalized &&
+            antimirov_partial_derivative_origin_supported normalized symbol &&
+            regex_equal canonical reference &&
+            regex_equal canonical reconstructed
+        derivative_verification_result (canonical, certified)
+    derivative_verification_capability verify
+
+union derivative_pipeline_validation alphabet =
+    | DerivativePipelineRejected
+    | DerivativePipelineVerified : derivative_pipeline alphabet derivative_verified
+
+inl derivative_pipeline_verify forall alphabet.
+    (capability : derivative_verification_capability alphabet)
+    (state : derivative_pipeline alphabet derivative_normalized)
+    : derivative_pipeline_validation alphabet =
+    match capability, state with
+    | derivative_verification_capability verify, DerivativeNormalized (normalized, symbol) =>
+        match verify normalized symbol with
+        | derivative_verification_result (candidate, certified) =>
+            if certified then DerivativePipelineVerified (DerivativeVerified (normalized, symbol, candidate))
+            else DerivativePipelineRejected
+
+inl derivative_pipeline_candidate forall alphabet.
+    (state : derivative_pipeline alphabet derivative_verified) : regex alphabet =
+    match state with
+    | DerivativeVerified (_, _, candidate) => candidate
+
+union sealed_verified_derivative =
+    | SealedVerifiedDerivative : (exists alphabet. derivative_pipeline alphabet derivative_verified)
+
+inl seal_verified_derivative forall alphabet.
+    (state : derivative_pipeline alphabet derivative_verified) : sealed_verified_derivative =
+    SealedVerifiedDerivative (exists state)
+
+nominal derivative_pipeline_request alphabet = regex alphabet * alphabet
+nominal derivative_pipeline_program alphabet = capability_program derivative_pipeline_request matcher_check alphabet
+
+inl capture_derivative_pipeline_program forall alphabet {symbol_compare; finite_alphabet}.
+    (value : regex alphabet)
+    (symbol : alphabet)
+    : derivative_pipeline_program alphabet =
+    inl normalization : derivative_normalization_capability alphabet = derivative_normalization_capability_default
+    inl verification : derivative_verification_capability alphabet = derivative_verification_capability_default
+    inl interpret (request : derivative_pipeline_request alphabet) : matcher_check alphabet =
+        match request with
+        | derivative_pipeline_request (program_regex, program_symbol) =>
+            inl raw : derivative_pipeline alphabet derivative_unchecked = derivative_pipeline_begin program_regex program_symbol
+            inl normalized : derivative_pipeline alphabet derivative_normalized = derivative_pipeline_normalize normalization raw
+            match derivative_pipeline_verify verification normalized with
+            | DerivativePipelineRejected => matcher_check false
+            | DerivativePipelineVerified verified =>
+                inl _ = seal_verified_derivative verified
+                matcher_check true
+    derivative_pipeline_program (capability_program_make (derivative_pipeline_request (value, symbol)) interpret)
+
+inl run_derivative_pipeline_program forall alphabet.
+    (program : derivative_pipeline_program alphabet) : matcher_check alphabet =
+    match program with
+    | derivative_pipeline_program generic_program => capability_program_run generic_program
+
+inl derivative_pipeline_program_passes forall alphabet.
+    (program : derivative_pipeline_program alphabet) : bool =
+    matcher_check_value (run_derivative_pipeline_program program)
+
+inl main () : string =
+    inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    inl tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
+    inl bit_symbols = finite_alphabet_symbols bit_descriptor
+    inl tri_symbols = finite_alphabet_symbols tri_descriptor
+    assert_static (finite_alphabet_descriptor_certified bit_descriptor) "Antimirov certificate requires the canonical bit finite-domain descriptor"
+    assert_static (finite_alphabet_descriptor_certified tri_descriptor) "Antimirov certificate requires the canonical ternary finite-domain descriptor"
+
+    assert_static (antimirov_certificate (ends_with_zero ())) "Brzozowski state must reconstruct from its Antimirov partial-derivative subset"
+    inl bit_position_source = normalize (ends_with_zero ())
+    assert_static (
+        match antimirov_position_origins bit_position_source with
+        | RegexListNil => false
+        | RegexListCons (_, truncated) =>
+            bool_same (regex_list_exact_budget truncated (regex_position_count bit_position_source)) false
+    ) "removing one concrete bit origin must violate the exact position count"
+    assert_static (
+        match antimirov_position_origins bit_position_source with
+        | RegexListNil => false
+        | RegexListCons (_, rest) =>
+            inl forged_same_count = RegexListCons (RegexEmpty, rest)
+            bool_same
+                (antimirov_position_origin_candidate_valid bit_position_source forged_same_count)
+                false
+    ) "a same-cardinality forged origin set must fail semantic origin validation"
+    assert_static (antimirov_certificate (tri_a_star ())) "ternary star partial-derivative support must remain bounded and closed"
+    assert_static (antimirov_certificate (tri_ab_star_then_c ())) "ternary concatenation/alt/star support must remain bounded and closed"
+    inl tri_position_source = normalize (tri_ab_star_then_c ())
+    assert_static (
+        match antimirov_position_origins tri_position_source with
+        | RegexListNil => false
+        | RegexListCons (_, truncated) =>
+            bool_same (regex_list_exact_budget truncated (regex_position_count tri_position_source)) false
+    ) "removing one concrete ternary origin must violate the exact position count"
+
+
+    inl bit_corpus = regex_corpus_depth_one bit_symbols
+    inl tri_corpus = regex_corpus_depth_one tri_symbols
+    assert_static (antimirov_corpus_certificate bit_corpus) "depth-one bit corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
+    assert_static (antimirov_corpus_certificate tri_corpus) "depth-one ternary corpus must satisfy Antimirov reconstruction, support closure and positions-plus-one bound"
+
+    inl program_batch : matcher_batch antimirov_certificate_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (capture_antimirov_certificate_program (ends_with_zero ())),
+            MatchBatchSingle (capture_antimirov_certificate_program (tri_ab_star_then_c ())))
+    assert_static (matcher_batch_forall `$antimirov_certificate_program_passes program_batch) "higher-ranked Antimirov programs must execute alphabet-indexed certificates without erasing their family"
+
+    inl derivative_pipeline_batch : matcher_batch derivative_pipeline_program (bit_alphabet * tri_alphabet) =
+        MatchBatchPair (
+            MatchBatchSingle (capture_derivative_pipeline_program (RegexStar (RegexChar (zero ()))) (zero ())),
+            MatchBatchSingle (capture_derivative_pipeline_program (tri_a_star ()) (tri_a ())))
+    assert_static (matcher_batch_forall `$derivative_pipeline_program_passes derivative_pipeline_batch) "higher-ranked derivative programs must enforce normalize-then-verify before sealing across alphabets"
+
+    inl rejecting_bit_normalization : derivative_normalization_capability bit_alphabet = derivative_normalization_capability_default
+    inl rejecting_bit_raw : derivative_pipeline bit_alphabet derivative_unchecked = derivative_pipeline_begin (RegexStar (RegexChar (zero ()))) (zero ())
+    inl rejecting_bit_normalized : derivative_pipeline bit_alphabet derivative_normalized = derivative_pipeline_normalize rejecting_bit_normalization rejecting_bit_raw
+    inl rejecting_bit_verification : derivative_verification_capability bit_alphabet =
+        derivative_verification_capability (fun normalized _ => derivative_verification_result (normalized, false))
+    assert_static (
+        match derivative_pipeline_verify rejecting_bit_verification rejecting_bit_normalized with
+        | DerivativePipelineRejected => true
+        | DerivativePipelineVerified _ => false
+    ) "a failed verification capability must not manufacture the verified derivative phase"
+
+    "brzozowski-antimirov-certificate-green"

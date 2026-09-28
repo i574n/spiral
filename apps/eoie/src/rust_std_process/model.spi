@@ -1,0 +1,69 @@
+inl (~!\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl status_code0 (~program : string) : i32 =
+    !\(program, $'"std::process::Command::new(&*$0).status().unwrap().code().unwrap_or(127)"')
+
+inl status_code1 (~program : string) (~argument0 : string) : i32 =
+    !\((program, argument0), $'"std::process::Command::new(&*$0).arg(&*$1).status().unwrap().code().unwrap_or(127)"')
+
+inl status_code5 (~program : string) (~argument0 : string) (~argument1 : string) (~argument2 : string) (~argument3 : string) (~argument4 : string) : i32 =
+    !\((program, argument0, argument1, argument2, argument3, argument4), $'"std::process::Command::new(&*$0).arg(&*$1).arg(&*$2).arg(&*$3).arg(&*$4).arg(&*$5).status().unwrap().code().unwrap_or(127)"')
+
+inl status_code7 (~program : string) (~argument0 : string) (~argument1 : string) (~argument2 : string) (~argument3 : string) (~argument4 : string) (~argument5 : string) (~argument6 : string) : i32 =
+    !\((program, argument0, argument1, argument2, argument3, argument4, argument5, argument6), $'"std::process::Command::new(&*$0).arg(&*$1).arg(&*$2).arg(&*$3).arg(&*$4).arg(&*$5).arg(&*$6).arg(&*$7).status().unwrap().code().unwrap_or(127)"')
+
+inl kill_wait_code1 (~program : string) (~argument0 : string) : i32 =
+    !\((program, argument0), $'"{ let mut child = std::process::Command::new(&*$0).arg(&*$1).spawn().unwrap(); let kill_failed = child.kill().is_err(); let wait_failed = child.wait().is_err(); if kill_failed { 1 } else if wait_failed { 2 } else { 0 } }"')
+
+inl status_code2 (~program : string) (~argument0 : string) (~argument1 : string) : i32 =
+    !\((program, argument0, argument1), $'"std::process::Command::new(&*$0).arg(&*$1).arg(&*$2).status().unwrap().code().unwrap_or(127)"')
+
+inl status_code4 (~program : string) (~argument0 : string) (~argument1 : string) (~argument2 : string) (~argument3 : string) : i32 =
+    !\((program, argument0, argument1, argument2, argument3), $'"std::process::Command::new(&*$0).arg(&*$1).arg(&*$2).arg(&*$3).arg(&*$4).status().unwrap().code().unwrap_or(127)"')
+
+inl kill_wait_code2 (~program : string) (~argument0 : string) (~argument1 : string) : i32 =
+    !\((program, argument0, argument1), $'"{ let mut child = std::process::Command::new(&*$0).arg(&*$1).arg(&*$2).spawn().unwrap(); let kill_failed = child.kill().is_err(); let wait_failed = child.wait().is_err(); if kill_failed { 1 } else if wait_failed { 2 } else { 0 } }"')
+
+inl spawn_rejected_code0 (~program : string) : i32 =
+    !\(program, $'"if std::process::Command::new(&*$0).status().is_err() { 127 } else { 0 }"')
+
+inl captured_output_word1 (~program : string) (~argument : string) : u64 =
+    !\((program, argument), $'"{ let output = std::process::Command::new(&*$0).arg(&*$1).output().unwrap(); let code = u64::try_from(output.status.code().unwrap_or(127)).unwrap_or(127) & 255; let stdout_len = u64::try_from(output.stdout.len()).unwrap_or(65535).min(65535); let stderr_len = u64::try_from(output.stderr.len()).unwrap_or(65535).min(65535); code | (stdout_len << 8) | (stderr_len << 24) }"')
+
+inl wall_clock_millis () : u64 =
+    inl ~zero = 0u64
+    !\(zero, $'"$0.saturating_add(u64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()).unwrap_or(u64::MAX))"')
+
+inl elapsed_millis (~started : u64) : u64 =
+    !\(started, $'"u64::try_from(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_millis()).unwrap_or(u64::MAX).saturating_sub($0)"')
+
+inl trigger_then_kill_group2_word1 (~sibling_program : string) (~sibling_argument : string) (~trigger_program : string) (~trigger_argument : string) (~kill_program : string) (~kill_separator : string) : u64 =
+    !\((sibling_program, sibling_argument, trigger_program, trigger_argument, kill_program, kill_separator), $'"{ use std::os::unix::process::CommandExt; let mut command0 = std::process::Command::new(&*$0); command0.arg(&*$1); command0.process_group(0); let mut child0 = command0.spawn().unwrap(); let group = i32::try_from(child0.id()).unwrap_or(0); let mut command1 = std::process::Command::new(&*$0); command1.arg(&*$1); command1.process_group(group); let mut child1 = command1.spawn().unwrap(); let trigger = std::process::Command::new(&*$2).arg(&*$3).status().unwrap(); let trigger_code = u64::try_from(trigger.code().unwrap_or(127)).unwrap_or(127).min(255); let kill = std::process::Command::new(&*$4).arg(&*$5).arg((-group).to_string()).status().unwrap(); let status0 = child0.wait().unwrap(); let status1 = child1.wait().unwrap(); let cancelled0 = if status0.code().is_none() { 1u64 } else { 0u64 }; let cancelled1 = if status1.code().is_none() { 1u64 } else { 0u64 }; let kill_code = if kill.success() { 1u64 } else { 0u64 }; trigger_code | ((cancelled0 + cancelled1) << 8) | (kill_code << 16) }"')
+
+inl fail_trigger_group2_trigger_code (~word : u64) : i32 =
+    !\(word, $'"i32::try_from($0 & 255u64).unwrap_or(255)"')
+
+inl fail_trigger_group2_cancelled (~word : u64) : i32 =
+    !\(word, $'"i32::try_from(($0 >> 8) & 255u64).unwrap_or(255)"')
+
+inl fail_trigger_group2_kill_sent (~word : u64) : i32 =
+    !\(word, $'"i32::try_from(($0 >> 16) & 1u64).unwrap_or(1)"')
+
+inl cat_roundtrip_word (~input : string) : u64 =
+    !\(input, $'"{ let mut child = std::process::Command::new(\"/bin/cat\").stdin(std::process::Stdio::piped()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).spawn().unwrap(); { let mut stdin = child.stdin.take().unwrap(); std::io::Write::write_all(&mut stdin, $0.as_bytes()).unwrap(); } let output = child.wait_with_output().unwrap(); let code = u64::try_from(output.status.code().unwrap_or(127)).unwrap_or(127) & 255u64; let stdout_match = if output.stdout == $0.as_bytes() { 1u64 } else { 0u64 }; let stderr_empty = if output.stderr.is_empty() { 1u64 } else { 0u64 }; code | (stdout_match << 8) | (stderr_empty << 24) }"')
+
+inl shell_capture_word (~script : string) : u64 =
+    !\(script, $'"{ let output = std::process::Command::new(\"/bin/sh\").arg(\"-c\").arg(&*$0).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).output().unwrap(); let code = u64::try_from(output.status.code().unwrap_or(127)).unwrap_or(127) & 255u64; let stdout_len = u64::try_from(output.stdout.len()).unwrap_or(65535).min(65535); let stderr_len = u64::try_from(output.stderr.len()).unwrap_or(65535).min(65535); code | (stdout_len << 8) | (stderr_len << 24) }"')
+
+inl shell_closed_stdin_word (~script : string) : u64 =
+    !\(script, $'"{ let output = std::process::Command::new(\"/bin/sh\").arg(\"-c\").arg(&*$0).stdin(std::process::Stdio::null()).stdout(std::process::Stdio::piped()).stderr(std::process::Stdio::piped()).output().unwrap(); let code = u64::try_from(output.status.code().unwrap_or(127)).unwrap_or(127) & 255u64; let stdout_len = u64::try_from(output.stdout.len()).unwrap_or(65535).min(65535); let stderr_len = u64::try_from(output.stderr.len()).unwrap_or(65535).min(65535); code | (stdout_len << 8) | (stderr_len << 24) }"')
+
+inl capture_word_code (~word : u64) : i32 =
+    !\(word, $'"i32::try_from($0 & 255u64).unwrap_or(255)"')
+
+inl capture_word_stdout_metric (~word : u64) : i32 =
+    !\(word, $'"i32::try_from(($0 >> 8) & 65535u64).unwrap_or(65535)"')
+
+inl capture_word_stderr_metric (~word : u64) : i32 =
+    !\(word, $'"i32::try_from(($0 >> 24) & 65535u64).unwrap_or(65535)"')

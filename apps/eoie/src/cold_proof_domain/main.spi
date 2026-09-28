@@ -1,0 +1,12 @@
+open cold_proof_bindings.bindings
+open cold_rebuild_contract.bindings
+
+inl main () : i32 =
+    inl _ = cold_proof_equal_binding 1i32 1i32
+    inl _ = cold_rebuild_expected_shards_binding 90i32 2i32
+    emit_runtime ()
+    emit_cold_rebuild_runtime ()
+    $"RustExportI32Binary(\"eoie_cold_proof_equal_binding\",\"cold_proof_equal_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_cold_rebuild_expected_shards\",\"cold_rebuild_expected_shards_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

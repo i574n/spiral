@@ -1,0 +1,37 @@
+open core
+
+union rust_tool_role =
+    | RustCompiler
+    | RustPackageManager
+    | RustDocumentationCompiler
+    | RustFormatter
+
+union rust_tool_identity =
+    | RustToolIdentity :: rust_tool_role * evidence_ref -> rust_tool_identity
+
+inl rustc_identity () : rust_tool_identity =
+    RustToolIdentity (RustCompiler, EvidenceRef ("rustc", "33c990d7d1551347cbdd16b267fd64ecc382453e9703df8c10571749a7eb7bc9", 646160u64, BinaryMedia, ExternalRequired))
+
+inl cargo_identity () : rust_tool_identity =
+    RustToolIdentity (RustPackageManager, EvidenceRef ("cargo", "2c2612853529607a59faf033ddeba157662c55553f2486ecf9da9b13da2632d2", 42855096u64, BinaryMedia, ExternalRequired))
+
+inl rustdoc_identity () : rust_tool_identity =
+    RustToolIdentity (RustDocumentationCompiler, EvidenceRef ("rustdoc", "74e0910ebec8a502b05df355a76e22340c2c29fbb2f5c4303e3b34968c4a0d57", 13692280u64, BinaryMedia, ExternalRequired))
+
+inl rustfmt_identity () : rust_tool_identity =
+    RustToolIdentity (RustFormatter, EvidenceRef ("rustfmt", "993c8217d552141cd3487cc1aca7956b0e3ea4aedbb54a0ab64378443f667b11", 5269024u64, BinaryMedia, ExternalRequired))
+
+union spiral_compiler_role =
+    | SpiralCompilerEntrypoint
+    | SpiralCompilerFacade
+
+union spiral_compiler_identity =
+    | SpiralCompilerIdentity :: spiral_compiler_role * evidence_ref -> spiral_compiler_identity
+
+inl spiral_entry_identity () : spiral_compiler_identity =
+    SpiralCompilerIdentity (SpiralCompilerEntrypoint, EvidenceRef ("spiral-compile", "e44e338a7e6b3dde94619dfe0ff0a1ae8a6d2913e85294c943d351260d720eff", 63200u64, BinaryMedia, ExternalRequired))
+
+inl spiral_facade_identity () : spiral_compiler_identity =
+    SpiralCompilerIdentity (SpiralCompilerFacade, EvidenceRef ("SpiralCompilerFacadeCli.dll", "3881114224bd0c13df2d8fbe8729e67a1ff1405a941725272b79d38b1b3f4523", 62976u64, BinaryMedia, ExternalRequired))
+
+inl main () : i32 = 0i32

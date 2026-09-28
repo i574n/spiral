@@ -1,0 +1,11 @@
+inl impossible_dependent_cross_pair () :
+    corrected_cic_bool_dependent_application =
+    CorrectedCicBoolDependentApplication (exists (
+        CorrectedCicBoolIndexTrue
+            "the-witness-selects-the-true-index",
+        CorrectedCicBoolDependentFalseResult (
+            corrected_cic_true (),
+            "the-result-illegally-selects-the-false-index"),
+        "one-dependent-application-cannot-pair-different-indices"))
+
+inl main () = impossible_dependent_cross_pair ()

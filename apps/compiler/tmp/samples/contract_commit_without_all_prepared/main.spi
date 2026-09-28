@@ -1,0 +1,24 @@
+nominal missing = ()
+nominal ready = ()
+nominal open_phase = ()
+nominal committed_phase = ()
+
+union transaction participant_a participant_b phase =
+    | OpenTx :: transaction missing missing open_phase
+    | PreparedA :: transaction ready missing open_phase
+    | PreparedAB :: transaction ready ready open_phase
+    | Committed :: transaction ready ready committed_phase
+
+inl prepare_a (tx : transaction missing missing open_phase)
+    : transaction ready missing open_phase =
+    match tx with
+    | OpenTx => PreparedA
+
+inl commit (tx : transaction ready ready open_phase)
+    : transaction ready ready committed_phase =
+    match tx with
+    | PreparedAB => Committed
+
+inl main () : string =
+    inl _ = commit (prepare_a OpenTx)
+    "unreachable"

@@ -1,0 +1,16 @@
+inl impossible_closed_identity_beta_reduction_result_mismatch
+    (relation : exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type)
+    : exact_linear_indexed_reduction
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type =
+    ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation)
+
+inl main () =
+    impossible_closed_identity_beta_reduction_result_mismatch
+        (ExactLinearIndexedClosedIdentityBetaRelation (
+            ExactLinearIndexedBoolTrue (
+                exact_linear_indexed_empty_usage (),
+                "BoolTrue-cannot-be-used-as-the-Unit-result-of-the-closed-beta-reduction"),
+            "the-negative-relation-is-indexed-by-Bool"))

@@ -1,0 +1,13 @@
+inl impossible_closed_bool_program_outcome_mismatch ()
+    : exact_linear_indexed_closed_bool_program
+        exact_linear_closed_bool_false_normal =
+    ExactLinearIndexedClosedBoolProgramIfTrue (
+        ExactLinearIndexedClosedBoolProgramTrue
+            "a-program-indexed-by-False-cannot-select-a-True-normalizing-then-program",
+        ExactLinearIndexedBoolFalse (
+            exact_linear_indexed_empty_usage (),
+            "the-unselected-else-branch-does-not-change-the-selected-program-outcome"),
+        "the-result-index-must-be-derived-from-the-selected-recursive-program")
+
+inl main () =
+    impossible_closed_bool_program_outcome_mismatch ()

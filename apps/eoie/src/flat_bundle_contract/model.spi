@@ -1,0 +1,66 @@
+nominal flat_bundle_policy_owner = string
+nominal flat_bundle_negative_owner = string
+nominal flat_root_pending owner = owner
+nominal flat_root_validated owner = owner
+nominal flat_manifest_collected owner = owner
+nominal flat_archive_written owner = owner
+nominal flat_archive_verified owner = owner
+
+union flat_bundle_transition from to =
+    | ValidateFlatRoot :: forall owner. flat_bundle_transition (flat_root_pending owner) (flat_root_validated owner)
+    | CollectFlatManifest :: forall owner. flat_bundle_transition (flat_root_validated owner) (flat_manifest_collected owner)
+    | WriteFlatArchive :: forall owner. flat_bundle_transition (flat_manifest_collected owner) (flat_archive_written owner)
+    | VerifyFlatArchive :: forall owner. flat_bundle_transition (flat_archive_written owner) (flat_archive_verified owner)
+
+union rec flat_bundle_plan from to =
+    | FlatBundleStep :: forall from to. flat_bundle_transition from to -> flat_bundle_plan from to
+    | FlatBundleThen :: forall from to. (exists middle. flat_bundle_plan from middle * flat_bundle_plan middle to) -> flat_bundle_plan from to
+
+let bool_pair_binding (left : i32) (right : i32) : i32 =
+    if !!!!LT(left,1i32) then 0i32
+    elif !!!!LT(1i32,left) then 0i32
+    elif !!!!LT(right,1i32) then 0i32
+    elif !!!!LT(1i32,right) then 0i32
+    else 1i32
+
+let preflight_binding (root_directory : i32) (output_outside_root : i32) : i32 =
+    bool_pair_binding root_directory output_outside_root
+
+let manifest_binding (entries_positive : i32) (canonical_order : i32) : i32 =
+    bool_pair_binding entries_positive canonical_order
+
+let size_binding (limit_positive : i32) (within_limit : i32) : i32 =
+    bool_pair_binding limit_positive within_limit
+
+union flat_compression_method =
+    | FlatStored
+    | FlatDeflated
+
+inl compression_code = function
+    | FlatStored => 0i32
+    | FlatDeflated => 1i32
+
+let compression_binding (deterministic : i32) (method_code : i32) : i32 =
+    if !!!!LT(deterministic,1i32) then 0i32
+    elif !!!!LT(1i32,deterministic) then 0i32
+    elif !!!!LT(method_code,1i32) then 0i32
+    elif !!!!LT(1i32,method_code) then 0i32
+    else 1i32
+
+let complete_binding (manifest_valid : i32) (size_valid : i32) : i32 =
+    bool_pair_binding manifest_valid size_valid
+
+inl full_plan forall owner. () : flat_bundle_plan (flat_root_pending owner) (flat_archive_verified owner) =
+    FlatBundleThen (exists (
+        FlatBundleStep ValidateFlatRoot,
+        FlatBundleThen (exists (
+            FlatBundleStep CollectFlatManifest,
+            FlatBundleThen (exists (
+                FlatBundleStep WriteFlatArchive,
+                FlatBundleStep VerifyFlatArchive
+            ))
+        ))
+    ))
+
+inl policy_plan () : flat_bundle_plan (flat_root_pending flat_bundle_policy_owner) (flat_archive_verified flat_bundle_policy_owner) = full_plan ()
+inl negative_plan () : flat_bundle_plan (flat_root_pending flat_bundle_negative_owner) (flat_archive_verified flat_bundle_negative_owner) = full_plan ()

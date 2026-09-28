@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl ~items : array string = create 2i32
+    set items 0i32 "ab"
+    set items 1i32 "cde"
+    inl first = index items 0i32
+    inl second = index items 1i32
+    sm.length first +. sm.length second -. 5i32

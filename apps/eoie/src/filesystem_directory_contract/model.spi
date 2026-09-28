@@ -1,0 +1,116 @@
+inl (~!\\) forall t u. ((args : t), (code : string)) : u =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl create_dir (path : string) : bool =
+    !\\(path, $'"std::fs::create_dir_all(&*$0).is_ok()"')
+
+inl cleanup_tree (path : string) : bool =
+    !\\(path, $'"std::fs::remove_dir_all(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+
+inl directory_exists (path : string) : bool =
+    !\\(path, $'"std::path::Path::new(&*$0).is_dir()"')
+
+inl directory_missing (path : string) : bool =
+    !\\(path, $'"\!std::path::Path::new(&*$0).is_dir()"')
+
+inl write_text (path : string) (text : string) : bool =
+    !\\((path, text), $'"std::fs::write(&*$0, &*$1).is_ok()"')
+
+inl remove_file (path : string) : bool =
+    !\\(path, $'"std::fs::remove_file(&*$0).is_ok() || \!std::path::Path::new(&*$0).exists()"')
+
+inl file_exists (path : string) : bool =
+    !\\(path, $'"std::path::Path::new(&*$0).is_file()"')
+
+inl file_missing (path : string) : bool =
+    !\\(path, $'"\!std::path::Path::new(&*$0).is_file()"')
+
+inl tree_missing (path : string) : bool =
+    !\\(path, $'"\!std::path::Path::new(&*$0).exists()"')
+
+nominal policy_owner = string
+nominal agile_owner = string
+nominal directory_pending owner = owner
+nominal directory_absent owner = owner
+nominal directory_created owner = owner
+nominal directory_verified owner = owner
+nominal directory_cleaned owner = owner
+
+union directory_transition from to =
+    | EnsureDirectoryAbsent :: forall owner. string -> directory_transition (directory_pending owner) (directory_absent owner)
+    | CreateDirectory :: forall owner. string -> directory_transition (directory_absent owner) (directory_created owner)
+    | VerifyDirectory :: forall owner. string -> directory_transition (directory_created owner) (directory_verified owner)
+    | CleanupDirectory :: forall owner. string -> directory_transition (directory_verified owner) (directory_cleaned owner)
+
+union rec directory_plan from to =
+    | DirectoryStep :: forall from to. directory_transition from to -> directory_plan from to
+    | DirectoryThen :: forall from to. (exists middle. directory_plan from middle * directory_plan middle to) -> directory_plan from to
+
+union directory_outcome =
+    | DirectoryAccepted : string
+    | DirectoryRejected : string
+    | DirectoryFailed : string
+
+inl ensure_absent_step forall owner. () : directory_plan (directory_pending owner) (directory_absent owner) =
+    DirectoryStep (EnsureDirectoryAbsent "ensure-directory-absent")
+
+inl create_step forall owner. () : directory_plan (directory_absent owner) (directory_created owner) =
+    DirectoryStep (CreateDirectory "create-directory")
+
+inl verify_step forall owner. () : directory_plan (directory_created owner) (directory_verified owner) =
+    DirectoryStep (VerifyDirectory "verify-directory")
+
+inl cleanup_step forall owner. () : directory_plan (directory_verified owner) (directory_cleaned owner) =
+    DirectoryStep (CleanupDirectory "cleanup-directory")
+
+inl full_plan forall owner. () : directory_plan (directory_pending owner) (directory_cleaned owner) =
+    DirectoryThen (
+        exists (
+            ensure_absent_step (),
+            DirectoryThen (
+                exists (
+                    create_step (),
+                    DirectoryThen (
+                        exists (
+                            verify_step (),
+                            cleanup_step ()))))))
+
+inl policy_plan () : directory_plan (directory_pending policy_owner) (directory_cleaned policy_owner) = full_plan ()
+inl agile_plan () : directory_plan (directory_pending agile_owner) (directory_cleaned agile_owner) = full_plan ()
+
+inl cleanup (path : string) : bool =
+    if cleanup_tree path then tree_missing path && file_missing path
+    elif remove_file path then tree_missing path && file_missing path
+    else false
+
+inl policy_directory (path : string) : directory_outcome =
+    inl _ = policy_plan ()
+    if cleanup path then
+        if create_dir path then
+            if directory_exists path then
+                if cleanup path
+                then DirectoryAccepted "directory-lifecycle-accepted"
+                else DirectoryFailed "directory-cleanup-failed"
+            else
+                if cleanup path
+                then DirectoryRejected "directory-create-not-observed"
+                else DirectoryFailed "directory-rejection-cleanup-failed"
+        else DirectoryFailed "directory-create-failed"
+    else DirectoryFailed "directory-ensure-absent-failed"
+
+inl agile_rejection (path : string) : directory_outcome =
+    inl _ = agile_plan ()
+    if cleanup path then
+        if write_text path "occupied-by-file" then
+            if create_dir path then
+                if cleanup path
+                then DirectoryFailed "directory-create-accepted-file-occupancy"
+                else DirectoryFailed "directory-negative-cleanup-failed"
+            else
+                if file_exists path && directory_missing path then
+                    if cleanup path
+                    then DirectoryRejected "directory-file-occupancy-rejected"
+                    else DirectoryFailed "directory-rejection-cleanup-failed"
+                else DirectoryFailed "directory-negative-observation-failed"
+        else DirectoryFailed "directory-negative-fixture-write-failed"
+    else DirectoryFailed "directory-negative-ensure-absent-failed"

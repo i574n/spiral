@@ -1,0 +1,35 @@
+inl impossible_closed_tensor_identity_progress_target_cross_type () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_unit_type =
+    inl empty_usage = exact_linear_indexed_empty_usage ()
+    inl unit_value :
+        exact_linear_indexed_value
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedValueUnit (
+            empty_usage,
+            "the-negative-Tensor-identity-left-and-right-values-are-Unit")
+    inl tensor_value :
+        exact_linear_indexed_value
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+        ExactLinearIndexedValueTensor (exists (
+            unit_value,
+            unit_value,
+            ExactLinearIndexedUsageMergeEmpty
+                "the-negative-Tensor-argument-has-empty-usage",
+            "the-negative-Tensor-identity-argument-is-canonical"))
+    inl relation :
+        exact_linear_indexed_closed_identity_beta_relation
+            (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type) =
+        ExactLinearIndexedClosedIdentityBetaRelation (
+            exact_linear_indexed_value_term tensor_value,
+            "the-negative-attempts-to-observe-a-Tensor-target-as-Unit")
+    exact_linear_indexed_closed_identity_beta_target relation
+
+inl main () =
+    impossible_closed_tensor_identity_progress_target_cross_type ()

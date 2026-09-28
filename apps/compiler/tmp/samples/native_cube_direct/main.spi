@@ -1,0 +1,63 @@
+nominal rotation =
+    {
+        a : f64
+        b : f64
+        c : f64
+    }
+
+nominal cube =
+    {
+        cube_width : f64
+        horizontal_offset : f64
+    }
+
+union projected =
+    | Hidden
+    | Visible : f64 * f64 * f64
+
+inl get_width () = 160f64
+inl get_height () = 44f64
+inl get_distance_from_cam () = 100f64
+inl get_k1 () = 40f64
+
+inl sin64 (x : f64) : f64 = !!!!Sin(x)
+inl cos64 (x : f64) : f64 = !!!!Cos(x)
+
+inl calculate_x (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b, c = rot.a, rot.b, rot.c
+    j *. sin64 a *. sin64 b *. cos64 c -. k *. cos64 a *. sin64 b *. cos64 c +.
+    j *. cos64 a *. sin64 c +. k *. sin64 a *. sin64 c +. i *. cos64 b *. cos64 c
+
+inl calculate_y (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b, c = rot.a, rot.b, rot.c
+    j *. cos64 a *. cos64 c +. k *. sin64 a *. cos64 c -.
+    j *. sin64 a *. sin64 b *. sin64 c +. k *. cos64 a *. sin64 b *. sin64 c -.
+    i *. cos64 b *. sin64 c
+
+inl calculate_z (i : f64) (j : f64) (k : f64) (rotation rot) : f64 =
+    inl a, b = rot.a, rot.b
+    k *. cos64 a *. cos64 b -. j *. sin64 a *. cos64 b +. i *. sin64 b
+
+inl calculate_for_surface cube_x cube_y cube_z rot horizontal_offset =
+    inl x = calculate_x cube_x cube_y cube_z rot
+    inl y = calculate_y cube_x cube_y cube_z rot
+    inl z = calculate_z cube_x cube_y cube_z rot +. get_distance_from_cam ()
+    inl ooz = 1f64 /. z
+    inl xp = get_width () /. 2f64 +. horizontal_offset +. get_k1 () *. ooz *. x *. 2f64
+    inl yp = get_height () /. 2f64 +. get_k1 () *. ooz *. y
+    if xp >= 0f64 && xp < get_width () && yp >= 0f64 && yp < get_height ()
+    then Visible (xp, yp, ooz)
+    else Hidden
+
+inl score_cube rot (cube value) : i32 =
+    inl cw = value.cube_width
+    match calculate_for_surface cw cw (0f64 -. cw) rot value.horizontal_offset with
+    | Visible (xp, yp, depth) when xp >= 0f64 && yp >= 0f64 && depth > 0f64 => 14i32
+    | _ => 0i32
+
+inl main () : i32 =
+    inl rot = rotation { a = 0f64; b = 0f64; c = 0f64 }
+    inl score = (fun value => score_cube rot value) : cube -> i32
+    join score (cube { cube_width = 20f64; horizontal_offset = 0f64 -. 40f64 }) +.
+    join score (cube { cube_width = 10f64; horizontal_offset = 10f64 }) +.
+    join score (cube { cube_width = 5f64; horizontal_offset = 40f64 })

@@ -1,0 +1,13 @@
+inl main () =
+    inl a = !!!!LayoutToHeapRefs({items=!!!!Array(1i32,2i32); q=0i32; w=0i32})
+    inl b = !!!!LayoutIndex(a)
+    if !!!!Equal(a.q,0i32) then
+        a.items <- !!!!Array(19i32,23i32)
+        !!!!ArrayResize(b.items,3i32,23i32)
+    else
+        a.items <- !!!!Array(31i32)
+        !!!!ArrayResize(b.items,2i32,11i32)
+    !!!!ArraySet(a.items,1i32,17i32)
+    a.q <- !!!!ArrayIndex(b.items,0i32)
+    a.w <- !!!!ArrayIndex(a.items,2i32)
+    !!!!Add(a.q,a.w)

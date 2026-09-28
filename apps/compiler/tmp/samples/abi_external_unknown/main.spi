@@ -1,0 +1,3 @@
+inl main () : i32 = real
+    inl ~x = 1i32
+    $"spiral_abi_missing(!x)" : i32

@@ -1,0 +1,12 @@
+inl main () : i32 =
+    inl _ = toolchain_execution_gate_binding 1i32 0i32
+    inl _ = toolchain_execution_gate_binding 2i32 0i32
+    inl _ = toolchain_observed_outcome_binding 1i32 0i32
+    inl _ = toolchain_observed_outcome_binding 0i32 1i32
+    inl _ = toolchain_observed_outcome_binding 0i32 0i32
+    inl _ = toolchain_receipt_catalog "v1"
+    $"RustExportI32Binary(\"eoie_toolchain_execution_gate\",\"toolchain_execution_gate_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_observed_outcome\",\"toolchain_observed_outcome_binding\")" : ()
+    $"RustExportStringUnary(\"eoie_toolchain_receipt_catalog\",\"toolchain_receipt_catalog\")" : ()
+    $"RustLibrary()" : ()
+    0i32

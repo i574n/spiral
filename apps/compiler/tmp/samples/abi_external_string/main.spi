@@ -1,0 +1,3 @@
+inl main () : i32 = real
+    inl ~value = "spiral"
+    $"spiral_abi_libc_strlen(!value)" : i32

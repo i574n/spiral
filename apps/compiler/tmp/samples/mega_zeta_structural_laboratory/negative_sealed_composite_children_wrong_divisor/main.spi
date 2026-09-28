@@ -1,0 +1,14 @@
+inl impossible_sealed_composite_children_wrong_divisor
+    (children :
+        certified_interval_positive_positional_sealed_composite_children
+            (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+            (positional_zero_bit (positional_one_bit positional_one))
+            (positional_zero_bit positional_one))
+    : certified_interval_positive_positional_sealed_composite_children
+        (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one)))
+        (positional_one_bit (positional_zero_bit (positional_zero_bit positional_one)))
+        (positional_zero_bit positional_one) =
+    children
+
+inl main () =
+    impossible_sealed_composite_children_wrong_divisor

@@ -1,0 +1,7 @@
+inl impossible_zero_remainder
+    (zero : nonnegative_positional_nat positional_zero)
+    : positive_positional_nat positional_zero =
+    zero
+
+inl main () =
+    impossible_zero_remainder NonnegativePositionalZero

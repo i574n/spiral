@@ -1,0 +1,295 @@
+nominal transfer_a = ()
+nominal manifest_good = ()
+nominal manifest_fork = ()
+nominal round_29 = ()
+nominal epoch_2 = ()
+nominal epoch_3 = ()
+nominal registry_root_29 = ()
+nominal evidence_root_29 = ()
+nominal peer_a = ()
+nominal peer_b = ()
+nominal peer_c = ()
+nominal peer_x = ()
+nominal peer_y = ()
+nominal key_a_old = ()
+nominal key_a_new = ()
+nominal key_b_old = ()
+nominal key_b_new = ()
+nominal key_c_old = ()
+nominal key_c_new = ()
+nominal key_x_new = ()
+nominal key_y_new = ()
+nominal key_revoked = ()
+nominal collecting = ()
+nominal registry_loaded = ()
+nominal equivocation_detected = ()
+nominal reconfigured = ()
+nominal quorum_ready = ()
+nominal committed = ()
+nominal active = ()
+nominal retired = ()
+nominal revoked = ()
+nominal authenticated = ()
+nominal distinct = ()
+nominal durable = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+
+union public_key peer key round status state =
+    | PublicKey :: forall peer key round status state.
+        string -> public_key peer key round status state
+
+union key_successor peer old_key new_key round state =
+    | KeySuccessor :: forall peer old_key new_key round state.
+        string -> key_successor peer old_key new_key round state
+
+union registry_entry peer key round status root state =
+    | RegistryEntry :: forall peer key round status root state.
+        public_key peer key round status authenticated * string -> registry_entry peer key round status root state
+
+union public_statement transfer manifest peer key round state =
+    | PublicStatement :: forall transfer manifest peer key round state.
+        string -> public_statement transfer manifest peer key round state
+
+union public_equivocation transfer peer key round left_manifest right_manifest state =
+    | PublicEquivocation :: forall transfer peer key round left_manifest right_manifest state.
+        public_statement transfer left_manifest peer key round authenticated *
+        public_statement transfer right_manifest peer key round authenticated *
+        string -> public_equivocation transfer peer key round left_manifest right_manifest state
+
+union one_shot_reuse peer key round state =
+    | OneShotReuse :: forall peer key round state.
+        string -> one_shot_reuse peer key round state
+
+union key_rotation peer old_key new_key from_epoch to_epoch state =
+    | KeyRotation :: forall peer old_key new_key from_epoch to_epoch state.
+        key_successor peer old_key new_key round_29 authenticated * string ->
+        key_rotation peer old_key new_key from_epoch to_epoch state
+
+union key_revocation peer key epoch state =
+    | KeyRevocation :: forall peer key epoch state.
+        string -> key_revocation peer key epoch state
+
+union public_membership epoch pa ka pb kb pc kc root state =
+    | PublicMembership :: forall epoch pa ka pb kb pc kc root state.
+        registry_entry pa ka round_29 active root authenticated *
+        registry_entry pb kb round_29 active root authenticated *
+        registry_entry pc kc round_29 active root authenticated *
+        string -> public_membership epoch pa ka pb kb pc kc root state
+
+union distinct_public_signers pa ka pb kb pc kc state =
+    | DistinctPublicSigners :: forall pa ka pb kb pc kc state.
+        string -> distinct_public_signers pa ka pb kb pc kc state
+
+union public_quorum transfer manifest round epoch pa ka pb kb pc kc registry_root state =
+    | PublicQuorum :: forall transfer manifest round epoch pa ka pb kb pc kc registry_root state.
+        public_statement transfer manifest pa ka round authenticated *
+        public_statement transfer manifest pb kb round authenticated *
+        public_statement transfer manifest pc kc round authenticated *
+        distinct_public_signers pa ka pb kb pc kc distinct *
+        public_membership epoch pa ka pb kb pc kc registry_root durable *
+        string -> public_quorum transfer manifest round epoch pa ka pb kb pc kc registry_root state
+
+union public_commit transfer manifest round epoch registry_root evidence_root state =
+    | PublicCommit :: forall transfer manifest round epoch registry_root evidence_root state.
+        string -> public_commit transfer manifest round epoch registry_root evidence_root state
+
+union public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to effect =
+    | LoadRotatedRegistry :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        registry_entry pa ka_old round retired registry_root authenticated *
+        registry_entry pa ka_new round active registry_root authenticated *
+        registry_entry pb kb_old round retired registry_root authenticated *
+        registry_entry pb kb_new round active registry_root authenticated *
+        registry_entry pc kc_old round retired registry_root authenticated *
+        registry_entry pc kc_new round active registry_root authenticated *
+        registry_entry pa revoked_key round revoked registry_root authenticated *
+        key_successor pa ka_old ka_new round authenticated *
+        key_successor pb kb_old kb_new round authenticated *
+        key_successor pc kc_old kc_new round authenticated ->
+        public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root collecting registry_loaded idempotent
+    | VerifyPublicEquivocation :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        public_statement transfer good_manifest pa ka_new round authenticated *
+        public_statement transfer good_manifest pb kb_new round authenticated *
+        public_statement transfer good_manifest pc kc_new round authenticated *
+        public_equivocation transfer px kx round good_manifest fork_manifest authenticated *
+        public_equivocation transfer py ky round good_manifest fork_manifest authenticated *
+        one_shot_reuse px kx round authenticated *
+        one_shot_reuse py ky round authenticated ->
+        public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root registry_loaded equivocation_detected idempotent
+    | RotateRevokeAndExpel :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        key_rotation pa ka_old ka_new from_epoch to_epoch durable *
+        key_rotation pb kb_old kb_new from_epoch to_epoch durable *
+        key_rotation pc kc_old kc_new from_epoch to_epoch durable *
+        key_revocation pa revoked_key to_epoch durable *
+        public_membership to_epoch pa ka_new pb kb_new pc kc_new registry_root durable ->
+        public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root equivocation_detected reconfigured non_idempotent
+    | FormPublicQuorum :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        public_statement transfer good_manifest pa ka_new round authenticated *
+        public_statement transfer good_manifest pb kb_new round authenticated *
+        public_statement transfer good_manifest pc kc_new round authenticated *
+        distinct_public_signers pa ka_new pb kb_new pc kc_new distinct *
+        public_membership to_epoch pa ka_new pb kb_new pc kc_new registry_root durable *
+        public_quorum transfer good_manifest round to_epoch pa ka_new pb kb_new pc kc_new registry_root authenticated ->
+        public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root reconfigured quorum_ready idempotent
+    | PublishPublicCommit :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        public_quorum transfer good_manifest round to_epoch pa ka_new pb kb_new pc kc_new registry_root authenticated *
+        public_commit transfer good_manifest round to_epoch registry_root evidence_root committed ->
+        public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root quorum_ready committed non_idempotent
+
+union public_byzantine_row transfer manifest round registry_root evidence_root from to effect =
+    | PublicByzantineRow :: forall transfer manifest round registry_root evidence_root from to effect.
+        string -> public_byzantine_row transfer manifest round registry_root evidence_root from to effect
+
+union public_byzantine_node transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to =
+    | PublicByzantineNode :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
+        (exists effect.
+            public_byzantine_op transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to effect *
+            public_byzantine_row transfer good_manifest round registry_root evidence_root from to effect)
+        -> public_byzantine_node transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to
+
+union rec public_byzantine_plan transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to =
+    | PublicByzantineLeaf :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
+        public_byzantine_node transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to ->
+        public_byzantine_plan transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to
+    | PublicByzantineThen :: forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
+        (exists middle.
+            public_byzantine_plan transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from middle *
+            public_byzantine_node transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root middle to)
+        -> public_byzantine_plan transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to
+
+union packed_public_byzantine transfer manifest =
+    | PackedPublicByzantine :: forall transfer manifest.
+        (exists fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+            public_byzantine_plan transfer manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root collecting committed)
+        -> packed_public_byzantine transfer manifest
+
+inl with_packed_public_byzantine forall transfer manifest result.
+    (visit : forall fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+        public_byzantine_plan transfer manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root collecting committed -> result)
+    (packed : packed_public_byzantine transfer manifest) : result =
+    match packed with
+    | PackedPublicByzantine payload =>
+        inl exists fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root. plan = payload
+        visit plan
+
+inl node_label forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
+    (node : public_byzantine_node transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to) : string =
+    match node with
+    | PublicByzantineNode payload =>
+        inl exists effect. _, PublicByzantineRow label = payload
+        label
+
+inl rec terminal_label forall transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to.
+    (plan : public_byzantine_plan transfer good_manifest fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root from to) : string =
+    match plan with
+    | PublicByzantineLeaf node => node_label node
+    | PublicByzantineThen payload =>
+        inl exists middle. _, node = payload
+        node_label node
+
+inl key_a_old_public () : public_key peer_a key_a_old round_29 retired authenticated = PublicKey "peer-a-old-retired"
+inl key_a_new_public () : public_key peer_a key_a_new round_29 active authenticated = PublicKey "peer-a-new-active"
+inl key_b_old_public () : public_key peer_b key_b_old round_29 retired authenticated = PublicKey "peer-b-old-retired"
+inl key_b_new_public () : public_key peer_b key_b_new round_29 active authenticated = PublicKey "peer-b-new-active"
+inl key_c_old_public () : public_key peer_c key_c_old round_29 retired authenticated = PublicKey "peer-c-old-retired"
+inl key_c_new_public () : public_key peer_c key_c_new round_29 active authenticated = PublicKey "peer-c-new-active"
+inl revoked_public () : public_key peer_a key_revoked round_29 revoked authenticated = PublicKey "peer-a-revoked"
+
+inl entry_a_new () : registry_entry peer_a key_a_new round_29 active registry_root_29 authenticated = RegistryEntry (key_a_new_public (), "a-new-in-root")
+inl entry_b_new () : registry_entry peer_b key_b_new round_29 active registry_root_29 authenticated = RegistryEntry (key_b_new_public (), "b-new-in-root")
+inl entry_c_new () : registry_entry peer_c key_c_new round_29 active registry_root_29 authenticated = RegistryEntry (key_c_new_public (), "c-new-in-root")
+
+inl membership () : public_membership epoch_3 peer_a key_a_new peer_b key_b_new peer_c key_c_new registry_root_29 durable =
+    PublicMembership (entry_a_new (), entry_b_new (), entry_c_new (), "epoch-3-public-membership")
+
+inl distinct_signers () : distinct_public_signers peer_a key_a_new peer_b key_b_new peer_c key_c_new distinct =
+    DistinctPublicSigners "three-distinct-peers-and-keys"
+
+inl stmt_a () : public_statement transfer_a manifest_good peer_a key_a_new round_29 authenticated = PublicStatement "peer-a-good-public"
+inl stmt_a_old () : public_statement transfer_a manifest_good peer_a key_a_old round_29 authenticated = PublicStatement "peer-a-retired-key-public"
+inl stmt_b () : public_statement transfer_a manifest_good peer_b key_b_new round_29 authenticated = PublicStatement "peer-b-good-public"
+inl stmt_c () : public_statement transfer_a manifest_good peer_c key_c_new round_29 authenticated = PublicStatement "peer-c-good-public"
+
+inl quorum () : public_quorum transfer_a manifest_good round_29 epoch_3 peer_a key_a_new peer_b key_b_new peer_c key_c_new registry_root_29 authenticated =
+    PublicQuorum (stmt_a (), stmt_b (), stmt_c (), distinct_signers (), membership (), "public-quorum-5-of-7")
+
+inl load_node () : public_byzantine_node transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 collecting registry_loaded =
+    PublicByzantineNode (exists (
+        LoadRotatedRegistry (
+            RegistryEntry (key_a_old_public (), "a-old-retired"),
+            entry_a_new (),
+            RegistryEntry (key_b_old_public (), "b-old-retired"),
+            entry_b_new (),
+            RegistryEntry (key_c_old_public (), "c-old-retired"),
+            entry_c_new (),
+            RegistryEntry (revoked_public (), "a-revoked"),
+            KeySuccessor "a-old-to-new",
+            KeySuccessor "b-old-to-new",
+            KeySuccessor "c-old-to-new"
+        ),
+        PublicByzantineRow "load-public-registry-and-rotation"
+    ))
+
+inl verify_node () : public_byzantine_node transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 registry_loaded equivocation_detected =
+    PublicByzantineNode (exists (
+        VerifyPublicEquivocation (
+            stmt_a (),
+            stmt_b (),
+            stmt_c (),
+            PublicEquivocation (PublicStatement "x-good", PublicStatement "x-fork", "x-two-valid-lamport-signatures"),
+            PublicEquivocation (PublicStatement "y-good", PublicStatement "y-fork", "y-two-valid-lamport-signatures"),
+            OneShotReuse "x-one-shot-key-reused",
+            OneShotReuse "y-one-shot-key-reused"
+        ),
+        PublicByzantineRow "verify-public-equivocation-and-key-reuse"
+    ))
+
+inl reconfigure_node () : public_byzantine_node transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 equivocation_detected reconfigured =
+    PublicByzantineNode (exists (
+        RotateRevokeAndExpel (
+            KeyRotation (KeySuccessor "a-old-to-new", "a-rotation-receipt"),
+            KeyRotation (KeySuccessor "b-old-to-new", "b-rotation-receipt"),
+            KeyRotation (KeySuccessor "c-old-to-new", "c-rotation-receipt"),
+            KeyRevocation "revoked-key-cannot-vote",
+            membership ()
+        ),
+        PublicByzantineRow "rotate-revoke-expel-and-advance-membership"
+    ))
+
+inl quorum_node () : public_byzantine_node transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 reconfigured quorum_ready =
+    PublicByzantineNode (exists (
+        FormPublicQuorum (stmt_a_old (), stmt_b (), stmt_c (), distinct_signers (), membership (), quorum ()),
+        PublicByzantineRow "form-public-quorum-with-active-one-shot-keys"
+    ))
+
+inl commit_node () : public_byzantine_node transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 quorum_ready committed =
+    PublicByzantineNode (exists (
+        PublishPublicCommit (
+            quorum (),
+            PublicCommit "public-lamport-byzantine-mesh-committed"
+        ),
+        PublicByzantineRow "public-byzantine-mesh-rotated-and-committed"
+    ))
+
+inl plan () : public_byzantine_plan transfer_a manifest_good manifest_fork round_29 peer_a key_a_old key_a_new peer_b key_b_old key_b_new peer_c key_c_old key_c_new peer_x key_x_new peer_y key_y_new key_revoked epoch_2 epoch_3 registry_root_29 evidence_root_29 collecting committed =
+    PublicByzantineThen (exists (
+        PublicByzantineThen (exists (
+            PublicByzantineThen (exists (
+                PublicByzantineThen (exists (
+                    PublicByzantineLeaf (load_node ()),
+                    verify_node ()
+                )),
+                reconfigure_node ()
+            )),
+            quorum_node ()
+        )),
+        commit_node ()
+    ))
+
+inl inspect forall fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root.
+    (plan : public_byzantine_plan transfer_a manifest_good fork_manifest round pa ka_old ka_new pb kb_old kb_new pc kc_old kc_new px kx py ky revoked_key from_epoch to_epoch registry_root evidence_root collecting committed) : string =
+    terminal_label plan
+
+inl main () : string =
+    inl packed : packed_public_byzantine transfer_a manifest_good = PackedPublicByzantine (exists (plan ()))
+    with_packed_public_byzantine `$inspect packed

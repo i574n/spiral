@@ -1,0 +1,31 @@
+inl impossible_closed_application_argument_tensor_beta_target_cross_type () :
+    exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_bool_type =
+    inl unit_argument :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedUnit (
+            exact_linear_indexed_empty_usage (),
+            "the-structural-Tensor-beta-argument-is-closed-Unit")
+    inl tensor_function :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            (exact_linear_arrow_type
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)
+                (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
+        exact_linear_indexed_identity_term_for ()
+    exact_linear_indexed_reduction_target
+        (ExactLinearIndexedReductionClosedApplicationArgument (
+            tensor_function,
+            ExactLinearIndexedClosedAtomicReductionTensorBeta (
+                unit_argument,
+                "the-real-atomic-child-reduces-to-Tensor-Unit-Unit"),
+            "the-real-congruence-target-is-Tensor-Unit-Unit-not-Bool"))
+
+inl main () =
+    impossible_closed_application_argument_tensor_beta_target_cross_type ()

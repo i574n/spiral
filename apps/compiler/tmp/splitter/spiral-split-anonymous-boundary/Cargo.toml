@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-anonymous-boundary"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/anonymous_boundary.rs"
+
+[dependencies]
+rayon.workspace = true

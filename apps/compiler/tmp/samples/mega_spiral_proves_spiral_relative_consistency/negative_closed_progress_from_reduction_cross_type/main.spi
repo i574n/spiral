@@ -1,0 +1,20 @@
+inl impossible_closed_progress_from_reduction_cross_type () :
+    exact_linear_indexed_closed_progress exact_linear_bool_type =
+    inl argument :
+        exact_linear_indexed_term
+            exact_linear_free_context_empty
+            exact_linear_indexed_usage_empty
+            exact_linear_unit_type =
+        ExactLinearIndexedUnit (
+            exact_linear_indexed_empty_usage (),
+            "the-negative-progress-source-is-Unit")
+    inl relation :
+        exact_linear_indexed_closed_identity_beta_relation exact_linear_unit_type =
+        ExactLinearIndexedClosedIdentityBetaRelation (
+            argument,
+            "the-negative-progress-reduction-is-indexed-by-Unit")
+    exact_linear_indexed_closed_progress_from_reduction
+        (ExactLinearIndexedReductionClosedAtomic (ExactLinearIndexedClosedAtomicReductionIdentity relation))
+
+inl main () =
+    impossible_closed_progress_from_reduction_cross_type ()

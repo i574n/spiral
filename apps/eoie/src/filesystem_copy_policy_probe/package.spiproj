@@ -1,0 +1,4 @@
+packages:
+    filesystem_copy_contract
+modules:
+    main

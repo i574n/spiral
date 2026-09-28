@@ -1,0 +1,51 @@
+open binary_install_contract.bindings
+open release_closeout_contract.bindings
+
+nominal handoff_idle = ()
+nominal handoff_loaded = ()
+nominal handoff_rendered = ()
+
+union handoff_op from to =
+    | LoadTypedHandoff :: handoff_op handoff_idle handoff_loaded
+    | RenderReadableHandoff :: handoff_op handoff_loaded handoff_rendered
+
+union rec handoff_plan from to =
+    | HandoffStep :: forall from to. handoff_op from to -> handoff_plan from to
+    | HandoffThen :: forall from to. (exists middle. handoff_plan from middle * handoff_plan middle to) -> handoff_plan from to
+
+inl readable_handoff () : handoff_plan handoff_idle handoff_rendered =
+    HandoffThen (exists (HandoffStep LoadTypedHandoff, HandoffStep RenderReadableHandoff))
+
+inl main () : i32 =
+    render_terminal.emit_runtime ()
+    binary_install_terminal.emit_runtime ()
+    release_closeout_terminal.emit_runtime ()
+    inl _ = binary_install_shape_binding 1i32 1i32
+    inl _ = binary_install_source_binding 1i32 3i32
+    inl _ = binary_install_freshness_binding 1i32 1i32
+    inl _ = binary_install_running_destination_binding 0i32 1i32
+    inl _ = binary_install_permission_binding 1i32 1i32
+    inl _ = binary_install_mode_binding 1i32 7i32
+    inl _ = binary_install_commit_binding 1i32 7i32
+    inl _ = release_closeout_shape_binding 63i32 6i32
+    inl _ = release_closeout_migration_binding 259i32 259i32
+    inl _ = release_closeout_evidence_binding 7i32 7i32
+    inl _ = release_closeout_mode_binding 1i32 3i32
+    inl _ = release_closeout_commit_binding 7i32 7i32
+    inl _ = release_closeout_refresh_binding 127i32 127i32
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_shape_binding\",\"binary_install_shape_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_source_binding\",\"binary_install_source_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_freshness_binding\",\"binary_install_freshness_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_running_destination_binding\",\"binary_install_running_destination_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_permission_binding\",\"binary_install_permission_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_mode_binding\",\"binary_install_mode_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_binary_install_commit_binding\",\"binary_install_commit_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_shape_binding\",\"release_closeout_shape_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_migration_binding\",\"release_closeout_migration_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_evidence_binding\",\"release_closeout_evidence_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_mode_binding\",\"release_closeout_mode_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_commit_binding\",\"release_closeout_commit_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_handoff_release_closeout_refresh_binding\",\"release_closeout_refresh_binding\")" : ()
+    $"RustLibrary()" : ()
+    inl _ = readable_handoff ()
+    0i32

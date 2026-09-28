@@ -1,0 +1,25 @@
+[package]
+name = "eoie-agile-state"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_agile_state"
+path = "state.rs"
+
+[dependencies]
+agile-state-runtime-policy-domain = { path = "../agile_state_runtime_policy_domain" }
+agile-state-transient-schema-domain = { path = "../agile_state_transient_schema_domain" }
+eoie-agile-policy = { path = "../eoie_agile_policy" }
+eoie-agile-lease = { path = "../eoie_agile_lease" }
+eoie-process = { path = "../eoie_process" }
+eoie-proxy-search = { path = "../eoie_proxy_search" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }
+state-receipt-codec-core = { path = "../state_receipt_codec_core" }
+state-receipt-fingerprint-domain = { path = "../state_receipt_fingerprint_domain" }
+state-receipt-parser-domain = { path = "../state_receipt_parser_domain" }
+state-receipt-tuple-domain = { path = "../state_receipt_tuple_domain" }
+state-receipt-serializer-domain = { path = "../state_receipt_serializer_domain" }
+rayon = "1.12.0"

@@ -1,0 +1,39 @@
+nominal app_scope = ()
+nominal i0 = ()
+nominal i1 = ()
+nominal i2 = ()
+nominal open_stream = ()
+nominal closed_stream = ()
+
+union stream scope cursor state =
+    | Stream :: forall scope cursor state. string -> stream scope cursor state
+
+union chunk scope from to =
+    | Chunk :: forall scope from to. string -> chunk scope from to
+
+union end_marker scope cursor =
+    | EndMarker :: forall scope cursor. string -> end_marker scope cursor
+
+inl append forall scope from to.
+    (stream : stream scope from open_stream)
+    (chunk : chunk scope from to)
+    : stream scope to open_stream =
+    match stream, chunk with
+    | Stream _, Chunk label => Stream label
+
+inl close forall scope cursor.
+    (stream : stream scope cursor open_stream)
+    (marker : end_marker scope cursor)
+    : stream scope cursor closed_stream =
+    match stream, marker with
+    | Stream _, EndMarker label => Stream label
+
+inl main () : string =
+    inl stream0 : stream app_scope i0 open_stream = Stream "head"
+    inl chunk0 : chunk app_scope i0 i1 = Chunk "body"
+    inl chunk1 : chunk app_scope i1 i2 = Chunk "tail"
+    inl marker : end_marker app_scope i2 = EndMarker "ssr-stream-closed"
+    inl stream1 = append stream0 chunk0
+    inl stream2 = append stream1 chunk1
+    match close stream2 marker with
+    | Stream label => label

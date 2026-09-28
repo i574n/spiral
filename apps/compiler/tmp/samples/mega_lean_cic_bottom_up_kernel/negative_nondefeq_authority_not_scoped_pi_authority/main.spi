@@ -1,0 +1,7 @@
+inl impossible_nondefeq_authority_not_scoped_pi_authority forall ctx domain.
+    (authority : corrected_cic_structural_nondefeq_authority
+        (ctx_extend ctx domain) (universe_sort universe_one)) :
+    corrected_cic_scoped_pi_term_authority ctx domain =
+    authority
+
+inl main () = ()

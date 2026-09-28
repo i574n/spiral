@@ -1,0 +1,21 @@
+inl impossible_corrected_cic_general_pi_binder_body_mismatch () :
+    corrected_cic_term empty_ctx (universe_sort universe_one) =
+    inl bool_binder : binder empty_ctx bool_sort =
+        identity_binder ()
+    inl universe_binder :
+        binder empty_ctx (universe_sort universe_one) =
+        binder (
+            empty_ctx "negative-general-Pi-empty",
+            universe_sort (universe_one "u1"),
+            "the-codomain-body-is-bound-under-a-universe-domain")
+    inl universe_codomain_body :
+        corrected_cic_term
+            (ctx_extend empty_ctx (universe_sort universe_one))
+            (universe_sort universe_one) =
+        CorrectedBoundHere universe_binder
+    CorrectedPi (exists (
+        bool_binder,
+        universe_codomain_body))
+
+inl main () =
+    impossible_corrected_cic_general_pi_binder_body_mismatch ()

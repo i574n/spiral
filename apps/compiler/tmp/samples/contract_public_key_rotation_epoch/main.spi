@@ -1,0 +1,29 @@
+nominal signer_a = ()
+nominal key_old = ()
+nominal key_new = ()
+nominal epoch0 = ()
+nominal epoch1 = ()
+nominal active = ()
+nominal pending = ()
+nominal retired = ()
+nominal rotated = ()
+
+union public_key signer key epoch state = | PublicKey :: forall signer key epoch state. string -> public_key signer key epoch state
+union rotation signer old_key new_key old_epoch new_epoch state = | Rotation :: forall signer old_key new_key old_epoch new_epoch state. string -> rotation signer old_key new_key old_epoch new_epoch state
+
+inl rotate forall signer old_key new_key old_epoch new_epoch.
+    (old : public_key signer old_key old_epoch active)
+    (next : public_key signer new_key new_epoch pending)
+    (proof : rotation signer old_key new_key old_epoch new_epoch rotated)
+    : public_key signer old_key old_epoch retired * public_key signer new_key new_epoch active =
+    match old, next, proof with | PublicKey _, PublicKey _, Rotation _ => PublicKey "retired", PublicKey "public-key-rotated"
+
+inl authorize forall signer key epoch. (key : public_key signer key epoch active) : string =
+    match key with | PublicKey label => label
+
+inl main () : string =
+    inl old : public_key signer_a key_old epoch0 active = PublicKey "old"
+    inl next : public_key signer_a key_new epoch1 pending = PublicKey "new"
+    inl proof : rotation signer_a key_old key_new epoch0 epoch1 rotated = Rotation "rotation"
+    match rotate old next proof with
+    | PublicKey _, activated => authorize activated

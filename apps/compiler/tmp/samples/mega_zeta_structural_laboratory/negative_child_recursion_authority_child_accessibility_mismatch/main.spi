@@ -1,0 +1,30 @@
+inl impossible_child_recursion_authority_child_accessibility_mismatch () :
+    certified_interval_positive_positional_child_recursion_authority
+        (positional_zero_bit positional_one)
+        (positional_one_bit positional_one)
+        (z_nat_succ z_nat_zero) =
+    inl membership :
+        certified_interval_positive_positional_factor_membership
+            (positional_zero_bit positional_one)
+            (positional_one_bit positional_one)
+            (z_nat_succ z_nat_zero) =
+        CertifiedIntervalPositivePositionalFactorMembershipHere (
+            positive_positional_two_value (),
+            PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorOneBit PositivePositionalOne,
+            "two-is-a-candidate-below-three")
+    match derive_certified_interval_positive_positional_membership_recursive_descent
+            (positive_positional_three_value ()) membership with
+    | CertifiedIntervalPositivePositionalRecursiveDescentProven descent =>
+        CertifiedIntervalPositivePositionalChildRecursionAuthority (
+            membership,
+            positive_positional_two_value (),
+            descent,
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            derive_positive_positional_predecessor_accessibility
+                (positive_positional_three_value ()),
+            "the-child-accessibility-is-deliberately-rooted-at-three-instead-of-two")
+
+inl main () =
+    impossible_child_recursion_authority_child_accessibility_mismatch ()

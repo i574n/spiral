@@ -1,0 +1,4 @@
+inl main () =
+    inl a = !!!!LayoutToStackRefs({items=!!!!Array(1i32,2i32); q=0i32; w=0i32})
+    !!!!ArrayResize(a.items,-1i32,0i32)
+    !!!!Add(a.q,a.w)

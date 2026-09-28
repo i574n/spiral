@@ -1,0 +1,57 @@
+union dogfood_capability =
+    | ToolchainActionDomain
+    | ToolchainCommandPlan
+    | StateReceiptFingerprint
+    | StateReceiptCodec
+    | FilesystemTransaction
+    | PatchTransactionCore
+    | BundleColdRoundtrip
+    | CandidateSelfPatch
+    | DeterministicBundleManifest
+    | ProcessStreaming
+    | RootedFilesystemOperations
+    | PhysicalBundleRetention
+    | ArchiveDeflateExtraction
+    | NativeArchiveExtraction
+    | InspectionAuthority
+    | ProcessBatchPlan
+    | MultiOwnerCoverageUnion
+    | SelfInstallCutover
+    | PatchMutationRegenerationCutover
+
+union public_verb =
+    | StatusVerb
+    | PatchVerb
+    | AgileVerb
+    | BundleVerb
+    | ProxyVerb
+
+union dogfood_gate =
+    | DogfoodCounted : u32 * u32
+
+inl dogfood_required_count () : u32 = 8u32
+inl dogfood_current_settled_count () : u32 = 8u32
+inl dogfood_recovered_topology_count () : u32 = 22u32
+inl settled_gate () : dogfood_gate = DogfoodCounted (8u32, 8u32)
+inl public_candidate_verb_count () : u32 = 5u32
+
+inl current_authority () : authority_state_domain.formal_authority_state =
+    authority_state_domain.current_formal_authority ()
+
+inl current_formal_blocker_mask () : i32 =
+    authority_state_domain.current_formal_blocker_mask ()
+
+inl operational_replacement_ready () : bool =
+    authority_state_domain.operational_replacement_ready ()
+
+inl legacy_fallback_execution_allowed () : bool =
+    authority_state_domain.legacy_fallback_execution_allowed ()
+
+inl authority_note () : string =
+    "operational-replacement-ready;semantic-closeout-coldproof-v4-and-differential-catalog-current;formal-authority-blocked-until-family-contracts-and-public-cold-rebuild-close;legacy-834-and-9252-are-historical-oracles-not-runtime-fallbacks"
+
+inl main () : i32 =
+    inl _ = settled_gate ()
+    inl _ = current_authority ()
+    inl _ = current_formal_blocker_mask ()
+    0i32

@@ -1,0 +1,179 @@
+nominal cold = ()
+nominal prepared = ()
+nominal view_change_started = ()
+nominal new_view_installed = ()
+nominal committed = ()
+
+nominal view_7 = ()
+nominal view_8 = ()
+nominal epoch_11 = ()
+nominal replica_a = ()
+nominal replica_b = ()
+nominal replica_c = ()
+nominal replica_d = ()
+nominal request_42 = ()
+
+union request_digest request =
+    | Request42Digest :: string -> request_digest request_42
+
+union prepare_vote replica view epoch request =
+    | PrepareA7 :: string -> prepare_vote replica_a view_7 epoch_11 request_42
+    | PrepareB7 :: string -> prepare_vote replica_b view_7 epoch_11 request_42
+    | PrepareC7 :: string -> prepare_vote replica_c view_7 epoch_11 request_42
+    | PrepareD7 :: string -> prepare_vote replica_d view_7 epoch_11 request_42
+
+union view_change_vote replica old_view new_view epoch request =
+    | ViewChangeA78 :: string -> view_change_vote replica_a view_7 view_8 epoch_11 request_42
+    | ViewChangeB78 :: string -> view_change_vote replica_b view_7 view_8 epoch_11 request_42
+    | ViewChangeC78 :: string -> view_change_vote replica_c view_7 view_8 epoch_11 request_42
+    | ViewChangeD78 :: string -> view_change_vote replica_d view_7 view_8 epoch_11 request_42
+
+union quorum3 a b c =
+    | Quorum3 :: forall a b c. a * b * c -> quorum3 a b c
+
+union new_view_certificate a b c old_view new_view epoch request =
+    | NewViewBCD78 ::
+        quorum3
+            (view_change_vote replica_b view_7 view_8 epoch_11 request_42)
+            (view_change_vote replica_c view_7 view_8 epoch_11 request_42)
+            (view_change_vote replica_d view_7 view_8 epoch_11 request_42) ->
+        new_view_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42
+
+union commit_certificate a b c old_view new_view epoch request =
+    | CommitBCD78 ::
+        new_view_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42 ->
+        commit_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42
+
+union pbft_op from to result =
+    | Prepare :: forall replica view epoch request.
+        request_digest request ->
+        pbft_op cold prepared (prepare_vote replica view epoch request)
+    | StartViewChange :: forall replica old_view new_view epoch request.
+        prepare_vote replica old_view epoch request ->
+        pbft_op prepared view_change_started
+            (view_change_vote replica old_view new_view epoch request)
+    | InstallNewView :: forall a b c old_view new_view epoch request.
+        quorum3
+            (view_change_vote a old_view new_view epoch request)
+            (view_change_vote b old_view new_view epoch request)
+            (view_change_vote c old_view new_view epoch request) ->
+        pbft_op view_change_started new_view_installed
+            (new_view_certificate a b c old_view new_view epoch request)
+    | Commit :: forall a b c old_view new_view epoch request.
+        new_view_certificate a b c old_view new_view epoch request ->
+        pbft_op new_view_installed committed
+            (commit_certificate a b c old_view new_view epoch request)
+
+nominal signature_interpreter from to result = pbft_op from to result
+nominal network_interpreter from to result = pbft_op from to result
+nominal audit_interpreter from to result = pbft_op from to result
+
+prototype interpret interpreter from to result : interpreter from to result -> string
+
+instance interpret signature_interpreter = fun (signature_interpreter op) =>
+    match op with
+    | Prepare _ => "verify-client-digest"
+    | StartViewChange _ => "verify-prepare-signature"
+    | InstallNewView _ => "verify-distinct-view-change-signatures"
+    | Commit _ => "verify-new-view-certificate"
+
+instance interpret network_interpreter = fun (network_interpreter op) =>
+    match op with
+    | Prepare _ => "broadcast-prepare"
+    | StartViewChange _ => "broadcast-view-change"
+    | InstallNewView _ => "broadcast-new-view"
+    | Commit _ => "broadcast-commit"
+
+instance interpret audit_interpreter = fun (audit_interpreter op) =>
+    match op with
+    | Prepare _ => "audit-request-binding"
+    | StartViewChange _ => "audit-old-new-view"
+    | InstallNewView _ => "audit-quorum-distinctness"
+    | Commit _ => "audit-commit-finality"
+
+union rec pbft_plan from to =
+    | PbftStep :: forall from to.
+        (exists result. pbft_op from to result * result) -> pbft_plan from to
+    | PbftThen :: forall from to.
+        (exists middle. pbft_plan from middle * pbft_plan middle to) -> pbft_plan from to
+
+inl rec terminal forall from to. (plan : pbft_plan from to) : string =
+    match plan with
+    | PbftStep payload =>
+        inl exists result. op, _ = payload
+        match op with
+        | Prepare _ => "prepared"
+        | StartViewChange _ => "view-change-started"
+        | InstallNewView _ => "new-view-installed"
+        | Commit _ => "committed"
+    | PbftThen payload =>
+        inl exists middle. _, right = payload
+        terminal right
+
+inl prepare_vote_a () : prepare_vote replica_a view_7 epoch_11 request_42 =
+    PrepareA7 "prepare-a"
+
+inl change_vote_a () : view_change_vote replica_a view_7 view_8 epoch_11 request_42 =
+    ViewChangeA78 "vc-a"
+
+inl quorum_bcd () =
+    Quorum3 (ViewChangeB78 "vc-b", ViewChangeC78 "vc-c", ViewChangeD78 "vc-d")
+
+inl new_view_bcd () : new_view_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42 =
+    NewViewBCD78 (quorum_bcd ())
+
+inl commit_bcd () : commit_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42 =
+    CommitBCD78 (new_view_bcd ())
+
+inl build_plan () : pbft_plan cold committed =
+    inl prepare : pbft_plan cold prepared =
+        PbftStep (exists (Prepare (Request42Digest "request-42"), prepare_vote_a ()))
+    inl change : pbft_plan prepared view_change_started =
+        PbftStep (exists (StartViewChange (prepare_vote_a ()), change_vote_a ()))
+    inl install : pbft_plan view_change_started new_view_installed =
+        PbftStep (exists (InstallNewView (quorum_bcd ()), new_view_bcd ()))
+    inl commit : pbft_plan new_view_installed committed =
+        PbftStep (exists (Commit (new_view_bcd ()), commit_bcd ()))
+    PbftThen (exists (prepare,
+        PbftThen (exists (change,
+            PbftThen (exists (install, commit))))))
+
+union sealed_commit =
+    | SealedCommit ::
+        (exists a b c old_view new_view epoch request.
+            commit_certificate a b c old_view new_view epoch request) ->
+        sealed_commit
+
+inl inspect_commit forall a b c old_view new_view epoch request.
+    (_ : commit_certificate a b c old_view new_view epoch request) : string =
+    "commit-certificate-bound"
+
+inl with_sealed forall output.
+    (visit :
+        forall a b c old_view new_view epoch request.
+            commit_certificate a b c old_view new_view epoch request -> output)
+    (value : sealed_commit) : output =
+    match value with
+    | SealedCommit payload =>
+        inl exists a b c old_view new_view epoch request. certificate = payload
+        visit certificate
+
+inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tprepare\tPrepare\tcold\tprepared\t\tidempotent\treplica-a\t1\n1\tview-change\tStartViewChange\tprepared\tview_change_started\tprepare\tidempotent\tview-8\t1\n1\tinstall-new-view\tInstallNewView\tview_change_started\tnew_view_installed\tview-change\tnon_idempotent\tquorum-3\t0\n1\tcommit\tCommit\tnew_view_installed\tcommitted\tinstall-new-view\tnon_idempotent\tview-8\t0\n"
+
+inl main () : string =
+    inl prepare_op : pbft_op cold prepared (prepare_vote replica_a view_7 epoch_11 request_42) =
+        Prepare (Request42Digest "request-42")
+    inl commit_op :
+        pbft_op new_view_installed committed
+            (commit_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42) =
+        Commit (new_view_bcd ())
+    inl install_op :
+        pbft_op view_change_started new_view_installed
+            (new_view_certificate replica_b replica_c replica_d view_7 view_8 epoch_11 request_42) =
+        InstallNewView (quorum_bcd ())
+    inl sig = interpret (signature_interpreter prepare_op)
+    inl net = interpret (network_interpreter commit_op)
+    inl audit = interpret (audit_interpreter install_op)
+    inl sealed_label = with_sealed `$inspect_commit (SealedCommit (exists (commit_bcd ())))
+    serialize_authority sig net audit (terminal (build_plan ()))

@@ -1,0 +1,13 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal i0 = ()
+nominal i1 = ()
+nominal i2 = ()
+nominal i3 = ()
+union segment build contig start finish = | Segment :: forall build contig start finish. string -> segment build contig start finish
+union region build contig start finish = | Region :: forall build contig start finish. string -> region build contig start finish
+inl merge forall build contig start middle finish. (left : segment build contig start middle) (right : segment build contig middle finish) : region build contig start finish = Region "merged"
+inl main () =
+    inl left : segment hg38 chr1 i0 i1 = Segment "left"
+    inl right : segment hg38 chr1 i2 i3 = Segment "right"
+    merge left right

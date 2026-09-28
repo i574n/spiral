@@ -1,0 +1,146 @@
+nominal archive_idle = ()
+nominal archive_preflighted = ()
+nominal archive_entries_validated = ()
+nominal archive_links_validated = ()
+nominal archive_payloads_written = ()
+nominal archive_tree_validated = ()
+nominal archive_committed = ()
+
+union archive_extract_op from to =
+    | ArchivePreflight :: archive_extract_op archive_idle archive_preflighted
+    | ValidateArchiveEntries :: archive_extract_op archive_preflighted archive_entries_validated
+    | ValidateArchiveLinks :: archive_extract_op archive_entries_validated archive_links_validated
+    | WriteArchivePayloads :: archive_extract_op archive_links_validated archive_payloads_written
+    | ValidateExtractedTree :: archive_extract_op archive_payloads_written archive_tree_validated
+    | CommitArchiveExtraction :: archive_extract_op archive_tree_validated archive_committed
+
+union rec archive_extract_plan from to =
+    | ArchiveExtractStep :: forall from to. archive_extract_op from to -> archive_extract_plan from to
+    | ArchiveExtractThen :: forall from to. (exists middle. archive_extract_plan from middle * archive_extract_plan middle to) -> archive_extract_plan from to
+
+inl deflate_extract_plan () : archive_extract_plan archive_idle archive_committed =
+    ArchiveExtractThen (exists (
+        ArchiveExtractStep ArchivePreflight,
+        ArchiveExtractThen (exists (
+            ArchiveExtractStep ValidateArchiveEntries,
+            ArchiveExtractThen (exists (
+                ArchiveExtractStep ValidateArchiveLinks,
+                ArchiveExtractThen (exists (
+                    ArchiveExtractStep WriteArchivePayloads,
+                ArchiveExtractThen (exists (
+                    ArchiveExtractStep ValidateExtractedTree,
+                        ArchiveExtractStep CommitArchiveExtraction
+                    ))
+                ))
+            ))
+        ))
+    ))
+
+let archive_preflight_binding (archive_regular : i32) (destination_absent : i32) : i32 =
+    if !!!!LT(archive_regular,1i32) then 0i32
+    elif !!!!LT(1i32,archive_regular) then 0i32
+    elif !!!!LT(destination_absent,1i32) then 0i32
+    elif !!!!LT(1i32,destination_absent) then 0i32
+    else 1i32
+
+let archive_entry_binding (path_safe : i32) (not_symlink : i32) : i32 =
+    if !!!!LT(path_safe,1i32) then 0i32
+    elif !!!!LT(1i32,path_safe) then 0i32
+    elif !!!!LT(not_symlink,1i32) then 0i32
+    elif !!!!LT(1i32,not_symlink) then 0i32
+    else 1i32
+
+let archive_tar_symlink_binding (target_confined : i32) (zero_payload : i32) : i32 =
+    if !!!!LT(target_confined,1i32) then 0i32
+    elif !!!!LT(1i32,target_confined) then 0i32
+    elif !!!!LT(zero_payload,1i32) then 0i32
+    elif !!!!LT(1i32,zero_payload) then 0i32
+    else 1i32
+
+let archive_tar_hardlink_binding (target_ready : i32) (zero_payload : i32) : i32 =
+    if !!!!LT(target_ready,1i32) then 0i32
+    elif !!!!LT(1i32,target_ready) then 0i32
+    elif !!!!LT(zero_payload,1i32) then 0i32
+    elif !!!!LT(1i32,zero_payload) then 0i32
+    else 1i32
+
+let archive_tar_long_link_binding (target_bounded : i32) (target_utf8 : i32) : i32 =
+    if !!!!LT(target_bounded,1i32) then 0i32
+    elif !!!!LT(1i32,target_bounded) then 0i32
+    elif !!!!LT(target_utf8,1i32) then 0i32
+    elif !!!!LT(1i32,target_utf8) then 0i32
+    else 1i32
+
+let archive_tar_pax_path_binding (path_safe : i32) (path_record_supported : i32) : i32 =
+    if !!!!LT(path_safe,1i32) then 0i32
+    elif !!!!LT(1i32,path_safe) then 0i32
+    elif !!!!LT(path_record_supported,1i32) then 0i32
+    elif !!!!LT(1i32,path_record_supported) then 0i32
+    else 1i32
+
+let archive_compression_binding (entry_safe : i32) (compression_supported : i32) : i32 =
+    if !!!!LT(entry_safe,1i32) then 0i32
+    elif !!!!LT(1i32,entry_safe) then 0i32
+    elif !!!!LT(compression_supported,1i32) then 0i32
+    elif !!!!LT(1i32,compression_supported) then 0i32
+    else 1i32
+
+let archive_budget_binding (limit_bytes : i32) (observed_bytes : i32) : i32 =
+    if !!!!LT(limit_bytes,1i32) then 0i32
+    elif !!!!LT(observed_bytes,0i32) then 0i32
+    elif !!!!LT(limit_bytes,observed_bytes) then 0i32
+    else 1i32
+
+let archive_complete_binding (expected_payloads : i32) (written_payloads : i32) : i32 =
+    if !!!!LT(expected_payloads,0i32) then 0i32
+    elif !!!!LT(written_payloads,0i32) then 0i32
+    elif !!!!LT(expected_payloads,written_payloads) then 0i32
+    elif !!!!LT(written_payloads,expected_payloads) then 0i32
+    else 1i32
+
+let archive_tree_binding (counts_match : i32) (tree_safe : i32) : i32 =
+    if !!!!LT(counts_match,1i32) then 0i32
+    elif !!!!LT(1i32,counts_match) then 0i32
+    elif !!!!LT(tree_safe,1i32) then 0i32
+    elif !!!!LT(1i32,tree_safe) then 0i32
+    else 1i32
+
+union archive_format =
+    | ZipArchive
+    | TarArchive
+    | TarGzipArchive
+    | TarXzArchive
+    | TarBzip2Archive
+
+inl archive_format_code = function
+    | ZipArchive => 0i32
+    | TarArchive => 1i32
+    | TarGzipArchive => 2i32
+    | TarXzArchive => 3i32
+    | TarBzip2Archive => 4i32
+
+let archive_format_binding (format_code : i32) (tool_available : i32) : i32 =
+    if !!!!LT(format_code,0i32) then 0i32
+    elif !!!!LT(4i32,format_code) then 0i32
+    elif !!!!LT(tool_available,1i32) then 0i32
+    elif !!!!LT(1i32,tool_available) then 0i32
+    else 1i32
+
+union archive_fault_point =
+    | NoArchiveFault
+    | FailAfterFirstPayload
+    | FailBeforeCommit
+
+inl archive_fault_code = function
+    | NoArchiveFault => 0i32
+    | FailAfterFirstPayload => 1i32
+    | FailBeforeCommit => 2i32
+
+let archive_fault_binding (configured : i32) (observed : i32) : i32 =
+    if !!!!LT(configured,0i32) then 0i32
+    elif !!!!LT(2i32,configured) then 0i32
+    elif !!!!LT(observed,1i32) then 0i32
+    elif !!!!LT(2i32,observed) then 0i32
+    elif !!!!LT(configured,observed) then 0i32
+    elif !!!!LT(observed,configured) then 0i32
+    else 1i32

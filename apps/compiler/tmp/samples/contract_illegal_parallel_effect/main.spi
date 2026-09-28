@@ -1,0 +1,15 @@
+nominal parallel = ()
+nominal serial = ()
+
+union task effect result =
+    | ValidateIssuer :: task parallel string
+    | Publish :: string -> task serial string
+
+union dag result =
+    | ParallelNode :: forall result. task parallel result -> dag result
+
+inl parallel_node forall result. (task : task parallel result) : dag result =
+    ParallelNode task
+
+inl main () : dag string =
+    parallel_node (Publish "not-parallel")

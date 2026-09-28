@@ -1,0 +1,25 @@
+[package]
+name = "eoie-legacy-operations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_legacy_operations"
+path = "operations.rs"
+
+[dependencies]
+eoie-process = { path = "../eoie_process" }
+eoie-process-observation = { path = "../eoie_process_observation" }
+eoie-toolchain-proxy = { path = "../eoie_toolchain_proxy" }
+eoie-source-topology = { path = "../eoie_source_topology" }
+eoie-source-map = { path = "../eoie_source_map" }
+eoie-cold-rebuild-matrix = { path = "../eoie_cold_rebuild_matrix" }
+eoie-ingest-frontier = { path = "../eoie_ingest_frontier" }
+eoie-coverage-prune = { path = "../eoie_coverage_prune" }
+eoie-bundle-zip = { path = "../eoie_bundle_zip" }
+eoie-patch-control-domain = { path = "../patch_control_domain" }
+eoie-rust-std-fs = { path = "../rust_std_fs" }
+eoie-proxy-search = { path = "../eoie_proxy_search" }
+legacy-capability-domain = { path = "../legacy_capability_domain" }

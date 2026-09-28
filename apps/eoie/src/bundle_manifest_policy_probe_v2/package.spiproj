@@ -1,0 +1,4 @@
+packages:
+    bundle_manifest_contract
+modules:
+    main

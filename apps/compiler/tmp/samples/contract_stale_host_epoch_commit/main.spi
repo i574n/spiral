@@ -1,0 +1,18 @@
+nominal app_a = ()
+nominal host_a = ()
+nominal generation_6 = ()
+nominal generation_7 = ()
+nominal root_scope = ()
+nominal live = ()
+nominal drained = ()
+nominal committed = ()
+union host_lease host generation state = | HostLease :: forall host generation state. string -> host_lease host generation state
+union scope_tree app host generation scope state = | ScopeTree :: forall app host generation scope state. string -> scope_tree app host generation scope state
+union effect_drain scope generation state = | Drain :: forall scope generation state. string -> effect_drain scope generation state
+union dom_commit app host generation state = | DomCommit :: forall app host generation state. string -> dom_commit app host generation state
+inl commit forall app host generation scope. (lease : host_lease host generation live) (tree : scope_tree app host generation scope live) (drain : effect_drain scope generation drained) : dom_commit app host generation committed = DomCommit "ok"
+inl main () =
+    inl lease : host_lease host_a generation_7 live = HostLease "browser-host"
+    inl tree : scope_tree app_a host_a generation_7 root_scope live = ScopeTree "root"
+    inl stale : effect_drain root_scope generation_6 drained = Drain "stale"
+    commit lease tree stale

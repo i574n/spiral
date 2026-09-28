@@ -1,0 +1,6 @@
+inl impossible_prime_power_leaf_nonfactor_chain_is_product_nonfactor forall factor count product external.
+    (chain : certified_arithmetic_prime_power_leaf_nonfactor_chain factor count product external) :
+    positive_positional_nonfactor_certificate product external =
+    chain
+
+inl main () = ()

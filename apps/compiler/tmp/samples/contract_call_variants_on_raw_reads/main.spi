@@ -1,0 +1,17 @@
+nominal donor_a = ()
+nominal hg38 = ()
+nominal raw = ()
+nominal aligned = ()
+nominal variants = ()
+
+union readset source build stage =
+    | ReadSet :: forall source build stage. string -> readset source build stage
+
+inl call_variants forall source build. (reads : readset source build aligned) : readset source build variants =
+    match reads with
+    | ReadSet label => ReadSet label
+
+inl main () : string =
+    inl reads : readset donor_a hg38 raw = ReadSet "raw"
+    inl _ : readset donor_a hg38 variants = call_variants reads
+    "unreachable"

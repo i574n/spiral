@@ -1,0 +1,1 @@
+inl failure_marker () = 2i32

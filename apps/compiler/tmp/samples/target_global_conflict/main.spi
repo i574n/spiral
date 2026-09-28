@@ -1,0 +1,6 @@
+inl main () =
+    inl _ = portable.target_global "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q"
+    inl _ = portable.target_global "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C"
+    inl _ = portable.target_global "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q"
+    inl _ = portable.target_global "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C"
+    0i32

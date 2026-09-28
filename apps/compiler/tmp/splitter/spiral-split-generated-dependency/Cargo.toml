@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-generated-dependency"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/generated_dependency.rs"
+
+[dependencies]
+rayon.workspace = true

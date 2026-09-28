@@ -1,0 +1,20 @@
+union differential_catalog_schema =
+    | DifferentialCatalogV1
+
+union differential_catalog_status =
+    | DifferentialCatalogPending
+    | DifferentialCatalogClosed
+
+union differential_catalog_gate =
+    | DifferentialCatalogGate : string * string
+
+inl current_differential_catalog_schema () : differential_catalog_schema = DifferentialCatalogV1
+inl current_differential_catalog_status () : differential_catalog_status = DifferentialCatalogClosed
+inl current_differential_semantic_flags () : u32 = 31u32
+
+inl settlement_gate () : differential_catalog_gate = DifferentialCatalogGate ("state/differential.spi", "9bd2ec75f53cd08696c740d6bb72f6bd67e2cfa5fe79819b6f29a6ac41a0b197")
+inl catalog_gate () : differential_catalog_gate = DifferentialCatalogGate ("state/legacy_catalog.spi", "d269bd5675e4e143d5961e8c102dcf839eee42c4484a732ad4bf9c397faaaddb")
+inl contract_gate () : differential_catalog_gate = DifferentialCatalogGate ("src/differential_normalization_contract/model.spi", "87558c332dc90516f697b9970b8ad666330680d15890564a5fbb470595ffcedf")
+inl route_gate () : differential_catalog_gate = DifferentialCatalogGate ("src/legacy_operations_entry/legacy_terminal.spi", "b4e6b206b31b4f6d5a054246931a12f06e9f1112f5471e1ce086a8f508d8aecb")
+
+inl main () : i32 = 0i32

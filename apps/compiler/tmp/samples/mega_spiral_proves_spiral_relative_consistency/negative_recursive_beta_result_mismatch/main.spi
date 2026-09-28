@@ -1,0 +1,15 @@
+inl impossible_recursive_beta_result_mismatch () :
+    exact_linear_indexed_closed_recursive_beta_relation
+        exact_linear_bool_type exact_linear_bool_type =
+    ExactLinearIndexedClosedRecursiveBetaRelation (
+        ExactLinearIndexedClosedRecursiveBetaBodyTensorLeftUnit (
+            ExactLinearIndexedClosedRecursiveBetaBodyBound
+                "the-negative-inner-body-binds-Bool",
+            "the-negative-wrapper-changes-the-result-to-Tensor-Bool-Unit"),
+        ExactLinearIndexedBoolTrue (
+            ExactLinearIndexedAllUnusedEmpty
+                "the-negative-Bool-argument-is-closed",
+            "the-negative-argument-matches-the-body-domain"),
+        "the-negative-tries-to-hide-a-Tensor-result-behind-a-Bool-index")
+
+inl main () = impossible_recursive_beta_result_mismatch ()

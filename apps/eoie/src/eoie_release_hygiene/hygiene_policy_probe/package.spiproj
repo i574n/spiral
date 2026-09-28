@@ -1,0 +1,5 @@
+packageDir: ../../
+packages:
+    rust_std_env
+modules:
+    main

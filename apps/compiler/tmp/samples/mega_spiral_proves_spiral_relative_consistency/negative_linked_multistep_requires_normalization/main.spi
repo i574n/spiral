@@ -1,0 +1,12 @@
+inl impossible_linked_multistep_requires_normalization
+    (trace :
+        exact_linear_indexed_closed_bool_multistep
+            exact_linear_closed_bool_false_normal)
+    : exact_linear_indexed_closed_bool_linked_multistep
+        exact_linear_closed_bool_false_normal =
+    ExactLinearIndexedClosedBoolLinkedMultistep (
+        trace,
+        "an-unlinked-public-trace-cannot-be-repacked-as-the-normalization-backed-authority")
+
+inl main () =
+    impossible_linked_multistep_requires_normalization

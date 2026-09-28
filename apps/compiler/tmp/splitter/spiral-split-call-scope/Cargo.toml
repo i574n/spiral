@@ -1,0 +1,13 @@
+[package]
+name = "spiral-split-call-scope"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/call_scope.rs"
+
+[dependencies]
+spiral-split-capture-parameter.workspace = true
+spiral-split-pattern-contract.workspace = true

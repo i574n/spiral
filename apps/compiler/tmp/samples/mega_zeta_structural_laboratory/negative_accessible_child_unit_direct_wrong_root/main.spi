@@ -1,0 +1,8 @@
+inl impossible_accessible_child_unit_direct_wrong_root () =
+    certified_interval_positive_positional_accessible_child_unit_complete_tree
+        (positive_positional_three_value ())
+        (derive_positive_positional_predecessor_accessibility
+            (positive_positional_three_value ()))
+
+inl main () =
+    impossible_accessible_child_unit_direct_wrong_root ()

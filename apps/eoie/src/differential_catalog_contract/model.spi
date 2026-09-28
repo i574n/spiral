@@ -1,0 +1,41 @@
+nominal differential_catalog_raw = ()
+nominal differential_catalog_settlement_verified = ()
+nominal differential_catalog_legacy_verified = ()
+nominal differential_catalog_sources_verified = ()
+nominal differential_catalog_closed = ()
+
+union differential_catalog_gate =
+    | DifferentialSettlementGate
+    | LegacyCatalogGate
+    | NormalizationContractGate
+    | PublicDifferentialRouteGate
+
+union differential_catalog_policy =
+    | RejectDifferentialCatalogHeader
+    | RejectDifferentialCatalogGateShape
+    | RejectDifferentialSettlementDrift
+    | RejectLegacyCatalogDrift
+    | RejectDifferentialSourceDrift
+    | AuthorizeDifferentialCatalogClosure
+
+union differential_catalog_op from to =
+    | InspectDifferentialSettlement :: differential_catalog_op differential_catalog_raw differential_catalog_settlement_verified
+    | VerifyLegacyCatalog :: differential_catalog_op differential_catalog_settlement_verified differential_catalog_legacy_verified
+    | VerifyDifferentialSources :: differential_catalog_op differential_catalog_legacy_verified differential_catalog_sources_verified
+    | CloseDifferentialCatalog :: differential_catalog_op differential_catalog_sources_verified differential_catalog_closed
+
+union rec differential_catalog_plan from to =
+    | DifferentialCatalogStep :: forall from to. differential_catalog_op from to -> differential_catalog_plan from to
+    | DifferentialCatalogThen :: forall from to. (exists middle. differential_catalog_plan from middle * differential_catalog_plan middle to) -> differential_catalog_plan from to
+
+inl differential_catalog_public_plan () : differential_catalog_plan differential_catalog_raw differential_catalog_closed =
+    DifferentialCatalogThen (exists (
+        DifferentialCatalogStep InspectDifferentialSettlement,
+        DifferentialCatalogThen (exists (
+            DifferentialCatalogStep VerifyLegacyCatalog,
+            DifferentialCatalogThen (exists (
+                DifferentialCatalogStep VerifyDifferentialSources,
+                DifferentialCatalogStep CloseDifferentialCatalog
+            ))
+        ))
+    ))

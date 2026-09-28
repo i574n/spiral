@@ -1,0 +1,19 @@
+[package]
+name = "spiral-split-lift-batch"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[lib]
+path = "src/lift_batch.rs"
+
+[dependencies]
+spiral-split-capture-closure.workspace = true
+spiral-split-recursive-header-stabilize.workspace = true
+spiral-split-fsharp-lex.workspace = true
+spiral-split-lift.workspace = true
+spiral-split-lift-plan.workspace = true
+spiral-split-lift-rewrite.workspace = true
+spiral-split-detached-call.workspace = true
+spiral-split-model.workspace = true

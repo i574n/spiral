@@ -1,0 +1,6 @@
+packageDir: packages
+packages:
+    consumer
+    types
+modules:
+    main

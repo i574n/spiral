@@ -1,0 +1,8 @@
+inl impossible_closed_bool_normalization_outcome_mismatch ()
+    : exact_linear_indexed_closed_bool_normalization
+        exact_linear_closed_bool_false_normal =
+    ExactLinearIndexedClosedBoolNormalizationTrue
+        "a-False-indexed-normalization-cannot-be-backed-by-a-True-normalization"
+
+inl main () =
+    impossible_closed_bool_normalization_outcome_mismatch ()

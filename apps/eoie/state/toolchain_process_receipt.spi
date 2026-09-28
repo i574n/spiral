@@ -1,0 +1,5 @@
+open core
+// toolchain-process-receipt|cargo-build|5|1|0|5595|1|1619009055200291057|17308288101770421760|11185209101334253465|4
+inl current_toolchain_process_receipt () : toolchain_process_receipt =
+    ToolchainProcessReceipt (CargoBuildProcess, ToolchainCompletionCommitted, ToolchainPassed 0i32, 5595u64, 1u32, ToolchainProcessIdentity (1619009055200291057u64, 17308288101770421760u64, 11185209101334253465u64, CargoReleaseProcessProfile))
+inl main () : i32 = 0i32

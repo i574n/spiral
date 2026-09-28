@@ -1,0 +1,5 @@
+inl impossible_typed_meta_identity_decision_not_scalar forall left right.
+    (decision : corrected_cic_typed_meta_identity_decision left right) : i64 =
+    decision
+
+inl main () = ()

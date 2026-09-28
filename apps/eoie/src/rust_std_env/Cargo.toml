@@ -1,0 +1,10 @@
+[package]
+name = "eoie-rust-std-env"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[example]]
+name = "eoie-rust-std-env-probe"
+path = "env_probe.rs"

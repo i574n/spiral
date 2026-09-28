@@ -1,0 +1,6 @@
+modules:
+    streaming_observation
+    stdout_observation
+    stdout_observation_tests
+    detached_observation
+    process_observation

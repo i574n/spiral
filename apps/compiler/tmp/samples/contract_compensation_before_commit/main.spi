@@ -1,0 +1,27 @@
+nominal draft = ()
+nominal sent = ()
+nominal committed = ()
+nominal pending = ()
+
+union document phase =
+    | DraftDocument :: document draft
+    | SentDocument :: document sent
+
+union compensation from to =
+    | UndoSubmit :: compensation sent draft
+
+union receipt from to status =
+    | PendingReceipt :: forall from to. receipt from to pending
+    | CommittedReceipt :: forall from to. receipt from to committed
+
+inl rollback forall from to.
+    (compensation : compensation to from)
+    (receipt : receipt from to committed)
+    (document : document to)
+    : document from =
+    match compensation, receipt, document with
+    | UndoSubmit, CommittedReceipt, SentDocument => DraftDocument
+
+inl main () : string =
+    inl _ = rollback UndoSubmit PendingReceipt SentDocument
+    "unreachable"

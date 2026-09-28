@@ -1,0 +1,33 @@
+nominal validate_id = ()
+nominal publish_id = ()
+nominal parallel = ()
+nominal serial = ()
+nominal validation_cap = ()
+nominal publish_cap = ()
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+
+union node id effect capability from to =
+    | ValidateNode :: node validate_id parallel validation_cap draft validated
+    | PublishNode :: node publish_id serial publish_cap validated authorized
+
+union packed_node from to =
+    | PackedNode :: forall from to.
+        (exists id. exists effect. exists capability.
+            node id effect capability from to)
+        -> packed_node from to
+
+union rec manifest from to =
+    | ManifestNode :: forall from to. packed_node from to -> manifest from to
+    | Depends :: forall from to.
+        (exists middle. manifest from middle * packed_node middle to)
+        -> manifest from to
+
+inl invalid () : manifest draft authorized =
+    Depends (exists (
+        ManifestNode (PackedNode (exists (exists (exists PublishNode)))),
+        PackedNode (exists (exists (exists ValidateNode)))
+    ))
+
+inl main () : string = "unreachable"

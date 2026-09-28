@@ -1,0 +1,17 @@
+[package]
+name = "eoie-bundle-manifest"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_bundle_manifest"
+path = "bundle_manifest.rs"
+
+[dependencies]
+zip = { version = "0.6.6", default-features = false, features = ["deflate"] }
+archive-deflate-domain = { path = "../archive_deflate_domain" }
+eoie-rust-std-fs-mutation = { path = "../rust_std_fs_mutation" }
+eoie-archive-tar-runtime = { path = "../eoie_archive_tar_runtime" }
+eoie-process-observation = { path = "../eoie_process_observation" }

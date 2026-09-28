@@ -1,0 +1,20 @@
+nominal scope_a = ()
+nominal epoch1 = ()
+nominal executor_a = ()
+nominal pending = ()
+nominal drained = ()
+nominal committed = ()
+
+union effect_queue scope epoch executor state = | Queue :: forall scope epoch executor state. string -> effect_queue scope epoch executor state
+union drain_receipt scope epoch executor state = | DrainReceipt :: forall scope epoch executor state. string -> drain_receipt scope epoch executor state
+union render_frame scope epoch state = | Frame :: forall scope epoch state. string -> render_frame scope epoch state
+
+inl drain forall scope epoch executor. (queue : effect_queue scope epoch executor pending) : effect_queue scope epoch executor drained * drain_receipt scope epoch executor drained = Queue "drained", DrainReceipt "receipt"
+inl commit forall scope epoch executor. (frame : render_frame scope epoch pending) (queue : effect_queue scope epoch executor drained) (receipt : drain_receipt scope epoch executor drained) : render_frame scope epoch committed =
+    match frame, queue, receipt with | Frame _, Queue _, DrainReceipt _ => Frame "executor-drain-committed"
+
+inl main () : string =
+    inl frame : render_frame scope_a epoch1 pending = Frame "frame"
+    inl queue : effect_queue scope_a epoch1 executor_a pending = Queue "queue"
+    match drain queue with | drained_queue, receipt =>
+        match commit frame drained_queue receipt with | Frame label => label

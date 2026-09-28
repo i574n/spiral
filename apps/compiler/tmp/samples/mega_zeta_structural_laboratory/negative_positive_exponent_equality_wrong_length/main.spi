@@ -1,0 +1,8 @@
+inl impossible_positive_exponent_equality_wrong_length () :
+    certified_arithmetic_positive_exponent_equal
+        (z_nat_succ z_nat_zero)
+        (z_nat_succ (z_nat_succ z_nat_zero)) =
+    CertifiedArithmeticPositiveExponentEqualOne
+
+inl main () =
+    impossible_positive_exponent_equality_wrong_length ()

@@ -1,0 +1,10 @@
+inl impossible_corrected_cic_meta_solved_authority_without_assignment () :
+    corrected_cic_meta_authority
+        (corrected_cic_meta_states_solved empty_ctx bool_sort
+            corrected_cic_meta_states_empty) =
+    CorrectedCicMetaAuthorityOpen (
+        corrected_cic_empty_meta_authority (),
+        "an-open-transition-cannot-be-reclassified-as-an-already-solved-authority")
+
+inl main () =
+    impossible_corrected_cic_meta_solved_authority_without_assignment ()

@@ -1,0 +1,97 @@
+let rec projection_find_digit_loop (text : string) (at : i32) (text_len : i32) : i32 =
+    if (=.) at text_len then text_len
+    else
+        inl digit = codec_decimal_digit_value (sm.index text at)
+        if (<) digit 10u64 then at
+        else projection_find_digit_loop text ((+.) at 1i32) text_len
+
+inl projection_line (source : string) (marker : string) : string =
+    inl source_len = sm.length source : i32
+    inl marker_at = find_text source 0i32 marker
+    if (=.) marker_at source_len then codec_empty ()
+    else
+        inl line_near_to = find_char source marker_at (char_newline ())
+        slice_exclusive source marker_at line_near_to
+
+inl projection_u32 (source : string) (marker : string) : string =
+    inl line = projection_line source marker
+    inl line_len = sm.length line : i32
+    if (=.) line_len 0i32 then codec_empty ()
+    else
+        inl equals_at = find_char line 0i32 '='
+        if (=.) equals_at line_len then codec_empty ()
+        else
+            inl digit_from = projection_find_digit_loop line ((+.) equals_at 1i32) line_len
+            if (=.) digit_from line_len then codec_empty ()
+            else
+                inl digit_near_to = find_text line digit_from "u32"
+                if (=.) digit_near_to line_len then codec_empty ()
+                else codec_u64_decimal_normalize (slice_exclusive line digit_from digit_near_to)
+
+let handoff_ratings_projection (source : string) : string =
+    inl active = projection_u32 source "inl active_codebase_readiness"
+    inl ceiling = projection_u32 source "inl subjective_phase_ceiling"
+    inl coverage = projection_u32 source "inl active_coverage_attainment"
+    inl runtime_drift = projection_u32 source "inl phase_runtime_drift"
+    inl parallel = projection_u32 source "inl phase_parallel_readiness"
+    inl plan_ir = projection_u32 source "inl phase_plan_ir"
+    inl migration = projection_u32 source "inl migration ()"
+    if (=.) active "" then codec_empty ()
+    elif (=.) ceiling "" then codec_empty ()
+    elif (=.) coverage "" then codec_empty ()
+    elif (=.) runtime_drift "" then codec_empty ()
+    elif (=.) parallel "" then codec_empty ()
+    elif (=.) plan_ir "" then codec_empty ()
+    elif (=.) migration "" then codec_empty ()
+    else
+        inl out0 = sm.concat "active_readiness=" active
+        inl out1 = sm.concat out0 "/1000 subjective_ceiling="
+        inl out2 = sm.concat out1 ceiling
+        inl out3 = sm.concat out2 "/1000 coverage="
+        inl out4 = sm.concat out3 coverage
+        inl out5 = sm.concat out4 "/1000 runtime_drift="
+        inl out6 = sm.concat out5 runtime_drift
+        inl out7 = sm.concat out6 "/1000 parallel_readiness="
+        inl out8 = sm.concat out7 parallel
+        inl out9 = sm.concat out8 "/1000 canonical_plan_ir="
+        inl out10 = sm.concat out9 plan_ir
+        inl out11 = sm.concat out10 "/1000 migration_historical="
+        inl out12 = sm.concat out11 migration
+        sm.concat out12 "/1000"
+
+let rec projection_census_loop (line : string) (at : i32) (line_len : i32) (index : i32) (out : string) : string =
+    inl digit_from = projection_find_digit_loop line at line_len
+    if (=.) digit_from line_len then if (=.) index 10i32 then out else codec_empty ()
+    elif (>=) index 10i32 then codec_empty ()
+    else
+        inl digit_near_to = find_text line digit_from "u32"
+        if (=.) digit_near_to line_len then codec_empty ()
+        else
+            inl value = codec_u64_decimal_normalize (slice_exclusive line digit_from digit_near_to)
+            if (=.) value "" then codec_empty ()
+            else
+                inl prefix =
+                    if (=.) index 0i32 then "spiral_files="
+                    elif (=.) index 1i32 then " generated_rust_files="
+                    elif (=.) index 2i32 then " rust_global_sites="
+                    elif (=.) index 3i32 then " spiral_loc="
+                    elif (=.) index 4i32 then " generated_rust_loc="
+                    elif (=.) index 5i32 then " cargo_crates="
+                    elif (=.) index 6i32 then " spiral_packages="
+                    elif (=.) index 7i32 then " package_only="
+                    elif (=.) index 8i32 then " max_crate_loc="
+                    else " max_rust_file_loc="
+                inl item = sm.concat prefix value
+                projection_census_loop line ((+.) digit_near_to 3i32) line_len ((+.) index 1i32) (sm.concat out item)
+
+let handoff_census_projection (source : string) : string =
+    inl line = projection_line source "AuthorityCensus ("
+    inl line_len = sm.length line : i32
+    if (=.) line_len 0i32 then codec_empty ()
+    else projection_census_loop line 0i32 line_len 0i32 ""
+
+inl fixture_ratings () : string =
+    "inl active_coverage_attainment () : u32 = 804u32\ninl active_codebase_readiness () : u32 = 477u32\ninl subjective_phase_ceiling () : u32 = 620u32\ninl phase_runtime_drift () : phase_dimension = PhaseDimension (\"runtime-drift-burndown\", 510u32, 12u32)\ninl phase_parallel_readiness () : phase_dimension = PhaseDimension (\"parallel-readiness\", 550u32, 8u32)\ninl phase_plan_ir () : phase_dimension = PhaseDimension (\"canonical-plan-ir\", 750u32, 10u32)\ninl migration () = Rating (MigrationCompleteness, 987u32, 0i32)\n"
+
+inl fixture_census () : string =
+    "inl census () : authority_census = AuthorityCensus (446u32, 90u32, 2141u32, 19236u32, 27530u32, 81u32, 239u32, 158u32, 996u32, 957u32)\n"

@@ -1,7 +1,5 @@
 param(
     $fast,
-    $SkipNotebook,
-    $SkipFsx,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
@@ -12,14 +10,7 @@ $ErrorActionPreference = "Stop"
 
 $projectName = "spiral_compiler"
 
-if (!$SkipFsx) {
-    if (!$fast -and !$SkipNotebook -and !$env:CI) {
-        $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot/lib/fsharp")
-        { . ../../workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/$projectName.dib" --working-directory $workingDirectory } | Invoke-Block -Retries 3
-    }
-    { . ../../workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/$projectName.dib" fs } | Invoke-Block
-}
-
+# spiral_compiler.fs is the source of truth (the single-flight core); there is no notebook to export it from.
 $runtime = $fast -or $env:CI ? @("--runtime", ($IsWindows ? "win-x64" : "linux-x64")) : @()
 $builderArgs = @("$projectName.fs", $runtime, "--packages", "Fable.Core", "FSharp.Control.AsyncSeq", "FSharpx.Collections", "Hopac", "Argu", "FParsec", "FSharp.Json", "Microsoft.AspNetCore.SignalR.Client", "System.Management", "--modules", @(GetFsxModules), "lib/fsharp/Common.fs")
 { . ../../deps/polyglot/apps/builder/dist/Builder$(_exe) @builderArgs } | Invoke-Block -OnError Continue

@@ -1,0 +1,4 @@
+packages:
+    flat_bundle_contract
+modules:
+    main

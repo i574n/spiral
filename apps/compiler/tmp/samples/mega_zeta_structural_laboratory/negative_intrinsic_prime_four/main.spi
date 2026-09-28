@@ -1,0 +1,11 @@
+inl impossible_intrinsic_prime_four () :
+    certified_interval_positive_positional_sealed_factor_class
+        (positional_zero_bit (positional_zero_bit positional_one)) =
+    CertifiedIntervalPositivePositionalSealedPrimeClass (exists (
+        positive_positional_four_value (),
+        PositivePositionalFactorCandidateNonunitZeroBit (positive_positional_two_value ()),
+        CertifiedIntervalPositivePositionalAllRejectedTwo
+            "four-cannot-reuse-the-two-candidate-base-as-a-complete-rejection",
+        "sealed-prime-four-must-be-uninhabitable"))
+
+inl main () = impossible_intrinsic_prime_four ()

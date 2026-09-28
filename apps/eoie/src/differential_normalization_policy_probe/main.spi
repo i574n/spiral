@@ -1,0 +1,11 @@
+open differential_normalization_contract.model
+
+inl main () : i32 =
+    inl plan = public_differential_plan ()
+    inl _ = plan
+    inl normalize_ok = normalization_binding 1i32 1i32
+    inl compare_ok = comparison_binding 1i32 1i32
+    inl receipt_ok = receipt_binding compare_ok 1i32
+    match settlement_binding normalize_ok compare_ok receipt_ok with
+    | 1 => 0i32
+    | _ => 1i32

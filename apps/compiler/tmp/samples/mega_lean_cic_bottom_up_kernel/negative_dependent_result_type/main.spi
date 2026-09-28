@@ -1,0 +1,7 @@
+inl impossible_true_index_bool_result () :
+    corrected_cic_bool_dependent_result corrected_cic_bool_true_index =
+    CorrectedCicBoolDependentTrueResult (
+        corrected_cic_true (),
+        "the-true-index-result-requires-Sort-zero-in-Sort-one-not-a-Bool-term")
+
+inl main () = impossible_true_index_bool_result ()

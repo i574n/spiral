@@ -1,0 +1,1 @@
+inl main () : i32 = domain.model.bootstrap_probe_result ()

@@ -1,0 +1,93 @@
+nominal torus_t = ()
+nominal torus_base = ()
+nominal loop_x = ()
+nominal loop_y = ()
+nominal torus_commutator = ()
+nominal motive_p = ()
+nominal fiber_base = ()
+nominal auto_x = ()
+nominal auto_y = ()
+nominal compose_xy = ()
+nominal compose_yx = ()
+nominal commute_xy = ()
+nominal section_witness = ()
+
+union torus_hit torus base x_loop y_loop commutator =
+    | TorusHit :: forall torus base x_loop y_loop commutator. string -> torus_hit torus base x_loop y_loop commutator
+
+union motive_fiber motive point fiber_id =
+    | MotiveFiber :: forall motive point fiber_id. string -> motive_fiber motive point fiber_id
+
+union fiber_automorphism motive fiber_id map_id =
+    | FiberAutomorphism :: forall motive fiber_id map_id. string -> fiber_automorphism motive fiber_id map_id
+
+union automorphism_composition motive fiber_id left right composite =
+    | AutomorphismComposition :: forall motive fiber_id left right composite.
+        fiber_automorphism motive fiber_id left *
+        fiber_automorphism motive fiber_id right *
+        string -> automorphism_composition motive fiber_id left right composite
+
+union commuting_2homotopy motive fiber_id map_x map_y composite_xy composite_yx filler =
+    | Commuting2Homotopy :: forall motive fiber_id map_x map_y composite_xy composite_yx filler.
+        automorphism_composition motive fiber_id map_x map_y composite_xy *
+        automorphism_composition motive fiber_id map_y map_x composite_yx *
+        string -> commuting_2homotopy motive fiber_id map_x map_y composite_xy composite_yx filler
+
+union torus_dependent_algebra torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler =
+    | TorusDependentAlgebra :: forall torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler.
+        torus_hit torus base x_loop y_loop commutator *
+        motive_fiber motive base fiber_id *
+        fiber_automorphism motive fiber_id map_x *
+        fiber_automorphism motive fiber_id map_y *
+        commuting_2homotopy motive fiber_id map_x map_y composite_xy composite_yx filler *
+        string -> torus_dependent_algebra torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler
+
+union torus_section torus motive base fiber_id map_x map_y filler witness =
+    | TorusSection :: forall torus motive base fiber_id map_x map_y filler witness. string -> torus_section torus motive base fiber_id map_x map_y filler witness
+
+union torus_dependent_eliminator torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler section =
+    | TorusDependentEliminator :: forall torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler section.
+        torus_dependent_algebra torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler *
+        torus_section torus motive base fiber_id map_x map_y filler section *
+        string -> torus_dependent_eliminator torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler section
+
+union packed_torus_eliminator torus motive =
+    | PackedTorusEliminator :: forall torus motive.
+        (exists base x_loop y_loop commutator fiber_id map_x map_y composite_xy composite_yx filler section.
+            torus_dependent_eliminator torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler section)
+        -> packed_torus_eliminator torus motive
+
+inl with_torus_eliminator forall torus motive result.
+    (visit : forall base x_loop y_loop commutator fiber_id map_x map_y composite_xy composite_yx filler section.
+        torus_dependent_eliminator torus base x_loop y_loop commutator motive fiber_id map_x map_y composite_xy composite_yx filler section -> result)
+    (packed : packed_torus_eliminator torus motive) : result =
+    match packed with
+    | PackedTorusEliminator payload =>
+        inl exists base x_loop y_loop commutator fiber_id map_x map_y composite_xy composite_yx filler section. eliminator = payload
+        visit eliminator
+
+inl x_auto () : fiber_automorphism motive_p fiber_base auto_x = FiberAutomorphism "monodromy-x"
+inl y_auto () : fiber_automorphism motive_p fiber_base auto_y = FiberAutomorphism "monodromy-y"
+
+inl xy_composite () : automorphism_composition motive_p fiber_base auto_x auto_y compose_xy =
+    AutomorphismComposition (x_auto (), y_auto (), "x-after-y")
+
+inl yx_composite () : automorphism_composition motive_p fiber_base auto_y auto_x compose_yx =
+    AutomorphismComposition (y_auto (), x_auto (), "y-after-x")
+
+inl commuting_square () : commuting_2homotopy motive_p fiber_base auto_x auto_y compose_xy compose_yx commute_xy =
+    Commuting2Homotopy (xy_composite (), yx_composite (), "torus-commutator-filled")
+
+inl torus_algebra () : torus_dependent_algebra torus_t torus_base loop_x loop_y torus_commutator motive_p fiber_base auto_x auto_y compose_xy compose_yx commute_xy =
+    TorusDependentAlgebra (TorusHit "higher-inductive-torus", MotiveFiber "fiber-at-base", x_auto (), y_auto (), commuting_square (), "dependent-torus-algebra")
+
+inl torus_eliminator () : torus_dependent_eliminator torus_t torus_base loop_x loop_y torus_commutator motive_p fiber_base auto_x auto_y compose_xy compose_yx commute_xy section_witness =
+    TorusDependentEliminator (torus_algebra (), TorusSection "section-respects-two-loops-and-commutator", "torus-dependent-eliminator")
+
+inl eliminator_label forall base x_loop y_loop commutator fiber_id map_x map_y composite_xy composite_yx filler section.
+    (_ : torus_dependent_eliminator torus_t base x_loop y_loop commutator motive_p fiber_id map_x map_y composite_xy composite_yx filler section) : string =
+    "hott-torus-dependent-eliminator"
+
+inl main () : string =
+    inl packed : packed_torus_eliminator torus_t motive_p = PackedTorusEliminator (exists (torus_eliminator ()))
+    with_torus_eliminator `$eliminator_label packed

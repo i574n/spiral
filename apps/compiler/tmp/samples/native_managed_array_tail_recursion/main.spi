@@ -1,0 +1,16 @@
+inl rec keep ~n (left : array i32) (right : array i32) : array i32 =
+    if n =. 0i32 then left
+    else join keep (n -. 1i32) right left
+
+inl main () : i32 =
+    inl ~size = 1i32
+    inl ~left : array i32 = create size
+    inl ~right : array i32 = create size
+    set left 0i32 7i32
+    set right 0i32 11i32
+    inl alias = left
+    inl result = join keep 1000000i32 left right
+    set result 0i32 13i32
+    if index alias 0i32 =. 13i32 then
+        if index right 0i32 =. 11i32 then 0i32 else 2i32
+    else 1i32

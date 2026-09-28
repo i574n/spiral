@@ -1,0 +1,30 @@
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+
+union operation from to effect =
+    | Validate :: operation draft validated idempotent
+    | Publish :: operation validated authorized non_idempotent
+
+union row from to effect =
+    | Row :: forall from to effect. string -> row from to effect
+
+inl codec forall from to effect.
+    (operation : operation from to effect)
+    : row from to effect =
+    match operation with
+    | Validate => Row "validate-row"
+    | Publish => Row "generic-authority-emitter"
+
+inl emit forall from to effect.
+    (serializer : forall a b e. operation a b e -> row a b e)
+    (operation : operation from to effect)
+    : row from to effect =
+    serializer operation
+
+inl main () : string =
+    inl emitted : row validated authorized non_idempotent = emit `$codec Publish
+    match emitted with
+    | Row label => label

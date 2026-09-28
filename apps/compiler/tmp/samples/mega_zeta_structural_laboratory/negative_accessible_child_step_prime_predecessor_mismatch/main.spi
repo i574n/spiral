@@ -1,0 +1,14 @@
+inl impossible_accessible_child_step_prime_predecessor_mismatch () =
+    inl three_value = positive_positional_three_value ()
+    certified_interval_positive_positional_accessible_child_completion
+        three_value
+        (PositivePositionalPredecessorAccessibilityStep (exists (
+            PositivePositionalOne,
+            PositivePositionalPredecessorTwo,
+            PositivePositionalLessOneZeroBit PositivePositionalOne,
+            PositivePositionalPredecessorAccessibilityOne
+                "forged-one-tail-accessibility",
+            "forged-two-to-one-step-for-general-prime-three")))
+
+inl main () =
+    impossible_accessible_child_step_prime_predecessor_mismatch ()

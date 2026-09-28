@@ -1,0 +1,9 @@
+union restart_baton_receipt_schema =
+    | RestartBatonReceiptV2
+union restart_baton_receipt_status =
+    | RestartBatonReady
+union restart_baton_receipt =
+    | RestartBatonReceipt : restart_baton_receipt_schema * restart_baton_receipt_status * u32 * string * u64 * string * string * string * string * string
+inl current_restart_baton () : restart_baton_receipt =
+    RestartBatonReceipt (RestartBatonReceiptV2, RestartBatonReady, 987u32, "/mnt/data/bundle_eoie_v20260723-alpha70360.zip", 5582171u64, "b7a702d45501ced79cf344ff0e509cca1b0abef7fd244dc29e823bb8cb766fc8", "207a61a4cd7142f8725d65cf53284a876edc6473f2a92793f1bc9c036aaac850", "INTERRUPTION-RESTART-BATON", "src/legacy_capability_domain/restart_baton.spi,src/legacy_capability_domain/main.spi,src/legacy_operations_entry/restart_baton_terminal.spi,src/eoie_coverage_smoke/smoke.spi,state/package.spiproj", "agile-check")
+inl main () : i32 = 0i32

@@ -1,0 +1,9 @@
+inl rec keep ~n (value : string) : string =
+    if n =. 0i32 then value
+    else
+        inl next = if n %. 2i32 =. 0i32 then "ok" else "go"
+        join keep (n -. 1i32) next
+
+inl main () : i32 =
+    inl value = join keep 1000000i32 "seed"
+    if (=.) (sm.length value : i32) 2i32 then 0i32 else 1i32

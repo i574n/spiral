@@ -1,0 +1,4 @@
+packages:
+    filesystem_action_batch_contract
+modules:
+    main

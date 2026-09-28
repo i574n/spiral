@@ -1,0 +1,24 @@
+open path_tag_contract.model
+
+inl main () : i32 =
+    match path_tag_relative_binding 1i32 0i32 2i32 with
+    | 0 =>
+        match path_tag_relative_binding 0i32 1i32 2i32 with
+        | 0 =>
+            match path_tag_relative_binding 0i32 0i32 0i32 with
+            | 0 =>
+                match path_tag_indices_binding 64i32 0i32 0i32 with
+                | 0 =>
+                    match path_tag_indices_binding 0i32 -1i32 0i32 with
+                    | 0 =>
+                        match path_tag_shape_binding 2i32 1i32 with
+                        | 0 =>
+                            match path_tag_collision_binding 1i32 0i32 with
+                            | 0 => 0i32
+                            | _ => 7i32
+                        | _ => 6i32
+                    | _ => 5i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

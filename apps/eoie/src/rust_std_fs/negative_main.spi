@@ -1,0 +1,13 @@
+open model
+
+inl missing_stage_probe () : bool =
+    inl pending = staged "/tmp/eoie-rust-std-fs-negative-stage.txt"
+    discard pending && staged_missing pending
+
+inl missing_path_probe () : bool =
+    match probe (unchecked "/tmp/eoie-rust-std-fs-negative-missing.txt") with
+    | FileMissing path => missing_path_nonempty path
+    | FileReadable _ => false
+
+inl main () : i32 =
+    if missing_stage_probe () && missing_path_probe () then 0i32 else 1i32

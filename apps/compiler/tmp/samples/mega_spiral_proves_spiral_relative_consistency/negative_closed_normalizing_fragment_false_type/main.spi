@@ -1,0 +1,12 @@
+inl impossible_closed_normalizing_fragment_false_type ()
+    : exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
+    inl bool_fragment :
+        exact_linear_indexed_closed_normalizing_fragment exact_linear_bool_type =
+        ExactLinearIndexedClosedNormalizingFragmentBoolProgramTrue (
+            ExactLinearIndexedClosedBoolProgramTrue
+                "a-covered-closed-Bool-program-normalizes-to-True",
+            "the-covered-fragment-theorem-must-return-a-Bool-not-False-witness")
+    exact_linear_indexed_closed_normalizing_fragment_type_not_false bool_fragment
+
+inl main () =
+    impossible_closed_normalizing_fragment_false_type ()

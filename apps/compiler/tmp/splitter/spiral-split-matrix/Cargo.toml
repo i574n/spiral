@@ -1,0 +1,15 @@
+[package]
+name = "spiral-split-matrix"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "spiral-split-matrix"
+path = "src/spiral_split_matrix.rs"
+
+[dependencies]
+spiral-split-build-budget.workspace = true
+spiral-split-matrix-receipt.workspace = true
+spiral-split-process-supervisor.workspace = true

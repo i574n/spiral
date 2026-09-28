@@ -1,0 +1,9 @@
+# Build output belongs in the cache directory (%LOCALAPPDATA%/spiral-bin or ~/.cache/spiral-bin);
+# these catch in-tree builds and the logs a core writes beside its source.
+bin/
+obj/
+target/
+*.dll
+*.exe
+*.pdb
+*.jsonl

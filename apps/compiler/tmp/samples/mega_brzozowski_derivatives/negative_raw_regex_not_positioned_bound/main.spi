@@ -1,0 +1,6 @@
+open main
+open positioned_bound
+
+inl main () : bool =
+    require_positioned_regex (
+        antimirov_position_tree_regex (bit_ends_with_zero_position_tree ()))

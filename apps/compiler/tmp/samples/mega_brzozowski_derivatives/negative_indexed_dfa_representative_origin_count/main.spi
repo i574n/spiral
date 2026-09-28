@@ -1,0 +1,3 @@
+open main
+inl main () : bool =
+    require_exact_representative_origin_count (two_bit_states ()) (one_origin_for_two_closure ())

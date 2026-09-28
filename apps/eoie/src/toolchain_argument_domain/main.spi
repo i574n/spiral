@@ -1,0 +1,9 @@
+inl main () : i32 =
+    inl _ = toolchain_argument_count_binding 4i32 0i32
+    inl _ = toolchain_argument_token_low_binding 2i32 3i32
+    inl _ = toolchain_argument_token_chunk_binding 12i32 1i32
+    $"RustExportI32Binary(\"eoie_toolchain_argument_count\",\"toolchain_argument_count_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_argument_token_low\",\"toolchain_argument_token_low_binding\")" : ()
+    $"RustExportI32Binary(\"eoie_toolchain_argument_token_chunk\",\"toolchain_argument_token_chunk_binding\")" : ()
+    $"RustLibrary()" : ()
+    0i32

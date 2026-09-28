@@ -1,0 +1,41 @@
+union payload =
+    | Empty
+    | Values : array string
+
+inl reserve ~(xs : array string) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+inl resize ~(xs : array string) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+inl capacity ~(xs : array string) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+let mutate x : i32 =
+    match x with
+    | Empty => 90i32
+    | Values values =>
+        join reserve values 8i32
+        join resize values 3i32
+        set values 1i32 "cde"
+        set values 2i32 "f"
+        join resize values 2i32
+        join capacity values
+
+let observe x : i32 =
+    match x with
+    | Empty => 91i32
+    | Values values =>
+        length values +. sm.length (index values 0i32) +. sm.length (index values 1i32)
+
+inl main () : i32 =
+    inl ~values : array string = create 4i32
+    join resize values 1i32
+    set values 0i32 "ab"
+    inl ~alias = values
+    inl wrapped = Values values
+    inl ~grown = mutate wrapped
+    inl ~score = observe wrapped
+    join resize alias 0i32
+    join resize alias 1i32
+    score +. grown +. length values -. 16i32

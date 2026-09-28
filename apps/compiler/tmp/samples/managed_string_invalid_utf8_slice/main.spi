@@ -1,0 +1,6 @@
+let invalid_middle (x : string) : string =
+    sm.slice x { from = 1i32; to = 1i32 }
+
+inl main () =
+    inl invalid = invalid_middle "é"
+    sm.length invalid : i32

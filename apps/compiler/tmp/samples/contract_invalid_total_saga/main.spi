@@ -1,0 +1,27 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+union forward from to =
+    | Sign :: forward draft signed
+    | Authorize :: forward signed authorized
+
+union compensate from to =
+    | Unauthorize :: compensate authorized signed
+    | Unsign :: compensate signed draft
+
+union chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+
+nominal total_saga from to =
+    {
+        forward_plan : chain forward from to
+        rollback_plan : chain compensate to from
+    }
+
+inl main () : total_saga draft authorized =
+    total_saga {
+        forward_plan = ChainStep Sign
+        rollback_plan = ChainStep Unsign
+    }

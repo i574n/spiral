@@ -1,0 +1,18 @@
+[package]
+name = "bundle-lifecycle-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "bundle_lifecycle_domain"
+path = "lifecycle.rs"
+
+[[example]]
+name = "archive_extract_negative"
+path = "archive_extract_negative.rs"
+
+[[example]]
+name = "archive_extract_policy_probe"
+path = "archive_extract_policy_probe.rs"

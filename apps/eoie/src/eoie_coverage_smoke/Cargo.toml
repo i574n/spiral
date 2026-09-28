@@ -1,0 +1,13 @@
+[package]
+name = "eoie-coverage-smoke"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "eoie_coverage_smoke"
+path = "smoke.rs"
+
+[dependencies]
+eoie-process-observation = { path = "../eoie_process_observation" }

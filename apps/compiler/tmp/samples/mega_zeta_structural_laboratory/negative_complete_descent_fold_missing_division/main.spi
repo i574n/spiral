@@ -1,0 +1,24 @@
+inl positive_positional_one_less_two () :
+    positive_positional_less positional_one (positional_zero_bit positional_one) =
+    PositivePositionalLessOneZeroBit PositivePositionalOne
+
+inl certified_recursive_descent_two_to_one () :
+    certified_interval_positive_positional_recursive_descent
+        (positional_zero_bit positional_one)
+        positional_one =
+    CertifiedIntervalPositivePositionalRecursiveDescent (
+        positive_positional_one_less_two (),
+        "one-is-strictly-smaller-than-two")
+
+inl impossible_complete_descent_fold_missing_division () :
+    certified_interval_positive_positional_complete_descent_fold
+        (positional_zero_bit positional_one) =
+    CertifiedIntervalPositivePositionalCompleteDescentFoldSplit (exists (
+        positive_positional_two_value (),
+        certified_recursive_descent_two_to_one (),
+        certified_recursive_descent_two_to_one (),
+        CertifiedIntervalPositivePositionalCompleteDescentFoldUnit,
+        CertifiedIntervalPositivePositionalCompleteDescentFoldUnit,
+        "a-split-fold-must-carry-the-structural-division-equation"))
+
+inl main () = impossible_complete_descent_fold_missing_division ()

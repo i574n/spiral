@@ -1,0 +1,5 @@
+packages:
+    patch_mutation_contract
+modules:
+    gated_terminal
+    app

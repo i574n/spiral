@@ -1,0 +1,5 @@
+inl impossible_slot () : antimirov_origin_slot position_shape_empty =
+    OriginSlotChar
+
+inl main () =
+    impossible_slot ()

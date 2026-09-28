@@ -1,0 +1,8 @@
+inl impossible_accessible_child_one_mismatch () =
+    certified_interval_positive_positional_accessible_child_completion
+        (positive_positional_two_value ())
+        (PositivePositionalPredecessorAccessibilityOne
+            "forged-one-accessibility-for-two")
+
+inl main () =
+    impossible_accessible_child_one_mismatch ()

@@ -1,0 +1,12 @@
+inl rec impossible_inhabited_bool_empty_match
+    (term : exact_linear_indexed_term
+        exact_linear_free_context_empty
+        exact_linear_indexed_usage_empty
+        exact_linear_bool_type) : string =
+    match term with
+
+inl main () : string =
+    impossible_inhabited_bool_empty_match (
+        ExactLinearIndexedBoolTrue (
+            exact_linear_indexed_empty_usage (),
+            "the-inhabited-Bool-control-forces-the-empty-match-to-be-checked"))

@@ -1,0 +1,208 @@
+union command_effect =
+    | Inspect
+    | Wrap
+    | Mutate
+    | Renew
+
+union command_handler =
+    | StatusHandler
+    | PatchHandler
+    | AgileHandler
+    | BundleHandler
+    | ProxyHandler
+    | HelpHandler
+    | UnknownHandler
+    | LeaseDeniedHandler
+
+union command_spec =
+    | StatusSpec
+    | PatchSpec
+    | AgileSpec
+    | BundleSpec
+    | ProxySpec
+    | HelpSpec
+    | UnknownSpec
+
+nominal actionable = ()
+union cli_diagnostic state =
+    | ActionableDiagnostic :: string * string * string * string -> cli_diagnostic actionable
+
+inl status_arity_diagnostic () : cli_diagnostic actionable =
+    ActionableDiagnostic ("status [root]", "status", "zero arguments|one bundle root", "eoie status")
+
+inl help_arity_diagnostic () : cli_diagnostic actionable =
+    ActionableDiagnostic ("help [verb|--completion|--json|--schema]", "help", "verb|proxy <capability>|--completion|--json|--schema", "eoie help")
+
+inl unknown_verb_diagnostic () : cli_diagnostic actionable =
+    ActionableDiagnostic ("<status|patch|agile|bundle|proxy|help> ...", "public command", "status|patch|agile|bundle|proxy|help", "eoie help")
+
+inl diagnostic_catalog_witness () : i32 =
+    match status_arity_diagnostic (), help_arity_diagnostic (), unknown_verb_diagnostic () with
+    | ActionableDiagnostic _, ActionableDiagnostic _, ActionableDiagnostic _ => 1i32
+
+inl command_code_value = function
+    | StatusSpec => 0u64
+    | PatchSpec => 1u64
+    | AgileSpec => 2u64
+    | BundleSpec => 3u64
+    | ProxySpec => 4u64
+    | HelpSpec => 5u64
+    | UnknownSpec => 6u64
+
+inl effect_code_value = function
+    | Inspect => 0u64
+    | Wrap => 1u64
+    | Mutate => 2u64
+    | Renew => 3u64
+
+inl handler_value = function
+    | StatusSpec => StatusHandler
+    | PatchSpec => PatchHandler
+    | AgileSpec => AgileHandler
+    | BundleSpec => BundleHandler
+    | ProxySpec => ProxyHandler
+    | HelpSpec => HelpHandler
+    | UnknownSpec => UnknownHandler
+
+inl handler_code_value = function
+    | StatusHandler => 0i32
+    | PatchHandler => 1i32
+    | AgileHandler => 2i32
+    | BundleHandler => 3i32
+    | ProxyHandler => 4i32
+    | HelpHandler => 5i32
+    | UnknownHandler => 6i32
+    | LeaseDeniedHandler => 7i32
+
+inl handler_from_code (code : i32) : command_handler =
+    match code with
+    | 0i32 => handler_value StatusSpec
+    | 1i32 => handler_value PatchSpec
+    | 2i32 => handler_value AgileSpec
+    | 3i32 => handler_value BundleSpec
+    | 4i32 => handler_value ProxySpec
+    | 5i32 => handler_value HelpSpec
+    | 7i32 => LeaseDeniedHandler
+    | _ => handler_value UnknownSpec
+
+inl command_catalog_witness () : i32 =
+    match handler_from_code 0i32,
+          handler_from_code 1i32,
+          handler_from_code 2i32,
+          handler_from_code 3i32,
+          handler_from_code 4i32,
+          handler_from_code 5i32 with
+    | StatusHandler, PatchHandler, AgileHandler, BundleHandler, ProxyHandler, HelpHandler => 1i32
+    | _ => 0i32
+
+let command_code (~input : string) : u64 =
+    if rust_std_string.model.pipe_member "-h|--help" input then command_code_value HelpSpec
+    else rust_std_string.model.pipe_index "status|patch|agile|bundle|proxy|help" input
+
+
+let command_effect_code (~input : string) : u64 =
+    if rust_std_string.model.pipe_member "patch|agile|proxy" input then effect_code_value Mutate
+    elif rust_std_string.model.equals input "bundle" then effect_code_value Wrap
+    else effect_code_value Inspect
+
+let command_subcommand_effect_code (~input : string) : u64 =
+    if rust_std_string.model.pipe_member "patch:check|agile:list|agile:check|agile:lease|agile:status|proxy:plan-ir-inspect|proxy:plan-ir-check|proxy:legacy-surface|proxy:self-upgrade-check|proxy:fs-list|proxy:fs-read|proxy:fs-slice|proxy:fs-context|proxy:fs-search|proxy:parallel-search|proxy:parallel-manifest|proxy:product-diff|proxy:hash|proxy:hash-tree|proxy:source-stats|proxy:ingest-map|proxy:ingest-trim-check|proxy:ingest-extracted-manifest|proxy:ingest-targets|proxy:ingest-targets-derive|proxy:frontier-map|proxy:spi-map|proxy:spi-diff|proxy:source-recovery-diff|proxy:coverage-assess" input then effect_code_value Inspect
+    elif rust_std_string.model.pipe_member "agile:record|proxy:release-closeout|proxy:spiral-session-shutdown" input then effect_code_value Wrap
+    elif rust_std_string.model.equals input "agile:begin" then effect_code_value Renew
+    elif rust_std_string.model.equals input "bundle:retention-apply" then effect_code_value Mutate
+    else 4u64
+
+let command_descriptor_by_index (~input : string) : string * string * string * string * string =
+    inl keys = "0|1|2|3|4|5"
+    inl name = rust_std_string.model.pipe_lookup keys "status\npatch\nagile\nbundle\nproxy\nhelp" input
+    if rust_std_string.model.equals name "" then "unknown", "inspect", "unknown", "unknown public verb", "unknown"
+    else
+        name,
+        rust_std_string.model.pipe_lookup keys "inspect\nmutate\nmutate\nwrap\nmutate\ninspect" input,
+        rust_std_string.model.pipe_lookup keys "status [root]\npatch: apply <root> <plan.spi> [--compiler <absolute>] | check <root> <plan.spi> | rehearse <root> <plan.spi> | gated <root> <plan.spi> <gate-program>\nagile: begin <root> <title> | lease <root> | status <root> | handoff <root> | list <root> | check <root> [--compiler <absolute>] | record <root> | set <root> <id> <progress> <Planned|Active|Blocked|Paused|Done>\nbundle: growth-baseline <predecessor.zip> <previous-root> <root> | growth-receipt <root> <reason> <reference> | check <root> [auto|generic|eoie] | create <root> <output.zip> [auto|generic|eoie] | create-flat <root> <output.zip> <max-bytes> | verify <archive.zip> [auto|generic|eoie] | verify-flat <archive.zip> <max-bytes> | rehydrate <archive.zip> <destination> [auto|generic|eoie] | retention-plan <directory> <current.zip> <receipt.spi> | retention-apply <directory> <current.zip> <receipt.spi> <fingerprint>\nproxy: plan-ir-inspect|plan-ir-check|legacy-surface|install-self|self-upgrade-check|restart-baton|fs-chmod|fs-symlink|fs-copy-tree|command-capture|command-capture-env|command-capture-matrix|command-capture-matrix-gate|batch-plan|batch-plan-resume|fs-list|fs-read|fs-slice|fs-context|fs-search|parallel-search|parallel-manifest|product-diff|fs-write|text-replace|fs-copy|fs-remove|fs-remove-tree|run|spiral-session-shutdown|archive-extract|zip-extract|hash|hash-tree|prune-build-cache|prune-compiler-sidecars|incident-recovery|external-payload|differential-compare|coverage-assess|coverage-export|coverage-union|coverage-run|toolchain|portable-toolchain|source-stats|source-topology|ingest-map|ingest-trim-check|ingest-extracted-manifest|ingest-targets|ingest-targets-derive|frontier-map|spi-map|spi-diff|source-recovery-diff|source-author|fs-batch-write|fs-actions|binary-install|release-closeout|shim|prune-uncovered ...\nhelp [verb|--completion|--json|--schema] | proxy <capability>" input,
+        rust_std_string.model.pipe_lookup keys "inspect migration evidence toolchain and authority state\nrehearse gate and apply typed patch plans\nmanage typed backlog leases and turn receipts\ncheck create verify rehydrate and retain bundles\nexecute bounded filesystem process archive toolchain and evidence capabilities\nrender the public command catalog" input,
+        name
+
+let command_descriptor_json_by_index (~input : string) : string =
+    inl name, effect, usage, summary, handler = command_descriptor_by_index input
+    inl a = rust_std_string.model.concat5 "{\"name\":\"" name "\",\"effect\":\"" effect "\""
+    inl b = rust_std_string.model.concat5 ",\"handler\":\"" handler "\",\"summary\":\"" summary "\""
+    inl c = rust_std_string.model.concat5 ",\"usage\":\"" usage "\"}" "" ""
+    rust_std_string.model.concat5 a b c "" ""
+
+let command_count () : i32 = 6i32
+
+let command_schema_witness () : i32 =
+    match command_count (), command_catalog_witness () with
+    | 6i32, 1i32 => 1i32
+    | _ => 0i32
+
+let proxy_usage (~input : string) : string =
+    rust_std_string.model.pipe_lookup
+        "plan-ir-inspect|plan-ir-check|install-self|self-upgrade-check|fs-chmod|fs-symlink|fs-copy-tree|command-capture|command-capture-env|fs-list|fs-read|fs-context|fs-search|parallel-search|hash|hash-tree|fs-write|text-replace|fs-remove|fs-remove-tree|run|archive-extract|zip-extract|toolchain|portable-toolchain"
+        "proxy plan-ir-inspect <index>\nproxy plan-ir-check\nproxy install-self <source-binary> <installed-binary> <canonical-link>\nproxy self-upgrade-check <current-root> <candidate-root>\nproxy fs-chmod <root> <relative-path> <octal-mode>\nproxy fs-symlink <root> <target-relative> <link-relative>\nproxy fs-copy-tree <source> <destination>\nproxy command-capture <root> <receipt-relative> <timeout-ms> <program> [args...]\nproxy command-capture-env <root> <receipt-relative> <timeout-ms> <cwd-relative> <env-cell> <program> [args...]\nproxy fs-list <absolute-directory>\nproxy fs-read <root> <relative>\nproxy fs-context <root> <relative> <needle> <radius-bytes>\nproxy fs-search <root> <relative> <needle>\nproxy parallel-search <root> <relative> <needle> <max-hits>\nproxy hash <root> <relative>\nproxy hash-tree <root> <relative>\nproxy fs-write <root> <relative> [--replace-existing] [--expect-hash <sha256>] [--expect-nonempty] [--] <text>\nproxy text-replace <check|apply> <root> <relative> <old> <new>\nproxy fs-remove <root> <relative>\nproxy fs-remove-tree <root> <relative> [--missing-ok]\nproxy run --cwd <directory> --program <program> [--timeout-ms <ms>] [--env KEY=VALUE]... [--unset KEY]... [-- <args...>]\nproxy archive-extract <archive> <destination>\nproxy zip-extract <archive> <destination>\nproxy toolchain <root> <action> ...\nproxy portable-toolchain <root> ..."
+        input
+
+let toolchain_action_code (~input : string) : u64 =
+    rust_std_string.model.pipe_index "cargo-lock|cargo-fmt-check|cargo-check|cargo-test|cargo-clippy|cargo-build|cargo-version|spiral-version" input
+
+
+union proxy_route =
+    | DirectRoute
+    | SearchRoute
+    | ArchiveExtractRoute
+    | ZipExtractRoute
+    | LegacyProxyRoute
+
+inl proxy_route_code_value = function
+    | DirectRoute => 0u64
+    | SearchRoute => 29u64
+    | ArchiveExtractRoute => 30u64
+    | ZipExtractRoute => 31u64
+    | LegacyProxyRoute => 32u64
+
+inl proxy_direct_route_names () : string =
+    "plan-ir-inspect|plan-ir-check|prune-compiler-sidecars|incident-recovery|external-payload|coverage-export|coverage-union|legacy-surface|install-self|self-upgrade-check|restart-baton|source-author|fs-batch-write|fs-actions|binary-install|release-closeout|shim|fs-chmod|fs-symlink|fs-copy-tree|command-capture|command-capture-env|command-capture-matrix|command-capture-matrix-gate|batch-plan|batch-plan-resume|portable-toolchain|product-diff|source-recovery-diff"
+
+inl proxy_search_route_names () : string =
+    "fs-slice|fs-context|fs-search|parallel-search|parallel-manifest|hash|hash-tree|fs-copy"
+
+let proxy_route_code (~input : string) : u64 =
+    if rust_std_string.model.pipe_member (proxy_direct_route_names ()) input then rust_std_string.model.pipe_index (proxy_direct_route_names ()) input
+    elif rust_std_string.model.pipe_member (proxy_search_route_names ()) input then proxy_route_code_value SearchRoute
+    elif rust_std_string.model.equals input "archive-extract" then proxy_route_code_value ArchiveExtractRoute
+    elif rust_std_string.model.equals input "zip-extract" then proxy_route_code_value ZipExtractRoute
+    else proxy_route_code_value LegacyProxyRoute
+
+let proxy_route_witness () : i32 =
+    match proxy_route_code "plan-ir-inspect",
+          proxy_route_code "source-recovery-diff",
+          proxy_route_code "hash-tree",
+          proxy_route_code "archive-extract",
+          proxy_route_code "zip-extract",
+          proxy_route_code "fs-write" with
+    | 0u64, 28u64, 29u64, 30u64, 31u64, 32u64 => 1i32
+    | _ => 0i32
+
+union help_flag =
+    | CompletionHelp
+    | JsonHelp
+    | SchemaHelp
+    | TargetHelp
+
+inl help_flag_code_value = function
+    | CompletionHelp => 0u64
+    | JsonHelp => 1u64
+    | SchemaHelp => 2u64
+    | TargetHelp => 3u64
+
+let help_flag_code (~input : string) : u64 =
+    if rust_std_string.model.equals input "--completion" then help_flag_code_value CompletionHelp
+    elif rust_std_string.model.equals input "--json" then help_flag_code_value JsonHelp
+    elif rust_std_string.model.equals input "--schema" then help_flag_code_value SchemaHelp
+    else help_flag_code_value TargetHelp
+
+let help_flag_witness () : i32 =
+    match help_flag_code "--completion", help_flag_code "--json", help_flag_code "--schema", help_flag_code "status" with
+    | 0u64, 1u64, 2u64, 3u64 => 1i32
+    | _ => 0i32

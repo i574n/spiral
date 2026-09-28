@@ -1,0 +1,10 @@
+[package]
+name = "agile-state-transient-schema-domain"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "agile_state_transient_schema_domain"
+path = "schema.rs"

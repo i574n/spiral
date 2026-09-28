@@ -1,0 +1,16 @@
+[package]
+name = "spiral-split-recursive-scc"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/recursive_scc.rs"
+
+[dependencies]
+spiral-split-model.workspace = true
+spiral-split-lift.workspace = true
+spiral-split-lift-plan.workspace = true
+spiral-split-binding-header.workspace = true
+spiral-split-capture-parameter.workspace = true

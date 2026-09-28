@@ -1,0 +1,129 @@
+inl parse_snapshot_line (line : string) : string =
+    inl marker = "= StateCheckSnapshot "
+    inl line_len = sm.length line : i32
+    inl marker_at = find_text line 0i32 marker
+    if (=.) marker_at line_len then codec_empty ()
+    else
+        inl value_from = (+.) marker_at (sm.length marker : i32)
+        inl value_near_to = find_text line value_from "u64"
+        if (=.) value_near_to line_len then codec_empty ()
+        else sm.concat "snapshot\t" (sm.concat (slice_exclusive line value_from value_near_to) "\n")
+
+inl parse_module_attestation (line : string) (at : i32) (line_len : i32) : string =
+    inl at = skip_spaces line at
+    if (=.) at line_len then "runtime"
+    elif starts_with_at line at "RuntimeAttestation" then "runtime"
+    elif starts_with_at line at "BuildAttestation" then
+        inl digits_from = skip_spaces line ((+.) at (sm.length "BuildAttestation" : i32))
+        inl digits_near_to = find_text line digits_from "u64"
+        if (=.) digits_near_to line_len then codec_empty ()
+        else sm.concat "build:" (slice_exclusive line digits_from digits_near_to)
+    elif starts_with_at line at "build:" then
+        inl digits_from = (+.) at (sm.length "build:" : i32)
+        inl digits_near_to = find_text line digits_from "u64"
+        if (=.) digits_near_to line_len then codec_empty ()
+        else sm.concat "build:" (slice_exclusive line digits_from digits_near_to)
+    elif (=.) (sm.index line at) ')' then "runtime"
+    else codec_empty ()
+
+inl parse_module_line (line : string) : string =
+    inl marker = "= ModuleTypecheckReceipt ("
+    inl line_len = sm.length line : i32
+    inl marker_at = find_text line 0i32 marker
+    if (=.) marker_at line_len then codec_empty ()
+    else
+        inl path_from = (+.) marker_at (sm.length marker : i32)
+        inl path, after_path, path_ok = parse_quoted line path_from
+        if (=.) path_ok false then codec_empty ()
+        else
+            inl first_comma = find_char line after_path ','
+            if (=.) first_comma line_len then codec_empty ()
+            else
+                inl bytes_from = skip_spaces line ((+.) first_comma 1i32)
+                inl bytes_near_to = find_text line bytes_from "u64"
+                if (=.) bytes_near_to line_len then codec_empty ()
+                else
+                    inl second_comma = find_char line ((+.) bytes_near_to 3i32) ','
+                    if (=.) second_comma line_len then codec_empty ()
+                    else
+                        inl fingerprint_from = skip_spaces line ((+.) second_comma 1i32)
+                        inl fingerprint_u64 = find_text line fingerprint_from "u64"
+                        if (=.) fingerprint_u64 line_len then codec_empty ()
+                        else
+                            inl legacy_tab = find_char line fingerprint_from (char_tab ())
+                            inl legacy_attestation = (<) legacy_tab fingerprint_u64
+                            inl fingerprint_near_to = if legacy_attestation then legacy_tab else fingerprint_u64
+                            inl bytes = slice_exclusive line bytes_from bytes_near_to
+                            inl fingerprint = slice_exclusive line fingerprint_from fingerprint_near_to
+                            inl attestation_from =
+                                if legacy_attestation then skip_spaces line ((+.) legacy_tab 1i32)
+                                else
+                                    inl after_fingerprint = skip_spaces line ((+.) fingerprint_u64 3i32)
+                                    if (=.) after_fingerprint line_len then after_fingerprint
+                                    elif (=.) (sm.index line after_fingerprint) ',' then skip_spaces line ((+.) after_fingerprint 1i32)
+                                    else after_fingerprint
+                            inl attestation = parse_module_attestation line attestation_from line_len
+                            if (=.) attestation "" then codec_empty ()
+                            else sm.concat "module\t" (sm.concat path (sm.concat "\t" (sm.concat bytes (sm.concat "\t" (sm.concat fingerprint (sm.concat "\t" (sm.concat attestation "\n")))))))
+
+inl parse_receipt_line (line : string) : string =
+    inl snapshot = parse_snapshot_line line
+    if (=.) snapshot "" then parse_module_line line else snapshot
+
+let rec parse_source_loop (source : string) (at : i32) (source_len : i32) (out : string) : string =
+    if (=.) at source_len then out
+    else
+        inl line_near_to = find_char_loop source at source_len (char_newline ())
+        inl line = slice_exclusive source at line_near_to
+        inl out = sm.concat out (parse_receipt_line line)
+        inl next = if (=.) line_near_to source_len then source_len else (+.) line_near_to 1i32
+        parse_source_loop source next source_len out
+
+let receipt_parse (source : string) : string =
+    parse_source_loop source 0i32 (sm.length source : i32) ""
+
+let receipt_row_fields (line : string) : string =
+    inl line_len = sm.length line : i32
+    inl first = find_char line 0i32 (char_tab ())
+    if (=.) first line_len then codec_empty ()
+    else
+        inl kind = slice_exclusive line 0i32 first
+        if (=.) kind "snapshot" then
+            inl second = find_char line ((+.) first 1i32) (char_tab ())
+            if (<) second line_len then codec_empty ()
+            else
+                inl value = slice_exclusive line ((+.) first 1i32) line_len
+                if (=.) value "" then codec_empty ()
+                else sm.concat "snapshot\n" (sm.concat value "\n")
+        elif (=.) kind "module" then
+            inl second = find_char line ((+.) first 1i32) (char_tab ())
+            if (=.) second line_len then codec_empty ()
+            else
+                inl third = find_char line ((+.) second 1i32) (char_tab ())
+                if (=.) third line_len then codec_empty ()
+                else
+                    inl fourth = find_char line ((+.) third 1i32) (char_tab ())
+                    if (=.) fourth line_len then codec_empty ()
+                    else
+                        inl fifth = find_char line ((+.) fourth 1i32) (char_tab ())
+                        if (<) fifth line_len then codec_empty ()
+                        else
+                            inl path = slice_exclusive line ((+.) first 1i32) second
+                            inl bytes = slice_exclusive line ((+.) second 1i32) third
+                            inl fingerprint = slice_exclusive line ((+.) third 1i32) fourth
+                            inl attestation = slice_exclusive line ((+.) fourth 1i32) line_len
+                            if (=.) path "" then codec_empty ()
+                            elif (=.) bytes "" then codec_empty ()
+                            elif (=.) fingerprint "" then codec_empty ()
+                            elif (=.) attestation "" then codec_empty ()
+                            else sm.concat "module\n" (sm.concat path (sm.concat "\n" (sm.concat bytes (sm.concat "\n" (sm.concat fingerprint (sm.concat "\n" (sm.concat attestation "\n")))))))
+        else codec_empty ()
+
+inl parser_fixture_table () : string =
+    "snapshot\t42\nmodule\talpha.spi\t12\t34\truntime\nmodule\tb\\c.spi\t56\t78\tbuild:99\n"
+
+inl parser_fixture_source () : string =
+    "union state_check_snapshot = | StateCheckSnapshot :: u64 -> state_check_snapshot\nunion module_attestation = | RuntimeAttestation | BuildAttestation :: u64 -> module_attestation\nunion module_typecheck_receipt = | ModuleTypecheckReceipt :: string * u64 * u64 * module_attestation -> module_typecheck_receipt\n\ninl snapshot () : state_check_snapshot = StateCheckSnapshot 42u64\ninl receipt_0000 () : module_typecheck_receipt = ModuleTypecheckReceipt (\"alpha.spi\", 12u64, 34u64, RuntimeAttestation)\ninl receipt_0001 () : module_typecheck_receipt = ModuleTypecheckReceipt (\"b\\\\c.spi\", 56u64, 78u64, BuildAttestation 99u64)\ninl main () : i32 = 0i32\n"
+
+inl parser_malformed_source () : string =
+    "inl receipt_bad () = ModuleTypecheckReceipt (\"unterminated, 12u64, 34u64)\n"

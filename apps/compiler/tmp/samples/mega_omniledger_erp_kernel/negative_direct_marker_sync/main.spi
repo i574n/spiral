@@ -1,0 +1,10 @@
+inl impossible_direct_marker_sync
+    (schedule : typed_fx_statement_recursive_writer_raw_cas_schedule)
+    : typed_fx_statement_durable_commit typed_fx_statement_durable_marker_synced =
+    TypedFxStatementDurableMarkerSyncedCommit (
+        schedule,
+        "a-marker-synced-commit-cannot-skip-the-prepared-and-data-synced-chain")
+
+inl main () =
+    impossible_direct_marker_sync
+        (typed_fx_statement_recursive_writer_raw_cas_schedule_value ())

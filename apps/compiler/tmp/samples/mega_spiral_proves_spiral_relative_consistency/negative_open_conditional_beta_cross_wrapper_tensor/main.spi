@@ -1,0 +1,8 @@
+inl impossible_open_conditional_beta_cross_wrapper_tensor () :
+    exact_linear_indexed_open_conditional_beta_step =
+    ExactLinearIndexedOpenConditionalBetaStep (
+        exact_linear_indexed_open_tensor_beta_substitution_strengthening (),
+        "forged-cross-wrapper-Tensor-proof")
+
+inl main () =
+    impossible_open_conditional_beta_cross_wrapper_tensor ()

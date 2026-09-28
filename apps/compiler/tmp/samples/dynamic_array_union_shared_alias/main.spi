@@ -1,0 +1,24 @@
+union payload =
+    | Empty
+    | Values : array i32
+
+let bump x : i32 =
+    match x with
+    | Empty => 0i32
+    | Values values =>
+        set values 0i32 (index values 0i32 +. 1i32)
+        0i32
+
+let score x : i32 =
+    match x with
+    | Empty => 0i32
+    | Values values => length values +. index values 0i32 +. index values 1i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~values : array i32 = create n
+    set values 0i32 4i32
+    set values 1i32 5i32
+    inl wrapped = Values values
+    inl bumped = bump wrapped
+    score wrapped +. bumped -. 12i32

@@ -1,0 +1,107 @@
+union patch_layer =
+    | CompilerBackend :: patch_layer
+    | ProductSpiral :: patch_layer
+    | GeneratedRust :: patch_layer
+    | TypedState :: patch_layer
+    | BootstrapWorkflow :: patch_layer
+
+union patch_proof =
+    | CompilerBuild :: patch_proof
+    | SpiralTypecheck :: patch_proof
+    | CargoCheck :: patch_proof
+    | CargoTest :: patch_proof
+    | ClippyClean :: patch_proof
+    | RustfmtStable :: patch_proof
+    | ExperimentReceipt :: patch_proof
+
+union patch_receipt =
+    | PatchReceipt :: string * patch_layer * patch_proof * string -> patch_receipt
+
+inl recovered_prototype () = PatchReceipt ("recovered-prototype-preserved", BootstrapWorkflow, ExperimentReceipt, "old behavior retained as quarry rather than settled authority")
+inl migration_reset () = PatchReceipt ("settled-migration-reset", TypedState, SpiralTypecheck, "reported prototype score separated from settled migration score")
+inl shared_domain () = PatchReceipt ("shared-spiral-domain-package", ProductSpiral, SpiralTypecheck, "one typed package imported by two application owners")
+inl filesystem_roundtrip_settlement_receipt () = PatchReceipt ("filesystem-exact-roundtrip-two-mains", ProductSpiral, CargoTest, "indexed absent written verified and cleaned states drive positive and mismatch physical mains; both remove their files and no Rust source is authored")
+inl bootstrap_probe () = PatchReceipt ("bootstrap-route-probe", GeneratedRust, CargoCheck, "Rust mirror regenerated from its main through the Spiral compiler")
+inl policy_probe () = PatchReceipt ("authorship-policy-probe", GeneratedRust, CargoCheck, "escape hatch remains rejected by typed policy")
+inl package_cache_green () = PatchReceipt ("nested-package-cache-green-receipt", CompilerBackend, ExperimentReceipt, "the same persistent lane observed dependency-change and emitted the updated dependent application")
+inl compiler_tail_normalization () = PatchReceipt ("generic-simple-tail-return-normalization", CompilerBackend, CompilerBuild, "simple Rust function bodies now lower terminal return expressions without product-specific knowledge")
+inl compiler_facade_dependency () = PatchReceipt ("facade-shares-prune-and-backend-source", CompilerBackend, CompilerBuild, "the facade project now compiles RustGlobalPrune before PortableBackends and matches the session runner")
+inl legacy_catalog () = PatchReceipt ("legacy-capability-catalog-expansion", TypedState, SpiralTypecheck, "twenty-two of thirty-four families classified without claiming migration")
+inl agile_rebuild () = PatchReceipt ("forward-bootstrap-roadmap", TypedState, SpiralTypecheck, "semantic and verification work precedes promotion")
+inl status_calibration () = PatchReceipt ("public-settled-migration-status", ProductSpiral, SpiralTypecheck, "status reports fifty-one remaining capability-equivalent units instead of recovered prototype score")
+inl no_manual_rust () = PatchReceipt ("no-product-rust-authorship", BootstrapWorkflow, ExperimentReceipt, "new Rust mirrors are generated from Spiral by the patched EOIE compiler lineage")
+inl patch_domain () = PatchReceipt ("typed-patch-transaction-domain", ProductSpiral, SpiralTypecheck, "indexed lifecycle definitions execute stage commit rollback and two fault routes from generated mains and are imported by the transaction owner")
+inl compiler_gadt_gap () = PatchReceipt ("indexed-transition-generated-main-closed", CompilerBackend, ExperimentReceipt, "session diagnostics identified an unbound addition operator; unchanged GADT lowering generated stage commit and rollback correctly")
+inl fault_model () = PatchReceipt ("typed-transaction-fault-model", ProductSpiral, SpiralTypecheck, "NoFault FailAfterStage and FailDuringCommit select only type-valid commit or rollback outcomes")
+inl rust_interop_lowering () = PatchReceipt ("canonical-rust-interop-lowering", CompilerBackend, CompilerBuild, "portable Rust preprocessing lowers canonical emitRustExpr argument tuples and prunes compile-time-only tuple helpers")
+inl physical_rollback () = PatchReceipt ("generated-physical-patch-rollback", ProductSpiral, CargoTest, "Spiral mappings stage promote and restore temporary files while proving original bytes under injected faults")
+inl two_file_rollback () = PatchReceipt ("generated-two-file-rollback-between-promotions", ProductSpiral, CargoTest, "a failure after the first of two promotions restores both original files and removes all staging residues")
+inl typed_backup_collection () = PatchReceipt ("typed-backup-capture-reuse-slot-count", ProductSpiral, CargoTest, "Spiral decides whether to capture or reuse an original and exports its stable slot and next count while the adapter retains only physical identity and bytes")
+inl package_membership_gap () = PatchReceipt ("package-membership-cache-gap-recorded", CompilerBackend, ExperimentReceipt, "known include content changes invalidate correctly but adding or removing package modules still requires a fresh session")
+
+inl typed_layout_root_fix () = PatchReceipt ("generic-typed-layout-local-root-repair", CompilerBackend, CompilerBuild, "unrelated else branches are ignored until the local typed-layout root exists and the minimal fixture compiles")
+inl rust_std_env_package () = PatchReceipt ("shared-rust-standard-environment-mappings", ProductSpiral, SpiralTypecheck, "argument count length and byte access are defined once and imported by a main-owned application")
+inl lease_argument_adapter () = PatchReceipt ("lease-argument-rustglobal-removed", ProductSpiral, ClippyClean, "the operational lease path compiles through granular shared mappings without a broad RustGlobal body")
+inl unused_rc_normalizer () = PatchReceipt ("generic-unused-rc-import-normalization", CompilerBackend, CompilerBuild, "generated Rust drops the Rc import only when no residual Rc token remains")
+inl multi_payload_gap () = PatchReceipt ("multiple-payload-union-gap-isolated", CompilerBackend, ExperimentReceipt, "the mutation-owner reuse attempt was reverted after exposing a distinct portable union payload limit")
+inl external_review_absorbed () = PatchReceipt ("external-review-roadmap-typed", TypedState, SpiralTypecheck, "state hygiene native patch native bundle self-evolution cold dogfood and legacy decisions are ordered by typed dependencies")
+inl state_plan_retirement () = PatchReceipt ("spent-state-plans-retired", TypedState, SpiralTypecheck, "twenty applied patch plans have active-to-applied-to-retired witnesses and no longer participate in the state package")
+
+inl typed_patch_effect_receipts () = PatchReceipt ("typed-patch-effect-receipts", ProductSpiral, CargoTest, "binary bindings authorize guard payloads and read stage write rename remove receipts while Rust retains terminal syscalls")
+inl typed_patch_driver_coordination () = PatchReceipt ("typed-patch-driver-coordination", ProductSpiral, CargoTest, "a split Spiral crate validates witness operation stage promotion and final completion counts")
+inl reversible_self_patch_fixture () = PatchReceipt ("reversible-self-patch-fixture", ProductSpiral, CargoTest, "the public process patches and restores a versionless Spiral source with typechecks after both transitions")
+
+inl coverage_refresh () = PatchReceipt ("fresh-product-coverage-assessment", TypedState, ExperimentReceipt, "native LLVM and grcov vendor-filtered sixty-two-test workspace and isolated sixty-five-phase source-stats smoke profiles measure 601 532 and 629 per thousand across 8257 executable lines")
+inl native_llvm_runner () = PatchReceipt ("native-llvm-coverage-runner", ProductSpiral, CargoTest, "one public proxy call composes instrumented build candidate binary compiler session shared target bounded contracts and profile receipts")
+inl owner_coverage_shards () = PatchReceipt ("owner-level-coverage-shards", ProductSpiral, CargoTest, "public workspace and owner scopes select all applicable Cargo targets without assuming a library target")
+inl five_verb_public_smoke () = PatchReceipt ("five-verb-public-smoke", BootstrapWorkflow, ExperimentReceipt, "status patch Agile bundle and proxy execute through the instrumented binary and bundle hygiene rejects compiler sidecars")
+inl verification_rating_split () = PatchReceipt ("verification-rating-split", TypedState, SpiralTypecheck, "verification machinery and achieved coverage are distinct rating keys")
+inl legacy_port_prune_decisions () = PatchReceipt ("legacy-port-prune-decisions", TypedState, SpiralTypecheck, "twenty-five capability families have explicit port prune defer or fallback decisions")
+inl patch_mutation_contract_attempt () = PatchReceipt ("patch-mutation-direct-owner-contracts", ProductSpiral, CargoTest, "the blocked inline experiment was replaced by a separate Spiral-generated contract crate; eight contracts pass and owner coverage reaches 654 per thousand")
+inl cold_bundle_exact_receipt () = PatchReceipt ("exact-cold-bundle-closure", TypedState, CargoTest, "verified archive rehydration workspace check public build and fifty-eight contracts are connected by an indexed Spiral proof")
+inl compiler_session_shutdown_receipt () = PatchReceipt ("verified-compiler-session-shutdown", ProductSpiral, CargoTest, "process authority discovers scoped servers through proc performs bounded TERM KILL cleanup and refuses success until no matching process survives")
+inl native_source_stats_receipt () = PatchReceipt ("native-source-statistics", ProductSpiral, CargoTest, "a dedicated Spiral crate replaces the external censo helper with deterministic vendor-excluding symlink-rejecting product LOC maximum-file maximum-crate and SOTA forecasts")
+inl dogfood_gate_reassessment () = PatchReceipt ("dogfood-gate-denied", BootstrapWorkflow, ExperimentReceipt, "coverage floors and incomplete pillars keep promotion fail-closed after native source statistics and sixty-five-phase public recovery smoke proof")
+inl public_recovery_smoke_receipt () = PatchReceipt ("sixty-five-phase-native-source-stats-public-smoke", ProductSpiral, CargoTest, "a dedicated sub-thousand-line crate exercises filesystem differential cache eight direct toolchain actions three wrapper failures patch Agile coverage bundle zip native source statistics and shutdown through the instrumented binary")
+
+inl direct_toolchain_proxy_receipt () = PatchReceipt ("direct-toolchain-proxy-wrappers", ProductSpiral, CargoTest, "typed lock format check test Clippy build Cargo version and Spiral version actions pass manually under LLVM smoke and in hot contracts")
+
+inl v160_portable_lowering_receipt () = PatchReceipt ("v160-eoie-dual-lane-compiler", CompilerBackend, CargoTest, "the canonical compiler distribution keeps raw v160 behind explicit native and preflight switches and vendors the proven v96 Rust lane; three owner outputs match byte-normalized receipts and pass sixty-two tests fourteen public contracts and Clippy without manual Rust edits")
+
+inl release_hygiene_receipt () = PatchReceipt ("typed-compiler-sidecar-release-hygiene", ProductSpiral, CargoTest, "a dedicated generated crate exposes deterministic dry-run and commit receipts rejects symlinks and leaves the worktree at zero candidates; fs-copy and public patch outputs have normalized differential receipts")
+inl bundle_create_hygiene_receipt () = PatchReceipt ("bundle-create-integrated-sidecar-hygiene", ProductSpiral, CargoTest, "bundle create invokes the typed pruner before check and a public roundtrip proves a synthetic sidecar is removed before archive collection")
+inl archive_rollback_differential_receipt () = PatchReceipt ("archive-and-rollback-differential-receipts", ProductSpiral, CargoTest, "rehydrated CLI Rust and both restored rollback payloads are compared through the public normalized differential adapter")
+
+inl bundle_cold_roundtrip_receipt () = PatchReceipt ("bundle-cold-roundtrip-settled", ProductSpiral, CargoTest, "indexed verified extracted and rehydrated lifecycle rejects wrapped oversized mismatched and incomplete archives and is consumed by the lifecycle probe plus physical bundle main before exact cold replay")
+inl candidate_self_patch_receipt () = PatchReceipt ("candidate-self-patch-settled", ProductSpiral, CargoTest, "the public candidate mutates a real versionless state source typechecks all modules restores its original SHA-256 leaves no stage residue and replays the proof cold without automatic promotion")
+
+inl cli_proxy_result_bridge_receipt () = PatchReceipt ("cli-proxy-result-bridge-dedup", ProductSpiral, ClippyClean, "one compiler-generated helper replaces three repeated error branches; check format Clippy and fourteen public contracts preserve behavior while Rust LOC falls")
+inl candidate_burn_in_receipt () = PatchReceipt ("candidate-self-patch-burn-in", BootstrapWorkflow, SpiralTypecheck, "the candidate rejects a missing witness mutates a real versionless state source typechecks all thirty-five modules and restores the original SHA-256 exactly")
+inl multi_shape_burnin_receipt () = PatchReceipt ("candidate-multi-shape-burnin", BootstrapWorkflow, SpiralTypecheck, "multi-file and multi-hunk negative plans prove atomic refusal; valid plans mutate typecheck and restore exact hashes")
+inl runtime_name_burndown_receipt () = PatchReceipt ("runtime-name-burndown-18-to-15", ProductSpiral, CargoCheck, "two orphan runtime files are removed and coverage imports move to coverage_terminal without changing generated Rust authority")
+
+inl compiler_runtime_blockers_receipt () = PatchReceipt ("runtime-burndown-compiler-blockers", CompilerBackend, ExperimentReceipt, "library export markers and block routing expressions are isolated as backend debts and every product experiment was reverted without manual Rust edits")
+inl process_batch_plan_receipt () = PatchReceipt ("typed-process-batch-plan-and-resume-checkpoints", ProductSpiral, CargoTest, "indexed spawn run link timeout and completion transitions are compiled once and consumed by independent policy and resume mains while settlement remains withheld pending physical integration and cold replay")
+
+inl command_capture_environment_shrinkage_receipt () = PatchReceipt ("command-capture-environment-and-filesystem-shadow-removal", ProductSpiral, ClippyClean, "the legacy process adapter explicitly forwards the toolchain environment reuses shared atomic-write and safe-relative mappings compiles Spiral through itself and reduces generated Rust")
+
+inl portable_rust_c_oracle_receipt () = PatchReceipt ("portable-rust-c-semantic-oracle", CompilerBackend, CompilerBuild, "the generic Rust facade lowers the C semantic oracle without entering the unbounded monolithic Rust path; patch Agile archive and batch-plan owners compile, while product promotion retains the prior patch residual until the fresh output satisfies the crate line budget")
+
+inl reusable_large_burnin_receipt () = PatchReceipt ("reusable-public-ten-crate-burnin", BootstrapWorkflow, SpiralTypecheck, "cold public typed apply and restore plans mutate ten files ten v183 owner compilers run in parallel and compiler sidecars are pruned before the exact d64051c82e93e276de22b405b1cad496377e9c560378927249da0b6d5e018cf9 tree hash is recovered")
+inl release_hygiene_walk_dedup_receipt () = PatchReceipt ("release-hygiene-recursive-walk-dedup", ProductSpiral, ClippyClean, "one generated recursive walker replaces two equivalent filesystem traversals and removes nine Rust lines while the three focused tests remain green")
+inl coverage_export_binary_type_receipt () = PatchReceipt ("coverage-export-binary-type-validation", ProductSpiral, CargoTest, "the public exporter consumes six owner profiles accepts the real test binary and writes a 937 per thousand LCOV receipt after the Spiral source corrects the file-versus-directory contract")
+
+inl archive_single_authority_receipt () = PatchReceipt ("archive-single-physical-authority-and-precommit-rollback", ProductSpiral, CargoTest, "bundle rehydration and proxy extraction share archive_deflate_domain; after-first-payload and before-commit faults remove staging and preserve the exact parent snapshot before successful hot and cold extraction")
+
+inl mnemonic_path_tag_receipt () = PatchReceipt ("mnemonic-three-word-path-tags", ProductSpiral, CargoTest, "one shared non-Cargo Spiral contract validates relative paths and eighteen-bit word-bank selection; generated proxy code reuses SHA256 and public spi-map rejects tag collisions while positive and negative mains pass")
+
+inl v2_coverage_reactivation_receipt () = PatchReceipt ("fresh-v2-coverage-reactivation", ProductSpiral, CargoTest, "coverage smoke restart-baton score is derived from the current settlement; fourteen public contracts one-hundred-twenty-one smoke phases two source-topology tests one proxy-search test deterministic exports and four-input union reach four-hundred-sixty-one per thousand while promotion floors remain unchanged")
+inl patch_preflight_receipt () = PatchReceipt ("mutation-free-public-patch-preflight", ProductSpiral, CargoTest, "shared Spiral policy and negative mains reject invalid witnesses ambiguous modes unsafe paths and mutation claims; public patch check executes the exact apply guard phase in memory and proves valid stale and unsafe fixtures without staging or changing target bytes")
+inl generic_flat_bundle_receipt () = PatchReceipt ("generic-flat-product-bundle", ProductSpiral, CargoTest, "one shared non-Cargo Spiral contract with empty-payload indexed transitions drives positive and negative mains plus public create-flat and verify-flat; deterministic archives match byte-for-byte inside-root output fails before mutation and size failure removes the candidate archive")
+
+inl exact_replace_dogfood_receipt () = PatchReceipt ("typed-exact-replace-dogfood", ProductSpiral, CargoTest, "shared Spiral contract positive and negative probes public check and apply zero and multiple match rejection atomic readback verification and candidate-native state updates replace the recurring 9252 text-replace shim")
+inl patch_resume_receipt () = PatchReceipt ("typed-patch-resume-after-typecheck", ProductSpiral, CargoTest, "a typed plan receipt survives an interrupted apply resumes with compiler execution disabled rejects stale source bytes and retains total rollback after a fault between promotions")
+
+inl patch_semantic_verification_receipt () = PatchReceipt ("patch-semantic-verification-spiral-authority", ProductSpiral, CargoTest, "five embedded Rust cfg-test emitters are retired from control effect driver orchestration and fallback; one package-only Spiral probe replays the same invariants hot and cold while nineteen transactional and fourteen public contracts pass without Cargo growth")
+
+inl main () : i32 = 0i32

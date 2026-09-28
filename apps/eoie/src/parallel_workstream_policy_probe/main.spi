@@ -1,0 +1,76 @@
+open parallel_workstream_contract.model
+
+nominal proof_baseline = ()
+
+inl physical_group_failure_cancel () : i32 =
+    inl started = rust_std_process.model.wall_clock_millis ()
+    inl word = rust_std_process.model.trigger_then_kill_group2_word1 "/bin/sleep" "5" "/usr/bin/test" "" "/bin/kill" "--"
+    inl elapsed = rust_std_process.model.elapsed_millis started
+    inl trigger = rust_std_process.model.fail_trigger_group2_trigger_code word
+    inl cancelled = rust_std_process.model.fail_trigger_group2_cancelled word
+    inl kill_sent = rust_std_process.model.fail_trigger_group2_kill_sent word
+    inl completion = workstream_completion_binding 3i32 3i32 0i32 1i32 cancelled 3i32
+    inl no_merge = workstream_failure_binding 0i32 1i32 cancelled 0i32
+    if !!!!EQ(trigger,1i32) then
+        if !!!!EQ(cancelled,2i32) then
+            if !!!!EQ(kill_sent,1i32) then
+                if !!!!EQ(completion,1i32) then
+                    if !!!!EQ(no_merge,1i32) then
+                        if !!!!LT(elapsed,1000u64) then 1i32 else 0i32
+                    else 0i32
+                else 0i32
+            else 0i32
+        else 0i32
+    else 0i32
+
+inl main () : i32 =
+    inl search_receipt : workstream_receipt proof_baseline owner_search = WorkstreamReceipt (11u64, 21u64, 7u32, WorkstreamPassed)
+    inl agile_receipt : workstream_receipt proof_baseline owner_agile = WorkstreamReceipt (12u64, 22u64, 8u32, WorkstreamPassed)
+    inl handoff_receipt : workstream_receipt proof_baseline owner_handoff = WorkstreamReceipt (13u64, 23u64, 9u32, WorkstreamPassed)
+    inl handoff_batch : workstream_batch proof_baseline (owner_cons owner_handoff owner_nil) =
+        WorkstreamCons (OwnerAbsentNil, handoff_receipt, WorkstreamNil)
+    inl agile_batch : workstream_batch proof_baseline (owner_cons owner_agile (owner_cons owner_handoff owner_nil)) =
+        WorkstreamCons (OwnerAbsentCons (AgileDistinctHandoff, OwnerAbsentNil), agile_receipt, handoff_batch)
+    inl batch : workstream_batch proof_baseline (owner_cons owner_search (owner_cons owner_agile (owner_cons owner_handoff owner_nil))) =
+        WorkstreamCons (OwnerAbsentCons (SearchDistinctAgile, OwnerAbsentCons (SearchDistinctHandoff, OwnerAbsentNil)), search_receipt, agile_batch)
+    inl search_plan : workstream_plan proof_baseline owner_search workstream_draft workstream_receipted =
+        WorkstreamThen (exists (
+            WorkstreamStep ValidateOwnerWorkstream,
+            WorkstreamThen (exists (
+                WorkstreamStep ExecuteOwnerWorkstream,
+                WorkstreamStep CommitOwnerReceipt
+            ))
+        ))
+    inl merge : merge_plan proof_baseline (owner_cons owner_search (owner_cons owner_agile (owner_cons owner_handoff owner_nil))) merge_unchecked merge_committed =
+        MergeThen (exists (
+            MergeStep (ValidateWorkstreamBatch batch),
+            MergeStep (CommitWorkstreamBatch batch)
+        ))
+    inl cancellation : workstream_cancellation_plan owner_agile =
+        CancelAfterFailure (StageSiblingOutput, ObserveSiblingFailure, CancelSiblingOutput)
+    inl _ = search_plan
+    inl _ = merge
+    inl _ = cancellation
+    inl concurrency = workstream_concurrency_binding 3i32 49i32 133i32 45i32
+    inl completion = workstream_completion_binding 3i32 3i32 3i32 0i32 0i32 3i32
+    inl merge_authorized = workstream_merge_authorization_binding 3i32 3i32 0i32 0i32 3i32 1i32 1i32 1i32
+    inl cancel_safe = workstream_cancel_before_promotion_binding 1i32 2i32 1i32 2i32 0i32 0i32 2i32
+    inl cancel_before_stage_safe = workstream_cancel_before_promotion_binding 1i32 2i32 1i32 0i32 0i32 0i32 0i32
+    inl physical_cancel = physical_group_failure_cancel ()
+    inl gate0 = !!!!Mult(concurrency,completion)
+    inl gate1 = !!!!Mult(gate0,merge_authorized)
+    inl gate2 = !!!!Mult(gate1,cancel_safe)
+    inl gate3 = !!!!Mult(gate2,cancel_before_stage_safe)
+    inl gate = !!!!Mult(gate3,physical_cancel)
+    match workstream_receipt_binding gate 1i32 0i32 7i32 with
+    | 1 =>
+        match workstream_parallel_binding 3i32 56i32 3i32 3i32 with
+        | 1 =>
+            match workstream_merge_binding 3i32 3i32 1i32 1i32 1i32 with
+            | 1 =>
+                match workstream_failure_binding 3i32 0i32 0i32 1i32 with
+                | 1 => 0i32
+                | _ => 4i32
+            | _ => 3i32
+        | _ => 2i32
+    | _ => 1i32

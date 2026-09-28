@@ -1,0 +1,26 @@
+open exact_replace_contract.model
+
+inl zero_is (value : i32) : bool =
+    if !!!!LT(value,0i32) then false
+    elif !!!!LT(0i32,value) then false
+    else true
+
+inl main () : i32 =
+    inl _ = negative_plan ()
+    if zero_is (preflight_binding 0i32 1i32 1i32) then
+        if zero_is (preflight_binding 1i32 0i32 1i32) then
+            if zero_is (preflight_binding 1i32 1i32 0i32) then
+                if zero_is (unique_match_binding 0i32) then
+                    if zero_is (unique_match_binding 2i32) then
+                        if zero_is (mode_binding 0i32 1i32) then
+                            if zero_is (verification_binding 0i32 0i32 1i32) then
+                                if zero_is (verification_binding 1i32 1i32 1i32) then
+                                    if zero_is (verification_binding 1i32 0i32 0i32) then 0i32 else 9i32
+                                else 8i32
+                            else 7i32
+                        else 6i32
+                    else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

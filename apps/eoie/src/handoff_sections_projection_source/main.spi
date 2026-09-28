@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl sections_ok = (=.) (handoff_sections_projection (fixture_handoff ())) "ok\n## A\n\none\n\n## B\n\ntwo\n\n## C\n\nthree\n\n## D\n\nfour"
+    inl duplicate_ok = (=.) (handoff_sections_projection (fixture_handoff_duplicate ())) ""
+    $"RustExportStringUnary(\"eoie_handoff_sections_projection\",\"handoff_sections_projection\")" : ()
+    $"RustLibrary()" : ()
+    if sections_ok then if duplicate_ok then 0i32 else 2i32 else 1i32

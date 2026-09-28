@@ -1,0 +1,9 @@
+open main
+
+union orphan_symbol =
+    | Orphan
+
+nominal orphan_alphabet = orphan_symbol
+
+inl main () =
+    derivative (RegexChar (orphan_alphabet Orphan)) (orphan_alphabet Orphan)
