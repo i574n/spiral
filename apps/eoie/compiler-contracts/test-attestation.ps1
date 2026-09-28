@@ -80,7 +80,9 @@ $results = Join-Path $work 'results.tsv'
 [IO.File]::WriteAllText($jobs, "gadt`tRust`t$gadt`t$rust`t20000`n")
 & $dotnet $compiler --batch $jobs $results --timeout-ms 20000
 if ($LASTEXITCODE -ne 0) { throw ([IO.File]::ReadAllText($results)) }
-$executable = Join-Path $work $(if ($IsWindows) { 'gadt.exe' } else { 'gadt' })
+$bin = Join-Path $work 'bin'
+New-Item -ItemType Directory -Path $bin -Force | Out-Null
+$executable = Join-Path $bin $(if ($IsWindows) { 'gadt.exe' } else { 'gadt' })
 & $rustc --edition 2024 --crate-name gadt $rust -o $executable
 if ($LASTEXITCODE -ne 0) { throw 'GADT Rust failed native compilation.' }
 & $executable
@@ -99,10 +101,11 @@ if (-not [regex]::IsMatch($arrayCode, 'ArrayGet[0-9]+\([^\r\n]+\) -> i32 \{\s*if
 $fallbackMutation = [regex]::Replace($arrayCode, '(?m)^    let v1: i32 = 2;$', '    let v1: i32 = -1;')
 if ($fallbackMutation -eq $arrayCode) { throw 'Fixed-array fallback probe could not locate the fixture index.' }
 $fallbackSource = Join-Path $work 'fixed-array-fallback.rs'
-$fallbackExecutable = Join-Path $work $(if ($IsWindows) { 'fixed-array-fallback.exe' } else { 'fixed-array-fallback' })
+$fallbackExecutable = Join-Path $bin $(if ($IsWindows) { 'fixed-array-fallback.exe' } else { 'fixed-array-fallback' })
 [IO.File]::WriteAllText($fallbackSource, $fallbackMutation)
 & $rustc --edition 2024 --crate-name fixed_array_fallback $fallbackSource -o $fallbackExecutable
 if ($LASTEXITCODE -ne 0) { throw 'Fixed-array fallback Rust failed to compile.' }
 & $fallbackExecutable
 if ($LASTEXITCODE -ne 2) { throw "Fixed-array fallback returned $LASTEXITCODE; expected 2." }
 Write-Host "EOIE attestation contracts passed: $work"
+$LASTEXITCODE = 0

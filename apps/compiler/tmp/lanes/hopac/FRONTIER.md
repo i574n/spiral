@@ -107,9 +107,21 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
       scope's `seq` in front of the retry's `TyLocalReturnOp call`, so the call is emitted twice.
 
     `While` now drops the stale placeholder-bound call and fuses the first shape; its existing force-read
-    of the method cell then resolves the real `bool`. The root cause is general: a retry does not roll
-    back `seq`. So any join-point call whose first attempt saw a pending return type can be emitted twice.
-14. **Diagnostics.**
+    of the method cell then resolves the real `bool`.
+14. **Replay re-ran effectful applications (silent miscompile).** Even when `while_loop` compiled, about 3 runs
+    in 8 emitted its body once *before* the loop as well; the exit code happened to agree. The cause was
+    found with `SPIRAL_DEBUG_TERM_TRACE=samples/while_loop/main.spi:2`, which logs every `term` evaluation of
+    an application on a source line with its stack and scope:
+    - Replay registration stores a whole-spine thunk per application that re-applies the function in the
+      captured scope.
+    - When the replay driver's orphan drain forced that thunk, the whole `while'` application ran a second
+      time, while the direct evaluator was running it or after it had finished.
+
+    Thunks now refuse nodes the direct evaluator owns: it is active on them (`isDirectNodeActive`) or has
+    completed them (`markDirectNodeCompleted`). They fail closed, so the direct result stands. `While`/`Do`/
+    `Indent` arguments are also no longer registered as replay children of the parent scope. Afterwards
+    `while_loop` gives the same residual on 8 of 8 runs.
+15. **Diagnostics.**
     - Unexpected .NET exceptions (NullReference, InvalidOperation, KeyNotFound, ...) now carry their
       innermost compiler frames in the `FatalError` text.
     - Codegen reads join-point body cells through `jpBodyCellAwait`, which waits up to 3 s for a producer
