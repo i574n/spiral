@@ -20,7 +20,7 @@ use spiral_split_generated_dependency::{
     GeneratedDependency, qualify_generated_helper_references,
     qualify_unique_type_annotation_references, scan_generated_dependencies,
 };
-use spiral_split_model::{PROJECT_OVERHEAD_LINES, SplitPlan, fnv1a64};
+use spiral_split_model::{PROJECT_OVERHEAD_LINES, SplitPlan, fnv1a64, planning_lines};
 use spiral_split_union_forward_identity::{
     render_union_forward_tsv, rewrite_union_forward_identities,
 };
@@ -409,7 +409,7 @@ fn fuse_series_corridors(
                 .1
                 .iter()
                 .chain(&groups[consumer].1)
-                .map(|shard| plan.shards[*shard].line_count)
+                .map(|shard| planning_lines(plan.shards[*shard].line_count))
                 .sum::<usize>();
             let teeth = groups[provider].1.len() + groups[consumer].1.len();
             (lines <= policy.max_lines && teeth <= policy.max_teeth).then_some((provider, consumer))
@@ -438,7 +438,9 @@ fn fuse_series_corridors(
 /// provider gear) only if, after propagating the growth to every downstream gear, each gear still
 /// finishes within its members' latest finish (from the all-singleton schedule plus an allowance).
 /// Otherwise it starts a new gear. Gears are ranked and edges only ever go from lower to higher rank,
-/// so the gear graph stays acyclic.
+/// so the gear graph stays acyclic. Timeline and `merge_cap` both weigh components with `planning_lines`:
+/// greedy packing leaves many gears just under capacity, so with exact lines a few lines added to one
+/// body tipped a gear over and reshaped the gears downstream.
 fn pack_components_on_timeline(
     sccs: &SccPlan<Condensed>,
     policy: GearPolicy,
@@ -447,6 +449,7 @@ fn pack_components_on_timeline(
     struct Group {
         components: Vec<usize>,
         lines: usize,
+        weight: usize,
         start: usize,
         finish: usize,
         cap: usize,
@@ -465,6 +468,7 @@ fn pack_components_on_timeline(
     });
     // All-singleton schedule and latest finishes.
     let overhead = PROJECT_OVERHEAD_LINES;
+    let weight_of = |component: usize| planning_lines(components[component].lines);
     let mut finish_single = vec![0usize; count];
     for &component in &order {
         let ready = components[component]
@@ -474,13 +478,17 @@ fn pack_components_on_timeline(
             .map(|dependency| finish_single[*dependency])
             .max()
             .unwrap_or(0);
-        finish_single[component] = ready + overhead + components[component].lines;
+        finish_single[component] = ready + overhead + weight_of(component);
     }
-    let horizon = finish_single.iter().copied().max().unwrap_or(0) + allowance;
+    // Slack relative to the critical path (so it does not shrink when `planning_lines` rounds the many
+    // small components up), and a whole critical path of it: gear builds run 2 MSBuild nodes wide on a
+    // workstation, where fewer projects beat a wider graph (141 gears instead of 268 on the hopac core).
+    let floor = finish_single.iter().copied().max().unwrap_or(0);
+    let horizon = floor + allowance.max(floor);
     let mut latest_finish = vec![horizon; count];
     for &component in order.iter().rev() {
         let latest_start = latest_finish[component]
-            .saturating_sub(components[component].lines + overhead);
+            .saturating_sub(weight_of(component) + overhead);
         for dependency in &components[component].dependencies {
             if *dependency != component {
                 latest_finish[*dependency] = latest_finish[*dependency].min(latest_start);
@@ -495,6 +503,7 @@ fn pack_components_on_timeline(
     let mut group_of = vec![usize::MAX; count];
     for &component in &order {
         let lines = components[component].lines;
+        let weight = weight_of(component);
         let provider_groups = components[component]
             .dependencies
             .iter()
@@ -513,7 +522,7 @@ fn pack_components_on_timeline(
         }
         let mut placed = None;
         for target in candidates {
-            if groups[target].lines + lines > merge_cap {
+            if groups[target].weight + weight > merge_cap {
                 continue;
             }
             if provider_groups
@@ -533,7 +542,8 @@ fn pack_components_on_timeline(
             log.push((target, groups[target].start, groups[target].finish));
             groups[target].start = groups[target].start.max(ready);
             groups[target].lines += lines;
-            groups[target].finish = groups[target].start + overhead + groups[target].lines;
+            groups[target].weight += weight;
+            groups[target].finish = groups[target].start + overhead + groups[target].weight;
             let cap = groups[target].cap.min(latest_finish[component]);
             let mut ok = groups[target].finish <= cap;
             let mut queue = groups[target].consumers.iter().copied().collect::<Vec<_>>();
@@ -550,7 +560,7 @@ fn pack_components_on_timeline(
                 }
                 log.push((consumer, groups[consumer].start, groups[consumer].finish));
                 groups[consumer].start = start;
-                groups[consumer].finish = start + overhead + groups[consumer].lines;
+                groups[consumer].finish = start + overhead + groups[consumer].weight;
                 if groups[consumer].finish > groups[consumer].cap {
                     ok = false;
                 }
@@ -562,6 +572,7 @@ fn pack_components_on_timeline(
                 break;
             }
             groups[target].lines -= lines;
+            groups[target].weight -= weight;
             for (group, start, finish) in log.into_iter().rev() {
                 groups[group].start = start;
                 groups[group].finish = finish;
@@ -576,8 +587,9 @@ fn pack_components_on_timeline(
             groups.push(Group {
                 components: Vec::new(),
                 lines,
+                weight,
                 start,
-                finish: start + overhead + lines,
+                finish: start + overhead + weight,
                 cap: latest_finish[component],
                 rank: groups.len(),
                 providers: BTreeSet::new(),

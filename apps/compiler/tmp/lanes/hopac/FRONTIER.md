@@ -30,10 +30,13 @@ innermost frames. For a wrong result, cut a 5-line program and compare with sing
 `frontier_try_item` was reduced to `match Cons (a, Nil) with | Cons (x, _) => ...` below).
 `SPIRAL_DEBUG_UNBOX=1` prints each union unbox's case, operand classification and value shape.
 
-The splitter was evaluated for this loop and rejected. Re-emitting after a one-line edit takes 90-300 s and
-rewrites every part. The split core does compile cleanly as one F# project, but in 287-326 s against the
-monolith's 219 s on 8 cores: only typecheck parallelizes, and each file adds a fixed checking cost.
-Details and `scripts/bench-split.ps1` are in `lanes/splitter/README.md`.
+For body-only edits there is a faster loop: `scripts/gear-dev.ps1` builds the core as 141 gear assemblies
+and rebuilds only the gear owning the edit (~90 s for an edit in `peval`, against ~200-400 s for the
+monolith). Point the tests at it with `SPIRAL_COMPILER_DLL`. A body edit keeps the split plan (measured
+over 6 edits across the core). Adding or removing a top-level declaration renumbers the later parts, and
+gear-dev stops rather than rebuilding most gears; use the monolith for those (or `-Force`). The split
+compiler gives the same frontier and smoke results as the monolith. Details are in
+`lanes/splitter/README.md`.
 
 ## Root causes fixed (core, `compiler/cores/hopac/spiral_compiler.fs`)
 
@@ -129,24 +132,54 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
       `IVar.Now.get` returns.
     - The `while` rejection prints the binds it got.
 
+16. **`if` branches replayed into the enclosing block (silent miscompile).** `while_control` returned −12
+    instead of 0 on C and Delphi on some runs. The C had a `break;` right after the condition, before the
+    `if`, and the loop left on its first pass. `SPIRAL_DEBUG_TERM_TRACE=while_control/main.spi:7` (now
+    also logging macro terms and macro replay thunks) showed the extra `break` coming from the replay
+    driver: `runReplayDriver` → `tryApplyReplayDataWithContext` → `runApplyAfterDefinition`. It ran on a
+    join-point promise's resumption loop or a parent-cache handoff wake, before the direct evaluator
+    reached the branch.
+    - Registering an `EIfThenElse` also registered both branch subtrees as replay children, with the
+      scope *around* the `if` as their context. A runtime `if` runs each branch in a scope of its own, so
+      a branch application replayed from there emitted its statements into the enclosing block. This is
+      the path fix 14 did not cover, since it guarded only whole-spine thunks.
+    - Only the condition is registered now, in both registration switches; the branches are left to the
+      direct handler, as `While`/`Do`/`Indent` arguments are. The worklist also no longer probes the
+      branches of a runtime (`DV`) condition, or of an `if` the direct evaluator owns.
+    - `while_control`: 12 of 12 runs correct, against about 1 in 4 wrong before. In the wide run
+      `DISAGREE` went from 1 to 0 and examples gained 7 rows (see "Beyond smoke").
+
 Host (`compiler/host/Program.fs`): `SPIRAL_HOPAC_WORKERS` / `SPIRAL_DOP` determinism knobs, and an
 absolute build deadline (`SPIRAL_BUILD_DEADLINE_MS`, 3 s before the job timeout).
 
 ## Beyond smoke
 
-`pwsh scripts/test.ps1 -Mode hopac -Suite examples,contracts -Native` (1,093 jobs, ~70 min):
+`pwsh scripts/test.ps1 -Mode hopac -Suite examples,contracts -Native` (1,154 jobs, ~75 min), 2026-09-28
+after fix 16:
 
 | Suite | Jobs | ok | error | crash | Parity | missing |
 |---|---:|---:|---:|---:|---:|---:|
-| examples | 486 | 366 | 118 | 2 | 417 | 66 |
-| contracts | 607 | 166 | 438 | 3 | 586 | 20 |
+| examples | 547 | 421 | 126 | 0 | 493 | 50 |
+| contracts | 607 | 167 | 439 | 1 | 587 | 19 |
 
-Native: 320 runs, 189 agree with C, 20 build failures, 1 `DISAGREE`. Most `error` rows are rejections
-that single-flight also reports (the contracts are mostly negative cases).
+Native: 373 runs, 205 agree with C, 21 build failures, 0 `DISAGREE`. Most `error` rows are rejections
+that single-flight also reports (the contracts are mostly negative cases). Against the run before fix 16,
+examples gained 7 rows. The 6 contract rows that went the other way are flaky: each also fails on the
+pre-fix compiler, or passes on a rerun, as it sits at the ~25 s build budget.
 
-**Silent miscompiles first** (worse than any error): `managed_string_recursive` compiles but its program
-gives a different answer than C (`DISAGREE`), and `rust_target_globals` gets code although single-flight
-rejects the program (`UNEXPECTED-OUTPUT`).
+Silent miscompiles still open (compile, run, wrong answer): `tuple_mixed` and `portable_composite` on C
+(−6 instead of 0). Tuple elements are permuted across a join point (`method1(v3, v2, v1)`), so `bias`
+receives `ok`. Also `native_managed_array_tail_recursion` on C (stack overflow) and Delphi (exit 217), and
+`dynamic_array_tuple_managed` on Rust (0 instead of 2).
+
+**Silent miscompiles first** (worse than any error). Both are resolved now:
+- `managed_string_recursive` gave a different answer than C (`DISAGREE`). Since fix 14 (replay no longer
+  re-runs applications) it agrees on C, Rust and Delphi, 4 of 4 runs.
+- `rust_target_globals` got Delphi code although single-flight rejected the program
+  (`UNEXPECTED-OUTPUT`). The oracle was wrong: the shared host inserted Delphi target globals after
+  `{$mode objfpc}{$H+}\n`, but some Delphi lowerings end that line with `AppendLine`, which writes CRLF on
+  Windows, so single-flight's output never matched. The insertion normalizes to LF now, single-flight
+  emits the Delphi that the fixture's README describes, the row is re-blessed, and hopac has parity.
 
 The 96 rows without parity, by cause:
 
@@ -188,7 +221,7 @@ The 96 rows without parity, by cause:
 In this order, each with `SPIRAL_HOPAC_WORKERS=1`, a stack dump, and a reduced program compared with
 single-flight:
 
-1. `managed_string_recursive` (`DISAGREE`) and `rust_target_globals` (`UNEXPECTED-OUTPUT`).
+1. ~~`managed_string_recursive` and `rust_target_globals`~~ (resolved, see above).
 2. `native_closure_captured_branch` for the closure `NullReferenceException`s. Lead: method join points
    have the same deferred-placeholder design (`JpMethodDeferredFromOwnedProducer`) that fix 8 removed for
    type join points.

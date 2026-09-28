@@ -39,6 +39,30 @@ mod tests {
     }
 
     #[test]
+    fn module_level_do_is_found_but_local_do_is_not() {
+        let nested = "namespace Polyglot\nmodule A =\n    let table = Dictionary()\n    module B =\n        do table.Add(1, 2)\n";
+        assert_eq!(module_level_do(nested), Some(5));
+        let local = "module A =\n    let run () =\n        do printfn \"x\"\n        1\n";
+        assert_eq!(module_level_do(local), None);
+    }
+
+    #[test]
+    fn gear_root_initializes_parts_with_module_level_do() {
+        let root = std::env::temp_dir().join(format!("spiral-split-gear-root-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        fs::write(root.join("Part0001.fs"), "namespace Polyglot\n\nmodule spiral_compiler_Part0001 =\n    let x = 1\n").unwrap();
+        fs::write(root.join("Part0002.fs"), "namespace Polyglot\n\nmodule spiral_compiler_Part0002 =\n    do hook <- Some 1\n").unwrap();
+        let gear_root = render_gear_root(&root).unwrap();
+        assert!(gear_root.contains("        spiral_compiler_Part0002.spiral_split_initialize |> ignore\n"));
+        assert!(!gear_root.contains("Part0001"));
+        let part = fs::read_to_string(root.join("Part0002.fs")).unwrap();
+        assert!(part.ends_with("    do hook <- Some 1\n\n    let spiral_split_initialize = obj ()\n"));
+        render_gear_root(&root).unwrap();
+        assert_eq!(fs::read_to_string(root.join("Part0002.fs")).unwrap(), part);
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
     fn independent_teeth_pack_inside_the_same_layer() {
         let split = plan(vec![
             shard(0, 1, 400, &[]),

@@ -223,6 +223,12 @@ impl<S> Declaration<S> {
         self.span.line_count()
     }
 
+    /// The declaration's weight for shard and gear planning, see [`planning_lines`].
+    #[must_use]
+    pub fn planning_line_count(&self) -> usize {
+        planning_lines(self.line_count())
+    }
+
     #[must_use]
     pub fn restage<T>(self) -> Declaration<T> {
         Declaration {
@@ -321,6 +327,27 @@ impl Display for ReferenceMode {
     }
 }
 
+/// Planning weight of a declaration with `lines` lines: rounded up to a multiple of 64 up to 1,024 lines,
+/// then to geometric buckets 12.5% apart. The shard planner simulates its line-weighted critical path of
+/// the whole program with these weights (capacity limits stay exact): with exact counts, a few lines added
+/// to one body moved groups far downstream and renumbered thousands of parts (a 6-line edit in the
+/// replay worklist regrouped `BigStack`). A small edit now changes a weight only when it crosses a
+/// bucket boundary.
+#[must_use]
+pub fn planning_lines(lines: usize) -> usize {
+    const STEP: usize = 64;
+    const LINEAR_UNTIL: usize = 1_024;
+    let lines = lines.max(1);
+    if lines <= LINEAR_UNTIL {
+        return lines.div_ceil(STEP) * STEP;
+    }
+    let mut bucket = LINEAR_UNTIL;
+    while bucket < lines {
+        bucket = (bucket + bucket / 8).div_ceil(STEP) * STEP;
+    }
+    bucket
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Shard {
     pub id: usize,
@@ -387,6 +414,24 @@ pub fn fnv1a64(bytes: &[u8]) -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn planning_lines_absorb_small_edits() {
+        assert_eq!(planning_lines(0), 64);
+        assert_eq!(planning_lines(64), 64);
+        assert_eq!(planning_lines(65), 128);
+        assert_eq!(planning_lines(1_024), 1_024);
+        // Geometric buckets: 1,152, 1,344, ... never below the exact count, at most 1/8 plus a step above.
+        let mut previous = 0;
+        for lines in [1_025, 1_200, 4_366, 21_244] {
+            let weight = planning_lines(lines);
+            assert!(weight >= lines && weight <= lines + lines / 8 + 64, "{lines} -> {weight}");
+            assert!(weight > previous);
+            previous = weight;
+        }
+        // The replay worklist step (4,366 lines) keeps its weight when a 6-line fix lands in it.
+        assert_eq!(planning_lines(4_360), planning_lines(4_366));
+    }
 
     #[test]
     fn recursive_boundary_keeps_kind() {

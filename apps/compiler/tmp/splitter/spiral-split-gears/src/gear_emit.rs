@@ -12,6 +12,77 @@ fn atomic_write(path: &Path, content: &str) -> Result<(), String> {
     fs::rename(&temporary, path).map_err(|error| format!("commit {}: {error}", path.display()))
 }
 
+/// Line (1-based) of the first module-level `do`: one directly in a `module X =` body, not inside a
+/// binding or type.
+fn module_level_do(text: &str) -> Option<usize> {
+    let mut bodies = vec![0usize];
+    for (index, line) in text.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if trimmed.is_empty() || trimmed.starts_with("//") {
+            continue;
+        }
+        let indent = line.len() - trimmed.len();
+        while bodies.len() > 1 && indent < bodies[bodies.len() - 1] {
+            bodies.pop();
+        }
+        if trimmed.starts_with("module ") && trimmed.trim_end().ends_with('=') {
+            bodies.push(indent + 4);
+        } else if indent == bodies[bodies.len() - 1]
+            && (trimmed.starts_with("do ") || trimmed.trim_end() == "do")
+        {
+            return Some(index + 1);
+        }
+    }
+    None
+}
+
+const SPLIT_INITIALIZE: &str = "spiral_split_initialize";
+
+/// A library assembly runs a file's initialization only once a value of that file is read, so the
+/// monolith's module-level `do`s (hook installations, registries) would silently never run once split.
+/// Each part holding one gets a value to read, and `GearRoot.initialize ()` reads them in source order;
+/// the host calls it where the monolith's startup would first touch the core.
+fn render_gear_root(output_root: &Path) -> Result<String, String> {
+    let mut parts = fs::read_dir(output_root)
+        .map_err(|error| format!("read {}: {error}", output_root.display()))?
+        .filter_map(Result::ok)
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("Part") && name.ends_with(".fs"))
+        })
+        .collect::<Vec<_>>();
+    parts.sort();
+    let mut touches = String::new();
+    for path in parts {
+        let text = fs::read_to_string(&path)
+            .map_err(|error| format!("read {}: {error}", path.display()))?;
+        if module_level_do(&text).is_none() {
+            continue;
+        }
+        let Some(module) = text.lines().find_map(|line| {
+            line.strip_prefix("module ")?.strip_suffix(" =").map(str::to_owned)
+        }) else {
+            return Err(format!("{}: module-level `do` outside a part module", path.display()));
+        };
+        if !text.contains(SPLIT_INITIALIZE) {
+            let newline = if text.contains("\r\n") { "\r\n" } else { "\n" };
+            let separator = if text.ends_with('\n') { "" } else { newline };
+            atomic_write(
+                &path,
+                &format!("{text}{separator}{newline}    let {SPLIT_INITIALIZE} = obj (){newline}"),
+            )?;
+        }
+        let _ = writeln!(touches, "        {module}.{SPLIT_INITIALIZE} |> ignore");
+    }
+    Ok(format!(
+        "namespace Polyglot\nmodule GearRoot =\n    let ready = true\n    \
+         /// Runs the source's module-level `do`s in source order, as the monolith's startup would.\n    \
+         let initialize () =\n{touches}        ()\n"
+    ))
+}
+
 struct GearEmitPhases {
     path: PathBuf,
     started: std::time::Instant,
@@ -285,10 +356,7 @@ pub fn emit_gears(
     phases.record("metrics")?;
     let effective_sccs = condense_compile_sccs(&effective_split)?;
     let sidecars = [
-        (
-            "GearRoot.fs",
-            "namespace Polyglot\nmodule GearRoot = let ready = true\n".to_owned(),
-        ),
+        ("GearRoot.fs", render_gear_root(&options.output_root)?),
         ("GearRoot.fsproj", render_root_project(&gears)),
         ("GearBuild.proj", render_gear_build_project(&gears)),
         ("gears.tsv", render_gears_tsv(&gears)),

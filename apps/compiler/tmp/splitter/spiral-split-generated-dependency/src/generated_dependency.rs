@@ -1,4 +1,5 @@
 use rayon::prelude::*;
+use spiral_split_fsharp_lex::character_literal_starts;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::Path;
@@ -40,6 +41,19 @@ fn code_projection(text: &str) -> String {
                     projected.extend_from_slice(b"  ");
                     index += 2;
                     state = LexicalState::VerbatimString;
+                } else if character_literal_starts(bytes, index) {
+                    // A char literal such as '"' must not open a string: that blanked everything up to
+                    // the next quote, hid a `type` declared there, and made its name look unique.
+                    let mut end = index + 1;
+                    if bytes[end] == b'\\' {
+                        end += 2;
+                    }
+                    while end < bytes.len() && bytes[end] != b'\'' {
+                        end += 1;
+                    }
+                    let end = (end + 1).min(bytes.len());
+                    projected.extend(std::iter::repeat_n(b' ', end - index));
+                    index = end;
                 } else if bytes[index] == b'"' {
                     projected.push(b' ');
                     index += 1;
@@ -638,6 +652,21 @@ mod tests {
              open spiral_compiler_Part0574\n",
         );
         assert_eq!(references, BTreeSet::from([574, 585, 1505]));
+    }
+
+    #[test]
+    fn char_literal_quote_does_not_hide_a_type_declaration() {
+        // Two parts declare `Key`; the second declares it after a '"' char literal. The name is not
+        // unique, so a third part's annotation must stay as written.
+        let mut texts = vec![
+            "module spiral_compiler_Part0000 =\n    type Key<'K> = { node: string }\n".to_owned(),
+            "module spiral_compiler_Part0001 =\n    let separators = [| ':'; '\"'; '\\'' |]\n    type Key<'Kind> =\n        | Node of int\n"
+                .to_owned(),
+            "module spiral_compiler_Part0002 =\n    type Graph = | Term of key: Key<int>\n".to_owned(),
+        ];
+        let dependencies = qualify_unique_type_annotation_texts(&mut texts).expect("qualify");
+        assert!(dependencies.is_empty());
+        assert!(texts[2].contains("key: Key<int>"));
     }
 
     #[test]

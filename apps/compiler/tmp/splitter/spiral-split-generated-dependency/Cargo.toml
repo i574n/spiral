@@ -10,3 +10,4 @@ path = "src/generated_dependency.rs"
 
 [dependencies]
 rayon.workspace = true
+spiral-split-fsharp-lex.workspace = true

@@ -26,6 +26,7 @@ pwsh scripts/test.ps1 -Suite all -Native    # everything, with native C/Rust/Del
 pwsh scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
 pwsh scripts/build-splitter.ps1             # spiral-split (Rust), for split core builds
 pwsh scripts/bench-split.ps1                # time the split core against the monolith
+pwsh scripts/gear-dev.ps1                   # the split hopac compiler, rebuilding only changed gears
 ```
 
 Native builds need `gcc` or `clang`, `rustc` and `fpc` (Free Pascal) on `PATH`; missing tools are

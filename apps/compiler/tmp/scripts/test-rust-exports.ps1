@@ -19,33 +19,25 @@ $fixtures = Join-Path $BundleRoot 'tests/rust-exports'
 $library = '    $"RustLibrary()" : ()'
 
 function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedDictionary]$Cases) {
-    $jobs = foreach ($case in $Cases.Keys) {
+    # One compiler process per case. A second BuildFile in the same process can
+    # sit until the batch timeout on Linux, which used to leave the results file short.
+    foreach ($case in $Cases.Keys) {
         $directory = Join-Path $work $case
         New-Item -ItemType Directory -Path $directory -Force | Out-Null
         Copy-Item -LiteralPath (Join-Path $Fixture 'package.spiproj') -Destination $directory
         $inputPath = Join-Path $directory 'main.spi'
+        $outputPath = Join-Path $directory 'library.rs'
         [IO.File]::WriteAllText($inputPath, $Cases[$case][0])
-        "$case`tRust`t$inputPath`t$(Join-Path $directory 'library.rs')`t120000"
-    }
-    $jobsPath = Join-Path $work "$(Split-Path $Fixture -Leaf).jobs.tsv"
-    $resultsPath = Join-Path $work "$(Split-Path $Fixture -Leaf).results.tsv"
-    $jobs | Set-Content -LiteralPath $jobsPath -Encoding utf8NoBOM
-    $batchLog = & $dotnet $compiler --batch $jobsPath $resultsPath --timeout-ms 120000 2>&1 | Out-String
-    $batchCode = $LASTEXITCODE
-    $written = if (Test-Path -LiteralPath $resultsPath) { [IO.File]::ReadAllText($resultsPath) } else { '' }
-    $rows = @(Import-Csv -LiteralPath $resultsPath -Delimiter "`t" -Header 'case','status','elapsed','detail' -ErrorAction SilentlyContinue)
-    if ($rows.Count -ne $Cases.Count) {
-        throw "Missing compiler results (exit $batchCode, $($rows.Count) of $($Cases.Count)): $resultsPath`n$written`n$batchLog"
-    }
-    foreach ($row in $rows) {
-        $outputPath = Join-Path $work "$($row.case)/library.rs"
-        $expected = $Cases[$row.case][1]
+        if (Test-Path -LiteralPath $outputPath) { Remove-Item -LiteralPath $outputPath -Force }
+        $log = & $dotnet $compiler --backend Rust $inputPath $outputPath 2>&1 | Out-String
+        $code = $LASTEXITCODE
+        $expected = $Cases[$case][1]
         if ($expected) {
-            if ($row.status -ne 'error' -or -not $row.detail.Contains($expected) -or (Test-Path -LiteralPath $outputPath)) {
-                throw "Expected $($row.case) rejection: $($row | ConvertTo-Json -Compress)"
+            if ($code -eq 0 -or -not $log.Contains($expected) -or (Test-Path -LiteralPath $outputPath)) {
+                throw "Expected $case rejection (exit $code): $log"
             }
-        } elseif ($row.status -ne 'ok' -or -not (Test-Path -LiteralPath $outputPath)) {
-            throw "Rust library compilation failed: $($row | ConvertTo-Json -Compress)"
+        } elseif ($code -ne 0 -or -not (Test-Path -LiteralPath $outputPath)) {
+            throw "Rust library compilation failed for ${case} (exit $code): $log"
         }
     }
 }

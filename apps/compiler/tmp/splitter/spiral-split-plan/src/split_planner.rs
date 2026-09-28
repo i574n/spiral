@@ -20,7 +20,8 @@ fn declaration_layers(program: &Program<Linked>) -> Vec<usize> {
 
 /// Latest line-weighted finish of each declaration such that the whole graph still finishes within
 /// the declaration critical path plus `allowance` lines. Dependencies always precede their consumers in
-/// F# source order.
+/// F# source order. Weighs with `planning_line_count`: with exact counts, lines added to one body on the
+/// critical path moved every latest finish, and with them groups (and part numbers) far downstream.
 fn declaration_latest_finish(program: &Program<Linked>, allowance: usize) -> Vec<usize> {
     let count = program.declarations.len();
     let mut finishes = vec![0usize; count];
@@ -32,13 +33,16 @@ fn declaration_latest_finish(program: &Program<Linked>, allowance: usize) -> Vec
             .map(|dependency| finishes[dependency.0])
             .max()
             .unwrap_or(0)
-            + declaration.line_count();
+            + declaration.planning_line_count();
     }
-    let horizon = finishes.iter().copied().max().unwrap_or(0) + allowance;
+    // Slack relative to the critical path, so it does not shrink when the planning weights round the
+    // many small declarations up.
+    let floor = finishes.iter().copied().max().unwrap_or(0);
+    let horizon = floor + allowance.max(floor / 2);
     let mut latest_finish = vec![horizon; count];
     for declaration in program.declarations.iter().rev() {
         let id = declaration.id.0;
-        let latest_start = latest_finish[id].saturating_sub(declaration.line_count());
+        let latest_start = latest_finish[id].saturating_sub(declaration.planning_line_count());
         for dependency in &declaration.direct_dependencies {
             latest_finish[dependency.0] = latest_finish[dependency.0].min(latest_start);
         }
@@ -58,7 +62,10 @@ fn declaration_latest_finish(program: &Program<Linked>, allowance: usize) -> Vec
 fn critical_path_module_groups(program: &Program<Linked>, max_lines: usize) -> Vec<Vec<DeclarationId>> {
     struct OpenGroup {
         members: Vec<DeclarationId>,
+        /// Exact source lines, for the `max_lines` capacity.
         lines: usize,
+        /// Planning weight, for the simulated schedule (see `declaration_latest_finish`).
+        weight: usize,
         start: usize,
         finish_cap: usize,
         has_dependents: bool,
@@ -71,6 +78,7 @@ fn critical_path_module_groups(program: &Program<Linked>, max_lines: usize) -> V
     for declaration in &program.declarations {
         let id = declaration.id.0;
         let lines = declaration.line_count();
+        let weight = declaration.planning_line_count();
         let module = declaration.scope.module_name().map(str::to_owned);
         let candidate = module.as_ref().and_then(|name| open_by_module.get(name).copied());
         let ready_excluding = |excluded: Option<usize>| {
@@ -79,14 +87,14 @@ fn critical_path_module_groups(program: &Program<Linked>, max_lines: usize) -> V
                 .iter()
                 .map(|dependency| group_of[dependency.0])
                 .filter(|group| *group != usize::MAX && Some(*group) != excluded)
-                .map(|group| groups[group].start + groups[group].lines)
+                .map(|group| groups[group].start + groups[group].weight)
                 .max()
                 .unwrap_or(0)
         };
         let joined = candidate.filter(|&group| {
             let open = &groups[group];
             let start = open.start.max(ready_excluding(Some(group)));
-            let finish = start + open.lines + lines;
+            let finish = start + open.weight + weight;
             !open.has_dependents
                 && open.lines + lines <= max_lines
                 && finish <= open.finish_cap.min(latest_finish[id])
@@ -96,6 +104,7 @@ fn critical_path_module_groups(program: &Program<Linked>, max_lines: usize) -> V
             let open = &mut groups[group];
             open.start = start;
             open.lines += lines;
+            open.weight += weight;
             open.finish_cap = open.finish_cap.min(latest_finish[id]);
             open.members.push(declaration.id);
             group
@@ -103,6 +112,7 @@ fn critical_path_module_groups(program: &Program<Linked>, max_lines: usize) -> V
             groups.push(OpenGroup {
                 members: vec![declaration.id],
                 lines,
+                weight,
                 start: ready_excluding(None),
                 finish_cap: latest_finish[id],
                 has_dependents: false,

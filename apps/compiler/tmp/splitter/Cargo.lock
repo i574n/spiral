@@ -400,6 +400,7 @@ name = "spiral-split-generated-dependency"
 version = "0.0.0"
 dependencies = [
  "rayon",
+ "spiral-split-fsharp-lex",
 ]
 
 [[package]]

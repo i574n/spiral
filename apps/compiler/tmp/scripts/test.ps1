@@ -109,13 +109,12 @@ function Get-Entry([string]$dir) {
 # Contract cases and megaproject sub-packages are type-system checks compiled to F# only.
 function Test-ContractSample([string]$relative) { $relative -like 'samples/contract_*' -or $relative -like 'samples/mega_*' }
 
+# harness.psd1 lists the samples compiled to fewer than all four backends.
+$sampleBackends = @{}
+foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 function Get-ExampleBackends([string]$dir) {
-    $found = @()
-    foreach ($pair in @(@('main.fsx', 'Fsharp'), @('main.c', 'C'), @('main.rs', 'Rust'), @('main.pas', 'Delphi'))) {
-        if (Test-Path (Join-Path $dir $pair[0])) { $found += $pair[1] }
-    }
-    if ($found.Count -eq 0) { $found = @('Fsharp', 'C', 'Rust', 'Delphi') }
-    $found
+    $relative = 'samples/' + (Split-Path $dir -Leaf)
+    if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Delphi') }
 }
 
 function Get-Samples([string]$suite) {

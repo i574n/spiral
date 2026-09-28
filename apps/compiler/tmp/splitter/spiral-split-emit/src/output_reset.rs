@@ -175,11 +175,16 @@ fn prepare_output_root(plan: &SplitPlan, options: &EmitOptions) -> Result<Resume
         .output_root
         .join("gear-preplan-anonymous-record-bridges.tsv")
         .is_file();
-    let sources = resumable_sources(
-        projects,
-        source_receipt_matches(plan, options),
-        postprocessed_sources,
-    );
+    // Gear emission (spiral-split gears) rewrites Part*.fs in place with passes that are not
+    // idempotent; its gears.tsv marks sources that must be emitted afresh, or a rerun on the same
+    // source rewrites the rewritten text and flips annotations between runs.
+    let gear_postprocessed = options.output_root.join("gears.tsv").is_file();
+    let sources = !gear_postprocessed
+        && resumable_sources(
+            projects,
+            source_receipt_matches(plan, options),
+            postprocessed_sources,
+        );
     let prebridge_complete = !postprocessed_sources
         && sources
         && projects

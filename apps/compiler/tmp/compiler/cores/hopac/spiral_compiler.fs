@@ -48337,10 +48337,10 @@ module spiral_compiler =
     /// Reflection names are admitted once at the parser boundary; lookup authority
     /// is the nominal DU rather than a raw string-keyed dictionary.
     let operator_case_dict : Dictionary<OperatorCaseNameId,Op> = Collections.Generic.Dictionary(HashIdentity.Structural)
-    
+
 
     do Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>) |> Array.iter (fun x -> operator_case_dict.[OperatorCaseNameId.create x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
-    
+
 
     /// ### string_to_op
     let string_to_op x = operator_case_dict.TryGetValue (OperatorCaseNameId.create x)
@@ -79800,7 +79800,15 @@ module spiral_compiler =
                                                         FastRuntimeFormat.format "{\"kind\":\"eval_worklist_if_symbolic_condition_branch_probe_scheduled\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"branch\":%s,\"branch_node_id\":%d,\"branch_shape\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"condition_class\":%s,\"detail_compact\":%s,\"single_flight\":1,\"next\":\"schedule_if_symbolic_branch_probe\"}" [| box (esc event); box cellReady.nodeId; box (esc (replayCellShapeText cellReady)); box (esc (replayCellSiteText cellReady)); box (esc branchName); box branchNodeId; box (esc (EvalReplayValueStore.workShapeIdText branchShape)); box spine.condNodeId; box (esc (EvalReplayValueStore.workShapeIdText spine.condShape)); box (esc conditionClass); box (esc compactDetail) |])
                                                     let branchCell = { cellReady with nodeId = branchNodeId; shape = branchShape; status = ReplayCellReadyStatus ReplayCellReadyIfSymbolicConditionBranchProbe }
                                                     "term_if_symbolic_condition_" + branchName + "_branch_probe_scheduled:" + conditionClass, SemanticStepPartial, replayNextOther "schedule_if_symbolic_branch_probe", branchCell
-                                                match trueMissing, falseMissing with
+                                                // A probe replays a branch in this cell's environment, the scope around the `if`;
+                                                // the direct handler evaluates each branch in a scope of its own. For a runtime
+                                                // condition (`DV`), or while the direct evaluator owns the `if`, probing would emit
+                                                // the branch's statements (a `break`, an assignment) into the enclosing block as
+                                                // well, so leave the branches to the direct handler.
+                                                let directOwned =
+                                                    (match condValue with DV _ -> true | _ -> false)
+                                                    || EvalReplayValueStore.isDirectNodeOwned cellReady.nodeId
+                                                match (if directOwned then false else trueMissing), (if directOwned then false else falseMissing) with
                                                 | true, true ->
                                                     deferBranch "false" spine.falseNodeId spine.falseShape
                                                     scheduleBranch "true" spine.trueNodeId spine.trueShape
@@ -79811,7 +79819,7 @@ module spiral_compiler =
                                                 | false, false ->
                                                     DiagJson.emit (
                                                         FastRuntimeFormat.format "{\"kind\":\"eval_worklist_if_symbolic_condition_blocked\",\"event\":%s,\"node_id\":%d,\"shape\":%s,\"site\":%s,\"condition_node_id\":%d,\"condition_shape\":%s,\"condition_class\":%s,\"branches_ready\":1,\"detail_compact\":%s,\"single_flight\":1,\"next\":\"explicit_eval_worklist_if_symbolic_condition_required\"}" [| box (esc event); box cellReady.nodeId; box (esc (replayCellShapeText cellReady)); box (esc (replayCellSiteText cellReady)); box spine.condNodeId; box (esc (EvalReplayValueStore.workShapeIdText spine.condShape)); box (esc conditionClass); box (esc compactDetail) |])
-                                                    "term_if_symbolic_condition_blocked:" + conditionClass + ":" + compactDetail, SemanticIfSymbolicConditionBlocked, replayNextExplicit "explicit_eval_worklist_if_symbolic_condition_required", cellReady
+                                                    "term_if_symbolic_condition_blocked:" + conditionClass + (if directOwned then ":direct_owned:" else ":") + compactDetail, SemanticIfSymbolicConditionBlocked, replayNextExplicit "explicit_eval_worklist_if_symbolic_condition_required", cellReady
                                             | None ->
                                                 let condCell = { cellReady with nodeId = spine.condNodeId; shape = spine.condShape; status = ReplayCellReadyStatus ReplayCellReadyIfCondition }
                                                 "term_if_condition_scheduled", SemanticStepPartial, replayNextExplicit "explicit_eval_worklist_if_condition_stepper_required", condCell
@@ -91000,7 +91008,9 @@ module spiral_compiler =
             | TerminalFlowFairnessReleaseByQuiescence of CompilerIdentityKernel.ContentDigest
             | TerminalFlowFairnessReleaseByTopologyGate of TerminalFlowIdentityRef<TerminalFlowTopologyGateRefKind>
 
-        let private terminalFlowFairnessReleaseBasisRef = function
+        // Annotated: the inline kind would otherwise be inferred from the first use further down, which a
+        // split build compiles in another part (FS0071 there).
+        let private terminalFlowFairnessReleaseBasisRef : TerminalFlowFairnessReleaseBasis -> TerminalFlowIdentityRef<TerminalFlowFairnessReleaseRefKind> = function
             | TerminalFlowFairnessReleaseByQuiescence digest ->
                 terminalFlowIdentityRefOfText ("fairness-basis-quiescence:" + CompilerIdentityKernel.ContentDigest.text digest)
             | TerminalFlowFairnessReleaseByTopologyGate gateRef ->
@@ -132723,6 +132733,23 @@ module spiral_compiler =
                 | _ -> None)
     let debugTermTraceLock = obj ()
 
+    /// Appends `tag` and the compiler stack to the SPIRAL_DEBUG_TERM_TRACE file when `r` starts on the
+    /// traced line; `seqId`/`seqCount` identify the statement sequence being appended to.
+    let debugTraceAt (r: Range) (tag: string) (seqId: int) (seqCount: int) =
+        match debugTermTrace.Value with
+        | Some (suffix, line, file) when (fst r.range).line = line && r.path.Replace('\\', '/').EndsWith suffix ->
+            let frames =
+                Environment.StackTrace.Split('\n')
+                |> Array.map (fun frame -> frame.Trim())
+                |> Array.filter (fun frame -> frame.Contains "Polyglot")
+                |> Array.truncate 30
+            let entry =
+                sprintf "=== %s at %d:%d seq=%d count=%d thread=%d\n%s\n"
+                    tag ((fst r.range).line + 1) (fst r.range).character seqId seqCount
+                    Threading.Thread.CurrentThread.ManagedThreadId (String.concat "\n" frames)
+            lock debugTermTraceLock (fun () -> IO.File.AppendAllText(file, entry))
+        | _ -> ()
+
     /// ### cse_add
     let cse_add (d: LangEnv) k v = (List.head d.cse).TryAdd(k,v) |> ignore
     
@@ -154691,20 +154718,11 @@ module spiral_compiler =
             // The wrapper also owns typed evaluator-parent depth. A safe continuation is a direct parent only
             // for its immediate term child; deeper unmodeled recursion is represented as Opaque rather than
             // being silently attached to that continuation or collapsed to Root.
-            match debugTermTrace.Value, x with
-            | Some (suffix, line, file), EApply(r, _, _) when (fst r.range).line = line && r.path.Replace('\\', '/').EndsWith suffix ->
-                let frames =
-                    Environment.StackTrace.Split('\n')
-                    |> Array.map (fun frame -> frame.Trim())
-                    |> Array.filter (fun frame -> frame.Contains "Polyglot")
-                    |> Array.truncate 30
-                let entry =
-                    sprintf "=== term at %d:%d seq=%d count=%d thread=%d\n%s\n"
-                        ((fst r.range).line + 1) (fst r.range).character
-                        (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s.seq) s.seq.Count
-                        Threading.Thread.CurrentThread.ManagedThreadId (String.concat "\n" frames)
-                lock debugTermTraceLock (fun () -> IO.File.AppendAllText(file, entry))
-            | _ -> ()
+            if debugTermTrace.Value.IsSome then
+                match x with
+                | EApply(r, _, _) -> debugTraceAt r "term" (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s.seq) s.seq.Count
+                | EMacro(r, _, _) -> debugTraceAt r "term macro" (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s.seq) s.seq.Count
+                | _ -> ()
             let previousTermDepth = jp_current_declared_term_depth.Value
             jp_current_declared_term_depth.Value <- max 0 previousTermDepth + 1
             try
@@ -155454,6 +155472,7 @@ module spiral_compiler =
                         }
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             let s2 = add_trace s r
+                            debugTraceAt r "macro replay thunk" (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s2.seq) s2.seq.Count
                             let mutable macroTermIx = 0
                             let mutable macroTypeIx = 0
                             let cachedTerm kind idx =
@@ -155681,13 +155700,12 @@ module spiral_compiler =
                         let condNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cond)
                         let trueNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onTrue)
                         let falseNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFalse)
-                        // MIGRATION: the unknown-return branch probe can schedule
-                        // a non-leaf branch (observed ELet at core/listm.spi:6).
-                        // Register all three children recursively so scheduled
-                        // branch cells have their normal thunks/spines available.
+                        // Only the condition is a replay child of this scope. The branches of a runtime `if` run in scopes of
+                        // their own (term_scope); registered here, with this scope as their context, the replay driver applied
+                        // branch applications in the enclosing block as well (`while_control`: a `break` emitted before the
+                        // `if`, on some runs, via tryApplyReplayDataWithContext). A branch cell the probe schedules without a
+                        // store falls back to the direct handler, as `While`/`Do`/`Indent` arguments do.
                         registerReplayTerm condNodeId cond
-                        registerReplayTerm trueNodeId onTrue
-                        registerReplayTerm falseNodeId onFalse
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"eval_worklist_if_branch_children_registered\",\"event\":\"term_entry_global_fuse\",\"node_id\":%d,\"shape\":\"EIfThenElse\",\"site\":%s,\"condition_node_id\":%d,\"true_node_id\":%d,\"true_shape\":%s,\"false_node_id\":%d,\"false_shape\":%s,\"single_flight\":1,\"next\":\"if_children_ready_for_branch_probe\"}" [| box nodeId; box (DiagJson.esc site); box condNodeId; box trueNodeId; box (DiagJson.esc (evalNodeShapeTerm onTrue)); box falseNodeId; box (DiagJson.esc (evalNodeShapeTerm onFalse)) |])
                         match cond with
@@ -156739,6 +156757,7 @@ module spiral_compiler =
                     }
                     EvalReplayValueStore.putTerm nodeId (fun () ->
                         let s2 = add_trace s r
+                        debugTraceAt r "macro replay thunk" (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s2.seq) s2.seq.Count
                         let mutable macroTermIx = 0
                         let mutable macroTypeIx = 0
                         let cachedTerm kind idx =
@@ -156932,12 +156951,9 @@ module spiral_compiler =
                     let condNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cond)
                     let trueNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onTrue)
                     let falseNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box onFalse)
-                    // MIGRATION: mirror recursive child registration in the
-                    // post-fuse path, where deferred branch cells may resume
-                    // after the active driver unwinds.
+                    // Only the condition, as in the pre-fuse path: branches registered with this scope were
+                    // applied by the replay driver into the enclosing block.
                     registerReplayTerm condNodeId cond
-                    registerReplayTerm trueNodeId onTrue
-                    registerReplayTerm falseNodeId onFalse
                     DiagJson.emit (
                         FastRuntimeFormat.format "{\"kind\":\"eval_worklist_if_branch_children_registered\",\"event\":\"term_entry_post_fuse\",\"node_id\":%d,\"shape\":\"EIfThenElse\",\"site\":%s,\"condition_node_id\":%d,\"true_node_id\":%d,\"true_shape\":%s,\"false_node_id\":%d,\"false_shape\":%s,\"single_flight\":1,\"next\":\"if_children_ready_for_branch_probe\"}" [| box nodeId; box (DiagJson.esc site); box condNodeId; box trueNodeId; box (DiagJson.esc (evalNodeShapeTerm onTrue)); box falseNodeId; box (DiagJson.esc (evalNodeShapeTerm onFalse)) |])
                     match cond with
