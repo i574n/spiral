@@ -132,6 +132,7 @@ void ClosureDecref1(Closure1 * x){
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v1){
     US0 v0 = x->v0;
+    USIncref0(&(v0));
     ClosureDecref1(x);
     
     
@@ -181,7 +182,7 @@ int32_t ClosureMethod1(Closure1 * x, int32_t v1){
         }
     }
     
-    
+    USDecref0(&(v0));
     int32_t v13;
     v13 = v12 + v1;
     
@@ -203,6 +204,7 @@ void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
 Fun1 * ClosureMethod0(Closure0 * x, int32_t v0){
+    
     
     ClosureDecref0(x);
     

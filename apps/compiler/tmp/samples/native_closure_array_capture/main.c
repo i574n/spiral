@@ -47,13 +47,14 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     Array0 * v0 = x->v0;
+    v0->refc++;
     ClosureDecref0(x);
     
     
     int32_t v2;
     v2 = v0->len;
     
-    
+    ArrayDecref0(v0);
     int32_t v3;
     v3 = v2 + v1;
     

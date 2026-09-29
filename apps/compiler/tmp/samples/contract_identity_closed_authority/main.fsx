@@ -1,2 +1,2 @@
-let v1 : string = "identity-closed-authority"
-v1
+let v0 : string = "identity-closed-authority"
+v0

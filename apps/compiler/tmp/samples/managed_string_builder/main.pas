@@ -51,11 +51,11 @@ var
   v2: LongInt;
   v3: AnsiString;
   v4: Boolean;
-  v6: LongInt;
-  v7: Boolean;
-  v10: AnsiString;
-  v8: AnsiString;
+  v5: LongInt;
+  v6: Boolean;
   v9: AnsiString;
+  v7: AnsiString;
+  v8: AnsiString;
 begin
   v2 := v0 - 1;
   v3 := '' + v1;
@@ -63,16 +63,16 @@ begin
   if v4 then begin
       Result := v3;
   end else begin
-      v6 := v2 mod 2;
-      v7 := v6 = 0;
-      if v7 then begin
-          v8 := 'ab';
-          v10 := v8;
+      v5 := v2 mod 2;
+      v6 := v5 = 0;
+      if v6 then begin
+          v7 := 'ab';
+          v9 := v7;
       end else begin
-          v9 := 'c';
-          v10 := v9;
+          v8 := 'c';
+          v9 := v8;
       end;
-      Result := method2(v2, v3, v10);
+      Result := method2(v2, v3, v9);
   end;
 end;
 function method0: AnsiString;

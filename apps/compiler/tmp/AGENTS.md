@@ -24,6 +24,11 @@ pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke   # widen once the front
 pwsh scripts/test.ps1 -Mode hopac -Suite all -Record      # full scoreboard, written to lanes/hopac/
 ```
 
+`-Parallel` defaults to what the machine can take: about 3/8 of the logical CPUs in hopac mode (a hopac job
+keeps 2-3 cores busy), half in single-flight, both capped at one worker per 1.5 GB of free memory. On an
+8-CPU machine a hopac `examples,contracts -Native` run takes 3 workers; don't drop to 1 unless memory is
+short.
+
 Compile statuses: `ok` (returned code), `emitted` (the core wrote the residual during the run but the
 compile never returned; the expected next Hopac milestone after the current hangs), `error`, `timeout`,
 `crash`. Baseline verdicts: `parity`, `emitted-parity`, `*-residual-differs`, `FIXED` (oracle had no
@@ -42,7 +47,9 @@ Hopac knobs (environment): `SPIRAL_HOPAC_WORKERS` and `SPIRAL_DOP` (set both to 
 runs), `SPIRAL_BUILD_DEADLINE_MS` / `SPIRAL_BUILD_BUDGET_MS` (stall watchdog; the host sets the deadline,
 otherwise 15 min), `SPIRAL_LEGACY_JOIN_HEURISTICS=1` (old EJP0019/EJP0021 join loop),
 `SPIRAL_DEBUG_UNBOX=1` (trace union unboxes), `SPIRAL_ARTIFACT_COMMIT_GRACE_MS` (500),
-`SPIRAL_RUN_END_GRACE_MS` (500), `SPIRAL_CODEGEN_STACK_MB` (512). Debugging workflow:
+`SPIRAL_RUN_END_GRACE_MS` (500), `SPIRAL_CODEGEN_STACK_MB` (512), `SPIRAL_JP_SLICE_OPS=<max>,<interval>`
+(time-slice declared method bodies again, e.g. `256,64`; off by default because resuming a slice is
+unsound, FRONTIER.md fix 22). Debugging workflow:
 `lanes/hopac/FRONTIER.md`, "The fast loop".
 
 In hopac mode every job runs in its own compiler process (`-FreshProcess`, on by default there), because

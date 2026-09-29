@@ -198,41 +198,41 @@ int32_t main(){
     AssignArray0(&(v1->ptr[0l]), 9l);
     
     
-    Array0 * v5;
-    v5 = v2->ptr[0l];
-    v5->refc++;
+    Array0 * v4;
+    v4 = v2->ptr[0l];
+    v4->refc++;
+    
+    int32_t v5;
+    v5 = v4->ptr[0l];
+    
     
     int32_t v6;
-    v6 = v5->ptr[0l];
+    v6 = v4->len;
     
-    
+    ArrayDecref0(v4);
     int32_t v7;
-    v7 = v5->len;
+    v7 = v5 + v6;
     
-    ArrayDecref0(v5);
+    
     int32_t v8;
-    v8 = v6 + v7;
+    v8 = v2->len;
     
     
     int32_t v9;
-    v9 = v2->len;
-    
-    
-    int32_t v10;
-    v10 = v8 + v9;
+    v9 = v7 + v8;
     v1->refc++; v2->refc++;
     
-    int32_t v11;
-    v11 = method4(v1, v2);
+    int32_t v10;
+    v10 = method4(v1, v2);
     
     ArrayDecref0(v1); ArrayDecref1(v2);
+    int32_t v11;
+    v11 = v9 + v10;
+    
+    
     int32_t v12;
-    v12 = v10 + v11;
+    v12 = v11 - 13l;
     
     
-    int32_t v13;
-    v13 = v12 - 13l;
-    
-    
-    return v13;
+    return v12;
 }

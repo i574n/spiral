@@ -1,5 +1,0 @@
-inl main () =
-    inl ~x = 40i32
-    inl f = (fun (value : i32) => !!!!Add(value,2i32)) : i32 -> i32
-    inl ~p = !!!!ToFunPtr(f)
-    p x

@@ -61,13 +61,14 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     String * v0 = x->v0;
+    v0->refc++;
     ClosureDecref0(x);
     
     
     int32_t v2;
     v2 = v0->len-1;
     
-    
+    StringDecref(v0);
     int32_t v3;
     v3 = v2 + v1;
     
@@ -90,13 +91,14 @@ void ClosureDecref1(Closure1 * x){
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v1){
     String * v0 = x->v0;
+    v0->refc++;
     ClosureDecref1(x);
     
     
     int32_t v2;
     v2 = v0->len-1;
     
-    
+    StringDecref(v0);
     int32_t v3;
     v3 = v2 + v1;
     

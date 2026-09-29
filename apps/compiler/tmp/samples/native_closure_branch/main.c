@@ -29,6 +29,7 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v0){
     
+    
     ClosureDecref0(x);
     
     
@@ -53,6 +54,7 @@ void ClosureDecref1(Closure1 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
 int32_t ClosureMethod1(Closure1 * x, int32_t v0){
+    
     
     ClosureDecref1(x);
     

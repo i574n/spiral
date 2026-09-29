@@ -90,13 +90,127 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Upstream: the i574n fork (`polyglot/deps/The-Spiral-Language`) is the sync pivot; record the fork commit the
   sections correspond to before the first sync (README, "Upstream"). `scripts/upstream.py` (status, import,
   export) moves edits between sections and the fork's files.
-- Unified so far: `VSCTypes` (single-flight build verified; hopac build pending). 32 pairs left.
+- Unified so far: `VSCTypes`, `HashConsing` (hopac's locked version for both), `PersistentVectorExtensions`
+  (hopac's diagnostics helpers moved into a hopac-only `HopacRuntimeHelpers` section before it),
+  `CodegenUtils` (hopac's superset), `RefCounting`, and the Rust and Delphi backends through a new
+  `CodegenAdapter` section pair (before `CodegenRust`): union tag text, layout key matching, method key
+  arguments, method/closure body lookup, memo tables and RefCounting's decrement table, each in the form
+  its core needs. Sharing single-flight's Rust text gives hopac single-flight's union case tags
+  (`case_tag`, where hopac used the case's position). Single-flight builds verified after each step; the
+  hopac build is pending. 26 pairs left.
+- `Tokenize` is a behaviour choice, not a merge: hopac's side changes triple-quoted strings (newline placed
+  before a continuation line instead of after it, empty lines handled) and drops `inline` on the lexer
+  state. Decide the triple-string semantics with a test fixture first (no sample uses `"""` today).
+- `CodegenC` is shared too (single-flight's text through the adapter, plus hopac's
+  `preservesDuplicateGlobalFragment` fix): 26 of 29 sampled programs give byte-identical C before and after,
+  the other 3 are the same expected rejections. 25 pairs left.
+- Left as pairs on purpose: `CodegenFsharp` (hopac's side carries ~560 lines of join point body resolution:
+  owner materialization, replay drains, recovery; the adapter's simple await would bypass them),
+  `CodegenCpp`/`CodegenPython` (real feature differences, e.g. hopac's typed macro control, union tag tables
+  and object-dtype array literals in Python; no fixtures cover them), `Tokenize` (above).
+- Lua and Gleam are shared too (single-flight's text, so hopac gets single-flight's newer Lua union payload
+  handling); `#nowarn 40` moved above the prelude pair so hopac's build stops warning on the shared
+  backends. All six native backends (C, Rust, Delphi, Lua, Gleam through the adapter; RefCounting) now have
+  one copy. Pairs left (24): prelude, `spiral_compiler`, Utils, Tokenize, BlockParsing, HopacExtensions,
+  BlockBundling, Infer, Prepass, PartEval, CodegenFsharp, CodegenAdapter (intended), CodegenCpp,
+  CodegenPython, WDiff, WDiffPrepass, SpiProj, Graph, ServerUtils, SignalRSupervisor, new_server,
+  startParentWatcher, SpiralHub, main; one hopac-only section (HopacRuntimeHelpers). Their differences
+  are mostly hopac's concurrency/performance adaptations (`HopacExtensions.S.*` = `Array.*`,
+  `ConcurrentQueue` for `ResizeArray`, a tag allocator for `dict'.Count`, `FastRuntimeFormat` for `sprintf`)
+  plus a few real fixes to keep (e.g. hopac's `preservesDuplicateGlobalFragment` in `global`).
+- The three single-flight "regressions" after the translator cut are translator-only features:
+  `native_fptr_basic`/`native_fptr_reuse` need function pointers (`YFun .. FT_Pointer`), which upstream's C
+  backend never had (only the C++/Cuda one: `typedef` + `FunPointerMethod{tag}`); `native_layout_stack_mutable`
+  needs stack-mutable layouts, which the C and Rust backends reject by design. Like the 16 translator-only
+  fixtures before, they are dropped (harness entries removed; delete the three directories once the running
+  wide hopac run has finished). Porting function pointers to C/Rust/Delphi from the C++ backend is an
+  option if native callbacks are wanted.
 - IR plan (the codegen pairs): the IR types differ only systematically: union tags (`UnionTagId` vs
   `string`), layout keys (`LayoutFieldNameId` vs `string`), join point owners (`JpBodyOwnerIdentity` vs
   `string ConsedNode * E`, and the method key carries its range type), `ReFunction`'s annotation identity.
   Give single-flight tiny definitions of hopac's names (`UnionTagId = string`, `UnionTagIdOps.text = id`,
   `LayoutFieldNameIdOps.matchesText`, per-mode `method_body`/`closure_body`), then the IR types and the
   codegens can be shared text compiled by both.
+
+## Session 2026-09-29: merged core verified on both lanes
+
+- Hopac builds from the merged file (0 errors) and gives the same frontier 8/8, smoke 36/36, native 0
+  `DISAGREE` as before the merge, with the unified sections and the shared Rust/Delphi/C backends. Single-
+  flight: frontier, smoke and examples as before, minus the C closure `NATIVE-DIFF`s (fixed, below). The three
+  translator-only fixtures are deleted. In-tree outputs restored with single-flight after the hopac runs.
+
+## Session 2026-09-29: wide hopac run, C closure fix
+
+- Wide hopac run after fixes 18-20 (`<cache>/runs/hopac-20260928-201051`, examples+contracts, 1 worker, 2h09):
+  examples 413/461 parity (44 missing), contracts 585/607 (21 missing, 4 crashes), native 7 build
+  failures (21 before), 0 `DISAGREE`. Against the post-fix-16 run: `tuple_mixed`, `portable_composite` and
+  `native_managed_array_tail_recursion` now agree on C/Rust/Delphi; `managed_string_codepoints` compiles for
+  Rust and Delphi (it stalled); several mega sub-packages flipped to parity. To check: 4 compiler crashes with
+  a stack overflow (exit 0xC00000FD: `contract_atomic_carbon_microgrid_clearing`,
+  `contract_region_safe_robotic_surgery`, mega `antimirov_certificate`, `minimization_witness`; fix 20 now
+  evaluates compound `if` conditions directly, on the stack, which is a suspect); 4 `WRITE_ABORT` on
+  `native_string_utf8_*` (hopac's residual is much smaller than the file on disk: 5 KB vs 28 KB);
+  `native_cube_direct` now compiles but its C references an undeclared `v1`; stalls at the build budget
+  (`frontier_fib`, `dynamic_array_growth_union_managed`, two contracts), possibly timing.
+- **C closure use-after-free (upstream bug, fixed in the shared `CodegenC`)**: `ClosureMethodN` copied the
+  captured values out of the closure, then `ClosureDecrefN(x)` freed the closure and, through it, captured
+  arrays the body then read (`native_closure_array_capture` 40 instead of 42; `managed_capture`,
+  `multimodule`, `transport` 38). The host's C rewriting used to hide it. The method now takes a reference
+  to each captured value before releasing the closure and the body owns them. Upstream's `CodegenC.fs` has
+  the same code: a pull request candidate (`scripts/upstream.py export`).
+
+## Session 2026-09-29 (morning): method bodies losing statements, replay repeating calls
+
+- **Fix 21** (compiler stack overflows in the BigStack spawn): `BigStack.StackBudget` measures the stack left
+  with `GetCurrentThreadStackLimits`; 0 crashes in 5 runs of the crash-prone contracts.
+- **Fix 22** (`lanes/hopac/FRONTIER.md`): `native_cube_direct`'s `return v1` and `native_string_utf8_*`'s
+  `return v25` (the `WRITE_ABORT`s) were not fixes 18-20 but the cooperative time-slicing of declared method
+  bodies: resume continues in the previous slice's block while the body is read from a fresh one. Declared
+  bodies no longer time-slice (budget 2^24); `SPIRAL_JP_SLICE_OPS` brings slicing back for repro. Both
+  fixtures now match single-flight; frontier+smoke 8/8, 36/36, native 0 DISAGREE, and no resumes at all.
+  The wide run of it is incomplete (below).
+- `scripts/test.ps1 -Parallel` now defaults from the machine (hopac ~3/8 of the CPUs, single-flight half,
+  capped by free memory: 3 workers here); see `AGENTS.md`.
+- **Replay repeating join point calls** (open, fix half done, UNCOMMITTED CORE EDITS, see below): hopac's `main`
+  in `native_string_utf8_validate_source` called `utf8_validate_loop0` seven times (single-flight: twice).
+  Repro: `samples/frontier_replay_repeat_call` (`inl a = sm.utf8_validate "abc"`; single-flight emits 1 call,
+  hopac emitted 4). Not in `tests/harness.psd1` yet and has no committed outputs: add it, or run it with
+  `spc`-style direct compiles. `SPIRAL_DEBUG_TERM_TRACE=core/sm.spi:135` shows every extra application
+  coming from the replay driver alone (the direct evaluator never runs it): `runReplayDriver` →
+  `tryApplyReplayDataWithContext` → `tryRunApplyAfterDefinitionAt` → `runApplyAfterDefinition`, once per
+  driver tick, into the same block. The `CellShapeEApply` case of the driver (`EvalWorklist`, ~line 85060)
+  re-applies whenever the cell is ready, with no "already applied" check, and reads the argument values
+  through `tryTerm` thunks, which recompute (fresh `DV`s).
+  In `spiral_compiler.fs` now (hopac-only `EvalReplayValueStore`, ~line 66380 and ~68540), built only as
+  **Debug** (`bin/hopac/.../Debug`), Release not rebuilt:
+  1. `tryRunApplyAfterDefinitionAt` / `tryRunDynamicJoinApplyAfterDefinitionAt` refuse nodes the direct
+     evaluator owns (`isDirectNodeOwned`, fix 14's guard). Alone: 4 → 3 calls.
+  2. A memo of completed replay apply steps per node, keyed by scope block (`installReplayScopeKey`, installed
+     next to `installAnnotTestBranchAfterDefinition` as `LangEnv.seq`), function and argument. With it:
+     repro 2 calls, `native_string_utf8_validate_source` 4 (was 7).
+  3. A diagnostic row `eval_worklist_replay_apply_memo_miss` (same_scope/same_head/same_arg). The remaining
+     miss: same scope, different function and argument (`DV`): the argument thunks re-emit. Remove the row
+     once fixed.
+  Next: make the `CellShapeEApply` driver case (and the whole-spine thunk at ~163570) not re-apply a node
+  whose value the replay already committed (e.g. a committed-node set set by `putTermValue` after an apply
+  and checked before applying; `putTerm` registrations must not overwrite it), then drop the memo if it is
+  no longer needed. Verify with the repro, the utf8 fixture, frontier+smoke, then a wide run.
+- **Wide run of fix 22 is incomplete**: stopped at the user's request. `<cache>/runs/hopac-20260929-071704`
+  (`-Parallel 3`, Release = fix 22 only) reached 386 of ~1,154 jobs: ok 209, error 177, 0 timeouts, 0 crashes.
+  An earlier 1-worker attempt (`hopac-20260929-065121`, 246 jobs) was stopped to switch to parallel. Rerun:
+  `pwsh scripts/test.ps1 -Mode hopac -Suite examples,contracts -Native` (the default is now 3 workers here),
+  after rebuilding Release (it will then include the unfinished replay edits above: finish or revert them
+  first, or build fix 22 alone from a copy).
+- In-tree `samples/` outputs were rewritten by the hopac runs: restore with single-flight
+  (`pwsh scripts/test.ps1 -Suite frontier,smoke,examples,contracts -Native`) before committing.
+- The two single-flight `REGRESSED` contract rows of the last restore run
+  (`mega_omniledger_erp_kernel/negative_direct_marker_sync`,
+  `mega_spiral_proves_spiral_relative_consistency/negative_application_argument_function_branch_mismatch`)
+  are timeouts under load: compiled alone, both give the expected rejection in 7 s.
+- `scripts/upstream.py export ... --since <repo-ref>` exports only the edits made since a commit of this repo,
+  as the fork's files (README, "Upstream"); `--since cd17d19` gives the C closure fix for a pull request.
+- `scripts/build.ps1` stamps the staged core copy, so building an older file with `-CoreSource` (a backup)
+  is no longer a silent no-op.
 
 ## Open, in order
 
@@ -114,9 +228,9 @@ State at hand-off, and the open work in priority order. Details live in the lane
    `pwsh scripts/gear-dev.ps1 -Force` (~20 min at `-MaxNodes 2`), then
    `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke -Native`.
    Then continue the user's goal: iterate on the splitter/hopac until every sample compiles with hopac.
-4. **Hopac silent miscompiles** (`lanes/hopac/FRONTIER.md`, "Beyond smoke"): `tuple_mixed` and
-   `portable_composite` (tuple elements permuted across a join point, `method1(v3, v2, v1)`),
-   `native_managed_array_tail_recursion`. Then the ~25 build-budget stalls and the `EJP0035` closure branch.
+4. **Hopac**: replay repeating join point calls (above), then the build-budget stalls and the `EJP0035`
+   closure branch. (`tuple_mixed`, `portable_composite` and `native_managed_array_tail_recursion` were fixed
+   by fixes 18 and 19.)
 5. **Mutual tail recursion in the native backends**: self tail calls are loops; a strongly connected group
    of methods that tail-call each other still recurses (covered by a 1 GB / 256 MB stack for now). Merge
    each group into one looping function with a state tag.

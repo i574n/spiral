@@ -40,15 +40,13 @@ var
   v5: AnsiString;
   v6: Boolean;
   v7: AnsiString;
-  v8: Boolean;
-  v9: AnsiString;
-  v10: AnsiString;
-  v11: LongInt;
+  v8: AnsiString;
+  v9: LongInt;
+  v10: Boolean;
+  v11: AnsiChar;
   v12: Boolean;
   v13: AnsiChar;
   v14: Boolean;
-  v15: AnsiChar;
-  v16: Boolean;
 begin
   v0 := True;
   v1 := method0(v0);
@@ -56,20 +54,18 @@ begin
   v3 := method0(v2);
   v4 := True;
   v5 := method0(v4);
-  v6 := True;
-  v7 := method0(v6);
-  v8 := False;
-  v9 := method1(v8);
-  v10 := v7 + v9;
-  v11 := LongInt(Length(v10));
-  v12 := v11 = 6;
-  if v12 then begin
-      v13 := v10[0 + 1];
-      v14 := v13 = 's';
-      if v14 then begin
-          v15 := v10[5 + 1];
-          v16 := v15 = 'l';
-          if v16 then begin
+  v6 := False;
+  v7 := method1(v6);
+  v8 := v5 + v7;
+  v9 := LongInt(Length(v8));
+  v10 := v9 = 6;
+  if v10 then begin
+      v11 := v8[0 + 1];
+      v12 := v11 = 's';
+      if v12 then begin
+          v13 := v8[5 + 1];
+          v14 := v13 = 'l';
+          if v14 then begin
               Result := 0;
           end else begin
               Result := 1;

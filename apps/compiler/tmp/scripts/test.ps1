@@ -67,7 +67,14 @@ $mode = ConvertTo-SpiralMode $Mode
 # grace), and the host reports a stall as an error 7 s before the job timeout, so 20 s is the floor.
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $freshProcess = if ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
-if ($Parallel -le 0) { $Parallel = if ($mode -eq 'hopac') { 2 } else { [Math]::Max(1, [int]([Environment]::ProcessorCount / 3)) } }
+# Default workers from the machine: a hopac job keeps 2-3 cores busy (its own worker pool), a single-flight
+# job about one; each needs up to ~1.5 GB, so free memory caps both (a 2-worker run was once killed for it).
+if ($Parallel -le 0) {
+    $cpus = [Environment]::ProcessorCount
+    $byCpu = if ($mode -eq 'hopac') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }
+    $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
+    $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
+}
 if ($Bless -and $mode -ne 'single-flight') { throw '-Bless records the oracle baseline and is only valid in single-flight mode' }
 
 $dotnet = Resolve-SpiralDotnet

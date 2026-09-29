@@ -1,2 +1,2 @@
-let v0 : string = "exact-once-owner-ledger"
-v0
+let v1 : string = "exact-once-owner-ledger"
+v1

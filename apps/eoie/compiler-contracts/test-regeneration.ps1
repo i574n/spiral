@@ -81,7 +81,17 @@ try {
             $stderr = Join-Path $work "logs/$($row.Member).err"
             $env:SPIRAL_BUILD_BUDGET_MS = [string]([Math]::Max(1000, $timeoutMs - 3000))
             $watch = [Diagnostics.Stopwatch]::StartNew()
-            $proc = Start-Process -FilePath $dotnet -ArgumentList @($compiler, '--backend', 'Rust', $row.Input, $row.Output) -WorkingDirectory $work -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            # -WindowStyle is Windows-only. Linux pwsh rejects the parameter before any owner compiles.
+            $launch = @{
+                FilePath = $dotnet
+                ArgumentList = @($compiler, '--backend', 'Rust', $row.Input, $row.Output)
+                WorkingDirectory = $work
+                PassThru = $true
+                RedirectStandardOutput = $stdout
+                RedirectStandardError = $stderr
+            }
+            if ($IsWindows) { $launch.WindowStyle = 'Hidden' }
+            $proc = Start-Process @launch
             if (-not $proc.WaitForExit($timeoutMs)) {
                 try { $proc.Kill($true) } catch { try { $proc.Kill() } catch {} }
                 $null = $proc.WaitForExit(10000)

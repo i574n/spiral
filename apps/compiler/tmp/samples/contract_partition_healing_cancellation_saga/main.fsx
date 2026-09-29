@@ -1,2 +1,2 @@
-let v0 : string = "multihost-partition-healed"
-v0
+let v1 : string = "multihost-partition-healed"
+v1

@@ -1,2 +1,2 @@
-let v0 : string = "keyed-fanout-fanin"
-v0
+let v1 : string = "keyed-fanout-fanin"
+v1

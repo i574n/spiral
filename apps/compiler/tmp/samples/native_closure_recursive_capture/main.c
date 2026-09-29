@@ -97,13 +97,14 @@ void ClosureDecref0(Closure0 * x){
 }
 int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     UH0 * v0 = x->v0;
+    v0->refc++;
     ClosureDecref0(x);
     v0->refc++;
     
     int32_t v2;
     v2 = sum0(v0);
     
-    
+    UHDecref0(v0);
     int32_t v3;
     v3 = v2 + v1;
     

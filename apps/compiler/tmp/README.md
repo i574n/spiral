@@ -114,7 +114,16 @@ Sync through the fork, where git merges natively:
 python scripts/upstream.py status <fork> [ref]                # per section: lines differing from the fork's file
 python scripts/upstream.py import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
 python scripts/upstream.py export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
+python scripts/upstream.py export <fork> <base-ref> <out-dir> --since <repo-ref>
+                                  # only what changed here since <repo-ref>: a pull request's worth
 ```
+
+Plain `export` carries every difference, the compaction's renames included. For a pull request use
+`--since` with a commit of this repository from before the change: it takes the edits from that version of
+each section to the current one, applies them to the fork's file at `<base-ref>` and writes only the files
+that changed (for example `export <fork> a21845bb out --since cd17d19` gives the C closure fix in
+`CodegenC.fs`, among the other edits since then; drop the hunks that are merge plumbing, such as
+`codegenMemoTable` or `RefcDecrTable`, before opening the PR).
 
 It moves edits as normalized-line patches (a 3-way merge that ignores indentation, blank lines, the
 `/// ###` headings and module headers), so each side keeps its own formatting; an edit whose lines the
@@ -127,5 +136,9 @@ Carrying a file into its section (and back) is mechanical as long as shared sect
 `#if SPIRAL_CORE_HOPAC` (hopac differences live in whole hopac-only sections or pairs, see `AGENTS.md`): the
 section's single-flight text is the fork file with the compaction's indent and headings. One file costs
 nothing extra here; only keeping upstream's multi-file layout would make `git merge` work without that
-section-to-file step. Before the first sync, record the fork commit the sections correspond to (a
-per-section 3-way merge needs that base).
+section-to-file step.
+
+**Sync base: fork commit `a21845bb` (2025-11-26).** Found by scoring the 726 fork commits that touch the
+compiler against the sections (normalized line overlap, then ordered matching); the fork's current `master`
+(`572a36be`) scores the same, since its compiler files have not changed since. Use it as `<old-ref>` for the
+first `import` and as `<base-ref>` for the first `export`, then move it forward with each sync.

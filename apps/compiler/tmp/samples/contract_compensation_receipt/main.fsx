@@ -1,2 +1,2 @@
-let v2 : string = "compensation-receipt"
-v2
+let v0 : string = "compensation-receipt"
+v0

@@ -116,35 +116,35 @@ String * method1(int32_t v0, String * v1){
     } else {
         
         
-        int32_t v6;
-        v6 = v2 % 2l;
+        int32_t v5;
+        v5 = v2 % 2l;
         
         
-        bool v7;
-        v7 = v6 == 0l;
+        bool v6;
+        v6 = v5 == 0l;
         
         
-        String * v10;
-        if (v7){
+        String * v9;
+        if (v6){
             
             
-            String * v8;
-            v8 = StringLit(3, "ab");
+            String * v7;
+            v7 = StringLit(3, "ab");
             
             
-            v10 = v8;
+            v9 = v7;
         } else {
             
             
-            String * v9;
-            v9 = StringLit(2, "c");
+            String * v8;
+            v8 = StringLit(2, "c");
             
             
-            v10 = v9;
+            v9 = v8;
         }
         
         
-        return method2(v2, v3, v10);
+        return method2(v2, v3, v9);
     }
 }
 String * method0(){

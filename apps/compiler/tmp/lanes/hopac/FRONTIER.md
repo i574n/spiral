@@ -180,6 +180,51 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
     are left to the direct evaluator, as the branches are. Reduced case and fix verified; nested reads in
     other ops (`index a 0 + 1`) were never affected.
 
+21. **Compiler stack overflows inside the BigStack spawn.** Some contracts killed the compiler (exit
+    0xC00000FD) in about 1 run of 3: `evalCoreWithBigStack` moves deep evaluation to a fresh big-stack
+    thread when `EnsureSufficientExecutionStack` says the stack is short, but that probe only guarantees
+    ~128 KB, and the spawn itself (a SHA-based `ContentDigest.ofText`, formatting) plus the parent's join
+    loop sometimes needed more; the overflows were on Hopac scheduler workers. `BigStack.StackBudget` now
+    measures the stack left by address, with the thread's exact limits from `GetCurrentThreadStackLimits`
+    on Windows (any thread, Hopac workers included; threads of known size record their start elsewhere),
+    and spawns once less than 2 MB (or a quarter of a smaller stack) is left. The three crash-prone
+    contracts went from 1-2 crashes per 5-job run to none in 5 runs; frontier and smoke unchanged.
+
+22. **Method bodies lost their statements after a cooperative yield.** `native_cube_direct` emitted
+    `int32_t method0(){ return v1; }` and `native_string_utf8_validate_source` emitted
+    `utf8_scalar_at_byte_offset1` as `return v25;` (hopac's residual 5 KB against 28 KB, the
+    `WRITE_ABORT`s below). A declared method body (`JpVerifyDeclaredMethodBody`) ran in slices: after 256
+    operations (96 for invocation-volatile effects), or every 64 (24) bindings of one `let` chain or apply
+    spine, it yielded and was resumed later from a saved continuation. Resume is unsound in both of its
+    styles:
+    - *direct resume* continues in the environment the continuation saved, and so in the earlier slice's
+      block (`LangEnv.seq`), while `run ()` reads the body back from the new slice's fresh block: the
+      statements are lost and only the returned variable survives;
+    - *prefix replay* re-evaluates the body from its root and re-emits the prefix. Sharing the block
+      across slices (tried: one root block per work job) fixes direct resume but repeats the prefix here,
+      a silent miscompile once a statement has an effect, so it was not kept.
+
+    Neither fix 18, 19 nor 20 caused it (reverting all three, or building the pre-merge core, reproduces
+    it); it was hidden while cube stalled. Declared bodies no longer time-slice: the default budget is
+    2^24 operations with a checkpoint every 2^22 bindings. Both fixtures now match single-flight (cube
+    byte for byte; utf8 exits 0, and its method bodies are identical). The resume path is kept, not
+    fixed; `SPIRAL_JP_SLICE_OPS=<max>,<interval>` brings budgets back to reproduce its bugs:
+    `SPIRAL_JP_SLICE_OPS=128,32` makes `native_string_utf8_validate_source` repeat a prefix, and
+    `64,16` makes `native_cube_direct` stall.
+
+Wide run after fixes 18-20 (2026-09-29, `-Suite examples,contracts -Native -Parallel 1`): examples 413/461
+parity, contracts 585/607, native 7 build failures (21 before), 0 `DISAGREE`; the three fixtures above and
+`managed_string_codepoints` (Rust, Delphi) now pass. New: 4 compiler stack overflows (exit 0xC00000FD) in
+contract and mega sub-packages (fix 21), 4 `WRITE_ABORT`s on `native_string_utf8_*` (hopac's residual 5 KB
+against 28 KB) and `native_cube_direct`, which used to stall, finishing with statements missing (both fix
+22).
+
+**Open: the root evaluation repeats awaited method calls.** In `native_string_utf8_validate_source`, hopac's
+`main` calls `utf8_validate_loop0` seven times where single-flight calls it twice, and uses only the last
+result of each argument. The answer is right because the calls are pure; with an effect it would be a silent
+miscompile. It happens with or without fix 22 and with 1 or 8 workers, so it is the root evaluator's replay
+re-emitting a `let` whose value is a join point call, not the method-body slicing.
+
 Host (`compiler/host/Program.fs`): `SPIRAL_HOPAC_WORKERS` / `SPIRAL_DOP` determinism knobs, and an
 absolute build deadline (`SPIRAL_BUILD_DEADLINE_MS`, 3 s before the job timeout).
 

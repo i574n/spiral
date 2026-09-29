@@ -36,10 +36,10 @@ v3.[int 0] <- 5
 v3.[int 1] <- 6
 v1.[int 0] <- v2
 v1.[int 1] <- v3
-let v5 : US0 = US0_1(v1)
-let v6 : int32 = method0(v5)
-let v7 : US0 = US0_1(v1)
-let v8 : int32 = method1(v7)
-let v9 : int32 = v8 + v6
-let v10 : int32 = v9 - 19
-v10
+let v4 : US0 = US0_1(v1)
+let v5 : int32 = method0(v4)
+let v6 : US0 = US0_1(v1)
+let v7 : int32 = method1(v6)
+let v8 : int32 = v7 + v5
+let v9 : int32 = v8 - 19
+v9

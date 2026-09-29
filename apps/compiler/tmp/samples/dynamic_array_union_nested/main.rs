@@ -48,10 +48,10 @@ fn spiral_main() -> i32 {
     v3.clone().borrow_mut()[1i32 as usize] = 6i32;
     v1.clone().borrow_mut()[0i32 as usize] = v2.clone();
     v1.clone().borrow_mut()[1i32 as usize] = v3.clone();
-    let mut v5: US0 = US0::US0_1(v1.clone());
-    let mut v6: i32 = method0(v5.clone());
-    let mut v7: i32 = v6 - 20i32;
-    v7
+    let mut v4: US0 = US0::US0_1(v1.clone());
+    let mut v5: i32 = method0(v4.clone());
+    let mut v6: i32 = v5 - 20i32;
+    v6
 }
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

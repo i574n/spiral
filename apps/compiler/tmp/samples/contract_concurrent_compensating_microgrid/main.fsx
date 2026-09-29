@@ -1,2 +1,2 @@
-let v0 : string = "concurrent-compensating-microgrid"
-v0
+let v1 : string = "concurrent-compensating-microgrid"
+v1

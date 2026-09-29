@@ -19,7 +19,6 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 3i32;
     let mut v1: Rc<RefCell<Vec<i32>>> = method0(v0);
     let mut v2: i32 = 2i32;
-    let mut v3: Rc<RefCell<Vec<i32>>> = method0(v0);
     method1(v1.clone(), v2)
 }
 fn main() {

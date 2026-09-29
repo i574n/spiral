@@ -88,6 +88,7 @@ void ClosureDecref0(Closure0 * x){
 }
 US0 ClosureMethod0(Closure0 * x, int32_t v0){
     
+    
     ClosureDecref0(x);
     
     

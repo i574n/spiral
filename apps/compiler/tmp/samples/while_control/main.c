@@ -23,19 +23,19 @@ int32_t main(){
     while (method_while0()){
         
         
-        int32_t v2;
-        v2 = v0 + 1l;
+        int32_t v3;
+        v3 = v0 + 1l;
         
         
         
-        v0 = v2;
+        v0 = v3;
         
         
-        bool v3;
-        v3 = v0 < 3l;
+        bool v4;
+        v4 = v0 < 3l;
         
         
-        if (v3){
+        if (v4){
             
             
             
@@ -46,11 +46,11 @@ int32_t main(){
         } else {
             
             
-            bool v4;
-            v4 = v0 >= 6l;
+            bool v5;
+            v5 = v0 >= 6l;
             
             
-            if (v4){
+            if (v5){
                 
                 
                 
@@ -61,12 +61,12 @@ int32_t main(){
             } else {
                 
                 
-                int32_t v5;
-                v5 = v1 + v0;
+                int32_t v6;
+                v6 = v1 + v0;
                 
                 
                 
-                v1 = v5;
+                v1 = v6;
                 
                 
                 
@@ -75,9 +75,9 @@ int32_t main(){
     }
     
     
-    int32_t v6;
-    v6 = v1 - 12l;
+    int32_t v7;
+    v7 = v1 - 12l;
     
     
-    return v6;
+    return v7;
 }

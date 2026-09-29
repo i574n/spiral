@@ -33,6 +33,7 @@ void ClosureDecref0(Closure0 * x){
 }
 Tuple0 ClosureMethod0(Closure0 * x, int32_t v1, int32_t v2){
     int32_t v0 = x->v0;
+    
     ClosureDecref0(x);
     
     

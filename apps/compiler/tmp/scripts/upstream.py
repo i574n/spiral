@@ -3,6 +3,9 @@
     python upstream.py status <fork> [ref]                  per section: lines that differ from the fork's file
     python upstream.py import <fork> <old-ref> <new-ref>     carry the fork's edits old->new into the sections
     python upstream.py export <fork> <base-ref> <out-dir>    write the fork's files with the sections' edits
+    python upstream.py export <fork> <base-ref> <out-dir> --since <ref>
+                                                             only the edits made since <ref> of this repo
+                                                             (a pull request's worth), not the compaction's
 
 <fork> is a clone of the fork (polyglot/deps/The-Spiral-Language); refs are git refs in it. A section
 `/// ## Name` maps to `The Spiral Language 2/Name.fs` (`SignalRSupervisor` to `Supervisor.fs`); sections
@@ -165,14 +168,49 @@ def import_(fork, old_ref, new_ref):
         file.write("\n".join(lines))
 
 
-def export(fork, base_ref, out_dir):
+def core_at(ref):
+    """The merged file at a git ref of this repository."""
+    root = git(os.path.dirname(CORE), "rev-parse", "--show-toplevel").strip()
+    path = os.path.relpath(CORE, root).replace(os.sep, "/")
+    text = git(root, "show", f"{ref}:{path}")
+    if text is None:
+        raise SystemExit(f"{path} not found at {ref}")
+    return text.split("\n")
+
+
+def indent_shift(section, fork_lines):
+    """How much deeper the section's code sits than the fork's (the most common difference on equal lines)."""
+    s, f = normalized(section), normalized(fork_lines)
+    counts = {}
+    for block in difflib.SequenceMatcher(None, [k for k, _ in s], [k for k, _ in f], autojunk=False).get_matching_blocks():
+        for offset in range(block.size):
+            a, b = section[s[block.a + offset][1]], fork_lines[f[block.b + offset][1]]
+            delta = (len(a) - len(a.lstrip(" "))) - (len(b) - len(b.lstrip(" ")))
+            counts[delta] = counts.get(delta, 0) + 1
+    return max(0, max(counts, key=counts.get)) if counts else 0
+
+
+def export(fork, base_ref, out_dir, since=None):
     lines = load_core()
+    old_spans, old_lines = (sections(core_at(since)), core_at(since)) if since else (None, None)
     for name, (start, end) in sections(lines).items():
         base = fork_file(fork, base_ref, name)
         if base is None:
             continue
         section = [dedent(line) for line in lines[start:end]]
-        result, conflicts = transfer(base, section, base, lambda line: line)
+        if since:
+            # Only the edits made since `since`, not the compaction's own differences (renames, layout).
+            if name not in old_spans:
+                print(f"{name}: not in the core at {since}; skipped")
+                continue
+            old_start, old_end = old_spans[name]
+            old = [dedent(line) for line in old_lines[old_start:old_end]]
+            if [k for k, _ in normalized(old)] == [k for k, _ in normalized(section)]:
+                continue
+            shift = indent_shift(old, base)
+            result, conflicts = transfer(old, section, base, lambda line: line[shift:] if line[:shift].strip() == "" else line.lstrip())
+        else:
+            result, conflicts = transfer(base, section, base, lambda line: line)
         for conflict in conflicts:
             print(f"{name}: CONFLICT {conflict}")
         path = os.path.join(out_dir, DIRECTORY, FILE_OF.get(name, name + ".fs"))
@@ -191,6 +229,8 @@ def main():
         import_(args[1], args[2], args[3])
     elif len(args) == 4 and args[0] == "export":
         export(args[1], args[2], args[3])
+    elif len(args) == 6 and args[0] == "export" and args[4] == "--since":
+        export(args[1], args[2], args[3], args[5])
     else:
         raise SystemExit(__doc__)
 

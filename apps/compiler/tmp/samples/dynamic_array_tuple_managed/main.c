@@ -112,7 +112,7 @@ int32_t method4(Array0 * v0, Array0 * v1){
 int32_t method3(Array0 * v0, Array0 * v1){
     
     
-    return method4(v0, v1);
+    return method4(v1, v0);
 }
 int32_t method6(Array0 * v0){
     
@@ -152,7 +152,7 @@ int32_t main(){
     v3->refc++; v4->refc++;
     
     int32_t v5;
-    v5 = method3(v4, v3);
+    v5 = method3(v3, v4);
     v1->refc++;
     ArrayDecref0(v3); ArrayDecref0(v4);
     int32_t v6;

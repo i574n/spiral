@@ -113,26 +113,26 @@ int32_t score0(UH0 * v0){
 int32_t main(){
     
     
-    UH0 * v0;
-    v0 = UH0_0();
+    String * v0;
+    v0 = StringLit(3, "ab");
     
     
     String * v1;
     v1 = StringLit(4, "qwe");
-    v0->refc += 2; v1->refc++;
+    
     
     UH0 * v2;
-    v2 = UH0_1(v1, v0, v0);
+    v2 = UH0_0();
+    v1->refc++; v2->refc += 2;
     
-    UHDecref0(v0);
-    String * v3;
-    v3 = StringLit(3, "ab");
-    v2->refc += 2; v3->refc++;
-    
-    UH0 * v4;
-    v4 = UH0_1(v3, v2, v2);
-    v4->refc++;
+    UH0 * v3;
+    v3 = UH0_1(v1, v2, v2);
+    v0->refc++; v3->refc += 2;
     UHDecref0(v2);
+    UH0 * v4;
+    v4 = UH0_1(v0, v3, v3);
+    v4->refc++;
+    UHDecref0(v3);
     int32_t v5;
     v5 = score0(v4);
     
@@ -143,12 +143,12 @@ int32_t main(){
     
     UH0 * v7;
     v7 = UH0_1(v1, v6, v6);
-    v3->refc++; v7->refc += 2;
+    v0->refc++; v7->refc += 2;
     StringDecref(v1); UHDecref0(v6);
     UH0 * v8;
-    v8 = UH0_1(v3, v7, v7);
+    v8 = UH0_1(v0, v7, v7);
     v8->refc++;
-    StringDecref(v3); UHDecref0(v7);
+    StringDecref(v0); UHDecref0(v7);
     int32_t v9;
     v9 = score0(v8);
     

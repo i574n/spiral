@@ -6,7 +6,8 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let length = bytes.len() as i64;
     if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }
     if to < from { return Rc::<str>::from(""); }
-    match std::str::from_utf8(&bytes[from as usize..(to + 1) as usize]) { Ok(slice) => Rc::<str>::from(slice), Err(_) => std::process::abort() }
+    let slice = &bytes[from as usize..(to + 1) as usize];
+    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
 fn method0(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = string_slice(&v0.clone(), 1i32 as i64, 3i32 as i64);
@@ -15,17 +16,15 @@ fn method0(mut v0: Rc<str>) -> Rc<str> {
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = Rc::<str>::from("alpha");
     let mut v1: Rc<str> = method0(v0.clone());
-    let mut v2: Rc<str> = method0(v0.clone());
-    let mut v3: Rc<str> = method0(v0.clone());
-    let mut v4: i32 = (v3.clone().len() as i32);
-    let mut v5: bool = v4 == 3i32;
-    if v5 {
-        let mut v6: u8 = v3.clone().as_bytes()[0i32 as usize];
-        let mut v7: bool = v6 == b'l';
-        if v7 {
-            let mut v8: u8 = v3.clone().as_bytes()[2i32 as usize];
-            let mut v9: bool = v8 == b'h';
-            if v9 {
+    let mut v2: i32 = (v1.clone().len() as i32);
+    let mut v3: bool = v2 == 3i32;
+    if v3 {
+        let mut v4: u8 = v1.clone().as_bytes()[0i32 as usize];
+        let mut v5: bool = v4 == b'l';
+        if v5 {
+            let mut v6: u8 = v1.clone().as_bytes()[2i32 as usize];
+            let mut v7: bool = v6 == b'h';
+            if v7 {
                 0i32
             } else {
                 1i32

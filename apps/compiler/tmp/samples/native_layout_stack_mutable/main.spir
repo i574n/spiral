@@ -1,7 +1,0 @@
-inl main () =
-    inl a = !!!!LayoutToStackMutable({q=5i32; w=6i32})
-    a.q <- 7i32
-    inl b = !!!!LayoutIndex(a)
-    a.w <- 8i32
-    inl c = !!!!LayoutIndex(a)
-    !!!!Add(b.q,c.w)

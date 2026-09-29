@@ -61,47 +61,39 @@ int32_t main(){
     
     String * v1;
     v1 = middle0(v0);
-    v0->refc++;
-    StringDecref(v1);
-    String * v2;
-    v2 = middle0(v0);
-    v0->refc++;
-    StringDecref(v2);
-    String * v3;
-    v3 = middle0(v0);
     
     StringDecref(v0);
-    int32_t v4;
-    v4 = v3->len-1;
+    int32_t v2;
+    v2 = v1->len-1;
     
     
-    bool v5;
-    v5 = v4 == 3l;
+    bool v3;
+    v3 = v2 == 3l;
     
     
-    if (v5){
+    if (v3){
         
         
-        char v6;
-        v6 = v3->ptr[0l];
+        char v4;
+        v4 = v1->ptr[0l];
         
         
-        bool v7;
-        v7 = v6 == 'l';
+        bool v5;
+        v5 = v4 == 'l';
         
         
-        if (v7){
+        if (v5){
             
             
-            char v8;
-            v8 = v3->ptr[2l];
+            char v6;
+            v6 = v1->ptr[2l];
             
-            StringDecref(v3);
-            bool v9;
-            v9 = v8 == 'h';
+            StringDecref(v1);
+            bool v7;
+            v7 = v6 == 'h';
             
             
-            if (v9){
+            if (v7){
                 
                 
                 return 0l;
@@ -112,12 +104,12 @@ int32_t main(){
             }
         } else {
             
-            StringDecref(v3);
+            StringDecref(v1);
             return 2l;
         }
     } else {
         
-        StringDecref(v3);
+        StringDecref(v1);
         return 3l;
     }
 }

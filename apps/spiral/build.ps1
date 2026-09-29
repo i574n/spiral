@@ -20,7 +20,7 @@ $projectName = "spiral"
 if (!$SkipPreBuild -and !$SkipFsx) {
     if (!$fast -and !$SkipNotebook) {
         $workingDirectory = ResolveLink (GetFullPath "../../deps/polyglot")
-        { . ../../workspace/target/release/spiral$(_exe) dib --path "$ResolvedScriptDir/$projectName.dib" --working-directory $workingDirectory --retries 3 } | Invoke-Block
+        # { . ../../workspace/target/release/spiral$(_exe) dib --path "$ResolvedScriptDir/$projectName.dib" --working-directory $workingDirectory --retries 3 } | Invoke-Block
     }
 
     { . ../../workspace/target/release/spiral$(_exe) dib-export "$ResolvedScriptDir/$projectName.dib" spi } | Invoke-Block

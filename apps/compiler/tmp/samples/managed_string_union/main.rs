@@ -16,14 +16,14 @@ impl US0 {
 }
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
+        US0::US0_1(v3) => { // Number
+            let mut v3: i32 = v3.clone();
+            v3
+        }
         US0::US0_0(v1) => { // Text
             let mut v1: Rc<str> = v1.clone();
             let mut v2: i32 = (v1.clone().len() as i32);
             v2
-        }
-        US0::US0_1(v3) => { // Number
-            let mut v3: i32 = v3.clone();
-            v3
         }
         _ => unreachable!(),
     }

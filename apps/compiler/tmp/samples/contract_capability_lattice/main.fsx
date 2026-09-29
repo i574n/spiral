@@ -1,2 +1,2 @@
-let v1 : string = "capability-lattice"
-v1
+let v0 : string = "capability-lattice"
+v0

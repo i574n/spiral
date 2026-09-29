@@ -31,7 +31,12 @@ foreach ($m in $modes) {
     # only refreshed when the content changes, so unchanged cores keep their incremental build.
     $staged = Join-Path $cache "core-src/$m/spiral_compiler.fs"
     New-Item -ItemType Directory -Force (Split-Path $staged) | Out-Null
-    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne (Get-FileSha256 $core)) { Copy-Item -LiteralPath $core -Destination $staged -Force }
+    # Copy-Item keeps the source's write time, and MSBuild compares times: an older core (a backup) would
+    # look up to date, so the copy is stamped now.
+    if (-not (Test-Path $staged) -or (Get-FileSha256 $staged) -ne (Get-FileSha256 $core)) {
+        Copy-Item -LiteralPath $core -Destination $staged -Force
+        (Get-Item -LiteralPath $staged).LastWriteTime = Get-Date
+    }
     $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", '-nologo', '-v:m')
     Write-Host "== building $m ($Configuration) from $core"
     $sw = [Diagnostics.Stopwatch]::StartNew()

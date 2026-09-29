@@ -108,8 +108,6 @@
             'samples/native_float_nan_is'
             'samples/native_float_pow_pi'
             'samples/native_float_sqrt'
-            'samples/native_fptr_basic'
-            'samples/native_fptr_reuse'
             'samples/native_layout_heap'
             'samples/native_managed_array_tail_recursion'
             'samples/native_managed_scc_tail_recursion'
@@ -233,9 +231,6 @@
             'samples/mega_omniledger_erp_kernel'
             'samples/mega_spiral_proves_spiral_relative_consistency'
             'samples/mega_zeta_structural_laboratory'
-        )
-        'Rust,Delphi' = @(
-            'samples/native_layout_stack_mutable'
         )
         'C,Rust' = @(
             'samples/rust_emit_expr_macro'

@@ -61,19 +61,11 @@ int32_t main(){
     
     String * v1;
     v1 = invalid_middle0(v0);
-    v0->refc++;
-    StringDecref(v1);
-    String * v2;
-    v2 = invalid_middle0(v0);
-    v0->refc++;
-    StringDecref(v2);
-    String * v3;
-    v3 = invalid_middle0(v0);
     
     StringDecref(v0);
-    int32_t v4;
-    v4 = v3->len-1;
+    int32_t v2;
+    v2 = v1->len-1;
     
-    StringDecref(v3);
-    return v4;
+    StringDecref(v1);
+    return v2;
 }
