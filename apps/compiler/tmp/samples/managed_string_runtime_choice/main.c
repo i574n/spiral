@@ -67,44 +67,84 @@ int32_t main(){
     
     
     bool v0;
-    v0 = true;
+    v0 = false;
     
     
     String * v1;
     v1 = choose0(v0);
     
-    
+    StringDecref(v1);
     bool v2;
-    v2 = false;
+    v2 = true;
     
     
     String * v3;
     v3 = choose0(v2);
-    v1->refc++;
-    
-    int32_t v4;
-    v4 = measure1(v1);
-    v1->refc++;
-    
-    int32_t v5;
-    v5 = measure1(v1);
-    
-    StringDecref(v1);
-    int32_t v6;
-    v6 = v4 + v5;
-    v3->refc++;
-    
-    int32_t v7;
-    v7 = measure1(v3);
     
     StringDecref(v3);
-    int32_t v8;
-    v8 = v6 + v7;
+    bool v4;
+    v4 = true;
     
     
-    int32_t v9;
-    v9 = v8 - 14l;
+    String * v5;
+    v5 = choose0(v4);
+    
+    StringDecref(v5);
+    bool v6;
+    v6 = false;
     
     
-    return v9;
+    String * v7;
+    v7 = choose0(v6);
+    
+    StringDecref(v7);
+    bool v8;
+    v8 = false;
+    
+    
+    String * v9;
+    v9 = choose0(v8);
+    
+    StringDecref(v9);
+    bool v10;
+    v10 = true;
+    
+    
+    String * v11;
+    v11 = choose0(v10);
+    
+    
+    bool v12;
+    v12 = false;
+    
+    
+    String * v13;
+    v13 = choose0(v12);
+    v11->refc++;
+    
+    int32_t v14;
+    v14 = measure1(v11);
+    v11->refc++;
+    
+    int32_t v15;
+    v15 = measure1(v11);
+    
+    StringDecref(v11);
+    int32_t v16;
+    v16 = v14 + v15;
+    v13->refc++;
+    
+    int32_t v17;
+    v17 = measure1(v13);
+    
+    StringDecref(v13);
+    int32_t v18;
+    v18 = v16 + v17;
+    
+    
+    int32_t v19;
+    v19 = v18 - 14l;
+    
+    
+    return v19;
 }

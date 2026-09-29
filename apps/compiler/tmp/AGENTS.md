@@ -7,7 +7,7 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 | | single-flight | hopac |
 |---|---|---|
 | What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: full parity on frontier+smoke, ~92% on examples+contracts |
-| Source of truth | `apps/compiler/spiral_compiler.fs` (the repo's main core) | `compiler/cores/hopac/spiral_compiler.fs` |
+| Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_HOPAC` side of each section pair |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
 | Known wall | `apps/spiral` overflows the stack | ~27 partial-evaluation stalls, closures created in runtime `if` branches (`EJP0035`), and an order-dependent parse of backtick type application (see `lanes/hopac/FRONTIER.md`). Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |
@@ -94,10 +94,18 @@ commit the outputs the compiler writes next to it. Changes to the single-flight 
   `SPIRAL_CORE_SINGLE_FLIGHT` / `SPIRAL_CORE_HOPAC` (see `directProjectCompileFsharp`).
 - This directory holds sources, fixtures and docs only. Build output, toolchains, native binaries, run logs
   and the flat dependency directory stay in the cache directory; `.gitignore` catches in-tree builds.
-- There is one copy of each core: single-flight is `apps/compiler/spiral_compiler.fs`, hopac is
-  `compiler/cores/hopac/spiral_compiler.fs`. Keep LF line endings (never `WriteAllLines` on either).
-- Porting between cores: both descend from commit `12f52a1`; diff a core against
-  `git show 12f52a1:apps/compiler/spiral_compiler.fs` to see its own changes (`lanes/hopac/FRONTIER.md`).
+- Both cores are one file, `apps/compiler/spiral_compiler.fs` (merged 2026-09-28). It is split into sections
+  at its `/// ## Name` headers, one per upstream module. A section both cores share appears once; a section
+  that differs appears whole, twice:
+  `#if SPIRAL_CORE_HOPAC` (hopac's) `#else` (single-flight's) `#endif`, markers at column 0. The core project
+  defines `SPIRAL_CORE_HOPAC` in hopac mode; `Get-SpiralCoreProjection` (scripts/env.ps1) writes one core
+  without the pairs, which is what the splitter reads. Keep LF line endings (never `WriteAllLines`).
+- Edit a shared section once, for both cores. Unifying a pair (one section serving both) is the way to stop
+  copying changes between cores: make the shared text single-flight's (the upstream-facing view), and move
+  what hopac needs into hooks defined in an earlier hopac-only section. Never put `#if` inside a section
+  that maps to an upstream file: the upstream sync replaces those sections wholesale (README, "Upstream").
+- Verify a change to a pair or a shared section with both builds (`build.ps1 -Mode single-flight` and
+  `-Mode hopac`) and each lane's tests.
 
 ## Promotion criterion
 

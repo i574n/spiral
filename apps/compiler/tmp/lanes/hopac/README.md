@@ -1,6 +1,6 @@
 # Hopac lane
 
-The Hopac core (`compiler/cores/hopac/spiral_compiler.fs`) is the parallel evolution of the Spiral
+The Hopac core (the `#if SPIRAL_CORE_HOPAC` side of `apps/compiler/spiral_compiler.fs`) is the parallel evolution of the Spiral
 compiler. It becomes the main core (`apps/compiler/spiral_compiler.fs`) once it meets the promotion
 criterion in `AGENTS.md`; until then single-flight is the main core and the oracle.
 

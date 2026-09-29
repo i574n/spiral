@@ -126,8 +126,9 @@ A body-only edit in `term_core` (the `peval` gear, the largest), measured on the
 | host (up to date, gears copied) | 1 s |
 | **total** | **92 s** |
 
-For comparison, the monolithic hopac build takes 206 s. A renumbering edit rebuilds most of the 141 gears
-through MSBuild instead, roughly a full build: 15-30 min at `-MaxNodes 2`.
+For comparison, the monolithic hopac build takes 206 s. Adding or removing declarations no longer
+renumbers anything (see "Stable gears across emissions"); only `-Full`, which re-plans from scratch,
+rebuilds most gears through MSBuild, roughly 15-30 min at `-MaxNodes 2`.
 
 F# reference assemblies are not stable across body edits: one changed string literal rewrote 1.67 MB of
 a 2.8 MB reference assembly, because the metadata heaps shift and the MVID follows the whole compilation.
@@ -175,10 +176,54 @@ fixed:
 - One core function (`terminalFlowFairnessReleaseBasisRef`) had its inline SRTP kind inferred only from a
   later use in the same file; split into another part it defaulted to `obj` (FS0071). It is annotated.
 
-Adding or removing a top-level declaration still renumbers every later part and costs about a full
-build. gear-dev refuses to start one: past 8 dirty gears it stops before syncing anything, prints the
-estimate, and `-Force` goes ahead. For such edits the monolith (`scripts/build.ps1 -Mode hopac`, ~4 min)
-is the faster check.
+## Stable gears across emissions (2026-09-28)
+
+Adding a top-level declaration used to renumber every later part (a part number was the shard's position
+in source order) and, through the greedy timeline packing, reshape most gears downstream: between two
+plans of the hopac core, 1,211 of the 1,232 changed parts were only renumbered, and 93 of 138 gears would
+have rebuilt. Stable renaming alone would not have helped, since 86 gears had also changed membership.
+
+`spiral-split gears` now takes the previous emission's anchors (`SPIRAL_GEAR_ANCHORS=<anchors.tsv>`; gear-dev
+keeps them in `<cache>/gear-dev/<mode>/anchors.tsv`) and (`spiral-split-gears/src/gear_anchors.rs`):
+- **reuses the previous partition** instead of packing: each component returns to its previous gear, a new
+  component joins the gear of its source-order predecessor, and gears an edit made mutually dependent are
+  merged (so only those rebuild); identity and series fusion still run afterwards;
+- **keeps part and gear numbers**: a final pass renames `PartNNNN`/`GearNNNN` in every emitted file to the
+  previous numbers (fresh numbers above them for new shards and gears), and sorts `ProjectReference` runs
+  so an unchanged gear project stays byte-identical;
+- writes `anchors.tsv`: every declaration in source order with its final part and gear. A declaration's
+  key is its module, `/// ###` heading, defined names and occurrence; keying on module and heading alone
+  (most declarations have no heading) made one added declaration shift the key of every later one.
+
+Measured on the hopac core with one top-level declaration added: **2 of 138 gears** dirty (6 changed
+files), against 93 before. Part numbers no longer follow source order, so anything that needs the order
+reads `anchors.tsv` (gear-dev builds the host's `open` list from it). The numeric shard and gear columns
+of the TSV sidecars (`parts.tsv`, `gears.tsv`, ...) keep planning ids. The packing only gets revisited by
+`gear-dev -Full`, which drops the anchors and re-plans from scratch, so run it when many edits have
+accumulated (new code piles into its neighbours' gears). `SPIRAL_GEAR_ANCHOR_DEBUG=1` prints the partition
+size and any cycle merges.
+
+gear-dev still stops past 8 dirty gears (print the estimate, `-Force` goes ahead); with anchors that now
+means a genuinely wide edit, or the first emission after `-Full`.
+
+**Surface changes.** A stable plan was not enough on its own: the first real run with one added `let`
+changed 6 files and 1 gear, but rebuilt **75 gears (1,039 s)**, because the gear's IL surface changed and
+gear-dev rebuilt every dependent. gear-dev now keeps each gear's surface description
+(`.out/surface/<gear>.surface`, one line per type and per type-qualified member) and classifies a change:
+- *grew* (every old line still present): dependents built against the old surface still bind to all they
+  use, so only the surface copy (for the host) is refreshed;
+- *changed*: the names it lost (removed or altered types and members) are checked against each
+  dependent's compiled assembly (`TypeReferences` by full name, `MemberReferences` by name); only
+  dependents that reference one rebuild. Name-only matching over-rebuilds on a collision, never under.
+
+Measured on the hopac core (2026-09-28), the whole `gear-dev` run including emission and host:
+
+| edit | gears built | total |
+|---|---:|---:|
+| add one top-level `let` (before the surface rules) | 75 | 1,056 s |
+| add one top-level `let` | 1 | **92 s** |
+| remove two top-level `let`s | 2 | **103 s** |
+| the monolith (`scripts/build.ps1 -Mode hopac`), for comparison | - | ~190 s |
 
 ## Commands
 
@@ -186,12 +231,13 @@ is the faster check.
 pwsh scripts/build-splitter.ps1                       # builds spiral-split into <cache>/splitter-target
 pwsh scripts/build-splitter.ps1 -Test                 # cargo test --workspace
 $split = "<cache>/splitter-target/release/spiral-split"
-& $split analyze compiler/cores/hopac/spiral_compiler.fs
-& $split gears compiler/cores/hopac/spiral_compiler.fs <cache>/gears-hopac --threads 8
+. scripts/env.ps1; $core = Get-SpiralCoreProjection hopac "<cache>/hopac-core.fs"   # one core, no section pairs
+& $split analyze $core
+& $split gears $core <cache>/gears-hopac --threads 8
 & $split gear-build <cache>/gears-hopac --dotnet <dotnet> --threads 4
-& $split bench compiler/cores/hopac/spiral_compiler.fs     # shard metrics, incl. critical paths
-& $split chain compiler/cores/hopac/spiral_compiler.fs     # the heaviest declaration and shard chains
-& $split gear-bench compiler/cores/hopac/spiral_compiler.fs  # gear plan shape, no emission
+& $split bench $core     # shard metrics, incl. critical paths
+& $split chain $core     # the heaviest declaration and shard chains
+& $split gear-bench $core  # gear plan shape, no emission
 pwsh scripts/bench-split.ps1                          # time monolith vs split single-project builds
 pwsh scripts/gear-dev.ps1 [-Mode hopac] [-Full] [-Force] [-MaxNodes 2]   # the edit loop, see above
 ```

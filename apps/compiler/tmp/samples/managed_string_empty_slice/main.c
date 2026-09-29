@@ -88,95 +88,107 @@ int32_t main(){
     String * v1;
     v1 = empty_middle0(v0);
     v0->refc++;
-    
+    StringDecref(v1);
     String * v2;
-    v2 = empty_end1(v0);
+    v2 = empty_middle0(v0);
+    v0->refc++;
+    StringDecref(v2);
+    String * v3;
+    v3 = empty_middle0(v0);
+    v0->refc++;
+    StringDecref(v3);
+    String * v4;
+    v4 = empty_middle0(v0);
+    v0->refc++;
+    
+    String * v5;
+    v5 = empty_end1(v0);
     
     StringDecref(v0);
-    String * v3;
-    v3 = StringLit(1, "");
-    v3->refc++;
-    
-    String * v4;
-    v4 = empty_source2(v3);
-    
-    StringDecref(v3);
-    String * v5;
-    v5 = StringConcat(v1, v2);
-    
-    
     String * v6;
-    v6 = StringConcat(v4, StringLit(3, "ok"));
-    
+    v6 = StringLit(1, "");
+    v6->refc++;
     
     String * v7;
-    v7 = StringConcat(v5, v6);
+    v7 = empty_source2(v6);
     
-    StringDecref(v5); StringDecref(v6);
-    int32_t v8;
-    v8 = v1->len-1;
-    
-    StringDecref(v1);
-    bool v9;
-    v9 = v8 == 0l;
+    StringDecref(v6);
+    String * v8;
+    v8 = StringConcat(v4, v5);
     
     
-    if (v9){
+    String * v9;
+    v9 = StringConcat(v7, StringLit(3, "ok"));
+    
+    
+    String * v10;
+    v10 = StringConcat(v8, v9);
+    
+    StringDecref(v8); StringDecref(v9);
+    int32_t v11;
+    v11 = v4->len-1;
+    
+    StringDecref(v4);
+    bool v12;
+    v12 = v11 == 0l;
+    
+    
+    if (v12){
         
         
-        int32_t v10;
-        v10 = v2->len-1;
+        int32_t v13;
+        v13 = v5->len-1;
         
-        StringDecref(v2);
-        bool v11;
-        v11 = v10 == 0l;
+        StringDecref(v5);
+        bool v14;
+        v14 = v13 == 0l;
         
         
-        if (v11){
+        if (v14){
             
             
-            int32_t v12;
-            v12 = v4->len-1;
+            int32_t v15;
+            v15 = v7->len-1;
             
-            StringDecref(v4);
-            bool v13;
-            v13 = v12 == 0l;
+            StringDecref(v7);
+            bool v16;
+            v16 = v15 == 0l;
             
             
-            if (v13){
+            if (v16){
                 
                 
-                int32_t v14;
-                v14 = v7->len-1;
+                int32_t v17;
+                v17 = v10->len-1;
                 
                 
-                bool v15;
-                v15 = v14 == 2l;
+                bool v18;
+                v18 = v17 == 2l;
                 
                 
-                if (v15){
+                if (v18){
                     
                     
-                    char v16;
-                    v16 = v7->ptr[0l];
+                    char v19;
+                    v19 = v10->ptr[0l];
                     
                     
-                    bool v17;
-                    v17 = v16 == 'o';
+                    bool v20;
+                    v20 = v19 == 'o';
                     
                     
-                    if (v17){
+                    if (v20){
                         
                         
-                        char v18;
-                        v18 = v7->ptr[1l];
+                        char v21;
+                        v21 = v10->ptr[1l];
                         
-                        StringDecref(v7);
-                        bool v19;
-                        v19 = v18 == 'k';
+                        StringDecref(v10);
+                        bool v22;
+                        v22 = v21 == 'k';
                         
                         
-                        if (v19){
+                        if (v22){
                             
                             
                             return 0l;
@@ -187,27 +199,27 @@ int32_t main(){
                         }
                     } else {
                         
-                        StringDecref(v7);
+                        StringDecref(v10);
                         return 2l;
                     }
                 } else {
                     
-                    StringDecref(v7);
+                    StringDecref(v10);
                     return 3l;
                 }
             } else {
                 
-                StringDecref(v7);
+                StringDecref(v10);
                 return 4l;
             }
         } else {
             
-            StringDecref(v4); StringDecref(v7);
+            StringDecref(v7); StringDecref(v10);
             return 5l;
         }
     } else {
         
-        StringDecref(v2); StringDecref(v4); StringDecref(v7);
+        StringDecref(v5); StringDecref(v7); StringDecref(v10);
         return 6l;
     }
 }

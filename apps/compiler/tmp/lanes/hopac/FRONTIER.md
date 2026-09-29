@@ -33,12 +33,13 @@ innermost frames. For a wrong result, cut a 5-line program and compare with sing
 For body-only edits there is a faster loop: `scripts/gear-dev.ps1` builds the core as 141 gear assemblies
 and rebuilds only the gear owning the edit (~90 s for an edit in `peval`, against ~200-400 s for the
 monolith). Point the tests at it with `SPIRAL_COMPILER_DLL`. A body edit keeps the split plan (measured
-over 6 edits across the core). Adding or removing a top-level declaration renumbers the later parts, and
-gear-dev stops rather than rebuilding most gears; use the monolith for those (or `-Force`). The split
+over 6 edits across the core), and since the gear anchors and surface rules (2026-09-28) so does adding
+or removing a top-level declaration: one `let` added is 1 gear and 92 s end to end, against 1,056 s
+before (see the splitter README). The split loop is now the faster one for every kind of edit. The split
 compiler gives the same frontier and smoke results as the monolith. Details are in
 `lanes/splitter/README.md`.
 
-## Root causes fixed (core, `compiler/cores/hopac/spiral_compiler.fs`)
+## Root causes fixed (core: hopac's side of `apps/compiler/spiral_compiler.fs`; before 2026-09-28 `compiler/cores/hopac/spiral_compiler.fs`)
 
 In the order they were found; each was confirmed with a stack dump or a reduced program.
 
@@ -156,6 +157,29 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
     duplicate identifiers in the Rust/Delphi versions of hopac's C) no longer apply as such.
     Frontier and smoke: Rust 11/11 and Delphi 11/11 agree with C.
 
+18. **Join point parameters permuted against their arguments (silent miscompile).** `tuple_mixed` and
+    `portable_composite` computed −6 instead of 0: `method1(v3, v2, v1)` passed an `int32` where the
+    method's first parameter was a `bool`. `data_to_rdata` numbers a join point's call arguments while
+    walking pairs tail-first (`dataPostorderChildRelation`, which other hopac code relies on), and
+    `rdata_free_vars` listed the method's parameters walking pairs head-first, as single-flight does for
+    both. Parameters are now ordered by their argument index, which is correct whatever the walk order.
+
+19. **Tail calls lost: the last `if` of a method let-bound (stack overflow).**
+    `native_managed_array_tail_recursion` overflowed the stack on C (exit 217 on Delphi): hopac emitted
+    `let v5 = if .. else method1(..) in v5`, so the self call was no longer in tail position and C kept
+    the refcount decrements after it. `seq_apply` fuses a block's last `TyLet x` with a return of `x` only
+    when both are the same object (`Object.ReferenceEquals`); replay rebuilds wrapper values, and for an
+    `array` (a nominal) the return was a new `DNominal` around the same `DV`. It now compares variable ids
+    through nominals and pairs. The output is now identical to single-flight's.
+
+20. **`if` condition evaluated before the preceding statements (silent miscompile, ordering).**
+    `set a 0 13` followed by `if index a 0 = 13` emitted the read (four times) before the `set`, then
+    again after it. Fix 16 left the `if` condition registered as a replay child when the term is entered,
+    which walks ahead of evaluation; the replay driver then evaluated a condition that emits code in the
+    enclosing block, early. Only atom conditions (variable, literal, symbol) are registered now; others
+    are left to the direct evaluator, as the branches are. Reduced case and fix verified; nested reads in
+    other ops (`index a 0 + 1`) were never affected.
+
 Host (`compiler/host/Program.fs`): `SPIRAL_HOPAC_WORKERS` / `SPIRAL_DOP` determinism knobs, and an
 absolute build deadline (`SPIRAL_BUILD_DEADLINE_MS`, 3 s before the job timeout).
 
@@ -231,6 +255,15 @@ single-flight:
 1. ~~`managed_string_recursive` and `rust_target_globals`~~ (resolved, see above).
 2. `native_closure_captured_branch` for the closure `NullReferenceException`s. Lead: method join points
    have the same deferred-placeholder design (`JpMethodDeferredFromOwnedProducer`) that fix 8 removed for
-   type join points.
+   type join points. 2026-09-28: a direct compile (`--backend Fsharp`, `SPIRAL_HOPAC_WORKERS=1`) hangs
+   for good. `dotnet-stack` shows codegen blocked in `requireResolvedClosureCell` on
+   `CodegenJpClosureBodyCellPending` (`run (IVar.read ivar)`), all Hopac workers idle: the closure's
+   producer job (`startHopacJob (jp_start_named_with_metadata .. run)` in the closure specialization) ended
+   without filling its cell, most likely through the `JpPromiseProducerPreservePendingWithoutFailureFill`
+   branch, which re-raises and leaves the promise pending. The run's `.jsonl` (in
+   `<cache>/core-src/hopac/`, one per compile, 7.5 GB accumulated) has no producer event for it; the
+   emission policy thins them out. Next: log that branch's exception type unconditionally, then decide
+   what should retry or fail the cell. (A direct compile has no build deadline unless
+   `SPIRAL_BUILD_DEADLINE_MS` is set.)
 3. `native_cube_direct` for the evaluation loops.
 4. Port the single-flight-only features, then `-Suite mega`, `-FreshProcess:$false`, and `apps/spiral`.

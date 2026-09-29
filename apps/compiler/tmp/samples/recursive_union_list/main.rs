@@ -16,15 +16,15 @@ impl UH0 {
 }
 fn method0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
+        UH0::UH0_0 => { // Nil
+            0i32
+        }
         UH0::UH0_1(v1, v2) => { // Cons
             let mut v1: i32 = v1.clone();
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: i32 = method0(v2.clone());
             let mut v4: i32 = v1 + v3;
             v4
-        }
-        UH0::UH0_0 => { // Nil
-            0i32
         }
         _ => unreachable!(),
     }

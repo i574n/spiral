@@ -45,45 +45,51 @@ var
   v5: AnsiString;
   v6: AnsiString;
   v7: AnsiString;
-  v8: LongInt;
-  v9: Boolean;
-  v10: LongInt;
-  v11: Boolean;
-  v12: LongInt;
-  v13: Boolean;
-  v14: LongInt;
-  v15: Boolean;
-  v16: AnsiChar;
-  v17: Boolean;
-  v18: AnsiChar;
-  v19: Boolean;
+  v8: AnsiString;
+  v9: AnsiString;
+  v10: AnsiString;
+  v11: LongInt;
+  v12: Boolean;
+  v13: LongInt;
+  v14: Boolean;
+  v15: LongInt;
+  v16: Boolean;
+  v17: LongInt;
+  v18: Boolean;
+  v19: AnsiChar;
+  v20: Boolean;
+  v21: AnsiChar;
+  v22: Boolean;
 begin
   v0 := 'alpha';
   v1 := method0(v0);
-  v2 := method1(v0);
-  v3 := '';
-  v4 := method2(v3);
-  v5 := v1 + v2;
-  v6 := v4 + 'ok';
-  v7 := v5 + v6;
-  v8 := LongInt(Length(v1));
-  v9 := v8 = 0;
-  if v9 then begin
-      v10 := LongInt(Length(v2));
-      v11 := v10 = 0;
-      if v11 then begin
-          v12 := LongInt(Length(v4));
-          v13 := v12 = 0;
-          if v13 then begin
-              v14 := LongInt(Length(v7));
-              v15 := v14 = 2;
-              if v15 then begin
-                  v16 := v7[0 + 1];
-                  v17 := v16 = 'o';
-                  if v17 then begin
-                      v18 := v7[1 + 1];
-                      v19 := v18 = 'k';
-                      if v19 then begin
+  v2 := method0(v0);
+  v3 := method0(v0);
+  v4 := method0(v0);
+  v5 := method1(v0);
+  v6 := '';
+  v7 := method2(v6);
+  v8 := v4 + v5;
+  v9 := v7 + 'ok';
+  v10 := v8 + v9;
+  v11 := LongInt(Length(v4));
+  v12 := v11 = 0;
+  if v12 then begin
+      v13 := LongInt(Length(v5));
+      v14 := v13 = 0;
+      if v14 then begin
+          v15 := LongInt(Length(v7));
+          v16 := v15 = 0;
+          if v16 then begin
+              v17 := LongInt(Length(v10));
+              v18 := v17 = 2;
+              if v18 then begin
+                  v19 := v10[0 + 1];
+                  v20 := v19 = 'o';
+                  if v20 then begin
+                      v21 := v10[1 + 1];
+                      v22 := v21 = 'k';
+                      if v22 then begin
                           Result := 0;
                       end else begin
                           Result := 1;

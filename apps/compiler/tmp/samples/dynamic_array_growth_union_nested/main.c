@@ -285,17 +285,17 @@ int32_t main(){
     AssignArray1(&(v1->ptr[1l]), v3);
     v1->refc++;
     ArrayDecref1(v3);
-    US0 v4;
-    v4 = US0_1(v1);
-    USIncref0(&(v4));
+    US0 v5;
+    v5 = US0_1(v1);
+    USIncref0(&(v5));
     ArrayDecref0(v1);
-    int32_t v5;
-    v5 = score0(v4);
-    
-    USDecref0(&(v4));
     int32_t v6;
-    v6 = v5 - 26l;
+    v6 = score0(v5);
+    
+    USDecref0(&(v5));
+    int32_t v7;
+    v7 = v6 - 26l;
     
     
-    return v6;
+    return v7;
 }

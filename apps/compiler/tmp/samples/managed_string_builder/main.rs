@@ -30,16 +30,16 @@ fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
     if v4 {
         v3.clone()
     } else {
-        let mut v5: i32 = v2 % 2i32;
-        let mut v6: bool = v5 == 0i32;
-        let mut v9: Rc<str> = if v6 {
-            let mut v7: Rc<str> = Rc::<str>::from("ab");
-            v7.clone()
-        } else {
-            let mut v8: Rc<str> = Rc::<str>::from("c");
+        let mut v6: i32 = v2 % 2i32;
+        let mut v7: bool = v6 == 0i32;
+        let mut v10: Rc<str> = if v7 {
+            let mut v8: Rc<str> = Rc::<str>::from("ab");
             v8.clone()
+        } else {
+            let mut v9: Rc<str> = Rc::<str>::from("c");
+            v9.clone()
         };
-        method2(v2, v3.clone(), v9.clone())
+        method2(v2, v3.clone(), v10.clone())
     }
 }
 fn method0() -> Rc<str> {

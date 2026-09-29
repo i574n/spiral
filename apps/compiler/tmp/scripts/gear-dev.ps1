@@ -31,7 +31,8 @@ param(
 
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
-$core = Get-SpiralCoreSource $Mode
+# The splitter reads one core: this mode's side of the merged file's section pairs.
+$core = Get-SpiralCoreProjection $Mode (Join-Path $cache "gear-dev/$Mode/core.fs")
 $splitter = Join-Path $cache ('splitter-target/release/spiral-split' + $(if ($IsWindows) { '.exe' } else { '' }))
 $overlay = Join-Path $cache "bin/$Mode/SpiralCompilerRuntimeCompat/Release/net11.0"
 if (-not (Test-Path $splitter)) { throw "missing $splitter (run scripts/build-splitter.ps1)" }
@@ -44,6 +45,12 @@ New-Item -ItemType Directory -Force $build | Out-Null
 $clock = [Diagnostics.Stopwatch]::StartNew()
 
 # ---- 1. emit
+# The previous emission's anchors keep its gears and part/gear numbers (splitter README, "Stable gears"), so
+# adding a declaration rebuilds the gears around it instead of renumbering every later part. -Full re-plans
+# from scratch (contiguous numbering, fresh packing).
+$anchors = Join-Path $root 'anchors.tsv'
+if ($Full) { Remove-Item -LiteralPath $anchors -ErrorAction SilentlyContinue }
+if (Test-Path -LiteralPath $anchors) { $env:SPIRAL_GEAR_ANCHORS = $anchors } else { Remove-Item Env:SPIRAL_GEAR_ANCHORS -ErrorAction SilentlyContinue }
 & $splitter gears $core $emit --threads ([Environment]::ProcessorCount) --assembly-overlay-root $overlay | Select-Object -Last 1 | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'spiral-split gears failed' }
 $emitSeconds = [int]$clock.Elapsed.TotalSeconds
@@ -73,6 +80,8 @@ if (-not $Full -and -not $Force -and (Test-Path (Join-Path $build '.out/full-bui
 }
 foreach ($file in $copies) { Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $build $file.Name) -Force }
 foreach ($file in $stale) { Remove-Item -LiteralPath $file.FullName }
+# build/ now holds this emission's numbering; the next emission anchors to it.
+Copy-Item -LiteralPath (Join-Path $emit 'anchors.tsv') -Destination $anchors -Force
 if ($changed.Count -and $changed.Count -le 10) { Write-Host "   changed: $(@($changed) -join ', ')" }
 $outputs = (Join-Path $build '.out').Replace('\', '/')
 $props = @"
@@ -136,7 +145,9 @@ using System.Reflection.PortableExecutable;
 using System.Security.Cryptography;
 using System.Text;
 public static class SpiralGearSurface {
-    public static string Hash(string path) {
+    // One line per type and per member; members name their type, so a member moving between types is a
+    // removal plus an addition, not an addition alone.
+    public static string Describe(string path) {
         if (!File.Exists(path)) return "";
         using var stream = File.OpenRead(path);
         using var pe = new PEReader(stream);
@@ -145,32 +156,69 @@ public static class SpiralGearSurface {
         void Blob(BlobHandle handle) => text.Append(Convert.ToHexString(md.GetBlobBytes(handle))).Append(';');
         foreach (var typeHandle in md.TypeDefinitions) {
             var type = md.GetTypeDefinition(typeHandle);
-            text.Append("T ").Append(md.GetString(type.Namespace)).Append('.').Append(md.GetString(type.Name)).Append(' ').Append((int)type.Attributes).Append('\n');
-            foreach (var h in type.GetMethods()) { var m = md.GetMethodDefinition(h); text.Append(" M ").Append(md.GetString(m.Name)).Append(' ').Append((int)m.Attributes).Append(' '); Blob(m.Signature); text.Append('\n'); }
-            foreach (var h in type.GetFields()) { var f = md.GetFieldDefinition(h); text.Append(" F ").Append(md.GetString(f.Name)).Append(' ').Append((int)f.Attributes).Append(' '); Blob(f.Signature); text.Append('\n'); }
-            foreach (var h in type.GetProperties()) { var p = md.GetPropertyDefinition(h); text.Append(" P ").Append(md.GetString(p.Name)).Append(' '); Blob(p.Signature); text.Append('\n'); }
+            var name = md.GetString(type.Namespace) + "." + md.GetString(type.Name);
+            text.Append("T ").Append(name).Append(' ').Append((int)type.Attributes).Append('\n');
+            foreach (var h in type.GetMethods()) { var m = md.GetMethodDefinition(h); text.Append("M ").Append(name).Append("::").Append(md.GetString(m.Name)).Append(' ').Append((int)m.Attributes).Append(' '); Blob(m.Signature); text.Append('\n'); }
+            foreach (var h in type.GetFields()) { var f = md.GetFieldDefinition(h); text.Append("F ").Append(name).Append("::").Append(md.GetString(f.Name)).Append(' ').Append((int)f.Attributes).Append(' '); Blob(f.Signature); text.Append('\n'); }
+            foreach (var h in type.GetProperties()) { var p = md.GetPropertyDefinition(h); text.Append("P ").Append(name).Append("::").Append(md.GetString(p.Name)).Append(' '); Blob(p.Signature); text.Append('\n'); }
         }
         foreach (var h in md.TypeReferences) { var r = md.GetTypeReference(h); text.Append("R ").Append(md.GetString(r.Namespace)).Append('.').Append(md.GetString(r.Name)).Append('\n'); }
         foreach (var h in md.AssemblyReferences) { var a = md.GetAssemblyReference(h); text.Append("A ").Append(md.GetString(a.Name)).Append('\n'); }
-        return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(text.ToString())));
+        return text.ToString();
+    }
+    // Names of the types ("T:ns.Name") and members ("N:name") whose lines `before` has and `after` lacks
+    // (removed or altered). Lost type and assembly references are not the dependents' concern.
+    public static string[] LostNames(string before, string after) {
+        var now = new System.Collections.Generic.HashSet<string>(after.Split('\n'));
+        var names = new System.Collections.Generic.HashSet<string>();
+        foreach (var line in before.Split('\n')) {
+            if (line.Length < 3 || now.Contains(line)) continue;
+            var rest = line.Substring(2);
+            var space = rest.IndexOf(' ');
+            var id = space < 0 ? rest : rest.Substring(0, space);
+            if (line[0] == 'T') names.Add("T:" + id);
+            else if (line[0] == 'M' || line[0] == 'F' || line[0] == 'P') names.Add("N:" + id.Substring(id.IndexOf("::") + 2));
+        }
+        return System.Linq.Enumerable.ToArray(names);
+    }
+    // Whether an assembly references any of `names`: a type reference by full name, or a member reference
+    // (method, field; property accessors are methods) by name. By name only, so a collision rebuilds more,
+    // never less: every use of another assembly's type or member compiles to such a reference.
+    public static bool References(string path, string[] names) {
+        if (names.Length == 0) return false;
+        if (!File.Exists(path)) return true;
+        var wanted = new System.Collections.Generic.HashSet<string>(names);
+        using var stream = File.OpenRead(path);
+        using var pe = new PEReader(stream);
+        var md = pe.GetMetadataReader();
+        foreach (var h in md.TypeReferences) { var r = md.GetTypeReference(h); if (wanted.Contains("T:" + md.GetString(r.Namespace) + "." + md.GetString(r.Name))) return true; }
+        foreach (var h in md.MemberReferences) { var m = md.GetMemberReference(h); if (wanted.Contains("N:" + md.GetString(m.Name))) return true; }
+        return false;
     }
 }
 '@
 }
 # Each gear's reference assembly is copied to surface/ only when its IL surface changes; the host compiles
-# against those copies, so a body-only edit leaves it up to date.
+# against those copies, so a body-only edit leaves it up to date. Update-Surface says how it changed:
+# 'same', 'grew' (members only added: dependents built against the old surface still bind to everything
+# they use, so they do not rebuild; a new declaration used to rebuild every dependent of its gear, 75 of
+# 138 gears for one `let`) or 'changed' with the names it lost (removed or altered types and members):
+# then only the dependents whose assembly references one of those names rebuild.
 $surfaceDir = Join-Path $outputs 'surface'
 New-Item -ItemType Directory -Force $surfaceDir | Out-Null
 function Update-Surface([string]$name) {
     $ref = "$outputs/obj/$name/Debug/net11.0/ref/SpiralCompiler$name.dll"
-    $hashPath = Join-Path $surfaceDir "$name.hash"
-    $old = if (Test-Path -LiteralPath $hashPath) { Get-Content -LiteralPath $hashPath -Raw } else { '' }
-    $new = [SpiralGearSurface]::Hash($ref)
-    if ($new -and $new -ne $old) {
-        Copy-Item -LiteralPath $ref -Destination (Join-Path $surfaceDir "SpiralCompiler$name.dll") -Force
-        Set-Content -LiteralPath $hashPath -Value $new -NoNewline
-    }
-    $new -ne $old
+    $surfacePath = Join-Path $surfaceDir "$name.surface"
+    $copy = Join-Path $surfaceDir "SpiralCompiler$name.dll"
+    # Surfaces recorded before descriptions were kept: describe the stored copy instead.
+    $old = if (Test-Path -LiteralPath $surfacePath) { [IO.File]::ReadAllText($surfacePath) } else { [SpiralGearSurface]::Describe($copy) }
+    $new = [SpiralGearSurface]::Describe($ref)
+    if (-not $new -or $new -eq $old) { return [pscustomobject]@{ Kind = 'same'; Lost = @() } }
+    Copy-Item -LiteralPath $ref -Destination (Join-Path $surfaceDir "SpiralCompiler$name.dll") -Force
+    [IO.File]::WriteAllText($surfacePath, $new)
+    if (-not $old) { return [pscustomobject]@{ Kind = 'changed'; Lost = $null } }
+    $lost = [SpiralGearSurface]::LostNames($old, $new)
+    [pscustomobject]@{ Kind = $(if ($lost.Count) { 'changed' } else { 'grew' }); Lost = $lost }
 }
 
 # ---- 4. build
@@ -200,8 +248,15 @@ if ($Full -or $firstBuild -or $wide) {
         $built++
         $errors += @($log | Select-String ': error ' | ForEach-Object { $_.Line -replace ' \[.*$', '' } | Sort-Object -Unique)
         if ($errors.Count) { break }
-        # Dependents only need rebuilding when the IL surface changed.
-        if (Update-Surface $name) { foreach ($dependent in @($dependents[$name])) { if ($dependent) { [void]$dirty.Add($dependent) } } }
+        # Dependents only need rebuilding when the IL surface lost or changed something they reference.
+        $surface = Update-Surface $name
+        if ($surface.Kind -eq 'changed') {
+            foreach ($dependent in @($dependents[$name])) {
+                if (-not $dependent) { continue }
+                $assembly = "$outputs/bin/$dependent/Debug/net11.0/SpiralCompiler$dependent.dll"
+                if ($null -eq $surface.Lost -or [SpiralGearSurface]::References($assembly, $surface.Lost)) { [void]$dirty.Add($dependent) }
+            }
+        }
     }
     # GearRoot is not a gear, but GearRoot.initialize names the parts holding module-level `do`s.
     if (-not $errors.Count -and ($changed.Contains('GearRoot.fs') -or $changed.Contains('GearRoot.fsproj'))) {
@@ -227,7 +282,17 @@ if ($errors.Count) { exit 1 }
 # definitions do in the monolith).
 $hostDir = Join-Path $root 'host'
 New-Item -ItemType Directory -Force $hostDir | Out-Null
-$partOpens = (Get-ChildItem $build -Filter 'Part*.fs' | Where-Object BaseName -match '^Part\d+$' | Sort-Object Name | ForEach-Object { "open spiral_compiler_$($_.BaseName)" }) -join "`n"
+# Part numbers are stable across emissions, not ordered: anchors.tsv lists the declarations in source order.
+$partOrder = [Collections.Generic.List[string]]::new()
+$seenParts = [Collections.Generic.HashSet[string]]::new()
+foreach ($line in [IO.File]::ReadLines($anchors) | Select-Object -Skip 1) {
+    $cells = $line.Split("`t")   # declaration keys never hold tabs; they may hold quotes, so no Import-Csv
+    $part = 'Part{0:D4}' -f [int]$cells[$cells.Length - 2]
+    if ($seenParts.Add($part)) { $partOrder.Add($part) }
+}
+$unanchored = @(Get-ChildItem $build -Filter 'Part*.fs' | Where-Object { $_.BaseName -match '^Part\d+$' -and -not $seenParts.Contains($_.BaseName) } | Sort-Object { [int]$_.BaseName.Substring(4) })
+if ($unanchored.Count) { Write-Host "   warning: $($unanchored.Count) parts not in anchors.tsv; opened last" -ForegroundColor Yellow; $unanchored | ForEach-Object { $partOrder.Add($_.BaseName) } }
+$partOpens = ($partOrder | ForEach-Object { "open spiral_compiler_$_" }) -join "`n"
 # The split also dissolves nested modules (`HopacExtensions.forceConcurrency` now lives at the top of some
 # part); the splitter's qualified-rewrites map says where, and the host copy gets the same rewrite.
 $rewrites = @{}

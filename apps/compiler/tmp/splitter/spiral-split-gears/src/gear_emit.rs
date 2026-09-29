@@ -388,6 +388,15 @@ pub fn emit_gears(
         atomic_write(&options.output_root.join(name), &content)?;
     }
     phases.record("sidecars")?;
+    // Keep the previous emission's part and gear numbers (`gear_anchors`). The returned plan and the
+    // numeric shard/gear columns of the TSV sidecars keep planning ids; file and module names do not.
+    let names = gear_anchors::stable_names(&effective_split, &gears.gears, anchors_from_env());
+    gear_anchors::apply_stable_names(&options.output_root, &names)?;
+    atomic_write(
+        &options.output_root.join(ANCHORS_FILE),
+        &gear_anchors::render_anchors(&effective_split, &gears.shard_to_gear, &names),
+    )?;
+    phases.record("stable_names")?;
     let receipt = GearEmitReceipt {
         gears: gears.gears.len(),
         files: gears.gears.len() + 13,

@@ -12,7 +12,7 @@ function method3(v0: LongInt): LongInt; forward;
 function method7(v0: AnsiString): Boolean; forward;
 function method2(v0: LongInt): LongInt; forward;
 function method8(v0: Single): TTuple0; forward;
-function method9(v0: Boolean; v1: Single; v2: LongInt): LongInt; forward;
+function method9(v0: LongInt; v1: Single; v2: Boolean): LongInt; forward;
 function method1(v0: LongInt): LongInt; forward;
 function method10(v0: LongInt): TTuple1; forward;
 function method11(v0: LongInt; v1: LongInt; v2: Boolean): LongInt; forward;
@@ -95,15 +95,15 @@ begin
   v1 := v0 >= 3.5;
   Result := TupleCreate0(v1, v0, 7);
 end;
-function method9(v0: Boolean; v1: Single; v2: LongInt): LongInt;
+function method9(v0: LongInt; v1: Single; v2: Boolean): LongInt;
 var
   v3: Boolean;
   v4: LongInt;
 begin
-  if v0 then begin
+  if v2 then begin
       v3 := v1 >= 3.5;
       if v3 then begin
-          v4 := v2 - 7;
+          v4 := v0 - 7;
           Result := v4;
       end else begin
           Result := 1;
@@ -127,7 +127,7 @@ begin
   v2 := tmp4.f0;
   v3 := tmp4.f1;
   v4 := tmp4.f2;
-  v5 := method9(v2, v3, v4);
+  v5 := method9(v4, v3, v2);
   v6 := v0 + v5;
   Result := method2(v6);
 end;

@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <!--
     The compiler core as its own assembly, so host edits (Program.fs) never
-    recompile the monolith. -p:SpiralCore=single-flight builds the repo's main core
-    (apps/compiler/spiral_compiler.fs), -p:SpiralCore=hopac builds cores/hopac/spiral_compiler.fs;
-    -p:SpiralCoreSource=<path> builds any other copy.
+    recompile the monolith. Both cores are apps/compiler/spiral_compiler.fs: -p:SpiralCore=hopac
+    defines SPIRAL_CORE_HOPAC, which selects hopac's side of the file's `#if SPIRAL_CORE_HOPAC`
+    section pairs; -p:SpiralCore=single-flight leaves it undefined. -p:SpiralCoreSource=<path>
+    builds any other copy.
   -->
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <AssemblyName>SpiralCompilerCore</AssemblyName>
     <RootNamespace>Polyglot</RootNamespace>
-    <SpiralCoreSource Condition="'$(SpiralCoreSource)' == '' and '$(SpiralCore)' == 'single-flight'">../../../spiral_compiler.fs</SpiralCoreSource>
-    <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../cores/$(SpiralCore)/spiral_compiler.fs</SpiralCoreSource>
+    <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../../../spiral_compiler.fs</SpiralCoreSource>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(SpiralCoreSource)" Link="spiral_compiler.fs" />

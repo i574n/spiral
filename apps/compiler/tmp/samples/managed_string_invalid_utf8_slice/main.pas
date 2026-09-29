@@ -23,12 +23,16 @@ function SpiralMain: LongInt;
 var
   v0: AnsiString;
   v1: AnsiString;
-  v2: LongInt;
+  v2: AnsiString;
+  v3: AnsiString;
+  v4: LongInt;
 begin
   v0 := #195#169;
   v1 := method0(v0);
-  v2 := LongInt(Length(v1));
-  Result := v2;
+  v2 := method0(v0);
+  v3 := method0(v0);
+  v4 := LongInt(Length(v3));
+  Result := v4;
 end;
 begin
   Halt(SpiralMain);

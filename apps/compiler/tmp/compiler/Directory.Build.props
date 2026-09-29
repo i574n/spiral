@@ -1,8 +1,8 @@
 <Project>
   <!--
-    One host, two compiler cores. `SpiralCore` selects which monolith is compiled into the host:
-      single-flight  ../../spiral_compiler.fs (apps/compiler; stable; C/F#/Rust/Delphi)
-      hopac          cores/hopac/spiral_compiler.fs (parallel Hopac evaluator; in progress)
+    One host, two compiler cores in one file (../../spiral_compiler.fs). `SpiralCore` selects which is compiled into
+    the host: single-flight (stable; C/F#/Rust/Delphi) or hopac (parallel Hopac evaluator, in progress; the core
+    project defines SPIRAL_CORE_HOPAC, which picks hopac's side of the file's section pairs).
     All build output goes to an external cache so the bundle never contains obj/bin trees.
   -->
   <PropertyGroup>

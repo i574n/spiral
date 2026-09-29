@@ -8,26 +8,26 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 0i32;
     let mut v1: i32 = 0i32;
     while method0() {
-        let mut v3: i32 = v0 + 1i32;
-        v0 = v3;
-        let mut v4: bool = v0 < 3i32;
-        if v4 {
+        let mut v2: i32 = v0 + 1i32;
+        v0 = v2;
+        let mut v3: bool = v0 < 3i32;
+        if v3 {
             continue;
             ()
         } else {
-            let mut v5: bool = v0 >= 6i32;
-            if v5 {
+            let mut v4: bool = v0 >= 6i32;
+            if v4 {
                 break;
                 ()
             } else {
-                let mut v6: i32 = v1 + v0;
-                v1 = v6;
+                let mut v5: i32 = v1 + v0;
+                v1 = v5;
                 ()
             }
         }
     };
-    let mut v7: i32 = v1 - 12i32;
-    v7
+    let mut v6: i32 = v1 - 12i32;
+    v6
 }
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

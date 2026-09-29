@@ -22,15 +22,15 @@ var
   v4: LongInt;
 begin
   case v0.tag of
+      0: begin // Nil
+          Result := 0;
+      end;
       1: begin // Cons
           v1 := v0.c1_0;
           v2 := v0.c1_1;
           v3 := method0(v2);
           v4 := v1 + v3;
           Result := v4;
-      end;
-      0: begin // Nil
-          Result := 0;
       end;
   end;
 end;

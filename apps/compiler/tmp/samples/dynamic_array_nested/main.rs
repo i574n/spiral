@@ -5,24 +5,24 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 2i32;
     let mut v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = Rc::new(RefCell::new(vec![<Rc<RefCell<Vec<i32>>>>::default(); v0 as usize]));
     let mut v2: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
-    let mut v3: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
+    let mut v4: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
     v2.clone().borrow_mut()[0i32 as usize] = 3i32;
     v2.clone().borrow_mut()[1i32 as usize] = 4i32;
-    v3.clone().borrow_mut()[0i32 as usize] = 5i32;
-    v3.clone().borrow_mut()[1i32 as usize] = 6i32;
+    v4.clone().borrow_mut()[0i32 as usize] = 5i32;
+    v4.clone().borrow_mut()[1i32 as usize] = 6i32;
     v1.clone().borrow_mut()[0i32 as usize] = v2.clone();
-    v1.clone().borrow_mut()[1i32 as usize] = v3.clone();
-    let mut v4: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[0i32 as usize].clone();
-    let mut v5: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[1i32 as usize].clone();
-    let mut v6: i32 = v4.clone().borrow()[0i32 as usize].clone();
-    let mut v7: i32 = v4.clone().borrow()[1i32 as usize].clone();
-    let mut v8: i32 = v6 + v7;
-    let mut v9: i32 = v5.clone().borrow()[0i32 as usize].clone();
-    let mut v10: i32 = v8 + v9;
-    let mut v11: i32 = v5.clone().borrow()[1i32 as usize].clone();
-    let mut v12: i32 = v10 + v11;
-    let mut v13: i32 = v12 - 18i32;
-    v13
+    v1.clone().borrow_mut()[1i32 as usize] = v4.clone();
+    let mut v5: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[0i32 as usize].clone();
+    let mut v6: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[1i32 as usize].clone();
+    let mut v7: i32 = v5.clone().borrow()[0i32 as usize].clone();
+    let mut v8: i32 = v5.clone().borrow()[1i32 as usize].clone();
+    let mut v9: i32 = v7 + v8;
+    let mut v10: i32 = v6.clone().borrow()[0i32 as usize].clone();
+    let mut v11: i32 = v9 + v10;
+    let mut v12: i32 = v6.clone().borrow()[1i32 as usize].clone();
+    let mut v13: i32 = v11 + v12;
+    let mut v14: i32 = v13 - 18i32;
+    v14
 }
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

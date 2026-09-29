@@ -11,32 +11,32 @@ function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: LongInt;
-  v3: LongInt;
+  v2: LongInt;
+  v3: Boolean;
   v4: Boolean;
-  v5: Boolean;
+  v5: LongInt;
   v6: LongInt;
-  v7: LongInt;
 begin
   v0 := 0;
   v1 := 0;
   while method0 do begin
-      v3 := v0 + 1;
-      v0 := v3;
-      v4 := v0 < 3;
-      if v4 then begin
+      v2 := v0 + 1;
+      v0 := v2;
+      v3 := v0 < 3;
+      if v3 then begin
           continue;
       end else begin
-          v5 := v0 >= 6;
-          if v5 then begin
+          v4 := v0 >= 6;
+          if v4 then begin
               break;
           end else begin
-              v6 := v1 + v0;
-              v1 := v6;
+              v5 := v1 + v0;
+              v1 := v5;
           end;
       end;
   end;
-  v7 := v1 - 12;
-  Result := v7;
+  v6 := v1 - 12;
+  Result := v6;
 end;
 begin
   Halt(SpiralMain);

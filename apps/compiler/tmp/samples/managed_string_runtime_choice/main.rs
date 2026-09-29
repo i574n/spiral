@@ -15,17 +15,27 @@ fn method1(mut v0: Rc<str>) -> i32 {
     v1
 }
 fn spiral_main() -> i32 {
-    let mut v0: bool = true;
+    let mut v0: bool = false;
     let mut v1: Rc<str> = method0(v0);
-    let mut v2: bool = false;
+    let mut v2: bool = true;
     let mut v3: Rc<str> = method0(v2);
-    let mut v4: i32 = method1(v1.clone());
-    let mut v5: i32 = method1(v1.clone());
-    let mut v6: i32 = v4 + v5;
-    let mut v7: i32 = method1(v3.clone());
-    let mut v8: i32 = v6 + v7;
-    let mut v9: i32 = v8 - 14i32;
-    v9
+    let mut v4: bool = true;
+    let mut v5: Rc<str> = method0(v4);
+    let mut v6: bool = false;
+    let mut v7: Rc<str> = method0(v6);
+    let mut v8: bool = false;
+    let mut v9: Rc<str> = method0(v8);
+    let mut v10: bool = true;
+    let mut v11: Rc<str> = method0(v10);
+    let mut v12: bool = false;
+    let mut v13: Rc<str> = method0(v12);
+    let mut v14: i32 = method1(v11.clone());
+    let mut v15: i32 = method1(v11.clone());
+    let mut v16: i32 = v14 + v15;
+    let mut v17: i32 = method1(v13.clone());
+    let mut v18: i32 = v16 + v17;
+    let mut v19: i32 = v18 - 14i32;
+    v19
 }
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

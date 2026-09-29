@@ -4,8 +4,12 @@ The build, test harness and fixtures around the Spiral compiler, plus its two de
 
 | Mode | Core | State | Use it for |
 |---|---|---|---|
-| `single-flight` | `../spiral_compiler.fs` (apps/compiler, 0.9 MB) | stable | F#, C, **Rust** and **Delphi** output; the oracle every test is scored against |
-| `hopac` | `compiler/cores/hopac/spiral_compiler.fs` (13 MB) | in progress | the parallel Hopac evaluator; advanced one frontier fixture at a time |
+| `single-flight` | `../spiral_compiler.fs`: shared sections + the `#else` side of each pair | stable | F#, C, **Rust** and **Delphi** output; the oracle every test is scored against |
+| `hopac` | `../spiral_compiler.fs`: shared sections + the `#if SPIRAL_CORE_HOPAC` side of each pair | in progress | the parallel Hopac evaluator; advanced one frontier fixture at a time |
+
+Both cores are one file (13.9 MB, merged 2026-09-28): its `/// ## Name` sections are shared when both cores
+agree and written as whole `#if SPIRAL_CORE_HOPAC` / `#else` pairs when they differ (6 shared and 33 pairs
+at the merge). See `AGENTS.md` for the rules and "Upstream" below for syncing with The Spiral Language.
 
 Both modes build the **same host** (`compiler/host`) around a different core. The host talks to the core
 through `SupervisorReq` (`FileOpen`, `BuildFile`, …, built by reflection), `new_server`, `startupParse`
@@ -39,9 +43,8 @@ reported as `no-toolchain`, not as failures. Managed dependencies come from NuGe
 
 ```text
 compiler/
-  cores/hopac/           the Hopac core (the single-flight core is ../spiral_compiler.fs)
-  core/                  project that compiles the selected core into SpiralCompilerCore.dll
-  host/                  SpiralCompiler.exe: CLI, --batch runner, portable Rust/Delphi lowering
+  core/                  project that compiles ../spiral_compiler.fs (either core) into SpiralCompilerCore.dll
+  host/                  SpiralCompiler.exe: CLI, --batch runner
   runtime-compat/        minimal Supervisor stand-in (Lib/Common/Trace) both cores need
   lib/                   Packages.props (pinned NuGet dependencies) and Dependencies.fsproj
 samples/                 every fixture, one flat directory each:
@@ -87,3 +90,42 @@ explicit call to the Spiral function in `main` so specialization retains it.
 `scripts/test-rust-exports.ps1` proves the six export ABIs through a real Rust consumer.
 
 Development workflow, lane rules and how progress is measured: [AGENTS.md](AGENTS.md).
+
+## Upstream
+
+`spiral_compiler.fs` descends from The Spiral Language (mrakgr/The-Spiral-Language, `The Spiral Language 2/`,
+about two dozen files) through the i574n fork (`polyglot/deps/The-Spiral-Language`, branch `master`), which
+keeps upstream's file layout: each section here is one of its files (`PartEval` is `PartEval.fs`,
+`SignalRSupervisor` is `Supervisor.fs`; a few sections are i574n additions: Rust, Delphi, Gleam, Lua,
+the SignalR host). Measured 2026-09-28 with the compaction's mechanical changes undone (4-space indent,
+`/// ###` headings, `#!import` lines): single-flight's sections match the fork's files on 90% of their lines
+and upstream `master` on 83%. The fork is 210 commits ahead of upstream and 26 behind (merge base
+`850588a2`, 2025-04-05).
+
+Sync through the fork, where git merges natively:
+- **pull**: `git merge mrakgr/master` in the fork (conflicts resolved per file, with history); then carry
+  the fork's changed files into their sections here.
+- **push / pull request**: write the changed sections back to the fork's files, on a branch, and open the
+  PR from there.
+
+`scripts/upstream.py` does the section side (fork = a clone of the fork, refs are git refs in it):
+
+```powershell
+python scripts/upstream.py status <fork> [ref]                # per section: lines differing from the fork's file
+python scripts/upstream.py import <fork> <old-ref> <new-ref>  # carry the fork's edits old->new into the sections
+python scripts/upstream.py export <fork> <base-ref> <out-dir> # the fork's files with the sections' edits
+```
+
+It moves edits as normalized-line patches (a 3-way merge that ignores indentation, blank lines, the
+`/// ###` headings and module headers), so each side keeps its own formatting; an edit whose lines the
+other side also changed is reported as a conflict, not applied. Only single-flight's text is touched (a
+pair's hopac side is reported). Checked 2026-09-28: exporting against the fork's `master` reproduces every
+section exactly (normalized), and a synthetic upstream edit imports into its section with the section's
+indentation and headings kept.
+
+Carrying a file into its section (and back) is mechanical as long as shared sections never contain
+`#if SPIRAL_CORE_HOPAC` (hopac differences live in whole hopac-only sections or pairs, see `AGENTS.md`): the
+section's single-flight text is the fork file with the compaction's indent and headings. One file costs
+nothing extra here; only keeping upstream's multi-file layout would make `git merge` work without that
+section-to-file step. Before the first sync, record the fork commit the sections correspond to (a
+per-section 3-way merge needs that base).

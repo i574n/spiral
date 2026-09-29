@@ -61,18 +61,60 @@ foreach ($memberMatch in $members) {
 }
 if (-not $rows.Count) { throw 'No regeneration owners selected.' }
 New-Item -ItemType Directory -Path (Join-Path $work 'outputs') -Force | Out-Null
-$jobs = Join-Path $work 'jobs.tsv'
+New-Item -ItemType Directory -Path (Join-Path $work 'logs') -Force | Out-Null
 $results = Join-Path $work 'results.tsv'
-$rows | ForEach-Object { "$($_.Member)`tRust`t$($_.Input)`t$($_.Output)`t$($TimeoutSec * 1000)" } |
-    Set-Content -LiteralPath $jobs -Encoding utf8NoBOM
 $rows | Export-Csv -LiteralPath (Join-Path $work 'owners.csv') -NoTypeInformation
 $previousWorkspace = $env:SPIRAL_WORKSPACE_ROOT
+$previousBudget = $env:SPIRAL_BUILD_BUDGET_MS
 try {
     $env:SPIRAL_WORKSPACE_ROOT = $BundleRoot
+    # One compiler process per owner. A second BuildFile in the same process can
+    # sit until the batch timeout, which used to stop the remaining owners.
     Write-Host "Regenerating $($rows.Count) primary EOIE owners: $work"
-    & $dotnet $compiler --batch $jobs $results --timeout-ms ($TimeoutSec * 1000)
+    $encoding = [Text.UTF8Encoding]::new($false)
+    $writer = [IO.StreamWriter]::new($results, $false, $encoding)
+    try {
+        $writer.AutoFlush = $true
+        foreach ($row in $rows) {
+            $timeoutMs = $TimeoutSec * 1000
+            $stdout = Join-Path $work "logs/$($row.Member).out"
+            $stderr = Join-Path $work "logs/$($row.Member).err"
+            $env:SPIRAL_BUILD_BUDGET_MS = [string]([Math]::Max(1000, $timeoutMs - 3000))
+            $watch = [Diagnostics.Stopwatch]::StartNew()
+            $proc = Start-Process -FilePath $dotnet -ArgumentList @($compiler, '--backend', 'Rust', $row.Input, $row.Output) -WorkingDirectory $work -PassThru -WindowStyle Hidden -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+            if (-not $proc.WaitForExit($timeoutMs)) {
+                try { $proc.Kill($true) } catch { try { $proc.Kill() } catch {} }
+                $null = $proc.WaitForExit(10000)
+                $writer.WriteLine("$($row.Member)`ttimeout`t$($watch.ElapsedMilliseconds)`tno result within $timeoutMs ms")
+                Write-Host "$($row.Member) timeout $($watch.ElapsedMilliseconds) ms"
+                continue
+            }
+            $elapsed = $watch.ElapsedMilliseconds
+            if ($proc.ExitCode -eq 0 -and (Test-Path -LiteralPath $row.Output)) {
+                $bytes = (Get-Item -LiteralPath $row.Output).Length
+                $writer.WriteLine("$($row.Member)`tok`t$elapsed`tbytes=$bytes entry=main revision=process")
+                Write-Host "$($row.Member) ok $elapsed ms ($bytes bytes)"
+            } else {
+                $detail = ''
+                if (Test-Path -LiteralPath $stderr) {
+                    $detail = ([IO.File]::ReadAllText($stderr) -replace '[\t\r\n]', ' ').Trim()
+                }
+                if (-not $detail -and (Test-Path -LiteralPath $stdout)) {
+                    $detail = ([IO.File]::ReadAllText($stdout) -replace '[\t\r\n]', ' ').Trim()
+                }
+                if ($detail.Length -gt 500) { $detail = $detail.Substring(0, 500) }
+                if (-not $detail) { $detail = "compiler exit $($proc.ExitCode)" }
+                $writer.WriteLine("$($row.Member)`terror`t$elapsed`t$detail")
+                Write-Host "$($row.Member) error $elapsed ms $detail"
+            }
+        }
+    } finally {
+        $writer.Dispose()
+    }
 } finally {
     $env:SPIRAL_WORKSPACE_ROOT = $previousWorkspace
+    if ($null -eq $previousBudget) { Remove-Item Env:SPIRAL_BUILD_BUDGET_MS -ErrorAction SilentlyContinue }
+    else { $env:SPIRAL_BUILD_BUDGET_MS = $previousBudget }
 }
 $compiled = @(Import-Csv -LiteralPath $results -Delimiter "`t" -Header 'owner','status','elapsed','detail')
 $failed = @($compiled | Where-Object status -ne 'ok')

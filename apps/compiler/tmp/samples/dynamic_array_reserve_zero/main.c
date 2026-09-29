@@ -119,21 +119,25 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(0l, false);
-    v0->refc++;
     
+    
+    Array0 * v1;
+    v1 = ArrayCreate0(0l, false);
+    v0->refc++;
+    ArrayDecref0(v1);
     
     method0(v0);
     v0->refc++;
     
-    int32_t v1;
-    v1 = method1(v0);
+    int32_t v2;
+    v2 = method1(v0);
     
     
-    bool v2;
-    v2 = v1 < 3l;
+    bool v3;
+    v3 = v2 < 3l;
     
     
-    if (v2){
+    if (v3){
         
         ArrayDecref0(v0);
         return 10l;
@@ -144,15 +148,15 @@ int32_t main(){
         method2(v0);
         v0->refc++;
         
-        int32_t v3;
-        v3 = method3(v0);
+        int32_t v4;
+        v4 = method3(v0);
         
         
-        bool v4;
-        v4 = v3 == v1;
+        bool v5;
+        v5 = v4 == v2;
         
         
-        if (v4){
+        if (v5){
             v0->refc++;
             
             
@@ -179,39 +183,39 @@ int32_t main(){
             method6(v0);
             
             
-            int32_t v5;
-            v5 = v0->len;
-            
-            
             int32_t v6;
-            v6 = v0->ptr[0l];
+            v6 = v0->len;
             
             
             int32_t v7;
-            v7 = v5 + v6;
+            v7 = v0->ptr[0l];
             
             
             int32_t v8;
-            v8 = v0->ptr[1l];
+            v8 = v6 + v7;
             
             
             int32_t v9;
-            v9 = v7 + v8;
+            v9 = v0->ptr[1l];
             
             
             int32_t v10;
-            v10 = v0->ptr[2l];
+            v10 = v8 + v9;
+            
+            
+            int32_t v11;
+            v11 = v0->ptr[2l];
             
             ArrayDecref0(v0);
-            int32_t v11;
-            v11 = v9 + v10;
-            
-            
             int32_t v12;
-            v12 = v11 - 3l;
+            v12 = v10 + v11;
             
             
-            return v12;
+            int32_t v13;
+            v13 = v12 - 3l;
+            
+            
+            return v13;
         } else {
             
             ArrayDecref0(v0);

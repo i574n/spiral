@@ -27,7 +27,7 @@ param(
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
 $m = ConvertTo-SpiralMode $Mode
-$core = Get-SpiralCoreSource $m
+$core = Get-SpiralCoreProjection $m (Join-Path (Get-SpiralCacheDir) "split-bench/$m/core.fs")
 $root = Join-Path $cache "split-bench/$m"
 $emit = Join-Path $root 'emit'
 $lib = Get-SpiralLibDir

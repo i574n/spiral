@@ -1,2 +1,2 @@
-let v0 : string = "attenuated-capability"
-v0
+let v1 : string = "attenuated-capability"
+v1

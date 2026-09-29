@@ -26,11 +26,39 @@ function ConvertTo-SpiralMode([string]$Mode) {
 
 # The single-flight core is the repo's main compiler source (apps/compiler/spiral_compiler.fs); the hopac
 # core is still a lane of its own until it meets the promotion criterion in AGENTS.md.
+# Both cores live in apps/compiler/spiral_compiler.fs: sections they share appear once, the others as whole
+# `#if SPIRAL_CORE_HOPAC` (hopac) / `#else` (single-flight) pairs. The F# builds compile the file with the
+# symbol set per mode; tools that need one core without the pairs (the splitter) use Get-SpiralCoreProjection.
 function Get-SpiralCoreSource([string]$Mode) {
-    switch (ConvertTo-SpiralMode $Mode) {
-        'single-flight' { Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs' }
-        'hopac' { Join-Path $BundleRoot 'compiler/cores/hopac/spiral_compiler.fs' }
+    [void](ConvertTo-SpiralMode $Mode)
+    Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs'
+}
+
+# Writes the given mode's core to $Destination: the merged file with only that mode's branch of every
+# `#if SPIRAL_CORE_HOPAC` pair (markers at column 0; other directives are left alone). Returns $Destination.
+function Get-SpiralCoreProjection([string]$Mode, [string]$Destination) {
+    $hopac = (ConvertTo-SpiralMode $Mode) -eq 'hopac'
+    $text = [IO.File]::ReadAllText((Get-SpiralCoreSource $Mode))
+    $out = [Text.StringBuilder]::new($text.Length)
+    $depth = 0
+    $ours = [Collections.Generic.List[object]]::new()   # @(depth, inHopacBranch) per open SPIRAL_CORE_HOPAC block
+    foreach ($line in [regex]::Split($text, '(?<=\n)')) {
+        if ($line.Length -eq 0) { continue }
+        $bare = $line.TrimEnd("`r", "`n")
+        if ($bare -ceq '#if SPIRAL_CORE_HOPAC') { $depth++; $ours.Add(@($depth, $true)); continue }
+        if ($ours.Count -and $depth -eq $ours[$ours.Count - 1][0] -and ($bare -ceq '#else' -or $bare -ceq '#endif')) {
+            if ($bare -ceq '#else') { $ours[$ours.Count - 1] = @($depth, $false) } else { $ours.RemoveAt($ours.Count - 1); $depth-- }
+            continue
+        }
+        if ($line -match '^\s*#if\b') { $depth++ } elseif ($line -match '^\s*#endif\b') { $depth-- }
+        $keep = $true
+        foreach ($block in $ours) { if ($block[1] -ne $hopac) { $keep = $false; break } }
+        if ($keep) { [void]$out.Append($line) }
     }
+    if ($ours.Count) { throw 'unterminated #if SPIRAL_CORE_HOPAC block in the core' }
+    New-Item -ItemType Directory -Force (Split-Path $Destination) | Out-Null
+    [IO.File]::WriteAllText($Destination, $out.ToString())
+    $Destination
 }
 
 function Test-DotnetHasSdk11([string]$Dotnet) {

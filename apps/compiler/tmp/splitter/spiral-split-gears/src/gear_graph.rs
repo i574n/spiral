@@ -1,5 +1,8 @@
+mod gear_anchors;
 mod gear_compile_order;
 mod gear_cyclic_source;
+
+pub use gear_anchors::{ANCHORS_ENV, ANCHORS_FILE, Anchors, anchors_from_env};
 
 use gear_compile_order::compile_order;
 use gear_cyclic_source::fuse_cyclic_sources;
@@ -645,7 +648,11 @@ fn plan_gears_with_bridge_report(
         }
     } else {
         let allowance = policy.max_lines.saturating_mul(4);
-        let packed = pack_components_on_timeline(&sccs, policy, allowance);
+        // With the previous emission's anchors, keep its gears (see `gear_anchors`); otherwise pack.
+        let packed = match anchors_from_env() {
+            Some(anchors) => gear_anchors::anchored_partition(plan, &sccs, anchors),
+            None => pack_components_on_timeline(&sccs, policy, allowance),
+        };
         groups = recompute_series_layers(plan, packed.into_iter().map(|shards| (0, shards)).collect())?;
     }
     // Anonymous-record identities and address-taken top-level mutables must

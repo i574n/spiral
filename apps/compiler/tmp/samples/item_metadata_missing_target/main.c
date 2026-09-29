@@ -51,6 +51,18 @@ int32_t main(){
     
     
     target_global0(v0);
+    v0->refc++;
+    
+    
+    target_global0(v0);
+    v0->refc++;
+    
+    
+    target_global0(v0);
+    v0->refc++;
+    
+    
+    target_global0(v0);
     
     StringDecref(v0);
     return 0l;

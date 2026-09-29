@@ -49,6 +49,55 @@ State at hand-off, and the open work in priority order. Details live in the lane
   `runtime_drift.spi`) pin hashes/sizes of edited files, but `eoie status` already failed at HEAD
   ("missing evidence root"), so they could not be refreshed here.
 
+## Session 2026-09-28 (evening): splitter + hopac iteration
+
+- Hopac fixes 18-20 (`lanes/hopac/FRONTIER.md`): join point parameters permuted against their arguments
+  (`tuple_mixed`, `portable_composite`), tail calls lost for nominal returns
+  (`native_managed_array_tail_recursion`), `if` conditions replayed ahead of earlier statements. All three
+  verified on their fixtures and on frontier+smoke (8/8, 36/36, native 0 DISAGREE). A wide
+  `-Suite examples,contracts -Native -Parallel 1` run was started to check for regressions (the first
+  attempt at 2 workers was killed for low memory); read its result before calling fix 20 done.
+- Splitter: stable gears and part numbers across emissions (`spiral-split-gears/src/gear_anchors.rs`,
+  `SPIRAL_GEAR_ANCHORS`) and surface-aware dependent rebuilds in `scripts/gear-dev.ps1`. Adding a
+  top-level `let` to the hopac core: 1 gear, 92 s end to end (was 75 gears, 1,056 s); removing two: 2 gears,
+  103 s. The split compiler passes frontier+smoke (one `frontier_try_item` run hit the 15 s budget; the
+  split gears are unoptimized, so they run close to it; 2 reruns passed). Details: `lanes/splitter/README.md`.
+- The split loop is now the fast path for hopac edits: `pwsh scripts/gear-dev.ps1`, then
+  `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode hopac ...`.
+- Hopac runs rewrite in-tree sample outputs: before committing, rerun single-flight on the touched suites
+  (`pwsh scripts/test.ps1 -Suite frontier,smoke,examples,contracts -Native`) so the committed outputs are
+  single-flight's again.
+
+## Session 2026-09-28 (night): both cores in one file
+
+- `apps/compiler/spiral_compiler.fs` now holds both cores: 6 shared sections and 33 whole-section
+  `#if SPIRAL_CORE_HOPAC` / `#else` pairs (rules in `AGENTS.md`, upstream strategy in `README.md`, "Upstream").
+  The merge was generated and checked without a build: projecting single-flight gives the old file byte for
+  byte, hopac gives the old hopac core up to whitespace-only lines (its notebook export put one after every
+  declaration). `compiler/cores/hopac/` is gone; the pre-merge files and the one-shot merge script are in
+  `<cache>/core-backups/20260928-203025/`. Single-flight builds from the merged file (0 warnings).
+- **Not yet done**: the hopac build from the merged file (waits for the memory-heavy wide run), then hopac
+  frontier+smoke to confirm the projection builds and behaves like before; the first `gear-dev` run after
+  the merge rebuilds most gears once (shared sections now have single-flight's blank lines).
+- **Unifying pairs** is where copying stops. Order: IR types (the `PartEval` type definitions: `Data`, `TyV`,
+  `TypedOp`, join point keys), then codegens behind one small interface for fetching a method/closure body
+  (dictionary vs `jpBodyCellAwait`), then the small pairs. Smallest by lines differing (single-flight-only /
+  hopac-only, blank lines ignored): VSCTypes 4/2, RefCounting 5/6, WDiffPrepass 7/7, startParentWatcher 4/4,
+  Graph 8/45, SpiralHub 15/16, SpiProj 18/17, CodegenDelphi 14/14, CodegenRust 21/23, Tokenize 17/35,
+  HashConsing 0/23, PersistentVectorExtensions 0/146. Keep the shared text single-flight's, move hopac
+  telemetry (`DiagJson.emit`) out of shared sections, and treat single-flight's own lines as behaviour
+  changes for hopac (verify both builds and both lanes' tests per batch).
+- Upstream: the i574n fork (`polyglot/deps/The-Spiral-Language`) is the sync pivot; record the fork commit the
+  sections correspond to before the first sync (README, "Upstream"). `scripts/upstream.py` (status, import,
+  export) moves edits between sections and the fork's files.
+- Unified so far: `VSCTypes` (single-flight build verified; hopac build pending). 32 pairs left.
+- IR plan (the codegen pairs): the IR types differ only systematically: union tags (`UnionTagId` vs
+  `string`), layout keys (`LayoutFieldNameId` vs `string`), join point owners (`JpBodyOwnerIdentity` vs
+  `string ConsedNode * E`, and the method key carries its range type), `ReFunction`'s annotation identity.
+  Give single-flight tiny definitions of hopac's names (`UnionTagId = string`, `UnionTagIdOps.text = id`,
+  `LayoutFieldNameIdOps.matchesText`, per-mode `method_body`/`closure_body`), then the IR types and the
+  codegens can be shared text compiled by both.
+
 ## Open, in order
 
 1. **Re-bless the oracle.** Every Rust/Delphi row of `<cache>/baseline/EXPECTED.tsv` still holds translator-era
