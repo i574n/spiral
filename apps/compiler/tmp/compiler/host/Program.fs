@@ -100,7 +100,9 @@ module Program =
                 else Some value)
         match candidate with
         | Some value when validIdentifier value && declaredBinding source value -> value
-        | Some value -> failwith $"generated F# terminal expression is not a declared identifier: {value}"
+        // A script may end in an expression (`method0(v0, v1)`, a literal): the binding is only a label for the
+        // manifest and the `entry=` report, so record it as such instead of failing a valid compile.
+        | Some _ -> "(expression)"
         | None -> failwith "generated F# has no terminal expression"
 
     let private writeEntryManifest outputPath entryBinding generatedBytes revisionMode backend =
@@ -132,8 +134,11 @@ module Program =
     let private diagnosticFor uri = function
         | TypeErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
             Some $"TypeErrors: %A{x.errors}"
-        | ParserErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
-            Some $"ParserErrors: %A{x.errors}"
+        // ParserErrors do not end a build: a top-level block that fails to parse is left out of the module and
+        // the build goes on, failing only if something uses it (then its FatalError carries these errors as
+        // detail, through diagnosticForOther). Single-flight never publishes parser errors during a batch
+        // build; hopac publishes them asynchronously, so ending the build on them made hopac's result depend
+        // on whether they arrived before BuildFile returned (FRONTIER.md fix 31).
         | TokenizerErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
             Some $"TokenizerErrors: %A{x.errors}"
         | PackageErrors x when not (List.isEmpty x.errors) ->

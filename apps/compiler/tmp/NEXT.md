@@ -169,33 +169,28 @@ State at hand-off, and the open work in priority order. Details live in the lane
   bodies no longer time-slice (budget 2^24); `SPIRAL_JP_SLICE_OPS` brings slicing back for repro. Both
   fixtures now match single-flight; frontier+smoke 8/8, 36/36, native 0 DISAGREE, and no resumes at all.
   The wide run of it is incomplete (below).
+- `File main has a type error somewhere in its path.` now lists the typer's errors of every package, not just
+  the entry's (both cores' `BuildFile`): an error in a dependency used to come with no detail at all.
 - `scripts/test.ps1 -Parallel` now defaults from the machine (hopac ~3/8 of the CPUs, single-flight half,
   capped by free memory: 3 workers here); see `AGENTS.md`.
-- **Replay repeating join point calls** (open, fix half done, UNCOMMITTED CORE EDITS, see below): hopac's `main`
-  in `native_string_utf8_validate_source` called `utf8_validate_loop0` seven times (single-flight: twice).
-  Repro: `samples/frontier_replay_repeat_call` (`inl a = sm.utf8_validate "abc"`; single-flight emits 1 call,
-  hopac emitted 4). Not in `tests/harness.psd1` yet and has no committed outputs: add it, or run it with
-  `spc`-style direct compiles. `SPIRAL_DEBUG_TERM_TRACE=core/sm.spi:135` shows every extra application
-  coming from the replay driver alone (the direct evaluator never runs it): `runReplayDriver` →
-  `tryApplyReplayDataWithContext` → `tryRunApplyAfterDefinitionAt` → `runApplyAfterDefinition`, once per
-  driver tick, into the same block. The `CellShapeEApply` case of the driver (`EvalWorklist`, ~line 85060)
-  re-applies whenever the cell is ready, with no "already applied" check, and reads the argument values
-  through `tryTerm` thunks, which recompute (fresh `DV`s).
-  In `spiral_compiler.fs` now (hopac-only `EvalReplayValueStore`, ~line 66380 and ~68540), built only as
-  **Debug** (`bin/hopac/.../Debug`), Release not rebuilt:
-  1. `tryRunApplyAfterDefinitionAt` / `tryRunDynamicJoinApplyAfterDefinitionAt` refuse nodes the direct
-     evaluator owns (`isDirectNodeOwned`, fix 14's guard). Alone: 4 → 3 calls.
-  2. A memo of completed replay apply steps per node, keyed by scope block (`installReplayScopeKey`, installed
-     next to `installAnnotTestBranchAfterDefinition` as `LangEnv.seq`), function and argument. With it:
-     repro 2 calls, `native_string_utf8_validate_source` 4 (was 7).
-  3. A diagnostic row `eval_worklist_replay_apply_memo_miss` (same_scope/same_head/same_arg). The remaining
-     miss: same scope, different function and argument (`DV`): the argument thunks re-emit. Remove the row
-     once fixed.
-  Next: make the `CellShapeEApply` driver case (and the whole-spine thunk at ~163570) not re-apply a node
-  whose value the replay already committed (e.g. a committed-node set set by `putTermValue` after an apply
-  and checked before applying; `putTerm` registrations must not overwrite it), then drop the memo if it is
-  no longer needed. Verify with the repro, the utf8 fixture, frontier+smoke, then a wide run.
-- **Wide run of fix 22 is incomplete**: stopped at the user's request. `<cache>/runs/hopac-20260929-071704`
+- **Fixes 23 and 24** (`lanes/hopac/FRONTIER.md`): replay no longer repeats applications into a block the
+  direct evaluator is building, nor re-applies one it already applied (repro
+  `samples/native_replay_repeat_call`: 1 call like single-flight, was 4; utf8 fixture 2, was 7); and replayed
+  applications get their arguments in order (`Expected a string. Got: i32` in two utf8 fixtures, reduced to
+  `f "abc" 1i32`). Verified on Debug builds with direct compiles; suite results below.
+- **Batch (late 2026-09-29)**: fix 28 (nominal-wrapped functions dyn like single-flight), more ledger and
+  digest performance work, host accepts F# scripts ending in an expression; then one `-Suite all -Native`
+  hopac run (results in FRONTIER.md when it lands). The `native_source_package_prototype_*` rows are parity:
+  the oracle expects the rejection, and single-flight rejects them too (their nested packages use `+.`, which
+  only the harness core defines).
+- **Evening 2026-09-29**: fix 25 (closures in runtime `if` branches, the `EJP0035` wall: two closures shared
+  one promise identity) and fix 26 (performance: lazy path/lineage digests, incremental work-ledger counts,
+  `Environment.ProcessId`; profile and numbers in FRONTIER.md). A `frontier,smoke,examples,contracts -Native`
+  run of fixes 21-25 reached 1,011 of ~1,100 jobs before a low-memory reap: 956 match the oracle (937 in the
+  fixes-18-20 run on the same rows), 31 rows fixed, no real regressions (the 10 load-induced stalls pass
+  alone; 2 rows are the mega fixture/oracle problem). Profiling tools: `dotnet-trace`/`dotnet-stack`
+  installed with `--tool-path` in the session scratch (reinstall the same way, not globally).
+- **Wide run of fix 22 is incomplete** (superseded by the run above): stopped at the user's request. `<cache>/runs/hopac-20260929-071704`
   (`-Parallel 3`, Release = fix 22 only) reached 386 of ~1,154 jobs: ok 209, error 177, 0 timeouts, 0 crashes.
   An earlier 1-worker attempt (`hopac-20260929-065121`, 246 jobs) was stopped to switch to parallel. Rerun:
   `pwsh scripts/test.ps1 -Mode hopac -Suite examples,contracts -Native` (the default is now 3 workers here),
@@ -212,14 +207,103 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - `scripts/build.ps1` stamps the staged core copy, so building an older file with `-CoreSource` (a backup)
   is no longer a silent no-op.
 
+## Session 2026-09-30 (night): batched hopac fixes 31-33
+
+- Full run `<cache>/runs/hopac-20260929-231443` (fixes 22-30 + perf): contracts 590/607 parity (was 578),
+  examples 430/453 (was 409), mega 2/5, native 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`,
+  pre-existing). Seven contracts that stalled before now compile. Left: 20 UNEXPECTED-OUTPUT from the
+  host's "(expression)" entry (single-flight rebuild + re-bless), 5 mega parse errors, 6 brzozowski
+  sub-packages and `mega_lean_cic` stalling in partial evaluation (single-flight: 1.5-8 s).
+- Fixes 31 (host keeps `ParserErrors` as detail instead of ending the build, like single-flight), 32
+  (500 ms graces → 20 ms, `DiagJson.emit` filters before enriching; jsonl mirror pruning in `test.ps1`),
+  33 (dependency type errors hung `BuildFile`), in FRONTIER.md. Release built with 31-32 and the first
+  half of 33: `frontier_hello` 3.9-4.6 s (was ~8), fix 31 verified; the prototype rows still stalled,
+  hence the null-slot half of 33, which is **not built yet**. Next full run: `<cache>/runs/hopac-20260930-00*`.
+- Full run `<cache>/runs/hopac-20260930-002911` (fixes 31, 32, first half of 33): contracts 591, examples 430,
+  frontier 8/8, mega 3/5 (`lean_cic` compiles in 77 s, was a 178 s stall), compile phase 2,719 s (was
+  3,046 s), native 1 DISAGREE (same row). Missing: only 8 rows. Seven are partial-evaluation slowness: five
+  brzozowski sub-packages at ~28 s (single-flight 1.5-3.7 s), and the omniledger and spiral_proves roots
+  at 178 s, which parse now. The eighth is `antimirov_typed_slot_bound`, replay values shared between
+  evaluations (fix 34, partial).
+- Full run `<cache>/runs/hopac-20260930-013153` (fixes 33b, 34 memo key): contracts 591, examples 426,
+  mega 2/5. Slower overall (3,085 s), because trace analyses ran alongside it. Four `native_cube_*_direct`
+  [C] rows stalled at 17.9 s (load, or the fix 34 memo key: check alone). `derivative_runtime_gadt` hit
+  the fix-34 union-unbox mismatch, hence the second half of 34. Batch 35 (perf, `SPIRAL_DIAG_QUIET`) and
+  34b were being built next.
+- Build of 34b + 35 (quiet mode, ledger counters, credit/classifier memos): `frontier_hello` 2.7-3.3 s,
+  brzozowski `antimirov_typed_slot_bound`/`derivative_runtime_gadt`/`finite_inventory_adversarial`
+  12-14 s at 3 workers (were 23-28 s), `native_cube_frame_direct` [C] 5.4 s (its suite stalls were
+  load). Full run `<cache>/runs/hopac-20260930-02*` started with it.
+- Open: `mega_brzozowski_derivatives/negative_raw_regex_not_positioned_bound` still stalls at
+  `typecheck_await_scheduled` (parity: expected rejection, but 28 s). A direct compile with
+  `SPIRAL_DEBUG_TYPECHECK_WAIT=8` printed nothing although `file_build` emits that stage right before the
+  watchdog. Either the watchdog's `states` list (`packages_infer`) throws, which would also abort
+  `file_build`, or stderr is lost at the forced exit. Wrap the start of `file_build` in a try that sends
+  the exception as a fatal.
+- Full run `<cache>/runs/hopac-20260930-024800` (fixes 34b + 35): contracts 596/607, examples 430/453,
+  frontier 8/8, mega 3/5, compile phase 2,438 s. Real misses: `spiral_proves`, `lean_cic` (load-dependent),
+  brzozowski `antimirov_certificate`. The rest is the host "(expression)" re-bless and new fixtures.
+- Fixes 36-37 (FRONTIER.md): producer records compared by reference, lazy credit digests and snapshots,
+  quiet-mode HUD/heartbeat/handoff savings, `file_build` setup guard. `spiral_proves` alone: 151 → 65 s.
+  `SPIRAL_HOPAC_WORKERS=3` measured no better than the default. Full run `<cache>/runs/hopac-20260930-0413*`.
+- Estimate (2026-09-30, 04:00), how far hopac is from compiling everything single-flight does: ~700/1000.
+  Suite parity is ~97%, but the tail is the hard part:
+  - mega roots take minutes against seconds;
+  - the replay store keys values per AST node, not per evaluation (fix 34: timing-dependent wrong values);
+  - `apps/spiral`, the promotion criterion, has not been attempted since the early lanes.
+- Full run `<cache>/runs/hopac-20260930-041329` (fix 37): **mega 5/5** for the first time (lean_cic 43 s,
+  omniledger 52 s, spiral_proves 149 s of its 180 s budget), contracts 596/607, examples 430/453, frontier
+  8/8, native 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`). The only real miss:
+  `mega_brzozowski_derivatives/antimirov_certificate`, the fix-34 replay mix-up, which is a race: alone it
+  compiles, at 1 or 8 workers. Everything else "missing" is the host "(expression)" re-bless and new
+  fixtures.
+- Race 38 is narrowed down (FRONTIER.md): type checking finishes and the fatal is sent, but the host never
+  turns it into a result. The loss is between `errors.fatal` and the host's `DiagnosticRouter`. The
+  watchdog now also writes `%TEMP%\spiral-typecheck-wait-<pid>.txt`.
+- Two races left, both in FRONTIER.md: 34 (replay values per AST node, not per evaluation: wrong-type
+  branch values now and then) and 38 (multi-package type checking sometimes never answers; parity rows,
+  28 s each).
+- Estimate after this session: ~750/1000. Parity is ~99% of the suite rows, but the remaining work is the
+  hard kind:
+  - the two races;
+  - speed: mega roots 40-150 s against 1-8 s in single-flight;
+  - `apps/spiral`, the promotion criterion, not attempted yet.
+- **Final run of the session** `<cache>/runs/hopac-20260930-050954`: frontier 8/8, contracts 597, examples 430,
+  mega 5/5, **no `missing` rows** (FRONTIER.md status table). Then single-flight was rebuilt with the
+  current host, and a full `-Suite all -Native` run (`<cache>/runs/single-flight-20260930-055401`) restored
+  the in-tree outputs.
+- That single-flight run: contracts 597 parity, examples 430, frontier 4 + 4 new, mega 5/5. There are no
+  `REGRESSED` rows and the same 3 NATIVE-DIFF rows (the Rust `managed_string_invalid_utf8_slice` DISAGREE is in
+  both lanes: a single-flight Rust backend issue). **The same 21 UNEXPECTED-OUTPUT rows as hopac**, all
+  `entry=(expression)`: the host now accepts F# scripts ending in an expression, in both lanes.
+  Re-blessing the oracle (`pwsh scripts/test.ps1 -Suite all -Native -Bless`, single-flight) turns them into
+  parity. Review first: they are
+  `contract_arithmetic`, `contract_record`, `branch_select`, `dynamic_array_{bool,f64,function_boundary,
+  record,return,runtime_length}`, `gadt_specialized_case_rank`, `portable_composite`, `record_value`,
+  `recursive_union_mutual`, `tuple_mixed`, 4 `mega_brzozowski_derivatives/compiler_probe_*`, and 3 mega
+  `negative_*` sub-packages. Those last seven are mega fixtures whose "negative" programs single-flight
+  compiles; oracle rows the earlier host only rejected by accident.
+- Git state: the working tree has single-flight's outputs. The **index** (staged by the user) still holds
+  94 sample outputs from an earlier hopac run. For example, the staged `dynamic_array_function_boundary/main.c`
+  has the duplicated `method0` call of the replay bug fixed in fix 23. `git diff -- samples` shows them;
+  restage the working tree's versions before committing.
+- Next targets: build fix 33's second half and fix 34; profile `mega_brzozowski_derivatives/finite_inventory_adversarial`
+  (hopac >28 s in partial evaluation); stack-dump `mega_lean_cic_bottom_up_kernel` (>172 s).
+
 ## Open, in order
 
 1. **Re-bless the oracle.** Every Rust/Delphi row of `<cache>/baseline/EXPECTED.tsv` still holds translator-era
    hashes and exit codes. Run `pwsh scripts/test.ps1 -Suite all -Native`, check there is no `REGRESSED`,
    `NATIVE-DIFF` or `DISAGREE` beyond the rows below, then rerun it with `-Bless`. Then commit the refreshed
    `samples/**/main.*` outputs that run wrote. (Slow: ~30 min.)
-   Expected differences, all improvements: `managed_string_invalid_utf8_slice` (Delphi now exits 3 like C),
+   Expected differences, all improvements: `managed_string_invalid_utf8_slice` (Delphi now exits 3 like C;
+   Rust too since 2026-09-30: `codegenRust`'s `string_slice` exits 3 when a slice starts or ends inside a
+   code point, like C's abort and Delphi's `Halt(3)`, instead of truncating to the valid prefix; both lanes
+   DISAGREE 0),
    `dynamic_array_bounds_negative` (Delphi exits 0 like C; Rust panics, a `Known` row).
+   Before blessing, decide the 5 mega `brzozowski` rows whose oracle is the parent package's program
+   (FRONTIER.md, "Resolved (2026-09-29)"), and bless the two new fixtures
+   (`native_replay_repeat_call`, `native_literal_join_args`) so hopac's residual is checked against them.
 2. **Rust libraries and exports for eoie**: `lanes/single-flight/RUST_LIBRARY_PLAN.md`. Then delete
    `compiler/host/PortableBackends.fs` and everything that calls it (the host still runs its
    `lowerPortableBackend`/`tryLowerPortableSource` on C and F# output; verify that is a no-op for the
@@ -228,8 +312,36 @@ State at hand-off, and the open work in priority order. Details live in the lane
    `pwsh scripts/gear-dev.ps1 -Force` (~20 min at `-MaxNodes 2`), then
    `$env:SPIRAL_COMPILER_DLL = <printed path>; pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke -Native`.
    Then continue the user's goal: iterate on the splitter/hopac until every sample compiles with hopac.
-4. **Hopac**: replay repeating join point calls (above), then the build-budget stalls and the `EJP0035`
-   closure branch. (`tuple_mixed`, `portable_composite` and `native_managed_array_tail_recursion` were fixed
+4. **Hopac**: the build-budget stalls. They fall into two groups:
+   - **Diagnosed (2026-09-29, late):** with the fatal message now listing every package's errors, these
+     "stalls" report instead: hopac rejects `+.`/`=.` inside the nested package
+     (`packages/shared/advance.spi:12:31: Unbound term variable: +.`, `consume.spi:16:43: ... =.`). Those
+     operators come from the harness core `samples/core` (`operators-`); The-Spiral-Language's core
+     (`SPIRAL_COMPILER_PACKAGE_DIR`, `deps/polyglot/.../VS Code Plugin/core`) has neither, and every
+     package in these fixtures uses `|core-` (the real core). Single-flight rejects them the same way (a
+     fresh compile: `Unbound variable: +.` in `shared`), and the oracle expects the rejection, so hopac is at
+     parity; whether the fixtures should use the harness core (`core-`) is a fixture question. (Earlier
+     builds hung at `typecheck_await_scheduled` instead of reporting; which change ended that is not pinned
+     down.) The notes below are the earlier analysis.
+   - Type checking never finishes (`last_stage=typecheck_await_scheduled`) for multi-package programs:
+     every `native_source_package_prototype_*` fixture and 4 mega `negative_*` sub-packages. The
+     prototype isn't the cause: `native_source_package_prototype_record_callback` with a plain
+     function instead still stalls. `main` → `shared` → `model` (each also on `|core-`) is enough.
+     A plain type error in `shared` is reported correctly by hopac (`FatalError ... type error
+     somewhere in its path`, 5 s). The reduced variant (in `shared/advance.spi`: `open model.state`, then
+     `inl run () : i32 =` building a `state_t`, destructuring it with `inl (state_t s) = initial` and adding
+     its fields) is rejected by single-flight in 5 s and stalls hopac, while the original fixture compiles in
+     single-flight. Hopac compiles the same package graph with valid bodies (`open model.state` alone, a
+     `state_t` built and unused, a `match initial with | state_t s => ..`), and the destructuring
+     `inl (state_t s) = initial` compiles in a single-file program in both cores. So the stall needs the
+     destructuring of an imported nominal inside a dependency package. Next: instrument which package's
+     type-check stream `BuildFile` waits on (`tc.files.uids_file.[mid]`: `a.state`, and the prepass `b`)
+     at the stall; a typechecker exception swallowed inside a Hopac stream would leave that promise unfilled.
+   - Partial evaluation (`partial_evaluation_started`): the cube and utf8 fixtures, `frontier_fib`, and
+     contract and mega sub-packages. Recheck these after fixes 22-25, since some cleared.
+   The mega sub-packages that "parse order-dependently" are a fixture problem, not hopac: see
+   FRONTIER.md ("Resolved (2026-09-29)") for the 5 oracle rows single-flight compiled from the wrong
+   `main`. (`tuple_mixed`, `portable_composite` and `native_managed_array_tail_recursion` were fixed
    by fixes 18 and 19.)
 5. **Mutual tail recursion in the native backends**: self tail calls are loops; a strongly connected group
    of methods that tail-call each other still recurses (covered by a 1 GB / 256 MB stack for now). Merge

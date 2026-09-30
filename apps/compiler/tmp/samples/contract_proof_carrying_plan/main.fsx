@@ -1,2 +1,2 @@
-let v8 : string = "proof-carrying-plan"
-v8
+let v0 : string = "proof-carrying-plan"
+v0

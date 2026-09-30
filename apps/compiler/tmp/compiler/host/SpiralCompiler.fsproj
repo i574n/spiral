@@ -17,6 +17,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
     <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
+    <!-- Hopac runs one compile per process: tier-0 PGO instrumentation costs more than it pays back (~7%). -->
+    <TieredPGO>false</TieredPGO>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Program.fs" />

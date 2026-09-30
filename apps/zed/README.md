@@ -98,13 +98,22 @@ assert_eq!(doubled, vec![2, 4, 6]);
 
 ## How to Test
 
-### 1. Run the Extension Test Suite
-In a terminal, test the extension's Rust unit tests:
+### 1. Probe the helper
+From the extension directory:
+
 ```powershell
-cd C:\home\git\spiral\apps\zed
-cargo test
+pwsh -File C:\home\git\spiral\apps\zed\test.ps1
 ```
-All tests for GADTs, Existentials, HKTs, and protocol state machines will execute and pass.
+
+That builds `dist/spiral-zed.exe`, checks `fixtures/ok/main.spi` (must pass), and checks `fixtures/bad/main.spi` (must fail). The same binary is what Zed launches. Restart the `spiral-lsp` language server after a rebuild.
+
+A single file, without the script:
+
+```powershell
+dist\spiral-zed.exe --dotnet $dotnet --compiler $dll --probe fixtures\bad\main.spi
+```
+
+The probe prints the dotnet path, the compiler dll, the backend, the exit code, and one `diagnostic line:character message` line. A compiler trace such as `Error trace on line: 2, column: 5` is reported at line 1, character 4.
 
 ### 2. Test Syntax Highlighting in Zed
 1. Open any Spiral file in Zed, for example:
@@ -127,7 +136,7 @@ Zed starts `spiral-zed`, which speaks the language server protocol and runs the 
 
 `%LOCALAPPDATA%\spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0\SpiralCompiler.dll`
 
-The log is the `spiral-lsp` language server trace. The first lines are `spiral-zed: ready` with the dotnet path, the dll path, and the backend. Hover a name for the token and the latest compiler note. The code action **Spiral: Build file** runs `SpiralCompiler --backend Rust` and writes the `.rs` next to the module. Build and check output is appended to that same trace.
+Opening a `.spi` file shows a toast, `Spiral ready`, and then checks that file. A failure is one diagnostic. When the compiler prints `Error trace on line`, the underline uses that line and column. The code actions **Spiral: Build file** and **Spiral: Show compiler** are on `.spi` and `.spir` buffers. Show compiler repeats the backend and the dll name. The language server log still starts with `spiral-zed: ready` and the full dotnet and dll paths. Hover a name for the token and the latest compiler note. Build writes the `.rs` next to the module.
 
 ```json
 {

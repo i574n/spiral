@@ -1,5 +1,22 @@
 # Hopac frontier
 
+**Status 2026-09-30 (fixes 21-37):** `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native`
+(`<cache>/runs/hopac-20260930-050954`, 3 workers, `SPIRAL_DIAG_QUIET=1` from the harness):
+
+| Suite | Jobs | Parity | Not parity |
+|---|---:|---:|---|
+| frontier | 8 | 8 (4 have no oracle row yet) | 0 |
+| contracts | 607 | 597 | 9 UNEXPECTED-OUTPUT, 1 no-oracle |
+| examples | 453 | 430 | 12 UNEXPECTED-OUTPUT, 8 new, 3 NATIVE-DIFF |
+| mega | 5 | 5 (brzozowski 5 s, zeta 15 s, omniledger 38 s, lean_cic 64 s, spiral_proves 106 s) | 0 |
+
+No `missing` row. The 21 UNEXPECTED-OUTPUT rows are F# outputs that end in an expression, which the host
+now accepts. They need single-flight rebuilt with the same host and the oracle re-blessed. Native: 359
+ran, 1 DISAGREE (Rust `managed_string_invalid_utf8_slice`, a shared `codegenRust` issue, fixed right after
+this run: both lanes now DISAGREE 0). The NATIVE-DIFF rows are translator-era oracle values (NEXT.md). Compile phase 2,390 s, median job 4.2 s (`frontier_hello`
+~3 s). Two known races can still flip a row: 34 (replay values per AST node) and 38 (multi-package
+type checking).
+
 Status as of 2026-09-27, measured on Windows with
 `pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke -Native -Record` (46 jobs, one process per job,
 20 s per job, 2 in parallel). Full rows: `<cache>/scoreboards/hopac.tsv`.
@@ -212,6 +229,17 @@ In the order they were found; each was confirmed with a stack dump or a reduced 
     `SPIRAL_JP_SLICE_OPS=128,32` makes `native_string_utf8_validate_source` repeat a prefix, and
     `64,16` makes `native_cube_direct` stall.
 
+Run after fixes 21-25 (2026-09-29, `-Suite frontier,smoke,examples,contracts -Native`, 3 workers,
+`<cache>/runs/hopac-20260929-185749`; reaped for low memory at 1,011 of ~1,100 jobs, so there is no
+`results.tsv`, only the per-worker files): on those 1,011 rows the compile status matches the oracle for 956,
+against 937 in the fixes-18-20 run. 31 rows fixed: every `native_closure_*branch` row (C, Rust, Delphi),
+`native_string_utf8_*` (fold, grapheme, scalar, normalization, with their `_invalid` variants),
+`managed_string_codepoints` [C], the two contract crashes (fix 21),
+`contract_partition_healing_cancellation_saga`, and the closure `NATIVE-DIFF`s (the C closure fix). 12 rows
+went the other way: 10 build-budget stalls that each compile within budget when rerun alone (16-22 s for
+the contracts: the run shared the machine with compiler builds and profiling), and 2 mega sub-packages whose
+oracle is wrong (see "Resolved (2026-09-29)" below).
+
 Wide run after fixes 18-20 (2026-09-29, `-Suite examples,contracts -Native -Parallel 1`): examples 413/461
 parity, contracts 585/607, native 7 build failures (21 before), 0 `DISAGREE`; the three fixtures above and
 `managed_string_codepoints` (Rust, Delphi) now pass. New: 4 compiler stack overflows (exit 0xC00000FD) in
@@ -219,11 +247,261 @@ contract and mega sub-packages (fix 21), 4 `WRITE_ABORT`s on `native_string_utf8
 against 28 KB) and `native_cube_direct`, which used to stall, finishing with statements missing (both fix
 22).
 
-**Open: the root evaluation repeats awaited method calls.** In `native_string_utf8_validate_source`, hopac's
-`main` calls `utf8_validate_loop0` seven times where single-flight calls it twice, and uses only the last
-result of each argument. The answer is right because the calls are pure; with an effect it would be a silent
-miscompile. It happens with or without fix 22 and with 1 or 8 workers, so it is the root evaluator's replay
-re-emitting a `let` whose value is a join point call, not the method-body slicing.
+23. **Replay repeated applications, out of order (silent miscompile once effects are involved).**
+    `native_string_utf8_validate_source`'s `main` called `utf8_validate_loop0` seven times where
+    single-flight calls it twice, and `samples/native_replay_repeat_call` (`inl a = sm.utf8_validate "abc"`)
+    four times instead of once. `SPIRAL_DEBUG_TERM_TRACE=core/sm.spi:135` showed where they came from:
+    - The replay driver runs nested inside direct evaluation (cooperative ticks, same thread) and applied
+      the call through its apply-spine route (`runReplayDriver` → `tryApplyReplayDataWithContext` →
+      `tryRunApplyAfterDefinitionAt`), into the block the direct evaluator was still building, ahead of
+      the statements before it (the empty string's call landed before the other). The direct evaluator
+      then applied it again, and its values are the ones used.
+    - The driver applied again on every tick that reached the cell, re-reading the arguments through their
+      thunks (fresh variables each time).
+
+    Fix 14 guarded only the whole-spine thunks, and only by node. Now:
+    - `term_core` counts the blocks it is building (`enterDirectScope`/`exitDirectScope`, by `LangEnv.seq`);
+      the apply-spine route fails closed for a node the direct evaluator owns or a block it is building,
+      like the thunks;
+    - an application the replay completed is recorded per node and block (`rememberReplayAppliedValue`);
+      the driver's `EApply` case and both whole-spine thunks reuse it instead of applying again;
+    - completed apply steps are memoized per node, block, function and argument.
+
+    Both fixtures now emit single-flight's calls (1 and 2).
+24. **Replayed applications got their arguments in reverse (`Expected a string. Got: i32`).**
+    `native_string_utf8_scalar_source_invalid` and `native_string_utf8_normalization_bounded_source` failed
+    type checking inside `utf8_scalar_at_byte_offset`: `str` was bound to the `i32`. Reduced: `let f (str :
+    string) (i : i32) = ...` called as `f "abc" 1i32` (with literal arguments; `inl ~s` variables took the
+    direct path and worked). The three apply-spine registrations collect arguments walking the `EApply`
+    chain from the outside, so `argNodeIds` held the last argument first; the whole-spine thunks iterated
+    it backwards, but the driver's `EApply` case applied it forwards, i.e. `f 1i32 "abc"`. Spines now store
+    arguments in application order (the thunks keep their own array). This was older than fixes 18-22.
+    Fixture: `samples/native_literal_join_args`.
+
+25. **Closures in runtime `if` branches (`EJP0035 ... JpClosureBodyCellPayload was never filled`).**
+    `native_closure_branch` (`inl ~g = if flag then a else b` over two annotated lambdas) and the other
+    `native_closure_*branch*` fixtures (12 rows). The run log showed two closure work units with the same
+    `computation_key` and instantiation (`generation=0|tag=0|hkey=..`): closure tags come from each owner's own
+    hash-cons table, and both lambdas' environments are equal, so both were `JPClosure tag=0`. The second
+    producer failed with `PromiseProducerBindingConflictFailure`, and that failure also voided the first's
+    success (`worklist_terminal_failure_precedes_late_success`), so neither body cell was filled. The closure
+    key and instantiation now include the owner's source range and backend, as method keys include theirs.
+    (The old note blamed a retry that never came; the retry was never needed.) `native_closure_branch`,
+    `_captured_branch`, `_managed_captured_branch` and `_nested_branch` now give C byte-identical to
+    single-flight's (exit 42).
+
+26. **Contracts 3-5x slower than single-flight (reported as stalls under load).** On a quiet machine the
+    Release compiler took 32 s for `contract_public_byzantine_key_rotation` (260 lines) and 24 s for
+    `contract_higher_rank_hot_swap`, against single-flight's 7 and 9 s; under a parallel suite plus builds
+    they took 114 s and 72 s and hit the build budget. With the changes below, even the unoptimized Debug
+    build takes 28 s and 22 s (the ledger change alone: 38 → 28 s for byzantine), and Release 27 s and
+    22 s (`contract_dependently_verified_federation` 19 s): 10-15%, so the rest of the gap is elsewhere. A sampled-thread-time trace (`dotnet-trace collect --profile
+    dotnet-sampled-thread-time --format Speedscope`, summarized per frame) of the byzantine compile:
+    evaluation proper (`term`/`apply`) ~21% of busy time; `DiagJson.emit` ~25%, of which re-parsing the JSON
+    it emits (`jsonStringFieldByName`, `jsonHasField`, `enrichJsonLineWithProgressEta`) ~10%; the semantic
+    work ledger ~12% (`SemanticWorkUnitKeyId.CompareTo` under `keysForScope`/`countsForScope`, which
+    scanned every admitted work unit on each heartbeat and credit decision); SHA-256 digests
+    (`ContentDigest.ofText`) ~9%; the console HUD ~7%. Changed so far:
+    - `EvalCycleGuard`/`EvalStackDepthGuard` digested the whole evaluation path on every enter/exit
+      (quadratic in depth); the digest is lazy now (nothing reads it on the hot path);
+    - `RecursionTracker.enter` digested a chained lineage on every term evaluation and took a global lock;
+      lazy and unchained now, and the lock is taken only for a new maximum depth;
+    - the ledger keeps per-scope admitted/receipt counts and open-key sets, so `countsForScope` and
+      `openKeysForScope` no longer scan (`Set.toList` keeps the credit digests' key order).
+
+    Next: `DiagJson.emit` (build rows from typed fields instead of re-parsing emitted JSON; sample the
+    per-commit handoff rows), then the HUD repaint rate.
+30. **The lexer's cross-line state was process-wide (context-dependent parse errors).** After fix 29 the two
+    mega roots still failed at a multi-line parameter annotation (`(transport : t ⏎ a b c)`, "Expected: )"),
+    yet the same definitions compile alone. `TripleString.in_triple` and `MultiComment.depth` were module-level
+    mutables; hopac tokenizes files in parallel, so one file's open `"""` string (these files have 110 and 27)
+    leaked into lines of another file tokenized at the same time. Both are `ThreadLocal` now: a file's lines
+    are tokenized in one synchronous call after `reset_lexical_state` (tokenize_replace maps sequentially).
+    **The mega-root parse errors remain, though**: fixture `samples/frontier_macro_then_multiline_annotation`
+    (12 lines: `inl g forall a b. ⏎ (e : eq ⏎ a b) : i32`, "Expected: )" at `a`) fails in hopac and
+    compiles in single-flight, and the outcome is timing-dependent (the same input parsed 1 time in 5; 0 of 3
+    with 1 or 8 workers while a suite ran). Strictly, the continuation `a` (column 8) is left of the application
+    head `eq` (column 9), so `apply` (`blockParsingIndent (col d) (<)`) should stop there in both cores, and
+    single-flight still accepts it. Deterministic form, no `forall` needed: `inl g (e : eq ⏎ i32 i32) : i32`
+    with the second line indented less than `eq` parses in single-flight and fails in hopac; indented more,
+    both parse. The parser text on that path is identical in both cores (`root_pattern_type`, `root_type`'s
+    `apply`, `col`, `line_template`, `try_current_template`). Resolved by fix 31: both cores reject the
+    block, and the difference is in how the build reacts to that.
+31. **A parse error in an unused block failed only hopac builds (timing-dependent).** Neither core's
+    parser was the cause (fix 30). Single-flight also fails to parse `inl g (e : eq ⏎ i32 i32)` with the
+    continuation left of `eq`, and even `inl g (e : eq i32 i32)) )`. It leaves the block out of the module and
+    builds the rest; only a use fails ("Unbound variable: g"), and a broken `main` fails as "Cannot find
+    `main`" (`contract_parser_error`). The host ended a build as soon as a `ParserErrors` diagnostic for the
+    entry arrived. Single-flight never publishes one during a batch build (only an empty
+    `TokenizerErrors`; `SPIRAL_HOST_TRACE_DIAGNOSTICS=1` shows the stream). Hopac publishes them
+    asynchronously, so its result depended on whether they arrived before `BuildFile` returned: that is the
+    1-in-5 of fix 30, and the mega roots' "Expected: )". The host now keeps `ParserErrors` as detail for a
+    later `FatalError` instead of ending the build (host `diagnosticFor`).
+32. **Fixed latency and telemetry cost on every compile.** Two 500 ms graces waited for receipts that never
+    arrive in a batch build: the terminal writer's artifact commit (`SPIRAL_ARTIFACT_COMMIT_GRACE_MS`) and
+    the run-end receipt, which cannot arrive before the result it waits on (`SPIRAL_RUN_END_GRACE_MS`). Both
+    default to 20 ms now. `DiagJson.emit` compacted and enriched every row (memory, progress/ETA and
+    seq/consensus envelope, each re-parsing the JSON) before its filters dropped most of them; the filters
+    read only the producer's own fields, so it now decides on the raw row and enriches only rows it writes.
+    `scripts/test.ps1` also deletes the compiler's per-process `<timestamp>.jsonl` mirrors older than 12 h
+    from `<cache>/core-src`: about 1 MB per hopac compile, they had filled the disk (13 GB) and killed a run.
+33. **Type errors in a dependency package hung the build (`last_stage=typecheck_await_scheduled`).**
+    `native_source_package_prototype_*` (9 rows) and two brzozowski `negative_*` sub-packages stalled after
+    type checking had finished. The stall was fix 27's own error listing, run inside a started Hopac job.
+    It read `fst tc.files.uids_file.[mid]` for every package state in `packages_infer`, and a reset state
+    holds null slots (`Array.zeroCreate`). The `NullReferenceException` was swallowed by the job, so the
+    fatal was never sent. The debug watchdog (`SPIRAL_DEBUG_TYPECHECK_WAIT`) had the same flaw and printed
+    nothing, which first looked like "every promise is filled". The listing now skips empty slots, reads
+    only the part of each result stream already available (`Promise.Now`, never blocking), and falls back
+    to a fatal without details if it still throws; the watchdog reports its own failures. The first
+    attempt (non-blocking reads only) still stalled. Probe note: `SPIRAL_BUILD_DEADLINE_MS` is an
+    absolute Unix time in ms (the host sets it); use `SPIRAL_BUILD_BUDGET_MS` for a relative budget.
+34. **Replay values shared between evaluations of the same node (open; partly fixed).**
+    `mega_brzozowski_derivatives/antimirov_typed_slot_bound` compiled in one full run and failed in the
+    next, inside `normalize forall alphabet {symbol_compare}`, with "The types of two branches of an union
+    unbox do not match. Got: symbol_ordering And: tri_alphabet". A match got branch values from two
+    specializations. The replay store (`EvalReplayValueStore`) keys term thunks, apply spines and apply
+    contexts by AST node identity (`RuntimeHelpers.GetHashCode`), and the latest registration wins. A
+    replay for one evaluation can therefore read a thunk captured by another evaluation of the same node,
+    and identity hashes can also collide. Fix 23's applied-value memo was keyed by (node, scope block), so
+    two applications of one node in one block (an inlined function called twice) shared a value. It is now
+    keyed by the evaluation's own context object, and the whole-spine thunks use the context they
+    captured. That alone did not cure it: the next run hit the same mismatch in `derivative_runtime_gadt`,
+    and after fix 37 `antimirov_certificate` hits it every time (11 s, no longer a stall).
+    The whole-spine thunks now also take simple heads and arguments (`EB`, `EV`, `ELit`, `ESymbol`) from
+    their own captured environment instead of the shared per-node store (not yet run in a suite). The
+    real fix is a per-evaluation store: register under (node, context) and look up with the context the
+    replay runs for, in the replay driver too.
+35. **The brzozowski sub-package stalls are load-induced slowness.** `finite_inventory_adversarial` compiles
+    alone in 18 s (single-flight 1.6 s) and stalls at ~28 s in a 3-worker suite. In its sampled profile,
+    evaluation (`term`) is 34% of busy time. The rest is overhead:
+    - the terminal-flow reducer loop, 12.7%;
+    - JSON emission and the HUD/file log, ~15%;
+    - SHA-256 digests, 9%;
+    - work-ledger counts and credit decisions, ~10%;
+    - `DiagnosticClassifier`, 6%.
+
+    Changed:
+    - `SemanticWorkLedger` keeps `admittedCount`/`receiptCount`: F#'s `Map.Count` walks the tree, and
+      every JP worker dequeue read it through `jpTryReserveObserverLane`.
+    - Credit decisions are memoized per (immutable) ledger instance (`ConditionalWeakTable`). Each one had
+      listed the open units, joined their names and hashed the text, and many observers asked between two
+      mutations.
+    - `DiagnosticClassifier.classifyFacts` is memoized by text. The replay driver classified the same
+      reason strings on every pinned terminal cell, ~70 substring searches each.
+    - `SPIRAL_DIAG_QUIET=1`, which `scripts/test.ps1` sets unless the caller did, turns off the pure
+      diagnostic outputs. These are the `DiagJson.emit` rows (17% inclusive), the advanced console
+      projections, and the live work-ledger heartbeat and projection-suite emissions. The last two still
+      run their state observation. Durable terminal receipts, errors and results are unaffected. Direct
+      compiles keep everything.
+36. **The two slow mega roots, profiled alone** (after fix 35, `SPIRAL_DIAG_QUIET=1`).
+    `mega_lean_cic_bottom_up_kernel` takes 33 s alone, but 77-178 s in a suite. The 3-5x slowdown under
+    load is beyond fair CPU sharing, so oversubscription is a suspect: every compile runs its own full
+    Hopac worker pool. `mega_spiral_proves_spiral_relative_consistency` takes 151 s even alone. Changed:
+    - `EvaluatorProducerRecord` is `[<ReferenceEquality>]`: 22.8% of lean_cic's CPU. The producer
+      graph's `ConcurrentDictionary.AddOrUpdate` compare-and-swaps the prior value with
+      `EqualityComparer.Default`, which compared records structurally, deep into boxed
+      `Data`/`Ty`/`LangEnv` artifacts, on every replay registration. Each update mints a new record with a
+      new revision, so content equality meant nothing.
+    - `SemanticWorkCreditOutstanding` builds its open work-unit list and digest on first read, and so
+      does the ledger snapshot's open-unit texts: ~36% of spiral_proves' CPU. With thousands of open
+      units every credit decision mapped them all (`openWorkUnits`, 21%), joined their names and hashed
+      the text, and most deciders only look at returned/outstanding.
+    - `BuildFile` setup exceptions (`file_build`) now reach the host as a fatal instead of vanishing
+      into the stall budget.
+37. **spiral_proves after fix 36** (143 s alone, was 151 s). The credit digest was still forced on
+    every call by `terminalFlowTerminationCreditDecisionFor` (the closed-world promotion gate and the
+    fairness advance). It digested thousands of open units, ~44% of CPU with the text formatting. That
+    function only needs the digest and the ledger snapshot when credit is returned, so both are lazy
+    there now. In quiet mode, three more pure-telemetry costs are skipped:
+    - the heartbeat thread polled in 1-5 ms sleeps (~7% busy); it now waits in 25 ms steps, with the
+      same 250 ms cadence and ledger heartbeat;
+    - the HUD ticker painted frames to a redirected stream;
+    - the parent-cache handoff wake built proof-tuple JSON fields (4%) for a row that is dropped.
+
+    Measured on the fix-36 build, mega suite with 3 workers: `SPIRAL_HOPAC_WORKERS=3` did not beat the
+    default of one worker per core (lean_cic 178 s vs 139 s, same wall time). `lean_cic` is slow in the
+    suite because it shares the CPU with the omniledger and spiral_proves roots, not because of
+    scheduler oversubscription.
+38. **Open: multi-package type checking races (`typecheck_await_scheduled` stalls).** Up to four
+    brzozowski `negative_*` sub-packages stall at 28 s in suite runs. Their oracle rows are rejections,
+    so they count as parity, but they cost the full budget. `negative_antimirov_slot_shape` is the
+    reproducer. Alone, it sometimes answers in 3 s with single-flight's own errors ("Unbound type
+    variable: antimirov_origin_slot", a fixture quirk: parity) and sometimes stalls. Both happened with
+    `DOTNET_ThreadPool_ForceMinWorkerThreads=64`, so a larger thread pool is not the fix (a host
+    `SetMinThreads` floor was tried and reverted). Run through `Start-Process` with redirected output,
+    3 of 3 answered; run through a PowerShell pipe, most stalled. In stalled runs even the
+    `SPIRAL_DEBUG_TYPECHECK_WAIT` watchdog (a `Task.Delay` continuation) never prints, and the
+    `file_build` setup guard reports no exception. So thread-pool threads are blocked, or the
+    process's stderr writes block.
+
+    Later the same day, with the compile run under a PowerShell pipe (3 of 3 stalled):
+    - A `dotnet-stack` dump 12 s in shows **every thread idle**: Hopac workers in `Scheduler.UnsafeWait`,
+      thread-pool workers parked, main in `compileOne` waiting for the build result. So it is neither
+      starvation nor blocked console writes: something the host waits on is never signalled.
+    - The watchdog also appends to `%TEMP%\spiral-typecheck-wait-<pid>.txt` now, since its stderr lines
+      never showed. At 6 s it wrote `entry input=true output=true`: **type checking finished**, and the
+      build had taken the error branch, which sends the fatal (`Ch.send errors.fatal`) and emits no
+      further stage. That is why `last_stage` stays `typecheck_await_scheduled`.
+    - With `SPIRAL_HOST_TRACE_DIAGNOSTICS=1` the same run answered: a burst of `ParserErrors` and
+      `PackageErrors` diagnostics, then `FatalError`, then the host's "type error somewhere in its path".
+
+    So the lost signal is between the core's `errors.fatal` send and the host's `DiagnosticRouter`
+    (`startDiagnosticPump`, `Accept`, the `fatalGraceMs` continuation and `TrySetResult`). Suspects: the
+    fatal handled while no build is `active`, or the pump behind on the parser-error burst when the build
+    task wins. A strong candidate: `fatal` is `start (Ch.send errors.fatal x)`, a rendezvous that completes
+    only when a receiver takes it. If the core's merge of the error channels is itself blocked handing an
+    earlier diagnostic of the burst to the host's `AsyncSeq` pump, every Hopac worker just waits: the
+    all-idle dump. Check where `errors.fatal` is consumed and whether the host pump can stop pulling. Next: log each `Accept` with the router's `active` state to a temp file (the trace changes
+    timing), or make the core's fatal also fill the BuildFile result IVar with `None`, which the host
+    already turns into a waited-for diagnostic.
+29. **Triple-quoted strings broke block structure (`Failed to parse this token` in mega roots).**
+    `mega_omniledger_erp_kernel` (110 `"""` strings) and `mega_spiral_proves_spiral_relative_consistency` (27)
+    failed to parse far below their strings. Hopac's tokenizer gave every empty line inside an open `"""`
+    string a `TokText "\n"` token at column 0, and the block splitter starts a new top-level block at a line
+    whose first token is at column 0, cutting the enclosing definition in two. It also put each line's
+    newline before the next line's text, which dropped the newline before the closing line. `string_triple_line`
+    and `tokenize` now match single-flight's (hopac keeps its ordinal search for `"""`).
+
+    Same batch, from a profile of `native_cube_frame_direct` (21 s alone; examples have a 15 s budget):
+    idle join point workers rescanned every queue every 2 ms (the fail-safe timeout of a one-waiter
+    `AutoResetEvent`), ~22% of the compile's CPU. The timeout is 20 ms now, and a worker that takes an item
+    wakes the next while work remains. The hopac host turns off tier-0 PGO (one compile per process;
+    `frontier_hello` 8.1 → 7.5 s). A `frontier_hello` compile spends ~3.6 s before `BuildFile` starts, ~2 s in
+    partial evaluation and ~1.2 s after codegen (the two 500 ms grace periods).
+28. **A nominal around a function could not be dyn'd (`Expected an annotated function into runtime data`).**
+    `mega_brzozowski_derivatives/antimirov_typed_slot_bound`: `nominal cap alphabet = regex alphabet -> ...`
+    built as `cap (fun left right => ..)`. Hopac's `dyn` rejected every `DNominal(DFunction ..)`;
+    single-flight dyns the nominal's contents, closure-converting the annotated function. The special case
+    is gone, and the fixture compiles (`"brzozowski-antimirov-typed-slot-bound-green"`).
+
+    Same batch (one build): more of fix 26's profile, taken with stderr redirected as the harness runs it (no
+    HUD): the ledger keeps running cost sums (`project`), a global open set (`openKeys`) and an unclassified
+    counter (`unclassifiedOpenCount`, 7.6%); replay-tick proof fields are memoized per (event, reason) (their
+    text classification was ~4%); `ContentDigest.ofText` uses the static `SHA256.HashData` and memoizes texts
+    up to 512 chars (bounded), since telemetry digests the same short texts repeatedly (it was 11.8%). The host
+    no longer fails an F# compile whose script ends in an expression (`method0(v0, v1)`, a literal): the
+    entry binding is only a label, recorded as `(expression)`.
+27. **Multi-package type-check "stalls" were an unreported rejection.** `BuildFile` now collects the typer's
+    errors from every package before failing (both cores). With the current build the
+    `native_source_package_prototype_*` fixtures fail in 6 s instead of hanging at
+    `typecheck_await_scheduled`, and the error is visible: the nested package `shared` sees no `+.`/`=.`.
+    Which change ended the hang is not pinned down (this and fix 26 landed in the same builds). Single-flight
+    rejects these fixtures the same way (all their packages use `|core-`, the real core, which has no `+.`),
+    and the oracle expects the rejection: hopac is at parity.
+    `SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>` prints the unfilled type-check promises if a hang comes back.
+
+    Stalls after fixes 22-25 (Debug build, direct compiles): `frontier_fib`,
+    `native_string_utf8_grapheme_bounded_source` and `_canonical_equal_bounded_source` now match
+    single-flight byte for byte; `native_cube_frame_direct`, `_terminal_stream_direct` and
+    `_flush_delay_direct` compile (exit 42; up to variable numbering, hopac's C has one extra copy of a
+    three-`double` tuple). `contract_dependently_verified_federation` compiles but takes 45 s (single-flight
+    7 s, the contract timeout is 30 s); `contract_higher_rank_hot_swap` and
+    `contract_public_byzantine_key_rotation` still exceed 40 s (single-flight 7-9 s).
+
+    With fixes 22-24 (Debug build, direct compiles, C): both utf8 fixtures above, `native_string_utf8_validate_source`,
+    `managed_string_codepoints`, `native_cube_direct`, `order_nojoin` and the two new fixtures (`native_replay_repeat_call`, `native_literal_join_args`) give
+    C byte-identical to single-flight's, with the same exit codes.
 
 Host (`compiler/host/Program.fs`): `SPIRAL_HOPAC_WORKERS` / `SPIRAL_DOP` determinism knobs, and an
 absolute build deadline (`SPIRAL_BUILD_DEADLINE_MS`, 3 s before the job timeout).
@@ -277,11 +555,23 @@ The 96 rows without parity, by cause:
     triple-quoted strings, which these files don't use.
 
   The failure matches the file being parsed with `is_top_down=true`, where `` `x `` in a term consumes
-  the token and returns `Error []`. Next: dump the token stream and `is_top_down` for line 68 of
-  `indexed_dfa_probe/main.spi` from both cores.
+  the token and returns `Error []`.
+
+  **Resolved (2026-09-29): hopac is right, the oracle is wrong.** These files are top-down (`.spi`) and use
+  `` f `t () `` in terms, which the parser rejects in top-down code (same parser text in both cores). Each
+  sub-package's own module is `main` and it `open`s its dependency's module, also `main`. Single-flight,
+  even in a fresh process, compiles such an entry file into the *dependency's* program: its output is the
+  parent's `"brzozowski-kernel-ready"` (hash `82c913d798038335`), and 5 oracle rows record exactly that
+  (`compiler_probe_generic_inventory_pack`, `generic_indexed_alphabet_authority`,
+  `indexed_closure_certificate`, `indexed_dfa_probe`, `indexed_dfa_state_cardinality`). Hopac parses the
+  sub-package's file and reports the genuine error; it only "passes" on the runs where it also resolves
+  `main` to the dependency. Decision needed (not hopac work): fix the five fixtures (bottom-up `.spir`, or
+  no backtick application), and make a failed entry module an error instead of a silent fallback to a
+  same-named dependency module, then re-bless those rows.
 - 9 closure failures inside branches (`native_closure_*branch*`) were a bare `NullReferenceException`.
   They now report `EJP0035: join point body cell (JpClosureBodyCellPayload) was never filled`. The
   producer's partial-step control exception takes the
+  (Resolved by fix 25: the two closures shared one promise identity.) Old analysis: the
   `jp_closure_body_control_deferred_without_failure_fill` path, which keeps the promise pending for a
   later retry. Nothing retries a closure created in a runtime `if` branch, so codegen finds the cell
   empty.

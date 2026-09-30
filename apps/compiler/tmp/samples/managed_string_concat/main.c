@@ -93,74 +93,50 @@ int32_t main(){
     String * v1;
     v1 = choose_left0(v0);
     
-    StringDecref(v1);
+    
     bool v2;
-    v2 = true;
+    v2 = false;
     
     
     String * v3;
-    v3 = choose_left0(v2);
-    
-    StringDecref(v3);
-    bool v4;
-    v4 = true;
+    v3 = choose_right1(v2);
     
     
-    String * v5;
-    v5 = choose_left0(v4);
+    String * v4;
+    v4 = StringConcat(v1, v3);
     
-    StringDecref(v5);
+    StringDecref(v1); StringDecref(v3);
+    int32_t v5;
+    v5 = v4->len-1;
+    
+    
     bool v6;
-    v6 = true;
+    v6 = v5 == 6l;
     
     
-    String * v7;
-    v7 = choose_left0(v6);
-    
-    
-    bool v8;
-    v8 = false;
-    
-    
-    String * v9;
-    v9 = choose_right1(v8);
-    
-    
-    String * v10;
-    v10 = StringConcat(v7, v9);
-    
-    StringDecref(v7); StringDecref(v9);
-    int32_t v11;
-    v11 = v10->len-1;
-    
-    
-    bool v12;
-    v12 = v11 == 6l;
-    
-    
-    if (v12){
+    if (v6){
         
         
-        char v13;
-        v13 = v10->ptr[0l];
+        char v7;
+        v7 = v4->ptr[0l];
         
         
-        bool v14;
-        v14 = v13 == 's';
+        bool v8;
+        v8 = v7 == 's';
         
         
-        if (v14){
+        if (v8){
             
             
-            char v15;
-            v15 = v10->ptr[5l];
+            char v9;
+            v9 = v4->ptr[5l];
             
-            StringDecref(v10);
-            bool v16;
-            v16 = v15 == 'l';
+            StringDecref(v4);
+            bool v10;
+            v10 = v9 == 'l';
             
             
-            if (v16){
+            if (v10){
                 
                 
                 return 0l;
@@ -171,12 +147,12 @@ int32_t main(){
             }
         } else {
             
-            StringDecref(v10);
+            StringDecref(v4);
             return 2l;
         }
     } else {
         
-        StringDecref(v10);
+        StringDecref(v4);
         return 3l;
     }
 }

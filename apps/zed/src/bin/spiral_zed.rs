@@ -17,19 +17,31 @@ struct Options {
     backend: String,
 }
 
+enum Launch {
+    Serve(Options),
+    Probe(Options, PathBuf),
+}
+
 struct Doc {
     path: PathBuf,
     text: String,
 }
 
 fn main() {
-    let options = match Options::from_args() {
-        Ok(options) => options,
+    let launch = match Launch::from_args() {
+        Ok(launch) => launch,
         Err(error) => {
             eprintln!("spiral-zed: {error}");
             std::process::exit(2);
         }
     };
+    match launch {
+        Launch::Serve(options) => serve(options),
+        Launch::Probe(options, path) => std::process::exit(probe(&options, &path)),
+    }
+}
+
+fn serve(options: Options) {
     eprintln!(
         "spiral-zed: ready\n  dotnet: {}\n  compiler: {}\n  backend: {}",
         options.dotnet, options.compiler, options.backend
@@ -53,12 +65,17 @@ fn main() {
     }
 }
 
-impl Options {
+fn usage() -> &'static str {
+    "usage: spiral-zed --dotnet DOTNET --compiler DLL [--backend Rust] [--probe FILE.spi]"
+}
+
+impl Launch {
     fn from_args() -> Result<Self, String> {
         let mut args = std::env::args().skip(1);
         let mut dotnet = None;
         let mut compiler = None;
         let mut backend = "Rust".to_string();
+        let mut probe = None;
         while let Some(arg) = args.next() {
             match arg.as_str() {
                 "--dotnet" => dotnet = args.next(),
@@ -66,15 +83,76 @@ impl Options {
                 "--backend" => {
                     backend = args.next().unwrap_or_else(|| "Rust".to_string());
                 }
-                other => return Err(format!("unknown argument {other}")),
+                "--probe" => probe = Some(PathBuf::from(args.next().ok_or("--probe needs a .spi path")?)),
+                "--help" | "-h" => return Err(usage().to_string()),
+                other => return Err(format!("unknown argument {other}\n{}", usage())),
             }
         }
-        Ok(Self {
-            dotnet: dotnet.ok_or("--dotnet is required")?,
-            compiler: compiler.ok_or("--compiler is required")?,
+        let options = Options {
+            dotnet: dotnet.ok_or_else(|| format!("--dotnet is required\n{}", usage()))?,
+            compiler: compiler.ok_or_else(|| format!("--compiler is required\n{}", usage()))?,
             backend,
+        };
+        Ok(match probe {
+            Some(path) => Launch::Probe(options, path),
+            None => Launch::Serve(options),
         })
     }
+}
+
+fn probe(options: &Options, path: &Path) -> i32 {
+    eprintln!(
+        "spiral-zed: probe\n  dotnet: {}\n  compiler: {}\n  backend: {}\n  file: {}",
+        options.dotnet,
+        options.compiler,
+        options.backend,
+        path.display()
+    );
+    if !path.is_file() {
+        eprintln!("spiral-zed: missing {}", path.display());
+        return 2;
+    }
+    let started = std::time::Instant::now();
+    let output = run(
+        options,
+        &[
+            &options.compiler,
+            "--check",
+            &path.to_string_lossy(),
+        ],
+        Duration::from_secs(90),
+    );
+    let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+    eprintln!(
+        "check exit {} in {}ms, {} diagnostic(s)",
+        output.status,
+        started.elapsed().as_millis(),
+        diagnostics.len()
+    );
+    if !output.stdout.trim().is_empty() {
+        eprintln!("{}", output.stdout.trim());
+    }
+    for diagnostic in &diagnostics {
+        eprintln!("{}", format_diagnostic(diagnostic));
+    }
+    if output.status == 0 { 0 } else { 1 }
+}
+
+fn format_diagnostic(diagnostic: &Value) -> String {
+    let line = diagnostic.pointer("/range/start/line").and_then(Value::as_u64).unwrap_or(0);
+    let character = diagnostic.pointer("/range/start/character").and_then(Value::as_u64).unwrap_or(0);
+    let message = diagnostic.get("message").and_then(Value::as_str).unwrap_or("");
+    format!("diagnostic {line}:{character} {message}")
+}
+
+fn toast_diagnostic(diagnostic: &Value) -> String {
+    format_diagnostic(diagnostic)
+        .lines()
+        .next()
+        .unwrap_or("")
+        .chars()
+        .take(180)
+        .collect()
 }
 
 struct Server {
@@ -115,13 +193,22 @@ impl Server {
                 false
             }
             "initialized" => {
+                let message = format!(
+                    "Spiral ready. backend {} compiler {}",
+                    self.options.backend,
+                    Path::new(&self.options.compiler)
+                        .file_name()
+                        .and_then(|name| name.to_str())
+                        .unwrap_or(&self.options.compiler)
+                );
                 self.log(
                     3,
                     &format!(
-                        "spiral-zed listening. backend {} compiler {}",
-                        self.options.backend, self.options.compiler
+                        "spiral-zed listening. backend {} dotnet {} compiler {}",
+                        self.options.backend, self.options.dotnet, self.options.compiler
                     ),
                 );
+                self.show(3, &message);
                 false
             }
             "shutdown" => {
@@ -220,8 +307,14 @@ impl Server {
 
     fn open_doc(&mut self, uri: String, text: String) {
         let path = uri_to_path(&uri).unwrap_or_else(|| PathBuf::from(&uri));
+        let check = is_module(&path);
         self.docs.insert(uri.clone(), Doc { path, text });
-        self.check(&uri);
+        if check {
+            self.check(&uri);
+        } else {
+            self.log(3, "opened a project file; module check runs on .spi and .spir");
+            self.publish(&uri, Vec::new());
+        }
     }
 
     fn check(&mut self, uri: &str) {
@@ -229,7 +322,11 @@ impl Server {
             return;
         };
         let path = doc.path.clone();
+        if !is_module(&path) {
+            return;
+        }
         self.log(3, &format!("check {}", path.display()));
+        let started = std::time::Instant::now();
         let output = run(
             &self.options,
             &[
@@ -241,6 +338,17 @@ impl Server {
         );
         self.note_output(uri, &output);
         let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        self.log(
+            if diagnostics.is_empty() { 3 } else { 1 },
+            &format!(
+                "check finished in {}ms, {} diagnostic(s)",
+                started.elapsed().as_millis(),
+                diagnostics.len()
+            ),
+        );
+        if let Some(first) = diagnostics.first() {
+            self.show(1, &toast_diagnostic(first));
+        }
         self.publish(uri, diagnostics);
     }
 
@@ -250,8 +358,9 @@ impl Server {
             return;
         };
         let path = doc.path.clone();
-        if path.extension().and_then(|ext| ext.to_str()) == Some("spiproj") {
+        if !is_module(&path) {
             self.log(2, "build file applies to .spi and .spir modules");
+            self.show(2, "Spiral build applies to .spi and .spir modules.");
             return;
         }
         let mut output_path = path.clone();
@@ -282,21 +391,36 @@ impl Server {
             &format!(
                 "build exit {}\n{}\n{}",
                 output.status,
-                output.stdout.trim(),
-                output.stderr.trim()
+                clip(output.stdout.trim(), 500),
+                clip(output.stderr.trim(), 2000)
             ),
         );
-        self.publish(uri, diagnostics_from(&output.stderr, &output.stdout, output.status));
+        let diagnostics = diagnostics_from(&output.stderr, &output.stdout, output.status);
+        if output.status == 0 {
+            self.show(3, &format!("Spiral build wrote {}", output_path.display()));
+        } else if let Some(first) = diagnostics.first() {
+            self.show(1, &toast_diagnostic(first));
+        }
+        self.publish(uri, diagnostics);
     }
 
     fn show_status(&self) {
+        let message = format!(
+            "Spiral backend {} compiler {}",
+            self.options.backend,
+            Path::new(&self.options.compiler)
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or(&self.options.compiler)
+        );
         self.log(
             3,
             &format!(
-                "backend {}\ndotnet {}\ncompiler {}",
-                self.options.backend, self.options.dotnet, self.options.compiler
+                "{message}\ndotnet {}\ncompiler {}",
+                self.options.dotnet, self.options.compiler
             ),
         );
+        self.show(3, &message);
     }
 
     fn hover(&self, message: &Value) -> Value {
@@ -342,19 +466,27 @@ impl Server {
         let Some(doc) = self.docs.get(uri) else {
             return Vec::new();
         };
-        let ext = doc.path.extension().and_then(|ext| ext.to_str()).unwrap_or("");
-        if ext != "spi" && ext != "spir" {
-            return Vec::new();
-        }
-        vec![json!({
-            "title": "Spiral: Build file",
+        let mut actions = vec![json!({
+            "title": "Spiral: Show compiler",
             "kind": "source",
             "command": {
-                "title": "Spiral: Build file",
-                "command": "spiral.buildFile",
+                "title": "Spiral: Show compiler",
+                "command": "spiral.showStatus",
                 "arguments": [uri]
             }
-        })]
+        })];
+        if is_module(&doc.path) {
+            actions.insert(0, json!({
+                "title": "Spiral: Build file",
+                "kind": "source",
+                "command": {
+                    "title": "Spiral: Build file",
+                    "command": "spiral.buildFile",
+                    "arguments": [uri]
+                }
+            }));
+        }
+        actions
     }
 
     fn note_output(&mut self, uri: &str, output: &RunOutput) {
@@ -368,7 +500,7 @@ impl Server {
             }
             text.push_str(output.stderr.trim());
         }
-        self.notes.insert(uri.to_string(), text);
+        self.notes.insert(uri.to_string(), clip(&text, 8000));
     }
 
     fn publish(&self, uri: &str, diagnostics: Vec<Value>) {
@@ -382,6 +514,13 @@ impl Server {
         eprintln!("spiral-zed: {message}");
         self.notify(
             "window/logMessage",
+            json!({ "type": typ, "message": message }),
+        );
+    }
+
+    fn show(&self, typ: u8, message: &str) {
+        self.notify(
+            "window/showMessage",
             json!({ "type": typ, "message": message }),
         );
     }
@@ -412,14 +551,17 @@ struct RunOutput {
 }
 
 fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
-    let mut child = match Command::new(&options.dotnet)
+    let mut command = Command::new(&options.dotnet);
+    command
         .args(args)
         .env("DOTNET_NOLOGO", "1")
         .env("DOTNET_CLI_TELEMETRY_OPTOUT", "1")
         .stdout(std::process::Stdio::piped())
-        .stderr(std::process::Stdio::piped())
-        .spawn()
-    {
+        .stderr(std::process::Stdio::piped());
+    if let Some(root) = Path::new(&options.dotnet).parent() {
+        command.env("DOTNET_ROOT", root);
+    }
+    let mut child = match command.spawn() {
         Ok(child) => child,
         Err(error) => {
             return RunOutput {
@@ -429,33 +571,40 @@ fn run(options: &Options, args: &[&str], timeout: Duration) -> RunOutput {
             };
         }
     };
+    let stdout_pipe = child.stdout.take();
+    let stderr_pipe = child.stderr.take();
+    let stdout_thread = std::thread::spawn(move || read_pipe(stdout_pipe));
+    let stderr_thread = std::thread::spawn(move || read_pipe(stderr_pipe));
     let started = std::time::Instant::now();
-    loop {
+    let status = loop {
         if let Some(status) = child.try_wait().ok().flatten() {
-            let mut stdout = String::new();
-            let mut stderr = String::new();
-            if let Some(mut pipe) = child.stdout.take() {
-                let _ = pipe.read_to_string(&mut stdout);
-            }
-            if let Some(mut pipe) = child.stderr.take() {
-                let _ = pipe.read_to_string(&mut stderr);
-            }
-            return RunOutput {
-                status: status.code().unwrap_or(1),
-                stdout,
-                stderr,
-            };
+            break status.code().unwrap_or(1);
         }
         if started.elapsed() > timeout {
             let _ = child.kill();
-            return RunOutput {
-                status: 3,
-                stdout: String::new(),
-                stderr: format!("compiler timed out after {}s", timeout.as_secs()),
-            };
+            let _ = child.wait();
+            break 3;
         }
         std::thread::sleep(Duration::from_millis(50));
+    };
+    let stdout = stdout_thread.join().unwrap_or_default();
+    let mut stderr = stderr_thread.join().unwrap_or_default();
+    if status == 3 {
+        stderr.push_str(&format!("\ncompiler timed out after {}s", timeout.as_secs()));
     }
+    RunOutput {
+        status,
+        stdout,
+        stderr,
+    }
+}
+
+fn read_pipe(pipe: Option<impl Read>) -> String {
+    let mut text = String::new();
+    if let Some(mut pipe) = pipe {
+        let _ = pipe.read_to_string(&mut text);
+    }
+    text
 }
 
 fn diagnostics_from(stderr: &str, stdout: &str, status: i32) -> Vec<Value> {
@@ -470,10 +619,44 @@ fn diagnostics_from(stderr: &str, stdout: &str, status: i32) -> Vec<Value> {
     if text.is_empty() {
         return vec![diagnostic(0, 0, 1, "compiler failed")];
     }
-    text.lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(|line| diagnostic(0, 0, line.chars().count().min(1).max(1), line.trim()))
-        .collect()
+    let (line, character) = trace_location(text).unwrap_or((0, 0));
+    vec![diagnostic(line, character, character + 1, &clip(text, 4000))]
+}
+
+fn trace_location(text: &str) -> Option<(usize, usize)> {
+    const MARKER: &str = "Error trace on line: ";
+    let rest = text.get(text.find(MARKER)? + MARKER.len()..)?;
+    let (line, rest) = leading_usize(rest)?;
+    let rest = rest.trim_start().strip_prefix(", column:")?;
+    let (column, _) = leading_usize(rest.trim_start())?;
+    Some((line.saturating_sub(1), column.saturating_sub(1)))
+}
+
+fn leading_usize(text: &str) -> Option<(usize, &str)> {
+    let digits = text.chars().take_while(|ch| ch.is_ascii_digit()).count();
+    if digits == 0 {
+        return None;
+    }
+    let (head, tail) = text.split_at(digits);
+    Some((head.parse().ok()?, tail))
+}
+
+fn clip(text: &str, max: usize) -> String {
+    if text.len() <= max {
+        return text.to_string();
+    }
+    let mut end = max;
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    format!("{}…", &text[..end])
+}
+
+fn is_module(path: &Path) -> bool {
+    matches!(
+        path.extension().and_then(|ext| ext.to_str()),
+        Some("spi" | "spir")
+    )
 }
 
 fn diagnostic(line: usize, start: usize, end: usize, message: &str) -> Value {
@@ -831,5 +1014,60 @@ mod tests {
         let strings: Vec<_> = tokens.iter().filter(|token| token.kind == 1).collect();
         assert_eq!(strings.len(), 1);
         assert_eq!(strings[0].line, 0);
+    }
+
+    #[test]
+    fn trace_location_is_zero_based() {
+        let text = "Error trace on line: 2, column: 5 in module: main.spi .\n    \"no\"\n    ^\n";
+        assert_eq!(trace_location(text), Some((1, 4)));
+        let diagnostics = diagnostics_from(text, "", 5);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].pointer("/range/start/line").and_then(Value::as_u64), Some(1));
+        assert_eq!(diagnostics[0].pointer("/range/start/character").and_then(Value::as_u64), Some(4));
+    }
+
+    #[test]
+    fn a_clean_check_publishes_nothing() {
+        assert!(diagnostics_from("", "checked package x", 0).is_empty());
+    }
+
+    #[test]
+    fn a_rejection_without_a_trace_is_one_diagnostic() {
+        let diagnostics = diagnostics_from("Package typecheck rejected: pkg\nmore detail\n", "", 5);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].pointer("/range/start/line").and_then(Value::as_u64), Some(0));
+    }
+
+    #[test]
+    fn hover_includes_the_compiler_note() {
+        let mut server = Server {
+            options: Options {
+                dotnet: "dotnet".into(),
+                compiler: "SpiralCompiler.dll".into(),
+                backend: "Rust".into(),
+            },
+            docs: HashMap::new(),
+            notes: HashMap::new(),
+            stdout: Mutex::new(std::io::stdout()),
+        };
+        let uri = "file:///C:/fixture/main.spi";
+        server.docs.insert(
+            uri.into(),
+            Doc {
+                path: PathBuf::from("main.spi"),
+                text: "inl main () : i32 = 0i32\n".into(),
+            },
+        );
+        server.notes.insert(uri.into(), "Package typecheck rejected".into());
+        let hover = server.hover(&json!({
+            "params": {
+                "textDocument": { "uri": uri },
+                "position": { "line": 0, "character": 0 }
+            }
+        }));
+        let body = hover.pointer("/contents/value").and_then(Value::as_str).unwrap();
+        assert!(body.contains("inl"));
+        assert!(body.contains("keyword"));
+        assert!(body.contains("Package typecheck rejected"));
     }
 }

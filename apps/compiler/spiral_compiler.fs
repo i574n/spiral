@@ -475,12 +475,26 @@ module spiral_compiler =
         type ContentDigest = private | ContentDigest of string
 
         module ContentDigest =
+            // Digests were ~12% of a slow compile: telemetry digests the same short texts over and over. The
+            // static hash avoids a hasher per call, and short texts are memoized (bounded).
+            let private compute label (normalized:string) =
+                let payload = System.Text.Encoding.UTF8.GetBytes(label + "|" + normalized)
+                let digest = System.Security.Cryptography.SHA256.HashData(payload) |> System.Convert.ToHexStringLower
+                ContentDigest(digest + ":" + label)
+
+            let private cache = System.Collections.Concurrent.ConcurrentDictionary<struct (string * string), ContentDigest>()
+
             let ofText label (text:string) =
                 let normalized = if isNull text then "<null>" else text
-                let payload = System.Text.Encoding.UTF8.GetBytes(label + "|" + normalized)
-                use sha256 = System.Security.Cryptography.SHA256.Create()
-                let digest = sha256.ComputeHash(payload) |> System.Convert.ToHexString |> fun value -> value.ToLowerInvariant()
-                ContentDigest(digest + ":" + label)
+                if normalized.Length > 512 then compute label normalized
+                else
+                    let key = struct (label, normalized)
+                    let mutable digest = Unchecked.defaultof<ContentDigest>
+                    if cache.TryGetValue(key, &digest) then digest
+                    else
+                        let digest = compute label normalized
+                        if cache.Count < 200000 then cache.TryAdd(key, digest) |> ignore
+                        digest
 
             let text (ContentDigest value) = value
 
@@ -2372,11 +2386,12 @@ module spiral_compiler =
         // BuildFile result, which waits here: a cycle that left every BuildFile unanswered. The writer's
         // run-end state is also never reopened for a second request in the same process. Bound the wait:
         // when the receipt has not arrived within the grace period, the result boundary itself is the
-        // run end. SPIRAL_RUN_END_GRACE_MS overrides the grace (default 500 ms).
+        // run end. SPIRAL_RUN_END_GRACE_MS overrides the grace (default 20 ms: the receipt cannot arrive
+        // first, so the grace was 500 ms of pure latency at the end of every compile).
         let private terminalRunEndGraceMs =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_RUN_END_GRACE_MS") with
             | true, value when value >= 0 -> value
-            | _ -> 500
+            | _ -> 20
         let awaitTerminalReducerRunEndJob () =
             let ivar = lock terminalDurableRunEndObservedGate (fun () -> terminalDurableRunEndIvar)
             Hopac.Alt.choose [
@@ -4534,7 +4549,7 @@ module spiral_compiler =
             let line =
                 FastRuntimeFormat.format
                     "{\"v\":1,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":%s,\"source\":%s,\"correlation\":%s,\"message\":%s,\"authority\":\"immediate_failure_boundary_before_control_transfer\",\"next\":%s,\"payload_policy_du\":\"BoundedStructuredContextNoRecursiveExceptionFormatting\"}"
-                    [| box (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()); box (System.Diagnostics.Process.GetCurrentProcess().Id); box Thread.CurrentThread.ManagedThreadId; box (fileLogEscJson (compactBounded kind)); box (fileLogEscJson (compactBounded source)); box (fileLogEscJson (compactBounded correlation)); box (fileLogEscJson (compactBounded message)); box (fileLogEscJson (compactBounded next)) |]
+                    [| box (DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()); box (System.Environment.ProcessId); box Thread.CurrentThread.ManagedThreadId; box (fileLogEscJson (compactBounded kind)); box (fileLogEscJson (compactBounded source)); box (fileLogEscJson (compactBounded correlation)); box (fileLogEscJson (compactBounded message)); box (fileLogEscJson (compactBounded next)) |]
             appendFileLogLineSerialized line
 
         let private installRuntimeExceptionCaptureHooks () =
@@ -10009,12 +10024,24 @@ module spiral_compiler =
             |> List.choose (fun (fact, present) -> if present then Some fact else None)
             |> Set.ofList
 
-        let classifyFacts message = factsFor message
+        // factsFor runs ~70 substring searches; the replay driver classifies the same few reason texts on
+        // every pinned terminal cell (~4% of a compile). Pure, so memoized by text (bounded).
+        let private factsMemo = System.Collections.Concurrent.ConcurrentDictionary<string, _>(System.StringComparer.Ordinal)
+
+        let classifyFacts (message:string) =
+            if isNull message || message.Length > 4096 then factsFor message
+            else
+                let mutable facts = Unchecked.defaultof<_>
+                if factsMemo.TryGetValue(message, &facts) then facts
+                else
+                    let facts = factsFor message
+                    if factsMemo.Count < 50000 then factsMemo.TryAdd(message, facts) |> ignore
+                    facts
 
         let hasFact fact classification = Set.contains fact classification.facts
 
         let classifyIngress (message:string) : DiagnosticIngress =
-            let facts = factsFor message
+            let facts = classifyFacts message
             if has "Cannot construct an instance of a void type" message
                || hasAll ["void type"; "Cannot construct"] message then
                 classified facts DiagnosticEJP0013 DiagnosticVoidInstanceConstruction DiagnosticRetryAfterCacheInvalidation
@@ -12816,12 +12843,31 @@ module spiral_compiler =
             admitted : Map<SemanticWorkUnitKeyId,SemanticCost>
             admittedUnits : Map<SemanticWorkUnitKeyId,SomeWorkUnitId>
             receipts : Map<SemanticWorkUnitKeyId,ContentDigest * WorkUnitDisposition * SemanticCost>
+            // Per credit scope, kept with admittedUnits/receipts: the admitted units, how many have a receipt,
+            // and the ones still open. Heartbeats and credit decisions read these instead of scanning.
+            scopeAdmitted : Map<SemanticWorkCreditScope,int>
+            scopeReceipts : Map<SemanticWorkCreditScope,int>
+            scopeOpen : Map<SemanticWorkCreditScope,Set<SemanticWorkUnitKeyId>>
+            // Running totals for `project`, and every admitted unit without a receipt, for `openKeys`.
+            admittedCostSum : SemanticCost
+            retiredCostSum : SemanticCost
+            blockedCostSum : SemanticCost
+            openAll : Set<SemanticWorkUnitKeyId>
+            // Admitted units with neither a receipt nor a classified unit (admittedUnits).
+            unclassifiedOpen : int
+            // admitted.Count and receipts.Count: F#'s Map.Count walks the tree, and every JP worker dequeue
+            // read both (through jpTryReserveObserverLane), ~4% of a compile.
+            admittedTotal : int
+            receiptTotal : int
         }
 
+        // openWorkUnits and creditDigest are built on first read: most deciders only ask whether credit is
+        // returned, and with thousands of open units building both was ~36% of mega_spiral_proves' CPU
+        // (FRONTIER.md fix 36).
         type SemanticWorkCreditOutstanding = private {
             openUnits : SemanticWorkUnitKeyId list
-            openWorkUnits : SomeWorkUnitId list
-            creditDigest : ContentDigest
+            openWorkUnits : Lazy<SomeWorkUnitId list>
+            creditDigest : Lazy<ContentDigest>
         }
 
         type SemanticWorkCreditReturned = private {
@@ -12839,13 +12885,13 @@ module spiral_compiler =
                 | SemanticWorkCreditOutstanding credit -> List.length credit.openUnits
                 | SemanticWorkCreditReturned _ -> 0
             let digest = function
-                | SemanticWorkCreditOutstanding credit -> credit.creditDigest
+                | SemanticWorkCreditOutstanding credit -> credit.creditDigest.Value
                 | SemanticWorkCreditReturned credit -> credit.returnDigest
             let openUnitTexts = function
                 | SemanticWorkCreditOutstanding credit -> credit.openUnits |> List.map SemanticWorkUnitKeyId.text
                 | SemanticWorkCreditReturned _ -> []
             let openWorkUnitTexts = function
-                | SemanticWorkCreditOutstanding credit -> credit.openWorkUnits |> List.map SomeWorkUnitIdOps.stableText
+                | SemanticWorkCreditOutstanding credit -> credit.openWorkUnits.Value |> List.map SomeWorkUnitIdOps.stableText
                 | SemanticWorkCreditReturned _ -> []
             let isReturned = function
                 | SemanticWorkCreditReturned _ -> true
@@ -12900,7 +12946,17 @@ module spiral_compiler =
             | SemanticWorkTerminalReservationLedgerConflict of SemanticWorkLedgerConflict
 
         module SemanticWorkLedger =
-            let empty = { admitted = Map.empty; admittedUnits = Map.empty; receipts = Map.empty }
+            let empty =
+                { admitted = Map.empty; admittedUnits = Map.empty; receipts = Map.empty
+                  scopeAdmitted = Map.empty; scopeReceipts = Map.empty; scopeOpen = Map.empty
+                  admittedCostSum = Measured.zero; retiredCostSum = Measured.zero; blockedCostSum = Measured.zero
+                  openAll = Set.empty; unclassifiedOpen = 0; admittedTotal = 0; receiptTotal = 0 }
+
+            let private bumpScope scope (counts:Map<SemanticWorkCreditScope,int>) =
+                Map.add scope (1 + defaultArg (Map.tryFind scope counts) 0) counts
+
+            let private openSetOf scope (ledger:SemanticWorkLedger) =
+                defaultArg (Map.tryFind scope ledger.scopeOpen) Set.empty
 
             let admit
                 (workUnit:WorkUnitId<'Phase,'Kind>)
@@ -12908,7 +12964,15 @@ module spiral_compiler =
                 (ledger:SemanticWorkLedger) =
                 let key = SemanticWorkUnitKeyId.ofWorkUnit workUnit
                 match Map.tryFind key ledger.admitted with
-                | None -> Ok { ledger with admitted = Map.add key semanticCost ledger.admitted }
+                | None ->
+                    Ok { ledger with
+                            admitted = Map.add key semanticCost ledger.admitted
+                            admittedTotal = ledger.admittedTotal + 1
+                            admittedCostSum = Measured.add ledger.admittedCostSum semanticCost
+                            openAll = if Map.containsKey key ledger.receipts then ledger.openAll else Set.add key ledger.openAll
+                            unclassifiedOpen =
+                                if Map.containsKey key ledger.receipts || Map.containsKey key ledger.admittedUnits then ledger.unclassifiedOpen
+                                else ledger.unclassifiedOpen + 1 }
                 | Some previous when previous = semanticCost -> Ok ledger
                 | Some previous -> Error(SemanticWorkUnitAlreadyAdmittedWithDifferentCost(key,previous,semanticCost))
 
@@ -12926,7 +12990,24 @@ module spiral_compiler =
                 | Some _ ->
                     match Map.tryFind key ledger.receipts with
                     | None ->
-                        Ok { ledger with receipts = Map.add key (receiptRef, workUnitReceiptDisposition receipt, cost) ledger.receipts }
+                        let disposition = workUnitReceiptDisposition receipt
+                        let ledger =
+                            { ledger with
+                                receipts = Map.add key (receiptRef, disposition, cost) ledger.receipts
+                                receiptTotal = ledger.receiptTotal + 1
+                                openAll = Set.remove key ledger.openAll
+                                unclassifiedOpen =
+                                    if Map.containsKey key ledger.admittedUnits then ledger.unclassifiedOpen
+                                    else ledger.unclassifiedOpen - 1
+                                retiredCostSum = (match disposition with WorkUnitRetired _ -> Measured.add ledger.retiredCostSum cost | _ -> ledger.retiredCostSum)
+                                blockedCostSum = (match disposition with WorkUnitBlocked _ -> Measured.add ledger.blockedCostSum cost | _ -> ledger.blockedCostSum) }
+                        match Map.tryFind key ledger.admittedUnits with
+                        | Some workUnit ->
+                            let scope = SomeWorkUnitIdOps.creditScope workUnit
+                            Ok { ledger with
+                                    scopeReceipts = bumpScope scope ledger.scopeReceipts
+                                    scopeOpen = Map.add scope (Set.remove key (openSetOf scope ledger)) ledger.scopeOpen }
+                        | None -> Ok ledger
                     | Some(previousRef, previousDisposition, previousCost)
                         when previousRef = receiptRef && previousDisposition = workUnitReceiptDisposition receipt && previousCost = cost -> Ok ledger
                     | Some(previousRef, _, _) ->
@@ -12953,7 +13034,16 @@ module spiral_compiler =
                     let key = SemanticWorkUnitKeyId.ofSomeWorkUnit workUnit
                     match Map.tryFind key nextLedger.admittedUnits with
                     | None ->
-                        Ok { nextLedger with admittedUnits = Map.add key workUnit nextLedger.admittedUnits }
+                        let scope = SomeWorkUnitIdOps.creditScope workUnit
+                        let hasReceipt = Map.containsKey key nextLedger.receipts
+                        Ok { nextLedger with
+                                admittedUnits = Map.add key workUnit nextLedger.admittedUnits
+                                unclassifiedOpen = if hasReceipt then nextLedger.unclassifiedOpen else nextLedger.unclassifiedOpen - 1
+                                scopeAdmitted = bumpScope scope nextLedger.scopeAdmitted
+                                scopeReceipts = if hasReceipt then bumpScope scope nextLedger.scopeReceipts else nextLedger.scopeReceipts
+                                scopeOpen =
+                                    if hasReceipt then nextLedger.scopeOpen
+                                    else Map.add scope (Set.add key (openSetOf scope nextLedger)) nextLedger.scopeOpen }
                     | Some existing when existing = workUnit -> Ok nextLedger
                     | Some _ -> Error(SemanticWorkUnitIdentityConflict key)
 
@@ -12977,66 +13067,31 @@ module spiral_compiler =
                 | SemanticWorkAdmit(workUnit, cost) -> admitSome workUnit cost ledger
                 | SemanticWorkApply receipt -> applySome receipt ledger
 
-            let private sumCosts (costs:seq<SemanticCost>) : SemanticCost =
-                costs |> Seq.fold Measured.add Measured.zero
-
             let project
                 (denominator:ProgressDenominator<SemanticCostUnit>)
                 (ledger:SemanticWorkLedger)
                 : ExactCostProjection<SemanticCostUnit> =
-                let admittedCost = ledger.admitted |> Map.toSeq |> Seq.map snd |> sumCosts
-                let completedCost =
-                    ledger.receipts
-                    |> Map.toSeq
-                    |> Seq.choose (fun (_,(_,disposition,cost)) -> match disposition with WorkUnitRetired _ -> Some cost | _ -> None)
-                    |> sumCosts
-                let blockedCost =
-                    ledger.receipts
-                    |> Map.toSeq
-                    |> Seq.choose (fun (_,(_,disposition,cost)) -> match disposition with WorkUnitBlocked _ -> Some cost | _ -> None)
-                    |> sumCosts
+                let admittedCost = ledger.admittedCostSum
+                let completedCost = ledger.retiredCostSum
+                let blockedCost = ledger.blockedCostSum
                 let nonBlockedAdmitted = Measured.subtractFloor admittedCost blockedCost
                 ExactCostLedger.create completedCost nonBlockedAdmitted blockedCost denominator
                 |> ExactCostLedger.project
 
-            let counts ledger = ledger.admitted.Count, ledger.receipts.Count
+            let counts (ledger:SemanticWorkLedger) = ledger.admittedTotal, ledger.receiptTotal
 
-            let openCount ledger = max 0 (ledger.admitted.Count - ledger.receipts.Count)
-
-            let private scopeOfKey key ledger =
-                ledger.admittedUnits
-                |> Map.tryFind key
-                |> Option.map SomeWorkUnitIdOps.creditScope
-
-            let private keysForScope scope ledger =
-                ledger.admitted
-                |> Map.toList
-                |> List.choose (fun (key, _) ->
-                    match scopeOfKey key ledger with
-                    | Some observed when observed = scope -> Some key
-                    | _ -> None)
+            let openCount (ledger:SemanticWorkLedger) = max 0 (ledger.admittedTotal - ledger.receiptTotal)
 
             let countsForScope scope ledger =
-                let admittedKeys = keysForScope scope ledger
-                let receiptCount =
-                    admittedKeys
-                    |> List.sumBy (fun key -> if Map.containsKey key ledger.receipts then 1 else 0)
-                List.length admittedKeys, receiptCount
+                defaultArg (Map.tryFind scope ledger.scopeAdmitted) 0,
+                defaultArg (Map.tryFind scope ledger.scopeReceipts) 0
 
-            let unclassifiedOpenCount ledger =
-                ledger.admitted
-                |> Map.toList
-                |> List.sumBy (fun (key, _) ->
-                    if Map.containsKey key ledger.receipts || Map.containsKey key ledger.admittedUnits then 0 else 1)
+            let unclassifiedOpenCount ledger = ledger.unclassifiedOpen
 
-            let openKeys ledger =
-                ledger.admitted
-                |> Map.toList
-                |> List.choose (fun (key, _) -> if Map.containsKey key ledger.receipts then None else Some key)
+            let openKeys ledger = Set.toList ledger.openAll
 
             let openKeysForScope scope ledger =
-                keysForScope scope ledger
-                |> List.filter (fun key -> not (Map.containsKey key ledger.receipts))
+                openSetOf scope ledger |> Set.toList
 
             let isOpenSomeWorkUnit workUnit ledger =
                 let key = SemanticWorkUnitKeyId.ofSomeWorkUnit workUnit
@@ -13052,11 +13107,12 @@ module spiral_compiler =
                     | Some SemanticWorkTerminalProtocol ->
                         "semantic-work-credit-returned:terminal-protocol", "semantic-work-credit-outstanding:terminal-protocol"
                 let openWorkUnits =
-                    openUnits
-                    |> List.map (fun key ->
-                        match Map.tryFind key ledger.admittedUnits with
-                        | Some workUnit -> workUnit
-                        | None -> invalidOp ("semantic work witness missing for open credit: " + SemanticWorkUnitKeyId.text key))
+                    lazy (
+                        openUnits
+                        |> List.map (fun key ->
+                            match Map.tryFind key ledger.admittedUnits with
+                            | Some workUnit -> workUnit
+                            | None -> invalidOp ("semantic work witness missing for open credit: " + SemanticWorkUnitKeyId.text key)))
                 if openUnits.IsEmpty && admittedCount = receiptCount then
                     let digest =
                         ContentDigest.ofText
@@ -13068,25 +13124,42 @@ module spiral_compiler =
                         returnDigest = digest
                     }
                 else
-                    let openText = openUnits |> List.map SemanticWorkUnitKeyId.text |> String.concat "|"
                     let digest =
-                        ContentDigest.ofText
-                            outstandingDigestKind
-                            (FastRuntimeFormat.format "admitted=%d|receipts=%d|open=%s" [| box admittedCount; box receiptCount; box openText |])
+                        lazy (
+                            let openText = openUnits |> List.map SemanticWorkUnitKeyId.text |> String.concat "|"
+                            ContentDigest.ofText
+                                outstandingDigestKind
+                                (FastRuntimeFormat.format "admitted=%d|receipts=%d|open=%s" [| box admittedCount; box receiptCount; box openText |]))
                     SemanticWorkCreditOutstanding {
                         openUnits = openUnits
                         openWorkUnits = openWorkUnits
                         creditDigest = digest
                     }
 
+            // A decision is a function of the (immutable) ledger and the scope, and the terminal-flow observers
+            // ask for it many times between two mutations; each computation lists the open units and digests
+            // them (~6% of a compile). Memoized per ledger instance; entries go with the ledger.
+            let private creditDecisionMemo =
+                System.Runtime.CompilerServices.ConditionalWeakTable<SemanticWorkLedger, System.Collections.Concurrent.ConcurrentDictionary<SemanticWorkCreditScope option, SemanticWorkCreditDecision>>()
+
+            let private memoCreditDecision (ledger:SemanticWorkLedger) (scope:SemanticWorkCreditScope option) (compute: unit -> SemanticWorkCreditDecision) =
+                let table = creditDecisionMemo.GetValue(ledger, fun _ -> System.Collections.Concurrent.ConcurrentDictionary())
+                let mutable decision = Unchecked.defaultof<SemanticWorkCreditDecision>
+                if table.TryGetValue(scope, &decision) then decision
+                else table.GetOrAdd(scope, compute ())
+
             let creditDecision ledger =
-                let admittedCount = ledger.admitted.Count
-                let receiptCount = ledger.receipts.Count
-                creditDecisionFromCounts None admittedCount receiptCount (openKeys ledger) ledger
+                memoCreditDecision ledger None (fun () ->
+                    let admittedCount = ledger.admittedTotal
+                    let receiptCount = ledger.receiptTotal
+                    // A receipt needs its admission, so equal counts mean nothing is open (no scan).
+                    let openUnits = if admittedCount = receiptCount then [] else openKeys ledger
+                    creditDecisionFromCounts None admittedCount receiptCount openUnits ledger)
 
             let creditDecisionForScope scope ledger =
-                let admittedCount, receiptCount = countsForScope scope ledger
-                creditDecisionFromCounts (Some scope) admittedCount receiptCount (openKeysForScope scope ledger) ledger
+                memoCreditDecision ledger (Some scope) (fun () ->
+                    let admittedCount, receiptCount = countsForScope scope ledger
+                    creditDecisionFromCounts (Some scope) admittedCount receiptCount (openKeysForScope scope ledger) ledger)
 
             let reconcileFailClosedReplayCredits
                 (failureRef:ContentDigest)
@@ -17978,6 +18051,12 @@ module spiral_compiler =
 
     module DiagJson =
 
+        // SPIRAL_DIAG_QUIET=1 (scripts/test.ps1 sets it): batch builds nobody watches skip the diagnostic
+        // JSONL rows and console projections, which cost ~20% of a compile (FRONTIER.md fix 35). Durable
+        // terminal receipts, build errors and the result are unaffected. Direct compiles keep full telemetry.
+        let quiet =
+            System.String.Equals(System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET", "1", System.StringComparison.Ordinal)
+
         let private diagnosticTextDelimiters =
             [| '|'; '@'; '/'; ':'; '('; ')'; '['; ']'; '{'; '}'; ','; ';'; '='; ' '; '\t'; '\r'; '\n'; '"'; '\'' |]
 
@@ -18368,9 +18447,9 @@ module spiral_compiler =
             retiredCost : int64
             openCount : int64
             operationalOpenCount : int64
-            operationalOpenWorkUnits : string list
+            operationalOpenWorkUnits : Lazy<string list>
             terminalProtocolOpenCount : int64
-            terminalProtocolOpenWorkUnits : string list
+            terminalProtocolOpenWorkUnits : Lazy<string list>
             unclassifiedOpenCount : int64
         }
 
@@ -18395,9 +18474,9 @@ module spiral_compiler =
               retiredCost = CompilerKernelV2.Measured.value projection.completedCost
               openCount = int64 (max 0 (admitted - receipts))
               operationalOpenCount = CompilerKernelV2.SemanticWorkCreditDecision.openUnitCount operationalDecision |> int64
-              operationalOpenWorkUnits = CompilerKernelV2.SemanticWorkCreditDecision.openWorkUnitTexts operationalDecision
+              operationalOpenWorkUnits = lazy (CompilerKernelV2.SemanticWorkCreditDecision.openWorkUnitTexts operationalDecision)
               terminalProtocolOpenCount = CompilerKernelV2.SemanticWorkCreditDecision.openUnitCount terminalProtocolDecision |> int64
-              terminalProtocolOpenWorkUnits = CompilerKernelV2.SemanticWorkCreditDecision.openWorkUnitTexts terminalProtocolDecision
+              terminalProtocolOpenWorkUnits = lazy (CompilerKernelV2.SemanticWorkCreditDecision.openWorkUnitTexts terminalProtocolDecision)
               unclassifiedOpenCount = CompilerKernelV2.SemanticWorkLedger.unclassifiedOpenCount ledger |> int64 }
 
         let semanticWorkLedgerClosed (snapshot : SemanticWorkLedgerSnapshot) =
@@ -22088,7 +22167,7 @@ module spiral_compiler =
                                 Some(sprintf ",\"%s\":%s" field (esc (truncateForDiag compactLimit value))))
                         |> String.concat ""
                     let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
-                    let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                    let pid = string (System.Environment.ProcessId)
                     let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                     let decisionHash =
                         match hotJsonDecisionChangeKey line with
@@ -22135,7 +22214,7 @@ module spiral_compiler =
                             if value = "" then "" else sprintf ",\"%s\":%s" field (esc (truncateForDiag 384 value))
                         let kind = jsonStringFieldByName "kind" line
                         let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         let compactKind = if kind = "" then "diag_compacted" else kind
                         FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":%s%s%s%s%s%s%s,\"original_bytes\":%d,\"compact_policy\":\"truncated_preview_%d\",\"excerpt\":%s}" [| box ts; box pid; box tid; box (esc run_id); box (esc compactKind); box (keep "event"); box (keep "status"); box (keep "outcome"); box (keep "reason"); box (keep "site"); box (keep "next"); box line.Length; box limit; box (esc (truncateForDiag 512 line)) |]
@@ -37882,7 +37961,7 @@ module spiral_compiler =
                                         // intermediate JSON frame or touching push-actor/metronome state.
                                         // This keeps elapsed/ETA paint bounded even when semantic lanes
                                         // are saturated or the terminal actor is still initializing.
-                                        CompilerConsoleHud88.tryPaintReducerHudSnapshotNow() |> ignore
+                                        if not quiet then CompilerConsoleHud88.tryPaintReducerHudSnapshotNow() |> ignore
                                         // Publish the attempt after the bounded paint. Effective/visible
                                         // receipts are tracked independently by the console compositor.
                                         lock progressHudSmoothFrameTickerGate (fun () ->
@@ -38232,7 +38311,7 @@ module spiral_compiler =
         let private enrichTerminalDurableJsonLine (line: string) =
             let trimmed = if System.Object.ReferenceEquals(line,null) then "" else line.Trim()
             let now = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-            let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+            let pid = string (System.Environment.ProcessId)
             let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
             let withEnvelope =
                 match jsonObjectEnvelopeId trimmed with
@@ -38905,7 +38984,7 @@ module spiral_compiler =
                     let rescueStartPolicyId = noWorkRescueStartPolicyFor rescueWasInFlight
                     let rescueStartPolicy = noWorkRescueStartPolicyText rescueStartPolicyId
                     let rescueLine =
-                        FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%s,"tid":%s,"run_id":%s,"kind":"progress_tick_no_work_rescue_requested","beat":%d,"no_work_s":%d,"no_work_pokes":%d,"work":%d,"replay_scheduled":%d,"replay_driver_ticks":%d,"root_receipts":%d,"terminal_signals":%d,"rich_age_ms":%d,"rich_busy_ms":%d,"progress_pct":%.2f,"eta_s":%d,"line_progress_eta_du":"LineProgressEtaDirect(no_work_rescue_requested|not_hud_only)","rescue_in_flight":%b,"rescue_age_ms":%d,"rescue_start_policy":%s,"rescue_start_policy_du":%s,"sink":"stderr_raw_atomic","policy":"minimal_tick_owns_stall_rescue_with_worker_receipts"}""" [| box now; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box beatNo; box noWorkS; box pokeNo; box sampledWork; box replaySchedules; box replayDrivers; box rootComplete; box terminalSignals; box richAgeMs; box richBusyMs; box lastProgressPct; box etaS; box rescueWasInFlight; box rescueAgeBeforeMs; box (esc rescueStartPolicy); box (esc rescueStartPolicy) |]
+                        FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%s,"tid":%s,"run_id":%s,"kind":"progress_tick_no_work_rescue_requested","beat":%d,"no_work_s":%d,"no_work_pokes":%d,"work":%d,"replay_scheduled":%d,"replay_driver_ticks":%d,"root_receipts":%d,"terminal_signals":%d,"rich_age_ms":%d,"rich_busy_ms":%d,"progress_pct":%.2f,"eta_s":%d,"line_progress_eta_du":"LineProgressEtaDirect(no_work_rescue_requested|not_hud_only)","rescue_in_flight":%b,"rescue_age_ms":%d,"rescue_start_policy":%s,"rescue_start_policy_du":%s,"sink":"stderr_raw_atomic","policy":"minimal_tick_owns_stall_rescue_with_worker_receipts"}""" [| box now; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box beatNo; box noWorkS; box pokeNo; box sampledWork; box replaySchedules; box replayDrivers; box rootComplete; box terminalSignals; box richAgeMs; box richBusyMs; box lastProgressPct; box etaS; box rescueWasInFlight; box rescueAgeBeforeMs; box (esc rescueStartPolicy); box (esc rescueStartPolicy) |]
                     let emitNoWorkRescueReceipt =
                         pokeNo <= 2L
                         || noWorkS <= 3L
@@ -38919,7 +38998,7 @@ module spiral_compiler =
                             let runner =
                                 System.Threading.ThreadStart(fun () ->
                                     let startedAt = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                                    let pid2 = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                                    let pid2 = string (System.Environment.ProcessId)
                                     let tid2 = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                                     if emitNoWorkRescueReceipt then
                                         writeProgressHeartbeatLineDirect (FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%s,"tid":%s,"run_id":%s,"kind":"progress_tick_no_work_rescue_worker_started","beat":%d,"no_work_s":%d,"no_work_pokes":%d,"work":%d,"replay_scheduled":%d,"replay_driver_ticks":%d,"progress_pct":%.2f,"eta_s":%d,"line_progress_eta_du":"LineProgressEtaDirect(no_work_rescue_worker_started|not_hud_only)","sink":"stderr_raw_atomic","policy":"dedicated_thread_before_handler_sparse"}""" [| box startedAt; box pid2; box tid2; box (esc run_id); box beatNo; box noWorkS; box pokeNo; box sampledWork; box replaySchedules; box replayDrivers; box lastProgressPct; box etaS |])
@@ -38995,7 +39074,7 @@ module spiral_compiler =
                         lock progressPredictionTickGate (fun () -> progressPredictionNoWorkRescueInFlight <- 0)
                         lock progressPredictionTickGate (fun () -> progressPredictionNoWorkRescueStartedMs <- 0L)
                         writeProgressHeartbeatLineDirect (
-                            FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%d,"tid":%d,"run_id":%s,"kind":"progress_tick_no_work_rescue_observer_only","beat":%d,"no_work_s":%d,"metronome_authority_du":"ObserverOnly","rescue_worker_started":false,"scheduler_poke_invoked":false,"root_complete_authority_du":"NativeRootCompleteAlt","next":"observe_wait_graph_without_mutation"}""" [| box now; box (System.Diagnostics.Process.GetCurrentProcess().Id); box (System.Threading.Thread.CurrentThread.ManagedThreadId); box (esc run_id); box beatNo; box noWorkS |])
+                            FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%d,"tid":%d,"run_id":%s,"kind":"progress_tick_no_work_rescue_observer_only","beat":%d,"no_work_s":%d,"metronome_authority_du":"ObserverOnly","rescue_worker_started":false,"scheduler_poke_invoked":false,"root_complete_authority_du":"NativeRootCompleteAlt","next":"observe_wait_graph_without_mutation"}""" [| box now; box (System.Environment.ProcessId); box (System.Threading.Thread.CurrentThread.ManagedThreadId); box (esc run_id); box beatNo; box noWorkS |])
                 archived legacy metronome rescue end *)
                 // MIGRATION: the metronome is observation-only.  The historical
                 // rescue counters are projected as zero and cannot grant progress,
@@ -44040,7 +44119,7 @@ module spiral_compiler =
                     let richDisplayedProgressPct = float richAuthoritySnapshot.work.midBp / 100.0
                     let richDisplayedEtaS = CompilerConsoleHud88.reducerHudEtaP50Seconds richAuthoritySnapshot
                     let ts = string now
-                    let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                    let pid = string (System.Environment.ProcessId)
                     let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                     let richHolesPatchedTotal = CompilerConsoleHud88.cachedHudNumberOrZero CompilerConsoleHud88.Phase2HudCounterHolesPatchedTotal
                     let richMonoQueueDepth = CompilerConsoleHud88.cachedHudNumberOrZero CompilerConsoleHud88.Phase2HudCounterMonoQueueDepth
@@ -44247,7 +44326,9 @@ module spiral_compiler =
                                 try
                                     let mutable nowMs = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                                     while nowMs < nextDueMs && not (CompilerConsoleHud88.progressHudPresentationClosedNow()) do
-                                        let sleepMs = int (min 5L (max 1L (nextDueMs - nowMs)))
+                                        // 1-5 ms sleeps kept this observer thread ~7% busy; quiet (batch) runs have no
+                                        // visible clock to keep smooth, so they wait in 25 ms steps (fix 37).
+                                        let sleepMs = int (min (if quiet then 25L else 5L) (max 1L (nextDueMs - nowMs)))
                                         System.Threading.Thread.Sleep(sleepMs)
                                         nowMs <- System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                                     if not (CompilerConsoleHud88.progressHudPresentationClosedNow()) then
@@ -44651,7 +44732,7 @@ module spiral_compiler =
                     | PlateauGlobalEmitGuardNativeClosurePlateauPoison ->
                         let nextHoldoffUntilMs = now + 30000L
                         lock progressPredictionTickGate (fun () -> progressPredictionPlateauAbortHoldoffUntilMs <- nextHoldoffUntilMs)
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         let semanticDelta = nativeClosureSemanticDeltaText NativeClosureSemanticDeltaStarved
                         let poison = nativeClosurePlateauPoisonText NativeClosurePlateauPoisonSemanticFixedPoint
@@ -44661,7 +44742,7 @@ module spiral_compiler =
                     | PlateauGlobalEmitGuardHoldLiveReplayEvidence ->
                         let nextHoldoffUntilMs = now + 30000L
                         lock progressPredictionTickGate (fun () -> progressPredictionPlateauAbortHoldoffUntilMs <- nextHoldoffUntilMs)
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         let line =
                             FastRuntimeFormat.format """{"v":1,"ts_ms":%d,"pid":%s,"tid":%s,"run_id":%s,"kind":"compile_progress_plateau_global_emit_guard_holdoff","event":"diag_emit_plateau_guard","decision_du":%s,"last_no_work_s":%d,"last_replay_scheduled":%d,"last_replay_driver_ticks":%d,"last_root_receipts":%d,"last_terminal_signals":%d,"last_sampled_delta":%d,"last_replay_delta":%d,"last_root_delta":%d,"last_terminal_delta":%d,"holdoff_ms":30000,"policy":"typed_global_emit_guard_respects_live_replay_holdoff_no_buildok_no_writer"}""" [| box now; box pid; box tid; box (esc run_id); box (esc (plateauGlobalEmitGuardDecisionText guardDecisionId)); box lastNoWorkS; box lastReplaySchedules; box lastReplayDrivers; box lastRootComplete; box lastTerminalSignals; box lastSampledDelta; box lastReplayDelta; box lastRootDelta; box lastTerminalDelta |]
@@ -44669,7 +44750,7 @@ module spiral_compiler =
                     | PlateauGlobalEmitGuardRaise ->
                         let nextHoldoffUntilMs = now + 1000L
                         lock progressPredictionTickGate (fun () -> progressPredictionPlateauAbortHoldoffUntilMs <- nextHoldoffUntilMs)
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         let line =
                             FastRuntimeFormat.format
@@ -44677,7 +44758,8 @@ module spiral_compiler =
                                 [| box now; box pid; box tid; box (esc run_id); box (esc (plateauGlobalEmitGuardDecisionText guardDecisionId)) |]
                         writeProgressHeartbeatLineDirect line
                     | PlateauGlobalEmitGuardWaitHoldoff -> ()
-            try
+            if not quiet then
+              try
                 let trimmed = if System.Object.ReferenceEquals(json,null) then "" else json.Trim()
                 let line =
                     match jsonObjectEnvelopeId trimmed with
@@ -44685,18 +44767,23 @@ module spiral_compiler =
                     | JsonEnvelopeObject ->
                         let body = trimmed.Substring(1, trimmed.Length - 2)
                         let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,%s}" [| box ts; box pid; box tid; box body |]
                     | JsonEnvelopeOther ->
                         let ts = string (System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds())
-                        let pid = string (System.Diagnostics.Process.GetCurrentProcess().Id)
+                        let pid = string (System.Environment.ProcessId)
                         let tid = string (System.Threading.Thread.CurrentThread.ManagedThreadId)
                         FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%s,\"pid\":%s,\"tid\":%s,\"kind\":\"diag\",\"msg\":%s}" [| box ts; box pid; box tid; box (esc trimmed) |]
-                let line = compactJsonLineIfLarge line
-                let line = enrichJsonLineWithProcessMemory line
-                let line = enrichJsonLineWithProgressEta line
-                let line = enrichJsonLineWithSeqRunConsensus line
+                // Compaction and enrichment (memory, progress/ETA, seq/consensus envelope) only add fields;
+                // the emission filters below read the producer's own fields (kind, status, driver,
+                // decision_du, site, ...). Most rows are dropped, so decide on the raw row and enrich only
+                // what is written: enriching every row cost ~10% of a hopac compile's CPU.
+                let enrichForWrite line =
+                    let line = compactJsonLineIfLarge line
+                    let line = enrichJsonLineWithProcessMemory line
+                    let line = enrichJsonLineWithProgressEta line
+                    enrichJsonLineWithSeqRunConsensus line
                 let nowAfterEnrich = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                 // JSON is only the erasure boundary here: the bounded lease is
                 // persisted as an atomic runtime state and the deadman merely
@@ -44717,9 +44804,9 @@ module spiral_compiler =
                         let progressPctForLease = float progressBpForLease / 100.0
                         let postRootTailQueue, postRootTailActive, postRootTailPending = postRootWriterTailSnapshotNow()
                         writeProgressHeartbeatLineDirect (
-                            FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_tail_snapshot_before_lease_expiry\",\"event\":\"diag_emit_post_root_tail_snapshot\",\"queue_depth\":%d,\"active_depth\":%d,\"pending\":%d,\"workdag_tail_after_state_du\":\"WorkDagTail(LastObserved|qap=%d/%d/%d)\",\"writer_capability_lease_id\":\"writer-lease:expired\",\"root_reopen_forbidden\":true,\"next\":\"emit_typed_lease_expiry_receipt\"}" [| box nowAfterEnrich; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box postRootTailQueue; box postRootTailActive; box postRootTailPending; box postRootTailQueue; box postRootTailActive; box postRootTailPending |])
+                            FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_tail_snapshot_before_lease_expiry\",\"event\":\"diag_emit_post_root_tail_snapshot\",\"queue_depth\":%d,\"active_depth\":%d,\"pending\":%d,\"workdag_tail_after_state_du\":\"WorkDagTail(LastObserved|qap=%d/%d/%d)\",\"writer_capability_lease_id\":\"writer-lease:expired\",\"root_reopen_forbidden\":true,\"next\":\"emit_typed_lease_expiry_receipt\"}" [| box nowAfterEnrich; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box postRootTailQueue; box postRootTailActive; box postRootTailPending; box postRootTailQueue; box postRootTailActive; box postRootTailPending |])
                         writeProgressHeartbeatLineDirect (
-                            FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_lease_expired_observation\",\"event\":\"diag_emit_post_root_lease_expiry\",\"elapsed_s\":%d,\"progress_pct\":%.4f,\"writer_capability_lease_id\":\"writer-lease:expired\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Expired|deadline_ms=%d|generation=%d)\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_after_root_du\":\"TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(ObserveBuildErrorRequest|source=post_root_writer_lease_expiry|quorum_board_authority=false)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(AwaitingTypedReducer|source=post_root_writer_lease_expiry|root_to_writer_alt=expired|observer_request=post-root-lease-expired)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(WriterCapabilityTopLevelPromise|state=expired_to_observer_request)\",\"deadman_action_du\":\"PostRootLeaseExpiryRequestsReducerDecision\",\"observer_request_id\":\"exit-observation:post-root-lease-expired\",\"terminal_commit_receipt_id\":\"\",\"root_complete_exit_policy_du\":\"request_fail_closed_after_post_root_writer_lease_expired\",\"root_promise_status_du\":\"RootPromiseProjectionErased(durable_receipt|receipt=post-root-lease-expired|source=canonical_root_authority)\",\"canonical_root_authority_du\":\"CanonicalRootAuthorityProjectionRequired(durable_receipt)\",\"root_complete_await_contract_du\":\"RootCompleteAwaitArmed(reason=post_root_writer_lease_expired_observation)\",\"worker_action\":\"observe_post_root_writer_lease_expiry\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(ObservedRequest|seal=writer-tail-seal:lease-expired|violation=WriterLeaseExpiredWithoutDecision)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:lease-expired|contract=exit-observation:post-root-lease-expired|exit_kind=request_build_error|tail=workdag-tail:last-observed-qap|physical_exit_latched=false)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitObservation(id=exit-observation:post-root-lease-expired|outcome=request_failed_closed|authority=post_root_writer_lease|requested_exit=1)\",\"native_job_graph\":\"RootComplete.resolved->WriterCapabilityLease.expired->TerminalAfterRoot.ObserveBuildErrorRequest(post_root_lease_expiry_observation)\",\"message\":\"[spiral_compiler] Post-root writer lease expired without a writer commit. The observer records a typed exit request while the reducer continues consuming semantic and QAP evidence; only the reducer may publish run_end or claim physical exit.\",\"policy\":\"post_root_writer_lease_expiry_is_observer_only_typed_reducer_owns_exit\"}" [| box nowAfterEnrich; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedSForLease; box progressPctForLease; box postRootWriterLeaseDeadlineMs; box postRootWriterLeaseGeneration |])
+                            FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_lease_expired_observation\",\"event\":\"diag_emit_post_root_lease_expiry\",\"elapsed_s\":%d,\"progress_pct\":%.4f,\"writer_capability_lease_id\":\"writer-lease:expired\",\"writer_capability_status_du\":\"WriterCapabilityLeaseStatus(Expired|deadline_ms=%d|generation=%d)\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_after_root_du\":\"TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_emission_decision_du\":\"TerminalEmissionDecision(ObserveBuildErrorRequest|source=post_root_writer_lease_expiry|quorum_board_authority=false)\",\"breakthrough_seal_certificate_du\":\"BreakthroughSealCertificate(AwaitingTypedReducer|source=post_root_writer_lease_expiry|root_to_writer_alt=expired|observer_request=post-root-lease-expired)\",\"pure_hopac_graph_obligation_du\":\"PureHopacGraphObligation(WriterCapabilityTopLevelPromise|state=expired_to_observer_request)\",\"deadman_action_du\":\"PostRootLeaseExpiryRequestsReducerDecision\",\"observer_request_id\":\"exit-observation:post-root-lease-expired\",\"terminal_commit_receipt_id\":\"\",\"root_complete_exit_policy_du\":\"request_fail_closed_after_post_root_writer_lease_expired\",\"root_promise_status_du\":\"RootPromiseProjectionErased(durable_receipt|receipt=post-root-lease-expired|source=canonical_root_authority)\",\"canonical_root_authority_du\":\"CanonicalRootAuthorityProjectionRequired(durable_receipt)\",\"root_complete_await_contract_du\":\"RootCompleteAwaitArmed(reason=post_root_writer_lease_expired_observation)\",\"worker_action\":\"observe_post_root_writer_lease_expiry\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(ObservedRequest|seal=writer-tail-seal:lease-expired|violation=WriterLeaseExpiredWithoutDecision)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:lease-expired|contract=exit-observation:post-root-lease-expired|exit_kind=request_build_error|tail=workdag-tail:last-observed-qap|physical_exit_latched=false)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitObservation(id=exit-observation:post-root-lease-expired|outcome=request_failed_closed|authority=post_root_writer_lease|requested_exit=1)\",\"native_job_graph\":\"RootComplete.resolved->WriterCapabilityLease.expired->TerminalAfterRoot.ObserveBuildErrorRequest(post_root_lease_expiry_observation)\",\"message\":\"[spiral_compiler] Post-root writer lease expired without a writer commit. The observer records a typed exit request while the reducer continues consuming semantic and QAP evidence; only the reducer may publish run_end or claim physical exit.\",\"policy\":\"post_root_writer_lease_expiry_is_observer_only_typed_reducer_owns_exit\"}" [| box nowAfterEnrich; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedSForLease; box progressPctForLease; box postRootWriterLeaseDeadlineMs; box postRootWriterLeaseGeneration |])
                         ()
                 let lastTrueTickMs = progressPredictionAuthoritativeTickMs()
                 let nowMonotonicAfterEnrich = Environment.TickCount64
@@ -44738,15 +44825,15 @@ module spiral_compiler =
                             let sourceKind = jsonStringFieldByName "kind" line
                             let trueTickAgeMs = max 0L (nowMonotonicAfterEnrich - lastTrueTickMs)
                             writeProgressHeartbeatLineDirect (
-                                FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"progress_tick_emit_wall_clock_pulse\",\"event\":\"diag_emit_wall_clock_fallback\",\"source\":\"DiagJson.emit\",\"elapsed_s\":%d,\"elapsed_ms\":%d,\"progress_pct\":%.2f,\"eta_s\":%d,\"last_true_tick_age_ms\":%d,\"source_kind\":%s,\"hud_clock_policy_du\":\"emit_path_wall_clock_tracks_true_metronome_stall_and_arms_cpu_deadman\",\"next\":\"continue_compiler_work_or_deadman_exit\"}" [| box nowAfterEnrich; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedS; box elapsedMs; box progressPct; box etaS; box trueTickAgeMs; box (esc sourceKind) |])
+                                FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"progress_tick_emit_wall_clock_pulse\",\"event\":\"diag_emit_wall_clock_fallback\",\"source\":\"DiagJson.emit\",\"elapsed_s\":%d,\"elapsed_ms\":%d,\"progress_pct\":%.2f,\"eta_s\":%d,\"last_true_tick_age_ms\":%d,\"source_kind\":%s,\"hud_clock_policy_du\":\"emit_path_wall_clock_tracks_true_metronome_stall_and_arms_cpu_deadman\",\"next\":\"continue_compiler_work_or_deadman_exit\"}" [| box nowAfterEnrich; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedS; box elapsedMs; box progressPct; box etaS; box trueTickAgeMs; box (esc sourceKind) |])
                             // Emit-path deadman is observer-only. The process-global TerminalFlow
                             // server owns the only timer-driven fail-closed transition.
                             if false && trueTickAgeMs >= 5000L && typedNoWorkDisplayProjectionQuarantined TypedNoWorkBandDisabledDeadman progressPct && not postRootWriterLeaseLive then
                                 let deadmanTailQueue, deadmanTailActive, deadmanTailPending = postRootWriterTailSnapshotNow()
                                 writeProgressHeartbeatLineDirect (
-                                    FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_tail_snapshot_before_cpu_deadman\",\"event\":\"diag_emit_cpu_deadman_tail_snapshot\",\"queue_depth\":%d,\"active_depth\":%d,\"pending\":%d,\"workdag_tail_after_state_du\":\"WorkDagTail(LastObserved|qap=%d/%d/%d)\",\"writer_capability_lease_id\":\"writer-lease:expired\",\"root_reopen_forbidden\":true,\"next\":\"emit_deadman_terminal_receipt_from_observed_tail\"}" [| box nowAfterEnrich; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box deadmanTailQueue; box deadmanTailActive; box deadmanTailPending; box deadmanTailQueue; box deadmanTailActive; box deadmanTailPending |])
+                                    FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"post_root_writer_tail_snapshot_before_cpu_deadman\",\"event\":\"diag_emit_cpu_deadman_tail_snapshot\",\"queue_depth\":%d,\"active_depth\":%d,\"pending\":%d,\"workdag_tail_after_state_du\":\"WorkDagTail(LastObserved|qap=%d/%d/%d)\",\"writer_capability_lease_id\":\"writer-lease:expired\",\"root_reopen_forbidden\":true,\"next\":\"emit_deadman_terminal_receipt_from_observed_tail\"}" [| box nowAfterEnrich; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box deadmanTailQueue; box deadmanTailActive; box deadmanTailPending; box deadmanTailQueue; box deadmanTailActive; box deadmanTailPending |])
                                 writeProgressHeartbeatLineDirect (
-                                    FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"compile_progress_true_metronome_cpu_deadman\",\"event\":\"diag_emit_cpu_deadman\",\"elapsed_s\":%d,\"progress_pct\":%.4f,\"last_true_tick_age_ms\":%d,\"source_kind\":%s,\"writer_capability_lease_id\":\"writer-lease:expired\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_after_root_du\":\"TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"deadman_action_du\":\"DeadmanAfterWriterLeaseExpiry\",\"deadman_terminal_receipt_id\":\"deadman-terminal-receipt:post-root\",\"root_complete_exit_policy_du\":\"request_fail_closed_after_post_root_writer_lease_expired\",\"scheduler_owned_root_transition_du\":\"SchedulerRootFailClosedAfterOwnerDeadlock(cpu_deadman_after_root_gate)\",\"root_complete_alt_authority_du\":\"RootCompleteAltAuthority(id=root-complete-alt:cpu-deadman|receipt=terminal-root-receipt:cpu-deadman|kind=cpu_deadman|writer_required=false)\",\"terminal_root_receipt_gate_du\":\"TerminalRootReceiptGate(id=terminal-root-gate:cpu-deadman|root_consumed=true|writer_consumed=true|commit_allowed=true|fail_closed_ms=5000)\",\"root_terminal_outcome_du\":\"RootTerminalOutcome(PostRoot|TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap))\",\"fail_closed_exit_authority_du\":\"FailClosedExitAuthority(ByOwnerDrainViolation|violation=PostRootWriterLeaseExpiredWithoutDecision|terminal_gate=terminal-root-gate:cpu-deadman)\",\"armed_wait_graph_spine_du\":\"ArmedWaitGraphSpine(id=spine:cpu-deadman|qap=unknown|unarmed=1|dropped=1|edge=cpu-deadman)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootTerminalization|flow=emit_build_error|lease=writer-lease:expired)\",\"scheduler_push_authority_du\":\"SchedulerPushAuthority(id=push:cpu-deadman|writer_required=false|renderer=false|metronome_observer_only=true)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughPostRootTerminalization(flow=emit_build_error|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap|spine=spine:cpu-deadman)\",\"terminal_authority_migration_status_du\":\"TerminalAuthorityMigration(round=1of5-post-root|push_events=2|renderer_rejected=1|arbiter=post_root_emit_build_error)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:cpu-deadman|outcome=failed_closed|authority=owner_drain_violation|exit=1)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:cpu-deadman|contract=deadman-terminal-receipt:post-root|exit_kind=build_error|writer=none|artifact=none|tail=workdag-tail:last-observed-qap|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=metronome_deadman|violation=WriterLeaseExpiredWithoutDecision)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedFailure|seal=writer-tail-seal:cpu-deadman|violation=WriterLeaseExpiredWithoutDecision)\",\"native_job_graph\":\"RootComplete.resolved->WriterCapabilityLease.expired->TerminalAfterRoot.EmitBuildError(deadman_terminal_receipt)\",\"message\":\"[spiral_compiler] CPU/metronome deadman: wall-clock pulse advanced for 5s without a true rich/metronome tick near terminal progress. migration suppresses the metronome deadman while a bounded post-root WriterCapabilityLease is live; on lease expiry it emits TerminalAfterRoot(EmitBuildError) with a durable deadman terminal receipt instead of reopening owner debt.\",\"policy\":\"post_root_writer_lease_expiry_emits_typed_terminal_receipt_no_root_reopen\"}" [| box nowAfterEnrich; box (string (System.Diagnostics.Process.GetCurrentProcess().Id)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedS; box progressPct; box trueTickAgeMs; box (esc sourceKind) |])
+                                    FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%s,\"tid\":%s,\"run_id\":%s,\"kind\":\"compile_progress_true_metronome_cpu_deadman\",\"event\":\"diag_emit_cpu_deadman\",\"elapsed_s\":%d,\"progress_pct\":%.4f,\"last_true_tick_age_ms\":%d,\"source_kind\":%s,\"writer_capability_lease_id\":\"writer-lease:expired\",\"post_root_authority_violation_du\":\"PostRootAuthorityViolation(WriterLeaseExpiredWithoutDecision|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"terminal_after_root_du\":\"TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap)\",\"deadman_action_du\":\"DeadmanAfterWriterLeaseExpiry\",\"deadman_terminal_receipt_id\":\"deadman-terminal-receipt:post-root\",\"root_complete_exit_policy_du\":\"request_fail_closed_after_post_root_writer_lease_expired\",\"scheduler_owned_root_transition_du\":\"SchedulerRootFailClosedAfterOwnerDeadlock(cpu_deadman_after_root_gate)\",\"root_complete_alt_authority_du\":\"RootCompleteAltAuthority(id=root-complete-alt:cpu-deadman|receipt=terminal-root-receipt:cpu-deadman|kind=cpu_deadman|writer_required=false)\",\"terminal_root_receipt_gate_du\":\"TerminalRootReceiptGate(id=terminal-root-gate:cpu-deadman|root_consumed=true|writer_consumed=true|commit_allowed=true|fail_closed_ms=5000)\",\"root_terminal_outcome_du\":\"RootTerminalOutcome(PostRoot|TerminalAfterRoot(ObserveBuildErrorRequest|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap))\",\"fail_closed_exit_authority_du\":\"FailClosedExitAuthority(ByOwnerDrainViolation|violation=PostRootWriterLeaseExpiredWithoutDecision|terminal_gate=terminal-root-gate:cpu-deadman)\",\"armed_wait_graph_spine_du\":\"ArmedWaitGraphSpine(id=spine:cpu-deadman|qap=unknown|unarmed=1|dropped=1|edge=cpu-deadman)\",\"scheduler_push_event_du\":\"SchedulerPushEvent(PushPostRootTerminalization|flow=emit_build_error|lease=writer-lease:expired)\",\"scheduler_push_authority_du\":\"SchedulerPushAuthority(id=push:cpu-deadman|writer_required=false|renderer=false|metronome_observer_only=true)\",\"breakthrough_exit_arbiter_du\":\"BreakthroughPostRootTerminalization(flow=emit_build_error|lease=writer-lease:expired|tail=workdag-tail:last-observed-qap|spine=spine:cpu-deadman)\",\"terminal_authority_migration_status_du\":\"TerminalAuthorityMigration(round=1of5-post-root|push_events=2|renderer_rejected=1|arbiter=post_root_emit_build_error)\",\"native_terminal_exit_contract_du\":\"NativeTerminalExitContract(id=exit-contract:cpu-deadman|outcome=failed_closed|authority=owner_drain_violation|exit=1)\",\"writer_tail_emission_seal_du\":\"WriterTailEmissionSeal(id=writer-tail-seal:cpu-deadman|contract=deadman-terminal-receipt:post-root|exit_kind=build_error|writer=none|artifact=none|tail=workdag-tail:last-observed-qap|owner_back_edge=PostRootOwnerDebtBackEdgePolicy(FatalViolation|row=metronome_deadman|violation=WriterLeaseExpiredWithoutDecision)|physical_exit_latched=true)\",\"post_root_terminal_emission_boundary_du\":\"PostRootTerminalEmissionBoundary(SealedFailure|seal=writer-tail-seal:cpu-deadman|violation=WriterLeaseExpiredWithoutDecision)\",\"native_job_graph\":\"RootComplete.resolved->WriterCapabilityLease.expired->TerminalAfterRoot.EmitBuildError(deadman_terminal_receipt)\",\"message\":\"[spiral_compiler] CPU/metronome deadman: wall-clock pulse advanced for 5s without a true rich/metronome tick near terminal progress. migration suppresses the metronome deadman while a bounded post-root WriterCapabilityLease is live; on lease expiry it emits TerminalAfterRoot(EmitBuildError) with a durable deadman terminal receipt instead of reopening owner debt.\",\"policy\":\"post_root_writer_lease_expiry_emits_typed_terminal_receipt_no_root_reopen\"}" [| box nowAfterEnrich; box (string (System.Environment.ProcessId)); box (string (System.Threading.Thread.CurrentThread.ManagedThreadId)); box (esc run_id); box elapsedS; box progressPct; box trueTickAgeMs; box (esc sourceKind) |])
                                 forceProcessExitDirect 227 LegacyExitTrueMetronomeStalledCpuDeadman
                         with _ -> ()
                 noteProgressSiteFromJsonLine line
@@ -44758,8 +44845,8 @@ module spiral_compiler =
                 // True 1s ticks are emitted only by the dedicated metronome thread;
                 // ordinary diagnostics must not consume or delay the heartbeat slot.
                 if emitCurrentLine && emitAllowedAfterTerminalLatch then
-                    writeProgressHeartbeatLine false line
-            with _ -> ()
+                    writeProgressHeartbeatLine false (enrichForWrite line)
+              with _ -> ()
 
         // Survival diagnostics bypass enrichment, typed serialization and terminal actors.
         // Use only for evidence needed to diagnose failures in those mechanisms themselves.
@@ -44767,7 +44854,7 @@ module spiral_compiler =
             try
                 let trimmed = if System.Object.ReferenceEquals(json,null) then "" else json.Trim()
                 let now = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                let pid = System.Diagnostics.Process.GetCurrentProcess().Id
+                let pid = System.Environment.ProcessId
                 let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
                 let line =
                     match jsonObjectEnvelopeId trimmed with
@@ -44979,7 +45066,7 @@ module spiral_compiler =
             with ex ->
                 let eventType = typeof<'T>.FullName
                 let now = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-                let pid = System.Diagnostics.Process.GetCurrentProcess().Id
+                let pid = System.Environment.ProcessId
                 let tid = System.Threading.Thread.CurrentThread.ManagedThreadId
                 writeProgressHeartbeatLineDirect (
                     FastRuntimeFormat.format "{\"v\":1,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":\"typed_diag_serialization_failed\",\"event_type\":%s,\"exception_type\":%s,\"exception_message\":%s,\"authority\":\"direct_serializer_failure_survival_lane\",\"next\":\"keep_compiler_running_and_fix_event_schema\"}" [| box now; box pid; box tid; box (esc eventType); box (esc (ex.GetType().FullName)); box (esc ex.Message) |])
@@ -46472,20 +46559,24 @@ module spiral_compiler =
     
 
     /// ### TripleString
+    // The lexer's cross-line state is per thread: hopac tokenizes files in parallel, and a process-wide flag let
+    // one file's open `"""` string leak into another file's lines (parse errors in big files with many triple
+    // strings, and the "order-dependent parse" of earlier runs). A file's lines are tokenized in one call, on one
+    // thread, after reset_lexical_state (fix 30).
     module TripleString =
-        let mutable in_triple = false
-        let is_open () = in_triple
-        let open' () = in_triple <- true
-        let close () = in_triple <- false
-    
+        let private in_triple = new System.Threading.ThreadLocal<bool>()
+        let is_open () = in_triple.Value
+        let open' () = in_triple.Value <- true
+        let close () = in_triple.Value <- false
+
 
     /// ### MultiComment
     module MultiComment =
-        let mutable depth = 0
-        let in_comment () = depth > 0
-        let open' () = depth <- depth + 1
-        let close () = if depth > 0 then depth <- depth - 1
-        let reset () = depth <- 0
+        let private depth = new System.Threading.ThreadLocal<int>()
+        let in_comment () = depth.Value > 0
+        let open' () = depth.Value <- depth.Value + 1
+        let close () = if depth.Value > 0 then depth.Value <- depth.Value - 1
+        let reset () = depth.Value <- 0
     
 
     /// ### reset_lexical_state
@@ -46637,31 +46728,30 @@ module spiral_compiler =
     let string_triple_line (s : Tokenizer) =
         let text = s.text
         let len = text.Length
+        // As in single-flight: each line's text ends with its newline. Hopac put the newline before the next
+        // line instead, which dropped the one before the closing line, and gave empty lines a token at column 0,
+        // which the block splitter read as a new top-level block (fix 29).
         if TripleString.is_open() then
-            if len = 0 then
-                let t = ({from=0; nearTo=0}, TokText "\n")
-                Ok [t]
+            let body_from = s.from
+            let idx = findOrdinalTextFrom text body_from "\"\"\""
+            if idx >= 0 then
+                let body =
+                    if body_from < idx then
+                        [ ({from=body_from; nearTo=idx},
+                            TokText (text.Substring(body_from, idx - body_from))) ]
+                    else []
+                s.from <- idx + 3
+                TripleString.close()
+                Ok (body @ [ ({from=idx; nearTo=s.from}, TokStringClose) ])
             else
-                let body_from = s.from
-                let idx = findOrdinalTextFrom text body_from "\"\"\""
-                if idx >= 0 then
-                    let body =
-                        if body_from < idx then
-                            [ ({from=body_from; nearTo=idx},
-                                TokText (text.Substring(body_from, idx - body_from))) ]
-                        else []
-                    s.from <- idx + 3
-                    TripleString.close()
-                    Ok (body @ [ ({from=idx; nearTo=s.from}, TokStringClose) ])
-                else
-                    let content =
-                        if body_from < len then
-                            "\n" + text.Substring(body_from, len - body_from)
-                        else
-                            "\n"
-                    let t = ({from=body_from; nearTo=len}, TokText content)
-                    s.from <- len
-                    Ok [t]
+                let content =
+                    if body_from < len then
+                        text.Substring(body_from, len - body_from) + "\n"
+                    else
+                        "\n"
+                let t = ({from=body_from; nearTo=len}, TokText content)
+                s.from <- len
+                Ok [t]
         elif peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
             let from_open = s.from
             inc' 3 s
@@ -46683,9 +46773,9 @@ module spiral_compiler =
                 let open_tok  = ({from=from_open; nearTo=from_open+3}, TokStringOpen)
                 let content =
                     if body_from < len then
-                        text.Substring(body_from, len - body_from)
+                        text.Substring(body_from, len - body_from) + "\n"
                     else
-                        ""
+                        "\n"
                 let body =
                     [ ({from=body_from; nearTo=len}, TokText content) ]
                 s.from <- len
@@ -46783,10 +46873,6 @@ module spiral_compiler =
     and tokenize text =
         let mutable ar = PersistentVector.empty
         let mutable er = []
-        if TripleString.is_open() && (text : string).Length = 0 then
-            ar <- PersistentVector.conj ({from=0; nearTo=0}, TokText "\n") ar
-    
-
         let tokens =
             many_iter (fun (x : (TokenizerRange * SpiralToken) list,er' : (TokenizerRange * string) list) ->
                 List.iter (fun x -> ar <- PersistentVector.conj x ar) x
@@ -64008,6 +64094,7 @@ module spiral_compiler =
             headNodeId: int
             headShape: CompilerIdentityKernel.WorkShapeId
             argCount: int
+            /// In application order (`f a b`: a, then b); the replay driver applies them in this order.
             argNodeIds: int[]
             argShapes: CompilerIdentityKernel.WorkShapeId[]
         }
@@ -64570,6 +64657,11 @@ module spiral_compiler =
             let value (EvaluatorProducerMaterialRevision value) = value
             let advanced beforeRevision afterRevision = value afterRevision > value beforeRevision
 
+        // Reference equality: evaluatorProducerGraph.AddOrUpdate compare-and-swaps the prior record with
+        // EqualityComparer.Default, which compared records structurally, deep into the boxed Data/Ty/LangEnv
+        // artifacts, on every replay registration (~23% of mega_lean_cic's CPU, FRONTIER.md fix 36). Every
+        // update mints a new record with a new revision, so content equality between records meant nothing.
+        [<ReferenceEquality>]
         type EvaluatorProducerRecord = {
             key : EvaluatorNodeKey
             shape : CompilerIdentityKernel.WorkShapeId
@@ -66782,6 +66874,29 @@ module spiral_compiler =
         let isDirectNodeOwned (nodeId: int) =
             isDirectNodeActive nodeId || directCompletedNodes.ContainsKey nodeId
 
+        // Statement blocks a direct evaluation is building right now (reference counted by block identity).
+        // The replay driver runs nested inside direct evaluation (cooperative ticks); an application it runs
+        // into such a block lands ahead of the statements the direct evaluator has yet to emit, and the direct
+        // evaluator then runs it again (`utf8_validate` called twice per `let` in main, in the wrong order).
+        let private directActiveScopes =
+            System.Collections.Concurrent.ConcurrentDictionary<obj,int>(HashIdentity.Reference)
+
+        let enterDirectScope (scope: obj) =
+            directActiveScopes.AddOrUpdate(scope, 1, (fun _ n -> n + 1)) |> ignore
+
+        let exitDirectScope (scope: obj) =
+            let mutable finished = false
+            while not finished do
+                match directActiveScopes.TryGetValue scope with
+                | true, n when n > 1 -> finished <- directActiveScopes.TryUpdate(scope, n - 1, n)
+                | true, n -> finished <- directActiveScopes.TryRemove(System.Collections.Generic.KeyValuePair(scope, n))
+                | _ -> finished <- true
+
+        let isDirectScopeActive (scope: obj) =
+            match directActiveScopes.TryGetValue scope with
+            | true, n -> n > 0
+            | _ -> false
+
         let private enqueueParentCacheHandoff (kindId: ParentCacheHandoffKindId) (childNodeId: int) =
             if parentCacheHandoffAdmissionAllows() then
                 let childKind =
@@ -68552,17 +68667,9 @@ module spiral_compiler =
             match replayApplyResults.TryGetValue nodeId with
             | true, results ->
                 let scope = replayScopeOf sObj
-                let hit =
-                    lock results (fun () ->
-                        results |> Seq.tryPick (fun (s, h, a, result) ->
-                            if obj.ReferenceEquals(s, scope) && replayDataSame h head && replayDataSame a arg then Some result else None))
-                if hit.IsNone then
-                    let (s, h, a, _) = lock results (fun () -> results.[results.Count - 1])
-                    DiagJson.emit (
-                        FastRuntimeFormat.format
-                            "{\"kind\":\"eval_worklist_replay_apply_memo_miss\",\"node_id\":%d,\"entries\":%d,\"same_scope\":%b,\"same_head\":%b,\"same_arg\":%b,\"head_case\":%s,\"arg_case\":%s}"
-                            [| box nodeId; box results.Count; box (obj.ReferenceEquals(s, scope)); box (replayDataSame h head); box (replayDataSame a arg); box (DiagJson.esc (dataCaseName head)); box (DiagJson.esc (dataCaseName arg)) |])
-                hit
+                lock results (fun () ->
+                    results |> Seq.tryPick (fun (s, h, a, result) ->
+                        if obj.ReferenceEquals(s, scope) && replayDataSame h head && replayDataSame a arg then Some result else None))
             | _ -> None
 
         let private rememberReplayApplyResult nodeId (sObj: obj) head arg result =
@@ -68570,12 +68677,39 @@ module spiral_compiler =
             lock results (fun () -> results.Add((replayScopeOf sObj, head, arg, result)))
             result
 
+        // Whole applications the replay completed, per application node and scope block. Before applying a
+        // node again, the driver (and the whole-spine thunks) take this value: re-applying re-reads the
+        // arguments through their thunks, which emit fresh variables, so the step memo above cannot match.
+        let private replayAppliedValues =
+            System.Collections.Concurrent.ConcurrentDictionary<struct (int * obj), Data>(
+                { new System.Collections.Generic.IEqualityComparer<struct (int * obj)> with
+                    member _.Equals(struct (a, s), struct (b, t)) = a = b && obj.ReferenceEquals(s, t)
+                    member _.GetHashCode(struct (a, s)) = a * 31 + System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode s })
+
+        // Keyed by the evaluation's own context object, not by its scope block: node ids are AST identity
+        // hashes, and one block can apply the same node twice under different environments (an inlined
+        // function called twice, a generic body at two types), which must not share a value.
+        let tryReplayAppliedValueIn (nodeId: int) (sObj: obj) : Data option =
+            let mutable value = Unchecked.defaultof<Data>
+            if replayAppliedValues.TryGetValue(struct (nodeId, sObj), &value) then Some value else None
+
+        let rememberReplayAppliedValueIn (nodeId: int) (sObj: obj) (value: Data) : unit =
+            replayAppliedValues.TryAdd(struct (nodeId, sObj), value) |> ignore
+
+        let tryReplayAppliedValue (nodeId: int) : Data option =
+            tryApplyContext nodeId |> Option.bind (tryReplayAppliedValueIn nodeId)
+
+        let rememberReplayAppliedValue (nodeId: int) (value: Data) : unit =
+            match tryApplyContext nodeId with
+            | Some sObj -> rememberReplayAppliedValueIn nodeId sObj value
+            | None -> ()
+
         let private tryRunApplyAfterDefinitionAt (nodeId: int) (head: Data) (arg: Data) : Choice<Data,FunctionBodyExecutionFailureId> =
             match tryApplyContext nodeId with
             // Applying runs the application's effects into the captured scope; an application the direct
             // evaluator runs now or has run would be emitted twice. Fails closed like a missing context, as
             // the replay thunks do (fix 14).
-            | Some _ when isDirectNodeOwned nodeId ->
+            | Some sObj when isDirectNodeOwned nodeId || isDirectScopeActive (replayScopeOf sObj) ->
                 Choice2Of2 (functionBodyExecutionFailure (DiagnosticClassifier.classifyIngress "") FunctionBodyNonStepperFailure "replay_apply_spine_owned_by_direct_evaluation")
             | Some sObj ->
                 match tryReplayApplyResult nodeId sObj head arg with
@@ -68592,7 +68726,7 @@ module spiral_compiler =
 
         let private tryRunDynamicJoinApplyAfterDefinitionAt (nodeId: int) (head: Data) (arg: Data) : Choice<Data,DynamicJoinExecutionFailureId> =
             match tryApplyContext nodeId with
-            | Some _ when isDirectNodeOwned nodeId ->
+            | Some sObj when isDirectNodeOwned nodeId || isDirectScopeActive (replayScopeOf sObj) ->
                 Choice2Of2 (dynamicJoinExecutionFailure (DiagnosticClassifier.classifyIngress "") dynamicJoinReasonEvidenceEmpty "replay_apply_spine_owned_by_direct_evaluation")
             | Some sObj ->
                 match tryReplayApplyResult nodeId sObj head arg with
@@ -72147,7 +72281,21 @@ module spiral_compiler =
             | Some tuple -> pendingGraphProofTupleJsonFields tuple
             | None -> ""
 
-        let replayTickProofTupleCompactJsonFields (eventText: string) (reasonText: string) =
+        // A pure function of the two texts, computed on every replay tick (it classifies both texts: ~4% of a
+        // slow compile); memoized, with a bounded cache.
+        let private replayTickProofCompactCache =
+            System.Collections.Concurrent.ConcurrentDictionary<struct (string * string), string>()
+
+        let rec replayTickProofTupleCompactJsonFields (eventText: string) (reasonText: string) =
+            let key = struct (eventText, reasonText)
+            let mutable cached = null
+            if replayTickProofCompactCache.TryGetValue(key, &cached) then cached
+            else
+                let fields = replayTickProofTupleCompactJsonFieldsUncached eventText reasonText
+                if replayTickProofCompactCache.Count < 4096 then replayTickProofCompactCache.TryAdd(key, fields) |> ignore
+                fields
+
+        and private replayTickProofTupleCompactJsonFieldsUncached (eventText: string) (reasonText: string) =
             match replayTickProofTupleFor eventText reasonText with
             | Some tuple ->
                 let compactText =
@@ -85059,8 +85207,12 @@ module spiral_compiler =
                                         | None -> "term_symbol_value_missing_store", SemanticStepPartial, replayNextExplicit "explicit_eval_worklist_symbol_value_store_required", cellReady
                                     | CellTerm, CellShapeEApply ->
                                         try
-                                            match EvalReplayValueStore.tryApplySpine cellReady.nodeId with
-                                            | Some spine ->
+                                            // Applied already in this scope: re-applying would emit the application again.
+                                            match EvalReplayValueStore.tryReplayAppliedValue cellReady.nodeId, EvalReplayValueStore.tryApplySpine cellReady.nodeId with
+                                            | Some value, _ ->
+                                                EvalReplayValueStore.putTermValue cellReady.nodeId value
+                                                compositeOrParent "term_apply_replay_applied_reused" cellReady
+                                            | None, Some spine ->
                                                 if not (EvalReplayValueStore.tryTermReady spine.headNodeId) then
                                                     let headCell = { cellReady with nodeId = spine.headNodeId; shape = spine.headShape; status = ReplayCellReadyStatus ReplayCellReadyApplyHead }
                                                     "term_apply_spine_head_scheduled", SemanticStepPartial, ReplayNextScheduleApplyHead, headCell
@@ -85082,6 +85234,7 @@ module spiral_compiler =
                                                             let values = argValues |> Array.map Option.get
                                                             match EvalReplayValueStore.tryApplyReplayDataWithContext cellReady.nodeId head values with
                                                             | Choice1Of2 value ->
+                                                                EvalReplayValueStore.rememberReplayAppliedValue cellReady.nodeId value
                                                                 EvalReplayValueStore.putTermValue cellReady.nodeId value
                                                                 compositeOrParent "term_apply_args_value_resolved" cellReady
                                                             | Choice2Of2 applyFailure ->
@@ -85674,7 +85827,7 @@ module spiral_compiler =
                                                                 "term_apply_arg_value_store_race_scheduled", SemanticStepPartial, ReplayNextScheduleApplyArg, argCell
                                                             | None ->
                                                                 "term_apply_args_available_value_store_race", SemanticStepPartial, replayNextExplicit "explicit_eval_worklist_apply_impl_required", cellReady
-                                            | None ->
+                                            | None, None ->
                                                 match EvalReplayValueStore.tryTermDetailed cellReady.nodeId with
                                                 | Choice1Of2 value ->
                                                     EvalReplayValueStore.putTermValue cellReady.nodeId value
@@ -89125,9 +89278,11 @@ module spiral_compiler =
                     | ParentReplayDriverWakeNoQueue
                     | ParentReplayDriverWakeAlreadyActive
                     | ParentReplayDriverWakeSuppressQueuedFence -> false
-                DiagJson.emit (
+                // The row's proof-tuple fields cost ~4% of a large compile to build; skip them when quiet.
+                if not DiagJson.quiet then
+                 DiagJson.emit (
                     FastRuntimeFormat.format "{\"kind\":\"eval_worklist_parent_handoff_driver_wake_requested\",\"event\":\"cache_write_parent_handoff_wake_callback\",\"decision_du\":%s,\"queue_depth\":%d,\"active_depth\":%d,\"scheduled_async\":%b,\"pending\":%d%s,\"materialized_terminal_payload_du\":\"ParentCacheHandoffWake\",\"pending_graph_shard_state\":\"TerminalPayload(ParentCacheHandoffWake)\",\"jsonl_recycle_du\":\"emit_once_then_compact_parent_cache_handoff_wake\",\"single_flight\":1,\"next\":\"native_hopac_callback_or_hopac_replay_driver_job\"}" [| box (esc (parentReplayDriverWakeDecisionText wakeDecision)); box queueDepthBeforeWake; box activeDepthBeforeWake; box scheduled; box (pendingCount()); box (pendingGraphProofTupleJsonFields (proofTupleForParentCacheHandoffWake "cache_write_parent_handoff_wake_callback")) |]
-                )
+                  )
             with _ -> ())
 
         do
@@ -93122,7 +93277,9 @@ module spiral_compiler =
     // RecursionTracker and BigStack modules below own construction/transitions.
     type RecursionContext = private {
         depth : int
-        lineage : CompilerIdentityKernel.ContentDigest
+        // Lazy and not chained: it was a SHA digest of the parent's digest on every term evaluation, and nothing
+        // reads it on the hot path (a chained lazy value forced at depth would recurse as deep as the evaluation).
+        lineage : Lazy<CompilerIdentityKernel.ContentDigest>
     }
 
     type RecursionEntry = private {
@@ -93140,14 +93297,16 @@ module spiral_compiler =
 
     /// Explicit evaluator traversal capabilities.  These paths are threaded
     /// through LangEnv so fiber migration cannot reset recursion authority.
+    // `pathRef` is lazy: it digests the whole path, and computing it on every enter/exit made evaluation
+    // quadratic in its depth (a contract compiled 8-16x slower than single-flight); nothing reads it on the hot path.
     type EvalNodePath = private {
         nodes : obj list
-        pathRef : CompilerIdentityKernel.ContentDigest
+        pathRef : Lazy<CompilerIdentityKernel.ContentDigest>
     }
 
     type EvalKeyPath = private {
         keys : EvalWorklist.ReplayKeyId list
-        pathRef : CompilerIdentityKernel.ContentDigest
+        pathRef : Lazy<CompilerIdentityKernel.ContentDigest>
     }
 
     /// ### LangEnv
@@ -93831,7 +93990,7 @@ module spiral_compiler =
 
         let root =
             { depth = 0
-              lineage = CompilerIdentityKernel.ContentDigest.ofText "recursion-context" "root" }
+              lineage = lazy (CompilerIdentityKernel.ContentDigest.ofText "recursion-context" "root") }
 
         let currentDepth context = context.depth
         let observerDepthUnavailable = 0
@@ -93841,9 +94000,10 @@ module spiral_compiler =
         let inheritDepth depth parent =
             { depth = max 0 depth
               lineage =
-                CompilerIdentityKernel.ContentDigest.ofText
-                    "recursion-context-inherit"
-                    (CompilerIdentityKernel.ContentDigest.text parent.lineage + "|depth=" + string (max 0 depth)) }
+                lazy (
+                    CompilerIdentityKernel.ContentDigest.ofText
+                        "recursion-context-inherit"
+                        ("depth=" + string parent.depth + "->" + string (max 0 depth))) }
 
         let enter (siteId:CompilerIdentityKernel.WorkSiteId) context =
             let depth = context.depth + 1
@@ -93851,10 +94011,11 @@ module spiral_compiler =
             let current =
                 { depth = depth
                   lineage =
-                    CompilerIdentityKernel.ContentDigest.ofText
-                        "recursion-context-enter"
-                        (CompilerIdentityKernel.ContentDigest.text context.lineage + "|site=" + siteText + "|depth=" + string depth) }
-            lock diagnosticsGate (fun () -> maxObserved <- max maxObserved depth)
+                    lazy (
+                        CompilerIdentityKernel.ContentDigest.ofText
+                            "recursion-context-enter"
+                            ("site=" + siteText + "|depth=" + string depth)) }
+            if depth > maxObserved then lock diagnosticsGate (fun () -> maxObserved <- max maxObserved depth)
             if depth > 50 then
                 deepCallSites.AddOrUpdate(siteId, 1, (fun _ n -> n + 1)) |> ignore
             { prior = context; current = current; site = siteId }
@@ -97199,7 +97360,10 @@ module spiral_compiler =
                     terminalFlowNonEmptyEvidence TerminalFlowTerminationCreditNoSnapshot [])
             | Some evidence ->
                 let rootSettlement = terminalFlowQapRootSettlementEvidenceFor evidence
-                let semanticLedger = DiagJson.semanticWorkLedgerSnapshot()
+                // The snapshot and the credit digest are only needed when credit is returned (no blockers);
+                // computing them on every call digested thousands of open units (~25% of
+                // mega_spiral_proves' CPU, FRONTIER.md fix 37).
+                let semanticLedger = lazy (DiagJson.semanticWorkLedgerSnapshot())
                 let semanticCreditDecision =
                     CompilerKernelV2.SemanticWorkLedgerAuthority.creditDecisionForScope
                         CompilerKernelV2.SemanticWorkOperational
@@ -97212,7 +97376,7 @@ module spiral_compiler =
                     CompilerKernelV2.SemanticWorkCreditDecision.openUnitCount terminalProtocolCreditDecision |> int64
                 let unclassifiedSemanticOpenCount =
                     CompilerKernelV2.SemanticWorkLedgerAuthority.unclassifiedOpenCount () |> int64
-                let semanticCreditDigest = CompilerKernelV2.SemanticWorkCreditDecision.digest semanticCreditDecision
+                let semanticCreditDigest = lazy (CompilerKernelV2.SemanticWorkCreditDecision.digest semanticCreditDecision)
                 let kernelObligations =
                     evidence.frontier.queueKindCounts.universeConstraint
                     + evidence.frontier.queueKindCounts.defEqObligation
@@ -97275,7 +97439,7 @@ module spiral_compiler =
                                 [| box (terminalFlowIdentityRefDigest evidence.snapshotRef)
                                    box admitted
                                    box receipts
-                                   box (CompilerIdentityKernel.ContentDigest.text semanticCreditDigest)
+                                   box (CompilerIdentityKernel.ContentDigest.text semanticCreditDigest.Value)
                                    box terminalProtocolOpenCount
                                    box operationalGraphRevision
                                    box (CompilerIdentityKernel.ContentDigest.text operationalGraphRef)
@@ -97288,8 +97452,8 @@ module spiral_compiler =
                         rootSettlement = rootSettlement
                         schedulerAdmitted = admitted
                         schedulerReceipts = receipts
-                        semanticReceipts = semanticLedger.receipts
-                        semanticCreditDigest = semanticCreditDigest
+                        semanticReceipts = semanticLedger.Value.receipts
+                        semanticCreditDigest = semanticCreditDigest.Value
                         terminalProtocolOpen = terminalProtocolOpenCount
                         operationalGraphRevision = operationalGraphRevision
                         operationalGraphRef = operationalGraphRef
@@ -98848,7 +99012,7 @@ module spiral_compiler =
                 let remainingUnattributed =
                     max 0L (evidence.workLedger.remainingCost - remainingBlocked - remainingQueued - remainingRunning)
                 let semanticLedgerSnapshot = DiagJson.semanticWorkLedgerSnapshot()
-                FastRuntimeFormat.format "{\"kind\":\"terminal_work_unit_ledger\",\"ledger_ref\":%u,\"snapshot_ref\":%u,\"owner_actor_ref\":%u,\"state_du\":%s,\"discovered_cost\":%d,\"ready_cost\":%d,\"active_cost\":%d,\"execution_attempt_count\":%d,\"operational_graph_open_count\":%d,\"operational_graph_suspended_count\":%d,\"operational_graph_observation_du\":%s,\"completed_cost\":%d,\"retired_cost\":%d,\"ast_completed_cost\":%d,\"semantic_completed_cost\":%d,\"semantic_to_ast_ratio_milli\":%d,\"completion_unit_scope_du\":\"AstSeedProgressPlusSemanticReceipts\",\"blocked_cost\":%d,\"blocked_unit_count\":%d,\"blocked_unit_id\":%u,\"blocked_unit_ref\":%u,\"blocked_unit_site\":%s,\"blocked_unit_work_unit_id\":%s,\"blocked_unit_method_key\":%s,\"blocked_unit_source\":%s,\"blocked_work_identity_authority_du\":%s,\"blocked_unit_kind_du\":%s,\"blocked_unit_producer_ref\":%u,\"blocked_unit_owner_ref\":%u,\"blocked_since_snapshot_ref\":%u,\"blocked_units_du\":%s,\"blocked_attribution_authority_du\":%s,\"blocked_attribution_complete\":%b,\"scheduler_admitted_count\":%d,\"scheduler_receipt_count\":%d,\"scheduler_open_count\":%d,\"scheduler_open_not_represented\":%d,\"semantic_total_open_count\":%d,\"semantic_operational_open_count\":%d,\"semantic_operational_open_work_units_du\":%s,\"semantic_terminal_protocol_open_count\":%d,\"semantic_terminal_protocol_open_work_units_du\":%s,\"semantic_unclassified_open_count\":%d,\"ledger_admission_lag\":%d,\"residual_cost\":%d,\"proven_dead_cost\":%d,\"remaining_cost\":%d,\"remaining_blocked\":%d,\"remaining_queued\":%d,\"remaining_running\":%d,\"remaining_unattributed\":%d,\"total_cost\":%d,\"ledger_closure_state_du\":%s,\"ledger_closure_scope_du\":\"OperationalGraphOnly\",\"semantic_seed_gap_authority_du\":\"PhaseProgressBook\",\"progress_projection_authority_du\":\"SeededAstProjectionOnly\",\"material_delta_cost\":%d,\"zero_delta_streak\":%d,\"material_rate_milli_cost_per_s\":%d,\"eta_authority_du\":%s,\"updated_at_ms\":%d,\"progress_formula_du\":\"none_ledger_is_closure_proof_seeded_ast_projection_is_only_numeric_progress\",\"eta_formula_du\":\"remaining_over_material_rate_or_typed_blocker\",\"authority\":\"single_reducer_actor_owned_work_ledger_plus_queue_attribution\"}" [| box (terminalFlowIdentityRefDigest evidence.workLedger.ledgerRef); box (terminalFlowIdentityRefDigest evidence.snapshotRef); box evidence.workLedger.ownerActorRef; box (DiagJson.esc (terminalFlowWorkLedgerStateText evidence.workLedger.state)); box evidence.workLedger.discoveredCost; box evidence.workLedger.readyCost; box evidence.workLedger.activeCost; box evidence.workLedger.executionAttemptCount; box evidence.workLedger.operationalGraphOpenCount; box evidence.workLedger.operationalGraphSuspendedCount; box (DiagJson.esc (terminalFlowOperationalGraphObservationText evidence.workLedger.operationalGraphObservation)); box evidence.workLedger.completedCost; box retiredCost; box evidence.workLedger.completedCost; box semanticCompletedCost; box semanticToAstRatioMilli; box evidence.workLedger.blockedCost; box evidence.workLedger.blockedUnits.Length; box blockedUnitRef; box blockedUnitRef; box (DiagJson.esc ("queue_kind:" + blockedUnitKind)); box (DiagJson.esc evidence.workLedger.blockedWorkUnitId); box (DiagJson.esc evidence.workLedger.blockedMethodKey); box (DiagJson.esc evidence.workLedger.blockedSource); box (DiagJson.esc (terminalFlowBlockedWorkIdentityAuthorityText evidence.workLedger.blockedWorkIdentityAuthority)); box (DiagJson.esc blockedUnitKind); box blockedUnitProducerRef; box blockedUnitOwnerRef; box blockedSinceSnapshotRef; box (DiagJson.esc blockedUnitsText); box (DiagJson.esc (terminalFlowBlockedAttributionAuthorityClassText evidence.workLedger.blockedAttributionAuthority)); box evidence.workLedger.blockedAttributionComplete; box evidence.workLedger.schedulerAdmittedCount; box evidence.workLedger.schedulerReceiptCount; box evidence.workLedger.schedulerOpenCount; box evidence.workLedger.schedulerOpenNotRepresented; box semanticLedgerSnapshot.openCount; box semanticLedgerSnapshot.operationalOpenCount; box (DiagJson.esc (String.concat ";" semanticLedgerSnapshot.operationalOpenWorkUnits)); box semanticLedgerSnapshot.terminalProtocolOpenCount; box (DiagJson.esc (String.concat ";" semanticLedgerSnapshot.terminalProtocolOpenWorkUnits)); box semanticLedgerSnapshot.unclassifiedOpenCount; box evidence.workLedger.schedulerOpenNotRepresented; box evidence.workLedger.residualCost; box evidence.workLedger.provenDeadCost; box evidence.workLedger.remainingCost; box remainingBlocked; box remainingQueued; box remainingRunning; box remainingUnattributed; box evidence.workLedger.totalCost; box (DiagJson.esc (terminalFlowWorkLedgerStateText evidence.workLedger.state)); box evidence.workLedger.materialDeltaCost; box evidence.workLedger.zeroDeltaStreak; box evidence.workLedger.milliCostPerSecond; box (DiagJson.esc (terminalFlowEtaAuthorityText evidence.workLedger.etaAuthority)); box evidence.workLedger.updatedAtMs |]
+                FastRuntimeFormat.format "{\"kind\":\"terminal_work_unit_ledger\",\"ledger_ref\":%u,\"snapshot_ref\":%u,\"owner_actor_ref\":%u,\"state_du\":%s,\"discovered_cost\":%d,\"ready_cost\":%d,\"active_cost\":%d,\"execution_attempt_count\":%d,\"operational_graph_open_count\":%d,\"operational_graph_suspended_count\":%d,\"operational_graph_observation_du\":%s,\"completed_cost\":%d,\"retired_cost\":%d,\"ast_completed_cost\":%d,\"semantic_completed_cost\":%d,\"semantic_to_ast_ratio_milli\":%d,\"completion_unit_scope_du\":\"AstSeedProgressPlusSemanticReceipts\",\"blocked_cost\":%d,\"blocked_unit_count\":%d,\"blocked_unit_id\":%u,\"blocked_unit_ref\":%u,\"blocked_unit_site\":%s,\"blocked_unit_work_unit_id\":%s,\"blocked_unit_method_key\":%s,\"blocked_unit_source\":%s,\"blocked_work_identity_authority_du\":%s,\"blocked_unit_kind_du\":%s,\"blocked_unit_producer_ref\":%u,\"blocked_unit_owner_ref\":%u,\"blocked_since_snapshot_ref\":%u,\"blocked_units_du\":%s,\"blocked_attribution_authority_du\":%s,\"blocked_attribution_complete\":%b,\"scheduler_admitted_count\":%d,\"scheduler_receipt_count\":%d,\"scheduler_open_count\":%d,\"scheduler_open_not_represented\":%d,\"semantic_total_open_count\":%d,\"semantic_operational_open_count\":%d,\"semantic_operational_open_work_units_du\":%s,\"semantic_terminal_protocol_open_count\":%d,\"semantic_terminal_protocol_open_work_units_du\":%s,\"semantic_unclassified_open_count\":%d,\"ledger_admission_lag\":%d,\"residual_cost\":%d,\"proven_dead_cost\":%d,\"remaining_cost\":%d,\"remaining_blocked\":%d,\"remaining_queued\":%d,\"remaining_running\":%d,\"remaining_unattributed\":%d,\"total_cost\":%d,\"ledger_closure_state_du\":%s,\"ledger_closure_scope_du\":\"OperationalGraphOnly\",\"semantic_seed_gap_authority_du\":\"PhaseProgressBook\",\"progress_projection_authority_du\":\"SeededAstProjectionOnly\",\"material_delta_cost\":%d,\"zero_delta_streak\":%d,\"material_rate_milli_cost_per_s\":%d,\"eta_authority_du\":%s,\"updated_at_ms\":%d,\"progress_formula_du\":\"none_ledger_is_closure_proof_seeded_ast_projection_is_only_numeric_progress\",\"eta_formula_du\":\"remaining_over_material_rate_or_typed_blocker\",\"authority\":\"single_reducer_actor_owned_work_ledger_plus_queue_attribution\"}" [| box (terminalFlowIdentityRefDigest evidence.workLedger.ledgerRef); box (terminalFlowIdentityRefDigest evidence.snapshotRef); box evidence.workLedger.ownerActorRef; box (DiagJson.esc (terminalFlowWorkLedgerStateText evidence.workLedger.state)); box evidence.workLedger.discoveredCost; box evidence.workLedger.readyCost; box evidence.workLedger.activeCost; box evidence.workLedger.executionAttemptCount; box evidence.workLedger.operationalGraphOpenCount; box evidence.workLedger.operationalGraphSuspendedCount; box (DiagJson.esc (terminalFlowOperationalGraphObservationText evidence.workLedger.operationalGraphObservation)); box evidence.workLedger.completedCost; box retiredCost; box evidence.workLedger.completedCost; box semanticCompletedCost; box semanticToAstRatioMilli; box evidence.workLedger.blockedCost; box evidence.workLedger.blockedUnits.Length; box blockedUnitRef; box blockedUnitRef; box (DiagJson.esc ("queue_kind:" + blockedUnitKind)); box (DiagJson.esc evidence.workLedger.blockedWorkUnitId); box (DiagJson.esc evidence.workLedger.blockedMethodKey); box (DiagJson.esc evidence.workLedger.blockedSource); box (DiagJson.esc (terminalFlowBlockedWorkIdentityAuthorityText evidence.workLedger.blockedWorkIdentityAuthority)); box (DiagJson.esc blockedUnitKind); box blockedUnitProducerRef; box blockedUnitOwnerRef; box blockedSinceSnapshotRef; box (DiagJson.esc blockedUnitsText); box (DiagJson.esc (terminalFlowBlockedAttributionAuthorityClassText evidence.workLedger.blockedAttributionAuthority)); box evidence.workLedger.blockedAttributionComplete; box evidence.workLedger.schedulerAdmittedCount; box evidence.workLedger.schedulerReceiptCount; box evidence.workLedger.schedulerOpenCount; box evidence.workLedger.schedulerOpenNotRepresented; box semanticLedgerSnapshot.openCount; box semanticLedgerSnapshot.operationalOpenCount; box (DiagJson.esc (String.concat ";" semanticLedgerSnapshot.operationalOpenWorkUnits.Value)); box semanticLedgerSnapshot.terminalProtocolOpenCount; box (DiagJson.esc (String.concat ";" semanticLedgerSnapshot.terminalProtocolOpenWorkUnits.Value)); box semanticLedgerSnapshot.unclassifiedOpenCount; box evidence.workLedger.schedulerOpenNotRepresented; box evidence.workLedger.residualCost; box evidence.workLedger.provenDeadCost; box evidence.workLedger.remainingCost; box remainingBlocked; box remainingQueued; box remainingRunning; box remainingUnattributed; box evidence.workLedger.totalCost; box (DiagJson.esc (terminalFlowWorkLedgerStateText evidence.workLedger.state)); box evidence.workLedger.materialDeltaCost; box evidence.workLedger.zeroDeltaStreak; box evidence.workLedger.milliCostPerSecond; box (DiagJson.esc (terminalFlowEtaAuthorityText evidence.workLedger.etaAuthority)); box evidence.workLedger.updatedAtMs |]
             | TerminalFlowDiagnosticProgressRejected regression ->
                 sprintf "{\"kind\":\"terminal_progress_authority_rejected\",\"reason_du\":%s,\"authority\":\"single_reducer_monotonicity_guard\"}"
                     (DiagJson.esc (terminalFlowProgressRegressionText regression))
@@ -99045,6 +99209,7 @@ module spiral_compiler =
             // progress projection. Feed that transition back through the installed
             // observer so terminal promotion is not stranded behind a stale active count.
             terminalFlowObserveProgressProjection liveEvidence
+            if DiagJson.quiet then () else
             let nowMs = Environment.TickCount64
             let signature = terminalFlowLiveWorkLedgerSemanticSignature source liveEvidence
             let emitNow, changed, heartbeat, occurrence =
@@ -99065,6 +99230,7 @@ module spiral_compiler =
 
         let private terminalFlowEmitProgressProjectionSuite evidence =
             terminalFlowObserveProgressProjection evidence
+            if DiagJson.quiet then () else
             let nowMs = Environment.TickCount64
             let signature = terminalFlowProgressProjectionSemanticSignature evidence
             let emitNow, changed, heartbeat, occurrence, next =
@@ -99520,6 +99686,7 @@ module spiral_compiler =
             graph, actorAgeMs, action
 
         let private terminalFlowEmitAdvancedConsoleProjection (projection:TerminalFlowAdvancedConsoleProjection) =
+            if DiagJson.quiet then () else
             // Minted refs, leases, snapshot clocks and exact queue magnitudes are observer
             // identity, not causal state. Keep the structured console lane bounded: full proof
             // strings belong to their exact-once receipts, not to every repeated projection.
@@ -137736,7 +137903,7 @@ module spiral_compiler =
 
         let empty =
             { nodes = []
-              pathRef = CompilerIdentityKernel.ContentDigest.ofText "eval-node-path" "empty" }
+              pathRef = lazy (CompilerIdentityKernel.ContentDigest.ofText "eval-node-path" "empty") }
 
         let private nodeCount node path =
             path.nodes
@@ -137750,10 +137917,11 @@ module spiral_compiler =
             let nextNodes = node :: path.nodes
             let count = nodeCount node path + 1
             let pathRef =
-                nextNodes
-                |> List.map (RuntimeHelpers.GetHashCode >> string)
-                |> String.concat "/"
-                |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path"
+                lazy (
+                    nextNodes
+                    |> List.map (RuntimeHelpers.GetHashCode >> string)
+                    |> String.concat "/"
+                    |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path")
             { nodes = nextNodes; pathRef = pathRef }, count
 
         let exit (path:EvalNodePath) (node:obj) : EvalNodePath =
@@ -137763,10 +137931,11 @@ module spiral_compiler =
                 | head :: tail -> removeFirst (head :: acc) tail
             let nextNodes = removeFirst [] path.nodes
             let pathRef =
-                nextNodes
-                |> List.map (RuntimeHelpers.GetHashCode >> string)
-                |> String.concat "/"
-                |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path"
+                lazy (
+                    nextNodes
+                    |> List.map (RuntimeHelpers.GetHashCode >> string)
+                    |> String.concat "/"
+                    |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path")
             { nodes = nextNodes; pathRef = pathRef }
 
         let snapshotHashes n (path:EvalNodePath) =
@@ -137775,14 +137944,14 @@ module spiral_compiler =
             |> Seq.map RuntimeHelpers.GetHashCode
             |> Seq.toArray
 
-        let pathRef (path:EvalNodePath) = path.pathRef
+        let pathRef (path:EvalNodePath) = path.pathRef.Value
 
     /// Diagnostic stack depth is also explicit.  It is not authority, but it
     /// must survive fiber migration and therefore cannot live in ThreadLocal.
     module EvalStackDepthGuard =
         let empty =
             { keys = []
-              pathRef = CompilerIdentityKernel.ContentDigest.ofText "eval-key-path" "empty" }
+              pathRef = lazy (CompilerIdentityKernel.ContentDigest.ofText "eval-key-path" "empty") }
 
         let private keyId (key:string) =
             EvalWorklist.ReplayKeyIdOps.create key
@@ -137797,7 +137966,7 @@ module spiral_compiler =
             let keyId = keyId key
             let count = 1 + (path.keys |> List.filter ((=) keyId) |> List.length)
             let nextKeys = keyId :: path.keys
-            { keys = nextKeys; pathRef = keyPathRef nextKeys }, count
+            { keys = nextKeys; pathRef = lazy (keyPathRef nextKeys) }, count
 
         let exit (path:EvalKeyPath) (key:string) : EvalKeyPath =
             let keyId = keyId key
@@ -137806,7 +137975,7 @@ module spiral_compiler =
                 | head :: tail when head = keyId -> List.rev acc @ tail
                 | head :: tail -> removeFirst (head :: acc) tail
             let nextKeys = removeFirst [] path.keys
-            { keys = nextKeys; pathRef = keyPathRef nextKeys }
+            { keys = nextKeys; pathRef = lazy (keyPathRef nextKeys) }
 
         let snapshotKeys n (path:EvalKeyPath) =
             path.keys
@@ -137814,7 +137983,7 @@ module spiral_compiler =
             |> Seq.map EvalWorklist.ReplayKeyIdOps.text
             |> Seq.toArray
 
-        let pathRef (path:EvalKeyPath) = path.pathRef
+        let pathRef (path:EvalKeyPath) = path.pathRef.Value
 
     /// ### Range helpers (prepass / evaluation)
     /// These helpers are used by diagnostics and recursion guards. They intentionally prefer
@@ -146836,7 +147005,10 @@ module spiral_compiler =
         | JpWorkerIdleWaitEmptyQueue fallbackTimeoutMs
         | JpWorkerIdleWaitDeferredTypedCarrierEvidence fallbackTimeoutMs -> fallbackTimeoutMs
 
-    let jp_worker_idle_empty_queue_policy = JpWorkerIdleWaitEmptyQueue 2
+    // Idle workers wake on jp_specialization_runnable_signal (and a worker that takes an item passes the signal
+    // on while more are queued); this timeout is only the lost-pulse fail-safe. At 2 ms, idle workers rescanned
+    // every queue ~500 times a second each: ~22% of a slow compile's CPU.
+    let jp_worker_idle_empty_queue_policy = JpWorkerIdleWaitEmptyQueue 20
     let jp_worker_idle_deferred_typed_carrier_policy = JpWorkerIdleWaitDeferredTypedCarrierEvidence 256
 
     let jpSpecializationQueueAdmissionText = function
@@ -158243,7 +158415,9 @@ module spiral_compiler =
                                                 let mutable idleWaitPolicy = jp_worker_idle_empty_queue_policy
                                                 while keepDraining && drained < 256 do
                                                     match jpSpecializationQueueTryRemoveRunnable () with
-                                                    | JpSpecializationRunnableQueueRemoved(work, _, laneAdmission) ->
+                                                    | JpSpecializationRunnableQueueRemoved(work, depthAfter, laneAdmission) ->
+                                                        // The signal wakes one waiter: hand it on while work remains.
+                                                        if depthAfter > 0 then jpSignalSpecializationRunnablePotential ()
                                                         if executeWorkerItemSafely work laneAdmission then
                                                             drained <- drained + 1
                                                         else
@@ -159193,7 +159367,15 @@ module spiral_compiler =
                     let name = sprintf "closure<%d>" join_point_key.tag
                     s.join_point_closure_key_names.TryAdd(join_point_key, JpNameIdOps.create name) |> ignore
                 let closureGeneration = CacheGeneration.current ()
-                let closureMethodKey = sprintf "JPClosure tag=%d" join_point_key.tag
+                // Tags come from each owner's own hash-cons table, so two closures (different bodies, same
+                // environment) both get tag 0; the owner's source and backend keep their promises apart.
+                // Without them the second closure's producer failed with a binding conflict that also
+                // voided the first's result, and codegen found neither body (EJP0035, `native_closure_branch`).
+                let closureOwnerText =
+                    let ownerRange = range_of_e_or range0 (JpBodyOwnerIdentity.body closureOwnerIdentity)
+                    let (a, b) = ownerRange.range
+                    FastRuntimeFormat.format "%s:%d:%d-%d:%d@%s" [| box ownerRange.path; box a.line; box a.character; box b.line; box b.character; box (JpBodyOwnerIdentity.backendText closureOwnerIdentity) |]
+                let closureMethodKey = sprintf "JPClosure tag=%d source=%s" join_point_key.tag closureOwnerText
                 let closureSiteId = CompilerIdentityKernel.WorkSiteIdOps.create closureMethodKey
                 let closureBackendId = JpBodyOwnerIdentity.backendId closureOwnerIdentity
                 let closureIdentityBinding =
@@ -159208,7 +159390,7 @@ module spiral_compiler =
                     JpClosureComputation(JpClosureIdentity closureIdentityBinding, closureSiteId)
                 let closureInstantiationId =
                     CompilerKernelV2.InstantiationIdOps.create
-                        (FastRuntimeFormat.format "generation=%d|tag=%d|hkey=%d" [| box closureGeneration; box join_point_key.tag; box join_point_key.hkey |])
+                        (FastRuntimeFormat.format "generation=%d|tag=%d|hkey=%d|source=%s" [| box closureGeneration; box join_point_key.tag; box join_point_key.hkey; box closureOwnerText |])
                 let closureInstantiationText = CompilerKernelV2.InstantiationIdOps.text closureInstantiationId
                 let closureMemoCellIdentity =
                     JpClosureMemoCellIdentity(closureBackendId, s.backend, body, join_point_key, closureGeneration)
@@ -159666,8 +159848,8 @@ module spiral_compiler =
                             pushChildren source
                         | DNominal(DUnion(_, _),_) ->
                             raise_type_error s "Compiler error: Union should always have a tag in the first argument."
-                        | DNominal(DFunction _,_) ->
-                            raise_type_error s <| sprintf "Expected an annotated function into runtime data.\nGot: %s\n" (show_data source)
+                        // A nominal around a function (`nominal cap = a -> b`, `cap (fun x => ..)`) dyns its function
+                        // like single-flight: the inner DFunction is closure-converted if annotated, else rejected below.
                         | DNominal _ ->
                             dirty <- true
                             stack.Push(DynDataBuild source)
@@ -161318,6 +161500,7 @@ module spiral_compiler =
             // decision; replay-return remains a separate control result.
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
             EvalReplayValueStore.enterDirectNode nodeId
+            EvalReplayValueStore.enterDirectScope (box s.seq)
             try
                 try
                     match evalCoreWithBigStack s BigStack.BigStackTerm "term_emergency" (fun env -> term_core_impl env x) with
@@ -161332,6 +161515,7 @@ module spiral_compiler =
                 with
                 | EvalReplayTermReturn value -> value
             finally
+                EvalReplayValueStore.exitDirectScope (box s.seq)
                 EvalReplayValueStore.exitDirectNode nodeId
     
 
@@ -162358,8 +162542,8 @@ module spiral_compiler =
                             headNodeId = headNodeId
                             headShape = evalNodeWorkShapeIdTerm cur
                             argCount = replayArgs.Length
-                            argNodeIds = replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                            argShapes = replayArgs |> Array.map evalNodeWorkShapeIdTerm
+                            argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                            argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
                         }
                         EvalReplayValueStore.putApplyContext nodeId (box s)
                         // MIGRATION: register a whole-spine thunk without lexically capturing apply.
@@ -162370,19 +162554,39 @@ module spiral_compiler =
                             // evaluator neither runs now nor has run (fails closed, like a missing apply).
                             if EvalReplayValueStore.isDirectNodeOwned nodeId then
                                 failwith "replay_apply_spine_owned_by_direct_evaluation"
-                            let mutable current =
-                                match EvalReplayValueStore.tryTerm headNodeId with
-                                | Some value -> value
-                                | None -> failwith ("apply_head_value_missing:" + evalNodeShapeTerm cur)
-                            for i = replayArgs.Length - 1 downto 0 do
-                                let arg = replayArgs.[i]
-                                let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
-                                let argValue =
-                                    match EvalReplayValueStore.tryTerm argNodeId with
+                            match EvalReplayValueStore.tryReplayAppliedValueIn nodeId (box s) with
+                            | Some value -> value
+                            | None ->
+                                // Simple heads and arguments come from this evaluation's own environment:
+                                // the store keeps one value per AST node, the latest registration's, which
+                                // can belong to another evaluation of the same node (FRONTIER.md fix 34).
+                                let ownValue (e: E) =
+                                    match e with
+                                    | EB _ -> Some DB
+                                    | EV a -> Some (v s a)
+                                    | ELit(_,lit) -> Some (DLit lit)
+                                    | ESymbol(_,sym) -> Some (DSymbol sym)
+                                    | _ -> None
+                                let mutable current =
+                                    match ownValue cur with
                                     | Some value -> value
-                                    | None -> failwith ("apply_arg_value_missing:" + evalNodeShapeTerm arg)
-                                current <- EvalReplayValueStore.runApplyAfterDefinition (box s) current argValue
-                            current)
+                                    | None ->
+                                    match EvalReplayValueStore.tryTerm headNodeId with
+                                    | Some value -> value
+                                    | None -> failwith ("apply_head_value_missing:" + evalNodeShapeTerm cur)
+                                for i = replayArgs.Length - 1 downto 0 do
+                                    let arg = replayArgs.[i]
+                                    let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                                    let argValue =
+                                        match ownValue arg with
+                                        | Some value -> value
+                                        | None ->
+                                        match EvalReplayValueStore.tryTerm argNodeId with
+                                        | Some value -> value
+                                        | None -> failwith ("apply_arg_value_missing:" + evalNodeShapeTerm arg)
+                                    current <- EvalReplayValueStore.runApplyAfterDefinition (box s) current argValue
+                                EvalReplayValueStore.rememberReplayAppliedValueIn nodeId (box s) current
+                                current)
                     | _ -> ()
                 let fuseVisitKind, _, _, _, _, _, _ = TermCycleFuse.describe()
                 let activeFuseDomain = evalFuseDomainOfVisitKind fuseVisitKind
@@ -163602,8 +163806,8 @@ module spiral_compiler =
                         headNodeId = headNodeId
                         headShape = evalNodeWorkShapeIdTerm cur
                         argCount = replayArgs.Length
-                        argNodeIds = replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                        argShapes = replayArgs |> Array.map evalNodeWorkShapeIdTerm
+                        argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                        argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
                     }
                     DiagJson.emit (
                         FastRuntimeFormat.format "{\"kind\":\"eval_worklist_apply_spine_post_fuse_recursive_children_registered\",\"event\":\"term_entry_post_fuse\",\"node_id\":%d,\"shape\":\"EApply\",\"site\":%s,\"head_node_id\":%d,\"head_shape\":%s,\"arg_count\":%d,\"single_flight\":1,\"next\":\"apply_children_ready_for_replay\"}" [| box nodeId; box (DiagJson.esc site); box headNodeId; box (DiagJson.esc (evalNodeShapeTerm cur)); box replayArgs.Length |])
@@ -163621,19 +163825,37 @@ module spiral_compiler =
                         // evaluator neither runs now nor has run (fails closed, like a missing apply).
                         if EvalReplayValueStore.isDirectNodeOwned nodeId then
                             failwith "replay_apply_spine_owned_by_direct_evaluation"
-                        let mutable current =
-                            match EvalReplayValueStore.tryTerm headNodeId with
-                            | Some value -> value
-                            | None -> term s cur
-                        for i = replayArgs.Length - 1 downto 0 do
-                            let arg = replayArgs.[i]
-                            let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
-                            let argValue =
-                                match EvalReplayValueStore.tryTerm argNodeId with
+                        match EvalReplayValueStore.tryReplayAppliedValueIn nodeId (box s) with
+                        | Some value -> value
+                        | None ->
+                            // As above: simple heads/arguments from this evaluation's environment (fix 34).
+                            let ownValue (e: E) =
+                                match e with
+                                | EB _ -> Some DB
+                                | EV a -> Some (v s a)
+                                | ELit(_,lit) -> Some (DLit lit)
+                                | ESymbol(_,sym) -> Some (DSymbol sym)
+                                | _ -> None
+                            let mutable current =
+                                match ownValue cur with
                                 | Some value -> value
-                                | None -> term s arg
-                            current <- EvalReplayValueStore.runApplyAfterDefinition (box s) current argValue
-                        current)
+                                | None ->
+                                match EvalReplayValueStore.tryTerm headNodeId with
+                                | Some value -> value
+                                | None -> term s cur
+                            for i = replayArgs.Length - 1 downto 0 do
+                                let arg = replayArgs.[i]
+                                let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box arg)
+                                let argValue =
+                                    match ownValue arg with
+                                    | Some value -> value
+                                    | None ->
+                                    match EvalReplayValueStore.tryTerm argNodeId with
+                                    | Some value -> value
+                                    | None -> term s arg
+                                current <- EvalReplayValueStore.runApplyAfterDefinition (box s) current argValue
+                            EvalReplayValueStore.rememberReplayAppliedValueIn nodeId (box s) current
+                            current)
                 | _ -> ()
             match BigStack.tryRun s.bigStack BigStack.BigStackRegisterReplayTermNormal "register_replay_term_normal" (fun childContext -> registerReplayTermWithContext childContext nodeId x) with
             | Some () -> ()
@@ -164423,8 +164645,8 @@ module spiral_compiler =
                             headNodeId = headNodeId
                             headShape = evalNodeWorkShapeIdTerm cur
                             argCount = replayArgs.Length
-                            argNodeIds = replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                            argShapes = replayArgs |> Array.map evalNodeWorkShapeIdTerm
+                            argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                            argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
                         }
                     | _ -> ()
                     if not (EvalReplayValueStore.hasTerm bodyNodeId) then
@@ -175145,7 +175367,7 @@ module spiral_compiler =
             fun x -> if has_added.Add(x) then env.globals.Add x
 
         let string_slice () =
-            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
+            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    // A slice that starts or ends inside a code point fails like the C and Delphi backends (abort / Halt(3)).\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
         let rec tyv x =
             match x with
@@ -186628,9 +186850,79 @@ module spiral_compiler =
                     let a,b = tc.files.uids_file.[mid]
                     let x,_x = prepass.files.uids_file.[mid]
                     emitBuildFileInitializationStage BuildFileTypecheckAwaitScheduled
+                    // SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>: if the type check is still pending then, print to stderr
+                    // which type-check promises (each file's input environment and output, each package's result)
+                    // are unfilled, in every package. For the multi-package stalls (NEXT.md).
+                    match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_DEBUG_TYPECHECK_WAIT") with
+                    | true, seconds when seconds > 0 ->
+                        let states =
+                            let seen = HashSet<obj>(HashIdentity.Reference)
+                            tc :: (Seq.append s.packages_infer.ok.Values s.packages_infer.error.Values |> List.ofSeq)
+                            |> List.filter (fun state -> seen.Add (box state))
+                        // Also appended to %TEMP%\spiral-typecheck-wait-<pid>.txt: stalled runs showed none of the stderr lines.
+                        let waitLog = Path.Combine(Path.GetTempPath(), sprintf "spiral-typecheck-wait-%d.txt" System.Environment.ProcessId)
+                        let eprintfn fmt = Printf.kprintf (fun (line: string) -> System.Console.Error.WriteLine line; (try File.AppendAllText(waitLog, line + "\n") with _ -> ())) fmt
+                        File.AppendAllText(waitLog, sprintf "[typecheck-wait] armed for %d s\n" seconds)
+                        System.Threading.Tasks.Task.Delay(seconds * 1000).ContinueWith(fun (_ : System.Threading.Tasks.Task) ->
+                            eprintfn "[typecheck-wait] entry input=%b output=%b" (Promise.Now.isFulfilled a.state) (Promise.Now.isFulfilled b)
+                            if not (Promise.Now.isFulfilled a.state && Promise.Now.isFulfilled b) then
+                              try
+                                let rec files (tc : ProjStateTC) x acc =
+                                    match x with
+                                    | ProjFilesTree.File(mid,path,_) -> (path, tc.files.uids_file.[mid]) :: acc
+                                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+                                states |> List.iteri (fun i state ->
+                                    eprintfn "[typecheck-wait] package %d result=%b" i (Promise.Now.isFulfilled state.result)
+                                    for (path, slot) in List.foldBack (files state) state.files.files.tree [] do
+                                        if isNull (box slot) || isNull (box (fst slot)) then eprintfn "[typecheck-wait]   %s (empty slot)" path
+                                        else
+                                            let file, output = slot
+                                            eprintfn "[typecheck-wait]   %s input=%b output=%b" path (Promise.Now.isFulfilled file.state) (Promise.Now.isFulfilled output))
+                              with ex -> eprintfn "[typecheck-wait] failed: %s" (ex.ToString())) |> ignore
+                    | _ -> ()
                     HopacExtensions.start (a.state >>= fun (has_error',_) ->
                         b >>= fun (has_error,_) ->
-                        if has_error || has_error' then fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path."; Job.unit() else
+                        if has_error || has_error' then
+                            // A batch build only gets this message, so it carries the typer's errors, from every
+                            // package (the entry's first): the error is often in a dependency.
+                            // A package state that was reset holds null slots in uids_file (Array.zeroCreate);
+                            // skip them. An exception here would be swallowed by the started job and the fatal
+                            // never sent (the stall of FRONTIER.md fix 33), so the listing is also guarded below.
+                            let rec files (tc : ProjStateTC) x acc =
+                                match x with
+                                | ProjFilesTree.File(mid,path,_) ->
+                                    let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                    if isNull (box slot) || isNull (box (fst slot)) then acc
+                                    else (path, (fst slot).result) :: acc
+                                | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+                            let states =
+                                let seen = HashSet<obj>(HashIdentity.Reference)
+                                tc :: (Seq.append s.packages_infer.ok.Values s.packages_infer.error.Values |> List.ofSeq)
+                                |> List.filter (fun state -> seen.Add (box state))
+                            // Read only the part of each file's result stream that is already there: some
+                            // packages' streams (other versions in packages_infer, files the entry does not
+                            // reach) never end, and folding them to the end hung the build right here, after
+                            // type checking had finished (native_source_package_prototype_*, FRONTIER.md fix 33).
+                            let rec availableErrors acc (stream : Stream<_>) =
+                                if Promise.Now.isFulfilled stream then
+                                    match Promise.Now.get stream with
+                                    | Hopac.Stream.Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
+                                    | Hopac.Stream.Nil -> acc
+                                else acc
+                            let errors =
+                                try
+                                    states |> List.collect (fun state -> List.foldBack (files state) state.files.files.tree [])
+                                    |> List.map (fun (path,result) ->
+                                        availableErrors [] result
+                                        |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
+                                with ex -> [[$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"]]
+                            Job.result errors
+                            >>= fun errors ->
+                                let details = errors |> Seq.concat |> String.concat "\n"
+                                let details = if details = "" then "" else $"\n{details}"
+                                fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path.{details}"
+                                Job.unit()
+                        else
                         emitBuildFileInitializationStage BuildFileTypecheckStateReady
                         emitBuildFileInitializationStage BuildFilePrepassAwaitScheduled
                         Stream.foldFun (fun _ (_,_,env) -> env) prepassTop_env_empty x.result >>= fun env ->
@@ -188463,14 +188755,14 @@ module spiral_compiler =
                                         // The artifact commit is a rendezvous with the terminal writer, which only
                                         // arrives once its native root-complete proof and owner-ledger closure succeed.
                                         // When it never does, the generated code was stranded here. Wait a bounded grace
-                                        // (SPIRAL_ARTIFACT_COMMIT_GRACE_MS, default 500; 0 waits for the writer forever)
+                                        // (SPIRAL_ARTIFACT_COMMIT_GRACE_MS, default 20; 0 waits for the writer forever)
                                         // and then commit locally; WriteGuard and the result boundary still apply.
                                         // The writer has not arrived in any measured frontier/smoke build, so the grace
                                         // is pure latency on every successful compile; keep it short.
                                         let commitGraceMs =
                                             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_ARTIFACT_COMMIT_GRACE_MS") with
                                             | true, value when value >= 0 -> value
-                                            | _ -> 500
+                                            | _ -> 20
                                         let commitSlot = IVar()
                                         HopacExtensions.start (BigStack.terminalFlowCommitArtifactsFromBuildDraftJob artifactManifestText >>= IVar.tryFill commitSlot)
                                         let localCommit () : Result<BigStack.TerminalFlowBuildDraftCommitReceipt, CompilerKernelV2.OperationalReasonId> =
@@ -188553,10 +188845,16 @@ module spiral_compiler =
                             | ProjFilesTree.Directory(_,_,l) -> list l
                             | ProjFilesTree.File(mid,path,_) ->
                                 trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_find.loop | File(mid,path,_) / path: {path}") _locals
-                                if file = path then file_build s mid (a, b); true else false
+                                if file = path then
+                                    // An exception while setting the build up (a null slot of a reset package
+                                    // state, ...) used to vanish here and leave BuildFile to the stall budget.
+                                    try file_build s mid (a, b)
+                                    with ex -> fatal $"BuildFile setup failed for {Path.GetFileNameWithoutExtension file}: {ex.GetType().Name}: {ex.Message}"
+                                    true
+                                else false
                         and list l = List.exists loop l
                         if list b.files.files.tree = false then fatal $"File {Path.GetFileNameWithoutExtension file} cannot be found in the project {spiproj_suffix pdir}"
-    
+
 
                         s
                     | None, None -> fatal $"Owner of file {Path.GetFileNameWithoutExtension file} has an error. Location: {spiproj_suffix pdir}"; s
@@ -189157,11 +189455,16 @@ module spiral_compiler =
                         if has_error || has_error' then
                             // The editor gets the typer's errors from the attention loop; a batch build only gets this
                             // message, so it carries the package's errors itself.
-                            let rec files x s =
+                            // Every package's files, the entry's first: the error is often in a dependency.
+                            let rec files (tc : ProjStateTC) x acc =
                                 match x with
-                                | ProjFilesTree.File(mid,path,_) -> (path, (fst tc.files.uids_file.[mid]).result) :: s
-                                | ProjFilesTree.Directory(_,_,l) -> List.foldBack files l s
-                            List.foldBack files tc.files.files.tree []
+                                | ProjFilesTree.File(mid,path,_) -> (path, (fst tc.files.uids_file.[mid]).result) :: acc
+                                | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
+                            let states =
+                                let seen = HashSet<obj>(HashIdentity.Reference)
+                                tc :: (Seq.append s.packages_infer.ok.Values s.packages_infer.error.Values |> List.ofSeq)
+                                |> List.filter (fun state -> seen.Add (box state))
+                            states |> List.collect (fun state -> List.foldBack (files state) state.files.files.tree [])
                             |> List.map (fun (path,result) ->
                                 Stream.foldFun (fun s (_,x : InferResult,_) -> s @ x.errors) [] result >>- fun errors ->
                                 errors |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
@@ -189555,7 +189858,7 @@ module spiral_compiler =
         if SpiralPlatform.is_windows () |> not
         then 0u
         else
-            let pid = System.Diagnostics.Process.GetCurrentProcess().Id
+            let pid = System.Environment.ProcessId
             let query = $"SELECT ParentProcessId FROM Win32_Process WHERE ProcessId = {pid}"
             use searcher = new System.Management.ManagementObjectSearcher (query)
             use results = searcher.Get ()

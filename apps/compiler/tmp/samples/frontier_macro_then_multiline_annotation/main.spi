@@ -1,0 +1,12 @@
+inl f (left : i64) (right : i64) : i64 =
+    $"!left * !right"
+
+union eq a b =
+    | Refl :: forall a. string -> eq a a
+
+inl g forall a b.
+    (e : eq
+        a b) : i32 =
+    0i32
+
+inl main () : i32 = 0i32

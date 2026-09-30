@@ -67,6 +67,8 @@
     Backends = @{
         'C,Rust,Delphi' = @(
             'samples/arithmetic_branch'
+            # hopac fix 24 (replayed arguments reversed); F# fails in both cores on the host's terminal check.
+            'samples/native_literal_join_args'
             'samples/dynamic_array_bounds_negative'
             'samples/expression_precedence'
             'samples/float_math'
@@ -198,6 +200,9 @@
             'samples/native_string_utf8_scalar_source_invalid'
             'samples/native_string_utf8_validate_source'
             'samples/native_string_utf8_validate_source_invalid'
+            # hopac fix 23 (replay repeated a join point call); C only like the utf8 fixtures above: single-flight's
+            # Rust and Delphi for sm.utf8 code do not build (`found v7`, `uint8_t`).
+            'samples/native_replay_repeat_call'
             'samples/target_global_conflict'
         )
         'Fsharp' = @(

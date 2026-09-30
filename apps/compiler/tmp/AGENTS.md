@@ -6,10 +6,10 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 
 | | single-flight | hopac |
 |---|---|---|
-| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: full parity on frontier+smoke, ~92% on examples+contracts |
+| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced (2026-09-30), 10-30x slower than single-flight on the mega roots |
 | Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_HOPAC` side of each section pair |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
-| Known wall | `apps/spiral` overflows the stack | ~27 partial-evaluation stalls, closures created in runtime `if` branches (`EJP0035`), and an order-dependent parse of backtick type application (see `lanes/hopac/FRONTIER.md`). Single-flight's features since the shared base `12f52a1` are ported. |
+| Known wall | `apps/spiral` overflows the stack | two races (FRONTIER.md fixes 34 and 38: replay values keyed per AST node; multi-package type checking that sometimes never answers), speed, and `apps/spiral` not yet attempted. Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |
 
 Switching lanes is only a build/test argument: `-Mode single-flight` or `-Mode hopac`. Both binaries
@@ -46,10 +46,13 @@ Override with `-TimeoutSec` only for deliberate profiling.
 Hopac knobs (environment): `SPIRAL_HOPAC_WORKERS` and `SPIRAL_DOP` (set both to 1 for deterministic
 runs), `SPIRAL_BUILD_DEADLINE_MS` / `SPIRAL_BUILD_BUDGET_MS` (stall watchdog; the host sets the deadline,
 otherwise 15 min), `SPIRAL_LEGACY_JOIN_HEURISTICS=1` (old EJP0019/EJP0021 join loop),
-`SPIRAL_DEBUG_UNBOX=1` (trace union unboxes), `SPIRAL_ARTIFACT_COMMIT_GRACE_MS` (500),
-`SPIRAL_RUN_END_GRACE_MS` (500), `SPIRAL_CODEGEN_STACK_MB` (512), `SPIRAL_JP_SLICE_OPS=<max>,<interval>`
+`SPIRAL_DEBUG_UNBOX=1` (trace union unboxes), `SPIRAL_ARTIFACT_COMMIT_GRACE_MS` (20),
+`SPIRAL_RUN_END_GRACE_MS` (20), `SPIRAL_CODEGEN_STACK_MB` (512), `SPIRAL_JP_SLICE_OPS=<max>,<interval>`
 (time-slice declared method bodies again, e.g. `256,64`; off by default because resuming a slice is
-unsound, FRONTIER.md fix 22). Debugging workflow:
+unsound, FRONTIER.md fix 22), `SPIRAL_DIAG_QUIET=1` (skip the diagnostic JSONL rows and console projections, ~20% of a compile;
+`scripts/test.ps1` sets it unless already set, so set `0` to keep them in a suite run),
+`SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>` (if type checking is still pending
+after that long, print every package's unfilled type-check promises to stderr). Debugging workflow:
 `lanes/hopac/FRONTIER.md`, "The fast loop".
 
 In hopac mode every job runs in its own compiler process (`-FreshProcess`, on by default there), because

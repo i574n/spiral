@@ -1,2 +1,2 @@
-let v2 : string = "two-phase-committed"
-v2
+let v0 : string = "two-phase-committed"
+v0

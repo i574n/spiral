@@ -92,8 +92,16 @@ New-Item -ItemType Directory -Force $runDir, $nativeRoot, $scratch | Out-Null
 $lockPath = Join-Path $cache 'test.lock'
 try { $lock = [IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') }
 catch { throw "another scripts/test.ps1 run is compiling the samples in place ($lockPath)" }
+# Every compile mirrors its console stream to <timestamp>.jsonl next to the staged core (up to MBs each);
+# a few days of runs filled the disk once, so keep only the last 12 hours.
+$staleLogs = (Get-Date).AddHours(-12)
+Get-ChildItem (Join-Path $cache 'core-src') -Filter '*.jsonl' -Recurse -File -ErrorAction SilentlyContinue |
+    Where-Object { $_.LastWriteTime -lt $staleLogs } | Remove-Item -Force -ErrorAction SilentlyContinue
 $env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $BundleRoot }
 $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir   # where `|core-` resolves
+# Nobody reads the hopac core's diagnostic JSONL rows in a suite run, and they cost ~20% of a compile;
+# set SPIRAL_DIAG_QUIET=0 beforehand to keep them (single-flight ignores it).
+if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
 $runStart = [DateTime]::UtcNow
 
 # ------------------------------------------------------------------ discovery

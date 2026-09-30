@@ -1,2 +1,2 @@
-let v1 : string = "v6"
-v1
+let v0 : string = "v6"
+v0

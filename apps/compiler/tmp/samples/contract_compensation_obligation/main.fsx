@@ -1,2 +1,2 @@
-let v3 : string = "compensation-obligation-sealed"
-v3
+let v0 : string = "compensation-obligation-sealed"
+v0
