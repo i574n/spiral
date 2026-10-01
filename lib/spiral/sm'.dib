@@ -1005,7 +1005,7 @@ inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
         elif c = (s |> index i)
         then i - from
         else 루프 (i + 1i32)
-    and inl 루프 i = join_body_unit body i i
+    and inl 루프 i = join_body_unit body len i
     from |> 루프
 
 #!spiral
@@ -1438,7 +1438,7 @@ inl span_from pred str i0 =
         elif str |> index i |> pred
         then 루프 (i + 1)
         else i
-    and inl 루프 i = join_body_unit body i i
+    and inl 루프 i = join_body_unit body len i
     i0 |> 루프
 
 #!markdown

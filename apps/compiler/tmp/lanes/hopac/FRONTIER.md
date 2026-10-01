@@ -1,5 +1,38 @@
 # Hopac frontier
 
+**Update 2026-10-01 06:50 (fix 54):** `runs/hopac-20261001-051209`: frontier 20/20 (with
+`frontier_static_list_eq` on four backends), contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
+DISAGREE 0; the single-flight restore run after it matches. apps/spiral on hopac: past every semantic wall,
+attempt 14 then ground in the declared-body resume-snapshot pruning (NEXT.md); attempt 15 runs with
+`SPIRAL_HOPAC_INLINE_JP=1` (`$CLAUDE_JOB_DIR/tmp/apps_spiral_hopac15_inline.txt`).
+
+**Status 2026-10-01 04:00 (fixes 21-53):** `runs/hopac-20261001-025722` (`-Suite all -Native`, 2 workers)
+against the oracle re-blessed on 2026-09-30 (three identical single-flight runs; the 5 mega brzozowski rows
+are now `error`, fix 49):
+
+| Suite | Jobs | Parity | Not parity |
+|---|---:|---:|---|
+| frontier | 16 | 16 | 0 |
+| contracts | 607 | 606 | 1 no-oracle (a row that times out in both lanes; `-Bless` never records timeouts) |
+| examples | 453 | 453 | 0 |
+| mega | 5 | 5 | 0 |
+
+Native: 359 ran, DISAGREE 0. Every oracle row is reproduced. The single-flight restore run right after
+(`single-flight-20261001-035430`) matches it row for row.
+
+**apps/spiral.** Single-flight builds it again (exit 0, 738 s, 2.79 MB of F#; the committed `spiral.fsx`
+from 2025-12-30 is 2.79 MB too): the wall was a library bug, not either core (`sm'.span_from`, NEXT.md).
+Hopac still fails on it (attempt 12: `EJP0011` at `listm'.try_item`, 1,025 re-entries). Reduced to
+`samples/frontier_static_list_eq` (blessed from single-flight, 4 backends): hopac does not fold `=` between
+two static lists. `if [ ' '; '/' ] = [] then 1 else 0` is `0` in single-flight; hopac emits a join point
+for the failure continuation of `real_core.spir:208`'s `!!!!Unbox2(..., (fun () => false))` (method key
+`<anon> @jp@real_core.spir:208:66-208:72`) and branches on its runtime result. A static `chars` list then
+turns runtime, and `sm'.char_contains` → `listm'.exists'` → `try_item` unrolls forever. Neither core's
+front end creates that `EJoinPoint` from a plain lambda, and both cores' static `Unbox2` branch is
+`apply s (on_fail, DB)`; next, find where hopac's `apply` turns that closure into a join point (likely the
+dynamic-join apply bridge, `installDynamicJoinApplyAfterDefinition`). `SPIRAL_HOPAC_INLINE_JP=1` (inline
+join points from the first step) does not change this.
+
 **Status 2026-09-30 18:00 (fixes 21-44):** `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native`
 (`<cache>/runs/hopac-20260930-171614`, 1,081 jobs, 3 workers, quiet):
 
@@ -446,6 +479,58 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     default of one worker per core (lean_cic 178 s vs 139 s, same wall time). `lean_cic` is slow in the
     suite because it shares the CPU with the omniledger and spiral_proves roots, not because of
     scheduler oversubscription.
+55. **Declared-body snapshot pruning was quadratic (apps/spiral in the default async mode).** Attempt 14
+    reached `main`'s return, then one JP work unit ground at under one core in
+    `jpPruneUnreachableDeclaredResumeSnapshotsForJob`. Each prune scans every snapshot of every job (plus the
+    global root tables), and it ran every 256 continuations, and every 64 once the global count passed
+    1,024. With most snapshots still reachable, a prune freed little and the next full scan came 64
+    continuations later: O(live x continuations). The trigger is now geometric (prune when the live count has
+    doubled since the last prune left it, floor 1,024): amortised linear, memory within 2x the reachable set.
+
+    Diagnostics in the same batch:
+    - a runaway inline recursion now gets a rustc-style report in both cores (`RunawayUnrollDiagnostic`,
+      the same module in each core's section): error code, `-->` span with the source line and a caret, the
+      repeating cycle with counts, the entry path, why (inline recursion on a runtime value) and the fix
+      (join point, or a static bound). Single-flight: `EJP0040` from the dynamic-`if` nesting guard
+      (`SPIRAL_IF_NESTING_LIMIT`, default 5,000), which was broken (its counter was local to `term`, so a new
+      one per call). Hopac: appended to every `EJP0011` re-entrant cycle message
+      (`samples/frontier_runaway_inline_recursion`);
+    - hopac no longer prints the 50-row `[spiral_hud_final]` block to stderr in quiet mode;
+    - incomplete artifact persistence now sends a `FatalError` with the reason (it filled `res None` alone:
+      "no code and no diagnostic arrived");
+    - recovery state is typed (`PevalStallProbe.PevalRecoveryState`, cause carried into the stall message
+      as `recovery=entered(...)`).
+54. **`VarIs` called every static union a variable (apps/spiral's last hopac-only wall).** Hopac's
+    `EOp(VarIs)` descended into unions and pairs and answered true for any `DSymbol`, which every union case
+    name is. So `real_core.spir`'s structural `=` (`if heap_union_is a && var_is a && var_is b then
+    (join body()) : bool else body()`) took the `join` branch on static lists and emitted a runtime call
+    for `[ ' '; '/' ] = []` instead of folding it to `false`. `sm'.trim_end`'s
+    `if chars = [] then trim_chars () else chars` then made a static `chars` runtime, and
+    `sm'.char_contains` → `listm'.exists'` → `try_item` unrolled forever (`EJP0011`, 1,025 re-entries;
+    `samples/frontier_static_list_eq`). The rule is now the language's (single-flight's): `DV` or
+    `DNominal(DV, _)`, plus a join-point placeholder (top level or under its nominal), which stands for a
+    pending runtime value. The old descent was a migration-era guard against placeholder pattern misses,
+    which fixes 44-53 handle now. Fixture: 7.3 s, 1,029 bytes (single-flight's size); the bare equality
+    folds to `0` as in single-flight.
+53. **Recovery entered midway restarts peval inline from scratch.** Fixes 44-52 patched the evaluation
+    that entered recovery in place, and each patch exposed the next leftover of its asynchronous phase:
+    orphaned cells built on placeholders, then (after fix 45's clear-and-rerun) closures whose owner table
+    was gone at codegen (attempts 8, 9), then replay frames pinned as terminal that abort the final
+    `jp_wait` (`dynamic_join_apply_blocked`, `replay_child_schedule_repeat_blocked`; fix 52's reset did
+    not hold, the driver re-pins while draining). Now `evalOnBigStack` records whether this peval started
+    in recovery; if recovery was entered during it, the root raises `PevalInlineRestart` (on success and on
+    a root pattern-miss escape). The hopac `build_many` call site catches it, resets
+    `EvalReplayValueStore` (`resetForFreshPeval`: the producer graph with every artifact projection,
+    deferrals, parent handoffs, direct-scope tracking, replay apply caches), the worklist, terminal
+    contracts, the cycle fuse and specialization caps, and runs a fresh peval: fresh tables, recovery on
+    from the first step (methods `RecomputeSuspect`, closures inline), so nothing is spawned or orphaned.
+    At most two restarts. `read_link`: exit 0 in 163 s, 187,528 bytes, 26 methods, 12 closures, no
+    placeholder. Cost: a program that enters recovery is evaluated twice.
+52. **(Superseded by 53.)** Cleared pinned terminal contracts after a recovered root value.
+51. **The build-level retry is closed after the native authority cutover.** An `EJP0008` raised for
+    orphaned cells came back as `NativeBuildBoundaryError(LegacyFallbackForbidden|reason=retry_after_
+    native_authority_kernel|...)`: `attempt_build` surfaces retryable codes as typed failures by design.
+    Hence fix 53's restart at the `peval` call site instead.
 50. **Orphaned cells recomputed in place when their inputs allow it.** Attempt 8 (Release, fixes 44-48)
     failed after 762 s: `EJP0014 ... CODEGEN JP MISSING BODY DICT BLOCKED closure0 ... dict=0`, a closure
     whose owner had no body table at codegen, after fix 45's clear-and-rerun of `main` (state from the

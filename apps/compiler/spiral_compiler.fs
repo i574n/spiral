@@ -5472,7 +5472,7 @@ module spiral_compiler =
                                     (hudKv "shutdown" "interrupted"))
                     rows
                     |> Array.iteri (fun i clean ->
-                        Console.Error.WriteLine("[spiral_hud_final] " + clean)
+                        (if System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET" <> "1" then Console.Error.WriteLine("[spiral_hud_final] " + clean))
                         appendFileLogLineSerialized (
                             FastRuntimeFormat.format "{\"v\":2,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":\"spiral_hud_final\",\"line_index\":%d,\"row_count\":%d,\"final_row\":false,\"snapshot_available\":false,\"text\":%s,\"authority\":\"last_rendered_hud_fallback\",\"hud_contract_du\":\"DetailedFlex50NoPrune\",\"row_compaction_du\":\"complete_50_row_final_hud_snapshot\"}" [| box nowMs; box pid; box tid; box i; box rows.Length; box (fileLogEscJson clean) |]))
                     appendFileLogLineSerialized (
@@ -5488,7 +5488,7 @@ module spiral_compiler =
                                 (hudKv "shutdown" "terminal_epilogue"))
                     rows
                     |> Array.iteri (fun i clean ->
-                        Console.Error.WriteLine("[spiral_hud_final] " + clean)
+                        (if System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET" <> "1" then Console.Error.WriteLine("[spiral_hud_final] " + clean))
                         appendFileLogLineSerialized (
                             FastRuntimeFormat.format "{\"v\":2,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":\"spiral_hud_final\",\"line_index\":%d,\"row_count\":%d,\"final_row\":false,\"snapshot_available\":false,\"text\":%s,\"authority\":\"shutdown_without_live_hud_snapshot\",\"hud_contract_du\":\"DetailedFlex50NoPrune\",\"row_compaction_du\":\"complete_50_row_final_hud_snapshot\"}" [| box nowMs; box pid; box tid; box i; box rows.Length; box (fileLogEscJson clean) |]))
                     appendFileLogLineSerialized (
@@ -5611,7 +5611,9 @@ module spiral_compiler =
                                     (hudKv "row" (sprintf "%d/%d" (i + 1) hudRows))
                                     (hudKv "phase" phase)
                                     (hudKv "possession" possession))
-                    rows |> Array.iter (fun row -> Console.Error.WriteLine("[spiral_hud_final] " + row))
+                    // Quiet mode (tests, probes, apps builds) keeps stderr for the result and the error: the 50-row final HUD buried it.
+                    if System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET" <> "1" then
+                        rows |> Array.iter (fun row -> Console.Error.WriteLine("[spiral_hud_final] " + row))
                     appendFileLogLineSerialized (
                         FastRuntimeFormat.format "{\"v\":2,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":\"reducer_hud_final_snapshot\",\"snapshot_available\":true,\"generation\":%d,\"snapshot_ms\":%d,\"elapsed_ms\":%d,\"phase_du\":%s,\"possession_stage_du\":%s,\"outcome_du\":%s,\"completed_cost\":%d,\"total_cost\":%d,\"progress_low_bp\":%d,\"progress_mid_bp\":%d,\"progress_high_bp\":%d,\"exact_denominator\":%b,\"exact_denominator_authority_du\":%s,\"numerator_scope_du\":\"kernel_cost_projection\",\"denominator_scope_du\":\"kernel_cost_projection\",\"scope_invariant_satisfied\":%b,\"eta_p50_s\":%d,\"eta_p90_s\":%d,\"eta_sigma_s\":%d,\"critical_path_remaining_cost\":%s,\"critical_path_du\":%s,\"actor_ref\":%s,\"stage_token_ref\":%s,\"fill_receipt_ref\":%s,\"run_end_receipt_ref\":%s,\"physical_exit_receipt_ref\":%s,\"run_end_emitted\":%b,\"exit_code\":%s,\"sealed_at_ms\":%s,\"blocker_count\":%d,\"blocker_count_authority_du\":%s,\"physical_boundary_overlay_applied\":%b,\"authority\":\"reducer_snapshot_with_optional_physical_boundary_overlay\",\"legacy_cache_authority\":false,\"hud_contract_du\":\"DetailedFlex50NoPrune\",\"row_count\":%d}" [| box nowMs; box pid; box tid; box snapshot.generation; box snapshot.snapshotMs; box snapshot.elapsedMsAtSnapshot; box (fileLogEscJson phase); box (fileLogEscJson possession); box (fileLogEscJson outcomeDu); box snapshot.work.semantic.retiredCost; box snapshot.work.semantic.totalMid; box reportedProgressLowBp; box reportedProgressMidBp; box reportedProgressHighBp; box exactDenominator; box (fileLogEscJson exactDenominatorAuthorityDu); box scopeInvariantSatisfied; box reportedEtaP50S; box reportedEtaP90S; box reportedEtaSigmaS; box criticalPathRemainingCostJson; box criticalPathStateJson; box (fileLogEscJson snapshot.actorRef); box (fileLogEscJson snapshot.stageTokenRef); box (fileLogEscJson snapshot.fillReceiptRef); box (fileLogEscJson reportedRunEndReceiptRef); box (fileLogEscJson reportedPhysicalExitReceiptRef); box runEndObserved; box (fileLogEscJson (reportedExitCode |> Option.map string |> Option.defaultValue "")); box (fileLogEscJson (reportedSealedAtMs |> Option.map string |> Option.defaultValue "")); box reportedBlockerCount; box (fileLogEscJson blockerCountAuthorityDu); box physicalBoundaryFinalRowAuthorized; box rows.Length |])
                     rows
@@ -69283,6 +69285,31 @@ module spiral_compiler =
                 | FunctionIs, [|a|] -> Some (boolData (isFunctionLike a))
                 | ExistsIs, [|a|] -> Some (boolData (isExistsLike a))
                 | _ -> typeAwareFallback ()
+
+        /// Everything this module holds for one partial evaluation, keyed by AST node (or by the evaluation's
+        /// objects): producer records and their artifacts (term/type thunks, spines, contexts), deferrals, parent
+        /// handoffs, direct-scope tracking, replay apply caches. A fresh peval of the same AST (fix 51) must not see
+        /// the previous run's thunks: they capture its environments and join-point tables. The wake callbacks
+        /// EvalWorklist installed once stay.
+        let resetForFreshPeval () =
+            evaluatorProducerGraph.Clear()
+            evaluatorPatternMissDeferralKeys.Clear()
+            deferredReplayCells.Clear()
+            deferredReplaySeenKeys.Clear()
+            parentContinuationEdgeCounts.Clear()
+            parentCacheHandoffQueue.Clear()
+            parentCacheHandoffRelations.Clear()
+            parentCacheHandoffParentNodes.Clear()
+            semanticSourceValues.Clear()
+            directActiveNodes.Clear()
+            directCompletedNodes.Clear()
+            directActiveScopes.Clear()
+            directOwnedScopes.Clear()
+            deferredTypeVarCells.Clear()
+            pendingMonomorphizationQueue.Clear()
+            replayThunkForceCutoffKeys.Clear()
+            replayApplyResults.Clear()
+            replayAppliedValues.Clear()
 
     /// MIGRATION update: replay commit now acts as a resume handoff. When retry_stop observes
     /// semantic_step_done/queue_depth=0, it invalidates the cache once and re-enters attempt_build
@@ -146783,10 +146810,13 @@ module spiral_compiler =
         | JpDeclaredResumeSnapshotPeriodicPrune -> "Periodic256"
         | JpDeclaredResumeSnapshotPressurePrune -> "Pressure64"
 
-    let jpDeclaredResumeSnapshotPruneBasis (continuationOrdinal:int64) (liveSnapshotCount:int) : JpDeclaredResumeSnapshotPruneBasisId option =
-        if continuationOrdinal > 0L && (continuationOrdinal &&& 255L) = 0L then
-            Some JpDeclaredResumeSnapshotPeriodicPrune
-        elif liveSnapshotCount >= 1024 && continuationOrdinal > 0L && (continuationOrdinal &&& 63L) = 0L then
+    // A prune scans every snapshot (all jobs), so its trigger must be geometric: prune once the live count has doubled
+    // since the last prune left it. Pruning every 64/256 continuations while most snapshots stayed reachable cost
+    // O(live x continuations): apps/spiral's declared bodies ground in this scan at under one core (FRONTIER.md 55).
+    let mutable private jpDeclaredResumeSnapshotPruneHighWater = 0
+
+    let jpDeclaredResumeSnapshotPruneBasis (_continuationOrdinal:int64) (liveSnapshotCount:int) : JpDeclaredResumeSnapshotPruneBasisId option =
+        if liveSnapshotCount >= max 1024 (2 * jpDeclaredResumeSnapshotPruneHighWater) then
             Some JpDeclaredResumeSnapshotPressurePrune
         else None
 
@@ -146795,6 +146825,7 @@ module spiral_compiler =
         | None -> ()
         | Some pruneBasis ->
             let receipt = jpPruneUnreachableDeclaredResumeSnapshotsForJob jobId freshContinuationRef
+            jpDeclaredResumeSnapshotPruneHighWater <- jp_declared_resume_snapshots.Count
             let occurrence, shouldEmit =
                 DiagJson.sparseLogDecision ("jp_declared_resume_snapshot_pruned|" + string jobId + "|" + jpDeclaredResumeSnapshotPruneBasisText pruneBasis) 64L
             if receipt.pruned > 0 || receipt.staleLocatorsPruned > 0 || shouldEmit then
@@ -149432,6 +149463,66 @@ module spiral_compiler =
         | JpReplayRetainOperationalCredit -> false
 
     /// ### peval
+    /// Rust-style report for partial evaluation that unrolls without end (typically an `inl` recursion on a
+    /// value only known at run time): the source span, the repeating cycle with counts, the entry path, why it
+    /// happens and how to fix it. Frames are innermost first: (path, 0-based line, 0-based column).
+    module RunawayUnrollDiagnostic =
+        let private sourceLines = System.Collections.Concurrent.ConcurrentDictionary<string, string[]>()
+        let private lineText (path: string) (line: int) =
+            let lines = sourceLines.GetOrAdd(path, fun p -> try System.IO.File.ReadAllLines p with _ -> [||])
+            if line >= 0 && line < lines.Length then lines.[line] else ""
+        let private shortPath (path: string) =
+            let p = path.Replace('\\', '/')
+            match p.LastIndexOf "/lib/" with
+            | i when i >= 0 -> p.Substring(i + 1)
+            | _ -> System.IO.Path.GetFileName p
+        let private collapse (frames: (string * int * int) list) =
+            frames
+            |> List.fold (fun acc (p, l, c) -> match acc with (p', l', _) :: _ when p' = p && l' = l -> acc | _ -> (p, l, c) :: acc) []
+            |> List.rev
+        let render (code: string) (headline: string) (frames: (string * int * int) list) (limitNote: string) =
+            let sb = System.Text.StringBuilder()
+            let add (s: string) = sb.Append(s).Append('\n') |> ignore
+            add (sprintf "error[%s]: %s" code headline)
+            let counts = frames |> List.countBy (fun (p, l, _) -> p, l) |> Map.ofList
+            let count p l = Map.tryFind (p, l) counts |> Option.defaultValue 0
+            match frames with
+            | (p, l, c) :: _ ->
+                let number = string (l + 1)
+                let pad = String.replicate number.Length " "
+                add (sprintf "%s--> %s:%d:%d" pad p (l + 1) (c + 1))
+                add (sprintf "%s |" pad)
+                add (sprintf "%s | %s" number ((lineText p l).TrimEnd()))
+                add (sprintf "%s | %s^ reached %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") (count p l))
+                add (sprintf "%s |" pad)
+            | [] -> ()
+            // The cycle is what repeats on the scale of the hottest frame; a frame that recurs a few times (the
+            // entry call, an outer wrapper) belongs to the entry path.
+            let hottest = if counts.IsEmpty then 0 else counts |> Map.toSeq |> Seq.map snd |> Seq.max
+            let inCycle p l = count p l > 1 && count p l * 4 >= hottest
+            let cycle =
+                frames
+                |> List.filter (fun (p, l, _) -> inCycle p l)
+                |> List.distinctBy (fun (p, l, _) -> p, l)
+                |> List.truncate 12
+            if not cycle.IsEmpty then
+                add "  = note: the repeating cycle (innermost first):"
+                for (p, l, _) in cycle do
+                    add (sprintf "          %s:%d  %s  (x%d)" (shortPath p) (l + 1) ((lineText p l).Trim()) (count p l))
+            let entry = frames |> List.filter (fun (p, l, _) -> not (inCycle p l)) |> List.rev |> collapse
+            if not entry.IsEmpty then
+                add "  = note: entered from (outermost first):"
+                let shown = if entry.Length <= 14 then entry else List.take 7 entry @ List.skip (entry.Length - 7) entry
+                if entry.Length > 14 then add (sprintf "          (%d frames, showing the first and last 7)" entry.Length)
+                for (p, l, _) in shown do
+                    add (sprintf "          %s:%d  %s" (shortPath p) (l + 1) ((lineText p l).Trim()))
+            add "  = note: an `inl` function is inlined at every call site; when it recurses on a value only known at run time"
+            add "          (an index, a list, a length), every level adds another branch and partial evaluation never reaches a base case"
+            add "  = help: make the recursive function a join point (`let rec`, or `join` the recursive call) so the recursion runs"
+            add "          at run time, or decide on a bound known at compile time (`join_body_unit body len i`, not on the index)"
+            add (sprintf "  = help: %s" limitNote)
+            sb.ToString().TrimEnd()
+
     /// What a stalled build waits on in partial evaluation, for the BuildFile stall message: `peval` installs a
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
     module PevalStallProbe =
@@ -149439,7 +149530,27 @@ module spiral_compiler =
         /// Set when a match ran into a join-point placeholder and the build switched to inline JP recompute
         /// (FRONTIER.md fix 44). That recovery requests sequential mode, which the output write guard would
         /// otherwise read as an unstable run. Reset at the start of each BuildFile transaction.
-        let mutable placeholderRecoveryEntered = false
+        type PevalRecoveryCause =
+            | RecoveryPlaceholderPatternMiss of patternNodeId: int
+            | RecoveryOrphanedCells
+            | RecoveryRequestedByEnvironment
+        type PevalRecoveryState =
+            | RecoveryNotEntered
+            | RecoveryEntered of PevalRecoveryCause
+        let mutable private recovery = RecoveryNotEntered
+        let recoveryActive () = match recovery with RecoveryEntered _ -> true | RecoveryNotEntered -> false
+        /// The first cause wins; later ones do not overwrite it.
+        let enterRecovery cause = match recovery with RecoveryNotEntered -> recovery <- RecoveryEntered cause | RecoveryEntered _ -> ()
+        let resetRecovery () = recovery <- RecoveryNotEntered
+        let recoveryText () =
+            match recovery with
+            | RecoveryNotEntered -> "not_entered"
+            | RecoveryEntered (RecoveryPlaceholderPatternMiss nodeId) -> sprintf "entered(placeholder_pattern_miss node=%d)" nodeId
+            | RecoveryEntered RecoveryOrphanedCells -> "entered(orphaned_cells)"
+            | RecoveryEntered RecoveryRequestedByEnvironment -> "entered(SPIRAL_HOPAC_INLINE_JP)"
+        /// Raised by peval's root when join-point cells stay orphaned after inline recovery: the BuildFile caller
+        /// runs a fresh peval (fresh tables, a reset replay store) with inline recovery still on (fix 51).
+        exception PevalInlineRestart of string
         /// Codegen runs after peval's join-point graph is quiescent, so a body cell still pending then has no
         /// producer left. Codegen used to wait on it without limit (and outside the build budget); it now waits
         /// this long and then fails closed with the key (FRONTIER.md fix 46).
@@ -159850,7 +159961,7 @@ module spiral_compiler =
                                 s.recursion
                                 s.bigStack
                         jp_orphan_recompute.[box jp_ivar] <- (fun () -> run () |> ignore)
-                        if PevalStallProbe.placeholderRecoveryEntered then
+                        if PevalStallProbe.recoveryActive () then
                             // Placeholder recovery (FRONTIER.md fixes 44-45): evaluate the closure body inline, as
                             // single-flight does. A spawned body can pattern-miss on a placeholder and be retired
                             // with its cell unfilled, which codegen then waits on forever.
@@ -160845,6 +160956,13 @@ module spiral_compiler =
                     let errEnv = if depth > 256 then s else (add_trace s r0)
                     let msg = FastRuntimeFormat.format "%s: re-entrant type evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" [| box DiagnosticClassifier.EJP0011; box site; box nodeId; box depth; box genNow; box reCount; box max_reentry; box big |]
                     let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
+                    let msg =
+                        msg + "\n"
+                        + RunawayUnrollDiagnostic.render
+                            "EJP0011"
+                            (sprintf "partial evaluation re-entered `%s` more than %d times" site max_reentry)
+                            (s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character))
+                            "the re-entry limit (EvalFallbackPolicy.maxReentry) is not configurable: a deliberately deep recursion over static data should be a join point too"
                     if depth > 256 then
                         raise_type_error_no_trace errEnv msg
                     else
@@ -160856,7 +160974,7 @@ module spiral_compiler =
                     // sidecar warnings already identify a typed re-entry frontier.  In forced
                     // sequential mode, prefetch one conservative frame for the jp_stall_preflight
                     // path; completion still requires the typed replay driver.
-                    if CacheGeneration.isSequentialRequested() && depth >= 8 && not (TermCycleFuse.isTripped()) && not PevalStallProbe.placeholderRecoveryEntered then
+                    if CacheGeneration.isSequentialRequested() && depth >= 8 && not (TermCycleFuse.isTripped()) && not (PevalStallProbe.recoveryActive ()) then
                         try
                             let genNow = int (CacheGeneration.current())
                             let typeSemanticCell = semanticCellForTy nodeId
@@ -160933,6 +161051,13 @@ module spiral_compiler =
                     let errEnv = if depth > 256 then s else (add_trace s r0)
                     let msg = FastRuntimeFormat.format "%s: re-entrant type evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" [| box DiagnosticClassifier.EJP0011; box site; box nodeKey; box depth; box genNow; box reKey; box max_reentry_key; box big |]
                     let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
+                    let msg =
+                        msg + "\n"
+                        + RunawayUnrollDiagnostic.render
+                            "EJP0011"
+                            (sprintf "partial evaluation re-entered `%s` more than %d times" site max_reentry)
+                            (s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character))
+                            "the re-entry limit (EvalFallbackPolicy.maxReentry) is not configurable: a deliberately deep recursion over static data should be a join point too"
                     if depth > 256 then
                         raise_type_error_no_trace errEnv msg
                     else
@@ -164091,6 +164216,13 @@ module spiral_compiler =
                     let errEnv = if depth > 256 then s else (add_trace s r0)
                     let msg = FastRuntimeFormat.format "%s: re-entrant term evaluation cycle detected at %s (nodeId=%d depth=%d gen=%d re=%d/%d big=%b)" [| box DiagnosticClassifier.EJP0011; box site; box nodeId; box depth; box newGen; box reCount; box max_reentry; box big |]
                     let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
+                    let msg =
+                        msg + "\n"
+                        + RunawayUnrollDiagnostic.render
+                            "EJP0011"
+                            (sprintf "partial evaluation re-entered `%s` more than %d times" site max_reentry)
+                            (s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character))
+                            "the re-entry limit (EvalFallbackPolicy.maxReentry) is not configurable: a deliberately deep recursion over static data should be a join point too"
                     if depth > 256 then
                         raise_type_error_no_trace errEnv msg
                     else
@@ -164101,7 +164233,7 @@ module spiral_compiler =
                     // Mirror the typed prefetch for term keyed warnings.  This is only
                     // enabled after forced-sequential fallback and only seeds a replayable frontier;
                     // it does not treat the warning itself as semantic completion.
-                    if CacheGeneration.isSequentialRequested() && depth >= 8 && not (TermCycleFuse.isTripped()) && not PevalStallProbe.placeholderRecoveryEntered then
+                    if CacheGeneration.isSequentialRequested() && depth >= 8 && not (TermCycleFuse.isTripped()) && not (PevalStallProbe.recoveryActive ()) then
                         try
                             let genNow = int (CacheGeneration.current())
                             let termSemanticCell = semanticCellForTerm nodeId
@@ -164211,6 +164343,13 @@ module spiral_compiler =
                     let errEnv = if depth > 256 then s else (add_trace s r0)
                     let msg = FastRuntimeFormat.format "%s: re-entrant term evaluation cycle detected at %s (key=%s depth=%d gen=%d re=%d/%d big=%b)" [| box DiagnosticClassifier.EJP0011; box site; box nodeKey; box depth; box (int newGen); box reKey; box max_reentry_key; box big |]
                     let msg = match frameOpt with Some frame -> EvalWorklist.requiredMessage msg frame | None -> msg
+                    let msg =
+                        msg + "\n"
+                        + RunawayUnrollDiagnostic.render
+                            "EJP0011"
+                            (sprintf "partial evaluation re-entered `%s` more than %d times" site max_reentry)
+                            (s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character))
+                            "the re-entry limit (EvalFallbackPolicy.maxReentry) is not configurable: a deliberately deep recursion over static data should be a join point too"
                     raise_type_error errEnv msg
                 
 
@@ -164875,7 +165014,7 @@ module spiral_compiler =
                     || gotText.Contains "JPClosureRecPlaceholder("
                     || gotText.Contains "JPArrayElementRecPlaceholder("
                 if mentionsPlaceholder then
-                    PevalStallProbe.placeholderRecoveryEntered <- true
+                    PevalStallProbe.enterRecovery (PevalStallProbe.RecoveryPlaceholderPatternMiss patternNodeId)
                     let firstInBuild = SuspectCache.currentCount () = 0
                     SuspectCache.mark (box patternNodeId) (DiagnosticClassifier.EJP0007 + " pattern_miss_on_jp_placeholder")
                     if firstInBuild then
@@ -167565,7 +167704,7 @@ module spiral_compiler =
                             // Global recovery mode: do not wait on potentially poisoned IVars.
                             // Placeholder pattern-miss recovery is a deterministic inline recompute, not an unstable
                             // retry: it must not mark the run sequential (the write guard refuses unstable outputs).
-                            if not PevalStallProbe.placeholderRecoveryEntered then CacheGeneration.requestSequential ()
+                            if not (PevalStallProbe.recoveryActive ()) then CacheGeneration.requestSequential ()
                             record_jp_diag_method join_point_key jp_name (r :: s.trace) |> ignore
                             let mutable removed = Unchecked.defaultof<_>
                             dict.TryRemove(join_point_key, &removed) |> ignore
@@ -170440,18 +170579,21 @@ module spiral_compiler =
                     | (true, _), _
                     | _, Some JpMethodRecPlaceholder -> true
                     | _ -> false
-                let rec is_var = function
-                    | DV _ -> true
-                    | DNominal(d, _) -> is_var d
-                    | DUnion(d, _) -> is_var d
-                    | DPair(a,b) -> is_var a || is_var b
-                    | DSymbol _ -> true
-                    | DTLit (LitString sym) when is_jp_placeholder sym -> true
-                    | DLit (LitString sym) when is_jp_placeholder sym -> true
-                    | d ->
-                        // Conservative fallback: if a JP-method recursion placeholder leaks through wrappers,
-                        // treat it as a variable to avoid list/union destructuring Pattern miss in downstream libraries.
-                        isJpRecPlaceholderData d
+                // The language's rule (single-flight's): only a runtime variable, possibly under its nominal, is a var.
+                // A join-point placeholder also counts, since it stands for a pending runtime value. The old version
+                // descended into unions and pairs and treated *any* symbol as a var, so every static union (its case
+                // name is a DSymbol) looked dynamic: structural equality on static lists took real_core's `join`
+                // branch instead of folding (`[ ' '; '/' ] = []` became a runtime call), a static list turned
+                // runtime and `try_item` unrolled forever (apps/spiral; samples/frontier_static_list_eq; fix 54).
+                let is_placeholder_data = function
+                    | DSymbol sym
+                    | DTLit (LitString sym)
+                    | DLit (LitString sym) -> is_jp_placeholder sym
+                    | d -> isJpRecPlaceholderData d
+                let is_var = function
+                    | DV _ | DNominal(DV _, _) -> true
+                    | DNominal(d, _) -> is_placeholder_data d
+                    | d -> is_placeholder_data d
                 let a = term s a
                 DLit (LitBool (is_var a))
     
@@ -170830,6 +170972,22 @@ module spiral_compiler =
             // MIGRATION: Always run the main evaluation on BigStack to prevent stack overflow
             let evalOnBigStack childContext =
                 let s = langEnvWithBigStack childContext s
+                // Recovery entered during this evaluation leaves replay work, deferrals and cells from the asynchronous
+                // phase behind (orphans, pinned replay frames that abort jp_wait). A peval that started in recovery
+                // evaluates join points inline from its first step, as single-flight does; one that entered it midway
+                // is discarded and restarted from scratch by its caller (fix 53).
+                // SPIRAL_HOPAC_INLINE_JP=1: evaluate join points inline from the first step (the recovery mode
+                // fix 53 restarts into), skipping the asynchronous specialization, declared-body slicing and replay
+                // resumption altogether. Diagnostic switch: hopac with single-flight's evaluation order.
+                if System.Environment.GetEnvironmentVariable "SPIRAL_HOPAC_INLINE_JP" = "1" && not (PevalStallProbe.recoveryActive ()) then
+                    SuspectCache.mark (box "SPIRAL_HOPAC_INLINE_JP") (DiagnosticClassifier.EJP0007 + " inline_jp_requested")
+                    PevalStallProbe.enterRecovery PevalStallProbe.RecoveryRequestedByEnvironment
+                let startedInRecovery = PevalStallProbe.recoveryActive ()
+                let restartIfRecoveryEnteredMidway why =
+                    if not startedInRecovery && PevalStallProbe.recoveryActive () then
+                        DiagJson.emit (
+                            FastRuntimeFormat.format "{\"kind\":\"peval_main_inline_restart_requested\",\"why\":%s,\"next\":\"fresh_peval_inline_from_start\"}" [| box (DiagJson.esc why) |])
+                        raise (PevalStallProbe.PevalInlineRestart ("placeholder recovery entered mid-evaluation: " + why))
                 // Root retry (FRONTIER.md fixes 44-45). Between attempts: let the abandoned attempt's join-point
                 // work settle, then start from a clean worklist, as the build-level retry does.
                 let awaitJpQuiescence site =
@@ -170854,7 +171012,7 @@ module spiral_compiler =
                     List.ofSeq orphans
                 let enterOrphanRecovery () =
                     SuspectCache.mark (box "peval_orphaned_cells") (DiagnosticClassifier.EJP0007 + " orphaned_cells")
-                    PevalStallProbe.placeholderRecoveryEntered <- true
+                    PevalStallProbe.enterRecovery PevalStallProbe.RecoveryOrphanedCells
                 // Recompute orphaned cells in place, round by round (a recomputed body can expose another orphan).
                 // Some true when none is left; None when an orphan has no recompute entry or rounds run out.
                 let rec settleOrphans round =
@@ -170884,26 +171042,35 @@ module spiral_compiler =
                         match outcome with
                         | Choice2Of2 escapeText ->
                             awaitJpQuiescence "peval-main-pattern-miss-quiescence"
+                            restartIfRecoveryEnteredMidway "pattern-miss escape at the root"
                             resetForRootRetry ()
                             DiagJson.emit (
                                 FastRuntimeFormat.format "{\"kind\":\"peval_main_pattern_miss_retried\",\"attempt\":%d,\"escape\":%s,\"authority\":\"suspect_cache_inline_recompute\",\"next\":\"rerun_main_with_inline_join_points\"}" [| box (n + 1); box (DiagJson.esc escapeText) |])
                             attempt (n + 1)
                         | Choice1Of2 value ->
                             awaitJpQuiescence "peval-main-orphan-check-quiescence"
-                            if settleOrphans 0 then value
+                            restartIfRecoveryEnteredMidway "main returned"
+                            if settleOrphans 0 then
+                                // In inline recovery main's value came from direct evaluation; a replay frame pinned as
+                                // terminal on the way (e.g. a dynamic-join apply that fix 41 refused because the direct
+                                // evaluator owned the block) is superseded, and must not abort the final jp_wait (fix 52).
+                                if PevalStallProbe.recoveryActive () then
+                                    EvalWorklist.resetTerminalContractsForRootRetry ()
+                                value
                             else
                                 // Orphans built on placeholder inputs need their parents recomputed too. Clearing the JP
                                 // tables and rerunning main in this peval let state from the abandoned attempt reach
                                 // codegen (apps/spiral attempts 8-9: `CODEGEN JP MISSING BODY DICT ... closure0`).
-                                // Retry the whole build instead: attempt_build runs a fresh peval (fresh tables) after a
-                                // cache invalidation, and inline recovery stays on (the suspect and the recovery flag
-                                // outlive the attempt), so no work is spawned and nothing is orphaned (fix 51).
+                                // Restart peval instead: its caller runs a fresh one (fresh tables, a reset replay store),
+                                // and inline recovery stays on (the suspect and the recovery flag are process state), so no
+                                // work is spawned and nothing is orphaned (fix 51). The build-level retry is not an option:
+                                // after the native authority cutover it surfaces retryable codes as failures.
                                 let orphans = (orphanedCells ()).Length
                                 let pendingText = try PevalStallProbe.pendingJoinPoints () with ex -> "probe_failed:" + ex.GetType().Name
                                 enterOrphanRecovery ()
                                 DiagJson.emit (
-                                    FastRuntimeFormat.format "{\"kind\":\"peval_main_orphaned_cells_build_retry\",\"orphaned_cells\":%d,\"pending\":%s,\"authority\":\"suspect_cache_inline_recompute\",\"next\":\"retry_build_from_fresh_generation_inline\"}" [| box orphans; box (DiagJson.esc pendingText) |])
-                                raise (PartEvalTypeError([], sprintf "%s: generation changed while waiting: %d orphaned join point cell(s) after inline recovery (%s); retry the build from a fresh generation with inline join points" DiagnosticClassifier.EJP0008 orphans pendingText))
+                                    FastRuntimeFormat.format "{\"kind\":\"peval_main_orphaned_cells_restart\",\"orphaned_cells\":%d,\"pending\":%s,\"authority\":\"suspect_cache_inline_recompute\",\"next\":\"fresh_peval_inline\"}" [| box orphans; box (DiagJson.esc pendingText) |])
+                                raise (PevalStallProbe.PevalInlineRestart (sprintf "%d orphaned join point cell(s) after inline recovery (%s)" orphans pendingText))
                     attempt 0
                 // Single host boundary: peval_main waits for the actor-owned graph outside JP workers.
                 CompilerKernelV2.CompilerRuntimeKernel.runHostBoundary
@@ -171550,6 +171717,75 @@ module spiral_compiler =
         }
 
     /// ### peval
+    /// Rust-style report for partial evaluation that unrolls without end (typically an `inl` recursion on a
+    /// value only known at run time): the source span, the repeating cycle with counts, the entry path, why it
+    /// happens and how to fix it. Frames are innermost first: (path, 0-based line, 0-based column).
+    module RunawayUnrollDiagnostic =
+        let private sourceLines = System.Collections.Concurrent.ConcurrentDictionary<string, string[]>()
+        let private lineText (path: string) (line: int) =
+            let lines = sourceLines.GetOrAdd(path, fun p -> try System.IO.File.ReadAllLines p with _ -> [||])
+            if line >= 0 && line < lines.Length then lines.[line] else ""
+        let private shortPath (path: string) =
+            let p = path.Replace('\\', '/')
+            match p.LastIndexOf "/lib/" with
+            | i when i >= 0 -> p.Substring(i + 1)
+            | _ -> System.IO.Path.GetFileName p
+        let private collapse (frames: (string * int * int) list) =
+            frames
+            |> List.fold (fun acc (p, l, c) -> match acc with (p', l', _) :: _ when p' = p && l' = l -> acc | _ -> (p, l, c) :: acc) []
+            |> List.rev
+        let render (code: string) (headline: string) (frames: (string * int * int) list) (limitNote: string) =
+            let sb = System.Text.StringBuilder()
+            let add (s: string) = sb.Append(s).Append('\n') |> ignore
+            add (sprintf "error[%s]: %s" code headline)
+            let counts = frames |> List.countBy (fun (p, l, _) -> p, l) |> Map.ofList
+            let count p l = Map.tryFind (p, l) counts |> Option.defaultValue 0
+            match frames with
+            | (p, l, c) :: _ ->
+                let number = string (l + 1)
+                let pad = String.replicate number.Length " "
+                add (sprintf "%s--> %s:%d:%d" pad p (l + 1) (c + 1))
+                add (sprintf "%s |" pad)
+                add (sprintf "%s | %s" number ((lineText p l).TrimEnd()))
+                add (sprintf "%s | %s^ reached %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") (count p l))
+                add (sprintf "%s |" pad)
+            | [] -> ()
+            // The cycle is what repeats on the scale of the hottest frame; a frame that recurs a few times (the
+            // entry call, an outer wrapper) belongs to the entry path.
+            let hottest = if counts.IsEmpty then 0 else counts |> Map.toSeq |> Seq.map snd |> Seq.max
+            let inCycle p l = count p l > 1 && count p l * 4 >= hottest
+            let cycle =
+                frames
+                |> List.filter (fun (p, l, _) -> inCycle p l)
+                |> List.distinctBy (fun (p, l, _) -> p, l)
+                |> List.truncate 12
+            if not cycle.IsEmpty then
+                add "  = note: the repeating cycle (innermost first):"
+                for (p, l, _) in cycle do
+                    add (sprintf "          %s:%d  %s  (x%d)" (shortPath p) (l + 1) ((lineText p l).Trim()) (count p l))
+            let entry = frames |> List.filter (fun (p, l, _) -> not (inCycle p l)) |> List.rev |> collapse
+            if not entry.IsEmpty then
+                add "  = note: entered from (outermost first):"
+                let shown = if entry.Length <= 14 then entry else List.take 7 entry @ List.skip (entry.Length - 7) entry
+                if entry.Length > 14 then add (sprintf "          (%d frames, showing the first and last 7)" entry.Length)
+                for (p, l, _) in shown do
+                    add (sprintf "          %s:%d  %s" (shortPath p) (l + 1) ((lineText p l).Trim()))
+            add "  = note: an `inl` function is inlined at every call site; when it recurses on a value only known at run time"
+            add "          (an index, a list, a length), every level adds another branch and partial evaluation never reaches a base case"
+            add "  = help: make the recursive function a join point (`let rec`, or `join` the recursive call) so the recursion runs"
+            add "          at run time, or decide on a bound known at compile time (`join_body_unit body len i`, not on the index)"
+            add (sprintf "  = help: %s" limitNote)
+            sb.ToString().TrimEnd()
+
+    /// Nesting of dynamic `if` branches on the evaluating thread (single-flight `if_`): an `inl` recursion guarded by
+    /// a runtime condition unrolls forever and overflowed a 1.5 GB stack after 80 min on apps/spiral.
+    module DynamicIfNesting =
+        let limit =
+            match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
+            | true, n when n > 0 -> n
+            | _ -> 5000
+        let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
+
     let peval (env : PartEvalTopEnv) (x : E) =
         let join_point_method = Dictionary(HashIdentity.Structural)
         let join_point_closure = Dictionary(HashIdentity.Structural)
@@ -171933,18 +172169,22 @@ module spiral_compiler =
             // An `inl` recursion guarded by a runtime condition unrolls forever: each level is another dynamic `if`
             // whose branch evaluates the next. On apps/spiral that nested ~75,000 deep and overflowed a 1.5 GB stack
             // after 80 min without saying where. Fail with the source trace well before that.
-            let dynamic_if_nesting_limit =
-                match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
-                | true, n when n > 0 -> n
-                | _ -> 5000
-            let dynamic_if_nesting = new System.Threading.ThreadLocal<int>(fun () -> 0)
+            // The counter lives in DynamicIfNesting (module level): `if_` is local to `term`, so a counter defined
+            // here would be a new one on every call and never pass 1.
             let within_dynamic_if s (f : unit -> 'a) : 'a =
-                let depth = dynamic_if_nesting.Value + 1
-                if depth > dynamic_if_nesting_limit then
-                    raise_type_error s $"Partial evaluation nested more than {dynamic_if_nesting_limit} dynamic `if` branches (SPIRAL_IF_NESTING_LIMIT). An `inl` recursion guarded by a runtime condition unrolls forever; make the recursive function a join point (`let` or `join`)."
-                dynamic_if_nesting.Value <- depth
+                let depth = DynamicIfNesting.depth.Value + 1
+                if depth > DynamicIfNesting.limit then
+                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                    let report =
+                        RunawayUnrollDiagnostic.render
+                            "EJP0040"
+                            (sprintf "partial evaluation nested more than %d dynamic `if` branches" DynamicIfNesting.limit)
+                            frames
+                            (sprintf "if the nesting is legitimate, raise the limit: SPIRAL_IF_NESTING_LIMIT=<n> (now %d)" DynamicIfNesting.limit)
+                    raise_type_error { s with trace = [] } report
+                DynamicIfNesting.depth.Value <- depth
                 try f ()
-                finally dynamic_if_nesting.Value <- depth - 1
+                finally DynamicIfNesting.depth.Value <- depth - 1
 
             let rec if_ s cond on_succ on_fail =
                 match cond with
@@ -185633,7 +185873,9 @@ module spiral_compiler =
                 |> Seq.map (fun kv -> kv.Key + "=" + string kv.Value)
                 |> String.concat ","
             let typecheck = try typecheckProbe () with ex -> "probe_failed:" + ex.GetType().Name
-            let peval = try PevalStallProbe.pendingJoinPoints () with ex -> "probe_failed:" + ex.GetType().Name
+            let peval =
+                (try PevalStallProbe.pendingJoinPoints () with ex -> "probe_failed:" + ex.GetType().Name)
+                + " recovery=" + PevalStallProbe.recoveryText ()
             sprintf "diagnostics={%s} typecheck={%s} peval={%s}" (if sent = "" then "none" else sent) typecheck peval
 
     /// ### SupervisorErrorSources
@@ -186645,7 +186887,7 @@ module spiral_compiler =
                                 let newBytes = int64 byteCount
                                 // Sequential mode and the build retry that placeholder/orphan recovery request are a deterministic inline
                                 // recompute, not instability (fixes 44, 51).
-                                let unstable = ((seq <> 0) || (inv <> 0L)) && not PevalStallProbe.placeholderRecoveryEntered
+                                let unstable = ((seq <> 0) || (inv <> 0L)) && not (PevalStallProbe.recoveryActive ())
 
                                 // WriteGuard:
                                 //  - block new outputs on unstable runs (prevents "success" without writing)
@@ -186899,6 +187141,9 @@ module spiral_compiler =
                                     job {
                                         do! authorized.finalizeArtifacts (BigStack.TerminalFlowArtifactPersistenceRejected(CompilerKernelV2.OperationalReasonIdOps.create reason))
                                         do! CompilerConsoleHud88.awaitTerminalReducerRunEndJob ()
+                                        // A failed build always says why: filling `res None` alone reached the host as
+                                        // "BuildFile returned no code and no diagnostic arrived".
+                                        HopacExtensions.start (Ch.send errors.fatal (FastRuntimeFormat.format "The generated code was not written to %s: %s (see WRITE_ABORT / artifact_filesystem_persistence_failed in the log)." [| box file; box reason |]))
                                         CompilerConsoleHud88.completeSupervisorBuildRequestFailed ()
                                         do! IVar.tryFill res None
                                     }
@@ -187295,7 +187540,24 @@ module spiral_compiler =
                                 try
                                     let build_many codegen backend =
                                         emitBuildFileInitializationStage BuildFilePartialEvaluationStarted
-                                        let (a,_),b = peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
+                                        let rec pevalWithInlineRestart restarts =
+                                            try peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
+                                            with
+                                            | PevalStallProbe.PevalInlineRestart reason when restarts >= 2 ->
+                                                // Out of restarts: surface the reason as a build error. Escaping as an unknown
+                                                // exception it reached the host as "no code and no diagnostic" (apps/spiral
+                                                // attempt 13).
+                                                raise (PartEvalTypeError([], sprintf "%s: partial evaluation still requested a fresh inline restart after %d restarts: %s" DiagnosticClassifier.EJP0014 restarts reason))
+                                            | PevalStallProbe.PevalInlineRestart reason ->
+                                                DiagJson.emit (
+                                                    FastRuntimeFormat.format "{\"kind\":\"peval_fresh_restart\",\"restart\":%d,\"reason\":%s,\"next\":\"fresh_peval_with_inline_join_points\"}" [| box (restarts + 1); box (DiagJson.esc reason) |])
+                                                EvalReplayValueStore.resetForFreshPeval ()
+                                                EvalWorklist.reset ()
+                                                EvalWorklist.resetTerminalContractsForRootRetry ()
+                                                TermCycleFuse.reset ()
+                                                LoopSpecializationGuard.reset ()
+                                                pevalWithInlineRestart (restarts + 1)
+                                        let (a,_),b = pevalWithInlineRestart 0
                                         emitBuildFileInitializationStage BuildFilePartialEvaluationCompleted
                                         let generated = codegenOnLargeStack (fun () -> codegen file b a)
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
@@ -187481,7 +187743,7 @@ module spiral_compiler =
                                             // Clear it only at the beginning of a fresh build transaction.
                                             EvalWorklist.resetStableRootCompleteLedger ()
                                             EvalWorklist.resetDurableTerminalContractLedger ()
-                                            PevalStallProbe.placeholderRecoveryEntered <- false
+                                            PevalStallProbe.resetRecovery ()
                                             CacheGeneration.resetSequentialRequest ()
                                             HopacExtensions.applyEnvForcedConcurrency ()
                                             // If we have active suspect keys from a previous invalidation, start this build deterministically.
@@ -188890,7 +189152,19 @@ module spiral_compiler =
                                                     elif is_soft_abort || attempt + 1 < max_attempts then
                                                         DiagJson.emit (
                                                             FastRuntimeFormat.format "{\"kind\":\"legacy_build_retry_rejected\",\"event\":\"native_authority_cutover\",\"code\":%s,\"attempt\":%d,\"max_attempts\":%d,\"soft_abort\":%s,\"authority_du\":\"NativeAuthorityKernel\",\"next\":\"surface_typed_failure_without_restarting_graph\"}" [| box (DiagJson.esc code); box attempt; box max_attempts; box (if is_soft_abort then "true" else "false") |])
-                                                        raiseNativeBuildBoundaryError (nativeBuildBoundaryLegacyFallbackForbidden ("retry_after_native_authority_kernel|" + e.Data1))
+                                                        // Keep the evaluation trace: the boundary wrapper carries only text, and without
+                                                        // it an EJP0011 cycle says where it closed but not how evaluation got there.
+                                                        let traceText =
+                                                            let frames =
+                                                                e.Data0
+                                                                |> List.fold (fun acc (r: Range) -> match acc with h :: _ when h = r -> acc | _ -> r :: acc) []
+                                                                |> List.rev
+                                                                |> List.map (fun (r: Range) -> sprintf "\n  at %s:%d" r.path ((fst r.range).line + 1))
+                                                            match frames with
+                                                            | [] -> ""
+                                                            | _ when frames.Length <= 60 -> "\nTrace (innermost first, repeats collapsed):" + String.concat "" frames
+                                                            | _ -> "\nTrace (innermost first, repeats collapsed):" + String.concat "" (List.take 30 frames) + "\n  ..." + String.concat "" (List.skip (frames.Length - 30) frames)
+                                                        raiseNativeBuildBoundaryError (nativeBuildBoundaryLegacyFallbackForbidden ("retry_after_native_authority_kernel|" + e.Data1 + traceText))
                                                     else
                                                         raise (partEvalTypeError e.Data0 e.Data1)
                                                 | DiagnosticClassifier.UnclassifiedIngress _ ->

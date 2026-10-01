@@ -228,14 +228,20 @@ inl try_pick fn list =
 
 /// ### exists'
 inl exists' f x =
-    inl length_x : i64 = x |> listm.length
-    let rec 루프 i =
-        if i >= length_x
-        then false
-        elif x |> item i |> f
-        then true
-        else 루프 (i + 1)
-    루프 0
+    inl rec body f = function
+        | [] => false
+        | x :: xs =>
+            if f x
+            then true
+            else 루프 xs
+    and inl 루프 list =
+        if var_is list |> not
+        then body f list
+        else
+            inl f = join f
+            inl list = dyn list
+            join body f list
+    루프 x
 
 /// ## fsharp
 

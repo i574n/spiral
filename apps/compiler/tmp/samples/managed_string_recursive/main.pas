@@ -44,10 +44,10 @@ begin
 end;
 function SpiralMain: LongInt;
 var
-  v0: AnsiString;
+  v0: TUH0;
   v1: AnsiString;
   v2: TUH0;
-  v3: TUH0;
+  v3: AnsiString;
   v4: TUH0;
   v5: LongInt;
   v6: TUH0;
@@ -57,15 +57,15 @@ var
   v10: LongInt;
   v11: LongInt;
 begin
-  v0 := 'ab';
+  v0 := UH0_0;
   v1 := 'qwe';
-  v2 := UH0_0;
-  v3 := UH0_1(v1, v2, v2);
-  v4 := UH0_1(v0, v3, v3);
+  v2 := UH0_1(v1, v0, v0);
+  v3 := 'ab';
+  v4 := UH0_1(v3, v2, v2);
   v5 := method0(v4);
   v6 := UH0_0;
   v7 := UH0_1(v1, v6, v6);
-  v8 := UH0_1(v0, v7, v7);
+  v8 := UH0_1(v3, v7, v7);
   v9 := method0(v8);
   v10 := v5 + v9;
   v11 := v10 - 16;

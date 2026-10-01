@@ -539,8 +539,9 @@ module Program =
                     let generated = buildTask.GetAwaiter().GetResult()
                     if isNull generated then
                         // The core fills BuildFile with None before its FatalError reaches the router; wait long
-                        // enough for that diagnostic (plus its grace) so rejections are reported as such.
-                        if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 4000))) then Error (waiter.Task.GetAwaiter().GetResult())
+                        // enough for that diagnostic (plus its grace) so rejections are reported as such. 4 s was not
+                        // enough on a loaded machine (the message arrived, the row said "no diagnostic arrived").
+                        if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 10000))) then Error (waiter.Task.GetAwaiter().GetResult())
                         else Error "BuildFile returned no code and no diagnostic arrived"
                     else
                         let coreWrites = cached.IsNone

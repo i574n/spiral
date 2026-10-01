@@ -353,6 +353,41 @@ State at hand-off, and the open work in priority order. Details live in the lane
     a larger budget to see whether it finishes;
   - hopac apps/spiral attempt 7 on the split build with fix 48 (`apps_spiral_hopac7.txt`).
   Fix 48 is only in the split build: rebuild the monolith (`build.ps1 -Mode hopac`) before the next suite.
+- **Night 2026-10-01, outcome.** Single-flight builds apps/spiral again (exit 0, 738 s, 2.79 MB) after the
+  `sm'.span_from` library fix below. Hopac: suite at full parity on fixes 49-53 (FRONTIER status table);
+  its last apps/spiral-specific wall was fix 54 (`VarIs` called every static union a variable;
+  `samples/frontier_static_list_eq`, blessed). Attempt 13 with fix 54 ran 25 min and ended with "BuildFile
+  returned no code and no diagnostic arrived": most likely `PevalInlineRestart` escaping after its two
+  restarts; that now surfaces as an EJP0014 build error with the reason (rebuild + rerun to read it).
+  `SPIRAL_HOPAC_INLINE_JP=1` evaluates hopac's join points inline from the start (diagnostic switch).
+  Attempt 14 (06:10, fix 54 + restart-limit message): at 24 min `main` had returned and the root waited in
+  `awaitJpQuiescence`; one JP work unit was still grinding in the asynchronous declared-body machinery
+  (`resume_declared_apply` → `jpStoreDeclaredApplyContinuation` → `jpMaybePruneDeclaredResumeSnapshots` →
+  `jpPruneUnreachableDeclaredResumeSnapshotsForJob`, a concurrent-dictionary walk per stored continuation:
+  likely quadratic), at under one core. Next for hopac apps/spiral: make that pruning incremental (or run
+  apps/spiral with `SPIRAL_HOPAC_INLINE_JP=1`, which skips the declared-body slicing, and compare).
+  Stacks: `$CLAUDE_JOB_DIR/tmp/attempt14_stacks.txt` was not written; rerun `dotnet-stack report`.
+- **Night 2026-10-01: apps/spiral now fails the same way in both cores.** Hopac attempt 10 (fixes 44-53,
+  fresh inline peval restart) failed after 624 s with `EJP0011: re-entrant term evaluation cycle` at
+  `listm'.spi:33` (`inl rec try_item`, 1,025 re-entries, depth 7,240), reached from `main` through
+  `trace.spi:221` (`trace`). An inline recursion whose index is a runtime value unrolls forever (one
+  dynamic `if` per level); single-flight's 80-min stack overflow is the same `if_ → term_scope' → term`
+  cycle (~75,000 deep). `listm'.try_item_` (`let rec`, a join point) is the runtime-safe variant. The
+  three-call `trace` repro compiles in single-flight now (80 s), so the trigger is specific to
+  apps/spiral's calls. Diagnostics added: single-flight `SPIRAL_IF_NESTING_LIMIT` (default 5,000) turns
+  the runaway into a traced type error; hopac's `legacy_build_retry_rejected` wrapper now keeps the
+  evaluation trace as text.
+  **Root cause (03:30): a library change, not the compilers.** The guard's full trace in single-flight:
+  `run` → `runtime.execute_with_options` → `split_command` → `runtime.split_args` → parsing combinators
+  → `p_char`'s error message → `sm'.span_from`. Commit `c656f5e` (2026-01-01, two days after the last
+  successful `spiral.fsx`) changed `span_from` from a `let rec` join point to
+  `inl rec body ... and inl 루프 i = join_body_unit body i i`, which inlines whenever the *index* is static;
+  the parser starts at a literal 0 and the string is runtime, so it unrolled forever (both cores, as the
+  language says). `lib/spiral/sm'.spi`: `span_from` and `index_of_char_from` now decide on the bound
+  (`join_body_unit body len i`, as `replicate` does). `runtime.split_args (dyn "a b")` alone: guard trip
+  in 68 s before, compiles now (123 s, 650 KB). (The `try_item` frames of the first traces were a
+  compacted-trace artefact plus `exists'`'s own divergence on runtime lists, which apps/spiral does not
+  hit.)
 - **Single-flight's apps/spiral stack overflow was a regression, now fixed** (2026-09-30 evening).
   Commit 1eb2ecf (2026-09-27) replaced the 1.5 GB thread single-flight ran `peval` + codegen on (upstream:
   256 MB, `Supervisor.fs:505-509`) with an inline call, leaving its comment orphaned; `peval` then ran on a
