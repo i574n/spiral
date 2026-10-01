@@ -13,7 +13,7 @@ let v5 : UH0 =
     else
         UH0_1
 match v5 with
-| UH0_1 -> (* StopA *)
-    0
 | UH0_0(v6) -> (* A *)
+    0
+| UH0_1 -> (* StopA *)
     0

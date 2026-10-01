@@ -16,10 +16,6 @@ impl US0 {
 }
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_0(v1) => { // Hit
-            let mut v1: i32 = v1.clone();
-            v1
-        }
         US0::US0_1(v2) => { // Flag
             let mut v2: bool = v2.clone();
             if v2 {
@@ -27,6 +23,10 @@ fn method0(mut v0: US0) -> i32 {
             } else {
                 4i32
             }
+        }
+        US0::US0_0(v1) => { // Hit
+            let mut v1: i32 = v1.clone();
+            v1
         }
         _ => unreachable!(),
     }

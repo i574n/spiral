@@ -23,14 +23,14 @@ fn method0(mut v0: US0) -> i32 {
         US0::US0_0 => { // Cold
             1i32
         }
-        US0::US0_1 => { // Warm
-            2i32
+        US0::US0_3 => { // Done
+            4i32
         }
         US0::US0_2 => { // Hot
             3i32
         }
-        US0::US0_3 => { // Done
-            4i32
+        US0::US0_1 => { // Warm
+            2i32
         }
         _ => unreachable!(),
     }

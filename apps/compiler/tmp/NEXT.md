@@ -414,9 +414,56 @@ State at hand-off, and the open work in priority order. Details live in the lane
   program (FRONTIER.md, "Resolved (2026-09-29)") still record that program; fixing them is item 1 below.
   Backup of the previous oracle: `$CLAUDE_JOB_DIR/tmp/EXPECTED.before-bless.tsv`.
 
+## Session 2026-10-01 (morning): hopac compiles apps/spiral in its default mode
+
+Details: `lanes/hopac/FRONTIER.md` fix 55.
+- **apps/spiral, hopac default (async) mode: partial evaluation and codegen in 555 s**, the same 2,687,696
+  bytes on two runs, 0 errors type-checked as .NET F# (`$CLAUDE_JOB_DIR/tmp/spiral.hopac-default.fsx`).
+  It needed the snapshot-prune trigger made geometric (it ground for hours), the JP watchdog to count
+  evaluation steps as progress (it aborted a busy 2-minute join point body, then the write guard refused the
+  "unstable" run) and the write guard to stop judging stable runs by the size of the file already on disk.
+  Inline-JP mode (`SPIRAL_HOPAC_INLINE_JP=1`) also builds it (879 s); its 7 suite gaps of the morning are closed
+  (the write loop's own `unstable`, FRONTIER fix 56), but async is faster and stays the default.
+- Hopac's output is ~104 KB smaller than single-flight's only because single-flight's variable numbers run to
+  `v146264` (hopac numbers per method); same line and token counts. Method signatures differ in the order of
+  captured variables, and the comparison base (`spiral.sf.fsx`, 03:48) predates the `listm'.exists'` change.
+- Runaway inline recursion: a rustc-style `error[EJP0040]` in both cores (span, repeating cycle, entry path,
+  why, fix), registered as terminal; `samples/frontier_runaway_inline_recursion`; `SPIRAL_IF_NESTING_LIMIT`
+  default 1,000. Hopac evaluates ~15-20 ms per inline level, so it needs ~20 s to report (task: per-application
+  overhead); quiet-mode telemetry and a quadratic cycle-guard count are already out of that path.
+- Splitter: a same-source `gear-dev` rerun after an anchor fallback crashed (`Part3817 is outside the plan`);
+  fixed in `output_reset.rs` (README "Same-source rerun"), and `-Full` now starts from an empty `.out` (it built
+  against the previous plan's same-named gears: FS0193). 141/141 gears build.
+
 ## Open, in order
 
-1. **The 5 mega `brzozowski` rows with a wrong oracle** (in progress, 2026-09-30 night). Cause, in *both*
+0. **2026-10-01 (11:30)**: done today: hopac default mode compiles apps/spiral end to end (attempt 19 wrote
+   the 2,687,696-byte output; 555 s quiet); single-flight restore and `frontier_runaway_inline_recursion` blessed
+   (4 x error, `SPIRAL_IF_NESTING_LIMIT` default 1,000). The 08:56 hopac suite had 10 load-induced residual
+   changes (race 34's variable-numbering face, fixed: replay may not draw from a direct block's counter) and 2
+   load stalls.
+   **Afternoon (14:50):** the fresh-process hopac suite `runs/hopac-20261001-140839` equals the 05:12 baseline
+   row for row (every residual hash), except the runaway fixture, whose hopac rows are now honestly
+   `timeout` (the harness scores a core's `BuildFile stalled` as a timeout; it used to pass as `error`).
+   Fixed on the way: fix 56 (the type-aware op replay ran unmarked as replay code: a duplicated statement;
+   the replay driver now marks its whole run), the unified `ArtifactWriteDecision` (inline mode's silent rows
+   compile), per-node costs (interned digests, lazy visit trace). **The promotion criterion (AGENTS.md) is met
+   except the runaway fixture's 4 rows**, which need hopac faster per inline application. Open, in order:
+   - **warm processes** (FRONTIER fix 57): a whole suite compiled 12x faster in one process per worker
+     (186 s vs 2,295 s), 1,054/1,089 rows unchanged; it needs a per-build session for the join point
+     machinery (work items, cells, deadlines, the terminal-failure latch): point resets were not enough;
+   - hopac per-application overhead (~15 ms per inline level; the runaway fixture's hopac rows time out). Root
+     found 18:20: at 64 re-entries of one node (`EvalFallbackPolicy.warnReentry`, a quarter of the parallel
+     limit 256) `term_core_impl` logs `EJP0011W term re-entry hot` and requests sequential mode; from then on
+     the visit ledger and term-cycle fuse run on every entry, the fuse trips, and each entry pays replay
+     registration, forced drains and contract pins. A progressing inline recursion is not a cycle: make the
+     warning require no-progress evidence (no new statement in the block, or `dynamicIfDepth` growing), then
+     a full suite (the same policy guards real cycles);
+   - race 34's general fix (a per-evaluation replay store) and whole-subtree replay registration (~12%);
+   - (done 17:13) the split loop works again: `gear-dev -Full` built 141/141 gears and the host after two
+     fixes (same-source reruns; `-Full` starts from an empty `.out`). `scripts/gear-dev.ps1` for core edits;
+   - before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
+1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
    cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which
    top-down code rejects) and is dropped without a message; `BuildFile` then finds the `main` that the
    entry's `open main` brought in from the dependency (single-flight `file_build` fold + `Map.tryFind "main"`;

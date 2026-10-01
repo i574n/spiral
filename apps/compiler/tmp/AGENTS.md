@@ -6,10 +6,10 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 
 | | single-flight | hopac |
 |---|---|---|
-| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced (2026-09-30), 10-30x slower than single-flight on the mega roots |
+| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced except the 4 rows of `frontier_runaway_inline_recursion`, which time out (2026-10-01), 10-30x slower than single-flight on the mega roots |
 | Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_HOPAC` side of each section pair |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
-| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md) | race 34 (FRONTIER.md: replay values keyed per AST node), speed, and `apps/spiral`: type checking passes, partial evaluation leaves 2 join points pending (`read_link`), codegen then waits on an unfilled cell (NEXT.md). Single-flight's features since the shared base `12f52a1` are ported. |
+| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md) | speed (~15 ms per inline application; the core library re-parsed by every fresh process) and race 34's general fix (a per-evaluation replay store). `apps/spiral` compiles since 2026-10-01 (555 s, 0 type errors, the same 874 methods/closures as single-flight; FRONTIER.md fix 55). Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |
 
 Switching lanes is only a build/test argument: `-Mode single-flight` or `-Mode hopac`. Both binaries
@@ -63,7 +63,8 @@ Timeouts are deliberately small (frontier/examples/smoke 20 s, contracts 30 s, m
 core library is warm, a small sample compiles in well under a second in single-flight, so anything slower
 is a hang. A fresh hopac process needs ~5-7 s for a frontier fixture (up to ~11 s under parallel load,
 hence 20 s rather than 15), and the host gives the core a deadline 3 s before the job timeout, after
-which the core reports `BuildFile stalled: ... last_stage=<stage>` as an `error` row instead of hanging.
+which the core reports `BuildFile stalled: ... last_stage=<stage>` instead of hanging. The harness scores that
+report as a `timeout` (with the stall message as its detail), so it never matches an expected rejection.
 Override with `-TimeoutSec` only for deliberate profiling.
 
 Hopac knobs (environment): `SPIRAL_HOPAC_WORKERS` and `SPIRAL_DOP` (set both to 1 for deterministic
@@ -75,12 +76,20 @@ otherwise 15 min), `SPIRAL_LEGACY_JOIN_HEURISTICS=1` (old EJP0019/EJP0021 join l
 unsound, FRONTIER.md fix 22), `SPIRAL_DIAG_QUIET=1` (skip the diagnostic JSONL rows and console projections, ~20% of a compile;
 `scripts/test.ps1` sets it unless already set, so set `0` to keep them in a suite run),
 `SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>` (if type checking is still pending
-after that long, print every package's unfilled type-check promises to stderr). Debugging workflow:
-`lanes/hopac/FRONTIER.md`, "The fast loop".
+after that long, print every package's unfilled type-check promises to stderr),
+`SPIRAL_HOPAC_INLINE_JP=1` (evaluate join points inline from the start; builds apps/spiral too),
+`SPIRAL_DEBUG_PUSH=<text>` (print every statement partial evaluation appends whose rendering starts with the
+text, e.g. `TyUnionBox`, with its block and managed stack: finds which path emitted a duplicated statement). Debugging workflow: `lanes/hopac/FRONTIER.md`, "The fast loop".
 
-In hopac mode every job runs in its own compiler process (`-FreshProcess`, on by default there), because
-the Hopac core currently serves only one `BuildFile` per process. Serving many builds from one warm
-process, as single-flight does, is itself a hopac milestone: once it works, run with `-FreshProcess:$false`.
+Both cores: `SPIRAL_IF_NESTING_LIMIT=<n>` (default 1,000): dynamic `if` branches nested on one evaluation
+path before partial evaluation stops with `error[EJP0040]`, a rustc-style report of the runaway inline
+recursion (span, repeating cycle, entry path, the join-point fix). A quiet build whose output the hopac write
+guard refuses says why in its `FatalError` and keeps the text in `%TEMP%/spiral-rejected/`.
+
+In hopac mode every job runs in its own compiler process (`-FreshProcess`, on by default there). The Hopac
+core can serve many `BuildFile`s from one process, and a whole suite then compiles ~12x faster
+(`-FreshProcess:$false`), but some per-build join point state still leaks into the next build (FRONTIER.md
+fix 57), so warm runs are an experiment until that is keyed per request.
 
 ## Advancing the hopac lane
 
@@ -148,3 +157,7 @@ commit the outputs the compiler writes next to it. Changes to the single-flight 
 Hopac replaces single-flight as the default when `-Suite all` shows no `missing` rows, all native
 columns agree, every row returns (`ok`, not `emitted`), and `apps/spiral` compiles. Until then
 single-flight stays the oracle and the lane that ships Rust/Delphi output.
+
+Status 2026-10-01 (`runs/hopac-20261001-150913`): met except 4 `missing` rows, the runaway fixture's: hopac
+reaches the `EJP0040` report in ~20 s, past the frontier deadline (single-flight: 3-11 s). Native columns
+agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles. What is left is speed.

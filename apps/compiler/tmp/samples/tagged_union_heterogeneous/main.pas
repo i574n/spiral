@@ -15,14 +15,10 @@ begin
 end;
 function method0(v0: TUS0): LongInt;
 var
-  v1: LongInt;
   v2: Boolean;
+  v1: LongInt;
 begin
   case v0.tag of
-      0: begin // Hit
-          v1 := v0.c0_0;
-          Result := v1;
-      end;
       1: begin // Flag
           v2 := v0.c1_0;
           if v2 then begin
@@ -30,6 +26,10 @@ begin
           end else begin
               Result := 4;
           end;
+      end;
+      0: begin // Hit
+          v1 := v0.c0_0;
+          Result := v1;
       end;
   end;
 end;

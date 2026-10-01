@@ -101,14 +101,14 @@ int32_t main(){
     
     
     switch (v5->tag) {
-        case 1: { // StopA
+        case 0: { // A
             
             
             UHDecref0(v5);
             return 0l;
             break;
         }
-        case 0: { // A
+        case 1: { // StopA
             
             
             UHDecref0(v5);

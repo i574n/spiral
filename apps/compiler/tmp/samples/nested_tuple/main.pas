@@ -28,9 +28,9 @@ var
   v6: LongInt;
   v7: LongInt;
 begin
-  v4 := v3 + v2;
-  v5 := v4 + v1;
-  v6 := v5 + v0;
+  v4 := v0 + v1;
+  v5 := v4 + v2;
+  v6 := v5 + v3;
   v7 := v6 - 10;
   Result := v7;
 end;
@@ -49,7 +49,7 @@ begin
   v2 := tmp5.f1;
   v3 := tmp5.f2;
   v4 := tmp5.f3;
-  Result := method1(v4, v3, v2, v1);
+  Result := method1(v1, v2, v3, v4);
 end;
 begin
   Halt(SpiralMain);

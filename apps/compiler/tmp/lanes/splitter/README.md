@@ -256,6 +256,22 @@ the next emission anchors to it. Still open:
   anchored gear differs from its own, so straddling shards never form. Changing the majority vote alone
   just cascades the other way.
 
+**Same-source rerun after a renaming emission (2026-10-01).** The anchored numbers can exceed the plan's
+ids (a fresh number above every previous one), so after such an emission `Part3817.fsproj` exists for a
+3,817-shard plan (ids 0-3816). A second `gear-dev -Force` on the same core failed with `spiral-split error:
+Part3817 is outside the plan (3817 entries)`: `prepare_output_root` (`output_reset.rs`) resumed the
+`Part*.fsproj` files whenever the emission-input identity matched, but `apply_stable_names` had already
+renamed them, names and contents, so they were renamed a second time. Sources already had the rule (a
+`gears.tsv` in the directory means gear emission rewrote it, so emit afresh); projects now follow it too.
+gear-dev printed nothing: the splitter's output goes through `Out-Host`, so a redirected run shows only the
+`spiral-split gears failed` throw (capture with `*>&1`).
+
+The renumbered plan then failed to build, even with `-Full`: `FS0193 ... from compilation unit
+'SpiralCompilerGear0018' did not contain ... 'WorkItem`4'`. `-Full` deleted the anchors but kept `.out`, the
+outputs and surface copies of the previous plan's gears, whose names the new plan reuses for other contents,
+so consumers compiled against stale assemblies. `-Full` now starts from an empty `.out`: 141/141 gears and
+the host built (1,044 s).
+
 **FS2014 in Debug** (`duplicate entry '<index>__debug@21-12' in method table`): an F# compiler naming
 collision (SDK 11.0.100-rc.1). In Debug, calls to the SRTP inline `index` (`let inline index d =
 (^a : (member Index: ^b) d)`, ParserCombinators) are not inlined but emitted as `<name>__debug@<line>-<n>`

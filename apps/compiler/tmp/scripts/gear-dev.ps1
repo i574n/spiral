@@ -49,7 +49,13 @@ $clock = [Diagnostics.Stopwatch]::StartNew()
 # adding a declaration rebuilds the gears around it instead of renumbering every later part. -Full re-plans
 # from scratch (contiguous numbering, fresh packing).
 $anchors = Join-Path $root 'anchors.tsv'
-if ($Full) { Remove-Item -LiteralPath $anchors -ErrorAction SilentlyContinue }
+if ($Full) {
+    Remove-Item -LiteralPath $anchors -ErrorAction SilentlyContinue
+    # -Full rebuilds every gear anyway; outputs and surface copies of the previous plan's gears (same names,
+    # other contents once the plan is renumbered) made consumers compile against stale assemblies: FS0193
+    # "... from compilation unit 'SpiralCompilerGear0018' did not contain ... 'WorkItem`4'" (2026-10-01).
+    Remove-Item -LiteralPath (Join-Path $build '.out') -Recurse -Force -ErrorAction SilentlyContinue
+}
 if (Test-Path -LiteralPath $anchors) { $env:SPIRAL_GEAR_ANCHORS = $anchors } else { Remove-Item Env:SPIRAL_GEAR_ANCHORS -ErrorAction SilentlyContinue }
 & $splitter gears $core $emit --threads ([Environment]::ProcessorCount) --assembly-overlay-root $overlay | Select-Object -Last 1 | Out-Host
 if ($LASTEXITCODE -ne 0) { throw 'spiral-split gears failed' }

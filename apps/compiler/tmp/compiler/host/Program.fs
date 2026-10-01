@@ -131,6 +131,20 @@ module Program =
     let private sameUri (a : string) (b : string) =
         String.Equals(normalizeUri a, normalizeUri b, StringComparison.OrdinalIgnoreCase)
 
+    /// The kind (tools match on it), the message as written (a rustc-style report starts with `error[CODE]:`),
+    /// then the evaluation trace, innermost first and indented. `%A` printed the anonymous record: quotes,
+    /// escaped newlines, `trace = [...]`.
+    let private renderTracedError (message : string) (trace : string list) =
+        let message = "TracedError: " + (if isNull message then "" else message.TrimEnd())
+        match trace with
+        | [] -> message
+        | frames ->
+            let frames =
+                frames
+                |> List.map (fun (frame : string) -> "  " + (if isNull frame then "" else frame.TrimEnd().Replace("\n", "\n  ")))
+                |> String.concat "\n"
+            message + "\ntrace (innermost first):\n" + frames
+
     let private diagnosticFor uri = function
         | TypeErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
             Some $"TypeErrors: %A{x.errors}"
@@ -143,7 +157,7 @@ module Program =
             Some $"TokenizerErrors: %A{x.errors}"
         | PackageErrors x when not (List.isEmpty x.errors) ->
             Some $"PackageErrors ({x.uri}): %A{x.errors}"
-        | TracedError x -> Some $"TracedError: %A{x}"
+        | TracedError x -> Some (renderTracedError x.message x.trace)
         | _ -> None
 
     /// A diagnostic about some other file (e.g. an imported package) that explains a later FatalError.

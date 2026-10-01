@@ -602,6 +602,9 @@ module spiral_compiler =
             let private gate = obj()
             let private slotByIdentity = System.Collections.Generic.Dictionary<InternedTextIdentity,int64>()
             let private textBySlot = System.Collections.Generic.Dictionary<int64,string>()
+            // The digest is a function of (kind, text): computed once per slot. Hashing it on every intern, inside this
+            // global lock, was ~15% of a hopac evaluation thread (sites and shapes are interned on every node entry).
+            let private digestBySlot = System.Collections.Generic.Dictionary<int64,ContentDigest>()
             let mutable private nextSlot = 0L
 
             let intern<'Kind> kindTag (value:string) : InternedTextId<'Kind> =
@@ -610,16 +613,15 @@ module spiral_compiler =
                     { kindTag = kindTag
                       value = normalized }
                 lock gate (fun () ->
-                    let slot =
-                        match slotByIdentity.TryGetValue identity with
-                        | true, existing -> existing
-                        | false, _ ->
-                            nextSlot <- nextSlot + 1L
-                            slotByIdentity.[identity] <- nextSlot
-                            textBySlot.[nextSlot] <- normalized
-                            nextSlot
-                    { slot = slot
-                      digest = ContentDigest.ofText (FastRuntimeFormat.format "interned-kind:%u" [| box kindTag |]) normalized })
+                    match slotByIdentity.TryGetValue identity with
+                    | true, existing -> { slot = existing; digest = digestBySlot.[existing] }
+                    | false, _ ->
+                        nextSlot <- nextSlot + 1L
+                        let digest = ContentDigest.ofText (FastRuntimeFormat.format "interned-kind:%u" [| box kindTag |]) normalized
+                        slotByIdentity.[identity] <- nextSlot
+                        textBySlot.[nextSlot] <- normalized
+                        digestBySlot.[nextSlot] <- digest
+                        { slot = nextSlot; digest = digest })
 
             let slot (identity:InternedTextId<'Kind>) = identity.slot
             let digest (identity:InternedTextId<'Kind>) = identity.digest
@@ -9565,6 +9567,8 @@ module spiral_compiler =
         let [<Literal>] EJP0034 = "[spiral_compiler] EJP0034"
         /// EJP0035: Required codegen JP body was operationally cancelled without materialization.
         let [<Literal>] EJP0035 = "[spiral_compiler] EJP0035"
+        /// EJP0040: Partial evaluation nested more dynamic `if` branches than the limit (runaway inline recursion).
+        let [<Literal>] EJP0040 = "[spiral_compiler] EJP0040"
 
         // MIGRATION / destructive domain migration migration phase.
         // Error text is admitted at one explicit ingress boundary, converted to a
@@ -9590,6 +9594,7 @@ module spiral_compiler =
             | DiagnosticEJP0033
             | DiagnosticEJP0034
             | DiagnosticEJP0035
+            | DiagnosticEJP0040
 
         type DiagnosticCauseId =
             | DiagnosticJoinPointAnnotationMismatch
@@ -9615,6 +9620,7 @@ module spiral_compiler =
             | DiagnosticRecordMapSemanticTerminal
             | DiagnosticCodegenBodyMalformed
             | DiagnosticRequiredCodegenBodyUnmaterialized
+            | DiagnosticRunawayInlineUnroll
 
         type DiagnosticDispositionId =
             | DiagnosticRetryAfterCacheInvalidation
@@ -9746,6 +9752,7 @@ module spiral_compiler =
             | DiagnosticEJP0033 -> EJP0033
             | DiagnosticEJP0034 -> EJP0034
             | DiagnosticEJP0035 -> EJP0035
+            | DiagnosticEJP0040 -> EJP0040
 
         let codeIdText = function
             | DiagnosticEJP0002 -> "EJP0002"
@@ -9768,6 +9775,7 @@ module spiral_compiler =
             | DiagnosticEJP0033 -> "EJP0033"
             | DiagnosticEJP0034 -> "EJP0034"
             | DiagnosticEJP0035 -> "EJP0035"
+            | DiagnosticEJP0040 -> "EJP0040"
 
         let causeText = function
             | DiagnosticJoinPointAnnotationMismatch -> "join_point_annotation_mismatch"
@@ -9793,6 +9801,7 @@ module spiral_compiler =
             | DiagnosticRecordMapSemanticTerminal -> "record_map_semantic_terminal"
             | DiagnosticCodegenBodyMalformed -> "codegen_body_malformed"
             | DiagnosticRequiredCodegenBodyUnmaterialized -> "required_codegen_body_unmaterialized"
+            | DiagnosticRunawayInlineUnroll -> "runaway_inline_unroll"
 
         let dispositionText = function
             | DiagnosticRetryAfterCacheInvalidation -> "retry_after_cache_invalidation"
@@ -10047,7 +10056,9 @@ module spiral_compiler =
 
         let classifyIngress (message:string) : DiagnosticIngress =
             let facts = classifyFacts message
-            if has "Cannot construct an instance of a void type" message
+            if hasCode DiagnosticEJP0040 message || has "error[EJP0040]" message then
+                classified facts DiagnosticEJP0040 DiagnosticRunawayInlineUnroll DiagnosticTerminalSemantic
+            elif has "Cannot construct an instance of a void type" message
                || hasAll ["void type"; "Cannot construct"] message then
                 classified facts DiagnosticEJP0013 DiagnosticVoidInstanceConstruction DiagnosticRetryAfterCacheInvalidation
             elif hasAny [
@@ -10156,6 +10167,7 @@ module spiral_compiler =
             | DiagnosticNativePromiseFailedClosed -> "Native promise failure terminal reached (no legacy retry)"
             | DiagnosticRecordMapSemanticTerminal -> "RecordMap expected-record semantic terminal reached (no legacy retry)"
             | DiagnosticCodegenBodyMalformed -> "Codegen join-point body cell resolved to a malformed producer state (no legacy retry)"
+            | DiagnosticRunawayInlineUnroll -> "Partial evaluation unrolled an inline recursion past the dynamic if nesting limit (a program error: no retry)"
             | DiagnosticRequiredCodegenBodyUnmaterialized -> "Required codegen join-point body was cancelled before any material body became authoritative"
     
 
@@ -18455,6 +18467,11 @@ module spiral_compiler =
         }
 
 
+        /// The receipt total alone (O(1)): the visit ledger reads it on every node visit, and the full snapshot below
+        /// also computes credit decisions and a progress projection.
+        let semanticWorkReceiptTotal () =
+            CompilerKernelV2.SemanticWorkLedgerAuthority.snapshot () |> CompilerKernelV2.SemanticWorkLedger.counts |> snd |> int64
+
         let semanticWorkLedgerSnapshot () =
             let ledger = CompilerKernelV2.SemanticWorkLedgerAuthority.snapshot ()
             let admitted, receipts = CompilerKernelV2.SemanticWorkLedger.counts ledger
@@ -22322,7 +22339,11 @@ module spiral_compiler =
             | ProgressHudCadenceSubsecond250ms -> "observer_only_native_closure_receipt_pump"
             | ProgressHudCadenceOneSecondFallback -> "1s_line_atomic_metronome"
 
-        let private progressPredictionMinimalCadenceId = ProgressHudCadenceSubsecond250ms
+        // A beat costs ~65 ms of CPU (snapshot projections and durable JSON): at 250 ms that thread was a quarter of a
+        // core on a mega root. Quiet (batch) runs show no HUD, so they beat once a second; the no-work checks it
+        // carries still run, at that pace.
+        let private progressPredictionMinimalCadenceId =
+            if quiet then ProgressHudCadenceOneSecondFallback else ProgressHudCadenceSubsecond250ms
         let private progressPredictionMinimalCadenceMs = progressHudCadenceMs progressPredictionMinimalCadenceId
 
         // MIGRATION: refresh the interactive HUD every 250ms, but do not append a
@@ -22819,6 +22840,17 @@ module spiral_compiler =
                 | TerminalFailureExitOpen -> false
                 | TerminalFailureExitRequested _
                 | TerminalFailureExitCommitted _ -> true)
+
+        /// A process serving BuildFile after BuildFile (the host's --batch): one build's requested terminal failure
+        /// must not outlive it. Left latched, every later build's join point workers cancelled at their first
+        /// operation (JpTerminalFailureRunningCutoverCancellation). A committed exit is the process ending: kept.
+        let terminalFailureExitResetForNewBuild () =
+            lock terminalFailureLatchGate (fun () ->
+                match terminalFailureExitLatch with
+                | TerminalFailureExitRequested _ -> terminalFailureExitLatch <- TerminalFailureExitOpen
+                | TerminalFailureExitOpen
+                | TerminalFailureExitCommitted _ -> ()
+                terminalQapDeadlockLatch <- TerminalQapDeadlockUnobserved)
 
         let terminalQapProvenDeadlockMarkObserved () =
             lock terminalFailureLatchGate (fun () ->
@@ -45322,9 +45354,8 @@ module spiral_compiler =
                 | EvalVisitAdaptiveProductivityWindow(_, value) -> value
             let stableKey = key kind generation sourceKey
             let semanticSnapshot = DiagJson.semanticFactBridgeSnapshot()
-            let semanticWorkSnapshot = DiagJson.semanticWorkLedgerSnapshot()
             let semanticFactCount = semanticSnapshot.factCount
-            let workUnitReceiptCount = semanticWorkSnapshot.receipts
+            let workUnitReceiptCount = DiagJson.semanticWorkReceiptTotal ()
             let cellRevision = if System.Object.ReferenceEquals(cellRevision,null) then "" else cellRevision
             let nowMs = System.Environment.TickCount64
             let initial =
@@ -45520,27 +45551,29 @@ module spiral_compiler =
                     DiagJson.emit (FastRuntimeFormat.format "{\"kind\":\"term_reentry_fuse\",\"code\":%s,\"key\":%s,\"site\":%s,\"depth\":%d,\"gen\":%d,\"re\":%d,\"max_re\":%d,\"trace_lines\":%d,\"root_promise_status\":%s,\"root_complete_await_contract_du\":%s,\"root_complete_exit_policy_du\":%s,\"root_complete_collapse_decision_du\":\"RootCompleteCollapse(EmitStructuredSemanticErrorExitOne|promise=term_reentry_fuse|payload=hard_cycle_fuse)\",\"semantic_diagnosis\":%s,\"semantic_error_payload\":%s,\"global_fuse_arbitration_du\":%s,\"global_fuse_live_replay_evidence_present\":false,\"global_fuse_native_consumer_attached\":false,\"global_fuse_cap_exceeded\":%b,\"fuse_state_du\":\"TermCycleFuseTripped\"}" [| box (esc DiagnosticClassifier.EJP0011); box (esc evidence.key); box (esc evidence.site); box evidence.depth; box evidence.generation; box evidence.reentry; box evidence.maxReentry; box evidence.trace.Length; box (esc "RootPromiseFailed(term_reentry_fuse)"); box (esc "RootCompleteAwaitFailedClosed(term_reentry_fuse)"); box (esc "observer_only_semantic_failure_requires_native_root_complete_boundary(term_reentry_fuse)"); box (esc "SemanticDiagnosis(TermReentryFuse|span=first_trace_site|message=hard_cycle_requires_native_parent_callback_or_terminal_collapse)"); box (esc fusePayload); box (esc "hard_cycle_fuse_wait_for_native_arbitration_before_EJP0011"); box (evidence.maxReentry > 0 && evidence.reentry > evidence.maxReentry) |])
                 with _ -> ()
 
-        let observePrefetchVisitWithTrace (kind: EvalVisitKind) (key: string) (site: string) (depth: int) (gen: int) (cellRevision: string) trace : EvalVisitAdmission =
+        // `traceOf` compacts the evaluation trace (up to 4,096 frames): called only for an emitted row or a trip, not on
+        // every visit of every node.
+        let observePrefetchVisitWithTrace (kind: EvalVisitKind) (key: string) (site: string) (depth: int) (gen: int) (cellRevision: string) (traceOf: unit -> _) : EvalVisitAdmission =
             let budget = 3
             let basisText = evalVisitBudgetBasisText (EvalVisitAdaptiveProductivityWindow(budget, 1000L))
             match EvalVisitLedger.observe kind gen key cellRevision budget with
             | (EvalVisitAdmitted(visitCount, visitBudget, unproductiveStreak, unproductiveAgeMs) as admission) ->
-                let evidence = evidenceFor kind key site depth gen visitCount visitBudget trace
                 let visitBucket = visitLog2Bucket visitCount
                 let shouldEmit = prefetchBucketFirst key gen visitBucket
                 let occurrenceCount = 1L
                 if shouldEmit then
+                    let evidence = evidenceFor kind key site depth gen visitCount visitBudget (traceOf ())
                     try
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"term_reentry_prefetch_observation\",\"key\":%s,\"site\":%s,\"depth\":%d,\"gen\":%d,\"stack_guard_scope_du\":\"thread_local_stack_depth\",\"visit_guard_scope_du\":\"process_wide_generation_productivity_ledger\",\"visit_count\":%d,\"visit_log2_bucket\":%d,\"visit_budget\":%d,\"unproductive_streak\":%d,\"unproductive_age_ms\":%d,\"facts_delta\":0,\"work_receipt_delta\":0,\"cell_revision_delta\":0,\"visit_budget_basis_du\":%s,\"trace_lines\":%d,\"occurrence_count\":%d,\"sparse_policy\":\"key_generation_log2_bucket_exact_first_only\",\"fuse_state_du\":\"TermCycleFuseOpen\",\"admission_du\":\"EvalVisitAdmitted\",\"terminal_authority\":false,\"single_flight\":1,\"next\":\"prefetch_replay_until_productivity_window_exhausted\"}" [| box (esc evidence.key); box (esc evidence.site); box evidence.depth; box evidence.generation; box visitCount; box visitBucket; box visitBudget; box unproductiveStreak; box unproductiveAgeMs; box (esc basisText); box evidence.trace.Length; box occurrenceCount |])
                     with _ -> ()
                 admission
             | (EvalVisitProductiveRepeat(visitCount, visitBudget, factsDelta, cellRevisionDelta, workReceiptDelta) as admission) ->
-                let evidence = evidenceFor kind key site depth gen visitCount visitBudget trace
                 let visitBucket = visitLog2Bucket visitCount
                 let shouldEmit = prefetchBucketFirst key gen visitBucket
                 let occurrenceCount = 1L
                 if shouldEmit then
+                    let evidence = evidenceFor kind key site depth gen visitCount visitBudget (traceOf ())
                     try
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"term_reentry_prefetch_observation\",\"key\":%s,\"site\":%s,\"depth\":%d,\"gen\":%d,\"visit_count\":%d,\"visit_log2_bucket\":%d,\"visit_budget\":%d,\"productive_visits\":true,\"unproductive_streak\":0,\"unproductive_age_ms\":0,\"facts_delta\":%d,\"work_receipt_delta\":%d,\"cell_revision_delta\":%d,\"visit_budget_basis_du\":%s,\"trace_lines\":%d,\"occurrence_count\":%d,\"sparse_policy\":\"key_generation_log2_bucket_exact_first_only\",\"admission_du\":\"EvalVisitProductiveRepeat\",\"terminal_authority\":false,\"single_flight\":1,\"next\":\"reset_unproductive_window_and_continue\"}" [| box (esc evidence.key); box (esc evidence.site); box evidence.depth; box evidence.generation; box visitCount; box visitBucket; box visitBudget; box factsDelta; box workReceiptDelta; box cellRevisionDelta; box (esc basisText); box evidence.trace.Length; box occurrenceCount |])
@@ -45550,7 +45583,7 @@ module spiral_compiler =
                 let occurrenceCount, firstExhaustion =
                     DiagJson.sparseLogDecision ("eval_visit_exhausted|" + key) 0L
                 if firstExhaustion && occurrenceCount = 1L then
-                    tripWithTrace kind key site depth gen visitCount visitBudget trace
+                    tripWithTrace kind key site depth gen visitCount visitBudget (traceOf ())
                     try
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"term_reentry_visit_budget_exhausted\",\"key\":%s,\"site\":%s,\"depth\":%d,\"gen\":%d,\"visit_count\":%d,\"visit_budget\":%d,\"productive_visits\":false,\"unproductive_streak\":%d,\"unproductive_age_ms\":%d,\"facts_delta\":0,\"work_receipt_delta\":0,\"cell_revision_delta\":0,\"visit_budget_basis_du\":%s,\"first_exhaustion\":true,\"occurrence_count\":%d,\"guard_scope_du\":\"process_wide_generation_productivity_ledger\",\"admission_du\":\"EvalVisitBudgetExhausted\",\"visit_ledger_disposition_du\":\"RaisedCycleFailure\",\"terminal_authority\":true,\"single_flight\":1,\"next\":\"raise_typed_cycle_failure_after_productivity_window\"}" [| box (esc key); box (esc site); box depth; box gen; box visitCount; box visitBudget; box unproductiveStreak; box unproductiveAgeMs; box (esc basisText); box occurrenceCount |])
@@ -65202,11 +65235,19 @@ module spiral_compiler =
                             | None, x -> x
                             | x, None -> x
                             | Some priorPath, Some nextPath -> Some (evaluatorDependencyAppendUniquePath priorPath nextPath)
+                        // evaluatorDependencyAppendUniquePath returns the prior path itself when it adds no edge, so
+                        // identity answers "changed?" exactly. Comparing the paths structurally walked every edge of a
+                        // node on every re-registration (the hottest frame of apps/spiral's evaluator, attempt 19).
+                        let dependenciesChanged =
+                            match prior.dependencies, nextDependencies with
+                            | None, None -> false
+                            | Some before, Some after -> not (obj.ReferenceEquals(before, after))
+                            | _ -> true
                         let materialChanged =
                             CompilerIdentityKernel.WorkShapeIdOps.slot nextShape <> CompilerIdentityKernel.WorkShapeIdOps.slot prior.shape
                             || nextSource <> prior.source
                             || nextState <> prior.state
-                            || nextDependencies <> prior.dependencies
+                            || dependenciesChanged
                         materialProgressObserved <- materialChanged
                         {
                             prior with
@@ -66767,11 +66808,23 @@ module spiral_compiler =
             DiagJson.emit (
                 FastRuntimeFormat.format "{\"kind\":%s,\"context_node_id\":%d,\"op\":%s,\"detail\":%s,\"arg_states\":%s,\"single_flight\":1,\"next\":%s}" [| box (DiagJson.esc (typeAwareOpReplayScheduleFailureKind failure)); box contextNodeId; box (DiagJson.esc opText); box (DiagJson.esc (typeAwareOpReplayScheduleFailureDetail failure)); box (replayOpArgStatesJson [||] argNodeIds); box (DiagJson.esc (typeAwareOpReplayScheduleFailureNext failure)) |])
 
+        // How deep in replay code this thread is (thunks forced by tryTerm, replay applies). A block records the
+        // depth its direct evaluation started at; replay code may emit only into blocks started at its own depth
+        // or deeper (a join point body it evaluates), never into one an outer evaluation is or was building.
+        let private replayDepth = new System.Threading.ThreadLocal<int>()
+        let enterReplay () = replayDepth.Value <- replayDepth.Value + 1
+        let exitReplay () = replayDepth.Value <- max 0 (replayDepth.Value - 1)
         let tryScheduleTypeAwareOpReplayWithContext (contextNodeId: int) (op: Op) (argNodeIds: int[]) : TypeAwareOpReplayScheduleDisposition option =
             match tryOpContext contextNodeId, typeAwareOpReplayScheduleAfterDefinitionRef.Value with
             | Some sObj, Some f ->
                 try
-                    match f sObj contextNodeId op argNodeIds with
+                    // Replay code, like tryTerm's thunks and the apply replays: unmarked, its `dyn` passed the emit guard
+                    // as if it were the direct evaluator and appended a second copy of a statement the direct
+                    // evaluator emitted (`native_closure_recursive_capture`: `inl ~leaf = Leaf` boxed twice).
+                    let scheduled =
+                        enterReplay ()
+                        try f sObj contextNodeId op argNodeIds finally exitReplay ()
+                    match scheduled with
                     | Choice1Of2 (childNodeId, childShape, reason) ->
                         let reasonId = CompilerKernelV2.OperationalReasonIdOps.create reason
                         if childNodeId = contextNodeId && evaluatorProducerIsResolved EvaluatorTermNode contextNodeId then
@@ -66926,12 +66979,6 @@ module spiral_compiler =
         // appended application is a second copy of one the direct evaluator already emitted (fix 41).
         let private directOwnedScopes = System.Runtime.CompilerServices.ConditionalWeakTable<obj, obj>()
 
-        // How deep in replay code this thread is (thunks forced by tryTerm, replay applies). A block records the
-        // depth its direct evaluation started at; replay code may emit only into blocks started at its own depth
-        // or deeper (a join point body it evaluates), never into one an outer evaluation is or was building.
-        let private replayDepth = new System.Threading.ThreadLocal<int>()
-        let enterReplay () = replayDepth.Value <- replayDepth.Value + 1
-        let exitReplay () = replayDepth.Value <- max 0 (replayDepth.Value - 1)
 
         let enterDirectScope (scope: obj) =
             match directOwnedScopes.TryGetValue scope with
@@ -71081,7 +71128,10 @@ module spiral_compiler =
             | WitnessParentReplayStatusPreservedCacheHandoffProof -> ProofTupleWakeParentReplayStatusPreservedCacheHandoff
             | _ -> ProofTupleWakePendingGraphCommittedTerminal
 
+        // Spliced only into diagnostic rows: quiet mode drops them, and building them was ~20% of a quiet hopac
+        // evaluation thread (forced replay drains, 2026-10-01 profile).
         let pendingGraphProofTupleJsonFields tuple =
+          if DiagJson.quiet then "" else
             let matrix = proofTupleMatrixStatusFor tuple
             let authorityDecision = proofTupleAuthorityDecisionFor tuple
             let compactProjection = proofTupleCompactProjectionFor tuple
@@ -72391,10 +72441,14 @@ module spiral_compiler =
         let private replayTickProofCompactCache =
             System.Collections.Concurrent.ConcurrentDictionary<struct (string * string), string>()
 
+        // Only ever spliced into diagnostic rows, which quiet mode drops: the texts vary per tick, so the cache
+        // misses and both classifications (String.Split over each text) were the hottest frames of a quiet
+        // hopac compile stuck unrolling (2026-10-01 stack dump).
         let rec replayTickProofTupleCompactJsonFields (eventText: string) (reasonText: string) =
             let key = struct (eventText, reasonText)
             let mutable cached = null
-            if replayTickProofCompactCache.TryGetValue(key, &cached) then cached
+            if DiagJson.quiet then ""
+            elif replayTickProofCompactCache.TryGetValue(key, &cached) then cached
             else
                 let fields = replayTickProofTupleCompactJsonFieldsUncached eventText reasonText
                 if replayTickProofCompactCache.Count < 4096 then replayTickProofCompactCache.TryAdd(key, fields) |> ignore
@@ -79958,6 +80012,11 @@ module spiral_compiler =
                       status = frameStatusOfSemanticStatusId statusId
                       cursor = 32
                       payload = FrameLegacySemanticPayload (frameLegacySemanticPayloadId reasonText) }
+                pinTerminalContract event frame
+                // The rest renders the diagnostic row only (replay key, closure id and liveness proof as text): quiet
+                // mode keeps the row's kind and skips the text, ~15% of a quiet hopac evaluation once a global
+                // term-cycle fuse has tripped (every later entry pins a contract here).
+                if DiagJson.quiet then DiagJson.emit "{\"kind\":\"eval_worklist_terminal_contract_pinned_from_status\"}" else
                 // MIGRATION: this status-only wrapper lives before pendingCount/replayQueueDepth in lexical order.
                 // Use already-visible worklist facts so closure-aware terminal authority stays typed without
                 // forward references.
@@ -79981,7 +80040,6 @@ module spiral_compiler =
                         terminalContractReplayEvidence (replayKeyDuText statusReplayKey),
                         terminalContractLivenessEvidence (replayLivenessProofDuText statusLivenessProof))
                     |> terminalContractAuthorityText
-                pinTerminalContract event frame
                 let liveReplayPolicy =
                     match liveReplayTerminalPolicyOfSemanticStatusId statusId with
                     | DeferTerminalWhileLiveReplay -> "defer_terminal_while_live_replay"
@@ -84378,6 +84436,11 @@ module spiral_compiler =
             | ReplayTickDynamicFunctionCarrier -> false
 
         let rec private runReplayDriver (eventId: ReplayTickEventId) =
+            // Everything the driver runs is replay code. Fix 41's emit guard recognizes replay code by this thread's
+            // replay depth, and entry points that did not mark it (the type-aware op replay, fix 56) appended copies
+            // of statements the direct evaluator emitted. Marking the driver covers every path below it.
+            EvalReplayValueStore.enterReplay ()
+            use _replayCode = { new System.IDisposable with member _.Dispose () = EvalReplayValueStore.exitReplay () }
             let event = replayTickEventToString eventId
             let tickEventId = eventId
             let activeDepthAfterEnter =
@@ -88940,7 +89003,7 @@ module spiral_compiler =
                 "materialized_dynamic_join_terminal_beats_forced_orphan_legacy_drain",
                 "forced_orphan_drain_worker_rejected_by_dynamic_join_cooperative_alt_timeout",
                 "dynamic_join_cooperative_alt_timeout_inline_callback",
-                pendingGraphProofTupleJsonFields (proofTupleForDynamicJoinCooperativeAltTimeout (event + ":" + reason))
+                (if DiagJson.quiet then "" else pendingGraphProofTupleJsonFields (proofTupleForDynamicJoinCooperativeAltTimeout (event + ":" + reason)))
             | ForcedDrainDynamicJoinBridgeTailHandoff ->
                 "DynamicJoinBridgeTailHandoff",
                 "DynamicRecordKeyBridgeTail->IVar<DynamicJoinBridgeTailHandoff>",
@@ -88948,7 +89011,7 @@ module spiral_compiler =
                 "materialized_dynamic_join_bridge_tail_beats_forced_orphan_legacy_drain",
                 "forced_orphan_drain_worker_rejected_by_dynamic_join_bridge_tail_handoff",
                 "dynamic_join_bridge_tail_handoff_inline_callback",
-                pendingGraphProofTupleJsonFields (proofTupleForDynamicJoinBridgeTail (event + ":" + reason))
+                (if DiagJson.quiet then "" else pendingGraphProofTupleJsonFields (proofTupleForDynamicJoinBridgeTail (event + ":" + reason)))
             | ForcedDrainNoRootBudgetParentReplayImmediateFill ->
                 "NoRootBudgetParentReplayImmediateFill",
                 "NoRootBudgetParentReplay->IVarFill(NoRootBudgetParentReplayImmediateFill)",
@@ -88956,7 +89019,7 @@ module spiral_compiler =
                 "materialized_terminal_beats_forced_orphan_legacy_drain_and_no_root_budget_parent_replay",
                 "forced_orphan_drain_worker_rejected_by_no_root_budget_parent_replay_immediate_fill",
                 "no_root_budget_parent_replay_immediate_fill_inline_callback",
-                pendingGraphProofTupleJsonFields (proofTupleForNoRootBudgetParentReplayImmediateFill (event + ":" + reason))
+                (if DiagJson.quiet then "" else pendingGraphProofTupleJsonFields (proofTupleForNoRootBudgetParentReplayImmediateFill (event + ":" + reason)))
             | ForcedDrainObservedPinnedTerminalContract ->
                 "ObservedPinnedTerminalContract",
                 "PinnedTerminalContract->IVar<TerminalPayload>",
@@ -88964,7 +89027,7 @@ module spiral_compiler =
                 "materialized_terminal_beats_forced_orphan_legacy_drain_and_observed_pinned_contract",
                 "forced_orphan_drain_worker_rejected_by_observed_pinned_terminal_contract",
                 "observed_pinned_terminal_contract_driver",
-                pendingGraphProofTupleJsonFields (proofTupleForObservedPinnedImmediateFill (event + ":" + reason))
+                (if DiagJson.quiet then "" else pendingGraphProofTupleJsonFields (proofTupleForObservedPinnedImmediateFill (event + ":" + reason)))
             | ForcedDrainIdleCrossKindActiveTySidecar ->
                 "IdleCrossKindActiveTySidecarTimeout",
                 "IdleCrossKindActiveTySidecar->IVar<IdleCrossKindActiveTySidecarTimeout>",
@@ -88972,7 +89035,7 @@ module spiral_compiler =
                 "materialized_terminal_beats_forced_orphan_legacy_drain",
                 "forced_orphan_drain_worker_rejected_by_idle_cross_kind_terminal_payload",
                 "idle_cross_kind_active_ty_sidecar_terminal_driver",
-                pendingGraphProofTupleJsonFields (proofTupleForIdleCrossKindSidecarDrain (event + ":" + reason))
+                (if DiagJson.quiet then "" else pendingGraphProofTupleJsonFields (proofTupleForIdleCrossKindSidecarDrain (event + ":" + reason)))
 
         let forceReplayDriverDrainPassTagged (ownerDebtDrainTriggerId: OwnerDebtDrainTriggerId) (forcedDrainTerminalAuthorityId: ForcedDrainTerminalAuthorityId option) (event: string) (reasonId: CompilerKernelV2.OperationalReasonId) (attempts: int) =
             let tickEventId = ReplayTickEventForcedDrain(CompilerKernelV2.OperationalReasonIdOps.create event)
@@ -93428,6 +93491,9 @@ module spiral_compiler =
     // quadratic in its depth (a contract compiled 8-16x slower than single-flight); nothing reads it on the hot path.
     type EvalNodePath = private {
         nodes : obj list
+        /// Occurrences on the path by identity hash (entries by reference, most recent first): the re-entry count
+        /// without walking `nodes`, which a node not on the path (every leaf, re-entered after its exit) scanned whole.
+        occurrences : Map<int, (obj * int) list>
         pathRef : Lazy<CompilerIdentityKernel.ContentDigest>
     }
 
@@ -93443,6 +93509,10 @@ module spiral_compiler =
     type LangEnv = {
         trace : Trace
         traceBudget : TraceBudgetState
+        /// Dynamic `if` branches enclosing this evaluation. In the environment, not on the thread: a declared
+        /// application suspends and resumes as a new work unit, so the native stack restarts every few levels.
+        /// Carried into closure and join point bodies as single-flight's thread-local count is; 0 only at the root.
+        dynamicIfDepth : int
         recursion : RecursionContext
         bigStack : BigStackExecutionContext
         evalNodePath : EvalNodePath
@@ -138028,22 +138098,34 @@ module spiral_compiler =
     /// traversal path is an immutable value carried by the evaluator.  Work
     /// stealing therefore cannot reset the guard merely by moving to another
     /// host thread.
+    /// Evaluation steps (node entries), for the JP watchdog: a join point body that evaluates for minutes is busy,
+    /// not stalled. A plain increment: concurrent entries may lose counts, the watchdog only asks whether it moved.
+    module EvalProgress =
+        let mutable steps = 0L
+
     module EvalCycleGuard =
         open System.Runtime.CompilerServices
 
         let empty =
             { nodes = []
+              occurrences = Map.empty
               pathRef = lazy (CompilerIdentityKernel.ContentDigest.ofText "eval-node-path" "empty") }
 
-        let private nodeCount node path =
-            path.nodes
-            |> List.filter (fun existing -> obj.ReferenceEquals(existing, node))
-            |> List.length
+        // Called on every node entry: O(log depth). Scanning the path made inline unrolling quadratic in depth.
+        let private nodeCount (node: obj) path =
+            match Map.tryFind (RuntimeHelpers.GetHashCode node) path.occurrences with
+            | Some entries ->
+                entries
+                |> List.tryFind (fun (existing, _) -> obj.ReferenceEquals(existing, node))
+                |> Option.map snd
+                |> Option.defaultValue 0
+            | None -> 0
 
         /// Returns the advanced path and the re-entry count.  Callers must thread
         /// the returned path into recursive evaluation; no ambient ThreadLocal is
         /// consulted or mutated.
         let enter (path:EvalNodePath) (node:obj) : EvalNodePath * int =
+            EvalProgress.steps <- EvalProgress.steps + 1L
             let nextNodes = node :: path.nodes
             let count = nodeCount node path + 1
             let pathRef =
@@ -138052,7 +138134,9 @@ module spiral_compiler =
                     |> List.map (RuntimeHelpers.GetHashCode >> string)
                     |> String.concat "/"
                     |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path")
-            { nodes = nextNodes; pathRef = pathRef }, count
+            let hash = RuntimeHelpers.GetHashCode node
+            let entries = Map.tryFind hash path.occurrences |> Option.defaultValue []
+            { nodes = nextNodes; occurrences = Map.add hash ((node, count) :: entries) path.occurrences; pathRef = pathRef }, count
 
         let exit (path:EvalNodePath) (node:obj) : EvalNodePath =
             let rec removeFirst acc = function
@@ -138060,13 +138144,25 @@ module spiral_compiler =
                 | head :: tail when obj.ReferenceEquals(head, node) -> List.rev acc @ tail
                 | head :: tail -> removeFirst (head :: acc) tail
             let nextNodes = removeFirst [] path.nodes
+            let hash = RuntimeHelpers.GetHashCode node
+            let nextOccurrences =
+                match Map.tryFind hash path.occurrences with
+                | Some entries ->
+                    let rec dropFirst acc = function
+                        | [] -> List.rev acc
+                        | ((existing: obj), _) :: rest when obj.ReferenceEquals(existing, node) -> List.rev acc @ rest
+                        | entry :: rest -> dropFirst (entry :: acc) rest
+                    match dropFirst [] entries with
+                    | [] -> Map.remove hash path.occurrences
+                    | remaining -> Map.add hash remaining path.occurrences
+                | None -> path.occurrences
             let pathRef =
                 lazy (
                     nextNodes
                     |> List.map (RuntimeHelpers.GetHashCode >> string)
                     |> String.concat "/"
                     |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path")
-            { nodes = nextNodes; pathRef = pathRef }
+            { nodes = nextNodes; occurrences = nextOccurrences; pathRef = pathRef }
 
         let snapshotHashes n (path:EvalNodePath) =
             path.nodes
@@ -149493,7 +149589,9 @@ module spiral_compiler =
                 add (sprintf "%s--> %s:%d:%d" pad p (l + 1) (c + 1))
                 add (sprintf "%s |" pad)
                 add (sprintf "%s | %s" number ((lineText p l).TrimEnd()))
-                add (sprintf "%s | %s^ reached %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") (count p l))
+                // Counted at this exact position: a line can hold several frames of one level (the `if` and the call).
+                let here = frames |> List.filter (fun (p', l', c') -> p' = p && l' = l && c' = c) |> List.length
+                add (sprintf "%s | %s^ entered %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") here)
                 add (sprintf "%s |" pad)
             | [] -> ()
             // The cycle is what repeats on the scale of the hottest frame; a frame that recurs a few times (the
@@ -149523,15 +149621,36 @@ module spiral_compiler =
             add (sprintf "  = help: %s" limitNote)
             sb.ToString().TrimEnd()
 
-    /// Nesting of dynamic `if` branches on the evaluating path (hopac `if_core_impl`), as in single-flight. An
-    /// AsyncLocal, not a ThreadLocal: evaluation moves onto new big-stack threads, which inherit the depth; join
-    /// point work on dedicated workers starts from zero (recursion through a join point runs at run time).
+    /// `SPIRAL_DEBUG_PUSH=<text>`: print every statement partial evaluation appends whose rendering contains the
+    /// text, with the block it goes to and the managed stack — to find which path emitted a duplicated statement.
+    module PevalDebugPush =
+        let private target =
+            match System.Environment.GetEnvironmentVariable "SPIRAL_DEBUG_PUSH" with
+            | null | "" -> None
+            | text -> Some text
+        let note (op: obj) (block: obj) =
+            match target with
+            | None -> ()
+            | Some text ->
+                // The head of the rendering only: a join point op renders its whole body.
+                let rendered = sprintf "%A" op
+                if rendered.Substring(0, min 160 rendered.Length).Contains text then
+                    let stack =
+                        System.Diagnostics.StackTrace(1, false).ToString().Split('\n')
+                        |> Array.map (fun line -> line.Trim().Split('(').[0].Replace("at Polyglot.spiral_compiler", ""))
+                        |> Array.filter (fun line -> line.Length > 0)
+                        |> Array.truncate 40
+                        |> String.concat "\n    "
+                    let op = rendered.Replace('\n', ' ')
+                    eprintfn "[debug_push] block=%d thread=%d op=%s\n    %s" (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode block) System.Threading.Thread.CurrentThread.ManagedThreadId (op.Substring(0, min 240 op.Length)) stack
+
+    /// Limit on dynamic `if` branches nested on one evaluation path (hopac `if_core_impl`; the depth is
+    /// `LangEnv.dynamicIfDepth`), as in single-flight.
     module DynamicIfNesting =
         let limit =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
             | true, n when n > 0 -> n
-            | _ -> 5000
-        let depth = System.Threading.AsyncLocal<int>()
+            | _ -> 1000
 
     /// What a stalled build waits on in partial evaluation, for the BuildFile stall message: `peval` installs a
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
@@ -155811,6 +155930,7 @@ module spiral_compiler =
                             next = "continue_without_false_deadline"
                         }
                     false
+
                 | Some(ageMs, budgetMs, budgetPolicy, deadlineDisposition) when jp_execution_deadline_claims.TryAdd(jobId, 0uy) ->
                     let workUnitId = CompilerKernelV2.WorkUnitIdOps.digestText item.workUnit
                     let policyText = jpWorkExecutionBudgetPolicyText budgetPolicy
@@ -158217,6 +158337,7 @@ module spiral_compiler =
 
 
         let mutable jp_watchdog_last_slow_trip_gen = -1L
+        let mutable jp_watchdog_last_steps = -1L
         
         
 
@@ -158238,6 +158359,13 @@ module spiral_compiler =
                                             // The watchdog thread is the only periodic path guaranteed to run
                                             // in redirected builds; UI/extra-provider callbacks are optional.
                                             jpEmitInFlightSlowUnits now
+                                            // Evaluation that is still stepping is progress: only waiting with nothing evaluating is a stall
+                                            // (apps/spiral: a 2-minute declared body tripped EJP0030 and its sequential recompute left the
+                                            // output untrusted, though it type-checks and reproduces byte for byte).
+                                            let steps = EvalProgress.steps
+                                            if steps <> jp_watchdog_last_steps then
+                                                jp_watchdog_last_steps <- steps
+                                                jp_progress_clock_mark now
                                             if jobs.Length > 0 && (jpSpecializationQueueDepth ()) = 0 then
                                                 let lastProg0 = jp_progress_clock_read()
                                                 let lastProg = if lastProg0 = 0L then now else lastProg0
@@ -159491,6 +159619,10 @@ module spiral_compiler =
                 if results.Count = 0 then invalidOp ("Ty->Data postorder invariant: missing result while building " + context)
                 results.Pop()
             let pushRuntimeVariable current =
+                // Replay code may not draw from the counter of a block the direct evaluator owns, as it may not
+                // append to it (push_typedop): a refused replay still used up a number, and the direct output
+                // skipped one under load (`dynamic_array_nested`: v4 missing, runs/hopac-20261001-085636).
+                if EvalReplayValueStore.replayEmitRefused (box s.seq) then failwith "replay_emit_into_direct_block"
                 let result = DV(L(s.i.Value,current))
                 s.i.Value <- s.i.Value + 1
                 results.Push result
@@ -159567,6 +159699,7 @@ module spiral_compiler =
         and push_typedop_no_rewrite d op ret_ty =
             if EvalReplayValueStore.replayEmitRefused (box d.seq) then failwith "replay_emit_into_direct_block"
             let ret = ty_to_data d ret_ty
+            PevalDebugPush.note (box op) (box d.seq)
             d.seq.Add(TyLet(ret,d.trace,op))
             ret
         and push_typedop (d: LangEnv) key ret_ty =
@@ -159580,6 +159713,7 @@ module spiral_compiler =
                 | Some x -> x
                 | None ->
                     let x = ty_to_data d ret_ty
+                    PevalDebugPush.note (box key) (box d.seq)
                     d.seq.Add(TyLet(x,d.trace,key))
                     cse_add d key x
                     x)
@@ -159596,6 +159730,7 @@ module spiral_compiler =
         and closure_env (s: LangEnv) (body,annot,gl_term,gl_ty,sz_term,sz_ty) : LangEnv = {
             trace = s.trace
             traceBudget = s.traceBudget
+            dynamicIfDepth = s.dynamicIfDepth
             recursion = s.recursion
             bigStack = s.bigStack
             evalNodePath = s.evalNodePath
@@ -160989,7 +161124,7 @@ module spiral_compiler =
                             let genNow = int (CacheGeneration.current())
                             let typeSemanticCell = semanticCellForTy nodeId
                             let typeCellRevision = EvalWorklist.replayCellRevisionText typeSemanticCell
-                            let typeVisitAdmission = TermCycleFuse.observePrefetchVisitWithTrace EvalVisitType ("ty:" + nodeKey) site depth genNow typeCellRevision (termCycleFuseTraceOf s.trace)
+                            let typeVisitAdmission = TermCycleFuse.observePrefetchVisitWithTrace EvalVisitType ("ty:" + nodeKey) site depth genNow typeCellRevision (fun () -> termCycleFuseTraceOf s.trace)
                             let typeVisitCount, typeVisitBudget =
                                 match typeVisitAdmission with
                                 | EvalVisitAdmitted(count, budget, _, _) -> count, budget
@@ -161240,6 +161375,7 @@ module spiral_compiler =
                             let s : LangEnv = {
                                 trace = r :: s.trace
                                 traceBudget = s.traceBudget
+                                dynamicIfDepth = s.dynamicIfDepth
                                 recursion = s.recursion
                                 bigStack = s.bigStack
                                 evalNodePath = s.evalNodePath
@@ -161313,6 +161449,7 @@ module spiral_compiler =
                                         let s : LangEnv = {
                                             trace = r :: s.trace
                                             traceBudget = s.traceBudget
+                                            dynamicIfDepth = s.dynamicIfDepth
                                             recursion = s.recursion
                                             bigStack = s.bigStack
                                             evalNodePath = s.evalNodePath
@@ -161397,6 +161534,7 @@ module spiral_compiler =
                                 let s : LangEnv = {
                                     trace = r :: s.trace
                                     traceBudget = s.traceBudget
+                                    dynamicIfDepth = s.dynamicIfDepth
                                     recursion = s.recursion
                                     bigStack = s.bigStack
                                     evalNodePath = s.evalNodePath
@@ -163775,6 +163913,7 @@ module spiral_compiler =
                                 { s with
                                     trace = r :: s.trace
                                     traceBudget = s.traceBudget
+                                    dynamicIfDepth = s.dynamicIfDepth
                                     recursion = s.recursion
                                     bigStack = s.bigStack
                                     evalNodePath = s.evalNodePath
@@ -164248,7 +164387,7 @@ module spiral_compiler =
                             let genNow = int (CacheGeneration.current())
                             let termSemanticCell = semanticCellForTerm nodeId
                             let termCellRevision = EvalWorklist.replayCellRevisionText termSemanticCell
-                            let termVisitAdmission = TermCycleFuse.observePrefetchVisitWithTrace EvalVisitTerm nodeKey site depth genNow termCellRevision (termCycleFuseTraceOf s.trace)
+                            let termVisitAdmission = TermCycleFuse.observePrefetchVisitWithTrace EvalVisitTerm nodeKey site depth genNow termCellRevision (fun () -> termCycleFuseTraceOf s.trace)
                             let termVisitCount, termVisitBudget =
                                 match termVisitAdmission with
                                 | EvalVisitAdmitted(count, budget, _, _) -> count, budget
@@ -165004,6 +165143,7 @@ module spiral_compiler =
                     match retTy with
                     | YVoid -> jpMethodUnknownReturnTy
                     | _ -> retTy
+                if EvalReplayValueStore.replayEmitRefused (box s.seq) then failwith "replay_emit_into_direct_block"
                 let i = s.i.Value
                 s.i.Value <- i + 1
                 let placeholder = DV(L(i, retTy))
@@ -165031,8 +165171,8 @@ module spiral_compiler =
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"jp_placeholder_pattern_miss_recovery_entered\",\"pattern_node_id\":%d,\"got\":%s,\"authority\":\"suspect_cache_inline_recompute\",\"next\":\"requeued_attempts_evaluate_join_points_inline\"}" [| box patternNodeId; box (DiagJson.esc gotText) |])
 
-            let within_dynamic_if (s: LangEnv) (f : unit -> 'a) : 'a =
-                let depth = DynamicIfNesting.depth.Value + 1
+            let within_dynamic_if (s: LangEnv) (f : LangEnv -> 'a) : 'a =
+                let depth = s.dynamicIfDepth + 1
                 if depth > DynamicIfNesting.limit then
                     let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
                     let report =
@@ -165041,10 +165181,9 @@ module spiral_compiler =
                             (sprintf "partial evaluation nested more than %d dynamic `if` branches" DynamicIfNesting.limit)
                             frames
                             (sprintf "if the nesting is legitimate, raise the limit: SPIRAL_IF_NESTING_LIMIT=<n> (now %d)" DynamicIfNesting.limit)
-                    raise_type_error_no_trace s report
-                DynamicIfNesting.depth.Value <- depth
-                try f ()
-                finally DynamicIfNesting.depth.Value <- depth - 1
+                    // The report carries the cycle and the entry path: no trace or envelope after it (as single-flight).
+                    raise (partEvalTypeError [] report)
+                f { s with dynamicIfDepth = depth }
 
             let rec if_ (s: LangEnv) cond on_succ on_fail =
                 // MIGRATION: Removed proactive depth-based BigStack spawning
@@ -165105,8 +165244,8 @@ module spiral_compiler =
                         let inline op op cond' res = cse.TryAdd(TyOp(op,[cond;cond']),res) |> ignore; cse.TryAdd(TyOp(op,[cond';cond]),res) |> ignore
                         op EQ lit_tr tr; op NEQ lit_tr fl; op EQ lit_fl fl; op NEQ lit_fl tr
                         cse
-                    let tr, type_tr = within_dynamic_if s (fun () -> term_scope' s (add_rewrite_cases true) on_succ)
-                    let fl, type_fl = within_dynamic_if s (fun () -> term_scope' s (add_rewrite_cases false) on_fail)
+                    let tr, type_tr = within_dynamic_if s (fun s -> term_scope' s (add_rewrite_cases true) on_succ)
+                    let fl, type_fl = within_dynamic_if s (fun s -> term_scope' s (add_rewrite_cases false) on_fail)
                     let type_tr, type_fl =
                         match type_tr, type_fl with
                         | YRecord tr, YRecord fl ->
@@ -170966,6 +171105,7 @@ module spiral_compiler =
         let s : LangEnv = {
             trace = []
             traceBudget = TraceBudgetState.create trace_budget_default
+            dynamicIfDepth = 0
             recursion = RecursionTracker.root
             bigStack = BigStack.rootContext
             evalNodePath = EvalCycleGuard.empty
@@ -171772,7 +171912,9 @@ module spiral_compiler =
                 add (sprintf "%s--> %s:%d:%d" pad p (l + 1) (c + 1))
                 add (sprintf "%s |" pad)
                 add (sprintf "%s | %s" number ((lineText p l).TrimEnd()))
-                add (sprintf "%s | %s^ reached %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") (count p l))
+                // Counted at this exact position: a line can hold several frames of one level (the `if` and the call).
+                let here = frames |> List.filter (fun (p', l', c') -> p' = p && l' = l && c' = c) |> List.length
+                add (sprintf "%s | %s^ entered %d times on the current evaluation path" pad (String.replicate (max 0 c) " ") here)
                 add (sprintf "%s |" pad)
             | [] -> ()
             // The cycle is what repeats on the scale of the hottest frame; a frame that recurs a few times (the
@@ -171808,7 +171950,7 @@ module spiral_compiler =
         let limit =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
             | true, n when n > 0 -> n
-            | _ -> 5000
+            | _ -> 1000
         let depth = new System.Threading.ThreadLocal<int>(fun () -> 0)
 
     let peval (env : PartEvalTopEnv) (x : E) =
@@ -186622,6 +186764,61 @@ module spiral_compiler =
                | CacheGeneration.GenerationReasonDeadIvarJpWait -> true
                | CacheGeneration.GenerationReasonRetry _
                | CacheGeneration.GenerationReasonUnclassified -> false)
+
+    /// A build that asked for sequential mode or invalidated the cache. Placeholder/orphan recovery is a deterministic
+    /// inline recompute, not instability (fixes 44, 51).
+    let private buildFileRunUnstable (seq: int) (inv: int64) =
+        (seq <> 0 || inv <> 0L) && not (PevalStallProbe.recoveryActive ())
+
+    // One process can serve BuildFile after BuildFile (the host's --batch and server modes; a whole suite ran 12x
+    // faster warm). What one build leaves behind must not reach the next:
+    //  - a request the host stopped waiting for (it returns on the first type error) stayed pending, and its budget
+    //    watchdog later published "BuildFile stalled ... for <that file>" into another file's build: a watchdog now
+    //    publishes only while its request is the newest. (Completing the stale request instead tripped the terminal
+    //    failure cutover in the next builds: JpTerminalFailureRunningCutoverCancellation on 77 rows.);
+    //  - evaluation stores, pinned terminal contracts, fuses, the recovery state and the sequential flag carried
+    //    over, and the invalidation count is cumulative: each build now starts from the in-process restart's reset
+    //    set (fixes 51-53), and "unstable" counts only this build's invalidations. In a fresh process all of it is
+    //    a no-op.
+    let mutable private buildInvalidationBaseline = 0L
+    let mutable private buildRequestOrdinal = 0L
+
+    let private beginBuildRequest () = System.Threading.Interlocked.Increment(&buildRequestOrdinal)
+    let private isNewestBuildRequest ordinal = System.Threading.Interlocked.Read(&buildRequestOrdinal) = ordinal
+
+    // Not the evaluation stores (the restart's resetForFreshPeval, EvalWorklist.reset, the terminal contracts, the
+    // fuses): resetting them between builds cancelled the next build's join point work in a warm process
+    // (JpTerminalFailureRunningCutoverCancellation on 70 rows); their per-build isolation is still open.
+    let private resetEvaluationForBuild () =
+        PevalStallProbe.resetRecovery ()
+        CacheGeneration.resetSequentialRequest ()
+        buildInvalidationBaseline <- CacheGeneration.invalidationCount ()
+
+    let private buildInvalidationsSinceStart () = CacheGeneration.invalidationCount () - buildInvalidationBaseline
+
+    /// What the BuildFile writer does with a generated artifact. A stable run's output is written whatever was on disk
+    /// before (judging it by the old file's size made the result depend on the previous output). An unstable run's is
+    /// trusted only to refresh an existing output after replay or retry alone, without shrinking it or growing it past
+    /// a budget: an incomplete replay shows as truncation. The precheck and the write used to restate these rules
+    /// separately, and the write's copy lacked the recovery exclusion, so a recovery run (always, in inline-JP mode)
+    /// passed the precheck and was then refused without a word.
+    type ArtifactWriteDecision =
+        | ArtifactWriteAllowed
+        | ArtifactWriteRefusedUnstableRun
+
+    let private artifactWriteDecision (oldBytes: int64) (newBytes: int64) (unstable: bool) (replayOrRetryOnly: bool) =
+        if not unstable then ArtifactWriteAllowed
+        else
+            let guardScale = max oldBytes newBytes
+            let deltaBudget = if guardScale <= 0L then 8192L else min 1048576L (max 8192L (guardScale / 32L))
+            let smallOutputFloor = max 2048L (guardScale / 128L)
+            let replayStableExisting =
+                oldBytes > 0L && replayOrRetryOnly && newBytes >= oldBytes && newBytes <= oldBytes + deltaBudget && newBytes > smallOutputFloor
+            if replayStableExisting then ArtifactWriteAllowed else ArtifactWriteRefusedUnstableRun
+
+    let private artifactUnstableRunText (seq: int) (inv: int64) =
+        let reasons = CacheGeneration.reasonsSnapshot 4 |> List.map (fun r -> if isNull r then "" elif r.Length > 200 then r.Substring(0, 197) + "..." else r)
+        FastRuntimeFormat.format "the run was unstable (sequential_requests=%d cache_invalidations=%d; reasons: %s), so its output is not trusted" [| box seq; box inv; box (if List.isEmpty reasons then "none recorded" else String.concat " | " reasons) |]
     
 
     /// ### workspaceRoot
@@ -186846,6 +187043,8 @@ module spiral_compiler =
                 if go_parent (Directory.GetParent(file)) = false then HopacExtensions.start (IVar.fill res None)
                 s
             | SupervisorReq.BuildFile (x, res) ->
+                let requestOrdinal = beginBuildRequest ()
+                DiagJson.terminalFailureExitResetForNewBuild ()
                 CompilerConsoleHud88.beginSupervisorBuildRequest ()
                 let backend = x.backend
                 let file = file x.uri
@@ -186866,7 +187065,7 @@ module spiral_compiler =
                 if buildBudgetMs > 0 then
                     HopacExtensions.start (job {
                         do! Hopac.timeOutMillis buildBudgetMs
-                        if not (IVar.Now.isFull res) then
+                        if not (IVar.Now.isFull res) && isNewestBuildRequest requestOrdinal then
                             let pending = try EvalWorklist.pendingCount () with _ -> -1
                             let active = try EvalWorklist.replayDriverActiveDepthValue () with _ -> -1
                             let drain = try EvalWorklist.replayDrainStateText (EvalWorklist.replayDrainStateSnapshot ()) with _ -> "unknown"
@@ -186896,7 +187095,7 @@ module spiral_compiler =
                                 + ",\"policy\":\"emit_only_on_authority_change\"}")
                         // MIGRATION: defensive output writer (generic; avoids clobbering good generated files on unstable runs).
                         let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
-                        let inv = CacheGeneration.invalidationCount()
+                        let inv = buildInvalidationsSinceStart ()
                         let file0 = Path.ChangeExtension(file,null) // null removes the extension from path.
                         let mutable bad : string option = None
                         for x in l do
@@ -186910,65 +187109,14 @@ module spiral_compiler =
                                 let oldBytes = try if System.IO.File.Exists(outPath) then int64 (System.IO.FileInfo(outPath).Length) else 0L with _ -> 0L
                                 // MIGRATION: WriteGuard + generic output validation (no hardcoded file names).
                                 let newBytes = int64 byteCount
-                                // Sequential mode and the build retry that placeholder/orphan recovery request are a deterministic inline
-                                // recompute, not instability (fixes 44, 51).
-                                let unstable = ((seq <> 0) || (inv <> 0L)) && not (PevalStallProbe.recoveryActive ())
-
-                                // WriteGuard:
-                                //  - block new outputs on unstable runs (prevents "success" without writing)
-                                //  - block large shrink by proportional budget even on stable runs (common truncation symptom)
-                                //  - MIGRATION: allow an existing output to be persisted after replay-only recovery
-                                //    when the produced text is non-shrinking and the delta is small. MIGRATION reached
-                                //    BuildOk after replay commits, but the guard rejected the write solely because
-                                //    retry/replay invalidations made the run look unstable.
-                                let isNew = oldBytes = 0L
-                                let guardScale = max oldBytes newBytes
-                                let minDeltaBudget = 8192L
-                                let maxDeltaBudget = 1048576L
-                                let deltaBudget =
-                                    if guardScale <= 0L then minDeltaBudget
-                                    else min maxDeltaBudget (max minDeltaBudget (guardScale / 32L))
-                                let smallOutputFloor = max 2048L (guardScale / 128L)
-                                let growthBig = oldBytes > 0L && newBytes > oldBytes + deltaBudget && newBytes > smallOutputFloor
-                                let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= deltaBudget
-                                let reasonSignals = CacheGeneration.reasonSignalsSnapshot 8 |> Set.ofList
-                                let hasReplayCompleteReason =
-                                    Set.contains CacheGeneration.GenerationReasonReplayRootComplete reasonSignals
-                                let replayCompleteNow = EvalWorklist.hasReplayCompleteWriteWitness()
+                                let unstable = buildFileRunUnstable seq inv
                                 let replayOrRetryOnly =
-                                    replayCompleteNow
-                                    && buildFileGenerationReasonsAreReplayOrRetryOnly reasonSignals
-                                let replayStableExisting =
-                                    oldBytes > 0L
-                                    && replayOrRetryOnly
-                                    && newBytes >= oldBytes
-                                    && newBytes <= oldBytes + deltaBudget
-                                    && newBytes > smallOutputFloor
-                                let persist =
-                                    if isNew then (not unstable) // no size floor for a new file: the floor guards truncation of existing outputs, and rejected every small program
-                                    else replayStableExisting || (not unstable)
-                                let blocked = (not persist) || shrinkBig
-
-                                // Reject obvious truncation/clobber generically: compare against the artifact's own scale, not backend extension.
-                                let shrinkRel = oldBytes > smallOutputFloor && newBytes < (oldBytes * 7L) / 10L
-                                let shrinkHard = oldBytes > smallOutputFloor && newBytes < smallOutputFloor
-                                let tiny = oldBytes > smallOutputFloor && newBytes < smallOutputFloor
-                                let reject = tiny || shrinkHard || (unstable && shrinkRel && not replayStableExisting) || blocked
-                                if reject && replayCompleteNow && (not hasReplayCompleteReason) && (tiny || shrinkHard || shrinkRel || shrinkBig) then
-                                    DiagJson.emit (
-                                        FastRuntimeFormat.format "{\"kind\":\"write_guard_replay_shrink_blocked\",\"event\":\"precheck\",\"path\":%s,\"bytes\":%d,\"old_bytes\":%d,\"replayCompleteNow\":true,\"hasReplayCompleteReason\":false,\"shrinkBig\":%b,\"shrinkHard\":%b,\"shrinkRel\":%b,\"tiny\":%b,\"single_flight\":1,\"next\":\"semantic_payload_or_codegen_frontier_required\"}" [| box (DiagJson.esc outPath); box byteCount; box (int oldBytes); box shrinkBig; box shrinkHard; box shrinkRel; box tiny |])
-                                if reject then
-                                    let reasons = CacheGeneration.reasonsSnapshot 3
-                                    let reasonsShort =
-                                        if List.isEmpty reasons then ""
-                                        else
-                                            let trim (s: string) =
-                                                if isNull s then ""
-                                                elif s.Length > 180 then s.Substring(0, 177) + "..."
-                                                else s
-                                            " reasons=[" + (reasons |> List.map trim |> String.concat " | ") + "]"
-
-                                    bad <- Some (FastRuntimeFormat.format "WRITE_ABORT: %s (lines=%d bytes=%d old_bytes=%d seq=%d inv=%d unstable=%b isNew=%b persist=%b replayCompleteNow=%b hasReplayCompleteReason=%b replayOrRetryOnly=%b replayStableExisting=%b growthBig=%b shrinkBig=%b shrinkHard=%b shrinkRel=%b tiny=%b deltaBudget=%d smallOutputFloor=%d)%s" [| box outPath; box lineCount; box byteCount; box (int oldBytes); box seq; box (int inv); box unstable; box isNew; box persist; box replayCompleteNow; box hasReplayCompleteReason; box replayOrRetryOnly; box replayStableExisting; box growthBig; box shrinkBig; box shrinkHard; box shrinkRel; box tiny; box (int deltaBudget); box (int smallOutputFloor); box reasonsShort |])
+                                    EvalWorklist.hasReplayCompleteWriteWitness()
+                                    && buildFileGenerationReasonsAreReplayOrRetryOnly (CacheGeneration.reasonSignalsSnapshot 8 |> Set.ofList)
+                                match artifactWriteDecision oldBytes newBytes unstable replayOrRetryOnly with
+                                | ArtifactWriteAllowed -> ()
+                                | ArtifactWriteRefusedUnstableRun ->
+                                    bad <- Some (FastRuntimeFormat.format "WRITE_ABORT: %s (%d lines, %d bytes, %d on disk): %s" [| box outPath; box lineCount; box byteCount; box oldBytes; box (artifactUnstableRunText seq inv) |])
                         match bad with
                         | Some msg ->
                             // MIGRATION: WRITE_ABORT must leave enough telemetry in console to finish SOTA.
@@ -187048,8 +187196,8 @@ module spiral_compiler =
                         | None ->
                             Job.fromAsync (async {
                                 let seq = if CacheGeneration.isSequentialRequested() then 1 else 0
-                                let inv = CacheGeneration.invalidationCount()
-                                let unstable = (seq <> 0) || (inv <> 0L)
+                                let inv = buildInvalidationsSinceStart ()
+                                let unstable = buildFileRunUnstable seq inv
                                 let mutable wrote = 0
                                 let mutable skipped = 0
                                 let mutable persistedBytes = 0L
@@ -187082,6 +187230,8 @@ module spiral_compiler =
                                                 i <- i + 1
                                         struct(sb.ToString(), replaced)
 
+                                // Why each skipped artifact was not written, for the FatalError (quiet runs keep no log).
+                                let aborts = ResizeArray<string>()
                                 for x in l do
                                     let outPath = file0 + x.file_extension
                                     let struct(codeSafe, repl) = sanitize_utf16_for_utf8 x.code
@@ -187092,36 +187242,22 @@ module spiral_compiler =
                                     let lineCount = try codeSafe.Split([| nl |], System.StringSplitOptions.None).Length with _ -> 0
                                     let oldBytes = try if System.IO.File.Exists(outPath) then int64 (System.IO.FileInfo(outPath).Length) else 0L with _ -> 0L
                                     let newBytes = int64 byteCount
-                                    // MIGRATION WriteGuard (write phase):
-                                    // Mirror the pre-check rules; any block here indicates a race or instability.
-                                    let guardScale = max oldBytes newBytes
-                                    let minDeltaBudget = 8192L
-                                    let maxDeltaBudget = 1048576L
-                                    let deltaBudget =
-                                        if guardScale <= 0L then minDeltaBudget
-                                        else min maxDeltaBudget (max minDeltaBudget (guardScale / 32L))
-                                    let smallOutputFloor = max 2048L (guardScale / 128L)
-                                    let growthBig = oldBytes > 0L && newBytes > oldBytes + deltaBudget && newBytes > smallOutputFloor
-                                    let isNew = oldBytes = 0L
-                                    let shrinkBig = oldBytes > 0L && (oldBytes - newBytes) >= deltaBudget
-                                    let reasonSignals = CacheGeneration.reasonSignalsSnapshot 8 |> Set.ofList
-                                    let hasReplayCompleteReason =
-                                        Set.contains CacheGeneration.GenerationReasonReplayRootComplete reasonSignals
                                     let replayOrRetryOnly =
                                         replayCompleteNow
-                                        && buildFileGenerationReasonsAreReplayOrRetryOnly reasonSignals
-                                    let replayStableExisting =
-                                        oldBytes > 0L
-                                        && replayOrRetryOnly
-                                        && newBytes >= oldBytes
-                                        && newBytes <= oldBytes + deltaBudget
-                                        && newBytes > smallOutputFloor
-                                    let persist =
-                                        if isNew then (not unstable) // no size floor for a new file: the floor guards truncation of existing outputs, and rejected every small program
-                                        else replayStableExisting || (not unstable)
-                                    let blocked = (not persist) || shrinkBig
-                                    if blocked then
-                                        trace Warning (fun () -> $"WRITE_ABORT: {outPath} (lines={lineCount} new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} unstable={unstable} isNew={isNew} persist={persist} replayCompleteNow={replayCompleteNow} hasReplayCompleteReason={hasReplayCompleteReason} replayOrRetryOnly={replayOrRetryOnly} replayStableExisting={replayStableExisting} growthBig={growthBig} shrinkBig={shrinkBig} deltaBudget={deltaBudget} smallOutputFloor={smallOutputFloor})") _locals
+                                        && buildFileGenerationReasonsAreReplayOrRetryOnly (CacheGeneration.reasonSignalsSnapshot 8 |> Set.ofList)
+                                    if artifactWriteDecision oldBytes newBytes unstable replayOrRetryOnly <> ArtifactWriteAllowed then
+                                        trace Warning (fun () -> $"WRITE_ABORT: {outPath} (lines={lineCount} new_bytes={newBytes} old_bytes={oldBytes} seq={seq} inv={inv} replay_or_retry_only={replayOrRetryOnly})") _locals
+                                        let why = artifactUnstableRunText seq inv
+                                        // Keep the rejected text where it can be checked (type-checked, diffed), outside the tree.
+                                        let kept =
+                                            try
+                                                let dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "spiral-rejected")
+                                                System.IO.Directory.CreateDirectory dir |> ignore
+                                                let keptPath = System.IO.Path.Combine(dir, System.IO.Path.GetFileName outPath)
+                                                System.IO.File.WriteAllText(keptPath, codeSafe)
+                                                "; kept at " + keptPath
+                                            with _ -> ""
+                                        aborts.Add(FastRuntimeFormat.format "%s (%d bytes): %s%s" [| box (System.IO.Path.GetFileName outPath); box newBytes; box why; box kept |])
                                         skipped <- skipped + 1
                                     else
                                         let tmpPath = outPath + ".tmp"
@@ -187149,7 +187285,7 @@ module spiral_compiler =
                                         if persisted then
                                             wrote <- wrote + 1
                                             persistedBytes <- persistedBytes + newBytes
-                                            if replayStableExisting then replayStableWrites <- replayStableWrites + 1
+                                            if unstable then replayStableWrites <- replayStableWrites + 1
                                         else
                                             skipped <- skipped + 1
                                             DiagJson.emit (
@@ -187158,9 +187294,9 @@ module spiral_compiler =
                                                     newBytes)
 
                                 trace Info (fun () -> $"WRITE_SUMMARY: wrote={wrote} skipped={skipped} persisted_bytes={persistedBytes} seq={seq} inv={inv} unstable={unstable} replayCompleteNow={replayCompleteNow} replayStableWrites={replayStableWrites}") _locals
-                                return struct(wrote, skipped, persistedBytes)
+                                return struct(wrote, skipped, persistedBytes, List.ofSeq aborts)
                             })
-                            |> Job.bind (fun (struct (wrote, skipped, persistedBytes)) ->
+                            |> Job.bind (fun (struct (wrote, skipped, persistedBytes, aborts)) ->
                                 if skipped <> 0 || wrote <> l.Length then
                                     let reason = FastRuntimeFormat.format "artifact_filesystem_persistence_incomplete|wrote=%d|expected=%d|skipped=%d|bytes=%d" [| box wrote; box l.Length; box skipped; box persistedBytes |]
                                     job {
@@ -187168,7 +187304,8 @@ module spiral_compiler =
                                         do! CompilerConsoleHud88.awaitTerminalReducerRunEndJob ()
                                         // A failed build always says why: filling `res None` alone reached the host as
                                         // "BuildFile returned no code and no diagnostic arrived".
-                                        HopacExtensions.start (Ch.send errors.fatal (FastRuntimeFormat.format "The generated code was not written to %s: %s (see WRITE_ABORT / artifact_filesystem_persistence_failed in the log)." [| box file; box reason |]))
+                                        let details = if List.isEmpty aborts then "" else "\n" + (aborts |> List.map (fun a -> "  = note: not written: " + a) |> String.concat "\n")
+                                        HopacExtensions.start (Ch.send errors.fatal (FastRuntimeFormat.format "The generated code was not written to %s: %s%s" [| box file; box reason; box details |]))
                                         CompilerConsoleHud88.completeSupervisorBuildRequestFailed ()
                                         do! IVar.tryFill res None
                                     }
@@ -187582,6 +187719,7 @@ module spiral_compiler =
                                                 TermCycleFuse.reset ()
                                                 LoopSpecializationGuard.reset ()
                                                 pevalWithInlineRestart (restarts + 1)
+                                        resetEvaluationForBuild ()
                                         let (a,_),b = pevalWithInlineRestart 0
                                         emitBuildFileInitializationStage BuildFilePartialEvaluationCompleted
                                         let generated = codegenOnLargeStack (fun () -> codegen file b a)

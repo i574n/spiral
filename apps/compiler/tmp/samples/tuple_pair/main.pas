@@ -18,7 +18,7 @@ function method1(v0: LongInt; v1: LongInt): LongInt;
 var
   v2: LongInt;
 begin
-  v2 := v1 + v0;
+  v2 := v0 + v1;
   Result := v2;
 end;
 function SpiralMain: LongInt;
@@ -36,7 +36,7 @@ begin
   tmp4 := method0(v0, v1);
   v2 := tmp4.f0;
   v3 := tmp4.f1;
-  v4 := method1(v3, v2);
+  v4 := method1(v2, v3);
   v5 := v4 - 42;
   Result := v5;
 end;

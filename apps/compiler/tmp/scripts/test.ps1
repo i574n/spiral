@@ -254,6 +254,13 @@ $partials = $workers | ForEach-Object -ThrottleLimit $Parallel -Parallel {
     & $runner $using:dotnet $using:compiler $_.Jobs $using:runDir $_.Index $using:freshProcess $using:scratch
 }
 foreach ($p in $partials) { foreach ($k in $p.Keys) { $compiled[$k] = $p[$k] } }
+# A core's "BuildFile stalled" is its own timeout report (the host's deadline is 3 s before the job's): score it as
+# a timeout, so it never matches an expected rejection and -Bless skips it. Hopac's runaway-recursion rows had
+# passed as `error` parity on the stall alone (2026-10-01).
+foreach ($k in @($compiled.Keys)) {
+    $c = $compiled[$k]
+    if ($c.Status -eq 'error' -and $c.Detail -match '^FatalError: BuildFile stalled') { $c.Status = 'timeout' }
+}
 Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 # "emitted": the job timed out or crashed, but the core had already written its output during this run.

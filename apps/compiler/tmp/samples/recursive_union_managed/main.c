@@ -66,13 +66,6 @@ int32_t sum0(UH0 * v0){
     
     
     switch (v0->tag) {
-        case 0: { // Nil
-            
-            
-            UHDecref0(v0);
-            return 0l;
-            break;
-        }
         case 1: { // Cons
             Array0 * v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1;
             v1->refc++; v2->refc++;
@@ -90,6 +83,13 @@ int32_t sum0(UH0 * v0){
             
             
             return v5;
+            break;
+        }
+        case 0: { // Nil
+            
+            
+            UHDecref0(v0);
+            return 0l;
             break;
         }
     }

@@ -1,5 +1,14 @@
 # Hopac frontier
 
+**Status 2026-10-01 17:53 (fixes 55-57):** `runs/hopac-20261001-171327` (`-Suite all -Native`, 3 workers,
+fresh processes): frontier 20 + 4 `missing`, contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
+DISAGREE 0, no `emitted` row; every residual hash equal to the 05:12 run's. The 4 `missing` are
+`frontier_runaway_inline_recursion` (new, blessed `error`): hopac needs ~20 s to reach its `EJP0040` report,
+past the frontier deadline, and the harness now scores a core's `BuildFile stalled` as a timeout. That is the
+only gap left to the AGENTS.md promotion criterion. **apps/spiral compiles in the default async mode** (fix 55;
+attempt 20 on this DLL: 576 s, 2,687,696 bytes, the same as attempts 17-19). Warm processes (fix 57) are an
+experiment.
+
 **Update 2026-10-01 06:50 (fix 54):** `runs/hopac-20261001-051209`: frontier 20/20 (with
 `frontier_static_list_eq` on four backends), contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
 DISAGREE 0; the single-flight restore run after it matches. apps/spiral on hopac: past every semantic wall,
@@ -479,6 +488,52 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     default of one worker per core (lean_cic 178 s vs 139 s, same wall time). `lean_cic` is slow in the
     suite because it shares the CPU with the omniledger and spiral_proves roots, not because of
     scheduler oversubscription.
+57. **Warm processes (one hopac process, many BuildFiles) — experiment, not the default yet.** AGENTS.md said
+    the core serves one BuildFile per process; it serves several. The host's `--batch` already runs jobs one
+    after another: four frontier fixtures in one process were byte-identical to single-flight, 2.7 s for the
+    first and 0.2-0.6 s for the next (fresh processes: ~4-5 s each, mostly re-parsing the core library).
+    `test.ps1 -Mode hopac -Suite all -Native -FreshProcess:$false`: compiled in 186 s instead of 2,295 s (12x),
+    1,054 of 1,089 rows unchanged (`runs/hopac-20261001-132627`). What leaks between builds, and the state of
+    each:
+    - a request the host stopped waiting for (it returns on the first type error) stays pending, and its
+      budget watchdog later published `BuildFile stalled ... for <that file>` into another file's build. Each
+      request now has an ordinal and a watchdog publishes only while its request is the newest. (Completing
+      the stale request instead made things worse: see the next item.);
+    - the terminal-failure latch (`DiagJson.TerminalFailureExitLatch`, open -> requested -> committed) is
+      process-wide by design: once a build requested a terminal failure, every later build's join point
+      workers cancelled at their first operation (`JpTerminalFailureRunningCutoverCancellation`, 77 rows in
+      `runs/hopac-20261001-135049`). Reset per BuildFile now unless the exit is committed (unverified);
+    - the generation's invalidation count is cumulative and the sequential flag sticky: the write guard now
+      counts only this build's invalidations, and the flag and the recovery state reset per build;
+    - resetting the evaluation stores per build (the in-process restart's set) did not help and is not done.
+    With the replay driver marked as replay code (fix 56's general form) the warm runs lose ~75 rows to
+    `JpTerminalFailureRunningCutoverCancellation` even with the latch reset per build (`runs/hopac-20261001-
+    145411`): the latch is set *during* the next build. Its only requester is the JP work hard-deadline
+    watchdog (`TypedDiagJpWorkUnitHardDeadline...`, "expired progress lease ... mark process failure latch"):
+    work left by a build the host gave up on keeps its deadline and expires inside a later build. The fresh
+    suite is unaffected (`runs/hopac-20261001-140839`: parity). Tagging each work timing with its BuildFile
+    request and retiring earlier requests' items quietly did not help (101 rows, `runs/hopac-20261001-
+    155...`; reverted): the current build's own join point work also reaches its deadline, presumably blocked
+    on cells or caches an earlier build left. So warm serving needs a per-build session for the JP machinery
+    as a whole (work items, cells, caches, deadlines, the latch), not more point resets. Until then
+    `-FreshProcess` stays on for hopac.
+56. **The type-aware op replay ran unmarked as replay code (a duplicated statement).** After the morning's
+    speedups, `native_closure_recursive_capture` [C, Rust] came out with `inl ~leaf = Leaf` boxed twice (a
+    dead `Rc::new(UH0::UH0_0)` after the `Node`), most runs, even with one Hopac worker; slower runs (loud,
+    or a loaded machine) usually missed it. `SPIRAL_DEBUG_PUSH=TyUnionBox` (new: prints every appended
+    statement whose rendering starts with the text, its block and managed stack) showed the same box appended
+    to the main block by two threads: the direct evaluator, and the replay driver
+    (`forceReplayDriverDrainPassTagged` -> `runReplayDriver` -> `tryScheduleTypeAwareOpReplayWithContext` ->
+    the `scheduleDyn` thunk -> `dyn`). Fix 41's guard (`replayEmitRefused`) refuses replay code that appends to
+    a block the direct evaluator owns, but it only knows replay code by the thread's replay depth, and this
+    entry point, unlike `tryTerm` and the apply replays, never called `enterReplay`. It does now (fails closed
+    on refusal, inside its existing handler); 8/8 runs match single-flight, and `dynamic_array_nested`,
+    `dynamic_array_union_nested` and this fixture are byte-identical to the oracle 5/5.
+
+    Also: inline-JP mode's silent rows (3 contracts, `mega_lean_cic`) were the write loop restating the write
+    guard without the precheck's recovery exclusion, so every recovery run passed the precheck and was refused
+    at the write. Both now use one `ArtifactWriteDecision` (stable: written; unstable: only a replay-stable
+    refresh of an existing output); the four compile, the contracts identical to single-flight.
 55. **Declared-body snapshot pruning was quadratic (apps/spiral in the default async mode).** Attempt 14
     reached `main`'s return, then one JP work unit ground at under one core in
     `jpPruneUnreachableDeclaredResumeSnapshotsForJob`. Each prune scans every snapshot of every job (plus the
@@ -487,14 +542,65 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     continuations later: O(live x continuations). The trigger is now geometric (prune when the live count has
     doubled since the last prune left it, floor 1,024): amortised linear, memory within 2x the reachable set.
 
+    **Result: hopac's default (async) mode compiles apps/spiral** — partial evaluation and codegen in 555 s
+    (888 s on a loaded machine; attempts 16-18), the same 2,687,696-byte `spiral.fsx` on two runs, 0 errors
+    when type-checked as .NET F#. Inline-JP mode: 879 s, 2,686,539 bytes. Single-flight: 2,791,987 bytes
+    (hopac's ~104 KB smaller output is task 37). The write was still refused, which led to:
+    - **watchdog misfire.** One join point body evaluated for 2 minutes; the JP watchdog only counted slice
+      progress and terminal admissions as progress, so it called that a stall (`EJP0030`, progress age 90 s),
+      invalidated the generation and requested sequential mode, a "cooperative abort so the outer retry can
+      recover" — but the native-authority cutover forbids that retry. The run finished anyway, and the write
+      guard then refused output from an "unstable" run (`seq=1 inv=1`). The watchdog now also counts
+      evaluation steps (`EvalProgress.steps`, one increment per `EvalCycleGuard.enter`): only waiting with
+      nothing evaluating is a stall; runaway evaluation is the `EJP0040` guard's and the build deadline's;
+    - **write guard read the old file.** A stable run was refused when its output shrank against whatever file
+      was on disk (`tiny`/`shrinkHard`: old > 2,048 B and new < 2,048 B, or a shrink of >= 8 KB). That made
+      the result depend on the previous output: inline mode's correct unrolled `frontier_static_list_eq` C
+      (542 B, single-flight's loop is 2,640 B) failed `WRITE_ABORT`. Size checks now apply only to unstable
+      runs. A refused write says why in the `FatalError` (`= note: not written: spiral.fsx (2687696 bytes):
+      the run was unstable (... reasons: [gen=1] jp_watchdog EJP0030 ...); kept at
+      %TEMP%/spiral-rejected/spiral.fsx`), so a quiet run's output can still be checked.
+
     Diagnostics in the same batch:
     - a runaway inline recursion now gets a rustc-style report in both cores (`RunawayUnrollDiagnostic`,
-      the same module in each core's section): error code, `-->` span with the source line and a caret, the
-      repeating cycle with counts, the entry path, why (inline recursion on a runtime value) and the fix
-      (join point, or a static bound). Single-flight: `EJP0040` from the dynamic-`if` nesting guard
-      (`SPIRAL_IF_NESTING_LIMIT`, default 5,000), which was broken (its counter was local to `term`, so a new
-      one per call). Hopac: appended to every `EJP0011` re-entrant cycle message
-      (`samples/frontier_runaway_inline_recursion`);
+      the same module in each core's section): `error[EJP0040]`, `-->` span with the source line and a caret,
+      the repeating cycle with counts, the entry path, why (inline recursion on a runtime value) and the fix
+      (join point, or a static bound). Both cores count dynamic-`if` nesting (`SPIRAL_IF_NESTING_LIMIT`,
+      default 1,000). Single-flight's guard was broken (its counter was local to `term`, so a new one per
+      call); hopac's depth lives in `LangEnv.dynamicIfDepth`, because a declared application suspends and
+      resumes as a new work unit, so nothing on the thread survives a level. `EJP0040` is registered in
+      `DiagnosticClassifier` as terminal (never retried). Hopac's `EJP0011` messages carry the same report.
+      The default was 5,000 at first: single-flight then took 12 s on the fixture (the runtime scanning a
+      10,000-frame stack on every GC; 3.7 s at 1,000) and timed out under suite load. apps/spiral compiles at
+      1,000 with byte-identical output;
+    - hopac reached the limit slowly: 50 levels 5.7 s, 200 9.6 s, 800 78 s (quadratic). Profile of the
+      evaluator thread: ~25% building proof-tuple JSON for diagnostic rows that quiet mode drops
+      (`forceReplayDriverDrainPassTagged` -> `pendingGraphProofTupleJsonFields`, and the replay tick's
+      `classifyFacts` over both texts), ~15% rendering terminal-contract rows once the global term-cycle fuse
+      has tripped, both now skipped when quiet; `EvalCycleGuard.nodeCount` filtered the whole path into a new
+      list on every node entry, and a leaf re-entered after its exit always scanned all of it (now an identity
+      map on the path, O(log depth)). 800 levels: 78 s -> 18 s; 1,000: 19.7 s, linear at ~15 ms a level, still
+      over hopac's frontier deadline (task: per-application overhead);
+    - general per-node costs found on the way (none changes a result): `InternedTextIdOps.intern` hashed
+      `ContentDigest.ofText` on every call, inside the global intern lock, though the digest is a function of
+      (kind, text) — now once per slot (~15% of the evaluator thread; sites and shapes are interned on every
+      node entry); the visit ledger compacted the evaluation trace (up to 4,096 frames) on every visit for a
+      row it emits once per bucket — now only for an emitted row or a trip; the producer graph compared each
+      node's dependency path structurally on every re-registration — `evaluatorDependencyAppendUniquePath`
+      returns the prior path itself when it adds nothing, so identity now answers (this was the hottest frame
+      of apps/spiral's evaluator); quiet runs beat the progress metronome at 1 s instead of 250 ms (each beat
+      ~65 ms of CPU: a quarter core on a mega root, the busiest thread of the process);
+    - **race 34, the variable-numbering face**: under suite load, 10 `dynamic_array_*nested*` rows came out
+      with one variable number skipped (`v4` missing, 592 vs 590 B), rows identical in the three runs before;
+      standalone the same DLL matched the oracle 5/5. Replay code may not append to a block the direct
+      evaluator owns (`replayEmitRefused`, fix 41), but `ty_to_data` and the dynamic-join replay placeholder
+      drew from that block's variable counter before any such check, so a refused replay still used up a
+      number. Both draws now refuse first (fail closed, as `push_typedop` does). Under load (two mega compiles
+      in the background) `dynamic_array_nested` gave 10/10 oracle outputs;
+    - the host renders a `TracedError` as `TracedError: <message>` and the trace frames indented below it (it
+      printed the F# record with `%A`: quotes, escaped newlines, `trace = [...]`), so a report reaches the
+      terminal as written; `EJP0040` is raised without trace or `Compiler: par` envelope in both cores (the
+      report carries the cycle and the entry path), so both print the same report;
     - hopac no longer prints the 50-row `[spiral_hud_final]` block to stderr in quiet mode;
     - incomplete artifact persistence now sends a `FatalError` with the reason (it filled `res None` alone:
       "no code and no diagnostic arrived");

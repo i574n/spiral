@@ -164,9 +164,14 @@ fn resumable_sources(projects: bool, source_receipt: bool, postprocessed_sources
 fn prepare_output_root(plan: &SplitPlan, options: &EmitOptions) -> Result<ResumeParts, String> {
     let identity = emission_identity(plan, options);
     let receipt = options.cache_root.join("emit-input.receipt.tsv");
-    let projects = fs::read_to_string(&receipt)
-        .map(|existing| existing == identity)
-        .unwrap_or(false);
+    // Gear emission (spiral-split gears) renames Part*.fs/.fsproj, names and contents, to the anchored
+    // numbers, which can exceed the plan's ids: a same-source rerun that kept those projects renamed them
+    // again ("Part3817 is outside the plan (3817 entries)"). Its gears.tsv marks the directory.
+    let gear_postprocessed = options.output_root.join("gears.tsv").is_file();
+    let projects = !gear_postprocessed
+        && fs::read_to_string(&receipt)
+            .map(|existing| existing == identity)
+            .unwrap_or(false);
     // Anonymous-record preplanning rewrites Part*.fs after source.receipt.tsv is written.
     // Those postprocessed sources are resumable only when both the source receipt and the full
     // emission-input identity match. The gears planner then reloads the persisted bridge receipt
@@ -178,7 +183,6 @@ fn prepare_output_root(plan: &SplitPlan, options: &EmitOptions) -> Result<Resume
     // Gear emission (spiral-split gears) rewrites Part*.fs in place with passes that are not
     // idempotent; its gears.tsv marks sources that must be emitted afresh, or a rerun on the same
     // source rewrites the rewritten text and flips annotations between runs.
-    let gear_postprocessed = options.output_root.join("gears.tsv").is_file();
     let sources = !gear_postprocessed
         && resumable_sources(
             projects,

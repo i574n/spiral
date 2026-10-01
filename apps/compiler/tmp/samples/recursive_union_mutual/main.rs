@@ -37,11 +37,11 @@ fn spiral_main() -> i32 {
         Rc::new(UH0::UH0_1)
     };
     match &*v5 {
-        UH0::UH0_1 => { // StopA
-            0i32
-        }
         UH0::UH0_0(v6) => { // A
             let mut v6: Rc<UH1> = v6.clone();
+            0i32
+        }
+        UH0::UH0_1 => { // StopA
             0i32
         }
         _ => unreachable!(),

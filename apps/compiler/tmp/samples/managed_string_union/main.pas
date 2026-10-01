@@ -15,19 +15,19 @@ begin
 end;
 function method0(v0: TUS0): LongInt;
 var
+  v3: LongInt;
   v1: AnsiString;
   v2: LongInt;
-  v3: LongInt;
 begin
   case v0.tag of
+      1: begin // Number
+          v3 := v0.c1_0;
+          Result := v3;
+      end;
       0: begin // Text
           v1 := v0.c0_0;
           v2 := LongInt(Length(v1));
           Result := v2;
-      end;
-      1: begin // Number
-          v3 := v0.c1_0;
-          Result := v3;
       end;
   end;
 end;

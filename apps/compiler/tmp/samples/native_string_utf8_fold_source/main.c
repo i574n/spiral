@@ -599,7 +599,7 @@ Tuple0 loop0(int32_t v0, int32_t v1, int32_t v2){
     if (v3){
         
         
-        return TupleCreate0(v2, v1);
+        return TupleCreate0(v1, v2);
     } else {
         
         
@@ -668,11 +668,11 @@ Tuple0 loop0(int32_t v0, int32_t v1, int32_t v2){
             
             
             int32_t v16;
-            v16 = v2 + 1l;
+            v16 = v1 + 1l;
             
             
             int32_t v17;
-            v17 = v1 * 3l;
+            v17 = v2 * 3l;
             
             
             int32_t v18;
@@ -683,7 +683,7 @@ Tuple0 loop0(int32_t v0, int32_t v1, int32_t v2){
             v19 = v17 + v18;
             
             
-            return loop0(v15, v19, v16);
+            return loop0(v15, v16, v19);
         }
     }
 }
@@ -697,7 +697,7 @@ Tuple0 loop3(int32_t v0, int32_t v1, int32_t v2){
     if (v3){
         
         
-        return TupleCreate0(v2, v1);
+        return TupleCreate0(v1, v2);
     } else {
         
         
@@ -766,11 +766,11 @@ Tuple0 loop3(int32_t v0, int32_t v1, int32_t v2){
             
             
             int32_t v16;
-            v16 = v2 + 1l;
+            v16 = v1 + 1l;
             
             
             int32_t v17;
-            v17 = v1 * 3l;
+            v17 = v2 * 3l;
             
             
             int32_t v18;
@@ -781,7 +781,7 @@ Tuple0 loop3(int32_t v0, int32_t v1, int32_t v2){
             v19 = v17 + v18;
             
             
-            return loop3(v15, v19, v16);
+            return loop3(v15, v16, v19);
         }
     }
 }

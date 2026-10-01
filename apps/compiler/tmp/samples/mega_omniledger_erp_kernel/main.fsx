@@ -4,7 +4,7 @@ type [<Struct>] US0 =
 and [<Struct>] US2 =
     | US2_0 of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : int64 * f0_5 : string * f0_6 : string
 and [<Struct>] US1 =
-    | US1_0 of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : string * f0_5 : string * f0_6 : string * f0_7 : US2
+    | US1_5 of f5_0 : string * f5_1 : string * f5_2 : string * f5_3 : string * f5_4 : string * f5_5 : string * f5_6 : string * f5_7 : US2
 let rec method0 (v0 : string, v1 : string) : unit =
     if v0 <> v1 then failwith "erp-NetIntercompany-typed-decode-roundtrip-mismatch"
     ()

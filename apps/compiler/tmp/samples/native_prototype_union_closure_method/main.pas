@@ -26,18 +26,11 @@ end;
 function TClosure0.Invoke(v1: LongInt): LongInt;
 var
   v7: LongInt;
-  v2: LongInt;
   v3: Boolean;
+  v2: LongInt;
   v8: LongInt;
 begin
   case v0.tag of
-      0: begin // Idle
-          v7 := 3;
-      end;
-      1: begin // Hit
-          v2 := v0.c1_0;
-          v7 := v2;
-      end;
       2: begin // Flag
           v3 := v0.c2_0;
           if v3 then begin
@@ -45,6 +38,13 @@ begin
           end else begin
               v7 := 5;
           end;
+      end;
+      1: begin // Hit
+          v2 := v0.c1_0;
+          v7 := v2;
+      end;
+      0: begin // Idle
+          v7 := 3;
       end;
   end;
   v8 := v7 + v1;

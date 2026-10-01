@@ -46,11 +46,11 @@ fn method8(mut v0: f32) -> (bool, f32, i32) {
     let mut v1: bool = v0 >= 3.5f32;
     (v1, v0, 7i32)
 }
-fn method9(mut v0: i32, mut v1: f32, mut v2: bool) -> i32 {
-    if v2 {
+fn method9(mut v0: bool, mut v1: f32, mut v2: i32) -> i32 {
+    if v0 {
         let mut v3: bool = v1 >= 3.5f32;
         if v3 {
-            let mut v4: i32 = v0 - 7i32;
+            let mut v4: i32 = v2 - 7i32;
             v4
         } else {
             1i32
@@ -62,7 +62,7 @@ fn method9(mut v0: i32, mut v1: f32, mut v2: bool) -> i32 {
 fn method1(mut v0: i32) -> i32 {
     let mut v1: f32 = 4.0f32;
     let (mut v2, mut v3, mut v4): (bool, f32, i32) = method8(v1);
-    let mut v5: i32 = method9(v4, v3, v2);
+    let mut v5: i32 = method9(v2, v3, v4);
     let mut v6: i32 = v0 + v5;
     method2(v6)
 }
