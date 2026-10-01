@@ -10,7 +10,8 @@ fn closure0(mut v0: i32) -> Rc<dyn Fn(i32, i32) -> (i32, i32)> {
     })
 }
 fn method0(mut v0: Rc<dyn Fn(i32, i32) -> (i32, i32)>) -> (i32, i32) {
-    v0(10i32, 20i32)
+    let (mut v1, mut v2): (i32, i32) = v0(10i32, 20i32);
+    (v1, v2)
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 1i32;

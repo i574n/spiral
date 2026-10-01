@@ -60,9 +60,14 @@ Fun0 * ClosureCreate0(int32_t v0){
     return (Fun0 *) x;
 }
 Tuple0 method0(Fun0 * v0){
+    v0->refc++;
     
+    int32_t v1; int32_t v2;
+    Tuple0 tmp0 = v0->fptr(v0, 10l, 20l);
+    v1 = tmp0.v0; v2 = tmp0.v1;
     
-    return v0->fptr(v0, 10l, 20l);
+    v0->decref_fptr(v0);
+    return TupleCreate0(v1, v2);
 }
 int32_t main(){
     
@@ -76,8 +81,8 @@ int32_t main(){
     v1->refc++;
     
     int32_t v2; int32_t v3;
-    Tuple0 tmp0 = method0(v1);
-    v2 = tmp0.v0; v3 = tmp0.v1;
+    Tuple0 tmp1 = method0(v1);
+    v2 = tmp1.v0; v3 = tmp1.v1;
     
     v1->decref_fptr(v1);
     int32_t v4;

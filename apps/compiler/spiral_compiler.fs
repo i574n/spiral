@@ -149523,6 +149523,16 @@ module spiral_compiler =
             add (sprintf "  = help: %s" limitNote)
             sb.ToString().TrimEnd()
 
+    /// Nesting of dynamic `if` branches on the evaluating path (hopac `if_core_impl`), as in single-flight. An
+    /// AsyncLocal, not a ThreadLocal: evaluation moves onto new big-stack threads, which inherit the depth; join
+    /// point work on dedicated workers starts from zero (recursion through a join point runs at run time).
+    module DynamicIfNesting =
+        let limit =
+            match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_IF_NESTING_LIMIT") with
+            | true, n when n > 0 -> n
+            | _ -> 5000
+        let depth = System.Threading.AsyncLocal<int>()
+
     /// What a stalled build waits on in partial evaluation, for the BuildFile stall message: `peval` installs a
     /// probe over its join-point tables (join points whose specialization is still pending, by name).
     module PevalStallProbe =
@@ -165021,6 +165031,21 @@ module spiral_compiler =
                         DiagJson.emit (
                             FastRuntimeFormat.format "{\"kind\":\"jp_placeholder_pattern_miss_recovery_entered\",\"pattern_node_id\":%d,\"got\":%s,\"authority\":\"suspect_cache_inline_recompute\",\"next\":\"requeued_attempts_evaluate_join_points_inline\"}" [| box patternNodeId; box (DiagJson.esc gotText) |])
 
+            let within_dynamic_if (s: LangEnv) (f : unit -> 'a) : 'a =
+                let depth = DynamicIfNesting.depth.Value + 1
+                if depth > DynamicIfNesting.limit then
+                    let frames = s.trace |> List.map (fun (r: Range) -> r.path, (fst r.range).line, (fst r.range).character)
+                    let report =
+                        RunawayUnrollDiagnostic.render
+                            "EJP0040"
+                            (sprintf "partial evaluation nested more than %d dynamic `if` branches" DynamicIfNesting.limit)
+                            frames
+                            (sprintf "if the nesting is legitimate, raise the limit: SPIRAL_IF_NESTING_LIMIT=<n> (now %d)" DynamicIfNesting.limit)
+                    raise_type_error_no_trace s report
+                DynamicIfNesting.depth.Value <- depth
+                try f ()
+                finally DynamicIfNesting.depth.Value <- depth - 1
+
             let rec if_ (s: LangEnv) cond on_succ on_fail =
                 // MIGRATION: Removed proactive depth-based BigStack spawning
                 // Rely only on EnsureSufficientExecutionStack in if_core for reactive spawning
@@ -165080,8 +165105,8 @@ module spiral_compiler =
                         let inline op op cond' res = cse.TryAdd(TyOp(op,[cond;cond']),res) |> ignore; cse.TryAdd(TyOp(op,[cond';cond]),res) |> ignore
                         op EQ lit_tr tr; op NEQ lit_tr fl; op EQ lit_fl fl; op NEQ lit_fl tr
                         cse
-                    let tr, type_tr = term_scope' s (add_rewrite_cases true) on_succ
-                    let fl, type_fl = term_scope' s (add_rewrite_cases false) on_fail
+                    let tr, type_tr = within_dynamic_if s (fun () -> term_scope' s (add_rewrite_cases true) on_succ)
+                    let fl, type_fl = within_dynamic_if s (fun () -> term_scope' s (add_rewrite_cases false) on_fail)
                     let type_tr, type_fl =
                         match type_tr, type_fl with
                         | YRecord tr, YRecord fl ->

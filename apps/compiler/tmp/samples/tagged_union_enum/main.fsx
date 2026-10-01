@@ -7,12 +7,12 @@ let rec method0 (v0 : US0) : int32 =
     match v0 with
     | US0_0 -> (* Cold *)
         1
-    | US0_3 -> (* Done *)
-        4
-    | US0_2 -> (* Hot *)
-        3
     | US0_1 -> (* Warm *)
         2
+    | US0_2 -> (* Hot *)
+        3
+    | US0_3 -> (* Done *)
+        4
 let v0 : int32 = 3
 let v1 : bool = v0 = 0
 let v10 : US0 =

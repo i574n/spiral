@@ -33,8 +33,15 @@ begin
   Result := c;
 end;
 function method0(v0: TFun0): TTuple0;
+var
+  v1: LongInt;
+  v2: LongInt;
+  tmp2: TTuple0;
 begin
-  Result := v0.Invoke(10, 20);
+  tmp2 := v0.Invoke(10, 20);
+  v1 := tmp2.f0;
+  v2 := tmp2.f1;
+  Result := TupleCreate0(v1, v2);
 end;
 function SpiralMain: LongInt;
 var

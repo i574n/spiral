@@ -79,26 +79,26 @@ int32_t sum0(UH0 * v0){
 int32_t main(){
     
     
-    int32_t v0;
-    v0 = 1l;
+    UH0 * v0;
+    v0 = UH0_0();
     
     
     int32_t v1;
     v1 = 2l;
-    
+    v0->refc += 2;
     
     UH0 * v2;
-    v2 = UH0_0();
+    v2 = UH0_1(v1, v0, v0);
+    
+    UHDecref0(v0);
+    int32_t v3;
+    v3 = 1l;
     v2->refc += 2;
     
-    UH0 * v3;
-    v3 = UH0_1(v1, v2, v2);
-    v3->refc += 2;
-    UHDecref0(v2);
     UH0 * v4;
-    v4 = UH0_1(v0, v3, v3);
+    v4 = UH0_1(v3, v2, v2);
     v4->refc++;
-    UHDecref0(v3);
+    UHDecref0(v2);
     int32_t v5;
     v5 = sum0(v4);
     

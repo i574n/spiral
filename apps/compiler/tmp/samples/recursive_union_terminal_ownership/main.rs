@@ -39,16 +39,16 @@ fn method0(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> i32 {
     v4
 }
 fn spiral_main() -> i32 {
-    let mut v0: i32 = 1i32;
+    let mut v0: Rc<UH0> = Rc::new(UH0::UH0_0);
     let mut v1: i32 = 2i32;
-    let mut v2: Rc<UH0> = Rc::new(UH0::UH0_0);
-    let mut v3: Rc<UH0> = Rc::new(UH0::UH0_1(v1, v2.clone(), v2.clone()));
-    let mut v4: Rc<UH0> = Rc::new(UH0::UH0_1(v0, v3.clone(), v3.clone()));
-    let mut v5: i32 = 1i32;
+    let mut v2: Rc<UH0> = Rc::new(UH0::UH0_1(v1, v0.clone(), v0.clone()));
+    let mut v3: i32 = 1i32;
+    let mut v4: Rc<UH0> = Rc::new(UH0::UH0_1(v3, v2.clone(), v2.clone()));
+    let mut v5: Rc<UH0> = Rc::new(UH0::UH0_0);
     let mut v6: i32 = 2i32;
-    let mut v7: Rc<UH0> = Rc::new(UH0::UH0_0);
-    let mut v8: Rc<UH0> = Rc::new(UH0::UH0_1(v6, v7.clone(), v7.clone()));
-    let mut v9: Rc<UH0> = Rc::new(UH0::UH0_1(v5, v8.clone(), v8.clone()));
+    let mut v7: Rc<UH0> = Rc::new(UH0::UH0_1(v6, v5.clone(), v5.clone()));
+    let mut v8: i32 = 1i32;
+    let mut v9: Rc<UH0> = Rc::new(UH0::UH0_1(v8, v7.clone(), v7.clone()));
     let mut v10: i32 = method0(v4.clone(), v9.clone());
     let mut v11: i32 = v10 - 10i32;
     v11

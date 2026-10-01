@@ -4,15 +4,15 @@ type [<Struct>] US0 =
     | US0_2 of f2_0 : bool
 let rec method0 (v0 : US0) : int32 =
     match v0 with
+    | US0_0 -> (* Idle *)
+        3
+    | US0_1(v1) -> (* Hit *)
+        v1
     | US0_2(v2) -> (* Flag *)
         if v2 then
             11
         else
             5
-    | US0_1(v1) -> (* Hit *)
-        v1
-    | US0_0 -> (* Idle *)
-        3
 let v0 : int32 = 2
 let v1 : bool = v0 = 0
 let v7 : US0 =

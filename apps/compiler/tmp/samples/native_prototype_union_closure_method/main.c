@@ -68,6 +68,20 @@ int32_t ClosureMethod0(Closure0 * x, int32_t v1){
     
     int32_t v7;
     switch (v0.tag) {
+        case 0: { // Idle
+            
+            
+            
+            v7 = 3l;
+            break;
+        }
+        case 1: { // Hit
+            int32_t v2 = v0.case1.v0;
+            
+            
+            v7 = v2;
+            break;
+        }
         case 2: { // Flag
             bool v3 = v0.case2.v0;
             
@@ -81,20 +95,6 @@ int32_t ClosureMethod0(Closure0 * x, int32_t v1){
                 
                 v7 = 5l;
             }
-            break;
-        }
-        case 1: { // Hit
-            int32_t v2 = v0.case1.v0;
-            
-            
-            v7 = v2;
-            break;
-        }
-        case 0: { // Idle
-            
-            
-            
-            v7 = 3l;
             break;
         }
     }

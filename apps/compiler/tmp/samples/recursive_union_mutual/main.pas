@@ -40,11 +40,11 @@ begin
       v5 := UH0_1;
   end;
   case v5.tag of
-      0: begin // A
-          v6 := v5.c0_0;
+      1: begin // StopA
           Result := 0;
       end;
-      1: begin // StopA
+      0: begin // A
+          v6 := v5.c0_0;
           Result := 0;
       end;
   end;

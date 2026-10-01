@@ -40,6 +40,13 @@ int32_t score0(US0 v0){
     
     
     switch (v0.tag) {
+        case 0: { // Hit
+            int32_t v1 = v0.case0.v0;
+            
+            USDecref0(&(v0));
+            return v1;
+            break;
+        }
         case 1: { // Flag
             bool v2 = v0.case1.v0;
             
@@ -53,13 +60,6 @@ int32_t score0(US0 v0){
                 
                 return 4l;
             }
-            break;
-        }
-        case 0: { // Hit
-            int32_t v1 = v0.case0.v0;
-            
-            USDecref0(&(v0));
-            return v1;
             break;
         }
     }

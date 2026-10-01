@@ -26,10 +26,17 @@ begin
 end;
 function method0(v0: TUS0): LongInt;
 var
-  v2: Boolean;
   v1: LongInt;
+  v2: Boolean;
 begin
   case v0.tag of
+      0: begin // Idle
+          Result := 3;
+      end;
+      1: begin // Hit
+          v1 := v0.c1_0;
+          Result := v1;
+      end;
       2: begin // Flag
           v2 := v0.c2_0;
           if v2 then begin
@@ -37,13 +44,6 @@ begin
           end else begin
               Result := 5;
           end;
-      end;
-      1: begin // Hit
-          v1 := v0.c1_0;
-          Result := v1;
-      end;
-      0: begin // Idle
-          Result := 3;
       end;
   end;
 end;

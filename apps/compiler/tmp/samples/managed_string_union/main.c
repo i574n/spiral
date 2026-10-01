@@ -78,13 +78,6 @@ int32_t score0(US0 v0){
     
     
     switch (v0.tag) {
-        case 1: { // Number
-            int32_t v3 = v0.case1.v0;
-            
-            USDecref0(&(v0));
-            return v3;
-            break;
-        }
         case 0: { // Text
             String * v1 = v0.case0.v0;
             v1->refc++;
@@ -94,6 +87,13 @@ int32_t score0(US0 v0){
             
             StringDecref(v1);
             return v2;
+            break;
+        }
+        case 1: { // Number
+            int32_t v3 = v0.case1.v0;
+            
+            USDecref0(&(v0));
+            return v3;
             break;
         }
     }

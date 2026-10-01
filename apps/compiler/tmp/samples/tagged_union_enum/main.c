@@ -49,11 +49,11 @@ int32_t score0(US0 v0){
             return 1l;
             break;
         }
-        case 3: { // Done
+        case 1: { // Warm
             
             
             USDecref0(&(v0));
-            return 4l;
+            return 2l;
             break;
         }
         case 2: { // Hot
@@ -63,11 +63,11 @@ int32_t score0(US0 v0){
             return 3l;
             break;
         }
-        case 1: { // Warm
+        case 3: { // Done
             
             
             USDecref0(&(v0));
-            return 2l;
+            return 4l;
             break;
         }
     }

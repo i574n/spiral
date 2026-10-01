@@ -1,17 +1,17 @@
 type [<Struct>] US0 =
     | US0_0 of f0_0 : int32
 and [<Struct>] US1 =
-    | US1_1 of f1_0 : int32 * f1_1 : bool
+    | US1_0 of f0_0 : int32 * f0_1 : bool
 and [<Struct>] US2 =
-    | US2_1 of f1_0 : int32
+    | US2_0 of f0_0 : int32
 and [<Struct>] US3 =
     | US3_0 of f0_0 : bool * f0_1 : int32
 and [<Struct>] US4 =
     | US4_0 of f0_0 : int32
 and [<Struct>] US5 =
-    | US5_1 of f1_0 : int32 * f1_1 : bool
+    | US5_0 of f0_0 : int32 * f0_1 : bool
 and [<Struct>] US6 =
-    | US6_2 of f2_0 : bool
+    | US6_0 of f0_0 : bool
 let rec method0 (v0 : US0) : US1 =
     match v0 with
     | US0_0(v1) -> (* RawA *)

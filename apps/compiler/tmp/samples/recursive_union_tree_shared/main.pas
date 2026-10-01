@@ -42,19 +42,19 @@ begin
 end;
 function SpiralMain: LongInt;
 var
-  v0: LongInt;
+  v0: TUH0;
   v1: LongInt;
   v2: TUH0;
-  v3: TUH0;
+  v3: LongInt;
   v4: TUH0;
   v5: LongInt;
   v6: LongInt;
 begin
-  v0 := 1;
+  v0 := UH0_0;
   v1 := 2;
-  v2 := UH0_0;
-  v3 := UH0_1(v1, v2, v2);
-  v4 := UH0_1(v0, v3, v3);
+  v2 := UH0_1(v1, v0, v0);
+  v3 := 1;
+  v4 := UH0_1(v3, v2, v2);
   v5 := method0(v4);
   v6 := v5 - 5;
   Result := v6;

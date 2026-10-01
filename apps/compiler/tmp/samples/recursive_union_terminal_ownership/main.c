@@ -96,46 +96,46 @@ int32_t consume_pair0(UH0 * v0, UH0 * v1){
 int32_t main(){
     
     
-    int32_t v0;
-    v0 = 1l;
+    UH0 * v0;
+    v0 = UH0_0();
     
     
     int32_t v1;
     v1 = 2l;
-    
+    v0->refc += 2;
     
     UH0 * v2;
-    v2 = UH0_0();
+    v2 = UH0_1(v1, v0, v0);
+    
+    UHDecref0(v0);
+    int32_t v3;
+    v3 = 1l;
     v2->refc += 2;
     
-    UH0 * v3;
-    v3 = UH0_1(v1, v2, v2);
-    v3->refc += 2;
-    UHDecref0(v2);
     UH0 * v4;
-    v4 = UH0_1(v0, v3, v3);
+    v4 = UH0_1(v3, v2, v2);
     
-    UHDecref0(v3);
-    int32_t v5;
-    v5 = 1l;
+    UHDecref0(v2);
+    UH0 * v5;
+    v5 = UH0_0();
     
     
     int32_t v6;
     v6 = 2l;
-    
+    v5->refc += 2;
     
     UH0 * v7;
-    v7 = UH0_0();
+    v7 = UH0_1(v6, v5, v5);
+    
+    UHDecref0(v5);
+    int32_t v8;
+    v8 = 1l;
     v7->refc += 2;
     
-    UH0 * v8;
-    v8 = UH0_1(v6, v7, v7);
-    v8->refc += 2;
-    UHDecref0(v7);
     UH0 * v9;
-    v9 = UH0_1(v5, v8, v8);
+    v9 = UH0_1(v8, v7, v7);
     v4->refc++; v9->refc++;
-    UHDecref0(v8);
+    UHDecref0(v7);
     int32_t v10;
     v10 = consume_pair0(v4, v9);
     

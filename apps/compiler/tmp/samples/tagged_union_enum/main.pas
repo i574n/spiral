@@ -27,14 +27,14 @@ begin
       0: begin // Cold
           Result := 1;
       end;
-      3: begin // Done
-          Result := 4;
+      1: begin // Warm
+          Result := 2;
       end;
       2: begin // Hot
           Result := 3;
       end;
-      1: begin // Warm
-          Result := 2;
+      3: begin // Done
+          Result := 4;
       end;
   end;
 end;

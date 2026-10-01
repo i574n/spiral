@@ -19,6 +19,13 @@ impl US0 {
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v7: i32 = match &v0 {
+            US0::US0_0 => { // Idle
+                3i32
+            }
+            US0::US0_1(v2) => { // Hit
+                let mut v2: i32 = v2.clone();
+                v2
+            }
             US0::US0_2(v3) => { // Flag
                 let mut v3: bool = v3.clone();
                 if v3 {
@@ -26,13 +33,6 @@ fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
                 } else {
                     5i32
                 }
-            }
-            US0::US0_1(v2) => { // Hit
-                let mut v2: i32 = v2.clone();
-                v2
-            }
-            US0::US0_0 => { // Idle
-                3i32
             }
             _ => unreachable!(),
         };

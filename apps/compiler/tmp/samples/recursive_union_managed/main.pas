@@ -24,6 +24,9 @@ var
   v5: LongInt;
 begin
   case v0.tag of
+      0: begin // Nil
+          Result := 0;
+      end;
       1: begin // Cons
           v1 := v0.c1_0;
           v2 := v0.c1_1;
@@ -31,9 +34,6 @@ begin
           v4 := method0(v2);
           v5 := v3 + v4;
           Result := v5;
-      end;
-      0: begin // Nil
-          Result := 0;
       end;
   end;
 end;

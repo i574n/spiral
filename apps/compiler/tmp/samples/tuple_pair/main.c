@@ -21,7 +21,7 @@ int32_t method1(int32_t v0, int32_t v1){
     
     
     int32_t v2;
-    v2 = v0 + v1;
+    v2 = v1 + v0;
     
     
     return v2;
@@ -43,7 +43,7 @@ int32_t main(){
     
     
     int32_t v4;
-    v4 = method1(v2, v3);
+    v4 = method1(v3, v2);
     
     
     int32_t v5;
