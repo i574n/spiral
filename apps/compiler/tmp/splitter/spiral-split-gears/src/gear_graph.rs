@@ -648,11 +648,11 @@ fn plan_gears_with_bridge_report(
         }
     } else {
         let allowance = policy.max_lines.saturating_mul(4);
-        // With the previous emission's anchors, keep its gears (see `gear_anchors`); otherwise pack.
-        let packed = match anchors_from_env() {
-            Some(anchors) => gear_anchors::anchored_partition(plan, &sccs, anchors),
-            None => pack_components_on_timeline(&sccs, policy, allowance),
-        };
+        // With the previous emission's anchors, keep its gears (see `gear_anchors`); otherwise, or when
+        // the anchors are stale (their cycle merges collapsed the partition), pack.
+        let packed = anchors_from_env()
+            .and_then(|anchors| gear_anchors::anchored_partition(plan, &sccs, anchors))
+            .unwrap_or_else(|| pack_components_on_timeline(&sccs, policy, allowance));
         groups = recompute_series_layers(plan, packed.into_iter().map(|shards| (0, shards)).collect())?;
     }
     // Anonymous-record identities and address-taken top-level mutables must

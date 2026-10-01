@@ -421,13 +421,18 @@ Write-Host "outputs: written next to their sources; git diff samples shows what 
 # ------------------------------------------------------------------ bless / record
 if ($Bless) {
     $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t") } else { @() }
+    # A timeout depends on the machine and its load, not on the program: never record one as expected (the
+    # oracle must be deterministic). Such a row keeps its previous oracle entry, if any.
+    $blessable = @($rows | Where-Object { $_.compile -ne 'timeout' })
+    $skipped = $rows.Count - $blessable.Count
+    if ($skipped) { Write-Host "not blessed: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }
     $fresh = @{}
-    foreach ($row in $rows) { $fresh["$($row.id)|$($row.backend)"] = $row }
-    $merged = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") }) + @($rows | ForEach-Object {
+    foreach ($row in $blessable) { $fresh["$($row.id)|$($row.backend)"] = $row }
+    $merged = @($existing | Where-Object { -not $fresh.ContainsKey("$($_.id)|$($_.backend)") }) + @($blessable | ForEach-Object {
         [pscustomobject]@{ id = $_.id; backend = $_.backend; compile = $_.compile; residual = $_.residual; native = $_.native; exit = $_.exit; stdout = $_.stdout } })
     New-Item -ItemType Directory -Force (Split-Path $expectedPath) | Out-Null
     $merged | Sort-Object id, backend | Export-Csv $expectedPath -Delimiter "`t" -NoTypeInformation -UseQuotes Never
-    Write-Host "blessed $($rows.Count) rows into $expectedPath"
+    Write-Host "blessed $($blessable.Count) rows into $expectedPath"
 }
 if ($Record) {
     $board = Get-SpiralScoreboardPath $mode

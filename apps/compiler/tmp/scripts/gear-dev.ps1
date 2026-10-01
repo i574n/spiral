@@ -55,6 +55,20 @@ if (Test-Path -LiteralPath $anchors) { $env:SPIRAL_GEAR_ANCHORS = $anchors } els
 if ($LASTEXITCODE -ne 0) { throw 'spiral-split gears failed' }
 $emitSeconds = [int]$clock.Elapsed.TotalSeconds
 
+# Anchors keep gears stable but shard packing is re-planned on every emission: once enough shards straddle old
+# gear boundaries, the anchored partition merges every gear on the resulting cycles (2026-09-30: 137 -> 9 gears,
+# one of 169,541 lines, so no parallelism, plus an FS2014 in Debug). The splitter now detects that and falls
+# back to a fresh plan (SPIRAL_GEAR_ANCHOR_MAX_MERGE); this is the second check. Syncing a collapsed plan would
+# also save its anchors for every later run, so refuse it, even under -Force; -Full re-plans from scratch.
+if (-not $Full) {
+    $previousGears = @(Get-ChildItem $build -Filter 'Gear*.fsproj' -ErrorAction SilentlyContinue | Where-Object BaseName -ne 'GearRoot').Count
+    $emittedGears = @(Get-ChildItem $emit -Filter 'Gear*.fsproj' | Where-Object BaseName -ne 'GearRoot').Count
+    if ($previousGears -ge 20 -and $emittedGears -lt [Math]::Ceiling($previousGears * 0.7)) {
+        Write-Host ("== the anchored plan collapsed from {0} to {1} gears (stale anchors: shards now straddle old gears). Nothing synced, anchors kept. Rerun with -Full to re-plan." -f $previousGears, $emittedGears) -ForegroundColor Yellow
+        exit 3
+    }
+}
+
 # ---- 2. sync changed sources and projects
 $changed = [Collections.Generic.HashSet[string]]::new()
 $emitted = Get-ChildItem $emit -File | Where-Object { $_.Extension -in '.fs', '.fsproj' }

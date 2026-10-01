@@ -1,5 +1,25 @@
 # Hopac frontier
 
+**Status 2026-09-30 18:00 (fixes 21-44):** `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native`
+(`<cache>/runs/hopac-20260930-171614`, 1,081 jobs, 3 workers, quiet):
+
+| Suite | Jobs | Parity | Not parity |
+|---|---:|---:|---|
+| frontier | 16 | 12 | 4 new: the two fix-44 fixtures (F# compiles; C/Rust/Delphi rejected, `sm'.format` has no backend case for them), no oracle rows yet |
+| contracts | 607 | 597 | 9 UNEXPECTED-OUTPUT, 1 no-oracle |
+| examples | 453 | 422 | 12 UNEXPECTED-OUTPUT, 16 new, 3 NATIVE-DIFF |
+| mega | 5 | 5 (brzozowski 6 s, zeta 10 s, omniledger 28 s, lean_cic 32 s, spiral_proves 51 s) | 0 |
+
+Against the 12:26 run (fix 41): no verdict changed; the only new rows are the two frontier fixtures'.
+Fixes 45-47 (`runs/hopac-20260930-193524`, 21:10): 61 rows `missing` with `BuildFile stalled` at ~18 s of a
+20 s job budget, on a machine saturated by `gear-dev -Full`, two apps/spiral compiles and two agents
+(compile phase 4,879 s against 2,053 s). Rerun of those 49 samples with 2 workers
+(`runs/hopac-20260930-212855`): 113/113 ok, 0 verdict changes against 17:16. So 44-47 change no verdict;
+suite timings are only meaningful on a quiet machine.
+Compile phase 2,053 s, median job 4.1 s. Native: 359 ran, DISAGREE 0. The 21 UNEXPECTED-OUTPUT rows
+are single-flight-identical "(expression)" outputs awaiting the re-bless (NEXT.md). `apps/spiral`: see
+fix 44 (2 pending join points left, then a codegen wait on an unfilled cell; NEXT.md).
+
 **Status 2026-09-30 (fixes 21-37):** `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native`
 (`<cache>/runs/hopac-20260930-050954`, 3 workers, `SPIRAL_DIAG_QUIET=1` from the harness):
 
@@ -393,7 +413,10 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
       diagnostic outputs. These are the `DiagJson.emit` rows (17% inclusive), the advanced console
       projections, and the live work-ledger heartbeat and projection-suite emissions. The last two still
       run their state observation. Durable terminal receipts, errors and results are unaffected. Direct
-      compiles keep everything.
+      compiles keep everything. Correction (fix 39): `emit`'s row filter also keeps the per-kind counters
+      that `DiagJson.snapshotKindCount` feeds to ~150 replay/join retry decisions. The first quiet mode
+      skipped it, so quiet and full runs could choose different paths. Quiet `emit` now still runs
+      `shouldEmitJsonLine` on the raw row and drops only the envelope, enrichment and write.
 36. **The two slow mega roots, profiled alone** (after fix 35, `SPIRAL_DIAG_QUIET=1`).
     `mega_lean_cic_bottom_up_kernel` takes 33 s alone, but 77-178 s in a suite. The 3-5x slowdown under
     load is beyond fair CPU sharing, so oversubscription is a suspect: every compile runs its own full
@@ -423,7 +446,216 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     default of one worker per core (lean_cic 178 s vs 139 s, same wall time). `lean_cic` is slow in the
     suite because it shares the CPU with the omniledger and spiral_proves roots, not because of
     scheduler oversubscription.
-38. **Open: multi-package type checking races (`typecheck_await_scheduled` stalls).** Up to four
+50. **Orphaned cells recomputed in place when their inputs allow it.** Attempt 8 (Release, fixes 44-48)
+    failed after 762 s: `EJP0014 ... CODEGEN JP MISSING BODY DICT BLOCKED closure0 ... dict=0`, a closure
+    whose owner had no body table at codegen, after fix 45's clear-and-rerun of `main` (state from the
+    abandoned attempt can survive into the rerun). Each owned method/closure cell now registers an inline
+    recompute (`jp_orphan_recompute`, keyed by the cell; methods share `recomputeInline` with the
+    `RecomputeSuspect` path, closures register their `run`), and peval's root recomputes orphaned cells in
+    place, round by round, before falling back to the clear-and-rerun. On `read_link` the orphan
+    (`<anon>@sm'_real.spir:276`) pattern-misses again on every in-place recompute: its captured environment
+    holds placeholder values from before recovery, so only a rerun of its parents fixes it, and the
+    fallback does (exit 0, 187,564 bytes). The missing closure table of attempt 8 did not reproduce there.
+    The clean general answer is a restart of the whole peval from a fresh generation once recovery starts;
+    to do.
+49. **A sub-package entry whose `main` fails to parse compiled its dependency's program (both cores).**
+    The entry's `inl main` block failed to parse (a backtick type application in top-down code) and was
+    dropped without a message; `BuildFile` then took the `main` that the entry's `open main` brought in
+    from the dependency. Five mega brzozowski rows recorded that program as their oracle. Both cores now
+    fail the build (`Cannot find main ...: the file does not define it, and it has errors`, then
+    `path:line:col` per error) when the entry does not define `main` itself and has tokenizer or parser
+    errors; hopac reads the bundles without blocking (fix 33). NEXT.md item 1 for the oracle side.
+
+**apps/spiral attempt 7 (21:00, split Debug build, fixes 44-48): evaluation reached the root.** At 2,041 s
+the heartbeat recorded `progress_pct=100`, `root_complete_receipts=1`, `terminal_signals=2`; then nothing
+moved (5% CPU) and from 34 to 56 min the heartbeat requested a "no work" hard abort 49 times
+(`compile_progress_plateau_abort`, `route_to_no_work_abort`) until the 60 min budget killed it. The
+requests are observer-only by design (`forceProcessExitDirect` queues a request; the terminal reducer owns
+the physical exit; only a stalled metronome or failed-closed deadman arms a physical failsafe), so the
+real question is what is stuck after root completion: codegen, the writer, or the terminal protocol.
+Next: attempt 8 on the Release monolith with a stack dump shortly after root completion.
+
+48. **Visit budget tripped on legitimate recursion during inline recovery (apps/spiral attempt 6).**
+    Attempt 6 (fixes 44-47, under a 99%-loaded machine) failed after 643 s with `EvalVisitBudgetFailure`.
+    In forced-sequential mode a keyed term/type re-entry (`reKey > 1`: the same node key twice on the
+    current evaluation path, i.e. recursion such as `run` → `루프` → `run`) seeds a replay prefetch and
+    charges `EvalVisitLedger`, which counts a revisit as productive only if semantic facts, work receipts
+    or the cell revision advanced. Inline recovery evaluates join points without work receipts, so
+    ordinary recursion reads as unproductive and exhausts the budget. Placeholder recovery requests
+    sequential mode, so it turned this replay heuristic on. Both prefetch guards (term and type) now skip
+    while `PevalStallProbe.placeholderRecoveryEntered`; single-flight has no such guard either.
+47. **Late completion after a generation was retired (apps/spiral, 36 min in).** Attempt 5 (fixes 44-45b)
+    ran for 36 min and then failed with `FatalError: specialization completion requires registration`. A
+    cache invalidation (`JpGenerationScopeCacheInvalidation`) retires every specialization registration up to
+    its generation (`JpSpecializationWorklistAuthority.retireGeneration`) while work items of that generation
+    can still be running; the first one to finish hit `invalidOp` in `prepareCompletion`. It now records the
+    late completion (`jp_specialization_late_completion_after_generation_retired`) and completes.
+46. **Codegen waits on a pending cell are bounded.** `requireResolvedMethodCell`/`...ClosureCell` blocked in
+    `run (IVar.read ivar)` without limit, outside the build budget (fix 45's hang ran 28 min past a 120 s
+    budget). They now wait `SPIRAL_CODEGEN_PENDING_CELL_WAIT_MS` (default 30,000) and then fail with
+    `EJP0014: codegen JP body cell still pending ... (orphaned cell, no producer left): method<N> body=.. key=..`.
+45. **Orphaned join-point cells: codegen waited forever (`read_link`).** Repro: a `main` matching on
+    `file_system.read_link ".."` (`$CLAUDE_JOB_DIR/tmp/readlink_loud.ps1`; single-flight overflows the
+    stack on it). Hopac finished partial evaluation, then `codegenFsharp` blocked in
+    `run (IVar.read ivar)` (`CodegenJpMethodBodyCellPending`, no timeout, outside the build budget) on a
+    cell nobody would fill: its work unit had pattern-missed before recovery started and was retired as a
+    stable replay sentinel, and after recovery nothing called that key again (its parent's body was
+    already complete). Fix:
+    - after `main` returns, peval waits for JP quiescence and counts pending method and closure cells. If
+      any remain, it marks a suspect (inline recovery), clears the JP specialization tables (method,
+      closure, completed/pending memos, declared interfaces; `LoopSpecializationGuard.reset`) and reruns
+      `main` (max 3 attempts in total, with the pattern-miss retry of fix 44);
+    - in recovery mode closure bodies run inline too (they had no inline path: always spawned work, which
+      could again be retired with its cell pending).
+
+    The repro compiles (exit 0, 187,564 bytes, 26 methods, 12 closures, no placeholder in the output;
+    114 s in loud mode). Codegen's unbounded wait on a pending cell is still there: next, fail closed
+    with the key once the graph is quiescent, and bring codegen under the build budget.
+44. **Matching on a join point's pending result (apps/spiral's stall).** The second and third attempts
+    named the pending join points: 96 of them, 44 at `trace.spi:302` (the `join` around the trace line) and
+    the rest in `listm`, `sm'_real.spir:276`, `parsing`. Reduced to two fixtures that fail only in hopac:
+    - `frontier_format_any_union`: `"x: " ++#? Some 1i32` in `main` (FatalError
+      `PatternMissBreakthroughEscapeTransport`);
+    - `frontier_join_format_any`: the same inside a `join` (spins until the 60 s stasis cancel, then the
+      build stalls). `env.spi:90`'s catch-all target branch does exactly this.
+
+    Mechanism: `++#?` calls `format_real`, a top-level join point. Its first call claims the cell, spawns
+    the body as JP work and returns a typed placeholder (`jp_method_synchronous_boundary_deferred`,
+    "continue term evaluation then dereference placeholder"). The caller then matches on that placeholder
+    (`.JPMethodUnknownRet(par)`), which can never succeed while the callee is pending. The pattern miss
+    raises a requeue signal: in `main` nothing catches it (fatal); in a JP work unit the requeued body gets
+    the same placeholder back and spins, and a nested `join ""` in `format_real` was retired as control-only
+    work with its cell unfilled.
+
+    Fix (5 parts, `jpPlaceholderPatternMissEntersRecovery`):
+    - a pattern miss (or type-pattern miss) whose scrutinee mentions a JP placeholder marks a
+      `SuspectCache` entry. That switches JP methods to the existing inline recompute paths (pending-cell
+      bypass, `RecomputeSuspect`), which evaluate the callee directly as single-flight does, for the rest of
+      the build;
+    - shared pending cells are bypassed too while suspects are active (they still deferred to a
+      placeholder);
+    - both inline paths now publish their body as a ready cell (`IVar(JpMethodBodyCellReadyPayload ..)`):
+      codegen reads JP method bodies from that table (`EJP0014 ... body cell not ready` otherwise);
+    - `peval`'s root retries `main` (max 3) on the escape once recovery is on: it waits for JP quiescence,
+      resets the worklist and the terminal contracts the abandoned attempt pinned
+      (`EvalWorklist.resetTerminalContractsForRootRetry`), and reruns;
+    - the sequential request that recovery makes is not "unstable" for the output write guard
+      (`PevalStallProbe.placeholderRecoveryEntered`, reset per build); without this the result was
+      computed and then refused (`WRITE_ABORT ... seq=1 unstable=true`).
+
+    Both fixtures now compile in ~7 s, and the trace-state repro (`get_trace_state_or_init`, formerly 3
+    pending join points and a stall) in 11 s. Cost: after the first placeholder miss the build evaluates
+    join points inline, so a build that hits it loses hopac's parallelism for its remainder.
+
+    apps/spiral, fourth attempt (16:48, 25 min): stalled with 2 pending join points instead of 96, both
+    `run@file_system.spi:701` (`read_link`'s `run` join point, which takes the `let rec 루프` and is called
+    back by it: mutual recursion across two join points). Next rung: a fixture for that shape.
+43. **apps/spiral, first attempt (2026-09-30 14:24, fix-41 build).** Script: a scratch copy of
+    `apps/spiral/spiral.spi` with an absolute `packageDir` (the compiler writes next to its source; the
+    committed `spiral.fsx` stays untouched). Type checking passed and partial evaluation started. After
+    ~17 min (1,550 CPU-s, 3.9 GB) CPU stopped advancing. A stack dump showed every thread idle: the
+    evaluator's big-stack thread was in a synchronous `Hopac.run` waiting for a job that never completes;
+    JP workers, the replay driver and the thread pool were all parked. That is a pending join-point
+    specialization at a scale the fixtures don't reach. The stall message now also carries
+    `peval={pending_join_points=N [names]}`: `peval` installs a probe over its `join_point_method` table
+    (`PevalStallProbe`). Second attempt with a 25-min budget, to read which join points are pending.
+42. **Parent-cache wake runs the replay driver off the evaluator thread.** The handoff wake ran
+    `replayDriverCooperativeTickFromGlobalFuseId` inline on every value commit, including the direct
+    evaluator's registrations: ~57% of `mega_spiral_proves`' evaluator thread. It now schedules one
+    coalesced tick on a Hopac worker (a flag absorbs further wakes and is cleared before the tick runs). This
+    is safe to run concurrently only because of fix 41's emit guard. Clean timings, alone:
+    - `lean_cic` 27 → 22-23 s;
+    - `spiral_proves` unchanged, 33-36 s;
+    - `omniledger` unchanged, 20 s;
+    - outputs identical to the clean baseline.
+
+    The first measurement of this change (and fix 40's) ran with a build's GC settings still set; see
+    fix 39. **Reverted:** the suite run of it (`hopac-20260930-134136`) had the same parity but two
+    brzozowski rows (`compiler_probe_generic_matcher_state`, `minimization_witness`) failed with race 34's
+    union-unbox type mismatch. That race used to hit about one row every few runs. Replay running
+    concurrently with the direct evaluator widens the per-node store's overwrite window (fix 34), so this
+    waits for a per-evaluation replay store.
+41. **Replay duplicated calls under load (nondeterministic output).** About 20 residuals changed between
+    two suite runs of the same build. Compiled alone, a churning fixture was stable (5/5). With three heavy
+    compiles in the background, `dynamic_array_function_boundary` [C] produced
+    `v1->refc++; int32_t v3; v3 = method0(v1, v2);` before `return method0(v1, v2);` in 1 of 6 runs. That is
+    fix 23's duplicated application, a silent miscompile for effectful calls. The replay driver runs on a
+    Hopac worker while the direct evaluator builds the block. The whole-spine thunks only checked
+    `isDirectNodeOwned` on their own node, a check-then-act that loses to timing. They now also refuse
+    while the target block is being built (`isDirectScopeActive (box s.seq)`), as
+    `tryRunApplyAfterDefinitionAt` already did. The same load repro: 10/10 identical outputs.
+    The next suite still produced the duplicate. The guard was then widened to blocks a direct
+    evaluation ever built (a weak table), not only active ones, and that suite still produced it too.
+    The duplicate came from another path: generic re-evaluation thunks.
+    `EJoinPoint'`/`EUnbox`/`EAnnot`/`ENominal`/`EPatternMiss` registrations store
+    `putTerm nodeId (fun () -> term s expr)`, and forcing one re-runs the whole expression into the captured
+    block. The invariant is now enforced where statements are emitted. Replay code runs with a thread-local
+    replay depth: thunks forced by `tryTermDetailed`, `tryApplyReplayDataWithContext` and
+    `tryDynamicJoinApplyReplayDataWithContext`. Each block records the replay depth its direct evaluation
+    started at. `push_typedop` and `push_typedop_no_rewrite` refuse (`replay_emit_into_direct_block`, fail
+    closed) to append to a block started at a shallower depth than the current replay. A join-point body
+    that a replay evaluates in a fresh block is started at the replay's depth, so it stays allowed.
+    Result: the fixture is clean in suite runs. Two suites of the same build (`hopac-20260930-114913`,
+    `-122633`) differ in 14 residuals (was 20-23 between runs); all `dynamic_array*` rows are stable now.
+    What remains:
+    - 11 brzozowski sub-packages differ only in variable numbering, even compiled alone (`v21`/`v19`).
+      Ids come from the shared counter `s.i`, and replay work that is later refused or abandoned
+      consumes ids. That is benign; making it byte-deterministic needs canonical renumbering per method
+      before codegen.
+    - `native_closure_recursive_capture` [C, Rust] and `native_float_pow_pi` [C] vary only under suite
+      load (8/8 identical under synthetic load, 3/3 alone). Their native results agree in both suites.
+39. **Digests and per-term bookkeeping (2026-09-30).** Profiled with `scripts/probe.ps1 -Profile`. Changed:
+    - `ContentDigest.ofText` (every work unit, receipt and minted ref) used SHA-256 over UTF-8, with
+      string concatenations and a memo whose key hashing cost as much. It was the top self-time frame, at
+      19-25% of `mega_lean_cic`. It is now a fast non-cryptographic 256-bit hash (four seeded 64-bit
+      lanes, MurmurHash3 `fmix64` finish), same 64-hex-digit format. The digests only identify things
+      within one compile. `ContentDigest.hash64`/`hex256` replace SHA-256 in the other hot identity
+      refs: `NonZeroRef.digestCandidate`, `terminalFlowLegacyMintedRefOf`, `durableJsonLineRef`. The SHA-1
+      short names that may reach generated code are unchanged.
+    - Replay task work units are memoized per (task id, key). Admit, open check and completion each
+      rebuilt one.
+    - Credit decisions are decided from counts plus an O(1) emptiness check, and list open keys lazily.
+    - `EvalStackDepthGuard` keeps plain string keys with a count map. Each term evaluation had
+      interned its key and scanned the whole key path.
+    - Quiet runs keep no JSONL file mirror. Its writes and `Flush(true)` were ~4%.
+
+    - Second round, same fix:
+      - `jsonStringFieldByName`/`jsonHasField` use `IndexOf`: `Split` copied the rest of the row per
+        field read.
+      - The row classifications (`jsonTelemetryDetailForKind`, `jsonTelemetryTextSignals`) are memoized
+        per kind text.
+      - `nativePromiseFailureClosedNow` reads the latch before the clock and without the tick lock.
+      - `NativeCutoverStableRef` uses the fast hash.
+      - Node keys are built by concatenation.
+
+    Alone, before → after: `mega_lean_cic` 46-63 → 20-28 s; `mega_spiral_proves` 80 → 33-38 s (151 s before
+    fix 36). Suite compile phase 2,142 → 2,001 s with identical parity. Hopac's times vary a lot between
+    identical runs (omniledger 26-51 s), and so does its output: ~20 residuals differ between two runs of
+    one build. So compare repeated probes, not single runs.
+
+    Where a large compile's main thread goes now (`scripts/profile-thread.py`, busiest thread, inclusive):
+    - `registerReplayTermWithContext` ~50%: registering replay thunks for each evaluated term;
+    - about 21% of that is replay-driver ticks that `putTermValue`'s parent-cache handoff runs inline;
+    - the replay driver itself (`runReplayDriver`) 19%;
+    - type evaluation (`ty`) 15%.
+
+    **Tried and reverted (fix 40 attempt):** registration-time `putTermValue`/`putTypeValue` without the
+    handoff wake made `lean_cic` slower (27 → 43 s) and changed `omniledger`'s output. **That measurement is
+    invalid:** the probes ran in a shell that had `DOTNET_gcServer=0` and `DOTNET_GCConserveMemory=9` set for
+    the preceding core build, and a compiler inheriting them is 2-4x slower. `build.ps1` now sets them for
+    its own build only. Fix 40 deserves a clean re-test. Those wakes drive
+    replay progress, so replay is load-bearing even while the direct evaluator runs. The remaining cost
+    is in the replay design itself (per-task ledger transactions on immutable maps, pinned-cell
+    bookkeeping, re-registration of subtrees), not in telemetry.
+38. **Resolved 2026-09-30: diagnostics lost between the core and the host (`typecheck_await_scheduled`
+    stalls).** Root cause, in both cores' `new_server`: the client error stream was
+    `AsyncSeq.unfoldAsync` over `event.Publish |> Async.AwaitEvent`. `AwaitEvent` subscribes for one event
+    and unsubscribes, so any diagnostic raised before the host pulled the next element was dropped.
+    After a burst of parser errors that was often the `FatalError`, and the host then waited for a result
+    that had already been sent. It is an unbounded `System.Threading.Channels` queue now. The stall message
+    also carries a diagnostics ledger and the type-check probe (AGENTS.md, "The loop"). The investigation
+    that led there:
+    Up to four Up to four
     brzozowski `negative_*` sub-packages stall at 28 s in suite runs. Their oracle rows are rejections,
     so they count as parity, but they cost the full budget. `negative_antimirov_slot_shape` is the
     reproducer. Alone, it sometimes answers in 3 s with single-flight's own errors ("Unbound type

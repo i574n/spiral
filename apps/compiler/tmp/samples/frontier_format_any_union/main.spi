@@ -1,0 +1,7 @@
+open sm'_operators
+
+/// `++#?` formats any value; on a union, hopac failed with PatternMissBreakthroughEscapeTransport (FRONTIER.md fix 44).
+inl main () : i32 =
+    inl x = Some 1i32
+    inl s = "x: " ++#? x
+    if s = "" then 1i32 else 0i32

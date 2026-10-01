@@ -198,9 +198,10 @@ keeps them in `<cache>/gear-dev/<mode>/anchors.tsv`) and (`spiral-split-gears/sr
 Measured on the hopac core with one top-level declaration added: **2 of 138 gears** dirty (6 changed
 files), against 93 before. Part numbers no longer follow source order, so anything that needs the order
 reads `anchors.tsv` (gear-dev builds the host's `open` list from it). The numeric shard and gear columns
-of the TSV sidecars (`parts.tsv`, `gears.tsv`, ...) keep planning ids. The packing only gets revisited by
+of the TSV sidecars (`parts.tsv`, `gears.tsv`, ...) keep planning ids. The packing gets revisited by
 `gear-dev -Full`, which drops the anchors and re-plans from scratch, so run it when many edits have
-accumulated (new code piles into its neighbours' gears). `SPIRAL_GEAR_ANCHOR_DEBUG=1` prints the partition
+accumulated (new code piles into its neighbours' gears), and automatically when stale anchors would
+collapse the partition (see "Anchor collapse" below). `SPIRAL_GEAR_ANCHOR_DEBUG=1` prints the partition
 size and any cycle merges.
 
 gear-dev still stops past 8 dirty gears (print the estimate, `-Force` goes ahead); with anchors that now
@@ -224,6 +225,47 @@ Measured on the hopac core (2026-09-28), the whole `gear-dev` run including emis
 | add one top-level `let` | 1 | **92 s** |
 | remove two top-level `let`s | 2 | **103 s** |
 | the monolith (`scripts/build.ps1 -Mode hopac`), for comparison | - | ~190 s |
+
+### Anchor collapse (2026-09-30)
+
+Two days of core edits (174.9k → 176.7k lines, the core merge, many section edits) later, `gear-dev -Force`
+emitted **9 gears instead of 137**, one of 169,541 lines (estimated parallelism 1.004), and one gear failed
+with FS2014. The core had no new cycle (`gear-metrics.tsv`: `cyclic_sccs 0`). The anchors had collapsed it:
+- the anchors keep gears, but shard packing is re-planned on every emission, and 145 of 3,813 new shards
+  straddled old gear boundaries;
+- `gear_anchors.rs` `previous_gear` gives a straddling shard the majority gear of its declarations. Shard 436
+  (DiagJson) packed old part 424 (gear 3: `WorkUnitId`, `GraphProgress*`, consumed nearly everywhere) with
+  old part 425 (`workUnitIdFor`, gear 24, which depends on `CompilerKernelV2`). Gear 3 then depended on
+  gears 10-24, and the cycle merge fused everything in between (`[anchored_partition] groups 137 -> 9`);
+- `-Force` skipped the only stop (the >8-dirty-gears check), and the run saved the collapsed `anchors.tsv`,
+  so every later anchored run would have stayed at 9 gears.
+
+A fresh plan of the same core gives 144 gears (max 21,431 lines, `peval` alone). gear-dev now refuses to
+sync or save anchors when an anchored plan drops below 70% of the previous gear count, even under `-Force`
+(exit 3; rerun with `-Full`).
+
+The splitter now catches it too: when the cycle merges collapse the anchored partition, `anchored_partition`
+gives up and `plan_gears` packs from scratch, printing `[anchored_partition] anchors stale: 137 -> 9 groups
+(largest merged cycle 129); falling back to a fresh plan` to stderr. Stale means the largest merged cycle
+holds more than `max(8, groups/10)` previous gears, or merging removed more than `max(8, 3*groups/10)` of
+them (the 70% rule; the floor keeps a small plan's legitimate merges). `SPIRAL_GEAR_ANCHOR_MAX_MERGE=<n>`
+replaces both bounds with `n`, `off` disables the fallback. The anchors still name the fresh plan's parts and
+gears (majority previous number where free), and the emitted `anchors.tsv` records the fresh partition, so
+the next emission anchors to it. Still open:
+- the root fix: make the shard planner (`spiral-split-plan`) keep a declaration out of an open shard whose
+  anchored gear differs from its own, so straddling shards never form. Changing the majority vote alone
+  just cascades the other way.
+
+**FS2014 in Debug** (`duplicate entry '<index>__debug@21-12' in method table`): an F# compiler naming
+collision (SDK 11.0.100-rc.1). In Debug, calls to the SRTP inline `index` (`let inline index d =
+(^a : (member Index: ^b) d)`, ParserCombinators) are not inlined but emitted as `<name>__debug@<line>-<n>`
+helpers in the consuming type, named by source line only. Four combinators (`opt`, `optional`, `(<|>%)`,
+`choice`) call `index d` on line 21 of four different part files, and a consumer in the same assembly that
+uses two of them gets two helpers of the same name. The monolith never hits it (distinct lines); the
+144-gear plan avoids it only by placement (helpers and consumers land in different gears). A 4-file repro
+is in the job scratch (`splitdiag/repro`), unreported upstream as far as a search shows (related:
+dotnet/fsharp#20466). `<Optimize>true</Optimize>` in gear-dev's `Directory.Build.props` avoids it, at the
+cost of slower gear compiles.
 
 ## Commands
 

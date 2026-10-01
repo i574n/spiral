@@ -122,50 +122,37 @@ pub fn previous_gear(split: &SplitPlan, keys: &[String], anchors: &Anchors, shar
     )
 }
 
-/// The previous emission's gears as a partition of the condensed components, in topological order.
-/// Anchored components return to their previous gear; a new component joins the gear of the component
-/// just before it in source order (or starts one). Gears that an edit made mutually dependent are merged,
-/// so the partition stays acyclic without re-planning the rest.
+/// Overrides how much cycle merging the anchored partition may do before it is declared stale: a number
+/// `n` falls back when one merged cycle has more than `n` groups or merging removes more than `n` groups
+/// in all; `off` never falls back. Unset: see [`anchors_collapsed`].
+pub const MAX_MERGE_ENV: &str = "SPIRAL_GEAR_ANCHOR_MAX_MERGE";
+
+fn max_merge_from_env() -> Option<usize> {
+    let value = std::env::var(MAX_MERGE_ENV).ok()?;
+    let value = value.trim();
+    if value.eq_ignore_ascii_case("off") {
+        return Some(usize::MAX);
+    }
+    value.parse().ok()
+}
+
+/// Whether merging the cycles of an anchored partition (`groups` previous gears -> `merged` gears, the
+/// largest merged cycle holding `largest` of them) collapsed it: the anchors are stale and a fresh plan
+/// is better. An edit that makes a few gears mutually dependent merges a handful; stale anchors (shards
+/// re-planned across old gear boundaries) merged 137 gears into 9, one cycle of 129. Default bounds:
+/// the largest cycle may hold `max(8, groups/10)` groups and merging may remove `max(8, 3*groups/10)`
+/// (the 70% rule, with a floor so small plans keep their merges); `max_merge` replaces both.
 #[must_use]
-pub fn anchored_partition(
-    split: &SplitPlan,
-    sccs: &spiral_split_gear_scc::SccPlan<spiral_split_gear_scc::Condensed>,
-    anchors: &Anchors,
-) -> Vec<Vec<usize>> {
-    let keys = declaration_keys(split);
-    let components = &sccs.components;
-    let mut by_first_shard = (0..components.len()).collect::<Vec<_>>();
-    by_first_shard.sort_by_key(|component| components[*component].shards.first().copied().unwrap_or(usize::MAX));
-    // Group keys: previous gear numbers, and fresh keys above them for gears that did not exist.
-    let mut fresh = anchors.max_gear().map_or(0, |max| max + 1);
-    let mut key_of = vec![usize::MAX; components.len()];
-    let mut last_key = None;
-    for &component in &by_first_shard {
-        let key = previous_gear(split, &keys, anchors, &components[component].shards)
-            .or(last_key)
-            .unwrap_or_else(|| {
-                fresh += 1;
-                fresh - 1
-            });
-        key_of[component] = key;
-        last_key = Some(key);
-    }
-    // Group graph by component dependencies; merge strongly connected groups (Kosaraju, iterative).
-    let group_keys = key_of.iter().copied().collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
-    let index_of = group_keys.iter().enumerate().map(|(index, key)| (*key, index)).collect::<HashMap<_, _>>();
-    let count = group_keys.len();
-    let group = |component: usize| index_of[&key_of[component]];
-    let mut forward = vec![BTreeSet::<usize>::new(); count];
-    let mut backward = vec![BTreeSet::<usize>::new(); count];
-    for (component, data) in components.iter().enumerate() {
-        for dependency in &data.dependencies {
-            let (provider, consumer) = (group(*dependency), group(component));
-            if provider != consumer {
-                forward[provider].insert(consumer);
-                backward[consumer].insert(provider);
-            }
-        }
-    }
+pub fn anchors_collapsed(groups: usize, merged: usize, largest: usize, max_merge: Option<usize>) -> bool {
+    let removed = groups.saturating_sub(merged);
+    let (largest_bound, removed_bound) = max_merge.map_or((8.max(groups / 10), 8.max(3 * groups / 10)), |max| (max, max));
+    largest > largest_bound || removed > removed_bound
+}
+
+/// Merges the strongly connected groups of a group graph (Kosaraju, iterative): each group's merged id,
+/// numbered in topological order (providers first), and the number of merged groups.
+fn merge_cycles(forward: &[BTreeSet<usize>], backward: &[BTreeSet<usize>]) -> (Vec<usize>, usize) {
+    let count = forward.len();
     let mut visited = vec![false; count];
     let mut finish_order = Vec::with_capacity(count);
     for root in 0..count {
@@ -206,12 +193,69 @@ pub fn anchored_partition(
         }
         merged_count += 1;
     }
-    if std::env::var("SPIRAL_GEAR_ANCHOR_DEBUG").as_deref() == Ok("1") {
-        let mut sizes = BTreeMap::<usize, usize>::new();
-        for scc in &merged {
-            *sizes.entry(*scc).or_default() += 1;
+    (merged, merged_count)
+}
+
+/// The largest merged group and how many groups it holds.
+fn largest_merge(merged: &[usize]) -> (usize, usize) {
+    let mut sizes = BTreeMap::<usize, usize>::new();
+    for group in merged {
+        *sizes.entry(*group).or_default() += 1;
+    }
+    sizes.into_iter().max_by_key(|(_, size)| *size).unwrap_or((0, 0))
+}
+
+/// The previous emission's gears as a partition of the condensed components, in topological order.
+/// Anchored components return to their previous gear; a new component joins the gear of the component
+/// just before it in source order (or starts one). Gears that an edit made mutually dependent are merged,
+/// so the partition stays acyclic without re-planning the rest.
+///
+/// `None` when that merging collapsed the partition ([`anchors_collapsed`]): the anchors are stale and the
+/// caller packs from scratch. The emitted `anchors.tsv` then records the fresh plan, so the next emission
+/// anchors to it.
+#[must_use]
+pub fn anchored_partition(
+    split: &SplitPlan,
+    sccs: &spiral_split_gear_scc::SccPlan<spiral_split_gear_scc::Condensed>,
+    anchors: &Anchors,
+) -> Option<Vec<Vec<usize>>> {
+    let keys = declaration_keys(split);
+    let components = &sccs.components;
+    let mut by_first_shard = (0..components.len()).collect::<Vec<_>>();
+    by_first_shard.sort_by_key(|component| components[*component].shards.first().copied().unwrap_or(usize::MAX));
+    // Group keys: previous gear numbers, and fresh keys above them for gears that did not exist.
+    let mut fresh = anchors.max_gear().map_or(0, |max| max + 1);
+    let mut key_of = vec![usize::MAX; components.len()];
+    let mut last_key = None;
+    for &component in &by_first_shard {
+        let key = previous_gear(split, &keys, anchors, &components[component].shards)
+            .or(last_key)
+            .unwrap_or_else(|| {
+                fresh += 1;
+                fresh - 1
+            });
+        key_of[component] = key;
+        last_key = Some(key);
+    }
+    // Group graph by component dependencies; merge strongly connected groups (Kosaraju, iterative).
+    let group_keys = key_of.iter().copied().collect::<BTreeSet<_>>().into_iter().collect::<Vec<_>>();
+    let index_of = group_keys.iter().enumerate().map(|(index, key)| (*key, index)).collect::<HashMap<_, _>>();
+    let count = group_keys.len();
+    let group = |component: usize| index_of[&key_of[component]];
+    let mut forward = vec![BTreeSet::<usize>::new(); count];
+    let mut backward = vec![BTreeSet::<usize>::new(); count];
+    for (component, data) in components.iter().enumerate() {
+        for dependency in &data.dependencies {
+            let (provider, consumer) = (group(*dependency), group(component));
+            if provider != consumer {
+                forward[provider].insert(consumer);
+                backward[consumer].insert(provider);
+            }
         }
-        let (largest, size) = sizes.iter().max_by_key(|(_, size)| **size).map_or((0, 0), |(scc, size)| (*scc, *size));
+    }
+    let (merged, merged_count) = merge_cycles(&forward, &backward);
+    let (largest, size) = largest_merge(&merged);
+    if std::env::var("SPIRAL_GEAR_ANCHOR_DEBUG").as_deref() == Ok("1") {
         eprintln!("[anchored_partition] groups {count} -> {merged_count}; largest merged cycle has {size} groups");
         if size > 1 {
             let mut shown = 0;
@@ -231,6 +275,16 @@ pub fn anchored_partition(
             }
         }
     }
+    if anchors_collapsed(count, merged_count, size, max_merge_from_env()) {
+        // Planning can run more than once per emission; say it once per distinct outcome.
+        static WARNED: std::sync::Mutex<BTreeSet<(usize, usize, usize)>> = std::sync::Mutex::new(BTreeSet::new());
+        if WARNED.lock().map_or(true, |mut warned| warned.insert((count, merged_count, size))) {
+            eprintln!(
+                "[anchored_partition] anchors stale: {count} -> {merged_count} groups (largest merged cycle {size}); falling back to a fresh plan ({MAX_MERGE_ENV} overrides)"
+            );
+        }
+        return None;
+    }
     // Kosaraju numbers components in topological order (providers first) over the condensed graph.
     let mut result = vec![Vec::<usize>::new(); merged_count];
     for (component, data) in components.iter().enumerate() {
@@ -240,7 +294,7 @@ pub fn anchored_partition(
         shards.sort_unstable();
     }
     result.retain(|shards| !shards.is_empty());
-    result
+    Some(result)
 }
 
 /// Assigns each id its anchored number when that number is still free, in id order, and fresh numbers
@@ -476,6 +530,46 @@ mod tests {
             sort_project_references(text),
             "<Compile Include=\"B.fs\" />\n<Compile Include=\"A.fs\" />\n  <ProjectReference Include=\"Gear0002.fsproj\" />\n  <ProjectReference Include=\"Gear0009.fsproj\" />\n</ItemGroup>\n"
         );
+    }
+
+    /// A chain of `count` groups (`g` provides `g + 1`) plus one edge from `from` back to `to`.
+    fn chain_with_back_edge(count: usize, from: usize, to: usize) -> (Vec<BTreeSet<usize>>, Vec<BTreeSet<usize>>) {
+        let mut forward = vec![BTreeSet::new(); count];
+        let mut backward = vec![BTreeSet::new(); count];
+        for (provider, consumer) in (0..count - 1).map(|group| (group, group + 1)).chain([(from, to)]) {
+            forward[provider].insert(consumer);
+            backward[consumer].insert(provider);
+        }
+        (forward, backward)
+    }
+
+    fn collapsed(count: usize, from: usize, to: usize, max_merge: Option<usize>) -> bool {
+        let (forward, backward) = chain_with_back_edge(count, from, to);
+        let (merged, merged_count) = merge_cycles(&forward, &backward);
+        anchors_collapsed(count, merged_count, largest_merge(&merged).1, max_merge)
+    }
+
+    #[test]
+    fn a_cycle_merge_that_swallows_most_gears_falls_back_but_a_small_one_does_not() {
+        // A late gear feeding the first one closes a cycle over all 20, as stale anchors did (137 -> 9).
+        let (forward, backward) = chain_with_back_edge(20, 19, 0);
+        assert_eq!(merge_cycles(&forward, &backward).1, 1);
+        assert!(collapsed(20, 19, 0, None));
+        // One edit making two neighbours mutually dependent: 20 -> 19 gears, stays anchored.
+        let (forward, backward) = chain_with_back_edge(20, 1, 0);
+        let (merged, merged_count) = merge_cycles(&forward, &backward);
+        assert_eq!((merged_count, largest_merge(&merged).1), (19, 2));
+        assert!(!collapsed(20, 1, 0, None));
+        // The merged ids stay topological: every chain edge goes forward or inside a merged group.
+        assert!((0..19).all(|group| merged[group] <= merged[group + 1]));
+        // Small plans keep their merges (floor of 8); the override replaces both bounds, `off` disables.
+        assert!(!collapsed(6, 5, 0, None));
+        assert!(collapsed(6, 5, 0, Some(3)));
+        assert!(!collapsed(20, 19, 0, Some(usize::MAX)));
+        // The real collapse: 137 gears -> 9, one cycle of 129; and many small merges losing over 30%.
+        assert!(anchors_collapsed(137, 9, 129, None));
+        assert!(anchors_collapsed(137, 90, 3, None));
+        assert!(!anchors_collapsed(137, 130, 5, None));
     }
 
     #[test]

@@ -4,7 +4,7 @@ Builds the Spiral compiler in one or both modes.
 
 .EXAMPLE
 pwsh scripts/build.ps1                                  # single-flight, Release
-pwsh scripts/build.ps1 -Mode hopac -Configuration Debug   # fastest hopac iteration build
+pwsh scripts/build.ps1 -Mode hopac -Configuration Debug   # not faster to build (median 382 s vs Release 239 s, results/builds.tsv)
 pwsh scripts/build.ps1 -Mode hopac -CoreSource ../../spiral_compiler.fs   # build a core that lives elsewhere
 #>
 param(
@@ -40,7 +40,13 @@ foreach ($m in $modes) {
     $args = @('build', $project, '-c', $Configuration, "-p:SpiralCore=$m", "-p:SpiralCacheDir=$cache", "-p:SpiralCoreSource=$staged", '-nologo', '-v:m')
     Write-Host "== building $m ($Configuration) from $core"
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    & $dotnet @args
+    # The F# compile of the core takes several GB: workstation GC with memory conservation keeps it from being
+    # reaped on a loaded machine. Set here for the build only, restored after: a compiler run that inherits
+    # them is 2-4x slower (and, with hopac's timing-dependent replay, can even emit different code).
+    $gcSaved = $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE
+    $env:DOTNET_gcServer = '0'; $env:DOTNET_GCConserveMemory = '9'; $env:MSBUILDDISABLENODEREUSE = '1'
+    try { & $dotnet @args }
+    finally { $env:DOTNET_gcServer, $env:DOTNET_GCConserveMemory, $env:MSBUILDDISABLENODEREUSE = $gcSaved }
     $exit = $LASTEXITCODE
     $seconds = [math]::Round($sw.Elapsed.TotalSeconds, 1)
     "$(Get-Date -Format s)`t$m`t$Configuration`t$seconds`t$exit`t$(Get-FileSha256 $core)`t$core" | Add-Content $receipts

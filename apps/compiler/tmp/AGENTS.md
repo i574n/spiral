@@ -9,7 +9,7 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 | What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced (2026-09-30), 10-30x slower than single-flight on the mega roots |
 | Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_HOPAC` side of each section pair |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
-| Known wall | `apps/spiral` overflows the stack | two races (FRONTIER.md fixes 34 and 38: replay values keyed per AST node; multi-package type checking that sometimes never answers), speed, and `apps/spiral` not yet attempted. Single-flight's features since the shared base `12f52a1` are ported. |
+| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md) | race 34 (FRONTIER.md: replay values keyed per AST node), speed, and `apps/spiral`: type checking passes, partial evaluation leaves 2 join points pending (`read_link`), codegen then waits on an unfilled cell (NEXT.md). Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |
 
 Switching lanes is only a build/test argument: `-Mode single-flight` or `-Mode hopac`. Both binaries
@@ -17,12 +17,35 @@ live side by side in the cache, so the same fixture can be compared across modes
 
 ## The loop
 
+**Iterate on the split build** (`scripts/gear-dev.ps1`, lanes/splitter/README.md): it rebuilds only the
+gears an edit touched (1 of 144 for a `peval` edit; under 2 min on a quiet machine, emit included) and runs
+from its own directory, so it works while a suite holds the monolith's DLL. Keep the monolith
+(`build.ps1`, Release) for timing measurements and the final suite runs: the gears are a Debug build
+(~1.5x slower to run). After many edits, or when gear-dev says the anchored plan collapsed (exit 3), run
+`gear-dev -Full` once (~25-60 min, one-off).
+
 ```powershell
-pwsh scripts/build.ps1 -Mode hopac                        # core edit: ~3.5 min; host edit: ~35 s
+pwsh scripts/gear-dev.ps1                                 # core edit: rebuilds the touched gears
+$env:SPIRAL_COMPILER_DLL = "<cache>/gear-dev/hopac/host/.out/bin/Debug/net11.0/SpiralCompiler.dll"
+pwsh scripts/probe.ps1 <sample>                           # probe/test/apps runs use that DLL while it is set
+pwsh scripts/build.ps1 -Mode hopac                        # the Release monolith: timings, final suites (~3.5-5 min)
 pwsh scripts/test.ps1 -Mode hopac -Suite frontier         # seconds per fixture, low timeouts
 pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke   # widen once the frontier is green
 pwsh scripts/test.ps1 -Mode hopac -Suite all -Record      # full scoreboard, written to lanes/hopac/
 ```
+
+For one fixture, skip the suite: `pwsh scripts/probe.ps1 <sample> [-Mode single-flight] [-Backend C]`
+compiles `samples/<sample>` directly and prints exit code, time and the first result line per run.
+- `-Repeat 5` exposes races: the outcomes line flags runs that differ.
+- `-Stacks 12` takes a `dotnet-stack` dump if the compiler is still running after 12 s: hangs.
+- `-Profile 40` records a 40 s sampled-thread profile and prints its hottest frames: slowness. For the
+  evaluator's own thread, `python scripts/profile-thread.py <run.speedscope.json> [threads] [rows]` prints
+  inclusive time per frame on the busiest thread(s).
+
+Logs go to `<cache>/probes/<sample>/`. A stalled hopac build now reports, in its `BuildFile stalled`
+message, the diagnostics sent and delivered during the build (`diagnostics={fatal_sent=..,delivered_..}`)
+and the entry's type-check promises (`typecheck={entry_input=.. entry_output=..}`). A stall after
+`fatal_sent`, or with type checking done, is a lost result, not slow evaluation.
 
 `-Parallel` defaults to what the machine can take: about 3/8 of the logical CPUs in hopac mode (a hopac job
 keeps 2-3 cores busy), half in single-flight, both capped at one worker per 1.5 GB of free memory. On an
@@ -96,7 +119,10 @@ commit the outputs the compiler writes next to it. Changes to the single-flight 
   the check that outputs changed. Never edit outputs by hand; a hopac run rewrites them with hopac's
   output, so restore them (`git restore samples`) or rerun single-flight before committing. One
   `scripts/test.ps1` run at a time (it holds `<cache>/test.lock`).
-- `-Bless` only in single-flight mode, only after reviewing every changed row of the baseline.
+- `-Bless` only in single-flight mode, only after reviewing every changed row of the baseline. Re-blessing
+  is the agent's call (don't ask the user): bless when there is no `REGRESSED`/`DISAGREE` and every other
+  changed row is explained, and only if the `-Bless` run reproduces the preceding single-flight run row for
+  row (same verdicts and residual hashes). The oracle lives in the cache, never in the tree.
 - Other generated results never go into the tree (the oracle, scoreboards, receipts, snapshots); hand-written
   harness tables live in `tests/harness.psd1`. `|core-` resolves to The-Spiral-Language's core through
   the repo's `deps/polyglot` link (`Get-SpiralPackageDir`); do not copy it here.

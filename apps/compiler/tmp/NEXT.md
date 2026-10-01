@@ -290,20 +290,112 @@ State at hand-off, and the open work in priority order. Details live in the lane
 - Next targets: build fix 33's second half and fix 34; profile `mega_brzozowski_derivatives/finite_inventory_adversarial`
   (hopac >28 s in partial evaluation); stack-dump `mega_lean_cic_bottom_up_kernel` (>172 s).
 
+## Session 2026-09-30 (day): stability and speed toward apps/spiral
+
+- **Fix 38 resolved**: both cores' `new_server` dropped diagnostics raised between two pulls of the client
+  stream (`Async.AwaitEvent`), often the `FatalError` after a burst of parser errors. The stream is a
+  `Channel` queue now. The brzozowski negatives answer in 2.5 s instead of stalling.
+- **Fix 39, speed**:
+  - fast non-cryptographic 256-bit `ContentDigest` (was SHA-256 per work unit and receipt), and
+    `hash64`/`hex256` for the other identity refs;
+  - memoized replay work units; count-based credit decisions; string key paths; `IndexOf` field reads;
+    memoized row classification.
+
+  Mega roots alone: lean_cic 46-63 → 20-28 s, spiral_proves 80 → 33-38 s. Suite compile phase ~2,000 s
+  (2,390 s this morning). Registration-time handoff removal was tried and reverted (it slowed replay).
+- **Fix 41, silent duplicate calls under load**: replay code re-ran applications and whole expressions
+  into blocks the direct evaluator was building. That was the ~20 residuals that changed between identical
+  runs. Replay code now runs with a thread-local depth, and `push_typedop` refuses to append to a block
+  started outside the current replay (`replay_emit_into_direct_block`, fail closed).
+- **Tools**: `scripts/probe.ps1` (one fixture: `-Repeat`, `-Stacks`, `-Profile`), `scripts/profile-summary.py`,
+  `scripts/profile-thread.py`, and the diagnostics ledger in stall messages. Debug builds are not faster
+  than Release.
+- **Race 34 is now the limiter**: making the replay driver run concurrently (fix 42, 20% faster on
+  lean_cic) doubled its hits, so it was reverted. Next step (design in FRONTIER.md fix 34): key replay
+  entries by (node, evaluation context). Whole-spine thunks can use their captured `s` right away; the
+  driver's cells need the context carried from the registration that created them (parent cells,
+  parent-continuation handoffs).
+- Measuring: never run probes in a shell that still has the build's GC variables set (`build.ps1` scopes
+  them now). They made the compiler 2-4x slower and invalidated two experiments (fix 40 needs a clean
+  re-test).
+- Quiet mode (`SPIRAL_DIAG_QUIET`) must keep `shouldEmitJsonLine`'s kind counters: ~150 retry decisions
+  read them (`snapshotKindCount`).
+- Rust `string_slice` exits 3 on a split code point like C/Delphi: native DISAGREE 0 in both lanes.
+- **apps/spiral with hopac** (scratch copy, `$CLAUDE_JOB_DIR/tmp/apps_spiral_build.ps1`): type checking
+  passes; partial evaluation stalled with 96 pending join points. Cause and fix 44 in FRONTIER.md: code
+  matched on a join point's pending placeholder result (`++#?` → `format_real`). With fix 44 the fourth
+  attempt (25 min) stalled with only 2 pending, both `run@file_system.spi:701`: `read_link`'s `run` join
+  point and its `let rec 루프` call each other (mutual recursion across two join points), which the
+  inline recursion guard only covers within one work unit.
+  Reduced (`$CLAUDE_JOB_DIR/tmp/trace_repro.ps1 -Body`): a `main` that matches on
+  `file_system.read_link "C:/nonexistent_dir_x" |> resultm.map_error' sm'.format |> resultm.unbox`.
+  Single-flight overflows the stack on it (exit 0xC00000FD in 11 s): very likely the same wall as
+  single-flight's apps/spiral overflow. Hopac finishes partial evaluation and then hangs in codegen,
+  past its 120 s build budget (the watchdog does not cover codegen): `codegenFsharp`'s
+  `requireResolvedMethodCell` finds `CodegenJpMethodBodyCellPending` and blocks in
+  `run (Hopac.IVar.read ivar)` on a cell nobody will fill (the JP graph is already quiescent). Two fixes,
+  in order:
+  1. codegen: a cell still pending after peval's quiescence has no producer; fail closed with the key
+     (EJP0014) instead of waiting forever, and extend the build budget to codegen;
+  2. find why `run`'s cell stays unfilled: `루프` is itself a join point (`let rec ... forall`), so
+     `run` → `루프` → `run` crosses two work units and the second `run` call defers to a placeholder
+     of a cell whose owner is waiting on it; or the owner was retired as control-only replay work (seen
+     in fix 44's trace) without filling it. Once fixed, add the repro as `samples/frontier_read_link`
+     (after single-flight stops overflowing on it, or as a hopac-only frontier row).
+- **Evening results (2026-09-30)**, logs under `$CLAUDE_JOB_DIR/tmp/`:
+  - hopac fixes 44-47: no verdict change (FRONTIER status; the full run's 61 stalls were machine load);
+  - single-flight with the restored peval thread (`runs/single-flight-20260930-210053`): identical to the
+    18:02 run on all 1,081 rows (verdicts, residual hashes, exit codes, stdout); one consistent timeout
+    (`mega_lean_cic.../negative_programmed_endpoint_cross_codomain`, 30 s, no oracle row);
+  - oracle re-blessed from single-flight (`-Bless` never records timeout rows now: machine-dependent);
+    the oracle before the bless is backed up at `$CLAUDE_JOB_DIR/tmp/EXPECTED.before-bless.tsv`;
+  - single-flight apps/spiral ran 32 min without overflowing, then hit the 30 min budget: rerun with
+    a larger budget to see whether it finishes;
+  - hopac apps/spiral attempt 7 on the split build with fix 48 (`apps_spiral_hopac7.txt`).
+  Fix 48 is only in the split build: rebuild the monolith (`build.ps1 -Mode hopac`) before the next suite.
+- **Single-flight's apps/spiral stack overflow was a regression, now fixed** (2026-09-30 evening).
+  Commit 1eb2ecf (2026-09-27) replaced the 1.5 GB thread single-flight ran `peval` + codegen on (upstream:
+  256 MB, `Supervisor.fs:505-509`) with an inline call, leaving its comment orphaned; `peval` then ran on a
+  1.5 MB Hopac worker stack. `read_link` overflowed at ~240 frames: finite depth, from `term` frames of
+  ~7-10 KB, join point bodies evaluated inline, and `BackendSwitch` evaluating every backend's branch
+  (2 MB was already enough for the repro). The thread is back (`#else` Supervisor, `file_build`); the
+  repro compiles in 30 s (192,400 bytes, 26 methods, 12 closures, the same counts as hopac). The next
+  single-flight `-Suite all -Native` run is its regression check. Diagnosis logs:
+  `$CLAUDE_JOB_DIR/tmp/cases/sf_readlink`.
+- **Splitter**: stale anchors collapsed the plan 137 → 9 gears (README "Anchor collapse"). Deployed: the
+  splitter falls back to a fresh plan on a collapse (`SPIRAL_GEAR_ANCHOR_MAX_MERGE`), and gear-dev refuses
+  to sync a collapsed plan. `gear-dev -Full` re-planned to 144 gears. Open: the root fix in
+  `spiral-split-plan` (keep straddling shards from forming), the FS2014 Debug naming collision (repro in
+  `$CLAUDE_JOB_DIR/tmp/splitdiag/repro`, not reported upstream).
+- **Oracle re-blessed (2026-09-30 22:05)** from single-flight (`runs/single-flight-20260930-214014`), after
+  three single-flight runs (18:02, 21:00, 21:40) agreed on all 1,081 rows (compile, residual hash, native,
+  exit, stdout). 1,155 → 1,174 rows: 20 added (the new examples and frontier fixtures, including
+  `frontier_format_any_union`, `frontier_join_format_any`, `native_replay_repeat_call`,
+  `native_literal_join_args`); 21 `error → ok` (the "(expression)" F# outputs); 361 refreshed residual
+  hashes (158 C, 100 Rust, 98 Delphi, 5 F#: translator-era and pre-fix hashes; no native, exit or stdout
+  value changed); the 3 native improvements (`managed_string_invalid_utf8_slice` Rust/Delphi exit 3,
+  `dynamic_array_bounds_negative` Delphi). The oracle holds no timeout row (`-Bless` skips them; one old
+  entry removed). Not changed by this: the 5 mega `brzozowski` rows whose oracle is the parent package's
+  program (FRONTIER.md, "Resolved (2026-09-29)") still record that program; fixing them is item 1 below.
+  Backup of the previous oracle: `$CLAUDE_JOB_DIR/tmp/EXPECTED.before-bless.tsv`.
+
 ## Open, in order
 
-1. **Re-bless the oracle.** Every Rust/Delphi row of `<cache>/baseline/EXPECTED.tsv` still holds translator-era
-   hashes and exit codes. Run `pwsh scripts/test.ps1 -Suite all -Native`, check there is no `REGRESSED`,
-   `NATIVE-DIFF` or `DISAGREE` beyond the rows below, then rerun it with `-Bless`. Then commit the refreshed
-   `samples/**/main.*` outputs that run wrote. (Slow: ~30 min.)
-   Expected differences, all improvements: `managed_string_invalid_utf8_slice` (Delphi now exits 3 like C;
-   Rust too since 2026-09-30: `codegenRust`'s `string_slice` exits 3 when a slice starts or ends inside a
-   code point, like C's abort and Delphi's `Halt(3)`, instead of truncating to the valid prefix; both lanes
-   DISAGREE 0),
-   `dynamic_array_bounds_negative` (Delphi exits 0 like C; Rust panics, a `Known` row).
-   Before blessing, decide the 5 mega `brzozowski` rows whose oracle is the parent package's program
-   (FRONTIER.md, "Resolved (2026-09-29)"), and bless the two new fixtures
-   (`native_replay_repeat_call`, `native_literal_join_args`) so hopac's residual is checked against them.
+1. **The 5 mega `brzozowski` rows with a wrong oracle** (in progress, 2026-09-30 night). Cause, in *both*
+   cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which
+   top-down code rejects) and is dropped without a message; `BuildFile` then finds the `main` that the
+   entry's `open main` brought in from the dependency (single-flight `file_build` fold + `Map.tryFind "main"`;
+   hopac the same at its `BuildFile`). Hopac's earlier "errors" on these rows came from the host or stall
+   messages. Patched in both cores (not yet built): when the entry does not define `main` itself and has
+   tokenizer/parser errors, the build fails with `Cannot find main ... the file does not define it, and it
+   has errors` plus `path:line:col` per error. Decision: these five are invalid programs and a valid
+   rewrite (`inl v : T = f ()` for each `` f `T () ``, `assert_static false` for `failwith`) partially
+   evaluates for >10 min (contracts timeout 30 s), so their oracle becomes `error`. Verify: full
+   single-flight run changes exactly these five rows; bless them with `-Filter`; hopac matches. Patches,
+   repro and the fixture rewrite: `$CLAUDE_JOB_DIR/tmp/entryfix/`. Also worth a look: two "negative"
+   mega rows (`negative_nondefeq_authority_not_scoped_pi_authority`,
+   `negative_recursive_beta_false_ready_domain_retag`) compile only because their negative block is a
+   parse error that gets dropped.
 2. **Rust libraries and exports for eoie**: `lanes/single-flight/RUST_LIBRARY_PLAN.md`. Then delete
    `compiler/host/PortableBackends.fs` and everything that calls it (the host still runs its
    `lowerPortableBackend`/`tryLowerPortableSource` on C and F# output; verify that is a no-op for the
