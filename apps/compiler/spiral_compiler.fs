@@ -7586,7 +7586,16 @@ module spiral_compiler =
                 progressHudEffectiveFrameLastMs,
                 progressHudVisibleFrameHealthText progressHudVisibleFrameHealth)
 
+        // Quiet (batch) runs keep stderr for the result and the error: the live 50-row grid's first frame came
+        // before every report. The frame still counts as painted for the HUD's own bookkeeping.
+        let private hudQuiet =
+            System.String.Equals(System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET", "1", System.StringComparison.Ordinal)
+
         let private writeProgressHudVisible (text: string) =
+          if hudQuiet then
+            recordProgressHudVisibleFrame ProgressHudVisibleFramePainted
+            true
+          else
             try
                 let writer, lane = progressHudWriterAndLane()
                 let flushPolicy = progressHudFlushPolicyFor lane
@@ -93493,7 +93502,7 @@ module spiral_compiler =
         nodes : obj list
         /// Occurrences on the path by identity hash (entries by reference, most recent first): the re-entry count
         /// without walking `nodes`, which a node not on the path (every leaf, re-entered after its exit) scanned whole.
-        occurrences : Map<int, (obj * int) list>
+        occurrences : Map<int, (obj * int * int) list>
         pathRef : Lazy<CompilerIdentityKernel.ContentDigest>
     }
 
@@ -138112,22 +138121,27 @@ module spiral_compiler =
               pathRef = lazy (CompilerIdentityKernel.ContentDigest.ofText "eval-node-path" "empty") }
 
         // Called on every node entry: O(log depth). Scanning the path made inline unrolling quadratic in depth.
-        let private nodeCount (node: obj) path =
+        // Counted per (node, level): the level is the dynamic `if` depth, and a node met again one dynamic `if`
+        // deeper is a recursion making progress, not a cycle. Counting those made a 65-level inline recursion
+        // through dynamic ifs "hot" (EJP0011W), switched the build to sequential mode and onto the term-cycle
+        // fuse path (~15 ms a level); single-flight lets it run to the EJP0040 limit. Cycles without a dynamic
+        // `if` are counted as before (level stays the same); cycles through them end at EJP0040.
+        let private nodeCount (node: obj) (level: int) path =
             match Map.tryFind (RuntimeHelpers.GetHashCode node) path.occurrences with
             | Some entries ->
                 entries
-                |> List.tryFind (fun (existing, _) -> obj.ReferenceEquals(existing, node))
-                |> Option.map snd
+                |> List.tryFind (fun (existing, existingLevel, _) -> obj.ReferenceEquals(existing, node) && existingLevel = level)
+                |> Option.map (fun (_, _, count) -> count)
                 |> Option.defaultValue 0
             | None -> 0
 
         /// Returns the advanced path and the re-entry count.  Callers must thread
         /// the returned path into recursive evaluation; no ambient ThreadLocal is
         /// consulted or mutated.
-        let enter (path:EvalNodePath) (node:obj) : EvalNodePath * int =
+        let enter (path:EvalNodePath) (node:obj) (level:int) : EvalNodePath * int =
             EvalProgress.steps <- EvalProgress.steps + 1L
             let nextNodes = node :: path.nodes
-            let count = nodeCount node path + 1
+            let count = nodeCount node level path + 1
             let pathRef =
                 lazy (
                     nextNodes
@@ -138136,7 +138150,7 @@ module spiral_compiler =
                     |> CompilerIdentityKernel.ContentDigest.ofText "eval-node-path")
             let hash = RuntimeHelpers.GetHashCode node
             let entries = Map.tryFind hash path.occurrences |> Option.defaultValue []
-            { nodes = nextNodes; occurrences = Map.add hash ((node, count) :: entries) path.occurrences; pathRef = pathRef }, count
+            { nodes = nextNodes; occurrences = Map.add hash ((node, level, count) :: entries) path.occurrences; pathRef = pathRef }, count
 
         let exit (path:EvalNodePath) (node:obj) : EvalNodePath =
             let rec removeFirst acc = function
@@ -138150,7 +138164,7 @@ module spiral_compiler =
                 | Some entries ->
                     let rec dropFirst acc = function
                         | [] -> List.rev acc
-                        | ((existing: obj), _) :: rest when obj.ReferenceEquals(existing, node) -> List.rev acc @ rest
+                        | ((existing: obj), _, _) :: rest when obj.ReferenceEquals(existing, node) -> List.rev acc @ rest
                         | entry :: rest -> dropFirst (entry :: acc) rest
                     match dropFirst [] entries with
                     | [] -> Map.remove hash path.occurrences
@@ -161053,10 +161067,11 @@ module spiral_compiler =
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
             registerReplayTy nodeId x
-            let nextEvalNodePath, reCount = EvalCycleGuard.enter s.evalNodePath nodeObj
+            let nextEvalNodePath, reCount = EvalCycleGuard.enter s.evalNodePath nodeObj s.dynamicIfDepth
             let (a0,b0) = r0.range
             let nodeKey = System.String.Concat(r0.path, ":", a0.line.ToString(), ":", a0.character.ToString(), "-", b0.line.ToString() + ":" + b0.character.ToString())
-            let nextEvalKeyPath, reKey = EvalStackDepthGuard.enter s.evalKeyPath nodeKey
+            let nextEvalKeyPath, reKey =
+                EvalStackDepthGuard.enter s.evalKeyPath (if s.dynamicIfDepth = 0 then nodeKey else nodeKey + "|if" + string s.dynamicIfDepth)
             let s = {
                 s with
                     evalNodePath = nextEvalNodePath
@@ -164313,10 +164328,11 @@ module spiral_compiler =
                     sprintf "%s: replay registration refused after BigStack exhaustion site=%s"
                         DiagnosticClassifier.EJP0010
                         site)
-            let nextEvalNodePath, reCount = EvalCycleGuard.enter s.evalNodePath nodeObj
+            let nextEvalNodePath, reCount = EvalCycleGuard.enter s.evalNodePath nodeObj s.dynamicIfDepth
             let (a0,b0) = r0.range
             let nodeKey = System.String.Concat(r0.path, ":", a0.line.ToString(), ":", a0.character.ToString(), "-", b0.line.ToString() + ":" + b0.character.ToString())
-            let nextEvalKeyPath, reKey = EvalStackDepthGuard.enter s.evalKeyPath nodeKey
+            let nextEvalKeyPath, reKey =
+                EvalStackDepthGuard.enter s.evalKeyPath (if s.dynamicIfDepth = 0 then nodeKey else nodeKey + "|if" + string s.dynamicIfDepth)
             let s = {
                 s with
                     evalNodePath = nextEvalNodePath
@@ -186429,6 +186445,7 @@ module spiral_compiler =
                 (fun () -> try result.Value <- generate () with error -> failure.Value <- error),
                 stackMb * 1024 * 1024)
         worker.Name <- "spiral-codegen"
+        worker.IsBackground <- true
         worker.Start()
         worker.Join()
         if not (isNull failure.Value) then
@@ -190346,6 +190363,9 @@ module spiral_compiler =
                         // on a 1.5 MB Hopac worker stack and overflowed on file_system.read_link (apps/spiral's wall).
                         let result = IVar()
                         let thread = new System.Threading.Thread((fun () -> body () |> IVar.fill result |> Hopac.start), 1536 <<< 20)
+                        // Background: a build that outlives its caller's timeout (a runaway peval) must not keep the
+                        // process alive after the caller is done (dotnet-repl hung at 400% cpu after the notebook ended).
+                        thread.IsBackground <- true
                         thread.Start()
                         IVar.read result >>= handle_build_result
                         )
@@ -190467,18 +190487,33 @@ module spiral_compiler =
             )
 
     let private newServerCore () : ServerRuntime =
-        // A queue, not an Event: Async.AwaitEvent subscribes for one event at a time, so a diagnostic
-        // raised between two pulls of the stream was dropped. After a burst of parser errors that was
-        // often the FatalError itself, and the host waited for the build until its budget ran out
-        // (hopac FRONTIER.md fix 38).
-        let pending = System.Threading.Channels.Channel.CreateUnbounded<ClientErrorsRes>()
+        // A queue per reader, not an Event: Async.AwaitEvent subscribes for one event at a time, so a
+        // diagnostic raised between two pulls of the stream was dropped. After a burst of parser errors that
+        // was often the FatalError itself, and the host waited for the build until its budget ran out
+        // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
+        // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
+        // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
+        // result (all of polyglot Supervisor.dib's error-path tests got None). Each enumeration subscribes a
+        // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
+        let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
+        let publish (x : ClientErrorsRes) =
+            for KeyValue (subscriber, ()) in subscribers do
+                subscriber.Writer.TryWrite x |> ignore
         let stream =
-            FSharp.Control.AsyncSeq.unfoldAsync
-                (fun () -> async {
-                    let! msg = pending.Reader.ReadAsync().AsTask() |> Async.AwaitTask
-                    return Some (msg, ())
-                })
-                ()
+            { new FSharp.Control.IAsyncEnumerable<ClientErrorsRes> with
+                member _.GetEnumerator () =
+                    let pending = System.Threading.Channels.Channel.CreateUnbounded<ClientErrorsRes>()
+                    subscribers.TryAdd (pending, ()) |> ignore
+                    { new FSharp.Control.IAsyncEnumerator<ClientErrorsRes> with
+                        member _.MoveNext () = async {
+                            let! ct = Async.CancellationToken
+                            let! msg = pending.Reader.ReadAsync(ct).AsTask() |> Async.AwaitTask
+                            return Some msg
+                        }
+                        member _.Dispose () =
+                            subscribers.TryRemove pending |> ignore
+                    }
+            }
     
 
         let error_ch_create msg =
@@ -190487,7 +190522,7 @@ module spiral_compiler =
                 msg >> fun (x : ClientErrorsRes) ->
                     Hopac.Job.awaitUnitTask (
                         task {
-                            pending.Writer.TryWrite x |> ignore
+                            publish x
                             BuildDiagnosticsLedger.note ("delivered_" + clientErrorsResKindText x)
                             trace Verbose (fun () -> $"spiral_compiler.new_server / error_ch_create / kind={clientErrorsResKindText x}") (fun () -> "")
                             ()
@@ -190604,18 +190639,33 @@ module spiral_compiler =
             job_val: (IVar<'c> -> 'd) -> Task<string>
             supervisor: Ch<SupervisorReq>
         |} =
-        // A queue, not an Event: Async.AwaitEvent subscribes for one event at a time, so a diagnostic
-        // raised between two pulls of the stream was dropped. After a burst of parser errors that was
-        // often the FatalError itself, and the host waited for the build until its budget ran out
-        // (hopac FRONTIER.md fix 38).
-        let pending = System.Threading.Channels.Channel.CreateUnbounded<ClientErrorsRes>()
+        // A queue per reader, not an Event: Async.AwaitEvent subscribes for one event at a time, so a
+        // diagnostic raised between two pulls of the stream was dropped. After a burst of parser errors that
+        // was often the FatalError itself, and the host waited for the build until its budget ran out
+        // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
+        // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
+        // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
+        // result (all of polyglot Supervisor.dib's error-path tests got None). Each enumeration subscribes a
+        // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
+        let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
+        let publish (x : ClientErrorsRes) =
+            for KeyValue (subscriber, ()) in subscribers do
+                subscriber.Writer.TryWrite x |> ignore
         let stream =
-            FSharp.Control.AsyncSeq.unfoldAsync
-                (fun () -> async {
-                    let! msg = pending.Reader.ReadAsync().AsTask() |> Async.AwaitTask
-                    return Some (msg, ())
-                })
-                ()
+            { new FSharp.Control.IAsyncEnumerable<ClientErrorsRes> with
+                member _.GetEnumerator () =
+                    let pending = System.Threading.Channels.Channel.CreateUnbounded<ClientErrorsRes>()
+                    subscribers.TryAdd (pending, ()) |> ignore
+                    { new FSharp.Control.IAsyncEnumerator<ClientErrorsRes> with
+                        member _.MoveNext () = async {
+                            let! ct = Async.CancellationToken
+                            let! msg = pending.Reader.ReadAsync(ct).AsTask() |> Async.AwaitTask
+                            return Some msg
+                        }
+                        member _.Dispose () =
+                            subscribers.TryRemove pending |> ignore
+                    }
+            }
 
         let error_ch_create msg =
             let x = Ch()
@@ -190623,7 +190673,7 @@ module spiral_compiler =
                 msg >> fun (x : ClientErrorsRes) ->
                     Hopac.Job.awaitUnitTask (
                         task {
-                            pending.Writer.TryWrite x |> ignore
+                            publish x
                             trace Verbose (fun () -> $"spiral_compiler.new_server / error_ch_create / x: %A{x}") (fun () -> "")
                             ()
                         }
@@ -191042,7 +191092,7 @@ module spiral_compiler =
     open Microsoft.Extensions.Logging
 
     let main args =
-        Trace.US0_1 |> set_trace_level
+        SpiralTrace.TraceLevel.US0_1 |> set_trace_level
         // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
 
         let env = startupParse args

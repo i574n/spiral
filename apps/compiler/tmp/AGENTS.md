@@ -6,10 +6,10 @@ Rules for humans and LLM sessions (browser sandbox or local Windows) that change
 
 | | single-flight | hopac |
 |---|---|---|
-| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced except the 4 rows of `frontier_runaway_inline_recursion`, which time out (2026-10-01), 10-30x slower than single-flight on the mega roots |
+| What it is | the compiler that works today: sequential evaluator, F#/C/Rust/Delphi | the parallel Hopac evaluator: every oracle row of `-Suite all` reproduced (2026-10-01 20:19), 10-30x slower than single-flight on the mega roots |
 | Source of truth | `apps/compiler/spiral_compiler.fs`: shared sections, and the `#else` side of each section pair | the same file: the `#if SPIRAL_CORE_HOPAC` side of each section pair |
 | Role in tests | **oracle**: its results are `<cache>/baseline/EXPECTED.tsv` (`-Bless`) | **candidate**: scored by how much of the oracle it reproduces |
-| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md) | speed (~15 ms per inline application; the core library re-parsed by every fresh process) and race 34's general fix (a per-evaluation replay store). `apps/spiral` compiles since 2026-10-01 (555 s, 0 type errors, the same 874 methods/closures as single-flight; FRONTIER.md fix 55). Single-flight's features since the shared base `12f52a1` are ported. |
+| Known wall | `apps/spiral` overflowed the stack until 2026-09-30: commit 1eb2ecf had dropped the 1.5 GB thread `peval` runs on (restored; NEXT.md) | speed (~15 ms per inline application; the core library re-parsed by every fresh process) and race 34's general fix (a per-evaluation replay store). `apps/spiral` compiles since 2026-10-01 (359 s, 0 type errors, the same 874 methods/closures as single-flight; FRONTIER.md fixes 55, 58). Single-flight's features since the shared base `12f52a1` are ported. |
 | Scoreboard | `<cache>/scoreboards/single-flight.tsv` | `<cache>/scoreboards/hopac.tsv` (`-Record`) |
 
 Switching lanes is only a build/test argument: `-Mode single-flight` or `-Mode hopac`. Both binaries
@@ -74,7 +74,7 @@ otherwise 15 min), `SPIRAL_LEGACY_JOIN_HEURISTICS=1` (old EJP0019/EJP0021 join l
 `SPIRAL_RUN_END_GRACE_MS` (20), `SPIRAL_CODEGEN_STACK_MB` (512), `SPIRAL_JP_SLICE_OPS=<max>,<interval>`
 (time-slice declared method bodies again, e.g. `256,64`; off by default because resuming a slice is
 unsound, FRONTIER.md fix 22), `SPIRAL_DIAG_QUIET=1` (skip the diagnostic JSONL rows and console projections, ~20% of a compile;
-`scripts/test.ps1` sets it unless already set, so set `0` to keep them in a suite run),
+`scripts/test.ps1` sets it unless already set, so set `0` to keep them in a suite run; it also sets `DOTNET_GCgen0size=0x10000000`, a 256 MB gen0 budget: deep evaluation stacks make every gen0 collection costly),
 `SPIRAL_DEBUG_TYPECHECK_WAIT=<seconds>` (if type checking is still pending
 after that long, print every package's unfilled type-check promises to stderr),
 `SPIRAL_HOPAC_INLINE_JP=1` (evaluate join points inline from the start; builds apps/spiral too),
@@ -158,6 +158,7 @@ Hopac replaces single-flight as the default when `-Suite all` shows no `missing`
 columns agree, every row returns (`ok`, not `emitted`), and `apps/spiral` compiles. Until then
 single-flight stays the oracle and the lane that ships Rust/Delphi output.
 
-Status 2026-10-01 (`runs/hopac-20261001-150913`): met except 4 `missing` rows, the runaway fixture's: hopac
-reaches the `EJP0040` report in ~20 s, past the frontier deadline (single-flight: 3-11 s). Native columns
-agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles. What is left is speed.
+Status 2026-10-01 20:19 (`runs/hopac-20261001-194016`): **met** for the first time: no `missing` row, native
+columns agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles (359 s). One margin is thin: the 4
+`frontier_runaway_inline_recursion` rows reach their `EJP0040` report in 14.5-16.5 s under suite load, against
+the 17 s core deadline (FRONTIER.md fix 58). Before switching the default, repeat the suite a few times.

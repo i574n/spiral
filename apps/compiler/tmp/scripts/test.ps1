@@ -102,6 +102,10 @@ $env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir   # where `|core-` resol
 # Nobody reads the hopac core's diagnostic JSONL rows in a suite run, and they cost ~20% of a compile;
 # set SPIRAL_DIAG_QUIET=0 beforehand to keep them (single-flight ignores it).
 if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
+# A 256 MB gen0 budget for the compiler processes: partial evaluation runs on deep stacks, and every gen0
+# collection scans the whole stack, so fewer collections pay off superlinearly (a 1,000-level inline recursion:
+# 13-15 s -> 9.5 s in hopac). The runtime reads it only from the environment, so it is set here.
+if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
 # ------------------------------------------------------------------ discovery

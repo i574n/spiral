@@ -1,5 +1,10 @@
 # Hopac frontier
 
+**Status 2026-10-01 20:19 (fix 58 + 256 MB gen0): every oracle row reproduced** — `runs/hopac-20261001-194016`:
+frontier 24/24, contracts 606 + 1 no-oracle, examples 453/453, mega 5/5, no `missing`, no `emitted`,
+DISAGREE 0; with apps/spiral compiling (359 s) that meets the AGENTS.md promotion criterion. Thin margin: the
+runaway fixture's rows report in 14.5-16.5 s under suite load (deadline 17 s).
+
 **Status 2026-10-01 17:53 (fixes 55-57):** `runs/hopac-20261001-171327` (`-Suite all -Native`, 3 workers,
 fresh processes): frontier 20 + 4 `missing`, contracts 606 + 1 no-oracle, examples 453/453, mega 5/5,
 DISAGREE 0, no `emitted` row; every residual hash equal to the 05:12 run's. The 4 `missing` are
@@ -488,6 +493,23 @@ against 28 KB) and `native_cube_direct`, which used to stall, finishing with sta
     default of one worker per core (lean_cic 178 s vs 139 s, same wall time). `lean_cic` is slow in the
     suite because it shares the CPU with the omniledger and spiral_proves roots, not because of
     scheduler oversubscription.
+58. **A recursion making progress counted as a cycle.** Hopac's cycle guards counted every re-entry of an AST
+    node (`EvalCycleGuard`) and of a source position (`EvalStackDepthGuard`). At 64 re-entries
+    (`EvalFallbackPolicy.warnReentry`, a quarter of the parallel limit 256) the evaluator logs `EJP0011W term
+    re-entry hot` and requests sequential mode; from then on the visit ledger and the term-cycle fuse run on
+    every entry, the fuse trips, and each entry pays replay registration, forced replay drains and
+    terminal-contract pins. An inline recursion through a dynamic `if` (`listm'.exists'` over a static list
+    with a runtime predicate, a deep if-chain, `frontier_runaway_inline_recursion`) meets the same node once per
+    level, each time one dynamic `if` deeper: progress, not a cycle. Both guards now count per (node, dynamic
+    `if` depth) — unchanged at depth 0, so a cycle without a dynamic `if` is caught exactly as before, and one
+    through dynamic `if`s ends at `EJP0040`, as in single-flight. The runaway fixture's 1,000 levels: 21-24 s
+    -> 15 s (200 levels: 5 s); its profile no longer shows the fuse path at all. **apps/spiral: 555-576 s ->
+    359 s**, the same 2,687,696 bytes (it went sequential the same way). Full suite
+    `runs/hopac-20261001-185336`: no row changed except `frontier_static_list_eq`, now exact parity on four
+    backends (its oracle was re-blessed: single-flight unrolls the static list since the `listm'.exists'`
+    change). What remains in the runaway fixture is ordinary evaluation plus the runtime scanning a deep stack
+    on every gen0 collection: a 256 MB gen0 budget (`DOTNET_GCgen0size=0x10000000`, environment only; the
+    harness sets it now) takes the fixture from 13-15 s to 9.5 s.
 57. **Warm processes (one hopac process, many BuildFiles) — experiment, not the default yet.** AGENTS.md said
     the core serves one BuildFile per process; it serves several. The host's `--batch` already runs jobs one
     after another: four frontier fixtures in one process were byte-identical to single-flight, 2.7 s for the

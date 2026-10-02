@@ -3701,7 +3701,7 @@ pub mod File_system {
         (v2.clone(), File_system::method94(v2))
     }
     pub fn closure54(unitVar: (), unitVar_1: ()) -> string {
-        string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral")
+        string("C:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral")
     }
     pub fn closure56(unitVar: (), v0: std::path::PathBuf) -> File_system::US15 {
         File_system::US15::US15_0(v0)
@@ -4863,7 +4863,7 @@ pub mod File_system {
                 .clone(),
             ),
             _ => {
-                File_system::method139(string("c:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral"))
+                File_system::method139(string("C:\\home\\git\\polyglot\\deps\\spiral\\lib\\spiral"))
             }
         };
         let v13: File_system::US5 = match &v7 {

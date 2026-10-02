@@ -176,12 +176,12 @@ impl Server {
                             "hoverProvider": true,
                             "documentLinkProvider": { "resolveProvider": false },
                             "executeCommandProvider": {
-                                "commands": ["spiral.buildFile", "spiral.showStatus"]
+                                "commands": ["spiral.buildFile", "spiral.showStatus", "spiral.createFile", "spiral.deleteFile", "spiral.createDirectory"]
                             },
                             "codeActionProvider": { "codeActionKinds": ["source"] },
                             "semanticTokensProvider": {
                                 "legend": {
-                                    "tokenTypes": ["keyword", "string", "comment", "number", "operator", "variable", "type"],
+                                    "tokenTypes": ["variable", "symbol", "string", "number", "operator", "unary_operator", "comment", "keyword", "parenthesis", "type_variable", "escaped_char", "unescaped_char", "number_suffix", "escaped_var", "type"],
                                     "tokenModifiers": []
                                 },
                                 "full": true
@@ -291,6 +291,9 @@ impl Server {
                 match command {
                     "spiral.buildFile" => self.build(&uri),
                     "spiral.showStatus" => self.show_status(),
+                    "spiral.createFile" => self.create_file(Path::new(&uri)),
+                    "spiral.deleteFile" => self.delete_file(Path::new(&uri)),
+                    "spiral.createDirectory" => self.create_directory(Path::new(&uri)),
                     _ => self.log(1, &format!("unknown command {command}")),
                 }
                 self.respond(id, Value::Null);
@@ -486,7 +489,42 @@ impl Server {
                 }
             }));
         }
+        if uri.ends_with("package.spiproj") {
+            actions.extend(project_actions(uri, &doc.text, &doc.path));
+        }
         actions
+    }
+
+    fn create_file(&self, path: &Path) {
+        match create_module_file(path) {
+            Ok(()) => self.show(3, &format!("Created {}", path.display())),
+            Err(error) => {
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
+    }
+
+    fn delete_file(&self, path: &Path) {
+        match std::fs::remove_file(path) {
+            Ok(()) => self.show(3, &format!("Deleted {}", path.display())),
+            Err(error) => {
+                let error = format!("Delete file failed: {error}");
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
+    }
+
+    fn create_directory(&self, path: &Path) {
+        match std::fs::create_dir_all(path) {
+            Ok(()) => self.show(3, &format!("Created {}", path.display())),
+            Err(error) => {
+                let error = format!("Create directory failed: {error}");
+                self.log(1, &error);
+                self.show(1, &error);
+            }
+        }
     }
 
     fn note_output(&mut self, uri: &str, output: &RunOutput) {
@@ -712,6 +750,81 @@ fn document_links(uri: &str, text: &str) -> Vec<Value> {
     links
 }
 
+fn project_actions(uri: &str, text: &str, project: &Path) -> Vec<Value> {
+    let Some(dir) = project.parent() else {
+        return Vec::new();
+    };
+    let mut module_dir = dir.to_path_buf();
+    let mut in_modules = false;
+    let mut actions = Vec::new();
+    for (line_index, line) in text.lines().enumerate() {
+        let trimmed = line.trim();
+        if let Some(rest) = trimmed.strip_prefix("moduleDir:") {
+            module_dir = dir.join(rest.trim());
+            if !module_dir.is_dir() {
+                actions.push(filesystem_action(uri, line_index, line, "Create directory.", "spiral.createDirectory", &module_dir, false));
+            }
+            in_modules = false;
+            continue;
+        }
+        if trimmed == "modules:" {
+            in_modules = true;
+            continue;
+        }
+        if in_modules && trimmed.ends_with(':') {
+            in_modules = false;
+            continue;
+        }
+        if in_modules && !trimmed.is_empty() && !trimmed.starts_with('#') {
+            let target = module_dir.join(format!("{trimmed}.spi"));
+            if target.is_file() {
+                actions.push(filesystem_action(uri, line_index, line, "Delete file.", "spiral.deleteFile", &target, true));
+            } else {
+                actions.push(filesystem_action(uri, line_index, line, "Create file.", "spiral.createFile", &target, false));
+            }
+        }
+    }
+    actions
+}
+
+fn filesystem_action(uri: &str, line_index: usize, line: &str, title: &str, command: &str, path: &Path, remove_line: bool) -> Value {
+    let mut action = json!({
+        "title": title,
+        "kind": "refactor",
+        "command": {
+            "title": title,
+            "command": command,
+            "arguments": [path.to_string_lossy()]
+        }
+    });
+    if remove_line {
+        let end_line = line_index + if line.ends_with('\n') { 0 } else { 1 };
+        action["edit"] = json!({
+            "changes": {
+                uri: [{
+                    "range": {
+                        "start": { "line": line_index, "character": 0 },
+                        "end": { "line": end_line, "character": 0 }
+                    },
+                    "newText": ""
+                }]
+            }
+        });
+    }
+    action
+}
+
+fn create_module_file(path: &Path) -> Result<(), String> {
+    if path.exists() {
+        return Err("File already exists.".to_string());
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    std::fs::File::create(path).map_err(|error| error.to_string())?;
+    Ok(())
+}
+
 fn word_at(line: &str, character: usize) -> (usize, String) {
     let chars: Vec<char> = line.chars().collect();
     if chars.is_empty() {
@@ -778,6 +891,19 @@ fn semantic_tokens(text: &str) -> Vec<u32> {
     data
 }
 
+const KIND_VARIABLE: u32 = 0;
+const KIND_SYMBOL: u32 = 1;
+const KIND_STRING: u32 = 2;
+const KIND_NUMBER: u32 = 3;
+const KIND_OPERATOR: u32 = 4;
+const KIND_UNARY: u32 = 5;
+const KIND_COMMENT: u32 = 6;
+const KIND_KEYWORD: u32 = 7;
+const KIND_PAREN: u32 = 8;
+const KIND_NUMBER_SUFFIX: u32 = 12;
+const KIND_ESCAPED_VAR: u32 = 13;
+const KIND_TYPE: u32 = 14;
+
 struct ScanToken {
     line: u32,
     character: u32,
@@ -804,7 +930,7 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
             while index < chars.len() && chars[index] != '\n' {
                 index += 1;
             }
-            push_token(&mut tokens, line, character, (index - start) as u32, 2);
+            push_token(&mut tokens, line, character, (index - start) as u32, KIND_COMMENT);
             character += (index - start) as u32;
             continue;
         }
@@ -821,22 +947,63 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
             if index + 1 < chars.len() {
                 index += 2;
             }
-            push_token(&mut tokens, line, character, (index - start) as u32, 2);
+            push_token(&mut tokens, line, character, (index - start) as u32, KIND_COMMENT);
             character += (index - start) as u32;
             continue;
         }
         if ch == '"' && chars.get(index + 1) == Some(&'"') && chars.get(index + 2) == Some(&'"') {
             let (next, len) = take_triple(&chars, index);
-            push_token(&mut tokens, line, character, len, 1);
+            push_token(&mut tokens, line, character, len, KIND_STRING);
             advance(&chars, index, next, &mut line, &mut character);
             index = next;
             continue;
         }
         if ch == '"' {
             let (next, len) = take_string(&chars, index);
-            push_token(&mut tokens, line, character, len, 1);
+            push_token(&mut tokens, line, character, len, KIND_STRING);
             advance(&chars, index, next, &mut line, &mut character);
             index = next;
+            continue;
+        }
+        if ch == '\'' {
+            if let Some(len) = char_literal_len(&chars, index) {
+                push_token(&mut tokens, line, character, len as u32, KIND_STRING);
+                index += len;
+                character += len as u32;
+                continue;
+            }
+        }
+        if ch == '~' && chars.get(index + 1).is_some_and(|next| next.is_ascii_alphabetic() || *next == '_') {
+            push_token(&mut tokens, line, character, 1, KIND_ESCAPED_VAR);
+            index += 1;
+            character += 1;
+            continue;
+        }
+        if matches!(ch, '(' | ')' | '[' | ']' | '{' | '}') {
+            push_token(&mut tokens, line, character, 1, KIND_PAREN);
+            index += 1;
+            character += 1;
+            continue;
+        }
+        if ch == '.' && chars.get(index + 1).is_some_and(|next| next.is_ascii_alphabetic() || *next == '_') {
+            let start = index;
+            index += 2;
+            while index < chars.len() && (chars[index].is_ascii_alphanumeric() || chars[index] == '_' || chars[index] == '\'') {
+                index += 1;
+            }
+            push_token(&mut tokens, line, character, (index - start) as u32, KIND_SYMBOL);
+            character += (index - start) as u32;
+            continue;
+        }
+        if is_operator_char(ch) {
+            let start = index;
+            index += 1;
+            while index < chars.len() && is_operator_char(chars[index]) {
+                index += 1;
+            }
+            let kind = if unary_operator(&chars, start, index) { KIND_UNARY } else { KIND_OPERATOR };
+            push_token(&mut tokens, line, character, (index - start) as u32, kind);
+            character += (index - start) as u32;
             continue;
         }
         if ch.is_ascii_alphabetic() || ch == '_' {
@@ -847,10 +1014,10 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
             }
             let word: String = chars[start..index].iter().collect();
             let kind = match token_kind(&word) {
-                "keyword" => 0,
-                "type" => 6,
-                "number" => 3,
-                _ => 5,
+                "keyword" => KIND_KEYWORD,
+                "type" => KIND_TYPE,
+                "number" => KIND_NUMBER,
+                _ => KIND_VARIABLE,
             };
             push_token(&mut tokens, line, character, (index - start) as u32, kind);
             character += (index - start) as u32;
@@ -859,17 +1026,80 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
         if ch.is_ascii_digit() {
             let start = index;
             index += 1;
-            while index < chars.len() && (chars[index].is_ascii_alphanumeric() || chars[index] == '_') {
+            while index < chars.len() && chars[index].is_ascii_digit() {
                 index += 1;
             }
-            push_token(&mut tokens, line, character, (index - start) as u32, 3);
+            if chars.get(index) == Some(&'.') && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) {
+                index += 1;
+                while index < chars.len() && chars[index].is_ascii_digit() {
+                    index += 1;
+                }
+            }
+            push_token(&mut tokens, line, character, (index - start) as u32, KIND_NUMBER);
             character += (index - start) as u32;
+            if let Some(suffix) = number_suffix_len(&chars, index) {
+                push_token(&mut tokens, line, character, suffix as u32, KIND_NUMBER_SUFFIX);
+                index += suffix;
+                character += suffix as u32;
+            }
             continue;
         }
         index += 1;
         character += 1;
     }
     tokens
+}
+
+fn is_operator_char(ch: char) -> bool {
+    ('!'..='~').contains(&ch)
+        && !ch.is_ascii_alphanumeric()
+        && ch != '_'
+        && ch != '"'
+        && ch != '\''
+        && !matches!(ch, '(' | ')' | '[' | ']' | '{' | '}')
+}
+
+fn unary_operator(chars: &[char], start: usize, end: usize) -> bool {
+    let before = if start == 0 { '\n' } else { chars[start - 1] };
+    let after = chars.get(end).copied().unwrap_or('\n');
+    let prefix = before == ' ' || before == '\n' || before == '\t' || matches!(before, '(' | '[' | '{');
+    let postfix = after == ' ' || after == '\n' || after == '\t' || matches!(after, ')' | ']' | '}');
+    prefix && !postfix
+}
+
+fn number_suffix_len(chars: &[char], index: usize) -> Option<usize> {
+    const SUFFIXES: &[&str] = &["i64", "i32", "i16", "i8", "u64", "u32", "u16", "u8", "f64", "f32"];
+    let rest: String = chars[index..].iter().take(3).collect();
+    SUFFIXES.iter().find_map(|suffix| {
+        if !rest.starts_with(suffix) {
+            return None;
+        }
+        let after = chars.get(index + suffix.len()).copied().unwrap_or(' ');
+        if after.is_ascii_alphanumeric() || after == '_' {
+            None
+        } else {
+            Some(suffix.len())
+        }
+    })
+}
+
+fn char_literal_len(chars: &[char], index: usize) -> Option<usize> {
+    let body = *chars.get(index + 1)?;
+    if body == '\\' {
+        let _escaped = chars.get(index + 2)?;
+        if chars.get(index + 3) == Some(&'\'') {
+            return Some(4);
+        }
+        return None;
+    }
+    if body == '\'' || body == '\n' {
+        return None;
+    }
+    if chars.get(index + 2) == Some(&'\'') {
+        Some(3)
+    } else {
+        None
+    }
 }
 
 fn push_token(tokens: &mut Vec<ScanToken>, line: u32, character: u32, length: u32, kind: u32) {
@@ -1002,7 +1232,7 @@ mod tests {
     #[test]
     fn empty_string_at_end_of_line_is_closed() {
         let tokens = scan_tokens("if ready then \"\"\nnext\n");
-        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == 1).collect();
+        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == KIND_STRING).collect();
         assert_eq!(strings.len(), 1);
         assert_eq!(strings[0].length, 2);
         assert!(tokens.iter().any(|token| token.line == 1));
@@ -1011,7 +1241,7 @@ mod tests {
     #[test]
     fn escaped_quote_before_closer_stays_one_string() {
         let tokens = scan_tokens("value = \"Include=\\\"\"\nnext\n");
-        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == 1).collect();
+        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == KIND_STRING).collect();
         assert_eq!(strings.len(), 1);
         assert_eq!(strings[0].line, 0);
     }
@@ -1069,5 +1299,35 @@ mod tests {
         assert!(body.contains("inl"));
         assert!(body.contains("keyword"));
         assert!(body.contains("Package typecheck rejected"));
+    }
+
+    #[test]
+    fn vscode_token_kinds_cover_suffix_tilde_symbol_and_char() {
+        let tokens = scan_tokens("inl ~x = 6i32\n.name\n'a'\n-y\n");
+        assert!(tokens.iter().any(|token| token.kind == KIND_ESCAPED_VAR && token.length == 1));
+        assert!(tokens.iter().any(|token| token.kind == KIND_NUMBER && token.length == 1));
+        assert!(tokens.iter().any(|token| token.kind == KIND_NUMBER_SUFFIX && token.length == 3));
+        assert!(tokens.iter().any(|token| token.kind == KIND_SYMBOL && token.length == 5));
+        assert!(tokens.iter().any(|token| token.kind == KIND_STRING && token.length == 3));
+        assert!(tokens.iter().any(|token| token.kind == KIND_UNARY));
+        let between = scan_tokens("x - y\n");
+        assert!(between.iter().any(|token| token.kind == KIND_OPERATOR));
+        assert!(!between.iter().any(|token| token.kind == KIND_UNARY));
+    }
+
+    #[test]
+    fn missing_module_offers_create_file() {
+        let dir = std::env::temp_dir().join("spiral-zed-missing-module");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let project = dir.join("package.spiproj");
+        let actions = project_actions("file:///pkg/package.spiproj", "modules:\n    gone\n", &project);
+        assert!(actions.iter().any(|action| action["title"] == "Create file."));
+        let created = dir.join("gone.spi");
+        create_module_file(&created).unwrap();
+        let again = project_actions("file:///pkg/package.spiproj", "modules:\n    gone\n", &project);
+        assert!(again.iter().any(|action| action["title"] == "Delete file."));
+        assert!(create_module_file(&created).is_err());
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }

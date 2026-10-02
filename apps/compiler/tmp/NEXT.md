@@ -437,33 +437,36 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
 
 ## Open, in order
 
-0. **2026-10-01 (11:30)**: done today: hopac default mode compiles apps/spiral end to end (attempt 19 wrote
-   the 2,687,696-byte output; 555 s quiet); single-flight restore and `frontier_runaway_inline_recursion` blessed
-   (4 x error, `SPIRAL_IF_NESTING_LIMIT` default 1,000). The 08:56 hopac suite had 10 load-induced residual
-   changes (race 34's variable-numbering face, fixed: replay may not draw from a direct block's counter) and 2
-   load stalls.
-   **Afternoon (14:50):** the fresh-process hopac suite `runs/hopac-20261001-140839` equals the 05:12 baseline
-   row for row (every residual hash), except the runaway fixture, whose hopac rows are now honestly
-   `timeout` (the harness scores a core's `BuildFile stalled` as a timeout; it used to pass as `error`).
-   Fixed on the way: fix 56 (the type-aware op replay ran unmarked as replay code: a duplicated statement;
-   the replay driver now marks its whole run), the unified `ArtifactWriteDecision` (inline mode's silent rows
-   compile), per-node costs (interned digests, lazy visit trace). **The promotion criterion (AGENTS.md) is met
-   except the runaway fixture's 4 rows**, which need hopac faster per inline application. Open, in order:
-   - **warm processes** (FRONTIER fix 57): a whole suite compiled 12x faster in one process per worker
-     (186 s vs 2,295 s), 1,054/1,089 rows unchanged; it needs a per-build session for the join point
-     machinery (work items, cells, deadlines, the terminal-failure latch): point resets were not enough;
-   - hopac per-application overhead (~15 ms per inline level; the runaway fixture's hopac rows time out). Root
-     found 18:20: at 64 re-entries of one node (`EvalFallbackPolicy.warnReentry`, a quarter of the parallel
-     limit 256) `term_core_impl` logs `EJP0011W term re-entry hot` and requests sequential mode; from then on
-     the visit ledger and term-cycle fuse run on every entry, the fuse trips, and each entry pays replay
-     registration, forced drains and contract pins. A progressing inline recursion is not a cycle: make the
-     warning require no-progress evidence (no new statement in the block, or `dynamicIfDepth` growing), then
-     a full suite (the same policy guards real cycles);
-   - race 34's general fix (a per-evaluation replay store) and whole-subtree replay registration (~12%);
-   - (done 17:13) the split loop works again: `gear-dev -Full` built 141/141 gears and the host after two
-     fixes (same-source reruns; `-Full` starts from an empty `.out`). `scripts/gear-dev.ps1` for core edits;
-   - before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
-1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
+0. **Handoff 2026-10-01 21:00 — hopac meets the promotion criterion** (AGENTS.md):
+   `runs/hopac-20261001-194016` reproduces every oracle row (no `missing`, no `emitted`, DISAGREE 0) and
+   apps/spiral compiles in the default async mode (359 s, 2,687,696 bytes, 0 type errors). The single-flight
+   run after it (20:50) is at full parity and the tracked sample outputs equal HEAD. Today's fixes: FRONTIER.md
+   55-58. Pending work, in order (nothing else is in flight; the session's task list is closed):
+   1. **Confirm the margin, then decide the default.** The 4 `frontier_runaway_inline_recursion` rows report
+      `EJP0040` in 14.5-16.5 s under suite load against the 17 s core deadline. Repeat
+      `pwsh scripts/test.ps1 -Mode hopac -Suite all -Native` two or three times; if they hold, switch the
+      default lane per AGENTS.md "Promotion criterion". If they flap: the remaining per-level cost is replay
+      registration (item 3), CSE lookups through the scope chain, and GC scans of the deep stack (the harness
+      already sets `DOTNET_GCgen0size=0x10000000`).
+   2. **Warm processes (FRONTIER fix 57).** `-FreshProcess:$false` compiles a whole suite 12x faster (186 s vs
+      2,295 s; each fresh process re-parses the core library, ~5 s). Done: the stale-watchdog ordinal, the
+      per-build invalidation baseline, sequential/recovery reset, the terminal-failure latch reset. Blocking:
+      join point work, cells and deadlines left by a build the host abandoned (it returns on the first type
+      error) make the next build's join point workers hit `JpTerminalFailureRunningCutoverCancellation` (~75-100
+      rows). Point resets did not help (store resets, request-tagged timings: both reverted). Next: a per-build
+      session object owning the JP machinery's work items, cells, caches, deadlines and the latch, created per
+      BuildFile request (the request ordinal exists in the Supervisor section).
+   3. **Race 34's general fix (a per-evaluation replay store).** Its faces fixed today: replay drawing from a
+      direct block's variable counter, the type-aware op replay running unmarked (fix 56; the replay driver
+      now marks its whole run). The general fix should also remove whole-subtree replay registration at every
+      term entry (`registerReplayTermWithContext`: ~19% on the runaway fixture, ~32% inclusive on a mega root);
+      its thunks capture the environment (`box s`), so registration cannot simply be deduplicated.
+   4. **Mega-root speed.** The evaluator dominates a mega root now (the quiet metronome went from 11.8 s to
+      0.7 s of CPU); next costs: telemetry producers still computed in quiet mode (keep each row's kind:
+      `forceReplayDriverDrainPassTagged` decides on `snapshotKindCount`), `EvalVisitLedger.key` (a
+      StableBindingId per visit), DiagSidecar hot-key counters (they feed retry triage).
+   5. Before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
+   History of the day: "Session 2026-10-01" above and FRONTIER.md's status lines.1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
    cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which
    top-down code rejects) and is dropped without a message; `BuildFile` then finds the `main` that the
    entry's `open main` brought in from the dependency (single-flight `file_build` fold + `Map.tryFind "main"`;

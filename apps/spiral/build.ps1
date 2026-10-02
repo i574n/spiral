@@ -71,6 +71,13 @@ if (!$fast) {
     # TODO: erroring without release (clap index)
     { cargo +nightly-2025-11-01 test --timings --release -- --show-output } | Invoke-Block
 }
+# polyglot's build.dib runs this script under `spiral dib`, i.e. under the spiral.exe it rebuilds, and Windows
+# can't replace a running exe ("failed to remove file ... spiral.exe: Access is denied") but can rename it.
+if ($IsWindows) {
+    $exe = "../../workspace/target/release/spiral.exe"
+    Get-ChildItem "$exe.old-*" -ErrorAction Ignore | ForEach-Object { try { $_.Delete() } catch { } }
+    if (Test-Path $exe) { Move-Item $exe "$exe.old-$(Get-Date -Format yyyyMMddHHmmss)" }
+}
 { cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -OnError Continue
 
 if ($env:CI) {

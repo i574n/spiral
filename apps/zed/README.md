@@ -136,7 +136,7 @@ Zed starts `spiral-zed`, which speaks the language server protocol and runs the 
 
 `%LOCALAPPDATA%\spiral-bin\bin\single-flight\SpiralCompiler\Release\net11.0\SpiralCompiler.dll`
 
-Opening a `.spi` file shows a toast, `Spiral ready`, and then checks that file. A failure is one diagnostic. When the compiler prints `Error trace on line`, the underline uses that line and column. The code actions **Spiral: Build file** and **Spiral: Show compiler** are on `.spi` and `.spir` buffers. Show compiler repeats the backend and the dll name. The language server log still starts with `spiral-zed: ready` and the full dotnet and dll paths. Hover a name for the token and the latest compiler note. Build writes the `.rs` next to the module.
+Opening a `.spi` file shows a toast, `Spiral ready`, and then checks that file. A failure is one diagnostic. When the compiler prints `Error trace on line`, the underline uses that line and column. The code actions **Spiral: Build file** and **Spiral: Show compiler** are on `.spi` and `.spir` buffers. On `package.spiproj`, a missing module offers **Create file.** and an existing module offers **Delete file.**, which removes that line. Show compiler repeats the backend and the dll name. The language server log still starts with `spiral-zed: ready` and the full dotnet and dll paths. Hover a name for the token and the latest compiler note. Semantic tokens use the VS Code legend, including `~` bindings, number suffixes such as `i32`, `.name` symbols, and character literals. Build writes the `.rs` next to the module.
 
 ```json
 {
