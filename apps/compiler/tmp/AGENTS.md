@@ -162,3 +162,7 @@ Status 2026-10-01 20:19 (`runs/hopac-20261001-194016`): **met** for the first ti
 columns agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles (359 s). One margin is thin: the 4
 `frontier_runaway_inline_recursion` rows reach their `EJP0040` report in 14.5-16.5 s under suite load, against
 the 17 s core deadline (FRONTIER.md fix 58). Before switching the default, repeat the suite a few times.
+
+Status 2026-10-02 16:10 (`runs/hopac-20261002-153006`): still met, and the margin held in two more runs (11.3-11.7 s,
+then 8.7-10.0 s); full parity, 33 more rows byte-identical to single-flight (union arms ordered by case name, not
+intern order). Hopac remains 4-5x slower than single-flight on the mega roots (NEXT.md item 1).

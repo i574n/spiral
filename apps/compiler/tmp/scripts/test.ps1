@@ -50,6 +50,9 @@ param(
     [switch]$Record,
     # One compiler process per job. Default on in hopac mode, whose core serves one BuildFile per process.
     [switch]$FreshProcess,
+    # Warm processes that end after a job returning an error (SPIRAL_BATCH_RECYCLE_AFTER_ERROR): the next job
+    # gets a fresh process only where an abandoned build could leak into it (FRONTIER.md fix 57). Experimental.
+    [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     # Workspace root for the compiler (SPIRAL_WORKSPACE_ROOT). Defaults to this directory.
     [string]$WorkspaceRoot
@@ -66,7 +69,8 @@ $mode = ConvertTo-SpiralMode $Mode
 # A fresh hopac process needs ~9-12 s for a trivial program (startup, core warm-up, commit and run-end
 # grace), and the host reports a stall as an error 7 s before the job timeout, so 20 s is the floor.
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
-$freshProcess = if ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
+$freshProcess = if ($WarmRecycle) { $false } elseif ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
+if ($WarmRecycle) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
 # Default workers from the machine: a hopac job keeps 2-3 cores busy (its own worker pool), a single-flight
 # job about one; each needs up to ~1.5 GB, so free memory caps both (a 2-worker run was once killed for it).
 if ($Parallel -le 0) {
@@ -227,6 +231,10 @@ $workerScript = {
         if ($lastTimedOut) {
             $cut = [Array]::IndexOf(@($remaining.Key), $lastTimedOut.Key)
             $remaining = @($remaining | Select-Object -Skip ($cut + 1)) + $rest
+        }
+        elseif ($exitCode -eq 4 -and $firstMissing -ge 0) {
+            # Recycled after an error (-WarmRecycle): the jobs it did not reach go to a fresh process.
+            $remaining = @($remaining | Select-Object -Skip $firstMissing) + $rest
         }
         elseif ($firstMissing -ge 0) {
             $key = $remaining[$firstMissing].Key

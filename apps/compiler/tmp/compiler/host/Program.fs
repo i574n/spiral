@@ -757,10 +757,16 @@ module Program =
         let budgetFromCaller = not (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable "SPIRAL_BUILD_BUDGET_MS"))
         use results = new StreamWriter(resultsPath, true, UTF8Encoding(false))
         results.AutoFlush <- true
+        // SPIRAL_BATCH_RECYCLE_AFTER_ERROR=1: end the batch after a job that returned an error (exit 4), so the caller
+        // starts a fresh process for the rest. The Hopac core leaves the join point work of a build the host
+        // abandons (it returns on the first type error) running into the next build (FRONTIER.md fix 57); after
+        // successful builds a warm process saves re-parsing the core library (~5 s per job).
+        let recycleAfterError = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_BATCH_RECYCLE_AFTER_ERROR", "1", StringComparison.Ordinal)
         let mutable exitCode = 0
         let mutable index = 0
         let mutable timedOut = false
-        while not timedOut && index < jobs.Length do
+        let mutable recycle = false
+        while not timedOut && not recycle && index < jobs.Length do
             let fields = jobs.[index].Split('\t')
             let id, backend, input, output = fields.[0], fields.[1], fields.[2], fields.[3]
             // Optional fifth column: per-job timeout in milliseconds (fast samples get seconds, mega samples minutes).
@@ -780,6 +786,7 @@ module Program =
                         results.WriteLine($"{id}\tok\t{stopwatch.ElapsedMilliseconds}\tbytes={bytes} entry={binding} revision={revisionMode}")
                     | Error message ->
                         exitCode <- 1
+                        recycle <- recycleAfterError
                         results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}")
                 else
                     exitCode <- 3
@@ -787,9 +794,10 @@ module Program =
                     results.WriteLine($"{id}\ttimeout\t{stopwatch.ElapsedMilliseconds}\tno result within {jobTimeoutMs} ms{stallDetail ()}")
             with error ->
                 exitCode <- 1
+                recycle <- recycleAfterError
                 results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText error.Message}")
             index <- index + 1
-        exitCode
+        if recycle && index < jobs.Length then 4 else exitCode
 
     let private runServer socketPath _initialInput =
         let socketPath = Path.GetFullPath socketPath

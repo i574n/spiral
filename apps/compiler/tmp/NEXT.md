@@ -448,6 +448,12 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       default lane per AGENTS.md "Promotion criterion". If they flap: the remaining per-level cost is replay
       registration (item 3), CSE lookups through the scope chain, and GC scans of the deep stack (the harness
       already sets `DOTNET_GCgen0size=0x10000000`).
+      2026-10-02: held twice with margin (`-Parallel 2`): `runs/hopac-20261002-111457` 11.3-11.7 s, and
+      `runs/hopac-20261002-153006` 8.7-10.0 s (after the registration and union-tag changes; full parity, 0 missing,
+      DISAGREE 0, compiled in 2,325 s vs 2,985 s that morning; 33 rows moved from parity-residual-differs to exact
+      parity, 64 left). The criterion's rows hold; switching the default lane is the user's call (hopac is still
+      4-5x slower than single-flight on the mega roots: lean_cic 19.7 s, omniledger 22.2 s, spiral_proves_spiral
+      43.6 s, brzozowski 3.9 s, zeta 7.2 s).
    2. **Warm processes (FRONTIER fix 57).** `-FreshProcess:$false` compiles a whole suite 12x faster (186 s vs
       2,295 s; each fresh process re-parses the core library, ~5 s). Done: the stale-watchdog ordinal, the
       per-build invalidation baseline, sequential/recovery reset, the terminal-failure latch reset. Blocking:
@@ -456,6 +462,31 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       rows). Point resets did not help (store resets, request-tagged timings: both reverted). Next: a per-build
       session object owning the JP machinery's work items, cells, caches, deadlines and the latch, created per
       BuildFile request (the request ordinal exists in the Supervisor section).
+      2026-10-02: `test.ps1 -WarmRecycle` (host: `SPIRAL_BATCH_RECYCLE_AFTER_ERROR=1` ends a batch with exit 4 after
+      an error job; the worker resumes the rest in a fresh process): `-Suite all -Native -Parallel 2` compiled in
+      1,032 s vs 2,985 s fresh (484 processes for 1089 jobs; warm examples compile in 0.2-0.4 s). Not byte-safe
+      yet, so opt-in only. Two leaks across *successful* builds: (a) `tagged_union_*` match arms came out in another
+      order — `UnionTagId` compared by intern slot, i.e. the process-wide first-seen order (fixed: ordinal text
+      order, single-flight's; the 4 `tagged_union_*` samples now come out byte-identical to the committed
+      single-flight outputs, warm and fresh, where hopac's had been `parity-residual-differs`); (b) the `while_*`
+      samples stall on their 3rd-8th build in one process (any backend; 1-2 of 8 per round): main returns, then
+      `jpAwaitCombinedQuiescence` (peval-main-orphan-check) waits on one operational node left `Running` with no job
+      behind it — `JPMethod <anon> while_loop/main.spi:1:20-1:26` (the stall report now lists spawn leases and
+      open nodes). Cause (traced with the absorbed exception, now printed outside quiet runs): the process-global
+      `SemanticWorkLedgerAuthority` kept the earlier build's receipt for the same content-identified work unit;
+      this build's receipt differed, so `jp_complete_work_item`'s retirement was rejected (`SemanticConflict
+      (ReceiptConflict ...)`), the boundary absorbed it, the node never retired. Fixed: `resetEvaluationForBuild`
+      empties the ledger (`SemanticWorkLedgerAuthority.resetForNewBuild`); 5 rounds x 8 warm builds clean.
+      Still open: the in-process inline restart (`pevalWithInlineRestart`) starts a new peval without that reset.
+      Full-suite results with both fixes: `-WarmRecycle` 1,018 s, examples all parity, 2 contracts rows missing
+      (`brzozowski/antimirov_certificate` cutover cancellation; `canonical_form_certificate` "types of two branches
+      of an union unbox do not match: symbol_ordering / bit_alphabet" — a warm-only wrong answer, cause not found);
+      fully warm (`-FreshProcess:$false`) 396 s but 116 examples rows `JpTerminalFailureRunningCutoverCancellation`
+      after abandoned error builds. Tried and reverted: the host waiting (up to 20 s) for the abandoned build's own
+      BuildFile before the next job — 5,130 s and still 94 cutover rows, so the latch comes from work that outlives
+      BuildFile itself.
+      Single-flight oracle after the `>>=` error-channel fix (`runs/single-flight-20261002-141358`): 1088 parity +
+      1 new, no REGRESSED, DISAGREE 0, every sample output byte-identical to the committed one (CR aside).
    3. **Race 34's general fix (a per-evaluation replay store).** Its faces fixed today: replay drawing from a
       direct block's variable counter, the type-aware op replay running unmarked (fix 56; the replay driver
       now marks its whole run). The general fix should also remove whole-subtree replay registration at every
@@ -465,6 +496,36 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       0.7 s of CPU); next costs: telemetry producers still computed in quiet mode (keep each row's kind:
       `forceReplayDriverDrainPassTagged` decides on `snapshotKindCount`), `EvalVisitLedger.key` (a
       StableBindingId per visit), DiagSidecar hot-key counters (they feed retry triage).
+      Profile 2026-10-02 (`probe.ps1 mega_lean_cic_bottom_up_kernel -Profile 30`, evaluator thread, inclusive):
+      `registerReplayTermWithContext` 35.5% (item 3's whole-subtree registration at every term entry: the walk
+      runs on the big stack already, so per-node stack probes are not the cost; the per-node puts are),
+      `buildFreshApplyState` 23.3%, `ty` 17.4%, `enqueueParentCacheHandoff` 7.7% of which
+      `fireParentCacheHandoffWake` 7.1% — mostly waiting on EvalWorklist's `gate` (its drain is only 1.3%).
+      Tried and reverted: running the wake callbacks on a coalesced thread-pool drainer (lean_cic 25.8/28.4/26.9 s
+      vs 29.8/48.4 s), but 1 of 3 runs emitted a different residual (49,387 bytes; the row had been 48,383 bytes,
+      `b9503cd5f6292933`, in every run since 10-01 08:56): parent-replay timing decides emission order here, so
+      the wake must stay synchronous until replay is per-evaluation (item 3).
+      Done 2026-10-02 (timing-only, no causal-order change): ~60% of registration was allocation and the GC it
+      triggered, not the puts: a fresh `Stack`/`List` per walk regrowing to large-object sizes, and the let/apply
+      spine arrays re-collected for the rest of the chain at every nested entry (quadratic copying). Now the walk
+      reuses a per-thread `EvalReplayRegistrationScratch`, and `evalReplayLetSpineOf`/`evalReplayApplyChainOf`
+      build each chain's spine once (ConditionalWeakTable on the expression). lean_cic 17.7-20.7 s warm (24.1 and
+      35.6 s on cold first runs), residual 48,383 bytes with one sha256 across 9 runs; registration 35.5% -> 16.2%
+      of the evaluator thread, its GC parking 76% -> 17% of it. `runs/hopac-20261002-111457` (`-Suite all
+      -Native -Parallel 2`): 1088 parity + the 1 known `new`, no `missing`/`emitted`/timeout, DISAGREE 0, mega
+      residuals unchanged; summed compile time -9 to -17% per suite (lean_cic 28.7 s vs 47.8 s); the 4 runaway rows
+      11.3-11.7 s (were 14.5-16.5 s against the 17 s deadline, with more workers then). The 11 brzozowski contract
+      rows whose residual changed already differed between the two runs before (emission order; residual-differs
+      in all four runs).
+      Not a lever: GC configuration. `PollGC` shows as 52.8% of the evaluator thread's self time in the sampled
+      profile, but that is mostly the sampler's own runtime suspension (EventPipe suspends threads like a GC does).
+      lean_cic x3 per variant, all with the same residual: default 17.2-17.6 s; `DOTNET_GCgen0size` 256 MB
+      18.5-20.3, 512 MB 18.4-19.0; +gcConcurrent=0 18.4-19.5; +workstation GC 18.6-19.1; +TieredPGO 21.1-30.9.
+      Judge allocation fixes by wall time and by frames' inclusive shares, not by PollGC. `scripts/test.ps1` still
+      sets the 256 MB gen0 (it helped before today's allocation fixes); compare a suite with and without it before
+      dropping it.
+      Mega roots, single-flight vs hopac (2026-10-01/02): brzozowski 2.0 vs 5.1-6.3 s, lean_cic 4.2 vs 30.9-47.8,
+      omniledger 5.0 vs 33.3-33.8, spiral_proves_spiral 8.1 vs 51.8-64.7, zeta 2.3 vs 10.1-11.1.
    5. Before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
    History of the day: "Session 2026-10-01" above and FRONTIER.md's status lines.1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
    cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which

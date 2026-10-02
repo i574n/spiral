@@ -9048,13 +9048,16 @@ module spiral_compiler =
                     else None)
 
         let private noteEjp0011Hot (msg: string) =
-            try
-                match tryReentryHotKind msg, tryReentryFieldValue DiagReentryKey msg with
-                | Some hotKind, Some key ->
-                    let keyId = DiagSidecarKeyIdOps.create (reentryHotPrefix hotKind + key)
-                    keyedCounts.AddOrUpdate(keyId, 1, (fun _ old -> old + 1)) |> ignore
-                | _ -> ()
-            with _ -> ()
+            // Only EJP0011W re-entry lines count. Checking for the code first skips tokenizing every other message
+            // (the split was ~3.5% of a hopac evaluator thread on lean_cic, 2026-10-02).
+            if not (String.IsNullOrEmpty msg) && msg.Contains("EJP0011W", StringComparison.Ordinal) then
+                try
+                    match tryReentryHotKind msg, tryReentryFieldValue DiagReentryKey msg with
+                    | Some hotKind, Some key ->
+                        let keyId = DiagSidecarKeyIdOps.create (reentryHotPrefix hotKind + key)
+                        keyedCounts.AddOrUpdate(keyId, 1, (fun _ old -> old + 1)) |> ignore
+                    | _ -> ()
+                with _ -> ()
 
         /// Emit sampled diagnostics (auto-keyed). First 3 always, then powers-of-two.
         let emit (msg: string) =
@@ -11891,6 +11894,17 @@ module spiral_compiler =
                 |> Seq.truncate (max 0 limit)
                 |> Seq.toList
 
+            /// "gen=<generation> <state> <site>" per open node (stall reports: which work never retired).
+            let openNodeSummaries limit graph =
+                graph.nodes
+                |> Map.toSeq
+                |> Seq.choose (fun (_,node) ->
+                    match node.state with
+                    | OperationalWorkRetired _ -> None
+                    | state -> Some ("gen=" + string node.generation + " " + operationalWorkGraphNodeStateText state + " " + WorkSiteIdOps.text node.siteId))
+                |> Seq.truncate (max 0 limit)
+                |> Seq.toList
+
             let openWorkProjections limit graph =
                 graph.nodes
                 |> Map.toSeq
@@ -13423,6 +13437,13 @@ module spiral_compiler =
                     | Ok(next, receipt) ->
                         state <- next
                         Ok receipt)
+
+            /// Back to the empty ledger before a BuildFile (warm processes). Work-unit identities are content digests,
+            /// so a later build of the same file admits the same units again, and its receipts (another backend,
+            /// another specialization result) conflicted with the earlier build's: ReceiptConflict -> "operational
+            /// retirement rejected" -> the node stayed Running and the build's quiescence wait never returned (warm
+            /// while_loop builds, 2026-10-02). A fresh process starts from this state anyway.
+            let resetForNewBuild () = lock gate (fun () -> state <- SemanticWorkLedger.empty)
 
 
         type PortableKernelOp =
@@ -63879,7 +63900,30 @@ module spiral_compiler =
 
     type UnionTagKind private () =
         static member InternedKindTag () = 0x130003u
-    type UnionTagId = private UnionTagId of CompilerIdentityKernel.InternedTextId<UnionTagKind>
+    /// Ordered by text (ordinal), not by intern slot. Case maps keyed by it (TyUnionUnbox's on_succs) decide the order
+    /// of the emitted match arms, and slot order is the process-wide interning order: a warm process that had compiled
+    /// other programs emitted `Hit | Flag | Idle` where a fresh one emitted `Flag | Hit | Idle` (2026-10-02). Ordinal
+    /// text order is single-flight's order too (its case maps are keyed by the case name).
+    [<CustomEquality; CustomComparison>]
+    type UnionTagId =
+        private
+        | UnionTagId of CompilerIdentityKernel.InternedTextId<UnionTagKind>
+        member private this.Value = let (UnionTagId value) = this in value
+        override this.Equals(other: obj) =
+            match other with
+            | :? UnionTagId as other -> this.Value = other.Value
+            | _ -> false
+        override this.GetHashCode() = this.Value.GetHashCode()
+        interface System.IComparable with
+            member this.CompareTo(other: obj) =
+                match other with
+                | :? UnionTagId as other ->
+                    if this.Value = other.Value then 0
+                    else
+                        System.String.CompareOrdinal(
+                            CompilerIdentityKernel.InternedTextIdOps.text this.Value,
+                            CompilerIdentityKernel.InternedTextIdOps.text other.Value)
+                | _ -> invalidArg "other" "cannot compare a union tag with another type"
 
     module UnionTagIdOps =
         let create value : UnionTagId =
@@ -93613,6 +93657,67 @@ module spiral_compiler =
         | ELitTest _ -> CompilerIdentityKernel.WorkShapeIdOps.Known.eLitTest
         | EDefaultLitTest _ -> CompilerIdentityKernel.WorkShapeIdOps.Known.eDefaultLitTest
         | ETypecase _ -> CompilerIdentityKernel.WorkShapeIdOps.Known.eTypecase
+
+    let private evalReplayLetSpines = System.Runtime.CompilerServices.ConditionalWeakTable<E, EvalReplayValueStore.LetSpine>()
+
+    /// The LetSpine of a let chain: node ids and shapes of its bodies and of the expression that ends it. It
+    /// depends on the expression object alone, so it is built once per chain: replay registration runs at every
+    /// term entry along the chain, and rebuilding the arrays there copied the rest of the chain each time.
+    let private evalReplayLetSpineOf (expr: E) : EvalReplayValueStore.LetSpine =
+        evalReplayLetSpines.GetValue(expr, fun expr ->
+            let bodyIds = ResizeArray<int>()
+            let bodyShapes = ResizeArray<CompilerIdentityKernel.WorkShapeId>()
+            let mutable cursor = expr
+            let mutable success = expr
+            let mutable walking = true
+            while walking do
+                match cursor with
+                | ELet(_,_,body,on_succ) ->
+                    bodyIds.Add (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body))
+                    bodyShapes.Add (evalNodeWorkShapeIdTerm body)
+                    cursor <- on_succ
+                | other ->
+                    success <- other
+                    walking <- false
+            {
+                bodyNodeIds = bodyIds.ToArray()
+                bodyShapes = bodyShapes.ToArray()
+                successNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box success)
+                successShape = evalNodeWorkShapeIdTerm success
+            })
+
+    /// An application chain `f a b c`: its head, its arguments outermost first (c, b, a: the order the replay
+    /// thunks index them), and its ApplySpine. Built once per chain for the same reason as LetSpine: every
+    /// nested EApply entry re-collected the rest of the chain (lean_cic, 2026-10-02: ~30% of registration in
+    /// List.ToArray/Array.Copy).
+    type EvalReplayApplyChain = { applyChainHead: E; applyChainArgsOuterFirst: E[]; applyChainSpine: EvalReplayValueStore.ApplySpine }
+
+    let private evalReplayApplyChains = System.Runtime.CompilerServices.ConditionalWeakTable<E, EvalReplayApplyChain>()
+
+    let private evalReplayApplyChainOf (expr: E) : EvalReplayApplyChain =
+        evalReplayApplyChains.GetValue(expr, fun expr ->
+            let args = ResizeArray<E>()
+            let mutable cur = expr
+            let mutable running = true
+            while running do
+                match cur with
+                | EApply(_, a, b) ->
+                    args.Add b
+                    cur <- a
+                | _ -> running <- false
+            let argsOuterFirst = args.ToArray()
+            let inOrder = Array.rev argsOuterFirst
+            {
+                applyChainHead = cur
+                applyChainArgsOuterFirst = argsOuterFirst
+                applyChainSpine = {
+                    headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                    headShape = evalNodeWorkShapeIdTerm cur
+                    argCount = argsOuterFirst.Length
+                    argNodeIds = inOrder |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
+                    argShapes = inOrder |> Array.map evalNodeWorkShapeIdTerm
+                }
+            })
 
     type EvalNodeStructuralShapeId =
         | EvalNodeStructuralApply
@@ -139184,6 +139289,26 @@ module spiral_compiler =
     type EvalReplayRegistrationFrame =
         | EvalReplayRegistrationTermFrame of nodeId:int * expr:E
 
+    /// The work stack and child buffer of one replay registration walk, kept per thread: every term entry walks its
+    /// subtree, and fresh collections regrew to large-object sizes on long let spines at each entry (lean_cic,
+    /// 2026-10-02: ~60% of registration time was in Stack.Grow, mostly parked for the collections it triggered). A
+    /// walk re-entered from a wake callback finds the slot empty and allocates its own.
+    [<AllowNullLiteral>]
+    type EvalReplayRegistrationScratch() =
+        [<System.ThreadStatic; DefaultValue>] static val mutable private cached : EvalReplayRegistrationScratch
+        member val Pending = System.Collections.Generic.Stack<EvalReplayRegistrationFrame>()
+        member val Children = System.Collections.Generic.List<EvalReplayRegistrationFrame>()
+        static member Rent () =
+            match EvalReplayRegistrationScratch.cached with
+            | null -> EvalReplayRegistrationScratch()
+            | scratch ->
+                EvalReplayRegistrationScratch.cached <- null
+                scratch
+        static member Return (scratch: EvalReplayRegistrationScratch) =
+            scratch.Pending.Clear()
+            scratch.Children.Clear()
+            EvalReplayRegistrationScratch.cached <- scratch
+
     let private evalReplayRegistrationRun
         (context:BigStackExecutionContext)
         (tagId:BigStack.BigStackJoinTagId)
@@ -151926,6 +152051,12 @@ module spiral_compiler =
                     | JpDeclaredEvaluatorSliceYield _ -> JpAuthorityBoundaryDeclaredSliceYieldEscape
                     | PartEvalTypeError _ -> JpAuthorityBoundaryPartEvalTypeError
                     | _ -> JpAuthorityBoundaryRuntimeException
+            // The typed row keeps only a digest of the message; an absorbed runtime exception is a bug, so print it
+            // whole outside quiet runs (a warm while_loop build's completion threw one and its node never retired).
+            match failureKind with
+            | JpAuthorityBoundaryRuntimeException when not DiagJson.quiet ->
+                eprintfn "[spiral_compiler] jp authority boundary absorbed a runtime exception (work %s):\n%O" workUnitId error
+            | _ -> ()
             { workUnitId = workUnitId
               exceptionType = exceptionType
               messageRef =
@@ -156674,7 +156805,22 @@ module spiral_compiler =
                     |> Seq.sortByDescending (fun kv -> kv.Value)
                     |> Seq.truncate 12
                     |> Seq.map (fun kv -> if kv.Value > 1 then kv.Key + " x" + string kv.Value else kv.Key)
-                sprintf "pending_join_points=%d [%s]" total (String.concat ", " shown)
+                // What jpAwaitCombinedQuiescence waits on: this peval's spawn leases and open operational work. An
+                // open node with no job behind it names the join point whose work never retired.
+                let quiescence =
+                    try
+                        let spawn = jpSpawnAdmissionSnapshot ()
+                        let graphTask = HopacExtensions.startAsTask (jp_operational_work_snapshot ())
+                        if graphTask.Wait 1000 then
+                            let graph = graphTask.Result
+                            sprintf " quiescence={spawn_leases=%d graph_open=%d graph_suspended=%d open=[%s]}"
+                                spawn.activeCount
+                                (CompilerKernelV2.OperationalWorkGraph.openCount graph)
+                                (CompilerKernelV2.OperationalWorkGraph.suspendedCount graph)
+                                (String.concat "; " (CompilerKernelV2.OperationalWorkGraph.openNodeSummaries 6 graph))
+                        else sprintf " quiescence={spawn_leases=%d graph=snapshot_timeout}" spawn.activeCount
+                    with ex -> " quiescence=probe_failed:" + ex.GetType().Name
+                sprintf "pending_join_points=%d [%s]%s" total (String.concat ", " shown) quiescence
             with ex -> "pending_join_points=probe_failed:" + ex.GetType().Name
         let jp_type_key_traces = System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<Ty []>, Trace>(HashIdentity.Reference)
     
@@ -162005,26 +162151,29 @@ module spiral_compiler =
                 | None -> ()
                 let nodeId0 = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box x)
                 let rec registerReplayTermWithContext (context:BigStackExecutionContext) (nodeId: int) (expr: E) =
-                    let pending = System.Collections.Generic.Stack<EvalReplayRegistrationFrame>()
-                    let children = System.Collections.Generic.List<EvalReplayRegistrationFrame>()
-                    pending.Push(EvalReplayRegistrationTermFrame(nodeId, expr))
-                    while pending.Count > 0 do
-                        match pending.Pop() with
-                        | EvalReplayRegistrationTermFrame(currentNodeId, currentExpr) ->
-                            children.Clear()
-                            let registerReplayTerm childNodeId childExpr =
-                                children.Add(EvalReplayRegistrationTermFrame(childNodeId, childExpr))
-                            match
-                                evalReplayRegistrationRun
-                                    context
-                                    BigStack.BigStackRegisterReplayTermGlobalFuse
-                                    "register_replay_term_global_fuse_child"
-                                    (fun currentContext -> registerReplayTermDirect currentContext registerReplayTerm currentNodeId currentExpr)
-                            with
-                            | EvalReplayRegistrationCompleted ->
-                                for i = children.Count - 1 downto 0 do
-                                    pending.Push(children.[i])
-                            | EvalReplayRegistrationBigStackExhausted -> evalReplayRegistrationStackFailure s siteId currentNodeId
+                    let scratch = EvalReplayRegistrationScratch.Rent()
+                    let pending = scratch.Pending
+                    let children = scratch.Children
+                    try
+                        pending.Push(EvalReplayRegistrationTermFrame(nodeId, expr))
+                        while pending.Count > 0 do
+                            match pending.Pop() with
+                            | EvalReplayRegistrationTermFrame(currentNodeId, currentExpr) ->
+                                children.Clear()
+                                let registerReplayTerm childNodeId childExpr =
+                                    children.Add(EvalReplayRegistrationTermFrame(childNodeId, childExpr))
+                                match
+                                    evalReplayRegistrationRun
+                                        context
+                                        BigStack.BigStackRegisterReplayTermGlobalFuse
+                                        "register_replay_term_global_fuse_child"
+                                        (fun currentContext -> registerReplayTermDirect currentContext registerReplayTerm currentNodeId currentExpr)
+                                with
+                                | EvalReplayRegistrationCompleted ->
+                                    for i = children.Count - 1 downto 0 do
+                                        pending.Push(children.[i])
+                                | EvalReplayRegistrationBigStackExhausted -> evalReplayRegistrationStackFailure s siteId currentNodeId
+                    finally EvalReplayRegistrationScratch.Return scratch
                 and registerReplayTermDirect
                     (context:BigStackExecutionContext)
                     (registerReplayTerm:int -> E -> unit)
@@ -162148,32 +162297,18 @@ module spiral_compiler =
                         // MIGRATION: also materialize the child spine so missing bodies are scheduled
                         // explicitly.  MIGRATION ended with replay_let_body_value_missing:EApply at
                         // runtime fixture path:5 and the retry drain kept re-running the same parent let.
-                        let letBodyIds = ResizeArray<int>()
-                        let letBodyShapes = ResizeArray<CompilerIdentityKernel.WorkShapeId>()
-                        let mutable letSuccessId = nodeId
-                        let mutable letSuccessShape = CompilerIdentityKernel.WorkShapeIdOps.Known.eLet
+                        let letSpine = evalReplayLetSpineOf expr
                         let mutable letCursor = expr
                         let mutable collectingLetChildren = true
                         while collectingLetChildren do
                             match letCursor with
                             | ELet(_,_,body,on_succ) ->
-                                let bodyId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)
-                                letBodyIds.Add bodyId
-                                letBodyShapes.Add (evalNodeWorkShapeIdTerm body)
-                                registerReplayTerm bodyId body
+                                registerReplayTerm (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)) body
                                 letCursor <- on_succ
                             | other ->
-                                let otherId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box other)
-                                letSuccessId <- otherId
-                                letSuccessShape <- evalNodeWorkShapeIdTerm other
-                                if otherId <> nodeId then registerReplayTerm otherId other
+                                if letSpine.successNodeId <> nodeId then registerReplayTerm letSpine.successNodeId other
                                 collectingLetChildren <- false
-                        EvalReplayValueStore.putLetSpine nodeId {
-                            bodyNodeIds = letBodyIds.ToArray()
-                            bodyShapes = letBodyShapes.ToArray()
-                            successNodeId = letSuccessId
-                            successShape = letSuccessShape
-                        }
+                        EvalReplayValueStore.putLetSpine nodeId letSpine
                         EvalReplayValueStore.putTerm nodeId (fun () ->
                             let mutable replay_s = s
                             let mutable replay_e = expr
@@ -162954,16 +163089,10 @@ module spiral_compiler =
                             falseShape = evalNodeWorkShapeIdTerm onFalse
                         }
                     | EApply _ ->
-                        let args = ResizeArray<E>()
-                        let mutable cur = expr
-                        let mutable running = true
-                        while running do
-                            match cur with
-                            | EApply(_, a, b) ->
-                                args.Add b
-                                cur <- a
-                            | _ -> running <- false
-                        let headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                        let applyChain = evalReplayApplyChainOf expr
+                        let args = applyChain.applyChainArgsOuterFirst
+                        let cur = applyChain.applyChainHead
+                        let headNodeId = applyChain.applyChainSpine.headNodeId
                         registerReplayTerm headNodeId cur
                         match cur with
                         | EB _ -> EvalReplayValueStore.putTermValue headNodeId DB
@@ -162996,14 +163125,8 @@ module spiral_compiler =
                             | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
                             | ESymbol(_,sym) -> EvalReplayValueStore.putTermValue argNodeId (DSymbol sym)
                             | _ -> ()
-                        let replayArgs = args.ToArray()
-                        EvalReplayValueStore.putApplySpine nodeId {
-                            headNodeId = headNodeId
-                            headShape = evalNodeWorkShapeIdTerm cur
-                            argCount = replayArgs.Length
-                            argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                            argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
-                        }
+                        let replayArgs = args
+                        EvalReplayValueStore.putApplySpine nodeId applyChain.applyChainSpine
                         EvalReplayValueStore.putApplyContext nodeId (box s)
                         // MIGRATION: register a whole-spine thunk without lexically capturing apply.
                         // The real apply function is installed later through EvalReplayValueStore after
@@ -163438,26 +163561,29 @@ module spiral_compiler =
             let nodeObj = box x
             let nodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode nodeObj
             let rec registerReplayTermWithContext (context:BigStackExecutionContext) (nodeId: int) (expr: E) =
-                let pending = System.Collections.Generic.Stack<EvalReplayRegistrationFrame>()
-                let children = System.Collections.Generic.List<EvalReplayRegistrationFrame>()
-                pending.Push(EvalReplayRegistrationTermFrame(nodeId, expr))
-                while pending.Count > 0 do
-                    match pending.Pop() with
-                    | EvalReplayRegistrationTermFrame(currentNodeId, currentExpr) ->
-                        children.Clear()
-                        let registerReplayTerm childNodeId childExpr =
-                            children.Add(EvalReplayRegistrationTermFrame(childNodeId, childExpr))
-                        match
-                            evalReplayRegistrationRun
-                                context
-                                BigStack.BigStackRegisterReplayTermNormal
-                                "register_replay_term_normal_child"
-                                (fun currentContext -> registerReplayTermDirect currentContext registerReplayTerm currentNodeId currentExpr)
-                        with
-                        | EvalReplayRegistrationCompleted ->
-                            for i = children.Count - 1 downto 0 do
-                                pending.Push(children.[i])
-                        | EvalReplayRegistrationBigStackExhausted -> evalReplayRegistrationStackFailure s siteId currentNodeId
+                let scratch = EvalReplayRegistrationScratch.Rent()
+                let pending = scratch.Pending
+                let children = scratch.Children
+                try
+                    pending.Push(EvalReplayRegistrationTermFrame(nodeId, expr))
+                    while pending.Count > 0 do
+                        match pending.Pop() with
+                        | EvalReplayRegistrationTermFrame(currentNodeId, currentExpr) ->
+                            children.Clear()
+                            let registerReplayTerm childNodeId childExpr =
+                                children.Add(EvalReplayRegistrationTermFrame(childNodeId, childExpr))
+                            match
+                                evalReplayRegistrationRun
+                                    context
+                                    BigStack.BigStackRegisterReplayTermNormal
+                                    "register_replay_term_normal_child"
+                                    (fun currentContext -> registerReplayTermDirect currentContext registerReplayTerm currentNodeId currentExpr)
+                            with
+                            | EvalReplayRegistrationCompleted ->
+                                for i = children.Count - 1 downto 0 do
+                                    pending.Push(children.[i])
+                            | EvalReplayRegistrationBigStackExhausted -> evalReplayRegistrationStackFailure s siteId currentNodeId
+                finally EvalReplayRegistrationScratch.Return scratch
             and registerReplayTermDirect
                 (context:BigStackExecutionContext)
                 (registerReplayTerm:int -> E -> unit)
@@ -163566,32 +163692,18 @@ module spiral_compiler =
                     // global-fuse path.  Walk the linear ELet spine with an explicit cursor so
                     // long let chains do not consume CLR stack merely to publish child replay
                     // nodes and the derivative LetSpine index.
-                    let letBodyIds = ResizeArray<int>()
-                    let letBodyShapes = ResizeArray<CompilerIdentityKernel.WorkShapeId>()
-                    let mutable letSuccessId = nodeId
-                    let mutable letSuccessShape = CompilerIdentityKernel.WorkShapeIdOps.Known.eLet
+                    let letSpine = evalReplayLetSpineOf expr
                     let mutable letCursor = expr
                     let mutable collectingLetChildren = true
                     while collectingLetChildren do
                         match letCursor with
                         | ELet(_,_,body,on_succ) ->
-                            let bodyId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)
-                            letBodyIds.Add bodyId
-                            letBodyShapes.Add (evalNodeWorkShapeIdTerm body)
-                            registerReplayTerm bodyId body
+                            registerReplayTerm (System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box body)) body
                             letCursor <- on_succ
                         | other ->
-                            let otherId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box other)
-                            letSuccessId <- otherId
-                            letSuccessShape <- evalNodeWorkShapeIdTerm other
-                            if otherId <> nodeId then registerReplayTerm otherId other
+                            if letSpine.successNodeId <> nodeId then registerReplayTerm letSpine.successNodeId other
                             collectingLetChildren <- false
-                    EvalReplayValueStore.putLetSpine nodeId {
-                        bodyNodeIds = letBodyIds.ToArray()
-                        bodyShapes = letBodyShapes.ToArray()
-                        successNodeId = letSuccessId
-                        successShape = letSuccessShape
-                    }
+                    EvalReplayValueStore.putLetSpine nodeId letSpine
                     EvalReplayValueStore.putTerm nodeId (fun () ->
                         let mutable replay_s = s
                         let mutable replay_e = expr
@@ -164226,16 +164338,10 @@ module spiral_compiler =
                         falseShape = evalNodeWorkShapeIdTerm onFalse
                     }
                 | EApply _ ->
-                    let args = ResizeArray<E>()
-                    let mutable cur = expr
-                    let mutable running = true
-                    while running do
-                        match cur with
-                        | EApply(_, a, b) ->
-                            args.Add b
-                            cur <- a
-                        | _ -> running <- false
-                    let headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                    let applyChain = evalReplayApplyChainOf expr
+                    let args = applyChain.applyChainArgsOuterFirst
+                    let cur = applyChain.applyChainHead
+                    let headNodeId = applyChain.applyChainSpine.headNodeId
                     // MIGRATION: post-fuse EApply children may themselves be EApply.
                     // Register them recursively just like the global-fuse path; otherwise
                     // a scheduled apply_arg_child can arrive at replay with no ApplySpine
@@ -164264,14 +164370,8 @@ module spiral_compiler =
                         | ELit(_,lit) -> EvalReplayValueStore.putTermValue argNodeId (DLit lit)
                         | ESymbol(_,sym) -> EvalReplayValueStore.putTermValue argNodeId (DSymbol sym)
                         | _ -> ()
-                    let replayArgs = args.ToArray()
-                    EvalReplayValueStore.putApplySpine nodeId {
-                        headNodeId = headNodeId
-                        headShape = evalNodeWorkShapeIdTerm cur
-                        argCount = replayArgs.Length
-                        argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                        argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
-                    }
+                    let replayArgs = args
+                    EvalReplayValueStore.putApplySpine nodeId applyChain.applyChainSpine
                     DiagJson.emit (
                         FastRuntimeFormat.format "{\"kind\":\"eval_worklist_apply_spine_post_fuse_recursive_children_registered\",\"event\":\"term_entry_post_fuse\",\"node_id\":%d,\"shape\":\"EApply\",\"site\":%s,\"head_node_id\":%d,\"head_shape\":%s,\"arg_count\":%d,\"single_flight\":1,\"next\":\"apply_children_ready_for_replay\"}" [| box nodeId; box (DiagJson.esc site); box headNodeId; box (DiagJson.esc (evalNodeShapeTerm cur)); box replayArgs.Length |])
                     // MIGRATION: direct term-cycle replay must carry the same LangEnv handle
@@ -165089,16 +165189,10 @@ module spiral_compiler =
                         // a replay-fingerprint terminal.  This only records existing syntax and
                         // existing thunks; the eventual value is still produced by apply/term.
                         let bodyEnv = mkBodyEnv()
-                        let args = ResizeArray<E>()
-                        let mutable cur = body
-                        let mutable running = true
-                        while running do
-                            match cur with
-                            | EApply(_, a, b) ->
-                                args.Add b
-                                cur <- a
-                            | _ -> running <- false
-                        let headNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box cur)
+                        let applyChain = evalReplayApplyChainOf body
+                        let args = applyChain.applyChainArgsOuterFirst
+                        let cur = applyChain.applyChainHead
+                        let headNodeId = applyChain.applyChainSpine.headNodeId
                         let putReplayTermLeaf nodeId expr =
                             match expr with
                             | EB _ -> EvalReplayValueStore.putTermValue nodeId DB
@@ -165118,15 +165212,8 @@ module spiral_compiler =
                         for argExpr in args do
                             let argNodeId = System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box argExpr)
                             putReplayTermLeaf argNodeId argExpr
-                        let replayArgs = args.ToArray()
                         EvalReplayValueStore.putApplyContext bodyNodeId (box bodyEnv)
-                        EvalReplayValueStore.putApplySpine bodyNodeId {
-                            headNodeId = headNodeId
-                            headShape = evalNodeWorkShapeIdTerm cur
-                            argCount = replayArgs.Length
-                            argNodeIds = Array.rev replayArgs |> Array.map (fun e -> System.Runtime.CompilerServices.RuntimeHelpers.GetHashCode (box e))
-                            argShapes = Array.rev replayArgs |> Array.map evalNodeWorkShapeIdTerm
-                        }
+                        EvalReplayValueStore.putApplySpine bodyNodeId applyChain.applyChainSpine
                     | _ -> ()
                     if not (EvalReplayValueStore.hasTerm bodyNodeId) then
                         EvalReplayValueStore.putTerm bodyNodeId (fun () -> term (mkBodyEnv()) body)
@@ -186835,6 +186922,7 @@ module spiral_compiler =
     // fuses): resetting them between builds cancelled the next build's join point work in a warm process
     // (JpTerminalFailureRunningCutoverCancellation on 70 rows); their per-build isolation is still open.
     let private resetEvaluationForBuild () =
+        CompilerKernelV2.SemanticWorkLedgerAuthority.resetForNewBuild ()
         PevalStallProbe.resetRecovery ()
         CacheGeneration.resetSequentialRequest ()
         buildInvalidationBaseline <- CacheGeneration.invalidationCount ()
@@ -190603,8 +190691,8 @@ module spiral_compiler =
 
         // The attention loop serves an editor: it walks every file's type checker stream to push per-file
         // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
-        // BuildFile instead, and there the walk kept ~4 cores busy for good after a build. That host sets
-        // SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile) keep the loop.
+        // BuildFile instead, so there the walk only type checks files for diagnostics nobody reads. That host
+        // sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile) keep the loop.
         if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
             HopacExtensions.server (Job.forever (Ch.take atten |> Job.Ignore))
         else
@@ -190732,7 +190820,10 @@ module spiral_compiler =
 
         let error_ch_create msg =
             let x = Ch()
-            Hopac.server (Job.forever (Ch.take x >>=* (
+            // `>>=`, not the memoizing `>>=*`: Job.forever over a promise took one message, then re-read the
+            // fulfilled promise forever: each error channel served its first error only and then spun a core
+            // (later FatalErrors never reached a build; ~4 cores busy after the attention loop's first pass).
+            Hopac.server (Job.forever (Ch.take x >>= (
                 msg >> fun (x : ClientErrorsRes) ->
                     Hopac.Job.awaitUnitTask (
                         task {
@@ -190758,9 +190849,9 @@ module spiral_compiler =
 
         // The attention loop serves an editor: it walks every file's type checker stream to push per-file
         // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
-        // BuildFile instead, and there the walk kept ~4 cores busy for good after a build (a Supervisor.dib run
-        // spun 3.5 h). That host sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process
-        // per compile, like tmp/compiler/host) keep the loop, whose diagnostics they render.
+        // BuildFile instead, so there the walk only type checks files for diagnostics nobody reads. That host
+        // sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile, like
+        // tmp/compiler/host) keep the loop, whose diagnostics they render.
         if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
             Hopac.server (Job.forever (Ch.take atten |> Job.Ignore))
         else
