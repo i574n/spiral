@@ -1,0 +1,6 @@
+name = "spiral_kino"
+version = "0.1.0"
+target = "erlang"
+
+[dependencies]
+gleam_stdlib = ">= 0.34.0 and < 2.0.0"

@@ -12,7 +12,7 @@ defmodule Spiral.Kino.Result do
           value: String.t() | nil,
           stdout: String.t(),
           html: [String.t()],
-          outputs: [Spiral.Kino.Notebook.output()],
+          outputs: [term()],
           source: String.t(),
           exit_status: integer() | nil,
           duration_ms: non_neg_integer() | nil,

@@ -1,3 +1,5 @@
+Code.require_file(Path.expand("spi/domain_compiler.ex", __DIR__))
+
 defmodule Spiral.Kino.MixProject do
   use Mix.Project
 
@@ -8,6 +10,7 @@ defmodule Spiral.Kino.MixProject do
       app: :spiral_kino,
       version: @version,
       elixir: "~> 1.18",
+      compilers: [:spiral_domain] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       description: "Spiral language smart cell for Livebook",

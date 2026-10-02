@@ -3,8 +3,6 @@ defmodule Spiral.Kino.SmartCell do
   use Kino.JS.Live
   use Kino.SmartCell, name: "Spiral"
 
-  alias Spiral.Kino.Directives
-
   @default_timeout_s 300
   @default_source """
   inl square x = x * x
@@ -16,14 +14,11 @@ defmodule Spiral.Kino.SmartCell do
   @impl true
   def init(attrs, ctx) do
     fields = %{
-      "backend" => valid_backend(attrs["backend"]),
-      "builder_args" => attrs["builder_args"] || "",
       "timeout" => valid_timeout(attrs["timeout"]),
       "print_code" => attrs["print_code"] == true
     }
 
     source = attrs["source"] || @default_source
-
     ctx = assign(ctx, fields: fields, source: source)
 
     {:ok, ctx,
@@ -36,12 +31,7 @@ defmodule Spiral.Kino.SmartCell do
 
   @impl true
   def handle_connect(ctx) do
-    payload = %{
-      fields: ctx.assigns.fields,
-      backends: Enum.map(Directives.backends(), fn {id, _, label} -> %{id: id, label: label} end)
-    }
-
-    {:ok, payload, ctx}
+    {:ok, %{fields: ctx.assigns.fields}, ctx}
   end
 
   @impl true
@@ -71,24 +61,24 @@ defmodule Spiral.Kino.SmartCell do
       opts = source_opts(attrs)
 
       args =
-        [string_literal(source) | Enum.map(opts, fn {k, v} -> "#{k}: #{literal(v)}" end)]
+        [
+          string_literal(source)
+          | Enum.map(opts, fn {key, value} -> "#{key}: #{literal(value)}" end)
+        ]
         |> Enum.map_join(",\n", &indent/1)
 
-      "Spiral.Kino.eval!(\n" <> args <> "\n)"
+      ("Spiral.Kino.eval!(\n" <> args <> "\n)")
+      |> Code.format_string!()
+      |> IO.iodata_to_binary()
     end
   end
 
   defp source_opts(attrs) do
-    backend = valid_backend(attrs["backend"])
-    builder_args = String.trim(attrs["builder_args"] || "")
-
     [
-      backend: if(backend != "fsharp", do: backend),
-      builder_args: if(backend != "fsharp" and builder_args != "", do: builder_args),
       timeout: valid_timeout(attrs["timeout"]) * 1000,
       print_code: if(attrs["print_code"] == true, do: true)
     ]
-    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.reject(fn {_key, value} -> is_nil(value) end)
   end
 
   defp string_literal(source) do
@@ -124,13 +114,8 @@ defmodule Spiral.Kino.SmartCell do
 
   defp normalize("timeout", value), do: valid_timeout(value)
   defp normalize("print_code", value), do: value == true
-  defp normalize("backend", value), do: valid_backend(value)
   defp normalize(_field, value) when is_binary(value), do: value
   defp normalize(_field, _value), do: ""
-
-  defp valid_backend(backend) do
-    if backend in Directives.backend_ids(), do: backend, else: "fsharp"
-  end
 
   defp valid_timeout(value) when is_integer(value) and value > 0, do: value
 
@@ -154,47 +139,25 @@ defmodule Spiral.Kino.SmartCell do
           <div class="header">
             <span class="title">Spiral</span>
             <label class="field">
-              <span>Backend</span>
-              <select name="backend"></select>
-            </label>
-            <label class="field builder-args">
-              <span>Builder args</span>
-              <input type="text" name="builder_args" placeholder="-d chrono regex" />
-            </label>
-            <label class="field">
               <span>Timeout (s)</span>
               <input type="number" min="1" step="1" name="timeout" />
             </label>
             <label class="field checkbox">
               <input type="checkbox" name="print_code" />
-              <span>Show generated code</span>
+              <span>Show generated Rust</span>
             </label>
           </div>
         </div>
       `;
 
-      const select = ctx.root.querySelector("select[name=backend]");
-      for (const backend of payload.backends) {
-        const option = document.createElement("option");
-        option.value = backend.id;
-        option.textContent = backend.label;
-        select.appendChild(option);
-      }
-
       const inputs = {
-        backend: select,
-        builder_args: ctx.root.querySelector("input[name=builder_args]"),
         timeout: ctx.root.querySelector("input[name=timeout]"),
         print_code: ctx.root.querySelector("input[name=print_code]"),
       };
 
       function render(fields) {
-        inputs.backend.value = fields.backend;
-        inputs.builder_args.value = fields.builder_args;
         inputs.timeout.value = fields.timeout;
         inputs.print_code.checked = fields.print_code;
-        ctx.root.querySelector(".builder-args").style.display =
-          fields.backend === "fsharp" ? "none" : "";
       }
 
       render(payload.fields);
@@ -252,23 +215,14 @@ defmodule Spiral.Kino.SmartCell do
       gap: 0.4rem;
     }
 
-    .field select,
-    .field input[type=text],
     .field input[type=number] {
+      width: 5rem;
       padding: 0.25rem 0.5rem;
       border: 1px solid #e1e8f0;
       border-radius: 0.375rem;
       background-color: white;
       font-size: 0.875rem;
       color: #445668;
-    }
-
-    .field input[type=number] {
-      width: 5rem;
-    }
-
-    .field input[type=text] {
-      width: 12rem;
     }
     """
   end

@@ -1,0 +1,299 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+union rec rows =
+    | NoRow
+    | Row : string * rows
+
+union rec cells =
+    | NoCell
+    | Cell : string * string * cells
+
+union mark =
+    | NoMark
+    | Mark : string * string
+
+union rec tokens =
+    | NoWord
+    | Word : string * tokens
+
+let rec rev_rows (xs : rows) (acc : rows) : rows =
+    match xs with
+    | NoRow => acc
+    | Row (s, rest) => rev_rows rest (Row (s, acc))
+
+let rec snoc (xs : rows) (item : string) : rows =
+    match xs with
+    | NoRow => Row (item, NoRow)
+    | Row (s, rest) => Row (s, snoc rest item)
+
+let rec has_row (xs : rows) (item : string) : bool =
+    match xs with
+    | NoRow => false
+    | Row (s, rest) => if s = item then true else has_row rest item
+
+inl add_row (xs : rows) (item : string) : rows =
+    if has_row xs item then xs else snoc xs item
+
+let rec join_rows (xs : rows) : string =
+    match xs with
+    | NoRow => ""
+    | Row (s, NoRow) => s
+    | Row (s, rest) => s ++ "\n" ++ join_rows rest
+
+let rec join_rev (xs : rows) (acc : string) (started : i32) : string =
+    match xs with
+    | NoRow => acc
+    | Row (s, rest) =>
+        if started = 0i32 then join_rev rest s 1i32
+        else join_rev rest (s ++ "\n" ++ acc) 1i32
+
+let rec count_cells (xs : cells) : i32 =
+    match xs with
+    | NoCell => 0i32
+    | Cell (_, _, rest) => 1i32 + count_cells rest
+
+let rec rev_cells (xs : cells) (acc : cells) : cells =
+    match xs with
+    | NoCell => acc
+    | Cell (k, s, rest) => rev_cells rest (Cell (k, s, acc))
+
+let rec emit_cells (xs : cells) : string =
+    match xs with
+    | NoCell => ""
+    | Cell (k, s, rest) =>
+        k ++ "\n" ++ text.show_i32 (text.length s) ++ "\n" ++ s ++ emit_cells rest
+
+inl wire (xs : cells) : string =
+    inl ordered = rev_cells xs NoCell
+    text.show_i32 (count_cells ordered) ++ "\n" ++ emit_cells ordered
+
+let rec letter_end (line : string) (i : i32) : i32 =
+    if i >= text.length line then i
+    elif text.is_letter (text.index line i) then letter_end line (i + 1i32)
+    else i
+
+inl marker (line : string) : mark =
+    if text.starts_with line "#!" then
+        inl n = letter_end line 2i32
+        if n = 2i32 then NoMark
+        else Mark (text.slice_len line 2i32 (n - 2i32), text.drop line n)
+    else NoMark
+
+inl add_line (buffer : string) (line : string) : string =
+    if buffer = "" then line else buffer ++ "\n" ++ line
+
+inl push (xs : cells) (kind : string) (buffer : string) : cells =
+    if kind = "" then xs
+    else
+        inl source = text.trim buffer
+        if source = "" then xs else Cell (kind, source, xs)
+
+let rec walk (src : string) (i : i32) (xs : cells) (kind : string) (buffer : string) : cells =
+    match text.next_line src i with
+    | LineDone => push xs kind buffer
+    | LineGot (line, next) =>
+        match marker line with
+        | NoMark => walk src next xs kind (add_line buffer line)
+        | Mark (name, rest) =>
+            inl xs2 = push xs kind buffer
+            if name = "import" then walk src next (Cell ("import", text.trim rest, xs2)) "" ""
+            elif name = "meta" then walk src next xs2 "" ""
+            elif name = "markdown" then walk src next xs2 name ""
+            elif name = "spiral" then walk src next xs2 name ""
+            elif name = "fsharp" then walk src next xs2 name ""
+            else walk src next xs2 ("code/" ++ name) ""
+
+inl parse_dib (src : string) : string =
+    wire (walk (text.replace src "\r\n" "\n") 0i32 NoCell "" "")
+
+let rec hash_end (line : string) (i : i32) : i32 =
+    if i < text.length line && text.index line i = '#' then hash_end line (i + 1i32) else i
+
+inl heading (line : string) : bool =
+    inl n = hash_end line 0i32
+    if n > 0i32 && n < text.length line then text.index line n = ' ' else false
+
+let rec split_go (src : string) (i : i32) (chunks : rows) (current : string) (any : i32) : rows =
+    match text.next_line src i with
+    | LineDone =>
+        inl saved = if any = 1i32 then Row (current, chunks) else chunks
+        rev_rows saved NoRow
+    | LineGot (line, next) =>
+        if heading line && any = 1i32 then split_go src next (Row (current, chunks)) line 1i32
+        elif text.trim line = "" && any = 0i32 then split_go src next chunks current 0i32
+        else
+            inl current2 = if any = 0i32 then line else current ++ "\n" ++ line
+            split_go src next chunks current2 1i32
+
+inl split_headings (source : string) : rows = split_go (text.trim source) 0i32 NoRow "" 0i32
+
+let rec doc_go (src : string) (i : i32) (acc : rows) : rows =
+    match text.next_line src i with
+    | LineDone => rev_rows acc NoRow
+    | LineGot (line, next) =>
+        inl trimmed = text.trim line
+        if trimmed = "" then doc_go src next acc else doc_go src next (Row (trimmed, acc))
+
+inl doc_lines (source : string) : rows = doc_go source 0i32 NoRow
+
+let rec prefix_docs (xs : rows) : string =
+    match xs with
+    | NoRow => ""
+    | Row (line, NoRow) => "/// " ++ line
+    | Row (line, rest) => "/// " ++ line ++ "\n" ++ prefix_docs rest
+
+inl flush (blocks : rows) (pending : rows) : rows =
+    match pending with
+    | NoRow => blocks
+    | _ => Row (prefix_docs pending ++ "\n", blocks)
+
+inl code_block (docs : rows) (body : string) : string =
+    inl trimmed = text.trim_newlines body
+    inl rendered =
+        match docs with
+        | NoRow => trimmed
+        | _ => prefix_docs docs ++ "\n" ++ trimmed
+    rendered ++ "\n"
+
+let rec rev_tokens (xs : tokens) (acc : tokens) : tokens =
+    match xs with
+    | NoWord => acc
+    | Word (s, rest) => rev_tokens rest (Word (s, acc))
+
+let rec take_token (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then i
+        elif ch = '\t' then i
+        else take_token src (i + 1i32)
+
+let rec skip_ws (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then skip_ws src (i + 1i32)
+        elif ch = '\t' then skip_ws src (i + 1i32)
+        else i
+
+let rec tokens_from (src : string) (i : i32) (acc : tokens) : tokens =
+    inl j = skip_ws src i
+    if j >= text.length src then rev_tokens acc NoWord
+    else
+        inl k = take_token src j
+        tokens_from src k (Word (text.slice_len src j (k - j), acc))
+
+let rec read_kernel (xs : tokens) (packages : rows) (test : i32) : rows * i32 =
+    match xs with
+    | NoWord => packages, test
+    | Word ("--package", Word (path, rest)) => read_kernel rest (add_row packages path) test
+    | Word ("--package", rest) => read_kernel rest packages test
+    | Word ("--test", Word ("static", rest)) => read_kernel rest packages 1i32
+    | Word ("--test", rest) => read_kernel rest packages 1i32
+    | Word ("--timeout", Word (_, rest)) => read_kernel rest packages test
+    | Word ("--timeout", rest) => read_kernel rest packages test
+    | Word ("--print-code", rest) => read_kernel rest packages test
+    | Word (_, rest) => read_kernel rest packages test
+
+let rec kernel_go (src : string) (i : i32) (body : rows) (seen : i32) (packages : rows) (test : i32) : string * rows * i32 =
+    match text.next_line src i with
+    | LineDone => join_rev body "" 0i32, packages, test
+    | LineGot (line, next) =>
+        if text.starts_with line "////" then kernel_go src next body seen packages test
+        elif text.starts_with line "///- " then
+            if seen = 1i32 then kernel_go src next body 1i32 packages test
+            else
+                inl packages2, test2 = read_kernel (tokens_from (text.drop line (text.length "///- ")) 0i32 NoWord) packages test
+                kernel_go src next body 1i32 packages2 test2
+        elif text.starts_with line "///> " then kernel_go src next body seen packages test
+        elif text.starts_with line "///" then kernel_go src next body seen packages test
+        else kernel_go src next (Row (line, body)) seen packages test
+
+let rec open_go (src : string) (i : i32) (any : i32) (ok : i32) : bool =
+    match text.next_line src i with
+    | LineDone => if any = 1i32 && ok = 1i32 then true else false
+    | LineGot (line, next) =>
+        inl trimmed = text.trim line
+        if trimmed = "" then open_go src next any ok
+        elif text.starts_with trimmed "open " then open_go src next 1i32 ok
+        else open_go src next 1i32 0i32
+
+inl open_only (body : string) : bool = open_go body 0i32 0i32 1i32
+
+let rec take_markdown (chunks : rows) (blocks : rows) (pending : rows) : rows * rows =
+    match chunks with
+    | NoRow => blocks, pending
+    | Row (chunk, rest) => take_markdown rest (flush blocks pending) (doc_lines chunk)
+
+inl take_spiral (source : string) (blocks : rows) (pending : rows) (opens : rows) (packages : rows) : rows * rows * rows * rows =
+    inl body, packages2, test = kernel_go source 0i32 NoRow 0i32 packages 0i32
+    if test = 1i32 then blocks, pending, opens, packages2
+    elif open_only body then blocks, pending, snoc opens (text.trim body), packages2
+    elif text.trim body = "" then blocks, pending, opens, packages2
+    else Row (code_block pending body, flush blocks NoRow), NoRow, opens, packages2
+
+let rec take_cells (xs : cells) (blocks : rows) (pending : rows) (opens : rows) (packages : rows) : rows * rows * rows * rows =
+    match xs with
+    | NoCell => blocks, pending, opens, packages
+    | Cell (kind, source, rest) =>
+        if kind = "markdown" then
+            inl blocks2, pending2 = take_markdown (split_headings source) blocks pending
+            take_cells rest blocks2 pending2 opens packages
+        elif kind = "spiral" then
+            inl blocks2, pending2, opens2, packages2 = take_spiral source blocks pending opens packages
+            take_cells rest blocks2 pending2 opens2 packages2
+        else take_cells rest blocks pending opens packages
+
+let rec read_cells (src : string) (i : i32) (n : i32) (acc : cells) : cells =
+    if n <= 0i32 then rev_cells acc NoCell
+    else
+        match text.next_line src i with
+        | LineDone => rev_cells acc NoCell
+        | LineGot (kind, j) =>
+            match text.next_line src j with
+            | LineDone => rev_cells acc NoCell
+            | LineGot (len_text, k) =>
+                inl nlen = text.parse_i32 len_text
+                read_cells src (k + nlen) (n - 1i32) (Cell (kind, text.slice_len src k nlen, acc))
+
+inl load (src : string) : cells =
+    match text.next_line src 0i32 with
+    | LineDone => NoCell
+    | LineGot (count, next) => read_cells src next (text.parse_i32 count) NoCell
+
+let rec package_line (xs : rows) : string =
+    match xs with
+    | NoRow => ""
+    | Row (path, NoRow) => "--package " ++ path
+    | Row (path, rest) => "--package " ++ path ++ " " ++ package_line rest
+
+inl place_opens (blocks : rows) (opens : rows) : rows =
+    match opens with
+    | NoRow => blocks
+    | _ =>
+        inl block = join_rows opens ++ "\n"
+        match blocks with
+        | NoRow => Row (block, NoRow)
+        | Row (first, rest) =>
+            if text.starts_with first "///" then Row (first, Row (block, rest))
+            else Row (block, blocks)
+
+inl inject (src : string) (packages : rows) : string =
+    match packages with
+    | NoRow => src
+    | _ =>
+        inl line = "///- " ++ package_line packages
+        match text.next_line src 0i32 with
+        | LineDone => "\n" ++ line ++ "\n"
+        | LineGot (first, next) => first ++ "\n" ++ line ++ "\n" ++ text.drop src next
+
+inl finish (src : string) : string =
+    if text.length src = 0i32 then "\n"
+    elif text.index src (text.length src - 1i32) = '\n' then src
+    else src ++ "\n"
+
+inl to_spi (src : string) : string =
+    inl blocks, pending, opens, packages = take_cells (load src) NoRow NoRow NoRow NoRow
+    inl flushed = flush blocks pending
+    inl placed = place_opens (rev_rows flushed NoRow) opens
+    finish (inject (join_rows placed) packages)

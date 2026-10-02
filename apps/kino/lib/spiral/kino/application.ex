@@ -3,6 +3,7 @@ defmodule Spiral.Kino.Application do
 
   @impl true
   def start(_type, _args) do
+    Spiral.Kino.Domain.ensure!()
     Kino.SmartCell.register(Spiral.Kino.SmartCell)
 
     children = [

@@ -1,0 +1,100 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+union rec tokens =
+    | NoToken
+    | Token : string * tokens
+
+let rec rev_tokens (xs : tokens) (acc : tokens) : tokens =
+    match xs with
+    | NoToken => acc
+    | Token (s, rest) => rev_tokens rest (Token (s, acc))
+
+let rec take_token (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then i
+        elif ch = '\t' then i
+        else take_token src (i + 1i32)
+
+let rec skip_ws (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then skip_ws src (i + 1i32)
+        elif ch = '\t' then skip_ws src (i + 1i32)
+        else i
+
+let rec tokens_from (src : string) (i : i32) (acc : tokens) : tokens =
+    inl j = skip_ws src i
+    if j >= text.length src then rev_tokens acc NoToken
+    else
+        inl k = take_token src j
+        tokens_from src k (Token (text.slice_len src j (k - j), acc))
+
+union parsed =
+    | Parsed : i32 * i32 * string
+    | ParseBad : string
+
+let rec pair (xs : tokens) (print_code : i32) (timeout : i32) (packages : string) : parsed =
+    match xs with
+    | NoToken => Parsed (print_code, timeout, packages)
+    | Token ("--print-code", rest) => pair rest 1i32 timeout packages
+    | Token ("--timeout", Token (ms, rest)) =>
+        inl n = text.parse_i32 ms
+        if n > 0i32 then pair rest print_code n packages
+        else ParseBad (text.err "timeout" ms)
+    | Token ("--package", Token (path, rest)) =>
+        inl packages2 = if packages = "" then path else packages ++ "\t" ++ path
+        pair rest print_code timeout packages2
+    | Token ("--test", Token ("static", rest)) => pair rest print_code timeout packages
+    | Token ("--test", rest) => pair rest print_code timeout packages
+    | Token (flag, _) => ParseBad (text.err "flag" flag)
+
+inl merge (args : string) (print_code : i32) (timeout : i32) (packages : string) : parsed =
+    pair (tokens_from args 0i32 NoToken) print_code timeout packages
+
+inl accept_backend (rest : string) : string =
+    inl sp = text.find_char rest 0i32 ' '
+    if sp < 0i32 then
+        if rest = "rust" then ""
+        else text.err "backend" rest
+    else
+        inl name = text.take rest sp
+        inl args = text.trim (text.drop rest (sp + 1i32))
+        if name = "rust" then
+            if text.find_char rest sp ' ' = sp then
+                if args = "" then text.err "builder" args else text.err "builder" args
+            else text.err "builder" args
+        else text.err "backend" name
+
+inl finish (kept : string) (print_code : i32) (timeout : i32) (packages : string) : string =
+    if text.contains kept "\n#!" then text.err "dib" ""
+    elif text.starts_with kept "#!" then text.err "dib" ""
+    else
+        inl wrapped, generated = cell.wrap kept
+        inl timeout_text = if timeout < 0i32 then "-" else text.show_i32 timeout
+        "ok\n" ++ text.show_i32 print_code ++ "\n" ++ timeout_text ++ "\n" ++ text.show_i32 generated ++ "\n" ++ packages ++ "\n" ++ wrapped
+
+let rec scan (src : string) (i : i32) (kept : string) (print_code : i32) (timeout : i32) (packages : string) (seen : i32) (started : i32) : string =
+    match text.next_line src i with
+    | LineDone => finish kept print_code timeout packages
+    | LineGot (line, next) =>
+        if text.starts_with line "////" then scan src next kept print_code timeout packages seen started
+        elif text.starts_with line "///- " then
+            if seen = 1i32 then scan src next kept print_code timeout packages 1i32 started
+            else
+                match merge (text.drop line (text.length "///- ")) print_code timeout packages with
+                | ParseBad message => message
+                | Parsed (print2, timeout2, packages2) => scan src next kept print2 timeout2 packages2 1i32 started
+        elif text.starts_with line "///> " then
+            inl backend = accept_backend (text.drop line (text.length "///> "))
+            if text.is_error backend then backend
+            else scan src next kept print_code timeout packages seen started
+        elif text.starts_with line "///" then text.err "directive" line
+        else
+            inl kept2 = if started = 0i32 then line else kept ++ "\n" ++ line
+            scan src next kept2 print_code timeout packages seen 1i32
+
+inl prepare (code : string) : string =
+    scan (text.replace code "\r\n" "\n") 0i32 "" 0i32 -1i32 "" 0i32 0i32

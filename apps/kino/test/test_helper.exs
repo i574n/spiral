@@ -60,4 +60,5 @@ defmodule Spiral.Kino.TestHelpers do
   end
 end
 
+Spiral.Kino.Domain.ensure!()
 ExUnit.start()

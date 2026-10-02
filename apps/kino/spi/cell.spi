@@ -1,0 +1,306 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+union rec lines =
+    | NoLine
+    | Line : string * lines
+
+let rec rev_lines (xs : lines) (acc : lines) : lines =
+    match xs with
+    | NoLine => acc
+    | Line (s, rest) => rev_lines rest (Line (s, acc))
+
+let rec count_lines (xs : lines) : i32 =
+    match xs with
+    | NoLine => 0i32
+    | Line (_, rest) => 1i32 + count_lines rest
+
+let rec nth_line (xs : lines) (i : i32) : string =
+    match xs with
+    | NoLine => ""
+    | Line (s, rest) => if i = 0i32 then s else nth_line rest (i - 1i32)
+
+let rec join_lines (xs : lines) : string =
+    match xs with
+    | NoLine => ""
+    | Line (s, NoLine) => s
+    | Line (s, rest) => s ++ "\n" ++ join_lines rest
+
+let rec collect (src : string) (i : i32) (acc : lines) : lines =
+    match text.next_line src i with
+    | LineDone => rev_lines acc NoLine
+    | LineGot (line, next) => collect src next (Line (line, acc))
+
+inl read_lines (text : string) : lines = collect text 0i32 NoLine
+
+inl declaration (line : string) : bool =
+    if text.starts_with line "open " then true
+    elif text.starts_with line "prototype " then true
+    elif text.starts_with line "instance " then true
+    elif text.starts_with line "type " then true
+    elif text.starts_with line "union " then true
+    elif text.starts_with line "nominal " then true
+    else false
+
+inl binding_keyword (line : string) : bool =
+    if text.starts_with line "inl " then true
+    elif text.starts_with line "and " then true
+    elif text.starts_with line "let " then true
+    else false
+
+let rec search_top (xs : lines) (i : i32) (last : i32) : i32 =
+    if i < 0i32 then last
+    else
+        inl line = nth_line xs i
+        if line = "" then search_top xs (i - 1i32) last
+        elif text.starts_with line " " then search_top xs (i - 1i32) last
+        elif text.starts_with line "// " then search_top xs (i - 1i32) last
+        elif declaration line then last
+        elif binding_keyword line then
+            if text.is_value_binding line then search_top xs (i - 1i32) i
+            else last
+        else search_top xs (i - 1i32) i
+
+let rec last_block (xs : lines) (i : i32) : i32 =
+    if i < 0i32 then -1i32
+    else
+        inl line = nth_line xs i
+        if line <> "" && text.starts_with line " " = false then i
+        else last_block xs (i - 1i32)
+
+inl main_line (line : string) : bool =
+    if text.starts_with line "inl main " then true
+    elif text.starts_with line "let main " then true
+    elif text.starts_with line "inl main(" then true
+    elif text.starts_with line "let main(" then true
+    else false
+
+let rec map_main (xs : lines) (i : i32) (at : i32) : lines =
+    match xs with
+    | NoLine => NoLine
+    | Line (line, rest) =>
+        inl mapped =
+            if i < at then line
+            elif i = at then "inl main () : i32 =\n    " ++ line
+            elif text.blank line then ""
+            else "    " ++ line
+        Line (mapped, map_main rest (i + 1i32) at)
+
+inl wrap (code : string) : string * i32 =
+    inl xs = read_lines code
+    inl n = count_lines xs
+    inl block = last_block xs (n - 1i32)
+    if block >= 0i32 && main_line (nth_line xs block) then text.ensure_nl code, 0i32
+    else
+        inl at = search_top xs (n - 1i32) -1i32
+        if at < 0i32 then text.ensure_nl code ++ "inl main () : i32 = 0i32\n", 1i32
+        else text.ensure_nl (join_lines (map_main xs 0i32 at)), 1i32
+
+inl package_project (includes : string) : string =
+    if includes = "" then "packages:\n    |core-\nmodules:\n    console\n    main\n"
+    else "packageDir: .\npackages:\n    |core-\n" ++ text.indent_names includes 0i32 "" ++ "modules:\n    console\n    main\n"
+
+let rec skip_spaces (line : string) (i : i32) : i32 =
+    if i < text.length line && text.index line i = ' ' then skip_spaces line (i + 1i32) else i
+
+let rec digits_end (line : string) (i : i32) : i32 =
+    if i < text.length line && text.digit_val (text.index line i) >= 0i32 then digits_end line (i + 1i32) else i
+
+inl var_end (line : string) (i : i32) : i32 =
+    if text.starts_at line i "v" then
+        inl j = digits_end line (i + 1i32)
+        if j > i + 1i32 then j else -1i32
+    else -1i32
+
+let rec last_var (line : string) (i : i32) (found : i32) : i32 =
+    if i >= text.length line then found
+    else
+        inl here = var_end line i
+        if here > i && (i = 0i32 || text.index line (i - 1i32) = ' ' || text.index line (i - 1i32) = '\t') then
+            last_var line here i
+        else last_var line (i + 1i32) found
+
+inl snippet_of (line : string) : string * string =
+    inl body = text.trim_newlines line
+    inl rest0 = skip_spaces body 0i32
+    if text.starts_at body rest0 "let mut v" = false then "", ""
+    else
+        inl name_at = rest0 + text.length "let mut "
+        inl name_to = var_end body name_at
+        if name_to < 0i32 then "", ""
+        elif text.starts_at body name_to ": Rc<str> = " = false then "", ""
+        else
+            inl q = name_to + text.length ": Rc<str> = "
+            if q >= text.length body || text.index body q <> '"' then "", ""
+            else
+                let rec scan (j : i32) : i32 =
+                    if j >= text.length body then -1i32
+                    elif text.index body j = '\\' then scan (j + 2i32)
+                    elif text.index body j = '"' then j
+                    else scan (j + 1i32)
+                inl close = scan (q + 1i32)
+                if close < 0i32 then "", ""
+                elif text.starts_at body (close + 1i32) ";" = false then "", ""
+                else
+                    inl tail = skip_spaces body (close + 2i32)
+                    if tail = text.length body then text.slice_len body name_at (name_to - name_at), text.slice_len body q (close - q + 1i32)
+                    else "", ""
+
+inl unescape (literal : string) : string =
+    inl body = text.drop (text.take literal (text.length literal - 1i32)) 1i32
+    let rec go (i : i32) (acc : string) : string =
+        if i >= text.length body then acc
+        elif text.starts_at body i "\\\\" then go (i + 2i32) (acc ++ "\\")
+        elif text.starts_at body i "\\\"" then go (i + 2i32) (acc ++ "\"")
+        elif text.starts_at body i "\\n" then go (i + 2i32) (acc ++ "\n")
+        elif text.starts_at body i "\\r" then go (i + 2i32) (acc ++ "\r")
+        elif text.starts_at body i "\\t" then go (i + 2i32) (acc ++ "\t")
+        else go (i + 1i32) (acc ++ text.one body i)
+    go 0i32 ""
+
+union rec pairs =
+    | NoPair
+    | Pair : string * string * pairs
+
+let rec find_pair (xs : pairs) (name : string) : string =
+    match xs with
+    | NoPair => ""
+    | Pair (k, v, rest) => if k = name then v else find_pair rest name
+
+let rec snippets (xs : lines) (acc : pairs) : pairs =
+    match xs with
+    | NoLine => acc
+    | Line (line, rest) =>
+        inl name, literal = snippet_of line
+        if name = "" then snippets rest acc
+        else snippets rest (Pair (name, unescape literal, acc))
+
+inl strip_clone (arg : string) : string =
+    inl t = text.trim arg
+    if text.starts_with t "v" && text.contains t ".clone()" then
+        inl endv = var_end t 0i32
+        if endv > 0i32 && text.drop t endv = ".clone()" then text.take t endv else t
+    else t
+
+let rec split_depth (src : string) (i : i32) (depth : i32) (cur : string) (acc : lines) : lines =
+    if i >= text.length src then rev_lines (Line (text.trim cur, acc)) NoLine
+    else
+        inl ch = text.index src i
+        if ch = '(' then split_depth src (i + 1i32) (depth + 1i32) (cur ++ "(") acc
+        elif ch = ')' then split_depth src (i + 1i32) (depth - 1i32) (cur ++ ")") acc
+        elif ch = ',' && depth = 0i32 then split_depth src (i + 1i32) 0i32 "" (Line (text.trim cur, acc))
+        else split_depth src (i + 1i32) depth (cur ++ text.one src i) acc
+
+inl split_args (value : string) : lines =
+    inl t = text.trim value
+    if t = "()" then NoLine
+    elif text.starts_with t "(" && text.index t (text.length t - 1i32) = ')' then
+        split_depth (text.slice_len t 1i32 (text.length t - 2i32)) 0i32 0i32 "" NoLine
+    else split_depth t 0i32 0i32 "" NoLine
+
+let rec subst (payload : string) (args : lines) (i : i32) : string =
+    match args with
+    | NoLine => payload
+    | Line (arg, rest) => subst (text.replace payload ("$" ++ text.show_i32 i) (strip_clone arg)) rest (i + 1i32)
+
+inl expand (prefix : string) (args : string) (code : string) (known : pairs) : string =
+    inl payload = find_pair known code
+    if payload = "" then prefix ++ "Fable.Core.RustInterop.emitRustExpr " ++ args ++ " " ++ code ++ " ;"
+    else prefix ++ subst payload (split_args args) 0i32 ++ ";"
+
+inl ends_with_eq (src : string) : bool =
+    inl t = text.trim src
+    if text.length t = 0i32 then false
+    else text.index t (text.length t - 1i32) = '='
+
+inl emit_of (line : string) : string * string * string =
+    inl marker = "Fable.Core.RustInterop.emitRustExpr"
+    inl at = text.find_from line marker 0i32
+    if at < 0i32 then "", "", ""
+    else
+        inl before = text.take line at
+        inl after = text.trim (text.drop line (at + text.length marker))
+        inl semi = text.find_from after ";" 0i32
+        if semi < 0i32 then "", "", ""
+        else
+            inl body = text.trim (text.take after semi)
+            inl var_at = last_var body 0i32 -1i32
+            if var_at < 0i32 then "", "", ""
+            else
+                inl code = text.slice_len body var_at (text.length body - var_at)
+                inl args = text.trim (text.take body var_at)
+                if text.trim before = "" then text.take line (skip_spaces line 0i32), args, code
+                elif text.starts_with (text.trim before) "let mut v" && ends_with_eq before then before, args, code
+                else "", "", ""
+
+let rec rewrite_lines (xs : lines) (known : pairs) : lines =
+    match xs with
+    | NoLine => NoLine
+    | Line (line, rest) =>
+        inl name, _lit = snippet_of line
+        inl prefix, args, code = emit_of line
+        inl out =
+            if name <> "" then ""
+            elif prefix <> "" || code <> "" then expand prefix args code known
+            else line
+        Line (out, rewrite_lines rest known)
+
+inl show_exit () : string = "let spiral_kino_value = main.join().unwrap();\n    println!(\"SPIRAL_KINO_VALUE:{}\", spiral_kino_value);\n    std::process::exit(0);"
+
+inl unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
+
+inl patch_rust (rust : string) (show_value : string) : string =
+    inl textn = text.replace rust "\r\n" "\n"
+    inl xs = read_lines textn
+    inl known = snippets xs NoPair
+    inl joined = join_lines (rewrite_lines xs known)
+    inl collapsed = text.collapse_newlines joined
+    if show_value = "1" then text.replace collapsed "std::process::exit(main.join().unwrap());" (show_exit ())
+    else text.replace collapsed "std::process::exit(main.join().unwrap());" (unit_exit ())
+
+inl join_pair (left : string) (right : string) : string =
+    if left = "" then right
+    elif right = "" then left
+    else left ++ "\n" ++ right
+
+inl split_output (output : string) : string =
+    inl textn = text.replace output "\r\n" "\n"
+    inl xs = read_lines textn
+    let rec find (rows : lines) (before : lines) : string =
+        match rows with
+        | NoLine => "0\n" ++ text.trim_trailing_newlines (join_lines (rev_lines before NoLine))
+        | Line (line, rest) =>
+            if text.starts_with line "SPIRAL_KINO_VALUE:" then
+                inl value = text.trim_cr (text.drop line (text.length "SPIRAL_KINO_VALUE:"))
+                inl stdout = text.trim_trailing_newlines (join_pair (join_lines (rev_lines before NoLine)) (join_lines rest))
+                "1\n" ++ value ++ "\n" ++ stdout
+            else find rest (Line (line, before))
+    find xs NoLine
+
+let rec skip_ws (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then skip_ws src (i + 1i32)
+        elif ch = '\t' then skip_ws src (i + 1i32)
+        elif ch = '\n' then skip_ws src (i + 1i32)
+        elif ch = '\r' then skip_ws src (i + 1i32)
+        else i
+
+let rec has_got (src : string) (i : i32) : bool =
+    inl at = text.find_from src "Got:" i
+    if at < 0i32 then false
+    else
+        inl j = skip_ws src (at + 4i32)
+        if j > at + 4i32 && text.starts_at src j "()" then true
+        else has_got src (at + 4i32)
+
+let rec has_expected (src : string) (i : i32) : bool =
+    inl at = text.find_from src "Expected:" i
+    if at < 0i32 then false
+    else
+        inl j = skip_ws src (at + 9i32)
+        if j > at + 9i32 && text.starts_at src j "i32" then true
+        else has_expected src (at + 9i32)
+
+inl unit_result (output : string) : string =
+    if has_got output 0i32 && has_expected output 0i32 then "1" else "0"

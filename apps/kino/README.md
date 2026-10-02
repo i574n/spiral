@@ -1,8 +1,8 @@
 # Spiral.Kino
 
 A [Livebook](https://livebook.dev) smart cell for [Spiral](https://github.com/mrakgr/The-Spiral-Language).
-Write Spiral code in the cell. It gets compiled and run, and the program output, the
-value of the last expression and any compile errors show up in the cell.
+Write Spiral in the cell. The single-flight Spiral compiler emits Rust, `rustc` builds it,
+and the cell shows program output, the `i32` result, and compile errors.
 
 The OTP application is `:spiral_kino`. The Elixir modules are `Spiral.Kino` and
 `Spiral.Kino.*`. The hex package this cell is built on is already named `kino`, so the
@@ -10,15 +10,15 @@ application name stays distinct from that dependency.
 
 ## Requirements
 
-- Livebook **v0.19+**. Kino minor versions track Livebook minor versions, and this
-  package uses `kino ~> 0.19.1`. Elixir **1.18+** is required for the built-in `JSON`
-  module.
-- A polyglot checkout with its local .NET tools restored (`dotnet tool restore` in the
-  polyglot root). Cells run through the polyglot fork of `dotnet repl` (pinned in
-  `polyglot/.config/dotnet-tools.json`), which hosts the Spiral .NET Interactive kernel.
-  The global/upstream `dotnet-repl` has no `spiral` kernel.
-- `dotnet` on `PATH`. Builder backends need their own toolchains: cargo for Rust,
-  node for TypeScript, python for Python/CUDA, gleam, lua, and so on.
+- Livebook **v0.19+** and Elixir **1.18+** (`kino ~> 0.19.1` uses the built-in `JSON` module).
+- The single-flight `SpiralCompiler.dll` (a .NET program). The default path is
+  `%LOCALAPPDATA%/spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll`.
+- `dotnet` that can load that DLL. The cache copy under
+  `%LOCALAPPDATA%/spiral-bin/toolchains/dotnet/dotnet.exe` is used when it is present.
+- `rustc` (edition 2021).
+- The Spiral core package (`core/package.spiproj`) from
+  `polyglot/deps/The-Spiral-Language/VS Code Plugin`. The cell links `|core-` and a
+  one-module `console.write_line` implemented in the cell package.
 
 ## Usage
 
@@ -50,109 +50,81 @@ The cell prints `Hello from Spiral!` and shows `49`. See
 From plain Elixir:
 
 ```elixir
-{:ok, result} = Spiral.Kino.run("1i32 + 2i32", backend: "fsharp", timeout: 120_000)
-result.value  #=> "3"
+{:ok, result} = Spiral.Kino.run("1i32 + 2i32", timeout: 120_000)
+result.value #=> "3"
 ```
 
 ## The cell
 
 | Field | Effect |
 | --- | --- |
-| Backend | `F#` (default): the code is compiled to F# and evaluated in .NET Interactive, and the value of the last expression is shown. The others add a `///>` builder line: `rust`, `typescript`, `python` (these three go F# → Fable), `cuda` (Python + CUDA), `cpp`, `gleam`, `lua`. |
-| Builder args | Appended to the `///>` line, e.g. `-d chrono regex` for Rust crates. |
-| Timeout (s) | Hard wall-clock limit for the whole run: startup + compile + run. When it expires, the whole process tree is killed and the cell fails with `Spiral.Kino.TimeoutError`. |
-| Show generated code | Adds `--print-code`. The generated code is printed before the program output. |
+| Timeout (s) | Wall-clock budget for compile, `rustc`, and the run together. When it expires, the process tree of the stage in progress is killed and the cell fails with `Spiral.Kino.TimeoutError`. |
+| Show generated Rust | Adds the patched Rust source in front of the program output. |
 
-The code can also carry kernel directives directly. These are the semantics of
-`polyglot/apps/spiral/Eval.fs`:
+The last top-level expression is wrapped as `inl main () : i32 =`. A body whose type is `()`
+is compiled once more with `0i32` appended, and that run shows output with no value.
+An `inl main` / `let main` you wrote is left as it is, and its `i32` is the cell value.
+`console.write_line` prints a string and a newline.
 
-- `///- <args>`: kernel arguments, e.g. `--timeout N` (ms, compile + eval inside the
-  kernel), `--print-code`, `--trace`, `--real`, `--cache`, `--package NAME`. **Only the
-  first `///-` line is read.** The cell therefore folds its options into your first
-  `///-` line, or inserts one, and never adds a second line.
-- `///> <builder> [args]`: every such line is used, so one cell can target several
-  backends. If your code already has a builder line for the backend chosen in the form,
-  no duplicate is added.
-- `////> ...`: a disabled directive (a comment).
-- The kernel wraps the last top-level expression(s) into `main`. You write plain cell
-  code, like in a `.dib` `#!spiral` cell.
+Kernel directives in the source:
 
-Errors:
+- `///- --print-code` and `///- --timeout <ms>` on the **first** `///-` line. A later `///-` line is ignored. A timeout passed to `run/2` or `eval!/2` wins over `--timeout`.
+- `///- --package <path>` links that directory into the cell (the directory name becomes an included package). The path is relative to the `:root` option, or to the working directory when `:root` is omitted. `offset.add_one` is how an included package's `offset` module is called.
+- `///- --test` and `///- --test static` mark a notebook cell as a test. The flag is removed before compile.
+- `///> rust` is accepted and dropped. `///> rust <args>` raises. Any other `///>` backend raises.
+- `////...` is dropped.
+- A line starting with `#!` raises.
+
+## Errors
 
 | Situation | Raised |
 | --- | --- |
-| Compile (parse/type) error, or an exception while evaluating | `Spiral.Kino.SpiralError`. The message is the compiler's, with the temp package path stripped. Positions such as `main.spi:5:12` refer to the kernel's *wrapped* `main.spi`, not to editor lines. Any stdout printed before the error is still shown. |
-| Timeout | `Spiral.Kino.TimeoutError` (the process tree is already killed). |
-| `dotnet repl` failed, nonzero exit, no or invalid notebook output, no Spiral kernel | `Spiral.Kino.ProcessError`, with a log tail and a hint. |
+| Parse or type error | `Spiral.Kino.SpiralError`. The message has the temp directory stripped. Positions such as `main.spi:5:12` refer to the wrapped `main.spi`. |
+| Timeout | `Spiral.Kino.TimeoutError`. The process tree is already killed. |
+| Compiler, `rustc`, or the cell binary failed to start, or the generated Rust still contains `emitRustExpr` | `Spiral.Kino.ProcessError`. |
 
 ## How it works
 
-1. The form options are merged into the code (`Spiral.Kino.Directives`).
-2. The code is written as a one-cell `.dib` into a temp directory
-   (`Spiral.Kino.Notebook.dib/1`).
-3. `dotnet repl --run cell.dib --output-path cell.dib.ipynb --exit-after-run` runs with
-   the polyglot root as the working directory, so the local tool manifest picks the
-   fork with the Spiral kernel.
-4. The outputs are read from the `.ipynb` (`Spiral.Kino.Notebook.parse_ipynb/1`):
-   - stdout streams become cell output;
-   - the `dni-plaintext` value becomes the cell result;
-   - other HTML is rendered with `Kino.HTML`;
-   - `error` outputs are raised.
-5. The temp directory is removed (unless `keep_files: true`).
+1. `Spiral.Kino.Directives` strips directives and `Spiral.Kino.Cell` wraps `main`.
+2. A temp package is written (`package.spiproj`, `console.spi`, `main.spi`) under `System.tmp_dir()/spiral_kino`.
+3. `dotnet SpiralCompiler.dll --backend Rust main.spi main.rs` runs with `SPIRAL_WORKSPACE_ROOT` and `SPIRAL_COMPILER_PACKAGE_DIR` set.
+4. Statement-form `emitRustExpr` calls are inlined, and `std::process::exit(main.join().unwrap())` is rewritten so the `i32` is printed as `SPIRAL_KINO_VALUE:<n>` and the process exits 0.
+5. `rustc --edition 2021 -o cell.exe main.rs` builds the file, and the binary runs in that directory.
+6. The temp directory is removed unless `keep_files: true`.
 
 ### Process handling (`Spiral.Kino.Runner`)
 
-- The child runs in an Erlang port (`spawn_executable`, no shell, so there are no quoting
-  issues). stdout and stderr are both captured, merged in write order, and the exit status
-  is returned.
-- The port is owned by a watcher process under `Spiral.Kino.TaskSupervisor`. The watcher
-  is **not linked** to the evaluating process; it monitors it instead.
-- On timeout, and also when the caller dies (Livebook *Stop* or re-evaluation kills the
-  evaluator), the watcher kills the whole tree. On Windows it uses
-  `taskkill /T /F /PID <pid>`; on Unix it walks the tree with `pgrep -P` and sends
-  `SIGKILL`.
-- On a graceful shutdown of the Livebook runtime (the app's supervisor stops), the
-  watcher also kills the tree. This path is implemented but not covered by a test.
-- Limitations:
-  - The tree is found through parent PIDs. A grandchild whose parent already exited
-    can't be found that way. The Spiral toolchain doesn't currently detach processes like
-    that.
-  - If the runtime VM is killed abruptly (e.g. the BEAM OS process is terminated),
-    nothing is left to clean up, and running children survive on Windows.
-
-  A Windows Job Object or a Unix cgroup/process group would close both gaps.
-- The Unix kill path (`pgrep`/`kill`) is written but has only been exercised on
-  Windows.
+- The child runs in an Erlang port (`spawn_executable`, no shell). stdout and stderr are captured together, and the exit status is returned.
+- The port is owned by a watcher under `Spiral.Kino.TaskSupervisor`. The watcher monitors the caller and is not linked to it.
+- On timeout, and when the caller dies (Livebook *Stop* or re-evaluation), the watcher kills the process tree. On Windows it uses `taskkill /T /F /PID`. On Unix it walks children with `pgrep -P` and sends `SIGKILL`.
+- A grandchild whose parent has already exited is not found by that walk. An abrupt BEAM kill leaves the children running on Windows.
+- Tests exercise the Windows `taskkill` path. The Unix `pgrep` / `kill` path is the same watcher with a different tree walk.
 
 ### Configuration
 
-| What | How |
-| --- | --- |
-| polyglot root | Resolved in this order: the `:polyglot_root` option, then `config :spiral_kino, polyglot_root: ...`, then the `SPIRAL_KINO_POLYGLOT_ROOT` env var, then the `polyglot` checkout next to this `spiral` checkout (`spiral/apps/kino/lib/spiral/../../../../../polyglot`). |
-| `dotnet` executable | `:dotnet` option; defaults to `PATH`. |
-| Editor highlighting | `config :spiral_kino, editor_language: "javascript"` (the default). Livebook's CodeMirror editor has no ML/F# mode. JavaScript is the closest available: it highlights `//` comments, the `///` directives, strings, numbers and `let`/`if`/`then`/`else`. Primes in identifiers (`am'.vec`) are read as string starts. Use `nil` for no highlighting. |
+Resolved in this order for each setting: the `run/2` option, then the environment variable, then the default.
 
-## Trade-offs and alternatives
+| Setting | Option | Environment | Default |
+| --- | --- | --- | --- |
+| Compiler DLL | `:compiler_dll` | `SPIRAL_COMPILER_DLL` | `%LOCALAPPDATA%/spiral-bin/bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll` |
+| `dotnet` | `:dotnet` | `SPIRAL_DOTNET` | cache `toolchains/dotnet/dotnet.exe`, then `dotnet` on `PATH` |
+| `rustc` | `:rustc_bin` | `SPIRAL_RUSTC` | `rustc` on `PATH` |
+| Workspace root | `:workspace` | `SPIRAL_WORKSPACE_ROOT` | `spiral/apps/compiler/tmp` next to this app |
+| Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `<polyglot root>/deps/The-Spiral-Language/VS Code Plugin` |
+| Polyglot root | `:polyglot_root` | `SPIRAL_KINO_POLYGLOT_ROOT`, or `config :spiral_kino, polyglot_root: ...` | the `polyglot` checkout next to this `spiral` checkout |
 
-- **Why `dotnet repl` and not a direct compiler CLI?** The prebuilt
-  `polyglot/apps/spiral/dist/Supervisor.exe` has a
-  `--build-file in.spi out.{fsx,py,lua,gleam,cpp}` mode, which would be faster: no
-  .NET Interactive, and the output program runs directly. However, the current binary
-  embeds the in-development (Hopac) compiler. It stalls on a trivial snippet: it warns
-  about a blocking call inside a Hopac job and never finishes. (Outside the workspace it
-  also logs workspace-root warnings, but it falls back to its build-time path.) The
-  `dotnet repl` route works today and keeps
-  the exact kernel semantics: directives, builders, value display. The cost is about
-  15–20 s of cold start per cell. If `Supervisor --build-file` becomes reliable, a second
-  engine can go behind the same `:command` hook.
-- **Each cell is independent.** Every run is a fresh kernel process, so definitions are
-  not shared between Spiral cells, unlike consecutive `#!spiral` cells in a `.dib`.
-- **Side effects outside the temp directory.** The Spiral kernel persists each compiled
-  cell under `polyglot/target/spiral_Eval/packages/<hash>/`. This is the kernel's normal
-  behaviour, the same as when running `.dib` notebooks.
-- **Erlang on Windows:** if Livebook (or `mix`) is started from a shell where another
-  Erlang comes first on `PATH` (e.g. Chocolatey's), the VM may fail to boot with
-  "corrupt atom table". Put the right OTP first.
+Editor highlighting is `config :spiral_kino, editor_language: "javascript"` (the default).
+Livebook's editor has no Spiral mode. JavaScript highlights `//` comments, strings, numbers,
+and `let`. Primes in identifiers (`am'.vec`) are read as string starts. `nil` turns highlighting off.
+
+Each cell is a fresh process. Definitions are not shared between cells. A `.dib` notebook
+is converted with `Spiral.Kino.Document`: `parse_dib/1`, `to_livemd/1`, and `to_spi/1`.
+`to_spi/1` keeps definitions, `open` lines, and the first `--package` directive, and it
+drops `--test` cells. `parse_livemd/1` reads the smart cells `to_livemd/1` writes.
+
+On Windows, if another Erlang comes first on `PATH` (Chocolatey's `erl` does), the VM can
+fail at boot with "corrupt atom table". Put the OTP that matches this Elixir first.
+Scoop Erlang and Elixir are the pair this package is tested with.
 
 ## Development
 
@@ -162,7 +134,6 @@ mix compile --warnings-as-errors
 mix test
 ```
 
-The tests don't need .NET. A fake `dotnet repl` (an escript) replays real `.ipynb`
-outputs captured from the Spiral kernel (`test/fixtures`). The runner tests use real
-process trees: an escript that starts a grandchild BEAM. They check that a timeout, and
-also killing the caller, leave no process alive.
+`mix test` includes two live compiles when the compiler DLL, the core package, `dotnet`,
+and `rustc` are all present. The other tests fake those three stages.
+The runner tests use real process trees.

@@ -1,0 +1,112 @@
+defmodule Spiral.Kino.Document do
+  alias Spiral.Kino.SmartCell
+
+  @spec parse_dib(String.t()) :: %{cells: [map()]}
+  def parse_dib(text) when is_binary(text) do
+    %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.parse_dib(text))}
+  end
+
+  @spec parse_livemd(String.t()) :: %{cells: [map()]}
+  def parse_livemd(text) when is_binary(text) do
+    text = String.replace(text, "\r\n", "\n")
+
+    cells =
+      Regex.split(~r/(```(?:elixir|fsharp|spiral)\n.*?```\n?)/s, text, include_captures: true)
+      |> Enum.flat_map(&livemd_part/1)
+
+    %{cells: cells}
+  end
+
+  @spec to_livemd(%{cells: [map()]}) :: String.t()
+  def to_livemd(%{cells: cells}) do
+    cells
+    |> Enum.map_join("\n\n", &render_cell/1)
+    |> newline()
+  end
+
+  @spec to_spi(%{cells: [map()]}) :: String.t()
+  def to_spi(%{cells: cells}) do
+    Spiral.Kino.Domain.to_spi(Spiral.Kino.Domain.encode_cells(cells))
+  end
+
+  defp livemd_part(part) do
+    cond do
+      String.starts_with?(part, "```elixir") ->
+        case eval_source(part) do
+          nil -> markdown_part(part)
+          source -> [%{kind: :spiral, source: source}]
+        end
+
+      String.starts_with?(part, "```fsharp") ->
+        [%{kind: :fsharp, source: fence_body(part)}]
+
+      String.starts_with?(part, "```spiral") ->
+        [%{kind: :spiral, source: fence_body(part)}]
+
+      true ->
+        markdown_part(part)
+    end
+  end
+
+  defp markdown_part(part) do
+    source =
+      part
+      |> String.replace(~r/<!-- livebook:.*?-->\n?/s, "")
+      |> String.trim()
+
+    if source == "", do: [], else: [%{kind: :markdown, source: source}]
+  end
+
+  defp fence_body(part) do
+    part
+    |> String.replace(~r/\A```[a-z]+\n/, "")
+    |> String.replace(~r/```\n?\z/, "")
+    |> String.trim_trailing("\n")
+  end
+
+  defp eval_source(part) do
+    code = fence_body(part)
+
+    with {:ok, ast} <- Code.string_to_quoted(code),
+         {{:., _, [{:__aliases__, _, [:Spiral, :Kino]}, :eval!]}, _, [sigil | _]} <- ast,
+         {source, _} when is_binary(source) <- Code.eval_quoted(sigil) do
+      String.trim_trailing(source, "\n")
+    else
+      _ -> nil
+    end
+  end
+
+  defp render_cell(%{kind: :markdown, source: source}), do: source
+
+  defp render_cell(%{kind: :spiral, source: source}) do
+    print_code = String.contains?(source, "--print-code")
+
+    elixir =
+      SmartCell.to_source(%{
+        "source" => source,
+        "timeout" => 300,
+        "print_code" => print_code
+      })
+
+    attrs =
+      JSON.encode!(%{
+        attrs: %{print_code: print_code, source: source, timeout: 300},
+        chunks: nil,
+        kind: "Elixir.Spiral.Kino.SmartCell",
+        livebook_object: "smart_cell"
+      })
+
+    "<!-- livebook:#{attrs} -->\n\n```elixir\n#{elixir}\n```"
+  end
+
+  defp render_cell(%{kind: :fsharp, source: source}), do: "```fsharp\n#{source}\n```"
+  defp render_cell(%{kind: :import, source: source}), do: "`#!import #{source}`"
+
+  defp render_cell(%{kind: :code, language: language, source: source}) do
+    "```#{language}\n#{source}\n```"
+  end
+
+  defp newline(text) do
+    if String.ends_with?(text, "\n"), do: text, else: text <> "\n"
+  end
+end

@@ -858,7 +858,7 @@ fn token_kind(word: &str) -> &'static str {
         "inl", "inm", "inb", "forall", "union", "nominal", "real", "type", "open", "match",
         "typecase", "function", "with", "without", "as", "when", "let", "rec", "if", "then",
         "elif", "else", "join", "join_backend", "prototype", "instance", "in", "and", "fun",
-        "exists",
+        "exists", "_",
     ];
     if KEYWORDS.contains(&word) {
         "keyword"
@@ -900,6 +900,9 @@ const KIND_UNARY: u32 = 5;
 const KIND_COMMENT: u32 = 6;
 const KIND_KEYWORD: u32 = 7;
 const KIND_PAREN: u32 = 8;
+const KIND_TYPE_VARIABLE: u32 = 9;
+const KIND_ESCAPED_CHAR: u32 = 10;
+const KIND_UNESCAPED_CHAR: u32 = 11;
 const KIND_NUMBER_SUFFIX: u32 = 12;
 const KIND_ESCAPED_VAR: u32 = 13;
 const KIND_TYPE: u32 = 14;
@@ -912,7 +915,10 @@ struct ScanToken {
 }
 
 fn scan_tokens(text: &str) -> Vec<ScanToken> {
-    let chars: Vec<char> = text.chars().collect();
+    scan_chars(&text.chars().collect::<Vec<_>>())
+}
+
+fn scan_chars(chars: &[char]) -> Vec<ScanToken> {
     let mut tokens = Vec::new();
     let mut line = 0u32;
     let mut character = 0u32;
@@ -925,44 +931,30 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
             index += 1;
             continue;
         }
-        if ch == '/' && chars.get(index + 1) == Some(&'/') {
-            let start = index;
-            while index < chars.len() && chars[index] != '\n' {
-                index += 1;
-            }
-            push_token(&mut tokens, line, character, (index - start) as u32, KIND_COMMENT);
-            character += (index - start) as u32;
+        if let Some(next) = line_comment_end(&chars, index) {
+            push_token(&mut tokens, line, character, (next - index) as u32, KIND_COMMENT);
+            character += (next - index) as u32;
+            index = next;
             continue;
         }
         if ch == '(' && chars.get(index + 1) == Some(&'*') && chars.get(index + 2) == Some(&' ') {
-            let start = index;
-            index += 2;
-            while index + 1 < chars.len() && !(chars[index] == '*' && chars[index + 1] == ')') {
-                if chars[index] == '\n' {
-                    line += 1;
-                    character = 0;
-                }
-                index += 1;
-            }
-            if index + 1 < chars.len() {
-                index += 2;
-            }
-            push_token(&mut tokens, line, character, (index - start) as u32, KIND_COMMENT);
-            character += (index - start) as u32;
+            index = take_block_comment(&chars, index, &mut tokens, &mut line, &mut character);
+            continue;
+        }
+        if ch == '$' && matches!(chars.get(index + 1), Some('"' | '\'')) {
+            index = take_macro(&chars, index, &mut tokens, line, &mut character);
+            continue;
+        }
+        if ch == '@' && chars.get(index + 1) == Some(&'"') {
+            index = take_raw(&chars, index, &mut tokens, line, &mut character);
             continue;
         }
         if ch == '"' && chars.get(index + 1) == Some(&'"') && chars.get(index + 2) == Some(&'"') {
-            let (next, len) = take_triple(&chars, index);
-            push_token(&mut tokens, line, character, len, KIND_STRING);
-            advance(&chars, index, next, &mut line, &mut character);
-            index = next;
+            index = take_triple(&chars, index, &mut tokens, &mut line, &mut character);
             continue;
         }
         if ch == '"' {
-            let (next, len) = take_string(&chars, index);
-            push_token(&mut tokens, line, character, len, KIND_STRING);
-            advance(&chars, index, next, &mut line, &mut character);
-            index = next;
+            index = take_quoted(&chars, index, &mut tokens, line, &mut character);
             continue;
         }
         if ch == '\'' {
@@ -983,6 +975,18 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
             push_token(&mut tokens, line, character, 1, KIND_PAREN);
             index += 1;
             character += 1;
+            continue;
+        }
+        if ch == '.' && chars.get(index + 1) == Some(&'(') {
+            if let Some(next) = operator_symbol_end(&chars, index) {
+                push_token(&mut tokens, line, character, (next - index) as u32, KIND_SYMBOL);
+                character += (next - index) as u32;
+                index = next;
+                continue;
+            }
+        }
+        if ch == '-' && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) && prefix_separator(&chars, index) {
+            index = take_number(&chars, index, &mut tokens, line, &mut character);
             continue;
         }
         if ch == '.' && chars.get(index + 1).is_some_and(|next| next.is_ascii_alphabetic() || *next == '_') {
@@ -1013,41 +1017,122 @@ fn scan_tokens(text: &str) -> Vec<ScanToken> {
                 index += 1;
             }
             let word: String = chars[start..index].iter().collect();
-            let kind = match token_kind(&word) {
-                "keyword" => KIND_KEYWORD,
-                "type" => KIND_TYPE,
-                "number" => KIND_NUMBER,
-                _ => KIND_VARIABLE,
+            let kind = if word == "true" || word == "false" {
+                KIND_NUMBER
+            } else {
+                match token_kind(&word) {
+                    "keyword" => KIND_KEYWORD,
+                    "type" => KIND_TYPE,
+                    "number" => KIND_NUMBER,
+                    _ => KIND_VARIABLE,
+                }
             };
             push_token(&mut tokens, line, character, (index - start) as u32, kind);
             character += (index - start) as u32;
             continue;
         }
         if ch.is_ascii_digit() {
-            let start = index;
-            index += 1;
-            while index < chars.len() && chars[index].is_ascii_digit() {
-                index += 1;
-            }
-            if chars.get(index) == Some(&'.') && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) {
-                index += 1;
-                while index < chars.len() && chars[index].is_ascii_digit() {
-                    index += 1;
-                }
-            }
-            push_token(&mut tokens, line, character, (index - start) as u32, KIND_NUMBER);
-            character += (index - start) as u32;
-            if let Some(suffix) = number_suffix_len(&chars, index) {
-                push_token(&mut tokens, line, character, suffix as u32, KIND_NUMBER_SUFFIX);
-                index += suffix;
-                character += suffix as u32;
-            }
+            index = take_number(&chars, index, &mut tokens, line, &mut character);
             continue;
         }
         index += 1;
         character += 1;
     }
     tokens
+}
+
+fn line_comment_end(chars: &[char], index: usize) -> Option<usize> {
+    if chars.get(index) != Some(&'/') || chars.get(index + 1) != Some(&'/') {
+        return None;
+    }
+    let mut cursor = index + 2;
+    loop {
+        if chars.get(cursor) == Some(&'/') {
+            cursor += 1;
+            continue;
+        }
+        if matches!(chars.get(cursor), Some('!' | '-' | '>')) && chars.get(cursor + 1) == Some(&' ') {
+            cursor += 1;
+            continue;
+        }
+        break;
+    }
+    if chars.get(cursor) != Some(&' ') {
+        return None;
+    }
+    while cursor < chars.len() && chars[cursor] != '\n' {
+        cursor += 1;
+    }
+    Some(cursor)
+}
+
+fn take_block_comment(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: &mut u32, character: &mut u32) -> usize {
+    let mut index = start + 2;
+    let mut depth = 1;
+    let mut chunk = start;
+    while index < chars.len() && depth > 0 {
+        if chars[index] == '\n' {
+            push_token(tokens, *line, *character, (index - chunk) as u32, KIND_COMMENT);
+            *line += 1;
+            *character = 0;
+            index += 1;
+            chunk = index;
+            continue;
+        }
+        if chars[index] == '(' && chars.get(index + 1) == Some(&'*') {
+            depth += 1;
+            index += 2;
+            continue;
+        }
+        if chars[index] == '*' && chars.get(index + 1) == Some(&')') {
+            depth -= 1;
+            index += 2;
+            continue;
+        }
+        index += 1;
+    }
+    let len = (index - chunk) as u32;
+    push_token(tokens, *line, *character, len, KIND_COMMENT);
+    *character += len;
+    index
+}
+
+fn operator_symbol_end(chars: &[char], index: usize) -> Option<usize> {
+    let mut cursor = index + 2;
+    let body = cursor;
+    while cursor < chars.len() && is_operator_char(chars[cursor]) {
+        cursor += 1;
+    }
+    if cursor > body && chars.get(cursor) == Some(&')') {
+        Some(cursor + 1)
+    } else {
+        None
+    }
+}
+
+fn prefix_separator(chars: &[char], index: usize) -> bool {
+    index == 0 || matches!(chars[index - 1], ' ' | '\n' | '(' | '[' | '{')
+}
+
+fn take_number(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let mut index = start + 1;
+    while index < chars.len() && (chars[index].is_ascii_digit() || chars[index] == '_') {
+        index += 1;
+    }
+    if chars.get(index) == Some(&'.') && chars.get(index + 1).is_some_and(|next| next.is_ascii_digit()) {
+        index += 1;
+        while index < chars.len() && (chars[index].is_ascii_digit() || chars[index] == '_') {
+            index += 1;
+        }
+    }
+    push_token(tokens, line, *character, (index - start) as u32, KIND_NUMBER);
+    *character += (index - start) as u32;
+    if let Some(suffix) = number_suffix_len(chars, index) {
+        push_token(tokens, line, *character, suffix as u32, KIND_NUMBER_SUFFIX);
+        index += suffix;
+        *character += suffix as u32;
+    }
+    index
 }
 
 fn is_operator_char(ch: char) -> bool {
@@ -1114,43 +1199,201 @@ fn push_token(tokens: &mut Vec<ScanToken>, line: u32, character: u32, length: u3
     });
 }
 
-fn take_string(chars: &[char], start: usize) -> (usize, u32) {
+fn emit_text(tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32, from: usize, to: usize) {
+    let len = to.saturating_sub(from) as u32;
+    if len == 0 {
+        return;
+    }
+    push_token(tokens, line, *character, len, KIND_STRING);
+    *character += len;
+}
+
+fn take_quoted(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    push_token(tokens, line, *character, 1, KIND_STRING);
+    *character += 1;
     let mut index = start + 1;
+    let mut text_at = index;
     while index < chars.len() && chars[index] != '\n' {
         if chars[index] == '\\' && index + 1 < chars.len() && chars[index + 1] != '\n' {
+            emit_text(tokens, line, character, text_at, index);
+            let kind = if matches!(chars[index + 1], 'n' | 'r' | 't' | 'b') {
+                KIND_ESCAPED_CHAR
+            } else {
+                KIND_UNESCAPED_CHAR
+            };
+            push_token(tokens, line, *character, 2, kind);
+            *character += 2;
             index += 2;
+            text_at = index;
             continue;
         }
         if chars[index] == '"' {
+            emit_text(tokens, line, character, text_at, index);
+            push_token(tokens, line, *character, 1, KIND_STRING);
+            *character += 1;
+            return index + 1;
+        }
+        index += 1;
+    }
+    emit_text(tokens, line, character, text_at, index);
+    index
+}
+
+fn take_raw(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let mut index = start + 2;
+    while index < chars.len() && chars[index] != '\n' {
+        if chars[index] == '"' {
             index += 1;
-            return (index, (index - start) as u32);
+            break;
         }
         index += 1;
     }
-    (index, (index - start) as u32)
+    let len = (index - start) as u32;
+    push_token(tokens, line, *character, len, KIND_STRING);
+    *character += len;
+    index
 }
 
-fn take_triple(chars: &[char], start: usize) -> (usize, u32) {
+fn take_macro(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let closing = chars[start + 1];
+    push_token(tokens, line, *character, 2, KIND_STRING);
+    *character += 2;
+    let mut index = start + 2;
+    let mut text_at = index;
+    while index < chars.len() && chars[index] != '\n' {
+        let ch = chars[index];
+        if ch == closing {
+            emit_text(tokens, line, character, text_at, index);
+            push_token(tokens, line, *character, 1, KIND_STRING);
+            *character += 1;
+            return index + 1;
+        }
+        if ch == '\\' && index + 1 < chars.len() && chars[index + 1] != '\n' {
+            emit_text(tokens, line, character, text_at, index);
+            let kind = match chars[index + 1] {
+                'n' | 'r' | 't' | 'b' => KIND_ESCAPED_CHAR,
+                'v' => KIND_ESCAPED_VAR,
+                _ => KIND_UNESCAPED_CHAR,
+            };
+            push_token(tokens, line, *character, 2, kind);
+            *character += 2;
+            index += 2;
+            text_at = index;
+            continue;
+        }
+        if matches!(ch, '`' | '!' | '@' | '#') {
+            emit_text(tokens, line, character, text_at, index);
+            index = take_splice(chars, index, tokens, line, character);
+            text_at = index;
+            continue;
+        }
+        index += 1;
+    }
+    emit_text(tokens, line, character, text_at, index);
+    index
+}
+
+fn take_splice(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32) -> usize {
+    let sigil = chars[start];
+    if chars.get(start + 1) == Some(&'(') {
+        push_token(tokens, line, *character, 2, KIND_PAREN);
+        *character += 2;
+        let body_start = start + 2;
+        let mut depth = 1;
+        let mut index = body_start;
+        while index < chars.len() && chars[index] != '\n' {
+            if chars[index] == '(' {
+                depth += 1;
+                index += 1;
+            } else if chars[index] == ')' {
+                depth -= 1;
+                if depth == 0 {
+                    break;
+                }
+                index += 1;
+            } else {
+                index += 1;
+            }
+        }
+        if depth == 0 && chars.get(index) == Some(&')') {
+            let base = *character;
+            for mut token in scan_chars(&chars[body_start..index]) {
+                token.character += base;
+                token.line += line;
+                tokens.push(token);
+            }
+            *character = base + (index - body_start) as u32;
+            push_token(tokens, line, *character, 1, KIND_PAREN);
+            *character += 1;
+            return index + 1;
+        }
+        return body_start;
+    }
+    if chars.get(start + 1).is_some_and(|next| is_var_start(*next)) {
+        let mut end = start + 2;
+        while end < chars.len() && is_var_char(chars[end]) {
+            end += 1;
+        }
+        let kind = if sigil == '`' || sigil == '@' {
+            KIND_TYPE_VARIABLE
+        } else {
+            KIND_VARIABLE
+        };
+        let len = (end - start) as u32;
+        push_token(tokens, line, *character, len, kind);
+        *character += len;
+        return end;
+    }
+    push_token(tokens, line, *character, 1, KIND_UNESCAPED_CHAR);
+    *character += 1;
+    start + 1
+}
+
+fn is_var_start(ch: char) -> bool {
+    ch.is_ascii_alphabetic() || ch == '_'
+}
+
+fn is_var_char(ch: char) -> bool {
+    ch.is_ascii_alphanumeric() || ch == '_' || ch == '\''
+}
+
+fn take_triple(chars: &[char], start: usize, tokens: &mut Vec<ScanToken>, line: &mut u32, character: &mut u32) -> usize {
     let mut index = start + 3;
+    let mut chunk = start;
+    let flush = |tokens: &mut Vec<ScanToken>, line: u32, character: &mut u32, chunk: usize, index: usize| {
+        let len = (index - chunk) as u32;
+        push_token(tokens, line, *character, len, KIND_STRING);
+        *character += len;
+    };
     while index + 2 < chars.len() {
-        if chars[index] == '"' && chars[index + 1] == '"' && chars[index + 2] == '"' {
-            index += 3;
-            return (index, (index - start) as u32);
-        }
-        index += 1;
-    }
-    (chars.len(), (chars.len() - start) as u32)
-}
-
-fn advance(chars: &[char], from: usize, to: usize, line: &mut u32, character: &mut u32) {
-    for ch in &chars[from..to] {
-        if *ch == '\n' {
+        if chars[index] == '\n' {
+            flush(tokens, *line, character, chunk, index);
             *line += 1;
             *character = 0;
-        } else {
-            *character += 1;
+            index += 1;
+            chunk = index;
+            continue;
         }
+        if chars[index] == '"' && chars[index + 1] == '"' && chars[index + 2] == '"' {
+            index += 3;
+            flush(tokens, *line, character, chunk, index);
+            return index;
+        }
+        index += 1;
     }
+    while index < chars.len() {
+        if chars[index] == '\n' {
+            flush(tokens, *line, character, chunk, index);
+            *line += 1;
+            *character = 0;
+            index += 1;
+            chunk = index;
+            continue;
+        }
+        index += 1;
+    }
+    flush(tokens, *line, character, chunk, index);
+    index
 }
 
 fn text_of(message: &Value, field: &str) -> Option<(String, String)> {
@@ -1233,17 +1476,68 @@ mod tests {
     fn empty_string_at_end_of_line_is_closed() {
         let tokens = scan_tokens("if ready then \"\"\nnext\n");
         let strings: Vec<_> = tokens.iter().filter(|token| token.kind == KIND_STRING).collect();
-        assert_eq!(strings.len(), 1);
-        assert_eq!(strings[0].length, 2);
-        assert!(tokens.iter().any(|token| token.line == 1));
+        assert_eq!(strings.len(), 2);
+        assert_eq!(strings[0].length + strings[1].length, 2);
+        assert_eq!(strings[0].line, 0);
+        assert!(tokens.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
     }
 
     #[test]
-    fn escaped_quote_before_closer_stays_one_string() {
+    fn escaped_quote_before_closer_stays_on_its_line() {
         let tokens = scan_tokens("value = \"Include=\\\"\"\nnext\n");
-        let strings: Vec<_> = tokens.iter().filter(|token| token.kind == KIND_STRING).collect();
-        assert_eq!(strings.len(), 1);
-        assert_eq!(strings[0].line, 0);
+        assert!(tokens.iter().any(|token| token.kind == KIND_UNESCAPED_CHAR && token.length == 2 && token.line == 0));
+        assert!(tokens.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
+        assert!(tokens.iter().filter(|token| token.kind == KIND_STRING).all(|token| token.line == 0));
+    }
+
+    #[test]
+    fn quoted_escapes_and_macro_splices_use_the_legend() {
+        let quoted = scan_tokens("\"a\\nb\"\n");
+        assert!(quoted.iter().any(|token| token.kind == KIND_ESCAPED_CHAR && token.length == 2));
+        let raw = scan_tokens("@\"a\\nb\"");
+        assert_eq!(raw.len(), 1);
+        assert_eq!(raw[0].kind, KIND_STRING);
+        assert_eq!(raw[0].length, 7);
+        let macro_text = scan_tokens("$'num_complex_Complex<`t>'\n$'emit !args '\n$\"a\\nb\\v\\#\"\n$'println\\!('\n");
+        assert!(macro_text.iter().any(|token| token.kind == KIND_TYPE_VARIABLE && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_VARIABLE && token.length == 5));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_ESCAPED_CHAR && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_ESCAPED_VAR && token.length == 2));
+        assert!(macro_text.iter().any(|token| token.kind == KIND_UNESCAPED_CHAR && token.length == 2));
+        let nested = scan_tokens("$'$\"hangulize{!(platform.get_executable_suffix ())}\"'");
+        assert!(nested.iter().any(|token| token.kind == KIND_PAREN && token.length == 2));
+        assert!(nested.iter().any(|token| token.kind == KIND_VARIABLE && token.length == 8));
+        assert!(nested.iter().any(|token| token.kind == KIND_SYMBOL));
+        assert!(!nested.iter().any(|token| token.kind == KIND_COMMENT));
+    }
+
+    #[test]
+    fn comments_numbers_and_operator_symbols_follow_the_tokenizer() {
+        let nested = scan_tokens("(* (* a *) b *)\ncode\n");
+        assert!(nested.iter().any(|token| token.kind == KIND_COMMENT && token.line == 0));
+        assert!(nested.iter().any(|token| token.line == 1 && token.kind == KIND_VARIABLE));
+        assert!(!nested.iter().any(|token| token.line == 1 && token.kind == KIND_COMMENT));
+        let lines = scan_tokens("(* open\nstill *)\n_ inl\n");
+        assert_eq!(lines.iter().filter(|token| token.kind == KIND_COMMENT).count(), 2);
+        assert!(lines.iter().any(|token| token.line == 2 && token.kind == KIND_KEYWORD && token.length == 1));
+        let bare = scan_tokens("//note\n// note\n");
+        assert!(bare.iter().any(|token| token.line == 0 && token.kind == KIND_UNARY && token.length == 2));
+        assert!(bare.iter().any(|token| token.line == 0 && token.kind == KIND_VARIABLE));
+        assert!(!bare.iter().any(|token| token.line == 0 && token.kind == KIND_COMMENT));
+        assert!(bare.iter().any(|token| token.line == 1 && token.kind == KIND_COMMENT));
+        let numbers = scan_tokens("true\n1_024i32\n-1i32\nx - y\nx-1\n.(+)\n");
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 4));
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 5));
+        assert!(numbers.iter().any(|token| token.kind == KIND_NUMBER && token.length == 2));
+        assert!(numbers.iter().any(|token| token.kind == KIND_OPERATOR));
+        assert!(numbers.iter().any(|token| token.kind == KIND_SYMBOL && token.length == 4));
+        let triple = scan_tokens("\"\"\"one\ntwo\"\"\"\nnext\n");
+        assert_eq!(triple.iter().filter(|token| token.kind == KIND_STRING).count(), 2);
+        assert!(triple.iter().all(|token| token.kind != KIND_STRING || token.line < 2));
+        assert!(triple.iter().any(|token| token.line == 2 && token.kind == KIND_VARIABLE));
+        let spaced_negative = scan_tokens("x -1\n");
+        assert!(spaced_negative.iter().any(|token| token.kind == KIND_NUMBER && token.length == 2));
+        assert!(!spaced_negative.iter().any(|token| token.kind == KIND_UNARY || token.kind == KIND_OPERATOR));
     }
 
     #[test]

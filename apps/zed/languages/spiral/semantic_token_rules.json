@@ -1,0 +1,30 @@
+[
+  {
+    "token_type": "symbol",
+    "style": ["property"]
+  },
+  {
+    "token_type": "unary_operator",
+    "style": ["operator"]
+  },
+  {
+    "token_type": "type_variable",
+    "style": ["type"]
+  },
+  {
+    "token_type": "escaped_char",
+    "style": ["string.escape", "operator"]
+  },
+  {
+    "token_type": "unescaped_char",
+    "style": ["string.escape", "property"]
+  },
+  {
+    "token_type": "number_suffix",
+    "style": ["keyword"]
+  },
+  {
+    "token_type": "escaped_var",
+    "style": ["keyword"]
+  }
+]

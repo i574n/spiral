@@ -1,43 +1,73 @@
 defmodule Spiral.Kino do
   alias Spiral.Kino.{
+    Cell,
     Directives,
-    Notebook,
     ProcessError,
     Result,
     Runner,
     SpiralError,
-    TimeoutError
+    TimeoutError,
+    Toolchain
   }
 
   @default_timeout 300_000
-  @log_tail 4_000
   @default_polyglot_root Path.expand("../../../../../polyglot", __DIR__)
 
   @spec run(String.t(), keyword()) :: {:ok, Result.t()} | {:error, Exception.t()}
   def run(code, opts \\ []) when is_binary(code) do
-    timeout = Keyword.get(opts, :timeout, @default_timeout)
-    validate_timeout!(timeout)
+    if String.trim(code) == "" do
+      {:ok, %Result{}}
+    else
+      timeout = opts[:timeout] || @default_timeout
+      validate_timeout!(timeout)
+      prepared = Directives.prepare(code, opts)
+      timeout = opts[:timeout] || prepared.timeout || timeout
+      started = System.monotonic_time(:millisecond)
 
-    source =
-      Directives.apply_options(
-        code,
-        Keyword.take(opts, [:backend, :builder_args, :print_code, :trace, :kernel_args])
-      )
+      deadline =
+        case timeout do
+          :infinity -> :infinity
+          ms -> started + ms
+        end
 
-    dib = Notebook.dib(source)
-    dir = tmp_dir()
-    dib_path = Path.join(dir, "cell.dib")
-    ipynb_path = Path.join(dir, "cell.dib.ipynb")
+      dir = tmp_dir()
 
-    try do
-      File.write!(dib_path, dib)
+      try do
+        spi = Path.join(dir, "main.spi")
+        rs = Path.join(dir, "main.rs")
+        exe = Path.join(dir, exe_name())
 
-      with {:ok, {exe, args, cd}} <- command(opts, dib_path, ipynb_path) do
-        Runner.run(exe, args, timeout: timeout, cd: cd, env: Keyword.get(opts, :env, []))
-        |> to_result(source, ipynb_path)
+        with {:ok, names} <- mount_packages(dir, prepared.packages, opts[:root]),
+             :ok <- write_package(dir, names),
+             :ok <- File.write(spi, prepared.code),
+             {:ok, rust, show_value} <- compile(dir, spi, rs, prepared, opts, timeout, deadline),
+             rust = Cell.patch_rust(rust, show_value),
+             :ok <- reject_unpatched(rust),
+             :ok <- File.write(rs, rust),
+             :ok <- rustc(rs, exe, opts, timeout, deadline),
+             {:ok, ran} <- execute(exe, opts, timeout, deadline) do
+          {value, stdout} = Cell.split_output(ran.output)
+
+          stdout =
+            if prepared.print_code do
+              rust <> if(stdout == "", do: "", else: "\n" <> stdout)
+            else
+              stdout
+            end
+
+          {:ok,
+           %Result{
+             value: value,
+             stdout: stdout,
+             source: File.read!(spi),
+             exit_status: ran.exit_status,
+             duration_ms: System.monotonic_time(:millisecond) - started
+           }}
+        end
+      after
+        unlink_mounted(dir, prepared.packages, opts[:root])
+        unless opts[:keep_files], do: File.rm_rf(dir)
       end
-    after
-      unless opts[:keep_files], do: File.rm_rf(dir)
     end
   end
 
@@ -61,6 +91,14 @@ defmodule Spiral.Kino do
     end
   end
 
+  @spec polyglot_root(keyword()) :: String.t()
+  def polyglot_root(opts \\ []) do
+    opts[:polyglot_root] ||
+      Application.get_env(:spiral_kino, :polyglot_root) ||
+      System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") ||
+      @default_polyglot_root
+  end
+
   defp show(%Result{stdout: stdout, html: html}) do
     if stdout != "" do
       IO.write(if String.ends_with?(stdout, "\n"), do: stdout, else: stdout <> "\n")
@@ -69,148 +107,234 @@ defmodule Spiral.Kino do
     Enum.each(html, &Kino.render(Kino.HTML.new(&1)))
   end
 
-  defp to_result({:error, {:timeout, %{output: output, timeout: timeout}}}, _source, _ipynb) do
-    {:error,
-     %TimeoutError{
-       message:
-         "Spiral cell timed out after #{format_ms(timeout)}; the process tree was killed. " <>
-           "Increase the timeout if the toolchain needs longer (a cold `dotnet repl` " <>
-           "start takes ~20s; Fable/cargo builds can take minutes).",
-       timeout: timeout,
-       output: output
-     }}
+  defp compile(dir, spi, rs, prepared, opts, timeout, deadline) do
+    compile(dir, spi, rs, prepared, opts, timeout, deadline, 1, true)
   end
 
-  defp to_result({:error, {:spawn_failed, reason}}, _source, _ipynb) do
-    {:error, %ProcessError{message: "could not start the Spiral runner: #{inspect(reason)}"}}
-  end
+  defp compile(dir, spi, rs, prepared, opts, timeout, deadline, attempt, show_value) do
+    case invoke(
+           opts[:compile],
+           %{source: File.read!(spi), spi_path: spi, rs_path: rs, attempt: attempt},
+           fn ->
+             compile_default(spi, rs, opts, timeout, deadline)
+           end
+         ) do
+      {:ok, rust} ->
+        {:ok, rust, show_value}
 
-  defp to_result({:error, {:runner_crashed, reason}}, _source, _ipynb) do
-    {:error, %ProcessError{message: "the Spiral runner crashed: #{inspect(reason)}"}}
-  end
+      {:error, %TimeoutError{} = error} ->
+        {:error, error}
 
-  defp to_result({:ok, run}, source, ipynb_path) do
-    log = Notebook.strip_ansi(run.output)
+      {:error, %ProcessError{} = error} ->
+        {:error, error}
 
-    with {:ok, json} <- read_notebook(ipynb_path, run, log),
-         {:ok, outputs} <- parse_notebook(json, run, log) do
-      result =
-        Result.from_outputs(outputs,
-          source: source,
-          exit_status: run.exit_status,
-          duration_ms: run.duration_ms,
-          log: log
-        )
-
-      case Enum.find(outputs, &match?({:error, _}, &1)) do
-        {:error, error} ->
-          {:error, %SpiralError{message: error.message, details: error.details, result: result}}
-
-        nil when run.exit_status != 0 ->
-          {:error, process_error("dotnet repl exited with status #{run.exit_status}", run, log)}
-
-        nil ->
-          {:ok, result}
-      end
-    end
-  end
-
-  defp read_notebook(path, run, log) do
-    case File.read(path) do
-      {:ok, json} ->
-        {:ok, json}
-
-      {:error, reason} ->
-        {:error,
-         process_error(
-           "dotnet repl (exit status #{run.exit_status}) wrote no notebook output " <>
-             "(#{:file.format_error(reason)})",
-           run,
-           log
-         )}
-    end
-  end
-
-  defp parse_notebook(json, run, log) do
-    case Notebook.parse_ipynb(json) do
-      {:ok, outputs} ->
-        {:ok, outputs}
-
-      {:error, reason} ->
-        {:error,
-         process_error(
-           "could not parse the notebook written by dotnet repl (#{inspect(reason)})",
-           run,
-           log <> "\n" <> json
-         )}
-    end
-  end
-
-  defp process_error(message, run, log) do
-    hint =
-      if String.contains?(log, "NoSuitableKernelException") do
-        "\n\nNo `spiral` kernel was found: `dotnet repl` resolved to a build without the " <>
-          "Spiral kernel. It must run from the polyglot checkout so that the local tool " <>
-          "manifest (.config/dotnet-tools.json, dotnet-repl fork) is used; check " <>
-          "`:polyglot_root` and run `dotnet tool restore` there."
-      else
-        ""
-      end
-
-    tail = String.slice(log, -@log_tail, @log_tail)
-
-    %ProcessError{
-      message: message <> hint <> if(tail != "", do: "\n\nOutput (tail):\n" <> tail, else: ""),
-      exit_status: run.exit_status,
-      output: log
-    }
-  end
-
-  defp command(opts, dib_path, ipynb_path) do
-    case opts[:command] do
-      fun when is_function(fun, 1) ->
-        {exe, args} = fun.(%{dib: dib_path, ipynb: ipynb_path})
-        {:ok, {exe, args, opts[:cd]}}
-
-      nil ->
-        root = polyglot_root(opts)
-        manifest = Path.join(root, ".config/dotnet-tools.json")
-
-        cond do
-          not File.regular?(manifest) ->
-            {:error,
-             %ProcessError{
-               message:
-                 "polyglot checkout not found at #{root} (no .config/dotnet-tools.json). " <>
-                   "Set the :polyglot_root option, the :spiral_kino, :polyglot_root app env " <>
-                   "or the SPIRAL_KINO_POLYGLOT_ROOT environment variable."
-             }}
-
-          dotnet = opts[:dotnet] || System.find_executable("dotnet") ->
-            args = [
-              "repl",
-              "--run",
-              dib_path,
-              "--output-path",
-              ipynb_path,
-              "--exit-after-run"
-            ]
-
-            {:ok, {dotnet, args, root}}
-
-          true ->
-            {:error, %ProcessError{message: "`dotnet` was not found on PATH"}}
+      {:error, output} ->
+        if attempt == 1 and prepared.generated_main and Cell.unit_result?(output) do
+          File.write!(spi, String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
+          compile(dir, spi, rs, prepared, opts, timeout, deadline, 2, false)
+        else
+          {:error, %SpiralError{message: clean(output, dir), details: File.read!(spi)}}
         end
     end
   end
 
-  @spec polyglot_root(keyword()) :: String.t()
-  def polyglot_root(opts \\ []) do
-    opts[:polyglot_root] ||
-      Application.get_env(:spiral_kino, :polyglot_root) ||
-      System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") ||
-      @default_polyglot_root
+  defp compile_default(spi, rs, opts, timeout, deadline) do
+    with :ok <- require_tool(Toolchain.dotnet(opts), "dotnet"),
+         :ok <- require_file(Toolchain.compiler_dll(opts), "Spiral compiler"),
+         :ok <-
+           require_file(
+             Path.join(Toolchain.package_dir(opts), "core/package.spiproj"),
+             "Spiral core package"
+           ) do
+      dotnet = Toolchain.dotnet(opts)
+
+      case Runner.run(dotnet, [Toolchain.compiler_dll(opts), "--backend", "Rust", spi, rs],
+             timeout: budget(deadline),
+             env: compiler_env(opts, dotnet)
+           ) do
+        {:ok, %{exit_status: 0}} ->
+          {:ok, File.read!(rs)}
+
+        {:ok, %{output: output}} ->
+          {:error, output}
+
+        {:error, {:timeout, info}} ->
+          {:error, timeout_error(info, timeout)}
+
+        {:error, reason} ->
+          {:error,
+           %ProcessError{message: "could not start the Spiral compiler: #{inspect(reason)}"}}
+      end
+    end
   end
+
+  defp rustc(rs, exe, opts, timeout, deadline) do
+    case invoke(opts[:rustc], %{rs_path: rs, exe_path: exe}, fn ->
+           rustc_default(rs, exe, opts, timeout, deadline)
+         end) do
+      :ok -> :ok
+      {:error, %TimeoutError{} = error} -> {:error, error}
+      {:error, %ProcessError{} = error} -> {:error, error}
+      {:error, output} -> {:error, %ProcessError{message: "rustc failed\n\n#{output}"}}
+    end
+  end
+
+  defp rustc_default(rs, exe, opts, timeout, deadline) do
+    with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
+      case Runner.run(Toolchain.rustc(opts), ["--edition", "2021", "-o", exe, rs],
+             timeout: budget(deadline)
+           ) do
+        {:ok, %{exit_status: 0}} -> :ok
+        {:ok, %{output: output}} -> {:error, output}
+        {:error, {:timeout, info}} -> {:error, timeout_error(info, timeout)}
+        {:error, reason} -> {:error, "could not start rustc: #{inspect(reason)}"}
+      end
+    end
+  end
+
+  defp execute(exe, opts, timeout, deadline) do
+    case invoke(opts[:execute], %{exe_path: exe}, fn ->
+           Runner.run(exe, [], timeout: budget(deadline), cd: Path.dirname(exe))
+         end) do
+      {:ok, ran} ->
+        {:ok, ran}
+
+      {:error, {:timeout, info}} ->
+        {:error, timeout_error(info, timeout)}
+
+      {:error, %TimeoutError{} = error} ->
+        {:error, error}
+
+      {:error, reason} ->
+        {:error, %ProcessError{message: "could not run the cell: #{inspect(reason)}"}}
+    end
+  end
+
+  defp invoke(nil, _ctx, default), do: default.()
+  defp invoke(fun, ctx, _default) when is_function(fun, 1), do: fun.(ctx)
+
+  defp compiler_env(opts, dotnet) do
+    [
+      {"DOTNET_ROOT", Path.dirname(dotnet)},
+      {"DOTNET_NOLOGO", "1"},
+      {"DOTNET_CLI_TELEMETRY_OPTOUT", "1"},
+      {"SPIRAL_WORKSPACE_ROOT", Toolchain.workspace(opts)},
+      {"SPIRAL_COMPILER_PACKAGE_DIR", Toolchain.package_dir(opts)}
+      | Keyword.get(opts, :env, [])
+    ]
+  end
+
+  defp require_tool(nil, name), do: {:error, %ProcessError{message: "`#{name}` was not found"}}
+  defp require_tool(path, name) when is_binary(path), do: require_file(path, name)
+
+  defp require_file(path, name) do
+    if File.regular?(path),
+      do: :ok,
+      else: {:error, %ProcessError{message: "#{name} was not found at #{path}"}}
+  end
+
+  defp reject_unpatched(rust) do
+    if String.contains?(rust, "emitRustExpr") do
+      {:error, %ProcessError{message: "generated Rust still calls emitRustExpr"}}
+    else
+      :ok
+    end
+  end
+
+  defp budget(:infinity), do: :infinity
+  defp budget(deadline), do: max(deadline - System.monotonic_time(:millisecond), 0)
+
+  defp timeout_error(%{output: output}, timeout) do
+    %TimeoutError{
+      message: "Spiral cell timed out after #{format_ms(timeout)}; the process tree was killed.",
+      timeout: timeout,
+      output: output
+    }
+  end
+
+  defp clean(output, dir) do
+    prefix = String.trim_trailing(Path.expand(dir), "/\\")
+
+    output
+    |> String.replace(prefix <> "/", "")
+    |> String.replace(prefix <> "\\", "")
+    |> String.replace(String.replace(prefix, "\\", "/"), "")
+    |> String.trim()
+  end
+
+  defp write_package(dir, names) do
+    File.write!(Path.join(dir, "package.spiproj"), Cell.package_project(names))
+    File.write!(Path.join(dir, "console.spi"), Cell.console_source())
+    :ok
+  end
+
+  defp mount_packages(_dir, [], _root), do: {:ok, []}
+
+  defp mount_packages(dir, paths, root) do
+    Enum.reduce_while(paths, {:ok, []}, fn path, {:ok, names} ->
+      target = resolve_package(path, root)
+      name = Path.basename(target)
+
+      cond do
+        name in ["", "console", "main"] ->
+          {:halt,
+           {:error, %ProcessError{message: "package name #{inspect(name)} clashes with the cell"}}}
+
+        name in names ->
+          {:halt, {:error, %ProcessError{message: "package #{name} is listed twice"}}}
+
+        not File.regular?(Path.join(target, "package.spiproj")) ->
+          {:halt, {:error, %ProcessError{message: "Spiral package was not found at #{target}"}}}
+
+        true ->
+          case make_link(Path.join(dir, name), target) do
+            :ok -> {:cont, {:ok, names ++ [name]}}
+            {:error, message} -> {:halt, {:error, %ProcessError{message: message}}}
+          end
+      end
+    end)
+  end
+
+  defp resolve_package(path, nil), do: Path.expand(path)
+  defp resolve_package(path, root), do: Path.expand(path, root)
+
+  defp make_link(link, target) do
+    case :os.type() do
+      {:win32, _} ->
+        {out, status} =
+          System.cmd("cmd", ["/c", "mklink", "/J", win_path(link), win_path(target)])
+
+        if status == 0, do: :ok, else: {:error, "could not link #{link}: #{String.trim(out)}"}
+
+      _ ->
+        case File.ln_s(target, link) do
+          :ok -> :ok
+          {:error, reason} -> {:error, "could not link #{link}: #{inspect(reason)}"}
+        end
+    end
+  end
+
+  defp unlink_mounted(dir, paths, root) do
+    Enum.each(paths, fn path ->
+      link = path |> resolve_package(root) |> Path.basename() |> then(&Path.join(dir, &1))
+      remove_link(link)
+    end)
+  end
+
+  defp remove_link(link) do
+    case :os.type() do
+      {:win32, _} ->
+        link = win_path(link)
+        if File.dir?(link), do: System.cmd("cmd", ["/c", "rmdir", link])
+
+      _ ->
+        File.rm(link)
+    end
+  end
+
+  defp win_path(path), do: String.replace(path, "/", "\\")
+
+  defp exe_name, do: if(match?({:win32, _}, :os.type()), do: "cell.exe", else: "cell")
 
   defp tmp_dir do
     dir =

@@ -1,0 +1,299 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+inl length (text : string) : i32 = sm.length text
+
+inl index (text : string) (i : i32) : char = sm.index text i
+
+inl starts_at (text : string) (i : i32) (pat : string) : bool =
+    inl n = length pat
+    if i < 0i32 then false
+    elif i + n > length text then false
+    elif n = 0i32 then true
+    else sm.slice text {from=i; to=i + n - 1i32} = pat
+
+inl starts_with (text : string) (pat : string) : bool = starts_at text 0i32 pat
+
+inl drop (text : string) (n : i32) : string =
+    inl len = length text
+    if n >= len then ""
+    elif n <= 0i32 then text
+    else sm.slice text {from=n; to=len - 1i32}
+
+inl slice_len (text : string) (from : i32) (n : i32) : string =
+    if n <= 0i32 then ""
+    elif from >= length text then ""
+    else
+        inl last = from + n - 1i32
+        inl end = if last >= length text then length text - 1i32 else last
+        if end < from then ""
+        else sm.slice text {from=from; to=end}
+
+inl take (text : string) (n : i32) : string =
+    inl len = length text
+    inl m = if n < len then n else len
+    if m <= 0i32 then ""
+    else sm.slice text {from=0i32; to=m - 1i32}
+
+let rec find_from (text : string) (pat : string) (i : i32) : i32 =
+    inl n = length pat
+    inl len = length text
+    if n = 0i32 then i
+    elif i + n > len then -1i32
+    elif starts_at text i pat then i
+    else find_from text pat (i + 1i32)
+
+inl contains (text : string) (pat : string) : bool = find_from text pat 0i32 >= 0i32
+
+let rec find_char (text : string) (i : i32) (ch : char) : i32 =
+    if i >= length text then -1i32
+    elif index text i = ch then i
+    else find_char text (i + 1i32) ch
+
+inl one (text : string) (i : i32) : string = sm.slice text {from=i; to=i}
+
+inl is_space (ch : char) : bool =
+    if ch = ' ' then true
+    elif ch = '\t' then true
+    elif ch = '\n' then true
+    elif ch = '\r' then true
+    else false
+
+let rec trim_start (text : string) (i : i32) : i32 =
+    if i >= length text then i
+    elif is_space (index text i) then trim_start text (i + 1i32)
+    else i
+
+let rec trim_end (text : string) (i : i32) : i32 =
+    if i <= 0i32 then 0i32
+    elif is_space (index text (i - 1i32)) then trim_end text (i - 1i32)
+    else i
+
+inl trim (text : string) : string =
+    inl a = trim_start text 0i32
+    inl b = trim_end text (length text)
+    if b <= a then ""
+    else sm.slice text {from=a; to=b - 1i32}
+
+let rec trim_nl_start (text : string) (i : i32) : i32 =
+    if i >= length text then i
+    elif index text i = '\n' then trim_nl_start text (i + 1i32)
+    else i
+
+let rec trim_nl_end (text : string) (i : i32) : i32 =
+    if i <= 0i32 then 0i32
+    elif index text (i - 1i32) = '\n' then trim_nl_end text (i - 1i32)
+    else i
+
+inl trim_newlines (text : string) : string =
+    inl a = trim_nl_start text 0i32
+    inl b = trim_nl_end text (length text)
+    if b <= a then ""
+    else sm.slice text {from=a; to=b - 1i32}
+
+inl trim_trailing_newlines (text : string) : string =
+    inl b = trim_nl_end text (length text)
+    if b <= 0i32 then ""
+    elif b = length text then text
+    else sm.slice text {from=0i32; to=b - 1i32}
+
+inl trim_cr (text : string) : string =
+    if length text = 0i32 then ""
+    elif index text (length text - 1i32) = '\r' then take text (length text - 1i32)
+    else text
+
+inl blank (text : string) : bool = trim text = ""
+
+inl digit (n : i32) : string =
+    if n = 0i32 then "0"
+    elif n = 1i32 then "1"
+    elif n = 2i32 then "2"
+    elif n = 3i32 then "3"
+    elif n = 4i32 then "4"
+    elif n = 5i32 then "5"
+    elif n = 6i32 then "6"
+    elif n = 7i32 then "7"
+    elif n = 8i32 then "8"
+    elif n = 9i32 then "9"
+    else "0"
+
+let rec show_i32 (n : i32) : string =
+    if n < 0i32 then "-" ++ show_i32 (0i32 - n)
+    elif n < 10i32 then digit n
+    else show_i32 (n / 10i32) ++ digit (n % 10i32)
+
+inl digit_val (ch : char) : i32 =
+    if ch = '0' then 0i32
+    elif ch = '1' then 1i32
+    elif ch = '2' then 2i32
+    elif ch = '3' then 3i32
+    elif ch = '4' then 4i32
+    elif ch = '5' then 5i32
+    elif ch = '6' then 6i32
+    elif ch = '7' then 7i32
+    elif ch = '8' then 8i32
+    elif ch = '9' then 9i32
+    else -1i32
+
+let rec parse_acc (text : string) (i : i32) (acc : i32) (any : i32) : i32 =
+    if i >= length text then
+        if any = 1i32 then acc else -1i32
+    else
+        inl v = digit_val (index text i)
+        if v < 0i32 then -1i32
+        else parse_acc text (i + 1i32) (acc * 10i32 + v) 1i32
+
+inl parse_i32 (text : string) : i32 = parse_acc text 0i32 0i32 0i32
+
+let rec skip_spaces (text : string) (i : i32) : i32 =
+    if i < length text && index text i = ' ' then skip_spaces text (i + 1i32) else i
+
+let rec has_char (pat : string) (i : i32) (ch : char) : bool =
+    if i >= length pat then false
+    elif index pat i = ch then true
+    else has_char pat (i + 1i32) ch
+
+inl ident_set () : string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_'"
+
+inl letter_set () : string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+inl ident_char (ch : char) : bool = has_char (ident_set ()) 0i32 ch
+
+inl is_letter (ch : char) : bool = has_char (letter_set ()) 0i32 ch
+
+inl name_char (ch : char) : bool =
+    if ch = '~' then true
+    elif ch = '(' then true
+    else ident_char ch
+
+let rec take_name (text : string) (i : i32) : i32 =
+    if i < length text && name_char (index text i) then take_name text (i + 1i32) else i
+
+let rec take_ident (text : string) (i : i32) : i32 =
+    if i < length text && ident_char (index text i) then take_ident text (i + 1i32) else i
+
+let rec take_spaces_or_brace (text : string) (i : i32) : i32 =
+    if i >= length text then i
+    else
+        inl ch = index text i
+        if ch = ' ' || ch = '}' then take_spaces_or_brace text (i + 1i32) else i
+
+inl function_tail (text : string) (i : i32) : bool =
+    inl j = skip_spaces text i
+    if j > i && starts_at text j "function" then true else false
+
+inl eq_at (text : string) (i : i32) : bool =
+    inl j = skip_spaces text i
+    if j > i && j < length text then
+        inl ch = index text j
+        if ch = ':' || ch = '=' then function_tail text (j + 1i32) = false
+        else false
+    else false
+
+let rec take_tilde_word (text : string) (i : i32) : i32 =
+    if i >= length text then -1i32
+    else
+        inl ch = index text i
+        if ch = '~' || ident_char ch then
+            take_ident text (i + 1i32)
+        else -1i32
+
+inl group_word (text : string) (i : i32) : i32 =
+    if i >= length text || ident_char (index text i) = false then -1i32
+    else
+        inl j = take_ident text (i + 1i32)
+        inl k = take_spaces_or_brace text j
+        if k < length text && index text k = '&' then
+            inl m = skip_spaces text (k + 1i32)
+            if m < length text && ident_char (index text m) then take_ident text (m + 1i32) else k
+        else k
+
+inl group_paren (text : string) (i : i32) : i32 =
+    inl j = skip_spaces text i
+    inl k = take_tilde_word text j
+    if k >= 0i32 && k < length text && index text k = ')' then k + 1i32 else -1i32
+
+inl group_comma (text : string) (i : i32) : i32 =
+    if i >= length text || index text i <> ',' then -1i32
+    else take_tilde_word text (skip_spaces text (i + 1i32))
+
+inl is_value_binding (line : string) : bool =
+    inl origin =
+        if starts_at line 0i32 "and " then skip_spaces line 3i32 else 0i32
+    inl after =
+        if starts_at line origin "inl" || starts_at line origin "let" then
+            inl k = origin + 3i32
+            if k < length line && index line k = ' ' then skip_spaces line k else -1i32
+        else -1i32
+    if after < 0i32 then false
+    else
+        inl named = take_name line after
+        if named = after then false
+        elif eq_at line named then true
+        else
+            inl word = group_word line named
+            if word >= 0i32 && eq_at line word then true
+            else
+                inl paren = group_paren line named
+                if paren >= 0i32 && eq_at line paren then true
+                else
+                    inl comma = group_comma line named
+                    if comma >= 0i32 && eq_at line comma then true else false
+
+union line_step =
+    | LineDone
+    | LineGot : string * i32
+
+inl next_line (text : string) (i : i32) : line_step =
+    inl len = length text
+    if i > len then LineDone
+    elif len = 0i32 && i = 0i32 then LineGot ("", 1i32)
+    elif i = len then
+        if len > 0i32 && index text (len - 1i32) = '\n' then LineGot ("", len + 1i32)
+        else LineDone
+    else
+        inl nl = find_char text i '\n'
+        if nl < 0i32 then LineGot (sm.slice text {from=i; to=len - 1i32}, len)
+        elif nl = i then LineGot ("", nl + 1i32)
+        else LineGot (sm.slice text {from=i; to=nl - 1i32}, nl + 1i32)
+
+let rec replace_from (text : string) (pat : string) (repl : string) (i : i32) : string =
+    inl at = find_from text pat i
+    if at < 0i32 then
+        if i = 0i32 then text else drop text i
+    else
+        inl skip = at + length pat
+        take (drop text i) (at - i) ++ repl ++ replace_from text pat repl skip
+
+inl replace (text : string) (pat : string) (repl : string) : string =
+    if pat = "" then text else replace_from text pat repl 0i32
+
+let rec newlines (n : i32) : string =
+    if n <= 0i32 then ""
+    else "\n" ++ newlines (n - 1i32)
+
+let rec collapse_at (text : string) (i : i32) (run : i32) (acc : string) : string =
+    if i >= length text then
+        if run >= 3i32 then acc ++ "\n\n"
+        else acc ++ newlines run
+    elif index text i = '\n' then collapse_at text (i + 1i32) (run + 1i32) acc
+    else
+        inl acc2 = if run >= 3i32 then acc ++ "\n\n" else acc ++ newlines run
+        collapse_at text (i + 1i32) 0i32 (acc2 ++ one text i)
+
+inl collapse_newlines (text : string) : string = collapse_at text 0i32 0i32 ""
+
+inl ensure_nl (text : string) : string =
+    if length text = 0i32 then "\n"
+    elif index text (length text - 1i32) = '\n' then text
+    else text ++ "\n"
+
+let rec indent_names (text : string) (i : i32) (acc : string) : string =
+    match next_line text i with
+    | LineDone => acc
+    | LineGot (line, next) =>
+        if line = "" then indent_names text next acc
+        else indent_names text next (acc ++ "    " ++ line ++ "-\n")
+
+inl err (kind : string) (payload : string) : string = "error\n" ++ kind ++ "\n" ++ payload
+
+inl is_error (text : string) : bool = starts_with text "error\n"

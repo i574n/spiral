@@ -8,16 +8,12 @@ Mix.install([
 
 ## Running Spiral
 
-Insert a cell with **+ Smart → Spiral**. Write Spiral code in the editor; the form above it
-picks the backend, the timeout and whether to show the generated code. The cell compiles
-and runs the code through the Spiral .NET Interactive kernel (the polyglot fork of
-`dotnet repl`); program output, the value of the last expression and compile errors show
-up in the cell.
+Insert a cell with **+ Smart → Spiral**. The form sets the timeout and whether to show
+the generated Rust. The cell compiles with the single-flight Spiral compiler's Rust
+backend, `rustc` builds that file, and the program runs. Output, the `i32` value, and
+compile errors show up in the cell.
 
-The default backend compiles to F# and evaluates it, showing the value of the last
-expression:
-
-<!-- livebook:{"attrs":{"backend":"fsharp","builder_args":"","print_code":false,"source":"inl square x = x * x\n\nconsole.write_line \"Hello from Spiral!\"\nsquare 7i32\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"print_code":false,"source":"inl square x = x * x\n\nconsole.write_line \"Hello from Spiral!\"\nsquare 7i32\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -31,47 +27,42 @@ Spiral.Kino.eval!(
 )
 ```
 
-With **Show generated code** the generated F# is printed before the program output:
+With **Show generated Rust** the patched Rust is printed before the program output:
 
-<!-- livebook:{"attrs":{"backend":"fsharp","builder_args":"","print_code":true,"source":"inl fib (n : i32) : i32 =\n    let rec loop (a : i32) (b : i32) (n : i32) : i32 =\n        if n <= 0 then a else loop b (a + b) (n - 1)\n    loop 0 1 n\n\nfib 20\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"print_code":true,"source":"inl square x = x * x\n\nsquare 7i32\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  inl fib (n : i32) : i32 =
-      let rec loop (a : i32) (b : i32) (n : i32) : i32 =
-          if n <= 0 then a else loop b (a + b) (n - 1)
-      loop 0 1 n
+  inl square x = x * x
 
-  fib 20
+  square 7i32
   """,
   timeout: 300000,
   print_code: true
 )
 ```
 
-Other backends are selected in the form (or with `///>` lines in the code). Builder backends
-report the output of the generated program:
+A body that returns `()` is compiled again with `0i32` so the print still runs. That cell
+has output and no value:
 
-<!-- livebook:{"attrs":{"backend":"lua","builder_args":"","print_code":false,"source":"console.write_line \"Hello from Lua!\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"print_code":false,"source":"console.write_line \"Hello from Spiral!\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  console.write_line "Hello from Lua!"
+  console.write_line "Hello from Spiral!"
   """,
-  backend: "lua",
   timeout: 300000
 )
 ```
 
-Directives can also be written directly in the code; they are merged with the form
-options. Only the first `///-` line is read by the kernel, and every `///>` line adds a
-backend. A `////>` line is disabled.
+`///- --print-code` and `///- --timeout <ms>` on the first `///-` line are honored.
+`///> rust` is accepted. Any other `///>` backend raises. A `////` line is dropped.
 
 ## Programmatic use
 
-`Spiral.Kino.run/2` returns a `Spiral.Kino.Result` instead of rendering:
+`Spiral.Kino.run/2` returns a `Spiral.Kino.Result`:
 
 ```elixir
 {:ok, result} = Spiral.Kino.run("1i32 + 2i32", timeout: 120_000)
@@ -80,10 +71,10 @@ result.value
 
 ## Errors
 
-Compile errors are raised as `Spiral.Kino.SpiralError` (positions refer to the kernel's
-wrapped `main.spi`):
+Compile errors are raised as `Spiral.Kino.SpiralError`. Positions refer to the wrapped
+`main.spi`:
 
-<!-- livebook:{"attrs":{"backend":"fsharp","builder_args":"","print_code":false,"source":"1i32 + \"a\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
+<!-- livebook:{"attrs":{"print_code":false,"source":"1i32 + \"a\"\n","timeout":300},"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(

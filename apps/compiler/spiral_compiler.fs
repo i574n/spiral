@@ -177055,6 +177055,9 @@ module spiral_compiler =
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let functions = ResizeArray()
+        let exports = ResizeArray<string>()
+        let closure_of_var = Dictionary<int, int>()
+        let export_names = HashSet<string>()
 
         let print is_type show r =
             let s = {text=StringBuilder(); indent=0}
@@ -177245,6 +177248,11 @@ module spiral_compiler =
                     binds (indent (indent s)) fl
                 line (indent s) "}"
                 line s "}"
+            | TyJoinPoint(JPClosure(a,c) as a',args) ->
+                match d with
+                | Some (DV(L(i,_))) when args.Length = 0 -> closure_of_var.[i] <- (closure (a,c)).tag
+                | _ -> ()
+                simple (jp (a', args))
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Gleam backend does not support nesting other backends."
             | TyWhile(a, b) ->
@@ -177421,6 +177429,26 @@ module spiral_compiler =
                         |> fun c -> $"{c |> SpiralSm.ellipsis 1000}\n"
                     $"{call} {comment}"
                 |> simple
+            | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
+                if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
+                let tag =
+                    match closure_of_var.TryGetValue i with
+                    | true, tag -> tag
+                    | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
+                let parameters = env.ty_to_data domain |> data_free_vars
+                let decl = parameters |> Array.map (fun (L(k,t)) -> sprintf "v%i: %s" k (tyv t)) |> String.concat ", "
+                let call =
+                    match parameters with
+                    | [||] -> "Nil"
+                    | [|L(k,_)|] -> sprintf "v%i" k
+                    | ps -> ps |> Array.map (fun (L(k,_)) -> sprintf "v%i" k) |> String.concat ", " |> sprintf "#(%s)"
+                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n  closure{tag}(Nil)({call})\n}}\n")
+                match d with
+                | None -> line s "let _ = Nil"
+                | Some bound ->
+                    match free_vars false bound |> SpiralSm.trim with
+                    | "Nil" -> line s "let _ = Nil"
+                    | bound_name -> line s (sprintf "let %s = Nil" bound_name)
             | TyOp(Global, [DLit (LitString x)]) -> global' x
             | TyOp(op,l) ->
                 let dot = function
@@ -177430,6 +177458,7 @@ module spiral_compiler =
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | StaticStringConcat, [a;b] -> sprintf "{ %s } <> { %s }" (tup a) (tup b)
                 | StringIndex, [a;b] ->
                     global' "import gleam/string"
                     sprintf "%s |> string.slice(%s, 1)" (tup a) (tup b)
@@ -177557,7 +177586,7 @@ module spiral_compiler =
             jp
                 (fun ((jp_body, key & (C(args, _, fun_ty))), i) ->
                 match fun_ty with
-                | YFun (domain, range, FT_Vanilla) ->
+                | YFun (domain, range, _) ->
                     match codegenClosureBody env "Gleam" jp_body key with
                     | domain_args, body ->
                         {   tag = i
@@ -177565,8 +177594,6 @@ module spiral_compiler =
                             domain_args = data_free_vars domain_args
                             range = range
                             body = body }
-                | YFun (_, _, _) ->
-                    raise_codegen_error "Non-standard functions are not supported in the Gleam backend."
                 | _ ->
                     raise_codegen_error "Compiler error: Unexpected type in the closure join point.")
                 (fun s x ->
@@ -177634,6 +177661,7 @@ module spiral_compiler =
         env.globals |> Seq.distinct |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
+        exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
         program.Append($"pub fn main () {{ {main} }}").ToString()
 
     /// ## CodegenLua
@@ -190250,7 +190278,7 @@ module spiral_compiler =
                     | BuildSkip ->
                         trace Info (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result.BuildSkip") _locals
                         IVar.fill res None
-                let file_build (s : SupervisorState) mid (tc : ProjStateTC, prepass : ProjStatePrepass) =
+                let file_build (s : SupervisorState) pdir mid (tc : ProjStateTC, prepass : ProjStatePrepass) =
                     trace Verbose (fun () -> $"""Supervisor.supervisor_server.BuildFile.file_build / modules: %A{s.modules.Keys |> SpiralSm.concat ", "} / packages: %A{s.packages.Keys |> SpiralSm.concat ", "} / package_ids: %A{s.package_ids |> fst |> fun x -> x.Keys |> SpiralSm.concat ", "}""") _locals
                     let a,b = tc.files.uids_file.[mid]
                     let x,_x = prepass.files.uids_file.[mid]
@@ -190262,20 +190290,48 @@ module spiral_compiler =
                         if has_error || has_error' then
                             // The editor gets the typer's errors from the attention loop; a batch build only gets this
                             // message, so it carries the package's errors itself.
-                            // Every package's files, the entry's first: the error is often in a dependency.
+                            // The files of the entry's package and its dependencies, the entry's first: the error is
+                            // often in a dependency. Not every package this supervisor ever loaded: a long-lived host
+                            // (polyglot's Supervisor) accumulates packages, including ones whose directories were
+                            // deleted after their build, and folding their streams kept a type-error build from ever
+                            // replying (Supervisor.dib's type-error tests timed out; alone the same build replied in
+                            // 5 s). A batch host (one process per compile) loads exactly these packages anyway.
+                            // A package state that was reset holds null slots in uids_file (Array.zeroCreate): skip them.
                             let rec files (tc : ProjStateTC) x acc =
                                 match x with
-                                | ProjFilesTree.File(mid,path,_) -> (path, (fst tc.files.uids_file.[mid]).result) :: acc
+                                | ProjFilesTree.File(mid,path,_) ->
+                                    let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                    if isNull (box slot) || isNull (box (fst slot)) then acc
+                                    else (path, (fst slot).result) :: acc
                                 | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc) l acc
                             let states =
                                 let seen = HashSet<obj>(HashIdentity.Reference)
-                                tc :: (Seq.append s.packages_infer.ok.Values s.packages_infer.error.Values |> List.ofSeq)
+                                let dependencies, _ = topological_sort' (fst s.graph) [pdir]
+                                let state_of pdir' =
+                                    Map.tryFind pdir' (fst s.package_ids) |> Option.bind (fun uid ->
+                                        match Map.tryFind uid s.packages_infer.ok with
+                                        | Some state -> Some state
+                                        | None -> Map.tryFind uid s.packages_infer.error)
+                                tc :: (dependencies |> Seq.choose state_of |> List.ofSeq)
                                 |> List.filter (fun state -> seen.Add (box state))
-                            states |> List.collect (fun state -> List.foldBack (files state) state.files.files.tree [])
-                            |> List.map (fun (path,result) ->
-                                Stream.foldFun (fun s (_,x : InferResult,_) -> s @ x.errors) [] result >>- fun errors ->
-                                errors |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
-                            |> Job.seqCollect
+                            // Read only the part of each file's result stream that is already there: a stream can
+                            // never end (another version of a package, a file the entry does not reach), and folding
+                            // it to the end hung the build here after type checking had finished (Supervisor.dib's
+                            // type-error tests, in a long session; the hopac core's FRONTIER.md fix 33).
+                            let rec availableErrors acc (stream : Stream<_>) =
+                                if Promise.Now.isFulfilled stream then
+                                    match Promise.Now.get stream with
+                                    | Hopac.Stream.Cons((_, x : InferResult, _), next) -> availableErrors (acc @ x.errors) next
+                                    | Hopac.Stream.Nil -> acc
+                                else acc
+                            let errors =
+                                try
+                                    states |> List.collect (fun state -> List.foldBack (files state) state.files.files.tree [])
+                                    |> List.map (fun (path,result) ->
+                                        availableErrors [] result
+                                        |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
+                                with ex -> [[$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"]]
+                            Job.result errors
                             >>= fun errors ->
                                 let details = errors |> Seq.concat |> String.concat "\n"
                                 let details = if details = "" then "" else $"\n{details}"
@@ -190378,7 +190434,7 @@ module spiral_compiler =
                             | ProjFilesTree.Directory(_,_,l) -> list l
                             | ProjFilesTree.File(mid,path,_) ->
                                 trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_find.loop | File(mid,path,_) / path: {path}") _locals
-                                if file = path then file_build s mid (a, b); true else false
+                                if file = path then file_build s pdir mid (a, b); true else false
                         and list l = List.exists loop l
                         if list b.files.files.tree = false then fatal $"File {Path.GetFileNameWithoutExtension file} cannot be found in the project {spiproj_suffix pdir}"
 
@@ -190545,7 +190601,14 @@ module spiral_compiler =
         let atten = Ch()
     
 
-        do HopacExtensions.server (attention_server errors atten)
+        // The attention loop serves an editor: it walks every file's type checker stream to push per-file
+        // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
+        // BuildFile instead, and there the walk kept ~4 cores busy for good after a build. That host sets
+        // SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile) keep the loop.
+        if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
+            HopacExtensions.server (Job.forever (Ch.take atten |> Job.Ignore))
+        else
+            HopacExtensions.server (attention_server errors atten)
     
 
         let args = [| "--port"; "0" |]
@@ -190693,7 +190756,15 @@ module spiral_compiler =
         let supervisor = Ch()
         let atten = Ch()
 
-        do Hopac.server (attention_server errors atten)
+        // The attention loop serves an editor: it walks every file's type checker stream to push per-file
+        // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
+        // BuildFile instead, and there the walk kept ~4 cores busy for good after a build (a Supervisor.dib run
+        // spun 3.5 h). That host sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process
+        // per compile, like tmp/compiler/host) keep the loop, whose diagnostics they render.
+        if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
+            Hopac.server (Job.forever (Ch.take atten |> Job.Ignore))
+        else
+            Hopac.server (attention_server errors atten)
 
         let args = [| "--port"; "0" |]
         let env = startupParse args

@@ -1,0 +1,8 @@
+packages:
+    |core-
+modules:
+    text
+    cell
+    directives
+    document
+    main

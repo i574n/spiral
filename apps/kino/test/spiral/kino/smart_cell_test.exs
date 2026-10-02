@@ -25,48 +25,26 @@ defmodule Spiral.Kino.SmartCellTest do
   end
 
   describe "to_source/1" do
-    test "default backend, only the timeout is emitted" do
+    test "emits the timeout" do
       source = SmartCell.to_source(%{"source" => "1i32 + 2\n", "timeout" => 60})
-
-      assert source ==
-               Enum.join(
-                 [
-                   "Spiral.Kino.eval!(",
-                   ~s(  ~S"""),
-                   "  1i32 + 2",
-                   ~s(  """,),
-                   "  timeout: 60000",
-                   ")"
-                 ],
-                 "\n"
-               )
 
       assert eval_source(source) == {"1i32 + 2\n", [timeout: 60_000]}
     end
 
-    test "all options" do
+    test "print_code is emitted only when set" do
       attrs = %{
         "source" => "console.write_line \"hi\"\n",
-        "backend" => "rust",
-        "builder_args" => " -d chrono ",
         "timeout" => "120",
         "print_code" => true
       }
 
       assert eval_source(SmartCell.to_source(attrs)) ==
-               {"console.write_line \"hi\"\n",
-                [backend: "rust", builder_args: "-d chrono", timeout: 120_000, print_code: true]}
+               {"console.write_line \"hi\"\n", [timeout: 120_000, print_code: true]}
     end
 
-    test "builder args are dropped for the default backend; bad values fall back" do
-      attrs = %{
-        "source" => "x",
-        "backend" => "nope",
-        "builder_args" => "-d x",
-        "timeout" => "abc"
-      }
-
-      assert eval_source(SmartCell.to_source(attrs)) == {"x\n", [timeout: 300_000]}
+    test "a bad timeout falls back to 300 seconds" do
+      assert eval_source(SmartCell.to_source(%{"source" => "x", "timeout" => "abc"})) ==
+               {"x\n", [timeout: 300_000]}
     end
 
     test "empty source generates no code" do
@@ -74,7 +52,7 @@ defmodule Spiral.Kino.SmartCellTest do
       assert SmartCell.to_source(%{}) == ""
     end
 
-    test "round-trips tricky code exactly (heredoc path)" do
+    test "round-trips tricky code exactly" do
       code =
         Enum.join(
           [
@@ -94,7 +72,7 @@ defmodule Spiral.Kino.SmartCellTest do
       assert {^heredoc_code, _} = eval_source(SmartCell.to_source(%{"source" => heredoc_code}))
     end
 
-    test "round-trips code containing triple quotes and CR (escaped path)" do
+    test "round-trips code containing triple quotes and CR" do
       code = ~s(inl s = """x"""\r\n#{"\#{y}"} \\ end)
       source = SmartCell.to_source(%{"source" => code})
       refute source =~ ~s(~S""")
@@ -109,8 +87,8 @@ defmodule Spiral.Kino.SmartCellTest do
       source =
         SmartCell.to_source(%{
           "source" => "inl x = 1i32\n\nx\n",
-          "backend" => "lua",
-          "timeout" => 30
+          "timeout" => 30,
+          "print_code" => true
         })
 
       assert Code.format_string!(source) |> IO.iodata_to_binary() == source
@@ -118,40 +96,30 @@ defmodule Spiral.Kino.SmartCellTest do
   end
 
   describe "cell lifecycle" do
-    test "starts with defaults and a sample program" do
+    test "starts with the sample program" do
       {kino, source} = start_smart_cell!(SmartCell, %{})
 
       assert source =~ "Spiral.Kino.eval!("
       assert source =~ "square 7i32"
-
-      assert %{fields: fields, backends: backends} = connect(kino)
+      assert %{fields: fields} = connect(kino)
 
       assert fields == %{
-               "backend" => "fsharp",
-               "builder_args" => "",
                "timeout" => 300,
                "print_code" => false
              }
-
-      assert Enum.map(backends, & &1.id) == Spiral.Kino.Directives.backend_ids()
     end
 
-    test "restores attrs, reacts to UI events and editor changes" do
-      attrs = %{"source" => "1i32", "backend" => "lua", "timeout" => 10}
+    test "restores attrs and follows the editor" do
+      attrs = %{"source" => "1i32", "timeout" => 10, "print_code" => true}
       {kino, _source} = start_smart_cell!(SmartCell, attrs)
-
-      push_event(kino, "update_field", %{"field" => "backend", "value" => "gleam"})
-      assert_broadcast_event(kino, "update", %{"fields" => %{"backend" => "gleam"}})
-      assert_smart_cell_update(kino, %{"backend" => "gleam", "source" => "1i32"}, source)
-      assert source =~ ~s(backend: "gleam")
 
       push_event(kino, "update_field", %{"field" => "timeout", "value" => "42"})
       assert_smart_cell_update(kino, %{"timeout" => 42}, source)
       assert source =~ "timeout: 42000"
 
-      push_event(kino, "update_field", %{"field" => "print_code", "value" => true})
-      assert_smart_cell_update(kino, %{"print_code" => true}, source)
-      assert source =~ "print_code: true"
+      push_event(kino, "update_field", %{"field" => "print_code", "value" => false})
+      assert_smart_cell_update(kino, %{"print_code" => false}, source)
+      refute source =~ "print_code"
 
       push_smart_cell_editor_source(kino, "2i32")
       assert_smart_cell_update(kino, %{"source" => "2i32"}, source)
