@@ -1,3 +1,0 @@
-inl main () : i32 =
-    inl value = codec_u64_decimal_normalize "477"
-    if (=.) value "477" then 0i32 else 1i32

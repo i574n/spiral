@@ -34,33 +34,49 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++#? (c' ())
+    // An escape and the char after it, as written: a slice of the input (formatting the two chars into a string costs
+    // several allocations on native Rust).
+    inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>
+        match p (t, i, s) with
+        | Ok (_, i', s') => Ok (t |> slice i i', i', s')
+        | Error e => Error e
+    inl p_esc_char c = p_char c >>. any_char () |> p_esc_pair
     inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
-    inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
+    inl p_plain = special ++ [ ' ' ] |> many1_none_of
     inl p_esc = esc |> listm.map p_esc_char |> choice
-    inl p_quoted = (p_word <|> p_esc) |> many_strings
+    inl p_chunk = special |> many1_none_of
+    inl p_quoted = (p_chunk <|> p_esc) |> many_strings
     inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
     inl p_esc_root = p_esc >>% "" >>. p_word |> many |>> fun s => fun () => s () |> sm'.concat_list ""
     inl p_esc_quote_delim =
         esc
         |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
         |> choice
-    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |>> fun c' => fun () => #?c ++#? (c' ())
+    inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |> p_esc_pair
     inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
-    inl p_quoted_esc = (p_word <|> p_esc_noquote) |> many_strings
+    inl p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings
     inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
     inl ensure_progress p : parser _ = fun input, i, s =>
         match p (input, i, s) with
         | Ok (r, i', s') when i' = i =>
-            fun () => "runtime.split_args / segment zero-length success"
-            |> Error
+            fail (fun _ => "runtime.split_args / segment zero-length success") i s
         | other => other
     inl p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
     inl p_content = p_segment |> many1_strings
     inl p_args = spaces1 () |> sep_by p_content
     args
     |> run_parser p_args
-    |> resultm.map (fst >> listm'.box >> listm'.to_array')
+    |> resultm.map (fst >> fun (args : list string) =>
+        if rust.is_native () then
+            // one Vec of the right size (`listm'.box >> listm'.to_array'` fills and then copies it twice)
+            inl n = (0i32, args) ||> listm.fold fun n _ => n + 1
+            inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
+            inl _ : i32 = (0i32, args) ||> listm.fold fun n (x : string) =>
+                $'!acc.borrow_mut().push(!x)' : ()
+                n + 1
+            acc
+        else args |> listm'.box |> listm'.to_array'
+    )
     |> resultm.map_error eval
 
 #!spiral
@@ -71,7 +87,6 @@ let split_args (args : string) : result (array_base string) _ =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 Debug |> set_trace_level
 [
@@ -144,7 +159,6 @@ let split_command (command : string) : result (string * option string) _ =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 Debug |> set_trace_level
 [
@@ -201,6 +215,7 @@ nominal process_child =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end") : () -> ()
         }
         $'' : $'std_process_Child'
     )
@@ -215,6 +230,7 @@ nominal process_child_stdin =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end") : () -> ()
         }
         $'' : $'std_process_ChildStdin'
     )
@@ -274,6 +290,7 @@ nominal process_child_stderr =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end") : () -> ()
         }
         $'' : $'std_process_ChildStderr'
     )
@@ -294,6 +311,7 @@ nominal process_child_stdout =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end") : () -> ()
         }
         $'' : $'std_process_ChildStdout'
     )
@@ -314,6 +332,7 @@ nominal process_command =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end") : () -> ()
         }
         $'' : $'std_process_Command'
     )
@@ -328,6 +347,7 @@ nominal process_stdio =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end") : () -> ()
         }
         $'' : $'std_process_Stdio'
     )
@@ -342,6 +362,7 @@ nominal process_output =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end") : () -> ()
         }
         $'' : $'std_process_Output'
     )
@@ -356,6 +377,7 @@ nominal process_exit_status =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end") : () -> ()
         }
         $'' : $'std_process_ExitStatus'
     )
@@ -403,10 +425,17 @@ inl process_exit_status_code (status : process_exit_status) : optionm'.option' i
 #!spiral
 
 inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : string) : () =
-    inl stream = text |> sm'.as_bytes
-    inl stdin = join stdin
-    (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
-    (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
+    backend_switch {
+        Fsharp = fun () =>
+            inl stream = text |> sm'.as_bytes
+            inl stdin = join stdin
+            (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+            (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
+        // Native Rust: no join (a join point would clone the MutexGuard, which is not Clone).
+        Rust = fun () =>
+            inl stream = text |> sm'.as_bytes
+            (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
+    }
 
 #!markdown
 
@@ -415,9 +444,14 @@ inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : 
 #!spiral
 
 inl stdin_flush (stdin : threading.mutex_guard process_child_stdin) : () =
-    inl stdin = join stdin
-    (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
-    (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+    backend_switch {
+        Fsharp = fun () =>
+            inl stdin = join stdin
+            (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+            (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+        Rust = fun () =>
+            (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+    }
 
 #!markdown
 
@@ -587,6 +621,41 @@ inl stdio_line
 
 #!markdown
 
+### stdio_line_native
+
+#!spiral
+
+// Native Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not
+// `Send`); returns the text to accumulate. The reader threads already formatted io errors.
+inl stdio_line_native
+    (stdio : result () ())
+    (trace' : bool)
+    (line : resultm.result' sm'.std_string sm'.std_string)
+    : sm'.std_string
+    =
+    inl highlight text =
+        $'$"\\u001b[4;7m{!text}\\u001b[0m"'
+    match line |> resultm.unbox' with
+    | Ok line =>
+        inl line_log = line |> rust.clone |> sm'.from_std_string
+        inl text =
+            match stdio with
+            | Ok () => $'$"> {!line_log}"'
+            | Error () => $'$"\! {!line_log}"'
+        if trace'
+        then trace Verbose (fun () => text) id
+        else text |> console.write_line
+        match stdio with
+        | Ok () => line
+        | Error () => line |> highlight |> sm'.to_std_string
+    | Error e =>
+        trace Critical
+            fun () => "runtime.stdio_line"
+            fun () => { trace' e }
+        e |> highlight |> sm'.to_std_string
+
+#!markdown
+
 ### command
 
 #!spiral
@@ -642,7 +711,7 @@ inl new_arg (s : rust.static_ref sm'.str) : arg =
 ///- --test
 ///> rust -d clap
 
-##"arg"
+###"arg"
 |> new_arg
 |> sm'.format_pretty
 |> _assert sm'.contains "\"arg\""
@@ -682,7 +751,8 @@ inl arg_require_equals (value : bool) (arg : arg) : arg =
 
 inl arg_default_value (value : string) (arg : arg) : arg =
     inl value = #value
-    !\\((arg, value), $'"$0.default_value($1)"')
+    // clap keeps the default for the program's lifetime: default_value wants a 'static str.
+    !\\((arg, value), $'"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))"')
 
 #!markdown
 
@@ -692,7 +762,21 @@ inl arg_default_value (value : string) (arg : arg) : arg =
 
 inl arg_default_missing_value (value : string) (arg : arg) : arg =
     inl value = #value
-    !\\((arg, value), $'"$0.default_missing_value($1)"')
+    inl fable () : arg =
+        !\\((arg, value), $'"$0.default_missing_value($1)"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // clap keeps the value for the program's lifetime: default_missing_value wants a static str (a leaked one).
+        Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))"') : arg
+    }
 
 #!markdown
 
@@ -711,7 +795,7 @@ inl arg_overrides_with (value : string) (arg : arg) : arg =
 #!spiral
 
 inl arg_short (value : char) (arg : arg) : arg =
-    !\\((arg, value), $'"$0.short($1)"')
+    !\\((arg, value), $'"$0.short($1 as char)"')
 
 #!markdown
 
@@ -901,7 +985,11 @@ inl arg_action (value : arg_action) (arg : arg) : arg =
 #!spiral
 
 inl arg_index (value : i32) (arg : arg) : arg =
-    !\\((arg, ($'!value |> `(convert.unativeint) ' : convert.unativeint)), $'"$0.index($1)"')
+    inl index : convert.unativeint =
+        if rust.is_native ()
+        then $'(!value as usize)'
+        else $'!value |> `(convert.unativeint) '
+    !\\((arg, index), $'"$0.index($1)"')
 
 #!markdown
 
@@ -1262,7 +1350,9 @@ let current_process_kill () =
                         $'System.Console.Out.Flush ()'
                         $'System.Threading.Thread.Sleep 1000'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
-                        $'System.Diagnostics.Process.GetCurrentProcess().Kill ()' : ()
+                        // This is failure shutdown, not a timeout: preserve a normal nonzero status.
+                        $'System.Console.Error.Flush ()'
+                        $'System.Environment.Exit 1' : ()
                     | _ => fun () => ()
             inl thread : threading.thread = $'new System.Threading.Thread (!fn)'
             thread |> $'_.Start()' : ()
@@ -1277,11 +1367,6 @@ let current_process_kill () =
 inl gc_collect () =
     run_target function
         | Fsharp _ => fun () => $'System.GC.Collect' () : ()
-        | Python _ => fun () =>
-            backend_switch {
-                Python = fun () => global "import gc"
-            }
-            ($'gc.collect()' : int) |> ignore
         | _ => fun () => ()
 
 #!markdown
@@ -1290,11 +1375,11 @@ inl gc_collect () =
 
 #!markdown
 
-### execute_with_options
+### execute_with_options_fable
 
 #!spiral
 
-let execute_with_options (options : execution_options) : i32 * string =
+inl execute_with_options_fable (options : execution_options) : i32 * string =
     inl command = join options.command
     inl file_name, arguments = command |> split_command |> resultm.get
     inl arguments =
@@ -1514,6 +1599,92 @@ let execute_with_options (options : execution_options) : i32 * string =
 
 #!markdown
 
+### execute_with_options_native
+
+#!spiral
+
+// Native Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and
+// send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_native`),
+// runs the stdin callback, honors the cancellation token (kills the child) and waits. Child, Command, ChildStdin and the
+// receiver never leave the emitted block, so no `.clone()` is generated for them.
+inl execute_with_options_native (options : execution_options) : i32 * string =
+    inl command = join options.command
+    inl file_name, arguments = command |> split_command |> resultm.get
+    inl arguments =
+        arguments
+        |> optionm'.default_value ""
+        |> split_args
+        |> resultm.get
+        |> am'.to_vec
+        |> am'.vec_map sm'.to_std_string
+    trace Debug
+        fun () => "runtime.execute_with_options"
+        fun () => { file_name arguments = #?*arguments }
+    inl trace' = options.trace
+    inl on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+        line |> stdio_line_native (Ok ()) trace'
+    inl on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+        line |> stdio_line_native (Error ()) trace'
+    inl kind, exit_code, error, lines =
+        !\\(
+            (
+                file_name,
+                arguments,
+                options.working_directory,
+                options.environment_variables,
+                options.stdin,
+                options.cancellation_token,
+                options.stderr,
+                on_stdout,
+                on_stderr
+            ),
+            $'"{ let wd: Option<std::rc::Rc<str>> = $2.clone(); let stdin_fn: Option<std::rc::Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>)>> = $4.clone(); let token: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = $5.clone(); let stderr_on: bool = $6; let mut c = std::process::Command::new(&*$0); c.args(&*$1); c.stdout(std::process::Stdio::piped()); c.stderr(std::process::Stdio::piped()); c.stdin(std::process::Stdio::piped()); if let Some(d) = &wd { c.current_dir(&**d); } for (k, v) in $3.borrow().iter() { c.env(&**k, &**v); } match c.spawn() { Err(e) => (1i32, None, Some(format\!(\\\"{}\\\", e)), Vec::new()), Ok(mut child) => { let out = child.stdout.take().unwrap(); let err = child.stderr.take().unwrap(); let (tx, rx) = std::sync::mpsc::channel::<(bool, Result<std::string::String, std::string::String>)>(); let tx2 = tx.clone(); let h1 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(out))) { if tx.send((false, l.map_err(|e| format\!(\\\"{}\\\", e)))).is_err() { break; } } }); let h2 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(err))) { if stderr_on && tx2.send((true, l.map_err(|e| format\!(\\\"{}\\\", e)))).is_err() { break; } } }); if let (Some(f), Some(s)) = (&stdin_fn, child.stdin.take()) { let a = std::sync::Arc::new(std::sync::Mutex::new(s)); f(a.clone()); let _ = std::io::Write::flush(&mut *a.lock().unwrap()); } let mut lines: Vec<std::string::String> = Vec::new(); let mut cancelled = false; loop { if let Some(t) = &token { if t.load(std::sync::atomic::Ordering::SeqCst) { let _ = child.kill(); cancelled = true; break; } } match rx.recv_timeout(std::time::Duration::from_millis(100)) { Ok((false, l)) => lines.push($7(l)), Ok((true, l)) => lines.push($8(l)), Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}, Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break } } if \!cancelled { let _ = h1.join(); let _ = h2.join(); } match child.wait() { Ok(s) => (0i32, s.code(), None, lines), Err(e) => (2i32, None, Some(format\!(\\\"{}\\\", e)), lines) } } } }"'
+        ) : i32 * optionm'.option' i32 * optionm'.option' sm'.std_string * am'.vec sm'.std_string
+    inl error = error |> optionm'.default_value' (sm'.to_std_string "") |> sm'.from_std_string
+    inl exit_code, std_trace =
+        if kind = 1 then
+            trace Critical
+                fun () => "runtime.execute_with_options / child error"
+                fun () => { error file_name arguments = #?*arguments }
+            -1i32, error
+        elif kind = 2 then
+            trace Critical
+                fun () => "runtime.execute_with_options / output error"
+                fun () => { error file_name arguments = #?*arguments }
+            -2i32, error
+        else
+            inl exit_code, fallback =
+                match exit_code |> optionm'.unbox with
+                | Some exit_code => exit_code, ""
+                | None => -1i32, "runtime.execute_with_options / exit_code=None"
+            inl text =
+                lines
+                |> am'.vec_map sm'.from_std_string
+                |> am'.from_vec
+                |> fun x => x : _ i32 _
+                |> seq.of_array
+                |> sm'.concat "\n"
+                |> sm'.trim
+            exit_code, (if text = "" then fallback else text)
+    trace Verbose
+        fun () => "runtime.execute_with_options / result"
+        fun () => { file_name exit_code std_trace_len = ##std_trace }
+    exit_code, std_trace
+
+#!markdown
+
+### execute_with_options
+
+#!spiral
+
+let execute_with_options (options : execution_options) : i32 * string =
+    backend_switch {
+        Fsharp = fun () => execute_with_options_fable options
+        Rust = fun () => execute_with_options_native options
+    }
+
+#!markdown
+
 #### execute
 
 #!spiral
@@ -1543,7 +1714,7 @@ inl temp_dir, disposable =
 disposable |> use |> ignore
 inl path = temp_dir </> file_name |> file_system.normalize_path
 inl exit_code, result =
-    execute $'\@$"pwsh -c ""[IO.File]::ReadAllText(\'{!path}\')"""'
+    execute ("pwsh -c \"[IO.File]::ReadAllText('" ++# path ++# "')\"")
 exit_code |> _assert_eq 1
 result |> _assert sm'.contains "not find file"
 
@@ -1551,7 +1722,7 @@ content |> file_system.write_all_text path
 
 inl exit_code, output =
     execution_options fun x => { x with
-        command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText(\'{!file_name}\')"""'
+        command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('" ++# file_name ++# "')\""
         working_directory = Some temp_dir |> optionm'.box
     }
     |> execute_with_options
@@ -1568,7 +1739,7 @@ output |> _assert_eq content
 
 inl exit_code, output =
     execution_options fun x => { x with
-        command = $'\@$"pwsh -c ""[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) {{ Write-Output ``""Line$i``""; Start-Sleep -Milliseconds 200 }}"""'
+        command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }\""
         // trace = true
     }
     |> execute_with_options

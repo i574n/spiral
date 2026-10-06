@@ -1,4 +1,0 @@
-let active_rating_ceiling_binding (score : i32) (ceiling : i32) : i32 =
-    if !!!!LT(score,0i32) then 0i32
-    elif !!!!LT(ceiling,score) then 0i32
-    else 1i32

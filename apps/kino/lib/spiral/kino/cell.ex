@@ -1,4 +1,5 @@
 defmodule Spiral.Kino.Cell do
+  @external_resource Path.expand("console.spi", __DIR__)
   @console File.read!(Path.expand("console.spi", __DIR__))
 
   @spec console_source() :: String.t()

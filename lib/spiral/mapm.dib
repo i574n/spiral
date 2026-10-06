@@ -111,7 +111,10 @@ inl from_vec forall k v. (vec : am'.vec (k * v)) : hash_map k v =
 #!spiral
 
 inl from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : hash_map k v =
-    !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    // Fable's pairs are shared pointers (`as_ref`); native Rust's are plain tuples.
+    if rust.rust.is_native ()
+    then !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    else !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
 
 #!markdown
 
@@ -120,7 +123,9 @@ inl from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : hash_map k v =
 #!spiral
 
 inl b_tree_map_from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : b_tree_map k v =
-    !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    if rust.rust.is_native ()
+    then !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    else !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
 
 #!markdown
 

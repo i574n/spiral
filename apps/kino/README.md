@@ -112,6 +112,14 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | Workspace root | `:workspace` | `SPIRAL_WORKSPACE_ROOT` | `spiral/apps/compiler/tmp` next to this app |
 | Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `<polyglot root>/deps/The-Spiral-Language/VS Code Plugin` |
 | Polyglot root | `:polyglot_root` | `SPIRAL_KINO_POLYGLOT_ROOT`, or `config :spiral_kino, polyglot_root: ...` | the `polyglot` checkout next to this `spiral` checkout |
+| Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` (13805, polyglot's Supervisor port, is refused) | `13905` |
+
+By default a cell compiles through one shared, warm compiler: the first cell starts a detached
+`mix spiral.compiler_daemon` on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
+Livebook session ends so later sessions reuse it. `SPIRAL_KINO_COMPILER=process` opts out: each cell then starts its
+own compiler process, and no daemon is started. Passing any of `:compiler_dll`, `:dotnet`, `:package_dir`,
+`:workspace` or `:env` also compiles in a separate process. `SPIRAL_KINO_BRIDGE_TRACE=1` makes the daemon's socket
+bridge log every request and response to `<socket>.trace` (off by default).
 
 Editor highlighting is `config :spiral_kino, editor_language: "javascript"` (the default).
 Livebook's editor has no Spiral mode. JavaScript highlights `//` comments, strings, numbers,
@@ -137,3 +145,68 @@ mix test
 `mix test` includes two live compiles when the compiler DLL, the core package, `dotnet`,
 and `rustc` are all present. The other tests fake those three stages.
 The runner tests use real process trees.
+
+## Running a notebook from the command line
+
+`pwsh spi/livebook_dib.ps1 --path <nb.dib|nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi]`
+(`mix spiral.dib` behind it) runs every cell like `spiral dib` does. It writes `<nb>.ipynb`; on success it also writes
+the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ipynb stem>.html` through
+`jupyter nbconvert --to html --HTMLExporter.theme=dark` with LF endings and cell ids renumbered 1..n, as the old route
+does. Without `jupyter` on `PATH` the html is skipped with a note.
+
+On a fresh machine the script first provides what the route needs, each step only when its output is missing: the
+.NET 11 SDK (`apps/compiler/tmp/scripts/install-dotnet.ps1`, into the spiral-bin cache) and the single-flight
+`SpiralCompiler.dll` (`scripts/build.ps1 -Mode single-flight`), then `mix local.hex`/`local.rebar --if-missing` and
+`mix deps.get` when `deps/kino` is absent. It passes the resolved `SPIRAL_DOTNET`, `SPIRAL_COMPILER_DLL` and
+`SPIRAL_COMPILER_PACKAGE_DIR` on to mix.
+
+A cell's `///- --timeout <ms>` directive is its budget. It wins over the smart cell's `timeout` field (a smart cell
+always passes one) and over the 300 s default.
+
+### F# cells (`Spiral.Kino.FsiSession`, `Spiral.Kino.FsiChain`)
+
+A notebook's F# cells and `#!import` cells run in order on one long-lived `dotnet fsi --quiet` per notebook, each as its
+own submission, like the `.dib` route's .NET Interactive F# kernel. A later submission may redefine a type of an earlier
+one (polyglot's `Notebooks.dib` imports `.fsx` files that each define `US0`). Spiral cells still run in parallel beside
+the F# chain.
+
+- `#!import <file>.fs|.fsx` submits the file's text. `#!import <nb>.dib` runs that notebook's F# cells and its own
+  imports, each as a submission (its Spiral cells are skipped with a note). A relative path resolves against the
+  importing file's directory, then the notebook's. A mid-cell `#!import` splits the cell; the lines after it are the
+  next submission.
+- fsi's working directory is the notebook's directory (relative `#r` paths resolve against it).
+- The session first opens what the .NET Interactive F# kernel opens (`System`, `System.IO`, `System.Text`,
+  `Microsoft.DotNet.Interactive.Formatting`) and references the `Formatter` of the installed dotnet-repl or
+  dotnet-interactive tool (`SPIRAL_KINO_FORMATTING_DLL` overrides it), so `Formatter.ListExpansionLimit`,
+  `Formatter.Register` and `x.ToDisplayString ()` behave as on the old route. Without that dll a shim stands in (`%A`).
+  `x.Display ()` prints the value with its preferred formatter.
+- A cell shows its stdout/stderr and, when its last line is a non-unit expression, the value (`it`). It fails on
+  `error FS....` or `Stopped due to error`; positions read `input.fsx(line,col)` relative to the cell. Later cells still
+  run (the old route stops at the first failing cell).
+- Budget: `///- --timeout <ms>` in the cell, else 300 s. A cell that times out kills the fsi process tree; the F# cells
+  after it fail with `skipped: the F# session was killed ...` instead of running without their definitions.
+- `SPIRAL_KINO_FSHARP=script` (or a `:host` callback) restores the older path: each F# cell re-runs all earlier ones as
+  one `dotnet fsi --exec` script, and imports don't run.
+
+## CI
+
+dice's and alphabet's gh-pages workflows run every notebook through this route: their `build.ps1` notebook steps call
+`spi/livebook_dib.ps1 --path <nb>.livemd --output-path <nb>.dib.ipynb` (`--spi-path <nb>.spi`, or `--no-spi` for
+the F# notebooks dice_fsharp and hangul). What a runner needs:
+
+- Elixir >= 1.18 with a matching OTP (`erlef/setup-beam` with `elixir-version` set; `otp-version` + `gleam-version`
+  alone install no Elixir), and Gleam >= 1.14: `mix compile` regenerates `src/spiral_kino/domain.gleam` from
+  `spi/*.spi` with the Spiral compiler (`--backend Gleam`) and builds it with `gleam build`, against the
+  `gleam_stdlib` that `manifest.toml` pins (1.0.5 needs Gleam 1.14). `src/` and `build/` are not committed.
+- Nothing else for Kino itself: livebook_dib.ps1 installs the .NET 11 SDK and builds the compiler into the spiral-bin
+  cache (`~/.cache/spiral-bin` on Linux) when they are missing, and runs `mix deps.get` (see "Running a notebook from
+  the command line"). CI's setup-dotnet .NET 9 is not enough for the compiler (net11.0). Set `SPIRAL_COMPILER_DLL` /
+  `SPIRAL_DOTNET` / `SPIRAL_GLEAM` when the tools live elsewhere.
+- `rustc` for Spiral cells; the `spiral` CLI (`workspace/target/release/spiral`, which the repos' init builds) for
+  `///> rust -c/-d` cells, plus what those cells' programs need (NEAR sandbox for contract cells, pandoc/xelatex/
+  hangulize for alphabet documents' app test); `dotnet` for F# cells (the cache's .NET 11 `fsi`).
+- `jupyter` (nbconvert) for the html: polyglot's init installs it (`pip install -r requirements.txt`). Without it the
+  ipynb is still written and the html is skipped with a note.
+- The compiler daemon starts on 127.0.0.1:13905 (detached: on Unix in its own session via `setsid`); a runner ends it
+  with the job. Two checkouts that share one loopback (WSL with mirrored networking next to a Windows dev daemon) need
+  different `SPIRAL_KINO_COMPILER_PORT`s.

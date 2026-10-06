@@ -1,5 +1,0 @@
-packages:
-    agile_state_path_policy
-    rust_std_string
-modules:
-    schema

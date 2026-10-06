@@ -1,0 +1,31 @@
+// A non-Copy variable that a macro moves (a `self` method, `match`, a call argument, an emitRustExpr argument, a
+// closure capture, a loop) and that is used again afterwards: the splice clones it. A `&mut self` method (`push`)
+// keeps the variable itself, so the mutation is seen by the later `len`.
+nominal vec = $'Vec<i32>'
+nominal opt = $'Option<Vec<i32>>'
+
+inl emit forall a t. (args : a) (code : string) : t =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+let rec count_loop (i : i32) (acc : i32) (v : vec) : i32 =
+    if i < 3i32 then count_loop (i +. 1i32) (acc +. ($'!v.into_iter().count() as i32' : i32)) v else acc
+
+inl native (n : i32) : i32 =
+    inl v : vec = $'vec\![1i32, 2, !n]'
+    inl total : i32 = $'!v.into_iter().sum::<i32>()'
+    inl o : opt = $'Some(vec\![!n])'
+    inl m : i32 = $'match !o { Some(x) => x.len() as i32, None => 0 }'
+    inl m2 : i32 = $'!o.map(|x| x[0]).unwrap_or(0)'
+    inl d : i32 = $'std::convert::identity(!v).len() as i32'
+    inl e : i32 = emit v ($'"$0.into_iter().count() as i32"' : string)
+    inl w : vec = $'Vec::new()'
+    $'!w.push(4)' : ()
+    inl wl : i32 = $'!w.len() as i32'
+    inl ~f = fun () => $'!v.into_iter().count() as i32' : i32
+    inl c = f () +. f ()
+    inl l = count_loop 0i32 0i32 v
+    total +. m +. m2 +. d +. e +. wl +. c +. l +. ($'!v.len() as i32' : i32)
+
+inl main () : i32 =
+    inl ~n = 3i32
+    !!!!BackendSwitch({ C = fun () => 35i32 : i32; Rust = fun () => native n : i32 })

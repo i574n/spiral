@@ -1,5 +1,0 @@
-packages:
-    bootstrap_policy
-    command_spec_domain
-modules:
-    model

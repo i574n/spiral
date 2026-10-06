@@ -129,10 +129,12 @@ inl receipt_outcomes (result : execution_final_result) : am'.vec execution_outco
 
 /// ### json
 inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
+    inl result = result |> rust.clone_native
     !\\(result, $'"$0.json()"')
 
 /// ### borsh
 inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
+    inl result = result |> rust.clone_native
     !\\(result, $'"$0.borsh()"')
 
 /// ### total_gas_burnt
@@ -180,7 +182,26 @@ inl from_tgas
     (tgas : i32)
     : gas
     =
-    !\($'"near_workspaces::types::Gas::from_tgas(!tgas)"')
+    inl fable () : gas =
+        !\($'"near_workspaces::types::Gas::from_tgas(!tgas)"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // Native literals are typed (`300i32`); from_tgas takes a u64.
+        Rust = fun () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
+    }
+
+/// ### as_yoctonear
+inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =
+    // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.
+    !\\(tokens, $'"$0.as_yoctonear()"')
 
 /// ### print_usd
 inl print_usd retry (result : execution_final_result) =
@@ -201,7 +222,7 @@ inl print_usd retry (result : execution_final_result) =
         inl gas_burnt = outcome |> gas_burnt |> as_gas
         inl gas_burnt_usd = gas_burnt |> near.gas_to_usd
 
-        inl tokens_burnt = outcome |> tokens_burnt |> near.as_yoctonear
+        inl tokens_burnt = outcome |> tokens_burnt |> as_yoctonear
         inl tokens_burnt_usd = tokens_burnt |> near.tokens_to_usd
 
         trace Info

@@ -1,7 +1,0 @@
-packages:
-    rust_std_env
-    rust_std_process
-    rust_std_fs
-    rust_std_string
-modules:
-    main

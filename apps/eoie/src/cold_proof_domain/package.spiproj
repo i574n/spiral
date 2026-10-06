@@ -1,7 +1,0 @@
-packages:
-    cold_proof_bindings
-    cold_rebuild_contract
-modules:
-    terminal-
-    cold_rebuild_terminal-
-    main

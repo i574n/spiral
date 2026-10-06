@@ -1,7 +1,0 @@
-open filesystem_directory_contract.model
-
-inl main () : i32 =
-    match policy_directory "/tmp/eoie-directory-lifecycle" with
-    | DirectoryAccepted _ => 0i32
-    | DirectoryRejected _ => 1i32
-    | DirectoryFailed _ => 2i32

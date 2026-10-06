@@ -1,8 +1,0 @@
-let patch_gated_entry_public () : i32 = patch_mutation_contract.model.patch_gated_entry ()
-
-inl emit () : () =
-    gated_terminal.emit_runtime ()
-    !!!!Export("eoie_patch_gated_run", ((fun () => patch_gated_entry_public ()) : () -> i32))
-    inl _ = patch_mutation_contract.model.typed_patch_plan ()
-    inl _ = patch_gated_entry_public ()
-    ()

@@ -18,10 +18,26 @@ nominal reqwest_error =
     )
 
 /// ### request_builder
+// native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
+// the other backends keep the Fable alias (declared by the global below, as before)
+type request_builder_switch =
+    {
+        Gleam : $'reqwest_RequestBuilder'
+        Lua : $'reqwest_RequestBuilder'
+        Fsharp : $'reqwest_RequestBuilder'
+        Python : $'reqwest_RequestBuilder'
+        TypeScript : $'reqwest_RequestBuilder'
+        Cpp : $'reqwest_RequestBuilder'
+        CppHost : $'reqwest_RequestBuilder'
+        Delphi : $'reqwest_RequestBuilder'
+        Cuda : $'reqwest_RequestBuilder'
+        C : $'reqwest_RequestBuilder'
+        Rust : $'reqwest_wasm::RequestBuilder'
+    }
 nominal request_builder =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"reqwest_wasm::RequestBuilder\")>]\n#endif\ntype reqwest_RequestBuilder = class end"
-        $'' : $'reqwest_RequestBuilder'
+        $'' : $'backend_switch `(request_builder_switch)'
     )
 
 /// ### request_type

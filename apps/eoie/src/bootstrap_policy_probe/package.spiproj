@@ -1,8 +1,0 @@
-packages:
-    bootstrap_experiment_contract
-    bootstrap_policy
-    rust_std_env
-    rust_std_fs
-    toolchain_command_domain
-modules:
-    main

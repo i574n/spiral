@@ -1,8 +1,0 @@
-let patch_entry_public () : i32 = patch_mutation_contract.model.patch_entry ()
-
-inl emit () : () =
-    mutation_terminal.emit_runtime ()
-    !!!!Export("eoie_patch_run", ((fun () => patch_entry_public ()) : () -> i32))
-    inl _ = patch_mutation_contract.model.typed_patch_plan ()
-    inl _ = patch_entry_public ()
-    ()

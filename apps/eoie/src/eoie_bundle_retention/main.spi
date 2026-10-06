@@ -1,5 +1,0 @@
-
-inl main () : i32 =
-    rust_global "#![allow(clippy::collapsible_if)]"
-    emit_runtime ()
-    0i32

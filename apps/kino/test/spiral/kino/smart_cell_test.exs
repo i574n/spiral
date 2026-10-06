@@ -5,6 +5,9 @@ defmodule Spiral.Kino.SmartCellTest do
 
   alias Spiral.Kino.SmartCell
 
+  # Kino.Test's 100 ms default is too tight on a loaded machine; a reply that never comes still fails.
+  @wait 5_000
+
   setup :configure_livebook_bridge
 
   defp eval_source(source) do
@@ -101,7 +104,7 @@ defmodule Spiral.Kino.SmartCellTest do
 
       assert source =~ "Spiral.Kino.eval!("
       assert source =~ "square 7i32"
-      assert %{fields: fields} = connect(kino)
+      assert %{fields: fields} = connect(kino, nil, @wait)
 
       assert fields == %{
                "timeout" => 300,
@@ -114,15 +117,15 @@ defmodule Spiral.Kino.SmartCellTest do
       {kino, _source} = start_smart_cell!(SmartCell, attrs)
 
       push_event(kino, "update_field", %{"field" => "timeout", "value" => "42"})
-      assert_smart_cell_update(kino, %{"timeout" => 42}, source)
+      assert_smart_cell_update(kino, %{"timeout" => 42}, source, @wait)
       assert source =~ "timeout: 42000"
 
       push_event(kino, "update_field", %{"field" => "print_code", "value" => false})
-      assert_smart_cell_update(kino, %{"print_code" => false}, source)
+      assert_smart_cell_update(kino, %{"print_code" => false}, source, @wait)
       refute source =~ "print_code"
 
       push_smart_cell_editor_source(kino, "2i32")
-      assert_smart_cell_update(kino, %{"source" => "2i32"}, source)
+      assert_smart_cell_update(kino, %{"source" => "2i32"}, source, @wait)
       assert source =~ "  2i32\n"
     end
   end

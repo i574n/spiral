@@ -57,7 +57,12 @@ fn spiral_main() -> i32 {
     let mut v12: i32 = v11 - 4i32;
     v12
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

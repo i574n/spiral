@@ -1,11 +1,15 @@
 defmodule Spiral.Kino do
   alias Spiral.Kino.{
+    Builders,
     Cell,
+    CompilerClient,
     Directives,
+    Mounts,
     ProcessError,
     Result,
     Runner,
     SpiralError,
+    Targets,
     TimeoutError,
     Toolchain
   }
@@ -21,52 +25,45 @@ defmodule Spiral.Kino do
       timeout = opts[:timeout] || @default_timeout
       validate_timeout!(timeout)
       prepared = Directives.prepare(code, opts)
-      timeout = opts[:timeout] || prepared.timeout || timeout
-      started = System.monotonic_time(:millisecond)
 
-      deadline =
-        case timeout do
-          :infinity -> :infinity
-          ms -> started + ms
+      builders = cell_builders(opts, prepared)
+
+      if prepared.skip or Enum.any?(builders, &(&1.tool == :skip)) do
+        {:ok, %Result{exit_status: 0, source: code, duration_ms: 0}}
+      else
+        builders = if builders == [], do: [Builders.default()], else: builders
+
+        # A `///- --timeout` directive is part of the cell and wins over the caller's budget (a Livebook smart cell
+        # always passes `timeout:`; the notebook runner passes the same directive value).
+        timeout = prepared.timeout || timeout
+        started = System.monotonic_time(:millisecond)
+
+        deadline =
+          case timeout do
+            :infinity -> :infinity
+            ms -> started + ms
+          end
+
+        dir = tmp_dir()
+        Process.put(:spiral_kino_deadline, deadline)
+        Process.put(:spiral_kino_phases, %{})
+
+        try do
+          spi = Path.join(dir, "main.spi")
+          exe = Path.join(dir, exe_name())
+
+          with {:ok, names, package_dir} <-
+                 mount_packages(dir, prepared.packages, opts[:root], polyglot_root(opts)),
+               :ok <- write_package(dir, names, package_dir) do
+            run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
+          end
+        after
+          Process.put(:spiral_kino_last_phases, phases())
+          Process.delete(:spiral_kino_deadline)
+          Process.delete(:spiral_kino_queue_ms)
+          Process.delete(:spiral_kino_phases)
+          unless opts[:keep_files], do: File.rm_rf(dir)
         end
-
-      dir = tmp_dir()
-
-      try do
-        spi = Path.join(dir, "main.spi")
-        rs = Path.join(dir, "main.rs")
-        exe = Path.join(dir, exe_name())
-
-        with {:ok, names} <- mount_packages(dir, prepared.packages, opts[:root]),
-             :ok <- write_package(dir, names),
-             :ok <- File.write(spi, prepared.code),
-             {:ok, rust, show_value} <- compile(dir, spi, rs, prepared, opts, timeout, deadline),
-             rust = Cell.patch_rust(rust, show_value),
-             :ok <- reject_unpatched(rust),
-             :ok <- File.write(rs, rust),
-             :ok <- rustc(rs, exe, opts, timeout, deadline),
-             {:ok, ran} <- execute(exe, opts, timeout, deadline) do
-          {value, stdout} = Cell.split_output(ran.output)
-
-          stdout =
-            if prepared.print_code do
-              rust <> if(stdout == "", do: "", else: "\n" <> stdout)
-            else
-              stdout
-            end
-
-          {:ok,
-           %Result{
-             value: value,
-             stdout: stdout,
-             source: File.read!(spi),
-             exit_status: ran.exit_status,
-             duration_ms: System.monotonic_time(:millisecond) - started
-           }}
-        end
-      after
-        unlink_mounted(dir, prepared.packages, opts[:root])
-        unless opts[:keep_files], do: File.rm_rf(dir)
       end
     end
   end
@@ -91,6 +88,21 @@ defmodule Spiral.Kino do
     end
   end
 
+  @spec last_phases() :: map()
+  def last_phases, do: Process.get(:spiral_kino_last_phases) || %{}
+
+  @spec package_path(String.t(), String.t() | nil, String.t() | nil) :: String.t()
+  def package_path(path, root, workspace) when is_binary(path) do
+    expanded = expand_package(path, root)
+
+    if package_project?(expanded) do
+      expanded
+    else
+      alt = expand_package(path, workspace)
+      if package_project?(alt), do: alt, else: expanded
+    end
+  end
+
   @spec polyglot_root(keyword()) :: String.t()
   def polyglot_root(opts \\ []) do
     opts[:polyglot_root] ||
@@ -107,20 +119,221 @@ defmodule Spiral.Kino do
     Enum.each(html, &Kino.render(Kino.HTML.new(&1)))
   end
 
-  defp compile(dir, spi, rs, prepared, opts, timeout, deadline) do
-    compile(dir, spi, rs, prepared, opts, timeout, deadline, 1, true)
+  defp cell_builders(opts, prepared) do
+    if Keyword.has_key?(opts, :builders), do: opts[:builders], else: prepared.builders
   end
 
-  defp compile(dir, spi, rs, prepared, opts, timeout, deadline, attempt, show_value) do
+  defp run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started) do
+    builders
+    |> Enum.reduce_while({:ok, []}, fn builder, {:ok, acc} ->
+      case run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
+        {:ok, %{exit_status: status} = chunk} when status not in [nil, 0] ->
+          {:halt, {:done, acc ++ [chunk]}}
+
+        {:ok, chunk} ->
+          {:cont, {:ok, acc ++ [chunk]}}
+
+        {:error, error} ->
+          {:halt, {:error, error}}
+      end
+    end)
+    |> case do
+      {:ok, chunks} -> {:ok, assemble(chunks, spi, started)}
+      {:done, chunks} -> {:ok, assemble(chunks, spi, started)}
+      {:error, error} -> {:error, error}
+    end
+  end
+
+  defp run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
+    output = Path.join(dir, "main" <> Builders.ext(builder))
+    backend = Builders.backend(builder)
+    host = Builders.host_rust?(builder)
+    File.write!(spi, prepared.code)
+
+    with {:ok, text, show_value} <-
+           timed(:compile_ms, fn ->
+             compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline)
+           end) do
+      if host do
+        in_slot(fn ->
+          run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
+        end)
+      else
+        File.write!(output, text)
+
+        case in_slot(fn ->
+               timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
+             end) do
+          {:ok, %{stdout: stdout} = ran} ->
+            {:ok, chunk(builder, shown_stdout(prepared, text, stdout), Map.get(ran, :value))}
+
+          other ->
+            other
+        end
+      end
+    end
+  end
+
+  defp in_slot(fun) do
+    {result, _waited} = Spiral.Kino.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
+    result
+  end
+
+  defp timed(name, fun) do
+    started = System.monotonic_time(:millisecond)
+
+    try do
+      fun.()
+    after
+      add_phase(name, System.monotonic_time(:millisecond) - started)
+    end
+  end
+
+  defp add_phase(name, ms) when is_integer(ms) and ms >= 0 do
+    case Process.get(:spiral_kino_phases) do
+      %{} = phases ->
+        Process.put(:spiral_kino_phases, Map.update(phases, name, ms, &(&1 + ms)))
+
+        if name in [:slot_wait_ms, :queue_ms] do
+          case Process.get(:spiral_kino_deadline) do
+            deadline when is_integer(deadline) ->
+              Process.put(:spiral_kino_deadline, deadline + ms)
+
+            _ ->
+              :ok
+          end
+        end
+
+        :ok
+
+      _ ->
+        :ok
+    end
+  end
+
+  defp add_phase(_name, _ms), do: :ok
+
+  defp run_host_rust(text, show_value, rs, exe, prepared, opts, timeout, deadline) do
+    rust = timed(:patch_ms, fn -> Cell.patch_rust(text, show_value) end)
+
+    with :ok <- reject_unpatched(rust),
+         :ok <- File.write(rs, rust),
+         :ok <- timed(:rustc_ms, fn -> rustc(rs, exe, opts, timeout, deadline) end),
+         {:ok, ran} <- timed(:run_ms, fn -> execute(exe, opts, timeout, deadline) end) do
+      {value, stdout} = Cell.split_output(ran.output)
+
+      {:ok,
+       chunk(Builders.default(), shown_stdout(prepared, rust, stdout), value, ran.exit_status)}
+    end
+  end
+
+  defp chunk(builder, stdout, value, status \\ 0) do
+    %{
+      ext: String.trim_leading(Builders.ext(builder), "."),
+      tool: builder.tool,
+      stdout: stdout,
+      value: value,
+      exit_status: status
+    }
+  end
+
+  defp shown_stdout(prepared, generated, stdout) do
+    if prepared.print_code do
+      generated <> if(stdout == "", do: "", else: "\n" <> stdout)
+    else
+      stdout
+    end
+  end
+
+  defp assemble(chunks, spi, started) do
+    value =
+      Enum.reduce(chunks, nil, fn chunk, acc ->
+        if is_nil(chunk.value), do: acc, else: chunk.value
+      end)
+
+    status =
+      Enum.find_value(chunks, 0, fn chunk ->
+        if chunk.exit_status not in [nil, 0], do: chunk.exit_status
+      end)
+
+    stdout =
+      case chunks do
+        [one] ->
+          one.stdout
+
+        many ->
+          Enum.map_join(many, "\n", fn chunk ->
+            ".#{chunk.ext} (#{chunk.tool})\n" <> chunk.stdout
+          end)
+      end
+
+    %Result{
+      value: value,
+      stdout: stdout,
+      source: File.read!(spi),
+      exit_status: status,
+      duration_ms: System.monotonic_time(:millisecond) - started,
+      phases: phases()
+    }
+  end
+
+  defp phases do
+    phases = Process.get(:spiral_kino_phases) || %{}
+
+    case phases do
+      %{compile_ms: compile, queue_ms: queue} -> %{phases | compile_ms: max(compile - queue, 0)}
+      _ -> phases
+    end
+  end
+
+  defp compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline) do
+    compile(
+      dir,
+      spi,
+      output,
+      backend,
+      host,
+      builder,
+      prepared,
+      opts,
+      timeout,
+      deadline,
+      1,
+      not Map.get(prepared, :no_value, false)
+    )
+  end
+
+  defp compile(
+         dir,
+         spi,
+         output,
+         backend,
+         host,
+         builder,
+         prepared,
+         opts,
+         timeout,
+         deadline,
+         attempt,
+         show_value
+       ) do
     case invoke(
            opts[:compile],
-           %{source: File.read!(spi), spi_path: spi, rs_path: rs, attempt: attempt},
+           %{
+             source: File.read!(spi),
+             spi_path: spi,
+             rs_path: output,
+             output_path: output,
+             backend: backend,
+             builder: builder,
+             attempt: attempt
+           },
            fn ->
-             compile_default(spi, rs, opts, timeout, deadline)
+             compile_default(spi, output, backend, opts, timeout, deadline)
            end
          ) do
-      {:ok, rust} ->
-        {:ok, rust, show_value}
+      {:ok, text} ->
+        {:ok, text, show_value}
 
       {:error, %TimeoutError{} = error} ->
         {:error, error}
@@ -128,17 +341,32 @@ defmodule Spiral.Kino do
       {:error, %ProcessError{} = error} ->
         {:error, error}
 
-      {:error, output} ->
-        if attempt == 1 and prepared.generated_main and Cell.unit_result?(output) do
+      {:error, output_text} ->
+        if attempt == 1 and prepared.generated_main and
+             Cell.unit_result?(restore_type_lines(output_text)) do
           File.write!(spi, String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
-          compile(dir, spi, rs, prepared, opts, timeout, deadline, 2, false)
+
+          compile(
+            dir,
+            spi,
+            output,
+            backend,
+            host,
+            builder,
+            prepared,
+            opts,
+            timeout,
+            deadline,
+            2,
+            false
+          )
         else
-          {:error, %SpiralError{message: clean(output, dir), details: File.read!(spi)}}
+          {:error, %SpiralError{message: clean(output_text, dir), details: File.read!(spi)}}
         end
     end
   end
 
-  defp compile_default(spi, rs, opts, timeout, deadline) do
+  defp compile_default(spi, output, backend, opts, timeout, deadline) do
     with :ok <- require_tool(Toolchain.dotnet(opts), "dotnet"),
          :ok <- require_file(Toolchain.compiler_dll(opts), "Spiral compiler"),
          :ok <-
@@ -146,26 +374,103 @@ defmodule Spiral.Kino do
              Path.join(Toolchain.package_dir(opts), "core/package.spiproj"),
              "Spiral core package"
            ) do
-      dotnet = Toolchain.dotnet(opts)
-
-      case Runner.run(dotnet, [Toolchain.compiler_dll(opts), "--backend", "Rust", spi, rs],
-             timeout: budget(deadline),
-             env: compiler_env(opts, dotnet)
-           ) do
-        {:ok, %{exit_status: 0}} ->
-          {:ok, File.read!(rs)}
-
-        {:ok, %{output: output}} ->
-          {:error, output}
-
-        {:error, {:timeout, info}} ->
-          {:error, timeout_error(info, timeout)}
-
-        {:error, reason} ->
-          {:error,
-           %ProcessError{message: "could not start the Spiral compiler: #{inspect(reason)}"}}
+      if shared_compiler?(opts) do
+        shared_compile(spi, output, backend, opts, timeout, deadline)
+      else
+        one_shot_compile(spi, output, backend, opts, timeout, deadline)
       end
     end
+  end
+
+  defp shared_compiler?(opts) do
+    System.get_env("SPIRAL_KINO_COMPILER") != "process" and opts[:compiler_dll] == nil and
+      opts[:dotnet] == nil and opts[:package_dir] == nil and opts[:workspace] == nil and
+      opts[:env] == nil
+  end
+
+  defp shared_compile(spi, output, backend, opts, timeout, deadline) do
+    case CompilerClient.compile(%{
+           spi: spi,
+           rs: output,
+           timeout: budget(deadline),
+           mtime: source_mtime(spi, opts),
+           backend: backend
+         }) do
+      {:ok, _revision} ->
+        charge_queue()
+        {:ok, File.read!(output)}
+
+      {:error, :timeout} ->
+        charge_queue()
+        {:error, timeout_error(%{output: ""}, timeout)}
+
+      {:error, %ProcessError{} = error} ->
+        charge_queue()
+        {:error, error}
+
+      {:error, message} ->
+        charge_queue()
+        {:error, message}
+    end
+  end
+
+  defp charge_queue do
+    queue = Process.delete(:spiral_kino_queue_ms) || 0
+
+    case Process.get(:spiral_kino_phases) do
+      %{} ->
+        add_phase(:queue_ms, queue)
+
+      _ ->
+        case Process.get(:spiral_kino_deadline) do
+          ms when is_integer(ms) -> Process.put(:spiral_kino_deadline, ms + queue)
+          _ -> :ok
+        end
+    end
+  end
+
+  defp one_shot_compile(spi, output, backend, opts, timeout, deadline) do
+    dotnet = Toolchain.dotnet(opts)
+
+    case Runner.run(dotnet, [Toolchain.compiler_dll(opts), "--backend", backend, spi, output],
+           timeout: budget(deadline),
+           env: compiler_env(opts, dotnet)
+         ) do
+      {:ok, %{exit_status: 0}} ->
+        {:ok, File.read!(output)}
+
+      {:ok, %{output: text}} ->
+        {:error, text}
+
+      {:error, {:timeout, info}} ->
+        {:error, timeout_error(info, timeout)}
+
+      {:error, reason} ->
+        {:error,
+         %ProcessError{message: "could not start the Spiral compiler: #{inspect(reason)}"}}
+    end
+  end
+
+  defp source_mtime(spi, opts) do
+    dirs =
+      case File.read(Path.join(Path.dirname(spi), "package.spiproj")) do
+        {:ok, text} ->
+          case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
+            [_, dir] ->
+              dir = String.trim(dir)
+              if Path.type(dir) == :absolute, do: [dir], else: []
+
+            _ ->
+              []
+          end
+
+        _ ->
+          []
+      end
+
+    Enum.reduce([Path.join(Toolchain.package_dir(opts), "core") | dirs], 0, fn dir, acc ->
+      max(acc, Mounts.newest(dir))
+    end)
   end
 
   defp rustc(rs, exe, opts, timeout, deadline) do
@@ -242,7 +547,20 @@ defmodule Spiral.Kino do
   end
 
   defp budget(:infinity), do: :infinity
-  defp budget(deadline), do: max(deadline - System.monotonic_time(:millisecond), 0)
+
+  defp budget(deadline) do
+    deadline =
+      case Process.get(:spiral_kino_deadline) do
+        ms when is_integer(ms) -> ms
+        :infinity -> :infinity
+        _ -> deadline
+      end
+
+    case deadline do
+      :infinity -> :infinity
+      ms -> max(ms - System.monotonic_time(:millisecond), 0)
+    end
+  end
 
   defp timeout_error(%{output: output}, timeout) do
     %TimeoutError{
@@ -250,6 +568,10 @@ defmodule Spiral.Kino do
       timeout: timeout,
       output: output
     }
+  end
+
+  defp restore_type_lines(output) do
+    String.replace(output, ~r/(Got:[^\n]*) Expected:/, "\\1\nExpected:")
   end
 
   defp clean(output, dir) do
@@ -262,77 +584,70 @@ defmodule Spiral.Kino do
     |> String.trim()
   end
 
-  defp write_package(dir, names) do
-    File.write!(Path.join(dir, "package.spiproj"), Cell.package_project(names))
+  defp write_package(dir, names, package_dir) do
+    text = Cell.package_project(names)
+
+    text =
+      if package_dir do
+        String.replace(text, "packageDir: .", "packageDir: " <> package_dir, global: false)
+      else
+        text
+      end
+
+    File.write!(Path.join(dir, "package.spiproj"), text)
     File.write!(Path.join(dir, "console.spi"), Cell.console_source())
     :ok
   end
 
-  defp mount_packages(_dir, [], _root), do: {:ok, []}
+  defp mount_packages(_dir, [], _root, _workspace), do: {:ok, [], nil}
 
-  defp mount_packages(dir, paths, root) do
-    Enum.reduce_while(paths, {:ok, []}, fn path, {:ok, names} ->
-      target = resolve_package(path, root)
-      name = Path.basename(target)
+  defp mount_packages(_dir, paths, root, workspace) do
+    targets =
+      Enum.map(paths, fn path ->
+        target = resolve_package(path, root, workspace)
+        {target, Path.basename(target)}
+      end)
 
+    sibling_names = Enum.map(targets, &elem(&1, 1))
+
+    case mount_entries(targets, sibling_names) do
+      {:ok, entries} ->
+        case Mounts.ensure(entries) do
+          {:ok, package_dir} -> {:ok, Enum.map(entries, & &1.name), package_dir}
+          {:error, message} -> {:error, %ProcessError{message: message}}
+        end
+
+      error ->
+        error
+    end
+  end
+
+  defp mount_entries(targets, sibling_names) do
+    Enum.reduce_while(targets, {:ok, []}, fn {target, name}, {:ok, entries} ->
       cond do
-        name in ["", "console", "main"] ->
+        name in ["", "console", "main", "ready"] ->
           {:halt,
            {:error, %ProcessError{message: "package name #{inspect(name)} clashes with the cell"}}}
 
-        name in names ->
+        Enum.any?(entries, &(&1.name == name)) ->
           {:halt, {:error, %ProcessError{message: "package #{name} is listed twice"}}}
 
         not File.regular?(Path.join(target, "package.spiproj")) ->
           {:halt, {:error, %ProcessError{message: "Spiral package was not found at #{target}"}}}
 
         true ->
-          case make_link(Path.join(dir, name), target) do
-            :ok -> {:cont, {:ok, names ++ [name]}}
-            {:error, message} -> {:halt, {:error, %ProcessError{message: message}}}
-          end
+          kind = if Mounts.share_mounted_deps?(target, sibling_names), do: :shadow, else: :link
+          {:cont, {:ok, entries ++ [%{name: name, target: target, kind: kind}]}}
       end
     end)
   end
 
-  defp resolve_package(path, nil), do: Path.expand(path)
-  defp resolve_package(path, root), do: Path.expand(path, root)
+  defp resolve_package(path, root, workspace), do: package_path(path, root, workspace)
 
-  defp make_link(link, target) do
-    case :os.type() do
-      {:win32, _} ->
-        {out, status} =
-          System.cmd("cmd", ["/c", "mklink", "/J", win_path(link), win_path(target)])
+  defp expand_package(path, root) when is_binary(root), do: Path.expand(path, root)
+  defp expand_package(path, _root), do: Path.expand(path)
 
-        if status == 0, do: :ok, else: {:error, "could not link #{link}: #{String.trim(out)}"}
-
-      _ ->
-        case File.ln_s(target, link) do
-          :ok -> :ok
-          {:error, reason} -> {:error, "could not link #{link}: #{inspect(reason)}"}
-        end
-    end
-  end
-
-  defp unlink_mounted(dir, paths, root) do
-    Enum.each(paths, fn path ->
-      link = path |> resolve_package(root) |> Path.basename() |> then(&Path.join(dir, &1))
-      remove_link(link)
-    end)
-  end
-
-  defp remove_link(link) do
-    case :os.type() do
-      {:win32, _} ->
-        link = win_path(link)
-        if File.dir?(link), do: System.cmd("cmd", ["/c", "rmdir", link])
-
-      _ ->
-        File.rm(link)
-    end
-  end
-
-  defp win_path(path), do: String.replace(path, "/", "\\")
+  defp package_project?(path), do: File.regular?(Path.join(path, "package.spiproj"))
 
   defp exe_name, do: if(match?({:win32, _}, :os.type()), do: "cell.exe", else: "cell")
 

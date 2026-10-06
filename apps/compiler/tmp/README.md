@@ -28,7 +28,7 @@ pwsh scripts/build.ps1                      # single-flight            (~2 min)
 pwsh scripts/build.ps1 -Mode hopac          # hopac                    (~4-5 min for a core change, ~35 s for a host change)
 pwsh scripts/test.ps1                       # smoke suite, single-flight
 pwsh scripts/test.ps1 -Mode hopac -Suite frontier   # the hopac inner loop
-pwsh scripts/test.ps1 -Suite all -Native    # everything, with native C/Rust/Delphi builds and runs
+pwsh scripts/test.ps1 -Suite all -Native    # everything, with native builds and runs (C, Rust, Delphi, TypeScript, C++, Python)
 pwsh scripts/test-rust-exports.ps1          # Rust library/export ABI contracts
 pwsh scripts/build-splitter.ps1             # spiral-split (Rust), for split core builds
 pwsh scripts/bench-split.ps1                # time the split core against the monolith
@@ -53,7 +53,8 @@ samples/                 every fixture, one flat directory each:
   mega_<name>/             the five megaprojects and their sub-packages
   core/                    the portable `core-` package the fixtures share
 tests/                   harness.psd1 (smoke list, known failures, megaproject roots, C flags),
-                         native-shims/ (C shims for native builds), rust-exports/
+                         native-shims/ (C shims; run_main.mjs/run_main.py/cpp_native.py: the TypeScript/Python/C++
+                         native tiers), rust-exports/
 lanes/                   per-lane docs: single-flight (backends), hopac (frontier), splitter
 splitter/                Rust workspace `spiral-split`: splits a monolith into parallel-buildable projects
 scripts/                 env, build, test, bench (pwsh, cross-platform)
@@ -68,7 +69,9 @@ Linux, or `$SPIRAL_BIN_CACHE_DIR`.
 ## Compiler CLI
 
 ```text
-SpiralCompiler [--backend Fsharp|C|Rust|Delphi] <input.spi> <output.fsx|.c|.rs|.pas>
+SpiralCompiler [--backend Fsharp|C|Rust|Delphi|TypeScript|Lua|Gleam|"Cpp + Cuda"|"Python + Cuda"] <input.spi> <output>
+                                     (backend inferred from .fsx/.c/.rs/.pas/.ts/.lua/.gleam/.cpp/.py; C++ also writes
+                                     .corelib.hpp/.hpp/.cu, Python also _auto.py, next to the output)
 SpiralCompiler --check INPUT.spi
 SpiralCompiler --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir
 SpiralCompiler --batch JOBS.tsv RESULTS.tsv [--timeout-ms N]    one warm process, many compiles

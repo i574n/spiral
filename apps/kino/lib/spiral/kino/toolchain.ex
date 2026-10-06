@@ -32,6 +32,49 @@ defmodule Spiral.Kino.Toolchain do
     opts[:rustc_bin] || System.get_env("SPIRAL_RUSTC") || System.find_executable("rustc")
   end
 
+  @spec spiral(keyword()) :: String.t() | nil
+  def spiral(opts) do
+    opts[:spiral] || System.get_env("SPIRAL_EXE") || default_spiral()
+  end
+
+  @spec python(keyword()) :: String.t() | nil
+  def python(opts) do
+    opts[:python] || System.get_env("SPIRAL_PYTHON") || System.find_executable("python") ||
+      System.find_executable("python3")
+  end
+
+  @spec lua(keyword()) :: String.t() | nil
+  def lua(opts) do
+    opts[:lua] || System.get_env("SPIRAL_LUA") || System.find_executable("lua")
+  end
+
+  @spec node(keyword()) :: String.t() | nil
+  def node(opts) do
+    opts[:node] || System.get_env("SPIRAL_NODE") || System.find_executable("node")
+  end
+
+  @spec pwsh(keyword()) :: String.t() | nil
+  def pwsh(opts) do
+    opts[:pwsh] || System.get_env("SPIRAL_PWSH") || System.find_executable("pwsh")
+  end
+
+  @spec cc(keyword()) :: String.t() | nil
+  def cc(opts) do
+    opts[:cc] || System.get_env("SPIRAL_CC") || System.find_executable("gcc") ||
+      System.find_executable("clang") || System.find_executable("cl")
+  end
+
+  @spec dcc(keyword()) :: String.t() | nil
+  def dcc(opts) do
+    opts[:dcc] || System.get_env("SPIRAL_DCC") || System.find_executable("dcc32") ||
+      System.find_executable("dcc64")
+  end
+
+  defp default_spiral do
+    base = Path.expand("../../../../../workspace/target/release/spiral", __DIR__)
+    Enum.find([base <> ".exe", base], &File.regular?/1)
+  end
+
   defp bundled_dotnet do
     base = Path.join(cache_dir(), "toolchains/dotnet")
     Enum.find([Path.join(base, "dotnet.exe"), Path.join(base, "dotnet")], &File.regular?/1)

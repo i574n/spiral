@@ -5,7 +5,7 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let bytes = value.as_bytes();
     let length = bytes.len() as i64;
     if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }
-    if to < from { return Rc::<str>::from(""); }
+    if to < from { return { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }; }
     // A slice that starts or ends inside a code point fails like the C and Delphi backends (abort / Halt(3)).
     if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }
     let slice = &bytes[from as usize..(to + 1) as usize];
@@ -74,13 +74,13 @@ fn method2(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3: i32, mut v4: i32, mu
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = Rc::<str>::from("À");
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("À"); } LIT.with(|lit| lit.clone()) };
     let mut v1: i32 = 1i32;
     let mut v2: u8 = method0(v0.clone(), v1);
-    let mut v3: Rc<str> = Rc::<str>::from("©");
+    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("©"); } LIT.with(|lit| lit.clone()) };
     let mut v4: i32 = 0i32;
     let mut v5: u8 = method0(v3.clone(), v4);
-    let mut v6: Rc<str> = Rc::<str>::from("Aéλ🙂Z");
+    let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) };
     let mut v7: i32 = 0i32;
     let mut v8: i32 = 0i32;
     let mut v9: i32 = 10i32;
@@ -104,7 +104,7 @@ fn spiral_main() -> i32 {
     let mut v27: i32 = 10i32;
     let mut v28: i32 = method2(v6.clone(), v21, v23, v24, v25, v26, v27);
     let mut v29: i32 = v28 - 1i32;
-    let mut v30: Rc<str> = string_slice(&Rc::<str>::from("Aéλ🙂Z"), v19 as i64, v29 as i64);
+    let mut v30: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v19 as i64, v29 as i64);
     let mut v31: i32 = 1i32;
     let mut v32: u8 = method0(v0.clone(), v31);
     let mut v33: i32 = 0i32;
@@ -124,7 +124,7 @@ fn spiral_main() -> i32 {
     let mut v47: i32 = 10i32;
     let mut v48: i32 = method2(v6.clone(), v41, v43, v44, v45, v46, v47);
     let mut v49: i32 = v48 - 1i32;
-    let mut v50: Rc<str> = string_slice(&Rc::<str>::from("Aéλ🙂Z"), v39 as i64, v49 as i64);
+    let mut v50: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v39 as i64, v49 as i64);
     let mut v51: i32 = 1i32;
     let mut v52: u8 = method0(v0.clone(), v51);
     let mut v53: i32 = 0i32;
@@ -144,7 +144,7 @@ fn spiral_main() -> i32 {
     let mut v67: i32 = 10i32;
     let mut v68: i32 = method2(v6.clone(), v61, v63, v64, v65, v66, v67);
     let mut v69: i32 = v68 - 1i32;
-    let mut v70: Rc<str> = string_slice(&Rc::<str>::from("Aéλ🙂Z"), v59 as i64, v69 as i64);
+    let mut v70: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v59 as i64, v69 as i64);
     let mut v71: i32 = 1i32;
     let mut v72: u8 = method0(v0.clone(), v71);
     let mut v73: i32 = 0i32;
@@ -156,12 +156,12 @@ fn spiral_main() -> i32 {
     let mut v79: i32 = method2(v6.clone(), v72, v74, v75, v76, v77, v78);
     let mut v80: i32 = 0i32;
     let mut v81: u8 = method0(v30.clone(), v80);
-    let mut v82: Rc<str> = Rc::<str>::from("é");
+    let mut v82: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
     let mut v83: i32 = 0i32;
     let mut v84: u8 = method0(v82.clone(), v83);
     let mut v85: i32 = 3i32;
     let mut v86: u8 = method0(v50.clone(), v85);
-    let mut v87: Rc<str> = Rc::<str>::from("🙂");
+    let mut v87: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("🙂"); } LIT.with(|lit| lit.clone()) };
     let mut v88: i32 = 3i32;
     let mut v89: u8 = method0(v87.clone(), v88);
     let mut v90: bool = v10 == 5i32;
@@ -204,7 +204,12 @@ fn spiral_main() -> i32 {
         7i32
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

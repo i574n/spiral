@@ -1,0 +1,13 @@
+// A boxed trait object (`Box<dyn Fn>`, the shape of lib/spiral's `rust.box (rust.dyn' ..)`) isn't Clone: passing it
+// to a join point must move it, not call `.clone()` (rustc E0599).
+nominal box t = $'Box<`t>'
+nominal dynfn = $'dyn Fn() -> i32'
+
+inl native (k : i32) : i32 =
+    inl f : box dynfn = $'Box::new(move || !k * 3) as Box<dyn Fn() -> i32>'
+    inl r = join $'(!f)()' : i32
+    r + 1
+
+inl main () : i32 =
+    inl ~k = 7i32
+    !!!!BackendSwitch({ C = fun () => 22i32 : i32; Rust = fun () => native k : i32 })

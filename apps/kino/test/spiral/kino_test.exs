@@ -18,6 +18,11 @@ defmodule Spiral.KinoTest do
   }
   """
 
+  defp package_dir!(proj) do
+    [_, dir] = Regex.run(~r/^packageDir:\s*(.+)$/m, proj)
+    String.trim(dir)
+  end
+
   defp compile_ok(_ctx), do: {:ok, @rust}
   defp rustc_ok(_ctx), do: :ok
 
@@ -78,6 +83,40 @@ defmodule Spiral.KinoTest do
     assert source =~ "0i32"
   end
 
+  test "a rust contract cell with a unit body is compiled again as 0i32" do
+    compile = fn %{source: source, backend: backend} ->
+      assert backend == "Rust"
+
+      if String.contains?(source, "0i32") do
+        {:ok, "fn main() {}\n"}
+      else
+        {:error, "Got:      ()\nExpected: i32"}
+      end
+    end
+
+    assert {:ok, %Result{value: nil}} =
+             Spiral.Kino.run("trace Verbose (fun () => \"\") id",
+               compile: compile,
+               builders: [
+                 %{
+                   tool: :rust,
+                   raw: "rust -c",
+                   contract: "",
+                   wasm: nil,
+                   deps: [],
+                   cleanup: nil,
+                   target: nil,
+                   env: nil
+                 }
+               ],
+               target: fn %{builder: builder} ->
+                 assert builder.tool == :rust
+                 assert builder.contract == ""
+                 {:ok, %{exit_status: 0, output: "", duration_ms: 1}}
+               end
+             )
+  end
+
   test "a compiler rejection is a SpiralError" do
     compile = fn _ ->
       {:error, "main.spi:1:1: Unification failure.\nGot: string\nExpected: i32"}
@@ -104,6 +143,29 @@ defmodule Spiral.KinoTest do
     assert message =~ "timed out after 3s"
   end
 
+  test "a ///- --timeout directive wins over the caller's :timeout (smart cells always pass one)" do
+    home = self()
+
+    execute = fn _ ->
+      send(home, {:deadline, Process.get(:spiral_kino_deadline)})
+      {:error, {:timeout, %{timeout: 0, output: ""}}}
+    end
+
+    started = System.monotonic_time(:millisecond)
+
+    assert {:error, %TimeoutError{timeout: 900_000, message: message}} =
+             Spiral.Kino.run("///- --test --timeout 900000\n1i32",
+               compile: &compile_ok/1,
+               rustc: &rustc_ok/1,
+               execute: execute,
+               timeout: 300_000
+             )
+
+    assert message =~ "timed out after 900s"
+    assert_received {:deadline, deadline}
+    assert deadline - started > 300_000
+  end
+
   test "a missing compiler is a ProcessError" do
     assert {:error, %ProcessError{message: message}} =
              Spiral.Kino.run("1i32",
@@ -120,8 +182,13 @@ defmodule Spiral.KinoTest do
 
     compile = fn %{spi_path: spi} ->
       dir = Path.dirname(spi)
-      assert File.read!(Path.join(dir, "package.spiproj")) =~ "shared-"
-      assert File.regular?(Path.join(dir, "shared/offset.spi"))
+      proj = File.read!(Path.join(dir, "package.spiproj"))
+      assert proj =~ "shared-"
+      package_dir = package_dir!(proj)
+      assert package_dir =~ "kino-mounts"
+      refute String.starts_with?(package_dir, dir)
+      assert File.regular?(Path.join(package_dir, "shared/offset.spi"))
+      refute File.dir?(Path.join(dir, "shared"))
 
       {:ok,
        """
@@ -143,6 +210,115 @@ defmodule Spiral.KinoTest do
     assert File.regular?(fixture)
   end
 
+  test "an absolute packageDir shares the sibling mount" do
+    shares_sibling_mount(fn parent -> "#{String.replace(parent, "\\", "/")}/somewhere" end)
+  end
+
+  # dice's own package.spiproj: packageDir: deps/polyglot/deps/spiral/lib (relative) seen through the junction is a
+  # second path to the spiral lib the cell already mounts -> the lib is loaded twice ("Got: stream u8 Expected: stream u8").
+  test "a relative packageDir shares the sibling mount too" do
+    shares_sibling_mount(fn _parent -> "deps/somewhere/lib" end)
+  end
+
+  defp shares_sibling_mount(package_dir_of) do
+    parent =
+      Path.join(System.tmp_dir!(), "spiral_kino_share_#{System.unique_integer([:positive])}")
+
+    spiral = Path.join(parent, "spiral")
+    dice = Path.join(parent, "dice_lib")
+    File.mkdir_p!(Path.join(spiral, "rust"))
+    File.mkdir_p!(Path.join(dice, "lib"))
+
+    File.write!(
+      Path.join(spiral, "package.spiproj"),
+      "packages:\n    |core-\nmodules:\n    rust/\n        rust\n"
+    )
+
+    File.write!(Path.join(spiral, "rust/rust.spi"), "inl add_one (x : i32) : i32 = x + 1i32\n")
+
+    original =
+      "packageDir: #{package_dir_of.(parent)}\npackages:\n    |core-\n    spiral-\nmodules:\n    lib/\n        dice\n"
+
+    File.write!(Path.join(dice, "package.spiproj"), original)
+    File.write!(Path.join(dice, "lib/dice.spi"), "inl roll (x : i32) : i32 = x\n")
+
+    home = self()
+
+    compile = fn %{spi_path: spi} ->
+      dir = Path.dirname(spi)
+      package_dir = package_dir!(File.read!(Path.join(dir, "package.spiproj")))
+      proj = File.read!(Path.join(package_dir, "dice_lib/package.spiproj"))
+      assert proj =~ "packageDir: ..\n"
+      refute proj =~ "somewhere"
+      assert File.regular?(Path.join(package_dir, "dice_lib/lib/dice.spi"))
+      assert File.regular?(Path.join(package_dir, "spiral/rust/rust.spi"))
+      assert File.read!(Path.join(dice, "package.spiproj")) == original
+      send(home, {:kino_mount, package_dir})
+
+      {:ok,
+       """
+       fn main() {
+           std::process::exit(main.join().unwrap());
+       }
+       """}
+    end
+
+    assert {:ok, %Result{value: "1"}} =
+             Spiral.Kino.run(
+               "///- --package #{String.replace(spiral, "\\", "/")} --package #{String.replace(dice, "\\", "/")}\n1i32",
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value("SPIRAL_KINO_VALUE:1\n"),
+               timeout: 30_000
+             )
+
+    assert File.regular?(Path.join(dice, "lib/dice.spi"))
+    assert_received {:kino_mount, mount}
+    Spiral.Kino.Mounts.remove!(mount)
+    File.rm_rf!(parent)
+  end
+
+  test "two cells share one package directory" do
+    root = Path.expand("../fixtures", __DIR__)
+    parent = self()
+
+    compile = fn %{spi_path: spi} ->
+      send(
+        parent,
+        {:package_dir, package_dir!(File.read!(Path.join(Path.dirname(spi), "package.spiproj")))}
+      )
+
+      {:ok,
+       """
+       fn main() {
+           std::process::exit(main.join().unwrap());
+       }
+       """}
+    end
+
+    assert {:ok, %Result{}} =
+             Spiral.Kino.run("///- --package shared\n1i32",
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value("SPIRAL_KINO_VALUE:1\n"),
+               root: root,
+               timeout: 30_000
+             )
+
+    assert {:ok, %Result{}} =
+             Spiral.Kino.run("///- --package shared\n2i32",
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value("SPIRAL_KINO_VALUE:2\n"),
+               root: root,
+               timeout: 30_000
+             )
+
+    assert_received {:package_dir, first}
+    assert_received {:package_dir, second}
+    assert first == second
+  end
+
   test "a missing package is a ProcessError" do
     assert {:error, %ProcessError{message: message}} =
              Spiral.Kino.run("///- --package missing\n1i32",
@@ -157,8 +333,103 @@ defmodule Spiral.KinoTest do
     assert_raise ArgumentError, ~r/:timeout/, fn -> Spiral.Kino.run("1", timeout: 0) end
 
     assert_raise ArgumentError, ~r/unknown Spiral backend/, fn ->
-      Spiral.Kino.run("///> gleam\n1")
+      Spiral.Kino.run("///> fortran\n1")
     end
+
+    assert {:ok, %Result{exit_status: 0, value: nil}} = Spiral.Kino.run("///> _\nnot spiral")
+  end
+
+  test "a bare rust builder stays on rustc" do
+    assert {:ok, %Result{value: "1", stdout: ""}} =
+             Spiral.Kino.run("///> rust\n1i32",
+               compile: fn %{backend: "Rust", source: source} ->
+                 refute source =~ "///>"
+                 {:ok, "fn main() {}\n"}
+               end,
+               rustc: &rustc_ok/1,
+               execute: run_value("SPIRAL_KINO_VALUE:1\n"),
+               target: fn _ -> raise "target" end
+             )
+  end
+
+  test "rust contract flags call the target and skip the value patch" do
+    assert {:ok, %Result{value: nil, stdout: "contract"}} =
+             Spiral.Kino.run("///> rust -cd near-token\n1i32",
+               compile: fn %{backend: "Rust", source: source} ->
+                 refute source =~ "///>"
+                 {:ok, "fn spiral_main() { emitRustExpr }\n"}
+               end,
+               rustc: fn _ -> raise "rustc" end,
+               execute: fn _ -> raise "execute" end,
+               target: fn %{builder: builder, output_path: path} ->
+                 assert builder.contract == ""
+                 assert [%{name: "near-token", version: "*"}] = builder.deps
+                 assert File.read!(path) =~ "emitRustExpr"
+                 {:ok, %{exit_status: 0, output: "contract\n", duration_ms: 1}}
+               end
+             )
+  end
+
+  test "each builder compiles once and the outputs are labeled" do
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    assert {:ok, %Result{value: "9", stdout: stdout}} =
+             Spiral.Kino.run("///> fsharp\n///> rust\n1i32",
+               compile: fn %{backend: backend} ->
+                 Agent.update(agent, &(&1 ++ [backend]))
+                 {:ok, "fn main() {}\n"}
+               end,
+               rustc: &rustc_ok/1,
+               execute: run_value("SPIRAL_KINO_VALUE:9\n"),
+               target: fn %{builder: %{tool: :fsharp}} ->
+                 {:ok, %{exit_status: 0, output: "fsharp out", duration_ms: 1}}
+               end
+             )
+
+    assert Agent.get(agent, & &1) == ["Fsharp", "Rust"]
+    assert stdout =~ ".fsx (fsharp)"
+    assert stdout =~ "fsharp out"
+    assert stdout =~ ".rs (rust)"
+  end
+
+  test "a missing spiral executable names the command" do
+    assert {:error, %ProcessError{message: message}} =
+             Spiral.Kino.run("///> lua\n1i32",
+               compile: fn %{backend: "Lua", output_path: path} ->
+                 File.write!(path, "print(1)\n")
+                 {:ok, "print(1)\n"}
+               end,
+               spiral: "C:/missing/spiral.exe"
+             )
+
+    assert message =~ "spiral lua"
+    assert message =~ "was not found"
+  end
+
+  test "a builder value is the cell value" do
+    assert {:ok, %Result{value: "7", stdout: "", exit_status: 0}} =
+             Spiral.Kino.run("///> c\n1i32",
+               compile: fn %{backend: "C", source: source} ->
+                 refute source =~ "///>"
+                 {:ok, "int main(void) { return 7; }\n"}
+               end,
+               target: fn %{builder: %{tool: :c}} ->
+                 {:ok, %{exit_status: 0, output: "", value: "7", duration_ms: 1}}
+               end
+             )
+  end
+
+  test "spiral json output is the cell stdout" do
+    inner = JSON.encode!(%{"code" => "return 1", "extension" => "lua", "output" => "printed"})
+    outer = JSON.encode!(%{"command_result" => inner})
+
+    assert {:ok, %Result{stdout: "printed", value: nil}} =
+             Spiral.Kino.run("///> lua\n1i32",
+               compile: fn %{backend: "Lua"} -> {:ok, "return 1\n"} end,
+               target: fn %{builder: %{tool: :lua}} ->
+                 {:ok, %{exit_status: 0, output: "trace line\n" <> outer <> "\n", duration_ms: 1}}
+               end
+             )
   end
 
   describe "eval!/2" do

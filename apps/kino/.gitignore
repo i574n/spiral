@@ -8,6 +8,5 @@ erl_crash.dump
 *.ez
 spiral_kino-*.tar
 /tmp/
-/manifest.toml
 /gleam.lock
 /src/

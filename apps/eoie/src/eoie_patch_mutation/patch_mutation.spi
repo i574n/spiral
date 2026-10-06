@@ -1,3 +1,0 @@
-inl main () : i32 =
-    patch_mutation_app.app.emit ()
-    0i32

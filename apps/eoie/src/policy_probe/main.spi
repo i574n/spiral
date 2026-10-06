@@ -1,1 +1,0 @@
-inl main () : i32 = domain.model.policy_probe_result ()

@@ -1,7 +1,0 @@
-packages:
-    patch_model
-    patch_domain
-    rust_std_fs
-modules:
-    model
-    main

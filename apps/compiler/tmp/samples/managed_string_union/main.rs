@@ -33,7 +33,7 @@ fn spiral_main() -> i32 {
     let mut v4: US0 = if v0 {
         US0::US0_1(7i32)
     } else {
-        let mut v2: Rc<str> = Rc::<str>::from("qwe");
+        let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
         US0::US0_0(v2.clone())
     };
     let mut v5: i32 = method0(v4.clone());
@@ -42,7 +42,12 @@ fn spiral_main() -> i32 {
     let mut v8: i32 = v7 - 6i32;
     v8
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

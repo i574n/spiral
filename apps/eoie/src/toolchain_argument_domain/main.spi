@@ -1,8 +1,0 @@
-inl main () : i32 =
-    inl _ = toolchain_argument_count_binding 4i32 0i32
-    inl _ = toolchain_argument_token_low_binding 2i32 3i32
-    inl _ = toolchain_argument_token_chunk_binding 12i32 1i32
-    !!!!Export("eoie_toolchain_argument_count", ((fun (first, second) => toolchain_argument_count_binding first second) : i32 * i32 -> i32))
-    !!!!Export("eoie_toolchain_argument_token_low", ((fun (first, second) => toolchain_argument_token_low_binding first second) : i32 * i32 -> i32))
-    !!!!Export("eoie_toolchain_argument_token_chunk", ((fun (first, second) => toolchain_argument_token_chunk_binding first second) : i32 * i32 -> i32))
-    0i32

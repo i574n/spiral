@@ -1,7 +1,0 @@
-open filesystem_move_contract.model
-
-inl main () : i32 =
-    match policy_move "/tmp/eoie-move-source.txt" "/tmp/eoie-move-target.txt" "move-exact" with
-    | MoveAccepted _ => 0i32
-    | MoveRejected _ => 1i32
-    | MoveFailed _ => 2i32

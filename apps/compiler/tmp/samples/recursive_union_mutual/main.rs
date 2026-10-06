@@ -30,11 +30,11 @@ impl UH0 {
 fn spiral_main() -> i32 {
     let mut v0: bool = true;
     let mut v5: Rc<UH0> = if v0 {
-        let mut v1: Rc<UH0> = Rc::new(UH0::UH0_1);
+        let mut v1: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) };
         let mut v2: Rc<UH1> = Rc::new(UH1::UH1_0(v1.clone()));
         Rc::new(UH0::UH0_0(v2.clone()))
     } else {
-        Rc::new(UH0::UH0_1)
+        { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
     };
     match &*v5 {
         UH0::UH0_0(v6) => { // A
@@ -47,7 +47,12 @@ fn spiral_main() -> i32 {
         _ => unreachable!(),
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

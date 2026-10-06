@@ -1,6 +1,0 @@
-open filesystem_batch_write_contract.model
-
-inl main () : i32 =
-    emit_plan_op (ReplaceFile ("b2.txt", "893a3cfd3912a125b2419774d2752a3bb8cc175927cd5b421336e4f028607452", "changed"))
-    emit_plan_op (CreateFile ("bad.spi", "inl main () : i32 = not_valid_spiral"))
-    0i32

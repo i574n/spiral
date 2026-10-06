@@ -161,7 +161,7 @@ let rec run
 /// ### main
 ///> _
 
-inl main (args : array_base string) =
+inl run_main (args : array_base string) : i32 =
     inl command = get_command ()
     inl arg_matches = command |> runtime.command_get_matches
 
@@ -194,7 +194,7 @@ inl main (args : array_base string) =
         |> async.block_on_tokio
         |> resultm.map_error' sm'.format'
 
-    match result |> resultm.unbox, exception with
+    match result |> rust.clone_native |> resultm.unbox, exception with
     | Ok retries, Some exception =>
         ($'$"spiral_wasm.main / retries: {!retries} / exception: \'{!exception}\'"' : string)
         |> resultm.err |> resultm.unwrap'
@@ -212,5 +212,13 @@ inl main (args : array_base string) =
 
     0i32
 
+/// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process args.
 inl main () =
-    $'let main args = !main args' : ()
+    backend_switch {
+        Fsharp = fun () => $'let main args = !run_main args' : ()
+        Rust = fun () =>
+            inl args =
+                $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
+                : array_base string
+            run_main args |> ignore
+    } : ()

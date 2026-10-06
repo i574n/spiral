@@ -1,0 +1,28 @@
+// NEAR's persistent collections don't implement Clone: lib/spiral's native `near.vector` (`SpiralNearVec`, a plain Vec
+// off wasm32) and `near_sdk::store::*` (here a local stand-in module, so the program builds without near-sdk). A
+// contract's state record holding one is returned from a join point and passed to another by moving it, so a contract's
+// `new` can return its state directly (it was `.clone()` before: rustc E0599).
+nominal vector t = $'SpiralNearVec<`t>'
+nominal lookup_map k v = $'near_sdk::store::LookupMap<`k, `v>'
+
+type state = { version : u32; seeds : vector u8; owners : lookup_map u32 u8 }
+
+inl new_state (k : u32) : state =
+    global "struct SpiralNearVec<T>(std::vec::Vec<T>);\nmod near_sdk { pub mod store { pub struct LookupMap<K, V>(pub std::collections::BTreeMap<K, V>); } }"
+    {
+        version = k
+        seeds = $'SpiralNearVec(vec\![1u8, 2, 3])'
+        owners = $'near_sdk::store::LookupMap(std::collections::BTreeMap::from([(1u32, 4u8)]))'
+    }
+
+inl total (s : state) : i32 =
+    inl {version seeds owners} = s
+    $'(!version as i32) + (!seeds.0.len() as i32) + (*!owners.0.get(&1u32).unwrap() as i32)'
+
+inl native (k : u32) : i32 =
+    inl s = join new_state k
+    join total s
+
+inl main () : i32 =
+    inl ~k = 7u32
+    !!!!BackendSwitch({ C = fun () => 14i32 : i32; Rust = fun () => native k : i32 })

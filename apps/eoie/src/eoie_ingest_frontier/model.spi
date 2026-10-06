@@ -1,4 +1,0 @@
-let ingest_authority_binding (left : i32) (right : i32) : i32 =
-    if !!!!LT(left,0i32) then 0i32
-    elif !!!!LT(right,0i32) then 0i32
-    else ingest_frontier_contract.model.authority_status ()

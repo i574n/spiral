@@ -1,6 +1,0 @@
-open filesystem_batch_write_contract.model
-
-inl main () : i32 =
-    emit_plan_op (CreateFile ("a.txt", "alpha"))
-    emit_plan_op (CreateFile ("b.txt", "beta"))
-    0i32

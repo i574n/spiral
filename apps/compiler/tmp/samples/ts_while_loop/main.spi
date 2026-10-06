@@ -1,0 +1,13 @@
+inl while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((join cond()),(body()))
+
+inl set' forall t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : (); TypeScript = fun () => $"!a = !b" : (); CppHost = fun () => $"!a = !b" : (); Python = fun () => $"!a = !b" : () })
+
+inl main () : i32 =
+    inl ~i = 0i32
+    inl ~acc = 0i32
+    while' (fun () => i < 10i32) fun () =>
+        set' acc (acc +. i)
+        set' i (i +. 1i32)
+    acc -. 45i32

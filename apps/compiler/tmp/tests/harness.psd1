@@ -22,6 +22,8 @@
 
     # Diagnosed failures: reported as `known` instead of failing a run.
     Known = @(
+        @{ Id = 'samples/ts_int_wrap'; Backend = 'Python'; Reason = 'upstream CodegenPython: Python ints are unbounded, so fixed-width wrapping differs from C (exits 1 at the first wrap check)' }
+        @{ Id = 'samples/ts_string_slice'; Backend = 'Python'; Reason = 'upstream CodegenPython: strings index by code point, C/Rust/TypeScript by UTF-8 byte' }
         @{ Id = 'samples/native_cube_flush_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h); native C runs only on Linux' }
         @{ Id = 'samples/native_cube_monotonic_delay_direct'; Backend = 'C'; Reason = 'POSIX-only residual (poll.h/clock_gettime); native C runs only on Linux' }
         @{ Id = 'samples/dynamic_array_bounds_negative'; Backend = 'Rust'; Reason = 'C residual has no bounds check (exits 0); Rust panics as the fixture intends' }
@@ -49,8 +51,6 @@
         @{ Pattern = 'abi_external_string'; Flags = '-include {shims}/abi-external-string-c-shim.h' }
         @{ Pattern = 'abi_external'; Flags = '-Dspiral_abi_libc_abs=abs' }
         @{ Pattern = 'abi_external_i64'; Flags = '-Dspiral_abi_libc_llabs=llabs' }
-        @{ Pattern = 'native_recursive_tail_recursion'; Flags = '-include {shims}/native-recursive-tail-c-shim.h' }
-        @{ Pattern = 'native_managed_scc_tail_recursion'; Flags = '-include {shims}/native-managed-scc-tail-c-shim.h' }
         @{ Pattern = 'native_managed_array_scc_tail_recursion'; Flags = '-include {shims}/native-managed-array-scc-tail-c-shim.h' }
         @{ Pattern = 'native_managed_array_scc3_tail_recursion'; Flags = '-include {shims}/native-managed-array-scc3-tail-c-shim.h' }
         @{ Pattern = 'native_package_owned_array_type'; Flags = '-include {shims}/portable-array-refcount-c-shim.h' }
@@ -62,6 +62,109 @@
         @{ Pattern = 'dynamic_array_resize_nested'; Flags = '-include {shims}/dynamic-array-resize-nested-c-shim.h' }
         @{ Pattern = 'dynamic_array_*'; Flags = '-include {shims}/dynamic-array-geometric-growth-c-shim.h' }
     )
+    # Samples that also get a TypeScript row: every C-oracle sample whose TypeScript build agreed with C in the
+    # 2026-10-05 sweep (the rest are C-only by design: ABI/libc fixtures, C dynamic-array shims, the harness core's C-only
+    # byte macro, or a BackendSwitch without a TypeScript key).
+    AlsoTypeScript = @(
+        'samples/arithmetic_branch'
+        'samples/backend_smoke'
+        'samples/branch_select'
+        'samples/dynamic_array_bool'
+        'samples/dynamic_array_f64'
+        'samples/dynamic_array_function_boundary'
+        'samples/dynamic_array_mutable_alias'
+        'samples/dynamic_array_nested'
+        'samples/dynamic_array_record'
+        'samples/dynamic_array_record_shared_alias'
+        'samples/dynamic_array_return'
+        'samples/dynamic_array_runtime_length'
+        'samples/dynamic_array_shared_alias'
+        'samples/dynamic_array_union'
+        'samples/dynamic_array_union_nested'
+        'samples/dynamic_array_union_nested_shared_alias'
+        'samples/dynamic_array_union_shared_alias'
+        'samples/expression_precedence'
+        'samples/fixed_array_runtime_index'
+        'samples/fixed_array_runtime_update'
+        'samples/fixed_array_scalar'
+        'samples/float_math'
+        'samples/function_call'
+        'samples/item_metadata_missing_target'
+        'samples/lua_while_union_pair'
+        'samples/managed_string_array'
+        'samples/managed_string_builder'
+        'samples/managed_string_codepoints'
+        'samples/managed_string_concat'
+        'samples/managed_string_empty_slice'
+        'samples/managed_string_index'
+        'samples/managed_string_invalid_utf8_slice'
+        'samples/managed_string_record'
+        'samples/managed_string_recursive'
+        'samples/managed_string_runtime'
+        'samples/managed_string_runtime_choice'
+        'samples/managed_string_shared_calls'
+        'samples/managed_string_slice'
+        'samples/managed_string_union'
+        'samples/managed_string_utf8_boundaries'
+        'samples/multiline_comment'
+        'samples/multiline_triple_string'
+        'samples/native_bitwise_scalar'
+        'samples/native_closure_array_capture'
+        'samples/native_closure_branch'
+        'samples/native_closure_capture'
+        'samples/native_closure_captured_branch'
+        'samples/native_closure_managed_capture'
+        'samples/native_closure_managed_captured_branch'
+        'samples/native_closure_managed_reuse'
+        'samples/native_closure_multimodule'
+        'samples/native_closure_multiowner'
+        'samples/native_closure_nested_branch'
+        'samples/native_closure_return'
+        'samples/native_closure_reuse'
+        'samples/native_closure_union_capture_method'
+        'samples/native_closure_union_rec'
+        'samples/native_float_infinity'
+        'samples/native_float_math_family'
+        'samples/native_float_pow_pi'
+        'samples/native_float_sqrt'
+        'samples/native_literal_join_args'
+        'samples/native_managed_array_tail_recursion'
+        'samples/native_managed_scc_tail_recursion'
+        'samples/native_managed_tail_recursion'
+        'samples/native_multimodule'
+        'samples/native_prototype_record_callback'
+        'samples/native_prototype_union_closure_method'
+        'samples/native_recursive_tail_recursion'
+        'samples/native_string_utf8_fold_source_invalid'
+        'samples/native_string_utf8_grapheme_bounded_source_invalid'
+        'samples/native_string_utf8_scalar_source_invalid'
+        'samples/native_string_utf8_validate_source_invalid'
+        'samples/native_tail_recursion'
+        'samples/nested_tuple'
+        'samples/portable_composite'
+        'samples/predicate_call'
+        'samples/record_value'
+        'samples/recursive_union_list'
+        'samples/recursive_union_managed'
+        'samples/recursive_union_mutual'
+        'samples/recursive_union_terminal_ownership'
+        'samples/recursive_union_tree_shared'
+        'samples/rust_emit_expr_macro'
+        'samples/rust_global_item_macro'
+        'samples/rust_static_closure_chain'
+        'samples/rust_target_globals'
+        'samples/static_string'
+        'samples/tagged_union_enum'
+        'samples/tagged_union_heterogeneous'
+        'samples/tagged_union_scalar'
+        'samples/tagged_union_three_case'
+        'samples/tail_loop'
+        'samples/target_global_conflict'
+        'samples/tuple_mixed'
+        'samples/tuple_pair'
+        'samples/unsigned_mod'
+    )
+
     # Backends a sample is compiled to, when not all four (Fsharp, C, Rust, Delphi). Contract and
     # megaproject samples are F# only regardless.
     Backends = @{
@@ -238,8 +341,40 @@
             'samples/mega_zeta_structural_laboratory'
         )
         'C,Rust' = @(
+            'samples/rust_box_dyn_moves'
+            'samples/rust_consuming_json'
             'samples/rust_emit_expr_macro'
+            'samples/rust_emit_tuple_args'
             'samples/rust_global_item_macro'
+            'samples/rust_macro_reuse_clone'
+            'samples/rust_near_store_moves'
+            'samples/rust_static_closure_chain'
+            'samples/rust_string_literal_path'
+            'samples/rust_union_non_clone_payload'
+        )
+        # Portable fixtures for the newer backends (TypeScript; C++ host via g++ and Python on the CPU path, both from
+        # upstream's CodegenCpp/CodegenPython): the C row of the same sample is the oracle (exit code + stdout).
+        'Python' = @(
+            'samples/python_foreign_array_index'
+        )
+        'C,Python' = @(
+            'samples/python_macro_annotations'
+        )
+        'C,TypeScript,Cpp,Python' = @(
+            'samples/ts_int_wrap'
+            'samples/ts_union_recursive'
+            'samples/ts_union_scalar'
+            'samples/ts_closure_capture'
+            'samples/ts_closure_return'
+            'samples/ts_tail_loop'
+            'samples/ts_string_slice'
+            'samples/ts_string_concat'
+            'samples/ts_tuple_mixed'
+            'samples/ts_layout_heap'
+            'samples/ts_layout_mutable'
+            'samples/ts_while_loop'
+            'samples/ts_array_union'
+            'samples/ts_float_nan'
         )
     }
 }

@@ -1,4 +1,0 @@
-inl main () : i32 =
-    patch_gated_app.app.emit ()
-    patch_rehearsal_app.app.emit ()
-    0i32

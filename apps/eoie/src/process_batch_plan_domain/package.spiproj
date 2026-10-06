@@ -1,6 +1,0 @@
-modules:
-    model
-    bridge
-    matrix
-    terminal
-    main

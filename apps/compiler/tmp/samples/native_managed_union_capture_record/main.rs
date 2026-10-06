@@ -39,7 +39,7 @@ fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     })
 }
 fn closure0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
-    Rc::new(move |mut v0: i32| -> Rc<dyn Fn(i32) -> i32> {
+    thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = Rc::new(move |mut v0: i32| -> Rc<dyn Fn(i32) -> i32> {
         let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
         v1.clone().borrow_mut()[0i32 as usize] = v0;
         let mut v2: i32 = v0 + 1i32;
@@ -48,11 +48,12 @@ fn closure0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
         let mut v7: US0 = if v3 {
             US0::US0_0
         } else {
-            let mut v5: Rc<str> = Rc::<str>::from("hi");
+            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
             US0::US0_1(v5.clone(), v1.clone())
         };
         closure1(v7.clone())
-    })
+    }); }
+    CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>>) -> Rc<dyn Fn(i32) -> i32> {
     v0(0i32)
@@ -83,7 +84,12 @@ fn spiral_main() -> i32 {
     let mut v2: Rc<dyn Fn(i32) -> i32> = method1(v0.clone());
     method2(v1.clone(), v2.clone())
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

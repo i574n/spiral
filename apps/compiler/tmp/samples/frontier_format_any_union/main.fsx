@@ -7,23 +7,23 @@ let rec method1 () : string =
     v0
 and method2 (v0 : Mut0, v1 : string) : unit =
     let v2 : string = v0.l0
-    let v5 : string = v2 + v1 
-    v0.l0 <- v5
+    let v3 : string = v2 + v1 
+    v0.l0 <- v3
     ()
 and method0 (v0 : US0) : string =
     let v1 : string = method1()
-    let v11 : Mut0 = {l0 = v1} : Mut0
-    let v14 : string = $"%A{v0}"
-    method2(v11, v14)
-    let v136 : string = v11.l0
-    v136
+    let v18 : Mut0 = {l0 = v1} : Mut0
+    let v21 : string = $"%A{v0}"
+    method2(v18, v21)
+    let v70 : string = v18.l0
+    v70
 let v0 : int32 = 1
 let v1 : US0 = US0_0(v0)
 let v2 : string = method0(v1)
 let v7 : string = "x: "
 let v8 : string = v7 + v2 
-let v19 : bool = v8 = ""
-if v19 then
+let v16 : bool = v8 = ""
+if v16 then
     1
 else
     0

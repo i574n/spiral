@@ -1,0 +1,24 @@
+/// # pure_split
+/// Pure-Spiral (lib/spiral/parsing) port of parsing.dib's FParsec split_args grammar, combinator for combinator, so
+/// it is compared against FParsec on the same grammar. runtime.split_args (the real consumer) is benchmarked as well.
+open sm'_operators
+
+/// ### split_args
+let split_args (args : string) : result (array_base string) string =
+    open parsing
+    inl esc = [ '\\'; '`' ]
+    inl quotes = [ '"' ]
+    inl special = esc ++ quotes
+    inl p_esc_char c = p_char c >>. any_char () |>> fun c' => fun () => #?c ++#? (c' ())
+    inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
+    inl p_plain = special ++ [ ' ' ] |> none_of |> many1_chars
+    inl p_esc = esc |> listm.map p_esc_char |> choice
+    inl p_quoted = (p_word <|> p_esc) |> many_strings
+    inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
+    inl p_esc_root = (p_esc >>% "") >>. (p_word |> many_strings)
+    inl p_content = p_plain <|> p_quoted_all <|> p_esc_root
+    inl p_args = spaces1 () |> sep_by p_content
+    args
+    |> run_parser p_args
+    |> resultm.map (fst >> listm'.box >> listm'.to_array')
+    |> resultm.map_error eval

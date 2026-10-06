@@ -29,9 +29,41 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                             (fun () =>
                                                 $'Unchecked.defaultof<_>' : value
                                             ) : () -> value
+                                        // As F#'s Unchecked.defaultof<_>: a value type's zero (0 for an i32 payload),
+                                        // None (null) for everything else. Every arm is evaluated on every backend: the
+                                        // literal is_python keeps the other backends' evaluation (and numbering) as before.
                                         Python =
                                             (fun () =>
-                                                $'None' : value
+                                                inl is_python =
+                                                    backend_switch `bool `({}) {
+                                                        Gleam = (fun () => false) : () -> bool
+                                                        Lua = (fun () => false) : () -> bool
+                                                        Fsharp = (fun () => false) : () -> bool
+                                                        Python = (fun () => true) : () -> bool
+                                                    }
+                                                if is_python
+                                                then
+                                                    typecase value with
+                                                    | i8 => 0i8
+                                                    | i16 => 0i16
+                                                    | i32 => 0i32
+                                                    | i64 => 0i64
+                                                    | u8 => 0u8
+                                                    | u16 => 0u16
+                                                    | u32 => 0u32
+                                                    | u64 => 0u64
+                                                    | f32 => 0.0f32
+                                                    | f64 => 0.0f64
+                                                    | bool => false
+                                                    | char => '\0'
+                                                    | _ => $'None' : value
+                                                else $'None' : value
+                                            ) : () -> value
+                                        // native Rust: the payload type's Default (a number's 0 and bool's false, as F#'s
+                                        // zero of a value type); a payload type without Default (a Spiral union) doesn't compile
+                                        Rust =
+                                            (fun () =>
+                                                $'Default::default()' : value
                                             ) : () -> value
                                     }
                             inl item = real_core.nominal_create `union_type (key, value)
@@ -74,6 +106,10 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                                         Python =
                                                             (fun () =>
                                                                 $'None' : value
+                                                            ) : () -> value
+                                                        Rust =
+                                                            (fun () =>
+                                                                $'Default::default()' : value
                                                             ) : () -> value
                                                     }
                                             inl item = real_core.nominal_create `union_type (key, value)
@@ -153,9 +189,11 @@ inl union_to_string forall t. (x : t) : string =
                         Lua = fun () => "("
                         Fsharp = fun () =>
                             run_target function
-                                | Rust _ => fun () => join "("
+                                | Rust _ | RustNative => fun () => join "("
                                 | _ => fun () => join " "
                         Python = fun () => "("
+                        // Native Debug prints a union case as `US0_1(..)`.
+                        Rust = fun () => "("
                     }
                 inl x' = #?x' |> sm'.split separator |> am'.index_base 0
                 if #?x |> sm'.starts_with x'

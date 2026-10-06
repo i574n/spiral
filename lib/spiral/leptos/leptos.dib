@@ -18,11 +18,7 @@ open sm'_operators
 
 #!spiral
 
-nominal a' =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::A\")>]\n#endif\ntype leptos_html_A = class end"
-        $'' : $'leptos_html_A'
-    )
+nominal a' = $'leptos::html::A'
 
 #!markdown
 
@@ -30,11 +26,7 @@ nominal a' =
 
 #!spiral
 
-nominal event =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::ev::Event\")>]\n#endif\ntype leptos_ev_Event = class end"
-        $'' : $'leptos_ev_Event'
-    )
+nominal event = $'leptos::ev::Event'
 
 #!markdown
 
@@ -42,11 +34,7 @@ nominal event =
 
 #!spiral
 
-nominal mouse_event =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::ev::MouseEvent\")>]\n#endif\ntype leptos_ev_MouseEvent = class end"
-        $'' : $'leptos_ev_MouseEvent'
-    )
+nominal mouse_event = $'leptos::ev::MouseEvent'
 
 #!markdown
 
@@ -54,11 +42,7 @@ nominal mouse_event =
 
 #!spiral
 
-nominal button =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Button\")>]\n#endif\ntype leptos_html_Button = class end"
-        $'' : $'leptos_html_Button'
-    )
+nominal button = $'leptos::html::Button'
 
 #!markdown
 
@@ -66,11 +50,7 @@ nominal button =
 
 #!spiral
 
-nominal details =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Details\")>]\n#endif\ntype leptos_html_Details = class end"
-        $'' : $'leptos_html_Details'
-    )
+nominal details = $'leptos::html::Details'
 
 #!markdown
 
@@ -78,11 +58,7 @@ nominal details =
 
 #!spiral
 
-nominal dd =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Dd\")>]\n#endif\ntype leptos_html_Dd = class end"
-        $'' : $'leptos_html_Dd'
-    )
+nominal dd = $'leptos::html::Dd'
 
 #!markdown
 
@@ -90,11 +66,7 @@ nominal dd =
 
 #!spiral
 
-nominal div =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Div\")>]\n#endif\ntype leptos_html_Div = class end"
-        $'' : $'leptos_html_Div'
-    )
+nominal div = $'leptos::html::Div'
 
 #!markdown
 
@@ -102,11 +74,7 @@ nominal div =
 
 #!spiral
 
-nominal dl =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Dl\")>]\n#endif\ntype leptos_html_Dl = class end"
-        $'' : $'leptos_html_Dl'
-    )
+nominal dl = $'leptos::html::Dl'
 
 #!markdown
 
@@ -114,11 +82,7 @@ nominal dl =
 
 #!spiral
 
-nominal dt =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Dt\")>]\n#endif\ntype leptos_html_Dt = class end"
-        $'' : $'leptos_html_Dt'
-    )
+nominal dt = $'leptos::html::Dt'
 
 #!markdown
 
@@ -126,11 +90,7 @@ nominal dt =
 
 #!spiral
 
-nominal footer =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Footer\")>]\n#endif\ntype leptos_html_Footer = class end"
-        $'' : $'leptos_html_Footer'
-    )
+nominal footer = $'leptos::html::Footer'
 
 #!markdown
 
@@ -138,11 +98,7 @@ nominal footer =
 
 #!spiral
 
-nominal header =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Header\")>]\n#endif\ntype leptos_html_Header = class end"
-        $'' : $'leptos_html_Header'
-    )
+nominal header = $'leptos::html::Header'
 
 #!markdown
 
@@ -150,11 +106,7 @@ nominal header =
 
 #!spiral
 
-nominal input =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Input\")>]\n#endif\ntype leptos_html_Input = class end"
-        $'' : $'leptos_html_Input'
-    )
+nominal input = $'leptos::html::Input'
 
 #!markdown
 
@@ -162,11 +114,7 @@ nominal input =
 
 #!spiral
 
-nominal label =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Label\")>]\n#endif\ntype leptos_html_Label = class end"
-        $'' : $'leptos_html_Label'
-    )
+nominal label = $'leptos::html::Label'
 
 #!markdown
 
@@ -174,11 +122,7 @@ nominal label =
 
 #!spiral
 
-nominal main =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Main\")>]\n#endif\ntype leptos_html_Main = class end"
-        $'' : $'leptos_html_Main'
-    )
+nominal main = $'leptos::html::Main'
 
 #!markdown
 
@@ -186,11 +130,7 @@ nominal main =
 
 #!spiral
 
-nominal nav =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Nav\")>]\n#endif\ntype leptos_html_Nav = class end"
-        $'' : $'leptos_html_Nav'
-    )
+nominal nav = $'leptos::html::Nav'
 
 #!markdown
 
@@ -198,11 +138,7 @@ nominal nav =
 
 #!spiral
 
-nominal option' =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Option_\")>]\n#endif\ntype leptos_html_Option = class end"
-        $'' : $'leptos_html_Option'
-    )
+nominal option' = $'leptos::html::Option_'
 
 #!markdown
 
@@ -210,11 +146,7 @@ nominal option' =
 
 #!spiral
 
-nominal pre =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Pre\")>]\n#endif\ntype leptos_html_Pre = class end"
-        $'' : $'leptos_html_Pre'
-    )
+nominal pre = $'leptos::html::Pre'
 
 #!markdown
 
@@ -222,11 +154,7 @@ nominal pre =
 
 #!spiral
 
-nominal select =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Select\")>]\n#endif\ntype leptos_html_Select = class end"
-        $'' : $'leptos_html_Select'
-    )
+nominal select = $'leptos::html::Select'
 
 #!markdown
 
@@ -234,11 +162,7 @@ nominal select =
 
 #!spiral
 
-nominal span =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Span\")>]\n#endif\ntype leptos_html_Span = class end"
-        $'' : $'leptos_html_Span'
-    )
+nominal span = $'leptos::html::Span'
 
 #!markdown
 
@@ -246,11 +170,7 @@ nominal span =
 
 #!spiral
 
-nominal summary =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Summary\")>]\n#endif\ntype leptos_html_Summary = class end"
-        $'' : $'leptos_html_Summary'
-    )
+nominal summary = $'leptos::html::Summary'
 
 #!markdown
 
@@ -258,11 +178,7 @@ nominal summary =
 
 #!spiral
 
-nominal table =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Table\")>]\n#endif\ntype leptos_html_Table = class end"
-        $'' : $'leptos_html_Table'
-    )
+nominal table = $'leptos::html::Table'
 
 #!markdown
 
@@ -270,11 +186,7 @@ nominal table =
 
 #!spiral
 
-nominal thead =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Thead\")>]\n#endif\ntype leptos_html_Thead = class end"
-        $'' : $'leptos_html_Thead'
-    )
+nominal thead = $'leptos::html::Thead'
 
 #!markdown
 
@@ -282,11 +194,7 @@ nominal thead =
 
 #!spiral
 
-nominal tbody =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Tbody\")>]\n#endif\ntype leptos_html_Tbody = class end"
-        $'' : $'leptos_html_Tbody'
-    )
+nominal tbody = $'leptos::html::Tbody'
 
 #!markdown
 
@@ -294,11 +202,7 @@ nominal tbody =
 
 #!spiral
 
-nominal tr =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Tr\")>]\n#endif\ntype leptos_html_Tr = class end"
-        $'' : $'leptos_html_Tr'
-    )
+nominal tr = $'leptos::html::Tr'
 
 #!markdown
 
@@ -306,11 +210,7 @@ nominal tr =
 
 #!spiral
 
-nominal th =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Th\")>]\n#endif\ntype leptos_html_Th = class end"
-        $'' : $'leptos_html_Th'
-    )
+nominal th = $'leptos::html::Th'
 
 #!markdown
 
@@ -318,11 +218,7 @@ nominal th =
 
 #!spiral
 
-nominal td =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::Td\")>]\n#endif\ntype leptos_html_Td = class end"
-        $'' : $'leptos_html_Td'
-    )
+nominal td = $'leptos::html::Td'
 
 #!markdown
 
@@ -330,11 +226,7 @@ nominal td =
 
 #!spiral
 
-nominal svg =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::svg::Svg\")>]\n#endif\ntype leptos_svg_Svg = class end"
-        $'' : $'leptos_svg_Svg'
-    )
+nominal svg = $'leptos::svg::Svg'
 
 #!markdown
 
@@ -342,11 +234,7 @@ nominal svg =
 
 #!spiral
 
-nominal path =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::svg::Path\")>]\n#endif\ntype leptos_svg_Path = class end"
-        $'' : $'leptos_svg_Path'
-    )
+nominal path = $'leptos::svg::Path'
 
 #!markdown
 
@@ -354,11 +242,7 @@ nominal path =
 
 #!spiral
 
-nominal circle =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::svg::Circle\")>]\n#endif\ntype leptos_svg_Circle = class end"
-        $'' : $'leptos_svg_Circle'
-    )
+nominal circle = $'leptos::svg::Circle'
 
 #!markdown
 
@@ -366,11 +250,7 @@ nominal circle =
 
 #!spiral
 
-nominal rect =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::svg::Rect\")>]\n#endif\ntype leptos_svg_Rect = class end"
-        $'' : $'leptos_svg_Rect'
-    )
+nominal rect = $'leptos::svg::Rect'
 
 #!markdown
 
@@ -378,11 +258,7 @@ nominal rect =
 
 #!spiral
 
-nominal animate =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::svg::Animate\")>]\n#endif\ntype leptos_svg_Animate = class end"
-        $'' : $'leptos_svg_Animate'
-    )
+nominal animate = $'leptos::svg::Animate'
 
 #!markdown
 
@@ -390,11 +266,7 @@ nominal animate =
 
 #!spiral
 
-nominal action t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Action<$0, $1>\")>]\n#endif\ntype leptos_prelude_Action<'T, 'U> = class end"
-        $'' : $'leptos_prelude_Action<`t, `u>'
-    )
+nominal action t u = $'leptos::prelude::Action<`t, `u>'
 
 #!markdown
 
@@ -402,11 +274,7 @@ nominal action t u =
 
 #!spiral
 
-nominal arc_action t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcAction<$0, $1>\")>]\n#endif\ntype leptos_prelude_ArcAction<'T, 'U> = class end"
-        $'' : $'leptos_prelude_ArcAction<`t, `u>'
-    )
+nominal arc_action t u = $'leptos::prelude::ArcAction<`t, `u>'
 
 #!markdown
 
@@ -414,11 +282,7 @@ nominal arc_action t u =
 
 #!spiral
 
-nominal for =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::For\")>]\n#endif\ntype leptos_prelude_For = class end"
-        $'' : $'leptos_prelude_For'
-    )
+nominal for = $'leptos::prelude::For'
 
 #!markdown
 
@@ -426,11 +290,7 @@ nominal for =
 
 #!spiral
 
-nominal show =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Show\")>]\n#endif\ntype leptos_prelude_Show = class end"
-        $'' : $'leptos_prelude_Show'
-    )
+nominal show = $'leptos::prelude::Show'
 
 #!markdown
 
@@ -438,23 +298,9 @@ nominal show =
 
 #!spiral
 
-nominal fragment =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Fragment\")>]\n#endif\ntype leptos_dom_Fragment = class end"
-        $'' : $'leptos_dom_Fragment'
-    )
-
-#!markdown
-
-### interval_handle
-
-#!spiral
-
-nominal interval_handle =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::leptos_dom::helpers::IntervalHandle\")>]\n#endif\ntype leptos_dom_IntervalHandle = class end"
-        $'' : $'leptos_dom_IntervalHandle'
-    )
+// codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this
+// spelling.
+nominal fragment = $'leptos::prelude::Fragment'
 
 #!markdown
 
@@ -462,23 +308,7 @@ nominal interval_handle =
 
 #!spiral
 
-nominal text =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::tachys::renderer::dom::Text\")>]\n#endif\ntype leptos_dom_Text = class end"
-        $'' : $'leptos_dom_Text'
-    )
-
-#!markdown
-
-### transparent
-
-#!spiral
-
-nominal transparent =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::leptos_dom::Transparent\")>]\n#endif\ntype leptos_dom_Transparent = class end"
-        $'' : $'leptos_dom_Transparent'
-    )
+nominal text = $'leptos::tachys::renderer::dom::Text'
 
 #!markdown
 
@@ -486,11 +316,7 @@ nominal transparent =
 
 #!spiral
 
-nominal route =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::Route\")>]\n#endif\ntype leptos_router_Route = class end"
-        $'' : $'leptos_router_Route'
-    )
+nominal route = $'leptos_router::Route'
 
 #!markdown
 
@@ -498,11 +324,7 @@ nominal route =
 
 #!spiral
 
-nominal nested_route =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::NestedRoute<_, _, _, _>\")>]\n#endif\ntype leptos_router_NestedRoute = class end"
-        $'' : $'leptos_router_NestedRoute'
-    )
+nominal nested_route = $'leptos_router::NestedRoute<_, _, _, _>'
 
 #!markdown
 
@@ -510,11 +332,7 @@ nominal nested_route =
 
 #!spiral
 
-nominal route_definition =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::RouteDefinition\")>]\n#endif\ntype leptos_router_RouteDefinition = class end"
-        $'' : $'leptos_router_RouteDefinition'
-    )
+nominal route_definition = $'leptos_router::RouteDefinition'
 
 #!markdown
 
@@ -522,11 +340,7 @@ nominal route_definition =
 
 #!spiral
 
-nominal router =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::Router\")>]\n#endif\ntype leptos_router_Router = class end"
-        $'' : $'leptos_router_Router'
-    )
+nominal router = $'leptos_router::Router'
 
 #!markdown
 
@@ -534,11 +348,7 @@ nominal router =
 
 #!spiral
 
-nominal routes =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::Routes\")>]\n#endif\ntype leptos_router_Routes = class end"
-        $'' : $'leptos_router_Routes'
-    )
+nominal routes = $'leptos_router::Routes'
 
 #!markdown
 
@@ -546,11 +356,7 @@ nominal routes =
 
 #!spiral
 
-nominal html_element t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::html::HtmlElement<$0, _, _>\")>]\n#endif\ntype leptos_dom_html_HtmlElement<'T> = class end"
-        $'' : $'leptos_dom_html_HtmlElement<`t>'
-    )
+nominal html_element t = $'leptos::html::HtmlElement<`t, _, _>'
 
 #!markdown
 
@@ -558,11 +364,7 @@ nominal html_element t =
 
 #!spiral
 
-nominal into_view =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::IntoView\")>]\n#endif\ntype leptos_IntoView = class end"
-        $'' : $'leptos_IntoView'
-    )
+nominal into_view = $'leptos::IntoView'
 
 #!markdown
 
@@ -570,11 +372,7 @@ nominal into_view =
 
 #!spiral
 
-nominal location =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::location::Location\")>]\n#endif\ntype leptos_router_location_Location = class end"
-        $'' : $'leptos_router_location_Location'
-    )
+nominal location = $'leptos_router::location::Location'
 
 #!markdown
 
@@ -582,11 +380,7 @@ nominal location =
 
 #!spiral
 
-nominal navigate_options =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::NavigateOptions\")>]\n#endif\ntype leptos_router_NavigateOptions = class end"
-        $'' : $'leptos_router_NavigateOptions'
-    )
+nominal navigate_options = $'leptos_router::NavigateOptions'
 
 #!markdown
 
@@ -594,11 +388,7 @@ nominal navigate_options =
 
 #!spiral
 
-nominal url =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos_router::location::Url\")>]\n#endif\ntype leptos_router_Url = class end"
-        $'' : $'leptos_router_Url'
-    )
+nominal url = $'leptos_router::location::Url'
 
 #!markdown
 
@@ -606,11 +396,7 @@ nominal url =
 
 #!spiral
 
-nominal memo t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Memo<$0>\")>]\n#endif\ntype leptos_prelude_Memo<'T> = class end"
-        $'' : $'leptos_prelude_Memo<`t>'
-    )
+nominal memo t = $'leptos::prelude::Memo<`t>'
 
 #!markdown
 
@@ -618,11 +404,9 @@ nominal memo t =
 
 #!spiral
 
-nominal arc_memo t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcMemo<$0>\")>]\n#endif\ntype leptos_prelude_ArcMemo<'T> = class end"
-        $'' : $'leptos_prelude_ArcMemo<`t>'
-    )
+// Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a
+// SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.
+nominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'
 
 #!markdown
 
@@ -630,11 +414,7 @@ nominal arc_memo t =
 
 #!spiral
 
-nominal rw_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::RwSignal<$0>\")>]\n#endif\ntype leptos_prelude_RwSignal<'T> = class end"
-        $'' : $'leptos_prelude_RwSignal<`t>'
-    )
+nominal rw_signal t = $'leptos::prelude::RwSignal<`t>'
 
 #!markdown
 
@@ -642,11 +422,7 @@ nominal rw_signal t =
 
 #!spiral
 
-nominal arc_rw_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcRwSignal<$0>\")>]\n#endif\ntype leptos_prelude_ArcRwSignal<'T> = class end"
-        $'' : $'leptos_prelude_ArcRwSignal<`t>'
-    )
+nominal arc_rw_signal t = $'leptos::prelude::ArcRwSignal<`t>'
 
 #!markdown
 
@@ -654,11 +430,7 @@ nominal arc_rw_signal t =
 
 #!spiral
 
-nominal signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Signal<$0>\")>]\n#endif\ntype leptos_prelude_Signal<'T> = class end"
-        $'' : $'leptos_prelude_Signal<`t>'
-    )
+nominal signal t = $'leptos::prelude::Signal<`t>'
 
 #!markdown
 
@@ -666,11 +438,7 @@ nominal signal t =
 
 #!spiral
 
-nominal arc_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcSignal<$0>\")>]\n#endif\ntype leptos_prelude_ArcSignal<'T> = class end"
-        $'' : $'leptos_prelude_ArcSignal<`t>'
-    )
+nominal arc_signal t = $'leptos::prelude::ArcSignal<`t>'
 
 #!markdown
 
@@ -678,11 +446,7 @@ nominal arc_signal t =
 
 #!spiral
 
-nominal read_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ReadSignal<$0>\")>]\n#endif\ntype leptos_prelude_ReadSignal<'T> = class end"
-        $'' : $'leptos_prelude_ReadSignal<`t>'
-    )
+nominal read_signal t = $'leptos::prelude::ReadSignal<`t>'
 
 #!markdown
 
@@ -690,11 +454,7 @@ nominal read_signal t =
 
 #!spiral
 
-nominal arc_read_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcReadSignal<$0>\")>]\n#endif\ntype leptos_prelude_ArcReadSignal<'T> = class end"
-        $'' : $'leptos_prelude_ArcReadSignal<`t>'
-    )
+nominal arc_read_signal t = $'leptos::prelude::ArcReadSignal<`t>'
 
 #!markdown
 
@@ -702,11 +462,7 @@ nominal arc_read_signal t =
 
 #!spiral
 
-nominal write_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::WriteSignal<$0>\")>]\n#endif\ntype leptos_prelude_WriteSignal<'T> = class end"
-        $'' : $'leptos_prelude_WriteSignal<`t>'
-    )
+nominal write_signal t = $'leptos::prelude::WriteSignal<`t>'
 
 #!markdown
 
@@ -714,11 +470,7 @@ nominal write_signal t =
 
 #!spiral
 
-nominal arc_write_signal t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcWriteSignal<$0>\")>]\n#endif\ntype leptos_prelude_ArcWriteSignal<'T> = class end"
-        $'' : $'leptos_prelude_ArcWriteSignal<`t>'
-    )
+nominal arc_write_signal t = $'leptos::prelude::ArcWriteSignal<`t>'
 
 #!markdown
 
@@ -726,11 +478,7 @@ nominal arc_write_signal t =
 
 #!spiral
 
-nominal resource t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::Resource<$0, $1>\")>]\n#endif\ntype leptos_prelude_Resource<'T, 'U> = class end"
-        $'' : $'leptos_prelude_Resource<`t, `u>'
-    )
+nominal resource t u = $'leptos::prelude::Resource<`t, `u>'
 
 #!markdown
 
@@ -738,11 +486,7 @@ nominal resource t u =
 
 #!spiral
 
-nominal arc_resource t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcResource<$0, $1>\")>]\n#endif\ntype leptos_prelude_ArcResource<'T, 'U> = class end"
-        $'' : $'leptos_prelude_ArcResource<`t, `u>'
-    )
+nominal arc_resource t u = $'leptos::prelude::ArcResource<`t, `u>'
 
 #!markdown
 
@@ -750,11 +494,7 @@ nominal arc_resource t u =
 
 #!spiral
 
-nominal local_resource t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::LocalResource<$0, $1>\")>]\n#endif\ntype leptos_prelude_LocalResource<'T, 'U> = class end"
-        $'' : $'leptos_prelude_LocalResource<`t, `u>'
-    )
+nominal local_resource t u = $'leptos::prelude::LocalResource<`t, `u>'
 
 #!markdown
 
@@ -762,11 +502,7 @@ nominal local_resource t u =
 
 #!spiral
 
-nominal arc_local_resource t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::ArcLocalResource<$0>\")>]\n#endif\ntype leptos_prelude_ArcLocalResource<'T> = class end"
-        $'' : $'leptos_prelude_ArcLocalResource<`t>'
-    )
+nominal arc_local_resource t = $'leptos::prelude::ArcLocalResource<`t>'
 
 #!markdown
 
@@ -774,11 +510,7 @@ nominal arc_local_resource t =
 
 #!spiral
 
-nominal any_view =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::AnyView\")>]\n#endif\ntype leptos_prelude_AnyView = class end"
-        $'' : $'leptos_prelude_AnyView'
-    )
+nominal any_view = $'leptos::prelude::AnyView'
 
 #!markdown
 
@@ -786,11 +518,7 @@ nominal any_view =
 
 #!spiral
 
-nominal view' t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::View<$0>\")>]\n#endif\ntype leptos_prelude_View<'T> = class end"
-        $'' : $'leptos_prelude_View<`t>'
-    )
+nominal view' t = $'leptos::prelude::View<`t>'
 
 #!markdown
 
@@ -798,11 +526,15 @@ nominal view' t =
 
 #!spiral
 
-nominal view =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"leptos::prelude::AnyView\")>]\n#endif\ntype leptos_prelude_AnyView_ = class end"
-        $'' : $'leptos_prelude_AnyView_'
-    )
+nominal view = $'leptos::prelude::AnyView'
+
+#!markdown
+
+### keyboard_event
+
+#!spiral
+
+nominal keyboard_event = $'web_sys::KeyboardEvent'
 
 #!markdown
 
@@ -838,12 +570,50 @@ prototype signal_set signal t : t -> signal t -> ()
 
 #!markdown
 
+### prelude
+
+#!spiral
+
+// The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.
+inl prelude () =
+    global "use leptos::prelude::*;"
+
+#!markdown
+
+### send_wrapper
+
+#!spiral
+
+// leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's
+// are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).
+nominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'
+
+#!markdown
+
+### send_wrapper_new
+
+#!spiral
+
+inl send_wrapper_new forall t. (x : t) : send_wrapper t =
+    !\\(x, $'"leptos::__reexports::send_wrapper::SendWrapper::new($0)"')
+
+#!markdown
+
+### send_wrapper_get
+
+#!spiral
+
+inl send_wrapper_get forall t. (x : send_wrapper t) : t =
+    $'(*!x).clone()'
+
+#!markdown
+
 ### log_string
 
 #!spiral
 
-inl log_string (text : string) =
-    (!\($'@@"true; leptos::logging::log\!(""" + !text + @@""");"') : bool) |> ignore
+inl log_string (text : string) : () =
+    $'leptos::logging::log\!("{}", !text)'
 
 #!markdown
 
@@ -851,8 +621,8 @@ inl log_string (text : string) =
 
 #!spiral
 
-inl log (text : string) =
-    (!\\(text, $'@@$"true; leptos::logging::log\!(""{{}}"", $0)"') : bool) |> ignore
+inl log (text : string) : () =
+    $'leptos::logging::log\!("{}", !text)'
 
 #!markdown
 
@@ -860,8 +630,8 @@ inl log (text : string) =
 
 #!spiral
 
-inl log_debug (text : string) =
-    (!\\(text, $'@@$"true; leptos::logging::log\!(""{{:?}}"", $0)"') : bool) |> ignore
+inl log_debug (text : string) : () =
+    $'leptos::logging::log\!("{:?}", !text)'
 
 #!markdown
 
@@ -869,8 +639,8 @@ inl log_debug (text : string) =
 
 #!spiral
 
-inl log_pretty (text : string) =
-    (!\\(text, $'@@$"true; leptos::logging::log\!(""{{:\#?}}"", $0)"') : bool) |> ignore
+inl log_pretty (text : string) : () =
+    $'leptos::logging::log\!("{:\#?}", !text)'
 
 #!markdown
 
@@ -889,8 +659,8 @@ inl log_format fn obj =
 
 #!spiral
 
-inl mount_to_body (view_fn : () -> rust.impl into_view) : () =
-    (!\\(view_fn, $'"true; leptos::prelude::mount_to_body(|| $0()); //"') : bool) |> ignore
+inl mount_to_body (view_fn : () -> view) : () =
+    $'{ leptos::prelude::mount_to_body(move || (!view_fn)()); }'
 
 #!markdown
 
@@ -986,100 +756,6 @@ instance (~:>) view = fun x =>
 
 #!markdown
 
-### view_trait_to_element
-
-#!spiral
-
-inl view_trait_to_element (view : rust.impl into_view) : view' (html_element _) =
-    $'!view |> unbox'
-
-#!markdown
-
-### view_trait_to_route_definition
-
-#!spiral
-
-inl view_trait_to_route_definition (view : rust.impl into_view) : route_definition =
-    $'!view |> unbox'
-
-#!markdown
-
-### to_element_view
-
-#!spiral
-
-inl to_element_view (view : view' (html_element _)) : rust.impl into_view =
-    $'!view |> unbox'
-
-#!markdown
-
-### to_view_trait
-
-#!spiral
-
-inl to_view_trait (view : view) : rust.impl into_view =
-    $'!view |> unbox'
-
-#!markdown
-
-### to_fragment_unbox
-
-#!spiral
-
-inl to_fragment_unbox view : fragment =
-    $'!view |> unbox'
-
-#!markdown
-
-### from_fragment_unbox
-
-#!spiral
-
-inl from_fragment_unbox (fragment : fragment) =
-    $'!fragment |> unbox'
-
-#!markdown
-
-### element_to_view_trait
-
-#!spiral
-
-inl element_to_view_trait (macro : view' (html_element _)) : rust.impl into_view =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    !\($'"leptos::prelude::view\! { {!macro} }"')
-
-#!markdown
-
-### macro_to_view_trait
-
-#!spiral
-
-inl macro_to_view_trait (macro : string) : rust.impl into_view =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ClassAttribute;\n//\"\n#endif"
-    !\($'"leptos::prelude::view\! { " + !macro + " }"')
-
-#!markdown
-
-### macro_to_fragment
-
-#!spiral
-
-inl macro_to_fragment (macro : string) : fragment =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    !\($'"leptos::prelude::view\! { " + !macro + " }"')
-
-#!markdown
-
-### new_transparent
-
-#!spiral
-
-inl new_transparent x : transparent =
-    !\\(x, $'"leptos::leptos_dom::Transparent::new($0)"')
-
-#!markdown
-
 ### closure_to_view
 
 #!spiral
@@ -1109,15 +785,6 @@ inl view_list_to_view (views : list view) : view =
 
 #!markdown
 
-### to_fragment
-
-#!spiral
-
-inl to_fragment x : fragment =
-    $'!x |> unbox'
-
-#!markdown
-
 ### text_to_view
 
 #!spiral
@@ -1143,39 +810,20 @@ inl text_to_fragment (text : string) : fragment =
 
 #!spiral
 
+// The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).
 inl macro_to_view (macro : string) : view =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
+    prelude ()
     !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
 
 #!markdown
 
-### macro_to_view'
+### macro_to_element
 
 #!spiral
 
-inl macro_to_view' (macro : string) : view' infer =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    !\($'"leptos::IntoView::into_view(leptos::prelude::view\! { " + !macro + " })"')
-
-#!markdown
-
-### macro_to_view''
-
-#!spiral
-
-inl macro_to_view'' (macro : string) : view' infer =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
+inl macro_to_element (macro : string) : view' (html_element _) =
+    prelude ()
     !\($'"leptos::prelude::view\! { " + !macro + " }"')
-
-#!markdown
-
-### macro_to_view'''
-
-#!spiral
-
-inl macro_to_view''' (macro : string) : view' _ =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    !\($'"leptos::IntoView::into_view(leptos::prelude::view\! { " + !macro + " })"')
 
 #!markdown
 
@@ -1185,54 +833,6 @@ inl macro_to_view''' (macro : string) : view' _ =
 
 inl into_any_view (view : view' _) : view =
     !\\(view, $'"leptos::prelude::IntoAny::into_any($0)"')
-
-#!markdown
-
-### into_any_view'
-
-#!spiral
-
-inl into_any_view' (view : view' _) : view =
-    !\\(view, $'"&leptos::prelude::IntoAny::into_any($0)"')
-
-#!markdown
-
-### transparent_to_view
-
-#!spiral
-
-inl transparent_to_view (transparent : transparent) : view =
-    !\\(transparent, $'"leptos::prelude::IntoAny::into_any($0)"')
-
-#!markdown
-
-### transparent_to_fragment
-
-#!spiral
-
-inl transparent_to_fragment (transparent : transparent) : fragment =
-    transparent
-    |> transparent_to_view
-    |> view_to_fragment
-
-#!markdown
-
-### macro_to_element
-
-#!spiral
-
-inl macro_to_element (view : string) : view' (html_element _) =
-    view |> macro_to_view_trait |> view_trait_to_element
-
-#!markdown
-
-### transparents_fragment
-
-#!spiral
-
-inl transparents_fragment (items : array_base transparent) : fragment =
-    inl items = items |> am'.to_vec
-    !\\((items, transparent_to_view), $'"$0.iter().map(|x| $1(x.clone())).collect::<Fragment>()"')
 
 #!markdown
 
@@ -1270,8 +870,8 @@ inl text_fragment (text : string) : fragment =
 
 #!spiral
 
-inl provide_meta_context () =
-    (!\($'"true; leptos_meta::provide_meta_context()"') : bool) |> ignore
+inl provide_meta_context () : () =
+    $'leptos_meta::provide_meta_context()'
 
 #!markdown
 
@@ -1279,8 +879,19 @@ inl provide_meta_context () =
 
 #!spiral
 
-inl provide_context forall t. (x : t) =
-    (!\\(x, $'$"true; leptos::context::provide_context::<std::sync::Arc<`t>>($0)"') : bool) |> ignore
+// read back by use_context
+inl provide_context forall t. (x : t) : () =
+    inl x = x |> send_wrapper_new
+    $'leptos::context::provide_context(!x)'
+
+#!markdown
+
+### use_context
+
+#!spiral
+
+inl use_context forall t. () : optionm'.option' t =
+    $'leptos::context::use_context::<leptos::__reexports::send_wrapper::SendWrapper<`t>>().map(|x| (*x).clone())'
 
 #!markdown
 
@@ -1289,7 +900,7 @@ inl provide_context forall t. (x : t) =
 #!spiral
 
 inl create_signal forall t. (value : t) : read_signal t * write_signal t =
-    !\\(value, $'$"leptos::prelude::signal($0)"')
+    !\\(value, $'"leptos::prelude::signal($0)"')
 
 #!markdown
 
@@ -1298,7 +909,7 @@ inl create_signal forall t. (value : t) : read_signal t * write_signal t =
 #!spiral
 
 inl new_rw_signal forall t. (value : t) : rw_signal t =
-    !\\(value, $'$"leptos::prelude::RwSignal::new($0)"')
+    !\\(value, $'"leptos::prelude::RwSignal::new($0)"')
 
 #!markdown
 
@@ -1307,7 +918,7 @@ inl new_rw_signal forall t. (value : t) : rw_signal t =
 #!spiral
 
 inl new_arc_rw_signal forall t. (value : t) : arc_rw_signal t =
-    !\\(value, $'$"leptos::prelude::ArcRwSignal::new($0)"')
+    !\\(value, $'"leptos::prelude::ArcRwSignal::new($0)"')
 
 #!markdown
 
@@ -1316,7 +927,7 @@ inl new_arc_rw_signal forall t. (value : t) : arc_rw_signal t =
 #!spiral
 
 inl read_only forall t. (value : rw_signal t) : read_signal t =
-    !\\(value, $'$"leptos::prelude::RwSignal::read_only(&$0)"')
+    !\\(value, $'"leptos::prelude::RwSignal::read_only(&$0)"')
 
 #!markdown
 
@@ -1325,7 +936,7 @@ inl read_only forall t. (value : rw_signal t) : read_signal t =
 #!spiral
 
 inl write_only forall t. (value : rw_signal t) : write_signal t =
-    !\\(value, $'$"leptos::prelude::RwSignal::write_only(&$0)"')
+    !\\(value, $'"leptos::prelude::RwSignal::write_only(&$0)"')
 
 #!markdown
 
@@ -1350,12 +961,25 @@ inl typecheck_signal forall (t : * -> *) u. (signal : t u) : () =
 
 #!markdown
 
+### is_arc_memo
+
+#!spiral
+
+// An arc_memo holds a SendWrapper of its value (see arc_memo).
+inl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =
+    real
+        typecase t with
+        | arc_memo => true
+        | _ => false
+
+#!markdown
+
 ### memo_get'
 
 #!spiral
 
 inl memo_get' forall t. (memo : memo t) : t =
-    !\\(memo, $'$"$0()"')
+    !\\(memo, $'"$0()"')
 
 #!markdown
 
@@ -1365,20 +989,10 @@ inl memo_get' forall t. (memo : memo t) : t =
 
 inl signal_get' forall (t : * -> *) u. (signal : t u) : u =
     signal |> typecheck_signal
-    inl code =
-        real
-            typecase t with
-            | signal => $'$"leptos::prelude::Signal::get(&$0)"' : string
-            | arc_signal => $'$"leptos::prelude::ArcSignal::get(&$0)"' : string
-            | rw_signal => $'$"leptos::prelude::RwSignal::get(&$0)"' : string
-            | arc_rw_signal => $'$"leptos::prelude::ArcRwSignal::get(&$0)"' : string
-            | read_signal => $'$"leptos::prelude::ReadSignal::get(&$0)"' : string
-            | arc_read_signal => $'$"leptos::prelude::ArcReadSignal::get(&$0)"' : string
-            | write_signal => $'$"leptos::prelude::WriteSignal::get(&$0)"' : string
-            | arc_write_signal => $'$"leptos::prelude::ArcWriteSignal::get(&$0)"' : string
-            | memo => $'$"leptos::prelude::Memo::get(&$0)"' : string
-            | arc_memo => $'$"leptos::prelude::ArcMemo::get(&$0)"' : string
-    !\\(signal, code) : u
+    prelude ()
+    if is_arc_memo signal
+    then $'leptos::prelude::Get::get(&!signal).take()' : u
+    else $'leptos::prelude::Get::get(&!signal)' : u
 
 #!markdown
 
@@ -1424,22 +1038,8 @@ instance signal_get arc_memo = signal_get'
 
 inl signal_update' forall (t : * -> *) u. (fn : u -> u) (signal : t u) : () =
     signal |> typecheck_signal
-    inl code =
-        real
-            typecase t with
-            | signal => $'$"true; leptos::prelude::Signal::update(&$0, |x: &mut /*"' : string
-            | arc_signal => $'$"true; leptos::prelude::ArcSignal::update(&$0, |x: &mut /*"' : string
-            | rw_signal => $'$"true; leptos::prelude::RwSignal::update(&$0, |x: &mut /*"' : string
-            | arc_rw_signal => $'$"true; leptos::prelude::ArcRwSignal::update(&$0, |x: &mut /*"' : string
-            | read_signal => $'$"true; leptos::prelude::ReadSignal::update(&$0, |x: &mut /*"' : string
-            | arc_read_signal => $'$"true; leptos::prelude::ArcReadSignal::update(&$0, |x: &mut /*"' : string
-            | write_signal => $'$"true; leptos::prelude::WriteSignal::update(&$0, |x: &mut /*"' : string
-            | arc_write_signal => $'$"true; leptos::prelude::ArcWriteSignal::update(&$0, |x: &mut /*"' : string
-            | memo => $'$"true; leptos::prelude::Memo::update(&$0, |x: &mut /*"' : string
-            | arc_memo => $'$"true; leptos::prelude::ArcMemo::update(&$0, |x: &mut /*"' : string
-    (!\\(signal, code) : bool) |> ignore
-    (null () : rust.type_emit u) |> ignore
-    (!\\(fn, $'"*/ | { *x = $0(x.clone()) }); //"') : bool) |> ignore
+    prelude ()
+    $'leptos::prelude::Update::update(&!signal, |x: &mut `u| { *x = (!fn)(x.clone()) })'
 
 #!markdown
 
@@ -1467,21 +1067,10 @@ instance signal_update arc_write_signal = signal_update'
 
 inl signal_get_untracked' forall (t : * -> *) u. (signal : t u) : u =
     signal |> typecheck_signal
-    inl signal = signal |> rust.box_pin
-    inl code =
-        real
-            typecase t with
-            | signal => $'$"leptos::prelude::Signal::get_untracked(&$0)"' : string
-            | arc_signal => $'$"leptos::prelude::ArcSignal::get_untracked(&$0)"' : string
-            | rw_signal => $'$"leptos::prelude::RwSignal::get_untracked(&$0)"' : string
-            | arc_rw_signal => $'$"leptos::prelude::ArcRwSignal::get_untracked(&$0)"' : string
-            | read_signal => $'$"leptos::prelude::ReadSignal::get_untracked(&$0)"' : string
-            | arc_read_signal => $'$"leptos::prelude::ArcReadSignal::get_untracked(&$0)"' : string
-            | write_signal => $'$"leptos::prelude::WriteSignal::get_untracked(&$0)"' : string
-            | arc_write_signal => $'$"leptos::prelude::ArcWriteSignal::get_untracked(&$0)"' : string
-            | memo => $'$"leptos::prelude::Memo::get_untracked(&$0)"' : string
-            | arc_memo => $'$"leptos::prelude::ArcMemo::get_untracked(&$0)"' : string
-    !\\(signal, code) : u
+    prelude ()
+    if is_arc_memo signal
+    then $'leptos::prelude::GetUntracked::get_untracked(&!signal).take()' : u
+    else $'leptos::prelude::GetUntracked::get_untracked(&!signal)' : u
 
 #!markdown
 
@@ -1516,22 +1105,10 @@ instance signal_get_untracked arc_memo = signal_get_untracked'
 
 #!spiral
 
-inl signal_set' forall (t : * -> *) u. (value : u) (signal : t u) =
+inl signal_set' forall (t : * -> *) u. (value : u) (signal : t u) : () =
     signal |> typecheck_signal
-    inl code =
-        real
-            typecase t with
-            | signal => $'$"true; leptos::prelude::Signal::set(&$0, $1); //"' : string
-            | arc_signal => $'$"true; leptos::prelude::ArcSignal::set(&$0, $1); //"' : string
-            | rw_signal => $'$"true; leptos::prelude::RwSignal::set(&$0, $1); //"' : string
-            | arc_rw_signal => $'$"true; leptos::prelude::ArcRwSignal::set(&$0, $1); //"' : string
-            | read_signal => $'$"true; leptos::prelude::ReadSignal::set(&$0, $1); //"' : string
-            | arc_read_signal => $'$"true; leptos::prelude::ArcReadSignal::set(&$0, $1); //"' : string
-            | write_signal => $'$"true; leptos::prelude::WriteSignal::set(&$0, $1); //"' : string
-            | arc_write_signal => $'$"true; leptos::prelude::ArcWriteSignal::set(&$0, $1); //"' : string
-            | memo => $'$"true; leptos::prelude::Memo::set(&$0, $1); //"' : string
-            | arc_memo => $'$"true; leptos::prelude::ArcMemo::set(&$0, $1); //"' : string
-    (!\\((signal, value), code) : bool) |> ignore
+    prelude ()
+    $'leptos::prelude::Set::set(&!signal, !value)'
 
 #!markdown
 
@@ -1553,33 +1130,39 @@ instance signal_set arc_write_signal = signal_set'
 
 #!markdown
 
-### new_local_resource
+### untrack
 
 #!spiral
 
-inl new_local_resource forall t u.
-    (source : () -> t)
-    (fetcher : t -> async.future_pin u)
-    : local_resource t u
-    =
-    // inl fetcher x = rust.move fun () =>
-    //    fetcher x
-    // inl fetcher = join fetcher
-    // !\($'"leptos::create_local_resource(move || !source(), move |x| async move { !fetcher(x)().await })"')
+// `fn ()` without subscribing the running reactive closure to the signals it reads.
+inl untrack forall t. (fn : () -> t) : t =
+    !\\(fn, $'"leptos::prelude::untrack(move || $0())"')
 
-    // ---
+#!markdown
 
-    // inl fn x = async.new_future fun () =>
-    //     inl x' = fetcher x
-    //     x' |> async.await
+### new_memo
 
-    // !\\((source, fn), $'"leptos::create_local_resource(move || $0(), |x| async move { $1(x).await })"')
+#!spiral
 
-    inl fetcher = fetcher |> rust.func1_from
-    inl fetcher x =
-        fetcher |> rust.func1_move x
+inl new_memo forall t. (fn : () -> t) : memo t =
+    inl fn = fn |> send_wrapper_new
+    $'leptos::prelude::Memo::new(move |_| (*!fn)())'
 
-    !\\((source, fetcher), $'"leptos::prelude::LocalResource::new(move || $0(), |x| async move { $1(x).await })"')
+#!markdown
+
+### new_arc_memo
+
+#!spiral
+
+// The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares
+// values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at
+// each memo: a generic helper would always take the second impl).
+inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
+    global "pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"
+    // a closure of its own: its body may return early (`?`) with the plain value
+    inl fn = join fn
+    inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
+    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'
 
 #!markdown
 
@@ -1587,36 +1170,12 @@ inl new_local_resource forall t u.
 
 #!spiral
 
+// the fetcher returns a boxed future; local resources need no Send
 inl new_arc_local_resource forall t.
     (fetcher : () -> async.future_pin t)
     : arc_local_resource t
     =
-    // inl fetcher x = rust.move fun () =>
-    //    fetcher x
-    // inl fetcher = join fetcher
-    // !\($'"leptos::create_local_resource(move || !source(), move |x| async move { !fetcher(x)().await })"')
-
-    // ---
-
-    // inl fn x = async.new_future fun () =>
-    //     inl x' = fetcher x
-    //     x' |> async.await
-
-    // !\\((source, fn), $'"leptos::create_local_resource(move || $0(), |x| async move { $1(x).await })"')
-
-    inl fetcher = fetcher |> rust.func0_from
-
-    !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(|| async move { $0().await })"')
-
-#!markdown
-
-### new_resource
-
-#!spiral
-
-// inl new_resource forall t u. (source : () -> t) (fetcher : t -> async.future_pin u) : resource t u =
-//     inl source = join source
-//     !\\(fetcher, $'"leptos::Resource::new(move || !source(), |x| async move { $0(x).await })"')
+    !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(move || $0())"')
 
 #!markdown
 
@@ -1624,11 +1183,9 @@ inl new_arc_local_resource forall t.
 
 #!spiral
 
+// action inputs and futures are Rc-based (not Send): the local constructor
 inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =
-    inl action_fn = action_fn |> rust.func1_from
-    inl action_fn x =
-        action_fn |> rust.func1_move x
-    !\\(action_fn, $'"leptos::prelude::Action::new(move |value: &std::sync::Arc<`t>| $0(value.clone()))"')
+    !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
 
 #!markdown
 
@@ -1637,11 +1194,7 @@ inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =
 #!spiral
 
 inl new_arc_action forall t u. (action_fn : t -> async.future_pin u) : arc_action t u =
-    // inl action_fn = action_fn |> rust.func1_from
-    inl action_fn = action_fn |> rust.func1_from
-    inl action_fn x =
-        action_fn |> rust.func1_move x
-    !\\(action_fn, $'"leptos::prelude::ArcAction::new(move |value: &std::sync::Arc<`t>| $0(value.clone()))"')
+    !\\(action_fn, $'"leptos::prelude::ArcAction::new_unsync(move |value: &`t| $0(value.clone()))"')
 
 #!markdown
 
@@ -1650,7 +1203,7 @@ inl new_arc_action forall t u. (action_fn : t -> async.future_pin u) : arc_actio
 #!spiral
 
 inl action_dispatch forall t u. (value : heap t) (action : action (heap t) u) : () =
-    (!\\((action, value), $'"true; leptos::prelude::Action::dispatch(&$0, $1.clone())"') : bool) |> ignore
+    $'{ leptos::prelude::Action::dispatch_local(&!action, !value.clone()); }'
 
 #!markdown
 
@@ -1659,7 +1212,7 @@ inl action_dispatch forall t u. (value : heap t) (action : action (heap t) u) : 
 #!spiral
 
 inl arc_action_dispatch forall t u. (value : heap t) (action : arc_action (heap t) u) : () =
-    (!\\((action, value), $'"true; leptos::prelude::ArcAction::dispatch(&$0, $1.clone())"') : bool) |> ignore
+    $'{ leptos::prelude::ArcAction::dispatch_local(&!action, !value.clone()); }'
 
 #!markdown
 
@@ -1685,8 +1238,23 @@ inl action_pending forall t u. (action : action (heap t) u) : memo bool =
 
 #!spiral
 
+// ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)
 inl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =
-    !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
+    inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
+    new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool
+
+#!markdown
+
+### arc_action_pending_fn
+
+#!spiral
+
+// A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure
+// is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never
+// re-run: the memo is made once, outside the reader.
+inl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =
+    inl pending = action |> arc_action_pending
+    fun () => pending |> signal_get
 
 #!markdown
 
@@ -1708,21 +1276,25 @@ inl arc_action_value forall t u. (action : arc_action (heap t) u) : arc_rw_signa
 
 #!markdown
 
-### use_context
+### arc_action_value_get
 
 #!spiral
 
-inl use_context forall t. () : optionm'.option' t =
-    !\($'"leptos::context::use_context::<std::sync::Arc<`t>>()"')
+// leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.
+inl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =
+    prelude ()
+    $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
 
 #!markdown
 
-### local_resource_loading
+### new_arc_signal_derive
 
 #!spiral
 
-inl local_resource_loading forall t u. (resource : local_resource t u) : signal bool =
-    !\\(resource, $'$"leptos::prelude::pending(&$0).into()"')
+// A signal of `fn ()`, which leptos re-runs when a signal it reads changes.
+inl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =
+    inl fn = fn |> send_wrapper_new
+    $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'
 
 #!markdown
 
@@ -1730,8 +1302,10 @@ inl local_resource_loading forall t u. (resource : local_resource t u) : signal 
 
 #!spiral
 
+// loading = no value yet
 inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =
-    !\\(resource, $'$"leptos::prelude::Submission::pending(&$0.into()).into()"')
+    new_arc_signal_derive fun () =>
+        $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
 
 #!markdown
 
@@ -1740,7 +1314,7 @@ inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc
 #!spiral
 
 inl resource_get forall t u. (resource : resource t u) : optionm'.option' u =
-    !\\(resource, $'$"leptos::prelude::Resource::get(&$0)"')
+    !\\(resource, $'"leptos::prelude::Resource::get(&$0)"')
 
 #!markdown
 
@@ -1749,7 +1323,7 @@ inl resource_get forall t u. (resource : resource t u) : optionm'.option' u =
 #!spiral
 
 inl local_resource_get forall t u. (resource : local_resource t u) : optionm'.option' u =
-    !\\(resource, $'$"leptos::prelude::LocalResource::get(&$0)"')
+    !\\(resource, $'"leptos::prelude::LocalResource::get(&$0)"')
 
 #!markdown
 
@@ -1758,7 +1332,7 @@ inl local_resource_get forall t u. (resource : local_resource t u) : optionm'.op
 #!spiral
 
 inl arc_local_resource_get forall t. (resource : arc_local_resource t) : optionm'.option' t =
-    !\\(resource, $'$"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())"')
+    !\\(resource, $'"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())"')
 
 #!markdown
 
@@ -1767,7 +1341,7 @@ inl arc_local_resource_get forall t. (resource : arc_local_resource t) : optionm
 #!spiral
 
 inl resource_with forall t u v. (resource : resource t u) (fn : optionm'.option' u -> v) : v =
-    !\\((resource, fn), $'$"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))"')
+    !\\((resource, fn), $'"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))"')
 
 #!markdown
 
@@ -1776,51 +1350,7 @@ inl resource_with forall t u v. (resource : resource t u) (fn : optionm'.option'
 #!spiral
 
 inl new_effect (fn : () -> ()) : () =
-    inl fn = fn |> rust.func0_from
-    (!\($'"true; leptos::prelude::Effect::new(move |_| { !fn() })"') : bool) |> ignore
-
-#!markdown
-
-### interval_handle_clear
-
-#!spiral
-
-inl interval_handle_clear (interval_handle : interval_handle) =
-    (!\\(interval_handle, $'$"true; leptos::leptos_dom::helpers::IntervalHandle::clear(&$0)"') : bool) |> ignore
-
-#!markdown
-
-### set_interval_with_handle
-
-#!spiral
-
-inl set_interval_with_handle
-    (fn : () -> ())
-    (interval_millis : int)
-    : resultm.result' interval_handle wasm.js_value
-    =
-    inl fn = fn |> rust.func0_from
-    !\\((fn, interval_millis), $'$"leptos::set_interval_with_handle(move || $0(), $1)"')
-
-#!markdown
-
-### new_memo
-
-#!spiral
-
-inl new_memo forall t. (fn : () -> t) : memo t =
-    // inl fn = fn |> rust.func0_from
-    !\\(fn, $'"leptos::prelude::Memo::new(move |_| { $0() })"')
-
-#!markdown
-
-### new_arc_memo
-
-#!spiral
-
-inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
-    // inl fn = fn |> rust.func0_from
-    !\\(fn, $'"leptos::prelude::ArcMemo::new(move |_| { $0() })"')
+    $'{ leptos::prelude::Effect::new(move |_| (!fn)()); }'
 
 #!markdown
 
@@ -1833,13 +1363,55 @@ let window () : wasm.window =
 
 #!markdown
 
-### bool_prop
+### attr_fn
 
 #!spiral
 
-inl bool_prop (prop : string) (fn : () -> bool) : string =
-    inl fn = join fn
-    $'"" + !prop + "={move || !fn()}"'
+// A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.
+// Text values must be std::string::String (leptos has no attribute impls for Rc<str>).
+inl attr_fn forall t. (name : string) (fn : () -> t) : string =
+    inl fn = fn |> send_wrapper_new
+    $'"" + !name + "={ move || (*!fn)() }"'
+
+#!markdown
+
+### class_fn
+
+#!spiral
+
+// A reactive class attribute: the fixed `classes` and the ones `fn` returns.
+inl class_fn (classes : string) (fn : () -> string) : string =
+    attr_fn "class" fun () => classes ++# fn () |> sm'.to_std_string
+
+#!markdown
+
+### on_event
+
+#!spiral
+
+// An event handler (`on:<name>={move |event| f(event)}`).
+inl on_event forall t. (name : string) (fn : t -> ()) : string =
+    inl fn = fn |> send_wrapper_new
+    $'"on:" + !name + "={ move |event| (*!fn)(event) }"'
+
+#!markdown
+
+### on_click
+
+#!spiral
+
+inl on_click (fn : () -> ()) : string =
+    inl fn = fn |> send_wrapper_new
+    $'"on:click={ move |_| (*!fn)() }"'
+
+#!markdown
+
+### event_target_value
+
+#!spiral
+
+inl event_target_value forall t. (event : t) : sm'.std_string =
+    !\\(event, $'"leptos::prelude::event_target_value(&$0)"')
 
 #!markdown
 
@@ -1854,14 +1426,26 @@ inl concat_props props =
 
 #!markdown
 
-### move_to_fragment
+### concat_markup
 
 #!spiral
 
-inl move_to_fragment fn =
-    fn
-    |> rust.move
-    |> rust.func0_move
+// in order (concat_props reverses)
+inl concat_markup (items : list string) : string =
+    ("", items)
+    ||> listm.fold fun acc (x : string) =>
+        $'"" + !acc + !x + ""'
+
+#!markdown
+
+### tag_text
+
+#!spiral
+
+// view! markup of an element whose children are markup too.
+inl tag_text (tag : string) props (children : string) : string =
+    inl props = props |> concat_props
+    $'"<" + !tag + " " + !props + ">" + !children + "</" + !tag + ">"'
 
 #!markdown
 
@@ -1869,20 +1453,34 @@ inl move_to_fragment fn =
 
 #!spiral
 
-inl tag_raw tag props children =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::*;\n//\"\n#endif"
-    inl tag : string = tag
-    inl props = props |> concat_props
-    inl children =
-        children ()
-        |> fragment_to_view
-    // inl children = children |> rust.box_pin
-    // inl children = join children
-    // inl children = join children
-    // inl children = join children
-    // inl children = children >> fragment_to_view
-    // inl children : rust.func0 view = !\\(children, $'$"(|| $0)()"')
-    $'"<" + !tag + " " + !props + ">move || { !children }</" + !tag + ">"'
+// The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):
+// children that read signals wrap those parts in reactive_view / reactive_fragment.
+inl tag_raw tag props children : string =
+    inl children = children () |> fragment_to_view
+    tag_text tag props $'"{ !children }"'
+
+#!markdown
+
+### reactive_view
+
+#!spiral
+
+// Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.
+// reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be
+// Clone (signals, memos, closures, strings), not views.
+inl reactive_view (fn : () -> view) : view =
+    inl fn = fn |> send_wrapper_new
+    $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'
+
+#!markdown
+
+### reactive_fragment
+
+#!spiral
+
+inl reactive_fragment (fn : () -> fragment) : fragment =
+    reactive_view (fun () => fn () |> fragment_to_view)
+    |> view_to_fragment
 
 #!markdown
 
@@ -1931,6 +1529,8 @@ inl for props : view =
 
 #!spiral
 
+// For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`
+// is unpacked in Spiral by send_wrapper_get).
 inl for forall t u (signal : * -> *).
     (signal : signal (am'.vec t))
     (key_fn : t -> u)
@@ -1938,19 +1538,14 @@ inl for forall t u (signal : * -> *).
     : view
     =
     signal |> typecheck_signal
-    inl signal = signal |> rust.emit
-    inl key_fn = key_fn |> rust.func1_from
-    inl key_fn x =
-        key_fn |> rust.func1_move x
-    inl key_fn = join key_fn
-    inl children' = (children' >> fragment_to_view) |> rust.func1_from
-    inl children' x =
-        children' |> rust.func1_move x
+    // read through signal_get' (an arc_memo unwraps its SendWrapper there)
+    inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new
+    inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
+    inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
     for [
-        $'"each=!signal"'
-        $'"key=move |x| !key_fn(x.to_owned())"'
-        $'"let:x"'
-        $'"children=move |x| !children'(x)"'
+        $'"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }"'
+        $'"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }"'
+        $'"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }"'
     ]
 
 #!markdown
@@ -1970,14 +1565,11 @@ inl show props : view =
 #!spiral
 
 inl show (when_fn : () -> bool) (fallback : () -> view) (children : () -> fragment) : view =
-    inl when_fn = join when_fn
-    inl when_fn = join when_fn
-    inl fallback = join fallback
-    inl children = join children
+    inl children = children |> send_wrapper_new
     show [
-        $'"when=move || !when_fn()"'
-        $'"fallback=move || !fallback()"'
-        $'"children=std::rc::Rc::new(move || !children())"'
+        attr_fn "when" when_fn
+        attr_fn "fallback" fallback
+        $'"children=leptos::children::ToChildren::to_children(move || (*!children)())"'
     ]
 
 #!markdown
@@ -2035,8 +1627,9 @@ inl location_search (location : location) : memo sm'.std_string =
 
 #!spiral
 
+// leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue
 inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
-    !\\(s, $'"leptos_router::location::Url::try_from($0)"')
+    !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())"')
 
 #!markdown
 
@@ -2044,8 +1637,9 @@ inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
 
 #!spiral
 
+// leptos_router 0.8's Url keeps the path private: `path()`
 inl url_pathname (url : url) : sm'.std_string =
-    !\\(url, $'"$0.pathname"')
+    !\\(url, $'"$0.path().to_string()"')
 
 #!markdown
 
@@ -2072,43 +1666,13 @@ inl use_url () =
 
 #!spiral
 
-inl route path view children : view' nested_route =
-    inl path = path |> sm'.to_std_string
-    inl path = join path
-    // inl view = view |> rust.move
-    inl view () =
-        view () |> fragment_to_view
-    inl view = join view
-    tag_closed_raw "leptos_router::components::ParentRoute" [
-        $'"path=leptos_router::path\!(!path)"'
-        $'"view= move || !view()"'
-        $'"children=Box::new(move || !children())"'
+// leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a
+// route is view! markup, put together with the others by routes and router into one view! call.
+inl route (path : string) (view : () -> view) : string =
+    tag_closed_raw "leptos_router::components::Route" [
+        $'"path=leptos_router::path\!(\\\"" + !path + "\\\")"'
+        attr_fn "view" view
     ]
-    |> macro_to_view'''
-
-#!markdown
-
-### macro_to_view
-
-#!spiral
-
-inl macro_to_view (macro : string) : view =
-    global "#if FABLE_COMPILER\nFable.Core.RustInterop.emitRustExpr () \");\nuse leptos::prelude::ElementChild;\n//\"\n#endif"
-    !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
-
-#!markdown
-
-### router
-
-#!spiral
-
-inl router children : view =
-    // inl children : () -> fragment = join children
-    tag_closed_raw "leptos_router::components::Router" [
-        $'"children=Box::new(move || !children())"'
-    ]
-    |> macro_to_view'
-    |> into_any_view
 
 #!markdown
 
@@ -2116,16 +1680,20 @@ inl router children : view =
 
 #!spiral
 
-inl routes children : view =
-    inl children : () -> am'.vec (view' nested_route) = join children
-    inl children = join children
-    inl fallback = "leptos.routes / fallback" |> text_view
-    tag_closed_raw "leptos_router::components::Routes" [
-        $'"fallback=move || !fallback"'
-        $'"children=leptos::children::ToChildren::to_children(move || !children())"'
-    ]
-    |> macro_to_view'
-    |> into_any_view
+inl routes (fallback : () -> view) (routes : list string) : string =
+    tag_text "leptos_router::components::Routes" [
+        attr_fn "fallback" fallback
+    ] (routes |> concat_markup)
+
+#!markdown
+
+### router
+
+#!spiral
+
+inl router (routes : string) : view =
+    tag_text "leptos_router::components::Router" [] routes
+    |> macro_to_view
 
 #!markdown
 

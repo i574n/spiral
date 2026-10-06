@@ -242,9 +242,14 @@ module Program =
         binding : string
         }
 
-    type private CompilationCache() =
+    // `reuse = false`: a process that compiles once (the CLI's single compile, --plan-ir) never asks again, so it skips
+    // the cache and the source-graph fingerprint behind it (every .spi under the input's directory and the package
+    // directory read and hashed: ~0.3-0.5 s of each fresh compile).
+    type private CompilationCache(reuse : bool) =
         let entries = Dictionary<string,CachedCompilation>(StringComparer.Ordinal)
         let key uri backend = backend + "\u0000" + uri
+
+        member _.Reuse = reuse
 
         member _.TryGet(uri, backend, fingerprint) =
             match entries.TryGetValue(key uri backend) with
@@ -476,11 +481,21 @@ module Program =
                         for argIndex = args.Length - 1 downto 0 do
                             expression <- expression.Replace($"${argIndex}", args.[argIndex])
                         rewritten.[index] <- emitted.Groups.["prefix"].Value + expression + ";"
-                    | _ -> failwith $"Rust emitRustExpr code binding is missing: {code}"
+                    // The text isn't a literal binding (e.g. a method parameter): leave the call for rustc to
+                    // report. The compiler's own codegenRust inlines emits now (inlineFableEmits); this is a fallback.
+                    | _ -> ()
             rewritten
             |> Array.mapi (fun index line -> if drop.Contains index then None else Some line)
             |> Array.choose id
             |> String.concat "\n"
+
+    /// Backends whose BuildFile writes several files next to the input (upstream CodegenCpp/CodegenPython): the
+    /// suffixes the core appends to the extension-less input path. BuildFile returns their concatenation, which is
+    /// no file's content: writing it over `main.cpp`/`main.py` clobbered the real output.
+    let private multiFileSuffixes = function
+        | "Cpp + Cuda" -> Some [ ".corelib.hpp"; ".hpp"; ".cpp"; ".cu" ]
+        | "Python + Cuda" -> Some [ "_auto.py"; ".py" ]
+        | _ -> None
 
     let private compileOne
         (supervisor : Ch<SupervisorReq>)
@@ -495,10 +510,12 @@ module Program =
             let code = File.ReadAllText inputPath
             let uri = inputPath |> SpiralFileSystem.new_file_uri
             let revision = revisions.Plan(uri, code)
-            let fingerprint = sourceGraphFingerprint inputPath
+            let fingerprint = if cache.Reuse then sourceGraphFingerprint inputPath else ""
+            let multiFile = multiFileSuffixes backend
+            let started = DateTime.UtcNow
             let cached =
                 match revision with
-                | SourceUnchanged -> cache.TryGet(uri, backend, fingerprint)
+                | SourceUnchanged when multiFile.IsNone && cache.Reuse -> cache.TryGet(uri, backend, fingerprint)
                 | _ -> None
             let revisionMode =
                 match cached, revision with
@@ -521,6 +538,27 @@ module Program =
                 with :? IOException when attempt < 250 ->
                     Threading.Thread.Sleep 20
                     writeWithRetry path text (attempt + 1)
+            // An output path elsewhere: the core still writes `<input>.<ext>` next to its source (the sample harness's
+            // layout, one committed copy). Put those files back as they were, so building to another path leaves the
+            // source tree untouched (app builds overwrote tracked `dice.fsx`/`dice.rs` and left `*_native.rs` beside sources).
+            let coreOutputs =
+                let coreBase = Path.ChangeExtension(inputPath, null)
+                match multiFile with
+                | Some suffixes -> suffixes |> List.map (fun suffix -> coreBase + suffix)
+                | None -> [ Path.ChangeExtension(inputPath, Path.GetExtension outputPath) ]
+            let elsewhere =
+                let outBase = Path.Combine(Path.GetDirectoryName(Path.GetFullPath outputPath), Path.GetFileNameWithoutExtension outputPath)
+                not (String.Equals(Path.GetFullPath(Path.ChangeExtension(inputPath, null)), outBase, StringComparison.OrdinalIgnoreCase))
+            let coreSnapshots =
+                if elsewhere then coreOutputs |> List.map (fun path -> path, (if File.Exists path then Some (File.ReadAllBytes path) else None))
+                else []
+            let restoreCoreOutputs () =
+                for path, before in coreSnapshots do
+                    try
+                        match before with
+                        | Some bytes -> if not (File.Exists path && File.ReadAllBytes path = bytes) then File.WriteAllBytes(path, bytes)
+                        | None -> if File.Exists path then File.Delete path
+                    with _ -> ()
             let waiter = router.Begin uri
             try
                 if cached.IsNone then
@@ -563,20 +601,41 @@ module Program =
                         let parent = Path.GetDirectoryName outputPath
                         if not (String.IsNullOrWhiteSpace parent) then Directory.CreateDirectory parent |> ignore
                         let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
-                        if coreWrites && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
-                            // The output is the core's own file: one writer.
-                            if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
-                        else
-                            writeWithRetry outputPath generated 0
+                        match multiFile with
+                        | Some suffixes ->
+                            // The core writes each file itself: wait for this build's writes, then copy them when the
+                            // requested output is somewhere else. Never write the concatenation.
+                            let coreBase = Path.ChangeExtension(inputPath, null)
+                            let outBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
+                            let deadline = DateTime.UtcNow.AddSeconds 5.0
+                            let landed (suffix : string) =
+                                let path = coreBase + suffix
+                                File.Exists path && File.GetLastWriteTimeUtc path >= started.AddSeconds -2.0
+                            while not (suffixes |> List.forall landed) && DateTime.UtcNow < deadline do
+                                Threading.Thread.Sleep 20
+                            if not (String.Equals(Path.GetFullPath coreBase, Path.GetFullPath outBase, StringComparison.OrdinalIgnoreCase)) then
+                                for suffix in suffixes do
+                                    let source = coreBase + suffix
+                                    if File.Exists source then File.Copy(source, outBase + suffix, true)
+                        | None ->
+                            if coreWrites && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
+                                // The output is the core's own file: one writer.
+                                if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
+                            else
+                                writeWithRetry outputPath generated 0
+                                // Let the core's own write land before it is undone.
+                                if coreWrites && not coreSnapshots.IsEmpty then awaitCoreWrite coreFile generated |> ignore
+                        restoreCoreOutputs ()
                         let binding =
                             match cached with
                             | Some cached -> cached.binding
                             | None when String.Equals(backend, "Fsharp", StringComparison.Ordinal) -> discoverEntryBinding generated
                             | None -> "main"
-                        cache.Put(uri, backend, fingerprint, generated, binding)
+                        if multiFile.IsNone && cache.Reuse then cache.Put(uri, backend, fingerprint, generated, binding)
                         writeEntryManifest outputPath binding generated.Length revisionMode backend
                         Ok (generated.Length, binding, revisionMode)
             finally
+                restoreCoreOutputs ()
                 router.Clear waiter
         with error -> Error error.Message
 
@@ -698,7 +757,7 @@ module Program =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
         let revisions = SourceRevisionStore()
-        let cache = CompilationCache()
+        let cache = CompilationCache(false)
         startDiagnosticPump server.errors router
         try
             try
@@ -730,6 +789,7 @@ module Program =
         | ".cpp" -> "Cpp + Cuda"
         | ".lua" -> "Lua"
         | ".gleam" -> "Gleam"
+        | ".ts" | ".mts" -> "TypeScript"
         | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
 
     /// Where a timed-out compile stopped. The Hopac core exposes its last BuildFile stage lock-free, so this
@@ -749,11 +809,12 @@ module Program =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
         let revisions = SourceRevisionStore()
-        let cache = CompilationCache()
         startDiagnosticPump server.errors router
         let jobs =
             File.ReadAllLines jobsPath
             |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace line) && not (line.StartsWith "#"))
+        // A one-job batch (scripts/test.ps1 -FreshProcess, every hopac row) has nothing to reuse.
+        let cache = CompilationCache(jobs.Length > 1)
         let budgetFromCaller = not (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable "SPIRAL_BUILD_BUDGET_MS"))
         use results = new StreamWriter(resultsPath, true, UTF8Encoding(false))
         results.AutoFlush <- true
@@ -812,7 +873,7 @@ module Program =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
         let revisions = SourceRevisionStore()
-        let cache = CompilationCache()
+        let cache = CompilationCache(true)
         startDiagnosticPump server.errors router
         printfn "spiral-session-ready socket=%s pid=%d" socketPath Environment.ProcessId
         Console.Out.Flush()
@@ -870,6 +931,8 @@ module Program =
     [<EntryPoint>]
     let main argv =
         configureHopacFromEnvironment ()
+        // This host never answers hover requests (no language-server mode): the core can skip rendering hover types.
+        if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
         if argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
             0
@@ -897,7 +960,7 @@ module Program =
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()
             let revisions = SourceRevisionStore()
-            let cache = CompilationCache()
+            let cache = CompilationCache(false)
             startDiagnosticPump server.errors router
             let compileResult =
                 if backend = "Fsharp" && String.Equals(Environment.GetEnvironmentVariable "SPIRAL_DIRECT_PROJECT_BUILD", "1", StringComparison.Ordinal) then
@@ -912,5 +975,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi] <input.spi> <output.fsx|.c|.rs|.pas> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi"
+            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi"
             2

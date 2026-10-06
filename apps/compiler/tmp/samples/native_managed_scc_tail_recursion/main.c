@@ -33,6 +33,7 @@ static inline void StringDecref(String * x){
 static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
+int32_t method1(int32_t v0, String * v1);
 int32_t method2(int32_t v0, String * v1){
     
     

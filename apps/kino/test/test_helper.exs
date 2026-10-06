@@ -60,5 +60,47 @@ defmodule Spiral.Kino.TestHelpers do
   end
 end
 
+test_port? = System.get_env("SPIRAL_KINO_COMPILER_PORT") in [nil, ""]
+
+# A free port per run, so two concurrent `mix test` runs never share (and retire) one test daemon.
+if test_port? do
+  {:ok, socket} = :gen_tcp.listen(0, ip: {127, 0, 0, 1})
+  {:ok, port} = :inet.port(socket)
+  :gen_tcp.close(socket)
+  System.put_env("SPIRAL_KINO_COMPILER_PORT", Integer.to_string(port))
+end
+
 Spiral.Kino.Domain.ensure!()
 ExUnit.start()
+
+# Live tests start a compiler daemon on the test port; retire it when the suite ends so it does not linger.
+# A port given through SPIRAL_KINO_COMPILER_PORT belongs to the caller and is left alone.
+if test_port? do
+  ExUnit.after_suite(fn _ ->
+    Spiral.Kino.CompilerClient.shutdown()
+
+    # The per-run port names the daemon's logs and lock (kino-<port>.*): drop them so runs do not pile them up.
+    port = System.get_env("SPIRAL_KINO_COMPILER_PORT")
+
+    base =
+      String.replace(
+        System.get_env("LOCALAPPDATA") || Path.join(System.user_home!(), ".cache"),
+        "\\",
+        "/"
+      )
+
+    pattern = Path.join([base, "spiral-bin", "kino-#{port}.*"])
+
+    # The daemon's OS process can hold its logs open for a moment after its port closes.
+    Enum.reduce_while(1..20, :ok, fn _, :ok ->
+      Enum.each(Path.wildcard(pattern), &File.rm/1)
+
+      if Path.wildcard(pattern) == [] do
+        {:halt, :ok}
+      else
+        Process.sleep(250)
+        {:cont, :ok}
+      end
+    end)
+  end)
+end

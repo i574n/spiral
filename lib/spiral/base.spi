@@ -12,7 +12,18 @@ inl emit_unit forall t. (x : t) : () =
 
 /// ### use
 inl use forall t. (x : t) : t =
-    $'use !x = !x ' : ()
+    backend_switch {
+        Gleam = fun () => $'use !x = !x ' : ()
+        Lua = fun () => $'use !x = !x ' : ()
+        Fsharp = fun () => $'use !x = !x ' : ()
+        Python = fun () => $'use !x = !x ' : ()
+        Cpp = fun () => $'use !x = !x ' : ()
+        TypeScript = fun () => $'use !x = !x ' : ()
+        // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
+        Rust = fun () =>
+            global "struct SpiralUse(std::rc::Rc<dyn Fn()>);\nimpl Drop for SpiralUse {\n    fn drop(&mut self) { (self.0)() }\n}"
+            $'let _spiral_use = SpiralUse((!x).clone())' : ()
+    }
     $'!x '
 
 /// ### unit
@@ -67,6 +78,8 @@ inl exec_unit (fn : () -> ()) : () =
             inl unit = $'()' : $'unit'
             ($'(fun () -> !fn (); !unit) ()' : $'unit') |> ignore
         Python = fun () => fn ()
+        Rust = fun () => fn ()
+        TypeScript = fun () => fn ()
     }
 
 /// ### lazy
@@ -93,6 +106,7 @@ inl memoize forall t. (fn : () -> t) : () -> t =
             inl result : lazy t = $'lazy !fn ()'
             fun () => $'!result.Value' : t
         Python = fun () => body ()
+        Rust = fun () => body ()
     }
 
 /// ### capture
@@ -116,6 +130,7 @@ inl capture forall t. (fn : () -> t) : t =
             $'match _capture_!result with Some x -> x | None -> failwith "base.capture / _capture_!result=None"' : t
         Python = fun () =>
             fn ()
+        Rust = fun () => fn ()
     }
 
 /// ### yield_from
@@ -164,6 +179,8 @@ inl (=.) forall t. (a : t) (b : t) : bool =
         Lua = fun () => $'!a == !b ' : bool
         Fsharp = fun () => $'!a = !b ' : bool
         Python = fun () => $'!a == !b ' : bool
+        Rust = fun () => $'!a == !b ' : bool
+        TypeScript = fun () => $'!a === !b ' : bool
     }
 
 /// ### (<>.)
@@ -173,6 +190,8 @@ inl (<>.) forall t. (a : t) (b : t) : bool =
         Lua = fun () => $'!a ~= !b ' : bool
         Fsharp = fun () => $'!a <> !b ' : bool
         Python = fun () => $'!a \!= !b ' : bool
+        Rust = fun () => $'!a \!= !b ' : bool
+        TypeScript = fun () => $'!a \!== !b ' : bool
     }
 
 /// ### (<>..)
@@ -196,6 +215,7 @@ type pair_switch a b =
         Lua : $'(`a, `b)'
         Fsharp : $'(`a * `b)'
         Python : $'(`a, `b)'
+        Rust : $'(`a, `b)'
     }
 nominal pair a b = $'backend_switch `(pair_switch a b)'
 
@@ -213,6 +233,11 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
             $'!a, !b ' : pair a b
         Python = fun () =>
             $'!a, !b ' : pair a b
+        Rust = fun () =>
+            // the tuple takes its fields: a join point's arguments are the codegen's copies (`.clone()`, or a move for a
+            // type without Clone), so a field value used again or captured by an `Fn` closure stays usable
+            inl a, b = join (a, b)
+            $'(!a, !b)' : pair a b
     }
 
 /// ### from_pair
@@ -230,6 +255,7 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
         Python = fun () =>
             $'a, b = !pair '
             ($'a' : a), ($'b' : b)
+        Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
     }
 
 /// ### (||>)
@@ -285,11 +311,38 @@ inl rec defaultof forall t. (() : ()) : t =
         Gleam = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
         Lua = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
         Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
-        Python = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+        // Python: the F# defaults (Unchecked.defaultof) of the primitives the typecase above doesn't list.
+        Python = fun () =>
+            run (fun () =>
+                real
+                    typecase t with
+                    | i8 => 0i8
+                    | i16 => 0i16
+                    | i64 => 0i64
+                    | u8 => 0u8
+                    | u16 => 0u16
+                    | u32 => 0u32
+                    | u64 => 0u64
+                    | f32 => 0.0f32
+                    | f64 => 0.0f64
+                    | bool => false
+                    | _ => $'"base.defaultof / invalid type / t: `t"' : t
+                : t
+            ) : t
+        Rust = fun () => run (fun () => $'Default::default()' : t) : t
     }
 
 /// ### choice2'
-nominal choice2' a b = $'Choice<`a, `b>'
+// Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
+type choice2_switch a b =
+    {
+        Gleam : $'Choice<`a, `b>'
+        Lua : $'Choice<`a, `b>'
+        Fsharp : $'Choice<`a, `b>'
+        Python : $'Choice<`a, `b>'
+        Rust : $'Result<`a, `b>'
+    }
+nominal choice2' a b = $'backend_switch `(choice2_switch a b)'
 
 /// ### choice2_unbox
 inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
@@ -300,6 +353,12 @@ inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
             inl c1of2 = join c1of2
             inl c2of2 = join c2of2
             $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
+        | RustNative => fun choice =>
+            inl c1of2 (x : t1) : _ _ t2 = C1of2 x
+            inl c2of2 (x : t2) : _ t1 _ = C2of2 x
+            inl c1of2 = join c1of2
+            inl c2of2 = join c2of2
+            $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'
         | _ => fun _ => null ()
 
 /// ### ref
@@ -325,6 +384,8 @@ type exn_switch =
         Lua : $'nil'
         Fsharp : $'exn'
         Python : $'BaseException'
+        Rust : $'Rc<str>'
+        TypeScript : $'any'
     }
 nominal exn = $'backend_switch `(exn_switch)'
 
@@ -332,6 +393,16 @@ inl exn x =
     x |> $'`exn '
 
 /// ### try
+// Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
+// goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints
+// nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local
+// counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and
+// there the hook always reports (it is the only report before the abort).
+inl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
+    inl fn = dyn fn
+    inl ex_fn = dyn ex_fn
+    $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
+
 inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
     inl some x : option t = Some x
     inl some = dyn some
@@ -359,41 +430,93 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
             $'except Exception as e:'
             $'    result = !ex_fn(e)'
             $'result' : option t
+        // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
+        Rust = fun () =>
+            catch_unwind_native (fun () => some (fn ())) ex_fn
     }
 
 /// ### try_unit
+// F# and Python: try_unit / try_finally as one-line try statements over the closures
+inl try_unit_fsharp_python () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => true
+        Python = fun () => true
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => false
+    }
+
 inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
-    backend_switch {
-        Gleam = fun () => $'// base.try_unit' : ()
-        Lua = fun () => $'-- base.try_unit' : ()
-        Fsharp = fun () => $'try' : ()
-        Python = fun () => $'try:' : ()
-    }
-    fn |> indent
-    backend_switch {
-        Gleam = fun () => $'// base.try_unit' : ()
-        Lua = fun () => $'-- base.try_unit' : ()
-        Fsharp = fun () => $'with ex ->' : ()
-        Python = fun () => $'except Exception as ex:' : ()
-    }
-    fun () =>
-        inl ex = $'ex'
+    inl native =
         backend_switch {
-            Fsharp = fun () => $'()' : ()
+            Gleam = fun () => false
+            Lua = fun () => false
+            Fsharp = fun () => false
+            Python = fun () => false
+            TypeScript = fun () => false
+            Cpp = fun () => false
+            CppHost = fun () => false
+            Delphi = fun () => false
+            Cuda = fun () => false
+            Rust = fun () => true
         }
-        inl ex () =
-            ex
-        ex_fn ex
-    |> indent
-    backend_switch {
-        Gleam = fun () => $'// base.try_unit' : ()
-        Lua = fun () => $'-- base.try_unit' : ()
-        Fsharp = fun () =>
-            $'|> ignore'
-            $'(* try_unit'
-            $'try_unit *)' : t
-        Python = fun () => $'None' : t
-    }
+    if native
+    then
+        // Native Rust: a panic is the exception (catch_unwind_native).
+        catch_unwind_native fn (fun ex => ex_fn fun () => ex)
+        $'()' : t
+    elif try_unit_fsharp_python ()
+    then
+        inl fn = dyn fn
+        inl ex_fn = dyn ex_fn
+        backend_switch {
+            Fsharp = fun () =>
+                $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
+                $'()' : t
+            // (a helper def: the Python codegen puts `del` lines after a variable's last use, which would split a
+            // try/except written inline)
+            Python = fun () =>
+                global "def _spiral_try_unit(fn, ex_fn):\n    try: fn()\n    except Exception as ex: ex_fn(lambda: ex)"
+                $'_spiral_try_unit(!fn, !ex_fn)' : ()
+                $'None' : t
+        }
+    else
+        backend_switch {
+            Gleam = fun () => $'// base.try_unit' : ()
+            Lua = fun () => $'-- base.try_unit' : ()
+            Fsharp = fun () => $'try' : ()
+            Python = fun () => $'try:' : ()
+        }
+        fn |> indent
+        backend_switch {
+            Gleam = fun () => $'// base.try_unit' : ()
+            Lua = fun () => $'-- base.try_unit' : ()
+            Fsharp = fun () => $'with ex ->' : ()
+            Python = fun () => $'except Exception as ex:' : ()
+        }
+        fun () =>
+            inl ex = $'ex'
+            backend_switch {
+                Fsharp = fun () => $'()' : ()
+            }
+            inl ex () =
+                ex
+            ex_fn ex
+        |> indent
+        backend_switch {
+            Gleam = fun () => $'// base.try_unit' : ()
+            Lua = fun () => $'-- base.try_unit' : ()
+            Fsharp = fun () =>
+                $'|> ignore'
+                $'(* try_unit'
+                $'try_unit *)' : t
+            Python = fun () => $'None' : t
+        }
 
 /// ### try_unit'
 inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
@@ -401,29 +524,63 @@ inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
 
 /// ### try_finally
 inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
-    backend_switch {
-        Gleam = fun () => $'// base.try_finally' : ()
-        Lua = fun () => $'-- base.try_finally' : ()
-        Fsharp = fun () => $'try' : ()
-        Python = fun () => $'try:' : ()
-    }
-    fn |> indent
-    backend_switch {
-        Gleam = fun () => $'// base.try_finally' : ()
-        Lua = fun () => $'-- base.try_finally' : ()
-        Fsharp = fun () => $'finally' : ()
-        Python = fun () => $'finally:' : ()
-    }
-    finally |> indent
-    backend_switch {
-        Gleam = fun () => $'// base.try_finally' : ()
-        Lua = fun () => $'-- base.try_finally' : ()
-        Fsharp = fun () =>
-            $'(* try_finally'
-            $'try_finally *)'
-            ()
-        Python = fun () => $'// base.try_finally' : ()
-    }
+    inl native =
+        backend_switch {
+            Gleam = fun () => false
+            Lua = fun () => false
+            Fsharp = fun () => false
+            Python = fun () => false
+            TypeScript = fun () => false
+            Cpp = fun () => false
+            CppHost = fun () => false
+            Delphi = fun () => false
+            Cuda = fun () => false
+            Rust = fun () => true
+        }
+    if native
+    then
+        // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
+        inl fn = dyn fn
+        inl finally = dyn finally
+        $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()
+        $'()' : t
+    elif try_unit_fsharp_python ()
+    then
+        inl fn = dyn fn
+        inl finally = dyn finally
+        backend_switch {
+            Fsharp = fun () =>
+                $'try !fn () finally !finally ()' : ()
+                $'()' : t
+            Python = fun () =>
+                global "def _spiral_try_finally(fn, finally_fn):\n    try: fn()\n    finally: finally_fn()"
+                $'_spiral_try_finally(!fn, !finally)' : ()
+                $'None' : t
+        }
+    else
+        backend_switch {
+            Gleam = fun () => $'// base.try_finally' : ()
+            Lua = fun () => $'-- base.try_finally' : ()
+            Fsharp = fun () => $'try' : ()
+            Python = fun () => $'try:' : ()
+        }
+        fn |> indent
+        backend_switch {
+            Gleam = fun () => $'// base.try_finally' : ()
+            Lua = fun () => $'-- base.try_finally' : ()
+            Fsharp = fun () => $'finally' : ()
+            Python = fun () => $'finally:' : ()
+        }
+        finally |> indent
+        backend_switch {
+            Gleam = fun () => $'// base.try_finally' : ()
+            Lua = fun () => $'-- base.try_finally' : ()
+            Fsharp = fun () =>
+                $'(* try_finally'
+                $'try_finally *)'
+                ()
+            Python = fun () => $'// base.try_finally' : ()
+        }
 
 /// ### (:>)
 prototype (~:>) r : forall t. t -> r

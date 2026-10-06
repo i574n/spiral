@@ -1,0 +1,24 @@
+// A chain of closures that capture nothing (a lazy stream of constants, like lib.dice's roller cycles): each is a
+// `thread_local!` static whose initializer's closure body calls the next one. rustc's monomorphization walk nests std's
+// generic initializer instances per link and stops at the crate's `recursion_limit` (128 by default; the dice contract's
+// 64-link chain hit it on wasm32), so past 16 static closures the Rust backend raises the limit with their count:
+// `#![recursion_limit = "512"]` here. C runs the same program (its backend forward-declares the closure type the
+// recursive union names, see native_closure_union_rec); both exit with 40.
+union rec stream =
+    | Cons : u64 * (() -> stream)
+    | Nil
+
+inl rec build (n : u64) : stream =
+    if n = 0 then Nil else Cons (n, fun () => build (n - 1))
+
+inl native () : i32 =
+    inl ~s = build 80
+    inl ~acc = 0u64
+    let rec loop (s : stream) (acc : u64) : u64 =
+        match s with
+        | Cons (x, next) => loop (next ()) (acc + x)
+        | Nil => acc
+    inl r = loop s acc % 200
+    !!!!Conv(`i32, r)
+
+inl main () : i32 = native ()

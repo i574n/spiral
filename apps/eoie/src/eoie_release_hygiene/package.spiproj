@@ -1,9 +1,0 @@
-packages:
-    incident_recovery_contract
-    rust_std_string
-modules:
-    hygiene_policy
-    hygiene_terminal
-    incident_recovery_terminal
-    runtime_guard
-    main

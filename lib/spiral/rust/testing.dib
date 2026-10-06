@@ -23,19 +23,32 @@ open rust.rust_operators
 #!spiral
 
 inl run_tests' tests =
-    (!\($'"true; () //"') : bool) |> ignore
+    if rust.rust.is_native () then
+        // native Rust: the comment trick below relies on Fable's output layout. Each test becomes a top-level
+        // `#[test] fn <name>()` that selects itself by name and re-enters spiral_main() (on a big-stack thread, as
+        // main() does); this function then runs only the selected test.
+        inl fields = reflection.get_record_fields tests
+        global "thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }"
+        fields
+        |> listm.iter fun name, (fn : string -> ()) =>
+            inl (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
+            global ("#[test] fn " ++ name ++ "() { std::thread::Builder::new().stack_size(1 << 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(\"" ++ name ++ "\")); spiral_main() }).unwrap().join().unwrap(); }")
+            if $'SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&*!name)))' then
+                fn name
+    else
+        (!\($'"true; () //"') : bool) |> ignore
 
-    inl fields = reflection.get_record_fields tests
+        inl fields = reflection.get_record_fields tests
 
-    fields
-    |> listm.iter fun name, (fn : string -> ()) =>
-        !\($'"} /* /*"')
-        (!\($'$"*/ \#[test] fn " + !name + "() { //"') : bool) |> ignore
-        fn name
+        fields
+        |> listm.iter fun name, (fn : string -> ()) =>
+            !\($'"} /* /*"')
+            (!\($'$"*/ \#[test] fn " + !name + "() { //"') : bool) |> ignore
+            fn name
 
-    fields
-    |> listm.iter fun _ =>
-        !\($'"{ //"') : ()
+        fields
+        |> listm.iter fun _ =>
+            !\($'"{ //"') : ()
 
 #!spiral
 
@@ -43,7 +56,9 @@ inl run_tests' tests =
 
 inl run test =
     if env.get_environment_variable "TEST" = "1"
-    then ()
+    then
+        // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it
+        if rust.rust.is_native () then test () else ()
     else
         runtime.execution_options fun x => { x with
             command = "cargo +nightly-2025-11-01 test --timings -- --show-output"
@@ -55,7 +70,8 @@ inl run test =
             exit_code |> _assert_eq 0i32
             result |> _assert sm'.contains "test result: ok. 1 passed; 0 failed; 0 ignored;"
 
-    $'let tests () = !test ()' : ()
+    if rust.rust.is_native () |> not then
+        $'let tests () = !test ()' : ()
 
 #!spiral
 

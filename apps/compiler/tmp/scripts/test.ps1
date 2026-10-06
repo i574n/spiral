@@ -62,7 +62,7 @@ $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1'
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 # Per-job timeouts stay small: fast samples compile in well under a second once the core library is warm,
 # so anything slower is a hang (the expected Hopac failure mode) and should cost seconds, not minutes.
@@ -113,11 +113,16 @@ if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
 # ------------------------------------------------------------------ discovery
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+# Harness backend names that differ from the compiler's: the upstream C++/CUDA and Python backends.
+$coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
+# harness.psd1 AlsoTypeScript: samples that also get a TypeScript row (judged against C like the ts_* fixtures).
 function New-Sample([string]$suite, [string]$sourcePath, [string[]]$backends) {
-    [pscustomobject]@{ Suite = $suite; Id = (Get-Rel (Split-Path $sourcePath)); Input = $sourcePath; Backends = $backends }
+    $id = Get-Rel (Split-Path $sourcePath)
+    if ($harness.AlsoTypeScript -and $id -in $harness.AlsoTypeScript -and $backends -notcontains 'TypeScript') { $backends = @($backends) + 'TypeScript' }
+    [pscustomobject]@{ Suite = $suite; Id = $id; Input = $sourcePath; Backends = $backends }
 }
 
 # The entry of a sample directory: main.spi, or main.spir for bottom-up fixtures.
@@ -181,6 +186,7 @@ $jobs = foreach ($sample in $samples) {
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
         [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input
+            CoreBackend = $(if ($coreBackend.ContainsKey($b)) { $coreBackend[$b] } else { $b })
             Output = [IO.Path]::ChangeExtension($sample.Input, $extension[$b]); TimeoutSec = $timeout
             Native = Join-Path $nativeRoot "$($sample.Id)/$b" }
     }
@@ -203,7 +209,7 @@ $workerScript = {
         $logPath = Join-Path $dir "worker$index-$attempt.log"
         # -FreshProcess: one compile per process (the Hopac core treats BuildFile as one-shot per process).
         $batch = if ($fresh) { @($remaining[0]) } else { $remaining }
-        $batch | ForEach-Object { "$($_.Key)`t$($_.Backend)`t$($_.Input)`t$($_.Output)`t$($_.TimeoutSec * 1000)" } | Set-Content $jobsPath
+        $batch | ForEach-Object { "$($_.Key)`t$($_.CoreBackend)`t$($_.Input)`t$($_.Output)`t$($_.TimeoutSec * 1000)" } | Set-Content $jobsPath
         $arguments = @($compiler, '--batch', $jobsPath, $resultsPath)
         # Run from the scratch dir: the Hopac core creates target/ folders relative to the current directory.
         $process = Start-Process -FilePath $dotnet -ArgumentList $arguments -NoNewWindow -PassThru -WorkingDirectory $workDir `
@@ -280,7 +286,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 # separately from a plain hang. F# and C only: Rust/Delphi go through a C file the host puts back.
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -318,11 +324,36 @@ function Build-And-Run($job) {
     $binDir = $job.Native
     $dir = $binDir
     New-Item -ItemType Directory -Force $binDir | Out-Null
+    if ($job.Backend -eq 'TypeScript') {
+        # No build step: node strips the types and runs main.ts in a worker with a large stack (run_main.mjs).
+        if (-not $tools.Node) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.Node @('--experimental-strip-types', '--no-warnings', (Join-Path $shimDir 'run_main.mjs'), $job.Output) $binDir 30
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Python') {
+        # No build step: run main() of the generated module on the CPU path (corelib.py picks numpy without a GPU).
+        if (-not $tools.Python) { return 'no-toolchain' }
+        $env:PYTHONDONTWRITEBYTECODE = '1'
+        $env:SPIRAL_CUDA = '0'
+        $run = Invoke-Native $tools.Python @((Join-Path $shimDir 'run_main.py'), $job.Output) $binDir 30
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
     $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
+        'Cpp' {
+            # cpp_native.py: g++ for the CppHost part, nvcc only when the program entered `join_backend CudaHost`.
+            if (-not $tools.Python) { return 'no-toolchain' }
+            $b = Invoke-Native $tools.Python @((Join-Path $shimDir 'cpp_native.py'), $job.Output, $exe) $dir 180
+            if ("$($b.Exit)" -eq '3') { return 'no-toolchain' }
+            $b
+        }
     }
     if ($build.Exit -ne 0 -or -not (Test-Path $exe)) {
         $msg = (($build.Err + ' ' + $build.Out) -replace '\s+', ' ').Trim()
@@ -364,14 +395,14 @@ $rows = foreach ($job in $jobs) {
 }
 $rows = @($rows)
 
-# Rust and Delphi must reproduce the native behaviour of the C residual of the same sample.
+# Rust, Delphi and TypeScript must reproduce the native behaviour of the C residual of the same sample.
 $byId = $rows | Group-Object id -AsHashTable
 # Negative fixtures fail by design and each runtime reports failure with its own code (C abort, Rust panic
 # 101, FPC runtime error 2xx), so "both failed" agrees. Diagnosed issues listed in harness.psd1 Known are
 # reported as `known` instead of failing the run.
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =

@@ -21,7 +21,20 @@ inl to_string' forall t. (x : t) : std_string =
 
 /// ### from_std_string
 inl from_std_string (str : std_string) : string =
-    real from_std_string_real str
+    inl fable () : string = real from_std_string_real str
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // Native Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
+        Rust = fun () => !\\(str, $'"Rc::<str>::from(String::as_str(&$0))"') : string
+    }
 
 /// ## sm'
 
@@ -80,6 +93,7 @@ inl string_builder (initial : string) : string_builder =
             global "import io"
             global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
             $'CustomStringIO(!initial)' : string_builder
+        Rust = fun () => $'String::from(&*!initial)' : string_builder
     }
 
 /// ### append_real
@@ -108,6 +122,9 @@ inl (++\#) a b =
 inl format_debug forall t. (x : t) : string =
     real format_debug_real `t x
 
+inl obj_to_string_rust forall t. (x : t) : string =
+    real obj_to_string_rust_real `t x
+
 /// ### (~#?*)
 inl (~#?*) s =
     s |> format_debug
@@ -130,6 +147,7 @@ inl obj_to_string x : string =
         Lua = fun () => #?*x : string
         Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
+        Rust = fun () => obj_to_string_rust x
     }
 
 /// ### (~#?**)
@@ -170,6 +188,8 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
         Python = fun () => sm.slice s { from to = to_py () } : string
+        Rust = fun () => sm.slice s { from to } : string
+        TypeScript = fun () => sm.slice s { from to } : string
     }
 
 /// ### format_pretty_real
@@ -225,7 +245,11 @@ inl ellipsis (max : i32) (s : string) =
 
 /// ### last_index_of
 inl last_index_of (search : string) (s : string) : i32 =
-    $'!s.LastIndexOf !search '
+    // Bound before run_target: a literal materialized inside its first `#if` branch is reused by the others.
+    inl search = dyn search
+    run_target function
+        | RustNative => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+        | _ => fun () => $'!s.LastIndexOf !search ' : i32
 
 /// ### index_of_char
 inl index_of_char (search : char) (s : string) : int =
@@ -240,7 +264,7 @@ inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
         elif c = (s |> index i)
         then i - from
         else 루프 (i + 1i32)
-    and inl 루프 i = join_body_unit body len i
+    and inl 루프 i = join_body_unit body (if var_is i then i else len) i
     from |> 루프
 
 /// ### index_of
@@ -263,6 +287,7 @@ inl index_of (search : string) (s : string) : int =
         Lua = fun () => $'string.find(!s, !search) - 1' : int
         Fsharp = fun () => $'!s.IndexOf !search ' : int
         Python = fun () => $'!s.find(!search)' : int
+        Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
     }
 
 /// ### replicate
@@ -294,6 +319,7 @@ inl convert_to_utf32 (c : char) : int =
             | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
             | _ => fun c => c |> convert.i32
         Python = fun () => $'ord(!c)' : int
+        Rust = fun () => $'(!c as `int)' : int
     }
 
 /// ### ends_with
@@ -304,6 +330,7 @@ inl ends_with (value : string) (s : string) : bool =
             $'!s |> string.ends_with(!value)' : bool
         Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool
         Python = fun () => $'!s.endswith(!value)' : bool
+        Rust = fun () => $'!s.ends_with(&*!value)' : bool
         Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
     }
 
@@ -316,6 +343,7 @@ inl starts_with (value : string) (s : string) : bool =
         Lua = fun () => $'!value == "" or !s:sub(1, ##!value) == !value ' : bool
         Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
         Python = fun () => $'!s.startswith(!value)' : bool
+        Rust = fun () => $'!s.starts_with(&*!value)' : bool
     }
 
 /// ### is_white_space
@@ -324,7 +352,10 @@ inl is_white_space (c : char) : bool =
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
-    $'!str.Substring (!start, !len)'
+    // Native Rust: byte offsets, like the native index_of/length.
+    if rust.is_native ()
+    then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'
+    else $'!str.Substring (!start, !len)'
 
 /// ### to_lower
 inl to_lower (input : string) : string =
@@ -335,11 +366,15 @@ inl to_lower (input : string) : string =
         Lua = fun () => $'string.lower(!input)' : string
         Fsharp = fun () => $'!input.ToLower' () : string
         Python = fun () => $'!input.lower()' : string
+        Rust = fun () => $'Rc::<str>::from(!input.to_lowercase())' : string
+        TypeScript = fun () => $'!input.toLowerCase()' : string
     }
 
 /// ### to_upper
 inl to_upper (input : string) : string =
-    $'!input.ToUpper' ()
+    if rust.is_native ()
+    then $'Rc::<str>::from(!input.to_uppercase())'
+    else $'!input.ToUpper' ()
 
 /// ### char_to_upper
 inl char_to_upper (input : char) : char =
@@ -350,6 +385,7 @@ inl char_to_upper (input : char) : char =
         Lua = fun () => $'string.upper(!input)' : char
         Fsharp = fun () => $'System.Char.ToUpper !input ' : char
         Python = fun () => $'!input.upper()' : char
+        Rust = fun () => $'!input.to_ascii_uppercase()' : char
     }
 
 /// ### builder_append
@@ -365,6 +401,7 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
         Python = fun () =>
             ($'!sb.write(!item)' : int) |> ignore
             sb
+        Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder
     }
 
 /// ### builder_append_line
@@ -378,6 +415,8 @@ inl builder_append_line (sb : string_builder) : string_builder =
             ($'!sb.AppendLine ()' : string_builder) |> ignore
             sb
         Python = fun () =>
+            sb |> builder_append "\n"
+        Rust = fun () =>
             sb |> builder_append "\n"
     }
 
@@ -394,6 +433,7 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
             sb
         Python = fun () =>
             ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
+        Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
     }
 
 /// ### builder_clear
@@ -412,6 +452,7 @@ inl builder_clear (sb : string_builder) : string_builder =
             ($'!sb.truncate(0)' : int) |> ignore
             ($'!sb.seek(0)' : int) |> ignore
             sb
+        Rust = fun () => $'String::new()' : string_builder
     }
 
 /// ### builder_insert
@@ -433,6 +474,8 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
         Python = fun () =>
             inl sb = sb |> obj_to_string
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
+        // (a char index, as .NET's Insert)
+        Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
     }
 
 /// ### span_from
@@ -444,7 +487,7 @@ inl span_from pred str i0 =
         elif str |> index i |> pred
         then 루프 (i + 1)
         else i
-    and inl 루프 i = join_body_unit body len i
+    and inl 루프 i = join_body_unit body (if var_is i then i else len) i
     i0 |> 루프
 
 /// ### char_contains
@@ -465,7 +508,7 @@ inl trim_start (chars : list char) (input : string) : string =
         elif input |> index i |> char_contains chars
         then 루프 (i + 1)
         else i
-    input |> slice (루프 0) len
+    input |> slice (루프 0) (len - 1)
 
 /// ### trim_end
 inl trim_end (chars : list char) (input : string) : string =
@@ -473,7 +516,7 @@ inl trim_end (chars : list char) (input : string) : string =
     inl len = input |> length
     let rec 루프 (i : int) =
         if i <= 0
-        then 0
+        then -1
         elif input |> index (i - 1) |> char_contains chars
         then 루프 (i - 1)
         else i - 1
@@ -504,6 +547,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
             b |> $'String.concat' a : string
         Python = fun () =>
             $'!a.join(!b)' : string
+        Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string
     }
 
 /// ### length'
@@ -515,6 +559,7 @@ inl length' forall dim. (input : string) : dim =
         Lua = fun () => $'##!input ' : dim
         Fsharp = fun () => input |> $'String.length' : dim
         Python = fun () => $'len(!input)' : dim
+        Rust = fun () => $'(!input.len() as `dim)' : dim
     }
 
 /// ### to_string any
@@ -533,6 +578,8 @@ inl replace (old : string) (new : string) (s : string) : string =
             $'!s.Replace (!old, !new)' : string
         Python = fun () =>
             $'!s.replace(!old, !new)' : string
+        Rust = fun () =>
+            $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string
     }
 
 /// ### split
@@ -544,6 +591,9 @@ inl split (separator : string) (str : string) : array_base string =
             |> listm'.to_array'
         Fsharp = fun () => $'!str.Split !separator ' : array_base string
         Python = fun () => $'!str.split(!separator)' : array_base string
+        Rust = fun () =>
+            $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
+            : array_base string
     }
 
 /// ### split_string
@@ -565,7 +615,9 @@ inl encoding_utf8 () : encoding =
 
 /// ### utf8_get_bytes
 inl utf8_get_bytes (s : string) : a i32 u8 =
-    s |> (encoding_utf8 () |> $'_.GetBytes')
+    run_target function
+        | RustNative => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8
+        | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : a i32 u8
 
 /// ### byte_to_string
 inl byte_to_string (format : string) (x : u8) : string =
@@ -590,7 +642,20 @@ inl char_is_alphanumeric (x : char) : bool =
 
 /// ### byte_slice
 inl byte_slice (s : string) : rust.ref (am'.slice u8) =
-    !\($'"b\\\"" + !s + "\\\""')
+    inl fable () : rust.ref (am'.slice u8) =
+        !\($'"b\\\"" + !s + "\\\""')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()) }' : rust.ref (am'.slice u8)
+    }
 
 /// ### display
 nominal display t =
@@ -634,6 +699,7 @@ nominal json_value =
             Fsharp = (fun () =>
                 global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
                         ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end") : () -> ()
         }
         $'' : $'serde_json_Value'
     )
@@ -689,11 +755,17 @@ nominal os_string =
 
 /// ### raw_string_literal
 inl raw_string_literal (s : string) : rust.ref str =
-    !\($'"r\#\\"" + !s + "\\"\#"')
+    backend_switch {
+        Fsharp = fun () => !\($'"r\#\\"" + !s + "\\"\#"') : rust.ref str
+        Rust = fun () => $'(&*!s)' : rust.ref str
+    }
 
 /// ### raw_string_literal_static
 inl raw_string_literal_static (s : string) : rust.static_ref str =
-    !\($'"r\#\\"" + !s + "\\"\#"')
+    backend_switch {
+        Fsharp = fun () => !\($'"r\#\\"" + !s + "\\"\#"') : rust.static_ref str
+        Rust = fun () => $'Box::leak(String::from(&*!s).into_boxed_str())' : rust.static_ref str
+    }
 
 /// ### (~#)
 inl (~#) s =
@@ -711,7 +783,7 @@ inl include_str (path : string) : rust.ref str =
 inl as_str (s : string) : rust.ref str =
     // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
     run_target_args (fun () => s) function
-        | Rust _ => fun s => !\\(s, $'"&*$0"')
+        | Rust _ | RustNative => fun s => !\\(s, $'"&*$0"')
         | _ => convert.unbox
 
 /// ### from_iter
@@ -721,7 +793,7 @@ inl from_iter forall (t : * -> *). (s : t char) : std_string =
 /// ### ref_to_std_string
 inl ref_to_std_string (str : rust.ref str) : std_string =
     run_target_args (fun () => str) function
-        | Rust _ => fun str => !\\(str, $'"String::from($0)"')
+        | Rust _ | RustNative => fun str => !\\(str, $'"String::from($0)"')
         | _ => convert.unbox
 
 /// ### cow_to_std_string
@@ -768,21 +840,21 @@ inl from_os_str_ref s =
 /// ### format_custom'
 inl format_custom' (f : string) x : std_string =
     run_target function
-        | Rust _ => fun () =>
+        | Rust _ | RustNative => fun () =>
             !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format_debug'
 inl format_debug' x : std_string =
     run_target function
-        | Rust _ => fun () =>
+        | Rust _ | RustNative => fun () =>
             !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format'
 inl format' x : std_string =
     run_target_args (fun () => x) function
-        | Rust _ => fun x =>
+        | Rust _ | RustNative => fun x =>
             !\\(x, $'"format\!(\\\"{}\\\", $0)"')
         | _ => fun _ => null ()
 
@@ -801,6 +873,7 @@ nominal regex =
             Fsharp = (fun () =>
                 global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
                         ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end") : () -> ()
         }
         $'' : $'regex_Regex'
     )
@@ -876,7 +949,10 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
                 new_pair n' !\\(n, $'$"!match'.name(&$0).map(|x| x.as_str()).unwrap_or(\\\"\\\").to_string().into()"')
 
-            (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).map(|x| std::sync::Arc::try_unwrap(x).unwrap_or_else(|x| (*x).clone())).collect()"') : bool) |> ignore
+            // Fable's pairs are shared pointers (unwrapped here); native Rust's are plain tuples.
+            if rust.is_native ()
+            then (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).collect()"') : bool) |> ignore
+            else (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).map(|x| std::sync::Arc::try_unwrap(x).unwrap_or_else(|x| (*x).clone())).collect()"') : bool) |> ignore
 
             !\($'"_regex_captures"')
 
@@ -929,7 +1005,9 @@ inl encode_uri_component (s : std_string) : js_string =
 /// ### strip_prefix
 inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =
     inl s = join s
-    !\($'"!s.strip_prefix(!prefix)"')
+    if rust.is_native ()
+    then !\($'"!s.strip_prefix((!prefix) as char)"') // a native char is a byte (`b'#'`)
+    else !\($'"!s.strip_prefix(!prefix)"')
 
 /// ### str_from_utf8
 inl str_from_utf8 (bytes : rust.ref (am'.slice u8)) : resultm.result' (rust.ref str) utf8_error =
@@ -1020,7 +1098,21 @@ inl as_bytes (text : string) : rust.ref (am'.slice u8) =
 
 /// ### into_bytes
 inl into_bytes (x : std_string) : am'.vec u8 =
-    !\\(x, $'$"$0.into_bytes()"')
+    inl fable () : am'.vec u8 =
+        !\\(x, $'$"$0.clone().into_bytes()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // A copy: Spiral values can be used again after this (`into_bytes` would move the String).
+        Rust = fun () => $'(!x).as_bytes().to_vec()' : am'.vec u8
+    }
 
 /// ## python
 
@@ -1028,9 +1120,6 @@ inl into_bytes (x : std_string) : am'.vec u8 =
 inl encode_utf8 (s : string) : string =
     inl encoding = "utf-8"
     backend_switch {
-        Fsharp = fun () =>
-            open python_operators
-            !\\((s, encoding), $'"$0.encode($1)"') : string
         Python = fun () =>
             $'!s.encode(!encoding)' : string
     }
@@ -1046,6 +1135,8 @@ inl contains (value : string) (s : string) : bool =
         Lua = fun () => $'string.find(!s, !value, 1, true) ~= nil ' : bool
         Fsharp = fun () => $'!s.Contains !value ' : bool
         Python = fun () => $'!value in !s ' : bool
+        Rust = fun () => $'!s.contains(&*!value)' : bool
+        TypeScript = fun () => $'!s.includes(!value)' : bool
     }
 
 /// ### to_string result t u
@@ -1067,6 +1158,10 @@ instance to_string result t u = fun x =>
 inl format_exception (ex : exn) : string =
     run_target function
         | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
+        // Native Rust: the exception is the panic message (base.try, base.catch_unwind_native).
+        | RustNative => fun () => $'!ex ' : string
+        // Native TypeScript: JavaScript's `Error: message`.
+        | TypeScript when typescript.is_native () => fun () => $'String(!ex)' : string
         | _ => fun () => ex |> format_debug
 
 /// ### range
@@ -1106,6 +1201,7 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         Lua = id : () -> ()
         Fsharp = id : () -> ()
         Python = id : () -> ()
+        Rust = id : () -> ()
     }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 
@@ -1134,7 +1230,7 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
     run_target_args (fun () => s, pattern, replacement) function
         | Fsharp => fun s, pattern, replacement =>
             $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'
-        | Rust (None) => fun s, pattern, replacement =>
+        | Rust (None) | RustNative => fun s, pattern, replacement =>
             inl regex = pattern |> new_regex |> resultm.unwrap'
             inl s = join s
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')

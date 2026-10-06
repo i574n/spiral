@@ -1,8 +1,0 @@
-packages:
-    canonical_plan_ir_types-
-    rust_std_string
-    state_receipt_codec_model-
-modules:
-    model-
-    transport_terminal-
-    main

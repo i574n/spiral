@@ -35,7 +35,7 @@ function FixRust {
             -replace "unbox::<i32>\(null\(\)\)", "0" `
             -replace "null\(\)", "fable_library_rust::Native_::getZero()" `
             -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
-            -replace "__self__.", "self." `
+            -replace "__self__\.", "self." `
             -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `
             -replace "use fable_library_rust::System::Threading::Tasks::TaskCanceledException;", "type TaskCanceledException = ();" `
             -replace "use fable_library_rust::System::TimeZoneInfo;", "type TimeZoneInfo = i64;"
@@ -90,8 +90,6 @@ function CopyTarget {
             $lib,
             $name
         )
-        $name = $Language -eq "py" -and @("threading", "platform") -contains $name ? "$($name)_" : $name
-        $name = $Language -eq "py" ? $name.ToLower() : $name
         $from = "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
         if (!(Test-Path $from)) {
             $from = ResolveLink "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
@@ -166,11 +164,6 @@ function CopyTarget {
                     -replace ", awaitTask, ", ", awaitPromise as awaitTask, " `
             }
         }
-        if ($Language -eq "py") {
-            $text = $text `
-                -replace "from .....lib", "from ........polyglot.lib" `
-                -replace "from .....lib", "from ........polyglot.lib"
-        }
 
         $text | Set-Content $to
     }
@@ -214,6 +207,57 @@ function GetTargetDir {
     $result = ResolveLink "$root/target/Builder/$ProjectName"
     Write-Host "spiral/lib/spiral/lib.ps1/GetTargetDir / targetDir: $result"
     $result
+}
+
+# Native Rust: compiles $SpiPath to $RsPath with the Spiral compiler's own Rust backend (`--backend Rust`), through
+# the portable compiler host that polyglot/scripts/spiral-bundle.ps1 resolves (the way apps/builder and
+# apps/dir-tree-html build). Returns $true when the compiler wrote $RsPath. Never throws: a failure prints a
+# `NATIVE-RUST-FAILED <name>` line (grep the workflow log for it) and the caller falls back to BuildFable.
+# Set SPIRAL_FABLE_RUST=1 to skip the native attempt. The compile is killed (whole process tree) after
+# SPIRAL_NATIVE_RUST_TIMEOUT_SEC seconds (default 1800): apps/spiral is the largest compile in either repo.
+# -Backend "Python + Cuda" compiles the same way with the native Python backend (the former Fable Python path) and
+# prints NATIVE-PYTHON-* lines instead.
+function BuildNativeRust {
+    param (
+        [Parameter(Mandatory)]
+        [string] $SpiPath,
+        [Parameter(Mandatory)]
+        [string] $RsPath,
+        [Parameter(Mandatory)]
+        [string] $Name,
+        [string] $Backend = "Rust"
+    )
+    $tag = $Backend -eq "Rust" ? "NATIVE-RUST" : "NATIVE-PYTHON"
+    if ($Backend -eq "Rust" -and $env:SPIRAL_FABLE_RUST) {
+        Write-Host "NATIVE-RUST-SKIPPED $Name / SPIRAL_FABLE_RUST is set"
+        return $false
+    }
+    try {
+        . (ResolveLink "$PSScriptRoot/../../deps/polyglot/scripts/spiral-bundle.ps1")
+        $spiral = Ensure-SpiralRustCompiler | Select-Object -Last 1
+        # `|core-` resolves through SPIRAL_COMPILER_PACKAGE_DIR (else "Package not loaded." on line 1).
+        # A child scope keeps env.ps1's StrictMode/ErrorActionPreference out of this function.
+        if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
+            $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
+        }
+        $start = Get-Date
+        Write-Host "spiral/lib/spiral/lib.ps1/BuildNativeRust / $Name / $($spiral.Compiler) --backend $Backend $SpiPath $RsPath"
+        $timeoutSec = [int]($env:SPIRAL_NATIVE_RUST_TIMEOUT_SEC ?? 1800)
+        $arguments = @($spiral.Compiler, "--backend", $Backend, $SpiPath, $RsPath) | ForEach-Object { "`"$_`"" }
+        $process = Start-Process -FilePath $spiral.Dotnet -ArgumentList $arguments -NoNewWindow -PassThru
+        $null = $process.Handle
+        if (!$process.WaitForExit($timeoutSec * 1000)) {
+            try { $process.Kill($true) } catch { }
+            throw "timeout after $timeoutSec s (SPIRAL_NATIVE_RUST_TIMEOUT_SEC)"
+        }
+        if ($process.ExitCode -ne 0) { throw "compiler exit code $($process.ExitCode)" }
+        if (!(Test-Path $RsPath) -or (Get-Item $RsPath).LastWriteTime -lt $start) { throw "the compiler wrote no $RsPath" }
+        Write-Host "$tag-COMPILED $Name / $RsPath / $([int]((Get-Date) - $start).TotalSeconds) s"
+        $true
+    } catch {
+        Write-Host "$tag-FAILED $Name / compile / $_"
+        $false
+    }
 }
 
 function BuildFable {

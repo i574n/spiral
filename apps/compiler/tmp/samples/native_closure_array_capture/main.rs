@@ -13,7 +13,12 @@ fn spiral_main() -> i32 {
     let mut v1: Rc<dyn Fn(i32) -> i32> = closure0(v0.clone());
     v1(40i32)
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

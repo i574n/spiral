@@ -21,7 +21,7 @@ and [<Struct>] US2 =
 and [<Struct>] US3 =
     | US3_0 of f0_0 : UH1 * f0_1 : UH0
 and [<Struct>] US4 =
-    | US4_1 of f1_0 : UH1 * f1_1 : UH0 * f1_2 : bool
+    | US4_0 of f0_0 : UH1 * f0_1 : UH0 * f0_2 : bool
 let rec method5 (v0 : UH1, v1 : UH1) : US1 =
     match v0 with
     | UH1_3(v53, v54) -> (* RegexAlt *)

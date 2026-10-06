@@ -351,11 +351,19 @@ inl await_send forall t. (x : future_pin_send t) : t =
 
 #!spiral
 
-nominal into_iter t =
+// Native Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
+// elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`.
+nominal into_iter_fable t =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rayon::vec::IntoIter<$0>\")>]\n#endif\ntype rayon_vec_IntoIter<'T> = class end"
         $'' : $'rayon_vec_IntoIter<`t>'
     )
+type into_iter_switch t =
+    {
+        Fsharp : into_iter_fable t
+        Rust : $'Rc<RefCell<Vec<`t>>>'
+    }
+nominal into_iter t = $'backend_switch `(into_iter_switch t)'
 
 #!markdown
 
@@ -364,7 +372,10 @@ nominal into_iter t =
 #!spiral
 
 inl into_par_iter forall t. (x : am'.vec t) : into_iter t =
-    !\\(x, $'"rayon::iter::IntoParallelIterator::into_par_iter($0)"')
+    backend_switch {
+        Fsharp = fun () => !\\(x, $'"rayon::iter::IntoParallelIterator::into_par_iter($0)"') : into_iter t
+        Rust = fun () => $'Rc::new(RefCell::new(!x.clone()))' : into_iter t
+    }
 
 #!markdown
 
@@ -381,11 +392,17 @@ inl par_iter forall t. (x : am'.vec t) : into_iter t =
 
 #!spiral
 
-nominal iter_map t u =
+nominal iter_map_fable t u =
     `(
         global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rayon::iter::Map<$0, _>\")>]\n#endif\ntype rayon_iter_Map<'T> = class end"
         $'' : $'rayon_iter_Map<`t>'
     )
+type iter_map_switch t u =
+    {
+        Fsharp : iter_map_fable t u
+        Rust : $'Rc<RefCell<Vec<`u>>>'
+    }
+nominal iter_map t u = $'backend_switch `(iter_map_switch t u)'
 
 #!markdown
 
@@ -394,7 +411,19 @@ nominal iter_map t u =
 #!spiral
 
 inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : iter_map (into_iter t) u =
-    !\\((ar, fn), $'"rayon::iter::ParallelIterator::map($0, |x| $1(x))"')
+    backend_switch {
+        Fsharp = fun () => !\\((ar, fn), $'"rayon::iter::ParallelIterator::map($0, |x| $1(x))"') : iter_map (into_iter t) u
+        // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted
+        // `|x| f(x)` can't spread.
+        // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.
+        Rust = fun () =>
+            inl ar : array_base t = $'(!ar)'
+            inl n : i32 = $'(!ar.borrow().len() as i32)'
+            let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
+                if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
+            inl acc = loop 0 (am'.new_vec [])
+            $'Rc::new(RefCell::new(!acc))' : iter_map (into_iter t) u
+    }
 
 #!markdown
 
@@ -403,7 +432,10 @@ inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : iter_map (into_iter t
 #!spiral
 
 inl par_collect forall t u. (iter : iter_map (into_iter t) u) : am'.vec u =
-    !\\(iter, $'"rayon::iter::ParallelIterator::collect($0)"')
+    backend_switch {
+        Fsharp = fun () => !\\(iter, $'"rayon::iter::ParallelIterator::collect($0)"') : am'.vec u
+        Rust = fun () => $'(!iter).borrow().clone()' : am'.vec u
+    }
 
 #!markdown
 
@@ -498,6 +530,7 @@ type async_switch t =
     {
         Fsharp : $'Async<`t>'
         Python : async_python t
+        Rust : $'std::pin::Pin<Box<dyn std::future::Future<Output = `t>>>'
     }
 nominal async t = $'backend_switch `(async_switch t)'
 
@@ -542,8 +575,7 @@ inl await_task forall t. (a : task t) : async t =
     run_target function
         | Fsharp _
         // | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
+        | TypeScript _ => fun () =>
             a |> $'Async.AwaitTask'
         | _ => fun () => null ()
 
@@ -554,13 +586,15 @@ inl await_task forall t. (a : task t) : async t =
 #!spiral
 
 inl ignore forall t. (a : async t) : async () =
-    run_target function
-        | Fsharp _
-        // | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
-            a |> $'Async.Ignore'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then $'Box::pin(async move { let _ = !a.await; })' : async ()
+    else
+        run_target function
+            | Fsharp _
+            // | Rust _
+            | TypeScript _ => fun () =>
+                a |> $'Async.Ignore'
+            | _ => fun () => null ()
 
 #!markdown
 
@@ -570,13 +604,31 @@ inl ignore forall t. (a : async t) : async () =
 
 inl run_synchronously forall t. (a : async t) : t =
     run_target function
-        | Fsharp _
-        // | Rust _
-        | Python _ => fun () =>
+        | Fsharp _ => fun () =>
             a |> $'Async.RunSynchronously'
         | Cuda => fun () =>
             $'asyncio.run(!a())'
+        // Native Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.
+        | RustNative => fun () =>
+            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t
         | _ => fun () => null ()
+
+// Native Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the
+// native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in
+// base.catch_unwind_native (a once-installed hook that defers to the previous one unless this thread's counter is set).
+// A panic=abort build aborts instead (and its hook always reports).
+inl catch_native forall t. (a : async t) : async (resultm.result' t exn) =
+    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
+
+// Native Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and
+// aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts
+// there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).
+// A panic in that first poll is kept (its report suppressed, as in catch_native) and resumed by the handle (F# raises a
+// child's exception at the await). With a
+// timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after
+// it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.
+inl start_child_native forall t. (timeout : i32) (a : async t) : async (async t) =
+    $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)
 
 #!markdown
 
@@ -584,14 +636,18 @@ inl run_synchronously forall t. (a : async t) : t =
 
 #!spiral
 
+// Native Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once
+// and runs it on the thread pool.
 inl start (a : async ()) : () =
-    run_target function
-        | Fsharp _
-        | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
-            a |> $'Async.Start'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then a |> run_synchronously
+    else
+        run_target function
+            | Fsharp _
+            | Rust _
+            | TypeScript _ => fun () =>
+                a |> $'Async.Start'
+            | _ => fun () => null ()
 
 #!markdown
 
@@ -600,12 +656,14 @@ inl start (a : async ()) : () =
 #!spiral
 
 inl start_child forall t. (a : async t) : async (async t) =
-    run_target function
-        | Fsharp _
-        | TypeScript _
-        | Python _ => fun () =>
-            a |> $'Async.StartChild'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then a |> start_child_native -1
+    else
+        run_target function
+            | Fsharp _
+            | TypeScript _ => fun () =>
+                a |> $'Async.StartChild'
+            | _ => fun () => null ()
 
 #!markdown
 
@@ -614,12 +672,14 @@ inl start_child forall t. (a : async t) : async (async t) =
 #!spiral
 
 inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t) =
-    run_target function
-        | Fsharp _
-        | TypeScript _
-        | Python _ => fun () =>
-            $'Async.StartChild (!a, !timeout)'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then a |> start_child_native timeout
+    else
+        run_target function
+            | Fsharp _
+            | TypeScript _ => fun () =>
+                $'Async.StartChild (!a, !timeout)'
+            | _ => fun () => null ()
 
 #!markdown
 
@@ -627,14 +687,17 @@ inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t
 
 #!spiral
 
+// Native Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).
 inl start_immediate forall t. (a : async t) : () =
-    run_target function
-        | Fsharp _
-        // | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
-            a |> $'Async.StartImmediate'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then a |> run_synchronously |> fun _ => ()
+    else
+        run_target function
+            | Fsharp _
+            // | Rust _
+            | TypeScript _ => fun () =>
+                a |> $'Async.StartImmediate'
+            | _ => fun () => null ()
 
 #!markdown
 
@@ -642,14 +705,17 @@ inl start_immediate forall t. (a : async t) : () =
 
 #!spiral
 
+// Native Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).
 inl start_with_continuations forall t. (a : async t) : () =
-    run_target_args' a function
-        | Fsharp _
-        | Rust _
-        | TypeScript _
-        | Python _ => fun a =>
-            $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'
-        | _ => fun _ => null ()
+    if rust.is_native ()
+    then a |> catch_native |> run_synchronously |> fun _ => ()
+    else
+        run_target_args' a function
+            | Fsharp _
+            | Rust _
+            | TypeScript _ => fun a =>
+                $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'
+            | _ => fun _ => null ()
 
 #!markdown
 
@@ -669,11 +735,12 @@ inl sleep (ms : i32) : async () =
     run_target function
         | Fsharp _
         | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
+        | TypeScript _ => fun () =>
             ms |> $'Async.Sleep'
         | Cuda _ => fun () =>
             $'asyncio.sleep(!ms / 1000)'
+        | RustNative => fun () =>
+            $'Box::pin(async move { std::thread::sleep(std::time::Duration::from_millis((!ms as u64))) })' : async ()
         | _ => fun () => null ()
 
 #!markdown
@@ -728,14 +795,19 @@ inl return_await' forall t. (a : async t) : t =
 
 #!spiral
 
+// Native Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).
 inl catch' forall t e. (a : async t) : async (choice2' t e) =
-    run_target function
-        | Fsharp _
-        // | Rust _
-        | TypeScript _
-        | Python _ => fun () =>
-            a |> $'Async.Catch'
-        | _ => fun () => null ()
+    if rust.is_native ()
+    then
+        inl r = a |> catch_native
+        $'(!r)' : async (choice2' t e)
+    else
+        run_target function
+            | Fsharp _
+            // | Rust _
+            | TypeScript _ => fun () =>
+                a |> $'Async.Catch'
+            | _ => fun () => null ()
 
 #!markdown
 

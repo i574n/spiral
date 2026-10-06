@@ -3,10 +3,10 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: bool) -> Rc<str> {
     if v0 {
-        let mut v1: Rc<str> = Rc::<str>::from("alpha");
+        let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
         v1.clone()
     } else {
-        let mut v2: Rc<str> = Rc::<str>::from("beta");
+        let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("beta"); } LIT.with(|lit| lit.clone()) };
         v2.clone()
     }
 }
@@ -27,7 +27,12 @@ fn spiral_main() -> i32 {
     let mut v9: i32 = v8 - 14i32;
     v9
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

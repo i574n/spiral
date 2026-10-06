@@ -2,6 +2,165 @@
 
 State at hand-off, and the open work in priority order. Details live in the lane docs linked below.
 
+## Session 2026-10-05 (night): Rust literal cache and path-qualified literals
+
+- codegenRust's last pass, `cacheRustStringLiterals` (shared section, both cores), caches each `Rc::<str>::from("..")`
+  in a `thread_local`. It matched the bare suffix only, so a literal that macro text spelled with its path
+  (`std::rc::Rc::<str>::from("")`, eoie's `rust_std_string`) became `std::rc::{ thread_local!{..} LIT.with(..) }` and
+  rustc rejected it (`expected identifier, found {`; 5 errors in eoie's command_spec.rs). Now a `std::rc::` or
+  `::std::rc::` literal is replaced as a whole, its path kept inside the block (`static LIT: std::rc::Rc<str> = ..`), and
+  a literal behind any other path (`crate::Rc::..`) or an identifier is left as written. Bare literals are cached as
+  before (no existing output changes). Fixture `rust_string_literal_path` (C,Rust; exit 20; red with the previous
+  compiler, rustc error above).
+- Verified: single-flight `runs/single-flight-20261005-220235` (`-Suite all -Native`: +2 rows for the fixture, 0
+  changed rows vs `-190408`, outputs 1052 identical + the fixture's 2), re-blessed by `-220955` (row for row, 1054/1054
+  outputs identical; EXPECTED EE5D50A67221). Source 3CCCBD5D8346: projections single-flight 92e758a2, hopac daa4ca87.
+  Hopac (rebuilt): `runs/hopac-20261005-223154` (frontier+smoke, `-Parallel 1`, 72/72 parity, 0 changed rows vs
+  `-191036`) and `-223624` (78 Rust/string fixtures incl. the new one: all parity, DISAGREE 0, 0 changed rows vs
+  `-192602`; the fixture's C and Rust residual hashes equal single-flight's).
+- Tracked outputs elsewhere: eoie's `authority_state_domain/authority.rs` and `eoie_legacy_operations/operations.rs`
+  hold `std::rc::Rc::<str>::from("")` from a compiler older than the cache pass (their bare literals are uncached too);
+  if regenerated, this fix caches it like the others. eoie's `rust_std_string/model.spi` workaround (`.unwrap_or_default()`) can be reverted.
+
+## Session 2026-10-05 (day): C forward declarations, Python NaN/concat, hopac start-up and parse speed
+
+- C backend, recursive unions with closure fields: a `Fun` struct prints its range and domain types first, so a union
+  among them named the `Fun` before its typedef (`union rec s = Cons : u64 * (() -> s)`: `unknown type name 'Fun0'`);
+  and a function whose definition was still printing (its body prints the functions it calls first) was called before
+  its definition (a closure calling the join point that creates it: `implicit declaration of function 'build0'`).
+  CodegenC now emits a forward `typedef struct FunN FunN;` for a `Fun` named while its struct prints, and a prototype
+  for a function called while its definition prints. Only programs that failed before change, plus the four scc
+  samples whose shims hand-wrote those prototypes (their `main.c` gains the generated line; the two prototype-only
+  shims are deleted and the two array scc shims keep only their `DynamicArrayReserve0` macro). Fixture `native_closure_union_rec` (all four backends, exit 70); `rust_static_closure_chain`'s C side now
+  runs the real 80-link program (exit 40).
+- CodegenPython: a NaN literal printed `float()` (= 0.0) and is now `float('nan')` (unreachable from source today:
+  partial evaluation rejects a compile-time NaN; ts_float_nan builds its NaN with a macro). `StaticStringConcat`
+  (`sm.concat`) had no Python arm: `ts_string_concat` Python now builds and agrees with C (was a blessed error).
+  The other `ts_*` C++/Python gaps are upstream representation limits (C++ strings are `const char *` without a
+  length, arrays bare pointers; Python ints are unbounded, strings index by code point) and stay as they are.
+- Hopac start-up: every hopac row runs in a fresh process, which spent seconds JIT-compiling the compiler.
+  `scripts/build.ps1` now ReadyToRun-compiles a Release build's managed dlls with the runtime's crossgen2 (from the
+  NuGet cache, restored on first use; Hopac.dll crashes crossgen2 and stays IL, remembered in `<dll>.r2r-skip`).
+  frontier_hello 6.0 -> 3.2 s per fresh process; with the parse fixes below the lib/spiral frontier samples
+  (format_any_union, join_format_any, static_list_eq) went from 9-16 s to 7.4-8.9 s and the runaway rows from ~14 s
+  to 6.5-7.3 s (`runs/hopac-20261005-083405`, `-Parallel 1`, frontier+smoke compiled in 299 s vs 554 s).
+- Hopac parse of lib/spiral: the parsed-AST seed telemetry summed every block under a lock for each parsed block
+  (O(blocks^2), threads spinning on the lock) and keyed blocks through `NativeCutoverStableRef.ref32` (a digest and a
+  process-wide locked table per block): ~43% of parse CPU. Now a running aggregate keyed by the block's identity
+  string. The tokenizer's `skip_string`/`chars_till_string` used the culture-aware `String.Compare` (~16% of parse
+  CPU): ordinal now (shared section). The host skips the source-graph fingerprint (every .spi under the input and the
+  package directory read and hashed) when a process compiles once: the CLI's single compile, `--plan-ir`, and one-job
+  batches (every hopac `-FreshProcess` row).
+- Tokenizer (both cores): `tokenize_line` appended each token with `PersistentVector.conj`, which copied the vector's
+  tail array every time (over half of the tokenizer's CPU on lib/spiral); tokens now collect in a ResizeArray that
+  becomes the line's vector once. Infer (both cores) renders hover texts only when `SPIRAL_HOVERS` is not `0`; the
+  CLI host sets `0` (it has no language-server mode; the rendering was ~6% of a fresh single-flight compile). A fresh
+  single-flight compile of frontier_format_any_union went from ~8.9 to ~5 s (ABBA, 4 pairs, identical outputs); hopac
+  gains less (its parse is already parallel).
+- Hopac `term_core_impl` split for the JIT: it was 225 KB of IL, past the JIT's 60 KB optimization limit, so every
+  fresh process compiled it (twice) with MinOpts into 1.1 MB of machine code. Its long arms are now `let rec` local
+  functions (`termArm*`: fsc's TLR lifts them to static methods and, unlike plain single-use locals, does not inline
+  them back), and the EOp arms, which carried most of the match's decision tree, live in `termOpArms1..3`, split by Op
+  case (each repeats the catch-all arm; arm bodies and their relative order unchanged). IL: term_core_impl 42 KB,
+  termOpArms 21/42/56 KB; `DOTNET_JitDisasmSummary` reports "Tier-0 switched to FullOpts" for them. ABBA (4 pairs,
+  both ReadyToRun, outputs identical in every pair): lean_cic -1.5 s (-14%), runaway -0.7 s (-15%), brzozowski
+  -0.3 s, format_any_union and spiral_proves unchanged. The edit was generated mechanically (pure code motion); the
+  single-flight projection is unchanged by it. `apps/spiral` on hopac (fresh process, ReadyToRun): 85 s with the split,
+  93 s without, byte-identical `spiral.fsx` (1,932,564 B; 359-888 s on 10-01).
+- TypeScript coverage: a sweep compiled every sample with a C oracle to TypeScript; 97 agree with C and now carry a
+  TypeScript row (`tests/harness.psd1` `AlsoTypeScript`, appended in `test.ps1`'s New-Sample; frontier samples
+  excluded). The others are C-only by design (libc ABI fixtures, the C dynamic-array shims' macros, the harness core's
+  C-only `((uint8_t)!value)` byte macro, BackendSwitch fixtures without a TypeScript key). One real gap fixed: a string
+  slice that fails (bounds, or inside a code point) exited 1 on TypeScript (a thrown RangeError) where C/Rust/Delphi
+  exit 3 (abort / exit(3) / Halt(3)); the helper now exits 3 (`managed_string_invalid_utf8_slice`).
+- Verified: single-flight `runs/single-flight-20261005-081420` (C/Python/fixture rows above changed, all explained)
+  and `-085717` (0 changed vs `-081420`), re-blessed by `-091505`; then `-095511` (+93 TypeScript rows, all agree;
+  only the 3 ts_* TypeScript residuals with the slice helper changed) re-blessed by `-100311` (row for row, 1048/1048
+  outputs identical; EXPECTED 55DF84D84F0A); `-105157` (+4 multi-module TypeScript rows, scc shims without prototypes)
+  re-blessed by `-110215` (EXPECTED 979A16B45F19); `-113449` (tokenizer + hovers) reproduces it (outputs identical); re-blessed on the final source by `-185124` (EXPECTED
+  49DDCDFFABDB; its only differences from `-113449` are format_any_union/join_format_any F#/Rust variable renumbering from
+  lib/spiral edits made at 12:31).
+  Source 58D50F91F9AC: projections single-flight 6aae8632, hopac b867b6fb. Hopac `runs/hopac-20261005-083405` (frontier+smoke, 0 changed rows vs `-043523`), `-083905` (fixtures:
+  every new/changed row's residual equals single-flight's), and with the split `-101039` (frontier+smoke incl. the new
+  TypeScript smoke rows, 0 changed rows vs `-083405`), `-101617` (fixtures, 0 changed vs `-083905`) and `-101938`:
+  `-Suite all -Native -Parallel 3`, 1279 rows, no missing/emitted/timeout, DISAGREE 0, 12 parity-residual-differs (the
+  known BackendSwitch-numbering rows), compile time summed 2,280 s vs 7,020 s the night before. On 58D50F91F9AC:
+  `-115035` (frontier+smoke) and `-115519` (fixtures), 0 changed rows vs the runs before; repeated on a quieter machine by
+  `-191036`/`-191413` (0 changed; slowest frontier row 6.4 s against the 17.9 s deadline) and `-192602` (`-Suite all -Parallel 3`: 1283 rows, no
+  missing/emitted/timeout, DISAGREE 0, 0 changed rows vs `-101938`; slowest frontier row 9.9 s).
+
+- Open (hopac): under a saturated CPU the lib/spiral frontier samples (and a few small ones) can still hit the 17.9 s core
+  deadline in `prepass_await_scheduled` (type checking done, partial evaluation not started): `runs/hopac-20261005-122158`
+  had 16 such timeouts while other jobs held the machine at 100% CPU, where `-101938` an hour and a half earlier had none.
+  The stall is before partial evaluation (prepass scheduling waits behind the loaded thread pool), so the next lever
+  is the prepass/typecheck latency, not the evaluator.
+## Session 2026-10-04/05: D1, D8, Python+Cuda kernel corelib
+
+- Native Rust `failwith` panics (`std::panic::panic_any`); `fn main` maps a panicked main thread to exit 101.
+- Per-branch CSE scope at preprocessor directives (`module CseDirectiveBarrier`, shared, before HopacExtensions): an
+  `#if/#ifdef/#ifndef/#elif/#else/#endif` line in macro text prunes the block's CSE table back to what was bound before
+  the region, at all 4 `push_typedop_no_rewrite (TyMacro ..)` sites (sf EMacro; hopac EMacro and the 2 replay thunks).
+  Before, a value bound in the first `run_target` arm was reused by the other arms and after `#endif` (lib/spiral seq.dib
+  cell 92: `v66` undefined in plain F#). Single-flight `runs/single-flight-20261004-235909`: 0 changed rows vs the oracle,
+  mega compile times unchanged; hopac smoke and the new fixtures all parity; hopac frontier parity with residuals
+  identical to before, but the 4 slowest frontier samples needed `-TimeoutSec 60` on a saturated CPU (stalls before
+  partial evaluation, so load; rerun `-Mode hopac -Suite frontier` at the default budget on a quiet machine).
+- Python+Cuda `kernels_aux`: the 0cb0fda0 corelib marks members `__host__ __device__` and guards `__host__`, and
+  upstream's `Replace("__host__", "__device__")` turned that into `__device__ __device__` members and a second
+  `#ifndef __device__` block (upstream has the same latent bug). The `__host__` guard is now dropped first, then
+  `__host__ __device__` -> `__device__`. Only `*_auto.py` outputs change (residual hashes are of `main.py`). Not
+  regressions, kept as upstream: the dropped device sync after `main` in Python/C++ (upstream e17b1cfc, CHANGELOG: the
+  sync caused instability with a debugger), and polyglot Supervisor's C++ expectation containing `#pragma once` and
+  `#include "main.hpp"` twice (it is the 4 CppHost files joined, each correct).
+- `runtime/make_corelib.py` takes the upstream corelib path as an argument and writes only `runtime/corelib.cuh` (the
+  diff goes to stdout); the host copies only `corelib.cuh`/`corelib.py`. `scripts/probe.ps1 -Backend Cpp|Python`.
+- Rust `recursion_limit`: a closure that captures nothing is a `thread_local!` static, and a chain of them (closure k
+  calls closure k+1, e.g. lib.dice's constant stream) nests std's lazy-initializer instances in rustc's monomorphization
+  walk; the dice contract's wasm32 build stopped at the default limit (128) until it added `#![recursion_limit = "512"]`
+  itself. codegenRust now emits that attribute when a program has more than 16 static closures (smallest power of two
+  from 256 that is at least 4 per static closure + 64; skipped when a global already sets it). The chain alone does not
+  overflow on x86_64 or wasm32 (80 and 200 links built), the surrounding call graph matters, hence a count, not a chain
+  measure. Dice: its landed `.spi` compiles byte-identically with and without its own global (73 static closures ->
+  512). Fixture `rust_static_closure_chain`.
+- NEAR store collections move: `nonCloneRustType` covers `near_sdk::store::*` (Vector, LookupMap, IterableSet, ..., both
+  spellings) and lib/spiral's native `near.vector` (`SpiralNearVec`), so a state record holding one is returned/passed
+  without `.clone()` (rustc E0599). A contract's `new` can return its state: a dice variant exporting
+  `dice_contract_new : () -> state` builds for wasm32 with the dice profile and keeps the 7 exports/19 imports (dice
+  itself unchanged: it still uses `&mut Option<State>`, which is now optional). Fixture `rust_near_store_moves`.
+- `ts_float_nan`/`ts_while_loop` have `CppHost`/`Python` keys now: their C++ and Python rows build and agree with C (the
+  4 rows were blessed compile errors). ts_float_nan's C/TypeScript residuals renumber variables only (a value-level
+  `!!!!BackendSwitch` evaluates every arm). The host's usage line lists all 9 backend ids.
+- Seen, not fixed: the C backend can't declare a closure type inside a recursive union (`union rec s = Cons : u64 * (()
+  -> s)`: `unknown type name 'Fun0'`); CodegenPython writes a NaN literal as `float()` (= 0.0; upstream too).
+  Both fixed in the 2026-10-05 day session (above).
+- Verified on source `3D4D537BCE75` (projections: single-flight `dd28476f`, hopac `0eccfd3a`):
+  `runs/single-flight-20261005-010846` (all 1178 rows parity, DISAGREE 0), re-blessed by `-011934`, which reproduces it
+  row for row with byte-identical outputs; hopac `runs/hopac-20261005-003930` (smoke 36/36, frontier parity except
+  timeouts on a CPU-saturated machine) + `-010115` (those rows at `-TimeoutSec 60`: all parity) + `-005400` (new
+  fixtures 32/32).
+- Then verified on source `6AA9B2B3F775` (recursion_limit, NEAR store moves, fixtures; projections: single-flight
+  `de9c11d6`, hopac `d060e0b1`): `runs/single-flight-20261005-031327` (1182 rows, DISAGREE 0, REGRESSED 0; changed rows
+  only the 4 new and the 6 ts_float_nan/ts_while_loop rows above), re-blessed by `-033216`, which reproduces it row for
+  row with byte-identical outputs. Hopac on `6AA9B2B3F775`: `runs/hopac-20261005-035940` (smoke 36/36; frontier parity
+  except 4 timeouts at the 17.9 s core deadline, the usual slow rows under load) + `-041213` (new fixtures 44/44, DISAGREE 0).
+- hopac-perf 01-04 (hopac-only: Op case table without per-case `MakeUnion`, value-keyed `EvalSiteCache`, fewer
+  evaluator allocations, and the `memoCreditDecision` fix: it keyed a ConcurrentDictionary by an option, so `None`
+  threw `ArgumentNullException` in Hopac workers; now `voption`) on top: source `67D56F303BA9`, single-flight projection
+  unchanged (`de9c11d6`, so the bless above stands), hopac `50944649`. `runs/hopac-20261005-043523` (`-Parallel 1`):
+  frontier 28/28 and smoke 36/36 parity, no timeouts. Against `-035940`, the 4 timeouts and the emitted
+  frontier_static_list_eq row now return, with residuals identical to the `-TimeoutSec 60` run `-010115`. New fixtures
+  `-044750`: 44/44 parity, DISAGREE 0, row for row equal to `-041213`. Mega and timing: hopac-perf3's private runs
+  (`hopac-20261005-032257` base vs `-035558` patched, frontier,smoke,mega: 0 rows differ, compile_ms sum 808 -> 627 s,
+  sequential under load; their ABBA timing is in `$CLAUDE_JOB_DIR/tmp/agents/hopac-perf3/LOG.md`).
+
+## Session 2026-10-03: Python indexing and notebook error reporting
+
+- Upstream `mrakgr/host_cpp_and_cuda_backend` at `0cb0fda07a76202db356849301615c5bf026c5a1` still calls `.item()` unconditionally. The shared Python backend now unboxes numeric CuPy/NumPy array elements while preserving foreign/container and object-array values. `python_foreign_array_index` passes on both monolithic compiler modes.
+- Both compiler modes built successfully. Their Python suites each compiled/executed 12 of 15 rows; `ts_float_nan`, `ts_while_loop`, and `ts_string_concat` remain compile failures. This is not a clean full-suite result or a C parity run.
+- Updated authoritative `apps/spiral/spiral.dib` and `lib/spiral/runtime.dib`, then exported `.spi`: CUDA/C++ failures propagate, `SPIRAL_JSON=1` requests a quiet JSON response, and failure shutdown exits 1. Polyglot `apps/spiral/Eval.dib` opts into the protocol; its `.fs` was exported too. Generated F# shutdown was executed and returned 1.
+- Pending: rebuild the full CLI and run `python apps/spiral/test_json_protocol.py <rebuilt-executable>`. The old binary fails this regression test. The isolated full CLI compile timed out at 300 seconds; a smaller production CUDA runner probe was stopped after six minutes without output. Do not claim end-to-end JSON validation yet.
+- Pre-edit copies, private compiler builds and test logs: `%LOCALAPPDATA%/spiral-bin/scratch/ci-tail-fix-20261003-030322`. Concurrent agent changes were retained; no shared CLI binary was replaced.
+
 ## Done in the last session
 
 - Rust and Delphi are native backends in both cores (`codegenRust`, `codegenDelphi`, next to `codegenFsharp`).
@@ -20,9 +179,9 @@ State at hand-off, and the open work in priority order. Details live in the lane
 
 ## Session 2026-09-28 (late): eoie on the native backend, translator deleted
 
-- eoie builds natively: `pwsh apps/eoie/compiler-contracts/test-regeneration.ps1 -CargoCheck -Test -CompilerContracts`
+- eoie builds natively: `pwsh ../eoie/compiler-contracts/test-regeneration.ps1 -CargoCheck -Test -CompilerContracts`
   passes (88/88 owners, cargo check, all tests incl. the `--check`/`--plan-ir` ones) and so does
-  `compiler-contracts/test-attestation.ps1`. The regenerated `.rs` are copied into `apps/eoie/src` (uncommitted).
+  `compiler-contracts/test-attestation.ps1`. The regenerated `.rs` are copied into `eoie/src` (the eoie repository) (uncommitted).
   Source fixes and the translator behaviours eoie relied on: `lanes/single-flight/RUST_LIBRARY_PLAN.md`, "Progress".
 - Core (`apps/compiler/spiral_compiler.fs`): a failed type check's fatal now lists the package's typer errors;
   `codegenRust` emits `#![...]` globals before its `use`s (also in hopac); `params` renamed (reserved in F#).
@@ -451,7 +610,9 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       2026-10-02: held twice with margin (`-Parallel 2`): `runs/hopac-20261002-111457` 11.3-11.7 s, and
       `runs/hopac-20261002-153006` 8.7-10.0 s (after the registration and union-tag changes; full parity, 0 missing,
       DISAGREE 0, compiled in 2,325 s vs 2,985 s that morning; 33 rows moved from parity-residual-differs to exact
-      parity, 64 left). The criterion's rows hold; switching the default lane is the user's call (hopac is still
+      parity, 64 left). A third run at 18:27 on a throttled CPU (70% of nominal) put them at 15.2-15.9 s: the margin
+      depends on machine conditions, so the deadline is still the weak point. The criterion's rows hold; switching
+      the default lane is the user's call (hopac is still
       4-5x slower than single-flight on the mega roots: lean_cic 19.7 s, omniledger 22.2 s, spiral_proves_spiral
       43.6 s, brzozowski 3.9 s, zeta 7.2 s).
    2. **Warm processes (FRONTIER fix 57).** `-FreshProcess:$false` compiles a whole suite 12x faster (186 s vs
@@ -478,6 +639,9 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       (ReceiptConflict ...)`), the boundary absorbed it, the node never retired. Fixed: `resetEvaluationForBuild`
       empties the ledger (`SemanticWorkLedgerAuthority.resetForNewBuild`); 5 rounds x 8 warm builds clean.
       Still open: the in-process inline restart (`pevalWithInlineRestart`) starts a new peval without that reset.
+      Caveat: the reset is safe when nothing from an earlier build is still running (a fresh process, `-WarmRecycle`).
+      Fully warm, an abandoned error build's join point work is still in flight and the reset wipes its ledger
+      credits under it; that may feed the cutover rows below rather than being independent of them.
       Full-suite results with both fixes: `-WarmRecycle` 1,018 s, examples all parity, 2 contracts rows missing
       (`brzozowski/antimirov_certificate` cutover cancellation; `canonical_form_certificate` "types of two branches
       of an union unbox do not match: symbol_ordering / bit_alphabet" — a warm-only wrong answer, cause not found);
@@ -517,6 +681,11 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       11.3-11.7 s (were 14.5-16.5 s against the 17 s deadline, with more workers then). The 11 brzozowski contract
       rows whose residual changed already differed between the two runs before (emission order; residual-differs
       in all four runs).
+      Also 2026-10-02: `DiagSidecar.noteEjp0011Hot` tokenized every sidecar message to find EJP0011W (~3.5% of the
+      evaluator thread); it now checks for the code first. Verification run `runs/hopac-20261002-182701`: no verdict
+      or residual change vs `runs/hopac-20261002-153006`, but every timing was slower (3,410 s compiled, runaway rows
+      15.2-15.9 s, lean_cic 20-29 s rising run over run on an idle machine): the laptop CPU reported 70% of nominal
+      performance (Balanced scheme), so compare timings only within one session's conditions.
       Not a lever: GC configuration. `PollGC` shows as 52.8% of the evaluator thread's self time in the sampled
       profile, but that is mostly the sampler's own runtime suspension (EventPipe suspends threads like a GC does).
       lean_cic x3 per variant, all with the same residual: default 17.2-17.6 s; `DOTNET_GCgen0size` 256 MB
@@ -527,7 +696,73 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       Mega roots, single-flight vs hopac (2026-10-01/02): brzozowski 2.0 vs 5.1-6.3 s, lean_cic 4.2 vs 30.9-47.8,
       omniledger 5.0 vs 33.3-33.8, spiral_proves_spiral 8.1 vs 51.8-64.7, zeta 2.3 vs 10.1-11.1.
    5. Before any commit: a single-flight restore run (hopac suites rewrite the tracked sample outputs).
-   History of the day: "Session 2026-10-01" above and FRONTIER.md's status lines.1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
+   6. **Output convergence with single-flight (2026-10-02 evening).** Of the 65 rows whose hopac output differed
+      (`parity-residual-differs`), about 48 are now byte-identical to single-flight's (53 while BackendSwitch
+      evaluated every branch, reverted below; confirm the count on the next full suite). Causes fixed:
+      - pair traversal was tail-first in `dataPostorderChildRelation` (join point call arguments and renamed globals
+        came out reversed) and in hopac's `dyn` (`(0, 0)` and nested constructor arguments bound in reverse order);
+      - single-flight's F# union declarations numbered cases by their index in the whole union while every use
+        numbered them by position among the emitted cases (`US1_1` declared, `US1_0` used: the F# didn't compile for
+        GADT-refined unions; single-flight fixed, outputs re-blessed);
+      - a while condition deferred at the synchronous JP boundary was pushed with a placeholder type and used no
+        variable number (`while_*`, `native_cube_*`);
+      - `seq_apply`'s structural return check lacked records, so a closure returning a record stayed let-bound
+        (`native_prototype_record_callback`);
+      - `negative_programmed_endpoint_cross_codomain/package.spiproj` started with a YAML `---` line both cores
+        rejected at 0:0.
+      Tried and reverted: evaluating every `BackendSwitch` branch like single-flight (it converged
+      `native_float_nan_is` and the format_any samples, but other-backend branches spawn async join point
+      specializations: ~4 s more on formatting-heavy code, suite timeouts). Left: the 11 brzozowski contracts (one
+      extra variable number on the recursive join point call path, and run-to-run variation from async JPs) and
+      `native_float_nan_is` / format_any (the BackendSwitch numbering above).
+   7. **Night of 2026-10-02: structure, backends, dead code** (verification: both builds clean; suites pending).
+      - Onion steps 0-5 (restructuring the merged file layer by layer; the step inventory was a session note, not
+        in the repo): `upstream.py` handles nested `#if` (Utils was cut at 6 lines);
+        `scripts/projection-hash.ps1` hashes both cores' projections (a pure marker move must not change them);
+        `module HopacExtensions` re-paired so no pair straddles it; the Utils pair split (its hopac side was 36k lines
+        of hopac-only machinery, now a hopac-only region after a 61-line pair); the file header shared with hopac's
+        8k-line preamble kernel as a hopac-only region; SpiProj unified (single-flight's text, both cores).
+      - Dead code: 6.4k lines of hopac-only functions nothing referenced, removed to a fixed point (432, 118, 53, 27,
+        11, 4, 1 definitions per round; functions only, since a module-level value may run for its side effect);
+        two modules left empty were dropped. Single-flight's projection unchanged.
+      - TypeScript backend: shared section `/// ## CodegenTypescript` (after CodegenLua), `.ts` in the host, a
+        `C,TypeScript,Cpp,Python` harness set (`tests/harness.psd1`) with 14 `ts_*` fixtures; TypeScript runs on node
+        through `tests/native-shims/run_main.mjs` (worker with a 1 GB stack); all 14 agree with the C oracle. Chars are
+        UTF-8 bytes as in C.
+      - C++/CUDA/Python synced to upstream `host_cpp_and_cuda_backend` 0cb0fda0: CodegenCpp and CodegenPython are
+        now one shared section each (two pairs gone), CodegenUtils/CodegenAdapter updated, the backend is named
+        `CppHost`, and `StackRefs`/`HeapRefs` layouts were ported into both cores (Layout/Op cases, Infer, PartEval,
+        an error arm in every other backend). Native tiers: C++ (`tests/native-shims/cpp_native.py`, g++; nvcc only
+        when `join_backend CudaHost` leaves a non-empty `.cu`); Python (`run_main.py`, numpy CPU fallback without a
+        GPU). `lib/spiral/backend.spi` has `CppHost`/`TypeScript` keys.
+        Status of the 14 `ts_*` fixtures (`runs/single-flight-20261004-235909`): C++ 8 compile and agree with C; 6 are
+        blessed `error` rows, each an upstream limit of the C++ backend or of the core library, not a sync bug:
+        `ts_array_union` (array length: arrays are bare pointers in C++), `ts_closure_return` (a plain function has no
+        composable type: convert it to a closure), `ts_string_slice` (no native string slice), `ts_string_concat`
+        (`StaticStringConcat` with 2 args, upstream CodegenCpp), `ts_float_nan` and `ts_while_loop` (the fixture's own
+        `!!!!BackendSwitch` has no `CppHost` key; adding one is a fixture change). Python: 9 agree, 2 Known
+        (`ts_int_wrap`: unbounded ints; `ts_string_slice`: code-point indexing), 3 blessed `error` (`ts_string_concat`
+        as above; `ts_float_nan`, `ts_while_loop`: no `Python` key in that `!!!!BackendSwitch`). Plus `python_macro_annotations` (agrees) and
+        `python_foreign_array_index` (Python only, no C oracle).
+      - Later the same night: onion steps 2 (HopacExtensions unified: single-flight's top-level opens and `>>**` shared,
+        hopac's nested module a hopac-only region) and 6 (BlockBundling residual: single-flight's text shared, hopac
+        keeps 3 opens); single-flight's projection unchanged (`c5d4c508694feff8`). Verified 2026-10-03: hopac builds and
+        `runs/hopac-20261003-050046` reproduces the whole oracle (every row parity, DISAGREE 0); 636 of 657 hopac `ok` rows
+        are byte-identical to single-flight (brzozowski x10, format_any x4, native_float_nan_is x3, ts_float_nan x2,
+        ts_array_union Python, and another session's new python_foreign_array_index differ).
+      - Oracle re-blessed `single-flight-20261003-030150` (reproduced row for row by `-031154`): adds the 28 ts_* Cpp/Python
+        rows. codegenRust translates lib/spiral's Fable Rust type aliases (`fableRustAliases`):
+        reads `Fable.Core.Emit("R<$0>") ... type A<'T>` out of globals, drops F#-only globals, rewrites `A<x>` to `R<x>`.
+      - `codegen_runtime_file` also looks in the workspace (`apps/compiler/runtime`, `deps/spiral/apps/compiler/runtime`):
+        the notebook kernel and polyglot's Supervisor don't ship corelib.* next to their DLL (Supervisor.dib's Python
+        test failed with "Cannot find the codegen runtime file corelib.py"). The single-flight supervisor answers
+        BuildFile only after writing every file (a multi-file backend's caller compiles the siblings).
+      - Notebooks: `spiral cpp --cpp-path` (spiral.dib `process_cpp`: g++ or `SPIRAL_CXX`, then runs the binary) behind
+        Eval's `///> cpp` route; Supervisor.dib's Python/Cpp expectations are the multi-file outputs joined in file
+        order. Lib cells on cpp need `CppHost` arms in lib/spiral (3 today vs 144 `Python` keys).
+      - Host outputs are CRLF on Windows (codegen `AppendLine`); git normalizes them, but feed LF to Builder/Fable.
+   History of the day: "Session 2026-10-01" above and FRONTIER.md's status lines.
+1. **Done (FRONTIER fix 49): the 5 mega `brzozowski` rows with a wrong oracle**, blessed as `error`. Original notes: Cause, in *both*
    cores: the entry's `inl main` block fails to parse (a backtick type application on the next line, which
    top-down code rejects) and is dropped without a message; `BuildFile` then finds the `main` that the
    entry's `open main` brought in from the dependency (single-flight `file_build` fold + `Map.tryFind "main"`;

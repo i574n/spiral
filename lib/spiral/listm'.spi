@@ -249,12 +249,14 @@ inl exists' f x =
 inl list'_types () =
     backend_switch {
         Gleam = fun () => global "import gleam/list"
+        Rust = fun () => ()
     }
 type list'_switch t =
     {
         Gleam : $'List(`t)'
         Fsharp : $'`t list'
         Python : $'list'
+        Rust : $'Rc<Vec<`t>>'
     }
 nominal list' t = $'backend_switch `(list'_switch t)'
 
@@ -265,6 +267,7 @@ inl empty' forall t. () : list' t =
         Lua = fun () => $'{}' : list' t
         Fsharp = fun () => $'[]' : list' t
         Python = fun () => $'[]' : list' t
+        Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t
     }
 
 /// ### cons'
@@ -278,11 +281,20 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
         Python = fun () =>
             $'!tail.insert(0, !head)'
             $'!tail ' : list' t
+        Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
     }
 
 /// ### box
 inl box forall t. (list : list t) : list' t =
-    (list, empty' ()) ||> listm.foldBack cons'
+    run_target function
+        | RustNative => fun () =>
+            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on native Rust).
+            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
+            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
+                $'!acc.borrow_mut().push(!x)' : ()
+                n + 1
+            $'Rc::new(!acc.borrow().clone())' : list' t
+        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
 
 /// ### rev'
 inl rev' forall t. (items : list' t) : list' t =
@@ -300,6 +312,7 @@ inl rev' forall t. (items : list' t) : list' t =
             루프 (len - 1i32)
         Fsharp = fun () => items |> $'List.rev' : list' t
         Python = fun () => $'list(reversed(!items))' : list' t
+        Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
     }
 
 /// ### fold'
@@ -334,6 +347,14 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
             $'r_ = !init '
             $'for x in r: r_ = !cons (x)(r_)'
             $'r_' : list u
+        Rust = fun () =>
+            inl len : i32 = $'(!list).len() as i32'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i >= len then acc
+                else
+                    inl item : t = $'(!list)[!i as usize].clone()'
+                    루프 (i + 1i32) (Cons (fn item, acc))
+            루프 0i32 init
     }
 
 /// ### fold_back'
@@ -357,6 +378,14 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
             list
             |> rev'
             |> fold' fn init
+        Rust = fun () =>
+            inl len : i32 = $'(!list).len() as i32'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'(!list)[!i as usize].clone()'
+                    루프 (i - 1i32) (Cons (fn item, acc))
+            루프 (len - 1i32) init
     }
 
 /// ### filter'
@@ -379,6 +408,14 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
             루프 0i32
         Fsharp = fun () => list |> $'"List.filter !fn"' : list' t
         Python = fun () => $'list(filter(!fn, !list))' : list' t
+        Rust = fun () =>
+            inl len : i32 = $'(!list).len() as i32'
+            let rec 루프 (i : i32) (acc : list t) : list t =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'(!list)[!i as usize].clone()'
+                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
+            루프 (len - 1i32) Nil |> box
     }
 
 /// ### map
@@ -398,6 +435,7 @@ inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
             루프 0i32
         Fsharp = fun () => list |> $'List.map' fn : list' u
         Python = fun () => $'list(map(!fn, !list))' : list' u
+        Rust = fun () => fold_back' fn list Nil |> box
     }
 
 /// ### unbox
@@ -431,6 +469,14 @@ inl distinct' forall t. (list : list' t) : list' t =
             $'x = list(set(!list))'
             $'x.sort(key=!list.index)'
             $'x' : list' t
+        Rust = fun () =>
+            inl len : i32 = $'(!list).len() as i32'
+            let rec 루프 (i : i32) (seen : list t) : list t =
+                if i >= len then seen
+                else
+                    inl item : t = $'(!list)[!i as usize].clone()'
+                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
+            루프 0i32 Nil |> box |> rev'
     }
 
 /// ### to_array'
@@ -454,8 +500,8 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Fsharp = fun () => items |> $'List.toArray' : array_base t
         Python = fun () =>
             inl len = $'len(!items)' : i32
-            inl d = real defaultof `t ()
-            inl result : a _ t = am.init len (fun _ => d)
+            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).
+            inl result : a _ t = a ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
             let rec 루프 i =
                 if i >= len then
                     inl (a result) = result
@@ -464,6 +510,7 @@ inl to_array' forall t. (items : list' t) : array_base t =
                     set result i $'!items[!i]'
                     루프 (i + 1i32)
             루프 0i32
+        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
     }
 
 /// ### contains

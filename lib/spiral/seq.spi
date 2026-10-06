@@ -201,6 +201,7 @@ type seq_switch' t =
         Gleam : $'List(`t)'
         Fsharp : $'`t seq'
         Python : $'list'
+        Rust : $'Rc<Vec<`t>>'
     }
 nominal seq' t = $'backend_switch `(seq_switch' t)'
 
@@ -212,6 +213,7 @@ inl length' forall t. (items : seq' t) : int =
             $'!items |> list.length' : int
         Fsharp = fun () => items |> $'Seq.length' : int
         Python = fun () => $'len(!items)' : int
+        Rust = fun () => $'(!items.len() as `int)' : int
     }
 
 /// ### to_list'
@@ -220,6 +222,7 @@ inl to_list' forall t. (items : seq' t) : listm'.list' t =
         Gleam = fun () => $'!items ' : listm'.list' t
         Fsharp = fun () => items |> $'Seq.toList' : listm'.list' t
         Python = fun () => $'!items ' : listm'.list' t
+        Rust = fun () => $'(!items).clone()' : listm'.list' t
     }
 
 /// ### new_seq
@@ -250,6 +253,7 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
             |> new_seq
             |> fun x => x : seq' t
         Python = fun () => $'[item for item in !items]' : seq' t
+        Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
     }
 
 /// ### of_array
@@ -260,6 +264,7 @@ inl of_array forall dim t. (items : a dim t) : seq' t =
             $'!items |> array.to_list' : seq' t
         Fsharp = fun () => $'!items |> Seq.ofArray' : seq' t
         Python = fun () => $'list(iter(!items))' : seq' t
+        Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
     }
 
 /// ### of_array_base
@@ -275,7 +280,11 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
             global "import gary/array"
             $'!items |> array.from_list' : a dim t
         Fsharp = fun () => items |> $'Seq.toArray' : a dim t
-        Python = fun () => $'(cp if cuda else np).array(!items)' : a dim t
+        // A numpy object array (listm'.to_array'): `np` is not bound in native Python output and CuPy holds primitives only.
+        Python = fun () =>
+            inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'
+            $'!x ' : a dim t
+        Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t
     }
 
 /// ### of_list'
@@ -288,6 +297,7 @@ inl of_list' forall t. (items : listm'.list' t) : seq' t =
             |> new_seq
             |> fun x => x : seq' t
         Python = fun () => $'!items ' : seq' t
+        Rust = fun () => $'(!items).clone()' : seq' t
     }
 
 /// ### cast'
@@ -296,6 +306,17 @@ inl cast' forall t u. (items : u) : seq' t =
         Gleam = fun () => $'!items ' : seq' t
         Fsharp = fun () => items |> $'Seq.cast' : seq' t
         Python = fun () => $'list(!items)' : seq' t
+        // Native Rust: a seq'/list' (`Rc<Vec<t>>`) or an array as is, else anything `IntoIterator<Item = t>`.
+        Rust = fun () =>
+            inl x : seq' t =
+                real
+                    typecase u with
+                    | seq' ~x => $'(!items).clone()' : seq' t
+                    | listm'.list' ~x => $'(!items).clone()' : seq' t
+                    | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+                    | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t
+                    | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
+            x
     }
 
 /// ### rev'
@@ -306,6 +327,7 @@ inl rev'' forall t. (items : seq' t) : seq' t =
             $'!items |> list.reverse' : seq' t
         Fsharp = fun () => items |> $'Seq.rev' : seq' t
         Python = fun () => $'list(reversed(!items))' : seq' t
+        Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
     }
 
 /// ## rust

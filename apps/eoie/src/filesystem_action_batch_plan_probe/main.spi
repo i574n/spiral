@@ -1,8 +1,0 @@
-open filesystem_action_batch_contract.model
-
-inl main () : i32 =
-    emit_plan_op (MakeDir "newdir")
-    emit_plan_op (CopyFile ("source.txt", "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8", "copy.txt"))
-    emit_plan_op (Chmod ("mode.txt", "0644", "0755"))
-    emit_plan_op (Symlink ("link.txt", "source.txt"))
-    0i32

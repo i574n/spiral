@@ -1,5 +1,0 @@
-inl rust_global (x : string) : () = !!!!Global(x)
-
-inl main () : i32 =
-    rust_global "#![allow(dead_code)]"
-    model.transaction_probe_result ()

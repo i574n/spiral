@@ -7,11 +7,16 @@ fn method0(mut v0: Rc<str>, mut v1: i32) -> i32 {
     v3
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = Rc::<str>::from("abc");
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
     let mut v1: i32 = 1i32;
     method0(v0.clone(), v1)
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

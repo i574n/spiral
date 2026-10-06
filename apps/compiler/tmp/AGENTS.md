@@ -164,5 +164,11 @@ columns agree (`DISAGREE` 0), no row is `emitted`, `apps/spiral` compiles (359 s
 the 17 s core deadline (FRONTIER.md fix 58). Before switching the default, repeat the suite a few times.
 
 Status 2026-10-02 16:10 (`runs/hopac-20261002-153006`): still met, and the margin held in two more runs (11.3-11.7 s,
-then 8.7-10.0 s); full parity, 33 more rows byte-identical to single-flight (union arms ordered by case name, not
+then 8.7-10.0 s; 15.2-15.9 s in a third on a throttled CPU, so it still depends on machine load); full parity, 33 more rows byte-identical to single-flight (union arms ordered by case name, not
 intern order). Hopac remains 4-5x slower than single-flight on the mega roots (NEXT.md item 1).
+
+Status 2026-10-05 10:48 (`runs/hopac-20261005-101938`, `-Parallel 3`, ReadyToRun build with the term_core_impl split): met;
+1279 rows, no `missing`/`emitted`/timeout, DISAGREE 0, 12 rows `parity-residual-differs` (format_any x4, native_float_nan_is x3,
+ts_float_nan x4, rust_emit_tuple_args: BackendSwitch numbering). The slowest frontier rows now take 8-13 s under that load against
+the 17.9 s deadline (9-16 s before; frontier_hello ~2 s per fresh process instead of ~6-7 s), compile time summed over the
+suite 2,280 s vs 7,020 s the night before.

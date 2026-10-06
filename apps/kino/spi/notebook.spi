@@ -1,0 +1,199 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+union rec nb =
+    | NoNb
+    | Nb : string * nb
+
+union rec sources =
+    | NoSource
+    | Source : string * string * sources
+
+union rec flags =
+    | NoFlag
+    | Flag : string * flags
+
+let rec rev_nb (xs : nb) (acc : nb) : nb =
+    match xs with
+    | NoNb => acc
+    | Nb (s, rest) => rev_nb rest (Nb (s, acc))
+
+let rec snoc (xs : nb) (item : string) : nb =
+    match xs with
+    | NoNb => Nb (item, NoNb)
+    | Nb (s, rest) => Nb (s, snoc rest item)
+
+let rec has_nb (xs : nb) (item : string) : bool =
+    match xs with
+    | NoNb => false
+    | Nb (s, rest) => if s = item then true else has_nb rest item
+
+inl add_nb (xs : nb) (item : string) : nb =
+    if has_nb xs item then xs else snoc xs item
+
+let rec join_nb (xs : nb) : string =
+    match xs with
+    | NoNb => ""
+    | Nb (s, NoNb) => s
+    | Nb (s, rest) => s ++ "\n" ++ join_nb rest
+
+let rec join_rev (xs : nb) (acc : string) (started : i32) : string =
+    match xs with
+    | NoNb => acc
+    | Nb (s, rest) =>
+        if started = 0i32 then join_rev rest s 1i32
+        else join_rev rest (s ++ "\n" ++ acc) 1i32
+
+let rec rev_flags (xs : flags) (acc : flags) : flags =
+    match xs with
+    | NoFlag => acc
+    | Flag (s, rest) => rev_flags rest (Flag (s, acc))
+
+let rec take_token (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then i
+        elif ch = '\t' then i
+        else take_token src (i + 1i32)
+
+let rec skip_ws (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = ' ' then skip_ws src (i + 1i32)
+        elif ch = '\t' then skip_ws src (i + 1i32)
+        else i
+
+let rec flags_from (src : string) (i : i32) (acc : flags) : flags =
+    inl j = skip_ws src i
+    if j >= text.length src then rev_flags acc NoFlag
+    else
+        inl k = take_token src j
+        flags_from src k (Flag (text.slice_len src j (k - j), acc))
+
+let rec read_flags (xs : flags) (packages : nb) (test : i32) (timeout : string) : nb * i32 * string =
+    match xs with
+    | NoFlag => packages, test, timeout
+    | Flag ("--package", Flag (path, rest)) =>
+        if text.starts_with path "--" then read_flags rest packages test timeout
+        else read_flags rest (add_nb packages path) test timeout
+    | Flag ("--package", rest) => read_flags rest packages test timeout
+    | Flag ("--test", Flag ("static", rest)) => read_flags rest packages 1i32 timeout
+    | Flag ("--test", rest) => read_flags rest packages 1i32 timeout
+    | Flag ("--timeout", Flag (ms, rest)) =>
+        inl n = text.parse_i32 ms
+        inl timeout2 = if n > 0i32 then ms else timeout
+        read_flags rest packages test timeout2
+    | Flag (_, rest) => read_flags rest packages test timeout
+
+let rec scan_lines (src : string) (i : i32) (packages : nb) (test : i32) (timeout : string) (body : nb) (opens : nb) (skip : i32) : nb * i32 * string * string * nb * i32 =
+    match text.next_line src i with
+    | LineDone => packages, test, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
+    | LineGot (line, next) =>
+        inl trimmed = text.trim line
+        if text.starts_with trimmed "///" then
+            if text.starts_with trimmed "///- " then
+                inl packages2, test2, timeout2 =
+                    read_flags (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag) packages test timeout
+                scan_lines src next packages2 test2 timeout2 body opens skip
+            elif text.starts_with trimmed "///>" then
+                inl rest = text.trim (text.drop trimmed (text.length "///>"))
+                inl skip2 = if rest = "_" then 1i32 else skip
+                scan_lines src next packages test timeout body opens skip2
+            else scan_lines src next packages test timeout body opens skip
+        else
+            inl opens2 = if text.starts_with trimmed "open " then Nb (trimmed, opens) else opens
+            scan_lines src next packages test timeout (Nb (line, body)) opens2 skip
+
+inl scan (src : string) : nb * i32 * string * string * nb * i32 =
+    scan_lines (text.replace src "\r\n" "\n") 0i32 NoNb 0i32 "" NoNb NoNb 0i32
+
+let rec merge (xs : nb) (more : nb) : nb =
+    match more with
+    | NoNb => xs
+    | Nb (s, rest) => merge (add_nb xs s) rest
+
+inl push_part (xs : nb) (part : string) : nb =
+    if part = "" then xs else snoc xs part
+
+let rec package_line (xs : nb) : string =
+    match xs with
+    | NoNb => ""
+    | Nb (path, NoNb) => "--package " ++ path
+    | Nb (path, rest) => "--package " ++ path ++ " " ++ package_line rest
+
+inl program (packages : nb) (opens : nb) (defs : nb) (body : string) : string =
+    inl header =
+        match packages with
+        | NoNb => ""
+        | _ => "///- " ++ package_line packages
+    join_nb (push_part (push_part (push_part (push_part NoNb header) (join_nb opens)) (join_nb defs)) body)
+
+union rec steps =
+    | NoStep
+    | Step : i32 * string * string * steps
+
+let rec read_sources (src : string) (i : i32) (n : i32) (acc : sources) : sources =
+    if n <= 0i32 then acc
+    else
+        match text.next_line src i with
+        | LineDone => acc
+        | LineGot (kind, j) =>
+            match text.next_line src j with
+            | LineDone => acc
+            | LineGot (len_text, k) =>
+                inl nlen = text.parse_i32 len_text
+                read_sources src (k + nlen) (n - 1i32) (Source (kind, text.slice_len src k nlen, acc))
+
+let rec rev_sources (xs : sources) (acc : sources) : sources =
+    match xs with
+    | NoSource => acc
+    | Source (k, s, rest) => rev_sources rest (Source (k, s, acc))
+
+inl load_sources (src : string) : sources =
+    match text.next_line src 0i32 with
+    | LineDone => NoSource
+    | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
+
+let rec walk (xs : sources) (index : i32) (packages : nb) (opens : nb) (defs : nb) (acc : steps) : steps =
+    match xs with
+    | NoSource => acc
+    | Source (kind, source, rest) =>
+        if kind <> "spiral" then walk rest (index + 1i32) packages opens defs acc
+        else
+            inl cell_packages, test, timeout, body, cell_opens, skip = scan source
+            inl packages2 = merge packages cell_packages
+            inl code = if skip = 1i32 then "///> _" else program packages2 opens defs body
+            inl timeout_text = if timeout = "" then "-" else timeout
+            if test = 1i32 then
+                walk rest (index + 1i32) packages2 (merge opens cell_opens) defs (Step (index, timeout_text, code, acc))
+            elif skip = 1i32 then
+                walk rest (index + 1i32) packages2 opens defs (Step (index, timeout_text, code, acc))
+            elif text.trim body = "" then
+                walk rest (index + 1i32) packages2 opens defs (Step (index, timeout_text, code, acc))
+            else
+                walk rest (index + 1i32) packages2 opens (snoc defs body) (Step (index, timeout_text, code, acc))
+
+let rec rev_steps (xs : steps) (acc : steps) : steps =
+    match xs with
+    | NoStep => acc
+    | Step (index, timeout, code, rest) => rev_steps rest (Step (index, timeout, code, acc))
+
+let rec count_steps (xs : steps) : i32 =
+    match xs with
+    | NoStep => 0i32
+    | Step (_, _, _, rest) => 1i32 + count_steps rest
+
+let rec emit_steps (xs : steps) : string =
+    match xs with
+    | NoStep => ""
+    | Step (index, timeout, code, rest) =>
+        text.show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text.show_i32 (text.length code) ++ "\n" ++ code ++ emit_steps rest
+
+inl plan (src : string) : string =
+    match text.next_line (text.replace src "\r\n" "\n") 0i32 with
+    | LineDone => "0\n"
+    | LineGot (lib, next) =>
+        inl packages = if lib = "-" || lib = "" then NoNb else Nb (lib, NoNb)
+        inl found = rev_steps (walk (load_sources (text.drop src next)) 0i32 packages NoNb NoNb NoStep) NoStep
+        text.show_i32 (count_steps found) ++ "\n" ++ emit_steps found

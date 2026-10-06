@@ -1,1 +1,0 @@
-inl main () : i32 = proxy_search_entry.entry.emit_main ()

@@ -1,7 +1,0 @@
-open compiler_session_contract.model
-
-inl main () : i32 =
-    inl _ = build_session_plan ()
-    match authority_status () with
-    | 1 => 0i32
-    | _ => 1i32

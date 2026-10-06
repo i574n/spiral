@@ -1,0 +1,18 @@
+// String literals in macro text, spelled with a path (`std::rc::Rc::<str>::from("..")`, `::std::rc::..`,
+// `crate::Rc::..`) next to the bare `Rc::<str>::from("..")` and a Spiral literal. codegenRust's last pass caches every
+// bare literal in a thread_local; a path-qualified one is cached as a whole (its prefix kept) or, for a path it does
+// not know, left alone. Before, the pass rewrote only the `Rc::<str>::from(..)` suffix and rustc rejected
+// `std::rc::{ thread_local!{..} .. }`.
+inl native (n : i32) : i32 =
+    inl a : string = $'std::rc::Rc::<str>::from("abc")'
+    inl b : string = $'::std::rc::Rc::<str>::from("de")'
+    inl c : string = $'crate::Rc::<str>::from("fgh")'
+    inl d : string = $'Rc::<str>::from("ijkl")'
+    inl ~e = "mnopq"
+    inl o : string = $'None::<std::rc::Rc<str>>.unwrap_or_else(|| std::rc::Rc::<str>::from(""))'
+    inl len (s : string) : i32 = $'!s.len() as i32'
+    len a +. len b +. len c +. len d +. len e +. len o +. n
+
+inl main () : i32 =
+    inl ~n = 3i32
+    !!!!BackendSwitch({ C = fun () => 20i32 : i32; Rust = fun () => native n : i32 })

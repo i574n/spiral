@@ -1,7 +1,8 @@
 inl (~!\\) forall t u. ((args : t), (code : string)) : u =
     $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
-inl write_line (text : string) : () =
+// Any Display value, like the lib's console.write_line (alphabet's hangul writes an i32: `am'.length |> console.write_line`).
+inl write_line forall t. (text : t) : () =
     inl _ : () =
-        !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, $0.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
+        !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
     ()

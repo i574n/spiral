@@ -1,4 +1,0 @@
-union lease_status = | LeaseActive :: lease_status | LeaseClosed :: lease_status
-union prompt_lease = | PromptLease :: string * string * u64 * u64 * u64 * u64 * lease_status -> prompt_lease
-inl current () : prompt_lease = PromptLease ("current", "Validate exports and regenerate EOIE owners", 4500000u64, 600000u64, 1790508029919u64, 1790513129919u64, LeaseActive)
-inl main () : i32 = 0i32

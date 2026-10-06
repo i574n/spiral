@@ -12,10 +12,10 @@ fn method2(mut v0: i32, mut v1: Rc<str>, mut v2: Rc<str>) -> Rc<str> {
             let mut v6: i32 = v3 % 2i32;
             let mut v7: bool = v6 == 0i32;
             let mut v10: Rc<str> = if v7 {
-                let mut v8: Rc<str> = Rc::<str>::from("ab");
+                let mut v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
                 v8.clone()
             } else {
-                let mut v9: Rc<str> = Rc::<str>::from("c");
+                let mut v9: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("c"); } LIT.with(|lit| lit.clone()) };
                 v9.clone()
             };
             (v0, v1, v2) = (v3, v4.clone(), v10.clone());
@@ -25,7 +25,7 @@ fn method2(mut v0: i32, mut v1: Rc<str>, mut v2: Rc<str>) -> Rc<str> {
 }
 fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
     let mut v2: i32 = v0 - 1i32;
-    let mut v3: Rc<str> = Rc::<str>::from(format!("{}{}", Rc::<str>::from(""), v1.clone()));
+    let mut v3: Rc<str> = Rc::<str>::from(format!("{}{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }, v1.clone()));
     let mut v4: bool = v2 == 0i32;
     if v4 {
         v3.clone()
@@ -33,10 +33,10 @@ fn method1(mut v0: i32, mut v1: Rc<str>) -> Rc<str> {
         let mut v5: i32 = v2 % 2i32;
         let mut v6: bool = v5 == 0i32;
         let mut v9: Rc<str> = if v6 {
-            let mut v7: Rc<str> = Rc::<str>::from("ab");
+            let mut v7: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
             v7.clone()
         } else {
-            let mut v8: Rc<str> = Rc::<str>::from("c");
+            let mut v8: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("c"); } LIT.with(|lit| lit.clone()) };
             v8.clone()
         };
         method2(v2, v3.clone(), v9.clone())
@@ -46,16 +46,16 @@ fn method0() -> Rc<str> {
     let mut v0: i32 = 4i32;
     let mut v1: bool = v0 == 0i32;
     if v1 {
-        let mut v2: Rc<str> = Rc::<str>::from("");
+        let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
         v2.clone()
     } else {
         let mut v3: i32 = v0 % 2i32;
         let mut v4: bool = v3 == 0i32;
         let mut v7: Rc<str> = if v4 {
-            let mut v5: Rc<str> = Rc::<str>::from("ab");
+            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
             v5.clone()
         } else {
-            let mut v6: Rc<str> = Rc::<str>::from("c");
+            let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("c"); } LIT.with(|lit| lit.clone()) };
             v6.clone()
         };
         method1(v0, v7.clone())
@@ -83,7 +83,12 @@ fn spiral_main() -> i32 {
         3i32
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

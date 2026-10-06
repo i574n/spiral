@@ -90,6 +90,7 @@ type disposable_switch t =
         Gleam : $'Nil'
         Fsharp : $'System.IDisposable'
         Python : $'object'
+        Rust : $'Rc<dyn Fn()>'
     }
 nominal disposable t = $'backend_switch `(disposable_switch t)'
 
@@ -105,6 +106,7 @@ inl dispose (disposable : disposable _) : () =
         Lua = fun () => $'-- common.dispose' : ()
         Fsharp = fun () => disposable |> $'_.Dispose()' : ()
         Python = fun () => $'!disposable.__exit__(None, None, None)' : ()
+        Rust = fun () => $'(!disposable)()' : ()
     }
 
 #!markdown
@@ -173,7 +175,6 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 inl retry_fn_test = mut 0i32
 fun () =>
@@ -189,7 +190,7 @@ fun () =>
 ////> cuda // v3 = $"retry: {v0} / ex: %A{v1} / {v2 ()}"
 ///> rust
 ///> typescript
-///> python
+///> cuda
 
 inl retry_fn_test = mut 0i32
 fun () =>
@@ -218,6 +219,16 @@ inl random' forall t. (min : t) (max : t) : t =
         | Rust _ => fun () =>
             open rust.rust_operators
             !\\((min, max), $'"rand::Rng::gen_range(&mut rand::thread_rng(), $0..$1)"')
+        // Native builds don't depend on `rand`: xorshift seeded once per process (std's RandomState is randomly keyed
+        // per process, mixed with the clock), drawing like `gen_range` (min inclusive, max exclusive).
+        | RustNative => fun () =>
+            open rust.rust_operators
+            !\\((min, max), $'"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x << 13; x ^= x >> 7; x ^= x << 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span <= 0 { 0 } else { (x as i128) % span }; (($0 as i128) + n) as _ }"')
+        | Cuda _ => fun () =>
+            global "import random"
+            $'random.randrange(!min, !max)' : t
+        | TypeScript when typescript.is_native () => fun () =>
+            $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, b - a)); return (typeof !min === "bigint" ? BigInt(r) : r); })()' : t
         | _ => fun () =>
             random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert
 
@@ -233,7 +244,10 @@ inl new_disposable (fn : () -> ()) : disposable _ =
             global "type Disposable (f : unit -> unit) = interface System.IDisposable with member _.Dispose () = f ()"
             inl fn = join fn
             $'new Disposable (fun () -> Fable.Core.RustInterop.emitRustExpr !fn "$0()" )'
-        | Fsharp _ | TypeScript _ | Python _ => fun () =>
+        | RustNative => fun () =>
+            open rust.rust_operators
+            !\\(fn, $'"$0.clone()"') : disposable _
+        | Fsharp _ | TypeScript _ => fun () =>
             inl fn = join fn
             $'{ new System.IDisposable with member _.Dispose () = !fn () }'
         | Cuda _ => fun () =>
@@ -253,7 +267,6 @@ inl new_disposable (fn : () -> ()) : disposable _ =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 inl new_disposable_test = mut 0i32
 new_disposable fun () => new_disposable_test <- *new_disposable_test + 1

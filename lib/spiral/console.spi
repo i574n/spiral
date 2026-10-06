@@ -30,6 +30,8 @@ inl write_line obj : () =
             fun () => obj |> $'System.Console.WriteLine'
             |> exec_unit
         Python = fun () => $'print(!obj)' : ()
+        Rust = fun () => $'println\!("{}", !obj)' : ()
+        TypeScript = fun () => $'console.log(!obj)' : ()
     }
 
 /// ### write
@@ -41,6 +43,8 @@ inl write forall t. (x : t) : () =
         Lua = fun () => $'io.write(!x)' : ()
         Fsharp = fun () => $'!x |> System.Console.Write' : ()
         Python = fun () => $'print(!x, end="")' : ()
+        Rust = fun () => $'{ use std::io::Write; print\!("{}", !x); std::io::stdout().flush().unwrap(); }' : ()
+        TypeScript = fun () => $'process.stdout.write(String(!x))' : ()
     }
 
 /// ### write_ln
@@ -52,6 +56,7 @@ inl write_ln l : () =
         Fsharp = fun () => write_line () : ()
         Python = fun () => $"print()" : ()
         Cuda = fun () => $'printf("\\n")' : ()
+        Rust = fun () => $'println\!()' : ()
     }
 
 /// ### color_reset
@@ -66,6 +71,7 @@ inl color_reset () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
         | _ => fun () => $'"\\u001b[0m"'
 
 /// ### color_bright_black
@@ -80,6 +86,7 @@ inl color_bright_black () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
         | _ => fun () => $'"\\u001b[90m"'
 
 /// ### color_bright_red
@@ -94,6 +101,7 @@ inl color_bright_red () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
         | _ => fun () => $'"\\u001b[91m"'
 
 /// ### color_bright_green
@@ -108,6 +116,7 @@ inl color_bright_green () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
         | _ => fun () => $'"\\u001b[92m"'
 
 /// ### color_yellow
@@ -122,6 +131,7 @@ inl color_yellow () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
         | _ => fun () => $'"\\u001b[93m"'
 
 /// ### color_bright_blue
@@ -136,6 +146,7 @@ inl color_bright_blue () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
         | _ => fun () => $'"\\u001b[94m"'
 
 /// ### color_bright_magenta
@@ -150,6 +161,7 @@ inl color_bright_magenta () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
         | _ => fun () => $'"\\u001b[95m"'
 
 /// ### color_bright_cyan
@@ -164,6 +176,7 @@ inl color_bright_cyan () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
         | _ => fun () => $'"\\u001b[96m"'
 
 /// ### color_bright_white
@@ -178,4 +191,5 @@ inl color_bright_white () =
             color_reset
             |> sm'.ref_to_std_string
             |> sm'.from_std_string
+        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
         | _ => fun () => $'"\\u001b[97m"'

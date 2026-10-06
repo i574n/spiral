@@ -1,0 +1,27 @@
+// Python's corelib arrays hold ordinary objects; NumPy/CuPy arrays hold scalars.
+// Both enter the same ArrayIndex operation, including tuple-valued parser buffers.
+inl main () : i32 =
+    inl ~pairs : array (i32 * i32) = $'static_array(1)'
+    set pairs 0i32 (20i32, 22i32)
+    inl left, right = index pairs 0i32
+    inl ~plain : array i32 = $'dynamic_array(1)'
+    set plain 0i32 7i32
+    inl ~native : array i32 = create 1i32
+    set native 0i32 9i32
+    inl scalar = index native 0i32
+    inl scalar_is_native : bool = $'type(!scalar) is int'
+    inl ~objects : array (i32 * i32) = $'cp.empty(1,dtype=object)'
+    set objects 0i32 (3i32, 4i32)
+    inl a, b = index objects 0i32
+    inl pair_sum = !!!!Add(left,right)
+    inl object_sum = !!!!Add(a,b)
+    inl plain_value = index plain 0i32
+    if !!!!EQ(pair_sum,42i32) then
+        if !!!!EQ(plain_value,7i32) then
+            if !!!!EQ(scalar,9i32) then
+                if scalar_is_native then
+                    if !!!!EQ(object_sum,7i32) then 0i32 else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

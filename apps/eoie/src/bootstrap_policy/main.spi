@@ -1,4 +1,0 @@
-
-inl main () : i32 =
-    inl _ = model.build_plan ()
-    0i32

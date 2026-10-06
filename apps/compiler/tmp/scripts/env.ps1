@@ -101,7 +101,15 @@ function Get-SpiralNativeTools {
         CC = Resolve-SpiralTool 'cc' @($env:SPIRAL_CC, 'gcc', 'clang', 'cc')
         Rustc = Resolve-SpiralTool 'rustc' @($env:SPIRAL_RUSTC, 'rustc')
         Fpc = Resolve-SpiralTool 'fpc' @($env:SPIRAL_FPC, 'fpc')
+        Node = Resolve-SpiralTool 'node' @($env:SPIRAL_NODE, 'node')
+        Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, 'python', 'python3')
     }
+}
+
+# The C++/CUDA and Python backends read their runtime (corelib.cuh, corelib.py) from here rather than from a
+# possibly stale copy next to the compiler binary.
+if (-not $env:SPIRAL_CODEGEN_RUNTIME_DIR) {
+    $env:SPIRAL_CODEGEN_RUNTIME_DIR = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../runtime'))
 }
 
 function Get-SpiralCompilerDll([string]$Mode, [string]$Configuration = 'Release') {

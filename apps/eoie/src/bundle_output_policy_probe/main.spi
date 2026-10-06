@@ -1,7 +1,0 @@
-open bundle_output_contract.model
-
-inl main () : i32 =
-    match policy_output "/tmp/eoie-bundle-output-root" "/tmp/eoie-bundle-output.zip" with
-    | BundleOutputAccepted _ => 0i32
-    | BundleOutputRejected _ => 1i32
-    | BundleOutputFailed _ => 2i32

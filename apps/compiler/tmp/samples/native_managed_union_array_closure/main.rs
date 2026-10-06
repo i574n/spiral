@@ -15,7 +15,7 @@ impl US0 {
     }
 }
 fn closure0() -> Rc<dyn Fn(i32) -> US0> {
-    Rc::new(move |mut v0: i32| -> US0 {
+    thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> US0> = Rc::new(move |mut v0: i32| -> US0 {
         let mut v1: bool = v0 == 0i32;
         if v1 {
             US0::US0_0
@@ -26,7 +26,8 @@ fn closure0() -> Rc<dyn Fn(i32) -> US0> {
             v3.clone().borrow_mut()[1i32 as usize] = v4;
             US0::US0_1(v3.clone())
         }
-    })
+    }); }
+    CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
     v0(0i32)
@@ -61,7 +62,12 @@ fn spiral_main() -> i32 {
     let mut v6: i32 = v5 + 28i32;
     v6
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

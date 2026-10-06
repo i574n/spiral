@@ -1,6 +1,0 @@
-union patch_exact =
-    | PatchExact :: string * string * string -> patch_exact
-
-inl reject_missing_candidate_text () : patch_exact = PatchExact ("state/oracle.spi", "self-patch-text-that-does-not-exist", "self-patch-text-must-never-appear")
-
-inl main () : i32 = 0i32

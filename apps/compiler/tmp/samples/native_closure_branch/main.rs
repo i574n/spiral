@@ -2,16 +2,18 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn closure0() -> Rc<dyn Fn(i32) -> i32> {
-    Rc::new(move |mut v0: i32| -> i32 {
+    thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
         let mut v1: i32 = v0 + 2i32;
         v1
-    })
+    }); }
+    CLOSURE.with(|closure| closure.clone())
 }
 fn closure1() -> Rc<dyn Fn(i32) -> i32> {
-    Rc::new(move |mut v0: i32| -> i32 {
+    thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
         let mut v1: i32 = v0 + 3i32;
         v1
-    })
+    }); }
+    CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
     v0(40i32)
@@ -25,7 +27,12 @@ fn spiral_main() -> i32 {
     };
     method0(v3.clone())
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

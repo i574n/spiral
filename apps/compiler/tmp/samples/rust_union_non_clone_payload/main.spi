@@ -1,0 +1,25 @@
+// Union cases carrying a Rust value without Clone (Box<dyn Fn>): the enum can't derive Clone, a stack union is
+// matched by value (its field moves out), a heap union's field is borrowed.
+nominal boxed = $'Box<dyn Fn() -> i32>'
+
+union stack_u =
+    | SBoxed : boxed
+    | SEmpty
+
+union rec heap_u =
+    | HBoxed : boxed
+    | HEmpty
+
+inl native (k : i32) (flag : bool) : i32 =
+    inl f : boxed = $'Box::new(move || !k * 6) as Box<dyn Fn() -> i32>'
+    inl s = if flag then SBoxed f else SEmpty
+    inl r1 = match s with SBoxed f => $'(!f)()' : i32 | SEmpty => 0i32
+    inl g : boxed = $'Box::new(|| 7i32) as Box<dyn Fn() -> i32>'
+    inl h = if flag then HBoxed g else HEmpty
+    inl r2 = match h with HBoxed g => $'(!g)()' : i32 | HEmpty => 0i32
+    r1 +. r2
+
+inl main () : i32 =
+    inl ~k = 7i32
+    inl ~flag = true
+    !!!!BackendSwitch({ C = fun () => 49i32 : i32; Rust = fun () => native k flag : i32 })

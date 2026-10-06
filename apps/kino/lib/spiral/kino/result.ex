@@ -6,6 +6,7 @@ defmodule Spiral.Kino.Result do
             source: "",
             exit_status: nil,
             duration_ms: nil,
+            phases: %{},
             log: ""
 
   @type t :: %__MODULE__{
@@ -16,6 +17,7 @@ defmodule Spiral.Kino.Result do
           source: String.t(),
           exit_status: integer() | nil,
           duration_ms: non_neg_integer() | nil,
+          phases: %{optional(atom()) => non_neg_integer()},
           log: String.t()
         }
 

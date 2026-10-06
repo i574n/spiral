@@ -8,4 +8,5 @@ inl main () : i32 =
     export "package_project" ((fun includes => cell.package_project includes) : string -> string)
     export "parse_dib" ((fun text => document.parse_dib text) : string -> string)
     export "to_spi" ((fun text => document.to_spi text) : string -> string)
+    export "plan" ((fun text => notebook.plan text) : string -> string)
     0i32

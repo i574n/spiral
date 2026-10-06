@@ -5,7 +5,7 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let bytes = value.as_bytes();
     let length = bytes.len() as i64;
     if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }
-    if to < from { return Rc::<str>::from(""); }
+    if to < from { return { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) }; }
     // A slice that starts or ends inside a code point fails like the C and Delphi backends (abort / Halt(3)).
     if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }
     let slice = &bytes[from as usize..(to + 1) as usize];
@@ -24,13 +24,13 @@ fn method2(mut v0: Rc<str>) -> Rc<str> {
     v1.clone()
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = Rc::<str>::from("alpha");
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
     let mut v1: Rc<str> = method0(v0.clone());
     let mut v2: Rc<str> = method1(v0.clone());
-    let mut v3: Rc<str> = Rc::<str>::from("");
+    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
     let mut v4: Rc<str> = method2(v3.clone());
     let mut v5: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
-    let mut v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), Rc::<str>::from("ok")));
+    let mut v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) }));
     let mut v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5.clone(), v6.clone()));
     let mut v8: i32 = (v1.clone().len() as i32);
     let mut v9: bool = v8 == 0i32;
@@ -70,7 +70,12 @@ fn spiral_main() -> i32 {
         6i32
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

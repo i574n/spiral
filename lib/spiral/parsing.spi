@@ -36,15 +36,53 @@ inl new_parser_state (line_start : i32) (line : i32) (col : i32) (text_length : 
 inl new_parser_state' text_length =
     new_parser_state 0 1 1 text_length |> parser_state
 
+/// ### parser_error
+// A failure: the position it happened at and a formatter that gets the text and that position back when the message is
+// needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run
+// time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
+// discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.
+type parser_error =
+    {
+        format : string * int * parser_state -> string
+        i : int
+        s : parser_state
+    }
+
 /// ### parser
-type parser t = string * int * parser_state -> result ((() -> t) * int * parser_state) (() -> string)
+type parser t = string * int * parser_state -> result (t * int * parser_state) parser_error
+
+/// ### fail
+inl fail (format : string * int * parser_state -> string) (i : int) (s : parser_state) : result _ parser_error =
+    Error { format i s }
+
+/// ### error_message
+inl error_message (t : string) (e : parser_error) : string =
+    e.format (t, e.i, e.s)
+
+/// ### trace_entry
+// Verbose entry traces of the looping combinators (kept from the quadratic-behaviour hunt). A compile-time switch:
+// while false they emit no code at all (each trace call otherwise adds ~2.4k lines of F# and ~1 min of compile time to
+// every program using these combinators); set it to true to get them back.
+inl trace_entry_enabled () =
+    false
+
+inl trace_entry (name : string) (locals : () -> _) : () =
+    if trace_entry_enabled () then
+        inl name = dyn name
+        inl locals : () -> string = dyn fun () => locals () |> sm'.format
+        join trace Verbose (fun () => name) locals
 
 /// ### slice
 inl slice (start : int) (end : int) (t : string) : string =
-    t
-    |> sm'.range (am'.Start start) (am'.End fun _ => end)
-    |> trace_format Verbose fun r =>
-        "parsing.slice", { start end t_len = ##t; r_length = ##r }
+    // An empty range is "" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would
+    // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.
+    // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which
+    // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).
+    inl t = dyn t
+    if start >= end then ""
+    else
+        t
+        |> sm'.range (am'.Start start) (am'.End fun _ => end)
 
 /// ### parse
 inl parse forall t.
@@ -55,9 +93,11 @@ inl parse forall t.
     =
     p (t, 0, s)
     |> resultm.map fun result, i, (parser_state s' as s) =>
-        result,
+        (fun () => result),
         (fun () => t |> slice i s'.text_length),
         s
+    |> resultm.map_error fun e =>
+        fun () => e |> error_message t
 
 /// ### update_char
 inl update_char (parser_state s) (c : char) : parser_state =
@@ -72,15 +112,11 @@ inl update_char (parser_state s) (c : char) : parser_state =
             position = { line = s.position.line; col = s.position.col + 1 }
         }
     |> parser_state
-    |> trace_format Verbose fun r => "parsing.update_char", { c s r }
 
 /// ### update_span
 inl update_span (t : string) (i : int) (len : int) (parser_state s' as s) : parser_state =
     inl endi = i + len
     let rec 루프 (i' : int) (last_nl : int) (count : int) =
-        trace Verbose
-            (fun () => "parsing.update_span / 루프")
-            (fun () => { i len endi i' last_nl count t_len = ##t; s })
         if i' >= endi
         then last_nl, count
         else
@@ -101,14 +137,11 @@ inl update_span (t : string) (i : int) (len : int) (parser_state s' as s) : pars
             text_length = s'.text_length
         }
     |> parser_state
-    |> trace_format Verbose fun r =>
-        "parsing.update_span", { i len endi last_nl n t_len = ##t; s r }
 
 /// ### update
 inl update t s =
     s
     |> update_span t 0 ##t
-    |> trace_format Verbose fun r => "parsing.update", { t s r }
 
 /// ### advance_while
 inl advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
@@ -126,26 +159,20 @@ inl advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' as
         if consumed = 0
         then i, s
         else i', s |> update_span t i consumed
-    |> trace_format Verbose fun r =>
-        "parsing.advance_while", { i t_len = ##t; s r }
 
 /// ### run_parser
 inl run_parser p t =
-    t
-    |> parse p
-    |> fun run => ##t |> new_parser_state' |> run
-    |> resultm.map fun a, b, s => a (), b (), s
+    match p (t, 0, ##t |> new_parser_state') with
+    | Ok (result, i, (parser_state s' as s)) => Ok (result, t |> slice i s'.text_length, s)
+    | Error e => (fun () => e |> error_message t) |> Error
 
 /// ### any_char
 inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
     if i >= s'.text_length then
-        fun () => "parsing.any_char / unexpected end of t / " ++#? { s }
-        |> Error
+        fail (fun _, _, s => "parsing.any_char / unexpected end of t / " ++#? { s }) i s
     else
         inl c = t |> sm'.index i
-        trace Verbose (fun () => "parsing.any_char") (fun () => { c s })
-        Ok ((fun () => c), i + 1, c |> update_char s)
-    |> trace_format Verbose fun r => "parsing.any_char", { i t_len = ##t; s r }
+        Ok (c, i + 1, c |> update_char s)
 
 /// ### get_max_context
 inl get_max_context () =
@@ -154,87 +181,73 @@ inl get_max_context () =
 /// ### p_char
 inl p_char (c : char) : parser char =
     fun t, i, (parser_state ({ line_start position = { line col } } as s') as s) =>
-        trace Verbose (fun () => "parsing.p_char") (fun () => { c t_len = ##t; i s })
         if i >= s'.text_length then
-            fun () => "parsing.p_char / unexpected end of text / " ++#? { c s' }
-            |> Error
+            fail (fun _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++#? { c s' }) i s
         else
             inl got = t |> sm'.index i
             if got = c
-            then Ok ((fun () => got), i + 1, got |> update_char s)
+            then Ok (c, i + 1, got |> update_char s)
             else
-                fun () =>
-                    inl line_end = i |> sm'.span_from ((<>) '\n') t
-                    inl end = (i + get_max_context ()) |> min line_end
-                    inl line_slice = t |> slice line_start end
-                    inl new_line =
-                        inl len = ##line_slice
-                        if len > 0 && (line_slice |> sm'.index (len - 1)) = '\n' then "" else "\n"
-                    inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
-                    "parsing.p_char / "
-                    ++#? { expected = c; line col }
-                    ++# "\n" ++# line_slice
-                    ++# new_line
-                    ++# pointer_line ++# "\n"
-                |> Error
+                fail
+                    fun t, i, (parser_state { line_start position = { line col } }) =>
+                        inl line_end = i |> sm'.span_from ((<>) '\n') t
+                        inl end = (i + get_max_context ()) |> min line_end
+                        inl line_slice = t |> slice line_start end
+                        inl new_line =
+                            inl len = ##line_slice
+                            if len > 0 && (line_slice |> sm'.index (len - 1)) = '\n' then "" else "\n"
+                        inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
+                        "parsing.p_char / "
+                        ++#? { expected = c; line col }
+                        ++# "\n" ++# line_slice
+                        ++# new_line
+                        ++# pointer_line ++# "\n"
+                    i s
 
 /// ### any_string
 inl any_string len : parser string = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.any_string") (fun () => { t_len = ##t; i s })
     if s'.text_length - i >= len
-    then Ok ((fun () => t |> slice i (i + len)), i + len, s |> update_span t i len)
+    then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
     else
-        fun () => "parsing.any_string / unexpected end of text / " ++#? { s }
-        |> Error
+        fail (fun _, _, s => "parsing.any_string / unexpected end of text / " ++#? { s }) i s
 
 /// ### skip_any_string
 inl skip_any_string len : parser () = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.skip_any_string") (fun () => { t_len = ##t; i s })
     if s'.text_length - i >= len
-    then Ok (id, i + len, s |> update_span t i len)
+    then Ok ((), i + len, s |> update_span t i len)
     else
-        fun () => "parsing.skip_any_string / unexpected end of text / " ++#? { s }
-        |> Error
+        fail (fun _, _, s => "parsing.skip_any_string / unexpected end of text / " ++#? { s }) i s
 
 /// ### skip_many
 inl skip_many forall t. (p : parser t) : parser () = fun t, i, s =>
-    trace Verbose (fun () => "parsing.skip_many") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.skip_many" fun () => { t_len = ##t; i s }
     let rec 루프 (i' : int) (s' : parser_state) =
-        trace Verbose
-            fun () => "parsing.skip_many / 루프"
-            fun () => { t_len = ##t; i s i' s' }
         match p (t, i', s') with
-        | Error _ => Ok (id : () -> (), i', s')
+        | Error _ => Ok ((), i', s')
         | Ok (_, i'', s'') =>
             if i'' <> i'
             then s'' |> 루프 i''
-            else
-                fun () => "parsing.skip_many / inner parser consumed no text"
-                |> Error
+            else fail (fun _ => "parsing.skip_many / inner parser consumed no text") i' s'
     s |> 루프 i
 
 /// ### skip_many1
 inl skip_many1 forall t. (a : parser t) : parser () = fun t, i, s =>
-    trace Verbose (fun () => "parsing.skip_many1") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.skip_many1" fun () => { t_len = ##t; i s }
     match a (t, i, s) with
     | Error e => e |> Error
     | Ok (_, i', s') =>
         if i' <> i
         then skip_many a (t, i', s')
-        else
-            fun () => "parsing.skip_many1 / inner parser consumed no text"
-            |> Error
+        else fail (fun _ => "parsing.skip_many1 / inner parser consumed no text") i' s'
 
 /// ### (>>.)
 inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun t, i, s =>
-    trace Verbose (fun () => "parsing.(>>.)") (fun () => { t_len = ##t })
     match a (t, i, s) with
     | Ok (_, i', s') => b (t, i', s')
     | Error e => e |> Error
 
 /// ### (.>>)
 inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun t, i, s =>
-    trace Verbose (fun () => "parsing.(.>>)") (fun () => { t_len = ##t })
     match a (t, i, s) with
     | Error e => e |> Error
     | Ok (ra, i', s') =>
@@ -244,98 +257,107 @@ inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun t, i, s =>
 
 /// ### (.>>.)
 inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun t, i, s =>
-    trace Verbose (fun () => "parsing.(.>>.)") (fun () => { t_len = ##t })
     match a (t, i, s) with
     | Error e => e |> Error
     | Ok (ra, i', s') =>
         b (t, i', s')
         |> resultm.map fun rb, i'', s'' =>
-            (fun () => ra, rb), i'', s''
+            ((fun () => ra), (fun () => rb)), i'', s''
 
 /// ### (>>%)
 inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
-    trace Verbose (fun () => "parsing.(>>%)") (fun () => { b })
     a >> resultm.map fun _, i', s' =>
-        (fun () => b), i', s'
+        b, i', s'
 
 /// ### none_of
 inl none_of (chars : list char) : parser char = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.none_of") (fun () => { chars t_len = ##t; i s })
     inl chars' () =
         chars |> listm'.box |> listm'.to_array' |> sm'.format
     if i >= s'.text_length then
-        fun () => "parsing.none_of / unexpected end of text / " ++#? { chars' = chars' (); s }
-        |> Error
+        fail (fun _, _, s => "parsing.none_of / unexpected end of text / " ++#? { chars' = chars' (); s }) i s
     else
         inl ch = t |> sm'.index i
         if chars |> listm'.exists' ((=) ch) |> not
-        then Ok ((fun () => ch), i + 1, ch |> update_char s)
+        then Ok (ch, i + 1, ch |> update_char s)
         else
-            fun () =>
-                "parsing.none_of / unexpected char / "
-                ++#? { first_char = ch; chars' = chars' (); s }
-            |> Error
+            fail
+                fun t, i, s =>
+                    "parsing.none_of / unexpected char / "
+                    ++#? { first_char = t |> sm'.index i; chars' = chars' (); s }
+                i s
 
 /// ### (<|>)
 inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun t, i, s =>
-    trace Verbose (fun () => "parsing.(<|>)") (fun () => { t_len = ##t; i s })
     match a (t, i, s) with
     | Ok _ as r => r
     | Error _ => b (t, i, s)
 
 /// ### (|>>)
+// `f` maps a thunk to a thunk (the API of the lazy results this library had): both are inlined and forced here.
 inl (|>>) p f : parser _ =
-    trace Verbose (fun () => "parsing.(|>>)") (fun () => {})
     p >> resultm.map fun r, i', s' =>
-        f r, i', s'
+        f (fun () => r) (), i', s'
 
 /// ### many
 inl many forall b c.
-    (p : _ * _ * _ -> _ ((() -> b) * _ * _) c)
+    (p : _ * _ * _ -> _ (b * _ * _) c)
     : parser (list _)
     =
     fun t, i, s =>
-        trace Verbose (fun () => "parsing.many") (fun () => { t_len = ##t })
+        trace_entry "parsing.many" fun () => { t_len = ##t }
         let rec 루프 (acc : list b) (i' : int) (s' : parser_state)
-            : result ((() -> list b) * int * parser_state) _
+            : result (list b * int * parser_state) _
             =
-            trace Verbose
-                fun () => "parsing.many / 루프"
-                fun () => { t_len = ##t; i' s' }
             match p (t, i', s') with
-            | Error _ => Ok ((fun () => acc |> listm.rev), i', s')
-            | Ok (x, i'', s'') when i'' > i' => s'' |> 루프 (x () :: acc) i''
-            | Ok _ =>
-                fun () => "parsing.many / inner parser succeeded without consuming text"
-                |> Error
+            | Error _ => Ok (acc |> listm.rev, i', s')
+            | Ok (x, i'', s'') when i'' > i' => s'' |> 루프 (x :: acc) i''
+            | Ok _ => fail (fun _ => "parsing.many / inner parser succeeded without consuming text") i' s'
         s |> 루프 [] i
 
 /// ### many1_chars
 inl many1_chars (p : parser char) : parser string = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many1_chars") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.many1_chars" fun () => { t_len = ##t; i s }
     match p (t, i, s) with
     | Error e => e |> Error
     | Ok (_, i', s') =>
-        let rec 루프 (i'' : int) (s'' : parser_state) : result ((() -> string) * int * parser_state) _ =
-            trace Verbose
-                fun () => "parsing.many1_chars / 루프"
-                fun () => { t_len = ##t; i s i'' s'' }
+        let rec 루프 (i'' : int) (s'' : parser_state) : result (string * int * parser_state) _ =
             match p (t, i'', s'') with
-            | Error _ => Ok ((fun () => t |> slice i i''), i'', s'')
+            | Error _ => Ok (t |> slice i i'', i'', s'')
             | Ok (_, i''', s''') =>
                 if i''' <> i''
                 then s''' |> 루프 i'''
-                else
-                    fun () => "parsing.many1_chars / inner parser succeeded without consuming text"
-                    |> Error
+                else fail (fun _ => "parsing.many1_chars / inner parser succeeded without consuming text") i'' s''
         s' |> 루프 i'
+
+/// ### many1_satisfy
+// `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without
+// a parser call and its result thunk per character (one allocation per character on native Rust).
+inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
+    let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =
+        if i' >= s'.text_length
+        then i', s''
+        else
+            inl c = t |> sm'.index i'
+            if fn c
+            then 루프 (i' + 1) (c |> update_char s'')
+            else i', s''
+    inl i', s'' = 루프 i s
+    if i' > i
+    then Ok (t |> slice i i', i', s'')
+    else
+        fail (fun _, i, s => "parsing.many1_satisfy / no matching char / " ++#? { i s }) i s
+
+/// ### many1_none_of
+// `none_of chars |> many1_chars` on `many1_satisfy`.
+inl many1_none_of (chars : list char) : parser string =
+    many1_satisfy fun c => chars |> listm'.exists' ((=) c) |> not
 
 /// ### many_chars
 inl many_chars (p : parser char) : parser string = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many_chars") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.many_chars" fun () => { t_len = ##t; i s }
     match many1_chars p (t, i, s) with
     | Ok (res, i', s') => Ok (res, i', s')
-    | Error _ => Ok ((fun () => ""), i, s)
+    | Error _ => Ok ("", i, s)
 
 /// ### advance_while_no_nl
 inl advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
@@ -356,8 +378,6 @@ inl advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state
             i',
             { s' with position = { line = s'.position.line; col = s'.position.col + consumed } }
             |> parser_state
-    |> trace_format Verbose fun r =>
-        "parsing.advance_while_no_nl", { i t_len = ##t; s r }
 
 /// ### advance_newlines
 inl advance_newlines (t : string) (i : int) (parser_state s' as s)
@@ -381,183 +401,215 @@ inl advance_newlines (t : string) (i : int) (parser_state s' as s)
                 position = { line = s'.position.line + consumed; col = 1 }
             }
             |> parser_state
-    |> trace_format Verbose fun r =>
-        "parsing.advance_newlines", { i t_len = ##t; s r }
 
 /// ### many_chars_till
 inl many_chars_till (p : parser char) (end_p : parser _) = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.many_chars_till") (fun () => { t_len = ##t; i s })
-    let rec 루프 (i' : int) (s'' : parser_state) : result ((() -> string) * int * parser_state) (() -> string) =
-        trace Verbose
-            fun () => "parsing.many_chars_till"
-            fun () => { t_len = ##t; i s i' s'' }
+    trace_entry "parsing.many_chars_till" fun () => { t_len = ##t; i s }
+    let rec 루프 (i' : int) (s'' : parser_state) : result (string * int * parser_state) parser_error =
         if i' >= s'.text_length
-        then Ok ((fun () => if i' > i then t |> slice i i' else ""), i', s'')
+        then Ok ((if i' > i then t |> slice i i' else ""), i', s'')
         else
             inl i'', s''' = s'' |> advance_while_no_nl (fun c => c <> '\n') t i'
             if i'' >= s'.text_length
-            then Ok ((fun () => if i'' > i then t |> slice i i'' else ""), i'', s''')
+            then Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
             else
                 match end_p (t, i'', s''') with
-                | Ok _ => Ok ((fun () => if i'' > i then t |> slice i i'' else ""), i'', s''')
+                | Ok _ => Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
                 | Error _ =>
                     match p (t, i'', s''') with
-                    | Error _ => Ok ((fun () => if i'' > i then t |> slice i i'' else ""), i'', s''')
+                    | Error _ => Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
                     | Ok (_, i''', s'''') when i''' > i'' => s'''' |> 루프 i'''
                     | Ok _ =>
-                        fun () => "parsing.many_chars_till / inner parser succeeded without consuming text"
-                        |> Error
+                        fail (fun _ => "parsing.many_chars_till / inner parser succeeded without consuming text") i'' s'''
     s |> 루프 i
 
 /// ### many1
 inl many1 (p : parser _) : parser (list _) = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many1") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.many1" fun () => { t_len = ##t; i s }
     match p (t, i, s) with
     | Error e => e |> Error
     | Ok (first, i', s') =>
-        let rec 루프 acc (i'' : int) s'' : result ((() -> list _) * int * parser_state) _ =
-            trace Verbose
-                fun () => "parsing.many1 / 루프"
-                fun () => { t_len = ##t; i s i'' s'' }
+        let rec 루프 acc (i'' : int) s'' : result (list _ * int * parser_state) _ =
             match p (t, i'', s'') with
-            | Error _ => Ok ((fun () => acc |> listm.rev), i'', s'')
-            | Ok (x, i''', s''') when i''' > i'' => s''' |> 루프 (x () :: acc) i'''
-            | Ok _ =>
-                fun () => "parsing.many1 / inner parser succeeded without consuming text"
-                |> Error
-        s' |> 루프 [ first () ] i'
+            | Error _ => Ok (acc |> listm.rev, i'', s'')
+            | Ok (x, i''', s''') when i''' > i'' => s''' |> 루프 (x :: acc) i'''
+            | Ok _ => fail (fun _ => "parsing.many1 / inner parser succeeded without consuming text") i'' s''
+        s' |> 루프 [ first ] i'
+
+/// ### concat_rev
+inl concat_rev (acc : list string) : string =
+    let rec pass (rev : bool) (xs : list string) (out : list string) : list string =
+        match xs with
+        | a :: rest =>
+            match rest with
+            | b :: rest' => pass rev rest' ((if rev then b ++# a else a ++# b) :: out)
+            | [] => a :: out
+        | [] => out
+    let rec 루프 (rev : bool) (xs : list string) : string =
+        match xs with
+        | [] => ""
+        | x :: rest =>
+            match rest with
+            | [] => x
+            | _ => 루프 (not rev) (pass rev xs [])
+    if rust.rust.is_native () then
+        match acc with
+        | _ :: _ :: _ :: _ =>
+            // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is
+            // last-first): three allocations instead of a string and a list node per pair and pass.
+            inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x
+            inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
+            inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>
+                inl start = end - ##x
+                $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()
+                start
+            $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string
+        | _ => 루프 true acc
+    else 루프 true acc
+
+/// ### string_of
+// `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it
+// through a string builder: several allocations per element on native Rust).
+inl string_of forall t. (x : t) : string =
+    real
+        match x with
+        | (_ : string) => x
+        | _ => sm'_real.format_real `t x
 
 /// ### many1_strings
 inl many1_strings (p : parser _) : parser string = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many1_strings") (fun () => { t_len = ##t })
+    trace_entry "parsing.many1_strings" fun () => { t_len = ##t }
     match p (t, i, s) with
     | Error e => e |> Error
     | Ok (r, i', s') =>
-        let rec 루프 (acc : list string) (i'' : int) s'' : result ((() -> string) * int * _) _ =
-            trace Verbose
-                fun () => "parsing.many1_strings / 루프"
-                fun () => { t_len = ##t; i'' s'' }
+        inl first = string_of r
+        // `acc`: the elements after the first, last first (one element, the common case, builds no list)
+        let rec 루프 (acc : list string) (i'' : int) s'' : result (string * int * _) _ =
             match p (t, i'', s'') with
-            | Error _ => Ok ((fun () => acc |> listm.rev |> sm'.concat_list ""), i'', s'')
-            | Ok (r', i''', s''') when i''' > i => s''' |> 루프 (#?(r' ()) :: acc) i'''
-            | Ok _ =>
-                fun () => "parsing.many1_strings / inner parser succeeded without consuming text"
-                |> Error
-        s' |> 루프 [ #?(r ()) ] i'
+            | Error _ =>
+                inl r =
+                    match acc with
+                    | [] => first
+                    | _ => first ++# (acc |> concat_rev)
+                Ok (r, i'', s'')
+            | Ok (r', i''', s''') when i''' > i'' => s''' |> 루프 (string_of r' :: acc) i'''
+            | Ok _ => fail (fun _ => "parsing.many1_strings / inner parser succeeded without consuming text") i'' s''
+        s' |> 루프 [] i'
 
 /// ### many_strings
 inl many_strings (p : parser _) : parser string = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many_strings") (fun () => { t_len = ##t })
+    trace_entry "parsing.many_strings" fun () => { t_len = ##t }
     match p (t, i, s) with
-    | Error _ => Ok ((fun () => ""), i, s)
-    | Ok (_, i', _) when i' = i =>
-        fun () => "parsing.many_strings / first inner parser consumed no text"
-        |> Error
-    | Ok (r, i', s') =>
-        let rec 루프 (acc : list string) (i' : int) s' : result ((() -> string) * int * _) _ =
-            trace Verbose
-                fun () => "parsing.many_strings / 루프"
-                fun () => { t_len = ##t; i' s' }
+    | Error _ => Ok ("", i, s)
+    | Ok (_, i', _) when i' = i => fail (fun _ => "parsing.many_strings / first inner parser consumed no text") i s
+    | Ok (r, i', s') when rust.rust.is_native () =>
+        // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
+        // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.
+        inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'
+        inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
+        inl first = string_of r
+        let rec 루프 (n : int) (i' : int) s' : result (string * int * _) _ =
             match p (t, i', s') with
-            | Error _ => Ok ((fun () => #?(r ()) :: (acc |> listm.rev) |> sm'.concat_list ""), i', s')
-            | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (#?(r' ()) :: acc) i''
-            | Ok _ =>
-                fun () => "parsing.many_strings / inner parser succeeded without consuming text"
-                |> Error
+            | Error _ =>
+                inl r = if n = 0 then first else $'Rc::<str>::from(!buf.borrow().as_str())' : string
+                Ok (r, i', s')
+            | Ok (r', i'', s'') when i'' > i' =>
+                if n = 0 then push first
+                push (string_of r')
+                s'' |> 루프 (n + 1) i''
+            | Ok _ => fail (fun _ => "parsing.many_strings / inner parser succeeded without consuming text") i' s'
+        s' |> 루프 0 i'
+    | Ok (r, i', s') =>
+        let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
+            match p (t, i', s') with
+            | Error _ =>
+                // one element: the string itself (`++# ""` copies it on native Rust)
+                inl r = string_of r
+                inl r =
+                    match acc with
+                    | [] => r
+                    | _ => r ++# (acc |> concat_rev)
+                Ok (r, i', s')
+            | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (string_of r' :: acc) i''
+            | Ok _ => fail (fun _ => "parsing.many_strings / inner parser succeeded without consuming text") i' s'
         s' |> 루프 [] i'
 
 /// ### choice
-inl choice forall t. ps : parser t = fun t, i, s =>
-    trace Verbose
-        (fun () => "parsing.choice")
-        (fun () => { t_len = ##t; i s ps_length = ps |> listm.length : int })
-    let rec 루프 = function
-        | [] =>
-            fun () => "parsing.choice / no parsers succeeded"
-            |> Error
-        | (p : _ -> _ ((() -> t) * int * parser_state) _) :: ps' =>
-            trace Verbose
-                (fun () => "parsing.choice / 루프")
-                (fun () => { t_len = ##t; i s ps'_length = ps' |> listm.length : int })
-            match p (t, i, s) with
-            | Ok _ as r => r
-            | Error _ => ps' |> 루프
-    ps |> 루프
+// A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per
+// call, which on native Rust cost one allocation per element, list node and the empty list on every call).
+inl choice forall t. (ps : list (parser t)) : parser t =
+    inl none : parser t = fun _, i, s =>
+        fail (fun _ => "parsing.choice / no parsers succeeded") i s
+    (ps, none) ||> listm.foldBack (<|>)
 
 /// ### between
 inl between p_open p_close p_content : parser _ = fun t, i, s =>
-    trace Verbose (fun () => "parsing.between") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.between" fun () => { t_len = ##t; i s }
     match p_open (t, i, s) with
     | Ok (_, i', s') =>
         match p_content (t, i', s') with
         | Ok (result, i'', s'') =>
             match p_close (t, i'', s'') with
             | Ok (_, i''', s''') => Ok (result, i''', s''')
-            | Error e =>
-                fun () =>
-                    inl t_len = ##t
-                    inl end' = (i' + get_max_context ()) |> min t_len
-                    inl end'' = (i'' + get_max_context ()) |> min t_len
-                    inl rest' = t |> slice i' end'
-                    inl rest'' = t |> slice i'' end''
-                    "parsing.between / expected closing delimiter / " ++#? { e t rest' rest'' }
-                |> Error
+            | Error e' =>
+                // the only failure that keeps run-time data (the inner error and both positions): allocates
+                fail
+                    fun t, _, _ =>
+                        inl e = fun () => e' |> error_message t
+                        inl t_len = ##t
+                        inl end' = (i' + get_max_context ()) |> min t_len
+                        inl end'' = (i'' + get_max_context ()) |> min t_len
+                        inl rest' = t |> slice i' end'
+                        inl rest'' = t |> slice i'' end''
+                        "parsing.between / expected closing delimiter / " ++#? { e t rest' rest'' }
+                    i'' s''
         | Error _ =>
             match p_close (t, i', s') with
-            | Ok (_, i''', s''') => Ok ((fun () => ""), i''', s''')
+            | Ok (_, i''', s''') => Ok ("", i''', s''')
             | Error _ =>
-                fun () =>
-                    inl end' = (i' + get_max_context ()) |> min ##t
-                    inl rest' = t |> slice i' end'
-                    "parsing.between / expected content or closing delimiter / " ++#? { rest' }
-                |> Error
+                fail
+                    fun t, i', _ =>
+                        inl end' = (i' + get_max_context ()) |> min ##t
+                        inl rest' = t |> slice i' end'
+                        "parsing.between / expected content or closing delimiter / " ++#? { rest' }
+                    i' s'
     | Error e => e |> Error
 
 /// ### sep_by
 inl sep_by forall b. p sep : parser (list b) = fun t, i, s =>
-    trace Verbose (fun () => "parsing.sep_by") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.sep_by" fun () => { t_len = ##t; i s }
     match p (t, i, s) with
-    | Error _ => Ok ((fun () => []), i, s)
+    | Error _ => Ok ([], i, s)
     | Ok (first, i', s') =>
-        let rec 루프 (acc : list b) (i'' : int) s'' : result ((() -> list b) * int * parser_state) _ =
-            trace Verbose
-                (fun () => "parsing.sep_by / 루프")
-                (fun () => { t_len = ##t; i s i'' s'' })
+        let rec 루프 (acc : list b) (i'' : int) s'' : result (list b * int * parser_state) _ =
             match sep (t, i'', s'') with
-            | Error _ => Ok ((fun () => acc |> listm.rev), i'', s'')
+            | Error _ => Ok (acc |> listm.rev, i'', s'')
             | Ok (_, i''', s''') =>
                 if i''' = i'' then
-                    fun () => "parsing.sep_by / separator consumed no text"
-                    |> Error
+                    fail (fun _ => "parsing.sep_by / separator consumed no text") i'' s''
                 else
                     match p (t, i''', s''') with
-                    | Ok (x, i'''', s'''') => s'''' |> 루프 (x () :: acc) i''''
-                    | Error _ => Ok ((fun () => acc |> listm.rev), i'', s'')
-        s' |> 루프 [ first () ] i'
+                    | Ok (x, i'''', s'''') => s'''' |> 루프 (x :: acc) i''''
+                    | Error _ => Ok (acc |> listm.rev, i'', s'')
+        s' |> 루프 [ first ] i'
 
 /// ### sep_end_by
 inl sep_end_by forall b. p sep : parser (list b) = fun t, i, s =>
-    trace Verbose (fun () => "parsing.sep_end_by") (fun () => { t_len = ##t; i s })
+    trace_entry "parsing.sep_end_by" fun () => { t_len = ##t; i s }
     let rec 루프 acc i' s' =
-        trace Verbose
-            (fun () => "parsing.sep_end_by / 루프")
-            (fun () => { t_len = ##t; i s i' s' })
         match p (t, i', s') with
-        | Error _ => Ok ((fun () => acc |> listm.rev), i', s')
+        | Error _ => Ok (acc |> listm.rev, i', s')
         | Ok (x, i'', s'') =>
             if i'' = i' then
-                fun () => "parsing.sep_end_by / element parser consumed no text"
-                |> Error
+                fail (fun _ => "parsing.sep_end_by / element parser consumed no text") i' s'
             else
-                inl acc' = x () :: acc
+                inl acc' = x :: acc
                 match sep (t, i'', s'') with
-                | Error _ => Ok ((fun () => acc' |> listm.rev), i'', s'')
+                | Error _ => Ok (acc' |> listm.rev, i'', s'')
                 | Ok (_, i''', s''') =>
                     if i''' <> i''
                     then s''' |> 루프 acc' i'''
-                    else
-                        fun () => "parsing.sep_end_by / separator consumed no text"
-                        |> Error
+                    else fail (fun _ => "parsing.sep_end_by / separator consumed no text") i'' s''
     s |> 루프 [] i
 
 /// ### is_space
@@ -567,163 +619,146 @@ inl is_space c =
 /// ### spaces1
 inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>
     inl i', s' = s |> advance_while_no_nl is_space t i
-    trace Verbose (fun () => "parsing.spaces1") (fun () => { t_len = ##t; i s i' s' })
     if i' <> i
-    then Ok (id, i', s')
+    then Ok ((), i', s')
     else
-        fun () =>
-            inl preview_end = (i + get_max_context ()) |> min s'.text_length
-            "parsing.spaces1 / expected at least one space / "
-            ++#? { rest = t |> slice i preview_end }
-        |> Error
+        fail
+            fun t, i, (parser_state s') =>
+                inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                "parsing.spaces1 / expected at least one space / "
+                ++#? { rest = t |> slice i preview_end }
+            i s
 
 /// ### spaces
 inl spaces () : parser () = fun t, i, s =>
     inl i', s' = s |> advance_while_no_nl is_space t i
-    trace Verbose (fun () => "parsing.spaces") (fun () => { t_len = ##t; i i' s s' })
-    Ok (id, i', s')
+    Ok ((), i', s')
 
 /// ### p_digit
 inl p_digit () : parser char = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.p_digit") (fun () => { t_len = ##t; i s })
     if i >= s'.text_length then
-        fun () => "parsing.p_digit / unexpected end of text / " ++#? { s }
-        |> Error
+        fail (fun _, _, s => "parsing.p_digit / unexpected end of text / " ++#? { s }) i s
     else
         match t |> sm'.index i with
         | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c =>
-            Ok ((fun () => c), i + 1, c |> update_char s)
-        | c =>
-            fun () => "parsing.p_digit / unexpected char / " ++#? { c }
-            |> Error
+            Ok (c, i + 1, c |> update_char s)
+        | _ => fail (fun t, i, _ => "parsing.p_digit / unexpected char / " ++#? { c = t |> sm'.index i }) i s
 
 /// ### opt
 inl opt p : parser (option _) = fun t, i, s =>
-    trace Verbose (fun () => "parsing.opt") (fun () => { t_len = ##t })
     match p (t, i, s) with
-    | Ok (r, i', s') => Ok ((fun () => r |> Some), i', s')
-    | Error _ => Ok ((fun () => None), i, s)
+    | Ok (r, i', s') => Ok (Some (fun () => r), i', s')
+    | Error _ => Ok (None, i, s)
 
 /// ### rest_of_line
 inl rest_of_line () : parser string = fun t, i, s =>
-    trace Verbose (fun () => "parsing.rest_of_line") (fun () => { t_len = ##t })
     inl i'', s' = s |> advance_while_no_nl ((<>) '\n') t i
-    Ok ((fun () => t |> slice i i''), i'', s')
+    Ok (t |> slice i i'', i'', s')
 
 /// ### eof
 inl eof () : parser () = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.eof") (fun () => { t_len = ##t })
     if s'.text_length = i
-    then Ok (id, i, s)
+    then Ok ((), i, s)
     else
-        fun () =>
-            "parsing.eof / expected end of text / "
-            ++#? { rest = t |> slice i s'.text_length }
-        |> Error
+        fail
+            fun t, i, (parser_state s') =>
+                "parsing.eof / expected end of text / "
+                ++#? { rest = t |> slice i s'.text_length }
+            i s
 
 /// ### p_string
 inl p_string (str : string) : parser string = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.p_string") (fun () => { t_len = ##t })
     inl len = ##str
     if s'.text_length - i < len then
-        fun () => "parsing.p_string / unexpected end of text / " ++#? { expected = str; s }
-        |> Error
+        fail (fun _, _, s => "parsing.p_string / unexpected end of text / " ++#? { expected = str; s }) i s
     else
         let rec eq k =
             if k >= len
             then true
             else t |> sm'.index (i + k) = str |> sm'.index k && eq (k + 1)
         if eq 0
-        then Ok ((fun () => t |> slice i (i + len)), i + len, s |> update_span t i len)
+        then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
         else
-            fun () =>
-                inl preview_end = (i + get_max_context ()) |> min s'.text_length
-                inl rest = t |> slice i preview_end
-                inl got = t |> slice i (i + len)
-                "parsing.p_string / unexpected string / "
-                ++#? { expected = str; got rest s }
-            |> Error
+            fail
+                fun t, i, (parser_state s' as s) =>
+                    inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                    inl rest = t |> slice i preview_end
+                    inl got = t |> slice i (i + len)
+                    "parsing.p_string / unexpected string / "
+                    ++#? { expected = str; got rest s }
+                i s
 
 /// ### new_line
 inl new_line () : parser char = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.new_line") (fun () => { t_len = ##t })
     if i >= s'.text_length then
-        fun () => "parsing.new_line / unexpected end of text / " ++#? { s }
-        |> Error
+        fail (fun _, _, s => "parsing.new_line / unexpected end of text / " ++#? { s }) i s
     else
         inl c = t |> sm'.index i
         if c = '\n'
-        then Ok ((fun () => c), i + 1, c |> update_char s)
+        then Ok (c, i + 1, c |> update_char s)
         else
-            fun () =>
-                inl preview_end = (i + get_max_context ()) |> min s'.text_length
-                inl rest = t |> slice i preview_end
-                "parsing.new_line / expected new line char / "
-                ++#? { first_char = c; rest s }
-            |> Error
+            fail
+                fun t, i, (parser_state s' as s) =>
+                    inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                    inl rest = t |> slice i preview_end
+                    "parsing.new_line / expected new line char / "
+                    ++#? { first_char = t |> sm'.index i; rest s }
+                i s
 
 /// ### many_till
 inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun t, i, s =>
-    trace Verbose (fun () => "parsing.many_till") (fun () => { i t_len = ##t })
+    trace_entry "parsing.many_till" fun () => { i t_len = ##t }
     let rec 루프 (acc : list b) (i' : int) s' : result (_ * int * parser_state) _ =
-        trace Verbose
-            (fun () => "parsing.many_till / loop")
-            (fun () => { i' acc_len = acc |> listm.length : int })
         match end_p (t, i', s') with
-        | Ok (_, i'', s'') => Ok ((fun () => acc |> listm.rev), i'', s'')
+        | Ok (_, i'', s'') => Ok (acc |> listm.rev, i'', s'')
         | Error _ =>
             match p (t, i', s') with
             | Ok (x, i'', s'') =>
                 if i'' <> i'
-                then s'' |> 루프 (x () :: acc) i''
-                else
-                    fun () => "parsing.many_till / inner parser succeeded without consuming text"
-                    |> Error
+                then s'' |> 루프 (x :: acc) i''
+                else fail (fun _ => "parsing.many_till / inner parser succeeded without consuming text") i' s'
             | Error e => e |> Error
     s |> 루프 [] i
 
 /// ### p_return
 inl p_return forall t. (x : t) : parser t = fun t, i, s =>
-    trace Verbose (fun () => "parsing.p_return") (fun () => { t_len = ##t })
-    Ok ((fun () => x), i, s)
+    Ok (x, i, s)
 
 /// ### attempt
 inl attempt forall t. (p : parser t) : parser t = fun t, i, s =>
-    trace Verbose (fun () => "parsing.attempt") (fun () => { t_len = ##t })
     match p (t, i, s) with
     | Ok (r, i', s') => Ok (r, i', s')
     | Error e => e |> Error
 
 /// ### look_ahead
 inl look_ahead (p : parser _) : parser _ = fun t, i, s =>
-    trace Verbose (fun () => "parsing.look_ahead") (fun () => { t_len = ##t })
     match p (t, i, s) with
     | Ok (x, _, _) => Ok (x, i, s)
     | Error e => e |> Error
-    |> trace_format Verbose fun r => "parsing.look_ahead", { t_len = ##t; r}
 
 /// ### pipe2
-inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c =
-    p1 .>>. p2 |>> fun r => fun () =>
-        trace Verbose (fun () => "parsing.pipe2") (fun () => {})
-        r () |> f
+inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c = fun t, i, s =>
+    match p1 (t, i, s) with
+    | Error e => e |> Error
+    | Ok (ra, i', s') =>
+        p2 (t, i', s')
+        |> resultm.map fun rb, i'', s'' =>
+            f ((fun () => ra), (fun () => rb)), i'', s''
 
 /// ### new_lines
 inl new_lines () : parser () = fun t, i, s =>
-    trace Verbose (fun () => "parsing.new_lines") (fun () => { t_len = ##t })
     inl i', s' = s |> advance_newlines t i
-    Ok (id, i', s')
-    |> trace_format Verbose fun r => "parsing.new_lines", { t_len = ##t; r}
+    Ok ((), i', s')
 
 /// ### new_lines1
 inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>
-    trace Verbose (fun () => "parsing.new_lines1") (fun () => { t_len = ##t })
     inl i', s'' = s |> advance_newlines t i
     if i' <> i
-    then Ok (id, i', s'')
+    then Ok ((), i', s'')
     else
-        fun () =>
-            inl preview_end = i + get_max_context () |> min s'.text_length
-            "parsing.new_lines1 / expected at least one new line / "
-            ++#? { rest = t |> slice i preview_end }
-        |> Error
+        fail
+            fun t, i, (parser_state s') =>
+                inl preview_end = i + get_max_context () |> min s'.text_length
+                "parsing.new_lines1 / expected at least one new line / "
+                ++#? { rest = t |> slice i preview_end }
+            i s

@@ -1,7 +1,0 @@
-union patch_exact = | PatchExact :: string * string * string -> patch_exact
-
-inl ratings_basis () : patch_exact = PatchExact ("state/ratings.spi", "CalibrationBasis (203u32, 10178u32, 22343u32, 67u32, 57u32, \"fourteen-spiral-only-units;fresh-v2-coverage-public-smoke-and-owner-shards;bundle-has-four-partial-routes;proxy-has-five-partial-authority-families;agile-record-has-narrow-partial-authority;promotion-floors-unchanged;total-growth-unbounded;one-thousand-lines-per-Rust-file-and-Cargo-crate\")", "CalibrationBasis (203u32, 10180u32, 22343u32, 67u32, 57u32, \"fourteen-spiral-only-units;fresh-v2-coverage-public-smoke-and-owner-shards;bundle-has-four-partial-routes;proxy-has-five-partial-authority-families;agile-record-has-narrow-partial-authority;promotion-floors-unchanged;total-growth-unbounded;one-thousand-lines-per-Rust-file-and-Cargo-crate\")")
-
-inl history_source_stats () : patch_exact = PatchExact ("state/history.spi", "TurnSourceStatsEvidence (10178u32, 22343u32, 32521u32, 1106u32, 530u32, 517u32, 67u32, 930u32),", "TurnSourceStatsEvidence (10180u32, 22343u32, 32523u32, 1106u32, 530u32, 517u32, 67u32, 930u32),")
-
-inl main () : i32 = 0i32

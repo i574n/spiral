@@ -23,41 +23,54 @@ if (!$SkipFsx) {
     { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "$projectName.spi" "$projectName.fsx" } | Invoke-Block
 }
 
-$runtime = $fast -or $env:CI ? @("--runtime", ($IsWindows ? "win-x64" : "linux-x64")) : @()
-$builderArgs = @("$projectName.fsx", "--persist-only", $runtime, "--packages", "Fable.Core", "--modules", @(GetFsxModules), "lib/fsharp/Common.fs")
-{ . ../../deps/polyglot/apps/builder/dist/Builder$(_exe) @builderArgs } | Invoke-Block
-
 $targetDir = GetTargetDir $projectName
 
-{ BuildFable $targetDir $projectName "rs" } | Invoke-Block
+# Native Rust: the spiral_wasm.spi entry (its `main` has a `Rust` arm that runs `run_main` with the process args) -> a
+# crate under the target dir with the Spiral compiler's own Rust backend. Running it needs a contract .wasm and a NEAR
+# sandbox (the spiral CLI's `rust -c` cells do that), so the required check is that the binary builds and its clap
+# command answers `--help` (exit code 0, the `--wasm` argument listed). It then ships as
+# workspace/target/release/spiral_wasm, the path the spiral CLI runs.
+# The compiler writes its output next to the .spi it compiles, so it compiles a staged copy (the .spi plus a package
+# file with an absolute packageDir) under the target dir.
+$nativeDir = "$targetDir/native"
+$nativeStage = "$nativeDir/spi"
+Remove-Item $nativeStage -Recurse -Force -ErrorAction Ignore
+New-Item -ItemType Directory -Force "$nativeDir/src", $nativeStage | Out-Null
+Copy-Item "$projectName.spi" $nativeStage
+$packageDir = (ResolveLink (GetFullPath "../../deps/polyglot/deps/spiral/lib")) -replace '\\', '/'
+@("packageDir: $packageDir", 'packages:', '    |core-', '    spiral-', 'modules:', "    $projectName") | Set-Content "$nativeStage/package.spiproj"
+@(
+    '[package]', "name = `"$projectName`"", 'version = "0.0.1"', 'edition = "2021"', '', '[workspace]', '', '[dependencies]',
+    'anyhow = "1.0"', 'clap = "4.5"', 'tokio = { version = "1.40", features = ["full"] }',
+    'near-workspaces = { version = "=0.11.1", features = ["experimental", "unstable"] }',
+    'near-sandbox-utils = { version = ">=0.11,<1", features = ["global_install"] }', 'near-sdk = "=5.11.0"'
+) | Set-Content "$nativeDir/Cargo.toml"
+# The spiral workspace's lock file pins the versions the Fable crate (a workspace member with the same dependencies)
+# builds with: near-workspaces needs older transitive deps.
+Copy-Item ../../workspace/Cargo.lock "$nativeDir/Cargo.lock" -Force
+if (!(BuildNativeRust "$nativeStage/$projectName.spi" "$nativeDir/src/main.rs" "apps/wasm")) {
+    throw "NATIVE-RUST-FAILED apps/wasm / compile"
+}
+# near-workspaces' build script sets up the NEAR sandbox, which only exists for Linux.
+{ cargo +nightly-2025-11-01 build --release } | Invoke-Block -Location $nativeDir -Linux
+Push-Location $nativeDir
+$nativeOutput = [scriptblock]::Create("./target/release/$projectName --help") | Invoke-Linux 2>&1 | ForEach-Object { "$_" }
+$nativeExit = $LASTEXITCODE
+Pop-Location
+$nativeOutput | ForEach-Object { Write-Output "spiral/apps/wasm/build.ps1 / native run / $_" }
+if ($nativeExit -ne 0 -or !($nativeOutput -match '--wasm')) {
+    throw "NATIVE-RUST-FAILED apps/wasm / run --help exit code $($nativeExit): expected exit code 0 and the --wasm argument"
+}
+Write-Output "NATIVE-RUST-OK apps/wasm"
 
-$path = "$targetDir/target/rs/$projectName.rs"
-if (!(Test-Path $path)) {
-    $path = "$targetDir/target/rs/polyglot/target/Builder/$projectName/$projectName.rs"
-}
-if (!(Test-Path $path)) {
-    $path = "$targetDir/target/rs/target/Builder/$projectName/$projectName.rs"
-}
-Write-Output "spiral/apps/wasm/build.ps1 / path: $path"
-(Get-Content $path) `
-    -replace ".fsx`"]", ".rs`"]" `
-    -replace "`"../../../../../../../../../../../../polyglot", "`"../../deps/polyglot" `
-    -replace "`"../../../../../../../../../../../../lib", "`"../../deps/polyglot/deps/spiral/lib" `
-    -replace "`"../../../../../lib", "`"../../deps/polyglot/deps/spiral/lib" `
-    -replace "`"../../../../../deps/spiral", "`"../.." `
-    -replace "`"../../../lib", "`"../../deps/polyglot/lib" `
-    -replace "`"./lib", "`"../../deps/polyglot/lib" `
-    | FixRust `
-    | Set-Content "$projectName.rs"
+$shipped = "../../workspace/target/release/$projectName"
+New-Item -ItemType Directory -Force (Split-Path $shipped) | Out-Null
+Remove-Item $shipped -Force -ErrorAction Ignore
+Copy-Item "$nativeDir/target/release/$projectName" $shipped
+Write-Output "spiral/apps/wasm/build.ps1 / shipped the native $projectName to $shipped"
 
 Write-Output "spiral/apps/wasm/build.ps1 / `$targetDir = $targetDir / `$projectName: $projectName / `$env:CI:'$env:CI'"
 
-cargo fmt --
-
-{ cargo +nightly-2025-11-01 build --timings --release } | Invoke-Block -Linux
-
 if ($env:CI) {
     Remove-Item $targetDir -Recurse -Force -ErrorAction Ignore
-
-    ClearCargoTarget "../../workspace"
 }

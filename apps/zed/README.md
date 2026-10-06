@@ -118,11 +118,11 @@ The probe prints the dotnet path, the compiler dll, the backend, the exit code, 
 ### 2. Test Syntax Highlighting in Zed
 1. Open any Spiral file in Zed, for example:
    ```text
-   C:\home\git\spiral\apps\eoie\state\coverage.spi
+   C:\home\git\eoie\state\coverage.spi
    ```
    or
    ```text
-   C:\home\git\spiral\apps\eoie\src\eoie_fs_actions\main.spi
+   C:\home\git\eoie\src\eoie_fs_actions\main.spi
    ```
 2. Verify that:
    - Keywords (`inl`, `union`, `open`, `match`, etc.) are colored according to your theme.

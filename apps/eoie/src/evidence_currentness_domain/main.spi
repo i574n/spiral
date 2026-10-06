@@ -1,5 +1,0 @@
-
-inl main () : i32 =
-    inl _ = model.currentness_plan ()
-    terminal.emit_runtime ()
-    0i32

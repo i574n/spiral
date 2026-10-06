@@ -1,5 +1,0 @@
-packages:
-    rust_std_string
-    state_receipt_codec_model-
-modules:
-    policy

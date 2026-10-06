@@ -1,0 +1,30 @@
+// A recursive union whose case holds a closure that returns the union (stream) or takes it (visitor). The C backend
+// printed the closure's `Fun` struct after the union struct naming it in a field (`unknown type name 'Fun0'`): a Fun
+// struct prints its range/domain types first, and here those name the Fun back. It now forward-declares the Fun.
+union rec stream =
+    | Cons : u64 * (() -> stream)
+    | Nil
+
+union rec visitor =
+    | Visit : i32 * (visitor -> i32)
+    | Stop
+
+let rec build (n : u64) : stream =
+    if n = 0 then Nil else Cons (n, fun () => build (n - 1))
+
+let rec sum (s : stream) (acc : u64) : u64 =
+    match s with
+    | Cons (x, next) => sum (next ()) (acc + x)
+    | Nil => acc
+
+inl run (v : visitor) : i32 =
+    match v with
+    | Visit (x, f) => x + f v
+    | Stop => 0
+
+inl main () : i32 =
+    inl ~n = 10u64
+    inl total = sum (build n) 0
+    inl ~k = 5i32
+    inl v = Visit (k, fun self => match self with Visit (x, _) => x * 2 | Stop => 1)
+    !!!!Conv(`i32, total) + run v

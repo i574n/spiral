@@ -49,6 +49,31 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.to_spi(text)
   end
 
+  def plan(wire) do
+    ensure!()
+    :spiral_kino@domain.plan(wire)
+  end
+
+  # Every length on the wire is a byte count, as in the domain's byte-offset text helpers (spi/text.spi).
+  def decode_plan(wire) do
+    case String.split(wire, "\n", parts: 2) do
+      [count, rest] -> decode_steps(String.to_integer(count), rest, [])
+      [count] -> decode_steps(String.to_integer(count), "", [])
+    end
+  end
+
+  defp decode_steps(0, _rest, acc), do: Enum.reverse(acc)
+
+  defp decode_steps(n, rest, acc) do
+    [index_text, timeout, len_text, after_len] = String.split(rest, "\n", parts: 4)
+    len = String.to_integer(len_text)
+    <<program::binary-size(len), rest::binary>> = after_len
+
+    decode_steps(n - 1, rest, [
+      %{index: String.to_integer(index_text), timeout: timeout, program: program} | acc
+    ])
+  end
+
   def encode_cells(cells) do
     body = Enum.map_join(cells, "", &encode_cell/1)
     Integer.to_string(length(cells)) <> "\n" <> body
@@ -68,7 +93,7 @@ defmodule Spiral.Kino.Domain do
   end
 
   defp field(kind, source) do
-    kind <> "\n" <> Integer.to_string(String.length(source)) <> "\n" <> source
+    kind <> "\n" <> Integer.to_string(byte_size(source)) <> "\n" <> source
   end
 
   defp decode_n(0, _rest, acc), do: Enum.reverse(acc)
@@ -76,9 +101,9 @@ defmodule Spiral.Kino.Domain do
   defp decode_n(n, rest, acc) do
     [kind, len_text, after_len] = String.split(rest, "\n", parts: 3)
     len = String.to_integer(len_text)
-    source = String.slice(after_len, 0, len)
+    <<source::binary-size(len), rest::binary>> = after_len
 
-    decode_n(n - 1, String.slice(after_len, len, String.length(after_len) - len), [
+    decode_n(n - 1, rest, [
       cell(kind, source) | acc
     ])
   end

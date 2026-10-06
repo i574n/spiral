@@ -31,6 +31,22 @@ defmodule Spiral.Kino.DirectivesTest do
     assert %{code: "inl main () : i32 =\n    1i32 + 2i32\n"} = Directives.prepare("1i32 + 2i32")
   end
 
+  test "a unit body becomes the zero exit code" do
+    assert %{code: "inl main () : i32 =\n    0i32\n", generated_main: true, no_value: false} =
+             Directives.prepare("()\n")
+  end
+
+  test "a cell of definitions only shows no value" do
+    assert %{
+             code: "open testing\ninl main () : i32 = 0i32\n",
+             generated_main: true,
+             no_value: true
+           } =
+             Directives.prepare("open testing\n")
+
+    assert %{no_value: false} = Directives.prepare("1i32")
+  end
+
   test "--print-code and --timeout are read from the first ///- line" do
     assert %{print_code: true, timeout: 5_000, code: "inl main () : i32 =\n    1i32\n"} =
              Directives.prepare("///- --print-code --timeout 5000\n1i32")
@@ -43,16 +59,34 @@ defmodule Spiral.Kino.DirectivesTest do
     refute code =~ "--timeout"
   end
 
-  test "rust builder lines are dropped and other backends raise" do
-    assert %{code: "inl main () : i32 =\n    1i32\n"} = Directives.prepare("///> rust\n1i32")
+  test "builder lines are recorded and the body stays spiral" do
+    assert %{
+             code: "inl main () : i32 =\n    1i32\n",
+             skip: false,
+             builders: [%{tool: :rust, contract: nil, deps: []}]
+           } =
+             Directives.prepare("///> rust\n1i32")
 
-    assert_raise ArgumentError, ~r/builder arguments are not used/, fn ->
-      Directives.prepare("///> rust -d chrono\n1i32")
-    end
+    assert %{
+             code: "inl main () : i32 =\n    1i32\n",
+             skip: false,
+             builders: [%{tool: :rust, contract: ""}]
+           } =
+             Directives.prepare("///> rust -c\n1i32")
 
-    assert_raise ArgumentError, ~r/unknown Spiral backend "lua"/, fn ->
-      Directives.prepare("///> lua\n1i32")
-    end
+    assert %{
+             code: "inl main () : i32 =\n    1i32\n",
+             skip: false,
+             builders: [%{tool: :rust, contract: "", deps: [%{name: "near-token", version: "*"}]}]
+           } = Directives.prepare("///> rust -cd near-token\n1i32")
+
+    assert %{skip: true, builders: [], code: "inl main () : i32 =\n    1i32\n"} =
+             Directives.prepare("///> _\n1i32")
+
+    assert %{builders: [%{tool: :lua}], skip: false} = Directives.prepare("///> lua\n1i32")
+
+    assert %{builders: [%{tool: :fsharp}, %{tool: :gleam}]} =
+             Directives.prepare("///> fsharp\n///> gleam\n1i32")
   end
 
   test "disabled and unknown directives" do

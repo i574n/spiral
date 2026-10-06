@@ -1,8 +1,0 @@
-packages:
-    external_payload_contract
-modules:
-    retention_plan-
-    external_payload_terminal
-    retention_negative
-    retention_policy_probe
-    main

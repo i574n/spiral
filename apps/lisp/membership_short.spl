@@ -1,0 +1,13 @@
+; Tweet-sized variant of membership.spl: one top-level form per 280-character message.
+(nominal z string)
+(nominal (s n) (tuple n string))
+(nominal unit string)
+(nominal bool string)
+(nominal nil string)
+(nominal (ext t d) (tuple t d))
+(inl add ((a i64) (b i64)) i64 (emit "!a + !b"))
+(union rec (mem ctx slot dom) (Here (forall t d) (-> string (mem (ext t d) z d))) (There (forall t h n d) (-> (tuple (mem t n d) string) (mem (ext t h) (s n) d))))
+(inl rec slot (forall c n d) ((m (mem c n d))) i64 (match m ((Here _) 0i64) ((There t _) (add 1i64 (slot t)))))
+(type ub (ext (ext nil bool) unit))
+(inl bool_at_1 () (mem ub (s z) bool) (There (Here "older entry is Bool") "one step back"))
+(inl main () i32 (if (= (then (bool_at_1 ()) slot) 1i64) 0i32 1i32))

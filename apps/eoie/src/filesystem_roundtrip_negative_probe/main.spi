@@ -1,8 +1,0 @@
-inl main () : i32 =
-    inl outcome =
-        filesystem_roundtrip_contract.model.agile_rejection
-            "/tmp/eoie-roundtrip-negative.txt"
-            "expected-roundtrip"
-            "actual-roundtrip"
-    if filesystem_roundtrip_contract.model.rejected outcome
-    then 0i32 else 1i32

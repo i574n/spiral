@@ -9,8 +9,6 @@ modules:
         rust_operators
     typescript
     typescript_operators
-    python
-    python_operators
     optionm'
     optionm'_operators
     resultm

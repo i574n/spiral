@@ -1,6 +1,8 @@
 defmodule Spiral.Kino.Document do
   alias Spiral.Kino.SmartCell
 
+  @break_markdown ~s|<!-- livebook:{"break_markdown":true} -->|
+
   @spec parse_dib(String.t()) :: %{cells: [map()]}
   def parse_dib(text) when is_binary(text) do
     %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.parse_dib(text))}
@@ -19,10 +21,23 @@ defmodule Spiral.Kino.Document do
 
   @spec to_livemd(%{cells: [map()]}) :: String.t()
   def to_livemd(%{cells: cells}) do
-    cells
-    |> Enum.map_join("\n\n", &render_cell/1)
+    {parts, _} =
+      Enum.map_reduce(cells, nil, fn cell, prev ->
+        part =
+          if text_cell?(prev) and text_cell?(cell),
+            do: @break_markdown <> "\n\n" <> render_cell(cell),
+            else: render_cell(cell)
+
+        {part, cell}
+      end)
+
+    parts
+    |> Enum.join("\n\n")
     |> newline()
   end
+
+  defp text_cell?(%{kind: kind}) when kind in [:markdown, :import], do: true
+  defp text_cell?(_), do: false
 
   @spec to_spi(%{cells: [map()]}) :: String.t()
   def to_spi(%{cells: cells}) do
@@ -49,12 +64,20 @@ defmodule Spiral.Kino.Document do
   end
 
   defp markdown_part(part) do
-    source =
-      part
-      |> String.replace(~r/<!-- livebook:.*?-->\n?/s, "")
-      |> String.trim()
+    part
+    |> String.split(@break_markdown)
+    |> Enum.flat_map(fn chunk ->
+      source =
+        chunk
+        |> String.replace(~r/<!-- livebook:.*?-->\n?/s, "")
+        |> String.trim()
 
-    if source == "", do: [], else: [%{kind: :markdown, source: source}]
+      case Regex.run(~r/\A`#!import ([^`\n]+)`\z/, source) do
+        [_, path] -> [%{kind: :import, source: path}]
+        nil when source == "" -> []
+        nil -> [%{kind: :markdown, source: source}]
+      end
+    end)
   end
 
   defp fence_body(part) do

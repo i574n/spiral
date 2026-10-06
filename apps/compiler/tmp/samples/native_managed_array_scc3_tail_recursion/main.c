@@ -44,6 +44,7 @@ void method0(Array0 * v0){
     ArrayDecref0(v0);
     return ;
 }
+int32_t method2(int32_t v0, Array0 * v1);
 int32_t method4(int32_t v0, Array0 * v1){
     
     

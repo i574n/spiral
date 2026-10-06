@@ -34,13 +34,13 @@ fn method0(mut v0: Rc<UH0>) -> i32 {
     }
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<str> = Rc::<str>::from("ab");
-    let mut v1: Rc<str> = Rc::<str>::from("qwe");
-    let mut v2: Rc<UH0> = Rc::new(UH0::UH0_0);
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ab"); } LIT.with(|lit| lit.clone()) };
+    let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
+    let mut v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) };
     let mut v3: Rc<UH0> = Rc::new(UH0::UH0_1(v1.clone(), v2.clone(), v2.clone()));
     let mut v4: Rc<UH0> = Rc::new(UH0::UH0_1(v0.clone(), v3.clone(), v3.clone()));
     let mut v5: i32 = method0(v4.clone());
-    let mut v6: Rc<UH0> = Rc::new(UH0::UH0_0);
+    let mut v6: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) };
     let mut v7: Rc<UH0> = Rc::new(UH0::UH0_1(v1.clone(), v6.clone(), v6.clone()));
     let mut v8: Rc<UH0> = Rc::new(UH0::UH0_1(v0.clone(), v7.clone(), v7.clone()));
     let mut v9: i32 = method0(v8.clone());
@@ -48,7 +48,12 @@ fn spiral_main() -> i32 {
     let mut v11: i32 = v10 - 16i32;
     v11
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

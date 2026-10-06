@@ -187,14 +187,41 @@ inl _assert_in items x =
 
 /// ### __assert_contains
 inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
+    inl native =
+        backend_switch {
+            Gleam = fun () => false
+            Lua = fun () => false
+            Fsharp = fun () => false
+            Python = fun () => false
+            TypeScript = fun () => false
+            Cpp = fun () => false
+            CppHost = fun () => false
+            Delphi = fun () => false
+            Cuda = fun () => false
+            Rust = fun () => true
+        }
     __expect
         fun a b =>
-            a
-            |> $'List.ofSeq'
-            |> fun x => x : listm'.list' t
-            |> $'List.tryFind' ((=) b)
-            |> optionm'.unbox
-            |> fun (x : option t) => x <> None
+            if native
+            then
+                // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
+                // element equal to it (the element type's PartialEq)
+                real
+                    typecase u with
+                    | string =>
+                        // a native char is a `u8`; a string in a string: a substring
+                        typecase t with
+                        | char => $'!a.contains(!b as char)' : bool
+                        | _ => $'!a.contains(&*!b)' : bool
+                    | array_base _ => $'!a.borrow().contains(&!b)' : bool
+                    | _ => $'!a.iter().any(|x| *x == !b)' : bool
+            else
+                a
+                |> $'List.ofSeq'
+                |> fun x => x : listm'.list' t
+                |> $'List.tryFind' ((=) b)
+                |> optionm'.unbox
+                |> fun (x : option t) => x <> None
         trace
         // TODO: forall nameof (Cannot dyn a forall into a runtime var.)
         // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.
@@ -211,17 +238,41 @@ inl _assert_contains b a =
 inl _throws (fn : () -> ()) : option exn =
     inl none = None : option exn
     inl some (s : exn) = Some s
-    backend_switch {
-        Fsharp = fun () =>
-            $'try !fn (); !none with ex -> ex |> !some ' : option exn
-        Python = fun () =>
-            $'fn = !fn '
-            $'none = !none '
-            $'some = !some '
-            $'try: fn(); x = none '
-            $'except Exception as ex: x = some(ex)'
-            $'x' : option exn
-    }
+    inl native =
+        backend_switch {
+            Gleam = fun () => false
+            Lua = fun () => false
+            Fsharp = fun () => false
+            Python = fun () => false
+            TypeScript = fun () => false
+            Cpp = fun () => false
+            CppHost = fun () => false
+            Delphi = fun () => false
+            Cuda = fun () => false
+            Rust = fun () => true
+        }
+    if native
+    then
+        // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).
+        catch_unwind_native
+            fun () =>
+                fn ()
+                none
+            some
+    else
+        backend_switch {
+            Fsharp = fun () =>
+                $'try !fn (); !none with ex -> ex |> !some ' : option exn
+            Python = fun () =>
+                $'fn = !fn '
+                $'none = !none '
+                $'some = !some '
+                $'try: fn(); x = none '
+                $'except Exception as ex: x = some(ex)'
+                $'x' : option exn
+            TypeScript = fun () =>
+                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
+        }
 
 /// ### print_and_return
 inl rec print_and_return x =

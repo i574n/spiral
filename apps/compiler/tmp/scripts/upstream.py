@@ -58,15 +58,22 @@ def fork_file(fork, ref, name):
 def sections(lines):
     """name -> (start, end) of single-flight's text in the merged file (header line included)."""
     result, state, start, name = {}, None, None, None
+    # Conditionals nested inside a pair's side (e.g. `#if !INTERACTIVE` in single-flight's Utils) have their own
+    # `#else`/`#endif`: only depth 0 ends the pair, or Utils was cut off after six lines.
+    depth = 0
     def close(end):
         if name is not None and start is not None:
             result[name] = (start, end)
     for index, line in enumerate(lines):
-        if line == "#if SPIRAL_CORE_HOPAC":
-            close(index); name = start = None; state = "hopac"; continue
-        if state and line == "#else":
+        if line == "#if SPIRAL_CORE_HOPAC" and not state:
+            close(index); name = start = None; state = "hopac"; depth = 0; continue
+        if state and line.startswith("#if"):
+            depth += 1
+        elif state and depth > 0 and line == "#endif":
+            depth -= 1
+        elif state and depth == 0 and line == "#else":
             state = "single"; continue
-        if state and line == "#endif":
+        elif state and depth == 0 and line == "#endif":
             close(index); name = start = None; state = None; continue
         if state == "hopac":
             continue

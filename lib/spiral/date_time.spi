@@ -25,6 +25,7 @@ type timestamp_switch =
         Lua : i64
         Fsharp : i64
         Python : timestamp_python
+        Rust : i64
     }
 nominal timestamp = $'backend_switch `(timestamp_switch)'
 
@@ -35,6 +36,7 @@ inl timestamp forall t {int}. (x : t) : timestamp =
                 Gleam = fun () => global "import gleam/time/timestamp"
             }
             x |> $'timestamp.from_unix_seconds'
+        | RustNative => fun () => $'(!x as i64)'
         | _ => fun () => x |> convert.unbox
 
 /// ### timestamp_guid
@@ -120,6 +122,7 @@ type date_time_switch =
         Lua : i64
         Fsharp : $'System.DateTime'
         Python : date_time_python
+        Rust : $'chrono::NaiveDateTime'
     }
 nominal date_time = $'backend_switch `(date_time_switch)'
 
@@ -152,6 +155,7 @@ inl get_year (date_time : date_time) : i32 =
         Lua = fun () => $'0' : i32
         Fsharp = fun () => date_time |> $'_.Year' : i32
         Python = fun () => $'!date_time.year' : i32
+        Rust = fun () => $'chrono::Datelike::year(&!date_time)' : i32
     }
 
 /// ### split_date_time
@@ -211,6 +215,14 @@ inl format (format : string) (date_time : date_time) : string =
             elif get_year date_time < 1000
             then $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
             else $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
+        // Native Rust: like Lua/Python, a non-empty format is a strftime (chrono) format. The default is F#'s
+        // "M-d-y hh:mm:ss tt" (`y`: the year mod 100, unpadded).
+        Rust = fun () =>
+            inl format =
+                if format = ""
+                then "%-m-%-d-%-y %I:%M:%S %p"
+                else format
+            $'Rc::<str>::from(!date_time.format(&*!format).to_string())' : string
     }
 
 /// ### format_iso8601
@@ -220,6 +232,7 @@ inl format_iso8601 (date_time : date_time) : string =
         Lua = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
         Fsharp = fun () => date_time |> format "yyyy-MM-ddTHH-mm-ss.fff" : string
         Python = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%f" : string
+        Rust = fun () => date_time |> format "%Y-%m-%dT%H-%M-%S.%3f" : string
     }
 
 /// ### min_value
@@ -234,7 +247,10 @@ inl min_value () : date_time =
             inl date_time = $'os.time{year=1, month=1, day=1, hour=0, min=0, sec=0} or -62135596800' : date_time
             date_time
         Fsharp = fun () => $'System.DateTime.MinValue' : date_time
-        Python = fun () => $'datetime.datetime.min' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.datetime.min' : date_time
+        Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
     }
 
 /// ### max_value
@@ -249,7 +265,11 @@ inl max_value () : date_time =
             inl date_time = $'os.time{year=9999, month=12, day=31, hour=23, min=59, sec=59} or 253402300799' : date_time
             date_time
         Fsharp = fun () => $'System.DateTime.MaxValue' : date_time
-        Python = fun () => $'datetime.datetime.max' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.datetime.max' : date_time
+        // .NET's MaxValue: the last 100 ns tick of 9999-12-31
+        Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 999999900).unwrap()' : date_time
     }
 
 /// ### to_calendar_utc
@@ -283,7 +303,10 @@ inl unix_epoch () : date_time =
             inl date_time = $'os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0' : date_time
             date_time
         Fsharp = fun () => $'System.DateTime.UnixEpoch' : date_time
-        Python = fun () => $'datetime.datetime(1970, 1, 1)' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.datetime(1970, 1, 1)' : date_time
+        Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
     }
 
 /// ### date_time_milliseconds
@@ -341,7 +364,10 @@ inl date_time_milliseconds
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
         Python = fun () =>
-            $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond)' : date_time
+            global "import datetime"
+            $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time
+        Rust = fun () =>
+            $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_milli_opt(!hour as u32, !minute as u32, !second as u32, !millisecond as u32).unwrap()' : date_time
     }
 
 /// ### date_time_utc
@@ -369,7 +395,11 @@ inl date_time_utc
         Fsharp = fun () =>
             $'System.DateTime (!year, !month, !day, !hour, !minute, !second, System.DateTimeKind.Utc)' : date_time
         Python = fun () =>
+            global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time
+        // Native Rust: a NaiveDateTime has no kind (see specify_date_kind)
+        Rust = fun () =>
+            $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_opt(!hour as u32, !minute as u32, !second as u32).unwrap()' : date_time
     }
 
 /// ### date_time_kind
@@ -391,6 +421,8 @@ inl specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_tim
                 | Local => $'System.DateTimeKind.Local'
             $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time
         Python = fun () => $'!date_time.replace(tzinfo=None)' : date_time
+        // Native Rust: a chrono::NaiveDateTime carries no kind; the value is unchanged.
+        Rust = fun () => date_time
     }
 
 /// ### to_universal_time
@@ -399,7 +431,11 @@ inl to_universal_time (date_time : date_time) : date_time =
         Gleam = fun () => date_time
         Lua = fun () => date_time
         Fsharp = fun () => date_time |> $'_.ToUniversalTime()' : date_time
-        Python = fun () => $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
+        // Native Rust: like Python, the wall-clock value is kept (a NaiveDateTime has no kind to convert from).
+        Rust = fun () => date_time
     }
 
 /// ### time_span
@@ -416,6 +452,7 @@ type time_span_switch =
         Lua : $'number'
         Fsharp : $'System.TimeSpan'
         Python : time_span_python
+        Rust : $'chrono::TimeDelta'
     }
 nominal time_span = $'backend_switch `(time_span_switch)'
 
@@ -424,7 +461,12 @@ inl time_span x : time_span =
         Gleam = fun () => x |> convert.unbox : time_span
         Lua = fun () => x |> convert.unbox : time_span
         Fsharp = fun () => $'!x |> `time_span ' : time_span
-        Python = fun () => $'datetime.timedelta(!x)' : time_span
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.timedelta(!x)' : time_span
+        // Native Rust: x is a count of 100 ns ticks, like F#'s TimeSpan (int64)
+        Rust = fun () =>
+            $'(chrono::TimeDelta::microseconds((!x as i64) / 10) + chrono::TimeDelta::nanoseconds(((!x as i64) % 10) * 100))' : time_span
     }
 
 /// ### new_time_span
@@ -438,6 +480,8 @@ inl new_time_span (a : date_time) (b : date_time) : time_span =
             |> convert.convert
             |> fun x => x : int
             |> convert.convert
+        // Contracts have no clock (now () is null there): no DateTime arithmetic either.
+        | Rust (Some (Contract)) => fun () => null ()
         | _ => fun () => $'!b - !a '
 
 /// ### total_seconds
@@ -457,6 +501,9 @@ inl total_seconds (time_span : time_span) : f64 =
                 inl seconds = time_span |> convert.unbox : f64
                 seconds * 10000000 |> convert.convert : i64
             | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
+            // Native Rust: the TimeDelta's 100 ns ticks (num_seconds truncates toward zero; the sub-second rest fits)
+            | RustNative => fun () =>
+                $'{ let t = !time_span; t.num_seconds() * 10000000 + (t - chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100 }' : i64
             | Rust (Some (Contract)) => fun () => null ()
             | _ => fun () => time_span |> $'_.Ticks' : i64
     n / 10000000 |> convert.convert
@@ -477,6 +524,9 @@ inl days (time_span : time_span) : f64 =
             seconds / 86400 |> convert.convert : f64
         Fsharp = fun () => time_span |> $'_.TotalDays' : f64
         Python = fun () => $'!time_span.days' : f64
+        // Native Rust: F#'s TotalDays (100 ns ticks / ticks per day)
+        Rust = fun () =>
+            $'{ let t = !time_span; (t.num_seconds() * 10000000 + (t - chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100) as f64 / 864000000000.0 }' : f64
     }
 
 /// ### ticks
@@ -512,6 +562,13 @@ inl ticks (date_time : date_time) : timestamp =
             |> ((*) 10000000)
             |> convert.convert
             : timestamp
+        Rust = fun () =>
+            date_time
+            |> new_time_span (min_value ())
+            |> total_seconds
+            |> ((*) 10000000)
+            |> convert.convert
+            : timestamp
     }
 
 /// ### hours
@@ -525,6 +582,7 @@ inl hours (time_span : time_span) : i32 =
             ((total_seconds / 3600.0) |> math.floor |> convert.unbox : i32) % 24
         Fsharp = fun () => time_span |> $'_.Hours' : i32
         Python = fun () => $'!time_span.seconds // 3600' : i32
+        Rust = fun () => $'(!time_span.num_hours() % 24) as i32' : i32
     }
 
 /// ### minutes
@@ -538,6 +596,7 @@ inl minutes (time_span : time_span) : i32 =
             ((total_seconds / 60.0) |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Minutes' : i32
         Python = fun () => $'(!time_span.seconds // 60) % 60' : i32
+        Rust = fun () => $'(!time_span.num_minutes() % 60) as i32' : i32
     }
 
 /// ### seconds
@@ -551,6 +610,7 @@ inl seconds (time_span : time_span) : i32 =
             (total_seconds |> math.floor |> convert.unbox : i32) % 60
         Fsharp = fun () => time_span |> $'_.Seconds' : i32
         Python = fun () => $'!time_span.seconds % 60' : i32
+        Rust = fun () => $'(!time_span.num_seconds() % 60) as i32' : i32
     }
 
 /// ### milliseconds
@@ -563,15 +623,19 @@ inl milliseconds (time_span : time_span) : i32 =
             inl total_seconds = (time_span |> convert.to : i32) |> convert.convert : f64
             ((total_seconds * 1000.0) |> math.floor |> convert.unbox : i32) % 1000
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
-        Python = fun () => $'!time_span.microseconds' : i32
+        Python = fun () => $'!time_span.microseconds // 1000' : i32
+        Rust = fun () => $'(!time_span.num_milliseconds() % 1000) as i32' : i32
     }
 
 /// ### time_span_format
 inl time_span_format (format : string) (time_span : time_span) : string =
     run_target_args (fun () => format, time_span) function
-        | TypeScript _
-        | Python _ => fun format, time_span =>
+        | TypeScript _ => fun format, time_span =>
             $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
+        | RustNative => fun format, time_span =>
+            // Native Rust: ""/"c" -> .NET's constant format [-][d.]hh:mm:ss[.fffffff]; otherwise the hh, mm and ss
+            // tokens of a .NET custom format.
+            $'{ let t = !time_span; let f: &str = &(!format); let neg = t < chrono::TimeDelta::zero(); let a = if neg { -t } else { t }; let n = a.num_seconds() * 10000000 + (a - chrono::TimeDelta::seconds(a.num_seconds())).num_nanoseconds().unwrap() / 100; let (d, h, m, s, x) = (n / 864000000000, (n / 36000000000) % 24, (n / 600000000) % 60, (n / 10000000) % 60, n % 10000000); if f.is_empty() || f == "c" { Rc::<str>::from(format\!("{}{}{:02}:{:02}:{:02}{}", if neg { "-" } else { "" }, if d > 0 { format\!("{}.", d) } else { std::string::String::new() }, h, m, s, if x > 0 { format\!(".{:07}", x) } else { std::string::String::new() })) } else { Rc::<str>::from(f.replace("hh", &format\!("{:02}", h)).replace("mm", &format\!("{:02}", m)).replace("ss", &format\!("{:02}", s))) } }' : string
         | Rust _ => fun format, time_span =>
             open rust.rust_operators
             inl format = format
@@ -631,7 +695,15 @@ inl time_span_format (format : string) (time_span : time_span) : string =
             }
 
 /// ### time_zone_info
-nominal time_zone_info = $'System.TimeZoneInfo'
+type time_zone_info_switch =
+    {
+        Gleam : $'System.TimeZoneInfo'
+        Lua : $'System.TimeZoneInfo'
+        Fsharp : $'System.TimeZoneInfo'
+        Python : $'System.TimeZoneInfo'
+        Rust : $'chrono::FixedOffset'
+    }
+nominal time_zone_info = $'backend_switch `(time_zone_info_switch)'
 
 /// ### add_days
 inl add_days (days : i32) (date_time : date_time) : date_time =
@@ -649,7 +721,9 @@ inl add_days (days : i32) (date_time : date_time) : date_time =
         Fsharp = fun () =>
             $'!date_time.AddDays' days : date_time
         Python = fun () =>
+            global "import datetime"
             $'!date_time + datetime.timedelta(days=!days)' : date_time
+        Rust = fun () => $'!date_time + chrono::TimeDelta::days(!days as i64)' : date_time
     }
 
 /// ### to_calendar
@@ -677,7 +751,10 @@ inl now () : date_time =
                 | Rust (Some (Contract)) => fun () => null ()
                 | _ => fun () => $'System.DateTime.Now'
             : date_time
-        Python = fun () => $'datetime.datetime.now()' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.datetime.now()' : date_time
+        Rust = fun () => $'chrono::Local::now().naive_local()' : date_time
     }
 
 /// ### utc_now
@@ -690,7 +767,10 @@ inl utc_now () : date_time =
             inl date_time = $'os.time()' : date_time
             date_time
         Fsharp = fun () => $'System.DateTime.UtcNow' : date_time
-        Python = fun () => $'datetime.datetime.utcnow()' : date_time
+        Python = fun () =>
+            global "import datetime"
+            $'datetime.datetime.utcnow()' : date_time
+        Rust = fun () => $'chrono::Utc::now().naive_utc()' : date_time
     }
 
 /// ### stopwatch
@@ -703,6 +783,7 @@ type stopwatch_switch =
     {
         Fsharp : $'System.Diagnostics.Stopwatch'
         Python : stopwatch_python
+        Rust : $'std::time::Instant'
     }
 nominal stopwatch = $'backend_switch `(stopwatch_switch)'
 
@@ -710,13 +791,18 @@ inl stopwatch () : stopwatch =
     backend_switch {
         Fsharp = fun () => $'`stopwatch ()' : stopwatch
         Python = fun () => $'`stopwatch ' : stopwatch
+        // Native Rust: an Instant runs from its creation (stopwatch_start is a no-op there)
+        Rust = fun () => $'std::time::Instant::now()' : stopwatch
     }
 
 inl stopwatch_elapsed_milliseconds (stopwatch : stopwatch) : i64 =
-    $'!stopwatch.ElapsedMilliseconds'
+    if rust.rust.is_native ()
+    then $'(!stopwatch.elapsed().as_millis() as i64)'
+    else $'!stopwatch.ElapsedMilliseconds'
 
 inl stopwatch_start (stopwatch : stopwatch) : () =
-    $'!stopwatch.Start' ()
+    if rust.rust.is_native () |> not
+    then $'!stopwatch.Start' ()
 
 /// ## rust
 
@@ -725,6 +811,7 @@ nominal duration' =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::time::Duration\")>]\n#endif\ntype std_time_Duration = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::time::Duration\")>]\n#endif\ntype std_time_Duration = class end") : () -> ()
         }
         $'' : $'std_time_Duration'
     )
@@ -734,6 +821,7 @@ nominal date_time' t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"chrono::DateTime<$0>\")>]\n#endif\ntype chrono_DateTime<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"chrono::DateTime<$0>\")>]\n#endif\ntype chrono_DateTime<'T> = class end") : () -> ()
         }
         $'' : $'chrono_DateTime<`t>'
     )
@@ -750,6 +838,7 @@ nominal naive_date_time =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"chrono::NaiveDateTime\")>]\n#endif\ntype chrono_NaiveDateTime = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"chrono::NaiveDateTime\")>]\n#endif\ntype chrono_NaiveDateTime = class end") : () -> ()
         }
         $'' : $'chrono_NaiveDateTime'
     )
@@ -808,6 +897,7 @@ inl time_zone_local () : time_zone_info =
     run_target function
         | Fsharp _ => fun () =>
             $'System.TimeZoneInfo.Local'
+        | RustNative => fun () => $'*chrono::Local::now().offset()' : time_zone_info
         | Rust (None) => fun () =>
             open rust.rust_operators
             !\($'"std::sync::Arc::new(chrono::FixedOffset::local_minus_utc(chrono::Local::now().offset()) as i64)"')
@@ -817,6 +907,8 @@ inl time_zone_local () : time_zone_info =
 inl get_utc_offset (time_zone_info : time_zone_info) (date_time : date_time) : time_span =
     run_target function
         | Fsharp _ => fun () => date_time |> $'_.GetUtcOffset' (time_zone_local ())
+        | RustNative => fun () =>
+            $'chrono::TimeDelta::seconds(chrono::TimeZone::offset_from_local_datetime(&chrono::Local, &!date_time).earliest().map(|o| o.local_minus_utc()).unwrap_or(0) as i64)' : time_span
         | Rust (None | Some (Wasm)) => fun () =>
             open rust.rust_operators
             inl ticks = date_time |> ticks
@@ -882,6 +974,16 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
             inl time_zone_value = time_zone |> time_span_format (join "hh:mm")
             inl time_zone = $'$"{!time_zone_signal}{!time_zone_value.[0..1]}{!time_zone_value.[3..4]}"'
             create prefix time_zone
+        | RustNative => fun () =>
+            // The Fable Rust arm's layout: yyyyMMdd-HHmm-ss + 7 consecutive fraction digits split 2-4-1, then the
+            // utc offset sign and hhmm.
+            inl prefix : string =
+                $'{ let s = !date_time.format("%Y%m%d-%H%M-%S%f").to_string(); Rc::<str>::from(format\!("{}-{}-{}", &s[0..18], &s[18..22], &s[22..23])) }'
+            inl time_zone = date_time |> get_utc_offset (time_zone_local ())
+            inl time_zone_signal = if hours time_zone > 0 then 1u8 else 0
+            inl time_zone_value = time_zone |> time_span_format (join "hhmm")
+            inl time_zone = #?time_zone_signal ++# time_zone_value
+            create prefix time_zone
         | target => fun () =>
             inl prefix = date_time |> format (join "yyyyMMdd-HHmm-ssff-ffff-f")
             inl time_zone = date_time |> get_utc_offset (time_zone_local ())
@@ -895,6 +997,8 @@ inl date_time_from_guid (date_time_guid : date_time_guid) =
     inl date_time_guid = date_time_guid |> sm'.obj_to_string
     inl sm_replace = sm'.replace "-" ""
     run_target_args (fun () => sm_replace) function
+        | RustNative => fun _ =>
+            $'{ let s = !date_time_guid[..25].replace("-", ""); chrono::NaiveDateTime::parse_from_str(&s[0..14], "%Y%m%d%H%M%S").unwrap() + chrono::TimeDelta::nanoseconds(s[14..21].parse::<i64>().unwrap() * 100) }' : date_time
         | (Rust _ | TypeScript _) => fun sm_replace =>
             $'System.DateTime.Parse (!date_time_guid.[..24] |> !sm_replace)' : date_time
         | _ => fun sm_replace => $'System.DateTime.ParseExact (!date_time_guid.[..24] |> !sm_replace, "yyyyMMddHHmmssfffffff", null)' : date_time
@@ -903,12 +1007,16 @@ inl date_time_from_guid (date_time_guid : date_time_guid) =
 inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : timestamp_guid =
     inl guid = guid |> sm'.obj_to_string
     inl timestamp = timestamp |> sm'.obj_to_string |> sm'.pad_left 18i32 '0'
-    $'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'
+    if rust.rust.is_native ()
+    then $'Rc::<str>::from(format\!("{}-{}-{}-{}{}", &!timestamp[0..8], &!timestamp[8..12], &!timestamp[12..16], &!timestamp[16..18], &!guid[21..]))'
+    else $'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'
 
 /// ### timestamp_from_guid
 inl timestamp_from_guid (guid : date_time_guid) : timestamp =
     inl guid = guid |> sm'.obj_to_string
-    $'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'
+    if rust.rust.is_native ()
+    then $'format\!("{}{}{}{}", &!guid[0..8], &!guid[9..13], &!guid[14..18], &!guid[19..21]).parse::<i64>().unwrap()'
+    else $'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'
 
 /// ### new_guid_from_date_time
 inl new_guid_from_date_time (date_time : date_time) =

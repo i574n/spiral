@@ -34,6 +34,7 @@ nominal any =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n\#else\ntype core_any_Any = obj\n#endif\n") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"core::any::Any\")>]\ntype core_any_Any = class end\n\#else\ntype core_any_Any = obj\n#endif\n") : () -> ()
         }
         $'' : $'core_any_Any'
     )
@@ -48,6 +49,7 @@ nominal try t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype core_ops_Try<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype core_ops_Try<'T> = class end") : () -> ()
         }
         $'' : $'core_ops_Try<`t>'
     )
@@ -62,6 +64,7 @@ nominal cow t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::borrow::Cow<$0>\")>]\n#endif\ntype std_borrow_Cow<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::borrow::Cow<$0>\")>]\n#endif\ntype std_borrow_Cow<'T> = class end") : () -> ()
         }
         $'' : $'std_borrow_Cow<`t>'
     )
@@ -76,6 +79,7 @@ nominal ref_cell t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefCell<$0>\")>]\n#endif\ntype std_cell_RefCell<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefCell<$0>\")>]\n#endif\ntype std_cell_RefCell<'T> = class end") : () -> ()
         }
         $'' : $'std_cell_RefCell<`t>'
     )
@@ -90,6 +94,7 @@ nominal cell_ref t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::Ref<$0>\")>]\n#endif\ntype std_cell_Ref<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::Ref<$0>\")>]\n#endif\ntype std_cell_Ref<'T> = class end") : () -> ()
         }
         $'' : $'std_cell_Ref<`t>'
     )
@@ -104,6 +109,7 @@ nominal rc t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Rc<$0>\")>]\n#endif\ntype std_rc_Rc<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Rc<$0>\")>]\n#endif\ntype std_rc_Rc<'T> = class end") : () -> ()
         }
         $'' : $'std_rc_Rc<`t>'
     )
@@ -118,6 +124,7 @@ nominal lifetime_ref (t : * -> *) u =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0\")>]\n#endif\ntype LifetimeRef<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0\")>]\n#endif\ntype LifetimeRef<'T> = class end") : () -> ()
         }
         $'' : $'LifetimeRef<`(t u)>'
     )
@@ -132,6 +139,7 @@ nominal lifetime_join t u =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 + $1\")>]\n#endif\ntype LifetimeJoin<'T, 'U> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 + $1\")>]\n#endif\ntype LifetimeJoin<'T, 'U> = class end") : () -> ()
         }
         $'' : $'LifetimeJoin<`t, `u>'
     )
@@ -146,6 +154,7 @@ nominal lifetime t u =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 $1\")>]\n#endif\ntype Lifetime<'T, 'U> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"$0 $1\")>]\n#endif\ntype Lifetime<'T, 'U> = class end") : () -> ()
         }
         $'' : $'Lifetime<`t, `u>'
     )
@@ -160,6 +169,7 @@ nominal static_lifetime =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"'static\")>]\n#endif\ntype StaticLifetime = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"'static\")>]\n#endif\ntype StaticLifetime = class end") : () -> ()
         }
         $'' : $'StaticLifetime'
     )
@@ -174,6 +184,7 @@ nominal ref t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n\#else\ntype Ref<'T> = 'T\n#endif\n") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"&$0\")>]\ntype Ref<'T> = class end\n\#else\ntype Ref<'T> = 'T\n#endif\n") : () -> ()
         }
         $'' : $'Ref<`t>'
     )
@@ -196,6 +207,7 @@ nominal weak_rc t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Weak<$0>\")>]\n#endif\ntype std_rc_Weak<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::rc::Weak<$0>\")>]\n#endif\ntype std_rc_Weak<'T> = class end") : () -> ()
         }
         $'' : $'std_rc_Weak<`t>'
     )
@@ -210,6 +222,7 @@ nominal box t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Box<$0>\")>]\n#endif\ntype Box<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Box<$0>\")>]\n#endif\ntype Box<'T> = class end") : () -> ()
         }
         $'' : $'Box<`t>'
     )
@@ -224,6 +237,7 @@ nominal mut_cell t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"MutCell<$0>\")>]\n#endif\ntype MutCell<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"MutCell<$0>\")>]\n#endif\ntype MutCell<'T> = class end") : () -> ()
         }
         $'' : $'MutCell<`t>'
     )
@@ -238,6 +252,7 @@ nominal pin t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::pin::Pin<$0>\")>]\n#endif\ntype std_pin_Pin<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::pin::Pin<$0>\")>]\n#endif\ntype std_pin_Pin<'T> = class end") : () -> ()
         }
         $'' : $'std_pin_Pin<`t>'
     )
@@ -252,6 +267,7 @@ nominal dyn' t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"dyn $0\")>]\n#endif\ntype Dyn<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"dyn $0\")>]\n#endif\ntype Dyn<'T> = class end") : () -> ()
         }
         $'' : $'Dyn<`t>'
     )
@@ -266,6 +282,7 @@ nominal fn' t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn() -> $0\")>]\n#endif\ntype Fn<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn() -> $0\")>]\n#endif\ntype Fn<'T> = class end") : () -> ()
         }
         $'' : $'Fn<`t>'
     )
@@ -280,6 +297,7 @@ nominal action_fn t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0)\")>]\n#endif\ntype ActionFn<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0)\")>]\n#endif\ntype ActionFn<'T> = class end") : () -> ()
         }
         $'' : $'ActionFn<`t>'
     )
@@ -294,6 +312,7 @@ nominal action_fn2 t u =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0, $1)\")>]\n#endif\ntype ActionFn2<'T, 'U> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn($0, $1)\")>]\n#endif\ntype ActionFn2<'T, 'U> = class end") : () -> ()
         }
         $'' : $'ActionFn2<`t, `u>'
     )
@@ -308,6 +327,7 @@ nominal fn_once t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"FnOnce() -> $0\")>]\n#endif\ntype FnOnce<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"FnOnce() -> $0\")>]\n#endif\ntype FnOnce<'T> = class end") : () -> ()
         }
         $'' : $'FnOnce<`t>'
     )
@@ -322,6 +342,7 @@ nominal fn_unit =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn()\")>]\n#endif\ntype FnUnit = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Fn()\")>]\n#endif\ntype FnUnit = class end") : () -> ()
         }
         $'' : $'FnUnit'
     )
@@ -332,13 +353,22 @@ nominal fn_unit =
 
 #!spiral
 
-nominal func0 t =
+// Fable's `Func0<T>`/`Func1<A, B>` wrappers; native Rust uses Spiral's own closure type (`Rc<dyn Fn(..) -> ..>`, a
+// tuple argument spread into parameters), so the helpers below are coercions there.
+nominal func0_fable t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func0<$0>\")>]\n#endif\ntype Func0<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func0<$0>\")>]\n#endif\ntype Func0<'T> = class end") : () -> ()
         }
         $'' : $'Func0<`t>'
     )
+type func0_switch t =
+    {
+        Fsharp : func0_fable t
+        Rust : () -> t
+    }
+nominal func0 t = $'backend_switch `(func0_switch t)'
 
 #!markdown
 
@@ -346,15 +376,24 @@ nominal func0 t =
 
 #!spiral
 
+nominal func1_fable t u =
+    `(
+        backend_switch `(()) `({}) {
+            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func1<$0, $1>\")>]\n#endif\ntype Func0<'T, 'U> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func1<$0, $1>\")>]\n#endif\ntype Func0<'T, 'U> = class end") : () -> ()
+        }
+        $'' : $'Func0<`t, `u>'
+    )
+type func1_switch t u =
+    {
+        Fsharp : func1_fable t u
+        Rust : t -> u
+    }
 nominal func1 t u =
     `(
         typecase t with
         | () => `func0 `u
-        | _ =>
-            backend_switch `(()) `({}) {
-                Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Func1<$0, $1>\")>]\n#endif\ntype Func0<'T, 'U> = class end") : () -> ()
-            }
-            $'' : $'Func0<`t, `u>'
+        | _ => $'' : $'backend_switch `(func1_switch t u)'
     )
 
 #!markdown
@@ -367,6 +406,7 @@ nominal impl t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"impl $0\")>]\n#endif\ntype Impl<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"impl $0\")>]\n#endif\ntype Impl<'T> = class end") : () -> ()
         }
         $'' : $'Impl<`t>'
     )
@@ -381,6 +421,7 @@ nominal mut' t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mut $0\")>]\n#endif\ntype Mut<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"mut $0\")>]\n#endif\ntype Mut<'T> = class end") : () -> ()
         }
         $'' : $'Mut<`t>'
     )
@@ -395,6 +436,7 @@ nominal ref_mut t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefMut<$0>\")>]\n#endif\ntype std_cell_RefMut<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::cell::RefMut<$0>\")>]\n#endif\ntype std_cell_RefMut<'T> = class end") : () -> ()
         }
         $'' : $'std_cell_RefMut<`t>'
     )
@@ -405,13 +447,22 @@ nominal ref_mut t =
 
 #!spiral
 
-nominal send t =
+nominal send_fable t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Send\")>]\n#endif\ntype Send<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Send\")>]\n#endif\ntype Send<'T> = class end") : () -> ()
         }
         $'' : lifetime_join t $'Send<`t>'
     )
+// Native Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
+// instead, as runtime.execute_with_options's native arm does).
+type send_switch t =
+    {
+        Fsharp : send_fable t
+        Rust : t
+    }
+nominal send t = $'backend_switch `(send_switch t)'
 
 #!markdown
 
@@ -450,6 +501,7 @@ nominal ptr t =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*const $0\")>]\n#endif\ntype Ptr<'T> = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*const $0\")>]\n#endif\ntype Ptr<'T> = class end") : () -> ()
         }
         $'' : $'Ptr<`t>'
     )
@@ -473,6 +525,7 @@ nominal u128 =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"u128\")>]\n#endif\ntype u128 = class end") : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"u128\")>]\n#endif\ntype u128 = class end") : () -> ()
         }
         $'' : $'u128'
     )
@@ -516,7 +569,20 @@ inl unwrap_0_ref forall (t : * -> *) u. (x : ref (t u)) : ref u =
 #!spiral
 
 inl len forall t u {uint; int}. (x : t) : u =
-    !\($'$"!x.len()"')
+    inl fable () : u =
+        !\($'$"!x.len()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'((!x).len() as `u)' : u
+    }
 
 #!markdown
 
@@ -554,6 +620,28 @@ inl emit' forall t. (x : t) : t =
 
 inl clone forall t. (x : t) : t =
     !\\(x, $'"$0.clone()"')
+
+#!markdown
+
+### clone_native
+
+#!spiral
+
+inl clone_native forall t. (x : t) : t =
+    // Native Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
+    // (`self` methods, `match`) when the value is used again.
+    backend_switch {
+        Gleam = fun () => x
+        Lua = fun () => x
+        Fsharp = fun () => x
+        Python = fun () => x
+        TypeScript = fun () => x
+        Cpp = fun () => x
+        CppHost = fun () => x
+        Delphi = fun () => x
+        Cuda = fun () => x
+        Rust = fun () => clone x
+    }
 
 #!markdown
 
@@ -678,8 +766,21 @@ inl to_ref forall t. (x : t) : ref t =
 #!spiral
 
 inl to_ref_mut forall t. (x : t) : ref (mut' t) =
-    x |> to_mut
-    !\\(x, $'"&mut $0"')
+    inl fable () : ref (mut' t) =
+        x |> to_mut
+        !\\(x, $'"&mut $0"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => !\\(x, $'"&mut $0"') : ref (mut' t)
+    }
 
 #!markdown
 
@@ -809,7 +910,20 @@ inl from_ref_mut forall t. (ref : ref (mut' t)) : t =
 #!spiral
 
 inl reref forall t (u : * -> *). (x : ref (u t)) : ref t =
-    !\($'$"&*!x"')
+    inl fable () : ref t =
+        !\($'$"&*!x"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => !\\(x, $'"&*$0"') : ref t
+    }
 
 #!markdown
 
@@ -850,25 +964,71 @@ inl func0_move forall t. (fn : func0 t) : t =
 
 #!markdown
 
+### is_native
+
+#!spiral
+
+// True only in the native Rust backend (codegenRust). Partial evaluation runs every arm of a value-level
+// backend_switch in every build, so a switch whose arms inline the caller's closures (`Fsharp = fable; Lua = fable;
+// ...`) evaluates them once per key, and nested switches multiply (8 keys, 8^depth: dice_ui never finished). This
+// switch's arms are literals, so the `if is_native () then native else fable ()` that uses it evaluates one branch.
+inl is_native () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => false
+        Python = fun () => false
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => true
+    }
+
+#!markdown
+
+### one_param_fn
+
+#!spiral
+
+// Native Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
+// Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a
+// macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.
+nominal one_param t = $'(`t)'
+inl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =
+    fun (x : one_param t) =>
+        inl x : t = $'(!x)'
+        fn x
+
+#!markdown
+
 ### func1_move
 
 #!spiral
 
 inl func1_move forall t u. (x : t) (fn : func1 t u) : u =
-    inl fn = join fn
-    inl is_unit : bool =
-        real
-            typecase t with
-            | () => true
-            | _ => false
-    inl result =
-        if is_unit
-        then !\($'"(move || !fn())()"') : u
-        else
-            $'let func1_move_x = !x //' : ()
-            inl func1_move_x : infer = $'func1_move_x'
-            !\\(func1_move_x, $'"(move |x| !fn(x))($0)"') : u
-    result
+    inl fable () : u =
+        inl fn = join fn
+        inl is_unit : bool =
+            real
+                typecase t with
+                | () => true
+                | _ => false
+        inl result =
+            if is_unit
+            then !\($'"(move || !fn())()"') : u
+            else
+                $'let func1_move_x = !x //' : ()
+                inl func1_move_x : infer = $'func1_move_x'
+                !\\(func1_move_x, $'"(move |x| !fn(x))($0)"') : u
+        result
+    if is_native ()
+    then
+        // Natively `func1 t u` is Spiral's `t -> u` closure: coerce it back and let Spiral make the call.
+        inl fn : t -> u = $'!fn.clone()'
+        fn x
+    else fable ()
 
 #!markdown
 
@@ -877,25 +1037,29 @@ inl func1_move forall t u. (x : t) (fn : func1 t u) : u =
 #!spiral
 
 inl func0_from forall t. (fn : () -> t) : func0 t =
-    inl result' : unit = $'()'
-    (!\($'$"true; let _func0_from_!result' = Func0::from(move || {{ //"') : bool) |> ignore
-    inl is_unit : bool =
-        real
-            typecase t with
-            | () => true
-            | _ => false
-    inl result =
-        if is_unit |> not
-        then fn ()
-        else
-            (fn >> ignore) ()
-            // (!\($'$"true; // rust.func0_from"') : bool) |> ignore
-            $'// rust.func0_from / is_unit'
-    if is_unit
-    then (!\($'$"true; /*"') : bool) |> ignore
-    else (!\\(result, $'$"true; $0 /*"') : bool) |> ignore
-    (!\($'$"*/ }}); //"') : bool) |> ignore
-    !\($'$"_func0_from_!result'"')
+    inl fable () : func0 t =
+        inl result' : unit = $'()'
+        (!\($'$"true; let _func0_from_!result' = Func0::from(move || {{ //"') : bool) |> ignore
+        inl is_unit : bool =
+            real
+                typecase t with
+                | () => true
+                | _ => false
+        inl result =
+            if is_unit |> not
+            then fn ()
+            else
+                (fn >> ignore) ()
+                // (!\($'$"true; // rust.func0_from"') : bool) |> ignore
+                $'// rust.func0_from / is_unit'
+        if is_unit
+        then (!\($'$"true; /*"') : bool) |> ignore
+        else (!\\(result, $'$"true; $0 /*"') : bool) |> ignore
+        (!\($'$"*/ }}); //"') : bool) |> ignore
+        !\($'$"_func0_from_!result'"')
+    if is_native ()
+    then $'!fn.clone()' : func0 t
+    else fable ()
 
 #!markdown
 
@@ -904,35 +1068,39 @@ inl func0_from forall t. (fn : () -> t) : func0 t =
 #!spiral
 
 inl func1_from forall t u. (fn : t -> u) : func1 t u =
-    inl result' : unit = $'()'
-    inl is_unit : bool =
-        real
-            typecase u with
-            | () => true
-            | _ => false
-    inl is_unit' : bool =
-        real
-            typecase t with
-            | () => true
-            | _ => false
-    if is_unit
-    then (!\($'$"true; let _func1_from_!result' = Func0::from(move || {{ //"') : bool) |> ignore
-    else (!\($'$"true; let _func1_from_!result' = Func1::from(move |value| {{ //"') : bool) |> ignore
+    inl fable () : func1 t u =
+        inl result' : unit = $'()'
+        inl is_unit : bool =
+            real
+                typecase u with
+                | () => true
+                | _ => false
+        inl is_unit' : bool =
+            real
+                typecase t with
+                | () => true
+                | _ => false
+        if is_unit
+        then (!\($'$"true; let _func1_from_!result' = Func0::from(move || {{ //"') : bool) |> ignore
+        else (!\($'$"true; let _func1_from_!result' = Func1::from(move |value| {{ //"') : bool) |> ignore
 
-    inl result =
-        if is_unit'
-        then !\($'$"()"')
-        else !\($'$"value"')
-        |> fn
+        inl result =
+            if is_unit'
+            then !\($'$"()"')
+            else !\($'$"value"')
+            |> fn
 
-    if is_unit
-    then (!\($'$"true; /*"') : bool) |> ignore
-    else
-        $'let func1_from_result = !result //' : ()
-        inl func1_from_result : infer = $'func1_from_result'
-        (!\\(func1_from_result, $'$"true; $0 /*"') : bool) |> ignore
-    (!\($'$"*/ }}); //"') : bool) |> ignore
-    !\($'$"_func1_from_!result'"')
+        if is_unit
+        then (!\($'$"true; /*"') : bool) |> ignore
+        else
+            $'let func1_from_result = !result //' : ()
+            inl func1_from_result : infer = $'func1_from_result'
+            (!\\(func1_from_result, $'$"true; $0 /*"') : bool) |> ignore
+        (!\($'$"*/ }}); //"') : bool) |> ignore
+        !\($'$"_func1_from_!result'"')
+    if is_native ()
+    then $'!fn.clone()' : func1 t u
+    else fable ()
 
 #!markdown
 
@@ -941,7 +1109,10 @@ inl func1_from forall t u. (fn : t -> u) : func1 t u =
 #!spiral
 
 inl new_func0 forall t. (fn : () -> t) : func0 t =
-    !\\(fn, $'"Func0::new(|| $0())"')
+    inl fable () : func0 t = !\\(fn, $'"Func0::new(|| $0())"')
+    if is_native ()
+    then $'!fn.clone()' : func0 t
+    else fable ()
 
 #!markdown
 
@@ -950,7 +1121,10 @@ inl new_func0 forall t. (fn : () -> t) : func0 t =
 #!spiral
 
 inl move forall t. (fn : () -> t) : func0 t =
-    !\\(fn, $'"Func0::new(move || $0())"')
+    inl fable () : func0 t = !\\(fn, $'"Func0::new(move || $0())"')
+    if is_native ()
+    then $'!fn.clone()' : func0 t
+    else fable ()
 
 #!markdown
 
@@ -1001,7 +1175,7 @@ inl fix_closure' forall t. (depth : u8 * u8) (x : t) : string =
     inl x : infer = $'x'
     inl result' : unit = $'()'
     run_target_args (fun () => x) function
-        | Rust _ => fun x =>
+        | Rust _ | RustNative => fun x =>
             if is_unit
             then false
             else
@@ -1031,9 +1205,34 @@ fix_closure' (0, 0) ()
 
 #!spiral
 
-inl fix_closure depth x =
-    inl code = fix_closure' depth x
-    (!\code : bool) |> ignore
+inl fix_closure forall t. depth (x : t) =
+    inl fable () =
+        inl code = fix_closure' depth x
+        (!\code : bool) |> ignore
+    backend_switch {
+        Gleam = fable
+        Lua = fable
+        Fsharp = fable
+        Python = fable
+        Cpp = fable
+        CppHost = fable
+        Delphi = fable
+        Cuda = fable
+        TypeScript = fable
+        Rust = fun () =>
+            // Native Rust emits the caller's statements flat, in the block that opened the closure
+            // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever
+            // `depth` Fable's nesting needed. The text must be a literal (codegenRust inlines literal emits only).
+            // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.
+            inl is_unit : bool =
+                real
+                    typecase t with
+                    | () => true
+                    | _ => false
+            if is_unit
+            then (!\($'"true; () }); //"') : bool) |> ignore
+            else ($'true; (!x) }); //' : bool) |> ignore
+    }
 
 #!markdown
 
@@ -1089,6 +1288,7 @@ nominal type_emit t =
             Fsharp = (fun () =>
                 global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*/ $0 /*\")>]\n#endif\ntype TypeEmit<'T> = class end"
                         ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"*/ $0 /*\")>]\n#endif\ntype TypeEmit<'T> = class end") : () -> ()
         }
         $'' : $'TypeEmit<`t>'
     )
@@ -1116,33 +1316,42 @@ inl new_partial_eq_wrapper forall t.
     (x : t)
     : partial_eq_wrapper t
     =
-    inl struct () =
-        !\($'"} //"') : ()
+    inl fable () : partial_eq_wrapper t =
+        inl struct () =
+            !\($'"} //"') : ()
 
-        !\($'"\#[derive( //"') : ()
-        !\($'"  Debug, //"') : ()
-        !\($'"  Clone, //"') : ()
-        !\($'")] //"') : ()
-        !\($'"pub struct PartialEqWrapper<T>(T); /*"') : ()
+            !\($'"\#[derive( //"') : ()
+            !\($'"  Debug, //"') : ()
+            !\($'"  Clone, //"') : ()
+            !\($'")] //"') : ()
+            !\($'"pub struct PartialEqWrapper<T>(T); /*"') : ()
 
-        !\($'"*/ impl PartialEq for PartialEqWrapper< /*"') : ()
-        (null () : type_emit t) |> ignore
-        !\($'"*/ > { //"') : ()
+            !\($'"*/ impl PartialEq for PartialEqWrapper< /*"') : ()
+            (null () : type_emit t) |> ignore
+            !\($'"*/ > { //"') : ()
 
-        !\($'"fn eq(&self, other: &Self) -> bool { //"') : ()
+            !\($'"fn eq(&self, other: &Self) -> bool { //"') : ()
 
-        inl self : ref (partial_eq_wrapper t) = !\($'$"self"')
-        inl other : ref (partial_eq_wrapper t) = !\($'$"other"')
+            inl self : ref (partial_eq_wrapper t) = !\($'$"self"')
+            inl other : ref (partial_eq_wrapper t) = !\($'$"other"')
 
-        self
-        |> eq_fn other
-        |> fun x => !\($'$"!x //"')
+            self
+            |> eq_fn other
+            |> fun x => !\($'$"!x //"')
 
-        !\($'"} } } fn _main() { { { //"') : ()
+            !\($'"} } } fn _main() { { { //"') : ()
 
-    $'let _!struct = true' : ()
+        $'let _!struct = true' : ()
 
-    !\\(x, $'"PartialEqWrapper($0)"')
+        !\\(x, $'"PartialEqWrapper($0)"')
+    if is_native ()
+    then
+        // Native Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
+        // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller
+        // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.
+        global "#[derive(Debug, Clone)]\npub struct PartialEqWrapper<T>(pub T);\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\n}"
+        $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
+    else fable ()
 
 #!markdown
 
@@ -1200,4 +1409,17 @@ inl new_clone_wrapper forall t.
 #!spiral
 
 inl concat forall (t : * -> *) u. (x : t (t u)) : t u =
-    !\($'$"!x.concat()"')
+    inl fable () : t u =
+        !\($'$"!x.concat()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!x).concat()' : t u
+    }

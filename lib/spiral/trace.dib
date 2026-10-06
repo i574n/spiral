@@ -71,6 +71,22 @@ inl read_state () =
                         inl timestamp : u64 = !\($'$"near_sdk::env::block_timestamp()"')
                         timestamp |> convert.i64 |> Some
             }
+        | Rust _ => fun () =>
+            {
+                trace_level = None
+                repl_start = None
+            }
+        // Native binaries honor TRACE_LEVEL like the F# and Python ones (None meant Verbose: every lib trace printed).
+        | RustNative => fun () =>
+            {
+                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
+                repl_start = None
+            }
+        | TypeScript when typescript.is_native () => fun () =>
+            {
+                trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
+                repl_start = None
+            }
         | _ => fun () =>
             join
                 {
@@ -174,6 +190,14 @@ inl init_trace_state trace_level : () =
         Python = fun () =>
             global "class TraceState: trace_state = None"
             $'if TraceState.trace_state is None: TraceState.trace_state = !new_trace_state(!trace_level)' : ()
+        TypeScript = fun () =>
+            global "let spiral_trace_state: any = undefined;"
+            $'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)' : ()
+        Rust = fun () =>
+            global "fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\n    use std::sync::OnceLock;\n    static SLOT: OnceLock<usize> = OnceLock::new();\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\n    unsafe { (*(raw as *const T)).clone() }\n}"
+            inl fresh = fun () => new_trace_state trace_level
+            open rust.rust_operators
+            !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
     }
 
 #!markdown
@@ -194,6 +218,14 @@ inl get_trace_state_or_init trace_level : trace_state =
             $'TraceState.trace_state.Value' : trace_state
         Python = fun () =>
             $'TraceState.trace_state' : trace_state
+        TypeScript = fun () =>
+            $'spiral_trace_state' : trace_state
+        Rust = fun () =>
+            global "fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\n    use std::sync::OnceLock;\n    static SLOT: OnceLock<usize> = OnceLock::new();\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\n    unsafe { (*(raw as *const T)).clone() }\n}"
+            inl level' = trace_level |> optionm'.default_value Verbose
+            inl fresh = fun () => new_trace_state level'
+            open rust.rust_operators
+            !\\(fresh, $'"{ spiral_trace_hold(&$0) }"') : trace_state
     }
 
 #!markdown
@@ -210,6 +242,9 @@ inl set_trace_level new_level =
         Lua = id : () -> ()
         Fsharp = id : () -> ()
         Python = id : () -> ()
+        // The native state is one shared mutable cell (spiral_trace_hold): the assignment above is enough.
+        Rust = id : () -> ()
+        TypeScript = id : () -> ()
     }
 
 #!markdown
@@ -236,7 +271,6 @@ inl test_trace_level level : bool =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 test_trace_level Critical |> _assert_eq true
 test_trace_level Verbose |> _assert_eq true
@@ -289,7 +323,29 @@ inl trace_raw level fn =
                             chunks
                             |> am.iter near.log
                     | Rust _ => fun text, _ =>
-                        !\\(text, $'\@"println\!(""{}"", $0)"')
+                        !\\(text, $'"println\!(\\\"{}\\\", $0)"')
+                    // In a NEAR contract (wasm32) stdout goes nowhere: the trace goes to the contract's logs instead,
+                    // gathered as in the Contract arm above (a call's lines become one log, in 15000-char chunks, when
+                    // its trailing empty trace runs), since NEAR fails a receipt with more than 100 logs or more than
+                    // 16384 bytes of logs: spiral_trace_near_log's counter (one wasm instance per receipt) caps them at
+                    // 16000 bytes.
+                    | RustNative => fun text, _ =>
+                        global "#[cfg(target_arch = \"wasm32\")]\nfn spiral_trace_near_log(text: &str) {\n    use std::sync::atomic::{AtomicUsize, Ordering};\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\n    let cs: Vec<char> = text.chars().collect();\n    for c in cs.chunks(15000) {\n        let s: String = c.iter().collect();\n        let used = LOGGED.load(Ordering::Relaxed);\n        let budget = 16000usize.saturating_sub(used);\n        if budget < 13 {\n            break;\n        }\n        let s = if s.len() <= budget {\n            s\n        } else {\n            let mut end = budget - 12;\n            while !s.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{} [truncated]\", &s[..end])\n        };\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\n        near_sdk::env::log_str(&s);\n    }\n}"
+                        if $'cfg\!(target_arch = "wasm32")' : bool
+                        then
+                            inl new_acc =
+                                if *acc = ""
+                                then text
+                                elif text = ""
+                                then *acc
+                                else *acc ++\# text
+                            inl chunks_len : i32 = !\\(new_acc, $'"(($0.chars().count() + 14999) / 15000) as i32"')
+                            if text <>. "" && chunks_len <= 1i32
+                            then acc <- new_acc
+                            else
+                                acc <- ""
+                                !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
+                        else !\\(text, $'"println\!(\\\"{}\\\", $0)"')
                     | _ => fun text, write_line =>
                         text |> write_line
                 text |> *trace_state.trace_file
@@ -299,6 +355,8 @@ inl trace_raw level fn =
             Lua = id : () -> ()
             Fsharp = id : () -> ()
             Python = id : () -> ()
+            Rust = id : () -> ()
+            TypeScript = id : () -> ()
         }
     |> exec_unit
 
@@ -330,6 +388,15 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         inl str : sm'.std_string =
                             !\\((h, m, s), $'$"format\!(\\\"{{:02}}:{{:02}}:{{:02}}\\\", $0, $1, $2)"')
                         str |> sm'.from_std_string
+                    // A wasm build runs as a NEAR contract (`///> rust -c` / `-w`), where std's clock panics ("time not
+                    // implemented on this platform"): it reads the block timestamp instead, like the Fable contract arm.
+                    // Elsewhere local time, as F#'s DateTime.Now, without a dependency: GetLocalTime on Windows,
+                    // localtime_r (libc) on Unix.
+                    | RustNative => fun () =>
+                        open rust.rust_operators
+                        !\\((), $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = \\\"wasm32\\\")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern \\\"system\\\" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = \\\"wasm32\\\")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern \\\"C\\\" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = \\\"wasm32\\\")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; let mut buf = String::new(); let push = |buf: &mut String, n: u64| { if n < 10 { buf.push(char::from(48)); } buf.push_str(&n.to_string()); }; push(&mut buf, h); buf.push(char::from(58)); push(&mut buf, m); buf.push(char::from(58)); push(&mut buf, s); Rc::<str>::from(buf) }"') : string
+                    | TypeScript when typescript.is_native () => fun () =>
+                        $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
                     | _ => fun () =>
                         match trace_state.repl_start |> optionm'.unbox with
                         | Some repl_start =>
@@ -362,7 +429,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 Lua = fun () => "%H:%M:%S"
                                 Fsharp = fun () =>
                                     match target with
-                                    | Rust _ => join "hh:mm:ss"
+                                    | Rust _ | RustNative => join "hh:mm:ss"
                                     | _ => join "HH:mm:ss"
                                 Python = fun () => "%H:%M:%S"
                             }
@@ -407,7 +474,6 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 trace Debug (fun () => "test1") id
 trace Debug (fun () => "test2") id

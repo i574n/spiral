@@ -12,7 +12,7 @@
 param(
     [Parameter(Mandatory, Position = 0)][string]$Sample,
     [ValidateSet('single-flight', 'sf', 'hopac', 'hp')][string]$Mode = 'hopac',
-    [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi')][string]$Backend = 'Fsharp',
+    [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
     [int]$Repeat = 1,
     [int]$BudgetSec = 180,
     # Take a stack dump of the compiler after this many seconds if it is still running (0: never).
@@ -34,7 +34,9 @@ $cache = Get-SpiralCacheDir
 $dir = Join-Path $BundleRoot "samples/$Sample"
 $entry = @('main.spi', 'main.spir') | ForEach-Object { Join-Path $dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }
-$ext = @{ Fsharp = '.fsx'; C = '.c'; Rust = '.rs'; Delphi = '.pas' }[$Backend]
+$ext = @{ Fsharp = '.fsx'; C = '.c'; Rust = '.rs'; Delphi = '.pas'; TypeScript = '.ts'; Cpp = '.cpp'; Python = '.py' }[$Backend]
+# The core's ids for the multi-file backends (they also write main.corelib.hpp/.hpp/.cu, main_auto.py).
+$backendId = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }[$Backend] ?? $Backend
 $output = [IO.Path]::ChangeExtension($entry, $ext)
 $logDir = Join-Path $cache ("probes/" + ($Sample -replace '[\\/]', '__'))
 New-Item -ItemType Directory -Force $logDir | Out-Null
@@ -60,7 +62,7 @@ $rows = for ($run = 1; $run -le $Repeat; $run++) {
     $out = Join-Path $logDir "run$run.out.txt"
     $err = Join-Path $logDir "run$run.err.txt"
     $sw = [Diagnostics.Stopwatch]::StartNew()
-    $proc = Start-Process $dotnet -ArgumentList $dll, '--backend', $Backend, "`"$entry`"", "`"$output`"" `
+    $proc = Start-Process $dotnet -ArgumentList $dll, '--backend', "`"$backendId`"", "`"$entry`"", "`"$output`"" `
         -WindowStyle Hidden -PassThru -RedirectStandardOutput $out -RedirectStandardError $err
     $note = ''
     if ($Profile -gt 0) {

@@ -1,4 +1,0 @@
-inl rust_global (x : string) : () = !!!!Global(x)
-
-inl emit_runtime () : () =
-    rust_global "fn runtime_filename(path: &std::path::Path) -> bool {\n    path.file_name().and_then(|value| value.to_str()) == Some(\"runtime.spi\")\n}\n\npub fn validate_runtime_filenames(root: &std::path::Path) -> Result<(), String> {\n    let src = root.join(\"src\");\n    if !src.is_dir() { return Err(format!(\"runtime filename guard missing src: {}\", src.display())); }\n    let mut found = Vec::new();\n    collect_matching_regular_files(&src, &mut found, \"runtime filename guard\", runtime_filename)?;\n    found.sort();\n    if found.is_empty() { Ok(()) } else { Err(format!(\"generic runtime.spi files are forbidden: {}\", found.iter().map(|path| path.display().to_string()).collect::<Vec<_>>().join(\",\"))) }\n}\n"

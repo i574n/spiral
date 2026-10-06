@@ -1,5 +1,0 @@
-packages:
-    cold_proof_contract
-    cold_proof_bindings
-modules:
-    main

@@ -7,7 +7,7 @@ build, the post-deletion `-Suite all -Native` review (see `NEXT.md`), and moving
 
 ## What eoie relies on today
 
-About 80 eoie domain packages (`apps/eoie/.../*.spi`, 84 files) compile to a Rust library through markers
+About 80 eoie domain packages (`eoie/.../*.spi` in the [eoie](https://github.com/i574n/eoie) repository, 84 files) compile to a Rust library through markers
 that only the translator understands:
 
 | marker | uses | meaning |
@@ -43,9 +43,9 @@ links the generated rlib). eoie's `compiler-contracts/test-attestation.ps1` chec
 
 - `!!!!Export(name, f)` (peval: `f` must be an annotated function without runtime captures) and Rust library
   mode are in `apps/compiler/spiral_compiler.fs`; `scripts/test-rust-exports.ps1` passes.
-- eoie sources were rewritten by `apps/eoie/compiler-contracts/migrate-native-rust.py` (exports, `RustLibrary`,
+- eoie sources were rewritten by `eoie/compiler-contracts/migrate-native-rust.py` (exports, `RustLibrary`,
   `RustGlobal` helpers, Fable `emitRustExpr` calls -> `$'...' : type`) and `merge-rust-globals.py`.
-- `pwsh apps/eoie/compiler-contracts/test-regeneration.ps1 -CargoCheck` compiles every owner in a staged copy;
+- `pwsh ../eoie/compiler-contracts/test-regeneration.ps1 -CargoCheck` compiles every owner in a staged copy;
   it only replaces the committed `.rs` in that copy. Copy the outputs into the tree once `-Test` also passes.
 
 Translator behaviours eoie silently relied on, and what replaced them:

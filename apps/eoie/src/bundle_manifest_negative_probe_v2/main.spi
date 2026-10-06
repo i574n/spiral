@@ -1,7 +1,0 @@
-open bundle_manifest_contract.model
-
-inl main () : i32 =
-    inl _ = deterministic_plan ()
-    if executable_mode_passed (manifest_executable_mode_binding 1i32 0i32) then 1i32
-    elif parity_passed (manifest_parity_binding 1i32 0i32) then 1i32
-    else 0i32

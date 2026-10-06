@@ -1,0 +1,31 @@
+inl nan_is32 (x : f32) : bool = !!!!NanIs(x)
+inl nan_is64 (x : f64) : bool = !!!!NanIs(x)
+inl make_nan32 () : f32 =
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"nanf" : f32
+        C = fun () => $"nanf(\"\")" : f32
+        Rust = fun () => $"f32::NAN" : f32
+        Delphi = fun () => $"NaN" : f32
+        TypeScript = fun () => $"NaN" : f32
+        CppHost = fun () => $"nanf(\"\")" : f32
+        Python = fun () => $"float('nan')" : f32
+        })
+inl make_nan64 () : f64 =
+    !!!!BackendSwitch({
+        Fsharp = fun () => $"nan" : f64
+        C = fun () => $"nan(\"\")" : f64
+        Rust = fun () => $"f64::NAN" : f64
+        Delphi = fun () => $"NaN" : f64
+        TypeScript = fun () => $"NaN" : f64
+        CppHost = fun () => $"nan(\"\")" : f64
+        Python = fun () => $"float('nan')" : f64
+        })
+
+inl main () : i32 =
+    inl nan32 = make_nan32 ()
+    inl nan64 = make_nan64 ()
+    inl ~finite32 = 1f32
+    inl ~finite64 = 1f64
+    if nan_is32 nan32 && nan_is64 nan64 then
+        if nan_is32 finite32 || nan_is64 finite64 then 2i32 else 0i32
+    else 1i32

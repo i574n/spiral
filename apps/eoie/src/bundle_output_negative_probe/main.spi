@@ -1,7 +1,0 @@
-open bundle_output_contract.model
-
-inl main () : i32 =
-    match agile_rejection "/tmp/eoie-bundle-output-root-negative" "/tmp/eoie-bundle-output-root-negative/inside.zip" with
-    | BundleOutputRejected _ => 0i32
-    | BundleOutputAccepted _ => 1i32
-    | BundleOutputFailed _ => 2i32

@@ -1,0 +1,21 @@
+// Macro types whose text is another backend's (`Result<i32, string>`, `System.Threading.CancellationToken`) in the
+// annotations Python evaluates: a method's parameters and a union case's NamedTuple fields. Their text used to be
+// written verbatim: a SyntaxError (or NameError) when Python ran the definition.
+nominal res = $'Result<i32, string>'
+nominal tok = $'System.Threading.CancellationToken'
+
+union u =
+    | W : res
+    | T : tok
+
+inl native (k : i32) : i32 =
+    inl w : res = $'!k + 1'
+    inl r = join $'!w * 2' : i32
+    inl x = if k > 0 then W w else T ($'None' : tok)
+    match x with
+    | W y => r + $'(!y)' : i32
+    | T _ => 0i32
+
+inl main () : i32 =
+    inl ~k = 7i32
+    !!!!BackendSwitch({ C = fun () => 24i32 : i32; Python = fun () => native k : i32 })

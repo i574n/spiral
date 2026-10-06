@@ -1,6 +1,0 @@
-packages:
-    parallel_search_contract
-modules:
-    model
-    bindings
-    terminal

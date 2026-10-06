@@ -19,11 +19,16 @@ let rec nth_line (xs : lines) (i : i32) : string =
     | NoLine => ""
     | Line (s, rest) => if i = 0i32 then s else nth_line rest (i - 1i32)
 
-let rec join_lines (xs : lines) : string =
+// Tail recursive, appending to the left (linear on Erlang; the right fold copied the tail once per line).
+let rec join_from (xs : lines) (acc : string) : string =
+    match xs with
+    | NoLine => acc
+    | Line (s, rest) => join_from rest ((acc ++ "\n") ++ s)
+
+inl join_lines (xs : lines) : string =
     match xs with
     | NoLine => ""
-    | Line (s, NoLine) => s
-    | Line (s, rest) => s ++ "\n" ++ join_lines rest
+    | Line (s, rest) => join_from rest s
 
 let rec collect (src : string) (i : i32) (acc : lines) : lines =
     match text.next_line src i with
@@ -80,7 +85,9 @@ let rec map_main (xs : lines) (i : i32) (at : i32) : lines =
     | Line (line, rest) =>
         inl mapped =
             if i < at then line
-            elif i = at then "inl main () : i32 =\n    " ++ line
+            elif i = at then
+                inl expr = if text.trim line = "()" then "0i32" else line
+                "inl main () : i32 =\n    " ++ expr
             elif text.blank line then ""
             else "    " ++ line
         Line (mapped, map_main rest (i + 1i32) at)
@@ -92,7 +99,8 @@ inl wrap (code : string) : string * i32 =
     if block >= 0i32 && main_line (nth_line xs block) then text.ensure_nl code, 0i32
     else
         inl at = search_top xs (n - 1i32) -1i32
-        if at < 0i32 then text.ensure_nl code ++ "inl main () : i32 = 0i32\n", 1i32
+        // 2: no top-level expression (only definitions/opens); like the old route, the cell shows no value.
+        if at < 0i32 then text.ensure_nl code ++ "inl main () : i32 = 0i32\n", 2i32
         else text.ensure_nl (join_lines (map_main xs 0i32 at)), 1i32
 
 inl package_project (includes : string) : string =
@@ -229,7 +237,7 @@ inl emit_of (line : string) : string * string * string =
                 inl code = text.slice_len body var_at (text.length body - var_at)
                 inl args = text.trim (text.take body var_at)
                 if text.trim before = "" then text.take line (skip_spaces line 0i32), args, code
-                elif text.starts_with (text.trim before) "let mut v" && ends_with_eq before then before, args, code
+                elif ends_with_eq before && text.starts_with (text.trim before) "let " then before, args, code
                 else "", "", ""
 
 let rec rewrite_lines (xs : lines) (known : pairs) : lines =
@@ -248,14 +256,21 @@ inl show_exit () : string = "let spiral_kino_value = main.join().unwrap();\n    
 
 inl unit_exit () : string = "let _ = main.join().unwrap();\n    std::process::exit(0);"
 
+inl show_join () : string = "match main.join() {\n        Ok(spiral_kino_value) => { println!(\"SPIRAL_KINO_VALUE:{}\", spiral_kino_value); std::process::exit(0) }\n        Err(_) => std::process::exit(101),\n    }"
+
+inl unit_join () : string = "match main.join() {\n        Ok(_) => std::process::exit(0),\n        Err(_) => std::process::exit(101),\n    }"
+
 inl patch_rust (rust : string) (show_value : string) : string =
     inl textn = text.replace rust "\r\n" "\n"
     inl xs = read_lines textn
     inl known = snippets xs NoPair
     inl joined = join_lines (rewrite_lines xs known)
     inl collapsed = text.collapse_newlines joined
-    if show_value = "1" then text.replace collapsed "std::process::exit(main.join().unwrap());" (show_exit ())
-    else text.replace collapsed "std::process::exit(main.join().unwrap());" (unit_exit ())
+    // Since D1 (native failwith = panic) the compiler ends main with a join that maps a panic to exit code 101.
+    inl joined_exit = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });"
+    if show_value = "1" then
+        text.replace (text.replace collapsed "std::process::exit(main.join().unwrap());" (show_exit ())) joined_exit (show_join ())
+    else text.replace (text.replace collapsed "std::process::exit(main.join().unwrap());" (unit_exit ())) joined_exit (unit_join ())
 
 inl join_pair (left : string) (right : string) : string =
     if left = "" then right
@@ -286,21 +301,49 @@ let rec skip_ws (src : string) (i : i32) : i32 =
         elif ch = '\r' then skip_ws src (i + 1i32)
         else i
 
-let rec has_got (src : string) (i : i32) : bool =
+let rec line_end (src : string) (i : i32) : i32 =
+    if i >= text.length src then i
+    else
+        inl ch = text.index src i
+        if ch = '\n' then i
+        elif ch = '\r' then i
+        else line_end src (i + 1i32)
+
+inl cut_quote (ty : string) : string =
+    inl q = text.find_char ty 0i32 '"'
+    if q < 0i32 then ty else text.trim (text.take ty q)
+
+inl type_text (src : string) (at : i32) (label : string) : string =
+    inl j = skip_ws src (at + text.length label)
+    inl k = line_end src j
+    cut_quote (text.trim (text.slice_len src j (k - j)))
+
+inl prefix_before (ty : string) (mark : string) : i32 * string =
+    inl n = text.length mark
+    inl m = text.length ty
+    if text.starts_at ty (m - n) mark then 1i32, text.slice_len ty 0i32 (m - n)
+    else 0i32, ""
+
+inl unit_pair (got : string) (expected : string) : bool =
+    if got = "()" && expected = "i32" then true
+    else
+        inl g_ok, g = prefix_before got "-> ()"
+        inl e_ok, e = prefix_before expected "-> i32"
+        if g_ok = 1i32 && e_ok = 1i32 && g = e then true
+        else
+            // A generic last call (`x |> console.write_line` with `forall t`) unifies the other way round:
+            // Got: i32 -> i32, Expected: i32 -> ().
+            inl g_ok, g = prefix_before got "-> i32"
+            inl e_ok, e = prefix_before expected "-> ()"
+            if g_ok = 1i32 && e_ok = 1i32 && g = e then true else false
+
+let rec unit_from (src : string) (i : i32) : string =
     inl at = text.find_from src "Got:" i
-    if at < 0i32 then false
+    if at < 0i32 then "0"
     else
-        inl j = skip_ws src (at + 4i32)
-        if j > at + 4i32 && text.starts_at src j "()" then true
-        else has_got src (at + 4i32)
+        inl exp = text.find_from src "Expected:" (at + 4i32)
+        if exp < 0i32 then "0"
+        elif unit_pair (type_text src at "Got:") (type_text src exp "Expected:") then "1"
+        else unit_from src (at + 4i32)
 
-let rec has_expected (src : string) (i : i32) : bool =
-    inl at = text.find_from src "Expected:" i
-    if at < 0i32 then false
-    else
-        inl j = skip_ws src (at + 9i32)
-        if j > at + 9i32 && text.starts_at src j "i32" then true
-        else has_expected src (at + 9i32)
-
-inl unit_result (output : string) : string =
-    if has_got output 0i32 && has_expected output 0i32 then "1" else "0"
+inl unit_result (output : string) : string = unit_from output 0i32

@@ -1,6 +1,0 @@
-union binary_install_source = BinaryInstallSource : string * string * string
-union binary_install_target = BinaryInstallTarget : string * string * string * i32
-union binary_install_provenance = BinaryInstallProvenance : binary_install_source * binary_install_target
-inl current_binary_install_provenance () : binary_install_provenance =
-    BinaryInstallProvenance (BinaryInstallSource ("eoie-rust-target/release/eoie", "steel-raven-version", "222bbb1817b3870d2ca2c6ce45b9de1808b461bbfd014a9b81511412778f7223"), BinaryInstallTarget ("eoie70442/eoie", "nimble-fabric-node", "222bbb1817b3870d2ca2c6ce45b9de1808b461bbfd014a9b81511412778f7223", 493i32))
-inl main () : i32 = 0i32

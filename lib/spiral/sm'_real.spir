@@ -12,6 +12,7 @@ nominal std_string_real =
                 (fun () =>
                     global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n"
                 ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n") : () -> ()
         }
         $'' : $'std_string_String'
     )
@@ -71,6 +72,7 @@ type string_builder_switch =
         Gleam : string
         Fsharp : $'System.Text.StringBuilder'
         Python : string_builder_python
+        Rust : $'String'
     }
 nominal string_builder_real = $'backend_switch `(string_builder_switch)'
 
@@ -85,6 +87,8 @@ inl append_real (x : string) (s : string) : string =
         Lua = (fun () => $'!s .. !x ' : string) : () -> string
         Fsharp = (fun () => (+.) `string s x) : () -> string
         Python = (fun () => (+.) `string s x) : () -> string
+        Rust = (fun () => $'Rc::<str>::from(format\!("{}{}", !s, !x))' : string) : () -> string
+        TypeScript = (fun () => (+.) `string s x) : () -> string
     }
 
 /// ### append
@@ -146,7 +150,122 @@ inl rec format_debug_real forall t. (x : t) : string =
                 (fun () =>
                     $'f"{!x}"' : string
                 ) : () -> string
+            // Native Rust: codegenRust's unions/layouts derive only `Clone` (no `Debug`), so `{:?}` is used for
+            // primitives and arrays of primitives only; unions print structurally (`Case(payload)`), tuples and arrays,
+            // list's and options of anything else element by element (so `_assert_eq'` compares their contents),
+            // anything else as a `<rust type>` placeholder.
+            Rust =
+                (fun () =>
+                    typecase t with
+                    | char => $'Rc::<str>::from(format\!("{:?}", !x as char))' : string
+                    // F#'s `%A` of an option: `Some 1` / `None`.
+                    | optionm'.option' ~a =>
+                        if real_core.prim_type_is `a
+                        then $'Rc::<str>::from(match &!x { Some(v) => format\!("Some {:?}", v), None => String::from("None") })' : string
+                        else
+                            // the payload through Spiral, as an array of 0 or 1 elements (a tuple payload is one Rust value)
+                            inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
+                            if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then "None"
+                            else (++#*) "Some " (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | array_base ~el =>
+                        if real_core.prim_type_is `el
+                        then $'Rc::<str>::from(format\!("{:?}", !x.borrow()))' : string
+                        else format_debug_elements_rust `el x
+                    // a list'/seq' (`Rc<Vec<T>>`) of primitives prints through `Debug` as any nominal below; of anything
+                    // else element by element, as an array
+                    | listm'.list' ~el =>
+                        if real_core.prim_type_is `el
+                        then format_debug_other_rust `t x
+                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                    | seq.seq' ~el =>
+                        if real_core.prim_type_is `el
+                        then format_debug_other_rust `t x
+                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                    // a record field by field, as `#?` (format_real) writes one
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ => format_debug_other_rust `t x
+                ) : () -> string
+            TypeScript =
+                (fun () =>
+                    typecase t with
+                    | char => $'"\'" + String.fromCharCode(!x) + "\'"' : string
+                    | optionm'.option' ~a =>
+                        if $'!x === undefined' : bool
+                        then "None"
+                        else (++#*) "Some " (format_debug_real `a ($'!x ' : a))
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | array_base ~el =>
+                        if real_core.prim_type_is `el
+                        then $'"[" + !x.join(", ") + "]"' : string
+                        else $'String(!x)' : string
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        else $'String(!x)' : string
+                ) : () -> string
         }
+// Native Rust, a type that is neither a primitive container nor a tuple: a primitive through `Debug`, a union
+// structurally, a nominal as its payload, anything else as a `<rust type>` placeholder.
+and inl format_debug_other_rust forall t. (x : t) : string =
+    if real_core.prim_type_is `t
+    then $'Rc::<str>::from(format\!("{:?}", !x))' : string
+    elif real_core.union_type_is `t
+    then serialize_union_rust `t x
+    // A nominal prints as its payload: a primitive (`date_time.timestamp` over `i64`: the number,
+    // as F#'s `%A`), union, tuple, array or nominal as above; a macro type through `Debug` when it
+    // implements it (autoref specialization), else the placeholder.
+    elif real_core.nominal_type_is `t
+    then
+        inl payload forall u. (y : u) : string =
+            typecase u with
+            | {} => $'Rc::<str>::from("<`t>")' : string
+            | ~a -> ~b => $'Rc::<str>::from("<`t>")' : string
+            | ~a * ~b => format_debug_real `u y
+            | array_base _ => format_debug_real `u y
+            | _ =>
+                if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
+                then format_debug_real `u y
+                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\!("{:?}", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from("<`t>") } } (&&W(&!y)).s() })' : string
+        inl y = real_core.nominal_strip x
+        payload `(`y) y
+    else $'Rc::<str>::from("<`t>")' : string
+// Native Rust, the elements of an array (or of a list'/option' copied into one) whose elements have no `Debug`
+// (codegenRust's unions derive only `Clone`): one by one, `[a, b]` as `{:?}` prints an array of primitives.
+and inl format_debug_elements_rust forall el. (x : array_base el) : string =
+    join
+        inl n = !!!!ArrayLength(`u64, x)
+        inl i = mut `u64 (real_core.dyn 0u64)
+        inl s = mut `string (real_core.dyn "")
+        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+            inl j = !!!!LayoutIndex(i)
+            inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)
+            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
+            i <- !!!!Add(j, 1u64)
+        "[" ++#* !!!!LayoutIndex(s) ++#* "]"
+    : string
+// an element in parentheses when it is a tuple, as `{:?}` prints one
+and inl format_debug_element_rust forall el. (x : el) : string =
+    typecase el with
+    | ~a * ~b => "(" ++#* format_debug_real `el x ++#* ")"
+    | _ => format_debug_real `el x
 and inl serialize_union forall t. (x : t) : string =
     join
         $'if type(v0) ~= "table" then return tostring(v0) end' : ()
@@ -169,6 +288,42 @@ and inl serialize_union forall t. (x : t) : string =
                 inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
                 (++#*) tag ((++#*) "(" ((++#*) arg_str ")"))
     : string
+and inl serialize_union_rust forall t. (x : t) : string =
+    join
+        real_core.unbox x fun k, v =>
+            inl name = symbol_to_string_real `(`k)
+            typecase `v with
+            | () => name
+            | _ => (++#*) name ((++#*) "(" ((++#*) (format_debug_real `(`v) v) ")"))
+    : string
+
+// Native Rust `obj_to_string` (F#'s `ToString`): a non-generic nominal over a plain Rust type (guid: `Rc<str>`,
+// date_time: `chrono::NaiveDateTime`) prints through `Display`; anything else as `format_debug_real` (generic
+// nominals like `am'.vec t`, records, tuples, arrays and functions keep its placeholder).
+inl obj_to_string_rust_inner_real forall t. (x : t) : string =
+    typecase t with
+    | {} => format_debug_real `t x
+    | ~a * ~b => format_debug_real `t x
+    | ~a -> ~b => format_debug_real `t x
+    | array_base _ => format_debug_real `t x
+    | ~f ~a => format_debug_real `t x
+    | _ =>
+        if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t
+        then format_debug_real `t x
+        else $'Rc::<str>::from(format\!("{}", !x))' : string
+
+inl obj_to_string_rust_real forall t. (x : t) : string =
+    typecase t with
+    // Like F#'s `string`, where Debug differs: a char is itself, a string is not quoted.
+    | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string
+    | string => x
+    | ~f ~a => format_debug_real `t x
+    | _ =>
+        if real_core.nominal_type_is `t
+        then
+            inl x = real_core.nominal_strip x
+            obj_to_string_rust_inner_real `(`x) x
+        else format_debug_real `t x
 
 /// ### format_debug
 
@@ -189,6 +344,26 @@ and inl serialize_union forall t. (x : t) : string =
 
 inl format_pretty_real forall t. (x : t) : string =
     run_target_args `string `t (fun () => x) function
+        | RustNative => fun x =>
+            // A Spiral union prints structurally (format_debug_real: codegenRust's unions derive only `Clone`, so `{:#?}`
+            // doesn't compile for them), and so does an array/list'/seq'/option' of anything but primitives and a tuple
+            // with such an element at any depth (their elements may be unions); anything else through `{:#?}`, as the
+            // Fable arm.
+            inl rec structural forall u. () : bool =
+                typecase u with
+                | optionm'.option' ~a => if real_core.prim_type_is `a then false else true
+                | listm'.list' ~a => if real_core.prim_type_is `a then false else true
+                | seq.seq' ~a => if real_core.prim_type_is `a then false else true
+                | array_base ~a => if real_core.prim_type_is `a then false else true
+                | ~a * ~b => if structural `a () then true else structural `b ()
+                | {} => real_core.record_type_fold (fun acc key => forall v. => if acc then true else structural `v ()) false `u
+                | _ => real_core.union_type_is `u
+            if structural `t ()
+            then format_debug_real `t x
+            else
+                open rust
+                inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
+                from_std_string_real result
         | Rust _ => fun x =>
             open rust
             inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
@@ -226,6 +401,14 @@ let format_real forall t. (x : t) : string =
                 (fun () =>
                     ""
                 ) : () -> string
+            Rust =
+                (fun () =>
+                    ""
+                ) : () -> string
+            TypeScript =
+                (fun () =>
+                    ""
+                ) : () -> string
         }
     inl result = mut `string empty
     inl rec write x =
@@ -260,6 +443,23 @@ let format_real forall t. (x : t) : string =
                             | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
+                    Rust =
+                        (fun () =>
+                            match b with
+                            // F#'s `%+.6f`: an explicit sign, and .NET's names for NaN and the infinities.
+                            | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_finite() { format\!("{:+.6}", v) } else if v.is_nan() { String::from("NaN") } else if v > 0.0 { String::from("Infinity") } else { String::from("-Infinity") } })' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'Rc::<str>::from(format\!("{}", !b as char))' : string
+                            | _ => $'Rc::<str>::from(format\!("{}", !b))' : string
+                        ) : () -> string
+                    TypeScript =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) => $'(() => { const v = !b; return Number.isFinite(v) ? (v >= 0 ? "+" : "") + v.toFixed(6) : Number.isNaN(v) ? "NaN" : v > 0 ? "Infinity" : "-Infinity"; })()' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'String.fromCharCode(!b)' : string
+                            | _ => $'String(!b)' : string
+                        ) : () -> string
                 }
             backend_switch `(()) `({}) {
                 Gleam =
@@ -276,6 +476,16 @@ let format_real forall t. (x : t) : string =
                             result <- append_real s ((~*) `string result)
                     ) : () -> ()
                 Python =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Rust =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                TypeScript =
                     (fun () =>
                         join
                             result <- append_real s ((~*) `string result)

@@ -39,6 +39,7 @@ UH0 * UH0_1(int32_t v0, UH0 * v1) { // Box
     x->case1.v0 = v0; x->case1.v1 = v1;
     return x;
 }
+UH0 * method1(int32_t v0);
 UH0 * method2(int32_t v0){
     
     

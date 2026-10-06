@@ -1,5 +1,0 @@
-union prune_receipt =
-    | PruneReceipt :: string * string * string * string -> prune_receipt
-
-inl bootstrap_receipt () : prune_receipt = PruneReceipt ("src/eoie_cli/prune_candidate.rs", "a0184dffe556ef37925d0ebe9e7d3fa10d46629c3fd4d3d6aae50883f7b8fc39", "/bin/true", "bootstrap-evidence")
-inl main () : i32 = 0i32

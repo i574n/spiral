@@ -1,0 +1,171 @@
+/// # harness
+/// Shared benchmark harness for split_args implementations (see README.md).
+/// Every implementation is a function `string -> result (array_base string) _`.
+/// Output lines (tab separated):
+///   RESULT <impl> <case> <len> <args joined by |>   (correctness, compared across impls/runs by bench.ps1)
+///   TIME <impl> <case> <len> <iters> <ns_per_call> <checksum>
+open sm'_operators
+
+/// ### now_s
+inl now_s () : f64 =
+    backend_switch {
+        Fsharp = fun () =>
+            $'float (System.Diagnostics.Stopwatch.GetTimestamp ()) / float System.Diagnostics.Stopwatch.Frequency' : f64
+        Rust = fun () =>
+            $'std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs_f64()' : f64
+    }
+
+/// ### show_i64
+inl show_i64 (n : i64) : string =
+    backend_switch {
+        Fsharp = fun () =>
+            $'string !n ' : string
+        Rust = fun () =>
+            $'Rc::<str>::from(!n.to_string())' : string
+    }
+
+/// ### show_i32
+inl show_i32 (n : i32) : string =
+    backend_switch {
+        Fsharp = fun () =>
+            $'string !n ' : string
+        Rust = fun () =>
+            $'Rc::<str>::from(!n.to_string())' : string
+    }
+
+/// ### f64_of_i32
+inl f64_of_i32 (n : i32) : f64 =
+    backend_switch {
+        Fsharp = fun () =>
+            $'float !n ' : f64
+        Rust = fun () =>
+            $'(!n as f64)' : f64
+    }
+
+/// ### i64_of_f64
+inl i64_of_f64 (x : f64) : i64 =
+    backend_switch {
+        Fsharp = fun () =>
+            $'int64 !x ' : i64
+        Rust = fun () =>
+            $'(!x as i64)' : i64
+    }
+
+/// ### print
+inl print (s : string) : () =
+    console.write_line s
+
+/// ### join_args
+let join_args (arr : array_base string) : string =
+    inl n : i32 = arr |> a |> am'.length
+    let rec 루프 (i : i32) (acc : string) : string =
+        if i >= n
+        then acc
+        else 루프 (i + 1) (acc ++# (if i = 0 then "" else "|") ++# (arr |> am'.index_base i))
+    루프 0 ""
+
+/// ### repeat_join
+/// `n` copies of `s` separated by single spaces.
+let repeat_join (s : string) (n : i32) : string =
+    let rec 루프 (i : i32) (acc : string) : string =
+        if i >= n
+        then acc
+        else 루프 (i + 1) (if i = 0 then s else acc ++# " " ++# s)
+    루프 0 ""
+
+/// ### quoted_arg
+/// `prefix "<n chars of `ab c `>" suffix`: one long quoted argument (exposes per-char string building).
+let quoted_arg (n : i32) : string =
+    inl body = "ab c" |> sm'.replicate (n / 4)
+    "x \"" ++# body ++# "\" y"
+
+/// ### measure
+/// Calibrates the iteration count to ~50 ms per batch, then returns the best of 5 batches.
+inl measure (count : string -> i32) (input : string) : f64 * i32 * i32 =
+    inl batch (iters : i32) : f64 * i32 =
+        inl t0 = now_s ()
+        let rec 루프 (i : i32) (acc : i32) : i32 =
+            if i >= iters
+            then acc
+            else 루프 (i + 1) (acc + count input)
+        inl acc = 루프 0 0
+        now_s () - t0, acc
+    let rec calibrate (iters : i32) : i32 =
+        inl dt, _ = batch iters
+        if dt >= 0.05 || iters >= 16777216
+        then iters
+        else calibrate (iters * 2)
+    inl iters = calibrate 1
+    let rec best (k : i32) (m : f64) (sink : i32) : f64 * i32 =
+        if k >= 5
+        then m, sink
+        else
+            inl dt, acc = batch iters
+            best (k + 1) (if dt < m then dt else m) (sink + acc)
+    inl dt, sink = best 0 1000000.0 0
+    dt / f64_of_i32 iters * 1000000000.0, iters, sink
+
+/// ### run_case
+inl run_case (impl_name : string) split (case_name : string) (input : string) : () =
+    inl len : i32 = input |> sm'.length
+    inl joined =
+        match split input with
+        | Ok arr => arr |> join_args
+        | Error _ => "<error>"
+    print ("RESULT\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len ++# "\t" ++# joined)
+    inl count x : i32 =
+        match split x with
+        | Ok arr => arr |> a |> am'.length
+        | Error _ => -1
+    inl ns, iters, sink = measure count input
+    print (
+        "TIME\t" ++# impl_name ++# "\t" ++# case_name ++# "\t" ++# show_i32 len
+        ++# "\t" ++# show_i32 iters ++# "\t" ++# show_i64 (ns |> i64_of_f64) ++# "\t" ++# show_i32 sink
+    )
+
+/// ### cases
+/// runtime.dib's split_args test inputs (the real consumer's test set), CLI command lines, and generated inputs for
+/// scaling: `cli_xN` = N copies of a CLI line (1x/4x/16x length), `quoted_N` = one quoted argument of N chars.
+/// A runtime array, so the per-case code is emitted once (unrolling the cases at compile time made the bench itself
+/// take minutes to compile).
+let cases () : array_base (string * string) =
+    inl cli = "dotnet repl --exit-after-run --run \"c:/home/git/spiral/lib/spiral/parsing.dib\" --output-path \"c:/home/git/spiral/lib/spiral/parsing.dib.ipynb\""
+    ;[
+        "t01", "a b c"
+        "t02", "e f \"g h\" i"
+        "t03", "\"j k\" \"l\" \"m\""
+        "t04", "s -t \"u \`\"v\`\" w\""
+        "t05", "n -o \"p \\\"q\\\" r\""
+        "t06", "r -s \"t \\\"u\\\"\""
+        "t07", $'"x -y \\\"$z -a \'(b=\\\\\\"c-id=)[a-fA-F0-9]{8}\', { \`$_[1] + \`$d++ }\\\""'
+        "t08", "e -f \"$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\""
+        "t09", $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "'
+        "t10", $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""'
+        "t11", $'"l \\\"m n:\\\\o.p\\\""'
+        "t12", $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""'
+        "cli_repl", cli
+        "cli_cargo", "cargo +nightly-2025-11-01 build --release --manifest-path \"C:/home/git/spiral/workspace/Cargo.toml\" --target-dir \"C:/Users/i574n/AppData/Local/Temp/target dir\""
+        "cli_fs_path", "_ dotnet run --project c:/home/git/spiral/apps/compiler/spiral_compiler.fsproj --fs-path \\\"c:/home/git/spiral/lib/spiral/parsing.fsx\\\""
+        "cli_x1", repeat_join cli 1
+        "cli_x4", repeat_join cli 4
+        "cli_x16", repeat_join cli 16
+        "quoted_64", quoted_arg 64
+        "quoted_256", quoted_arg 256
+        "quoted_1024", quoted_arg 1024
+    ]
+
+/// ### run_all
+/// `impls` : list (string * (string -> result (array_base string) string)); each impl's code is emitted once.
+inl run_all impls =
+    inl cases = cases ()
+    inl n : i32 = cases |> a |> am'.length
+    impls
+    |> listm.iter fun impl_name, split =>
+        let rec 루프 (i : i32) : () =
+            // explicit unit result for the exit branch (see README: native Rust loop codegen)
+            if i >= n then ()
+            else
+                inl case_name, input = cases |> am'.index_base i
+                run_case impl_name split case_name input
+                루프 (i + 1)
+        루프 0

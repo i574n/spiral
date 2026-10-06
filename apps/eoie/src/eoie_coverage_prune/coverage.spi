@@ -1,6 +1,0 @@
-inl main () : i32 =
-    prune_terminal.emit_runtime ()
-    coverage_run.emit_coverage_run ()
-    coverage_export.emit_coverage_export ()
-    coverage_union.emit_coverage_union ()
-    0i32

@@ -1,0 +1,204 @@
+/// # fparsec
+/// Copy of parsing.dib's `## fparsec` frontend (its cells are `--test` only, so they are not in parsing.spi) and
+/// its FParsec-backed split_args, used as the reference implementation. F# only (needs the FParsec package).
+open sm'_operators
+
+nominal position_ = $'FParsec.Position'
+nominal parser_error_ = $'FParsec.Error.ParserError'
+
+nominal reply_ t = $'FParsec.Reply<`t>'
+
+nominal char_stream_ t = $'FParsec.CharStream<`t>'
+
+// nominal parser t u = char_stream u -> reply t
+nominal parser_ t u = $'FParsec.Primitives.Parser<`t, `u>'
+
+inl p_char_ forall t. (x : char) : parser_ char t =
+    x |> $'FParsec.CharParsers.pchar'
+
+inl p_string_ forall t. (x : string) : parser_ string t =
+    x |> $'FParsec.CharParsers.pstring'
+
+inl (>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ u v =
+    b |> $'FParsec.Primitives.(>>.)' a
+
+inl (.>>$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ t v =
+    b |> $'FParsec.Primitives.(.>>)' a
+
+inl (.>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (pair t u) v =
+    b |> $'FParsec.Primitives.(.>>.)' a
+
+inl (>>%$) forall t u v. (a : parser_ t v) (b : u) : parser_ u v =
+    b |> $'FParsec.Primitives.(>>%)' a
+
+inl (>>=$) forall t u v. (a : parser_ t v) (b : t -> parser_ u v) : parser_ u v =
+    b |> $'FParsec.Primitives.(>>=)' a
+
+inl (|>>$) forall t u v. (a : parser_ t v) (b : t -> u) : parser_ u v =
+    inl b = fun x => x |> b
+    b |> $'FParsec.Primitives.(|>>)' a
+
+inl any_char_ () : parser_ char _ =
+    $'FParsec.CharParsers.anyChar'
+
+inl any_string_ () : parser_ string _ =
+    $'FParsec.CharParsers.anyString'
+
+inl any_string__ (n : int) : parser_ string _ =
+    n |> $'FParsec.CharParsers.anyString'
+
+inl eof_ () : parser_ () _ =
+    $'FParsec.CharParsers.eof'
+
+inl spaces_ () : parser_ () () =
+    $'FParsec.CharParsers.spaces'
+
+inl spaces1_ () : parser_ () () =
+    $'FParsec.CharParsers.spaces1'
+
+inl (<|>$) forall t u. (a : parser_ t u) (b : parser_ t u) : parser_ t u =
+    b |> $'FParsec.Primitives.(<|>)' a
+
+inl many_satisfy_ forall t. (x : char -> bool) : parser_ string t =
+    x |> $'FParsec.CharParsers.manySatisfy'
+
+inl satisfy_ forall t. (x : char -> bool) : parser_ char t =
+    x |> $'FParsec.CharParsers.satisfy'
+
+inl none_of_ (x : list char) : parser_ char () =
+    x
+    |> listm'.box
+    |> listm'.to_array'
+    |> $'FParsec.CharParsers.noneOf'
+
+inl any_of_ (x : list char) : parser_ char () =
+    x
+    |> listm'.box
+    |> listm'.to_array'
+    |> $'FParsec.CharParsers.anyOf'
+
+inl skip_any_of_ (x : list char) : parser_ () () =
+    x
+    |> listm'.box
+    |> listm'.to_array'
+    |> $'FParsec.CharParsers.skipAnyOf'
+
+inl between_ forall t u v x. (a : parser_ t x) (b : parser_ u x) (c : parser_ v x) : parser_ v x =
+    c |> $'FParsec.Primitives.between' a b
+
+inl many_chars_ forall t. (x : parser_ char t) : parser_ string t =
+    x |> $'FParsec.CharParsers.manyChars'
+
+inl many1_chars_ forall t. (x : parser_ char t) : parser_ string t =
+    x |> $'FParsec.CharParsers.many1Chars'
+
+inl many_strings_ forall t. (x : parser_ string t) : parser_ string t =
+    x |> $'FParsec.CharParsers.manyStrings'
+
+inl skip_any_string_ forall t. (n : int) : parser_ () t =
+    n |> $'FParsec.CharParsers.skipAnyString'
+
+inl many1_strings_ forall t. (x : parser_ string t) : parser_ string t =
+    x |> $'FParsec.CharParsers.many1Strings'
+
+inl opt_ forall t u. (a : parser_ t u) : parser_ (optionm'.option' t) u =
+    a |> $'FParsec.Primitives.opt'
+
+inl choice_ forall t u. (a : list (parser_ t u)) : parser_ t u =
+    a
+    |> listm'.box
+    |> seq.of_list'
+    |> $'FParsec.Primitives.choice'
+
+inl delay_ forall t u. (fn : () -> parser_ t u) : parser_ t u =
+    fn |> $'FParsec.Primitives.parse.Delay'
+
+inl peek_ forall t u. (a : parser_ t u) : parser_ char u =
+    $'!a.Peek ()'
+
+inl not_followed_by_ forall t u. (a : parser_ t u) : parser_ () u =
+    a |> $'FParsec.Primitives.notFollowedBy'
+
+inl sep_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    b |> $'FParsec.Primitives.sepBy' a
+
+inl sep_by1_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    b |> $'FParsec.Primitives.sepBy1' a
+
+inl sep_end_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+    b |> $'FParsec.Primitives.sepEndBy' a
+
+inl many_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+    a |> $'FParsec.Primitives.many'
+
+inl many1_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+    a |> $'FParsec.Primitives.many1'
+
+inl many1_satisfy_ forall t. (x : char -> bool) : parser_ string t =
+    x |> $'FParsec.CharParsers.many1Satisfy'
+
+nominal parser_result'_ t u = $'FParsec.CharParsers.ParserResult<`t, `u>'
+
+inl run_ forall t. (parser : parser_ t ()) (x : string) : parser_result'_ t () =
+    x |> $'FParsec.CharParsers.run' parser
+
+union parser_result_ t u =
+    | Success : t * u * position_
+    | Failure : string * parser_error_ * u
+
+inl parser_result_ forall t u. = function
+    | Success (a, b, c) => $'`(parser_result'_ t u).Success (!a, !b, !c)' : parser_result'_ t u
+    | Failure (a, b, c) => $'`(parser_result'_ t u).Failure (!a, !b, !c)' : parser_result'_ t u
+
+inl parser_result'_ forall t u. (x : parser_result'_ t u) : parser_result_ t u =
+    $'let mutable _!x = None '
+    $'match !x with'
+    $'| FParsec.CharParsers.Success (a, b, c) -> (' : ()
+    $'(fun () ->'
+    $'(fun () ->'
+    (Success ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit
+    $')'
+    $'|> fun x -> x ()'
+    $') () ) | FParsec.CharParsers.Failure (a, b, c) -> (' : ()
+    $'(fun () ->'
+    $'(fun () ->'
+    (Failure ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit
+    $')'
+    $'|> fun x -> x ()'
+    $') () )' : ()
+    $'|> fun x -> _!x <- Some x'
+    $'match _!x with Some x -> x | None -> failwith "??? / _!x=None"'
+
+inl parse_ parser input : result _ _ =
+    match input |> run_ parser |> parser_result'_ with
+    | Success (result, b, c) => Ok (result, c)
+    | Failure (error_msg, b, c) => Error (error_msg, b)
+
+/// ### split_args
+let split_args (args : string) : result (array_base (string * position_)) (string * parser_error_) =
+    inl esc = [ '\\'; '`' ]
+    inl quotes = [ '"' ]
+    inl special = esc ++ quotes
+    inl p_esc_char c =
+        p_char_ c >>.$ any_char_ () |>>$ fun c' => $'$"{!c}{!c'}"'
+    inl p_word = special |> none_of_ |>>$ sm'.obj_to_string
+    inl p_plain = special ++ [ ' ' ] |> none_of_ |> many1_chars_
+    inl p_text = p_word |> many1_strings_
+    inl p_esc = esc |> listm.map p_esc_char |> choice_
+    inl p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat "")
+    inl p_quoted_all = p_quoted |> between_ (p_char_ '"') (p_char_ '"')
+    inl p_esc_root = (p_esc |>>$ (fun _ => "")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat "")
+    inl p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root
+    inl p_args = spaces1_ () |> sep_by_ p_content
+    args
+    |> parse_ p_args
+    |> resultm.map fun (a', b') =>
+        (
+            (
+                a'
+                |> listm'.to_array'
+                |> a
+                |> am.map fun x => x, b'
+                |> fun (a x : _ int _) => x
+            )
+        )

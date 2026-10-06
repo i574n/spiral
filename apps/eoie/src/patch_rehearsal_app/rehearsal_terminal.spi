@@ -1,3 +1,0 @@
-inl rust_global (x : string) : () = !!!!Global(x)
-
-inl emit_runtime () : () = rust_global "use eoie_patch_compat_driver::{patch_plan_error, patch_prepare_source_owned, patch_rehearse_context_owned};\n\n#[must_use]\nfn patch_mutation_error(message: &str) -> i32 {\n    eprintln!(\"eoie error: {message}\");\n    2\n}\n"

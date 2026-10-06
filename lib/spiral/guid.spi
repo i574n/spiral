@@ -15,6 +15,7 @@ type guid_switch =
         Lua : string
         Fsharp : $'System.Guid'
         Python : guid_python
+        Rust : $'Rc<str>'
     }
 nominal guid = $'backend_switch `(guid_switch)'
 
@@ -24,7 +25,11 @@ inl new_guid (x : string) : guid =
         | Rust (Some (Contract)) => fun _ => null ()
         | Gleam => fun x => $'!x '
         | Lua => fun x => $'!x '
-        | Cuda => fun x => $'!x '
+        | Cuda => fun x =>
+            global "import uuid" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)
+            $'!x '
+        // Native Rust: lowercase, like System.Guid's text
+        | RustNative => fun x => $'Rc::<str>::from(!x.to_lowercase())'
         | _ => fun x => $'!x |> `guid '
 
 /// ### new_raw_guid
@@ -35,7 +40,12 @@ inl new_raw_guid () : guid =
             $'gleam_uuid.v4_string ()' : guid
         Lua = fun () => $'""' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
-        Python = fun () => $'uuid.uuid4()' : guid
+        Python = fun () =>
+            // the nominal's type-level `global "import uuid"` doesn't reach the output (FINDINGS 52)
+            global "import uuid"
+            $'uuid.uuid4()' : guid
+        // Native Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).
+        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid
     }
 
 /// ### hash_guid

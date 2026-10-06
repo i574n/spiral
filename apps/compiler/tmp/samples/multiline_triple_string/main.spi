@@ -1,0 +1,41 @@
+// Triple-quoted strings: raw text (no escapes, no interpolation) that may span lines. Every line inside keeps
+// its newline, blank lines included, and nothing in it is a comment, a macro or a block boundary: lines at
+// column 0 inside a string don't start a new top-level statement.
+inl banner () = """
+top
+
+level"""
+
+inl main () : i32 =
+    inl ~quoted = """a "b" c"""
+    inl ~empty = """"""
+    inl ~raw = """a\nb"""
+    inl ~body = """first
+(* not a comment *)
+// nor this
+
+$"not a macro" !x
+inl fake () = 1
+  indented"""
+    inl ~top = banner ()
+    inl len (s : string) : i32 = sm.length s
+    if len quoted <> 7i32 then 1i32
+    elif sm.index quoted 2i32 <> '"' then 2i32
+    elif len empty <> 0i32 then 3i32
+    elif len raw <> 4i32 then 4i32
+    elif sm.index raw 1i32 <> '\\' then 5i32
+    elif len body <> 83i32 then 6i32
+    elif sm.index body 5i32 <> '\n' then 7i32
+    elif sm.index body 37i32 <> '\n' then 8i32
+    elif sm.index body 38i32 <> '\n' then 9i32
+    elif sm.index body 39i32 <> '$' then 10i32
+    elif sm.index body 57i32 <> 'i' then 11i32
+    elif sm.index body 82i32 <> 'd' then 12i32
+    elif len top <> 11i32 then 13i32
+    elif sm.index top 0i32 <> '\n' then 14i32
+    elif sm.index top 5i32 <> '\n' then 15i32
+    else 0i32
+
+// A string that closes on the file's last line.
+inl unused () = """unused
+text"""

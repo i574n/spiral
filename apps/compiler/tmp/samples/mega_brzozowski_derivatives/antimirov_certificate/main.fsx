@@ -48,7 +48,7 @@ and UH8 =
     | UH8_0
     | UH8_1 of US0 * UH8
 and [<Struct>] US5 =
-    | US5_2 of f2_0 : UH3 * f2_1 : US0 * f2_2 : UH3
+    | US5_0 of f0_0 : UH3 * f0_1 : US0 * f0_2 : UH3
 and [<Struct>] US4 =
     | US4_0
     | US4_1 of f1_0 : US5
@@ -56,7 +56,7 @@ and UH9 =
     | UH9_0
     | UH9_1 of US2 * UH9
 and [<Struct>] US7 =
-    | US7_2 of f2_0 : UH6 * f2_1 : US2 * f2_2 : UH6
+    | US7_0 of f0_0 : UH6 * f0_1 : US2 * f0_2 : UH6
 and [<Struct>] US6 =
     | US6_0
     | US6_1 of f1_0 : US7

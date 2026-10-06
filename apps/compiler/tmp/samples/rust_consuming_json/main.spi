@@ -1,0 +1,12 @@
+// A crate method that takes `self` under the name `json` or `borsh` (near-workspaces' ExecutionFinalResult, reqwest's
+// Response): a spliced variable that is used again is cloned there, the last use moves (rustc E0382 otherwise).
+inl native (k : i32) : i32 =
+    global "#[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) -> i32 { self.0 * 2 } }"
+    inl o : $'Outcome' = $'Outcome(!k)'
+    inl a : i32 = $'!o.json()'
+    inl b : i32 = $'!o.borsh()'
+    a + b
+
+inl main () : i32 =
+    inl ~k = 7i32
+    !!!!BackendSwitch({ C = fun () => 22i32 : i32; Rust = fun () => native k : i32 })

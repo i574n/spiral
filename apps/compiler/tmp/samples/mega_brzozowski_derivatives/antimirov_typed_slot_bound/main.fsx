@@ -16,26 +16,26 @@ and UH1 =
     | UH1_0
     | UH1_1 of UH0 * UH1
 and UH2 =
-    | UH2_2 of US0
+    | UH2_0 of US0
 and UH3 =
-    | UH3_3 of UH2 * UH2
+    | UH3_0 of UH2 * UH2
 and UH4 =
-    | UH4_5 of UH3
+    | UH4_0 of UH3
 and UH5 =
-    | UH5_4 of UH4 * UH2
+    | UH5_0 of UH4 * UH2
 and UH6 =
     | UH6_0
     | UH6_1 of UH6
 and UH10 =
     | UH10_0
 and UH9 =
+    | UH9_0 of UH10
     | UH9_1 of UH10
-    | UH9_2 of UH10
 and UH8 =
-    | UH8_5 of UH9
+    | UH8_0 of UH9
 and UH7 =
-    | UH7_3 of UH8
-    | UH7_4 of UH10
+    | UH7_0 of UH8
+    | UH7_1 of UH10
 and [<Struct>] US3 =
     | US3_0
     | US3_1 of f1_0 : UH7
@@ -69,11 +69,11 @@ and UH12 =
     | UH12_0
     | UH12_1 of UH11 * UH12
 and UH13 =
-    | UH13_2 of US8
+    | UH13_0 of US8
 and UH14 =
-    | UH14_5 of UH13
+    | UH14_0 of UH13
 and UH15 =
-    | UH15_5 of UH10
+    | UH15_0 of UH10
 and [<Struct>] US10 =
     | US10_0
     | US10_1 of f1_0 : UH15
@@ -84,11 +84,11 @@ and [<Struct>] US11 =
     | US11_0
     | US11_1 of f1_0 : UH15
 and UH16 =
-    | UH16_3 of UH13 * UH13
+    | UH16_0 of UH13 * UH13
 and UH17 =
-    | UH17_5 of UH16
+    | UH17_0 of UH16
 and UH18 =
-    | UH18_4 of UH17 * UH13
+    | UH18_0 of UH17 * UH13
 let rec method3 (v0 : UH0, v1 : UH0) : US1 =
     match v0 with
     | UH0_3(v53, v54) -> (* RegexAlt *)

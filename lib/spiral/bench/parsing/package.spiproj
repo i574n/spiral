@@ -1,0 +1,9 @@
+packageDir: ../../..
+packages:
+    |core-
+    spiral-
+modules:
+    harness
+    fparsec
+    pure_split
+    main

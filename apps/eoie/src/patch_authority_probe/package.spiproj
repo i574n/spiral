@@ -1,8 +1,0 @@
-packages:
-    patch_control_domain
-    patch_effect_domain
-    patch_driver_domain
-    patch_orchestration_domain
-    patch_fallback_domain
-modules:
-    main

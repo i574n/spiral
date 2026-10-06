@@ -75,16 +75,16 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
     inl error (e : exn) = e |> Error : result t exn
     backend_switch {
         Lua = fun () =>
-            $'fn = !fn '
-            $'ok = !ok '
-            $'error = !error '
-            $'ex_fn = !ex_fn '
-            $'local status, result = pcall(fn)'
+            $'local resultm_fn = !fn '
+            $'local resultm_ok = !ok '
+            $'local resultm_error = !error '
+            $'local resultm_ex_fn = !ex_fn '
+            $'local status, result = pcall(resultm_fn)'
             $'local r = nil'
             $'if status then'
-            $'    r = ok(result)'
+            $'    r = resultm_ok(result)'
             $'else'
-            $'    r = error(ex_fn(function() return result end))'
+            $'    r = resultm_error(resultm_ex_fn(function() return result end))'
             $'end'
             $'r' : result t exn
         Fsharp = fun () =>
@@ -116,6 +116,7 @@ inl get forall t e. (source : result t e) : t =
             Lua = fun () => $'"resultm.get / Error x: " .. tostring(!x)' : string
             Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
             Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
+            Rust = fun () => $'Rc::<str>::from(format\!("resultm.get / Error x: {:?}", !x))' : string
         }
         |> failwith
 
@@ -157,6 +158,7 @@ inl unwrap_err forall t u. (x : result t u) : u =
             Lua = fun () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
             Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
             Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+            Rust = fun () => $'Rc::<str>::from(format\!("resultm.unwrap_err / Ok x: {:?}", !x))' : string
         }
         |> failwith
     | Error x => x
@@ -189,11 +191,45 @@ inl result'_types () =
 type result'_switch t u =
     {
         Gleam : $'Result(`t, `u)'
-        Lua : $'Result(`t, `u)'
+        // Lua: the union too (see result'_union)
+        Lua : result t u
         Fsharp : $'Result<`t, `u>'
-        Python : $'Result<`t, `u>'
+        // native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
+        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
+        Python : result t u
+        Rust : $'Result<`t, `u>'
     }
 nominal result' t u = $'backend_switch `(result'_switch t u)'
+
+// Lua and native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
+// `Error e` from `Ok e`
+inl result'_union () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => true
+        Fsharp = fun () => false
+        Python = fun () => true
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => false
+    }
+
+inl result'_python () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => false
+        Python = fun () => true
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => false
+    }
 
 #!markdown
 
@@ -202,39 +238,50 @@ nominal result' t u = $'backend_switch `(result'_switch t u)'
 #!spiral
 
 inl unbox forall t u. (x : result' t u) : result t u =
-    inl ok x : result t u = Ok x
-    inl error x : result t u = Error x
-    inl ok = join ok
-    inl error = join error
-    backend_switch {
-        Gleam = fun () =>
-            $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
-        Lua = fun () =>
-            $'local ok = !ok '
-            $'local error = !error '
-            $'local r = nil'
-            $'if !x ~= nil then'
-            $'    r = ok(!x)'
-            $'else'
-            $'    r = error(!x)'
-            $'end'
-            $'r' : result t u
-        Fsharp = fun () =>
-            real
-                typecase t with
-                | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
-                | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
-            : result t u
-        Python = fun () =>
-            $'ok = !ok '
-            $'error = !error '
-            $'r = None'
-            $'if !x is not None:'
-            $'    r = ok(!x)'
-            $'else:'
-            $'    r = error(!x)'
-            $'r' : result t u
-    }
+    // native Python: result' already is the union (see result'_switch)
+    if result'_union ()
+    then $'!x ' : result t u
+    else
+        inl ok x : result t u = Ok x
+        inl error x : result t u = Error x
+        inl ok = join ok
+        inl error = join error
+        backend_switch {
+            Gleam = fun () =>
+                $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u
+            Lua = fun () =>
+                $'local resultm_ok = !ok '
+                $'local resultm_error = !error '
+                $'local r = nil'
+                $'if !x ~= nil then'
+                $'    r = resultm_ok(!x)'
+                $'else'
+                $'    r = resultm_error(!x)'
+                $'end'
+                $'r' : result t u
+            Fsharp = fun () =>
+                real
+                    typecase t with
+                    | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
+                    | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
+                : result t u
+            // unused (Python takes the branch above); kept so the other backends' output stays unchanged
+            Python = fun () =>
+                $'ok = !ok '
+                $'error = !error '
+                $'r = None'
+                $'if !x is not None:'
+                $'    r = ok(!x)'
+                $'else:'
+                $'    r = error(!x)'
+                $'r' : result t u
+            Rust = fun () =>
+                real
+                    typecase t with
+                    | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u
+                    | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u
+                : result t u
+        }
 
 #!markdown
 
@@ -243,21 +290,28 @@ inl unbox forall t u. (x : result' t u) : result t u =
 #!spiral
 
 inl box forall t u. (x : result t u) : result' t u =
-    match x with
-    | Ok x =>
-        backend_switch {
-            Gleam = fun () => $'Ok(!x)' : result' t u
-            Lua = fun () => $'!x ' : result' t u
-            Fsharp = fun () => $'Ok !x ' : result' t u
-            Python = fun () => $'!x ' : result' t u
-        }
-    | Error err =>
-        backend_switch {
-            Gleam = fun () => $'Error(!err)' : result' t u
-            Lua = fun () => $'!err ' : result' t u
-            Fsharp = fun () => $'Error !err ' : result' t u
-            Python = fun () => $'!err ' : result' t u
-        }
+    // native Python: the union value itself (a known case becomes a US constructor call)
+    if result'_union ()
+    then x |> dyn |> fun x => $'!x ' : result' t u
+    else
+        match x with
+        | Ok x =>
+            backend_switch {
+                Gleam = fun () => $'Ok(!x)' : result' t u
+                Lua = fun () => $'!x ' : result' t u
+                Fsharp = fun () => $'Ok !x ' : result' t u
+                // unused (Python takes the branch above); kept so the other backends' output stays unchanged
+                Python = fun () => $'!x ' : result' t u
+                Rust = fun () => $'Ok::<`t, `u>(!x)' : result' t u
+            }
+        | Error err =>
+            backend_switch {
+                Gleam = fun () => $'Error(!err)' : result' t u
+                Lua = fun () => $'!err ' : result' t u
+                Fsharp = fun () => $'Error !err ' : result' t u
+                Python = fun () => $'!err ' : result' t u
+                Rust = fun () => $'Err::<`t, `u>(!err)' : result' t u
+            }
 
 #!markdown
 
@@ -266,23 +320,35 @@ inl box forall t u. (x : result t u) : result' t u =
 #!spiral
 
 inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
-    backend_switch {
-        Gleam = fun () =>
-            result'_types ()
-            // inl fn = join fn
-            $'!x |> result.map(!fn)' : result' u e
-        Lua = fun () =>
-            if x =. $'nil'
-            then $'!x '
-            else fn $'!x ' |> fun x => $'!x ' : result' u e
-        Fsharp = fun () =>
-            inl fn = join fn
-            $'!x |> Result.map !fn ' : result' u e
-        Python = fun () =>
-            if x =. $'None'
-            then $'!x '
-            else fn $'!x ' |> fun x => $'!x ' : result' u e
-    }
+    // native Python: map through the union, as the native Rust arm does
+    if result'_union ()
+    then x |> unbox |> map fn |> box
+    else
+        backend_switch {
+            Gleam = fun () =>
+                result'_types ()
+                // inl fn = join fn
+                $'!x |> result.map(!fn)' : result' u e
+            Lua = fun () =>
+                if x =. $'nil'
+                then $'!x '
+                else fn $'!x ' |> fun x => $'!x ' : result' u e
+            Fsharp = fun () =>
+                inl fn = join fn
+                $'!x |> Result.map !fn ' : result' u e
+            // unused (Python takes the branch above); kept so the other backends' output stays unchanged
+            Python = fun () =>
+                if x =. $'None'
+                then $'!x '
+                else fn $'!x ' |> fun x => $'!x ' : result' u e
+            // native Rust: result' is Result<T, E>; map through the union (unbox/box carry the native arms)
+            Rust = fun () =>
+                inl r : result u e =
+                    match unbox x with
+                    | Ok v => Ok (fn v)
+                    | Error e => Error e
+                box r
+        }
 
 #!spiral
 
@@ -293,7 +359,6 @@ inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 inl x : _ _ string = Ok 3i32
 inl y : _ i32 _ = Error "error1"
@@ -329,8 +394,22 @@ nominal anyhow_error =
         $'' : $'anyhow_Error'
     )
 
-inl anyhow_error error =
-    !\\(error, $'"anyhow::anyhow\!($0)"')
+inl anyhow_error error : anyhow_error =
+    inl fable () : anyhow_error =
+        !\\(error, $'"anyhow::anyhow\!($0)"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // Native strings are `Rc<str>` (not Send + Sync): anyhow takes them through a format string.
+        Rust = fun () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
+    }
 
 #!markdown
 
@@ -344,7 +423,18 @@ inl try' forall t u. (x : result' t u) : t =
             typecase t with
             | () => true
             | _ => false
-    if is_unit
+    // native Python has no `?`: an Error raises, as unwrap'' does
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok x => x
+        | Error e =>
+            inl msg : string =
+                if result'_python ()
+                then $'f"resultm.try\' / e: {!e}"'
+                else $'"resultm.try\' / e: " .. tostring(!e)'
+            failwith msg
+    elif is_unit
     then (!\\(x, $'"true; $0?"') : bool) |> fun _ => $''
     else !\\(x, $'"$0?"')
 
@@ -364,7 +454,17 @@ inl to_try forall t u. (x : result' t u) : rust.try t =
 #!spiral
 
 inl unwrap' forall t u. (x : result' t u) : t =
-    !\\(x, $'"$0.unwrap()"')
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok x => x
+        | Error e =>
+            inl msg : string =
+                if result'_python ()
+                then $'f"resultm.unwrap\' / e: {!e}"'
+                else $'"resultm.unwrap\' / e: " .. tostring(!e)'
+            failwith msg
+    else !\\(x, $'"$0.unwrap()"')
 
 #!markdown
 
@@ -373,9 +473,20 @@ inl unwrap' forall t u. (x : result' t u) : t =
 #!spiral
 
 inl unwrap'' forall t u. (x : result' t u) : t =
-    run_target function
-        | Rust _ => fun () => x |> unwrap'
-        | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok x => x
+        | Error e =>
+            inl msg : string =
+                if result'_python ()
+                then $'f"resultm.unwrap\'\' / e: {!e}"'
+                else $'"resultm.unwrap\'\' / e: " .. tostring(!e)'
+            failwith msg
+    else
+        run_target function
+            | Rust _ | RustNative => fun () => x |> unwrap'
+            | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
 
 #!markdown
 
@@ -384,7 +495,17 @@ inl unwrap'' forall t u. (x : result' t u) : t =
 #!spiral
 
 inl unwrap_err' forall t u. (x : result' t u) : u =
-    $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok x =>
+            inl msg : string =
+                if result'_python ()
+                then $'f"resultm.unwrap_err\' / x: {!x}"'
+                else $'"resultm.unwrap_err\' / x: " .. tostring(!x)'
+            failwith msg
+        | Error x => x
+    else $'match !x with Ok x -> failwith $"resultm.unwrap_err\' / x: %A{x}" | Error x -> x'
 
 #!markdown
 
@@ -393,22 +514,26 @@ inl unwrap_err' forall t u. (x : result' t u) : u =
 #!spiral
 
 inl unbox' forall t u. (x : result' t u) : result t u =
-    inl ok x : result t u = Ok x
-    inl ok = join ok
-    inl error x : result t u = Error x
-    inl error = join error
-    real
-        typecase t with
-        | () =>
-            (~!\\)
-                `((result' t u -> result t u) * (result' t u -> result t u))
-                `(result t u)
-                ((ok, error, x), ($'"match $2 { Ok(()) => $0(()), Err(e) => $1(e) }"' : string))
-        | _ =>
-            (~!\\)
-                `((result' t u -> result t u) * (result' t u -> result t u))
-                `(result t u)
-                ((ok, error, x), ($'"match $2 { Ok(x) => $0(x), Err(e) => $1(e) }"' : string))
+    // Natively a unit closure takes no argument (`$0(())` doesn't build), so the native backend uses unbox's Rust arm.
+    if rust.is_native () || result'_union ()
+    then unbox x
+    else
+        inl ok x : result t u = Ok x
+        inl ok = join ok
+        inl error x : result t u = Error x
+        inl error = join error
+        real
+            typecase t with
+            | () =>
+                (~!\\)
+                    `((result' t u -> result t u) * (result' t u -> result t u))
+                    `(result t u)
+                    ((ok, error, x), ($'"match $2 { Ok(()) => $0(()), Err(e) => $1(e) }"' : string))
+            | _ =>
+                (~!\\)
+                    `((result' t u -> result t u) * (result' t u -> result t u))
+                    `(result t u)
+                    ((ok, error, x), ($'"match $2 { Ok(x) => $0(x), Err(e) => $1(e) }"' : string))
 
 #!markdown
 
@@ -417,9 +542,12 @@ inl unbox' forall t u. (x : result' t u) : result t u =
 #!spiral
 
 inl map' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
-    (!\\(source, $'"true; let _result_map_ = $0.map(|x| { //"') : bool) |> ignore
-    (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
-    !\($'"_result_map_"')
+    if result'_union ()
+    then source |> unbox |> map fn |> box
+    else
+        (!\\(source, $'"true; let _result_map_ = $0.map(|x| { //"') : bool) |> ignore
+        (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+        !\($'"_result_map_"')
 
 #!markdown
 
@@ -428,9 +556,12 @@ inl map' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
 #!spiral
 
 inl map'' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
-    inl fn = join fn
-    inl source = join source
-    !\($'"!source.map(|x| !fn(x))"')
+    if result'_union ()
+    then source |> unbox |> map fn |> box
+    else
+        inl fn = join fn
+        inl source = join source
+        !\($'"!source.map(|x| !fn(x))"')
 
 #!markdown
 
@@ -439,12 +570,15 @@ inl map'' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
 #!spiral
 
 inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    inl fn = join fn
-    run_target_args (fun () => fn) function
-        | Rust _ => fun fn =>
-            !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
-        | _ => fun fn =>
-            $'match !source with Ok x -> Ok x | Error x -> Error (!fn x)' : result' t u
+    if result'_union ()
+    then source |> unbox |> map_error fn |> box
+    else
+        inl fn = join fn
+        run_target_args (fun () => fn) function
+            | Rust _ | RustNative => fun fn =>
+                !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+            | _ => fun fn =>
+                $'match !source with Ok x -> Ok x | Error x -> Error (!fn x)' : result' t u
 
 #!markdown
 
@@ -453,9 +587,12 @@ inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u 
 #!spiral
 
 inl map_error'' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
-    (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
-    !\($'"_result_map_error__"')
+    if result'_union ()
+    then source |> unbox |> map_error fn |> box
+    else
+        (!\\(source, $'"true; let _result_map_error__ = $0.map_err(|x| { //"') : bool) |> ignore
+        (!\\(fn !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+        !\($'"_result_map_error__"')
 
 #!markdown
 
@@ -464,7 +601,9 @@ inl map_error'' forall t e u. (fn : e -> u) (source : result' t e) : result' t u
 #!spiral
 
 inl map_error''' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
+    if result'_union ()
+    then source |> unbox |> map_error fn |> box
+    else !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
 
 #!markdown
 
@@ -473,7 +612,9 @@ inl map_error''' forall t e u. (fn : e -> u) (source : result' t e) : result' t 
 #!spiral
 
 inl option_ok_or forall t e. (e : e) (source : optionm'.option' t) : result' t e =
-    !\\(source, $'"$0.ok_or(!e)"')
+    if result'_union ()
+    then source |> optionm'.unbox |> from_option_error e |> box
+    else !\\(source, $'"$0.ok_or(!e)"')
 
 #!markdown
 
@@ -523,7 +664,12 @@ inl as_ref' forall t e. (source : rust.ref (result' t e)) : result' (rust.ref t)
 #!spiral
 
 inl unwrap_or' forall t u. (default : t) (x : result' t u) : t =
-    !\\((x, default), $'"$0.unwrap_or($1)"')
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok x => x
+        | Error _ => default
+    else !\\((x, default), $'"$0.unwrap_or($1)"')
 
 #!markdown
 
@@ -541,9 +687,16 @@ inl expect forall t u. (error : rust.ref string) (x : result' t u) : t =
 #!spiral
 
 inl is_err forall t u. (x : result' t u) : bool =
-    run_target function
-        | Rust _ => fun () => !\\(x, $'"$0.is_err()"')
-        | _ => fun () => true
+    // native Python tells the cases apart (the `_` arm below is a stub that answers true for Ok too)
+    if result'_union ()
+    then
+        match unbox x with
+        | Ok _ => false
+        | Error _ => true
+    else
+        run_target function
+            | Rust _ | RustNative => fun () => !\\(x, $'"$0.is_err()"')
+            | _ => fun () => true
 
 #!markdown
 
@@ -552,9 +705,12 @@ inl is_err forall t u. (x : result' t u) : bool =
 #!spiral
 
 inl ok' forall t. (x : result' t _) : optionm'.option' t =
-    run_target function
-        | Rust _ => fun () => !\\(x, $'"$0.ok()"')
-        | _ => fun () => $'match !x with Ok x -> Some x | Error _ -> None'
+    if result'_union ()
+    then x |> unbox |> ok |> optionm'.box
+    else
+        run_target function
+            | Rust _ | RustNative => fun () => !\\(x, $'"$0.ok()"')
+            | _ => fun () => $'match !x with Ok x -> Some x | Error _ -> None'
 
 #!markdown
 
@@ -563,9 +719,12 @@ inl ok' forall t. (x : result' t _) : optionm'.option' t =
 #!spiral
 
 inl err forall t u. (x : u) : result' t u =
-    run_target function
-        | Rust _ => fun () => !\\(x, $'"Err($0)"')
-        | _ => fun () => $'!x |> Error'
+    if result'_union ()
+    then (Error x : result t u) |> box
+    else
+        run_target function
+            | Rust _ | RustNative => fun () => !\\(x, $'"Err($0)"')
+            | _ => fun () => $'!x |> Error'
 
 #!markdown
 
@@ -574,9 +733,12 @@ inl err forall t u. (x : u) : result' t u =
 #!spiral
 
 inl ok'' forall t u. (x : t) : result' t u =
-    run_target function
-        | Rust _ => fun () => !\\(x, $'"Ok($0)"')
-        | _ => fun () => $'!x |> Ok'
+    if result'_union ()
+    then (Ok x : result t u) |> box
+    else
+        run_target function
+            | Rust _ | RustNative => fun () => !\\(x, $'"Ok($0)"')
+            | _ => fun () => $'!x |> Ok'
 
 #!markdown
 
@@ -585,7 +747,17 @@ inl ok'' forall t u. (x : t) : result' t u =
 #!spiral
 
 inl transpose forall t u. (x : optionm'.option' (result' t u)) : result' (optionm'.option' t) u =
-    !\\(x, $'"$0.transpose()"')
+    if result'_union ()
+    then
+        inl r : result (optionm'.option' t) u =
+            match optionm'.unbox x with
+            | Some x =>
+                match unbox x with
+                | Ok x => Ok (optionm'.some' x)
+                | Error e => Error e
+            | None => Ok (optionm'.none' ())
+        box r
+    else !\\(x, $'"$0.transpose()"')
 
 #!markdown
 

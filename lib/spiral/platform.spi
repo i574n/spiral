@@ -51,6 +51,8 @@ inl is_windows () : bool =
     run_target function
         | Rust _ => fun () =>
             !\($'"cfg\!(windows)"')
+        | RustNative => fun () =>
+            $'cfg\!(windows)' : bool
         | Fsharp _ => fun () =>
             Windows |> os_platform |> is_os_platform
         | Gleam _ => fun () =>

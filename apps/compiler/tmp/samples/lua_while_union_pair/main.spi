@@ -1,0 +1,19 @@
+// sm'.dib's to_char_array test in small, on core only. `am.init` is a while loop writing an array (the loop of the
+// cell); the second loop's body has a statement-position `if` and ends in a unit return; the match reads a list built
+// by the loop, whose Cons case carries a pair payload (head, tail). Lua used to emit each loop as a `loopN(v0, v1)`
+// helper with `return nil` before another statement (a syntax error) and bound no pair payload variable.
+inl main () : i32 =
+    inl ar : a i32 i32 = am.init 3 (fun j => j * 5)
+    inl i = mut 0i32
+    inl odd = mut 0i32
+    inl acc = mut (Nil : list i32)
+    loopw.while (fun _ => *i < 4) fun _ =>
+        inl x = *i
+        if x % 2 = 1 then odd <- *odd + 1
+        acc <- Cons (x, *acc)
+        i <- x + 1
+    inl r =
+        match *acc with
+        | Cons (a, Cons (b, Cons (c, Cons (d, Nil)))) => a * 64 + b * 16 + c * 4 + d
+        | _ => -1
+    r + *odd + index ar 2 - index ar 1

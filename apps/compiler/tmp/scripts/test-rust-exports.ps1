@@ -18,6 +18,14 @@ if (-not $rustc) { throw 'rustc is required for the Rust export contracts.' }
 $work = Join-Path (Get-SpiralCacheDir) ('rust-exports/' + [guid]::NewGuid().ToString('N'))
 $fixtures = Join-Path $BundleRoot 'tests/rust-exports'
 
+function New-ExportCase([string]$Text, [string[]]$Expected) {
+    # A bare @(source, @(phrases)) flattens, so the fallback phrase would be a third element.
+    $pair = [object[]]::new(2)
+    $pair[0] = $Text
+    $pair[1] = [string[]]$Expected
+    ,$pair
+}
+
 function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedDictionary]$Cases) {
     # One compiler process per case. A second BuildFile in the same process can
     # sit until the batch timeout on Linux, which used to leave the results file short.
@@ -31,13 +39,17 @@ function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedD
         if (Test-Path -LiteralPath $outputPath) { Remove-Item -LiteralPath $outputPath -Force }
         $log = & $dotnet $compiler --backend Rust $inputPath $outputPath 2>&1 | Out-String
         $code = $LASTEXITCODE
-        $expected = $Cases[$case][1]
-        if ($expected) {
-            if ($code -eq 0 -or -not $log.Contains($expected) -or (Test-Path -LiteralPath $outputPath)) {
-                throw "Expected $case rejection (exit $code): $log"
+        $expected = @($Cases[$case][1] | Where-Object { $_ })
+        $published = Test-Path -LiteralPath $outputPath
+        if ($expected.Count) {
+            $matched = $false
+            foreach ($part in $expected) { if ($log.Contains([string]$part)) { $matched = $true } }
+            if ($code -eq 0 -or -not $matched -or $published) {
+                $need = $expected -join ' | '
+                throw "Expected $case rejection (exit $code, matched=$matched, published=$published, need='$need'): $log"
             }
-        } elseif ($code -ne 0 -or -not (Test-Path -LiteralPath $outputPath)) {
-            throw "Rust library compilation failed for ${case} (exit $code): $log"
+        } elseif ($code -ne 0 -or -not $published) {
+            throw "Rust library compilation failed for ${case} (exit $code, published=$published): $log"
         }
     }
 }
@@ -59,9 +71,9 @@ $source = [IO.File]::ReadAllText((Join-Path $exports 'main.spi'))
 $captured = '    inl ~k = 1i32' + "`n" + '    export "export_captured" ((fun (a, b) => choose a k) : i32 * i32 -> i32)' + "`n" + '    0i32'
 Invoke-Cases $exports ([ordered]@{
     exports = @($source, '')
-    missing = @($source.Replace('=> choose first second', '=> absent first second'), 'has a type error somewhere in its path')
-    wrong_signature = @($source.Replace('(fun value => opaque value) : string -> u64', '(fun value => opaque value) : i32 -> u64'), 'has a type error somewhere in its path')
-    wrong_tuple = @($source.Replace(': string -> string * string * string * string * string)', ': string -> string * string * string * string * i32)'), 'has a type error somewhere in its path')
+    missing = (New-ExportCase ($source.Replace('=> choose first second', '=> absent first second')) @('Unbound variable: absent.', 'has a type error somewhere in its path'))
+    wrong_signature = (New-ExportCase ($source.Replace('(fun value => opaque value) : string -> u64', '(fun value => opaque value) : i32 -> u64')) @('Expected: i32', 'has a type error somewhere in its path'))
+    wrong_tuple = (New-ExportCase ($source.Replace(': string -> string * string * string * string * string)', ': string -> string * string * string * string * i32)')) @('Expected: string * string * string * string * i32', 'has a type error somewhere in its path'))
     captured = @($source.Replace('    0i32', $captured), 'runtime free variables')
     duplicate = @($source.Replace('"export_echo"', '"export_scalar"'), 'Duplicate export: export_scalar')
 })

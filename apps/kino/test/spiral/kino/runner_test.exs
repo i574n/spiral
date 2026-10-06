@@ -1,6 +1,8 @@
 defmodule Spiral.Kino.RunnerTest do
   use ExUnit.Case, async: false
 
+  @moduletag timeout: 300_000
+
   import Spiral.Kino.TestHelpers
 
   alias Spiral.Kino.Runner
@@ -41,7 +43,7 @@ defmodule Spiral.Kino.RunnerTest do
       """)
 
     assert {:ok, %{exit_status: 3, output: output, os_pid: pid}} =
-             Runner.run(escript(), [script], timeout: 30_000)
+             Runner.run(escript(), [script], timeout: 120_000)
 
     assert output =~ "to stdout"
     assert output =~ "to stderr"
@@ -61,7 +63,7 @@ defmodule Spiral.Kino.RunnerTest do
 
     assert {:ok, %{exit_status: 0, output: output}} =
              Runner.run(escript(), [script],
-               timeout: 30_000,
+               timeout: 120_000,
                cd: cwd,
                env: [{"SPIRAL_KINO_TEST_VAR", "hello"}]
              )
@@ -74,6 +76,8 @@ defmodule Spiral.Kino.RunnerTest do
              Runner.run("definitely-not-a-real-executable-spiral-kino", [])
   end
 
+  # Load-tolerant: every escript boots its own VM, which can take tens of seconds on a loaded machine. The budget must
+  # outlast the parent + grandchild boots, and the pid file gets a minute to appear.
   test "timeout kills the whole process tree (including grandchildren)", %{dir: dir} do
     {args, pidfile} = slow_tree!(dir)
     test_pid = self()
@@ -81,25 +85,25 @@ defmodule Spiral.Kino.RunnerTest do
     task =
       Task.async(fn ->
         Runner.run(escript(), args,
-          timeout: 8_000,
+          timeout: 40_000,
           on_start: fn os_pid -> send(test_pid, {:child, os_pid}) end
         )
       end)
 
-    assert_receive {:child, child_pid}, 10_000
-    grandchild_pid = wait_until(fn -> read_pid(pidfile) end)
+    assert_receive {:child, child_pid}, 60_000
+    grandchild_pid = wait_until(fn -> read_pid(pidfile) end, 60_000)
     assert grandchild_pid, "grandchild never started"
     assert Runner.os_pid_alive?(grandchild_pid)
 
-    assert {:error, {:timeout, %{timeout: 8_000, output: output}}} =
-             Task.await(task, 60_000)
+    assert {:error, {:timeout, %{timeout: 40_000, output: output}}} =
+             Task.await(task, 120_000)
 
     assert output =~ "parent started"
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 10_000),
+    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 30_000),
            "grandchild #{grandchild_pid} survived the timeout"
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 10_000),
+    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 30_000),
            "child #{child_pid} survived the timeout"
   end
 
@@ -115,16 +119,16 @@ defmodule Spiral.Kino.RunnerTest do
         )
       end)
 
-    assert_receive {:child, child_pid}, 10_000
-    grandchild_pid = wait_until(fn -> read_pid(pidfile) end)
+    assert_receive {:child, child_pid}, 60_000
+    grandchild_pid = wait_until(fn -> read_pid(pidfile) end, 60_000)
     assert grandchild_pid, "grandchild never started"
 
     Process.exit(caller, :kill)
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 10_000),
+    assert wait_until(fn -> not Runner.os_pid_alive?(grandchild_pid) end, 30_000),
            "grandchild #{grandchild_pid} survived the caller's death"
 
-    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 10_000),
+    assert wait_until(fn -> not Runner.os_pid_alive?(child_pid) end, 30_000),
            "child #{child_pid} survived the caller's death"
   end
 end

@@ -22,3 +22,20 @@ inl import_all forall t. (file : string) : t =
 inl import forall t. (name : string) (file : string) : t =
     real
         $'Fable.Core.JsInterop.import !name !file ' : t
+
+/// ### is_native
+// The native TypeScript backend (codegenTypescript, `--backend TypeScript`); false in the F# build, whose `TypeScript`
+// run_target arms are Fable's (F# text).
+inl is_native () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => false
+        Python = fun () => false
+        TypeScript = fun () => true
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => false
+    }

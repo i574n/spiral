@@ -1,5 +1,0 @@
-packages:
-    patch_rehearsal_app
-    patch_gated_app
-modules:
-    main

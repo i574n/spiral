@@ -1,1 +1,0 @@
-inl main () : i32 = handoff_sections_projection_source.main.main ()

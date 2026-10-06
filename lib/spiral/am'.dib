@@ -42,6 +42,7 @@ inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
         Lua = fun () => index a i
         Fsharp = fun () => index a i
         Python = fun () => $'!a[!i]' : el
+        Rust = fun () => index a i
     }
 
 #!markdown
@@ -181,7 +182,7 @@ inl choose f l =
 ///> cuda
 ////> rust // v0.get_mut()[v2.get().clone() as usize] = match v1.get().clone().as_ref() { ^ expected `i32`, found `usize`
 ///> typescript
-///> python
+///> cuda
 
 10
 |> init
@@ -205,7 +206,6 @@ inl sum a =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 10
 |> init
@@ -231,7 +231,6 @@ inl init_series start end inc : array_base _ =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 init_series 0i32 6 2
 |> a
@@ -268,7 +267,6 @@ inl last (ar : a _ _) =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 10
 |> init
@@ -296,7 +294,7 @@ inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
 ///> cuda
 ////> rust // match &v23 { Spiral_builder::US0::US0_0(x) => x.clone(), _ => unreachable!(), } == 5_i32
 ///> typescript
-///> python
+///> cuda
 
 10
 |> init
@@ -324,7 +322,7 @@ inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
 ////> cuda // Only stack allocated primitive types (i8,i16,i32,i64 and u8,u16,u32,u64 and f32,f64 and bool) are allowed in CuPy arrays.
 ///> rust
 ///> typescript
-///> python
+///> cuda
 
 am.init 3i32 ((*) 2)
 |> fun (a x : _ int _) => x
@@ -347,7 +345,6 @@ inl slice forall dim {int; number} el. from nearTo s : a dim el =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 inl x : _ i32 _ = a ;[ 1i32; 2; 3 ]
 x |> slice 0 0 |> _assert_eq (a ;[])
@@ -395,6 +392,7 @@ nominal vec t =
                 (fun () =>
                     global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Vec<$0>\")>]\n#endif\ntype Vec<'T> = class end"
                 ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Vec<$0>\")>]\n#endif\ntype Vec<'T> = class end") : () -> ()
         }
         $'' : $'Vec<`t>'
     )
@@ -406,7 +404,23 @@ nominal vec t =
 #!spiral
 
 inl from_vec forall dim el. (vec : vec el) : a dim el =
-    !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    inl fable () : a dim el =
+        !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () =>
+            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
+            inl vec = join vec
+            $'Rc::new(RefCell::new(!vec))' : a dim el
+    }
 
 #!markdown
 
@@ -415,7 +429,23 @@ inl from_vec forall dim el. (vec : vec el) : a dim el =
 #!spiral
 
 inl from_vec_base forall el. (vec : vec el) : array_base el =
-    !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    inl fable () : array_base el =
+        !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () =>
+            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
+            inl vec = join vec
+            $'Rc::new(RefCell::new(!vec))' : array_base el
+    }
 
 #!markdown
 
@@ -424,7 +454,20 @@ inl from_vec_base forall el. (vec : vec el) : array_base el =
 #!spiral
 
 inl to_vec forall t. (ab : array_base t) : vec t =
-    !\\(ab, $'"$0.to_vec()"')
+    inl fable () : vec t =
+        !\\(ab, $'"$0.to_vec()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!ab).borrow().clone()' : vec t
+    }
 
 #!markdown
 
@@ -433,7 +476,20 @@ inl to_vec forall t. (ab : array_base t) : vec t =
 #!spiral
 
 inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
-    !\($'$"!x.to_vec()"')
+    inl fable () : vec u =
+        !\($'$"!x.to_vec()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!x).clone()' : vec u
+    }
 
 #!markdown
 
@@ -442,7 +498,20 @@ inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
 #!spiral
 
 inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
-    !\($'$"!x.to_vec()"')
+    inl fable () : vec v =
+        !\($'$"!x.to_vec()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!x).to_vec()' : vec v
+    }
 
 #!markdown
 
@@ -501,11 +570,20 @@ inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
 
 inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
     inl vec = join vec
-    inl fn = join fn
-    (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
-    (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
-    !\($'"!vec"')
+    if rust.is_native ()
+    then
+        // a tuple element is one Rust value: see rust.one_param_fn
+        inl fn = rust.one_param_fn fn
+        inl fn = join fn
+        (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+        (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
+        !\($'"!vec"')
+    else
+        inl fn = join fn
+        (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+        // inl vec = vec |> rust.to_mut
+        (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
+        !\($'"!vec"')
 
 #!markdown
 
@@ -528,9 +606,17 @@ inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
 #!spiral
 
 inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
-    inl fn = join fn
-    inl ar = join ar
-    !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
+    if rust.is_native ()
+    then
+        // a tuple element is one Rust value: see rust.one_param_fn
+        inl fn i = rust.one_param_fn (fn i)
+        inl fn = join fn
+        inl ar = join ar
+        !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
+    else
+        inl fn = join fn
+        inl ar = join ar
+        !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
 
 #!markdown
 
@@ -539,17 +625,24 @@ inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
 #!spiral
 
 inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    (!\\(ar, $'"true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"') : bool) |> ignore
-    inl result = fn !\($'"x"')
-    inl is_unit =
-        real
-            typecase u with
-            | () => true
-            | _ => false
-    if is_unit
-    then (!\($'"true; }}).collect::<Vec<_>>()"') : bool) |> ignore
-    else (!\\(result, $'"true; $0 }).collect::<Vec<_>>()"') : bool) |> ignore
-    !\($'"_vec_map"')
+    if rust.is_native ()
+    then
+        // as vec_map': a macro bound to a tuple (element or result) would splice its first field only
+        inl fn = rust.one_param_fn fn
+        // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again
+        !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+    else
+        (!\\(ar, $'"true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"') : bool) |> ignore
+        inl result = fn !\($'"x"')
+        inl is_unit =
+            real
+                typecase u with
+                | () => true
+                | _ => false
+        if is_unit
+        then (!\($'"true; }}).collect::<Vec<_>>()"') : bool) |> ignore
+        else (!\\(result, $'"true; $0 }).collect::<Vec<_>>()"') : bool) |> ignore
+        !\($'"_vec_map"')
 
 #!markdown
 
@@ -558,10 +651,16 @@ inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
 #!spiral
 
 inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    inl fn = fn |> rust.func1_from
-    inl fn x =
-        fn |> rust.func1_move x
-    !\\((ar, fn), $'"$0.into_iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+    if rust.is_native ()
+    then
+        // a tuple element is one Rust value: see rust.one_param_fn
+        inl fn = rust.one_param_fn fn
+        !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+    else
+        inl fn = fn |> rust.func1_from
+        inl fn x =
+            fn |> rust.func1_move x
+        !\\((ar, fn), $'"$0.into_iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 #!markdown
 
@@ -592,7 +691,19 @@ inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =
 inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
-    (!\($'"true; }}); { //"') : bool) |> ignore
+    // Native Rust: close the for_each like vec_for_each'' (the reopened { balanced against Fable's own wrapping).
+    backend_switch {
+        Gleam = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Lua = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Fsharp = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Python = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        TypeScript = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Cpp = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        CppHost = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Delphi = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Cuda = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
+        Rust = fun () => (!\($'"true; }}); //"') : bool) |> ignore
+    }
 
 #!markdown
 
@@ -623,9 +734,15 @@ inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
 #!spiral
 
 inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
-    inl fn = join fn
-    inl ar = join ar
-    !\($'"!ar.into_iter().filter(|x| !fn(x.clone().clone())).collect::<Vec<_>>()"')
+    if rust.is_native ()
+    then
+        // a tuple element is one Rust value: see rust.one_param_fn
+        inl fn = rust.one_param_fn fn
+        !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
+    else
+        inl fn = join fn
+        inl ar = join ar
+        !\($'"!ar.into_iter().filter(|x| !fn(x.clone().clone())).collect::<Vec<_>>()"')
 
 #!markdown
 
@@ -634,7 +751,20 @@ inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
 #!spiral
 
 inl vec_len forall t. (vec : vec t) : convert.unativeint =
-    !\\(vec, $'"$0.len()"')
+    inl fable () : convert.unativeint =
+        !\\(vec, $'"$0.len()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint
+    }
 
 #!markdown
 
@@ -663,15 +793,23 @@ nominal slice t =
 
 #!spiral
 
+type slice'_switch el =
+    {
+        Gleam : $'Slice\'<`el>'
+        Lua : $'Slice\'<`el>'
+        Fsharp : $'Slice\'<`el>'
+        Python : $'Slice\'<`el>'
+        TypeScript : $'Slice\'<`el>'
+        Cpp : $'Slice\'<`el>'
+        CppHost : $'Slice\'<`el>'
+        Delphi : $'Slice\'<`el>'
+        Cuda : $'Slice\'<`el>'
+        Rust : $'_'
+    }
 nominal slice' el dim =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype Slice'<'T> = class end"
-                ) : () -> ()
-        }
-        $'' : $'Slice\'<`el>'
+        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype Slice'<'T> = class end"
+        $'' : $'backend_switch `(slice'_switch el)'
     )
 
 #!markdown
@@ -687,6 +825,7 @@ nominal slice'' el dim =
                 (fun () =>
                     global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0; 10]\")>]\n#endif\ntype Slice'_<'T> = class end"
                 ) : () -> ()
+            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0; 10]\")>]\n#endif\ntype Slice'_<'T> = class end") : () -> ()
         }
         $'' : $'Slice\'_<`el>'
     )
@@ -741,7 +880,7 @@ inl slice_range forall t dim.
 #!spiral
 
 inl new_slice forall el dim. (el : el) : slice' el dim =
-    !\\(el, $'"[$0; @dim]"')
+    !\\(el, $'"[$0; @dim as usize]"')
 
 #!markdown
 
@@ -769,7 +908,20 @@ inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =
 #!spiral
 
 inl to_le_bytes forall t. (x : t) : slice' u8 8 =
-    !\($'$"!x.to_le_bytes()"')
+    inl fable () : slice' u8 8 =
+        !\($'$"!x.to_le_bytes()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
+    }
 
 #!markdown
 
@@ -778,7 +930,20 @@ inl to_le_bytes forall t. (x : t) : slice' u8 8 =
 #!spiral
 
 inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
-    !\($'$"!x.as_bytes()"')
+    inl fable () : rust.ref (slice u8) =
+        !\($'$"!x.as_bytes()"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)
+    }
 
 #!markdown
 
@@ -808,12 +973,28 @@ instance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>
 #!spiral
 
 inl new_vec forall t. (items : list t) : vec t =
-    inl items =
-        (items, ("", 0i32))
-        ||> listm.foldBack fun (x : t) (acc, i) =>
-            $'"!x"' +. (if i = 0 then "" else ", ") +. acc, i + 1
-        |> fst
-    !\($'"vec\![" + !items + "]"')
+    inl fable () : vec t =
+        inl items =
+            (items, ("", 0i32))
+            ||> listm.foldBack fun (x : t) (acc, i) =>
+                $'"!x"' +. (if i = 0 then "" else ", ") +. acc, i + 1
+            |> fst
+        !\($'"vec\![" + !items + "]"')
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () => fable ()
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        Rust = fun () =>
+            inl v : vec t = $'Vec::new()'
+            items |> listm.iter fun x => $'!v.push(!x)' : ()
+            v
+    }
 
 #!spiral
 
@@ -846,7 +1027,21 @@ inl average forall el {number}. (a : a _ el) : el =
 #!spiral
 
 inl distinct forall dim el. (a : a dim el) : a dim el =
-    $'!a |> Array.distinct'
+    if rust.is_native ()
+    then
+        // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
+        // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need
+        inl a = $'!a ' : a int el
+        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
+        loopw.for' {from=0; nearTo=length a} fun i =>
+            inl x = index i a
+            inl n = length r
+            inl s = mut {j=0}
+            loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>
+                s <- {j=s.j + 1}
+            if s.j = n then $'!r.borrow_mut().push(!x)' : ()
+        $'!r ' : a dim el
+    else $'!a |> Array.distinct'
 
 #!markdown
 
@@ -855,7 +1050,9 @@ inl distinct forall dim el. (a : a dim el) : a dim el =
 #!spiral
 
 inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-    $'!a |> Array.skip !n '
+    if rust.is_native ()
+    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
+    else $'!a |> Array.skip !n '
 
 #!markdown
 
@@ -864,7 +1061,9 @@ inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
 #!spiral
 
 inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
-    $'!a |> Array.skipWhile !fn '
+    if rust.is_native ()
+    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
+    else $'!a |> Array.skipWhile !fn '
 
 #!markdown
 
@@ -880,6 +1079,7 @@ inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
         Lua = fun () => items |> convert.to : listm'.list' t
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
         Python = fun () => items |> convert.to : listm'.list' t
+        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
     }
 
 #!markdown
@@ -898,7 +1098,6 @@ inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =
 ///> cuda
 ///> rust
 ///> typescript
-///> python
 
 a' ;[ -3i32; 6 ]
 |> to_list'
@@ -969,8 +1168,45 @@ inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
 
 #!spiral
 
-inl sort_by forall dim el. (fn : el -> _) (a : a dim el) : a dim el =
-    $'!a |> Array.sortBy !fn '
+inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
+    inl fable () = $'!a |> Array.sortBy !fn ' : a dim el
+    backend_switch {
+        Gleam = fun () => fable ()
+        Lua = fun () => fable ()
+        Fsharp = fun () => fable ()
+        Python = fun () =>
+            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.
+            inl keys = am.map fn ($'!a ' : a int el)
+            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
+            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
+        TypeScript = fun () => fable ()
+        Cpp = fun () => fable ()
+        CppHost = fun () => fable ()
+        Delphi = fun () => fable ()
+        Cuda = fun () => fable ()
+        // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
+        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)
+        Rust = fun () =>
+            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)
+            inl a = $'!a ' : a int el
+            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;
+            // a tuple element is one Rust value (see rust.one_param_fn)
+            inl key_fn = join (rust.one_param_fn fn)
+            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el
+            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key
+            loopw.for' {from=1; nearTo=length a} fun i =>
+                inl x = index i r
+                inl k = index i keys
+                inl s = mut {j=i}
+                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
+                    inl j = s.j
+                    set r j (index (j - 1) r)
+                    set keys j (index (j - 1) keys)
+                    s <- {j=j - 1}
+                set r s.j x
+                set keys s.j k
+            $'!r ' : a dim el
+    }
 
 #!markdown
 
@@ -1006,4 +1242,18 @@ inl transpose forall el. (a : array_base (array_base el)) : array_base (array_ba
 #!spiral
 
 inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
-    $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    backend_switch {
+        Gleam = fable
+        Lua = fable
+        Fsharp = fable
+        Python = fable
+        TypeScript = fable
+        Cpp = fable
+        CppHost = fable
+        Delphi = fable
+        Cuda = fable
+        Rust = fun () =>
+            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
+            x |> optionm'.unbox
+    }

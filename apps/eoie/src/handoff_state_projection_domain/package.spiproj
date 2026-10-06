@@ -1,4 +1,0 @@
-packages:
-    handoff_state_projection_source
-modules:
-    state_projection

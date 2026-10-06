@@ -1,5 +1,0 @@
-packages:
-    rust_std_string
-modules:
-    model
-    main

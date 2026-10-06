@@ -1,1 +1,0 @@
-inl main () : i32 = legacy_operations_entry.entry.emit_main ()

@@ -1,5 +1,0 @@
-packages:
-    patch_mutation_contract
-modules:
-    mutation_terminal
-    app

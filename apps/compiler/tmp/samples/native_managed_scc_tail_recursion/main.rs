@@ -36,15 +36,20 @@ fn spiral_main() -> i32 {
     let mut v1: i32 = v0 % 2i32;
     let mut v2: bool = v1 == 0i32;
     let mut v5: Rc<str> = if v2 {
-        let mut v3: Rc<str> = Rc::<str>::from("ok");
+        let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) };
         v3.clone()
     } else {
-        let mut v4: Rc<str> = Rc::<str>::from("go");
+        let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("go"); } LIT.with(|lit| lit.clone()) };
         v4.clone()
     };
     method0(v0, v5.clone())
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
-    std::process::exit(main.join().unwrap());
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}
+#[cfg(target_arch = "wasm32")]
+fn main() {
+    spiral_main();
 }

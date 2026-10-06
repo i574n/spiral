@@ -23,6 +23,7 @@ inl atan2 (y : f64) (x : f64) : f64 =
         Python = fun () => 
             global "import math"
             $'math.atan2(!y, !x)' : float
+        Rust = fun () => $'(!y).atan2(!x)' : float
     }
 
 /// ## floor
@@ -36,6 +37,7 @@ inl floor forall t {float}. (n : t) : t =
         Python = fun () => 
             global "import math"
             $'math.floor(!n)' : t
+        Rust = fun () => $'!n.floor()' : t
     }
 
 /// ## ceil
@@ -49,6 +51,7 @@ inl ceil forall t {float}. (n : t) : t =
         Python = fun () =>
             global "import math"
             n |> $'math.ceil' : t
+        Rust = fun () => $'!n.ceil()' : t
     }
 
 /// ## round
@@ -73,8 +76,12 @@ inl round forall t {number; float}. (x : t) : t =
                 else result - 1
         Fsharp = fun () => x |> $'round' : t
         Python = fun () => x |> $'round' : t
+        // F#'s round (Math.Round) rounds half to even
+        Rust = fun () => $'(!x).round_ties_even()' : t
     }
 
 /// ## log_base
 inl log_base (new_base : f64) (a : f64) : f64 =
-    $'System.Math.Log (!a, !new_base)'
+    if rust.rust.is_native ()
+    then $'(!a).log(!new_base)'
+    else $'System.Math.Log (!a, !new_base)'

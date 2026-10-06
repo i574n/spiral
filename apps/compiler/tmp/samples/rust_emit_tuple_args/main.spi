@@ -1,0 +1,19 @@
+// lib/spiral's rust.emit_expr (`!\\(args, $'"... $0 ..."')`) with tuple arguments: each element of the argument
+// tuple is one `$k`, also when the element is itself a tuple (leading, trailing, or the whole argument).
+inl emit forall a t. (args : a) (code : string) : t =
+    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+
+inl portable (a : i32) (b : i32) (c : i32) : i32 =
+    (a +. b +. c) +. (c -. a -. b) +. a *. b
+
+inl native (a : i32) (b : i32) (c : i32) : i32 =
+    inl leading : i32 = emit ((a, b), c) ($'"{ let (x, y) = $0; x + y + $1 }"' : string)
+    inl trailing : i32 = emit (c, (a, b)) ($'"{ let (x, y) = $1; $0 - x - y }"' : string)
+    inl whole : i32 = emit (a, b) ($'"{ let (x, y) = $0; x * y }"' : string)
+    leading +. trailing +. whole
+
+inl main () : i32 =
+    inl ~a = 1i32
+    inl ~b = 2i32
+    inl ~c = 40i32
+    !!!!BackendSwitch({ C = fun () => portable a b c : i32; Rust = fun () => native a b c : i32 })

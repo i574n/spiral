@@ -1,4 +1,0 @@
-inl main () : i32 =
-    inl active_ok = (=.) (handoff_active_work_projection (fixture_agile ())) "ok\nP0 Active 55% ACTIVE-WORK — Do u32 active work\nP1 Blocked 7% BLOCKED-WORK — Wait for evidence"
-    !!!!Export("eoie_handoff_active_work_projection", ((fun value => handoff_active_work_projection value) : string -> string))
-    if active_ok then 0i32 else 1i32
