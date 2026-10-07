@@ -65,12 +65,32 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                             (fun () =>
                                                 $'Default::default()' : value
                                             ) : () -> value
+                                        // TypeScript: as F#'s Unchecked.defaultof<_> (a number's 0, bool's false), undefined otherwise
+                                        TypeScript =
+                                            (fun () =>
+                                                typecase value with
+                                                | i8 => 0i8
+                                                | i16 => 0i16
+                                                | i32 => 0i32
+                                                | i64 => 0i64
+                                                | u8 => 0u8
+                                                | u16 => 0u16
+                                                | u32 => 0u32
+                                                | u64 => 0u64
+                                                | f32 => 0.0f32
+                                                | f64 => 0.0f64
+                                                | bool => false
+                                                | char => '\0'
+                                                | _ => $'undefined' : value
+                                            ) : () -> value
                                     }
                             inl item = real_core.nominal_create `union_type (key, value)
                             inl key' = sm'_real.symbol_to_string_real `(`key)
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
+// The union the tests below take apart (it was backend.target, deleted with the Fable targets).
+union reflection_test_target = Wasm | Contract
 
 /// ### get_union_fields_untag
 inl get_union_fields_untag forall union_type. () : list (string * union_type) =
@@ -110,6 +130,10 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                                         Rust =
                                                             (fun () =>
                                                                 $'Default::default()' : value
+                                                            ) : () -> value
+                                                        TypeScript =
+                                                            (fun () =>
+                                                                $'undefined' : value
                                                             ) : () -> value
                                                     }
                                             inl item = real_core.nominal_create `union_type (key, value)
@@ -194,6 +218,7 @@ inl union_to_string forall t. (x : t) : string =
                         Python = fun () => "("
                         // Native Debug prints a union case as `US0_1(..)`.
                         Rust = fun () => "("
+                        TypeScript = fun () => "("
                     }
                 inl x' = #?x' |> sm'.split separator |> am'.index_base 0
                 if #?x |> sm'.starts_with x'

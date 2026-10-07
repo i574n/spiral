@@ -100,9 +100,9 @@ pub fn closure0 (capt : Nil) -> fn(Int) -> Nil        {
     fn (v0) {
         let v1 = closure1(Nil) // args: "" / d: Some (DV (L (1, YFun (YPrim Int32T, YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
-        let v2 = closure2(Nil) // args: "" / d: Some  (DV     (L (2,         YFun           (YPair (YPrim Int32T, YNominal <tag 248>), YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
+        let v2 = closure2(Nil) // args: "" / d: Some  (DV     (L (2,         YFun           (YPair (YPrim Int32T, YNominal <tag 247>), YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
-        let v3 = closure3(Nil) // args: "" / d: Some  (DV     (L (3,         YFun           (YPrim Int32T, YApply (YNominal <tag 245>, YNominal <tag 248>),            FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
+        let v3 = closure3(Nil) // args: "" / d: Some  (DV     (L (3,         YFun           (YPrim Int32T, YApply (YNominal <tag 244>, YNominal <tag 247>),            FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
         let v4 = lustre.simple(v1, fn (a, b) { v2(#(a, b)) }, v3)
         let v5 = "#app_"

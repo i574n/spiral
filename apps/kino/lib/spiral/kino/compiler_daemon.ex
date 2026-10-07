@@ -3,14 +3,8 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   alias Spiral.Kino.{Runner, Toolchain}
 
-  # 13805 is polyglot's Supervisor port (`Supervisor --build-file`, the .dib kernel route). A Kino daemon there answers
-  # their requests with its own, possibly stale compiler, so Kino stays off it.
-  @supervisor_port 13805
   @default_port 13905
   @version "1"
-
-  @spec supervisor_port() :: 13805
-  def supervisor_port, do: @supervisor_port
 
   @spec port() :: 1..65535
   def port do
@@ -21,7 +15,7 @@ defmodule Spiral.Kino.CompilerDaemon do
       text ->
         case Integer.parse(String.trim(text)) do
           {number, ""} when number in 1..65535 ->
-            check_port!(number)
+            number
 
           _ ->
             raise ArgumentError,
@@ -29,15 +23,6 @@ defmodule Spiral.Kino.CompilerDaemon do
         end
     end
   end
-
-  @spec check_port!(non_neg_integer()) :: non_neg_integer()
-  def check_port!(@supervisor_port) do
-    raise ArgumentError,
-          "port #{@supervisor_port} is reserved for polyglot's Supervisor; " <>
-            "use another SPIRAL_KINO_COMPILER_PORT (default #{@default_port})"
-  end
-
-  def check_port!(number), do: number
 
   @spec start_link(keyword()) :: GenServer.on_start()
   def start_link(opts \\ []) do
@@ -90,7 +75,7 @@ defmodule Spiral.Kino.CompilerDaemon do
   @impl true
   def init(opts) do
     Process.flag(:trap_exit, true)
-    port = opts |> Keyword.get(:port, port()) |> check_port!()
+    port = Keyword.get(opts, :port, port())
 
     case :gen_tcp.listen(port, listen_opts()) do
       {:ok, listen} ->

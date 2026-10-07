@@ -76,6 +76,7 @@ inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
         Fsharp = fun () => $'System.Convert.ToInt32 (!x, !base)' : i32
         Python = fun () => $'int (!x, !base)' : i32
         Rust = fun () => $'i32::from_str_radix(&*(!x), (!base) as u32).unwrap()' : i32
+        TypeScript = fun () => $'parseInt(!x, !base)' : i32
     }
 
 /// ### convert_i32
@@ -154,6 +155,7 @@ inl u8 forall t. (x : t) : u8 =
         Fsharp = fun () => x |> $'uint8' : u8
         Python = fun () => x |> to : u8
         Rust = fun () => $'(!x as u8)' : u8
+        TypeScript = fun () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8
     }
 
 /// ### u16
@@ -164,6 +166,7 @@ inl u16 forall t. (x : t) : u16 =
         Fsharp = fun () => x |> $'uint16' : u16
         Python = fun () => $'!x & 0xFFFF' : u16
         Rust = fun () => $'(!x as u16)' : u16
+        TypeScript = fun () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16
     }
 
 /// ### u64

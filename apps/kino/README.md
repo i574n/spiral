@@ -113,7 +113,7 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | Workspace root | `:workspace` | `SPIRAL_WORKSPACE_ROOT` | `spiral/apps/compiler/tmp` next to this app |
 | Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `spiral/deps/The-Spiral-Language/VS Code Plugin`, else `polyglot/deps/...` next to it |
 | Package fallback root (a cell's `--package` path not found beside the notebook) | `:workspace_root` (`:polyglot_root`) | `SPIRAL_KINO_WORKSPACE_ROOT` (`SPIRAL_KINO_POLYGLOT_ROOT`), or `config :spiral_kino, workspace_root: ...` | this `spiral` checkout |
-| Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` (13805, polyglot's Supervisor port, is refused) | `13905` |
+| Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` | `13905` |
 
 By default a cell compiles through one shared, warm compiler: the first cell starts a detached
 `mix spiral.compiler_daemon` on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the

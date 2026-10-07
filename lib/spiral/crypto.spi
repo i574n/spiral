@@ -101,20 +101,16 @@ inl get_file_hash (path : string) =
 
 /// ### create_hash
 inl create_hash (x : string) : any =
-    open typescript_operators
-    global "type ICryptoCreateHash = abstract createHash: x: string -> obj"
-    inl crypto : $'ICryptoCreateHash' = typescript.import_all "crypto"
-    !\\(x, $'"!crypto.createHash($0)"')
+    global "import * as spiral_node_crypto from 'node:crypto';"
+    $'spiral_node_crypto.createHash(!x)' : any
 
 /// ### hash_update
 inl hash_update (s : string) (x : any) : any =
-    open typescript_operators
-    !\\((x, s), $'"$0.update($1, \'utf8\')"')
+    $'!x.update(!s, "utf8")' : any
 
 /// ### hash_digest
 inl hash_digest (s : string) (x : any) : string =
-    open typescript_operators
-    !\\((x, s), $'"$0.digest($1)"')
+    $'!x.digest(!s)' : string
 
 /// ## python
 

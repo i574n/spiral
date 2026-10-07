@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
+import sys
 def main():
     v0 = 250
     v1 = 10
@@ -134,4 +135,4 @@ def main():
         del v2, v3, v4, v5, v7, v9, v10, v12
         return 1
 
-if __name__ == '__main__': result = main(); None if result is None else print(result)
+if __name__ == '__main__': sys.exit(main())

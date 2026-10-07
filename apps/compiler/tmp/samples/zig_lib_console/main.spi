@@ -1,0 +1,8 @@
+// lib/spiral on the Zig backend (#82): console.write_line and sm'.obj_to_string have Zig arms; the C row is the oracle
+// (exit code + stdout).
+inl main () : i32 =
+    inl x = dyn 41i32
+    console.write_line (sm'.obj_to_string x)
+    console.write_line "hi"
+    console.write_line (sm'.obj_to_string (dyn true))
+    if x + 1i32 = 42i32 then 0i32 else 1i32

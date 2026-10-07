@@ -5,7 +5,7 @@ nominal vec = $'Vec<i32>'
 nominal opt = $'Option<Vec<i32>>'
 
 inl emit forall a t. (args : a) (code : string) : t =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+    $'__spiral_emit_rust !args !code '
 
 let rec count_loop (i : i32) (acc : i32) (v : vec) : i32 =
     if i < 3i32 then count_loop (i +. 1i32) (acc +. ($'!v.into_iter().count() as i32' : i32)) v else acc

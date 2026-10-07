@@ -69,6 +69,7 @@ type string_builder_switch =
         Fsharp : $'System.Text.StringBuilder'
         Python : string_builder_python
         Rust : $'String'
+        TypeScript : string
     }
 nominal string_builder_real = $'backend_switch `(string_builder_switch)'
 
@@ -163,6 +164,10 @@ inl rec format_debug_real forall t. (x : t) : string =
                             inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
                             if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then "None"
                             else (++#*) "Some " (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))
+                    // a unit head is left out (F#'s tuples carry no unit element)
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
                     | ~a * ~b =>
                         inl a, b = x
                         (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
@@ -198,11 +203,16 @@ inl rec format_debug_real forall t. (x : t) : string =
                         if $'!x === undefined' : bool
                         then "None"
                         else (++#*) "Some " (format_debug_real `a ($'!x ' : a))
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
                     | ~a * ~b =>
                         inl a, b = x
                         (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
                     | array_base ~el =>
-                        if real_core.prim_type_is `el
+                        if (typecase el with char => true | _ => false)
+                        then $'"[" + !x.map((c: number) => "\'" + String.fromCharCode(c) + "\'").join(", ") + "]"' : string
+                        elif real_core.prim_type_is `el
                         then $'"[" + !x.join(", ") + "]"' : string
                         else $'String(!x)' : string
                     | {} =>
@@ -215,6 +225,11 @@ inl rec format_debug_real forall t. (x : t) : string =
                     | _ =>
                         if real_core.union_type_is `t
                         then serialize_union_rust `t x
+                        // a nominal as its payload (a parser_state as its record)
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
                         else $'String(!x)' : string
                 ) : () -> string
         }
@@ -232,7 +247,7 @@ and inl format_debug_other_rust forall t. (x : t) : string =
     then
         inl payload forall u. (y : u) : string =
             typecase u with
-            | {} => $'Rc::<str>::from("<`t>")' : string
+            | {} => format_debug_real `u y
             | ~a -> ~b => $'Rc::<str>::from("<`t>")' : string
             | ~a * ~b => format_debug_real `u y
             | array_base _ => format_debug_real `u y

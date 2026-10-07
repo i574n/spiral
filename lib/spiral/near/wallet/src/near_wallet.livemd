@@ -2,10 +2,6 @@
 
 <!-- livebook:{"break_markdown":true} -->
 
-`#!import ../../../../../../polyglot/lib/fsharp/NotebooksHtml.livemd`
-
-<!-- livebook:{"break_markdown":true} -->
-
 ## near_wallet
 
 <!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open lustre","print_code":false},"livebook_object":"smart_cell"} -->

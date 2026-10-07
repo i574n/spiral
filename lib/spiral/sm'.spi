@@ -84,6 +84,7 @@ inl string_builder (initial : string) : string_builder =
             global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
             $'CustomStringIO(!initial)' : string_builder
         Rust = fun () => $'String::from(&*!initial)' : string_builder
+        TypeScript = fun () => $'!initial ' : string_builder
     }
 
 /// ### append_real
@@ -114,6 +115,19 @@ inl format_debug forall t. (x : t) : string =
 
 inl obj_to_string_rust forall t. (x : t) : string =
     real obj_to_string_rust_real `t x
+// TypeScript: a char is its byte (a number), shown as the character, as the other backends do.
+inl obj_to_string_typescript forall t. (x : t) : string =
+    if (real typecase t with char => true | _ => false)
+    then $'String.fromCharCode(!x)' : string
+    else $'String(!x)' : string
+// Zig: text through the prelude's arena (a string as is, a char as the character, a bool as true/false, numbers in decimal).
+inl obj_to_string_zig forall t. (x : t) : string =
+    if (real typecase t with string => true | _ => false) then $'!x ' : string
+    elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
+    elif (real typecase t with bool => true | _ => false) then $'(if (!x) "true" else "false")' : string
+    elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)
+    then $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch \@panic("out of memory"))' : string
+    else $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch \@panic("out of memory"))' : string
 
 /// ### (~#?*)
 inl (~#?*) s =
@@ -138,6 +152,8 @@ inl obj_to_string x : string =
         Fsharp = fun () => $'!x |> _.ToString()' : string
         Python = fun () => $'str(!x)' : string
         Rust = fun () => obj_to_string_rust x
+        TypeScript = fun () => obj_to_string_typescript x
+        Zig = fun () => obj_to_string_zig x
     }
 
 /// ### (~#?**)
@@ -278,6 +294,7 @@ inl index_of (search : string) (s : string) : int =
         Fsharp = fun () => $'!s.IndexOf !search ' : int
         Python = fun () => $'!s.find(!search)' : int
         Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
+        TypeScript = fun () => $'!s.indexOf(!search)' : int
     }
 
 /// ### replicate
@@ -310,6 +327,7 @@ inl convert_to_utf32 (c : char) : int =
             | _ => fun c => c |> convert.i32
         Python = fun () => $'ord(!c)' : int
         Rust = fun () => $'(!c as `int)' : int
+        TypeScript = fun () => $'(!c)' : int
     }
 
 /// ### ends_with
@@ -321,6 +339,7 @@ inl ends_with (value : string) (s : string) : bool =
         Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool
         Python = fun () => $'!s.endswith(!value)' : bool
         Rust = fun () => $'!s.ends_with(&*!value)' : bool
+        TypeScript = fun () => $'!s.endsWith(!value)' : bool
         Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
     }
 
@@ -334,6 +353,7 @@ inl starts_with (value : string) (s : string) : bool =
         Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
         Python = fun () => $'!s.startswith(!value)' : bool
         Rust = fun () => $'!s.starts_with(&*!value)' : bool
+        TypeScript = fun () => $'!s.startsWith(!value)' : bool
     }
 
 /// ### is_white_space
@@ -376,6 +396,7 @@ inl char_to_upper (input : char) : char =
         Fsharp = fun () => $'System.Char.ToUpper !input ' : char
         Python = fun () => $'!input.upper()' : char
         Rust = fun () => $'!input.to_ascii_uppercase()' : char
+        TypeScript = fun () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char
     }
 
 /// ### builder_append
@@ -392,6 +413,7 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
             ($'!sb.write(!item)' : int) |> ignore
             sb
         Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder
+        TypeScript = fun () => $'!sb + !item ' : string_builder
     }
 
 /// ### builder_append_line
@@ -407,6 +429,8 @@ inl builder_append_line (sb : string_builder) : string_builder =
         Python = fun () =>
             sb |> builder_append "\n"
         Rust = fun () =>
+            sb |> builder_append "\n"
+        TypeScript = fun () =>
             sb |> builder_append "\n"
     }
 
@@ -424,6 +448,7 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
         Python = fun () =>
             ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
         Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
+        TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder
     }
 
 /// ### builder_clear
@@ -443,6 +468,7 @@ inl builder_clear (sb : string_builder) : string_builder =
             ($'!sb.seek(0)' : int) |> ignore
             sb
         Rust = fun () => $'String::new()' : string_builder
+        TypeScript = fun () => $'""' : string_builder
     }
 
 /// ### builder_insert
@@ -538,6 +564,7 @@ inl concat (a : string) (b : seq.seq' string) : string =
         Python = fun () =>
             $'!a.join(!b)' : string
         Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string
+        TypeScript = fun () => $'!b.join(!a)' : string
     }
 
 /// ### length'
@@ -570,6 +597,8 @@ inl replace (old : string) (new : string) (s : string) : string =
             $'!s.replace(!old, !new)' : string
         Rust = fun () =>
             $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string
+        TypeScript = fun () =>
+            $'!s.split(!old).join(!new)' : string
     }
 
 /// ### split
@@ -584,6 +613,7 @@ inl split (separator : string) (str : string) : array_base string =
         Rust = fun () =>
             $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
             : array_base string
+        TypeScript = fun () => $'!str.split(!separator)' : array_base string
     }
 
 /// ### split_string
@@ -783,7 +813,6 @@ inl include_str (path : string) : rust.ref str =
 
 /// ### as_str
 inl as_str (s : string) : rust.ref str =
-    // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
     run_target_args (fun () => s) function
         | Rust => fun s => !\\(s, $'"&*$0"')
         | _ => convert.unbox
@@ -1200,6 +1229,8 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         Fsharp = id : () -> ()
         Python = id : () -> ()
         Rust = id : () -> ()
+        TypeScript = id : () -> ()
+        Zig = id : () -> ()
     }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 

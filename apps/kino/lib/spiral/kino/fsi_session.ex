@@ -199,7 +199,8 @@ defmodule Spiral.Kino.FsiSession do
         :stderr_to_stdout,
         :use_stdio,
         :hide,
-        args: ["fsi", "--nologo", "--quiet", "--utf8output", "--readline-"],
+        # --langversion:preview like the F# builds (lib.ps1 PublishFsharp) and the targets' `dotnet fsi --exec`
+        args: ["fsi", "--nologo", "--quiet", "--utf8output", "--readline-", "--langversion:preview"],
         env: env
       ] ++ if(opts[:cd], do: [cd: opts[:cd]], else: [])
 

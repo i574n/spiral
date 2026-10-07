@@ -98,6 +98,7 @@ inl memoize forall t. (fn : () -> t) : () -> t =
             fun () => $'!result.Value' : t
         Python = fun () => body ()
         Rust = fun () => body ()
+        TypeScript = fun () => body ()
     }
 
 /// ### capture
@@ -207,6 +208,7 @@ type pair_switch a b =
         Fsharp : $'(`a * `b)'
         Python : $'(`a, `b)'
         Rust : $'(`a, `b)'
+        TypeScript : $'[`a, `b]'
     }
 nominal pair a b = $'backend_switch `(pair_switch a b)'
 
@@ -229,6 +231,7 @@ inl new_pair forall a b. (a : a) (b : b) : pair a b =
             // type without Clone), so a field value used again or captured by an `Fn` closure stays usable
             inl a, b = join (a, b)
             $'(!a, !b)' : pair a b
+        TypeScript = fun () => $'[!a, !b]' : pair a b
     }
 
 /// ### from_pair
@@ -247,6 +250,7 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
             $'a, b = !pair '
             ($'a' : a), ($'b' : b)
         Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
+        TypeScript = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
     }
 
 /// ### (||>)
@@ -271,6 +275,7 @@ inl null forall t. () : t =
         Lua = fun () => $'nil' : t
         Fsharp = fun () => $'null |> unbox<`t>' : t
         Python = fun () => $'None' : t
+        TypeScript = fun () => $'null' : t
     }
 
 /// ### defaultof
@@ -402,19 +407,16 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
             $'with ex ->'
             $'    result.Value <- !ex_fn ex '
             $'result.Value' : option t
+        // Python: a module-level helper (independent of the indentation of the code that calls it).
         Python = fun () =>
-            $'result = !(None : option t)'
-            inl fn = dyn fn
-            inl ex_fn = dyn ex_fn
-            $'try:'
-            $'    result = !some(!fn())\n        \'\'\''
-            $'\'\'\''
-            $'except Exception as e:'
-            $'    result = !ex_fn(e)'
-            $'result' : option t
+            global "def spiral_try(fn, some, ex_fn):\n    try:\n        return some(fn())\n    except Exception as e:\n        return ex_fn(e)"
+            $'spiral_try(!fn, !some, !ex_fn)' : option t
         // Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
         Rust = fun () =>
             catch_unwind_rust (fun () => some (fn ())) ex_fn
+        // TypeScript: a thrown value (failwith throws an Error) is the exception.
+        TypeScript = fun () =>
+            $'(() => { try { return !some(!fn()); } catch (ex) { return !ex_fn(ex); } })()' : option t
     }
 
 /// ### try_unit

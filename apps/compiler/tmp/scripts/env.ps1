@@ -101,6 +101,7 @@ function Get-SpiralNativeTools {
         CC = Resolve-SpiralTool 'cc' @($env:SPIRAL_CC, 'gcc', 'clang', 'cc')
         Rustc = Resolve-SpiralTool 'rustc' @($env:SPIRAL_RUSTC, 'rustc')
         Fpc = Resolve-SpiralTool 'fpc' @($env:SPIRAL_FPC, 'fpc')
+        Zig = Resolve-SpiralTool 'zig' @($env:SPIRAL_ZIG, 'zig')
         Node = Resolve-SpiralTool 'node' @($env:SPIRAL_NODE, 'node')
         Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, 'python', 'python3')
     }
@@ -124,18 +125,21 @@ function Get-SpiralCompilerDll([string]$Mode, [string]$Configuration = 'Release'
 function Get-SpiralBaselinePath { Join-Path (Get-SpiralCacheDir) 'baseline/EXPECTED.tsv' }
 function Get-SpiralScoreboardPath([string]$Mode) { Join-Path (Get-SpiralCacheDir) "scoreboards/$(ConvertTo-SpiralMode $Mode).tsv" }
 
-# Where `packages: |core-` resolves: the standard library in polyglot's The-Spiral-Language checkout,
-# reached through the spiral repo's deps/polyglot link (or a sibling polyglot checkout). Never copied here.
+# Where `packages: |core-` resolves: the standard library in The-Spiral-Language's `VS Code Plugin/core`. Never copied
+# here.
 function Get-SpiralPackageDir {
+    # spiral's scripts/init.ps1 clones the fork into spiral/deps/The-Spiral-Language; polyglot's clone of it is the
+    # fallback (through spiral's deps/polyglot link, else the checkout next to spiral).
     $candidates = @(
         $env:SPIRAL_COMPILER_PACKAGE_DIR,
+        (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin'),
         (Join-Path $BundleRoot '../../../deps/polyglot/deps/The-Spiral-Language/VS Code Plugin'),
         (Join-Path $BundleRoot '../../../../polyglot/deps/The-Spiral-Language/VS Code Plugin')
     )
     foreach ($candidate in $candidates) {
         if ($candidate -and (Test-Path (Join-Path $candidate 'core/package.spiproj'))) { return (Resolve-Path $candidate).Path }
     }
-    throw 'The-Spiral-Language core package not found: link deps/polyglot or set SPIRAL_COMPILER_PACKAGE_DIR.'
+    throw 'The-Spiral-Language core package not found: run scripts/init.ps1 (clones it to deps/The-Spiral-Language) or set SPIRAL_COMPILER_PACKAGE_DIR.'
 }
 
 # Flat directory of the compiler's dependency DLLs (compiler/lib/Packages.props plus the SDK's FSharp.Core),

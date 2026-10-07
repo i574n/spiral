@@ -109,7 +109,7 @@ Spiral.Kino.eval!(
 
 ### disposable
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type disposable_switch t =\n    {\n        Gleam : $'Nil'\n        Fsharp : $'System.IDisposable'\n        Python : $'object'\n        Rust : $'Rc<dyn Fn()>'\n    }\nnominal disposable t = $'backend_switch `(disposable_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type disposable_switch t =\n    {\n        Gleam : $'Nil'\n        Fsharp : $'System.IDisposable'\n        Python : $'object'\n        Rust : $'Rc<dyn Fn()>'\n        TypeScript : $'() => void'\n    }\nnominal disposable t = $'backend_switch `(disposable_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -120,6 +120,7 @@ Spiral.Kino.eval!(
           Fsharp : $'System.IDisposable'
           Python : $'object'
           Rust : $'Rc<dyn Fn()>'
+          TypeScript : $'() => void'
       }
   nominal disposable t = $'backend_switch `(disposable_switch t)'
   """,
@@ -129,7 +130,7 @@ Spiral.Kino.eval!(
 
 ### dispose
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dispose (disposable : disposable _) : () =\n    backend_switch {\n        Gleam = fun () => $'// common.dispose' : ()\n        Lua = fun () => $'-- common.dispose' : ()\n        Fsharp = fun () => disposable |> $'_.Dispose()' : ()\n        Python = fun () => $'!disposable.__exit__(None, None, None)' : ()\n        Rust = fun () => $'(!disposable)()' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dispose (disposable : disposable _) : () =\n    backend_switch {\n        Gleam = fun () => $'// common.dispose' : ()\n        Lua = fun () => $'-- common.dispose' : ()\n        Fsharp = fun () => disposable |> $'_.Dispose()' : ()\n        Python = fun () => $'!disposable.__exit__(None, None, None)' : ()\n        Rust = fun () => $'(!disposable)()' : ()\n        TypeScript = fun () => $'(!disposable)()' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -141,6 +142,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => disposable |> $'_.Dispose()' : ()
           Python = fun () => $'!disposable.__exit__(None, None, None)' : ()
           Rust = fun () => $'(!disposable)()' : ()
+          TypeScript = fun () => $'(!disposable)()' : ()
       }
   """,
   timeout: 300_000
@@ -311,7 +313,7 @@ Spiral.Kino.eval!(
 
 ### new_disposable
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_disposable (fn : () -> ()) : disposable _ =\n    run_target function\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\(fn, $'\"$0.clone()\"') : disposable _\n        | Fsharp _ | TypeScript _ => fun () =>\n            inl fn = join fn\n            $'{ new System.IDisposable with member _.Dispose () = !fn () }'\n        | Cuda _ => fun () =>\n            $'class Disposable:'\n            $'    def __init__(self, fn):'\n            $'        self.fn = fn'\n            $'    def __exit__(self, exc_type, exc_value, traceback):'\n            $'        self.fn()'\n            $'        return False'\n            $'Disposable(!fn)'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_disposable (fn : () -> ()) : disposable _ =\n    run_target function\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\(fn, $'\"$0.clone()\"') : disposable _\n        // TypeScript: the function itself (dispose calls it), as Rust's Rc<dyn Fn()>.\n        | TypeScript => fun () =>\n            inl fn = join fn\n            $'!fn ' : disposable _\n        | Fsharp _ => fun () =>\n            inl fn = join fn\n            $'{ new System.IDisposable with member _.Dispose () = !fn () }'\n        | Cuda _ => fun () =>\n            $'class Disposable:'\n            $'    def __init__(self, fn):'\n            $'        self.fn = fn'\n            $'    def __exit__(self, exc_type, exc_value, traceback):'\n            $'        self.fn()'\n            $'        return False'\n            $'Disposable(!fn)'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -321,7 +323,11 @@ Spiral.Kino.eval!(
           | Rust => fun () =>
               open rust.rust_operators
               !\\(fn, $'"$0.clone()"') : disposable _
-          | Fsharp _ | TypeScript _ => fun () =>
+          // TypeScript: the function itself (dispose calls it), as Rust's Rc<dyn Fn()>.
+          | TypeScript => fun () =>
+              inl fn = join fn
+              $'!fn ' : disposable _
+          | Fsharp _ => fun () =>
               inl fn = join fn
               $'{ new System.IDisposable with member _.Dispose () = !fn () }'
           | Cuda _ => fun () =>
@@ -359,12 +365,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl new_disposable_test = mut 0i32\nfun () =>\n    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1\n    |> fun x => x : disposable ()\n    |> use\n    |> ignore\n    |> return\n|> async.new_task\n|> async.await_task\n|> async.run_synchronously\n*new_disposable_test |> _assert_eq 1","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl new_disposable_test = mut 0i32\nfun () =>\n    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1\n    |> fun x => x : disposable ()\n    |> use\n    |> ignore\n    |> return\n|> async.new_task\n|> async.await_task\n|> async.run_synchronously\n*new_disposable_test |> _assert_eq 1","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   inl new_disposable_test = mut 0i32
   fun () =>
@@ -382,12 +389,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl new_disposable_test = mut 0i32\nfun () =>\n    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1\n    |> fun x => x : disposable ()\n    |> ignore\n    |> return\n|> async.new_task\n|> async.await_task\n|> async.run_synchronously\n*new_disposable_test |> _assert_eq 0","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl new_disposable_test = mut 0i32\nfun () =>\n    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1\n    |> fun x => x : disposable ()\n    |> ignore\n    |> return\n|> async.new_task\n|> async.await_task\n|> async.run_synchronously\n*new_disposable_test |> _assert_eq 0","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   inl new_disposable_test = mut 0i32
   fun () =>

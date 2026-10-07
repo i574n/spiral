@@ -202,6 +202,7 @@ type seq_switch' t =
         Fsharp : $'`t seq'
         Python : $'list'
         Rust : $'Rc<Vec<`t>>'
+        TypeScript : $'Array<`t>'
     }
 nominal seq' t = $'backend_switch `(seq_switch' t)'
 
@@ -214,6 +215,7 @@ inl length' forall t. (items : seq' t) : int =
         Fsharp = fun () => items |> $'Seq.length' : int
         Python = fun () => $'len(!items)' : int
         Rust = fun () => $'(!items.len() as `int)' : int
+        TypeScript = fun () => $'!items.length' : int
     }
 
 /// ### to_list'
@@ -223,6 +225,7 @@ inl to_list' forall t. (items : seq' t) : listm'.list' t =
         Fsharp = fun () => items |> $'Seq.toList' : listm'.list' t
         Python = fun () => $'!items ' : listm'.list' t
         Rust = fun () => $'(!items).clone()' : listm'.list' t
+        TypeScript = fun () => $'[...!items]' : listm'.list' t
     }
 
 /// ### new_seq
@@ -254,6 +257,7 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
             |> fun x => x : seq' t
         Python = fun () => $'[item for item in !items]' : seq' t
         Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
+        TypeScript = fun () => $'[...!items]' : seq' t
     }
 
 /// ### of_array
@@ -265,6 +269,7 @@ inl of_array forall dim t. (items : a dim t) : seq' t =
         Fsharp = fun () => $'!items |> Seq.ofArray' : seq' t
         Python = fun () => $'list(iter(!items))' : seq' t
         Rust = fun () => $'Rc::new(!items.borrow().clone())' : seq' t
+        TypeScript = fun () => $'[...!items]' : seq' t
     }
 
 /// ### of_array_base
@@ -285,6 +290,7 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
             inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'
             $'!x ' : a dim t
         Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t
+        TypeScript = fun () => $'[...!items]' : a dim t
     }
 
 /// ### of_list'
@@ -298,6 +304,7 @@ inl of_list' forall t. (items : listm'.list' t) : seq' t =
             |> fun x => x : seq' t
         Python = fun () => $'!items ' : seq' t
         Rust = fun () => $'(!items).clone()' : seq' t
+        TypeScript = fun () => $'[...!items]' : seq' t
     }
 
 /// ### cast'
@@ -317,6 +324,8 @@ inl cast' forall t u. (items : u) : seq' t =
                     | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                     | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
             x
+        // TypeScript: an array or any iterable.
+        TypeScript = fun () => $'Array.from(!items)' : seq' t
     }
 
 /// ### rev'
@@ -328,6 +337,7 @@ inl rev'' forall t. (items : seq' t) : seq' t =
         Fsharp = fun () => items |> $'Seq.rev' : seq' t
         Python = fun () => $'list(reversed(!items))' : seq' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
+        TypeScript = fun () => $'[...!items].reverse()' : seq' t
     }
 
 /// ## rust

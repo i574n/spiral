@@ -62,7 +62,7 @@ $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1'
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 # Per-job timeouts stay small: fast samples compile in well under a second once the core library is warm,
 # so anything slower is a hang (the expected Hopac failure mode) and should cost seconds, not minutes.
@@ -113,7 +113,7 @@ if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
 # ------------------------------------------------------------------ discovery
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 # Harness backend names that differ from the compiler's: the upstream C++/CUDA and Python backends.
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
@@ -141,16 +141,23 @@ function Test-ContractSample([string]$relative) { $relative -like 'samples/contr
 # harness.psd1 lists the samples compiled to fewer than all four backends.
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
+# harness.psd1 Zig lists the samples that also get a Zig row (the backend being brought up; C is its oracle).
+$zigSamples = @{}
+foreach ($sample in @($harness.Zig)) { if ($sample) { $zigSamples[$sample] = $true } }
+function Add-ZigBackend([string]$relative, [string[]]$backends) {
+    if ($zigSamples.ContainsKey($relative) -and $backends -notcontains 'Zig') { @($backends) + 'Zig' } else { @($backends) }
+}
 function Get-ExampleBackends([string]$dir) {
     $relative = 'samples/' + (Split-Path $dir -Leaf)
-    if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Delphi') }
+    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Delphi') }
+    Add-ZigBackend $relative $backends
 }
 
 function Get-Samples([string]$suite) {
     switch ($suite) {
         'frontier' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'frontier_*' | ForEach-Object {
-                New-Sample 'frontier' (Get-Entry $_.FullName) @('Fsharp', 'C', 'Rust', 'Delphi') }
+                New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ZigBackend "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Delphi')) }
         }
         'smoke' {
             $harness.Smoke | ForEach-Object {
@@ -291,7 +298,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 # separately from a plain hang. F# and C only: Rust/Delphi go through a C file the host puts back.
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -352,6 +359,10 @@ function Build-And-Run($job) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
+        # Debug on Zig's own backend (-fno-llvm): ~1.5 s a build instead of ~30 s with LLVM (ReleaseSafe); overflow and bounds
+        # checks stay on (the generated code wraps integer ops explicitly). No import library (writing one next to an absolute
+        # -femit-bin path fails on Windows: BadPathName). The build cache is shared by every row.
+        'Zig' { if (-not $tools.Zig) { return 'no-toolchain' }; Invoke-Native $tools.Zig @('build-exe', $job.Output, '-O', 'Debug', '-fno-llvm', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', (Join-Path (Get-SpiralCacheDir) 'zig-cache'), '--global-cache-dir', (Join-Path (Get-SpiralCacheDir) 'zig-global-cache')) $dir 300 }
         'Cpp' {
             # cpp_native.py: g++ for the CppHost part, nvcc only when the program entered `join_backend CudaHost`.
             if (-not $tools.Python) { return 'no-toolchain' }
@@ -407,7 +418,7 @@ $byId = $rows | Group-Object id -AsHashTable
 # reported as `known` instead of failing the run.
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =

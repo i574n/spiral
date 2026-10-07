@@ -47,6 +47,7 @@ type disposable_switch t =
         Fsharp : $'System.IDisposable'
         Python : $'object'
         Rust : $'Rc<dyn Fn()>'
+        TypeScript : $'() => void'
     }
 nominal disposable t = $'backend_switch `(disposable_switch t)'
 
@@ -58,6 +59,7 @@ inl dispose (disposable : disposable _) : () =
         Fsharp = fun () => disposable |> $'_.Dispose()' : ()
         Python = fun () => $'!disposable.__exit__(None, None, None)' : ()
         Rust = fun () => $'(!disposable)()' : ()
+        TypeScript = fun () => $'(!disposable)()' : ()
     }
 
 /// ### yield
@@ -118,7 +120,11 @@ inl new_disposable (fn : () -> ()) : disposable _ =
         | Rust => fun () =>
             open rust.rust_operators
             !\\(fn, $'"$0.clone()"') : disposable _
-        | Fsharp _ | TypeScript _ => fun () =>
+        // TypeScript: the function itself (dispose calls it), as Rust's Rc<dyn Fn()>.
+        | TypeScript => fun () =>
+            inl fn = join fn
+            $'!fn ' : disposable _
+        | Fsharp _ => fun () =>
             inl fn = join fn
             $'{ new System.IDisposable with member _.Dispose () = !fn () }'
         | Cuda _ => fun () =>

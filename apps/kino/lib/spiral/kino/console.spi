@@ -10,7 +10,29 @@ inl show_value forall t. (value : t) : () =
     ()
 
 // Any Display value, like the lib's console.write_line (alphabet's hangul writes an i32: `am'.length |> console.write_line`).
+// The cell package's own `console` module shadows the lib's for the cell's code, so every backend prints here, with
+// every key the lib's backend_switch has: it evaluates each backend's arm in every build, so code reached through any
+// of them meets this switch (`///> fsharp`/`typescript` cells printed the Rust emit marker when only Rust was here).
+// Statement-like arms are local closures: inside the BackendSwitch op's arms a macro can't be typed and a forall call
+// can't be applied (`The macro needs an annotation` / `Cannot apply a forall with a term`).
 inl write_line forall t. (text : t) : () =
-    inl _ : () =
-        !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
-    ()
+    inl rust () : () =
+        inl _ : () =
+            !\\(text, $'"{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, ToString::to_string(&$0).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
+        ()
+    inl gleam () : () =
+        global "import gleam/io"
+        $'io.println(!text)' : ()
+    inl cpp () : () =
+        global "#include <iostream>"
+        $'std::cout << !text << std::endl' : ()
+    !!!!BackendSwitch ({
+        Rust = fun () => rust ()
+        Fsharp = fun () => $'System.Console.WriteLine(!text)' : ()
+        TypeScript = fun () => $'console.log(!text)' : ()
+        Python = fun () => $'print(!text)' : ()
+        Lua = fun () => $'print(!text)' : ()
+        Gleam = fun () => gleam ()
+        Cpp = fun () => cpp ()
+        Zig = fun () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
+    })

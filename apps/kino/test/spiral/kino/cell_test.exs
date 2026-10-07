@@ -24,6 +24,15 @@ defmodule Spiral.Kino.CellTest do
     assert patched =~ "std::process::exit(0);"
   end
 
+  test "a Python cell prints main's value instead of exiting with it" do
+    entry = "if __name__ == '__main__': result = main(); None if result is None else print(result)\n"
+    exits = "import sys\ndef main():\n    return 3\n\nif __name__ == '__main__': sys.exit(main())\n"
+
+    assert Cell.patch_python(exits) == "import sys\ndef main():\n    return 3\n\n" <> entry
+    # The older entry (prints) stays as it is.
+    assert Cell.patch_python("def main():\n    return 3\n\n" <> entry) == "def main():\n    return 3\n\n" <> entry
+  end
+
   test "inlines an emit bound to a tuple (the former marker spelling is still read)" do
     rust = """
     fn spiral_main() -> i32 {

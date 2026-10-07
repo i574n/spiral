@@ -16,6 +16,7 @@ inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
         Fsharp = fun () => index a i
         Python = fun () => $'!a[!i]' : el
         Rust = fun () => index a i
+        TypeScript = fun () => index a i
     }
 
 /// ### index_base
@@ -453,6 +454,7 @@ inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
         Python = fun () => items |> convert.to : listm'.list' t
         Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
+        TypeScript = fun () => $'[...!items]' : listm'.list' t
     }
 
 /// ### to_list'
@@ -504,7 +506,12 @@ inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
             inl keys = am.map fn ($'!a ' : a int el)
             // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
             $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
-        TypeScript = fun () => fsharp ()
+        // TypeScript: an index sort (JS's sort is stable) by a structural compare: arrays (tuples) element-wise,
+        // unions ({ tag, f0.. }) by case first, as F#.
+        TypeScript = fun () =>
+            inl keys = am.map fn ($'!a ' : a int el)
+            global "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
+            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], !keys[j])).map((i: number) => !a[i])' : a dim el
         Cpp = fun () => fsharp ()
         CppHost = fun () => fsharp ()
         Delphi = fun () => fsharp ()

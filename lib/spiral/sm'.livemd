@@ -375,7 +375,7 @@ Spiral.Kino.eval!(
 
 ### string_builder_real
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nnominal string_builder_python =\n    `(\n        global \"import io\"\n        $'' : $'io.StringIO'\n    )\ntype string_builder_switch =\n    {\n        Gleam : string\n        Fsharp : $'System.Text.StringBuilder'\n        Python : string_builder_python\n        Rust : $'String'\n    }\nnominal string_builder_real = $'backend_switch `(string_builder_switch)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nnominal string_builder_python =\n    `(\n        global \"import io\"\n        $'' : $'io.StringIO'\n    )\ntype string_builder_switch =\n    {\n        Gleam : string\n        Fsharp : $'System.Text.StringBuilder'\n        Python : string_builder_python\n        Rust : $'String'\n        TypeScript : string\n    }\nnominal string_builder_real = $'backend_switch `(string_builder_switch)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -393,6 +393,7 @@ Spiral.Kino.eval!(
           Fsharp : $'System.Text.StringBuilder'
           Python : string_builder_python
           Rust : $'String'
+          TypeScript : string
       }
   nominal string_builder_real = $'backend_switch `(string_builder_switch)'
   """,
@@ -413,7 +414,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl string_builder (initial : string) : string_builder =\n    inl initial =\n        if initial = \"\"\n        then join initial\n        else initial\n\n    backend_switch {\n        Gleam = fun () => $'!initial ' : string_builder\n        Lua = fun () => $'!initial ' : string_builder\n        Fsharp = fun () => initial |> $'`string_builder ' : string_builder\n        Python = fun () =>\n            global \"import io\"\n            global \"class CustomStringIO(io.StringIO):\\n    def __init__(self, init=''):\\n        super().__init__()\\n        if init != '': self.write(init)\\n    def __str__(self): return self.getvalue()\\n    def __repr__(self): return self.getvalue()\"\n            $'CustomStringIO(!initial)' : string_builder\n        Rust = fun () => $'String::from(&*!initial)' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl string_builder (initial : string) : string_builder =\n    inl initial =\n        if initial = \"\"\n        then join initial\n        else initial\n\n    backend_switch {\n        Gleam = fun () => $'!initial ' : string_builder\n        Lua = fun () => $'!initial ' : string_builder\n        Fsharp = fun () => initial |> $'`string_builder ' : string_builder\n        Python = fun () =>\n            global \"import io\"\n            global \"class CustomStringIO(io.StringIO):\\n    def __init__(self, init=''):\\n        super().__init__()\\n        if init != '': self.write(init)\\n    def __str__(self): return self.getvalue()\\n    def __repr__(self): return self.getvalue()\"\n            $'CustomStringIO(!initial)' : string_builder\n        Rust = fun () => $'String::from(&*!initial)' : string_builder\n        TypeScript = fun () => $'!initial ' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -433,6 +434,7 @@ Spiral.Kino.eval!(
               global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
               $'CustomStringIO(!initial)' : string_builder
           Rust = fun () => $'String::from(&*!initial)' : string_builder
+          TypeScript = fun () => $'!initial ' : string_builder
       }
   """,
   timeout: 300_000
@@ -536,7 +538,7 @@ Spiral.Kino.eval!(
 
 ### format_debug_real
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl rec format_debug_real forall t. (x : t) : string =\n    typecase t with\n    | string => x\n    | _ =>\n        backend_switch `string `({}) {\n            Gleam =\n                (fun () =>\n                    typecase t with\n                    | char => convert.to `(`x) `string x\n                    | string_builder_real => convert.to `(`x) `string x\n                    | _ =>\n                        global \"import gleam/string\"\n                        inl x =\n                            typecase t with\n                            | array_base _ => $'!x |> array.to_list' : t\n                            | _ => x\n                        $'string.inspect(!x)' : string\n                    ) : () -> string\n            Lua =\n                (fun () =>\n                    typecase t with\n                    | ~a * ~b =>\n                        inl a, b =\n                            if not (var_is `t x)\n                            then x\n                            else ($'__v[1]._1' : a), ($'__v[1]._2' : b)\n                        inl head_str = format_debug_real `a a\n                        inl tail_str = format_debug_real `b b\n                        (++#*) head_str ((++#*) \", \" tail_str)\n                    | {} => $'table.concat(!x, \", \")   ' : string\n                    | array_base _ =>\n                        (++#*) ((++#*) \"[\" ($'table.concat(!x, \", \")' : string)) \"]\"\n                    | t =>\n                        if real_core.union_type_is `t\n                        then serialize_union `t x\n                        else $'tostring(!x)       ' : string\n                ) : () -> string\n            Fsharp = (fun () => $'$\"%A{!x}\"' : string) : () -> string\n            Python =\n                (fun () =>\n                    $'f\"{!x}\"' : string\n                ) : () -> string\n            // Native Rust: codegenRust's unions/layouts derive only `Clone` (no `Debug`), so `{:?}` is used for\n            // primitives and arrays of primitives only; unions print structurally (`Case(payload)`), tuples and arrays,\n            // list's and options of anything else element by element (so `_assert_eq'` compares their contents),\n            // anything else as a `<rust type>` placeholder.\n            Rust =\n                (fun () =>\n                    typecase t with\n                    | char => $'Rc::<str>::from(format\\!(\"{:?}\", !x as char))' : string\n                    // F#'s `%A` of an option: `Some 1` / `None`.\n                    | optionm'.option' ~a =>\n                        if real_core.prim_type_is `a\n                        then $'Rc::<str>::from(match &!x { Some(v) => format\\!(\"Some {:?}\", v), None => String::from(\"None\") })' : string\n                        else\n                            // the payload through Spiral, as an array of 0 or 1 elements (a tuple payload is one Rust value)\n                            inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a\n                            if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then \"None\"\n                            else (++#*) \"Some \" (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if real_core.prim_type_is `el\n                        then $'Rc::<str>::from(format\\!(\"{:?}\", !x.borrow()))' : string\n                        else format_debug_elements_rust `el x\n                    // a list'/seq' (`Rc<Vec<T>>`) of primitives prints through `Debug` as any nominal below; of anything\n                    // else element by element, as an array\n                    | listm'.list' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    | seq.seq' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    // a record field by field, as `#?` (format_real) writes one\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ => format_debug_other_rust `t x\n                ) : () -> string\n            TypeScript =\n                (fun () =>\n                    typecase t with\n                    | char => $'\"\\'\" + String.fromCharCode(!x) + \"\\'\"' : string\n                    | optionm'.option' ~a =>\n                        if $'!x === undefined' : bool\n                        then \"None\"\n                        else (++#*) \"Some \" (format_debug_real `a ($'!x ' : a))\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if real_core.prim_type_is `el\n                        then $'\"[\" + !x.join(\", \") + \"]\"' : string\n                        else $'String(!x)' : string\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ =>\n                        if real_core.union_type_is `t\n                        then serialize_union_rust `t x\n                        else $'String(!x)' : string\n                ) : () -> string\n        }\n// Native Rust, a type that is neither a primitive container nor a tuple: a primitive through `Debug`, a union\n// structurally, a nominal as its payload, anything else as a `<rust type>` placeholder.\nand inl format_debug_other_rust forall t. (x : t) : string =\n    if real_core.prim_type_is `t\n    then $'Rc::<str>::from(format\\!(\"{:?}\", !x))' : string\n    elif real_core.union_type_is `t\n    then serialize_union_rust `t x\n    // A nominal prints as its payload: a primitive (`date_time.timestamp` over `i64`: the number,\n    // as F#'s `%A`), union, tuple, array or nominal as above; a macro type through `Debug` when it\n    // implements it (autoref specialization), else the placeholder.\n    elif real_core.nominal_type_is `t\n    then\n        inl payload forall u. (y : u) : string =\n            typecase u with\n            | {} => $'Rc::<str>::from(\"<`t>\")' : string\n            | ~a -> ~b => $'Rc::<str>::from(\"<`t>\")' : string\n            | ~a * ~b => format_debug_real `u y\n            | array_base _ => format_debug_real `u y\n            | _ =>\n                if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u\n                then format_debug_real `u y\n                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\\!(\"{:?}\", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from(\"<`t>\") } } (&&W(&!y)).s() })' : string\n        inl y = real_core.nominal_strip x\n        payload `(`y) y\n    else $'Rc::<str>::from(\"<`t>\")' : string\n// Native Rust, the elements of an array (or of a list'/option' copied into one) whose elements have no `Debug`\n// (codegenRust's unions derive only `Clone`): one by one, `[a, b]` as `{:?}` prints an array of primitives.\nand inl format_debug_elements_rust forall el. (x : array_base el) : string =\n    join\n        inl n = !!!!ArrayLength(`u64, x)\n        inl i = mut `u64 (real_core.dyn 0u64)\n        inl s = mut `string (real_core.dyn \"\")\n        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>\n            inl j = !!!!LayoutIndex(i)\n            inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)\n            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* \", \" ++#* e)\n            i <- !!!!Add(j, 1u64)\n        \"[\" ++#* !!!!LayoutIndex(s) ++#* \"]\"\n    : string\n// an element in parentheses when it is a tuple, as `{:?}` prints one\nand inl format_debug_element_rust forall el. (x : el) : string =\n    typecase el with\n    | ~a * ~b => \"(\" ++#* format_debug_real `el x ++#* \")\"\n    | _ => format_debug_real `el x\nand inl serialize_union forall t. (x : t) : string =\n    join\n        $'if type(v0) ~= \"table\" then return tostring(v0) end' : ()\n        real_core.unbox x fun k, v =>\n            inl tag : string = $'__v[1].tag'\n            typecase `v with\n            | () => tag\n            | ~a * ~b =>\n                typecase a with\n                | ~c * ~d =>\n                    inl head_str = format_debug_real `c ($'__v[1]._1 ' : c)\n                    inl tail_str = format_debug_real `d ($'__v[1]._2  ' : d)\n                    inl x = format_debug_real `b ($'__v[1]._3   ' : b)\n                    tag ++#* \"(\" ++#* head_str ++#* \", \" ++#* tail_str ++#* \", \" ++#* x ++#* \")\"\n                | _ =>\n                    inl head_str = format_debug_real `a ($'__v[1]._1    ' : a)\n                    inl tail_str = format_debug_real `b ($'__v[1]._2     ' : b)\n                    (++#*) tag ((++#*) \"(\" ((++#*) head_str ((++#*) \", \" ((++#*) tail_str \")\"))))\n            | ~a =>\n                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)\n                (++#*) tag ((++#*) \"(\" ((++#*) arg_str \")\"))\n    : string\nand inl serialize_union_rust forall t. (x : t) : string =\n    join\n        real_core.unbox x fun k, v =>\n            inl name = symbol_to_string_real `(`k)\n            typecase `v with\n            | () => name\n            | _ => (++#*) name ((++#*) \"(\" ((++#*) (format_debug_real `(`v) v) \")\"))\n    : string\n\n// Native Rust `obj_to_string` (F#'s `ToString`): a non-generic nominal over a plain Rust type (guid: `Rc<str>`,\n// date_time: `chrono::NaiveDateTime`) prints through `Display`; anything else as `format_debug_real` (generic\n// nominals like `am'.vec t`, records, tuples, arrays and functions keep its placeholder).\ninl obj_to_string_rust_inner_real forall t. (x : t) : string =\n    typecase t with\n    | {} => format_debug_real `t x\n    | ~a * ~b => format_debug_real `t x\n    | ~a -> ~b => format_debug_real `t x\n    | array_base _ => format_debug_real `t x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t\n        then format_debug_real `t x\n        else $'Rc::<str>::from(format\\!(\"{}\", !x))' : string\n\ninl obj_to_string_rust_real forall t. (x : t) : string =\n    typecase t with\n    // Like F#'s `string`, where Debug differs: a char is itself, a string is not quoted.\n    | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string\n    | string => x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.nominal_type_is `t\n        then\n            inl x = real_core.nominal_strip x\n            obj_to_string_rust_inner_real `(`x) x\n        else format_debug_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl rec format_debug_real forall t. (x : t) : string =\n    typecase t with\n    | string => x\n    | _ =>\n        backend_switch `string `({}) {\n            Gleam =\n                (fun () =>\n                    typecase t with\n                    | char => convert.to `(`x) `string x\n                    | string_builder_real => convert.to `(`x) `string x\n                    | _ =>\n                        global \"import gleam/string\"\n                        inl x =\n                            typecase t with\n                            | array_base _ => $'!x |> array.to_list' : t\n                            | _ => x\n                        $'string.inspect(!x)' : string\n                    ) : () -> string\n            Lua =\n                (fun () =>\n                    typecase t with\n                    | ~a * ~b =>\n                        inl a, b =\n                            if not (var_is `t x)\n                            then x\n                            else ($'__v[1]._1' : a), ($'__v[1]._2' : b)\n                        inl head_str = format_debug_real `a a\n                        inl tail_str = format_debug_real `b b\n                        (++#*) head_str ((++#*) \", \" tail_str)\n                    | {} => $'table.concat(!x, \", \")   ' : string\n                    | array_base _ =>\n                        (++#*) ((++#*) \"[\" ($'table.concat(!x, \", \")' : string)) \"]\"\n                    | t =>\n                        if real_core.union_type_is `t\n                        then serialize_union `t x\n                        else $'tostring(!x)       ' : string\n                ) : () -> string\n            Fsharp = (fun () => $'$\"%A{!x}\"' : string) : () -> string\n            Python =\n                (fun () =>\n                    $'f\"{!x}\"' : string\n                ) : () -> string\n            // Native Rust: codegenRust's unions/layouts derive only `Clone` (no `Debug`), so `{:?}` is used for\n            // primitives and arrays of primitives only; unions print structurally (`Case(payload)`), tuples and arrays,\n            // list's and options of anything else element by element (so `_assert_eq'` compares their contents),\n            // anything else as a `<rust type>` placeholder.\n            Rust =\n                (fun () =>\n                    typecase t with\n                    | char => $'Rc::<str>::from(format\\!(\"{:?}\", !x as char))' : string\n                    // F#'s `%A` of an option: `Some 1` / `None`.\n                    | optionm'.option' ~a =>\n                        if real_core.prim_type_is `a\n                        then $'Rc::<str>::from(match &!x { Some(v) => format\\!(\"Some {:?}\", v), None => String::from(\"None\") })' : string\n                        else\n                            // the payload through Spiral, as an array of 0 or 1 elements (a tuple payload is one Rust value)\n                            inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a\n                            if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then \"None\"\n                            else (++#*) \"Some \" (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))\n                    // a unit head is left out (F#'s tuples carry no unit element)\n                    | () * ~b =>\n                        inl _, b = x\n                        format_debug_real `b b\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if real_core.prim_type_is `el\n                        then $'Rc::<str>::from(format\\!(\"{:?}\", !x.borrow()))' : string\n                        else format_debug_elements_rust `el x\n                    // a list'/seq' (`Rc<Vec<T>>`) of primitives prints through `Debug` as any nominal below; of anything\n                    // else element by element, as an array\n                    | listm'.list' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    | seq.seq' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    // a record field by field, as `#?` (format_real) writes one\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ => format_debug_other_rust `t x\n                ) : () -> string\n            TypeScript =\n                (fun () =>\n                    typecase t with\n                    | char => $'\"\\'\" + String.fromCharCode(!x) + \"\\'\"' : string\n                    | optionm'.option' ~a =>\n                        if $'!x === undefined' : bool\n                        then \"None\"\n                        else (++#*) \"Some \" (format_debug_real `a ($'!x ' : a))\n                    | () * ~b =>\n                        inl _, b = x\n                        format_debug_real `b b\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if (typecase el with char => true | _ => false)\n                        then $'\"[\" + !x.map((c: number) => \"\\'\" + String.fromCharCode(c) + \"\\'\").join(\", \") + \"]\"' : string\n                        elif real_core.prim_type_is `el\n                        then $'\"[\" + !x.join(\", \") + \"]\"' : string\n                        else $'String(!x)' : string\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ =>\n                        if real_core.union_type_is `t\n                        then serialize_union_rust `t x\n                        // a nominal as its payload (a parser_state as its record)\n                        elif real_core.nominal_type_is `t\n                        then\n                            inl y = real_core.nominal_strip x\n                            format_debug_real `(`y) y\n                        else $'String(!x)' : string\n                ) : () -> string\n        }\n// Native Rust, a type that is neither a primitive container nor a tuple: a primitive through `Debug`, a union\n// structurally, a nominal as its payload, anything else as a `<rust type>` placeholder.\nand inl format_debug_other_rust forall t. (x : t) : string =\n    if real_core.prim_type_is `t\n    then $'Rc::<str>::from(format\\!(\"{:?}\", !x))' : string\n    elif real_core.union_type_is `t\n    then serialize_union_rust `t x\n    // A nominal prints as its payload: a primitive (`date_time.timestamp` over `i64`: the number,\n    // as F#'s `%A`), union, tuple, array or nominal as above; a macro type through `Debug` when it\n    // implements it (autoref specialization), else the placeholder.\n    elif real_core.nominal_type_is `t\n    then\n        inl payload forall u. (y : u) : string =\n            typecase u with\n            | {} => format_debug_real `u y\n            | ~a -> ~b => $'Rc::<str>::from(\"<`t>\")' : string\n            | ~a * ~b => format_debug_real `u y\n            | array_base _ => format_debug_real `u y\n            | _ =>\n                if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u\n                then format_debug_real `u y\n                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\\!(\"{:?}\", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from(\"<`t>\") } } (&&W(&!y)).s() })' : string\n        inl y = real_core.nominal_strip x\n        payload `(`y) y\n    else $'Rc::<str>::from(\"<`t>\")' : string\n// Native Rust, the elements of an array (or of a list'/option' copied into one) whose elements have no `Debug`\n// (codegenRust's unions derive only `Clone`): one by one, `[a, b]` as `{:?}` prints an array of primitives.\nand inl format_debug_elements_rust forall el. (x : array_base el) : string =\n    join\n        inl n = !!!!ArrayLength(`u64, x)\n        inl i = mut `u64 (real_core.dyn 0u64)\n        inl s = mut `string (real_core.dyn \"\")\n        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>\n            inl j = !!!!LayoutIndex(i)\n            inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)\n            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* \", \" ++#* e)\n            i <- !!!!Add(j, 1u64)\n        \"[\" ++#* !!!!LayoutIndex(s) ++#* \"]\"\n    : string\n// an element in parentheses when it is a tuple, as `{:?}` prints one\nand inl format_debug_element_rust forall el. (x : el) : string =\n    typecase el with\n    | ~a * ~b => \"(\" ++#* format_debug_real `el x ++#* \")\"\n    | _ => format_debug_real `el x\nand inl serialize_union forall t. (x : t) : string =\n    join\n        $'if type(v0) ~= \"table\" then return tostring(v0) end' : ()\n        real_core.unbox x fun k, v =>\n            inl tag : string = $'__v[1].tag'\n            typecase `v with\n            | () => tag\n            | ~a * ~b =>\n                typecase a with\n                | ~c * ~d =>\n                    inl head_str = format_debug_real `c ($'__v[1]._1 ' : c)\n                    inl tail_str = format_debug_real `d ($'__v[1]._2  ' : d)\n                    inl x = format_debug_real `b ($'__v[1]._3   ' : b)\n                    tag ++#* \"(\" ++#* head_str ++#* \", \" ++#* tail_str ++#* \", \" ++#* x ++#* \")\"\n                | _ =>\n                    inl head_str = format_debug_real `a ($'__v[1]._1    ' : a)\n                    inl tail_str = format_debug_real `b ($'__v[1]._2     ' : b)\n                    (++#*) tag ((++#*) \"(\" ((++#*) head_str ((++#*) \", \" ((++#*) tail_str \")\"))))\n            | ~a =>\n                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)\n                (++#*) tag ((++#*) \"(\" ((++#*) arg_str \")\"))\n    : string\nand inl serialize_union_rust forall t. (x : t) : string =\n    join\n        real_core.unbox x fun k, v =>\n            inl name = symbol_to_string_real `(`k)\n            typecase `v with\n            | () => name\n            | _ => (++#*) name ((++#*) \"(\" ((++#*) (format_debug_real `(`v) v) \")\"))\n    : string\n\n// Native Rust `obj_to_string` (F#'s `ToString`): a non-generic nominal over a plain Rust type (guid: `Rc<str>`,\n// date_time: `chrono::NaiveDateTime`) prints through `Display`; anything else as `format_debug_real` (generic\n// nominals like `am'.vec t`, records, tuples, arrays and functions keep its placeholder).\ninl obj_to_string_rust_inner_real forall t. (x : t) : string =\n    typecase t with\n    | {} => format_debug_real `t x\n    | ~a * ~b => format_debug_real `t x\n    | ~a -> ~b => format_debug_real `t x\n    | array_base _ => format_debug_real `t x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t\n        then format_debug_real `t x\n        else $'Rc::<str>::from(format\\!(\"{}\", !x))' : string\n\ninl obj_to_string_rust_real forall t. (x : t) : string =\n    typecase t with\n    // Like F#'s `string`, where Debug differs: a char is itself, a string is not quoted.\n    | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string\n    | string => x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.nominal_type_is `t\n        then\n            inl x = real_core.nominal_strip x\n            obj_to_string_rust_inner_real `(`x) x\n        else format_debug_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -602,6 +604,10 @@ Spiral.Kino.eval!(
                               inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
                               if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then "None"
                               else (++#*) "Some " (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))
+                      // a unit head is left out (F#'s tuples carry no unit element)
+                      | () * ~b =>
+                          inl _, b = x
+                          format_debug_real `b b
                       | ~a * ~b =>
                           inl a, b = x
                           (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
@@ -637,11 +643,16 @@ Spiral.Kino.eval!(
                           if $'!x === undefined' : bool
                           then "None"
                           else (++#*) "Some " (format_debug_real `a ($'!x ' : a))
+                      | () * ~b =>
+                          inl _, b = x
+                          format_debug_real `b b
                       | ~a * ~b =>
                           inl a, b = x
                           (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
                       | array_base ~el =>
-                          if real_core.prim_type_is `el
+                          if (typecase el with char => true | _ => false)
+                          then $'"[" + !x.map((c: number) => "\'" + String.fromCharCode(c) + "\'").join(", ") + "]"' : string
+                          elif real_core.prim_type_is `el
                           then $'"[" + !x.join(", ") + "]"' : string
                           else $'String(!x)' : string
                       | {} =>
@@ -654,6 +665,11 @@ Spiral.Kino.eval!(
                       | _ =>
                           if real_core.union_type_is `t
                           then serialize_union_rust `t x
+                          // a nominal as its payload (a parser_state as its record)
+                          elif real_core.nominal_type_is `t
+                          then
+                              inl y = real_core.nominal_strip x
+                              format_debug_real `(`y) y
                           else $'String(!x)' : string
                   ) : () -> string
           }
@@ -671,7 +687,7 @@ Spiral.Kino.eval!(
       then
           inl payload forall u. (y : u) : string =
               typecase u with
-              | {} => $'Rc::<str>::from("<`t>")' : string
+              | {} => format_debug_real `u y
               | ~a -> ~b => $'Rc::<str>::from("<`t>")' : string
               | ~a * ~b => format_debug_real `u y
               | array_base _ => format_debug_real `u y
@@ -766,7 +782,7 @@ Spiral.Kino.eval!(
 
 ### format_debug
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug forall t. (x : t) : string =\n    real format_debug_real `t x\n\ninl obj_to_string_rust forall t. (x : t) : string =\n    real obj_to_string_rust_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug forall t. (x : t) : string =\n    real format_debug_real `t x\n\ninl obj_to_string_rust forall t. (x : t) : string =\n    real obj_to_string_rust_real `t x\n// TypeScript: a char is its byte (a number), shown as the character, as the other backends do.\ninl obj_to_string_typescript forall t. (x : t) : string =\n    if (real typecase t with char => true | _ => false)\n    then $'String.fromCharCode(!x)' : string\n    else $'String(!x)' : string\n// Zig: text through the prelude's arena (a string as is, a char as the character, a bool as true/false, numbers in decimal).\ninl obj_to_string_zig forall t. (x : t) : string =\n    if (real typecase t with string => true | _ => false) then $'!x ' : string\n    elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, \"{c}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    elif (real typecase t with bool => true | _ => false) then $'(if (!x) \"true\" else \"false\")' : string\n    elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)\n    then $'(std.fmt.allocPrint(spiral_gpa, \"{d}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    else $'(std.fmt.allocPrint(spiral_gpa, \"{any}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -776,6 +792,19 @@ Spiral.Kino.eval!(
 
   inl obj_to_string_rust forall t. (x : t) : string =
       real obj_to_string_rust_real `t x
+  // TypeScript: a char is its byte (a number), shown as the character, as the other backends do.
+  inl obj_to_string_typescript forall t. (x : t) : string =
+      if (real typecase t with char => true | _ => false)
+      then $'String.fromCharCode(!x)' : string
+      else $'String(!x)' : string
+  // Zig: text through the prelude's arena (a string as is, a char as the character, a bool as true/false, numbers in decimal).
+  inl obj_to_string_zig forall t. (x : t) : string =
+      if (real typecase t with string => true | _ => false) then $'!x ' : string
+      elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
+      elif (real typecase t with bool => true | _ => false) then $'(if (!x) "true" else "false")' : string
+      elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)
+      then $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch \@panic("out of memory"))' : string
+      else $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch \@panic("out of memory"))' : string
   """,
   timeout: 300_000
 )
@@ -868,7 +897,7 @@ Spiral.Kino.eval!(
 
 ### obj_to_string
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl obj_to_string x : string =\n    backend_switch {\n        Gleam = fun () => #?*x : string\n        Lua = fun () => #?*x : string\n        Fsharp = fun () => $'!x |> _.ToString()' : string\n        Python = fun () => $'str(!x)' : string\n        Rust = fun () => obj_to_string_rust x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl obj_to_string x : string =\n    backend_switch {\n        Gleam = fun () => #?*x : string\n        Lua = fun () => #?*x : string\n        Fsharp = fun () => $'!x |> _.ToString()' : string\n        Python = fun () => $'str(!x)' : string\n        Rust = fun () => obj_to_string_rust x\n        TypeScript = fun () => obj_to_string_typescript x\n        Zig = fun () => obj_to_string_zig x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -880,6 +909,8 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'!x |> _.ToString()' : string
           Python = fun () => $'str(!x)' : string
           Rust = fun () => obj_to_string_rust x
+          TypeScript = fun () => obj_to_string_typescript x
+          Zig = fun () => obj_to_string_zig x
       }
   """,
   timeout: 300_000
@@ -1333,7 +1364,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(\"1\", \"2\", [\"3\"; \"4\"], { b = \"5\"; c = \"6\"; a = fun () => \"7\" }, ;[ 8i32 ])\n|> format\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"1, 2, Uh0i1(\\\"3\\\", Uh0i1(\\\"4\\\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Lua = fun () => \"1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Fsharp = fun () =>\n            run_target function\n                | Rust _ | Rust => fun () => join \"1, 2, UH0_1(\\\"3\\\", UH0_1(\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))\"\n                | TypeScript _ => fun () => join \"1, 2, UH0_1 (3, UH0_1 (4, UH0_0)), { b = 5; c = 6; a = 7 }, 8\"\n                | _ => fun () => join \"1, 2, UH0_1 (\\\"3\\\", UH0_1 (\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]\"\n            : string\n        Python = fun () => \"1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]\" : string\n        // native Rust: a union prints structurally with its case names (sm'_real.format_debug_real)\n        Rust = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(\"1\", \"2\", [\"3\"; \"4\"], { b = \"5\"; c = \"6\"; a = fun () => \"7\" }, ;[ 8i32 ])\n|> format\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"1, 2, Uh0i1(\\\"3\\\", Uh0i1(\\\"4\\\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Lua = fun () => \"1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Fsharp = fun () =>\n            run_target function\n                | _ => fun () => join \"1, 2, UH0_1 (\\\"3\\\", UH0_1 (\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]\"\n            : string\n        Python = fun () => \"1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]\" : string\n        // native Rust: a union prints structurally with its case names (sm'_real.format_debug_real)\n        Rust = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        TypeScript = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1354,13 +1385,12 @@ Spiral.Kino.eval!(
           Lua = fun () => "1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
           Fsharp = fun () =>
               run_target function
-                  | Rust _ | Rust => fun () => join "1, 2, UH0_1(\"3\", UH0_1(\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))"
-                  | TypeScript _ => fun () => join "1, 2, UH0_1 (3, UH0_1 (4, UH0_0)), { b = 5; c = 6; a = 7 }, 8"
                   | _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]"
               : string
           Python = fun () => "1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]" : string
           // native Rust: a union prints structurally with its case names (sm'_real.format_debug_real)
           Rust = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+          TypeScript = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
       }
   )
   """,
@@ -1588,7 +1618,7 @@ Spiral.Kino.eval!(
 
 ### index_of
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_of (search : string) (s : string) : int =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            global \"import gleam/option\"\n            global \"import gleam/string\"\n            inl g : list string =\n                $'!s |> string.to_graphemes'\n            $'let search = !search ' : ()\n            $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()\n            $'  case acc {' : ()\n            $'    option.None if item == search -> option.Some(index)' : ()\n            $'    _ -> acc' : ()\n            $'  }' : ()\n            $'})' : ()\n            $'x |> option.unwrap(-1)' : int\n        Lua = fun () => $'string.find(!s, !search) - 1' : int\n        Fsharp = fun () => $'!s.IndexOf !search ' : int\n        Python = fun () => $'!s.find(!search)' : int\n        Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_of (search : string) (s : string) : int =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            global \"import gleam/option\"\n            global \"import gleam/string\"\n            inl g : list string =\n                $'!s |> string.to_graphemes'\n            $'let search = !search ' : ()\n            $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()\n            $'  case acc {' : ()\n            $'    option.None if item == search -> option.Some(index)' : ()\n            $'    _ -> acc' : ()\n            $'  }' : ()\n            $'})' : ()\n            $'x |> option.unwrap(-1)' : int\n        Lua = fun () => $'string.find(!s, !search) - 1' : int\n        Fsharp = fun () => $'!s.IndexOf !search ' : int\n        Python = fun () => $'!s.find(!search)' : int\n        Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int\n        TypeScript = fun () => $'!s.indexOf(!search)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1613,6 +1643,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'!s.IndexOf !search ' : int
           Python = fun () => $'!s.find(!search)' : int
           Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
+          TypeScript = fun () => $'!s.indexOf(!search)' : int
       }
   """,
   timeout: 300_000
@@ -1765,7 +1796,7 @@ Spiral.Kino.eval!(
 
 ### convert_to_utf32
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_to_utf32 (c : char) : int =\n    backend_switch {\n        Gleam = fun () => c |> convert.i32\n        Lua = fun () => c |> convert.i32\n        Fsharp = fun () =>\n            run_target_args' c function\n            | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int\n            | _ => fun c => c |> convert.i32\n        Python = fun () => $'ord(!c)' : int\n        Rust = fun () => $'(!c as `int)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_to_utf32 (c : char) : int =\n    backend_switch {\n        Gleam = fun () => c |> convert.i32\n        Lua = fun () => c |> convert.i32\n        Fsharp = fun () =>\n            run_target_args' c function\n            | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int\n            | _ => fun c => c |> convert.i32\n        Python = fun () => $'ord(!c)' : int\n        Rust = fun () => $'(!c as `int)' : int\n        TypeScript = fun () => $'(!c)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1780,6 +1811,7 @@ Spiral.Kino.eval!(
               | _ => fun c => c |> convert.i32
           Python = fun () => $'ord(!c)' : int
           Rust = fun () => $'(!c as `int)' : int
+          TypeScript = fun () => $'(!c)' : int
       }
   """,
   timeout: 300_000
@@ -1788,7 +1820,7 @@ Spiral.Kino.eval!(
 
 ### ends_with
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ends_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.ends_with(!value)' : bool\n        Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.endswith(!value)' : bool\n        Rust = fun () => $'!s.ends_with(&*!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(-##!value) == !value ' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ends_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.ends_with(!value)' : bool\n        Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.endswith(!value)' : bool\n        Rust = fun () => $'!s.ends_with(&*!value)' : bool\n        TypeScript = fun () => $'!s.endsWith(!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(-##!value) == !value ' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1801,6 +1833,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool
           Python = fun () => $'!s.endswith(!value)' : bool
           Rust = fun () => $'!s.ends_with(&*!value)' : bool
+          TypeScript = fun () => $'!s.endsWith(!value)' : bool
           Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
       }
   """,
@@ -1810,7 +1843,7 @@ Spiral.Kino.eval!(
 
 ### starts_with
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl starts_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.starts_with(!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(1, ##!value) == !value ' : bool\n        Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.startswith(!value)' : bool\n        Rust = fun () => $'!s.starts_with(&*!value)' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl starts_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.starts_with(!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(1, ##!value) == !value ' : bool\n        Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.startswith(!value)' : bool\n        Rust = fun () => $'!s.starts_with(&*!value)' : bool\n        TypeScript = fun () => $'!s.startsWith(!value)' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1824,6 +1857,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
           Python = fun () => $'!s.startswith(!value)' : bool
           Rust = fun () => $'!s.starts_with(&*!value)' : bool
+          TypeScript = fun () => $'!s.startsWith(!value)' : bool
       }
   """,
   timeout: 300_000
@@ -1902,7 +1936,7 @@ Spiral.Kino.eval!(
 
 ### char_to_upper
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl char_to_upper (input : char) : char =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!input |> string.uppercase' : char\n        Lua = fun () => $'string.upper(!input)' : char\n        Fsharp = fun () => $'System.Char.ToUpper !input ' : char\n        Python = fun () => $'!input.upper()' : char\n        Rust = fun () => $'!input.to_ascii_uppercase()' : char\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl char_to_upper (input : char) : char =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!input |> string.uppercase' : char\n        Lua = fun () => $'string.upper(!input)' : char\n        Fsharp = fun () => $'System.Char.ToUpper !input ' : char\n        Python = fun () => $'!input.upper()' : char\n        Rust = fun () => $'!input.to_ascii_uppercase()' : char\n        TypeScript = fun () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1916,6 +1950,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'System.Char.ToUpper !input ' : char
           Python = fun () => $'!input.upper()' : char
           Rust = fun () => $'!input.to_ascii_uppercase()' : char
+          TypeScript = fun () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char
       }
   """,
   timeout: 300_000
@@ -1924,7 +1959,7 @@ Spiral.Kino.eval!(
 
 ### builder_append
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append (item : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'!sb <> !item ' : string_builder\n        Lua = fun () =>\n            $'!sb .. !item ' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Append' item : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.write(!item)' : int) |> ignore\n            sb\n        Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append (item : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'!sb <> !item ' : string_builder\n        Lua = fun () =>\n            $'!sb .. !item ' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Append' item : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.write(!item)' : int) |> ignore\n            sb\n        Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder\n        TypeScript = fun () => $'!sb + !item ' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1942,6 +1977,7 @@ Spiral.Kino.eval!(
               ($'!sb.write(!item)' : int) |> ignore
               sb
           Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder
+          TypeScript = fun () => $'!sb + !item ' : string_builder
       }
   """,
   timeout: 300_000
@@ -1973,7 +2009,7 @@ Spiral.Kino.eval!(
 
 ### builder_append_line
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append_line (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            sb |> builder_append \"\\n\"\n        Lua = fun () =>\n            sb |> builder_append \"\\n\"\n        Fsharp = fun () =>\n            ($'!sb.AppendLine ()' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            sb |> builder_append \"\\n\"\n        Rust = fun () =>\n            sb |> builder_append \"\\n\"\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append_line (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            sb |> builder_append \"\\n\"\n        Lua = fun () =>\n            sb |> builder_append \"\\n\"\n        Fsharp = fun () =>\n            ($'!sb.AppendLine ()' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            sb |> builder_append \"\\n\"\n        Rust = fun () =>\n            sb |> builder_append \"\\n\"\n        TypeScript = fun () =>\n            sb |> builder_append \"\\n\"\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1991,6 +2027,8 @@ Spiral.Kino.eval!(
               sb |> builder_append "\n"
           Rust = fun () =>
               sb |> builder_append "\n"
+          TypeScript = fun () =>
+              sb |> builder_append "\n"
       }
   """,
   timeout: 300_000
@@ -1999,7 +2037,7 @@ Spiral.Kino.eval!(
 
 ### builder_replace
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_replace (old : string) (new : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!sb |> string.replace(!old, !new)' : string_builder\n        Lua = fun () =>\n            $'string.gsub(!sb, !old, !new)' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Replace (!old, !new)' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder\n        Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_replace (old : string) (new : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!sb |> string.replace(!old, !new)' : string_builder\n        Lua = fun () =>\n            $'string.gsub(!sb, !old, !new)' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Replace (!old, !new)' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder\n        Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder\n        TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2017,6 +2055,7 @@ Spiral.Kino.eval!(
           Python = fun () =>
               ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
           Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
+          TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder
       }
   """,
   timeout: 300_000
@@ -2049,7 +2088,7 @@ Spiral.Kino.eval!(
 
 ### builder_clear
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_clear (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'let !sb = \"\"'\n            sb\n        Lua = fun () =>\n            $'!sb = \"\"'\n            sb\n        Fsharp = fun () =>\n            ($'!sb.Clear' () : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.truncate(0)' : int) |> ignore\n            ($'!sb.seek(0)' : int) |> ignore\n            sb\n        Rust = fun () => $'String::new()' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_clear (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'let !sb = \"\"'\n            sb\n        Lua = fun () =>\n            $'!sb = \"\"'\n            sb\n        Fsharp = fun () =>\n            ($'!sb.Clear' () : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.truncate(0)' : int) |> ignore\n            ($'!sb.seek(0)' : int) |> ignore\n            sb\n        Rust = fun () => $'String::new()' : string_builder\n        TypeScript = fun () => $'\"\"' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2070,6 +2109,7 @@ Spiral.Kino.eval!(
               ($'!sb.seek(0)' : int) |> ignore
               sb
           Rust = fun () => $'String::new()' : string_builder
+          TypeScript = fun () => $'""' : string_builder
       }
   """,
   timeout: 300_000
@@ -2380,7 +2420,7 @@ Spiral.Kino.eval!(
 
 ### concat
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat (a : string) (b : seq.seq' string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!b |> string.join(!a)' : string\n        Lua = fun () => $'table.concat(!b, !a)' : string\n        Fsharp = fun () =>\n            inl a =\n                if a = \"\\n\"\n                then join a\n                else a\n            b |> $'String.concat' a : string\n        Python = fun () =>\n            $'!a.join(!b)' : string\n        Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat (a : string) (b : seq.seq' string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!b |> string.join(!a)' : string\n        Lua = fun () => $'table.concat(!b, !a)' : string\n        Fsharp = fun () =>\n            inl a =\n                if a = \"\\n\"\n                then join a\n                else a\n            b |> $'String.concat' a : string\n        Python = fun () =>\n            $'!a.join(!b)' : string\n        Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string\n        TypeScript = fun () => $'!b.join(!a)' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2400,6 +2440,7 @@ Spiral.Kino.eval!(
           Python = fun () =>
               $'!a.join(!b)' : string
           Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string
+          TypeScript = fun () => $'!b.join(!a)' : string
       }
   """,
   timeout: 300_000
@@ -2461,7 +2502,7 @@ Spiral.Kino.eval!(
 
 ### replace
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl replace (old : string) (new : string) (s : string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.replace(!old, !new)' : string\n        Lua = fun () =>\n            $'string.gsub(!s, !old, !new)' : string\n        Fsharp = fun () =>\n            $'!s.Replace (!old, !new)' : string\n        Python = fun () =>\n            $'!s.replace(!old, !new)' : string\n        Rust = fun () =>\n            $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl replace (old : string) (new : string) (s : string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.replace(!old, !new)' : string\n        Lua = fun () =>\n            $'string.gsub(!s, !old, !new)' : string\n        Fsharp = fun () =>\n            $'!s.Replace (!old, !new)' : string\n        Python = fun () =>\n            $'!s.replace(!old, !new)' : string\n        Rust = fun () =>\n            $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string\n        TypeScript = fun () =>\n            $'!s.split(!old).join(!new)' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2479,6 +2520,8 @@ Spiral.Kino.eval!(
               $'!s.replace(!old, !new)' : string
           Rust = fun () =>
               $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string
+          TypeScript = fun () =>
+              $'!s.split(!old).join(!new)' : string
       }
   """,
   timeout: 300_000
@@ -2487,7 +2530,7 @@ Spiral.Kino.eval!(
 
 ### split
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl split (separator : string) (str : string) : array_base string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            ($'!str |> string.split(!separator)' : listm'.list' string)\n            |> listm'.to_array'\n        Fsharp = fun () => $'!str.Split !separator ' : array_base string\n        Python = fun () => $'!str.split(!separator)' : array_base string\n        Rust = fun () =>\n            $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'\n            : array_base string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl split (separator : string) (str : string) : array_base string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            ($'!str |> string.split(!separator)' : listm'.list' string)\n            |> listm'.to_array'\n        Fsharp = fun () => $'!str.Split !separator ' : array_base string\n        Python = fun () => $'!str.split(!separator)' : array_base string\n        Rust = fun () =>\n            $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'\n            : array_base string\n        TypeScript = fun () => $'!str.split(!separator)' : array_base string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2503,6 +2546,7 @@ Spiral.Kino.eval!(
           Rust = fun () =>
               $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
               : array_base string
+          TypeScript = fun () => $'!str.split(!separator)' : array_base string
       }
   """,
   timeout: 300_000
@@ -2988,13 +3032,12 @@ Spiral.Kino.eval!(
 
 ### as_str
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_str (s : string) : rust.ref str =\n    // !\\\\(s, $'\"fable_library_rust::String_::LrcStr::as_str(&$0)\"')\n    run_target_args (fun () => s) function\n        | Rust => fun s => !\\\\(s, $'\"&*$0\"')\n        | _ => convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_str (s : string) : rust.ref str =\n    run_target_args (fun () => s) function\n        | Rust => fun s => !\\\\(s, $'\"&*$0\"')\n        | _ => convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl as_str (s : string) : rust.ref str =
-      // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
       run_target_args (fun () => s) function
           | Rust => fun s => !\\(s, $'"&*$0"')
           | _ => convert.unbox
@@ -3898,7 +3941,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nfun () => failwith \"test\"\n|> _throws\n|> optionm.value\n|> format_exception\n|> _assert_eq (run_target function\n    | Fsharp _ => fun () => join \"System.Exception: test\"\n    | Cuda _ => fun () => \"test\"\n    | Rust _ => fun () => \"Exception { message: \\\"test\\\" }\"\n    | Rust => fun () => \"test\"\n    | TypeScript _ => fun () => \"Error: test\"\n    | _ => fun () => null ()\n)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nfun () => failwith \"test\"\n|> _throws\n|> optionm.value\n|> format_exception\n|> _assert_eq (run_target function\n    | Fsharp _ => fun () => join \"System.Exception: test\"\n    | Cuda _ => fun () => \"test\"\n    | Rust => fun () => \"test\"\n    | TypeScript _ => fun () => \"Error: test\"\n    | _ => fun () => null ()\n)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -3916,7 +3959,6 @@ Spiral.Kino.eval!(
   |> _assert_eq (run_target function
       | Fsharp _ => fun () => join "System.Exception: test"
       | Cuda _ => fun () => "test"
-      | Rust _ => fun () => "Exception { message: \"test\" }"
       | Rust => fun () => "test"
       | TypeScript _ => fun () => "Error: test"
       | _ => fun () => null ()
@@ -3928,7 +3970,7 @@ Spiral.Kino.eval!(
 
 ### range
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl range forall t. (start : am'.range t) (end : am'.range t) s =\n    inl is_start, start, end =\n        inl len () : int =\n            real\n                typecase t with\n                | int => length `t s\n                | _ => length' `t s\n        match start, end with\n        | Start start, End fn => true, start, len >> convert.to |> fn\n        | End start_fn, End end_fn => false, start_fn (len >> convert.to), end_fn (len >> convert.to)\n    inl start' = start |> convert.try_convert |> optionm.value : int\n    inl end' = end |> convert.try_convert |> optionm.value : int\n    inl start_is_var = start |> var_is\n    inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)\n    inl start_var_s_fixed = start_is_var && (s |> var_is |> not)\n    inl trace () =\n        [\n            \"sm'.range\"\n            \" / (s |> var_is): \"; s |> var_is |> obj_to_string\n            \" // start: \"; start |> obj_to_string\n            \" / (start |> var_is): \"; start_is_var |> obj_to_string\n            \" // end: \"; end |> obj_to_string\n            \" / (end |> var_is): \"; end |> var_is |> obj_to_string\n            \" // same_fixed: \"; same_fixed |> obj_to_string\n            \" / start_var_s_fixed: \"; start_var_s_fixed |> obj_to_string\n        ]\n        |> concat_list \"\"\n    backend_switch {\n        Gleam = fun () =>\n            // TODO: uncomment\n            // global \"import gleam/io\"\n            // $'io.println(!(trace ()))' : ()\n            ()\n        Lua = id : () -> ()\n        Fsharp = id : () -> ()\n        Python = id : () -> ()\n        Rust = id : () -> ()\n    }\n    s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl range forall t. (start : am'.range t) (end : am'.range t) s =\n    inl is_start, start, end =\n        inl len () : int =\n            real\n                typecase t with\n                | int => length `t s\n                | _ => length' `t s\n        match start, end with\n        | Start start, End fn => true, start, len >> convert.to |> fn\n        | End start_fn, End end_fn => false, start_fn (len >> convert.to), end_fn (len >> convert.to)\n    inl start' = start |> convert.try_convert |> optionm.value : int\n    inl end' = end |> convert.try_convert |> optionm.value : int\n    inl start_is_var = start |> var_is\n    inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)\n    inl start_var_s_fixed = start_is_var && (s |> var_is |> not)\n    inl trace () =\n        [\n            \"sm'.range\"\n            \" / (s |> var_is): \"; s |> var_is |> obj_to_string\n            \" // start: \"; start |> obj_to_string\n            \" / (start |> var_is): \"; start_is_var |> obj_to_string\n            \" // end: \"; end |> obj_to_string\n            \" / (end |> var_is): \"; end |> var_is |> obj_to_string\n            \" // same_fixed: \"; same_fixed |> obj_to_string\n            \" / start_var_s_fixed: \"; start_var_s_fixed |> obj_to_string\n        ]\n        |> concat_list \"\"\n    backend_switch {\n        Gleam = fun () =>\n            // TODO: uncomment\n            // global \"import gleam/io\"\n            // $'io.println(!(trace ()))' : ()\n            ()\n        Lua = id : () -> ()\n        Fsharp = id : () -> ()\n        Python = id : () -> ()\n        Rust = id : () -> ()\n        TypeScript = id : () -> ()\n        Zig = id : () -> ()\n    }\n    s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -3970,6 +4012,8 @@ Spiral.Kino.eval!(
           Fsharp = id : () -> ()
           Python = id : () -> ()
           Rust = id : () -> ()
+          TypeScript = id : () -> ()
+          Zig = id : () -> ()
       }
       s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
   """,

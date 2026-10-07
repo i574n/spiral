@@ -848,7 +848,7 @@ Spiral.Kino.eval!(
 
 ### list'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl list'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/list\"\n        Rust = fun () => ()\n    }\ntype list'_switch t =\n    {\n        Gleam : $'List(`t)'\n        Fsharp : $'`t list'\n        Python : $'list'\n        Rust : $'Rc<Vec<`t>>'\n    }\nnominal list' t = $'backend_switch `(list'_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl list'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/list\"\n        Rust = fun () => ()\n    }\ntype list'_switch t =\n    {\n        Gleam : $'List(`t)'\n        Fsharp : $'`t list'\n        Python : $'list'\n        Rust : $'Rc<Vec<`t>>'\n        TypeScript : $'Array<`t>'\n    }\nnominal list' t = $'backend_switch `(list'_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -864,6 +864,7 @@ Spiral.Kino.eval!(
           Fsharp : $'`t list'
           Python : $'list'
           Rust : $'Rc<Vec<`t>>'
+          TypeScript : $'Array<`t>'
       }
   nominal list' t = $'backend_switch `(list'_switch t)'
   """,
@@ -873,7 +874,7 @@ Spiral.Kino.eval!(
 
 ### empty'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl empty' forall t. () : list' t =\n    backend_switch {\n        Gleam = fun () => $'[]' : list' t\n        Lua = fun () => $'{}' : list' t\n        Fsharp = fun () => $'[]' : list' t\n        Python = fun () => $'[]' : list' t\n        Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl empty' forall t. () : list' t =\n    backend_switch {\n        Gleam = fun () => $'[]' : list' t\n        Lua = fun () => $'{}' : list' t\n        Fsharp = fun () => $'[]' : list' t\n        Python = fun () => $'[]' : list' t\n        Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t\n        TypeScript = fun () => $'[]' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -885,6 +886,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'[]' : list' t
           Python = fun () => $'[]' : list' t
           Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t
+          TypeScript = fun () => $'[]' : list' t
       }
   """,
   timeout: 300_000
@@ -893,7 +895,7 @@ Spiral.Kino.eval!(
 
 ### cons'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cons' forall t. (head : t) (tail : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'[ !head, ..!tail ]' : list' t\n        Lua = fun () =>\n            $'table.insert(!tail, 1, !head)'\n            $'!tail ' : list' t\n        Fsharp = fun () => $'!head :: !tail ' : list' t\n        Python = fun () =>\n            $'!tail.insert(0, !head)'\n            $'!tail ' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cons' forall t. (head : t) (tail : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'[ !head, ..!tail ]' : list' t\n        Lua = fun () =>\n            $'table.insert(!tail, 1, !head)'\n            $'!tail ' : list' t\n        Fsharp = fun () => $'!head :: !tail ' : list' t\n        Python = fun () =>\n            $'!tail.insert(0, !head)'\n            $'!tail ' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t\n        TypeScript = fun () => $'[!head, ...!tail]' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -909,6 +911,7 @@ Spiral.Kino.eval!(
               $'!tail.insert(0, !head)'
               $'!tail ' : list' t
           Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
+          TypeScript = fun () => $'[!head, ...!tail]' : list' t
       }
   """,
   timeout: 300_000
@@ -939,7 +942,7 @@ Spiral.Kino.eval!(
 
 ### rev'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rev' forall t. (items : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!items |> list.reverse' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!items)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- cons' ($'!items[!i + 1]') (*result)\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () => items |> $'List.rev' : list' t\n        Python = fun () => $'list(reversed(!items))' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rev' forall t. (items : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!items |> list.reverse' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!items)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- cons' ($'!items[!i + 1]') (*result)\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () => items |> $'List.rev' : list' t\n        Python = fun () => $'list(reversed(!items))' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t\n        TypeScript = fun () => $'[...!items].reverse()' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -960,6 +963,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => items |> $'List.rev' : list' t
           Python = fun () => $'list(reversed(!items))' : list' t
           Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
+          TypeScript = fun () => $'[...!items].reverse()' : list' t
       }
   """,
   timeout: 300_000
@@ -968,7 +972,7 @@ Spiral.Kino.eval!(
 
 ### fold'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold' : list u\n        Lua = fun () =>\n            inl result : mut (list u) = init |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- $'!fn(!list[!i + 1])' :: *result\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () =>\n            (init, list)\n            ||> $'List.fold' join fun acc x => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            inl init = init |> box\n            $'r = !init '\n            inl list = list |> rev'\n            $'for x in !list: r = [!fn(x)] + r'\n            inl init : list u = Nil\n            inl cons (a : u) b = Cons (a, b)\n            $'r_ = !init '\n            $'for x in r: r_ = !cons (x)(r_)'\n            $'r_' : list u\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i >= len then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (Cons (fn item, acc))\n            루프 0i32 init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold' : list u\n        Lua = fun () =>\n            inl result : mut (list u) = init |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- $'!fn(!list[!i + 1])' :: *result\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () =>\n            (init, list)\n            ||> $'List.fold' join fun acc x => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            inl init = init |> box\n            $'r = !init '\n            inl list = list |> rev'\n            $'for x in !list: r = [!fn(x)] + r'\n            inl init : list u = Nil\n            inl cons (a : u) b = Cons (a, b)\n            $'r_ = !init '\n            $'for x in r: r_ = !cons (x)(r_)'\n            $'r_' : list u\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i >= len then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (Cons (fn item, acc))\n            루프 0i32 init\n        TypeScript = fun () =>\n            inl len : i32 = $'!list.length'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i >= len then acc\n                else\n                    inl item : t = $'!list[!i]'\n                    루프 (i + 1i32) (Cons (fn item, acc))\n            루프 0i32 init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1012,6 +1016,14 @@ Spiral.Kino.eval!(
                       inl item : t = $'(!list)[!i as usize].clone()'
                       루프 (i + 1i32) (Cons (fn item, acc))
               루프 0i32 init
+          TypeScript = fun () =>
+              inl len : i32 = $'!list.length'
+              let rec 루프 (i : i32) (acc : list u) : list u =
+                  if i >= len then acc
+                  else
+                      inl item : t = $'!list[!i]'
+                      루프 (i + 1i32) (Cons (fn item, acc))
+              루프 0i32 init
       }
   """,
   timeout: 300_000
@@ -1020,7 +1032,7 @@ Spiral.Kino.eval!(
 
 ### fold_back'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold_back' : list u\n        Lua = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Fsharp = fun () =>\n            (list, init)\n            ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (Cons (fn item, acc))\n            루프 (len - 1i32) init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold_back' : list u\n        Lua = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Fsharp = fun () =>\n            (list, init)\n            ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (Cons (fn item, acc))\n            루프 (len - 1i32) init\n        TypeScript = fun () =>\n            inl len : i32 = $'!list.length'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'!list[!i]'\n                    루프 (i - 1i32) (Cons (fn item, acc))\n            루프 (len - 1i32) init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1053,6 +1065,14 @@ Spiral.Kino.eval!(
                       inl item : t = $'(!list)[!i as usize].clone()'
                       루프 (i - 1i32) (Cons (fn item, acc))
               루프 (len - 1i32) init
+          TypeScript = fun () =>
+              inl len : i32 = $'!list.length'
+              let rec 루프 (i : i32) (acc : list u) : list u =
+                  if i < 0i32 then acc
+                  else
+                      inl item : t = $'!list[!i]'
+                      루프 (i - 1i32) (Cons (fn item, acc))
+              루프 (len - 1i32) init
       }
   """,
   timeout: 300_000
@@ -1061,7 +1081,7 @@ Spiral.Kino.eval!(
 
 ### filter'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!list |> list.filter(!fn)' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if fn item\n                    then\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n                    else 루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'\"List.filter !fn\"' : list' t\n        Python = fun () => $'list(filter(!fn, !list))' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list t) : list t =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)\n            루프 (len - 1i32) Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!list |> list.filter(!fn)' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if fn item\n                    then\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n                    else 루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'\"List.filter !fn\"' : list' t\n        Python = fun () => $'list(filter(!fn, !list))' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list t) : list t =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)\n            루프 (len - 1i32) Nil |> box\n        TypeScript = fun () =>\n            inl len : i32 = $'!list.length'\n            let rec 루프 (i : i32) (acc : list t) : list t =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'!list[!i]'\n                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)\n            루프 (len - 1i32) Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1093,6 +1113,14 @@ Spiral.Kino.eval!(
                       inl item : t = $'(!list)[!i as usize].clone()'
                       루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
               루프 (len - 1i32) Nil |> box
+          TypeScript = fun () =>
+              inl len : i32 = $'!list.length'
+              let rec 루프 (i : i32) (acc : list t) : list t =
+                  if i < 0i32 then acc
+                  else
+                      inl item : t = $'!list[!i]'
+                      루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
+              루프 (len - 1i32) Nil |> box
       }
   """,
   timeout: 300_000
@@ -1101,7 +1129,7 @@ Spiral.Kino.eval!(
 
 ### map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (list : list' t) : list' u =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.map(!fn)' : list' u\n        Lua = fun () =>\n            inl result : mut (list' u) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    result <- cons' ($'!fn(!list[!i + 1])') (*result)\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.map' fn : list' u\n        Python = fun () => $'list(map(!fn, !list))' : list' u\n        Rust = fun () => fold_back' fn list Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (list : list' t) : list' u =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.map(!fn)' : list' u\n        Lua = fun () =>\n            inl result : mut (list' u) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    result <- cons' ($'!fn(!list[!i + 1])') (*result)\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.map' fn : list' u\n        Python = fun () => $'list(map(!fn, !list))' : list' u\n        Rust = fun () => fold_back' fn list Nil |> box\n        TypeScript = fun () => fold_back' fn list Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1123,6 +1151,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => list |> $'List.map' fn : list' u
           Python = fun () => $'list(map(!fn, !list))' : list' u
           Rust = fun () => fold_back' fn list Nil |> box
+          TypeScript = fun () => fold_back' fn list Nil |> box
       }
   """,
   timeout: 300_000
@@ -1146,7 +1175,7 @@ Spiral.Kino.eval!(
 
 ### distinct'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct' forall t. (list : list' t) : list' t =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.unique' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            inl seen : mut (list t) = [] |> mut\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if exists' (fun x => x = item) (*seen)\n                    then 루프 (i + 1i32)\n                    else\n                        seen <- item :: *seen\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.distinct' : list' t\n        Python = fun () =>\n            $'x = list(set(!list))'\n            $'x.sort(key=!list.index)'\n            $'x' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (seen : list t) : list t =\n                if i >= len then seen\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))\n            루프 0i32 Nil |> box |> rev'\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct' forall t. (list : list' t) : list' t =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.unique' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            inl seen : mut (list t) = [] |> mut\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if exists' (fun x => x = item) (*seen)\n                    then 루프 (i + 1i32)\n                    else\n                        seen <- item :: *seen\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.distinct' : list' t\n        Python = fun () =>\n            $'x = list(set(!list))'\n            $'x.sort(key=!list.index)'\n            $'x' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (seen : list t) : list t =\n                if i >= len then seen\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))\n            루프 0i32 Nil |> box |> rev'\n        TypeScript = fun () =>\n            inl len : i32 = $'!list.length'\n            let rec 루프 (i : i32) (seen : list t) : list t =\n                if i >= len then seen\n                else\n                    inl item : t = $'!list[!i]'\n                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))\n            루프 0i32 Nil |> box |> rev'\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1184,6 +1213,14 @@ Spiral.Kino.eval!(
                       inl item : t = $'(!list)[!i as usize].clone()'
                       루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
               루프 0i32 Nil |> box |> rev'
+          TypeScript = fun () =>
+              inl len : i32 = $'!list.length'
+              let rec 루프 (i : i32) (seen : list t) : list t =
+                  if i >= len then seen
+                  else
+                      inl item : t = $'!list[!i]'
+                      루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
+              루프 0i32 Nil |> box |> rev'
       }
   """,
   timeout: 300_000
@@ -1214,7 +1251,7 @@ Spiral.Kino.eval!(
 
 ### to_array'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall t. (items : list' t) : array_base t =\n    backend_switch {\n        Gleam = fun () =>\n            inl d = real defaultof `t ()\n            $'!items |> array.from_list(default: !d)' : array_base t\n        Lua = fun () =>\n            inl len = $'##(!items)' : i32\n            inl d = real defaultof `t ()\n            inl result : a _ t = am.init len (fun _ => d)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i + 1]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => items |> $'List.toArray' : array_base t\n        Python = fun () =>\n            inl len = $'len(!items)' : i32\n            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).\n            inl result : a _ t = a ($'__import__(\"numpy\").empty(!len, dtype=object)' : array_base t)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall t. (items : list' t) : array_base t =\n    backend_switch {\n        Gleam = fun () =>\n            inl d = real defaultof `t ()\n            $'!items |> array.from_list(default: !d)' : array_base t\n        Lua = fun () =>\n            inl len = $'##(!items)' : i32\n            inl d = real defaultof `t ()\n            inl result : a _ t = am.init len (fun _ => d)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i + 1]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => items |> $'List.toArray' : array_base t\n        Python = fun () =>\n            inl len = $'len(!items)' : i32\n            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).\n            inl result : a _ t = a ($'__import__(\"numpy\").empty(!len, dtype=object)' : array_base t)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t\n        TypeScript = fun () => $'[...!items]' : array_base t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1250,6 +1287,7 @@ Spiral.Kino.eval!(
                       루프 (i + 1i32)
               루프 0i32
           Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
+          TypeScript = fun () => $'[...!items]' : array_base t
       }
   """,
   timeout: 300_000

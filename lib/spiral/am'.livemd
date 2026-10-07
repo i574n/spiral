@@ -45,7 +45,7 @@ Spiral.Kino.eval!(
 
 ### index
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index forall dim {int} el. (i : dim) (a : a dim el) : el =\n    backend_switch {\n        Gleam = fun () => index a i\n        Lua = fun () => index a i\n        Fsharp = fun () => index a i\n        Python = fun () => $'!a[!i]' : el\n        Rust = fun () => index a i\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index forall dim {int} el. (i : dim) (a : a dim el) : el =\n    backend_switch {\n        Gleam = fun () => index a i\n        Lua = fun () => index a i\n        Fsharp = fun () => index a i\n        Python = fun () => $'!a[!i]' : el\n        Rust = fun () => index a i\n        TypeScript = fun () => index a i\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -57,6 +57,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => index a i
           Python = fun () => $'!a[!i]' : el
           Rust = fun () => index a i
+          TypeScript = fun () => index a i
       }
   """,
   timeout: 300_000
@@ -1285,7 +1286,7 @@ Spiral.Kino.eval!(
 
 ### to_list_base'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_list_base' forall t. (items : array_base t) : listm'.list' t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gary/array\"\n            $'!items |> array.to_list' : listm'.list' t\n        Lua = fun () => items |> convert.to : listm'.list' t\n        Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t\n        Python = fun () => items |> convert.to : listm'.list' t\n        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_list_base' forall t. (items : array_base t) : listm'.list' t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gary/array\"\n            $'!items |> array.to_list' : listm'.list' t\n        Lua = fun () => items |> convert.to : listm'.list' t\n        Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t\n        Python = fun () => items |> convert.to : listm'.list' t\n        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t\n        TypeScript = fun () => $'[...!items]' : listm'.list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1299,6 +1300,7 @@ Spiral.Kino.eval!(
           Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
           Python = fun () => items |> convert.to : listm'.list' t
           Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
+          TypeScript = fun () => $'[...!items]' : listm'.list' t
       }
   """,
   timeout: 300_000
@@ -1424,7 +1426,7 @@ Spiral.Kino.eval!(
 
 ### sort_by
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =\n    inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el\n    backend_switch {\n        Gleam = fun () => fsharp ()\n        Lua = fun () => fsharp ()\n        Fsharp = fun () => fsharp ()\n        Python = fun () =>\n            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.\n            inl keys = am.map fn ($'!a ' : a int el)\n            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else __k)(!keys[__i]))]' : a dim el\n        TypeScript = fun () => fsharp ()\n        Cpp = fun () => fsharp ()\n        CppHost = fun () => fsharp ()\n        Delphi = fun () => fsharp ()\n        Cuda = fun () => fsharp ()\n        // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders\n        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)\n        Rust = fun () =>\n            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)\n            inl a = $'!a ' : a int el\n            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;\n            // a tuple element is one Rust value (see rust.one_param_fn)\n            inl key_fn = join (rust.one_param_fn fn)\n            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el\n            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key\n            loopw.for' {from=1; nearTo=length a} fun i =>\n                inl x = index i r\n                inl k = index i keys\n                inl s = mut {j=i}\n                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>\n                    inl j = s.j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- {j=j - 1}\n                set r s.j x\n                set keys s.j k\n            $'!r ' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =\n    inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el\n    backend_switch {\n        Gleam = fun () => fsharp ()\n        Lua = fun () => fsharp ()\n        Fsharp = fun () => fsharp ()\n        Python = fun () =>\n            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.\n            inl keys = am.map fn ($'!a ' : a int el)\n            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else __k)(!keys[__i]))]' : a dim el\n        // TypeScript: an index sort (JS's sort is stable) by a structural compare: arrays (tuples) element-wise,\n        // unions ({ tag, f0.. }) by case first, as F#.\n        TypeScript = fun () =>\n            inl keys = am.map fn ($'!a ' : a int el)\n            global \"function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }\"\n            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], !keys[j])).map((i: number) => !a[i])' : a dim el\n        Cpp = fun () => fsharp ()\n        CppHost = fun () => fsharp ()\n        Delphi = fun () => fsharp ()\n        Cuda = fun () => fsharp ()\n        // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders\n        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)\n        Rust = fun () =>\n            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)\n            inl a = $'!a ' : a int el\n            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;\n            // a tuple element is one Rust value (see rust.one_param_fn)\n            inl key_fn = join (rust.one_param_fn fn)\n            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el\n            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key\n            loopw.for' {from=1; nearTo=length a} fun i =>\n                inl x = index i r\n                inl k = index i keys\n                inl s = mut {j=i}\n                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>\n                    inl j = s.j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- {j=j - 1}\n                set r s.j x\n                set keys s.j k\n            $'!r ' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1440,7 +1442,12 @@ Spiral.Kino.eval!(
               inl keys = am.map fn ($'!a ' : a int el)
               // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
               $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
-          TypeScript = fun () => fsharp ()
+          // TypeScript: an index sort (JS's sort is stable) by a structural compare: arrays (tuples) element-wise,
+          // unions ({ tag, f0.. }) by case first, as F#.
+          TypeScript = fun () =>
+              inl keys = am.map fn ($'!a ' : a int el)
+              global "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
+              $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], !keys[j])).map((i: number) => !a[i])' : a dim el
           Cpp = fun () => fsharp ()
           CppHost = fun () => fsharp ()
           Delphi = fun () => fsharp ()

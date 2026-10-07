@@ -2,10 +2,6 @@
 
 <!-- livebook:{"break_markdown":true} -->
 
-`#!import ../../../polyglot/lib/fsharp/NotebooksHtml.livemd`
-
-<!-- livebook:{"break_markdown":true} -->
-
 ## lustre
 
 <!-- livebook:{"break_markdown":true} -->

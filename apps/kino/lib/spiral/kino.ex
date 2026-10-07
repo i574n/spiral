@@ -168,7 +168,7 @@ defmodule Spiral.Kino do
           run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
         end)
       else
-        File.write!(output, text)
+        File.write!(output, if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text))
 
         case in_slot(fn ->
                timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)

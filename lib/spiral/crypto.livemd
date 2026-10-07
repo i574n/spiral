@@ -305,16 +305,14 @@ Spiral.Kino.eval!(
 
 ### create_hash
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl create_hash (x : string) : any =\n    open typescript_operators\n    global \"type ICryptoCreateHash = abstract createHash: x: string -> obj\"\n    inl crypto : $'ICryptoCreateHash' = typescript.import_all \"crypto\"\n    !\\\\(x, $'\"!crypto.createHash($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl create_hash (x : string) : any =\n    global \"import * as spiral_node_crypto from 'node:crypto';\"\n    $'spiral_node_crypto.createHash(!x)' : any","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl create_hash (x : string) : any =
-      open typescript_operators
-      global "type ICryptoCreateHash = abstract createHash: x: string -> obj"
-      inl crypto : $'ICryptoCreateHash' = typescript.import_all "crypto"
-      !\\(x, $'"!crypto.createHash($0)"')
+      global "import * as spiral_node_crypto from 'node:crypto';"
+      $'spiral_node_crypto.createHash(!x)' : any
   """,
   timeout: 300_000
 )
@@ -322,14 +320,13 @@ Spiral.Kino.eval!(
 
 ### hash_update
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl hash_update (s : string) (x : any) : any =\n    open typescript_operators\n    !\\\\((x, s), $'\"$0.update($1, \\'utf8\\')\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl hash_update (s : string) (x : any) : any =\n    $'!x.update(!s, \"utf8\")' : any","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl hash_update (s : string) (x : any) : any =
-      open typescript_operators
-      !\\((x, s), $'"$0.update($1, \'utf8\')"')
+      $'!x.update(!s, "utf8")' : any
   """,
   timeout: 300_000
 )
@@ -337,14 +334,13 @@ Spiral.Kino.eval!(
 
 ### hash_digest
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl hash_digest (s : string) (x : any) : string =\n    open typescript_operators\n    !\\\\((x, s), $'\"$0.digest($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl hash_digest (s : string) (x : any) : string =\n    $'!x.digest(!s)' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl hash_digest (s : string) (x : any) : string =
-      open typescript_operators
-      !\\((x, s), $'"$0.digest($1)"')
+      $'!x.digest(!s)' : string
   """,
   timeout: 300_000
 )

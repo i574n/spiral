@@ -123,6 +123,7 @@ type date_time_switch =
         Fsharp : $'System.DateTime'
         Python : date_time_python
         Rust : $'chrono::NaiveDateTime'
+        TypeScript : $'Date'
     }
 nominal date_time = $'backend_switch `(date_time_switch)'
 
@@ -368,6 +369,7 @@ inl date_time_milliseconds
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, !millisecond * 1000)' : date_time
         Rust = fun () =>
             $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_milli_opt(!hour as u32, !minute as u32, !second as u32, !millisecond as u32).unwrap()' : date_time
+        TypeScript = fun () => $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
     }
 
 /// ### date_time_utc
@@ -453,6 +455,8 @@ type time_span_switch =
         Fsharp : $'System.TimeSpan'
         Python : time_span_python
         Rust : $'chrono::TimeDelta'
+        // TypeScript: milliseconds (a Date minus a Date)
+        TypeScript : $'number'
     }
 nominal time_span = $'backend_switch `(time_span_switch)'
 
@@ -581,6 +585,7 @@ inl hours (time_span : time_span) : i32 =
         Fsharp = fun () => time_span |> $'_.Hours' : i32
         Python = fun () => $'!time_span.seconds // 3600' : i32
         Rust = fun () => $'(!time_span.num_hours() % 24) as i32' : i32
+        TypeScript = fun () => $'(Math.trunc(!time_span / 3600000) % 24)' : i32
     }
 
 /// ### minutes
@@ -595,6 +600,7 @@ inl minutes (time_span : time_span) : i32 =
         Fsharp = fun () => time_span |> $'_.Minutes' : i32
         Python = fun () => $'(!time_span.seconds // 60) % 60' : i32
         Rust = fun () => $'(!time_span.num_minutes() % 60) as i32' : i32
+        TypeScript = fun () => $'(Math.trunc(!time_span / 60000) % 60)' : i32
     }
 
 /// ### seconds
@@ -609,6 +615,7 @@ inl seconds (time_span : time_span) : i32 =
         Fsharp = fun () => time_span |> $'_.Seconds' : i32
         Python = fun () => $'!time_span.seconds % 60' : i32
         Rust = fun () => $'(!time_span.num_seconds() % 60) as i32' : i32
+        TypeScript = fun () => $'(Math.trunc(!time_span / 1000) % 60)' : i32
     }
 
 /// ### milliseconds
@@ -623,13 +630,16 @@ inl milliseconds (time_span : time_span) : i32 =
         Fsharp = fun () => time_span |> $'_.Milliseconds' : i32
         Python = fun () => $'!time_span.microseconds // 1000' : i32
         Rust = fun () => $'(!time_span.num_milliseconds() % 1000) as i32' : i32
+        TypeScript = fun () => $'(Math.trunc(!time_span) % 1000)' : i32
     }
 
 /// ### time_span_format
 inl time_span_format (format : string) (time_span : time_span) : string =
     run_target_args (fun () => format, time_span) function
-        | TypeScript _ => fun format, time_span =>
-            $'!time_span.ToString ("c", System.Globalization.CultureInfo.InvariantCulture)'
+        // TypeScript: ""/"c" -> .NET's constant format [-][d.]hh:mm:ss[.fffffff] (time_span is milliseconds); otherwise the
+        // hh, mm and ss tokens of a .NET custom format, as the Rust arm.
+        | TypeScript => fun format, time_span =>
+            $'(() => { const t = !time_span; const f = !format; const neg = t < 0; const a = Math.abs(t); const d = Math.floor(a / 86400000); const h = Math.floor(a / 3600000) % 24; const m = Math.floor(a / 60000) % 60; const s = Math.floor(a / 1000) % 60; const ms = Math.round(a % 1000); const p = (n: number) => String(n).padStart(2, "0"); if (f === "" || f === "c") return (neg ? "-" : "") + (d > 0 ? d + "." : "") + p(h) + ":" + p(m) + ":" + p(s) + (ms > 0 ? "." + String(ms * 10000).padStart(7, "0") : ""); return f.replace("hh", p(h)).replace("mm", p(m)).replace("ss", p(s)); })()' : string
         | Rust => fun format, time_span =>
             // Rust: ""/"c" -> .NET's constant format [-][d.]hh:mm:ss[.fffffff]; otherwise the hh, mm and ss
             // tokens of a .NET custom format.

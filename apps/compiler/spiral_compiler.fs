@@ -53049,6 +53049,17 @@ module spiral_compiler =
 
         init {empty with state=state} l.blocks
 
+    /// ### op_args_inferred
+    // ws: the ops whose arguments are plain runtime terms (or a type argument, as Conv's). Infer type checks those
+    // arguments and fill gives them their type applications, so `!!!!Printf("%s", *x)` or `!!!!Sin(if c then a else b)`
+    // work; the other ops (backend switches, records, compile-time ops) keep their unchecked arguments.
+    let op_args_inferred = function
+        | Printf | Add | Sub | Mult | Div | Mod | Pow | LT | LTE | EQ | NEQ | GT | GTE
+        | BitwiseAnd | BitwiseOr | BitwiseXor | BitwiseComplement | ShiftLeft | ShiftRight
+        | Neg | Log | Exp | Tanh | Sqrt | Sin | Cos | NanIs | Conv
+        | StringLength | StringIndex | StringSlice | ArrayIndex | ArrayIndexSet | ArrayLength | MonotonicDelayMs -> true
+        | _ -> false
+
     /// ### semantic_tokens
     let semantic_tokens (l : ParserState) =
         let rec loop s = function
@@ -54120,6 +54131,7 @@ module spiral_compiler =
                         ) l
                 match x with
                 | RawFilledForall _ | RawMissingBody _ | RawType _ as x -> failwithf "Compiler error: These cases should not appear in fill. It is intended to be called on top level statements only.\nGot: %A" x
+                | RawOp(r,op,l) when op_args_inferred op -> RawOp(r,op,l |> List.map (function RawType _ as a -> a | a -> f a))
                 | RawTypecase _
                 | RawSymbol _ | RawB _ | RawLit _ | RawOp _ -> x
                 | RawReal(_,x) -> x
@@ -54548,6 +54560,9 @@ module spiral_compiler =
                 f q a; f w b
             | RawSeq(_,a,b) -> f TyB a; f s b
             | RawReal(_,a) -> assert_bound_vars env a
+            // ws: the term arguments of the value ops (op_args_inferred) are type checked like any term, so `*x`, `a + b` or
+            // an `if` in them get their type applications; type arguments and the other ops stay unchecked.
+            | RawOp(_,op,l) when op_args_inferred op -> l |> List.iter (function RawType _ as a -> assert_bound_vars env a | a -> f' a |> ignore)
             | RawOp(_,_,l) -> List.iter (assert_bound_vars env) l
             | RawJoinPoint(r,None,a,_) -> annotations.Add(x,(r,s)); f s a
             | RawJoinPoint(r,Some _,a,_) ->
@@ -56368,6 +56383,7 @@ module spiral_compiler =
                         ) l
                 match x with
                 | RawFilledForall _ | RawMissingBody _ | RawType _ as x -> failwithf "Compiler error: These cases should not appear in fill. It is intended to be called on top level statements only.\nGot: %A" x
+                | RawOp(r,op,l) when op_args_inferred op -> RawOp(r,op,l |> List.map (function RawType _ as a -> a | a -> f a))
                 | RawTypecase _
                 | RawSymbol _ | RawB _ | RawLit _ | RawOp _ -> x
                 | RawReal(_,x) -> x
@@ -56765,6 +56781,9 @@ module spiral_compiler =
                 f q a; f w b
             | RawSeq(_,a,b) -> f TyB a; f s b
             | RawReal(_,a) -> assert_bound_vars env a
+            // ws: the term arguments of the value ops (op_args_inferred) are type checked like any term, so `*x`, `a + b` or
+            // an `if` in them get their type applications; type arguments and the other ops stay unchecked.
+            | RawOp(_,op,l) when op_args_inferred op -> l |> List.iter (function RawType _ as a -> assert_bound_vars env a | a -> f' a |> ignore)
             | RawOp(_,_,l) -> List.iter (assert_bound_vars env) l
             | RawJoinPoint(r,None,a,_) -> annotations.Add(x,(r,s)); f s a
             | RawJoinPoint(r,Some _,a,_) ->
@@ -154120,6 +154139,21 @@ module spiral_compiler =
             seq_apply s x, x_ty
         and term_scope' s cse x = term_scope'' {s with seq=ResizeArray(); cse=cse :: s.cse} x None
         and term_scope s x = term_scope' s (System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural)) x
+        and ty_is_uninhabited_hopac s x =
+            let rec loop depth x =
+                if depth <= 0 then false
+                else
+                    match x with
+                    | YVoid -> true
+                    | YUnion h -> Map.isEmpty h.Item.cases
+                    | YPair(a,b) -> loop (depth-1) a || loop (depth-1) b
+                    | YRecord fields -> Map.exists (fun _ v -> loop (depth-1) v) fields
+                    | YLayout(a,_) -> loop (depth-1) a
+                    | YNominal _ | YApply _ as nominal ->
+                        // A nominal still being defined (a type join point) can't be inspected: count it inhabited.
+                        try loop (depth-1) (nominal_type_apply s nominal) with PartEvalTypeError _ -> false
+                    | _ -> false
+            loop 32 x
         and nominal_type_apply s x =
             // Flatten the left-associated application spine explicitly so deeply nested
             // type-level application does not recurse through nominal_type_apply itself.
@@ -157697,6 +157731,8 @@ module spiral_compiler =
                         let v = Option.defaultValue (fst v) (snd v) // If the union case is generalized, use the specialized destructor instead of the constructor to evaluate the type.
                         match ty s v with
                         | YVoid -> cases
+                        // D49 (single-flight's ty_is_uninhabited): a case whose payload is uninhabited can never be built.
+                        | v when ty_is_uninhabited_hopac s v -> cases
                         | v ->
                             is_degenerate <- is_degenerate && match v with YB -> true | _ -> false
                             tags.[UnionTagIdOps.create k] <- i
@@ -163042,8 +163078,14 @@ module spiral_compiler =
                     | DLit(LitInt32 milliseconds) as duration when milliseconds >= 0 -> push_op_no_rewrite s MonotonicDelayMs duration YB
                     | DLit(LitInt32 milliseconds) -> raise_type_error s $"Expected a non-negative monotonic delay in milliseconds.\nGot: {milliseconds}"
                     | duration -> raise_type_error s $"Expected a compile-time i32 duration in milliseconds.\nGot: {show_data duration}"
-                | EOp(_,Printf,[fmt;str]) ->
-                    let fmt,str = term2 s fmt str
+                // The format and its arguments (none, one value or tuple, or several: a tuple of them; printf_pieces).
+                | EOp(_,Printf,fmt :: args) ->
+                    let fmt = term s fmt
+                    let str =
+                        match args with
+                        | [] -> DB
+                        | [a] -> term s a
+                        | args -> args |> List.map (term s) |> List.reduceBack (fun a b -> DPair(a,b))
                     match fmt with
                     | DLit(LitString _) -> push_binop_no_rewrite s Printf (fmt, str) YB
                     | _ -> raise_type_error s $"Expected a compile time string as the format.\nGot: {show_data fmt}"
@@ -165822,9 +165864,9 @@ module spiral_compiler =
         let get (globals : ResizeArray<string>) = table.GetValue(globals, fun g -> HashSet<string>(g))
 
     /// ### RustGapTrace
-    /// SPIRAL_RUST_GAP_TRACE=1: when a macro carries lib/spiral's Rust gap marker (backend.spi's
-    /// `compile_error!("... no Rust arm ...")` fallback), print the Spiral call chain once to stderr, so one
-    /// compile names every lib function that still needs a Rust arm.
+    /// SPIRAL_RUST_GAP_TRACE=1: when a macro carries lib/spiral's Rust or TypeScript gap marker (backend.spi's
+    /// `compile_error!("... no Rust arm ...")`/`no TypeScript arm` fallbacks), print the Spiral call chain once to
+    /// stderr, so one compile names every lib function that still needs an arm for that backend.
     module RustGapTrace =
         let enabled = System.Environment.GetEnvironmentVariable "SPIRAL_RUST_GAP_TRACE" = "1"
         /// BackendSwitch evaluates the other backends' branches only to check their types (into a throwaway seq):
@@ -166632,7 +166674,7 @@ module spiral_compiler =
             | EMacro(r,a,b) ->
                 let s = add_trace s r
                 if RustGapTrace.enabled then
-                    a |> List.iter (function MText x when x.Contains "Rust arm" -> RustGapTrace.report s.trace (x.Trim()) | _ -> ())
+                    a |> List.iter (function MText x when x.Contains "Rust arm" || x.Contains "TypeScript arm" -> RustGapTrace.report s.trace (x.Trim()) | _ -> ())
                 let a = a |> List.map (function MText x -> CMText x | MTerm (x,b) -> CMTerm(term s x |> dyn false s, b) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
                 match s.cse with
                 | table :: _ -> CseDirectiveBarrier.apply (table :> System.Collections.Generic.IDictionary<_,_>) (a |> Seq.choose (function CMText x -> Some x | _ -> None))
@@ -168026,8 +168068,14 @@ module spiral_compiler =
                 | DLit(LitInt32 milliseconds) as duration when milliseconds >= 0 -> push_op_no_rewrite s MonotonicDelayMs duration YB
                 | DLit(LitInt32 milliseconds) -> raise_type_error s $"Expected a non-negative monotonic delay in milliseconds.\nGot: {milliseconds}"
                 | duration -> raise_type_error s $"Expected a compile-time i32 duration in milliseconds.\nGot: {show_data duration}"
-            | EOp(_,Printf,[fmt;str]) ->
-                let fmt,str = term2 s fmt str
+            // The format and its arguments (none, one value or tuple, or several: a tuple of them; printf_pieces).
+            | EOp(_,Printf,fmt :: args) ->
+                let fmt = term s fmt
+                let str =
+                    match args with
+                    | [] -> DB
+                    | [a] -> term s a
+                    | args -> args |> List.map (term s) |> List.reduceBack (fun a b -> DPair(a,b))
                 match fmt with
                 | DLit(LitString _) -> push_binop_no_rewrite s Printf (fmt, str) YB
                 | _ -> raise_type_error s $"Expected a compile time string as the format.\nGot: {show_data fmt}"
@@ -168159,6 +168207,53 @@ module spiral_compiler =
         | None ->
             let looked = String.concat "; " dirs
             raise_codegen_error $"Cannot find the codegen runtime file {f} (looked in: {looked}). Set SPIRAL_CODEGEN_RUNTIME_DIR to the directory that holds corelib.cuh and corelib.py."
+
+    /// ### printf_pieces
+    // ws: the portable `!!!!Printf(format, arg, ..)` every backend but Cuda's C++ reads (that one hands the format to
+    // printf as is). `%s` takes a string, `%d` an integer of any width and `%%` writes a percent sign; the rest of the
+    // format is text. The pieces come back in order: `Choice1Of2 text` or `Choice2Of2 (specifier, argument)`.
+    let printf_pieces (fmt : string) (args : TermVar []) =
+        let kind = function
+            | WV(L(_,YPrim t)) -> Some t
+            | WLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let pieces = ResizeArray()
+        let text = StringBuilder()
+        let flush () =
+            if text.Length > 0 then
+                pieces.Add(Choice1Of2(text.ToString()))
+                text.Clear() |> ignore
+        let mutable next = 0
+        let mutable i = 0
+        while i < fmt.Length do
+            let c = fmt.[i]
+            let spec = if c = '%' && i + 1 < fmt.Length then fmt.[i + 1] else ' '
+            if c <> '%' then
+                text.Append c |> ignore
+                i <- i + 1
+            elif spec = '%' then
+                text.Append '%' |> ignore
+                i <- i + 2
+            elif spec = 's' || spec = 'd' then
+                if next >= args.Length then
+                    raise_codegen_error (sprintf "Printf: the format %A has more placeholders than arguments (%i)." fmt args.Length)
+                let arg = args.[next]
+                match spec, kind arg with
+                | 's', Some StringT -> ()
+                | 'd', Some (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) -> ()
+                | _, t ->
+                    let want = if spec = 's' then "a string" else "an integer"
+                    raise_codegen_error (sprintf "Printf: %%%c in the format %A takes %s; argument %i is %A." spec fmt want (next + 1) t)
+                flush ()
+                pieces.Add(Choice2Of2(spec, arg))
+                next <- next + 1
+                i <- i + 2
+            else
+                raise_codegen_error (sprintf "Printf: the format %A has an unsupported placeholder at %i; the portable ones are %%s (a string), %%d (an integer) and %%%%." fmt i)
+        flush ()
+        if next <> args.Length then
+            raise_codegen_error (sprintf "Printf: the format %A has %i placeholders but %i arguments were given." fmt next args.Length)
+        List.ofSeq pieces
 
     /// ### backend_cpp
     [<RequireQualifiedAccess>]
@@ -168666,6 +168761,15 @@ module spiral_compiler =
                         )
                         |> String.concat "; "
                     $"[ {items} ] |> Map |> Map.find v{i}"
+                | Printf, [DLit (LitString fmt); b] ->
+                    match printf_pieces fmt (data_term_vars b) with
+                    | [] -> "()"
+                    | pieces ->
+                        pieces |> List.map (function
+                            | Choice1Of2 t -> litFsharp (LitString t)
+                            | Choice2Of2 ('s', a) -> show_w a
+                            | Choice2Of2 (_, a) -> $"string ({show_w a})")
+                        |> String.concat " + " |> sprintf "System.Console.Write(%s)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %s with %i args not supported" (opStableText op) l.Length
                 |> simple
         and heap : _ -> LayoutRecFsharp =
@@ -169325,6 +169429,10 @@ module spiral_compiler =
 
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        // Rust-only code an F# build still carries (the join points a backend_switch's other arms create are emitted too)
+        // calls lib/spiral's emit marker: defined here so the F# compiles, it fails only if such code runs.
+        if (functions |> Seq.exists (fun x -> (string x).Contains "__spiral_emit_rust")) || main.ToString().Contains "__spiral_emit_rust" then
+            program.AppendLine("let __spiral_emit_rust (_ : 'a) (_ : 'b) : 'c = failwith \"lib/spiral: Rust-only code reached in an F# build\"") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
         program.Append(main).ToString()
@@ -169817,6 +169925,15 @@ module spiral_compiler =
                         )
                         |> String.concat "; "
                     $"[ {items} ] |> Map |> Map.find v{i}"
+                | Printf, [DLit (LitString fmt); b] ->
+                    match printf_pieces fmt (data_term_vars b) with
+                    | [] -> "()"
+                    | pieces ->
+                        pieces |> List.map (function
+                            | Choice1Of2 t -> litFsharp (LitString t)
+                            | Choice2Of2 ('s', a) -> show_w a
+                            | Choice2Of2 (_, a) -> $"string ({show_w a})")
+                        |> String.concat " + " |> sprintf "System.Console.Write(%s)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecFsharp = layout (fun s x ->
@@ -169881,6 +169998,10 @@ module spiral_compiler =
 
         let program = StringBuilder()
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        // Rust-only code an F# build still carries (the join points a backend_switch's other arms create are emitted too)
+        // calls lib/spiral's emit marker: defined here so the F# compiles, it fails only if such code runs.
+        if (functions |> Seq.exists (fun x -> (string x).Contains "__spiral_emit_rust")) || main.ToString().Contains "__spiral_emit_rust" then
+            program.AppendLine("let __spiral_emit_rust (_ : 'a) (_ : 'b) : 'c = failwith \"lib/spiral: Rust-only code reached in an F# build\"") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(if i = 0 then "type " else "and ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(if i = 0 then "let rec " else "and ").Append(x) |> ignore)
         program.Append(main).ToString()
@@ -170012,8 +170133,9 @@ module spiral_compiler =
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
     /// ### rustEmitMarkers
-    // The emit marker's spellings (inlineRustEmits): lib/spiral's, and the Fable-era one emitters outside it may still print.
-    let rustEmitMarkers = [ "__spiral_emit_rust"; "Fable.Core.RustInterop.emitRustExpr" ]
+    // The emit marker (inlineRustEmits): lib/spiral's rust.emit_expr prints it (Fable's `Fable.Core.RustInterop.emitRustExpr`
+    // spelling was read until every emitter had switched, 2026-10-07).
+    let rustEmitMarkers = [ "__spiral_emit_rust" ]
 
     /// ### translateFsharpInterpolations
     // lib/spiral's `$'$"text {!x}"'` macros are F# interpolated strings: codegenRust prints them as
@@ -170060,7 +170182,7 @@ module spiral_compiler =
                     else fmt.Append(c) |> ignore; i <- i + 1
                 if not ok then None
                 elif args.Count = 0 then
-                    // No holes: a plain literal, so an emitRustExpr code binding stays inlinable.
+                    // No holes: a plain literal, so an emit marker's code binding stays inlinable.
                     let literal = fmt.ToString().Replace("{{", "{").Replace("}}", "}")
                     Some ("Rc::<str>::from(\"" + literal + "\")")
                 else Some $"""Rc::<str>::from(format!("{fmt}", {String.concat ", " args}))"""
@@ -170233,8 +170355,7 @@ module spiral_compiler =
 
     /// ### inlineRustEmits
     // lib/spiral's `!\\(args, $'"rust text with $0"')` (rust.emit_expr) is the emit marker `__spiral_emit_rust`: codegenRust
-    // prints it as `__spiral_emit_rust (a, b) vN ;` with the text in an earlier `let mut vN: Rc<str> = "...";`. The
-    // marker's Fable-era spelling `Fable.Core.RustInterop.emitRustExpr` is accepted too (emitters outside lib/spiral).
+    // prints it as `__spiral_emit_rust (a, b) vN ;` with the text in an earlier `let mut vN: Rc<str> = "...";`.
     // Inline the text (with `$i` replaced by the arguments) and drop the binding, bound (`let mut v: T = ...`) or in
     // statement position. Hosts used to do this after the fact (Eval/Supervisor/the tmp host's rewriteRustEmitExpr).
     let inlineRustEmits (generated : string) =
@@ -170243,7 +170364,7 @@ module spiral_compiler =
             let lines = generated.Split([|"\r\n"; "\n"|], System.StringSplitOptions.None)
             let bindingPattern = System.Text.RegularExpressions.Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (?:Rc::<str>::from\()?(""(?:\\.|[^""\\])*"")\)?;\s*$")
             let emitPattern =
-                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)(?:__spiral_emit_rust|Fable\.Core\.RustInterop\.emitRustExpr) (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)__spiral_emit_rust (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
             let unescape (literal : string) =
                 let body = literal.Substring(1, literal.Length - 2)
                 let text = StringBuilder()
@@ -170469,7 +170590,7 @@ module spiral_compiler =
         // Macros are target code: their variables are named, not cloned, so `!a = !b` assigns.
         let macro_var = function WV (L(i,_)) -> $"v{i}" | WLit a -> litRust a
         let macro_args x = x |> data_term_vars |> Array.map macro_var |> String.concat ", "
-        // emitRustExpr's argument tuple: one `$k` per element of the tuple's spine. An element that is itself a tuple
+        // The emit marker's argument tuple: one `$k` per element of the tuple's spine. An element that is itself a tuple
         // (or a record) is one argument, written as a Rust tuple like `(!x)` writes it; flattening it would shift
         // every later `$k`. A trailing tuple shares the spine, so inlineRustEmits groups surplus arguments instead.
         // Liveness for macro splices. A macro names its variables (it's target code), so one that moves its argument
@@ -170864,7 +170985,17 @@ module spiral_compiler =
                 | NanIs, _ -> unary (sprintf "%s.is_nan()")
                 | StdoutFlush, [] -> "{ use std::io::Write; std::io::stdout().flush().unwrap(); }"
                 | MonotonicDelayMs, [a] -> $"std::thread::sleep(std::time::Duration::from_millis({tup a} as u64))"
-                | Printf, [DLit (LitString "%s"); b] -> $"print!(\"{{}}\", {tup b})"
+                | Printf, [DLit (LitString fmt); b] ->
+                    // The text goes into the format string (braces doubled); litRust spells a string as Rc::<str>::from("..").
+                    let rfmt = StringBuilder()
+                    let args = ResizeArray()
+                    for p in printf_pieces fmt (data_term_vars b) do
+                        match p with
+                        | Choice1Of2 t -> rfmt.Append(t.Replace("{", "{{").Replace("}", "}}")) |> ignore
+                        | Choice2Of2 (_, a) -> rfmt.Append "{}" |> ignore; args.Add(show_w a)
+                    let quoted = litRust (LitString (rfmt.ToString()))
+                    let quoted = quoted.Substring(quoted.IndexOf '"', quoted.LastIndexOf '"' - quoted.IndexOf '"' + 1)
+                    String.concat ", " (quoted :: List.ofSeq args) |> sprintf "print!(%s)"
                 | UnionTag, [DV(L(i,YUnion _))] ->
                     let ty = match d with Some (DV(L(_,t))) -> tyv t | _ -> "i32"
                     $"(v{i}.tag() as {ty})"
@@ -170952,8 +171083,8 @@ module spiral_compiler =
                     // Nothing captured: one closure per thread instead of an allocation per call.
                     line (indent s) $"thread_local!{{ static CLOSURE: Rc<dyn Fn({domain_tys}) -> {range}> = Rc::new(move |{param_list x.domain_args}| -> {range} {{"
                     without_self_loop (fun () -> binds (indent (indent s)) x.body)
-                    line (indent s) "}); }"
-                    line (indent s) "CLOSURE.with(|closure| closure.clone())"
+                    // One line, as the plain `})` it replaces: eoie keeps every crate under 1000 lines (lane W).
+                    line (indent s) "}); } CLOSURE.with(|closure| closure.clone())"
                 else
                     line (indent s) $"Rc::new(move |{param_list x.domain_args}| -> {range} {{"
                     without_self_loop (fun () -> binds (indent (indent s)) x.body)
@@ -170966,7 +171097,7 @@ module spiral_compiler =
         binds {text=main; indent=4} x
 
         let program = StringBuilder()
-        program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]") |> ignore
+        program.Append("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]") |> ignore
         // Inner attributes (`#![...]`) must precede every item, so such globals go before the `use`s.
         let inner, globals = env.globals |> Seq.toArray |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
         // A closure that captures nothing lives in a `thread_local!`, whose lazy initializer builds it; a chain of them
@@ -170979,7 +171110,9 @@ module spiral_compiler =
         if static_closures > 16 && not (inner |> Array.exists (fun x -> x.Contains "recursion_limit")) then
             let mutable limit = 256
             while limit < 4 * static_closures + 64 do limit <- limit * 2
-            program.AppendLine($"#![recursion_limit = \"{limit}\"]") |> ignore
+            // On the allow line: generated code stays line-lean (eoie's 1000-line crates, lane W).
+            program.Append($" #![recursion_limit = \"{limit}\"]") |> ignore
+        program.AppendLine() |> ignore
         inner |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
         program.AppendLine("use std::cell::RefCell;").AppendLine("use std::rc::Rc;") |> ignore
         globals |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
@@ -171011,8 +171144,8 @@ module spiral_compiler =
             // A large stack: mutual tail recursion that the C compiler turns into jumps recurses here. wasm32 has no
             // threads to spawn (the browser runs `main` once). A panic (failwith, D1) was already reported by the hook on
             // the spawned thread: exit 101 like an uncaught panic, without a second message from `join().unwrap()`.
-            program.AppendLine("#[cfg(not(target_arch = \"wasm32\"))]").AppendLine("fn main() {").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
-            program.AppendLine("#[cfg(target_arch = \"wasm32\")]").AppendLine("fn main() {").AppendLine("    spiral_main();").AppendLine("}") |> ignore
+            // Four lines, as before the wasm32 arm (eoie's 1000-line crates; Kino replaces the exit line by its text).
+            program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> cacheRustStringLiterals
 
@@ -171411,7 +171544,12 @@ module spiral_compiler =
                 | NanIs, _ -> unary (sprintf "IsNan(%s)") l
                 | StdoutFlush, [] -> "Flush(Output)"
                 | MonotonicDelayMs, _ -> unary (sprintf "Sleep(%s)") l
-                | Printf, [DLit (LitString "%s"); b] -> $"Write({tup b})"
+                | Printf, [DLit (LitString fmt); b] ->
+                    match printf_pieces fmt (data_term_vars b) with
+                    | [] -> "Write('')"
+                    | pieces ->
+                        pieces |> List.map (function Choice1Of2 t -> litDelphi (LitString t) | Choice2Of2 (_, a) -> show_w a)
+                        |> String.concat ", " |> sprintf "Write(%s)"
                 | UnionTag, [DV(L(i,YUnion _))] -> $"v{i}.tag"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Delphi backend" op l.Length
                 |> return'
@@ -171531,6 +171669,610 @@ module spiral_compiler =
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         program.AppendLine("begin").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
+
+    /// ## CodegenZig
+
+    /// ### backend_nameZig
+    let backend_nameZig = "Zig"
+
+    /// ### litZig
+    let litZig = function
+        | LitInt8 x -> $"@as(i8, {x})"
+        | LitInt16 x -> $"@as(i16, {x})"
+        | LitInt32 x -> $"@as(i32, {x})"
+        | LitInt64 x -> $"@as(i64, {x})"
+        | LitUInt8 x -> $"@as(u8, {x})"
+        | LitUInt16 x -> $"@as(u16, {x})"
+        | LitUInt32 x -> $"@as(u32, {x})"
+        | LitUInt64 x -> $"@as(u64, {x})"
+        | LitFloat32 x ->
+            if x = infinityf then "std.math.inf(f32)"
+            elif x = -infinityf then "(-std.math.inf(f32))"
+            elif Single.IsNaN x then "std.math.nan(f32)"
+            else let r = x.ToString "R" |> add_dec_point in $"@as(f32, {r})"
+        | LitFloat64 x ->
+            if x = infinity then "std.math.inf(f64)"
+            elif x = -infinity then "(-std.math.inf(f64))"
+            elif Double.IsNaN x then "std.math.nan(f64)"
+            else let r = x.ToString "R" |> add_dec_point in $"@as(f64, {r})"
+        | LitString x ->
+            // UTF-8 bytes; printable ASCII as is, the rest as \xNN.
+            let strb = StringBuilder("\"")
+            for b in Text.Encoding.UTF8.GetBytes x do
+                match char b with
+                | '"' -> strb.Append "\\\"" |> ignore
+                | '\\' -> strb.Append "\\\\" |> ignore
+                | '\n' -> strb.Append "\\n" |> ignore
+                | '\r' -> strb.Append "\\r" |> ignore
+                | '\t' -> strb.Append "\\t" |> ignore
+                | c when b >= 32uy && b < 127uy -> strb.Append c |> ignore
+                | _ -> strb.Append(sprintf "\\x%02x" b) |> ignore
+            strb.Append('"').ToString()
+        | LitChar x ->
+            if int x > 127 then raise_codegen_error $"The Zig backend represents chars as bytes; '{x}' is not ASCII."
+            else $"@as(u8, {int x})"
+        | LitBool x -> if x then "true" else "false"
+
+    /// ### primZig
+    let primZig = function
+        | Int8T -> "i8"
+        | Int16T -> "i16"
+        | Int32T -> "i32"
+        | Int64T -> "i64"
+        | UInt8T -> "u8"
+        | UInt16T -> "u16"
+        | UInt32T -> "u32"
+        | UInt64T -> "u64"
+        | Float32T -> "f32"
+        | Float64T -> "f64"
+        | BoolT -> "bool"
+        | StringT -> "[]const u8"
+        | CharT -> "u8"
+
+    /// ### type_litZig
+    let type_litZig = function
+        | YLit x -> litZig x
+        | YSymbol x -> x
+        | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
+
+    /// ### zigPrelude
+    /// The runtime every generated program starts with: a single-threaded Io and an arena (set by `main`), output, failure,
+    /// C-style conversions, strings and arrays. Memory is never freed (an arena, released at exit).
+    let zigPrelude = """const std = @import("std");
+var spiral_threaded: std.Io.Threaded = .init_single_threaded;
+var spiral_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+var spiral_io: std.Io = undefined;
+var spiral_gpa: std.mem.Allocator = undefined;
+var spiral_true: bool = true;
+fn spiralPrint(s: []const u8) void {
+    std.Io.File.stdout().writeStreamingAll(spiral_io, s) catch {};
+}
+fn spiralPrintAny(x: anytype) void {
+    const T = @TypeOf(x);
+    if (T == []const u8) return spiralPrint(x);
+    const s = switch (@typeInfo(T)) {
+        .float => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
+        .bool => std.fmt.allocPrint(spiral_gpa, "{}", .{x}),
+        else => std.fmt.allocPrint(spiral_gpa, "{d}", .{x}),
+    } catch @panic("out of memory");
+    spiralPrint(s);
+}
+fn spiralFail(s: []const u8) noreturn {
+    std.Io.File.stderr().writeStreamingAll(spiral_io, s) catch {};
+    std.Io.File.stderr().writeStreamingAll(spiral_io, "\n") catch {};
+    std.process.exit(1);
+}
+fn spiralConv(comptime T: type, x: anytype) T {
+    const S = @TypeOf(x);
+    if (@typeInfo(T) == .float) {
+        if (@typeInfo(S) == .float) return @floatCast(x) else return @floatFromInt(x);
+    }
+    if (@typeInfo(S) == .float) return @intFromFloat(x);
+    const U = @Int(.unsigned, @bitSizeOf(T));
+    const wide: i128 = x;
+    return @bitCast(@as(U, @truncate(@as(u128, @bitCast(wide)))));
+}
+fn spiralConcat(a: []const u8, b: []const u8) []const u8 {
+    return std.mem.concat(spiral_gpa, u8, &.{ a, b }) catch @panic("out of memory");
+}
+fn spiralStringSlice(s: []const u8, from: i64, upto: i64) []const u8 {
+    const len: i64 = @intCast(s.len);
+    if (from < 0 or from > len or upto < from - 1 or upto >= len) std.process.exit(3);
+    if (upto < from) return "";
+    const a: usize = @intCast(from);
+    const b: usize = @intCast(upto + 1);
+    if ((s[a] & 0xC0) == 0x80 or (b < s.len and (s[b] & 0xC0) == 0x80)) std.process.exit(3);
+    return s[a..b];
+}
+fn spiralIndex(len: usize, i: anytype) usize {
+    if (i < 0 or i >= len) std.process.exit(3);
+    return @intCast(i);
+}
+fn spiralNewArray(comptime T: type, n: anytype) []T {
+    const len: usize = @intCast(n);
+    const a = spiral_gpa.alloc(T, len) catch @panic("out of memory");
+    switch (@typeInfo(T)) {
+        .int, .float, .bool => @memset(a, std.mem.zeroes(T)),
+        else => if (T == []const u8) @memset(a, ""),
+    }
+    return a;
+}
+fn spiralCreate(comptime T: type, v: T) *T {
+    const p = spiral_gpa.create(T) catch @panic("out of memory");
+    p.* = v;
+    return p;
+}
+"""
+
+    /// ### BindsReturnZig
+    /// Where a statement's value goes: into these locals, or out of the function (Tail with its type).
+    type BindsReturnZig = ZLocal of TyV [] | ZTail of Ty
+
+    /// ### ZigLayoutRec
+    type ZigLayoutRec = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
+
+    /// ### codegenZig
+    /// Statement-oriented like the C and Delphi backends: every value goes into a local declared (`var vN: T =
+    /// undefined; _ = &vN;`, which also keeps Zig's unused/never-mutated checks quiet) at the top of its function.
+    /// Integers wrap (`+%`) as in C; strings are byte slices; heap layouts, heap unions, closures and arrays live in the
+    /// process arena and are never freed; stack unions are tagged structs, tuples structs. A closure is a `FunN` value:
+    /// a context pointer and a function taking it first.
+    let codegenZig (env : PartEvalResult) (x : TypedBind []) =
+        let types = ResizeArray()
+        let bodies = ResizeArray()
+        let globals = ResizeArray()
+
+        let memo (f : 'k -> int -> unit) =
+            let dict = Dictionary<'k, int>(HashIdentity.Structural)
+            fun (k : 'k) ->
+                match dict.TryGetValue k with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[k] <- tag
+                    f k tag
+                    tag
+        let memo_ref (f : 'k -> int -> unit) =
+            let dict = Dictionary<'k, int>(HashIdentity.Reference)
+            fun (k : 'k) ->
+                match dict.TryGetValue k with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[k] <- tag
+                    f k tag
+                    tag
+        let global' =
+            let has_added = HashSet env.globals
+            fun x -> if has_added.Add(x) then globals.Add x
+
+        // Locals of the function being generated: the declared ids and their declarations, in order.
+        let new_locals (parameters : TyV []) = HashSet(parameters |> Array.map (fun (L(i,_)) -> i)), ResizeArray<string>()
+        let text (s : CodegenEnv) = s.text.ToString()
+
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let is_int d = match prim_of d with Some (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) -> true | _ -> false
+        let is_float d = match prim_of d with Some (Float32T | Float64T) -> true | _ -> false
+        let is_string d = match prim_of d with Some StringT -> true | _ -> false
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litZig a
+        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+        let args' x = data_term_vars x |> Array.map show_w |> String.concat ", "
+
+        let layout_tags = Dictionary<Ty, ZigLayoutRec>(HashIdentity.Structural)
+        // The method being written when it calls itself in tail position: its body loops, tail values `return` and
+        // the self call reassigns the parameters and `continue`s.
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec tyv x =
+            match x with
+            | YUnion a ->
+                let a = a.Item
+                match a.layout with
+                | UHeap -> sprintf "*UH%i" (uheap a.cases)
+                | UStack -> sprintf "US%i" (ustack a.cases)
+            | YLayout(_,lay) as a ->
+                match lay with
+                | Heap -> sprintf "*Heap%i" (heap a).tag
+                | HeapMutable -> sprintf "*Mut%i" (mut a).tag
+                | StackMutable -> raise_codegen_error "The Zig backend doesn't support stack mutable layout types yet."
+                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
+            | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameZig then Some v else None) with
+                | Some x -> tup_ty x
+                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameZig}' field."
+            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litZig a) |> String.concat ""
+            | YPrim a -> primZig a
+            | YArray a -> sprintf "[]%s" (tup_ty' a)
+            | YFun(a,b,_) -> sprintf "Fun%i" (fun_type (a, b))
+            | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
+            | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
+            | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
+        and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
+        // "void" for unit.
+        and tup_ty x =
+            match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
+            | [||] -> "void"
+            | [|x|] -> x
+            | x -> sprintf "Tuple%i" (tuple_type x)
+        // An array element: unit elements are `u8` placeholders (Zig has zero-size slices, but `void` values can't be
+        // indexed into locals).
+        and tup_ty' x = match tup_ty x with "void" -> "u8" | t -> t
+        and tup d = data_term_vars d |> Array.map show_w |> String.concat ", "
+        // A value of type `range`: one term, or a tuple struct.
+        and tup_as (range : Ty) d =
+            match data_term_vars d with
+            | [||] -> ""
+            | [|x|] -> show_w x
+            | x ->
+                let tag = tyvs range |> Array.map (fun (L(_,t)) -> tyv t) |> tuple_type
+                let fields = x |> Array.mapi (fun k w -> $".f{k} = {show_w w}") |> String.concat ", "
+                $"Tuple{tag}{{ {fields} }}"
+        and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
+        // A function: its parameters copied into locals (Zig rejects an unused parameter and a pointless discard of a
+        // used one alike), its locals, then the body.
+        and emit_function (name : string) (self_tag : int option) (parameters : TyV []) (extra : string) (range : Ty) (body : TypedBind []) (tail : string) =
+            let range' = tup_ty range
+            let locals = new_locals parameters
+            let s = {text=StringBuilder(); indent=4}
+            let saved = self_loop.Value
+            match self_tag with
+            | Some tag when self_tail tag body ->
+                self_loop.Value <- Some (tag, parameters)
+                line s "while (true) {"
+                binds locals (indent s) (ZTail range) body
+                line s "}"
+            | _ ->
+                self_loop.Value <- None
+                binds locals s (ZTail range) body
+            self_loop.Value <- saved
+            if tail <> "" then line s tail
+            let ps = match extra, param_list parameters with "", p -> p | e, "" -> e | e, p -> $"{e}, {p}"
+            let copies = parameters |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = p{i}; _ = &v{i};\n") |> String.concat ""
+            let decls = snd locals |> Seq.map (sprintf "    %s\n") |> String.concat ""
+            bodies.Add($"fn {name}({ps}) {range'} {{\n{copies}{decls}{text s}}}\n")
+        and declare (names : HashSet<int>, decls : ResizeArray<string>) (L(i,t)) =
+            if names.Add i then decls.Add($"var v{i}: {tyv t} = undefined; _ = &v{i};")
+        and temp (_ : HashSet<int>, decls : ResizeArray<string>) (ty : string) =
+            let name = $"tmp{decls.Count}"
+            decls.Add($"var {name}: {ty} = undefined; _ = &{name};")
+            name
+        and binds locals (s : CodegenEnv) (ret : BindsReturnZig) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try let d = data_free_vars d
+                        d |> Array.iter (declare locals)
+                        op locals s (ZLocal d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) -> try op locals s ret a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try match ret with
+                        | ZLocal l -> Array.iter2 (fun (L(i,_)) b -> line s $"v{i} = {show_w b};") l (data_term_vars d)
+                        | ZTail range ->
+                            match tup_as range d with
+                            | "" -> if self_loop.Value.IsSome then line s "return;"
+                            | x -> line s $"return {x};"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op locals (s : CodegenEnv) (ret : BindsReturnZig) a =
+            let binds = binds locals
+            let return' (x : string) =
+                match ret with
+                | ZLocal [||] -> line s $"_ = {x};"
+                | ZLocal [|L(i,_)|] -> line s $"v{i} = {x};"
+                | ZLocal l ->
+                    let tmp = temp locals (tuple_type (l |> Array.map (fun (L(_,t)) -> tyv t)) |> sprintf "Tuple%i")
+                    line s $"{tmp} = {x};"
+                    l |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {tmp}.f{k};")
+                | ZTail range ->
+                    if tup_ty range = "void" then
+                        line s $"_ = {x};"
+                        if self_loop.Value.IsSome then line s "return;"
+                    else line s $"return {x};"
+            let layout_index (i : int) (fields : TyV []) =
+                match ret with
+                | ZLocal l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"v{t} = v{i}.l{f};") l fields
+                | ZTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
+            let jp (a, b) =
+                match a with
+                | JPMethod(a,c) -> $"method{(method (a,c)).tag}({args b})"
+                | JPClosure(a,c) -> $"closureCreate{(closure (a,c)).tag}({args b})"
+            let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
+            match a with
+            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_ty x | CMTypeLit x -> type_litZig x) |> String.concat "" |> return'
+            | TySizeOf t -> return' $"@as(i64, @sizeOf({tup_ty t}))"
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with ZTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
+                let parameters = snd self_loop.Value.Value
+                // Through temporaries: the new arguments may read the parameters being replaced.
+                let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
+                Array.iter2 (fun tmp (L(i,_)) -> line s $"{tmp} = v{i};") temps b
+                Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} = {tmp};") parameters temps
+                line s "continue;"
+            | TyJoinPoint(a,args) -> return' (jp (a, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Zig backend does not support nesting other backends."
+            | TyWhile(a,b) ->
+                line s $"while ({jp a}) {{"
+                binds (indent s) (ZLocal [||]) b
+                line s "}"
+            | TyDo a | TyIndent a -> binds s ret a
+            | TyIntSwitch(L(i,_),on_succ,on_fail) ->
+                line s $"switch (v{i}) {{"
+                on_succ |> Array.iteri (fun k b -> line (indent s) $"{k} => {{"; binds (indent (indent s)) ret b; line (indent s) "},")
+                line (indent s) "else => {"; binds (indent (indent s)) ret on_fail; line (indent s) "},"
+                line s "}"
+            | TyUnionUnbox(is,x,on_succs,on_fail) ->
+                let x' = x.Item
+                let _ = match x'.layout with UHeap -> uheap x'.cases | UStack -> ustack x'.cases
+                let case_index k =
+                    x'.cases |> Seq.map (fun (KeyValue ((_,k'),_)) -> k') |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
+                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+                let head =
+                    match is with
+                    | [L(i,_)] -> $"v{i}.tag"
+                    | L(i,_) :: _ ->
+                        let tmp = temp locals "i32"
+                        let same = is |> List.pairwise |> List.map (fun (L(a,_), L(b,_)) -> $"(v{a}.tag == v{b}.tag)") |> String.concat " and "
+                        line s $"{tmp} = if ({same}) v{i}.tag else -1;"
+                        tmp
+                    | [] -> raise_codegen_error "Compiler error: Union unbox without a scrutinee."
+                line s $"switch ({head}) {{"
+                on_succs |> Map.iter (fun k (a,b) ->
+                    let c = case_index k
+                    line (indent s) $"{c} => {{ // {UnionTagIdOps.text k}"
+                    List.iter2 (fun (L(v,_)) a ->
+                        data_free_vars a |> Array.iteri (fun f (L(i,_) as field) ->
+                            declare locals field
+                            line (indent (indent s)) $"v{i} = v{v}.c{c}_{f};")) is a
+                    binds (indent (indent s)) ret b
+                    line (indent s) "},")
+                match on_fail with
+                | Some b -> line (indent s) "else => {"; binds (indent (indent s)) ret b; line (indent s) "},"
+                | None -> line (indent s) "else => unreachable,"
+                line s "}"
+            | TyUnionBox(a,b,c) ->
+                let c = c.Item
+                let tag, prefix = match c.layout with UHeap -> uheap c.cases, "UH" | UStack -> ustack c.cases, "US"
+                let i =
+                    c.cases |> Seq.map (fun (KeyValue ((_,k),_)) -> k) |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
+                    |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
+                return' $"{prefix}{tag}_{i}({args' b})"
+            | TyToLayout(a,b) ->
+                match b with
+                | YLayout(_,Heap) -> $"heapCreate{(heap b).tag}({args' a})"
+                | YLayout(_,HeapMutable) -> $"mutCreate{(mut b).tag}({args' a})"
+                | YLayout(_,StackMutable) -> raise_codegen_error "The Zig backend doesn't support stack mutable layout types yet."
+                | _ -> raise_codegen_error $"Compiler error: Expected a layout type (4).\nGot: %s{show_ty b}"
+                |> return'
+            | TyLayoutIndexAll(L(i,YLayout(_,lay) & a)) ->
+                match lay with
+                | Heap -> (heap a).free_vars
+                | HeapMutable -> (mut a).free_vars
+                | StackMutable -> raise_codegen_error "The Zig backend doesn't support indexing into stack mutable layout types yet."
+                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
+                |> layout_index i
+            | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) ->
+                match lay with
+                | Heap -> heap a
+                | HeapMutable -> mut a
+                | StackMutable -> raise_codegen_error "The Zig backend doesn't support indexing into stack mutable layout types yet."
+                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
+                |> fun (x : ZigLayoutRec) -> x.free_vars_by_key |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None) |> Option.iter (layout_index i)
+            | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
+            | TyLayoutMutableSet(L(i,t),b,c) ->
+                let a = List.fold (fun s k ->
+                    match s with
+                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
+                    | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
+                Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
+            | TyArrayLiteral(a,b) ->
+                let el = tup_ty' a
+                let tmp = temp locals $"[]{el}"
+                line s $"{tmp} = spiralNewArray({el}, {b.Length});"
+                b |> List.iteri (fun k x -> line s $"{tmp}[{k}] = {tup_as a x};")
+                return' tmp
+            | TyArrayCreate(a,b) -> return' $"spiralNewArray({tup_ty' a}, {tup b})"
+            | TyArrayLength(a,b) | TyStringLength(a,b) -> return' $"@as({tyv a}, @intCast({tup b}.len))"
+            | TyFailwith(a,b) ->
+                // A noreturn call ends its block for Zig: in the middle of one (a value position) it goes behind a
+                // condition Zig can't fold, so the statements after it still compile.
+                match ret with
+                | ZTail _ -> line s $"spiralFail({tup b});"
+                | ZLocal _ -> line s $"if (spiral_true) spiralFail({tup b});"
+            | TyConv(a,b) ->
+                match a with
+                | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T | Float32T | Float64T) -> return' $"spiralConv({tyv a}, {tup b})"
+                | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
+            | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"v{i}.call(v{i}.ctx)" | x -> $"v{i}.call(v{i}.ctx, {x})")
+            | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(ArrayIndexSet, [a;b;c]) ->
+                let value = match a with DV(L(_,YArray el)) -> tup_as el c | _ -> tup c
+                line s $"{tup a}[spiralIndex({tup a}.len, {tup b})] = {value};"
+            | TyOp(op,l) ->
+                let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
+                let cmp o = match l with [a;_] when is_string a -> bin (fun a b -> match o with "<" -> $"std.mem.lessThan(u8, {a}, {b})" | "<=" -> $"!std.mem.lessThan(u8, {b}, {a})" | ">" -> $"std.mem.lessThan(u8, {b}, {a})" | _ -> $"!std.mem.lessThan(u8, {a}, {b})") | _ -> bin (fun a b -> $"{a} {o} {b}")
+                match op, l with
+                | Dyn,[a] -> tup a
+                | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | StringIndex, [a;b] -> $"{tup a}[spiralIndex({tup a}.len, {tup b})]"
+                | StringSlice, [a;b;c] -> $"spiralStringSlice({tup a}, @as(i64, {tup b}), @as(i64, {tup c}))"
+                | StaticStringConcat, _ -> bin (sprintf "spiralConcat(%s, %s)")
+                | ArrayIndex, [a;b] -> $"{tup a}[spiralIndex({tup a}.len, {tup b})]"
+                | Add, [a;_] -> bin (if is_int a then sprintf "%s +%% %s" else sprintf "%s + %s")
+                | Sub, [a;_] -> bin (if is_int a then sprintf "%s -%% %s" else sprintf "%s - %s")
+                | Mult, [a;_] -> bin (if is_int a then sprintf "%s *%% %s" else sprintf "%s * %s")
+                | Div, [a;_] -> bin (if is_float a then sprintf "%s / %s" else sprintf "@divTrunc(%s, %s)")
+                | Mod, _ -> bin (sprintf "@rem(%s, %s)")
+                | Pow, [a;_] -> bin (sprintf "std.math.pow(@TypeOf(%s), %s, %s)" (tup a))
+                | LT, _ -> cmp "<"
+                | LTE, _ -> cmp "<="
+                | EQ, [a;_] when is_string a -> bin (sprintf "std.mem.eql(u8, %s, %s)")
+                | NEQ, [a;_] when is_string a -> bin (sprintf "!std.mem.eql(u8, %s, %s)")
+                | EQ, _ -> bin (sprintf "%s == %s")
+                | NEQ, _ -> bin (sprintf "%s != %s")
+                | GT, _ -> cmp ">"
+                | GTE, _ -> cmp ">="
+                | BoolAnd, _ -> bin (sprintf "(%s and %s)")
+                | BoolOr, _ -> bin (sprintf "(%s or %s)")
+                | BitwiseAnd, _ -> bin (sprintf "%s & %s")
+                | BitwiseOr, _ -> bin (sprintf "%s | %s")
+                | BitwiseXor, _ -> bin (sprintf "%s ^ %s")
+                | BitwiseComplement, _ -> unary (sprintf "~%s") l
+                | ShiftLeft, [a;_] -> bin (sprintf "std.math.shl(@TypeOf(%s), %s, %s)" (tup a))
+                | ShiftRight, [a;_] -> bin (sprintf "std.math.shr(@TypeOf(%s), %s, %s)" (tup a))
+                | Neg, [a] -> if is_int a then unary (sprintf "-%%%s") l else unary (sprintf "-%s") l
+                | Log, _ -> unary (sprintf "@log(%s)") l
+                | Exp, _ -> unary (sprintf "@exp(%s)") l
+                | Tanh, _ -> unary (sprintf "std.math.tanh(%s)") l
+                | Sqrt, _ -> unary (sprintf "@sqrt(%s)") l
+                | Sin, _ -> unary (sprintf "@sin(%s)") l
+                | Cos, _ -> unary (sprintf "@cos(%s)") l
+                | NanIs, _ -> unary (sprintf "std.math.isNan(%s)") l
+                | StdoutFlush, [] -> "{}"
+                | Printf, [DLit (LitString fmt); b] ->
+                    // Several pieces become several calls (`return'` writes `_ = <x>;`); spiralPrint takes literals and slices.
+                    match printf_pieces fmt (data_term_vars b) with
+                    | [] -> "{}"
+                    | [Choice2Of2 (_, (WV _ as a))] -> $"spiralPrintAny({show_w a})"
+                    | pieces ->
+                        pieces |> List.map (function
+                            | Choice1Of2 t -> $"spiralPrint({litZig (LitString t)})"
+                            | Choice2Of2 ('s', a) -> $"spiralPrint({show_w a})"
+                            | Choice2Of2 (_, a) -> $"spiralPrintAny({show_w a})")
+                        |> String.concat "; "
+                | UnionTag, [DV(L(i,YUnion _))] ->
+                    match ret with
+                    | ZLocal [|L(_,t)|] -> $"spiralConv({tyv t}, v{i}.tag)"
+                    | _ -> $"v{i}.tag"
+                | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Zig backend" op l.Length
+                |> return'
+        and tuple_type : string [] -> int = memo (fun tys tag ->
+            let fields = tys |> Array.mapi (fun k t -> $"f{k}: {t}") |> String.concat ", "
+            types.Add($"const Tuple{tag} = struct {{ {fields} }};"))
+        and fun_type : Ty * Ty -> int = memo (fun (a, b) tag ->
+            let ps = tyvs a |> Array.map (fun (L(_,t)) -> tyv t)
+            let ps = Array.append [|"*anyopaque"|] ps |> String.concat ", "
+            types.Add($"const Fun{tag} = struct {{ ctx: *anyopaque, call: *const fn ({ps}) {tup_ty b} }};"))
+        and layout_rec (x : Ty) : ZigLayoutRec =
+            match x with
+            | YLayout(x,_) ->
+                let x = env.ty_to_data x
+                let a, b =
+                    match x with
+                    | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                    | _ -> data_free_vars x, Map.empty
+                {data=x; free_vars=a; free_vars_by_key=b; tag=0}
+            | _ -> raise_codegen_error $"Compiler error: Expected a layout type (3).\nGot: %s{show_ty x}"
+        and layout (kind : string) (x : Ty) : ZigLayoutRec =
+            match layout_tags.TryGetValue x with
+            | true, r -> r
+            | _ ->
+                let r = { layout_rec x with tag = layout_tags.Count }
+                layout_tags.[x] <- r
+                let fields = r.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
+                let ps = r.free_vars |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat ", "
+                let inits = r.free_vars |> Array.mapi (fun k (L(i,_)) -> $".l{i} = a{k}") |> String.concat ", "
+                let name = if kind = "Heap" then "Heap" else "Mut"
+                let create = if kind = "Heap" then "heapCreate" else "mutCreate"
+                types.Add($"const {name}{r.tag} = struct {{ {fields} }};")
+                bodies.Add($"fn {create}{r.tag}({ps}) *{name}{r.tag} {{\n    return spiralCreate({name}{r.tag}, .{{ {inits} }});\n}}\n")
+                r
+        and heap x : ZigLayoutRec = layout "Heap" x
+        and mut x : ZigLayoutRec = layout "Mut" x
+        and union_type (heap : bool) = memo_ref (fun (cases : Map<int * string, Ty>) tag ->
+            let name = if heap then $"UH{tag}" else $"US{tag}"
+            let cases = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars)
+            let fields = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> $"c{c}_{f}: {tyv t} = undefined")) |> Array.concat
+            let fields = Array.append [|"tag: i32"|] fields |> String.concat ", "
+            types.Add($"const {name} = struct {{ {fields} }};")
+            cases |> Array.iteri (fun c vars ->
+                let ps = vars |> Array.mapi (fun f (L(_,t)) -> $"a{f}: {tyv t}") |> String.concat ", "
+                let inits = vars |> Array.mapi (fun f _ -> $", .c{c}_{f} = a{f}") |> String.concat ""
+                let value = $"{name}{{ .tag = {c}{inits} }}"
+                if heap then bodies.Add($"fn {name}_{c}({ps}) *{name} {{\n    return spiralCreate({name}, {value});\n}}\n")
+                else bodies.Add($"fn {name}_{c}({ps}) {name} {{\n    return {value};\n}}\n")))
+        and uheap_memo = lazy (union_type true)
+        and ustack_memo = lazy (union_type false)
+        and uheap x = uheap_memo.Force() x
+        and ustack x = ustack_memo.Force() x
+        and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
+            let args = codegenMethodKeyArgs key
+            match codegenMethodBody env "Zig" jp_body key with
+            | body, range, _ -> emit_function $"method{tag}" (Some tag) (rdata_free_vars args) "" range body ""))
+        and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+        and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
+            match fun_ty with
+            | YFun(domain,range,_) ->
+                match codegenClosureBody env "Zig" jp_body key with
+                | domain_args, body ->
+                    let free_vars = rdata_free_vars args
+                    let domain_args = data_free_vars domain_args
+                    let parent = fun_type (domain, range)
+                    // The environment struct (a byte when nothing is captured: a pointer to a zero-size type isn't an
+                    // `*anyopaque`).
+                    let fields = free_vars |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}, ") |> String.concat ""
+                    types.Add($"const ClosureEnv{tag} = struct {{ {fields}pad: u8 = 0 }};")
+                    // The body reads its captures out of the environment into locals first.
+                    let loads = free_vars |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = env.v{i}; _ = &v{i};") |> String.concat "\n"
+                    let prologue = $"    const env: *ClosureEnv{tag} = @ptrCast(@alignCast(ctx)); _ = &env;\n{loads}"
+                    emit_function $"closure{tag}" None domain_args "ctx: *anyopaque" range body ""
+                    // Insert the prologue after the function's opening line (the functions its body called were added first).
+                    let head = $"fn closure{tag}("
+                    let saved = bodies.FindLastIndex(fun (b : string) -> b.StartsWith head)
+                    let f : string = bodies.[saved]
+                    let at = f.IndexOf('\n') + 1
+                    bodies.[saved] <- f.Substring(0, at) + prologue + (if loads = "" then "\n" else "\n") + f.Substring(at)
+                    let inits = free_vars |> Array.map (fun (L(i,_)) -> $".v{i} = p{i}, ") |> String.concat ""
+                    bodies.Add($"fn closureCreate{tag}({param_list free_vars}) Fun{parent} {{\n    return .{{ .ctx = spiralCreate(ClosureEnv{tag}, .{{ {inits}}}), .call = &closure{tag} }};\n}}\n")
+            | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
+        and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyUnionUnbox(_,_,on_succs,on_fail), _) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+
+        // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
+        let unitMain =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Zig backend should be a 32-bit int (or unit)."
+            | _ -> true
+        // A unit main is a `void` function the entry calls before exiting with 0.
+        if unitMain then
+            emit_function "spiralMainUnit" None [||] "" YB x ""
+            bodies.Add("fn spiralMain() i32 {\n    spiralMainUnit();\n    return 0;\n}\n")
+        else emit_function "spiralMain" None [||] "" (YPrim Int32T) x ""
+        let program = StringBuilder()
+        program.AppendLine("// Generated by the Spiral compiler (Zig backend). Build: zig build-exe main.zig -O ReleaseSafe (or -O Debug -fno-llvm: seconds)") |> ignore
+        program.Append(zigPrelude) |> ignore
+        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
+        // A single-threaded Io and a page-backed arena: the smallest std setup (`std.process.Init` pulls in the threaded
+        // Io and the debug allocator: a 3x slower build for nothing these programs use).
+        program.AppendLine("pub fn main() void {") |> ignore
+        program.AppendLine("    spiral_io = spiral_threaded.io();").AppendLine("    spiral_gpa = spiral_arena.allocator();") |> ignore
+        // On a 1 GB thread, as the Rust entry: mutual tail recursion that the C compiler turns into jumps recurses here.
+        program.AppendLine("    var code: i32 = 0;") |> ignore
+        program.AppendLine("    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{&code}) catch @panic(\"cannot start the main thread\");") |> ignore
+        program.AppendLine("    thread.join();").AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(code))));").AppendLine("}") |> ignore
+        program.AppendLine("fn spiralMainThread(code: *i32) void {").AppendLine("    code.* = spiralMain();").AppendLine("}") |> ignore
+        program.ToString()
 
     /// ## CodegenGleam
 
@@ -171777,10 +172519,10 @@ module spiral_compiler =
                     | WV(L(i',_)) -> sprintf "l%i :  v%i" i i'
                     | WLit x -> sprintf "l%i :  %s" i (litGleam x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
+            // ws: several fields bind a tuple (`let #(a, b) = #(v.l0, v.l1)`; the plain list was a syntax error, lane W).
             let layout_index i x =
                 x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
-                |> String.concat ", "
-                |> function "" -> () | x -> simple x
+                |> function [||] -> () | [|x|] -> simple x | l -> String.concat ", " l |> sprintf "#(%s)" |> simple
             let length (a,b) =
                 global' "import gleam/string"
                 sprintf "string.length(%s)" (tup b)
@@ -172149,6 +172891,16 @@ module spiral_compiler =
                     global' "import gleam/dict"
                     global' "import gleam/result"
                     $"[ {items} ] |> dict.from_list |> dict.get(v{i}) |> result.unwrap(0)"
+                | Printf, [DLit (LitString fmt); b] ->
+                    global' "import gleam/io"
+                    let pieces =
+                        printf_pieces fmt (data_term_vars b) |> List.map (function
+                            | Choice1Of2 t -> litGleam (LitString t)
+                            | Choice2Of2 ('s', a) -> show_w a
+                            | Choice2Of2 (_, a) -> global' "import gleam/int"; $"int.to_string({show_w a})")
+                    match pieces with
+                    | [] -> "Nil"
+                    | l -> String.concat " <> " l |> sprintf "io.print(%s)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecGleam = layout (fun s x ->
@@ -172550,9 +173302,14 @@ module spiral_compiler =
                     | WLit x -> sprintf "l%i = %s" i (litLua x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
             let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
-                |> String.concat ", "
-                |> function "" -> () | x -> simple x
+                let fields = x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
+                match fields, d with
+                | [||], _ -> ()
+                // Several fields are several values, not a packed table: `local a, b = x.l0, x.l1` (`simple` would unpack
+                // them as one table: "table expected, got number"; MAIN's cube port, cube.lua:336).
+                | fields, Some d when fields.Length > 1 && (data_free_vars d).Length = fields.Length ->
+                    line s (sprintf "local %s = %s" (free_vars false d |> SpiralSm.trim) (String.concat ", " fields))
+                | fields, _ -> simple (String.concat ", " fields)
             let length (a,b) =
                 sprintf "string.len(%s)" (tup b)
                 |> simple
@@ -172718,7 +173475,19 @@ module spiral_compiler =
             | TyArrayLiteral(a,b) ->
                 (List.map tup b |> String.concat ", " |> sprintf "{ %s }")
                 |> simple
-            | TyArrayCreate(a,b) -> "{}" |> simple
+            | TyArrayCreate(a,b) ->
+                // A new array's elements are their type's default, as in C (calloc) and the other backends; Lua's
+                // empty table read nil (MAIN's cube port: 'attempt to compare nil with number').
+                match a with
+                | YPrim (Float32T | Float64T) -> Some "0.0"
+                | YPrim BoolT -> Some "false"
+                | YPrim StringT -> Some "\"\""
+                | YPrim _ -> Some "0"
+                | _ -> None
+                |> function
+                    | Some v -> sprintf "(function(n) local t = {} for i = 1, n do t[i] = %s end return t end)(%s)" v (tup b)
+                    | None -> "{}"
+                |> simple
             | TyArrayLength(a,b) ->
                 sprintf "#(%s)" (tup b)
                 |> simple
@@ -172727,7 +173496,12 @@ module spiral_compiler =
             | TyFailwith(a,b) -> simple (sprintf "_G.error(%s)" (tup b))
             | TyConv(a,b) ->
                 let d = tup b
-                simple d
+                // A float to an integer truncates toward zero, as C does (Lua's numbers stay floats otherwise, and a float
+                // index reads nil: MAIN's cube port, 'attempt to compare nil with number').
+                let from_float = match data_term_vars b with [|WV(L(_,YPrim (Float32T | Float64T)))|] | [|WLit (LitFloat32 _ | LitFloat64 _)|] -> true | _ -> false
+                match a with
+                | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
+                | _ -> simple d
             | TyApply (L(i, t), b) ->
                 let arg_code = tup b
                 let call =
@@ -172764,6 +173538,12 @@ module spiral_compiler =
                 | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
                 | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
                 | Mult, [a;b] -> sprintf "%s * %s" (tup a) (tup b)
+                // Integers divide and take the remainder toward zero, as C does (Lua's `/` is float division and its `%`
+                // floors: MAIN's cube port checksum differed).
+                | Div, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
+                    sprintf "(math.modf(%s / %s))" (tup a) (tup b)
+                | Mod, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
+                    sprintf "math.fmod(%s, %s)" (tup a) (tup b)
                 | Div, [a;b] -> sprintf "%s / %s" (tup a) (tup b)
                 | Mod, [a;b] -> sprintf "%s %% %s" (tup a) (tup b)
                 | Pow, [a;b] -> sprintf "%s ^ %s" (tup a) (tup b)
@@ -172812,6 +173592,16 @@ module spiral_compiler =
                     )
                     code.Append("else __tag = 0 end\nreturn __tag end)()") |> ignore
                     code.ToString()
+                | Printf, [DLit (LitString fmt); b] ->
+                    printf_pieces fmt (data_term_vars b)
+                    |> List.map (function
+                        | Choice1Of2 t -> litLua (LitString t)
+                        | Choice2Of2 ('s', a) -> show_w a
+                        // Lua 5.1's %d is a C long (32 bits on Windows); 64-bit integers print through %.0f (exact up to
+                        // 2^53; `+ 0.0` turns a -0 into 0).
+                        | Choice2Of2 (_, (WV(L(_,YPrim (Int64T | UInt64T))) | WLit (LitInt64 _ | LitUInt64 _) as a)) -> "string.format(\"%.0f\", " + show_w a + " + 0.0)"
+                        | Choice2Of2 (_, a) -> "string.format(\"%d\", " + show_w a + ")")
+                    |> String.concat ", " |> sprintf "io.write(%s)"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                 |> simple
         and heap : _ -> LayoutRecLua = layout (fun s x ->
@@ -173530,7 +174320,16 @@ module spiral_compiler =
                 // Node and Bun drain stdout before exiting (the entry sets exitCode instead of calling process.exit).
                 | StdoutFlush, [] -> "void 0"
                 | MonotonicDelayMs, [a] -> delay_helper (); $"spiral_delay_ms({number_index a})"
-                | Printf, [DLit (LitString "%s"); b] -> $"process.stdout.write({tup b})"
+                | Printf, [DLit (LitString fmt); b] ->
+                    match printf_pieces fmt (data_term_vars b) with
+                    | [] -> "void 0"
+                    | [Choice2Of2 ('s', a)] -> $"process.stdout.write({show_w a})"
+                    | pieces ->
+                        pieces |> List.map (function
+                            | Choice1Of2 t -> litTypeScript (LitString t)
+                            | Choice2Of2 ('s', a) -> show_w a
+                            | Choice2Of2 (_, a) -> $"String({show_w a})")
+                        |> String.concat " + " |> sprintf "process.stdout.write(%s)"
                 | UnionTag, [DV(L(i,YUnion _))] ->
                     match ret with
                     | TsDeclare [|L(_,YPrim (Int64T | UInt64T))|] | TsAssign [|L(_,YPrim (Int64T | UInt64T))|] -> $"BigInt(v{i}.tag)"
@@ -174372,7 +175171,27 @@ module spiral_compiler =
                     | NanIs, [x] -> import "math.h"; sprintf "isnan(%s)" (tup_data x)
                     | StdoutFlush, [] -> import "stdio.h"; "fflush(stdout)"
                     | MonotonicDelayMs, [duration] -> import "poll.h"; sprintf "poll(0, 0, %s)" (tup_data duration)
-                    | Printf, [fmt;str] -> import "stdio.h"; sprintf "printf(%s, %s)" (string_in_op fmt) (string_in_op str)
+                    | Printf, [DLit (LitString fmt); str] ->
+                        // The portable format (printf_pieces) becomes a C format with one specifier per argument type.
+                        import "stdio.h"
+                        let data = function WV v -> DV v | WLit l -> DLit l
+                        let cfmt = StringBuilder()
+                        let args = ResizeArray()
+                        for p in printf_pieces fmt (data_term_vars str) do
+                            match p with
+                            | Choice1Of2 t -> cfmt.Append(t.Replace("%", "%%")) |> ignore
+                            | Choice2Of2 ('s', a) -> cfmt.Append "%s" |> ignore; args.Add(string_in_op (data a))
+                            | Choice2Of2 (_, a) ->
+                                let t = match a with WV(L(_,YPrim t)) -> t | WLit l -> lit_to_primitive_type l | _ -> Int32T
+                                let spec, cast =
+                                    match t with
+                                    | Int64T -> "%lld", "(long long)"
+                                    | UInt64T -> "%llu", "(unsigned long long)"
+                                    | UInt8T | UInt16T | UInt32T -> "%u", "(unsigned)"
+                                    | _ -> "%d", "(int)"
+                                cfmt.Append spec |> ignore
+                                args.Add(cast + tup_data (data a))
+                        String.concat ", " (lit_stringC (cfmt.ToString()) :: List.ofSeq args) |> sprintf "printf(%s)"
                     | UnionTag, [DV(L(i,YUnion l)) as x] ->
                         match l.Item.layout with
                         | UHeap -> "->tag"
@@ -176069,6 +176888,10 @@ module spiral_compiler =
                     r
 
             let cupy_ty x = part_eval_env.ty_to_data x |> data_free_vars |> cupy_ty
+            // ws: set while writing a method that calls itself in tail position: Python has no tail calls (RecursionError past
+            // ~1,000 frames), so the body runs in `while True:`, a tail value `return`s and the self call reassigns the
+            // parameters and `continue`s (Rust's and Delphi's self_loop; lane G's python_self_tail_call_depth).
+            let self_loop : (int * TyV []) option ref = ref None
             let rec binds_start (args : TyV []) (s : string_builder_env) (x : TypedBind []) = binds (refc_prepass Set.empty (Set args) x).g_decr s BindsTailEnd x // ws: RefCounting is not in a module here
             and binds g_decr (s : string_builder_env) (ret : BindsReturn) (stmts : TypedBind []) =
                 let s_len = s.text.Length
@@ -176186,6 +177009,10 @@ module spiral_compiler =
                     binds g_decr (indent s) ret tr
                     line s "else:"
                     binds g_decr (indent s) ret fl
+                | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with BindsTailEnd, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) -> // ws: see self_loop
+                    let parameters = snd self_loop.Value.Value
+                    if parameters.Length > 0 then line s $"{args parameters} = {args b}"
+                    line s "continue"
                 | TyJoinPoint(a,args) -> return' (jp (a, args))
                 | TyBackend(a,b,c) -> line s $"kernel = \"{backend_handler (a,b,c)}\""
                 | TyWhile(a,b) ->
@@ -176339,6 +177166,11 @@ module spiral_compiler =
                     | StdoutFlush, [] -> import "sys"; "sys.stdout.flush()"
                     | MonotonicDelayMs, [duration] -> import "time"; sprintf "time.sleep(%s / 1000)" (tup_data duration)
                     | UnionTag, [DUnion(_,l) | DV(L(_,YUnion l)) as x] -> sprintf "%s.tag" (tup_data x)
+                    | Printf, [DLit (LitString fmt); b] ->
+                        match printf_pieces fmt (data_term_vars b) |> List.map (function Choice1Of2 t -> lit (LitString t) | Choice2Of2 (_, a) -> show_w a) with
+                        | [] -> "pass"
+                        | [x] -> $"print({x}, end='')"
+                        | l -> String.concat ", " l |> sprintf "print(%s, sep='', end='')"
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
             // A case is named by its tag (the key's), as constructions and matches name it: a GADT-indexed union keeps only
@@ -176383,8 +177215,25 @@ module spiral_compiler =
                     ) (fun s x ->
                     let method_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"v{i} : {annot t}") |> String.concat ", "
                     line s $"def method{x.tag}({method_args}) -> {tup_annot x.range}:"
-                    binds_start x.free_vars (indent s) x.body
+                    let saved = self_loop.Value
+                    if self_tail x.tag x.body then // ws: see self_loop
+                        self_loop.Value <- Some (x.tag, x.free_vars)
+                        line (indent s) "while True:"
+                        binds_start x.free_vars (indent (indent s)) x.body
+                    else
+                        self_loop.Value <- None
+                        binds_start x.free_vars (indent s) x.body
+                    self_loop.Value <- saved
                     )
+            and self_tail tag (body : TypedBind []) = // ws: see self_loop
+                body.Length > 0 &&
+                match Array.last body with
+                | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
+                | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+                | TyLocalReturnOp(_, TyUnionUnbox(_,_,on_succs,on_fail), _) -> (on_succs |> Map.exists (fun _ (_,b) -> self_tail tag b)) || (on_fail |> Option.exists (self_tail tag))
+                | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+                | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+                | _ -> false
             and closure : _ -> ClosureRec =
                 jp true (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
@@ -176405,7 +177254,10 @@ module spiral_compiler =
                             let nonlocal_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"env_v{i}") |> String.concat ", "
                             line s $"nonlocal {nonlocal_args}"
                             x.free_vars |> Array.map (fun (L(i,t)) -> $"v{i} = env_v{i}") |> String.concat "; " |> line s
+                        let saved = self_loop.Value // ws: see self_loop
+                        self_loop.Value <- None
                         binds_start x.free_vars s x.body
+                        self_loop.Value <- saved
                     line s "return inner"
                     )
 
@@ -176423,7 +177275,13 @@ module spiral_compiler =
                 binds_start [||] (indent s) x
                 s.text.AppendLine() |> ignore
 
-                line s "if __name__ == '__main__': result = main(); None if result is None else print(result)" // ws: upstream prints `None` for unit; keeps the `///> cuda` notebook outputs unchanged
+                // ws: an i32 main is the exit code, as in C and Rust (lane W, #79); any other value is printed (upstream
+                // printed every result, `None` for unit). Kino's cells print the value either way (Cell.patch_python).
+                match Array.tryLast x with
+                | Some (TyLocalReturnData(d,_)) | Some (TyLocalReturnOp(_,_,d)) when (match data_term_vars d with [|WV(L(_,YPrim Int32T))|] | [|WLit (LitInt32 _)|] -> true | _ -> false) ->
+                    import "sys"
+                    line s "if __name__ == '__main__': sys.exit(main())"
+                | _ -> line s "if __name__ == '__main__': result = main(); None if result is None else print(result)"
                 code_env.main_defs.Add(s.text.ToString())
 
         let codegen (default_env : DefaultEnv) (file_path : string) part_eval_env (x : TypedBind[]) : GeneratedFile list = // ws: Startup. prefix and the annotation
@@ -180053,6 +180911,7 @@ module spiral_compiler =
         | BuildBackendFsharp
         | BuildBackendRust
         | BuildBackendDelphi
+        | BuildBackendZig
         | BuildBackendTypeScript
         | BuildBackendC
         | BuildBackendPythonCuda
@@ -180070,6 +180929,7 @@ module spiral_compiler =
         | "Fsharp" -> BuildBackendFsharp
         | "Rust" -> BuildBackendRust
         | "Delphi" -> BuildBackendDelphi
+        | "Zig" -> BuildBackendZig
         | "TypeScript" -> BuildBackendTypeScript
         | "C" -> BuildBackendC
         | "Python + Cuda" -> BuildBackendPythonCuda
@@ -180518,13 +181378,8 @@ module spiral_compiler =
                 let v =
                     match ModuleEnv.tryFindText (file x.uri) s.modules with
                     | Some v -> Some v
-                    | None when x.uri |> SpiralSm.ends_with ".dib" ->
-                        x.uri
-                        |> SpiralSm.replace "file:///" ""
-                        |> File.ReadAllText
-                        |> wdiff_module_init_all default_env (is_top_down x.uri)
-                        |> Some
                     | None -> None
+
     
 
                 match v with
@@ -181197,7 +182052,20 @@ module spiral_compiler =
                                         availableErrors [] result
                                         |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
                                 with ex -> [[$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"]]
-                            Job.result errors
+                            // The entry file's tokenizer and parser errors first (single-flight's type-error branch): a block
+                            // that fails to parse is left out, so its callers' 'Unbound variable' is only the symptom.
+                            let parse_errors =
+                                let _,_,bundles = a.input
+                                let rec available acc (stream : BlockBundleState) =
+                                    if Promise.Now.isFulfilled stream then
+                                        match Promise.Now.get stream with
+                                        | Hopac.Stream.Cons((_, bundle : BlockBundleValue), next) -> available (acc @ bundle.errors) next
+                                        | Hopac.Stream.Nil -> acc
+                                    else acc
+                                let tokenizer_errors = match ModuleEnv.tryFindText file s.modules with Some m -> m.tokenizer.errors | None -> []
+                                available tokenizer_errors bundles
+                                |> List.map (fun ((p,_),message) -> $"{file}:{p.line + 1}:{p.character + 1}: {message}")
+                            Job.result (parse_errors :: errors)
                             >>= fun errors ->
                                 let details = errors |> Seq.concat |> String.concat "\n"
                                 let details = if details = "" then "" else $"\n{details}"
@@ -181217,9 +182085,9 @@ module spiral_compiler =
                         // does not define `main` itself, report its tokenizer and parser errors instead. The bundles are
                         // the ones type checking consumed, so they are complete by now; read them without blocking all
                         // the same (FRONTIER.md fix 33).
+                        // D47 (single-flight): the entry file's errors always end the build (a dropped block makes its
+                        // callers fail with a bare `Unbound variable`, or vanishes without a word when nothing calls it).
                         let entry_errors =
-                            if own_main then []
-                            else
                                 let _,_,bundles = a.input
                                 let rec available acc (stream : BlockBundleState) =
                                     if Promise.Now.isFulfilled stream then
@@ -181237,7 +182105,7 @@ module spiral_compiler =
                             | "Check", _ -> BuildDraft.Skip
                             | _, _ when not (List.isEmpty entry_errors) ->
                                 let details = entry_errors |> List.map (fun ((a,_),message) -> $"\n{file}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
-                                BuildDraft.FatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}: the file does not define it, and it has errors (a block that fails to parse is left out, so `main` would come from an opened module).{details}"
+                                BuildDraft.FatalError $"The package of {Path.GetFileNameWithoutExtension file} has blocks that fail to tokenize or parse (such a block is left out of its module: its definitions would be missing without a word).{details}"
                             | _, Some main ->
                                 let prototypes_instances = Dictionary(env.prototypes_instances)
                                 let nominals =
@@ -181284,6 +182152,7 @@ module spiral_compiler =
                                         | BuildBackendFsharp -> build codegenFsharp "Fsharp" ".fsx"
                                         | BuildBackendRust -> build codegenRust "Rust" ".rs"
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
+                                        | BuildBackendZig -> build codegenZig "Zig" ".zig"
                                         | BuildBackendTypeScript -> build codegenTypeScript "TypeScript" ".ts"
                                         | BuildBackendC -> build CodegenC.codegenC "C" ".c"
                                         | BuildBackendPythonCuda -> build_many (CodegenPython.codegen default_env) "Python"
@@ -183685,13 +184554,8 @@ module spiral_compiler =
                 let v =
                     match Map.tryFind (file x.uri) s.modules with
                     | Some v -> Some v
-                    | None when x.uri |> SpiralSm.ends_with ".dib" ->
-                        x.uri
-                        |> SpiralSm.replace "file:///" ""
-                        |> File.ReadAllText
-                        |> wdiff_module_init_all default_env (is_top_down x.uri)
-                        |> Some
                     | None -> None
+
 
                 match v with
                 | Some v ->
@@ -183808,7 +184672,7 @@ module spiral_compiler =
                             // often in a dependency. Not every package this supervisor ever loaded: a long-lived host
                             // (polyglot's Supervisor) accumulates packages, including ones whose directories were
                             // deleted after their build, and folding their streams kept a type-error build from ever
-                            // replying (Supervisor.dib's type-error tests timed out; alone the same build replied in
+                            // replying (polyglot Supervisor's type-error tests timed out; alone the same build replied in
                             // 5 s). A batch host (one process per compile) loads exactly these packages anyway.
                             // A package state that was reset holds null slots in uids_file (Array.zeroCreate): skip them.
                             let rec files (tc : ProjStateTC) x acc =
@@ -183830,7 +184694,7 @@ module spiral_compiler =
                                 |> List.filter (fun state -> seen.Add (box state))
                             // Read only the part of each file's result stream that is already there: a stream can
                             // never end (another version of a package, a file the entry does not reach), and folding
-                            // it to the end hung the build here after type checking had finished (Supervisor.dib's
+                            // it to the end hung the build here after type checking had finished (polyglot Supervisor's
                             // type-error tests, in a long session; the hopac core's FRONTIER.md fix 33).
                             let rec availableErrors acc (stream : Stream<_>) =
                                 if Promise.Now.isFulfilled stream then
@@ -183845,8 +184709,37 @@ module spiral_compiler =
                                         availableErrors [] result
                                         |> List.map (fun ((a,_),message) -> $"{path}:{a.line + 1}:{a.character + 1}: {message}"))
                                 with ex -> [[$"(could not list the typer's errors: {ex.GetType().Name}: {ex.Message})"]]
-                            Job.result errors
-                            >>= fun errors ->
+                            // The entry file's tokenizer and parser errors first: a block that fails to parse is left out,
+                            // so its callers' 'Unbound variable' is only the symptom (lane H's empty `match`, lane C's `!!!!EQ`).
+                            let _,_,entry_bundles = a.input
+                            let entry_tokenizer_errors = match Map.tryFind file s.modules with Some m -> m.tokenizer.errors | None -> []
+                            Stream.foldFun (fun errors (_,bundle : BlockBundleValue) -> errors @ bundle.errors) entry_tokenizer_errors entry_bundles
+                            >>= fun parse_errors ->
+                                let parse_errors = parse_errors |> List.map (fun ((p,_),message) -> $"{file}:{p.line + 1}:{p.character + 1}: {message}")
+                                // The other files' (the entry's package and its dependencies) dropped blocks too: a lib
+                                // function that fails to parse surfaces only as its callers' 'Unbound variable' otherwise.
+                                let other_parse_errors =
+                                    try
+                                        let rec available acc (stream : BlockBundleState) =
+                                            if Promise.Now.isFulfilled stream then
+                                                match Promise.Now.get stream with
+                                                | Hopac.Stream.Cons((_,x : BlockBundleValue), next) -> available (acc @ x.errors) next
+                                                | Hopac.Stream.Nil -> acc
+                                            else acc
+                                        let rec other_files (tc' : ProjStateTC) x acc =
+                                            match x with
+                                            | ProjFilesTree.File(mid,path,_) when path <> file ->
+                                                let slot = if mid < tc'.files.uids_file.Length then tc'.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                                if isNull (box slot) || isNull (box (fst slot)) then acc
+                                                else
+                                                    let _,_,bundles = (fst slot).input
+                                                    let tok = match Map.tryFind path s.modules with Some m -> m.tokenizer.errors | None -> []
+                                                    ((tok @ available [] bundles) |> List.map (fun ((p,_),message) -> $"{path}:{p.line + 1}:{p.character + 1}: {message} (this block is left out of its module)")) @ acc
+                                            | ProjFilesTree.File _ -> acc
+                                            | ProjFilesTree.Directory(_,_,l) -> List.foldBack (other_files tc') l acc
+                                        states |> List.collect (fun state -> List.foldBack (other_files state) state.files.files.tree [])
+                                    with _ -> []
+                                let errors = parse_errors :: other_parse_errors :: errors
                                 let details = errors |> Seq.concat |> String.concat "\n"
                                 let details = if details = "" then "" else $"\n{details}"
                                 fatal $"File {Path.GetFileNameWithoutExtension file} has a type error somewhere in its path.{details}"
@@ -183892,8 +184785,37 @@ module spiral_compiler =
                                 | ProjFilesTree.File _ -> acc
                                 | ProjFilesTree.Directory(_,_,l) -> List.foldBack files l acc
                             try List.foldBack files tc.files.files.tree [] with _ -> []
+                        // The dependencies' blocks that fail to tokenize or parse don't end the build (a library's dead
+                        // block shouldn't break its users), but they were dropped without a word (a lib/spiral edit that
+                        // broke one definition surfaced only as 'Unbound variable' in its callers): warn on stderr.
+                        let dependency_warnings () =
+                            try
+                                let rec available acc (stream : BlockBundleState) =
+                                    if Promise.Now.isFulfilled stream then
+                                        match Promise.Now.get stream with
+                                        | Hopac.Stream.Cons((_,x : BlockBundleValue), next) -> available (acc @ x.errors) next
+                                        | Hopac.Stream.Nil -> acc
+                                    else acc
+                                let rec files (tc' : ProjStateTC) x acc =
+                                    match x with
+                                    | ProjFilesTree.File(mid,path,_) ->
+                                        let slot = if mid < tc'.files.uids_file.Length then tc'.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                        if isNull (box slot) || isNull (box (fst slot)) then acc
+                                        else
+                                            let _,_,bundles = (fst slot).input
+                                            let tok = match Map.tryFind path s.modules with Some m -> m.tokenizer.errors | None -> []
+                                            ((tok @ available [] bundles) |> List.map (fun e -> path, e)) @ acc
+                                    | ProjFilesTree.Directory(_,_,l) -> List.foldBack (files tc') l acc
+                                let dependencies, _ = topological_sort' (fst s.graph) [pdir]
+                                dependencies
+                                |> Seq.filter (fun d -> d <> pdir)
+                                |> Seq.choose (fun d -> Map.tryFind d (fst s.package_ids) |> Option.bind (fun uid -> match Map.tryFind uid s.packages_infer.ok with Some x -> Some x | None -> Map.tryFind uid s.packages_infer.error))
+                                |> Seq.collect (fun tc' -> List.foldBack (files tc') tc'.files.files.tree [])
+                                |> Seq.iter (fun (path,((p,_),message)) -> eprintfn "warning: %s:%i:%i: %O (this block is left out of its module)" path (p.line + 1) (p.character + 1) message)
+                            with _ -> ()
                         entry_errors >>=* fun entry_errors ->
                         let entry_errors = if own_main then entry_errors else entry_errors @ package_errors
+                        if List.isEmpty entry_errors then dependency_warnings ()
                         let body() =
                             match backend, Map.tryFind "main" env.term with
                             | "Check", _ -> BuildSkip
@@ -183925,6 +184847,7 @@ module spiral_compiler =
                                     | "Fsharp" -> build codegenFsharp "Fsharp" ".fsx"
                                     | "Rust" -> build codegenRust "Rust" ".rs"
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
+                                    | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"
                                     | "C" -> build CodegenC.codegenC "C" ".c"
                                     | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
@@ -184093,7 +185016,7 @@ module spiral_compiler =
         // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
         // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
         // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
-        // result (all of polyglot Supervisor.dib's error-path tests got None). Each enumeration subscribes a
+        // result (all of polyglot Supervisor's error-path tests got None). Each enumeration subscribes a
         // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
         let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
         let publish (x : ClientErrorsRes) =
@@ -184252,7 +185175,7 @@ module spiral_compiler =
         // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
         // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
         // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
-        // result (all of polyglot Supervisor.dib's error-path tests got None). Each enumeration subscribes a
+        // result (all of polyglot Supervisor's error-path tests got None). Each enumeration subscribes a
         // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
         let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
         let publish (x : ClientErrorsRes) =

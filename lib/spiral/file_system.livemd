@@ -402,12 +402,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nget_source_directory ()\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\nget_source_directory ()\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   get_source_directory ()
   |> directory_info
@@ -961,16 +962,14 @@ Spiral.Kino.eval!(
 
 ### ts_path_join
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ts_path_join (b : string) (a : string) : string =\n    open typescript_operators\n    global \"type IPathJoin = abstract join: [<System.ParamArray>] paths: string[] -> string\"\n    inl path : $'IPathJoin' = typescript.import_all \"path\"\n    !\\\\((a, b), $'\"!path.join($0, $1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ts_path_join (b : string) (a : string) : string =\n    global \"import * as spiral_node_path from 'node:path';\"\n    $'spiral_node_path.join(!a, !b)' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl ts_path_join (b : string) (a : string) : string =
-      open typescript_operators
-      global "type IPathJoin = abstract join: [<System.ParamArray>] paths: string[] -> string"
-      inl path : $'IPathJoin' = typescript.import_all "path"
-      !\\((a, b), $'"!path.join($0, $1)"')
+      global "import * as spiral_node_path from 'node:path';"
+      $'spiral_node_path.join(!a, !b)' : string
   """,
   timeout: 300_000
 )
@@ -1031,7 +1030,7 @@ Spiral.Kino.eval!(
 
 ### get_file_name
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFileName'\n        | Rust => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IPathBasename = abstract basename: path: string -> string\"\n            inl path' : $'IPathBasename' = typescript.import_all \"path\"\n            !\\\\(path, $'\"!path'.basename($0)\"')\n        | target => fun path => failwith $'$\"file_system.get_file_name / target: {!target} / path: {!path}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFileName'\n        | Rust => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | TypeScript => fun path =>\n            global \"import * as spiral_node_path from 'node:path';\"\n            $'spiral_node_path.basename(!path)' : string\n        | target => fun path => failwith $'$\"file_system.get_file_name / target: {!target} / path: {!path}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1049,10 +1048,8 @@ Spiral.Kino.eval!(
               |> optionm'.unbox
               |> optionm'.default_value ""
           | TypeScript => fun path =>
-              open typescript_operators
-              global "type IPathBasename = abstract basename: path: string -> string"
-              inl path' : $'IPathBasename' = typescript.import_all "path"
-              !\\(path, $'"!path'.basename($0)"')
+              global "import * as spiral_node_path from 'node:path';"
+              $'spiral_node_path.basename(!path)' : string
           | target => fun path => failwith $'$"file_system.get_file_name / target: {!target} / path: {!path}"'
   """,
   timeout: 300_000
@@ -1147,7 +1144,7 @@ Spiral.Kino.eval!(
 
 ### get_current_directory
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_current_directory () : string =\n    run_target function\n        | Rust => fun () =>\n            inl current_dir = !\\($'\"std::env::current_dir()\"') : resultm.result' path_buf stream.io_error\n            current_dir\n            |> resultm.unwrap'\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => fun () =>\n            open typescript_operators\n            global \"type IFs = abstract realpathSync: path: string -> string\"\n            inl fs : $'IFs' = typescript.import_all \"fs\"\n            !\\($'\"fs.realpathSync(\\'.\\')\"')\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_current_directory () : string =\n    run_target function\n        | Rust => fun () =>\n            inl current_dir = !\\($'\"std::env::current_dir()\"') : resultm.result' path_buf stream.io_error\n            current_dir\n            |> resultm.unwrap'\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => fun () =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'spiral_node_fs.realpathSync(\".\")' : string\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1164,10 +1161,8 @@ Spiral.Kino.eval!(
           | Fsharp => fun () =>
               $'System.IO.Directory.GetCurrentDirectory' ()
           | TypeScript _ => fun () =>
-              open typescript_operators
-              global "type IFs = abstract realpathSync: path: string -> string"
-              inl fs : $'IFs' = typescript.import_all "fs"
-              !\($'"fs.realpathSync(\'.\')"')
+              global "import * as spiral_node_fs from 'node:fs';"
+              $'spiral_node_fs.realpathSync(".")' : string
           | _ => fun () => null ()
   """,
   timeout: 300_000
@@ -1190,7 +1185,7 @@ Spiral.Kino.eval!(
 
 ### directory_exists
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Directory.Exists'\n        | Rust => fun path =>\n            inl path = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path && path_buf_is_dir path\n        | TypeScript => fun path =>\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            open typescript_operators\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Directory.Exists'\n        | Rust => fun path =>\n            inl path = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path && path_buf_is_dir path\n        | TypeScript => fun path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1203,10 +1198,8 @@ Spiral.Kino.eval!(
               inl path = path |> sm'.to_std_string |> new_path_buf
               path_buf_exists path && path_buf_is_dir path
           | TypeScript => fun path =>
-              global "type IFsExistsSync = abstract existsSync: path: string -> bool"
-              open typescript_operators
-              inl fs : $'IFsExistsSync' = typescript.import_all "fs"
-              !\\((fs, path), $'"$0.existsSync($1)"')
+              global "import * as spiral_node_fs from 'node:fs';"
+              $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
           | _ => fun _ => null ()
   """,
   timeout: 300_000
@@ -1215,7 +1208,7 @@ Spiral.Kino.eval!(
 
 ### directory_get_parent
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_get_parent (path : string) : optionm'.option' string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            inl parent : directory_info = path |> $'System.IO.Directory.GetParent'\n            if parent =. null ()\n            then None\n            else parent |> directory_info_full_name |> Some\n            |> optionm'.box\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl parent = path_buf |> path_buf_parent\n            parent\n            |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)\n        | TypeScript _ => fun path =>\n            open typescript_operators\n            global \"type IPathDirname = abstract dirname: path: string -> string\"\n            inl path' : $'IPathDirname' = typescript.import_all \"path\"\n            inl parent = !\\\\(path, $'\"!path'.dirname($0)\"')\n            if parent = path\n            then None\n            else parent |> Some\n            |> optionm'.box\n        | _ => fun _ => optionm'.none' ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_get_parent (path : string) : optionm'.option' string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            inl parent : directory_info = path |> $'System.IO.Directory.GetParent'\n            if parent =. null ()\n            then None\n            else parent |> directory_info_full_name |> Some\n            |> optionm'.box\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl parent = path_buf |> path_buf_parent\n            parent\n            |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)\n        | TypeScript _ => fun path =>\n            global \"import * as spiral_node_path from 'node:path';\"\n            inl parent = $'spiral_node_path.dirname(!path)' : string\n            if parent = path\n            then None\n            else parent |> Some\n            |> optionm'.box\n        | _ => fun _ => optionm'.none' ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1234,10 +1227,8 @@ Spiral.Kino.eval!(
               parent
               |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)
           | TypeScript _ => fun path =>
-              open typescript_operators
-              global "type IPathDirname = abstract dirname: path: string -> string"
-              inl path' : $'IPathDirname' = typescript.import_all "path"
-              inl parent = !\\(path, $'"!path'.dirname($0)"')
+              global "import * as spiral_node_path from 'node:path';"
+              inl parent = $'spiral_node_path.dirname(!path)' : string
               if parent = path
               then None
               else parent |> Some
@@ -1332,7 +1323,7 @@ Spiral.Kino.eval!(
 
 ### file_exists
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.File.Exists'\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.File.Exists'\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | TypeScript => fun path =>\n            global \"import * as spiral_node_fs from 'node:fs';\"\n            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1345,10 +1336,8 @@ Spiral.Kino.eval!(
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               path_buf_exists path_buf && path_buf_is_file path_buf
           | TypeScript => fun path =>
-              open typescript_operators
-              global "type IFsExistsSync = abstract existsSync: path: string -> bool"
-              inl fs : $'IFsExistsSync' = typescript.import_all "fs"
-              !\\((fs, path), $'"$0.existsSync($1)"')
+              global "import * as spiral_node_fs from 'node:fs';"
+              $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
           | _ => fun _ => null ()
   """,
   timeout: 300_000
@@ -1524,12 +1513,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    get_source_directory ()\n    |> find_parent file_type file\n    |> resultm.get\n    |> directory_info\n    |> directory_info_name\n|> am'.distinct\n|> fun (a x : _ int _) => x\n|> _assert_in [ ;[ \"spiral\" ]; ;[ \"polyglot\" ] ]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    get_source_directory ()\n    |> find_parent file_type file\n    |> resultm.get\n    |> directory_info\n    |> directory_info_name\n|> am'.distinct\n|> fun (a x : _ int _) => x\n|> _assert_in [ ;[ \"spiral\" ]; ;[ \"polyglot\" ] ]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   a ;[ Directory, "workspace"; File, "README.md" ]
   |> am.map fun file_type, file =>
@@ -1546,7 +1536,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    fun () =>\n        join\n            get_source_directory ()\n            |> find_parent file_type file\n            |> resultm.get\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.try'\n            |> sm'.from_os_str_ref\n            |> Some\n            |> optionm'.box\n    |> fun x => x () |> optionm'.unbox\n    |> optionm'.default_value \"\"\n|> am'.distinct\n|> fun result =>\n    result |> am'.length |> _assert_eq 1i32\n    index result 0i32 |> _assert_eq \"polyglot\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    fun () =>\n        join\n            // Rust's source directory is its crate's (CARGO_MANIFEST_DIR: a temp crate under Kino); a Rust cell's working\n            // directory is in the checkout.\n            get_current_directory ()\n            |> find_parent file_type file\n            |> resultm.get\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.try'\n            |> sm'.from_os_str_ref\n            |> Some\n            |> optionm'.box\n    |> fun x => x () |> optionm'.unbox\n    |> optionm'.default_value \"\"\n|> am'.distinct\n|> fun result =>\n    result |> am'.length |> _assert_eq 1i32\n    index result 0i32 |> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1558,7 +1548,9 @@ Spiral.Kino.eval!(
   |> am.map fun file_type, file =>
       fun () =>
           join
-              get_source_directory ()
+              // Rust's source directory is its crate's (CARGO_MANIFEST_DIR: a temp crate under Kino); a Rust cell's working
+              // directory is in the checkout.
+              get_current_directory ()
               |> find_parent file_type file
               |> resultm.get
               |> sm'.to_std_string
@@ -1573,7 +1565,7 @@ Spiral.Kino.eval!(
   |> am'.distinct
   |> fun result =>
       result |> am'.length |> _assert_eq 1i32
-      index result 0i32 |> _assert_eq "polyglot"
+      index result 0i32 |> _assert_eq "spiral"
   """,
   timeout: 300_000
 )
@@ -1726,41 +1718,48 @@ Spiral.Kino.eval!(
 
 ### get_workspace_root
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_workspace_root () =\n    inl dirs =\n        [ get_current_directory; get_source_directory; fun () => \"/workspaces\" ]\n    let run dir =\n        dir\n        |> find_parent Directory (\"spiral\" </> \"workspace\")\n        |> function\n            | Ok dir => dir |> normalize_path |> Some\n            | Error error =>\n                trace Warning\n                    fun () => \"file_system.get_workspace_root\"\n                    fun () => { dir error }\n                None\n    inl root =\n        (None, dirs)\n        ||> listm.fold fun acc dir =>\n            match acc with\n            | Some dir => Some dir\n            | None => dir () |> run\n        |> optionm.value\n    inl root =\n        match root |> get_file_name with\n        | \"deps\" =>\n            root\n            |> directory_get_parent\n            |> optionm'.get'\n            |> run\n            |> optionm.value\n        | _ => root\n    root </> \"polyglot\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_workspace_root () =\n    // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory\n    // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through\n    // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.\n    inl repo_root = env.get_environment_variable \"SPIRAL_REPO_ROOT\"\n    if repo_root <> \"\"\n    then repo_root |> normalize_path\n    else\n        inl dirs =\n            [ get_current_directory; get_source_directory; fun () => \"/workspaces\" ]\n        let run dir =\n            dir\n            |> find_parent Directory (\"spiral\" </> \"workspace\")\n            |> function\n                | Ok dir => dir |> normalize_path |> Some\n                | Error error =>\n                    trace Warning\n                        fun () => \"file_system.get_workspace_root\"\n                        fun () => { dir error }\n                    None\n        inl root =\n            (None, dirs)\n            ||> listm.fold fun acc dir =>\n                match acc with\n                | Some dir => Some dir\n                | None => dir () |> run\n            |> optionm.value\n        inl root =\n            match root |> get_file_name with\n            | \"deps\" =>\n                root\n                |> directory_get_parent\n                |> optionm'.get'\n                |> run\n                |> optionm.value\n            | _ => root\n        root </> \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl get_workspace_root () =
-      inl dirs =
-          [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
-      let run dir =
-          dir
-          |> find_parent Directory ("spiral" </> "workspace")
-          |> function
-              | Ok dir => dir |> normalize_path |> Some
-              | Error error =>
-                  trace Warning
-                      fun () => "file_system.get_workspace_root"
-                      fun () => { dir error }
-                  None
-      inl root =
-          (None, dirs)
-          ||> listm.fold fun acc dir =>
-              match acc with
-              | Some dir => Some dir
-              | None => dir () |> run
-          |> optionm.value
-      inl root =
-          match root |> get_file_name with
-          | "deps" =>
-              root
-              |> directory_get_parent
-              |> optionm'.get'
-              |> run
+      // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory
+      // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through
+      // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.
+      inl repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
+      if repo_root <> ""
+      then repo_root |> normalize_path
+      else
+          inl dirs =
+              [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
+          let run dir =
+              dir
+              |> find_parent Directory ("spiral" </> "workspace")
+              |> function
+                  | Ok dir => dir |> normalize_path |> Some
+                  | Error error =>
+                      trace Warning
+                          fun () => "file_system.get_workspace_root"
+                          fun () => { dir error }
+                      None
+          inl root =
+              (None, dirs)
+              ||> listm.fold fun acc dir =>
+                  match acc with
+                  | Some dir => Some dir
+                  | None => dir () |> run
               |> optionm.value
-          | _ => root
-      root </> "polyglot"
+          inl root =
+              match root |> get_file_name with
+              | "deps" =>
+                  root
+                  |> directory_get_parent
+                  |> optionm'.get'
+                  |> run
+                  |> optionm.value
+              | _ => root
+          root </> "spiral"
   """,
   timeout: 300_000
 )
@@ -1785,18 +1784,19 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nmatch get_workspace_root_external () with\n| Ok root => root\n| Error root => root\n|> get_file_name\n|> _assert_eq \"polyglot\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d regex\n\nmatch get_workspace_root_external () with\n| Ok root => root\n| Error root => root\n|> get_file_name\n|> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> rust -d regex
 
   match get_workspace_root_external () with
   | Ok root => root
   | Error root => root
   |> get_file_name
-  |> _assert_eq "polyglot"
+  |> _assert_eq "spiral"
   """,
   timeout: 300_000
 )
@@ -1846,12 +1846,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\".\"\n|> get_full_path\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\".\"\n|> get_full_path\n|> directory_info\n|> directory_info_name\n|> _assert_in [ \"spiral\"; \"fsharp\" ]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   "."
   |> get_full_path
@@ -1863,12 +1864,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"dir/.././._file\"\n|> get_full_path\n|> _assert_eq (get_current_directory () </> \"._file\")","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d regex\n\n\"dir/.././._file\"\n|> get_full_path\n|> _assert_eq (get_current_directory () </> \"._file\")","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> rust -d regex
 
   "dir/.././._file"
   |> get_full_path
@@ -1960,12 +1962,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n@\"\\\\?\\C:\\test\"\n|> normalize_path\n|> new_file_uri\n|> _assert_eq \"file:///c:/test\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d regex\n\n@\"\\\\?\\C:\\test\"\n|> normalize_path\n|> new_file_uri\n|> _assert_eq \"file:///c:/test\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> rust -d regex
 
   @"\\?\C:\test"
   |> normalize_path
@@ -2031,12 +2034,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl get_count dir : i64 =\n    inl files = dir |> directory_get_files\n    a files |> am'.length\n\ninl trace_dir = get_workspace_root () </> \"target/trace\"\ntrace_dir |> create_directory |> ignore\n\ninl count = get_count trace_dir\n\ntrace_file \"test\"\n\nget_count trace_dir\n|> _assert_eq (count + 1)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_count dir : i64 =\n    inl files = dir |> directory_get_files\n    a files |> am'.length\n\ninl trace_dir = get_workspace_root () </> \"target/trace\"\ntrace_dir |> create_directory |> ignore\n\ninl count = get_count trace_dir\n\ntrace_file \"test\"\n\nget_count trace_dir\n|> _assert_eq (count + 1)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   inl get_count dir : i64 =
       inl files = dir |> directory_get_files

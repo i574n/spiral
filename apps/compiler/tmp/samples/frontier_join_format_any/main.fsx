@@ -12,18 +12,18 @@ and method3 (v0 : Mut0, v1 : string) : unit =
     ()
 and method1 (v0 : US0) : string =
     let v1 : string = method2()
-    let v18 : Mut0 = {l0 = v1} : Mut0
-    let v21 : string = $"%A{v0}"
-    method3(v18, v21)
-    let v44 : string = v18.l0
-    v44
+    let v2 : Mut0 = {l0 = v1} : Mut0
+    let v3 : string = $"%A{v0}"
+    method3(v2, v3)
+    let v4 : string = v2.l0
+    v4
 and method0 () : string =
     let v0 : int32 = 1
     let v1 : US0 = US0_0(v0)
     let v2 : string = method1(v1)
-    let v7 : string = "x: "
-    let v8 : string = v7 + v2 
-    v8
+    let v3 : string = "x: "
+    let v4 : string = v3 + v2 
+    v4
 let v0 : string = method0()
 let v1 : bool = v0 = ""
 if v1 then

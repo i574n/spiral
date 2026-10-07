@@ -1017,12 +1017,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl run fn =\n    inl token, disposable = new_disposable_token (None |> optionm'.box)\n    fn token\n    $'!disposable.Dispose()'\n    fun () =>\n        fn token\n    |> async.new_task\n    |> async.await_task\n    |> async.start\n\nfun () =>\n    inl counter = mut 0i32\n\n    inl fn (token : cancellation_token) =\n        counter <- *counter + (if token |> token_cancellation_requested then 10 else 1)\n\n    join run fn\n    async.sleep 10 |> async.do\n    return_in *counter\n|> async.new_task\n|> fun x => x : _ int\n|> async.await_task\n|> async.run_synchronously\n|> _assert_eq 11i32","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl run fn =\n    inl token, disposable = new_disposable_token (None |> optionm'.box)\n    fn token\n    $'!disposable.Dispose()'\n    fun () =>\n        fn token\n    |> async.new_task\n    |> async.await_task\n    |> async.start\n\nfun () =>\n    inl counter = mut 0i32\n\n    inl fn (token : cancellation_token) =\n        counter <- *counter + (if token |> token_cancellation_requested then 10 else 1)\n\n    join run fn\n    async.sleep 10 |> async.do\n    return_in *counter\n|> async.new_task\n|> fun x => x : _ int\n|> async.await_task\n|> async.run_synchronously\n|> _assert_eq 11i32","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
+  ///> fsharp
 
   inl run fn =
       inl token, disposable = new_disposable_token (None |> optionm'.box)

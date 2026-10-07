@@ -26,8 +26,8 @@ function MoveExeAside {
     if (Test-Path $exe) { Move-Item $exe "$exe.old-$(Get-Date -Format yyyyMMddHHmmss)" }
 }
 
-# -SkipPreBuild (polyglot/scripts/init.ps1's bootstrap, before any spiral CLI exists): no notebook export and no F# output;
-# the build only needs the Spiral compiler (lib.ps1's BuildSpiral) and cargo.
+# -SkipPreBuild (polyglot/scripts/init.ps1's bootstrap, before any spiral CLI exists): no notebook export and no F#
+# output; the build only needs the Spiral compiler (lib.ps1's BuildSpiral) and cargo.
 if (!$SkipPreBuild) {
     # spiral.spi from the notebook, through Kino (apps/kino/spi/run_notebook.ps1 --export-only).
     $livebook = Join-Path $ResolvedScriptDir "../kino/spi/run_notebook.ps1"
@@ -158,7 +158,7 @@ Write-Output "spiral/apps/spiral/build.ps1 / `$projectName: $projectName / `$env
 
 if ($env:CI) {
     $targetDir | Remove-Item -Recurse -Force -ErrorAction Ignore
-    ClearCargoTarget "../../deps/polyglot/target/spiral/spiral"
+    ClearCargoTarget "../../target/spiral/spiral"
     # process_rust builds contract/wasm cells in their own workspace (their own lock for the NEAR toolchain).
-    ClearCargoTarget "../../deps/polyglot/target/spiral/spiral_contract"
+    ClearCargoTarget "../../target/spiral/spiral_contract"
 }

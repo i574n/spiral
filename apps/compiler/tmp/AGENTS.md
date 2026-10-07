@@ -121,6 +121,12 @@ exit code and stdout (`oracle` column). Add a fixture under `samples/<name>` for
 commit the outputs the compiler writes next to it. Changes to the single-flight core must keep `-Suite all -Native` free of `REGRESSED`,
 `NATIVE-DIFF` and `DISAGREE`, then refresh the oracle with `-Bless`.
 
+The Zig backend (`codegenZig`, `--backend Zig` / `.zig`, 2026-10-06) is being brought up toward the hub role: a sample
+gets a Zig row when `tests/harness.psd1`'s `Zig` list names it (C is its oracle, like Rust's and Delphi's). The native
+tier builds it with `zig build-exe -O Debug -fno-llvm` (~1.5 s; LLVM's ReleaseSafe takes ~30 s per program). Not
+supported yet: value-level `!!!!BackendSwitch` records without a `Zig` key, lib/spiral (no Zig arms), stack mutable
+layouts, C-only macros. Every program runs on a 1 GB thread (deep mutual recursion, as Rust).
+
 ## Rules
 
 - The compiler writes its output next to its source (`samples/<name>/main.c`, ...), replacing the previous
@@ -133,8 +139,9 @@ commit the outputs the compiler writes next to it. Changes to the single-flight 
   changed row is explained, and only if the `-Bless` run reproduces the preceding single-flight run row for
   row (same verdicts and residual hashes). The oracle lives in the cache, never in the tree.
 - Other generated results never go into the tree (the oracle, scoreboards, receipts, snapshots); hand-written
-  harness tables live in `tests/harness.psd1`. `|core-` resolves to The-Spiral-Language's core through
-  the repo's `deps/polyglot` link (`Get-SpiralPackageDir`); do not copy it here.
+  harness tables live in `tests/harness.psd1`. `|core-` resolves to The-Spiral-Language's core in
+  the fork that `scripts/init.ps1` clones to the repo's `deps/The-Spiral-Language` (polyglot's clone is the fallback;
+  `Get-SpiralPackageDir`); do not copy it here.
 - Keep both cores building against the same host. If the host needs a core-specific path, guard it with
   `SPIRAL_CORE_SINGLE_FLIGHT` / `SPIRAL_CORE_HOPAC` (see `directProjectCompileFsharp`).
 - This directory holds sources, fixtures and docs only. Build output, toolchains, native binaries, run logs

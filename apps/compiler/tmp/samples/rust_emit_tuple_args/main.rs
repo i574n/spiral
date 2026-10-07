@@ -5,12 +5,12 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 1i32;
     let mut v1: i32 = 2i32;
     let mut v2: i32 = 40i32;
-    let mut v11: i32 = { let (x, y) = (v0, v1); x + y + v2 };
-    let mut v13: i32 = { let (x, y) = (v0, v1); v2 - x - y };
-    let mut v15: i32 = { let (x, y) = (v0, v1); x * y };
-    let mut v16: i32 = v11.wrapping_add(v13);
-    let mut v17: i32 = v16.wrapping_add(v15);
-    v17
+    let mut v4: i32 = { let (x, y) = (v0, v1); x + y + v2 };
+    let mut v6: i32 = { let (x, y) = (v0, v1); v2 - x - y };
+    let mut v8: i32 = { let (x, y) = (v0, v1); x * y };
+    let mut v9: i32 = v4.wrapping_add(v6);
+    let mut v10: i32 = v9.wrapping_add(v8);
+    v10
 }
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {

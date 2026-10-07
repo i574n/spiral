@@ -1,6 +1,4 @@
-// FOR-D repro (lane G, 2026-10-06): a `main` that does not return i32. The C backend rejects it ("The return type of
-// main in the C backend should be a 32-bit int"); the Rust and Delphi backends accept it and emit code that does not build:
-// Rust `fn spiral_main() -> i32 { ... v0.clone() }` with v0 an `Rc<str>` (E0308), Delphi "Incompatible types: got
-// AnsiString expected LongInt". Expected: Rust and Delphi reject it at compile time like C (or emit a program that builds).
-// Not blessed.
+// A `main` that returns neither i32 nor unit (lane G's FOR-D, 2026-10-06). Every backend with an exit-code entry rejects
+// it at compile time ("The return type of main in the <backend> backend should be a 32-bit int"; Rust and Delphi since
+// #79, lane X: they used to emit code that did not build). Expected: error on C, Rust and Delphi.
 inl main () : string = "x"

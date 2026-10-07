@@ -16,6 +16,7 @@ type guid_switch =
         Fsharp : $'System.Guid'
         Python : guid_python
         Rust : $'Rc<str>'
+        TypeScript : string
     }
 nominal guid = $'backend_switch `(guid_switch)'
 
@@ -29,6 +30,7 @@ inl new_guid (x : string) : guid =
             $'!x '
         // Rust: lowercase, like System.Guid's text
         | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'
+        | TypeScript => fun x => $'!x.toLowerCase()'
         | _ => fun x => $'!x |> `guid '
 
 /// ### new_raw_guid
@@ -39,6 +41,8 @@ inl new_raw_guid () : guid =
             $'gleam_uuid.v4_string ()' : guid
         Lua = fun () => $'""' : guid
         Fsharp = fun () => $'System.Guid.NewGuid' () : guid
+        // TypeScript: the runtime's crypto.randomUUID (Node 19+, Bun, browsers): lowercase, like the Rust arm.
+        TypeScript = fun () => $'globalThis.crypto.randomUUID()' : guid
         Python = fun () =>
             // the nominal's type-level `global "import uuid"` doesn't reach the output (FINDINGS 52)
             global "import uuid"

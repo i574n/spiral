@@ -26,15 +26,14 @@ Spiral.Kino.eval!(
 
 ## fparsec
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n#r @\"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll\"\n#r @\"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll\"\n\n///> _\n\n()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n#r \"nuget: fparsec, 2.0.0-beta2\"\n\n///> _\n\n()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
 
-  #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll"
-  #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll"
+  #r "nuget: fparsec, 2.0.0-beta2"
 
   ///> _
 
@@ -1053,7 +1052,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> resultm.map_error eval\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Lua = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Fsharp = fun () =>\n            run_target function\n            | TypeScript _ => fun () =>\n                join\n                    \"parsing.none_of / unexpected char / \"\n                    ++# \"{ first_char = a; chars' = a,b,c; s = 0,1,1,3 }\"\n            | _ => fun () =>\n                join\n                    \"parsing.none_of / unexpected char / \"\n                    ++# \"{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }\"\n        Python = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }\"\n    }\n    |> Error\n)\n\n\"def\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> unwrap_format\n|> _assert_eq #?*('d', \"ef\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> resultm.map_error eval\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Lua = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Fsharp = fun () =>\n            join\n                \"parsing.none_of / unexpected char / \"\n                ++# \"{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }\"\n        TypeScript = fun () =>\n            join\n                \"parsing.none_of / unexpected char / \"\n                ++# \"{ first_char = a; chars' = ['a', 'b', 'c']; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }\"\n        Python = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }\"\n    }\n    |> Error\n)\n\n\"def\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> unwrap_format\n|> _assert_eq #?*('d', \"ef\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1076,15 +1075,13 @@ Spiral.Kino.eval!(
               "parsing.none_of / unexpected char / "
               ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
           Fsharp = fun () =>
-              run_target function
-              | TypeScript _ => fun () =>
-                  join
-                      "parsing.none_of / unexpected char / "
-                      ++# "{ first_char = a; chars' = a,b,c; s = 0,1,1,3 }"
-              | _ => fun () =>
-                  join
-                      "parsing.none_of / unexpected char / "
-                      ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"
+              join
+                  "parsing.none_of / unexpected char / "
+                  ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"
+          TypeScript = fun () =>
+              join
+                  "parsing.none_of / unexpected char / "
+                  ++# "{ first_char = a; chars' = ['a', 'b', 'c']; s = { line_start = 0; position = { line = 1; col = 1 }; text_length = 3 } }"
           Python = fun () =>
               "parsing.none_of / unexpected char / "
               ++# "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }"

@@ -221,13 +221,29 @@ defmodule Spiral.Kino.Targets do
         run_program(
           dotnet,
           "dotnet fsi",
-          ["fsi", "--nologo", "--exec", path],
-          opts,
+          # preview: the F# language version the F# builds compile with (lib.ps1 PublishFsharp's LangVersion), e.g.
+          # from-the-end slicing `s.[^10..]` in lib F# arms
+          ["fsi", "--nologo", "--langversion:preview", "--exec", in_notebook_dir(path, opts[:root])],
+          if(notebook_dir?(opts[:root]), do: Keyword.put(opts, :cwd, opts[:root]), else: opts),
           timeout,
           deadline,
           false
         )
     end
+  end
+
+  # A notebook's F# cell runs as if it were in the notebook's directory (lib/spiral file_system's tests look at both):
+  # that directory is the working directory, and a `# 1 "<dir>/<file>"` line directive makes it __SOURCE_DIRECTORY__
+  # (line numbers stay the file's own).
+  defp notebook_dir?(root), do: is_binary(root) and File.dir?(root)
+
+  defp in_notebook_dir(path, root) do
+    if notebook_dir?(root) do
+      dir = root |> Path.expand() |> String.replace("\\", "/")
+      File.write!(path, ~s(# 1 "#{dir}/#{Path.basename(path)}"\n) <> File.read!(path))
+    end
+
+    path
   end
 
   defp run_cc(path, opts, timeout, deadline) do
@@ -297,7 +313,12 @@ defmodule Spiral.Kino.Targets do
       true ->
         case Runner.run(exe, args,
                timeout: budget(deadline),
-               cd: if(spiral?, do: nil, else: work_dir(args, exe)),
+               cd:
+                 cond do
+                   spiral? -> nil
+                   is_binary(opts[:cwd]) -> opts[:cwd]
+                   true -> work_dir(args, exe)
+                 end,
                env: tool_env(opts, spiral?)
              ) do
           {:ok, %{exit_status: status, output: output}} ->

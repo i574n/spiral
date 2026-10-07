@@ -94,7 +94,7 @@ Spiral.Kino.eval!(
 
 ### from_try
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =\n    inl ok x = x |> Ok : result t exn\n    inl error (e : exn) = e |> Error : result t exn\n    backend_switch {\n        Lua = fun () =>\n            $'local resultm_fn = !fn '\n            $'local resultm_ok = !ok '\n            $'local resultm_error = !error '\n            $'local resultm_ex_fn = !ex_fn '\n            $'local status, result = pcall(resultm_fn)'\n            $'local r = nil'\n            $'if status then'\n            $'    r = resultm_ok(result)'\n            $'else'\n            $'    r = resultm_error(resultm_ex_fn(function() return result end))'\n            $'end'\n            $'r' : result t exn\n        Fsharp = fun () =>\n            join $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn\n        Python = fun () =>\n            $'fn = !fn '\n            $'ok = !ok '\n            $'error = !error '\n            $'ex_fn = !ex_fn '\n            $'try: x = ok(fn()) '\n            $'except Exception as ex: x = error(ex_fn(lambda: ex))'\n            $'x' : result t exn\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t exn =\n    inl ok x = x |> Ok : result t exn\n    inl error (e : exn) = e |> Error : result t exn\n    backend_switch {\n        Lua = fun () =>\n            $'local resultm_fn = !fn '\n            $'local resultm_ok = !ok '\n            $'local resultm_error = !error '\n            $'local resultm_ex_fn = !ex_fn '\n            $'local status, result = pcall(resultm_fn)'\n            $'local r = nil'\n            $'if status then'\n            $'    r = resultm_ok(result)'\n            $'else'\n            $'    r = resultm_error(resultm_ex_fn(function() return result end))'\n            $'end'\n            $'r' : result t exn\n        Fsharp = fun () =>\n            join $'try !fn () |> !ok with ex -> (fun () -> ex) |> !ex_fn |> !error ' : result t exn\n        Python = fun () =>\n            $'fn = !fn '\n            $'ok = !ok '\n            $'error = !error '\n            $'ex_fn = !ex_fn '\n            $'try: x = ok(fn()) '\n            $'except Exception as ex: x = error(ex_fn(lambda: ex))'\n            $'x' : result t exn\n        TypeScript = fun () =>\n            $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -126,6 +126,8 @@ Spiral.Kino.eval!(
               $'try: x = ok(fn()) '
               $'except Exception as ex: x = error(ex_fn(lambda: ex))'
               $'x' : result t exn
+          TypeScript = fun () =>
+              $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
       }
   """,
   timeout: 300_000
@@ -134,7 +136,7 @@ Spiral.Kino.eval!(
 
 ### get
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get forall t e. (source : result t e) : t =\n    match source with\n    | Ok x => x\n    | Error x =>\n        backend_switch {\n            Gleam = fun () =>\n                global \"import gleam/string\"\n                $'\"resultm.get / Error x: \" <> string.inspect(!x)' : string\n            Lua = fun () => $'\"resultm.get / Error x: \" .. tostring(!x)' : string\n            Fsharp = fun () => $'$\"resultm.get / Error x: {!x}\"' : string\n            Python = fun () => $'f\"resultm.get / Error x: {!x}\"' : string\n            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\\!(\"{:?}\", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\\!(\"resultm.get / Error x: {}\", (&SpiralDebug(&!x)).show()) })' : string\n        }\n        |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get forall t e. (source : result t e) : t =\n    match source with\n    | Ok x => x\n    | Error x =>\n        backend_switch {\n            Gleam = fun () =>\n                global \"import gleam/string\"\n                $'\"resultm.get / Error x: \" <> string.inspect(!x)' : string\n            Lua = fun () => $'\"resultm.get / Error x: \" .. tostring(!x)' : string\n            Fsharp = fun () => $'$\"resultm.get / Error x: {!x}\"' : string\n            Python = fun () => $'f\"resultm.get / Error x: {!x}\"' : string\n            TypeScript = fun () => $'\"resultm.get / Error x: \" + String(!x)' : string\n            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\\!(\"{:?}\", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\\!(\"resultm.get / Error x: {}\", (&SpiralDebug(&!x)).show()) })' : string\n        }\n        |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -150,6 +152,7 @@ Spiral.Kino.eval!(
               Lua = fun () => $'"resultm.get / Error x: " .. tostring(!x)' : string
               Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
               Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
+              TypeScript = fun () => $'"resultm.get / Error x: " + String(!x)' : string
               Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", (&SpiralDebug(&!x)).show()) })' : string
           }
           |> failwith
@@ -192,7 +195,7 @@ Spiral.Kino.eval!(
 
 ### unwrap_err
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unwrap_err forall t u. (x : result t u) : u =\n    match x with\n    | Ok x =>\n        backend_switch {\n            Gleam = fun () =>\n                global \"import gleam/string\"\n                $'\"resultm.unwrap_err / Ok x: \" <> string.inspect(!x)' : string\n            Lua = fun () => $'\"resultm.unwrap_err / Ok x: \" .. tostring(!x)' : string\n            Fsharp = fun () => $'$\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            Python = fun () => $'f\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\\!(\"{:?}\", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\\!(\"resultm.unwrap_err / Ok x: {}\", (&SpiralDebug(&!x)).show()) })' : string\n        }\n        |> failwith\n    | Error x => x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unwrap_err forall t u. (x : result t u) : u =\n    match x with\n    | Ok x =>\n        backend_switch {\n            Gleam = fun () =>\n                global \"import gleam/string\"\n                $'\"resultm.unwrap_err / Ok x: \" <> string.inspect(!x)' : string\n            Lua = fun () => $'\"resultm.unwrap_err / Ok x: \" .. tostring(!x)' : string\n            Fsharp = fun () => $'$\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            Python = fun () => $'f\"resultm.unwrap_err / Ok x: {!x}\"' : string\n            TypeScript = fun () => $'\"resultm.unwrap_err / Ok x: \" + String(!x)' : string\n            Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\\!(\"{:?}\", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\\!(\"resultm.unwrap_err / Ok x: {}\", (&SpiralDebug(&!x)).show()) })' : string\n        }\n        |> failwith\n    | Error x => x","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -207,6 +210,7 @@ Spiral.Kino.eval!(
               Lua = fun () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
               Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
               Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+              TypeScript = fun () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
               Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", (&SpiralDebug(&!x)).show()) })' : string
           }
           |> failwith
@@ -238,7 +242,7 @@ Spiral.Kino.eval!(
 
 ### result'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl result'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/result\"\n    }\ntype result'_switch t u =\n    {\n        Gleam : $'Result(`t, `u)'\n        // Lua: the union too (see result'_union)\n        Lua : result t u\n        Fsharp : $'Result<`t, `u>'\n        // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay\n        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)\n        Python : result t u\n        Rust : $'Result<`t, `u>'\n    }\nnominal result' t u = $'backend_switch `(result'_switch t u)'\n\n// Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell\n// `Error e` from `Ok e`\ninl result'_union () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => true\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl result'_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl result'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/result\"\n    }\ntype result'_switch t u =\n    {\n        Gleam : $'Result(`t, `u)'\n        // Lua: the union too (see result'_union)\n        Lua : result t u\n        Fsharp : $'Result<`t, `u>'\n        // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay\n        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)\n        Python : result t u\n        Rust : $'Result<`t, `u>'\n        // TypeScript: the union too, as Lua and Python\n        TypeScript : result t u\n    }\nnominal result' t u = $'backend_switch `(result'_switch t u)'\n\n// Lua, Python and TypeScript: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell\n// `Error e` from `Ok e`\ninl result'_union () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => true\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => true\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl result'_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -257,10 +261,12 @@ Spiral.Kino.eval!(
           // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
           Python : result t u
           Rust : $'Result<`t, `u>'
+          // TypeScript: the union too, as Lua and Python
+          TypeScript : result t u
       }
   nominal result' t u = $'backend_switch `(result'_switch t u)'
 
-  // Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
+  // Lua, Python and TypeScript: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
   // `Error e` from `Ok e`
   inl result'_union () : bool =
       backend_switch {
@@ -268,7 +274,7 @@ Spiral.Kino.eval!(
           Lua = fun () => true
           Fsharp = fun () => false
           Python = fun () => true
-          TypeScript = fun () => false
+          TypeScript = fun () => true
           Cpp = fun () => false
           CppHost = fun () => false
           Delphi = fun () => false

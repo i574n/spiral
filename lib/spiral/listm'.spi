@@ -257,6 +257,7 @@ type list'_switch t =
         Fsharp : $'`t list'
         Python : $'list'
         Rust : $'Rc<Vec<`t>>'
+        TypeScript : $'Array<`t>'
     }
 nominal list' t = $'backend_switch `(list'_switch t)'
 
@@ -268,6 +269,7 @@ inl empty' forall t. () : list' t =
         Fsharp = fun () => $'[]' : list' t
         Python = fun () => $'[]' : list' t
         Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t
+        TypeScript = fun () => $'[]' : list' t
     }
 
 /// ### cons'
@@ -282,6 +284,7 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
             $'!tail.insert(0, !head)'
             $'!tail ' : list' t
         Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
+        TypeScript = fun () => $'[!head, ...!tail]' : list' t
     }
 
 /// ### box
@@ -313,6 +316,7 @@ inl rev' forall t. (items : list' t) : list' t =
         Fsharp = fun () => items |> $'List.rev' : list' t
         Python = fun () => $'list(reversed(!items))' : list' t
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
+        TypeScript = fun () => $'[...!items].reverse()' : list' t
     }
 
 /// ### fold'
@@ -355,6 +359,14 @@ inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
                     inl item : t = $'(!list)[!i as usize].clone()'
                     루프 (i + 1i32) (Cons (fn item, acc))
             루프 0i32 init
+        TypeScript = fun () =>
+            inl len : i32 = $'!list.length'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i >= len then acc
+                else
+                    inl item : t = $'!list[!i]'
+                    루프 (i + 1i32) (Cons (fn item, acc))
+            루프 0i32 init
     }
 
 /// ### fold_back'
@@ -384,6 +396,14 @@ inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list
                 if i < 0i32 then acc
                 else
                     inl item : t = $'(!list)[!i as usize].clone()'
+                    루프 (i - 1i32) (Cons (fn item, acc))
+            루프 (len - 1i32) init
+        TypeScript = fun () =>
+            inl len : i32 = $'!list.length'
+            let rec 루프 (i : i32) (acc : list u) : list u =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'!list[!i]'
                     루프 (i - 1i32) (Cons (fn item, acc))
             루프 (len - 1i32) init
     }
@@ -416,6 +436,14 @@ inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
                     inl item : t = $'(!list)[!i as usize].clone()'
                     루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
             루프 (len - 1i32) Nil |> box
+        TypeScript = fun () =>
+            inl len : i32 = $'!list.length'
+            let rec 루프 (i : i32) (acc : list t) : list t =
+                if i < 0i32 then acc
+                else
+                    inl item : t = $'!list[!i]'
+                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
+            루프 (len - 1i32) Nil |> box
     }
 
 /// ### map
@@ -436,6 +464,7 @@ inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
         Fsharp = fun () => list |> $'List.map' fn : list' u
         Python = fun () => $'list(map(!fn, !list))' : list' u
         Rust = fun () => fold_back' fn list Nil |> box
+        TypeScript = fun () => fold_back' fn list Nil |> box
     }
 
 /// ### unbox
@@ -477,6 +506,14 @@ inl distinct' forall t. (list : list' t) : list' t =
                     inl item : t = $'(!list)[!i as usize].clone()'
                     루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
             루프 0i32 Nil |> box |> rev'
+        TypeScript = fun () =>
+            inl len : i32 = $'!list.length'
+            let rec 루프 (i : i32) (seen : list t) : list t =
+                if i >= len then seen
+                else
+                    inl item : t = $'!list[!i]'
+                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
+            루프 0i32 Nil |> box |> rev'
     }
 
 /// ### to_array'
@@ -511,6 +548,7 @@ inl to_array' forall t. (items : list' t) : array_base t =
                     루프 (i + 1i32)
             루프 0i32
         Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
+        TypeScript = fun () => $'[...!items]' : array_base t
     }
 
 /// ### contains

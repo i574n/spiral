@@ -41,6 +41,30 @@ defmodule Spiral.Kino.TargetsTest do
     assert {:ok, %{stdout: "hello"}} = run_target(text)
   end
 
+  test "an F# cell runs from the notebook's directory (cwd and __SOURCE_DIRECTORY__)" do
+    if is_binary(Toolchain.dotnet([])) do
+      root = Path.join(System.tmp_dir!(), "spiral_kino_root_#{System.unique_integer([:positive])}")
+      cell = Path.join(System.tmp_dir!(), "spiral_kino_cell_#{System.unique_integer([:positive])}")
+      File.mkdir_p!(root)
+      File.mkdir_p!(cell)
+      path = Path.join(cell, "main.fsx")
+
+      File.write!(
+        path,
+        "printfn \"%s|%s\" (System.IO.Path.GetFileName __SOURCE_DIRECTORY__) (System.IO.Path.GetFileName (System.IO.Directory.GetCurrentDirectory()))\n"
+      )
+
+      try do
+        name = Path.basename(root)
+        expected = "#{name}|#{name}"
+        assert {:ok, %{stdout: ^expected}} = Targets.run(%{tool: :fsharp}, path, [root: root], 120_000, deadline())
+      after
+        File.rm_rf(root)
+        File.rm_rf(cell)
+      end
+    end
+  end
+
   test "plain builder text stays as stdout" do
     assert {:ok, %{stdout: "contract"}} = run_target("contract\n")
   end

@@ -55,6 +55,8 @@ inl from_try forall t. (fn : () -> t) (ex_fn : (() -> exn) -> exn) : result t ex
             $'try: x = ok(fn()) '
             $'except Exception as ex: x = error(ex_fn(lambda: ex))'
             $'x' : result t exn
+        TypeScript = fun () =>
+            $'(() => { try { return !ok(!fn()); } catch (ex) { return !error(!ex_fn(() => ex)); } })()' : result t exn
     }
 
 /// ### get
@@ -69,6 +71,7 @@ inl get forall t e. (source : result t e) : t =
             Lua = fun () => $'"resultm.get / Error x: " .. tostring(!x)' : string
             Fsharp = fun () => $'$"resultm.get / Error x: {!x}"' : string
             Python = fun () => $'f"resultm.get / Error x: {!x}"' : string
+            TypeScript = fun () => $'"resultm.get / Error x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.get / Error x: {}", (&SpiralDebug(&!x)).show()) })' : string
         }
         |> failwith
@@ -96,6 +99,7 @@ inl unwrap_err forall t u. (x : result t u) : u =
             Lua = fun () => $'"resultm.unwrap_err / Ok x: " .. tostring(!x)' : string
             Fsharp = fun () => $'$"resultm.unwrap_err / Ok x: {!x}"' : string
             Python = fun () => $'f"resultm.unwrap_err / Ok x: {!x}"' : string
+            TypeScript = fun () => $'"resultm.unwrap_err / Ok x: " + String(!x)' : string
             Rust = fun () => $'Rc::<str>::from({ struct SpiralDebug<T>(T); trait SpiralDebugShow { fn show(&self) -> String; } impl<T: std::fmt::Debug> SpiralDebugShow for SpiralDebug<T> { fn show(&self) -> String { format\!("{:?}", self.0) } } trait SpiralTypeShow { fn show(&self) -> String; } impl<T> SpiralTypeShow for &SpiralDebug<T> { fn show(&self) -> String { String::from(std::any::type_name::<T>()) } } format\!("resultm.unwrap_err / Ok x: {}", (&SpiralDebug(&!x)).show()) })' : string
         }
         |> failwith
@@ -124,10 +128,12 @@ type result'_switch t u =
         // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
         Python : result t u
         Rust : $'Result<`t, `u>'
+        // TypeScript: the union too, as Lua and Python
+        TypeScript : result t u
     }
 nominal result' t u = $'backend_switch `(result'_switch t u)'
 
-// Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
+// Lua, Python and TypeScript: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
 // `Error e` from `Ok e`
 inl result'_union () : bool =
     backend_switch {
@@ -135,7 +141,7 @@ inl result'_union () : bool =
         Lua = fun () => true
         Fsharp = fun () => false
         Python = fun () => true
-        TypeScript = fun () => false
+        TypeScript = fun () => true
         Cpp = fun () => false
         CppHost = fun () => false
         Delphi = fun () => false

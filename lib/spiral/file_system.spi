@@ -396,10 +396,8 @@ inl read (path : string) : resultm.result' (am'.vec u8) stream.io_error =
 
 /// ### ts_path_join
 inl ts_path_join (b : string) (a : string) : string =
-    open typescript_operators
-    global "type IPathJoin = abstract join: [<System.ParamArray>] paths: string[] -> string"
-    inl path : $'IPathJoin' = typescript.import_all "path"
-    !\\((a, b), $'"!path.join($0, $1)"')
+    global "import * as spiral_node_path from 'node:path';"
+    $'spiral_node_path.join(!a, !b)' : string
 
 /// ## file_system
 
@@ -446,10 +444,8 @@ let get_file_name (path : string) : string =
             |> optionm'.unbox
             |> optionm'.default_value ""
         | TypeScript => fun path =>
-            open typescript_operators
-            global "type IPathBasename = abstract basename: path: string -> string"
-            inl path' : $'IPathBasename' = typescript.import_all "path"
-            !\\(path, $'"!path'.basename($0)"')
+            global "import * as spiral_node_path from 'node:path';"
+            $'spiral_node_path.basename(!path)' : string
         | target => fun path => failwith $'$"file_system.get_file_name / target: {!target} / path: {!path}"'
 
 /// ### get_file_name_without_extension
@@ -511,10 +507,8 @@ let get_current_directory () : string =
         | Fsharp => fun () =>
             $'System.IO.Directory.GetCurrentDirectory' ()
         | TypeScript _ => fun () =>
-            open typescript_operators
-            global "type IFs = abstract realpathSync: path: string -> string"
-            inl fs : $'IFs' = typescript.import_all "fs"
-            !\($'"fs.realpathSync(\'.\')"')
+            global "import * as spiral_node_fs from 'node:fs';"
+            $'spiral_node_fs.realpathSync(".")' : string
         | _ => fun () => null ()
 
 /// ### directory_exists
@@ -526,10 +520,8 @@ let directory_exists (path : string) : bool =
             inl path = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path && path_buf_is_dir path
         | TypeScript => fun path =>
-            global "type IFsExistsSync = abstract existsSync: path: string -> bool"
-            open typescript_operators
-            inl fs : $'IFsExistsSync' = typescript.import_all "fs"
-            !\\((fs, path), $'"$0.existsSync($1)"')
+            global "import * as spiral_node_fs from 'node:fs';"
+            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isDirectory())' : bool
         | _ => fun _ => null ()
 
 /// ### directory_get_parent
@@ -547,10 +539,8 @@ let directory_get_parent (path : string) : optionm'.option' string =
             parent
             |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)
         | TypeScript _ => fun path =>
-            open typescript_operators
-            global "type IPathDirname = abstract dirname: path: string -> string"
-            inl path' : $'IPathDirname' = typescript.import_all "path"
-            inl parent = !\\(path, $'"!path'.dirname($0)"')
+            global "import * as spiral_node_path from 'node:path';"
+            inl parent = $'spiral_node_path.dirname(!path)' : string
             if parent = path
             then None
             else parent |> Some
@@ -601,10 +591,8 @@ let file_exists (path : string) : bool =
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path_buf && path_buf_is_file path_buf
         | TypeScript => fun path =>
-            open typescript_operators
-            global "type IFsExistsSync = abstract existsSync: path: string -> bool"
-            inl fs : $'IFsExistsSync' = typescript.import_all "fs"
-            !\\((fs, path), $'"$0.existsSync($1)"')
+            global "import * as spiral_node_fs from 'node:fs';"
+            $'(spiral_node_fs.existsSync(!path) && spiral_node_fs.statSync(!path).isFile())' : bool
         | _ => fun _ => null ()
 
 /// ### directory_delete
@@ -813,35 +801,42 @@ let normalize_path (path : string) : string =
 
 /// ### get_workspace_root
 inl get_workspace_root () =
-    inl dirs =
-        [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
-    let run dir =
-        dir
-        |> find_parent Directory ("spiral" </> "workspace")
-        |> function
-            | Ok dir => dir |> normalize_path |> Some
-            | Error error =>
-                trace Warning
-                    fun () => "file_system.get_workspace_root"
-                    fun () => { dir error }
-                None
-    inl root =
-        (None, dirs)
-        ||> listm.fold fun acc dir =>
-            match acc with
-            | Some dir => Some dir
-            | None => dir () |> run
-        |> optionm.value
-    inl root =
-        match root |> get_file_name with
-        | "deps" =>
-            root
-            |> directory_get_parent
-            |> optionm'.get'
-            |> run
+    // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory
+    // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through
+    // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.
+    inl repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
+    if repo_root <> ""
+    then repo_root |> normalize_path
+    else
+        inl dirs =
+            [ get_current_directory; get_source_directory; fun () => "/workspaces" ]
+        let run dir =
+            dir
+            |> find_parent Directory ("spiral" </> "workspace")
+            |> function
+                | Ok dir => dir |> normalize_path |> Some
+                | Error error =>
+                    trace Warning
+                        fun () => "file_system.get_workspace_root"
+                        fun () => { dir error }
+                    None
+        inl root =
+            (None, dirs)
+            ||> listm.fold fun acc dir =>
+                match acc with
+                | Some dir => Some dir
+                | None => dir () |> run
             |> optionm.value
-        | _ => root
-    root </> "polyglot"
+        inl root =
+            match root |> get_file_name with
+            | "deps" =>
+                root
+                |> directory_get_parent
+                |> optionm'.get'
+                |> run
+                |> optionm.value
+            | _ => root
+        root </> "spiral"
 
 /// ### get_workspace_root_external
 inl get_workspace_root_external () =

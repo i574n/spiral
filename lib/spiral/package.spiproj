@@ -7,8 +7,6 @@ modules:
     rust/
         rust
         rust_operators
-    typescript
-    typescript_operators
     optionm'
     optionm'_operators
     resultm

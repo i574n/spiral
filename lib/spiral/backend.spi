@@ -30,6 +30,12 @@ inl backend_switch forall t. x : t =
                         // C++ host (upstream CodegenCpp names its host backend CppHost).
                         CppHost = fun () =>
                             $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
+                        // Zig (codegenZig): lib/spiral has no Zig arms yet. A value arm is Zig's @compileError, which only fires when
+                        // Zig code actually reaches the call (Zig analyzes lazily).
+                        Zig = fun () =>
+                            typecase t with
+                            | () => $'{}' : t
+                            | _ => $'\@compileError("backend_switch: this lib/spiral function has no Zig arm yet")' : t
                         // TypeScript (CodegenTypescript): lib/spiral arms are being added.
                         TypeScript = fun () =>
                             typecase t with
@@ -47,6 +53,7 @@ inl backend_switch forall t. x : t =
             // User records keep their `Cpp` key for the C++ host, like the type-level backend_switch in CodegenCpp.
             CppHost = fun () => backend "Cpp"
             TypeScript = fun () => backend "TypeScript"
+            Zig = fun () => backend "Zig"
         })
 
 // The target a run_target arm runs for: the backend of the build (Python builds are `Cuda`, C++ host builds `Cpp`).

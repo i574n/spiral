@@ -1,9 +1,5 @@
 # physics
 
-<!-- livebook:{"break_markdown":true} -->
-
-`#!import ../../../polyglot/lib/fsharp/Plotting.livemd`
-
 <!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir

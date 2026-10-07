@@ -3,8 +3,8 @@ function GetTargetDir {
         [Parameter(Mandatory)]
         [string] $ProjectName
     )
-    $root = "$PSScriptRoot/../../deps/polyglot"
-    $result = ResolveLink "$root/target/Builder/$ProjectName"
+    # this spiral checkout's target/build/<project> (polyglot/target/Builder before spiral's split from polyglot)
+    $result = ResolveLink ([IO.Path]::GetFullPath("$PSScriptRoot/../../target/build/$ProjectName"))
     Write-Host "spiral/lib/spiral/lib.ps1/GetTargetDir / targetDir: $result"
     $result
 }
@@ -91,16 +91,13 @@ function BuildNativeRust {
     BuildSpiral -SpiPath $SpiPath -OutPath $RsPath -Name $Name -Backend $Backend
 }
 
-function GetFsxModules {
-    @("deps/spiral/lib/spiral/common.fsx", "deps/spiral/lib/spiral/sm.fsx", "deps/spiral/lib/spiral/crypto.fsx", "deps/spiral/lib/spiral/date_time.fsx", "deps/spiral/lib/spiral/async_.fsx", "deps/spiral/lib/spiral/threading.fsx", "deps/spiral/lib/spiral/networking.fsx", "deps/spiral/lib/spiral/platform.fsx", "deps/spiral/lib/spiral/runtime.fsx", "deps/spiral/lib/spiral/file_system.fsx", "deps/spiral/lib/spiral/trace.fsx", "deps/spiral/lib/spiral/lib.fsx")
-}
-
 # The spiral library's F# modules (the compiler's F# runtime helpers), absolute, in compile order: what an F# program the
 # compiler wrote (e.g. dice.fsx) is published with (PublishFsharp -Modules).
 function GetFsxModulePaths {
     @("common", "sm", "crypto", "date_time", "async_", "threading", "networking", "platform", "runtime", "file_system", "trace", "lib") `
         | ForEach-Object { (Resolve-Path (Join-Path $PSScriptRoot "$_.fsx")).Path }
 }
+
 # F# (.NET): publishes $SourcePath (an .fsx/.fs the compiler wrote, e.g. dice.fsx) as a self-contained single-file exe
 # in <source dir>/dist, compiled with $Modules (paths, compiled first, in order). Packages are NuGet PackageReferences
 # (`Name=Version`; FSharp.Core always), restored by dotnet itself: no paket. Like polyglot's former Builder, the

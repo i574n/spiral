@@ -20,7 +20,7 @@ $notebooks = @(
     "physics", "parsing", "sm'", "rust/rust", "rust/testing", "rust/near", "rust/near_workspaces", "testing", "guid",
     "async", "runtime", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
     "mapm", "optionm'", "listm'", "reflection", "iter", "wasm", "leptos/leptos", "lustre", "util", "platform", "stream",
-    "threading", "benchmark", "seq", "env", "typescript", "file_system", "networking"
+    "threading", "benchmark", "seq", "env", "file_system", "networking"
 )
 function Get-NotebookArgs([string] $Notebook) {
     $path = Join-Path $ResolvedScriptDir "$Notebook.livemd"
@@ -60,5 +60,5 @@ if (!$fast) {
 }
 
 if ($env:CI) {
-    ClearCargoTarget "../../deps/polyglot/target/spiral/spiral"
+    ClearCargoTarget "../../target/spiral/spiral"
 }

@@ -171,12 +171,16 @@ module Program =
         let gate = obj()
         let mutable active : (string * Threading.Tasks.TaskCompletionSource<string>) option = None
         let mutable related : string option = None
+        // The entry's TypeErrors, held back briefly: the core's FatalError for a type error names the entry's parse
+        // errors and every typer error with its position (the single-flight type-error branch), so it wins when it
+        // follows (lane H's empty `match` was reported as the caller's 'Unbound variable' only).
+        let mutable entryTypeErrors : string option = None
 
         member _.Begin(uri) =
             let waiter =
                 new Threading.Tasks.TaskCompletionSource<string>(
                     Threading.Tasks.TaskCreationOptions.RunContinuationsAsynchronously)
-            lock gate (fun () -> active <- Some (uri, waiter); related <- None)
+            lock gate (fun () -> active <- Some (uri, waiter); related <- None; entryTypeErrors <- None)
             waiter
 
         member _.Clear(waiter : Threading.Tasks.TaskCompletionSource<string>) =
@@ -188,6 +192,11 @@ module Program =
         member _.Accept(message : ClientErrorsRes) =
             if traceDiagnostics then eprintfn "[diagnostic] %A" message
             match message with
+            | FatalError fatal when lock gate (fun () -> entryTypeErrors.IsSome) ->
+                lock gate (fun () ->
+                    match active with
+                    | Some (_, waiter) -> waiter.TrySetResult($"FatalError: {fatal}") |> ignore
+                    | None -> ())
             | FatalError fatal ->
                 let pending = lock gate (fun () -> active)
                 match pending with
@@ -206,6 +215,11 @@ module Program =
                     match active with
                     | Some (uri, waiter) ->
                         match diagnosticFor uri message with
+                        | Some diagnostic when (match message with TypeErrors _ -> true | _ -> false) ->
+                            entryTypeErrors <- Some diagnostic
+                            Threading.Tasks.Task.Delay(1000).ContinueWith(fun (_ : Threading.Tasks.Task) ->
+                                waiter.TrySetResult(diagnostic) |> ignore)
+                            |> ignore
                         | Some diagnostic -> waiter.TrySetResult(diagnostic) |> ignore
                         | None ->
                             match diagnosticForOther message with
@@ -408,14 +422,14 @@ module Program =
 #endif
 
 
-    /// The single-flight Rust backend prints the emit marker (`__spiral_emit_rust`, or its Fable-era spelling) as a call and keeps the
+    /// The single-flight Rust backend prints the emit marker (`__spiral_emit_rust`) as a call and keeps the
     /// snippet in a separate string binding. Inline the snippet and drop that binding.
     let private rewriteRustEmitExpr (generated : string) =
-        if not (generated.Contains("__spiral_emit_rust", StringComparison.Ordinal) || generated.Contains("Fable.Core.RustInterop.emitRustExpr", StringComparison.Ordinal)) then generated
+        if not (generated.Contains("__spiral_emit_rust", StringComparison.Ordinal)) then generated
         else
             let lines = generated.Split([|"\r\n"; "\n"|], StringSplitOptions.None)
             let bindingPattern = Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (""(?:\\.|[^""\\])*"");\s*$")
-            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )(?:__spiral_emit_rust|Fable\.Core\.RustInterop\.emitRustExpr) (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )__spiral_emit_rust (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
             let unescape (literal : string) =
                 let body = literal.Substring(1, literal.Length - 2)
                 let text = StringBuilder()
@@ -785,6 +799,7 @@ module Program =
         | ".c" -> "C"
         | ".rs" -> "Rust"
         | ".pas" | ".dpr" -> "Delphi"
+        | ".zig" -> "Zig"
         | ".py" -> "Python + Cuda"
         | ".cpp" -> "Cpp + Cuda"
         | ".lua" -> "Lua"
@@ -1044,5 +1059,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
+            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
             2

@@ -18,6 +18,7 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
+import sys
 def main():
     v0 = static_array(1)
     v0[0] = 20, 22
@@ -75,4 +76,4 @@ def main():
         del v5, v6, v11, v12, v13
         return 1
 
-if __name__ == '__main__': result = main(); None if result is None else print(result)
+if __name__ == '__main__': sys.exit(main())

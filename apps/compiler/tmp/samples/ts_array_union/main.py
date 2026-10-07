@@ -18,6 +18,7 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
+import sys
 class US0_0(NamedTuple): # Empty
     tag = 0
 class US0_1(NamedTuple): # Values
@@ -56,4 +57,4 @@ def main():
     del v3
     return v4
 
-if __name__ == '__main__': result = main(); None if result is None else print(result)
+if __name__ == '__main__': sys.exit(main())

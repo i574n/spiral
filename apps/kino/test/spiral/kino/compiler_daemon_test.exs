@@ -3,25 +3,21 @@ defmodule Spiral.Kino.CompilerDaemonTest do
 
   alias Spiral.Kino.{CompilerClient, CompilerDaemon}
 
-  test "the daemon never takes polyglot's Supervisor port" do
+  test "the daemon port: 13905 by default, SPIRAL_KINO_COMPILER_PORT otherwise" do
     previous = System.get_env("SPIRAL_KINO_COMPILER_PORT")
 
     try do
       System.delete_env("SPIRAL_KINO_COMPILER_PORT")
-      assert CompilerDaemon.port() != CompilerDaemon.supervisor_port()
-
-      System.put_env("SPIRAL_KINO_COMPILER_PORT", "13805")
-
-      assert_raise ArgumentError, ~r/reserved for polyglot's Supervisor/, fn ->
-        CompilerDaemon.port()
-      end
+      assert CompilerDaemon.port() == 13905
+      System.put_env("SPIRAL_KINO_COMPILER_PORT", "13806")
+      assert CompilerDaemon.port() == 13806
+      System.put_env("SPIRAL_KINO_COMPILER_PORT", "x")
+      assert_raise ArgumentError, fn -> CompilerDaemon.port() end
     after
       if previous,
         do: System.put_env("SPIRAL_KINO_COMPILER_PORT", previous),
         else: System.delete_env("SPIRAL_KINO_COMPILER_PORT")
     end
-
-    assert_raise ArgumentError, fn -> CompilerDaemon.check_port!(13805) end
   end
 
   test "queued clients share one compiler and do not overlap" do
