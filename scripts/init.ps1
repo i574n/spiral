@@ -82,8 +82,7 @@ foreach ($tool in "elixir", "gleam") {
     if (!(Test-Command $tool)) { Write-Output "init.ps1 / $tool is not on PATH: notebooks (apps/kino) need it" }
 }
 
-# polyglot: still the source of the plot app, the Builder and dir-tree-html (scripts/build.ps1, publish.ps1) and of the
-# shared core.ps1 helpers, until they move or go.
+# polyglot: spiral's workflow still runs polyglot's init (scripts/workflow.ps1); deps/polyglot links it.
 if (!$fast) {
     Set-Location (New-Item -ItemType Directory -Path "../.." -Force)
     git clone --recurse-submodules https://$domain/$owner/polyglot.git # --branch gh-pages
@@ -92,6 +91,6 @@ if (!$fast) {
     Set-Location $ScriptDir
 }
 
-. ../../polyglot/scripts/core.ps1
+. ./core.ps1
 
 EnsureSymbolicLink -Path "../deps/polyglot" -Target "../../polyglot"

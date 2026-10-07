@@ -5,7 +5,7 @@ param(
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
 
-. ../deps/polyglot/scripts/core.ps1
+. ./core.ps1
 
 
 { pwsh ../apps/spiral/build.ps1 } | Invoke-Block

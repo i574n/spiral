@@ -375,7 +375,7 @@ defmodule Spiral.Kino do
               Cell.unit_result?(restore_type_lines(output_text)) ->
             retry.(String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
 
-          attempt == 1 and prepared.generated_main and host and
+          attempt == 1 and prepared.generated_main and
               value_result?(output_text, File.read!(spi)) ->
             retry.(show_value_main(File.read!(spi)))
 
@@ -429,7 +429,8 @@ defmodule Spiral.Kino do
   end
 
   # The generated main's only error is that its expression is not an i32 (the old route showed any value; physics'
-  # cells end in plot data): the value is bound and shown with Rust's Debug (console.show_value) instead.
+  # cells end in plot data, parsing's F# cells in a formatted error): the value is bound and shown instead
+  # (console.show_value: Rust's Debug on the value line the runner reads, a plain print on the other backends).
   @doc false
   def value_result?(output, code) do
     case :binary.matches(code, @main_head) do
@@ -440,16 +441,41 @@ defmodule Spiral.Kino do
         {at, _} = List.last(matches)
 
         # 1-based line of the main head; its body (value bindings, then the expression) is indented by 4, and the
-        # compiler reports the result's mismatch at the start of the trailing expression (column 5)
+        # compiler reports the result's mismatch at the start of the trailing expression (column 5), or, for a piped
+        # expression (`x |> f`), at the last stage, on the body's last line
         head = code |> binary_part(0, at) |> String.split("\n") |> length()
+        last = code |> String.trim_trailing() |> String.split("\n") |> length()
 
         case Regex.scan(~r/main\.spi:(\d+):(\d+): (Unification failure\.)?/, output) do
-          [[_, line, "5", "Unification failure."]] ->
-            String.to_integer(line) > head and output =~ ~r/Got:\s*i32\b|Expected:\s*i32\b/
+          [[_, line, column, "Unification failure."]] ->
+            line = String.to_integer(line)
+
+            line > head and (column == "5" or line == last) and
+              (output =~ ~r/Got:\s*i32\b|Expected:\s*i32\b/ or i32_stage?(output))
 
           _ ->
             false
         end
+    end
+  end
+
+  defp i32_stage?(output) do
+    case Regex.run(~r/Got:\s*(.*?)\s*Expected:\s*([^\n]*)/s, output) do
+      [_, got, expected] ->
+        same_stage?(String.trim(got), String.trim(expected)) or
+          same_stage?(String.trim(expected), String.trim(got))
+
+      _ ->
+        false
+    end
+  end
+
+  defp same_stage?(i32_side, other) do
+    if String.ends_with?(i32_side, " -> i32") do
+      prefix = String.replace_suffix(i32_side, " -> i32", " -> ")
+      String.starts_with?(other, prefix) and other != i32_side
+    else
+      false
     end
   end
 

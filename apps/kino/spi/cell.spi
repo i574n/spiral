@@ -328,6 +328,7 @@ inl prefix_before (ty : string) (mark : string) : i32 * string =
 
 inl unit_pair (got : string) (expected : string) : bool =
     if got = "()" && expected = "i32" then true
+    elif got = "i32" && expected = "()" then true
     else
         inl g_ok, g = prefix_before got "-> ()"
         inl e_ok, e = prefix_before expected "-> i32"

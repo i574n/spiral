@@ -167,6 +167,9 @@ defmodule Spiral.Kino.CellTest do
 
     assert Cell.unit_result?("Got:      ()\nExpected: i32\")]")
     assert Cell.unit_result?("Unification failure.\nGot:      i32 -> i32\nExpected: i32 -> ()")
+    # a trailing `function | [] => () | x => failwith ...` (parsing's split_args test)
+    assert Cell.unit_result?("main.spi:261:17: Unification failure. Got:      i32\nExpected: ()")
+    refute Cell.unit_result?("Got:      i32\nExpected: string")
     refute Cell.unit_result?("Got:      string\nExpected: i32")
     refute Cell.unit_result?("Got:      () -> string\nExpected: () -> i32")
   end

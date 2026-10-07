@@ -484,9 +484,8 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
                 $'$"target/spiral/{!workspace_dir_name}/target/wasm32-unknown-unknown/release/spiral_{!hash}.wasm"'
 
             inl command =
-                // relative to the spiral checkout (file_system.get_workspace_root); invoke-block.ps1 is
-                // polyglot's, through spiral's deps/polyglot link
-                inl invoke_block_path = "deps/polyglot/scripts/invoke-block.ps1"
+                // relative to the spiral checkout (file_system.get_workspace_root)
+                inl invoke_block_path = "scripts/invoke-block.ps1"
                 inl spiral_wasm_command : string =
                     inl runtime_cmd =
                         match runtime with

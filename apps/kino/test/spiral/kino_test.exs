@@ -153,6 +153,18 @@ defmodule Spiral.KinoTest do
 
     refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
 
+    # a piped expression's last stage (parsing's F# `... |> sm'.format_debug` cell) is reported at that stage, on the
+    # body's last line; the same mismatch on an earlier body line is a real error
+    piped = "inl main () : i32 =\n    \"[a\"\n    |> parse\n    |> sm'.format_debug\n"
+    stage = "Unification failure. Got:      string * parser_error_ -> i32 Expected: string * parser_error_ -> string"
+    assert Spiral.Kino.value_result?("main.spi:4:8: " <> stage, piped)
+    refute Spiral.Kino.value_result?("main.spi:3:8: " <> stage, piped)
+
+    refute Spiral.Kino.value_result?(
+             "main.spi:4:8: Unification failure. Got:      string -> i32 Expected: u8 -> string",
+             piped
+           )
+
     refute Spiral.Kino.value_result?(
              "main.spi:4:5: Unification failure. Got: i32 Expected: i32 * i32\nmain.spi:2:1: Unbound variable: g.",
              code

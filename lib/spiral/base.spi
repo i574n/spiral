@@ -401,12 +401,7 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
         Lua = fun () =>
             fn () |> some
         Fsharp = fun () =>
-            $'let result = ref !(None : option t)'
-            $'try'
-            $'    result.Value <- !fn () |> !some '
-            $'with ex ->'
-            $'    result.Value <- !ex_fn ex '
-            $'result.Value' : option t
+            $'(try !fn () |> !some with ex -> !ex_fn ex)' : option t
         // Python: a module-level helper (independent of the indentation of the code that calls it).
         Python = fun () =>
             global "def spiral_try(fn, some, ex_fn):\n    try:\n        return some(fn())\n    except Exception as e:\n        return ex_fn(e)"

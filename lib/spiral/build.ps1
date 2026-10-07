@@ -5,7 +5,7 @@ param(
 )
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
-. ../../deps/polyglot/scripts/core.ps1
+. ../../scripts/core.ps1
 
 $ResolvedScriptDir = ResolveLink $ScriptDir
 $ResolvedScriptDir | Set-Location

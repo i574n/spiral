@@ -3,7 +3,7 @@ param(
 )
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
-. ../deps/polyglot/scripts/core.ps1
+. ./core.ps1
 
 
 Remove-Item ../dist -Recurse -Force -ErrorAction Ignore
@@ -74,4 +74,4 @@ Get-ChildItem -Path ../dist -Recurse -Force | Where-Object { $_.Name.StartsWith(
     Rename-Item -Path $_.FullName -NewName "_$($_.Name.Substring(1))"
 }
 
-{ . ../deps/polyglot/apps/dir-tree-html/dist/DirTreeHtml$(_exe) --dir ../dist --html ../dist/index.html } | Invoke-Block
+{ . ../apps/dir-tree-html/dist/DirTreeHtml$(_exe) --dir ../dist --html ../dist/index.html } | Invoke-Block
