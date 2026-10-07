@@ -17,12 +17,7 @@ fn spiral_main() -> i32 {
     let (mut v1, mut v2, mut v3): (u32, SpiralNearVec<u8>, near_sdk::store::LookupMap<u32, u8>) = method0(v0);
     method1(v1, v2, v3)
 }
-#[cfg(not(target_arch = "wasm32"))]
-fn main() {
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
     std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
-}
-#[cfg(target_arch = "wasm32")]
-fn main() {
-    spiral_main();
 }

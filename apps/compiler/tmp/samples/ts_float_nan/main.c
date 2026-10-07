@@ -7,66 +7,66 @@
 int32_t main(){
     
     
-    float v0;
-    v0 = nanf("");
+    float v1;
+    v1 = nanf("");
     
     
-    double v1;
-    v1 = nan("");
+    double v8;
+    v8 = nan("");
     
     
-    float v2;
-    v2 = 1.0f;
+    float v14;
+    v14 = 1.0f;
     
     
-    double v3;
-    v3 = 1.0;
+    double v15;
+    v15 = 1.0;
     
     
-    bool v4;
-    v4 = isnan(v0);
+    bool v16;
+    v16 = isnan(v1);
     
     
-    bool v6;
-    if (v4){
+    bool v18;
+    if (v16){
         
         
-        bool v5;
-        v5 = isnan(v1);
+        bool v17;
+        v17 = isnan(v8);
         
         
-        v6 = v5;
+        v18 = v17;
     } else {
         
         
-        v6 = false;
+        v18 = false;
     }
     
     
-    if (v6){
+    if (v18){
         
         
-        bool v7;
-        v7 = isnan(v2);
+        bool v19;
+        v19 = isnan(v14);
         
         
-        bool v9;
-        if (v7){
+        bool v21;
+        if (v19){
             
             
-            v9 = true;
+            v21 = true;
         } else {
             
             
-            bool v8;
-            v8 = isnan(v3);
+            bool v20;
+            v20 = isnan(v15);
             
             
-            v9 = v8;
+            v21 = v20;
         }
         
         
-        if (v9){
+        if (v21){
             
             
             return 2l;

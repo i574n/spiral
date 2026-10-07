@@ -92,10 +92,14 @@ $nativeRoot = Join-Path $cache "native/$mode"
 $scratch = Join-Path $cache "scratch/$mode"
 New-Item -ItemType Directory -Force $runDir, $nativeRoot, $scratch | Out-Null
 
-# Outputs are written in place, so only one run at a time.
-$lockPath = Join-Path $cache 'test.lock'
-try { $lock = [IO.File]::Open($lockPath, 'OpenOrCreate', 'ReadWrite', 'None') }
-catch { throw "another scripts/test.ps1 run is compiling the samples in place ($lockPath)" }
+# Outputs are written in place, so only one run at a time. The lock is a named mutex (one per cache dir), not a file
+# handle: a run that dies abandons the mutex and the next run takes it, while an exclusive test.lock handle stayed held
+# by a run stuck in process teardown and blocked every later run (2026-10-07 06:40).
+$lockName = 'Global\spiral-test-run-' + [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($cache.ToLowerInvariant()))).Substring(0, 16)
+$lock = [Threading.Mutex]::new($false, $lockName)
+$lockHeld = $false
+try { $lockHeld = $lock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $lockHeld = $true }
+if (-not $lockHeld) { throw "another scripts/test.ps1 run is compiling the samples in place (mutex $lockName)" }
 # Every compile mirrors its console stream to <timestamp>.jsonl next to the staged core (up to MBs each);
 # a few days of runs filled the disk once, so keep only the last 12 hours.
 $staleLogs = (Get-Date).AddHours(-12)
@@ -307,6 +311,14 @@ foreach ($job in $jobs) {
 
 # ------------------------------------------------------------------ native tier (C oracle, Rust, Delphi)
 $tools = Get-SpiralNativeTools
+# Zig: the real compiler, not a Scoop shim (the shim runs it as a child, one more process between a timeout and the kill).
+$zigExe = $tools.Zig
+if ($zigExe -and $zigExe -match '[\\/]scoop[\\/]shims[\\/]') {
+    $shim = [IO.Path]::ChangeExtension($zigExe, '.shim')
+    if (Test-Path $shim) { $real = (Get-Content $shim | Where-Object { $_ -match '^\s*path\s*=' } | Select-Object -First 1) -replace '^\s*path\s*=\s*"?([^"]+)"?\s*$', '$1'; if ($real -and (Test-Path $real)) { $zigExe = $real } }
+}
+$zigCacheGen = 0
+$zigCache = Join-Path $scratch "zig-cache-$stamp-0"
 $shimDir = Join-Path $BundleRoot 'tests/native-shims'
 $cFlagRules = @($harness.CFlags | ForEach-Object { [pscustomobject]$_ })
 function Get-CFlags($job) {
@@ -322,14 +334,22 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
     foreach ($a in $arguments) { $info.ArgumentList.Add($a) }
     $info.WorkingDirectory = $workDir
+    # stdin is closed at once: a program that reads input gets EOF instead of waiting on the harness's console.
+    $info.RedirectStandardInput = $true
     $info.RedirectStandardOutput = $true
     $info.RedirectStandardError = $true
     $info.UseShellExecute = $false
     $p = [Diagnostics.Process]::Start($info)
+    $p.StandardInput.Close()
     $out = $p.StandardOutput.ReadToEndAsync()
     $err = $p.StandardError.ReadToEndAsync()
-    if (-not $p.WaitForExit($timeoutSec * 1000)) { $p.Kill($true); return [pscustomobject]@{ Exit = 'timeout'; Out = ''; Err = '' } }
-    $p.WaitForExit()
+    if (-not $p.WaitForExit($timeoutSec * 1000)) { try { $p.Kill($true) } catch { }; return [pscustomobject]@{ Exit = 'timeout'; Out = ''; Err = '' } }
+    # Every wait is bounded: a child process that inherited stdout/stderr keeps the pipes open after this process
+    # exits, and an unbounded read (or the parameterless WaitForExit, which waits for them) hung a whole -Bless run
+    # silently (2026-10-07 06:09, after a Zig build). Such a row reports 'hung-output' and the run goes on.
+    if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($out, $err), 15000)) {
+        return [pscustomobject]@{ Exit = 'hung-output'; Out = ''; Err = 'stdout/stderr still open 15 s after exit (a child process holds them)' }
+    }
     [pscustomobject]@{ Exit = $p.ExitCode; Out = $out.Result; Err = $err.Result }
 }
 function Build-And-Run($job) {
@@ -361,8 +381,15 @@ function Build-And-Run($job) {
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         # Debug on Zig's own backend (-fno-llvm): ~1.5 s a build instead of ~30 s with LLVM (ReleaseSafe); overflow and bounds
         # checks stay on (the generated code wraps integer ops explicitly). No import library (writing one next to an absolute
-        # -femit-bin path fails on Windows: BadPathName). The build cache is shared by every row.
-        'Zig' { if (-not $tools.Zig) { return 'no-toolchain' }; Invoke-Native $tools.Zig @('build-exe', $job.Output, '-O', 'Debug', '-fno-llvm', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', (Join-Path (Get-SpiralCacheDir) 'zig-cache'), '--global-cache-dir', (Join-Path (Get-SpiralCacheDir) 'zig-global-cache')) $dir 300 }
+        # -femit-bin path fails on Windows: BadPathName). The caches belong to this run (see $zigCache): a Zig process stuck
+        # holding the shared cache's lock made every later build wait at 0% CPU (2026-10-07 06:09/06:44; it took a reboot).
+        'Zig' {
+            if (-not $zigExe) { return 'no-toolchain' }
+            $b = Invoke-Native $zigExe @('build-exe', $job.Output, '-O', 'Debug', '-fno-llvm', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', "$zigCache-local", '--global-cache-dir', $zigCache) $dir 120
+            # A timed-out build may leave its lock behind: the rest of the run builds in a fresh cache.
+            if ($b.Exit -eq 'timeout') { $script:zigCacheGen++; $script:zigCache = Join-Path $scratch "zig-cache-$stamp-$($script:zigCacheGen)" }
+            $b
+        }
         'Cpp' {
             # cpp_native.py: g++ for the CppHost part, nvcc only when the program entered `join_backend CudaHost`.
             if (-not $tools.Python) { return 'no-toolchain' }
@@ -384,11 +411,19 @@ function Build-And-Run($job) {
 $nativeResults = @{}
 if ($Native) {
     $sw.Restart()
-    foreach ($job in $jobs | Where-Object { $_.Backend -ne 'Fsharp' -and $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' }) {
+    $nativeJobs = @($jobs | Where-Object { $_.Backend -ne 'Fsharp' -and $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' })
+    $done = 0
+    foreach ($job in $nativeJobs) {
+        $jobWatch = [Diagnostics.Stopwatch]::StartNew()
         $r = Build-And-Run $job
         if ($r -is [string]) { $r = [pscustomobject]@{ Status = $r; Exit = ''; Stdout = ''; Detail = '' } }
         $nativeResults[$job.Key] = $r
+        $done++
+        # A progress line per native job: the run's log keeps moving, so a monitor tells a slow tier from a hung one.
+        Write-Host ("native {0}/{1} {2} {3}: {4} exit {5} ({6:N1}s)" -f $done, $nativeJobs.Count, $job.Id, $job.Backend, $r.Status, $r.Exit, $jobWatch.Elapsed.TotalSeconds)
     }
+    # This run's Zig caches (best effort: one a stuck process still locks stays until the next reboot).
+    Get-ChildItem $scratch -Directory -Filter "zig-cache-$stamp-*" -ErrorAction SilentlyContinue | ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
     Write-Host ("== native tier in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 }
 

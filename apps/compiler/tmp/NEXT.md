@@ -167,7 +167,7 @@ State at hand-off, and the open work in priority order. Details live in the lane
   Neither core asks for C and translates it. Single-flight examples: Rust 103/104 and Delphi 102/102 agree
   with C natively; hopac frontier+smoke: Rust 11/11, Delphi 11/11. See `lanes/single-flight/README.md`.
 - Compiler outputs live only next to their sources and are committed; a run replaces them and
-  `git diff samples` shows what changed. `scripts/test.ps1` holds `<cache>/test.lock`.
+  `git diff samples` shows what changed. `scripts/test.ps1` holds a named mutex per cache dir (a dead run abandons it).
 - C-isms removed from the fixtures: `samples/core/operators.spi` uses built-in ops; per-backend code goes
   through `!!!!BackendSwitch`; C-runtime fixtures (`dynamic_array_*`, `abi_external_*`) are C-only in
   `tests/harness.psd1`; the 16 translator-only fixtures are deleted; stale `Known` entries pruned.

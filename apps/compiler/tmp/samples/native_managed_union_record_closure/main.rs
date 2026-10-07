@@ -23,8 +23,7 @@ fn closure0() -> Rc<dyn Fn(i32) -> US0> {
             let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("managed"); } LIT.with(|lit| lit.clone()) };
             US0::US0_1(v3.clone(), 32i32)
         }
-    }); }
-    CLOSURE.with(|closure| closure.clone())
+    }); } CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
     v0(0i32)
@@ -63,12 +62,7 @@ fn spiral_main() -> i32 {
     let mut v15: i32 = v7.wrapping_add(v14);
     v15
 }
-#[cfg(not(target_arch = "wasm32"))]
-fn main() {
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
     std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
-}
-#[cfg(target_arch = "wasm32")]
-fn main() {
-    spiral_main();
 }

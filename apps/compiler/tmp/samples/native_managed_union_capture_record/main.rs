@@ -51,8 +51,7 @@ fn closure0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
             US0::US0_1(v5.clone(), v1.clone())
         };
         closure1(v7.clone())
-    }); }
-    CLOSURE.with(|closure| closure.clone())
+    }); } CLOSURE.with(|closure| closure.clone())
 }
 fn method0(mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>>) -> Rc<dyn Fn(i32) -> i32> {
     v0(0i32)
@@ -83,12 +82,7 @@ fn spiral_main() -> i32 {
     let mut v2: Rc<dyn Fn(i32) -> i32> = method1(v0.clone());
     method2(v1.clone(), v2.clone())
 }
-#[cfg(not(target_arch = "wasm32"))]
-fn main() {
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
     std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
-}
-#[cfg(target_arch = "wasm32")]
-fn main() {
-    spiral_main();
 }

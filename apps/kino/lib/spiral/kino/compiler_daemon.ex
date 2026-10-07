@@ -5,6 +5,17 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   @default_port 13905
   @version "1"
+  @idle_check_ms 60_000
+  @default_idle_min 30
+
+  # SPIRAL_KINO_COMPILER_IDLE_MIN: minutes without a compile before a serving daemon retires (default 30; 0 = never).
+  defp idle_ms do
+    case Integer.parse(System.get_env("SPIRAL_KINO_COMPILER_IDLE_MIN") || "") do
+      {0, ""} -> nil
+      {min, ""} when min > 0 -> min * 60_000
+      _ -> @default_idle_min * 60_000
+    end
+  end
 
   @spec port() :: 1..65535
   def port do
@@ -91,6 +102,11 @@ defmodule Spiral.Kino.CompilerDaemon do
 
         :ok = :gen_tcp.controlling_process(listen, acceptor)
         send(acceptor, :go)
+        # A serving daemon (one with on_retire) retires after idle_ms without a compile, instead of holding its compiler
+        # (GBs) forever: the next Kino run starts a fresh one. In-process servers (tests) never idle out.
+        idle_ms = if opts[:on_retire], do: Keyword.get(opts, :idle_ms, idle_ms()), else: nil
+        idle_check_ms = Keyword.get(opts, :idle_check_ms, @idle_check_ms)
+        if idle_ms, do: Process.send_after(self(), :idle_check, idle_check_ms)
 
         {:ok,
          %{
@@ -98,6 +114,9 @@ defmodule Spiral.Kino.CompilerDaemon do
            listen: listen,
            acceptor: acceptor,
            retiring: false,
+           idle_ms: idle_ms,
+           idle_check_ms: idle_check_ms,
+           last_used: System.monotonic_time(:millisecond),
            on_retire: opts[:on_retire],
            compile: opts[:compile],
            compiler: nil,
@@ -140,8 +159,24 @@ defmodule Spiral.Kino.CompilerDaemon do
     ms = if Process.delete(:spiral_kino_cold), do: 0, else: System.monotonic_time(:millisecond) - started
     result = normalize(result)
     log_compile(req, ms, result)
+    state = %{state | last_used: System.monotonic_time(:millisecond)}
     retire_when_idle({:reply, {:compiled, result, ms}, state})
   end
+
+  @impl true
+  def handle_info(:idle_check, %{retiring: false, idle_ms: idle_ms} = state) when is_integer(idle_ms) do
+    idle = System.monotonic_time(:millisecond) - state.last_used
+
+    if idle >= idle_ms and queued() == 0 do
+      IO.puts("#{clock()} idle for #{div(idle, 60_000)} min; retiring")
+      handle_info(:retire, state)
+    else
+      Process.send_after(self(), :idle_check, state.idle_check_ms)
+      {:noreply, state}
+    end
+  end
+
+  def handle_info(:idle_check, state), do: {:noreply, state}
 
   @impl true
   def handle_info(:retire, state) do

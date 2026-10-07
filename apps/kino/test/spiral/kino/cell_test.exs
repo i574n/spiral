@@ -128,6 +128,20 @@ defmodule Spiral.Kino.CellTest do
     assert unit =~ "Err(_) => std::process::exit(101)"
   end
 
+  test "the four-line main with its wasm32 early return is patched the same way" do
+    rust = """
+    fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+        let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+        std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+    }
+    """
+
+    shown = Cell.patch_rust(rust, true)
+    assert shown =~ ~s|fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }|
+    assert shown =~ ~s|println!("SPIRAL_KINO_VALUE:{}", spiral_kino_value)|
+    refute shown =~ "Ok(code) => code"
+  end
+
   test "splits the value marker out of stdout" do
     assert {"49", "Hello from Spiral!"} =
              Cell.split_output("Hello from Spiral!\nSPIRAL_KINO_VALUE:49\n")

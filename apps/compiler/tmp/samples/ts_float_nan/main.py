@@ -18,36 +18,36 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 import math
 import sys
 def main():
-    v0 = float('nan')
-    v1 = float('nan')
-    v2 = 1.0
-    v3 = 1.0
-    v4 = math.isnan(v0)
-    del v0
-    if v4:
-        v5 = math.isnan(v1)
-        v6 = v5
+    v6 = float('nan')
+    v13 = float('nan')
+    v14 = 1.0
+    v15 = 1.0
+    v16 = math.isnan(v6)
+    del v6
+    if v16:
+        v17 = math.isnan(v13)
+        v18 = v17
     else:
-        v6 = False
-    del v1, v4
-    if v6:
-        del v6
-        v7 = math.isnan(v2)
-        del v2
-        if v7:
-            v9 = True
+        v18 = False
+    del v13, v16
+    if v18:
+        del v18
+        v19 = math.isnan(v14)
+        del v14
+        if v19:
+            v21 = True
         else:
-            v8 = math.isnan(v3)
-            v9 = v8
-        del v3, v7
-        if v9:
-            del v9
+            v20 = math.isnan(v15)
+            v21 = v20
+        del v15, v19
+        if v21:
+            del v21
             return 2
         else:
-            del v9
+            del v21
             return 0
     else:
-        del v2, v3, v6
+        del v14, v15, v18
         return 1
 
 if __name__ == '__main__': sys.exit(main())

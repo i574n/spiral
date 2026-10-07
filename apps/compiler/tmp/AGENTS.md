@@ -133,7 +133,7 @@ layouts, C-only macros. Every program runs on a 1 GB thread (deep mutual recursi
   one. There is exactly one copy of each output and it is committed: `git diff samples` after a run is
   the check that outputs changed. Never edit outputs by hand; a hopac run rewrites them with hopac's
   output, so restore them (`git restore samples`) or rerun single-flight before committing. One
-  `scripts/test.ps1` run at a time (it holds `<cache>/test.lock`).
+  `scripts/test.ps1` run at a time (it holds a named mutex per cache dir; a dead run abandons it).
 - `-Bless` only in single-flight mode, only after reviewing every changed row of the baseline. Re-blessing
   is the agent's call (don't ask the user): bless when there is no `REGRESSED`/`DISAGREE` and every other
   changed row is explained, and only if the `-Bless` run reproduces the preceding single-flight run row for

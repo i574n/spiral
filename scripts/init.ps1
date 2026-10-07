@@ -36,7 +36,12 @@ if (!(Test-Command "rustup")) {
         Invoke-WebRequest -Uri "https://sh.rustup.rs" -OutFile $rustupInit
         /bin/sh $rustupInit -y --default-toolchain none
     }
-    $env:PATH = "$(Join-Path $HOME '.cargo/bin')$([IO.Path]::PathSeparator)$env:PATH"
+}
+# rustup's proxies (cargo, rustc) live in ~/.cargo/bin; a runner can have rustup on PATH without that directory
+# (GitHub windows-2025: 'cargo' not recognized here, which stopped init before it cloned polyglot).
+$cargoBin = Join-Path $HOME '.cargo/bin'
+if ((Test-Path $cargoBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -contains $cargoBin)) {
+    $env:PATH = "$cargoBin$([IO.Path]::PathSeparator)$env:PATH"
 }
 # nightly-2025-05-09: the default (Kino's rustc cells, wasm); nightly-2024-07-14: the NEAR contract toolchain
 # (`spiral rust --contract`); nightly-2025-11-01: the CLI, apps and `cargo test` builds.
@@ -65,8 +70,10 @@ if (Test-Command "pip") {
 
 # trunk (wasm app bundles: `spiral gleam` targets, lib/spiral/near/wallet).
 if (!(Test-Command "trunk")) {
-    cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
-    if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
+    if (Test-Command "cargo") {
+        cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
+        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo install trunk failed (exit code $LASTEXITCODE)" }
+    } else { Write-Output "init.ps1 / no cargo on PATH: trunk not installed" }
 }
 
 # Kino (apps/kino) needs Elixir >= 1.18 with its OTP and Gleam >= 1.14 (README "CI"); the .NET 11 SDK and the compiler it

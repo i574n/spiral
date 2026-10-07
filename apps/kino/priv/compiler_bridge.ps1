@@ -94,8 +94,17 @@ try {
   Note "bridge=$bridgePort"
   [Console]::Error.WriteLine("spiral-kino-bridge port=$bridgePort compiler=$($compiler.Id)")
 
-  while ($true) {
-    $client = $listener.AcceptTcpClient()
+  # The bridge lives only as long as its daemon (the process that started it) and its compiler: a blocking accept left
+  # orphaned bridges, each holding a multi-GB compiler server, after their daemon died (seven on 2026-10-07).
+  $parent = (Get-Process -Id $PID).Parent
+  :serve while ($true) {
+    $client = $null
+    while ($null -eq $client) {
+      if ($listener.Pending()) { $client = $listener.AcceptTcpClient() }
+      elseif ($compiler.HasExited) { Note "compiler exited"; break serve }
+      elseif ($null -eq $parent -or $parent.HasExited) { Note "daemon exited"; break serve }
+      else { Start-Sleep -Milliseconds 200 }
+    }
     $client.NoDelay = $true
     try {
       $net = $client.GetStream()
@@ -108,7 +117,7 @@ try {
       if ($null -eq $line) { continue }
       if ($line -eq "quit") {
         $writer.WriteLine("spiral-session`tquit`t$($compiler.Id)")
-        break
+        break serve
       }
       $parts = $line.Split("`t")
       if ($parts.Length -lt 4 -or $parts[0] -ne "compile") {

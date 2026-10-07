@@ -1,35 +1,35 @@
 #include "main.hpp"
 int main() {
-    float v0;
-    v0 = nanf("");
-    double v1;
-    v1 = nan("");
-    float v2;
-    v2 = 1.0f;
-    double v3;
-    v3 = 1.0;
-    bool v4;
-    v4 = isnan(v0);
-    bool v6;
-    if (v4){
-        bool v5;
-        v5 = isnan(v1);
-        v6 = v5;
+    float v5;
+    v5 = nanf("");
+    double v12;
+    v12 = nan("");
+    float v14;
+    v14 = 1.0f;
+    double v15;
+    v15 = 1.0;
+    bool v16;
+    v16 = isnan(v5);
+    bool v18;
+    if (v16){
+        bool v17;
+        v17 = isnan(v12);
+        v18 = v17;
     } else {
-        v6 = false;
+        v18 = false;
     }
-    if (v6){
-        bool v7;
-        v7 = isnan(v2);
-        bool v9;
-        if (v7){
-            v9 = true;
+    if (v18){
+        bool v19;
+        v19 = isnan(v14);
+        bool v21;
+        if (v19){
+            v21 = true;
         } else {
-            bool v8;
-            v8 = isnan(v3);
-            v9 = v8;
+            bool v20;
+            v20 = isnan(v15);
+            v21 = v20;
         }
-        if (v9){
+        if (v21){
             return 2;
         } else {
             return 0;
