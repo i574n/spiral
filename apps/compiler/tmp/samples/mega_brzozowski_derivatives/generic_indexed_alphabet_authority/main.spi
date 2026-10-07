@@ -46,7 +46,7 @@ inl authority_probe_symbols_exact
 inl main () : string =
     inl descriptor : indexed_finite_alphabet_descriptor authority_probe_alphabet =
         indexed_finite_alphabet_descriptor_from_authority ()
-    inl capability = make_indexed_dfa_capability `authority_probe_alphabet ()
+    inl capability : indexed_dfa_capability authority_probe_alphabet = make_indexed_dfa_capability ()
     assert_static
         (indexed_finite_alphabet_descriptor_certified capability descriptor)
         "derived indexed descriptor must certify against the local finite_alphabet authority"

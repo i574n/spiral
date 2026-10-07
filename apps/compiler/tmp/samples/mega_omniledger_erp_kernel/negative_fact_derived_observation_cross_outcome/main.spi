@@ -1,14 +1,19 @@
-inl impossible_fact_derived_observation_cross_outcome () :
-    typed_fx_hashed_statement_closed_decision =
-    inl _, recorded_history =
-        typed_fx_hashed_statement_closed_history_values ()
-    decide_typed_fx_hashed_statement_closed_recorded_primary_at_head
-        recorded_history
-        (TypedFxHashedStatementClosedRecordedChangedAtHeadObservation (
-            TypedFxHashedStatementIdentityCollisionHere (
-                TypedFxStatementPayloadHashPrimaryChanged
-                    "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation",
-                "the-negative-collision-proof-is-indexed-by-the-recorded-primary-history")))
+// a fact-derived identity collision (changed hash) cannot inhabit the DuplicateExact outcome (lane H 2026-10-06 rewrite; retired decide_..._recorded_primary_at_head / ChangedAtHeadObservation -> the single decision union)
+open main
+
+inl impossible_fact_derived_observation_cross_outcome () : typed_fx_hashed_statement_closed_decision =
+    inl _, recorded_history = typed_fx_hashed_statement_closed_history_values ()
+    match recorded_history with
+    | TypedFxHashedStatementClosedHistoryRecorded (recorded, _) =>
+        inl collision =
+            typed_fx_hashed_statement_top_collision_from_recorded_log
+                recorded
+                (TypedFxStatementPayloadHashPrimaryChanged "the-negative-collision-proof-cannot-inhabit-the-duplicate-observation")
+        TypedFxHashedStatementClosedDuplicateExact (
+            TypedFxHashedStatementEventStoreIdentityCollision (
+                collision,
+                recorded,
+                "the-negative-collision-proof-is-indexed-by-the-recorded-primary-history"))
 
 inl main () =
     impossible_fact_derived_observation_cross_outcome ()

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_beta_relation_result_mismatch () :
     exact_linear_indexed_closed_beta_relation exact_linear_unit_type =
     ExactLinearIndexedClosedBetaTensor (

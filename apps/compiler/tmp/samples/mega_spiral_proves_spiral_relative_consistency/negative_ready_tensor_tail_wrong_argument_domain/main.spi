@@ -1,3 +1,5 @@
+open main
+
 inl impossible_ready_tensor_tail_accepts_wrong_domain () =
     inl function_source :
         exact_linear_indexed_closed_value_source

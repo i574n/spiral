@@ -1,6 +1,11 @@
-inl impossible_two_takeover_program_wrong_endpoint () :
-    erp_p2p_fence_takeover_program nat_one nat_four =
-    erp_p2p_two_takeover_program_from_owners "owner-b" "owner-c"
+// a two-takeover program from fence one ends at fence three, not four (lane H 2026-10-06 rewrite; retired erp_p2p_two_takeover_program_from_owners -> program constructors)
+open main
+
+inl impossible_two_takeover_program_wrong_endpoint () : erp_p2p_fence_takeover_program nat_one nat_four =
+    ErpP2PFenceTakeoverProgramThen
+        (exists
+            (ErpP2PFenceTakeoverProgramOne "owner-b",
+             ErpP2PFenceTakeoverProgramOne "owner-c"))
 
 inl main () =
     impossible_two_takeover_program_wrong_endpoint ()

@@ -27,6 +27,21 @@ defmodule Spiral.Kino.BuildersTest do
              Builders.commands("///> cuda -e poetry -d numpy")
   end
 
+  # polyglot/lib/math: `pyo3='=0.26.0'` lost its quotes in the tokenizer and reached Cargo.toml as `pyo3==0.26.0`
+  test "a quoted rust dep version reaches the CLI as a TOML string" do
+    [rust] = Builders.commands("///> rust -d num-complex pyo3='=0.26.0'")
+
+    assert Builders.argv(rust, "main.rs") == [
+             "rust",
+             "--rs-path",
+             "main.rs",
+             "--deps",
+             "num-complex",
+             "--deps",
+             "pyo3='=0.26.0'"
+           ]
+  end
+
   test "argv keeps contract, wasm, and deps for spiral" do
     [rust] = Builders.commands("///> rust -cd near-token")
 
@@ -53,15 +68,9 @@ defmodule Spiral.Kino.BuildersTest do
 
     [ts] = Builders.commands("///> ts")
 
-    assert Builders.argv(ts, "main.fsx") == [
-             "fable",
-             "--fs-path",
-             "main.fsx",
-             "--command",
-             "typescript"
-           ]
-
-    assert Builders.backend(ts) == "Fsharp"
+    assert Builders.dispatch(ts, "main.ts") == {:bun, "main.ts"}
+    assert Builders.backend(ts) == "TypeScript"
+    assert Builders.ext(ts) == ".ts"
     assert Builders.dispatch(rust, "main.rs") == {:spiral, Builders.argv(rust, "main.rs")}
     assert Builders.host_rust?(hd(Builders.commands("///> rust")))
     refute Builders.host_rust?(rust)

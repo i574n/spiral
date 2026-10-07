@@ -182,38 +182,34 @@ inl get_source_directory () =
 /// ### display
 nominal display =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::Display\")>]\ntype std_path_Display = class end\n\#else\ntype std_path_Display = string\n#endif\n"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::Display\")>]\ntype std_path_Display = class end\n\#else\ntype std_path_Display = string\n#endif\n") : () -> ()
-        }
-        $'' : $'std_path_Display'
+        native_type
+            `($'std_path_Display')
+            `($'std::path::Display')
+            "type std_path_Display = string"
     )
 
 /// ### path
 nominal path =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::Path\")>]\n#endif\ntype std_path_Path = class end"
-        $'' : $'std_path_Path'
+        native_type
+            `($'std_path_Path')
+            `($'std::path::Path')
+            "type std_path_Path = class end"
     )
 
 /// ### path_buf
 nominal path_buf =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::PathBuf\")>]\ntype std_path_PathBuf = class end\n\#else\ntype std_path_PathBuf = string\n#endif\n"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::path::PathBuf\")>]\ntype std_path_PathBuf = class end\n\#else\ntype std_path_PathBuf = string\n#endif\n") : () -> ()
-        }
-        $'' : $'std_path_PathBuf'
+        native_type
+            `($'std_path_PathBuf')
+            `($'std::path::PathBuf')
+            "type std_path_PathBuf = string"
     )
 
 /// ### new_path_buf
 inl new_path_buf (path : sm'.std_string) : path_buf =
     run_target function
-        | Rust _ | RustNative => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
+        | RustNative => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
         | _ => fun () => path |> convert.unbox
 
 /// ### path_buf_from
@@ -235,7 +231,7 @@ inl path_display (path : rust.ref path) : display =
 /// ### path_buf_display
 inl path_buf_display (path_buf : path_buf) : display =
     run_target_args (fun () => path_buf) function
-        | Rust _ | RustNative => fun path_buf =>
+        | RustNative => fun path_buf =>
             inl path_buf = join path_buf
             !\($'"!path_buf.display()"')
         | _ => fun path_buf => path_buf |> convert.unbox
@@ -267,22 +263,28 @@ inl path_buf_parent (path_buf : path_buf) : optionm'.option' path_buf =
 /// ### dir_entry
 nominal dir_entry =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"async_walkdir::DirEntry\")>]\n#endif\ntype async_walkdir_DirEntry = class end"
-        $'' : $'async_walkdir_DirEntry'
+        native_type
+            `($'async_walkdir_DirEntry')
+            `($'async_walkdir::DirEntry')
+            "type async_walkdir_DirEntry = class end"
     )
 
 /// ### walk_dir
 nominal walk_dir =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"async_walkdir::WalkDir\")>]\n#endif\ntype async_walkdir_WalkDir = class end"
-        $'' : $'async_walkdir_WalkDir'
+        native_type
+            `($'async_walkdir_WalkDir')
+            `($'async_walkdir::WalkDir')
+            "type async_walkdir_WalkDir = class end"
     )
 
 /// ### async_walkdir_filtering
 nominal async_walkdir_filtering =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"async_walkdir::Filtering\")>]\n#endif\ntype async_walkdir_Filtering = class end"
-        $'' : $'async_walkdir_Filtering'
+        native_type
+            `($'async_walkdir_Filtering')
+            `($'async_walkdir::Filtering')
+            "type async_walkdir_Filtering = class end"
     )
 
 /// ### filtering
@@ -294,8 +296,10 @@ union filtering =
 /// ### async_walkdir_error
 nominal async_walkdir_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"async_walkdir::Error\")>]\n#endif\ntype async_walkdir_Error = class end"
-        $'' : $'async_walkdir_Error'
+        native_type
+            `($'async_walkdir_Error')
+            `($'async_walkdir::Error')
+            "type async_walkdir_Error = class end"
     )
 
 /// ### new_walk_dir
@@ -337,13 +341,10 @@ inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_di
 /// ### file_type
 nominal file_type =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::FileType\")>]\n#endif\ntype std_fs_FileType = class end"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::FileType\")>]\n#endif\ntype std_fs_FileType = class end") : () -> ()
-        }
-        $'' : $'std_fs_FileType'
+        native_type
+            `($'std_fs_FileType')
+            `($'std::fs::FileType')
+            "type std_fs_FileType = class end"
     )
 
 /// ### dir_entry_file_type
@@ -358,13 +359,10 @@ inl file_type_is_dir (file_type : file_type) : bool =
 /// ### file
 nominal file =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::File\")>]\n#endif\ntype std_fs_File = class end"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fs::File\")>]\n#endif\ntype std_fs_File = class end") : () -> ()
-        }
-        $'' : $'std_fs_File'
+        native_type
+            `($'std_fs_File')
+            `($'std::fs::File')
+            "type std_fs_File = class end"
     )
 
 /// ### file_open
@@ -408,8 +406,7 @@ inl ts_path_join (b : string) (a : string) : string =
 /// ### (< />)
 let (</>) (a : string) (b : string) : string =
     run_target_args (fun () => a, b) function
-        | Rust (Some (Contract)) => fun _ => null ()
-        | Rust (None) | RustNative => fun a, b =>
+        | RustNative => fun a, b =>
             a
             |> sm'.to_std_string
             |> new_path_buf
@@ -426,8 +423,7 @@ let (</>) (a : string) (b : string) : string =
 /// ### get_temp_path
 let get_temp_path () : string =
     run_target function
-        | Rust (Some (Contract)) => fun () => null ()
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             !\($'"std::env::temp_dir()"')
             |> path_buf_display
             |> sm'.format'
@@ -441,7 +437,7 @@ let get_file_name (path : string) : string =
     run_target_args' path function
         | Fsharp => fun path =>
             path |> $'System.IO.Path.GetFileName'
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             path
             |> sm'.to_std_string
             |> new_path_buf
@@ -449,7 +445,6 @@ let get_file_name (path : string) : string =
             |> optionm'.map' sm'.from_os_str_ref
             |> optionm'.unbox
             |> optionm'.default_value ""
-        | Rust (Some (Contract)) => fun _ => null ()
         | TypeScript => fun path =>
             open typescript_operators
             global "type IPathBasename = abstract basename: path: string -> string"
@@ -460,8 +455,7 @@ let get_file_name (path : string) : string =
 /// ### get_file_name_without_extension
 let get_file_name_without_extension (path : string) : string =
     run_target_args' path function
-        | Rust (Some (Contract)) => fun _ => null ()
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             inl file_stem = !\\(path_buf, $'"$0.file_stem()"')
             match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with
@@ -475,7 +469,7 @@ let get_directory_name (path : string) : string =
     run_target_args' path function
         | Fsharp _ => fun path =>
             path |> $'System.IO.Path.GetDirectoryName'
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             path
             |> sm'.to_std_string
             |> new_path_buf
@@ -488,8 +482,7 @@ let get_directory_name (path : string) : string =
 /// ### get_extension
 let get_extension (path : string) : string =
     run_target_args' path function
-        | Rust (Some (Contract)) => fun _ => null ()
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             !\\(path_buf, $'"$0.extension()"')
             |> optionm'.unwrap
@@ -500,7 +493,6 @@ let get_extension (path : string) : string =
 /// ### directory_separator_char
 let directory_separator_char () : char =
     run_target function
-        | Rust _ => fun () => !\($'"std::path::MAIN_SEPARATOR"')
         // The native char is a byte.
         | RustNative => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
         | TypeScript _ => fun () => '/'
@@ -509,8 +501,7 @@ let directory_separator_char () : char =
 /// ### get_current_directory
 let get_current_directory () : string =
     run_target function
-        | Rust (Some (Contract | Wasm)) => fun () => null ()
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             inl current_dir = !\($'"std::env::current_dir()"') : resultm.result' path_buf stream.io_error
             current_dir
             |> resultm.unwrap'
@@ -531,7 +522,7 @@ let directory_exists (path : string) : bool =
     run_target_args' path function
         | Fsharp => fun path =>
             path |> $'System.IO.Directory.Exists'
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path && path_buf_is_dir path
         | TypeScript => fun path =>
@@ -550,7 +541,7 @@ let directory_get_parent (path : string) : optionm'.option' string =
             then None
             else parent |> directory_info_full_name |> Some
             |> optionm'.box
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             inl parent = path_buf |> path_buf_parent
             parent
@@ -569,7 +560,6 @@ let directory_get_parent (path : string) : optionm'.option' string =
 /// ### create_temp_path'
 let create_temp_path' (guid : guid.guid) =
     run_target_args' guid function
-        | Rust (Some (Contract)) => fun _ => null ()
         | _ => fun guid =>
             get_temp_path ()
             </> join "!create_temp_path_" // TODO: replace ! (generates invalid links)
@@ -579,7 +569,6 @@ let create_temp_path' (guid : guid.guid) =
 /// ### create_temp_path
 let create_temp_path () =
     run_target function
-        | Rust (Some (Contract)) => fun () => null ()
         | _ => fun () =>
             date_time.now ()
             |> date_time.new_guid_from_date_time
@@ -590,7 +579,7 @@ let file_copy (new_path : string) (old_path : string) : () =
     run_target_args' (old_path, new_path) function
         | Fsharp => fun old_path, new_path =>
             $'System.IO.File.Copy (!old_path, !new_path, true)'
-        | Rust (None) | RustNative => fun old_path, new_path =>
+        | RustNative => fun old_path, new_path =>
             inl result : _ _ stream.io_error = !\\((old_path, new_path), $'"std::fs::copy(&*$0, &*$1)"')
             match result |> resultm.map_error' sm'.format' |> resultm.unbox with
             | Ok (result : u64) =>
@@ -608,7 +597,7 @@ let file_exists (path : string) : bool =
     run_target_args' path function
         | Fsharp => fun path =>
             path |> $'System.IO.File.Exists'
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             path_buf_exists path_buf && path_buf_is_file path_buf
         | TypeScript => fun path =>
@@ -623,7 +612,7 @@ let directory_delete recursive (path : string) : () =
     run_target_args' (path, recursive) function
         | Fsharp => fun path, recursive =>
             $'System.IO.Directory.Delete (!path, !recursive)'
-        | Rust (None) | RustNative => fun path, recursive =>
+        | RustNative => fun path, recursive =>
             if path |> directory_exists then
                 if recursive
                 then !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
@@ -635,7 +624,7 @@ inl write_all_text (path : string) (text : string) : () =
     run_target_args' (path, text) function
         | Fsharp => fun path, text =>
             $'System.IO.File.WriteAllText (!path, !text)'
-        | Rust (None) | RustNative => fun path, text =>
+        | RustNative => fun path, text =>
             !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
         | _ => fun _ => ()
 
@@ -645,7 +634,7 @@ inl read_all_bytes (path : string) : am'.vec u8 =
         | Fsharp => fun () =>
             $'!path |> System.IO.File.ReadAllBytes'
             |> am'.to_vec
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             path |> read |> resultm.unwrap'
         | _ => fun () => null ()
 
@@ -654,7 +643,7 @@ inl read_all_text (path : string) : string =
     run_target function
         | Fsharp => fun () =>
             $'!path |> System.IO.File.ReadAllText'
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             path
             |> read_all_bytes
             |> sm'.string_from_utf8
@@ -668,7 +657,7 @@ inl directory_create_symbolic_link (target : string) (path : string) : () =
         | Fsharp => fun () =>
             ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"') : bool) |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
@@ -679,7 +668,7 @@ inl file_create_symbolic_link (target : string) (path : string) : () =
         | Fsharp => fun () =>
             ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
             |> ignore
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"') : bool) |> ignore
             (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
         | _ => fun () => ()
@@ -712,7 +701,7 @@ inl file_delete (path : string) : () =
     run_target function
         | Fsharp => fun () =>
             path |> $'System.IO.File.Delete'
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             inl result : resultm.result' () stream.io_error =
                 if path |> file_exists
                 then !\\(path, $'"std::fs::remove_file(&*$0)"')
@@ -753,7 +742,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             |> resultm.err
 
     run_target function
-        | Rust _ | RustNative => fun () =>
+        | RustNative => fun () =>
             if path |> directory_exists
             then !\\(path, $'"std::fs::read_link(&*$0)"')
             else
@@ -764,7 +753,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                     : resultm.result' path_buf stream.io_error
                     =
                     run_target function
-                        | Rust _ | RustNative => fun () =>
+                        | RustNative => fun () =>
                             inl result : _ _ stream.io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
                             inl result = result |> resultm.map_error' sm'.format |> resultm.unbox
                             match result with
@@ -868,7 +857,7 @@ let get_full_path (path : string) : string =
     run_target_args (fun () => path) function
         | Fsharp => fun path =>
             path |> $'System.IO.Path.GetFullPath'
-        | Rust (None) | RustNative => fun path =>
+        | RustNative => fun path =>
             inl path_buf = path |> sm'.to_std_string |> new_path_buf
             if path_buf |> path_buf_exists |> not then
                 inl current_dir = get_current_directory ()
@@ -947,8 +936,7 @@ inl init_trace_file enabled =
 /// ### create_dir
 let create_dir dir =
     run_target_args' dir function
-        | Rust (Some (Contract | Wasm)) => fun _ => null ()
-        | Rust (None) | RustNative => fun dir =>
+        | RustNative => fun dir =>
             match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
             | Ok () =>
                 trace Verbose
@@ -1004,7 +992,7 @@ let link_file target_path path =
 /// ### file_exists_content
 let file_exists_content path content : bool =
     run_target function
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             if path |> file_exists |> not
             then false
             else
@@ -1022,6 +1010,8 @@ let write_all_text_exists path contents =
         contents |> write_all_text path
 
 /// ## main
+///> fsharp
+
 inl main () =
     init_trace_state None
     $'let file_exists_content x = !file_exists_content x' : ()

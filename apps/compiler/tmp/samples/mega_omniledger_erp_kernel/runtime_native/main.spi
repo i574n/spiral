@@ -1,0 +1,31 @@
+open main
+
+// The ERP root's programs that build without F#: the 24 of its 78 unreached programs (all_terminals) whose C output builds
+// and exits 0 (lane G, 2026-10-06; tmp/lanes/G/erp_native_terms.tsv). The other 54 and the root's own contract still emit F#
+// macros (file I/O, process spawning, string formatting) into every backend. Exit 0 when all of these hold.
+inl main () : i32 =
+    inl _ = typed_fx_statement_stream_position_serialization_terminal ()
+    inl _ = typed_usd_eur_determined_tie_rounding_terminal ()
+    inl _ = typed_fx_statement_stream_position_raw_decode_terminal ()
+    inl _ = typed_fx_statement_expected_position_raw_decision_terminal ()
+    inl _ = typed_fx_statement_expected_raw_append_terminal ()
+    inl _ = typed_fx_statement_two_writer_raw_cas_terminal ()
+    inl _ = typed_fx_statement_three_writer_raw_cas_terminal ()
+    inl _ = typed_fx_statement_recursive_writer_raw_cas_terminal ()
+    inl _ = typed_fx_statement_recursive_writer_checksummed_restart_terminal ()
+    inl _ = typed_fx_statement_recursive_writer_restart_invariant_terminal ()
+    inl _ = typed_fx_statement_stale_writer_conflict_program_append_terminal ()
+    inl _ = typed_fx_statement_stale_writer_conflict_program_append_associativity_terminal ()
+    inl _ = typed_fx_statement_recursive_writer_appended_tail_restart_terminal ()
+    inl _ = typed_fx_statement_recursive_writer_crash_phase_terminal ()
+    inl _ = typed_fx_statement_indexed_durable_commit_terminal ()
+    inl _ = typed_fx_hashed_statement_closed_fact_observation_program_terminal ()
+    inl _ = typed_fx_hashed_statement_closed_fact_input_terminal ()
+    inl _ = typed_fx_hashed_statement_proven_retry_terminal ()
+    inl _ = typed_fx_hashed_statement_history_enumeration_terminal ()
+    inl _ = typed_fx_hashed_statement_history_index_lookup_terminal ()
+    inl _ = typed_fx_hashed_statement_identity_lookup_terminal ()
+    inl _ = typed_fx_hashed_statement_membership_lookup_program_terminal ()
+    inl _ = typed_fx_hashed_statement_membership_lookup_program_append_terminal ()
+    inl _ = typed_fx_hashed_statement_identity_retry_stability_terminal ()
+    0i32

@@ -7,14 +7,10 @@
 
 nominal std_string_real =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n"
-                ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n") : () -> ()
-        }
-        $'' : $'std_string_String'
+        native_type
+            `($'std_string_String')
+            `($'std::string::String')
+            "type std_string_String = string"
     )
 
 /// ### std_string
@@ -364,10 +360,6 @@ inl format_pretty_real forall t. (x : t) : string =
                 open rust
                 inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
                 from_std_string_real result
-        | Rust _ => fun x =>
-            open rust
-            inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
-            from_std_string_real result
         | _ => fun _ => format_debug_real `t x
 
 /// ### format_pretty

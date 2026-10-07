@@ -1,0 +1,241 @@
+# iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### enumerate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =\n    // a pair is the Rust tuple itself\n    !\\($'\"!iter.enumerate()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
+      // a pair is the Rust tuple itself
+      !\($'"!iter.enumerate()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_iter forall (t : * -> *) u. (x : t u) : into_iterator u =\n    !\\($'\"!x.into_iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_iter forall (t : * -> *) u. (x : t u) : into_iterator u =
+      !\($'"!x.into_iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iter forall (t : * -> *) u. (x : t u) : into_iterator u =\n    !\\\\(x, $'\"$0.iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iter forall (t : * -> *) u. (x : t u) : into_iterator u =
+      !\\(x, $'"$0.iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iter_ref forall (t : * -> *) u. (x : t u) : into_iterator (rust.ref u) =\n    !\\\\(x, $'\"$0.iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iter_ref forall (t : * -> *) u. (x : t u) : into_iterator (rust.ref u) =
+      !\\(x, $'"$0.iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_ref'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iter_ref' forall (t : * -> *) u. (x : rust.ref (t u)) : into_iterator (rust.ref u) =\n    !\\\\(x, $'\"$0.iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iter_ref' forall (t : * -> *) u. (x : rust.ref (t u)) : into_iterator (rust.ref u) =
+      !\\(x, $'"$0.iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_ref''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iter_ref'' forall (t : * -> *) u (v : * -> *). (x : v (t u)) : into_iterator (rust.ref u) =\n    !\\\\(x, $'\"$0.iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iter_ref'' forall (t : * -> *) u (v : * -> *). (x : v (t u)) : into_iterator (rust.ref u) =
+      !\\(x, $'"$0.iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_ref'''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iter_ref''' forall (t : * -> *) u (v : * -> *) (w : * -> *). (x : w (v (t u))) : into_iterator (rust.ref u) =\n    !\\\\(x, $'\"$0.iter()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iter_ref''' forall (t : * -> *) u (v : * -> *) (w : * -> *). (x : w (v (t u))) : into_iterator (rust.ref u) =
+      !\\(x, $'"$0.iter()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (iter : into_iterator t) : into_iterator u =\n    !\\\\(fn, $'\"!iter.map(|x| $0(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map forall t u. (fn : t -> u) (iter : into_iterator t) : into_iterator u =
+      !\\(fn, $'"!iter.map(|x| $0(x))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### cloned
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cloned forall t. (iter : into_iterator (rust.ref t)) : into_iterator t =\n    !\\($'\"!iter.cloned()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl cloned forall t. (iter : into_iterator (rust.ref t)) : into_iterator t =
+      !\($'"!iter.cloned()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### for_each
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl for_each forall t. (fn : t -> ()) (iter : into_iterator t) : () =\n    (!\\\\(fn, $'\"true; !iter.for_each(|x| $0(x))\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl for_each forall t. (fn : t -> ()) (iter : into_iterator t) : () =
+      (!\\(fn, $'"true; !iter.for_each(|x| $0(x))"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### try_for_each
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_for_each forall t. (fn : t -> rust.try ()) x : resultm.result' () string =\n    (!\\($'\"true; let mut !x = !x; let _iter_try_for_each = !x.try_for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'\"true; $0 }); //\"') : bool) |> ignore\n    !\\($'\"_iter_try_for_each.map_err(|x| x.into())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_for_each forall t. (fn : t -> rust.try ()) x : resultm.result' () string =
+      (!\($'"true; let mut !x = !x; let _iter_try_for_each = !x.try_for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'"true; $0 }); //"') : bool) |> ignore
+      !\($'"_iter_try_for_each.map_err(|x| x.into())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl all forall t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =\n    x |> rust.to_mut\n    !\\\\(fn, $'$\"!x.all(|x| $0(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl all forall t. (fn : t -> bool) (x : rust.mut' (into_iterator t)) : bool =
+      x |> rust.to_mut
+      !\\(fn, $'$"!x.all(|x| $0(x))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### enumerate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativeint * t) =\n    inl (a ar) = ar\n    ar\n    |> am'.to_vec\n    |> into_iter\n    |> enumerate\n    |> iter_collect\n    |> am'.vec_map' from_pair\n    |> am'.from_vec","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl enumerate forall dim {int; number} t. (ar : a dim t) : a dim (convert.unativeint * t) =
+      inl (a ar) = ar
+      ar
+      |> am'.to_vec
+      |> into_iter
+      |> enumerate
+      |> iter_collect
+      |> am'.vec_map' from_pair
+      |> am'.from_vec
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\nam'.init_series 0i32 2 1\n|> fun x => a x : _ int _\n|> enumerate\n|> fun (a x : _ int _) => x\n|> _assert_eq' ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust
+
+  am'.init_series 0i32 2 1
+  |> fun x => a x : _ int _
+  |> enumerate
+  |> fun (a x : _ int _) => x
+  |> _assert_eq' ;[ convert.convert 0i32, 0; convert.convert 1i32, 1; convert.convert 2i32, 2 ]
+  """,
+  timeout: 300_000
+)
+```

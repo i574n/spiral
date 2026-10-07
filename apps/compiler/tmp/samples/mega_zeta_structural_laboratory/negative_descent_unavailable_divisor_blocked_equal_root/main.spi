@@ -1,3 +1,6 @@
+open main
+
+// tests: an equality block of the root (12 = 12) cannot block the descent from twelve to its proper divisor (the legacy completion refusal wrapper is retired; this targets the surviving recursive_descent_blocked union directly)
 inl impossible_descent_unavailable_divisor_blocked_equal_root () =
     inl root_value = positive_positional_twelve_value ()
     match classify_certified_interval_positive_positional_sealed_factor root_value with
@@ -5,11 +8,11 @@ inl impossible_descent_unavailable_divisor_blocked_equal_root () =
         inl exists divisor quotient. children =
             certified_interval_positive_positional_sealed_composite_children_from_witness
                 (CertifiedIntervalPositivePositionalSealedCompositeWitness composite_payload)
-        CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailableDivisor (exists (
-            children,
+        inl blocked : certified_interval_positive_positional_recursive_descent_blocked (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor =
             CertifiedIntervalPositivePositionalRecursiveDescentBlockedEqual
-                (positive_positional_equal_reflexive root_value)))
-    | _ => failwith "twelve-must-classify-as-composite-before-the-negative-boundary"
+                (positive_positional_equal_reflexive root_value)
+        ()
+    | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
 
 inl main () =
     impossible_descent_unavailable_divisor_blocked_equal_root ()

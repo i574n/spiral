@@ -134,7 +134,8 @@ function Get-Entry([string]$dir) {
     $null
 }
 
-# Contract cases and megaproject sub-packages are type-system checks compiled to F# only.
+# Contract cases and megaproject sub-packages are type-system checks compiled to F# only (a megaproject sub-package
+# listed in harness.psd1 Backends gets those backends).
 function Test-ContractSample([string]$relative) { $relative -like 'samples/contract_*' -or $relative -like 'samples/mega_*' }
 
 # harness.psd1 lists the samples compiled to fewer than all four backends.
@@ -165,10 +166,13 @@ function Get-Samples([string]$suite) {
         'contracts' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'contract_*' | Where-Object { Get-Entry $_.FullName } | ForEach-Object {
                 New-Sample 'contracts' (Get-Entry $_.FullName) @('Fsharp') }
-            # Megaproject sub-packages; the megaproject roots themselves are the mega suite.
+            # Megaproject sub-packages; the megaproject roots themselves are the mega suite. F# only, unless harness.psd1
+            # Backends lists the sub-package (a runtime fixture whose native builds and runs join the -Native tier).
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'mega_*' | ForEach-Object {
                 Get-ChildItem $_.FullName -Directory | Where-Object { (Test-Path (Join-Path $_.FullName 'package.spiproj')) -and (Get-Entry $_.FullName) } | ForEach-Object {
-                    New-Sample 'contracts' (Get-Entry $_.FullName) @('Fsharp') } }
+                    $relative = Get-Rel $_.FullName
+                    $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp') }
+                    New-Sample 'contracts' (Get-Entry $_.FullName) $backends } }
         }
         'mega' {
             $harness.Mega | ForEach-Object {
@@ -182,7 +186,8 @@ $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
 $jobs = foreach ($sample in $samples) {
-    $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } else { $suiteTimeoutSec[$sample.Suite] }
+    # harness.psd1 Timeouts: per-sample overrides for programs that are slow to compile but not hangs.
+    $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } elseif ($harness.Timeouts -and $harness.Timeouts.ContainsKey($sample.Id)) { $harness.Timeouts[$sample.Id] } else { $suiteTimeoutSec[$sample.Suite] }
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
         [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input

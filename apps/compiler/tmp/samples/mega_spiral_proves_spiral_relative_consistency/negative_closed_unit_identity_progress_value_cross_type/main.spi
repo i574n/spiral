@@ -1,15 +1,14 @@
-inl impossible_closed_unit_identity_progress_value_cross_type () :
-    exact_linear_indexed_value
-        exact_linear_free_context_empty
-        exact_linear_indexed_usage_empty
-        exact_linear_bool_type =
-    inl authority =
-        ExactLinearIndexedClosedUnitIdentityProgressAuthority (
-            ExactLinearIndexedValueUnit (
+// The closed Unit identity beta step's reduct is a Unit term: it cannot be reclassified as Bool (the progress authority that carried a value is retired; this targets ExactLinearIndexedClosedUnitIdentityBetaStep, its successor).
+open main
+
+inl impossible_closed_unit_identity_progress_value_cross_type () : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_bool_type =
+    inl step =
+        ExactLinearIndexedClosedUnitIdentityBetaStep (
+            ExactLinearIndexedUnit (
                 exact_linear_indexed_empty_usage (),
-                "the-negative-authority-final-value-is-Unit"),
-            "the-negative-attempts-to-reclassify-the-authority-value")
-    exact_linear_indexed_closed_unit_identity_progress_value authority
+                "the-negative-beta-argument-is-Unit"),
+            "the-negative-attempts-to-reclassify-the-beta-reduct")
+    exact_linear_indexed_closed_unit_identity_beta_target step
 
 inl main () =
     impossible_closed_unit_identity_progress_value_cross_type ()

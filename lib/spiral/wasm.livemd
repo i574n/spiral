@@ -1,0 +1,313 @@
+# wasm
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+### rexie
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rexie =\n    `(\n        native_type\n            `($'rexie_Rexie')\n            `($'rexie::Rexie')\n            \"type rexie_Rexie = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rexie =
+      `(
+          native_type
+              `($'rexie_Rexie')
+              `($'rexie::Rexie')
+              "type rexie_Rexie = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### rexie_store
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rexie_store =\n    `(\n        native_type\n            `($'rexie_Store')\n            `($'rexie::Store')\n            \"type rexie_Store = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rexie_store =
+      `(
+          native_type
+              `($'rexie_Store')
+              `($'rexie::Store')
+              "type rexie_Store = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### rexie_transaction
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rexie_transaction =\n    `(\n        native_type\n            `($'rexie_Transaction')\n            `($'rexie::Transaction')\n            \"type rexie_Transaction = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rexie_transaction =
+      `(
+          native_type
+              `($'rexie_Transaction')
+              `($'rexie::Transaction')
+              "type rexie_Transaction = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### rexie_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rexie_error =\n    `(\n        native_type\n            `($'rexie_Error')\n            `($'rexie::Error')\n            \"type rexie_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rexie_error =
+      `(
+          native_type
+              `($'rexie_Error')
+              `($'rexie::Error')
+              "type rexie_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### js_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal js_value =\n    `(\n        native_type\n            `($'wasm_bindgen_JsValue')\n            `($'wasm_bindgen::JsValue')\n            \"type wasm_bindgen_JsValue = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal js_value =
+      `(
+          native_type
+              `($'wasm_bindgen_JsValue')
+              `($'wasm_bindgen::JsValue')
+              "type wasm_bindgen_JsValue = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### closure
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal closure t =\n    `(\n        native_type\n            `($'wasm_bindgen_closure_Closure<`t>')\n            `($'wasm_bindgen::closure::Closure<`t>')\n            \"type wasm_bindgen_closure_Closure<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal closure t =
+      `(
+          native_type
+              `($'wasm_bindgen_closure_Closure<`t>')
+              `($'wasm_bindgen::closure::Closure<`t>')
+              "type wasm_bindgen_closure_Closure<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### js_function
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal js_function =\n    `(\n        native_type\n            `($'js_sys_Function')\n            `($'js_sys::Function')\n            \"type js_sys_Function = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal js_function =
+      `(
+          native_type
+              `($'js_sys_Function')
+              `($'js_sys::Function')
+              "type js_sys_Function = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### window
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal window =\n    `(\n        native_type\n            `($'web_sys_Window')\n            `($'web_sys::Window')\n            \"type web_sys_Window = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal window =
+      `(
+          native_type
+              `($'web_sys_Window')
+              `($'web_sys::Window')
+              "type web_sys_Window = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### document
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal document =\n    `(\n        native_type\n            `($'web_sys_Document')\n            `($'web_sys::Document')\n            \"type web_sys_Document = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal document =
+      `(
+          native_type
+              `($'web_sys_Document')
+              `($'web_sys::Document')
+              "type web_sys_Document = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### html_element
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal html_element =\n    `(\n        native_type\n            `($'web_sys_HtmlElement')\n            `($'web_sys::HtmlElement')\n            \"type web_sys_HtmlElement = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal html_element =
+      `(
+          native_type
+              `($'web_sys_HtmlElement')
+              `($'web_sys::HtmlElement')
+              "type web_sys_HtmlElement = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### storage
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal storage =\n    `(\n        native_type\n            `($'web_sys_Storage')\n            `($'web_sys::Storage')\n            \"type web_sys_Storage = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal storage =
+      `(
+          native_type
+              `($'web_sys_Storage')
+              `($'web_sys::Storage')
+              "type web_sys_Storage = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### closure_wrap
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl closure_wrap forall t. (x : rust.box t) : closure t =\n    // native Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)\n    inl x = if rust.is_native () then x else join x\n    !\\($'\"wasm_bindgen::closure::Closure::wrap(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl closure_wrap forall t. (x : rust.box t) : closure t =
+      // native Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)
+      inl x = if rust.is_native () then x else join x
+      !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### closure_forget
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl closure_forget forall t. (closure : closure t) =\n    !\\($'\"!closure.forget()\"') : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl closure_forget forall t. (closure : closure t) =
+      !\($'"!closure.forget()"') : ()
+  """,
+  timeout: 300_000
+)
+```
+
+### closure_as_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl closure_as_ref forall t. (closure : closure t) : rust.ref js_value =\n    !\\($'\"wasm_bindgen::closure::Closure::as_ref(&!closure)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl closure_as_ref forall t. (closure : closure t) : rust.ref js_value =
+      !\($'"wasm_bindgen::closure::Closure::as_ref(&!closure)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### unchecked_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unchecked_ref (ref : rust.ref js_value) : rust.ref js_function =\n    !\\($'\"wasm_bindgen::JsCast::unchecked_ref(!ref)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unchecked_ref (ref : rust.ref js_value) : rust.ref js_function =
+      !\($'"wasm_bindgen::JsCast::unchecked_ref(!ref)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### set_inner_html
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl set_inner_html (html : string) (el : html_element) =\n    inl html = join html\n    inl html = html |> sm'.as_str\n    inl el = join el\n    !\\\\(html, $'\"!el.set_inner_html($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl set_inner_html (html : string) (el : html_element) =
+      inl html = join html
+      inl html = html |> sm'.as_str
+      inl el = join el
+      !\\(html, $'"!el.set_inner_html($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_js_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_js_value (value : js_value) : resultm.result' (optionm'.option' sm'.json_value) sm'.std_string =\n    inl value = join value\n    !\\($'\"serde_wasm_bindgen::from_value(!value)\"')\n    |> resultm.map_error' fun (x : sm'.serde_wasm_bindgen_error) => x |> sm'.format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_js_value (value : js_value) : resultm.result' (optionm'.option' sm'.json_value) sm'.std_string =
+      inl value = join value
+      !\($'"serde_wasm_bindgen::from_value(!value)"')
+      |> resultm.map_error' fun (x : sm'.serde_wasm_bindgen_error) => x |> sm'.format'
+  """,
+  timeout: 300_000
+)
+```

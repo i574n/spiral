@@ -89,7 +89,7 @@ defmodule Spiral.Kino.Builders do
     case tool do
       :rust -> "Rust"
       :fsharp -> "Fsharp"
-      :typescript -> "Fsharp"
+      :typescript -> "TypeScript"
       :python -> "Python + Cuda"
       :cuda -> "Python + Cuda"
       :cpp -> "Cpp + Cuda"
@@ -105,7 +105,7 @@ defmodule Spiral.Kino.Builders do
     case tool do
       :rust -> ".rs"
       :fsharp -> ".fsx"
-      :typescript -> ".fsx"
+      :typescript -> ".ts"
       :python -> ".py"
       :cuda -> ".py"
       :cpp -> ".cpp"
@@ -120,11 +120,15 @@ defmodule Spiral.Kino.Builders do
           {:spiral, [String.t()]}
           | {:fsi, String.t()}
           | {:python, String.t()}
+          | {:bun, String.t()}
           | {:cc, String.t()}
           | {:dcc, String.t()}
   def dispatch(%{tool: :fsharp}, path), do: {:fsi, path}
 
   def dispatch(%{tool: :python, deps: [], env: nil}, path), do: {:python, path}
+
+  # The native TypeScript backend's output runs under bun (it runs .ts directly and installs imported packages itself).
+  def dispatch(%{tool: :typescript}, path), do: {:bun, path}
 
   def dispatch(%{tool: :c}, path), do: {:cc, path}
 
@@ -139,10 +143,6 @@ defmodule Spiral.Kino.Builders do
       value_arg("wasm", builder.wasm) ++
       dep_args(builder.deps) ++
       cleanup_args(builder)
-  end
-
-  def argv(%{tool: :typescript} = builder, path) do
-    ["fable", "--fs-path", path, "--command", typescript_command(builder.raw)]
   end
 
   def argv(%{tool: tool} = builder, path) when tool in [:python, :cuda] do
@@ -455,7 +455,18 @@ defmodule Spiral.Kino.Builders do
   defp value_arg(name, ""), do: ["--#{name}="]
   defp value_arg(name, value), do: ["--#{name}=#{value}"]
 
-  defp dep_args(deps), do: Enum.flat_map(deps, fn dep -> ["--deps", dep.raw] end)
+  defp dep_args(deps), do: Enum.flat_map(deps, fn dep -> ["--deps", dep_arg(dep)] end)
+
+  # The CLI writes a `name=version` dep into Cargo.toml as is, but the builder line's quotes are gone after tokenizing
+  # (`pyo3='=0.26.0'` -> `pyo3==0.26.0`, invalid TOML: polyglot/lib/math): the version goes back in a TOML literal string.
+  defp dep_arg(%{raw: raw, name: name, version: version}) when is_binary(version) do
+    if String.contains?(raw, "=") and not String.contains?(raw, ["\"", "'"]) and
+         not String.starts_with?(version, "{"),
+       do: "#{name}='#{version}'",
+       else: raw
+  end
+
+  defp dep_arg(%{raw: raw}), do: raw
 
   defp cleanup_args(%{cleanup: false}), do: ["--cleanup"]
   defp cleanup_args(_), do: []
@@ -465,12 +476,4 @@ defmodule Spiral.Kino.Builders do
 
   defp env_args(%{env: nil}), do: []
   defp env_args(%{env: env}), do: ["--env", env]
-
-  defp typescript_command(raw) do
-    case String.split(raw, ~r/\s+/, parts: 2) do
-      ["ts"] -> "typescript"
-      ["ts", rest] -> "typescript " <> rest
-      _ -> raw
-    end
-  end
 end

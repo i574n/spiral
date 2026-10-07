@@ -1,0 +1,6 @@
+packages: |core-
+modules:
+    lib/
+        lib
+        extra
+    main

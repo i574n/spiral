@@ -67,7 +67,10 @@ function Invoke-SpiralReadyToRun([string]$Dotnet, [string]$OutDir) {
         $skip = "$($dll.FullName).r2r-skip"
         if ((Test-Path $skip) -and (Get-Content $skip -Raw).Trim() -eq $stamp) { continue }
         $tmp = "$($dll.FullName).r2r"
-        $log = & $cg.Tool $dll.FullName -o $tmp -r (Join-Path $cg.Framework '*.dll') -r (Join-Path $OutDir '*.dll') --targetos $os --targetarch $arch -O 2>&1
+        # The output directory's other dlls as references, not a glob: on Linux crossgen2 rejects an input that a
+        # reference glob matches again ("Multiple input files matching same simple name"), so nothing was precompiled.
+        $refs = Get-ChildItem $OutDir -Filter *.dll -File | Where-Object FullName -ne $dll.FullName | ForEach-Object { '-r', $_.FullName }
+        $log = & $cg.Tool $dll.FullName -o $tmp -r (Join-Path $cg.Framework '*.dll') @refs --targetos $os --targetarch $arch -O 2>&1
         $why = ($log | Select-Object -First 1) -replace '\s+', ' '
         if ($LASTEXITCODE -eq 0 -and (Test-Path $tmp)) {
             # A process that loaded the new IL dll meanwhile holds it: keep the IL then.
@@ -88,8 +91,9 @@ function Unlock-SpiralOutputs([string]$OutDir) {
     if (-not (Test-Path $OutDir)) { return }
     Get-ChildItem $OutDir -Filter '*.dll.r2r-old-*' -File | ForEach-Object { try { $_.Delete() } catch { } }
     $stamp = Get-Date -Format 'HHmmssfff'
+    # Every dll, not only ReadyToRun ones: an IL dll a running compiler has loaded (FParsecCS, FSharpx.Collections, Hopac)
+    # is locked just the same, and MSBuild's copy over it failed the whole build (MSB3027, 2026-10-06).
     foreach ($dll in Get-ChildItem $OutDir -Filter *.dll -File) {
-        if (-not (Test-ReadyToRunImage $dll.FullName)) { continue }
         $aside = "$($dll.FullName).r2r-old-$stamp"
         try { [IO.File]::Move($dll.FullName, $aside); [IO.File]::Copy($aside, $dll.FullName) } catch { }
     }
@@ -128,3 +132,5 @@ foreach ($m in $modes) {
     else { Write-Host "== $m built in $seconds s -> $(Get-SpiralCompilerDll $m $Configuration)" -ForegroundColor Green }
 }
 if ($failed) { exit 1 }
+# Explicit: falling off the end exits with the last native command's code, a crossgen2 rejection (dll stays IL) in CI.
+exit 0

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recursive_open_bool_substitution_reuses_selected () :
     exact_linear_indexed_recursive_open_typed_substitution
         exact_linear_indexed_open_unit_substitution_context

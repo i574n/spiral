@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_indexed_unary_constructor_application_result_mismatch () :
     corrected_cic_instantiated_codomain
         (corrected_cic_substituted_codomain

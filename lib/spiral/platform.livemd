@@ -1,0 +1,185 @@
+# platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### os_platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal os_platform' = $'System.Runtime.InteropServices.OSPlatform'\n\nunion os_platform =\n    | FreeBSD\n    | Linux\n    | OSX\n    | Windows\n\ninl os_platform = function\n    | FreeBSD => $'`os_platform'.FreeBSD' : os_platform'\n    | Linux => $'`os_platform'.Linux' : os_platform'\n    | OSX => $'`os_platform'.OSX' : os_platform'\n    | Windows => $'`os_platform'.Windows' : os_platform'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal os_platform' = $'System.Runtime.InteropServices.OSPlatform'
+
+  union os_platform =
+      | FreeBSD
+      | Linux
+      | OSX
+      | Windows
+
+  inl os_platform = function
+      | FreeBSD => $'`os_platform'.FreeBSD' : os_platform'
+      | Linux => $'`os_platform'.Linux' : os_platform'
+      | OSX => $'`os_platform'.OSX' : os_platform'
+      | Windows => $'`os_platform'.Windows' : os_platform'
+  """,
+  timeout: 300_000
+)
+```
+
+### run_platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_platform forall t. (fn : os_platform -> (() -> t)) : t =\n    inl result = dyn true\n    $'let mutable _run_platform_!result : `t option = None '\n    $'\\n\\#if _FREEBSD'\n    fn FreeBSD () |> emit_unit\n    $'\\#endif\\n\\#if _LINUX'\n    fn Linux () |> emit_unit\n    $'\\#endif\\n\\#if _OSX'\n    fn OSX () |> emit_unit\n    $'\\#endif\\n\\#if _WINDOWS'\n    fn Windows () |> emit_unit\n    $'\\#endif'\n    $'|> fun x -> _run_platform_!result <- Some x'\n    $'match _run_platform_!result with Some x -> x | None -> failwith \"runtime.run_platform / _run_platform_!result=None\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run_platform forall t. (fn : os_platform -> (() -> t)) : t =
+      inl result = dyn true
+      $'let mutable _run_platform_!result : `t option = None '
+      $'\n\#if _FREEBSD'
+      fn FreeBSD () |> emit_unit
+      $'\#endif\n\#if _LINUX'
+      fn Linux () |> emit_unit
+      $'\#endif\n\#if _OSX'
+      fn OSX () |> emit_unit
+      $'\#endif\n\#if _WINDOWS'
+      fn Windows () |> emit_unit
+      $'\#endif'
+      $'|> fun x -> _run_platform_!result <- Some x'
+      $'match _run_platform_!result with Some x -> x | None -> failwith "runtime.run_platform / _run_platform_!result=None"'
+  """,
+  timeout: 300_000
+)
+```
+
+### is_os_platform
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_os_platform (x : os_platform') : bool =\n    x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_os_platform (x : os_platform') : bool =
+      x |> $'System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform'
+  """,
+  timeout: 300_000
+)
+```
+
+### is_windows'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_windows' () : bool =\n    run_platform function\n        | Windows => fun () => true\n        | _ => fun () => false","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_windows' () : bool =
+      run_platform function
+          | Windows => fun () => true
+          | _ => fun () => false
+  """,
+  timeout: 300_000
+)
+```
+
+## platform
+
+<!-- livebook:{"break_markdown":true} -->
+
+### is_windows
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_windows () : bool =\n    run_target function\n        | RustNative => fun () =>\n            $'cfg\\!(windows)' : bool\n        | Fsharp _ => fun () =>\n            Windows |> os_platform |> is_os_platform\n        | Gleam _ => fun () =>\n            backend_switch {\n                Gleam = fun () =>\n                    global \"import gleam/erlang/os\"\n            }\n            $'os.family() == os.WindowsNt'\n        | target => fun () => failwith $'$\"platform.is_windows / target: {!target}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_windows () : bool =
+      run_target function
+          | RustNative => fun () =>
+              $'cfg\!(windows)' : bool
+          | Fsharp _ => fun () =>
+              Windows |> os_platform |> is_os_platform
+          | Gleam _ => fun () =>
+              backend_switch {
+                  Gleam = fun () =>
+                      global "import gleam/erlang/os"
+              }
+              $'os.family() == os.WindowsNt'
+          | target => fun () => failwith $'$"platform.is_windows / target: {!target}"'
+  """,
+  timeout: 300_000
+)
+```
+
+### get_executable_suffix
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_executable_suffix () =\n    if is_windows ()\n    then \".exe\"\n    else \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_executable_suffix () =
+      if is_windows ()
+      then ".exe"
+      else ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nget_executable_suffix ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  get_executable_suffix ()
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\ninl main () =\n    $'let is_windows () = !is_windows ()' : ()\n    $'let get_executable_suffix () = !get_executable_suffix ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> fsharp
+
+  inl main () =
+      $'let is_windows () = !is_windows ()' : ()
+      $'let get_executable_suffix () = !get_executable_suffix ()' : ()
+  """,
+  timeout: 300_000
+)
+```

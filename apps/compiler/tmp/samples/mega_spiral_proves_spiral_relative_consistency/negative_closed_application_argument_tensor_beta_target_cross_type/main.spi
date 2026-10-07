@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_application_argument_tensor_beta_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
@@ -20,12 +22,13 @@ inl impossible_closed_application_argument_tensor_beta_target_cross_type () :
                 (exact_linear_tensor_type exact_linear_unit_type exact_linear_unit_type)) =
         exact_linear_indexed_identity_term_for ()
     exact_linear_indexed_reduction_target
-        (ExactLinearIndexedReductionClosedApplicationArgument (
+        (ExactLinearIndexedReductionClosedApplicationArgument (exists (
             tensor_function,
-            ExactLinearIndexedClosedAtomicReductionTensorBeta (
-                unit_argument,
-                "the-real-atomic-child-reduces-to-Tensor-Unit-Unit"),
-            "the-real-congruence-target-is-Tensor-Unit-Unit-not-Bool"))
+            ExactLinearIndexedReductionClosedAtomic (
+                ExactLinearIndexedClosedAtomicReductionTensorBeta (
+                    unit_argument,
+                    "the-real-atomic-child-reduces-to-Tensor-Unit-Unit")),
+            "the-real-congruence-target-is-Tensor-Unit-Unit-not-Bool")))
 
 inl main () =
     impossible_closed_application_argument_tensor_beta_target_cross_type ()

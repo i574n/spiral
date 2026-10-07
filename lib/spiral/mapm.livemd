@@ -1,0 +1,271 @@
+# mapm
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### hash_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal hash_map k v =\n    `(\n        native_type\n            `($'std_collections_HashMap<`k, `v>')\n            `($'std::collections::HashMap<`k, `v>')\n            \"type std_collections_HashMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal hash_map k v =
+      `(
+          native_type
+              `($'std_collections_HashMap<`k, `v>')
+              `($'std::collections::HashMap<`k, `v>')
+              "type std_collections_HashMap<'K, 'V> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### b_tree_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal b_tree_map k v =\n    `(\n        native_type\n            `($'std_collections_BTreeMap<`k, `v>')\n            `($'std::collections::BTreeMap<`k, `v>')\n            \"type std_collections_BTreeMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal b_tree_map k v =
+      `(
+          native_type
+              `($'std_collections_BTreeMap<`k, `v>')
+              `($'std::collections::BTreeMap<`k, `v>')
+              "type std_collections_BTreeMap<'K, 'V> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_hash_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_hash_map () : hash_map _ _ =\n    !\\($'\"std::collections::HashMap::new()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_hash_map () : hash_map _ _ =
+      !\($'"std::collections::HashMap::new()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_b_tree_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_b_tree_map () : b_tree_map _ _ =\n    !\\($'\"std::collections::BTreeMap::new()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_b_tree_map () : b_tree_map _ _ =
+      !\($'"std::collections::BTreeMap::new()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get forall k v. (key : k) (map : hash_map k v) : optionm'.option' v =\n    inl key = join key\n    !\\\\(map, $'\"std::collections::HashMap::get(&$0, &!key).map(|x| x).cloned()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get forall k v. (key : k) (map : hash_map k v) : optionm'.option' v =
+      inl key = join key
+      !\\(map, $'"std::collections::HashMap::get(&$0, &!key).map(|x| x).cloned()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### insert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl insert forall k v. (key : k) (value : v) (map : hash_map k v) : optionm'.option' v =\n    inl key = join key\n    !\\($'\"let mut !map = !map\"')\n    !\\($'\"std::collections::HashMap::insert(&mut !map, !key, !value)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl insert forall k v. (key : k) (value : v) (map : hash_map k v) : optionm'.option' v =
+      inl key = join key
+      !\($'"let mut !map = !map"')
+      !\($'"std::collections::HashMap::insert(&mut !map, !key, !value)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### map'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map' forall k v w. (fn : v -> w) (map : hash_map k v) : hash_map k w =\n    !\\\\((map, fn), $'\"$0.into_iter().map(|(k, v)| (k, $1(v))).collect()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map' forall k v w. (fn : v -> w) (map : hash_map k v) : hash_map k w =
+      !\\((map, fn), $'"$0.into_iter().map(|(k, v)| (k, $1(v))).collect()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### hash_map_count
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl hash_map_count forall k v. (map : hash_map k v) : i32 =\n    !\\\\(map, $'\"$0.count()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl hash_map_count forall k v. (map : hash_map k v) : i32 =
+      !\\(map, $'"$0.count()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_vec forall k v. (vec : am'.vec (k * v)) : hash_map k v =\n    !\\($'\"std::collections::HashMap::from_iter(!vec)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_vec forall k v. (vec : am'.vec (k * v)) : hash_map k v =
+      !\($'"std::collections::HashMap::from_iter(!vec)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_vec_pairs
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : hash_map k v =\n    !\\($'\"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : hash_map k v =
+      !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### b_tree_map_from_vec_pairs
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl b_tree_map_from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : b_tree_map k v =\n    !\\($'\"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl b_tree_map_from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : b_tree_map k v =
+      !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_array
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_array forall k v. (array : array_base (k * v)) : hash_map k v =\n    array |> am'.to_vec |> from_vec","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_array forall k v. (array : array_base (k * v)) : hash_map k v =
+      array |> am'.to_vec |> from_vec
+  """,
+  timeout: 300_000
+)
+```
+
+### from_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_list forall k v. (list : list (k * v)) : hash_map k v =\n    inl (a list) : _ i32 _ = list |> listm.toArray\n    list |> am'.to_vec |> from_vec","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_list forall k v. (list : list (k * v)) : hash_map k v =
+      inl (a list) : _ i32 _ = list |> listm.toArray
+      list |> am'.to_vec |> from_vec
+  """,
+  timeout: 300_000
+)
+```
+
+### to_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_vec forall k v. (map : hash_map k v) : am'.vec (k * v) =\n    !\\\\(map, $'\"$0.into_iter().map(|(k, v)| (k, v)).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_vec forall k v. (map : hash_map k v) : am'.vec (k * v) =
+      !\\(map, $'"$0.into_iter().map(|(k, v)| (k, v)).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal map k v = $'Map<`k, `v>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal map k v = $'Map<`k, `v>'
+  """,
+  timeout: 300_000
+)
+```
+
+### item
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl item forall k v. (k : k) (map : map k v) : v =\n    $'!map.[!k]'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl item forall k v. (k : k) (map : map k v) : v =
+      $'!map.[!k]'
+  """,
+  timeout: 300_000
+)
+```
+
+### of_array
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl of_array forall k v. (array : a _ (k * v)) : map k v =\n    $'!array |> Array.map (fun (struct (a, b)) -> a, b) |> Map.ofArray'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl of_array forall k v. (array : a _ (k * v)) : map k v =
+      $'!array |> Array.map (fun (struct (a, b)) -> a, b) |> Map.ofArray'
+  """,
+  timeout: 300_000
+)
+```

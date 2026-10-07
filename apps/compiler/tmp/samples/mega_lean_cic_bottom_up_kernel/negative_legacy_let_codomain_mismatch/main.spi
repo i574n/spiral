@@ -1,5 +1,7 @@
-inl impossible_legacy_let_function_result () :
-    legacy_cic_term empty_ctx identity_sort =
-    LetTerm (exists (identity_binder (), true_term (), identity_body ()))
+// let x : Bool = True in x is a Bool term, not a term of the identity's function sort (the legacy term type is retired; this targets its successor corrected_cic_term).
+open main
+
+inl impossible_legacy_let_function_result () : corrected_cic_term empty_ctx identity_sort =
+    CorrectedLet (exists (identity_binder (), corrected_cic_true (), corrected_cic_bound_here ()))
 
 inl main () = impossible_legacy_let_function_result ()

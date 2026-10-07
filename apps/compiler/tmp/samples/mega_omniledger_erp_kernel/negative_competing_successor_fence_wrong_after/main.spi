@@ -1,3 +1,5 @@
+open main
+
 inl impossible_competing_successor_fence_wrong_after () :
     erp_p2p_competing_successor_fence_receipt nat_one nat_three =
     erp_p2p_competing_successor_fence_from_existing_cas ()

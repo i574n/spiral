@@ -1,8 +1,6 @@
-inl impossible_recursive_divisor_refusal_wrong_child forall natural divisor quotient.
-    (children : certified_interval_positive_positional_sealed_composite_children natural divisor quotient)
-    (descent : certified_interval_positive_positional_recursive_descent natural divisor)
-    (wrong_refusal : certified_interval_positive_positional_legacy_completion_refusal quotient)
-    : certified_interval_positive_positional_legacy_completion_refusal natural =
+open main
+
+inl impossible_recursive_divisor_refusal_wrong_child forall natural divisor quotient. (children : certified_interval_positive_positional_sealed_composite_children natural divisor quotient) (descent : certified_interval_positive_positional_recursive_descent natural divisor) (wrong_refusal : certified_interval_positive_positional_legacy_completion_refusal quotient) : certified_interval_positive_positional_legacy_completion_refusal natural =
     CertifiedIntervalPositivePositionalLegacyCompletionRefusalRecursiveDivisor (exists (
         children,
         descent,

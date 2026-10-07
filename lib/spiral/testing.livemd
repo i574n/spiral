@@ -1,0 +1,581 @@
+# testing
+
+<!-- livebook:{"break_markdown":true} -->
+
+## testing
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+### testing_trace
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union testing_trace =\n    | Console\n    | Trace\n    | TraceRaw\n    | Silent","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union testing_trace =
+      | Console
+      | Trace
+      | TraceRaw
+      | Silent
+  """,
+  timeout: 300_000
+)
+```
+
+### __expect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __expect\n    (fn : _ -> _ -> bool)\n    (trace' : testing_trace)\n    (name : string)\n    (b : _)\n    (a : _)\n    : ()\n    =\n    inl result = fn a b\n    inl get_data () =\n        if result\n        then #?{ expected = b }\n        else #?{ actual = a; expected = b }\n    inl get_raw_text () =\n        inl data = get_data ()\n        name ++# \" \" ++# get_data ()\n    inl result =\n        result || join result\n    match trace' with\n    | Console =>\n        inl text = get_raw_text ()\n        text |> console.write_line\n        text\n    | Trace =>\n        trace Info (fun () => name) get_data\n        get_raw_text ()\n    | TraceRaw =>\n        inl text = get_raw_text ()\n        trace_raw Info fun () => text\n        text\n    | Silent => reflection.nameof { __expect }\n    |> assert result","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __expect
+      (fn : _ -> _ -> bool)
+      (trace' : testing_trace)
+      (name : string)
+      (b : _)
+      (a : _)
+      : ()
+      =
+      inl result = fn a b
+      inl get_data () =
+          if result
+          then #?{ expected = b }
+          else #?{ actual = a; expected = b }
+      inl get_raw_text () =
+          inl data = get_data ()
+          name ++# " " ++# get_data ()
+      inl result =
+          result || join result
+      match trace' with
+      | Console =>
+          inl text = get_raw_text ()
+          text |> console.write_line
+          text
+      | Trace =>
+          trace Info (fun () => name) get_data
+          get_raw_text ()
+      | TraceRaw =>
+          inl text = get_raw_text ()
+          trace_raw Info fun () => text
+          text
+      | Silent => reflection.nameof { __expect }
+      |> assert result
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_approx_eq
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_approx_eq trace e b a =\n    __expect\n        (fun a b => abs (b - a) < (e |> optionm.defaultWith 0.00000001))\n        trace\n        (reflection.nameof { __assert_approx_eq })\n        b\n        a\n\ninl _assert_approx_eq e b a =\n    __assert_approx_eq Console e b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_approx_eq trace e b a =
+      __expect
+          (fun a b => abs (b - a) < (e |> optionm.defaultWith 0.00000001))
+          trace
+          (reflection.nameof { __assert_approx_eq })
+          b
+          a
+
+  inl _assert_approx_eq e b a =
+      __assert_approx_eq Console e b a
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n12.345f64\n|> _assert_approx_eq (Some 0.0001f64) 12.345f64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  12.345f64
+  |> _assert_approx_eq (Some 0.0001f64) 12.345f64
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n\n1f64\n|> __assert_approx_eq Console (Some 3) 2","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+
+  1f64
+  |> __assert_approx_eq Console (Some 3) 2
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n\n(dyn 1f64)\n|> _assert_approx_eq (Some 3) 2","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+
+  (dyn 1f64)
+  |> _assert_approx_eq (Some 3) 2
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### __assert_eq
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_eq trace b a =\n    __expect (=) trace (reflection.nameof { __assert_eq }) b a\n\ninl _assert_eq b a =\n    __assert_eq Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_eq trace b a =
+      __expect (=) trace (reflection.nameof { __assert_eq }) b a
+
+  inl _assert_eq b a =
+      __assert_eq Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_eq'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_eq' forall t. (trace : testing_trace) (b : t) (a : t) : () =\n    __expect\n        (fun a b => #?a = #?b)\n        trace\n        (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })\n        b\n        a\n\ninl _assert_eq' b a =\n    __assert_eq' Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_eq' forall t. (trace : testing_trace) (b : t) (a : t) : () =
+      __expect
+          (fun a b => #?a = #?b)
+          trace
+          (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
+          b
+          a
+
+  inl _assert_eq' b a =
+      __assert_eq' Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_eq''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_eq'' trace b a =\n    __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a\n\ninl _assert_eq'' b a =\n    __assert_eq'' Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_eq'' trace b a =
+      __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a
+
+  inl _assert_eq'' b a =
+      __assert_eq'' Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_ne
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_ne trace b a =\n    __expect (<>.) trace (reflection.nameof { __assert_ne }) b a\n\ninl _assert_ne b a =\n    __assert_ne Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_ne trace b a =
+      __expect (<>.) trace (reflection.nameof { __assert_ne }) b a
+
+  inl _assert_ne b a =
+      __assert_ne Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_gt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_gt trace b a =\n    __expect (>) trace (reflection.nameof { __assert_gt }) b a\n\ninl _assert_gt b a =\n    __assert_gt Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_gt trace b a =
+      __expect (>) trace (reflection.nameof { __assert_gt }) b a
+
+  inl _assert_gt b a =
+      __assert_gt Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_ge
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_ge trace b a =\n    __expect (>=) trace (reflection.nameof { __assert_ge }) b a\n\ninl _assert_ge b a =\n    __assert_ge Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_ge trace b a =
+      __expect (>=) trace (reflection.nameof { __assert_ge }) b a
+
+  inl _assert_ge b a =
+      __assert_ge Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_lt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_lt trace b a =\n    __expect (<) trace (reflection.nameof { __assert_lt }) b a\n\ninl _assert_lt b a =\n    __assert_lt Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_lt trace b a =
+      __expect (<) trace (reflection.nameof { __assert_lt }) b a
+
+  inl _assert_lt b a =
+      __assert_lt Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_le
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_le trace b a =\n    __expect (<=) trace (reflection.nameof { __assert_le }) b a\n\ninl _assert_le b a =\n    __assert_le Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_le trace b a =
+      __expect (<=) trace (reflection.nameof { __assert_le }) b a
+
+  inl _assert_le b a =
+      __assert_le Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert fn trace b a =\n    __expect fn trace (reflection.nameof { __assert }) a b\n\ninl _assert fn b a =\n    __assert fn Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert fn trace b a =
+      __expect fn trace (reflection.nameof { __assert }) a b
+
+  inl _assert fn b a =
+      __assert fn Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+### __assert_between
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_between trace a b actual =\n    inl assert_between actual (a, b) =\n        __assert_ge Silent a actual\n        __assert_le Silent b actual\n        true\n    __expect assert_between trace (reflection.nameof { __assert_between }) (a, b) actual\n\ninl _assert_between a b actual =\n    __assert_between Console a b actual","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_between trace a b actual =
+      inl assert_between actual (a, b) =
+          __assert_ge Silent a actual
+          __assert_le Silent b actual
+          true
+      __expect assert_between trace (reflection.nameof { __assert_between }) (a, b) actual
+
+  inl _assert_between a b actual =
+      __assert_between Console a b actual
+  """,
+  timeout: 300_000
+)
+```
+
+### _assert_fn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec _assert_fn fn list =\n    list\n    |> listm.rev\n    |> listm.map fun input, expected => join\n        input\n        |> fn\n        |> resultm.get\n        |> fun x =>\n            inl expected' = join expected\n            inl name = reflection.nameof { _assert_fn }\n            try\n                fun () =>\n                    console.write_line \"\"\n                    trace Verbose\n                        fun () => name\n                        fun () => { input }\n                    #?x\n                    |> _assert_eq #?expected'\n                    true\n                fun ex =>\n                    trace Critical\n                        fun () => name ++# \" / error\"\n                        fun () => { ex expected }\n                    Some false\n            |> optionm.value\n    |> listm'.filter not\n    |> function\n        | [] => ()\n        | x => #?*x |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec _assert_fn fn list =
+      list
+      |> listm.rev
+      |> listm.map fun input, expected => join
+          input
+          |> fn
+          |> resultm.get
+          |> fun x =>
+              inl expected' = join expected
+              inl name = reflection.nameof { _assert_fn }
+              try
+                  fun () =>
+                      console.write_line ""
+                      trace Verbose
+                          fun () => name
+                          fun () => { input }
+                      #?x
+                      |> _assert_eq #?expected'
+                      true
+                  fun ex =>
+                      trace Critical
+                          fun () => name ++# " / error"
+                          fun () => { ex expected }
+                      Some false
+              |> optionm.value
+      |> listm'.filter not
+      |> function
+          | [] => ()
+          | x => #?*x |> failwith
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[\n    3i32,\n    2i32\n\n    2,\n    1\n]\n|> _assert_fn fun x =>\n    x - 1\n    |> Ok\n    |> fun x => x : _ _ ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [
+      3i32,
+      2i32
+
+      2,
+      1
+  ]
+  |> _assert_fn fun x =>
+      x - 1
+      |> Ok
+      |> fun x => x : _ _ ()
+  """,
+  timeout: 300_000
+)
+```
+
+### _assert_in
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl _assert_in items x =\n    (None, items)\n    ||> listm.fold fun acc x' =>\n        match acc with\n        | Some x => Some x\n        | None =>\n            if x' <>. x\n            then None\n            else\n                trace Debug (fun () => \"_assert_in\") fun () => { x x' }\n                Some ()\n    |> function\n        | Some _ => ()\n        | None =>\n            \"_assert_in / \" ++#? { x items } |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl _assert_in items x =
+      (None, items)
+      ||> listm.fold fun acc x' =>
+          match acc with
+          | Some x => Some x
+          | None =>
+              if x' <>. x
+              then None
+              else
+                  trace Debug (fun () => "_assert_in") fun () => { x x' }
+                  Some ()
+      |> function
+          | Some _ => ()
+          | None =>
+              "_assert_in / " ++#? { x items } |> failwith
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### __assert_contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    __expect\n        fun a b =>\n            if native\n            then\n                // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an\n                // element equal to it (the element type's PartialEq)\n                real\n                    typecase u with\n                    | string =>\n                        // a native char is a `u8`; a string in a string: a substring\n                        typecase t with\n                        | char => $'!a.contains(!b as char)' : bool\n                        | _ => $'!a.contains(&*!b)' : bool\n                    | array_base _ => $'!a.borrow().contains(&!b)' : bool\n                    | _ => $'!a.iter().any(|x| *x == !b)' : bool\n            else\n                a\n                |> $'List.ofSeq'\n                |> fun x => x : listm'.list' t\n                |> $'List.tryFind' ((=) b)\n                |> optionm'.unbox\n                |> fun (x : option t) => x <> None\n        trace\n        // TODO: forall nameof (Cannot dyn a forall into a runtime var.)\n        // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.\n        // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string\n        // (reflection.nameof { __assert_contains })\n        \"__assert_contains\"\n        b\n        a\n\ninl _assert_contains b a =\n    __assert_contains Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
+      inl native =
+          backend_switch {
+              Gleam = fun () => false
+              Lua = fun () => false
+              Fsharp = fun () => false
+              Python = fun () => false
+              TypeScript = fun () => false
+              Cpp = fun () => false
+              CppHost = fun () => false
+              Delphi = fun () => false
+              Cuda = fun () => false
+              Rust = fun () => true
+          }
+      __expect
+          fun a b =>
+              if native
+              then
+                  // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
+                  // element equal to it (the element type's PartialEq)
+                  real
+                      typecase u with
+                      | string =>
+                          // a native char is a `u8`; a string in a string: a substring
+                          typecase t with
+                          | char => $'!a.contains(!b as char)' : bool
+                          | _ => $'!a.contains(&*!b)' : bool
+                      | array_base _ => $'!a.borrow().contains(&!b)' : bool
+                      | _ => $'!a.iter().any(|x| *x == !b)' : bool
+              else
+                  a
+                  |> $'List.ofSeq'
+                  |> fun x => x : listm'.list' t
+                  |> $'List.tryFind' ((=) b)
+                  |> optionm'.unbox
+                  |> fun (x : option t) => x <> None
+          trace
+          // TODO: forall nameof (Cannot dyn a forall into a runtime var.)
+          // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.
+          // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string
+          // (reflection.nameof { __assert_contains })
+          "__assert_contains"
+          b
+          a
+
+  inl _assert_contains b a =
+      __assert_contains Console b a
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n;[ \"a\"; \"b\"; \"c\" ]\n|> _assert_contains \"b\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  ;[ "a"; "b"; "c" ]
+  |> _assert_contains "b"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"abcd\"\n|> _assert_contains 'b'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "abcd"
+  |> _assert_contains 'b'
+  """,
+  timeout: 300_000
+)
+```
+
+### _throws
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl _throws (fn : () -> ()) : option exn =\n    inl none = None : option exn\n    inl some (s : exn) = Some s\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).\n        catch_unwind_native\n            fun () =>\n                fn ()\n                none\n            some\n    else\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn (); !none with ex -> ex |> !some ' : option exn\n            Python = fun () =>\n                $'fn = !fn '\n                $'none = !none '\n                $'some = !some '\n                $'try: fn(); x = none '\n                $'except Exception as ex: x = some(ex)'\n                $'x' : option exn\n            TypeScript = fun () =>\n                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl _throws (fn : () -> ()) : option exn =
+      inl none = None : option exn
+      inl some (s : exn) = Some s
+      inl native =
+          backend_switch {
+              Gleam = fun () => false
+              Lua = fun () => false
+              Fsharp = fun () => false
+              Python = fun () => false
+              TypeScript = fun () => false
+              Cpp = fun () => false
+              CppHost = fun () => false
+              Delphi = fun () => false
+              Cuda = fun () => false
+              Rust = fun () => true
+          }
+      if native
+      then
+          // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).
+          catch_unwind_native
+              fun () =>
+                  fn ()
+                  none
+              some
+      else
+          backend_switch {
+              Fsharp = fun () =>
+                  $'try !fn (); !none with ex -> ex |> !some ' : option exn
+              Python = fun () =>
+                  $'fn = !fn '
+                  $'none = !none '
+                  $'some = !some '
+                  $'try: fn(); x = none '
+                  $'except Exception as ex: x = some(ex)'
+                  $'x' : option exn
+              TypeScript = fun () =>
+                  $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
+          }
+  """,
+  timeout: 300_000
+)
+```
+
+### print_and_return
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec print_and_return x =\n    inl name = reflection.nameof { print_and_return }\n    name ++#? { x }\n    |> console.write_line\n    x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec print_and_return x =
+      inl name = reflection.nameof { print_and_return }
+      name ++#? { x }
+      |> console.write_line
+      x
+  """,
+  timeout: 300_000
+)
+```

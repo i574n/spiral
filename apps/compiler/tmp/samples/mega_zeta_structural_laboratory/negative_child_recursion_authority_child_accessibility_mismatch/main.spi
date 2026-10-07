@@ -1,3 +1,6 @@
+// The child accessibility of a child recursion authority must be the child's (two), not the parent's (three) (the descent is now derived directly; the RecursiveDescentProven decision wrapper is retired).
+open main
+
 inl impossible_child_recursion_authority_child_accessibility_mismatch () :
     certified_interval_positive_positional_child_recursion_authority
         (positional_zero_bit positional_one)
@@ -13,18 +16,16 @@ inl impossible_child_recursion_authority_child_accessibility_mismatch () :
             PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
             PositivePositionalPredecessorOneBit PositivePositionalOne,
             "two-is-a-candidate-below-three")
-    match derive_certified_interval_positive_positional_membership_recursive_descent
-            (positive_positional_three_value ()) membership with
-    | CertifiedIntervalPositivePositionalRecursiveDescentProven descent =>
-        CertifiedIntervalPositivePositionalChildRecursionAuthority (
-            membership,
-            positive_positional_two_value (),
-            descent,
-            derive_positive_positional_predecessor_accessibility
-                (positive_positional_three_value ()),
-            derive_positive_positional_predecessor_accessibility
-                (positive_positional_three_value ()),
-            "the-child-accessibility-is-deliberately-rooted-at-three-instead-of-two")
+    inl descent = derive_certified_interval_positive_positional_membership_recursive_descent (positive_positional_three_value ()) membership
+    CertifiedIntervalPositivePositionalChildRecursionAuthority (
+        membership,
+        positive_positional_two_value (),
+        descent,
+        derive_positive_positional_predecessor_accessibility
+            (positive_positional_three_value ()),
+        derive_positive_positional_predecessor_accessibility
+            (positive_positional_three_value ()),
+        "the-child-accessibility-is-deliberately-rooted-at-three-instead-of-two")
 
 inl main () =
     impossible_child_recursion_authority_child_accessibility_mismatch ()

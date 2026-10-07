@@ -1,3 +1,5 @@
+open main
+
 inl impossible_net_intercompany_detached_mirrors () =
     inl invoice_value :
         invoice_match company_a usd widget_a warehouse_north tax_brazil po_1001 =

@@ -1,32 +1,27 @@
+// The complete tree of the Step-prime three cannot be typed as a tree for four (the predecessor step payload is now proof + accessibility; less is derived from the proof).
+open main
+
 inl impossible_accessible_step_prime_tree_wrong_root () :
     certified_interval_positive_positional_complete_factorization_tree
         (positional_zero_bit (positional_zero_bit positional_one)) =
     inl three_value = positive_positional_three_value ()
-    match
-        classify_certified_interval_positive_positional_sealed_factor
-            three_value,
-        derive_positive_positional_predecessor_accessibility three_value
-    with
+    match classify_certified_interval_positive_positional_sealed_factor three_value, derive_positive_positional_predecessor_accessibility three_value with
     | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload,
       PositivePositionalPredecessorAccessibilityStep step_payload =>
-        inl exists length.
-            prime_material, prime_nonunit, rejected, prime_note = prime_payload
-        inl exists predecessor.
-            predecessor_value, predecessor_proof, predecessor_less,
-            predecessor_accessibility, step_note = step_payload
+        inl exists length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
+        inl exists predecessor. predecessor_proof, predecessor_accessibility, step_note = step_payload
         certified_interval_positive_positional_accessible_step_prime_complete_tree
             (CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (exists (
                 prime_material,
                 prime_nonunit,
                 rejected,
-                predecessor_value,
                 predecessor_proof,
-                predecessor_less,
+                positive_positional_predecessor_implies_less predecessor_proof,
                 predecessor_accessibility,
                 prime_note,
                 step_note)))
     | _, _ =>
-        $"failwith \"three-was-unexpectedly-not-a-Step-certified-prime\""
+        $"mega_runtime_fail \"three-was-unexpectedly-not-a-Step-certified-prime\""
 
 inl main () =
     impossible_accessible_step_prime_tree_wrong_root ()

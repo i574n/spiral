@@ -1,11 +1,15 @@
+// Run-time checks are core-free ops (F# macros until 2026-10-06, so only the F# backend could run them); a failed check
+// stops the program with its message on every backend.
+inl mega_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
+
 nominal interval lower upper = lower * upper * string
 nominal z_nat_zero = string
 nominal z_nat_succ n = n * string
 
-inl zeta_runtime_i64_add (left : i64) (right : i64) : i64 = $"!left + !right"
+inl zeta_runtime_i64_add (left : i64) (right : i64) : i64 = !!!!Add(left, right)
 
 inl zeta_runtime_mul_i64 (left : i64) (right : i64) : i64 =
-    $"!left * !right"
+    !!!!Mult(left, right)
 
 nominal positional_one = ()
 nominal positional_zero_bit tail = tail
@@ -308,9 +312,9 @@ inl positive_positional_seven_value () :
     positive_positional_nat (positional_one_bit (positional_one_bit positional_one)) =
     PositivePositionalOneBit (positive_positional_three_value ())
 
-inl zeta_runtime_sub_i64 (left : i64) (right : i64) : i64 = $"!left - !right"
+inl zeta_runtime_sub_i64 (left : i64) (right : i64) : i64 = !!!!Sub(left, right)
 
-inl zeta_runtime_add_closure_i64 (left : i64) (right : i64) : i64 = $"!left + !right"
+inl zeta_runtime_add_closure_i64 (left : i64) (right : i64) : i64 = !!!!Add(left, right)
 
 union nonnegative_positional_successor input output =
     | NonnegativePositionalSuccessorZero ::
@@ -1554,7 +1558,10 @@ inl rec certified_interval_positive_positional_complete_prime_sequence_runtime
         inl tail_count, tail_product, tail_first, tail_order_mismatches =
             certified_interval_positive_positional_complete_prime_sequence_runtime tail
         inl local_order_mismatch : i64 =
-            $"if !tail_count = 0L || !value <= !tail_first then 0L else 1L"
+            inl test_0 = !!!!EQ(tail_count, 0i64)
+            inl test_1 = !!!!LTE(value, tail_first)
+            inl test_any = if test_0 then true elif test_1 then true else false
+            if test_any then 0i64 else 1i64
         zeta_runtime_add_closure_i64 1i64 tail_count,
         zeta_runtime_mul_i64 value tail_product,
         value,
@@ -1967,13 +1974,19 @@ inl certified_interval_positive_positional_prime_multiplicity_normal_form_total_
 
 inl assert_certified_interval_positive_positional_prime_multiplicity_exact_counts
     (three : i64) (twelve : i64) (eighteen : i64) : () =
-    $"if !three <> 1L || !twelve <> 2L || !eighteen <> 1L then failwith \"zeta-exact-multiplicity-count-index-mismatch\""
+    inl ok_0 = !!!!EQ(three, 1i64)
+    inl ok_1 = !!!!EQ(twelve, 2i64)
+    inl ok_2 = !!!!EQ(eighteen, 1i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "zeta-exact-multiplicity-count-index-mismatch"
 
 inl assert_certified_interval_positive_positional_prime_multiplicity_total_exact_counts
     (three : i64) (three_cells : i64)
     (twelve : i64) (twelve_cells : i64)
     (eighteen : i64) (eighteen_cells : i64) : () =
-    $"if !three <> !three_cells || !twelve <> !twelve_cells || !eighteen <> !eighteen_cells then failwith \"zeta-total-exact-multiplicity-count-mismatch\""
+    inl ok_0 = !!!!EQ(three, three_cells)
+    inl ok_1 = !!!!EQ(twelve, twelve_cells)
+    inl ok_2 = !!!!EQ(eighteen, eighteen_cells)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "zeta-total-exact-multiplicity-count-mismatch"
 
 inl rec certified_interval_positive_positional_prime_multiplicity_run_from_runtime forall head.
     (run : certified_interval_positive_positional_prime_multiplicity_run_from head)
@@ -2009,8 +2022,8 @@ inl rec certified_interval_positive_positional_prime_multiplicity_normal_form_fr
             certified_interval_positive_positional_prime_multiplicity_run_from_runtime run
         inl groups, cells, tail_product, tail_first, tail_last, tail_max, tail_mismatches =
             certified_interval_positive_positional_prime_multiplicity_normal_form_from_runtime rest
-        inl local_max : i64 = $"if !multiplicity >= !tail_max then !multiplicity else !tail_max"
-        inl local_mismatch : i64 = $"if !prime_value < !tail_first then 0L else 1L"
+        inl local_max : i64 = if !!!!GTE(multiplicity, tail_max) then multiplicity else tail_max
+        inl local_mismatch : i64 = if !!!!LT(prime_value, tail_first) then 0i64 else 1i64
         zeta_runtime_add_closure_i64 1i64 groups,
         zeta_runtime_add_closure_i64 multiplicity cells,
         zeta_runtime_mul_i64 product tail_product,
@@ -2031,7 +2044,12 @@ inl certified_interval_positive_positional_prime_multiplicity_normal_form_runtim
 
 inl assert_certified_interval_positive_positional_prime_multiplicity_normal_form_runtime
     (groups : i64) (cells : i64) (product_sum : i64) (max_sum : i64) (mismatches : i64) : () =
-    $"if !groups <> 5L || !cells <> 7L || !product_sum <> 33L || !max_sum <> 5L || !mismatches <> 0L then failwith \"certified-interval-positive-positional-prime-multiplicity-normal-form-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(groups, 5i64)
+    inl ok_1 = !!!!EQ(cells, 7i64)
+    inl ok_2 = !!!!EQ(product_sum, 33i64)
+    inl ok_3 = !!!!EQ(max_sum, 5i64)
+    inl ok_4 = !!!!EQ(mismatches, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "certified-interval-positive-positional-prime-multiplicity-normal-form-runtime-mismatch"
 
 inl rec certified_interval_positive_positional_ordered_prime_sequence_from_runtime forall head.
     (sequence : certified_interval_positive_positional_ordered_prime_sequence_from head)
@@ -2050,7 +2068,8 @@ inl rec certified_interval_positive_positional_ordered_prime_sequence_from_runti
         inl tail_count, tail_product, tail_first, tail_last, tail_mismatches =
             certified_interval_positive_positional_ordered_prime_sequence_from_runtime tail
         inl local_mismatch : i64 =
-            $"if !value <= !tail_first then 0L else 1L"
+            inl test_0 = !!!!LTE(value, tail_first)
+            if test_0 then 0i64 else 1i64
         zeta_runtime_add_closure_i64 1i64 tail_count,
         zeta_runtime_mul_i64 value tail_product,
         value,
@@ -2069,12 +2088,21 @@ inl certified_interval_positive_positional_ordered_prime_sequence_runtime
 
 inl assert_certified_interval_positive_positional_ordered_prime_sequence_runtime
     (count : i64) (product_sum : i64) (mismatches : i64) : () =
-    $"if !count <> 7L || !product_sum <> 33L || !mismatches <> 0L then failwith \"certified-interval-positive-positional-ordered-prime-sequence-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(count, 7i64)
+    inl ok_1 = !!!!EQ(product_sum, 33i64)
+    inl ok_2 = !!!!EQ(mismatches, 0i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "certified-interval-positive-positional-ordered-prime-sequence-runtime-mismatch"
 
 inl assert_certified_interval_positive_positional_complete_reconstruction_runtime
     (nodes : i64) (primes : i64) (splits : i64) (descents : i64)
     (root_sum : i64) (product_sum : i64) : () =
-    $"if !nodes <> 11L || !primes <> 7L || !splits <> 4L || !descents <> 8L || !root_sum <> 33L || !product_sum <> 33L then failwith \"certified-interval-positive-positional-complete-reconstruction-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(nodes, 11i64)
+    inl ok_1 = !!!!EQ(primes, 7i64)
+    inl ok_2 = !!!!EQ(splits, 4i64)
+    inl ok_3 = !!!!EQ(descents, 8i64)
+    inl ok_4 = !!!!EQ(root_sum, 33i64)
+    inl ok_5 = !!!!EQ(product_sum, 33i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "certified-interval-positive-positional-complete-reconstruction-runtime-mismatch"
 
 // The direct completion synthesizer was physically retired after the
 // accessibility-governed composite recursion stopped calling it. Historical
@@ -2140,7 +2168,10 @@ inl positive_positional_predecessor_less_runtime forall input output.
 
 inl assert_positive_positional_predecessor_less_runtime
     (input : i64) (output : i64) : () =
-    $"if !input <> 12L || !output <> 11L || !output >= !input then failwith \"positive-positional-predecessor-less-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(input, 12i64)
+    inl ok_1 = !!!!EQ(output, 11i64)
+    inl ok_2 = !!!!LT(output, input)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "positive-positional-predecessor-less-runtime-mismatch"
 
 inl positive_positional_predecessor_less_terminal () : string =
     match
@@ -2205,7 +2236,10 @@ inl rec positive_positional_predecessor_accessibility_runtime forall natural.
 
 inl assert_positive_positional_predecessor_accessibility_runtime
     (root : i64) (nodes : i64) (edges : i64) : () =
-    $"if !root <> 12L || !nodes <> 12L || !edges <> 11L then failwith \"positive-positional-predecessor-accessibility-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(root, 12i64)
+    inl ok_1 = !!!!EQ(nodes, 12i64)
+    inl ok_2 = !!!!EQ(edges, 11i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "positive-positional-predecessor-accessibility-runtime-mismatch"
 
 inl positive_positional_predecessor_accessibility_terminal () : string =
     inl root = positive_positional_twelve_value ()
@@ -2386,7 +2420,12 @@ inl certified_interval_positive_positional_accessible_step_prime_complete_tree f
 inl assert_certified_interval_positive_positional_accessible_step_prime_runtime
     (nodes : i64) (primes : i64) (splits : i64)
     (root : i64) (blocked : i64) : () =
-    $"if !nodes <> 1L || !primes <> 1L || !splits <> 0L || !root <> 3L || !blocked <> 0L then failwith \"certified-interval-positive-positional-accessible-step-prime-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(nodes, 1i64)
+    inl ok_1 = !!!!EQ(primes, 1i64)
+    inl ok_2 = !!!!EQ(splits, 0i64)
+    inl ok_3 = !!!!EQ(root, 3i64)
+    inl ok_4 = !!!!EQ(blocked, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "certified-interval-positive-positional-accessible-step-prime-runtime-mismatch"
 
 inl certified_interval_positive_positional_accessible_step_prime_terminal () : string =
     inl three_value = positive_positional_three_value ()
@@ -2695,7 +2734,11 @@ inl certified_interval_positive_positional_accessible_child_unit_complete_tree
 
 inl assert_certified_interval_positive_positional_accessible_child_unit_runtime
     (nodes : i64) (primes : i64) (splits : i64) (root : i64) : () =
-    $"if !nodes <> 1L || !primes <> 0L || !splits <> 0L || !root <> 1L then failwith \"certified-interval-positive-positional-accessible-child-unit-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(nodes, 1i64)
+    inl ok_1 = !!!!EQ(primes, 0i64)
+    inl ok_2 = !!!!EQ(splits, 0i64)
+    inl ok_3 = !!!!EQ(root, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "certified-interval-positive-positional-accessible-child-unit-runtime-mismatch"
 
 inl certified_interval_positive_positional_accessible_child_unit_terminal () : string =
     inl one = PositivePositionalOne
@@ -2737,7 +2780,19 @@ inl assert_certified_interval_positive_positional_membership_accessible_child_ru
     (first_splits : i64) (first_root : i64) (first_blocked : i64)
     (second_candidate : i64) (second_nodes : i64) (second_primes : i64)
     (second_splits : i64) (second_root : i64) (second_blocked : i64) : () =
-    $"if !first_candidate <> 6L || !first_nodes <> 3L || !first_primes <> 2L || !first_splits <> 1L || !first_root <> 6L || !first_blocked <> 0L || !second_candidate <> 9L || !second_nodes <> 3L || !second_primes <> 2L || !second_splits <> 1L || !second_root <> 9L || !second_blocked <> 0L then failwith \"certified-interval-positive-positional-membership-accessible-child-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_candidate, 6i64)
+    inl ok_1 = !!!!EQ(first_nodes, 3i64)
+    inl ok_2 = !!!!EQ(first_primes, 2i64)
+    inl ok_3 = !!!!EQ(first_splits, 1i64)
+    inl ok_4 = !!!!EQ(first_root, 6i64)
+    inl ok_5 = !!!!EQ(first_blocked, 0i64)
+    inl ok_6 = !!!!EQ(second_candidate, 9i64)
+    inl ok_7 = !!!!EQ(second_nodes, 3i64)
+    inl ok_8 = !!!!EQ(second_primes, 2i64)
+    inl ok_9 = !!!!EQ(second_splits, 1i64)
+    inl ok_10 = !!!!EQ(second_root, 9i64)
+    inl ok_11 = !!!!EQ(second_blocked, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 then () else mega_runtime_fail "certified-interval-positive-positional-membership-accessible-child-runtime-mismatch"
 
 inl certified_interval_positive_positional_membership_accessible_child_terminal () : string =
     inl twelve =
@@ -2828,7 +2883,15 @@ inl assert_positive_positional_strict_predecessor_accessibility_runtime
     (first_nodes : i64) (first_edges : i64)
     (second_lower : i64) (second_upper : i64)
     (second_nodes : i64) (second_edges : i64) : () =
-    $"if !first_lower <> 6L || !first_upper <> 7L || !first_nodes <> 6L || !first_edges <> 5L || !second_lower <> 13L || !second_upper <> 14L || !second_nodes <> 13L || !second_edges <> 12L then failwith \"positive-positional-strict-predecessor-accessibility-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_lower, 6i64)
+    inl ok_1 = !!!!EQ(first_upper, 7i64)
+    inl ok_2 = !!!!EQ(first_nodes, 6i64)
+    inl ok_3 = !!!!EQ(first_edges, 5i64)
+    inl ok_4 = !!!!EQ(second_lower, 13i64)
+    inl ok_5 = !!!!EQ(second_upper, 14i64)
+    inl ok_6 = !!!!EQ(second_nodes, 13i64)
+    inl ok_7 = !!!!EQ(second_edges, 12i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "positive-positional-strict-predecessor-accessibility-runtime-mismatch"
 
 inl positive_positional_strict_predecessor_accessibility_terminal () : string =
     inl first_lower, first_upper, first_nodes, first_edges =
@@ -2900,7 +2963,17 @@ inl positive_positional_quotient_accessibility_runtime forall dividend divisor q
 inl assert_positive_positional_quotient_accessibility_runtime
     (dividend : i64) (divisor : i64) (quotient : i64)
     (remainder : i64) (nodes : i64) (edges : i64) : () =
-    $"if !dividend <> 14L || !divisor <> 3L || !quotient <> 4L || !remainder <> 2L || !dividend <> !quotient * !divisor + !remainder || !nodes <> !quotient || !edges <> !quotient - 1L then failwith \"positive-positional-quotient-accessibility-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(dividend, 14i64)
+    inl ok_1 = !!!!EQ(divisor, 3i64)
+    inl ok_2 = !!!!EQ(quotient, 4i64)
+    inl ok_3 = !!!!EQ(remainder, 2i64)
+    inl term_0 = !!!!Mult(quotient, divisor)
+    inl term_1 = !!!!Add(term_0, remainder)
+    inl ok_4 = !!!!EQ(dividend, term_1)
+    inl ok_5 = !!!!EQ(nodes, quotient)
+    inl term_2 = !!!!Sub(quotient, 1i64)
+    inl ok_6 = !!!!EQ(edges, term_2)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "positive-positional-quotient-accessibility-runtime-mismatch"
 
 inl positive_positional_quotient_accessibility_terminal () : string =
     inl dividend, divisor, quotient, remainder, nodes, edges =
@@ -2984,7 +3057,13 @@ inl assert_positive_positional_two_stage_quotient_accessibility_runtime
     (middle : i64) (quotient : i64)
     (middle_nodes : i64) (middle_edges : i64)
     (quotient_nodes : i64) (quotient_edges : i64) : () =
-    $"if !middle <> 4L || !quotient <> 1L || !middle_nodes <> 4L || !middle_edges <> 3L || !quotient_nodes <> 1L || !quotient_edges <> 0L then failwith \"positive-positional-two-stage-quotient-accessibility-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(middle, 4i64)
+    inl ok_1 = !!!!EQ(quotient, 1i64)
+    inl ok_2 = !!!!EQ(middle_nodes, 4i64)
+    inl ok_3 = !!!!EQ(middle_edges, 3i64)
+    inl ok_4 = !!!!EQ(quotient_nodes, 1i64)
+    inl ok_5 = !!!!EQ(quotient_edges, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "positive-positional-two-stage-quotient-accessibility-runtime-mismatch"
 
 inl positive_positional_two_stage_quotient_accessibility_terminal () : string =
     inl middle, quotient, middle_nodes, middle_edges,
@@ -3118,7 +3197,17 @@ inl assert_positive_positional_flattened_quotient_composition_runtime
     (dividend : i64) (composite_divisor : i64)
     (quotient : i64) (remainder : i64)
     (nodes : i64) (edges : i64) : () =
-    $"if !dividend <> 14L || !composite_divisor <> 9L || !quotient <> 1L || !remainder <> 5L || !dividend <> !quotient * !composite_divisor + !remainder || !remainder >= !composite_divisor || !nodes <> 1L || !edges <> 0L then failwith \"positive-positional-flattened-quotient-composition-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(dividend, 14i64)
+    inl ok_1 = !!!!EQ(composite_divisor, 9i64)
+    inl ok_2 = !!!!EQ(quotient, 1i64)
+    inl ok_3 = !!!!EQ(remainder, 5i64)
+    inl term_0 = !!!!Mult(quotient, composite_divisor)
+    inl term_1 = !!!!Add(term_0, remainder)
+    inl ok_4 = !!!!EQ(dividend, term_1)
+    inl ok_5 = !!!!LT(remainder, composite_divisor)
+    inl ok_6 = !!!!EQ(nodes, 1i64)
+    inl ok_7 = !!!!EQ(edges, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "positive-positional-flattened-quotient-composition-runtime-mismatch"
 
 inl positive_positional_flattened_quotient_composition_terminal () : string =
     inl dividend, composite_divisor, quotient,
@@ -3163,7 +3252,17 @@ inl assert_positive_positional_generic_flattened_quotient_chain_runtime
     (staged_nodes : i64) (staged_edges : i64)
     (flattened_nodes : i64) (flattened_edges : i64)
     (quotients_definitionally_shared : i64) : () =
-    $"if !middle <> 4L || !staged_quotient <> 1L || !flattened_quotient <> 1L || !middle_nodes <> 4L || !middle_edges <> 3L || !staged_nodes <> 1L || !staged_edges <> 0L || !flattened_nodes <> 1L || !flattened_edges <> 0L || !quotients_definitionally_shared <> 1L then failwith \"positive-positional-generic-flattened-quotient-chain-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(middle, 4i64)
+    inl ok_1 = !!!!EQ(staged_quotient, 1i64)
+    inl ok_2 = !!!!EQ(flattened_quotient, 1i64)
+    inl ok_3 = !!!!EQ(middle_nodes, 4i64)
+    inl ok_4 = !!!!EQ(middle_edges, 3i64)
+    inl ok_5 = !!!!EQ(staged_nodes, 1i64)
+    inl ok_6 = !!!!EQ(staged_edges, 0i64)
+    inl ok_7 = !!!!EQ(flattened_nodes, 1i64)
+    inl ok_8 = !!!!EQ(flattened_edges, 0i64)
+    inl ok_9 = !!!!EQ(quotients_definitionally_shared, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "positive-positional-generic-flattened-quotient-chain-runtime-mismatch"
 
 inl positive_positional_generic_flattened_quotient_chain_terminal () : string =
     inl middle, staged_quotient, flattened_quotient,
@@ -3415,7 +3514,11 @@ inl certified_interval_positive_positional_membership_recursion_authority_termin
 
 inl assert_positive_positional_transitive_predecessor_path_runtime
     (input : i64) (output : i64) (nodes : i64) (edges : i64) : () =
-    $"if !input <> 12L || !output <> 1L || !nodes <> 12L || !edges <> 11L then failwith \"positive-positional-transitive-predecessor-path-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(input, 12i64)
+    inl ok_1 = !!!!EQ(output, 1i64)
+    inl ok_2 = !!!!EQ(nodes, 12i64)
+    inl ok_3 = !!!!EQ(edges, 11i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "positive-positional-transitive-predecessor-path-runtime-mismatch"
 
 inl positive_positional_transitive_predecessor_path_terminal () : string =
     inl root = positive_positional_twelve_value ()
@@ -3500,7 +3603,15 @@ inl assert_positive_positional_nonidentity_three_segment_path_associativity_runt
     (left_nodes : i64) (left_edges : i64)
     (right_input : i64) (right_output : i64)
     (right_nodes : i64) (right_edges : i64) : () =
-    $"if !left_input <> 4L || !left_output <> 1L || !left_nodes <> 4L || !left_edges <> 3L || !right_input <> 4L || !right_output <> 1L || !right_nodes <> 4L || !right_edges <> 3L then failwith \"positive-positional-nonidentity-three-segment-path-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_input, 4i64)
+    inl ok_1 = !!!!EQ(left_output, 1i64)
+    inl ok_2 = !!!!EQ(left_nodes, 4i64)
+    inl ok_3 = !!!!EQ(left_edges, 3i64)
+    inl ok_4 = !!!!EQ(right_input, 4i64)
+    inl ok_5 = !!!!EQ(right_output, 1i64)
+    inl ok_6 = !!!!EQ(right_nodes, 4i64)
+    inl ok_7 = !!!!EQ(right_edges, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "positive-positional-nonidentity-three-segment-path-associativity-runtime-mismatch"
 
 inl positive_positional_nonidentity_three_segment_path_associativity_terminal () : string =
     inl left_input, left_output, left_nodes, left_edges,
@@ -3556,7 +3667,13 @@ inl assert_positive_positional_transitive_predecessor_path_append_measure_runtim
     (input : i64) (output : i64)
     (joined_nodes : i64) (joined_edges : i64)
     (expected_nodes : i64) (expected_edges : i64) : () =
-    $"if !input <> 4L || !output <> 1L || !joined_nodes <> 4L || !joined_edges <> 3L || !joined_nodes <> !expected_nodes || !joined_edges <> !expected_edges then failwith \"positive-positional-transitive-predecessor-path-append-measure-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(input, 4i64)
+    inl ok_1 = !!!!EQ(output, 1i64)
+    inl ok_2 = !!!!EQ(joined_nodes, 4i64)
+    inl ok_3 = !!!!EQ(joined_edges, 3i64)
+    inl ok_4 = !!!!EQ(joined_nodes, expected_nodes)
+    inl ok_5 = !!!!EQ(joined_edges, expected_edges)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "positive-positional-transitive-predecessor-path-append-measure-runtime-mismatch"
 
 inl positive_positional_transitive_predecessor_path_append_measure_terminal () : string =
     inl input, output, joined_nodes, joined_edges,
@@ -3616,7 +3733,23 @@ inl assert_certified_interval_positive_positional_factor_membership_accessibilit
     (second_membership_nodes : i64) (second_membership_edges : i64)
     (second_accessibility_nodes : i64) (second_accessibility_edges : i64)
     (second_joined_nodes : i64) (second_joined_edges : i64) : () =
-    $"if !first_root <> 12L || !first_divisor <> 6L || !first_membership_nodes <> 7L || !first_membership_edges <> 6L || !first_accessibility_nodes <> 6L || !first_accessibility_edges <> 5L || !first_joined_nodes <> 12L || !first_joined_edges <> 11L || !second_root <> 18L || !second_divisor <> 9L || !second_membership_nodes <> 10L || !second_membership_edges <> 9L || !second_accessibility_nodes <> 9L || !second_accessibility_edges <> 8L || !second_joined_nodes <> 18L || !second_joined_edges <> 17L then failwith \"certified-interval-positive-positional-factor-membership-accessibility-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_root, 12i64)
+    inl ok_1 = !!!!EQ(first_divisor, 6i64)
+    inl ok_2 = !!!!EQ(first_membership_nodes, 7i64)
+    inl ok_3 = !!!!EQ(first_membership_edges, 6i64)
+    inl ok_4 = !!!!EQ(first_accessibility_nodes, 6i64)
+    inl ok_5 = !!!!EQ(first_accessibility_edges, 5i64)
+    inl ok_6 = !!!!EQ(first_joined_nodes, 12i64)
+    inl ok_7 = !!!!EQ(first_joined_edges, 11i64)
+    inl ok_8 = !!!!EQ(second_root, 18i64)
+    inl ok_9 = !!!!EQ(second_divisor, 9i64)
+    inl ok_10 = !!!!EQ(second_membership_nodes, 10i64)
+    inl ok_11 = !!!!EQ(second_membership_edges, 9i64)
+    inl ok_12 = !!!!EQ(second_accessibility_nodes, 9i64)
+    inl ok_13 = !!!!EQ(second_accessibility_edges, 8i64)
+    inl ok_14 = !!!!EQ(second_joined_nodes, 18i64)
+    inl ok_15 = !!!!EQ(second_joined_edges, 17i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 && ok_14 && ok_15 then () else mega_runtime_fail "certified-interval-positive-positional-factor-membership-accessibility-runtime-mismatch"
 
 inl certified_interval_positive_positional_factor_membership_accessibility_terminal () : string =
     inl twelve =
@@ -3714,7 +3847,21 @@ inl assert_certified_interval_positive_positional_division_accessible_quotient_r
     (second_claimed : i64) (second_projected : i64)
     (second_nodes : i64) (second_primes : i64)
     (second_splits : i64) (second_root : i64) (second_blocked : i64) : () =
-    $"if !first_claimed <> 2L || !first_projected <> 2L || !first_nodes <> 1L || !first_primes <> 1L || !first_splits <> 0L || !first_root <> 2L || !first_blocked <> 0L || !second_claimed <> 2L || !second_projected <> 2L || !second_nodes <> 1L || !second_primes <> 1L || !second_splits <> 0L || !second_root <> 2L || !second_blocked <> 0L then failwith \"certified-interval-positive-positional-division-accessible-quotient-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_claimed, 2i64)
+    inl ok_1 = !!!!EQ(first_projected, 2i64)
+    inl ok_2 = !!!!EQ(first_nodes, 1i64)
+    inl ok_3 = !!!!EQ(first_primes, 1i64)
+    inl ok_4 = !!!!EQ(first_splits, 0i64)
+    inl ok_5 = !!!!EQ(first_root, 2i64)
+    inl ok_6 = !!!!EQ(first_blocked, 0i64)
+    inl ok_7 = !!!!EQ(second_claimed, 2i64)
+    inl ok_8 = !!!!EQ(second_projected, 2i64)
+    inl ok_9 = !!!!EQ(second_nodes, 1i64)
+    inl ok_10 = !!!!EQ(second_primes, 1i64)
+    inl ok_11 = !!!!EQ(second_splits, 0i64)
+    inl ok_12 = !!!!EQ(second_root, 2i64)
+    inl ok_13 = !!!!EQ(second_blocked, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 then () else mega_runtime_fail "certified-interval-positive-positional-division-accessible-quotient-runtime-mismatch"
 
 inl certified_interval_positive_positional_division_accessible_quotient_terminal () : string =
     inl twelve =
@@ -3746,7 +3893,11 @@ inl certified_interval_positive_positional_division_accessible_quotient_terminal
 inl assert_certified_interval_positive_positional_sealed_composite_children_runtime
     (first_divisor : i64) (first_quotient : i64)
     (second_divisor : i64) (second_quotient : i64) : () =
-    $"if !first_divisor <> 6L || !first_quotient <> 2L || !second_divisor <> 9L || !second_quotient <> 2L then failwith \"certified-interval-positive-positional-sealed-composite-children-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_divisor, 6i64)
+    inl ok_1 = !!!!EQ(first_quotient, 2i64)
+    inl ok_2 = !!!!EQ(second_divisor, 9i64)
+    inl ok_3 = !!!!EQ(second_quotient, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "certified-interval-positive-positional-sealed-composite-children-runtime-mismatch"
 
 inl certified_interval_positive_positional_sealed_composite_children_terminal () : string =
     inl twelve =
@@ -3814,7 +3965,31 @@ inl assert_certified_interval_positive_positional_membership_strict_path_runtime
     (second_path_nodes : i64) (second_path_edges : i64)
     (second_parent_nodes : i64) (second_parent_edges : i64)
     (second_child_nodes : i64) (second_child_edges : i64) : () =
-    $"if !first_root <> 12L || !first_divisor <> 6L || !first_path_nodes <> 7L || !first_path_edges <> 6L || !first_parent_nodes <> 12L || !first_parent_edges <> 11L || !first_child_nodes <> 6L || !first_child_edges <> 5L || !first_parent_edges <> !first_path_edges + !first_child_edges || !first_parent_nodes <> !first_path_edges + !first_child_nodes || !second_root <> 18L || !second_divisor <> 9L || !second_path_nodes <> 10L || !second_path_edges <> 9L || !second_parent_nodes <> 18L || !second_parent_edges <> 17L || !second_child_nodes <> 9L || !second_child_edges <> 8L || !second_parent_edges <> !second_path_edges + !second_child_edges || !second_parent_nodes <> !second_path_edges + !second_child_nodes then failwith \"certified-interval-positive-positional-membership-strict-path-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_root, 12i64)
+    inl ok_1 = !!!!EQ(first_divisor, 6i64)
+    inl ok_2 = !!!!EQ(first_path_nodes, 7i64)
+    inl ok_3 = !!!!EQ(first_path_edges, 6i64)
+    inl ok_4 = !!!!EQ(first_parent_nodes, 12i64)
+    inl ok_5 = !!!!EQ(first_parent_edges, 11i64)
+    inl ok_6 = !!!!EQ(first_child_nodes, 6i64)
+    inl ok_7 = !!!!EQ(first_child_edges, 5i64)
+    inl term_0 = !!!!Add(first_path_edges, first_child_edges)
+    inl ok_8 = !!!!EQ(first_parent_edges, term_0)
+    inl term_1 = !!!!Add(first_path_edges, first_child_nodes)
+    inl ok_9 = !!!!EQ(first_parent_nodes, term_1)
+    inl ok_10 = !!!!EQ(second_root, 18i64)
+    inl ok_11 = !!!!EQ(second_divisor, 9i64)
+    inl ok_12 = !!!!EQ(second_path_nodes, 10i64)
+    inl ok_13 = !!!!EQ(second_path_edges, 9i64)
+    inl ok_14 = !!!!EQ(second_parent_nodes, 18i64)
+    inl ok_15 = !!!!EQ(second_parent_edges, 17i64)
+    inl ok_16 = !!!!EQ(second_child_nodes, 9i64)
+    inl ok_17 = !!!!EQ(second_child_edges, 8i64)
+    inl term_2 = !!!!Add(second_path_edges, second_child_edges)
+    inl ok_18 = !!!!EQ(second_parent_edges, term_2)
+    inl term_3 = !!!!Add(second_path_edges, second_child_nodes)
+    inl ok_19 = !!!!EQ(second_parent_nodes, term_3)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 && ok_14 && ok_15 && ok_16 && ok_17 && ok_18 && ok_19 then () else mega_runtime_fail "certified-interval-positive-positional-membership-strict-path-runtime-mismatch"
 
 inl certified_interval_positive_positional_membership_strict_path_terminal () : string =
     inl twelve =
@@ -3996,7 +4171,9 @@ inl certified_interval_positive_positional_first_run_multiplicity_shape_runtime 
 
 inl assert_certified_interval_positive_positional_same_root_first_run_multiplicity_shape_runtime
     (left_shape : i64) (right_shape : i64) : () =
-    $"if !left_shape <> 1L || !right_shape <> 1L then failwith \"same-root-six-first-run-multiplicity-shape-mismatch\""
+    inl ok_0 = !!!!EQ(left_shape, 1i64)
+    inl ok_1 = !!!!EQ(right_shape, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "same-root-six-first-run-multiplicity-shape-mismatch"
 
 nominal certified_interval_positive_positional_canonical_profile_outer_shape_done = ()
 nominal certified_interval_positive_positional_canonical_profile_outer_shape_some head = head
@@ -4974,7 +5151,13 @@ inl assert_certified_interval_positive_positional_six_distinct_tree_normalizatio
     (left_first : i64) (left_last : i64) (left_max : i64) (left_mismatch : i64)
     (right_groups : i64) (right_cells : i64) (right_product : i64)
     (right_first : i64) (right_last : i64) (right_max : i64) (right_mismatch : i64) : () =
-    $"if !left_divisor <> 3L || !left_quotient <> 2L || !right_divisor <> 2L || !right_quotient <> 3L then failwith \"same-root-six-factorization-shapes-are-not-distinct\"; if (!left_groups, !left_cells, !left_product, !left_first, !left_last, !left_max, !left_mismatch) <> (!right_groups, !right_cells, !right_product, !right_first, !right_last, !right_max, !right_mismatch) then failwith \"same-root-six-canonical-normalization-disagrees\"; if (!left_groups, !left_cells, !left_product, !left_first, !left_last, !left_max, !left_mismatch) <> (2L, 2L, 6L, 2L, 3L, 1L, 0L) then failwith \"same-root-six-canonical-normalization-unexpected\""
+    inl same (a : i64) (b : i64) : bool = !!!!EQ(a, b)
+    if same left_divisor 3i64 && same left_quotient 2i64 && same right_divisor 2i64 && same right_quotient 3i64 then ()
+    else mega_runtime_fail "same-root-six-factorization-shapes-are-not-distinct"
+    if same left_groups right_groups && same left_cells right_cells && same left_product right_product && same left_first right_first && same left_last right_last && same left_max right_max && same left_mismatch right_mismatch then ()
+    else mega_runtime_fail "same-root-six-canonical-normalization-disagrees"
+    if same left_groups 2i64 && same left_cells 2i64 && same left_product 6i64 && same left_first 2i64 && same left_last 3i64 && same left_max 1i64 && same left_mismatch 0i64 then ()
+    else mega_runtime_fail "same-root-six-canonical-normalization-unexpected"
 
 inl certified_interval_positive_positional_six_structural_profile_agreement_terminal () : string =
     inl six_value = positive_positional_six_value ()
@@ -4999,7 +5182,7 @@ inl certified_interval_positive_positional_six_structural_profile_agreement_term
         | CertifiedIntervalPositivePositionalSameRootCanonicalProfileAgreementMatched _ =>
             "same-root-six-typed-profile-decision-symmetry-now-swaps-the-shared-root-authority-and-the-structural-witness-together"
         | CertifiedIntervalPositivePositionalSameRootCanonicalProfileAgreementMismatch _ =>
-            $"failwith \"same-root-six-typed-profile-decision-symmetry-unexpected-mismatch\""
+            mega_runtime_fail "same-root-six-typed-profile-decision-symmetry-unexpected-mismatch"
     inl profile_decision =
         certified_interval_positive_positional_same_root_canonical_profile_pair_agreement authority
     inl symmetric_profile_decision =
@@ -5009,7 +5192,7 @@ inl certified_interval_positive_positional_six_structural_profile_agreement_term
         | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormAgreementMatched _ =>
             "same-root-six-profile-agreement-decision-symmetry-preserves-the-matched-witness"
         | CertifiedIntervalPositivePositionalPrimeMultiplicityNormalFormAgreementMismatch _ =>
-            $"failwith \"same-root-six-profile-agreement-decision-symmetry-unexpected-mismatch\""
+            mega_runtime_fail "same-root-six-profile-agreement-decision-symmetry-unexpected-mismatch"
     inl left_product_indexed =
         certified_interval_positive_positional_product_indexed_normal_form_from_rooted (
             certified_interval_positive_positional_same_root_canonical_profile_pair_left_profile authority)
@@ -5047,9 +5230,9 @@ inl certified_interval_positive_positional_six_structural_profile_agreement_term
                     (certified_interval_positive_positional_first_run_multiplicity_shape_runtime right_multiplicity_profile)
             "the-two-independent-six-factorizations-now-keep-both-canonical-outer-shapes-as-existentials-under-one-shared-root-authority-and-both-canonical-first-prime-runs-project-structural-multiplicity-shapes-that-are-single-cell-for-two-before-producing-the-recursive-prime-cell-run-and-group-agreement-witness-so-the-next-uniqueness-cut-can-index-multiplicity-before-the-tail"
     | _, _, CertifiedIntervalPositivePositionalSameRootCanonicalProfileAgreementMismatch _ =>
-        $"failwith \"same-root-six-structural-profile-agreement-mismatch\""
+        mega_runtime_fail "same-root-six-structural-profile-agreement-mismatch"
     | _, _, _ =>
-        $"failwith \"same-root-six-canonical-profiles-were-unexpectedly-empty\""
+        mega_runtime_fail "same-root-six-canonical-profiles-were-unexpectedly-empty"
 
 inl certified_interval_positive_positional_six_distinct_tree_normalization_terminal () : string =
     inl six_value = positive_positional_six_value ()
@@ -5235,10 +5418,10 @@ inl rec certified_arithmetic_positive_exponent_equal_make forall left right.
                 left_previous right_previous)
     | CertifiedArithmeticPositiveExponentOne,
       CertifiedArithmeticPositiveExponentMore _ =>
-        $"failwith \"zeta-positive-exponent-structural-equality-left-shorter\""
+        mega_runtime_fail "zeta-positive-exponent-structural-equality-left-shorter"
     | CertifiedArithmeticPositiveExponentMore _,
       CertifiedArithmeticPositiveExponentOne =>
-        $"failwith \"zeta-positive-exponent-structural-equality-right-shorter\""
+        mega_runtime_fail "zeta-positive-exponent-structural-equality-right-shorter"
 
 inl rec certified_arithmetic_prime_power_exponent forall factor count product.
     (power : certified_arithmetic_prime_power factor count product) :
@@ -5623,9 +5806,9 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_head_equal_aut
                 equal,
                 "same-root-head-equality-now-carries-the-two-concrete-prime-powers-and-their-indexed-equality-under-one-existential-authority"))
         | PositivePositionalOrderDecisionLess _ =>
-            $"failwith \"zeta-uniqueness-head-less-cannot-build-head-equality-authority\""
+            mega_runtime_fail "zeta-uniqueness-head-less-cannot-build-head-equality-authority"
         | PositivePositionalOrderDecisionGreater _ =>
-            $"failwith \"zeta-uniqueness-head-greater-cannot-build-head-equality-authority\""
+            mega_runtime_fail "zeta-uniqueness-head-greater-cannot-build-head-equality-authority"
 
 
 
@@ -5844,11 +6027,11 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_m
                 tail_continuation,
                 "aligned-head-equality-and-BothMore-tail-shape-now-form-a-single-recursion-seed-for-the-future-exponent-and-tail-proof")
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
-            $"failwith \"zeta-aligned-tail-recursion-seed-requires-both-more\""
+            mega_runtime_fail "zeta-aligned-tail-recursion-seed-requires-both-more"
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-            $"failwith \"zeta-aligned-tail-recursion-seed-cannot-start-from-left-mixed\""
+            mega_runtime_fail "zeta-aligned-tail-recursion-seed-cannot-start-from-left-mixed"
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-            $"failwith \"zeta-aligned-tail-recursion-seed-cannot-start-from-right-mixed\""
+            mega_runtime_fail "zeta-aligned-tail-recursion-seed-cannot-start-from-right-mixed"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_recursion_seed_note forall root.
     (seed : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_recursion_seed root) : string =
@@ -5878,11 +6061,11 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_m
                         frontier,
                         "the-BothMore-tail-recursion-seed-now-reopens-the-original-same-root-frontier-before-exponent-and-tail-recursion-can-be-generalized")
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
-                $"failwith \"zeta-tail-frontier-authority-requires-both-more\""
+                mega_runtime_fail "zeta-tail-frontier-authority-requires-both-more"
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-                $"failwith \"zeta-tail-frontier-authority-cannot-start-from-left-mixed\""
+                mega_runtime_fail "zeta-tail-frontier-authority-cannot-start-from-left-mixed"
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-                $"failwith \"zeta-tail-frontier-authority-cannot-start-from-right-mixed\""
+                mega_runtime_fail "zeta-tail-frontier-authority-cannot-start-from-right-mixed"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_frontier_authority_note forall root.
     (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_both_more_tail_frontier_authority root) : string =
@@ -5937,11 +6120,11 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_e
                 exponent_equality_consumed,
                 "aligned-tail-recursion-now-requires-the-recursively-consumed-indexed-head-exponent-equality-beside-the-same-root-and-BothMore-frontier")
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
-            $"failwith \"zeta-tail-exponent-frontier-requires-both-more\""
+            mega_runtime_fail "zeta-tail-exponent-frontier-requires-both-more"
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-            $"failwith \"zeta-tail-exponent-frontier-cannot-start-from-left-mixed\""
+            mega_runtime_fail "zeta-tail-exponent-frontier-cannot-start-from-left-mixed"
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-            $"failwith \"zeta-tail-exponent-frontier-cannot-start-from-right-mixed\""
+            mega_runtime_fail "zeta-tail-exponent-frontier-cannot-start-from-right-mixed"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_frontier_authority_note forall root.
     (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_frontier_authority root) : string =
@@ -5993,11 +6176,11 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_e
                     exponent_frontier,
                     "aligned-tail-exponent-equality-now-starts-from-the-open-recursion-authority-and-reuses-the-same-exponent-frontier")
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
-                $"failwith \"zeta-tail-exponent-seed-requires-both-more\""
+                mega_runtime_fail "zeta-tail-exponent-seed-requires-both-more"
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-                $"failwith \"zeta-tail-exponent-seed-cannot-start-from-left-mixed\""
+                mega_runtime_fail "zeta-tail-exponent-seed-cannot-start-from-left-mixed"
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-                $"failwith \"zeta-tail-exponent-seed-cannot-start-from-right-mixed\""
+                mega_runtime_fail "zeta-tail-exponent-seed-cannot-start-from-right-mixed"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_authority_note forall root.
     (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_authority root) : string =
@@ -6068,9 +6251,9 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_second
                                     left_second_tail, right_second_tail,
                                     "the-second-BothMore-heads-now-carry-indexed-factor-and-exponent-equality-together-with-the-two-next-tail-frontiers-before-recursing-again"))
                             | PositivePositionalOrderDecisionLess _ =>
-                                $"failwith \"zeta-aligned-second-head-less-contradicts-current-same-root-fixture\""
+                                mega_runtime_fail "zeta-aligned-second-head-less-contradicts-current-same-root-fixture"
                             | PositivePositionalOrderDecisionGreater _ =>
-                                $"failwith \"zeta-aligned-second-head-greater-contradicts-current-same-root-fixture\""
+                                mega_runtime_fail "zeta-aligned-second-head-greater-contradicts-current-same-root-fixture"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_second_head_equal_authority_note forall root.
     (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_second_head_equal_authority root) : string =
@@ -6119,9 +6302,9 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_remain
             authority,
             "after-indexed-second-head-equality-both-normal-forms-retain-a-tail-so-only-the-recursive-continuation-crosses-this-boundary")
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-        $"failwith \"zeta-aligned-remaining-tail-cannot-be-left-mixed\""
+        mega_runtime_fail "zeta-aligned-remaining-tail-cannot-be-left-mixed"
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-        $"failwith \"zeta-aligned-remaining-tail-cannot-be-right-mixed\""
+        mega_runtime_fail "zeta-aligned-remaining-tail-cannot-be-right-mixed"
 
 inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_remaining_tail_authority_note forall root.
     (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_remaining_tail_authority root) : string =
@@ -6209,17 +6392,17 @@ inl rec certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_ta
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedTailEqualityLess packed =>
         inl exists left_factor right_factor. _, note = packed
         inl _ = note
-        $"failwith \"zeta-aligned-tail-indexed-Less-obstruction-reaches-final-uniqueness-boundary\""
+        mega_runtime_fail "zeta-aligned-tail-indexed-Less-obstruction-reaches-final-uniqueness-boundary"
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedTailEqualityGreater packed =>
         inl exists left_factor right_factor. _, note = packed
         inl _ = note
-        $"failwith \"zeta-aligned-tail-indexed-Greater-obstruction-reaches-final-uniqueness-boundary\""
+        mega_runtime_fail "zeta-aligned-tail-indexed-Greater-obstruction-reaches-final-uniqueness-boundary"
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedTailEqualityLeftEndedFirst note =>
         inl _ = note
-        $"failwith \"zeta-aligned-tail-left-ended-first-obstruction-reaches-final-uniqueness-boundary\""
+        mega_runtime_fail "zeta-aligned-tail-left-ended-first-obstruction-reaches-final-uniqueness-boundary"
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedTailEqualityRightEndedFirst note =>
         inl _ = note
-        $"failwith \"zeta-aligned-tail-right-ended-first-obstruction-reaches-final-uniqueness-boundary\""
+        mega_runtime_fail "zeta-aligned-tail-right-ended-first-obstruction-reaches-final-uniqueness-boundary"
 
 nominal certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_equality_consumed_authority root =
     certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_exponent_seed_open_authority root *
@@ -6416,9 +6599,9 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_p
                         decide_positive_positional_exact_factor root_value second_value,
                         "one-linked-Mixed-authority-now-keeps-the-singleton-prime-power-strict-second-prime-separation-leafwise-nonfactor-chain-and-root-divisibility-decision-on-the-same-p-and-q-indices"))
                 | PositivePositionalOrderDecisionLess _ =>
-                    $"failwith \"zeta-linked-mixed-left-heads-must-be-equal\""
+                    mega_runtime_fail "zeta-linked-mixed-left-heads-must-be-equal"
                 | PositivePositionalOrderDecisionGreater _ =>
-                    $"failwith \"zeta-linked-mixed-left-heads-must-be-equal\""
+                    mega_runtime_fail "zeta-linked-mixed-left-heads-must-be-equal"
     | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessMixedLeftMoreRightSingleton (frontier, _) =>
         match frontier with
         | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_frontier payload =>
@@ -6450,9 +6633,9 @@ inl certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_p
                         decide_positive_positional_exact_factor root_value second_value,
                         "one-linked-Mixed-authority-now-keeps-the-singleton-prime-power-strict-second-prime-separation-leafwise-nonfactor-chain-and-root-divisibility-decision-on-the-same-p-and-q-indices"))
                 | PositivePositionalOrderDecisionLess _ =>
-                    $"failwith \"zeta-linked-mixed-right-heads-must-be-equal\""
+                    mega_runtime_fail "zeta-linked-mixed-right-heads-must-be-equal"
                 | PositivePositionalOrderDecisionGreater _ =>
-                    $"failwith \"zeta-linked-mixed-right-heads-must-be-equal\""
+                    mega_runtime_fail "zeta-linked-mixed-right-heads-must-be-equal"
 
 nominal certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_euclid_product_descent root =
     exists singleton_factor singleton_count second_factor.
@@ -6502,7 +6685,8 @@ inl certified_arithmetic_kernel_public_surface_root_value forall root.
 
 
 
-inl main () : string =
+// The root's contract, run by main (here) and by runtime_native (on C, Rust and Delphi).
+inl zeta_root_contract () : string =
     inl surface = certified_arithmetic_kernel_terminal ()
     inl _ = certified_arithmetic_kernel_public_surface_root_value surface
     inl rooted_prime_power_nf =
@@ -6512,7 +6696,7 @@ inl main () : string =
             rooted_prime_power_nf
     match twelve_prime_power_decision with
     | CertifiedArithmeticRootedPrimePowerDecisionPrimePower _ =>
-        $"failwith \"zeta-twelve-canonical-normal-form-cannot-be-a-single-prime-power\""
+        mega_runtime_fail "zeta-twelve-canonical-normal-form-cannot-be-a-single-prime-power"
     | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes _ => ()
 
     inl rooted_prime_power_nf_rebuilt =
@@ -6626,7 +6810,7 @@ inl main () : string =
             match aligned_remaining_tail_authority with
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedRemainingTailDone _ => ()
             | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessAlignedRemainingTailRecurse _ =>
-                $"failwith \"zeta-twelve-fixture-second-head-equality-should-close-the-aligned-tail\""
+                mega_runtime_fail "zeta-twelve-fixture-second-head-equality-should-close-the-aligned-tail"
             inl aligned_tail_equality_consumed_authority =
                 certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_aligned_tail_equality_consumed_authority_make
                     aligned_tail_exponent_seed_open_authority
@@ -6639,11 +6823,11 @@ inl main () : string =
                 match tail_case with
                 | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothMore => ()
                 | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBothSingleton =>
-                    $"failwith \"zeta-aligned-tail-continuation-expected-both-more-in-twelve-fixture\""
+                    mega_runtime_fail "zeta-aligned-tail-continuation-expected-both-more-in-twelve-fixture"
                 | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftSingletonRightMore =>
-                    $"failwith \"zeta-aligned-tail-continuation-cannot-be-left-mixed\""
+                    mega_runtime_fail "zeta-aligned-tail-continuation-cannot-be-left-mixed"
                 | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessLeftMoreRightSingleton =>
-                    $"failwith \"zeta-aligned-tail-continuation-cannot-be-right-mixed\""
+                    mega_runtime_fail "zeta-aligned-tail-continuation-cannot-be-right-mixed"
         | CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessBalanceMixed mixed =>
             inl linked_prime_power_divisibility =
                 certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility_make mixed
@@ -6685,7 +6869,7 @@ inl main () : string =
         match left_prime_power_decision with
         | CertifiedArithmeticRootedPrimePowerDecisionPrimePower _ => ()
         | CertifiedArithmeticRootedPrimePowerDecisionMultiplePrimes _ =>
-            $"failwith \"zeta-two-squared-singleton-normal-form-must-be-a-prime-power\""
+            mega_runtime_fail "zeta-two-squared-singleton-normal-form-must-be-a-prime-power"
 
         inl _ = certified_interval_positive_positional_product_multiplicity_run_prime left_run
         inl _ = ordering
@@ -6694,3 +6878,5 @@ inl main () : string =
         inl _ = right_exponent
         inl _ = positive_positional_multiply_result_value reconstruction
         "the-public-Zeta-root-now-adds-a-total-shape-derived-prime-power-decision-over-the-rooted-canonical-normal-form-and-exercises-both-two-squared-as-one-prime-power-and-twelve-as-a-strictly-multi-prime-normal-form-without-importing-factorization-tree-shapes"
+
+inl main () : string = zeta_root_contract ()

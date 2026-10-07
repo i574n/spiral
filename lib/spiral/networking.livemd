@@ -1,0 +1,404 @@
+# networking
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### reqwest_response
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_response =\n    `(\n        native_type\n            `($'reqwest_Response')\n            `($'reqwest_wasm::Response')\n            \"type reqwest_Response = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal reqwest_response =
+      `(
+          native_type
+              `($'reqwest_Response')
+              `($'reqwest_wasm::Response')
+              "type reqwest_Response = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### reqwest_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_error =\n    `(\n        native_type\n            `($'reqwest_Error')\n            `($'reqwest_wasm::Error')\n            \"type reqwest_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal reqwest_error =
+      `(
+          native_type
+              `($'reqwest_Error')
+              `($'reqwest_wasm::Error')
+              "type reqwest_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### request_builder
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;\n// the other backends keep the Fable alias (declared by the global below, as before)\ntype request_builder_switch =\n    {\n        Gleam : $'reqwest_RequestBuilder'\n        Lua : $'reqwest_RequestBuilder'\n        Fsharp : $'reqwest_RequestBuilder'\n        Python : $'reqwest_RequestBuilder'\n        TypeScript : $'reqwest_RequestBuilder'\n        Cpp : $'reqwest_RequestBuilder'\n        CppHost : $'reqwest_RequestBuilder'\n        Delphi : $'reqwest_RequestBuilder'\n        Cuda : $'reqwest_RequestBuilder'\n        C : $'reqwest_RequestBuilder'\n        Rust : $'reqwest_wasm::RequestBuilder'\n    }\nnominal request_builder =\n    `(\n        fsharp_global \"type reqwest_RequestBuilder = class end\"\n        $'' : $'backend_switch `(request_builder_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
+  // the other backends keep the Fable alias (declared by the global below, as before)
+  type request_builder_switch =
+      {
+          Gleam : $'reqwest_RequestBuilder'
+          Lua : $'reqwest_RequestBuilder'
+          Fsharp : $'reqwest_RequestBuilder'
+          Python : $'reqwest_RequestBuilder'
+          TypeScript : $'reqwest_RequestBuilder'
+          Cpp : $'reqwest_RequestBuilder'
+          CppHost : $'reqwest_RequestBuilder'
+          Delphi : $'reqwest_RequestBuilder'
+          Cuda : $'reqwest_RequestBuilder'
+          C : $'reqwest_RequestBuilder'
+          Rust : $'reqwest_wasm::RequestBuilder'
+      }
+  nominal request_builder =
+      `(
+          fsharp_global "type reqwest_RequestBuilder = class end"
+          $'' : $'backend_switch `(request_builder_switch)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### request_type
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union request_type =\n    | Get\n    | Post","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union request_type =
+      | Get
+      | Post
+  """,
+  timeout: 300_000
+)
+```
+
+### request
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type request =\n    {\n        url : string\n        request_type : request_type\n        body : string\n        json : bool\n        auto_refresh : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type request =
+      {
+          url : string
+          request_type : request_type
+          body : string
+          json : bool
+          auto_refresh : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### new_request_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_request_get (url : string) : request_builder =\n    inl url = join url\n    inl url = url |> sm'.to_std_string\n    inl url = join url\n    !\\($'\"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.get(!url)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_request_get (url : string) : request_builder =
+      inl url = join url
+      inl url = url |> sm'.to_std_string
+      inl url = join url
+      !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.get(!url)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_request_post
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_request_post (url : string) : request_builder =\n    inl url = join url\n    inl url = url |> sm'.to_std_string\n    inl url = join url\n    !\\($'\"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.post(!url)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_request_post (url : string) : request_builder =
+      inl url = join url
+      inl url = url |> sm'.to_std_string
+      inl url = join url
+      !\($'"reqwest_wasm::Client::builder().build().map_err(|err| err.to_string())?.post(!url)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### request_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =\n    inl request = join request\n    !\\($'\"Box::pin(reqwest_wasm::RequestBuilder::send(!request))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl request_send (request : request_builder) : async.future_pin (resultm.result' reqwest_response reqwest_error) =
+      inl request = join request
+      !\($'"Box::pin(reqwest_wasm::RequestBuilder::send(!request))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### request_body
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl request_body (body : string) (request : request_builder) : request_builder =\n    inl body = body |> sm'.to_std_string\n    !\\\\(body, $'\"reqwest_wasm::RequestBuilder::body(!request, $0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl request_body (body : string) (request : request_builder) : request_builder =
+      inl body = body |> sm'.to_std_string
+      !\\(body, $'"reqwest_wasm::RequestBuilder::body(!request, $0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### request_header
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl request_header (key : string) (value : string) (request : request_builder) : request_builder =\n    inl request = join request\n    inl key = key |> sm'.to_std_string\n    inl value = value |> sm'.to_std_string\n    !\\\\((key, value), $'\"reqwest_wasm::RequestBuilder::header(!request, $0, $1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl request_header (key : string) (value : string) (request : request_builder) : request_builder =
+      inl request = join request
+      inl key = key |> sm'.to_std_string
+      inl value = value |> sm'.to_std_string
+      !\\((key, value), $'"reqwest_wasm::RequestBuilder::header(!request, $0, $1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### request_json
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl request_json forall t. (obj : t) (request : request_builder) : request_builder =\n    !\\($'\"reqwest_wasm::RequestBuilder::json(!request, &!obj)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl request_json forall t. (obj : t) (request : request_builder) : request_builder =
+      !\($'"reqwest_wasm::RequestBuilder::json(!request, &!obj)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### response_text
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =\n    !\\($'\"Box::pin(reqwest_wasm::Response::text(!response))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl response_text (response : reqwest_response) : async.future_pin (resultm.result' sm'.std_string reqwest_error) =
+      !\($'"Box::pin(reqwest_wasm::Response::text(!response))"')
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### tcp_client
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tcp_client =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"#if FABLE_COMPILER\\n\\ntype System_Net_Sockets_TcpClient = System.IDisposable\\n\\#else\\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\\n#endif\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_Net_Sockets_TcpClient'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal tcp_client =
+      `(
+          backend_switch `(()) `({}) {
+              Fsharp = (fun () =>
+                  global "#if FABLE_COMPILER\n\ntype System_Net_Sockets_TcpClient = System.IDisposable\n\#else\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n#endif\n"
+                          ) : () -> ()
+          }
+          $'' : $'System_Net_Sockets_TcpClient'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_tcp_client
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_tcp_client () : tcp_client =\n    run_target function\n        | Fsharp => fun () => $'new `tcp_client ()'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_tcp_client () : tcp_client =
+      run_target function
+          | Fsharp => fun () => $'new `tcp_client ()'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### ip_address
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ip_address = $'System.Net.IPAddress'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal ip_address = $'System.Net.IPAddress'
+  """,
+  timeout: 300_000
+)
+```
+
+### ip_address_parse
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ip_address_parse (s : string) : ip_address =\n    s |> $'`ip_address.Parse'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ip_address_parse (s : string) : ip_address =
+      s |> $'`ip_address.Parse'
+  """,
+  timeout: 300_000
+)
+```
+
+### tcp_listener
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tcp_listener = $'System.Net.Sockets.TcpListener'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal tcp_listener = $'System.Net.Sockets.TcpListener'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_tcp_listener
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_tcp_listener (ip_address : ip_address) (port : i32) : tcp_listener =\n    $'new `tcp_listener (!ip_address, !port)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_tcp_listener (ip_address : ip_address) (port : i32) : tcp_listener =
+      $'new `tcp_listener (!ip_address, !port)'
+  """,
+  timeout: 300_000
+)
+```
+
+### listener_start
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl listener_start (listener : tcp_listener) : () =\n    listener |> $'_.Start()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl listener_start (listener : tcp_listener) : () =
+      listener |> $'_.Start()'
+  """,
+  timeout: 300_000
+)
+```
+
+### listener_stop
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl listener_stop (listener : tcp_listener) : () =\n    listener |> $'_.Stop()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl listener_stop (listener : tcp_listener) : () =
+      listener |> $'_.Stop()'
+  """,
+  timeout: 300_000
+)
+```
+
+### client_connect_async
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl client_connect_async\n    (host : string)\n    (port : i32)\n    (ct : threading.cancellation_token)\n    (client : tcp_client)\n    : async.value_task\n    =\n    run_target function\n        | Fsharp => fun () => $'!client.ConnectAsync (!host, !port, !ct)'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl client_connect_async
+      (host : string)
+      (port : i32)
+      (ct : threading.cancellation_token)
+      (client : tcp_client)
+      : async.value_task
+      =
+      run_target function
+          | Fsharp => fun () => $'!client.ConnectAsync (!host, !port, !ct)'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl main () =\n    init_trace_state None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl main () =
+      init_trace_state None
+  """,
+  timeout: 300_000
+)
+```

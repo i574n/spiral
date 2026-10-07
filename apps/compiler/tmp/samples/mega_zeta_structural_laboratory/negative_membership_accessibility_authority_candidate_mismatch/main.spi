@@ -1,3 +1,5 @@
+open main
+
 inl impossible_membership_accessibility_authority_candidate_mismatch () :
     certified_interval_positive_positional_membership_accessibility_authority
         positional_one

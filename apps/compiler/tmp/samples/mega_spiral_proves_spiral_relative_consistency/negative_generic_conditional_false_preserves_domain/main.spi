@@ -1,3 +1,5 @@
+open main
+
 inl impossible_generic_conditional_false_preserves_domain
     (derivation : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_unit_type exact_linear_unit_type) :
     exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_unit_type =

@@ -21,17 +21,7 @@ inl to_string' forall t. (x : t) : std_string =
 
 /// ### from_std_string
 inl from_std_string (str : std_string) : string =
-    inl fable () : string = real from_std_string_real str
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         // Native Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
         Rust = fun () => !\\(str, $'"Rc::<str>::from(String::as_str(&$0))"') : string
     }
@@ -628,8 +618,10 @@ inl byte_to_string (format : string) (x : u8) : string =
 /// ### str
 nominal str =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"str\")>]\ntype Str = class end\n\#else\ntype Str = string\n#endif\n"
-        $'' : $'Str'
+        native_type
+            `($'Str')
+            `($'str')
+            "type Str = string"
     )
 
 /// ### chars
@@ -642,115 +634,125 @@ inl char_is_alphanumeric (x : char) : bool =
 
 /// ### byte_slice
 inl byte_slice (s : string) : rust.ref (am'.slice u8) =
-    inl fable () : rust.ref (am'.slice u8) =
-        !\($'"b\\\"" + !s + "\\\""')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()) }' : rust.ref (am'.slice u8)
     }
 
 /// ### display
 nominal display t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::fmt::Display<$0>\")>]\n#endif\ntype std_fmt_Display<'T> = class end"
-        $'' : $'std_fmt_Display<`t>'
+        native_type
+            `($'std_fmt_Display<`t>')
+            `($'std::fmt::Display<`t>')
+            "type std_fmt_Display<'T> = class end"
     )
 
 /// ### base64_decode_error
 nominal base64_decode_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"base64::DecodeError\")>]\n#endif\ntype base64_DecodeError = class end"
-        $'' : $'base64_DecodeError'
+        native_type
+            `($'base64_DecodeError')
+            `($'base64::DecodeError')
+            "type base64_DecodeError = class end"
     )
 
 /// ### borsh_io_error
 nominal borsh_io_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"borsh::io::Error\")>]\n#endif\ntype borsh_io_Error = class end"
-        $'' : $'borsh_io_Error'
+        native_type
+            `($'borsh_io_Error')
+            `($'borsh::io::Error')
+            "type borsh_io_Error = class end"
     )
 
 /// ### utf8_error
 nominal utf8_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::str::Utf8Error\")>]\n#endif\ntype std_str_Utf8Error = class end"
-        $'' : $'std_str_Utf8Error'
+        native_type
+            `($'std_str_Utf8Error')
+            `($'std::str::Utf8Error')
+            "type std_str_Utf8Error = class end"
     )
 
 /// ### from_utf8_error
 nominal from_utf8_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::FromUtf8Error\")>]\n#endif\ntype std_string_FromUtf8Error = class end"
-        $'' : $'std_string_FromUtf8Error'
+        native_type
+            `($'std_string_FromUtf8Error')
+            `($'std::string::FromUtf8Error')
+            "type std_string_FromUtf8Error = class end"
     )
 
 /// ### json_value
 nominal json_value =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Value\")>]\n#endif\ntype serde_json_Value = class end") : () -> ()
-        }
-        $'' : $'serde_json_Value'
+        native_type
+            `($'serde_json_Value')
+            `($'serde_json::Value')
+            "type serde_json_Value = class end"
     )
 
 /// ### json_error
 nominal json_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_json::Error\")>]\n#endif\ntype serde_json_Error = class end"
-        $'' : $'serde_json_Error'
+        native_type
+            `($'serde_json_Error')
+            `($'serde_json::Error')
+            "type serde_json_Error = class end"
     )
 
 /// ### serde_wasm_bindgen_error
 nominal serde_wasm_bindgen_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"serde_wasm_bindgen::Error\")>]\n#endif\ntype serde_wasm_bindgen_Error = class end"
-        $'' : $'serde_wasm_bindgen_Error'
+        native_type
+            `($'serde_wasm_bindgen_Error')
+            `($'serde_wasm_bindgen::Error')
+            "type serde_wasm_bindgen_Error = class end"
     )
 
 /// ### js_string
 nominal js_string =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"js_sys::JsString\")>]\n#endif\ntype js_sys_JsString = class end"
-        $'' : $'js_sys_JsString'
+        native_type
+            `($'js_sys_JsString')
+            `($'js_sys::JsString')
+            "type js_sys_JsString = class end"
     )
 
 /// ### os_str
 nominal os_str =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::ffi::OsStr\")>]\n#endif\ntype std_ffi_OsStr = class end"
-        $'' : $'std_ffi_OsStr'
+        native_type
+            `($'std_ffi_OsStr')
+            `($'std::ffi::OsStr')
+            "type std_ffi_OsStr = class end"
     )
 
 /// ### c_str
 nominal c_str =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::ffi::CStr\")>]\n#endif\ntype std_ffi_CStr = class end"
-        $'' : $'std_ffi_CStr'
+        native_type
+            `($'std_ffi_CStr')
+            `($'std::ffi::CStr')
+            "type std_ffi_CStr = class end"
     )
 
 /// ### c_string
 nominal c_string =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::ffi::CString\")>]\n#endif\ntype std_ffi_CString = class end"
-        $'' : $'std_ffi_CString'
+        native_type
+            `($'std_ffi_CString')
+            `($'std::ffi::CString')
+            "type std_ffi_CString = class end"
     )
 
 /// ### os_string
 nominal os_string =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::ffi::OsString\")>]\n#endif\ntype std_ffi_OsString = class end"
-        $'' : $'std_ffi_OsString'
+        native_type
+            `($'std_ffi_OsString')
+            `($'std::ffi::OsString')
+            "type std_ffi_OsString = class end"
     )
 
 /// ### raw_string_literal
@@ -783,7 +785,7 @@ inl include_str (path : string) : rust.ref str =
 inl as_str (s : string) : rust.ref str =
     // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
     run_target_args (fun () => s) function
-        | Rust _ | RustNative => fun s => !\\(s, $'"&*$0"')
+        | RustNative => fun s => !\\(s, $'"&*$0"')
         | _ => convert.unbox
 
 /// ### from_iter
@@ -793,7 +795,7 @@ inl from_iter forall (t : * -> *). (s : t char) : std_string =
 /// ### ref_to_std_string
 inl ref_to_std_string (str : rust.ref str) : std_string =
     run_target_args (fun () => str) function
-        | Rust _ | RustNative => fun str => !\\(str, $'"String::from($0)"')
+        | RustNative => fun str => !\\(str, $'"String::from($0)"')
         | _ => convert.unbox
 
 /// ### cow_to_std_string
@@ -840,21 +842,21 @@ inl from_os_str_ref s =
 /// ### format_custom'
 inl format_custom' (f : string) x : std_string =
     run_target function
-        | Rust _ | RustNative => fun () =>
+        | RustNative => fun () =>
             !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format_debug'
 inl format_debug' x : std_string =
     run_target function
-        | Rust _ | RustNative => fun () =>
+        | RustNative => fun () =>
             !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format'
 inl format' x : std_string =
     run_target_args (fun () => x) function
-        | Rust _ | RustNative => fun x =>
+        | RustNative => fun x =>
             !\\(x, $'"format\!(\\\"{}\\\", $0)"')
         | _ => fun _ => null ()
 
@@ -869,20 +871,19 @@ inl format'' (format : string) : std_string =
 /// ### regex
 nominal regex =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end"
-                        ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Regex\")>]\n#endif\ntype regex_Regex = class end") : () -> ()
-        }
-        $'' : $'regex_Regex'
+        native_type
+            `($'regex_Regex')
+            `($'regex::Regex')
+            "type regex_Regex = class end"
     )
 
 /// ### regex_error
 nominal regex_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Error\")>]\n#endif\ntype regex_Error = class end"
-        $'' : $'regex_Error'
+        native_type
+            `($'regex_Error')
+            `($'regex::Error')
+            "type regex_Error = class end"
     )
 
 /// ### new_regex
@@ -892,22 +893,28 @@ inl new_regex (pattern : string) : resultm.result' regex regex_error =
 /// ### captures
 nominal regex_captures t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Captures<$0>\")>]\n#endif\ntype regex_Captures<'T> = class end"
-        $'' : $'regex_Captures<`t>'
+        native_type
+            `($'regex_Captures<`t>')
+            `($'regex::Captures<`t>')
+            "type regex_Captures<'T> = class end"
     )
 
 /// ### regex_capture_matches
 nominal regex_capture_matches =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::CaptureMatches\")>]\n#endif\ntype regex_CaptureMatches = class end"
-        $'' : $'regex_CaptureMatches'
+        native_type
+            `($'regex_CaptureMatches')
+            `($'regex::CaptureMatches')
+            "type regex_CaptureMatches = class end"
     )
 
 /// ### regex_capture_names
 nominal regex_capture_names =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::CaptureNames\")>]\n#endif\ntype regex_CaptureNames = class end"
-        $'' : $'regex_CaptureNames'
+        native_type
+            `($'regex_CaptureNames')
+            `($'regex::CaptureNames')
+            "type regex_CaptureNames = class end"
     )
 
 inl regex_capture_names (regex : regex) : regex_capture_names =
@@ -916,8 +923,10 @@ inl regex_capture_names (regex : regex) : regex_capture_names =
 /// ### match'
 nominal match' =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"regex::Match\")>]\n#endif\ntype regex_Match = class end"
-        $'' : $'regex_Match'
+        native_type
+            `($'regex_Match')
+            `($'regex::Match')
+            "type regex_Match = class end"
     )
 
 /// ### regex_captures_iter
@@ -949,10 +958,7 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
                 new_pair n' !\\(n, $'$"!match'.name(&$0).map(|x| x.as_str()).unwrap_or(\\\"\\\").to_string().into()"')
 
-            // Fable's pairs are shared pointers (unwrapped here); native Rust's are plain tuples.
-            if rust.is_native ()
-            then (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).collect()"') : bool) |> ignore
-            else (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).map(|x| std::sync::Arc::try_unwrap(x).unwrap_or_else(|x| (*x).clone())).collect()"') : bool) |> ignore
+            (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).collect()"') : bool) |> ignore
 
             !\($'"_regex_captures"')
 
@@ -1005,9 +1011,8 @@ inl encode_uri_component (s : std_string) : js_string =
 /// ### strip_prefix
 inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =
     inl s = join s
-    if rust.is_native ()
-    then !\($'"!s.strip_prefix((!prefix) as char)"') // a native char is a byte (`b'#'`)
-    else !\($'"!s.strip_prefix(!prefix)"')
+    // a native char is a byte (`b'#'`)
+    !\($'"!s.strip_prefix((!prefix) as char)"')
 
 /// ### str_from_utf8
 inl str_from_utf8 (bytes : rust.ref (am'.slice u8)) : resultm.result' (rust.ref str) utf8_error =
@@ -1036,8 +1041,10 @@ inl base64_decode (s : std_string) : result std_string std_string =
 /// ### encoding'
 nominal encoding' =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"encoding_rs::Encoding\")>]\n#endif\ntype encoding_rs_Encoding = class end"
-        $'' : $'encoding_rs_Encoding'
+        native_type
+            `($'encoding_rs_Encoding')
+            `($'encoding_rs::Encoding')
+            "type encoding_rs_Encoding = class end"
     )
 
 /// ### encoding_utf8'
@@ -1059,8 +1066,10 @@ inl utf8_decode (data : am'.vec u8) : resultm.result' std_string (rust.cow str) 
 /// ### windows
 nominal windows t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::slice::Windows<$0>\")>]\n#endif\ntype std_slice_Windows<'T> = class end"
-        $'' : $'std_slice_Windows<`t>'
+        native_type
+            `($'std_slice_Windows<`t>')
+            `($'std::slice::Windows<`t>')
+            "type std_slice_Windows<'T> = class end"
     )
 
 inl windows (len : convert.unativeint) (source : am'.vec u8) : windows u8 =
@@ -1098,18 +1107,7 @@ inl as_bytes (text : string) : rust.ref (am'.slice u8) =
 
 /// ### into_bytes
 inl into_bytes (x : std_string) : am'.vec u8 =
-    inl fable () : am'.vec u8 =
-        !\\(x, $'$"$0.clone().into_bytes()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         // A copy: Spiral values can be used again after this (`into_bytes` would move the String).
         Rust = fun () => $'(!x).as_bytes().to_vec()' : am'.vec u8
     }
@@ -1147,11 +1145,11 @@ instance to_string result t u = fun x =>
         | string * string =>
             match x with
             | Ok x => x
-            | Error x => $'"sm\'.to_string result / Error: " + !x + ""' : string
+            | Error x => "sm'.to_string result / Error: " ++# x
         | std_string * std_string =>
             match x with
             | Ok x => from_std_string x
-            | Error x => $'"sm\'.to_string result / Error: " + string !x + ""' : string
+            | Error x => "sm'.to_string result / Error: " ++# from_std_string x
         | _ => obj_to_string `u x
 
 /// ### format_exception
@@ -1230,7 +1228,7 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
     run_target_args (fun () => s, pattern, replacement) function
         | Fsharp => fun s, pattern, replacement =>
             $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'
-        | Rust (None) | RustNative => fun s, pattern, replacement =>
+        | RustNative => fun s, pattern, replacement =>
             inl regex = pattern |> new_regex |> resultm.unwrap'
             inl s = join s
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')
@@ -1243,6 +1241,8 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
         | _ => fun _ => join ""
 
 /// ## main
+///> fsharp
+
 inl main () =
     $'let contains x = !contains x' : ()
     $'let ends_with x = !ends_with x' : ()

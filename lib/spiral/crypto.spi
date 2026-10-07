@@ -32,14 +32,10 @@ inl get_file_hash' (path : string) : result string string =
 /// ### sha256'
 nominal sha256' =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"sha2::Sha256\")>]\n#endif\ntype sha2_Sha256 = class end"
-                ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"sha2::Sha256\")>]\n#endif\ntype sha2_Sha256 = class end") : () -> ()
-        }
-        $'' : $'sha2_Sha256'
+        native_type
+            `($'sha2_Sha256')
+            `($'sha2::Sha256')
+            "type sha2_Sha256 = class end"
     )
 
 /// ### new_sha256
@@ -165,7 +161,7 @@ let hash_text (~input : string) =
             create_hash "sha256"
             |> hash_update input
             |> hash_digest "hex"
-        | Rust (None) | RustNative => fun () =>
+        | RustNative => fun () =>
             input
             |> sm'.utf8_get_bytes
             |> fun (a x) => x
@@ -190,6 +186,8 @@ inl hash_to_port (text : string) : u16 =
     combined_value % 48128 + 1024
 
 /// ## main
+///> fsharp
+
 inl main () =
     $'let hash_text x = !hash_text x' : ()
     $'let hash_to_port x = !hash_to_port x' : ()

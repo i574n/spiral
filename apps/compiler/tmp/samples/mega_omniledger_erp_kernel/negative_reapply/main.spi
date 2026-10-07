@@ -1,3 +1,5 @@
+open main
+
 inl impossible_reapply
     (applied : typed_fx_statement_command typed_fx_statement_command_applied)
     : typed_fx_statement_command_transition

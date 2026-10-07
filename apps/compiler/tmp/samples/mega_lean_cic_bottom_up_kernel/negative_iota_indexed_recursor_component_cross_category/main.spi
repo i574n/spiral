@@ -1,3 +1,5 @@
+open main
+
 inl impossible_iota_indexed_recursor_component_cross_category () :
     existential_cic_verified_inductive_iota_indexed_recursor_component =
     ExistentialCicVerifiedInductiveIotaIndexedRecursorComponent (exists (

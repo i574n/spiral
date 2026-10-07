@@ -2051,395 +2051,383 @@ let v44 : bool = method4(v10)
 if v44 then
     ()
 else
-    let v45 : string = "suffix-independent bit derivative equation proof must validate"
-    failwith v45
-    ()
-let v46 : bool = method18(v21)
-if v46 then
+    failwith<unit> "suffix-independent bit derivative equation proof must validate"
+let v45 : bool = method18(v21)
+if v45 then
     ()
 else
-    let v47 : string = "suffix-independent ternary derivative equation proof must validate"
-    failwith v47
-    ()
-let v48 : US0 = US0_0
+    failwith<unit> "suffix-independent ternary derivative equation proof must validate"
+let v46 : US0 = US0_0
+let v47 : UH0 = UH0_2(v46)
+let v48 : US0 = US0_1
 let v49 : UH0 = UH0_2(v48)
-let v50 : US0 = US0_1
-let v51 : UH0 = UH0_2(v50)
-let v52 : UH0 = UH0_3(v49, v51)
-let v53 : UH0 = UH0_5(v52)
-let v54 : US0 = US0_0
-let v55 : UH0 = UH0_2(v54)
-let v56 : UH0 = UH0_4(v53, v55)
-let v57 : UH0 = method5(v32)
-let v58 : bool = method14(v56, v57)
-let v67 : bool =
-    if v58 then
-        let v59 : US0 = method6(v32)
-        let v63 : US4 =
-            match v59 with
+let v50 : UH0 = UH0_3(v47, v49)
+let v51 : UH0 = UH0_5(v50)
+let v52 : US0 = US0_0
+let v53 : UH0 = UH0_2(v52)
+let v54 : UH0 = UH0_4(v51, v53)
+let v55 : UH0 = method5(v32)
+let v56 : bool = method14(v54, v55)
+let v65 : bool =
+    if v56 then
+        let v57 : US0 = method6(v32)
+        let v61 : US4 =
+            match v57 with
             | US0_1 -> (* BitOne *)
                 US4_0
             | US0_0 -> (* BitZero *)
                 US4_1
-        let v64 : bool =
-            match v63 with
+        let v62 : bool =
+            match v61 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v64 then
+        if v62 then
             method4(v32)
         else
             false
     else
         false
-if v67 then
+if v65 then
     ()
 else
-    let v68 : string = "bit derivative equation certificate must bind source and symbol"
-    failwith v68
-    ()
-let v69 : US3 = US3_0
-let v70 : UH2 = UH2_2(v69)
-let v71 : US3 = US3_1
-let v72 : UH2 = UH2_2(v71)
-let v73 : UH2 = UH2_3(v70, v72)
-let v74 : UH2 = UH2_5(v73)
-let v75 : US3 = US3_2
-let v76 : UH2 = UH2_2(v75)
-let v77 : UH2 = UH2_4(v74, v76)
-let v78 : UH2 = method19(v43)
-let v79 : bool = method28(v77, v78)
-let v87 : bool =
-    if v79 then
-        let v80 : US3 = method20(v43)
-        let v83 : US4 =
-            match v80 with
+    failwith<unit> "bit derivative equation certificate must bind source and symbol"
+let v66 : US3 = US3_0
+let v67 : UH2 = UH2_2(v66)
+let v68 : US3 = US3_1
+let v69 : UH2 = UH2_2(v68)
+let v70 : UH2 = UH2_3(v67, v69)
+let v71 : UH2 = UH2_5(v70)
+let v72 : US3 = US3_2
+let v73 : UH2 = UH2_2(v72)
+let v74 : UH2 = UH2_4(v71, v73)
+let v75 : UH2 = method19(v43)
+let v76 : bool = method28(v74, v75)
+let v84 : bool =
+    if v76 then
+        let v77 : US3 = method20(v43)
+        let v80 : US4 =
+            match v77 with
             | US3_0 -> (* TriA *)
                 US4_1
             | _ ->
                 US4_0
-        let v84 : bool =
-            match v83 with
+        let v81 : bool =
+            match v80 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v84 then
+        if v81 then
             method18(v43)
         else
             false
     else
         false
-if v87 then
+if v84 then
     ()
 else
-    let v88 : string = "ternary derivative equation certificate must bind source and symbol"
-    failwith v88
-    ()
-let v89 : US0 = US0_0
-let v90 : UH0 = UH0_2(v89)
-let v91 : US0 = US0_1
+    failwith<unit> "ternary derivative equation certificate must bind source and symbol"
+let v85 : US0 = US0_0
+let v86 : UH0 = UH0_2(v85)
+let v87 : US0 = US0_1
+let v88 : UH0 = UH0_2(v87)
+let v89 : UH0 = UH0_3(v86, v88)
+let v90 : UH0 = UH0_5(v89)
+let v91 : US0 = US0_0
 let v92 : UH0 = UH0_2(v91)
-let v93 : UH0 = UH0_3(v90, v92)
-let v94 : UH0 = UH0_5(v93)
-let v95 : US0 = US0_0
-let v96 : UH0 = UH0_2(v95)
-let v97 : UH0 = UH0_4(v94, v96)
-let v98 : US0 = US0_0
-let v99 : UH1 = method0(v97, v98)
-let v100 : US0 = US0_0
-let v101 : UH0 = UH0_2(v100)
-let v102 : US0 = US0_1
+let v93 : UH0 = UH0_4(v90, v92)
+let v94 : US0 = US0_0
+let v95 : UH1 = method0(v93, v94)
+let v96 : US0 = US0_0
+let v97 : UH0 = UH0_2(v96)
+let v98 : US0 = US0_1
+let v99 : UH0 = UH0_2(v98)
+let v100 : UH0 = UH0_3(v97, v99)
+let v101 : UH0 = UH0_5(v100)
+let v102 : US0 = US0_0
 let v103 : UH0 = UH0_2(v102)
-let v104 : UH0 = UH0_3(v101, v103)
-let v105 : UH0 = UH0_5(v104)
-let v106 : US0 = US0_0
-let v107 : UH0 = UH0_2(v106)
-let v108 : UH0 = UH0_4(v105, v107)
-let v109 : UH0 = method5(v99)
-let v110 : bool = method14(v108, v109)
-let v119 : bool =
-    if v110 then
-        let v111 : US0 = method6(v99)
-        let v115 : US4 =
-            match v111 with
+let v104 : UH0 = UH0_4(v101, v103)
+let v105 : UH0 = method5(v95)
+let v106 : bool = method14(v104, v105)
+let v115 : bool =
+    if v106 then
+        let v107 : US0 = method6(v95)
+        let v111 : US4 =
+            match v107 with
             | US0_1 -> (* BitOne *)
                 US4_0
             | US0_0 -> (* BitZero *)
                 US4_1
-        let v116 : bool =
-            match v115 with
+        let v112 : bool =
+            match v111 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v116 then
-            method4(v99)
+        if v112 then
+            method4(v95)
         else
             false
     else
         false
-let v120 : US0 = US0_0
-let v121 : UH0 = UH0_2(v120)
-let v122 : US0 = US0_1
+let v116 : US0 = US0_0
+let v117 : UH0 = UH0_2(v116)
+let v118 : US0 = US0_1
+let v119 : UH0 = UH0_2(v118)
+let v120 : UH0 = UH0_3(v117, v119)
+let v121 : UH0 = UH0_5(v120)
+let v122 : US0 = US0_0
 let v123 : UH0 = UH0_2(v122)
-let v124 : UH0 = UH0_3(v121, v123)
-let v125 : UH0 = UH0_5(v124)
-let v126 : US0 = US0_0
-let v127 : UH0 = UH0_2(v126)
-let v128 : UH0 = UH0_4(v125, v127)
-let v129 : US0 = US0_0
-let v130 : UH0 = method8(v128, v129)
-let v131 : US3 = US3_0
-let v132 : UH2 = UH2_2(v131)
-let v133 : US3 = US3_1
+let v124 : UH0 = UH0_4(v121, v123)
+let v125 : US0 = US0_0
+let v126 : UH0 = method8(v124, v125)
+let v127 : US3 = US3_0
+let v128 : UH2 = UH2_2(v127)
+let v129 : US3 = US3_1
+let v130 : UH2 = UH2_2(v129)
+let v131 : UH2 = UH2_3(v128, v130)
+let v132 : UH2 = UH2_5(v131)
+let v133 : US3 = US3_2
 let v134 : UH2 = UH2_2(v133)
-let v135 : UH2 = UH2_3(v132, v134)
-let v136 : UH2 = UH2_5(v135)
-let v137 : US3 = US3_2
-let v138 : UH2 = UH2_2(v137)
-let v139 : UH2 = UH2_4(v136, v138)
-let v140 : US3 = US3_0
-let v141 : UH3 = method2(v139, v140)
-let v142 : US3 = US3_0
-let v143 : UH2 = UH2_2(v142)
-let v144 : US3 = US3_1
+let v135 : UH2 = UH2_4(v132, v134)
+let v136 : US3 = US3_0
+let v137 : UH3 = method2(v135, v136)
+let v138 : US3 = US3_0
+let v139 : UH2 = UH2_2(v138)
+let v140 : US3 = US3_1
+let v141 : UH2 = UH2_2(v140)
+let v142 : UH2 = UH2_3(v139, v141)
+let v143 : UH2 = UH2_5(v142)
+let v144 : US3 = US3_2
 let v145 : UH2 = UH2_2(v144)
-let v146 : UH2 = UH2_3(v143, v145)
-let v147 : UH2 = UH2_5(v146)
-let v148 : US3 = US3_2
-let v149 : UH2 = UH2_2(v148)
-let v150 : UH2 = UH2_4(v147, v149)
-let v151 : UH2 = method19(v141)
-let v152 : bool = method28(v150, v151)
-let v160 : bool =
-    if v152 then
-        let v153 : US3 = method20(v141)
-        let v156 : US4 =
-            match v153 with
+let v146 : UH2 = UH2_4(v143, v145)
+let v147 : UH2 = method19(v137)
+let v148 : bool = method28(v146, v147)
+let v156 : bool =
+    if v148 then
+        let v149 : US3 = method20(v137)
+        let v152 : US4 =
+            match v149 with
             | US3_0 -> (* TriA *)
                 US4_1
             | _ ->
                 US4_0
-        let v157 : bool =
-            match v156 with
+        let v153 : bool =
+            match v152 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v157 then
-            method18(v141)
+        if v153 then
+            method18(v137)
         else
             false
     else
         false
-let v161 : US3 = US3_0
-let v162 : UH2 = UH2_2(v161)
-let v163 : US3 = US3_1
+let v157 : US3 = US3_0
+let v158 : UH2 = UH2_2(v157)
+let v159 : US3 = US3_1
+let v160 : UH2 = UH2_2(v159)
+let v161 : UH2 = UH2_3(v158, v160)
+let v162 : UH2 = UH2_5(v161)
+let v163 : US3 = US3_2
 let v164 : UH2 = UH2_2(v163)
-let v165 : UH2 = UH2_3(v162, v164)
-let v166 : UH2 = UH2_5(v165)
-let v167 : US3 = US3_2
-let v168 : UH2 = UH2_2(v167)
-let v169 : UH2 = UH2_4(v166, v168)
-let v170 : US3 = US3_0
-let v171 : UH2 = method22(v169, v170)
-let v172 : US0 = US0_0
-let v173 : US0 = US0_1
-let v174 : UH4 = UH4_0
-let v175 : UH4 = UH4_1(v173, v174)
-let v176 : UH4 = UH4_1(v172, v175)
-let v177 : UH5 = method32(v176)
-let v178 : UH6 = UH6_0
-let v179 : UH5 = UH5_1(v178, v177)
-let v180 : US0 = US0_0
-let v181 : US0 = US0_1
-let v182 : UH4 = UH4_0
-let v183 : UH4 = UH4_1(v181, v182)
-let v184 : UH4 = UH4_1(v180, v183)
-let v185 : US0 = US0_0
-let v186 : US0 = US0_1
-let v187 : UH4 = UH4_0
-let v188 : UH4 = UH4_1(v186, v187)
-let v189 : UH4 = UH4_1(v185, v188)
-let v190 : UH5 = method32(v189)
-let v191 : UH5 = method33(v184, v190)
-let v192 : UH5 = method35(v179, v191)
-let v193 : US3 = US3_0
-let v194 : US3 = US3_1
-let v195 : US3 = US3_2
-let v196 : UH7 = UH7_0
-let v197 : UH7 = UH7_1(v195, v196)
-let v198 : UH7 = UH7_1(v194, v197)
-let v199 : UH7 = UH7_1(v193, v198)
-let v200 : UH8 = method36(v199)
-let v201 : UH9 = UH9_0
-let v202 : UH8 = UH8_1(v201, v200)
-let v203 : US3 = US3_0
-let v204 : US3 = US3_1
-let v205 : US3 = US3_2
-let v206 : UH7 = UH7_0
-let v207 : UH7 = UH7_1(v205, v206)
-let v208 : UH7 = UH7_1(v204, v207)
-let v209 : UH7 = UH7_1(v203, v208)
-let v210 : US3 = US3_0
-let v211 : US3 = US3_1
-let v212 : US3 = US3_2
-let v213 : UH7 = UH7_0
-let v214 : UH7 = UH7_1(v212, v213)
-let v215 : UH7 = UH7_1(v211, v214)
-let v216 : UH7 = UH7_1(v210, v215)
-let v217 : UH8 = method36(v216)
-let v218 : UH8 = method37(v209, v217)
-let v219 : UH8 = method39(v202, v218)
-let v220 : (UH6 -> bool) = closure0(v119, v130)
-let v221 : bool = method48(v220, v192)
-if v221 then
+let v165 : UH2 = UH2_4(v162, v164)
+let v166 : US3 = US3_0
+let v167 : UH2 = method22(v165, v166)
+let v168 : US0 = US0_0
+let v169 : US0 = US0_1
+let v170 : UH4 = UH4_0
+let v171 : UH4 = UH4_1(v169, v170)
+let v172 : UH4 = UH4_1(v168, v171)
+let v173 : UH5 = method32(v172)
+let v174 : UH6 = UH6_0
+let v175 : UH5 = UH5_1(v174, v173)
+let v176 : US0 = US0_0
+let v177 : US0 = US0_1
+let v178 : UH4 = UH4_0
+let v179 : UH4 = UH4_1(v177, v178)
+let v180 : UH4 = UH4_1(v176, v179)
+let v181 : US0 = US0_0
+let v182 : US0 = US0_1
+let v183 : UH4 = UH4_0
+let v184 : UH4 = UH4_1(v182, v183)
+let v185 : UH4 = UH4_1(v181, v184)
+let v186 : UH5 = method32(v185)
+let v187 : UH5 = method33(v180, v186)
+let v188 : UH5 = method35(v175, v187)
+let v189 : US3 = US3_0
+let v190 : US3 = US3_1
+let v191 : US3 = US3_2
+let v192 : UH7 = UH7_0
+let v193 : UH7 = UH7_1(v191, v192)
+let v194 : UH7 = UH7_1(v190, v193)
+let v195 : UH7 = UH7_1(v189, v194)
+let v196 : UH8 = method36(v195)
+let v197 : UH9 = UH9_0
+let v198 : UH8 = UH8_1(v197, v196)
+let v199 : US3 = US3_0
+let v200 : US3 = US3_1
+let v201 : US3 = US3_2
+let v202 : UH7 = UH7_0
+let v203 : UH7 = UH7_1(v201, v202)
+let v204 : UH7 = UH7_1(v200, v203)
+let v205 : UH7 = UH7_1(v199, v204)
+let v206 : US3 = US3_0
+let v207 : US3 = US3_1
+let v208 : US3 = US3_2
+let v209 : UH7 = UH7_0
+let v210 : UH7 = UH7_1(v208, v209)
+let v211 : UH7 = UH7_1(v207, v210)
+let v212 : UH7 = UH7_1(v206, v211)
+let v213 : UH8 = method36(v212)
+let v214 : UH8 = method37(v205, v213)
+let v215 : UH8 = method39(v198, v214)
+let v216 : (UH6 -> bool) = closure0(v115, v126)
+let v217 : bool = method48(v216, v188)
+if v217 then
     ()
 else
-    let v222 : string = "one bit structural certificate must instantiate over every finite suffix probe"
-    failwith v222
-    ()
-let v223 : (UH9 -> bool) = closure1(v160, v171)
-let v224 : bool = method57(v223, v219)
-if v224 then
+    failwith<unit> "one bit structural certificate must instantiate over every finite suffix probe"
+let v218 : (UH9 -> bool) = closure1(v156, v167)
+let v219 : bool = method57(v218, v215)
+if v219 then
     ()
 else
-    let v225 : string = "one ternary structural certificate must instantiate over every finite suffix probe"
-    failwith v225
-    ()
-let v226 : US0 = US0_1
-let v227 : US0 = US0_1
-let v228 : US0 = US0_0
-let v229 : UH6 = UH6_0
-let v230 : UH6 = UH6_1(v228, v229)
-let v231 : UH6 = UH6_1(v227, v230)
-let v232 : UH6 = UH6_1(v226, v231)
-let v233 : US3 = US3_1
-let v234 : US3 = US3_2
-let v235 : UH9 = UH9_0
-let v236 : UH9 = UH9_1(v234, v235)
-let v237 : UH9 = UH9_1(v233, v236)
-let v257 : bool =
-    if v119 then
-        let v238 : US0 = US0_0
-        let v239 : UH6 = UH6_1(v238, v232)
+    failwith<unit> "one ternary structural certificate must instantiate over every finite suffix probe"
+let v220 : US0 = US0_1
+let v221 : US0 = US0_1
+let v222 : US0 = US0_0
+let v223 : UH6 = UH6_0
+let v224 : UH6 = UH6_1(v222, v223)
+let v225 : UH6 = UH6_1(v221, v224)
+let v226 : UH6 = UH6_1(v220, v225)
+let v227 : US3 = US3_1
+let v228 : US3 = US3_2
+let v229 : UH9 = UH9_0
+let v230 : UH9 = UH9_1(v228, v229)
+let v231 : UH9 = UH9_1(v227, v230)
+let v251 : bool =
+    if v115 then
+        let v232 : US0 = US0_0
+        let v233 : UH6 = UH6_1(v232, v226)
+        let v234 : US0 = US0_0
+        let v235 : UH0 = UH0_2(v234)
+        let v236 : US0 = US0_1
+        let v237 : UH0 = UH0_2(v236)
+        let v238 : UH0 = UH0_3(v235, v237)
+        let v239 : UH0 = UH0_5(v238)
         let v240 : US0 = US0_0
         let v241 : UH0 = UH0_2(v240)
-        let v242 : US0 = US0_1
-        let v243 : UH0 = UH0_2(v242)
-        let v244 : UH0 = UH0_3(v241, v243)
-        let v245 : UH0 = UH0_5(v244)
-        let v246 : US0 = US0_0
-        let v247 : UH0 = UH0_2(v246)
-        let v248 : UH0 = UH0_4(v245, v247)
-        let v249 : US0 = US0_0
-        let v250 : UH6 = UH6_1(v249, v232)
-        let v251 : UH5 = method40(v248, v250)
-        let v252 : UH5 = method46(v239, v251)
-        let v253 : UH5 = method40(v130, v232)
-        let v254 : bool = method47(v252, v253)
-        if v254 then
-            method47(v253, v252)
+        let v242 : UH0 = UH0_4(v239, v241)
+        let v243 : US0 = US0_0
+        let v244 : UH6 = UH6_1(v243, v226)
+        let v245 : UH5 = method40(v242, v244)
+        let v246 : UH5 = method46(v233, v245)
+        let v247 : UH5 = method40(v126, v226)
+        let v248 : bool = method47(v246, v247)
+        if v248 then
+            method47(v247, v246)
         else
             false
     else
         false
-if not v257 then failwith "brzozowski-expected-true"
-let v277 : bool =
-    if v160 then
-        let v258 : US3 = US3_0
-        let v259 : UH9 = UH9_1(v258, v237)
-        let v260 : US3 = US3_0
+if v251 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
+let v271 : bool =
+    if v156 then
+        let v252 : US3 = US3_0
+        let v253 : UH9 = UH9_1(v252, v231)
+        let v254 : US3 = US3_0
+        let v255 : UH2 = UH2_2(v254)
+        let v256 : US3 = US3_1
+        let v257 : UH2 = UH2_2(v256)
+        let v258 : UH2 = UH2_3(v255, v257)
+        let v259 : UH2 = UH2_5(v258)
+        let v260 : US3 = US3_2
         let v261 : UH2 = UH2_2(v260)
-        let v262 : US3 = US3_1
-        let v263 : UH2 = UH2_2(v262)
-        let v264 : UH2 = UH2_3(v261, v263)
-        let v265 : UH2 = UH2_5(v264)
-        let v266 : US3 = US3_2
-        let v267 : UH2 = UH2_2(v266)
-        let v268 : UH2 = UH2_4(v265, v267)
-        let v269 : US3 = US3_0
-        let v270 : UH9 = UH9_1(v269, v237)
-        let v271 : UH8 = method49(v268, v270)
-        let v272 : UH8 = method55(v259, v271)
-        let v273 : UH8 = method49(v171, v237)
-        let v274 : bool = method56(v272, v273)
-        if v274 then
-            method56(v273, v272)
+        let v262 : UH2 = UH2_4(v259, v261)
+        let v263 : US3 = US3_0
+        let v264 : UH9 = UH9_1(v263, v231)
+        let v265 : UH8 = method49(v262, v264)
+        let v266 : UH8 = method55(v253, v265)
+        let v267 : UH8 = method49(v167, v231)
+        let v268 : bool = method56(v266, v267)
+        if v268 then
+            method56(v267, v266)
         else
             false
     else
         false
-if not v277 then failwith "brzozowski-expected-true"
-let v278 : UH0 = UH0_1
-let v279 : US0 = US0_0
-let v280 : UH1 = method0(v278, v279)
-let v281 : US0 = US0_0
-let v282 : UH0 = UH0_2(v281)
+if v271 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
+let v272 : UH0 = UH0_1
+let v273 : US0 = US0_0
+let v274 : UH1 = method0(v272, v273)
+let v275 : US0 = US0_0
+let v276 : UH0 = UH0_2(v275)
+let v277 : US0 = US0_0
+let v278 : UH1 = method0(v276, v277)
+let v279 : UH0 = UH0_1
+let v280 : US0 = US0_0
+let v281 : UH1 = method0(v279, v280)
+let v282 : US0 = US0_0
 let v283 : US0 = US0_0
-let v284 : UH1 = method0(v282, v283)
-let v285 : UH0 = UH0_1
-let v286 : US0 = US0_0
-let v287 : UH1 = method0(v285, v286)
-let v288 : US0 = US0_0
-let v289 : US0 = US0_0
-let v290 : US0 = US0_0
-let v291 : UH1 = UH1_2(v289, v290)
-let v292 : US0 = US0_1
-let v293 : US0 = US0_1
-let v294 : UH1 = UH1_2(v292, v293)
-let v295 : UH1 = UH1_3(v288, v291, v294)
-let v296 : bool = method4(v295)
-let v297 : bool = v296 = false
-if v297 then
+let v284 : US0 = US0_0
+let v285 : UH1 = UH1_2(v283, v284)
+let v286 : US0 = US0_1
+let v287 : US0 = US0_1
+let v288 : UH1 = UH1_2(v286, v287)
+let v289 : UH1 = UH1_3(v282, v285, v288)
+let v290 : bool = method4(v289)
+let v291 : bool = v290 = false
+if v291 then
     ()
 else
-    let v298 : string = "a child proof from another symbol context must be rejected"
-    failwith v298
-    ()
-let v299 : US0 = US0_0
-let v300 : US1 = US1_1
-let v301 : UH1 = UH1_4(v299, v300, v280, v284)
-let v302 : bool = method4(v301)
-let v303 : bool = v302 = false
-if v303 then
+    failwith<unit> "a child proof from another symbol context must be rejected"
+let v292 : US0 = US0_0
+let v293 : US1 = US1_1
+let v294 : UH1 = UH1_4(v292, v293, v274, v278)
+let v295 : bool = method4(v294)
+let v296 : bool = v295 = false
+if v296 then
     ()
 else
-    let v304 : string = "a forged nullable concatenation branch must be rejected"
-    failwith v304
-    ()
-let v305 : UH0 = UH0_0
-let v306 : UH0 = method5(v287)
-let v307 : bool = method14(v305, v306)
-let v316 : bool =
-    if v307 then
-        let v308 : US0 = method6(v287)
-        let v312 : US4 =
-            match v308 with
+    failwith<unit> "a forged nullable concatenation branch must be rejected"
+let v297 : UH0 = UH0_0
+let v298 : UH0 = method5(v281)
+let v299 : bool = method14(v297, v298)
+let v308 : bool =
+    if v299 then
+        let v300 : US0 = method6(v281)
+        let v304 : US4 =
+            match v300 with
             | US0_1 -> (* BitOne *)
                 US4_0
             | US0_0 -> (* BitZero *)
                 US4_1
-        let v313 : bool =
-            match v312 with
+        let v305 : bool =
+            match v304 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v313 then
-            method4(v287)
+        if v305 then
+            method4(v281)
         else
             false
     else
         false
-let v317 : bool = v316 = false
-if v317 then
+let v309 : bool = v308 = false
+if v309 then
     ()
 else
-    let v318 : string = "a forged source binding must be rejected"
-    failwith v318
-    ()
-let v319 : string = "brzozowski-derivative-universal-witness-green"
-v319
+    failwith<unit> "a forged source binding must be rejected"
+let v310 : string = "brzozowski-derivative-universal-witness-green"
+v310

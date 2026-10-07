@@ -22,28 +22,6 @@ inl severity = function
 /// ### read_state
 inl read_state () =
     run_target function
-        | Rust (Some (Wasm)) => fun () =>
-            {
-                trace_level = None
-                repl_start = None
-            }
-        | Rust (Some (Contract)) => fun () =>
-            {
-                trace_level = None
-                repl_start =
-                    open rust.rust_operators
-                    inl automation = env.get_environment_variable_comptime "AUTOMATION"
-                    if automation <>. "True"
-                    then None
-                    else
-                        inl timestamp : u64 = !\($'$"near_sdk::env::block_timestamp()"')
-                        timestamp |> convert.i64 |> Some
-            }
-        | Rust _ => fun () =>
-            {
-                trace_level = None
-                repl_start = None
-            }
         // Native binaries honor TRACE_LEVEL like the F# and Python ones (None meant Verbose: every lib trace printed).
         | RustNative => fun () =>
             {
@@ -215,31 +193,6 @@ inl trace_raw level fn =
                 open rust
                 open rust.rust_operators
                 run_target_args (fun () => text, console.write_line) function
-                    | Rust (Some (Contract)) => fun text, _ =>
-                        inl new_acc =
-                            if *acc = ""
-                            then text
-                            elif text = ""
-                            then *acc
-                            else *acc ++\# text
-                        inl chunks =
-                            new_acc
-                            |> sm'.as_str
-                            |> sm'.chars
-                            |> rust.from_mut
-                            |> iter_collect
-                            |> am'.vec_chunks 15000
-                            |> am'.vec_map sm'.from_iter
-                            |> am'.from_vec
-                        inl chunks_len = chunks |> am'.length
-                        if text <>. "" && chunks_len <= 1i32
-                        then acc <- new_acc
-                        else
-                            acc <- ""
-                            chunks
-                            |> am.iter near.log
-                    | Rust _ => fun text, _ =>
-                        !\\(text, $'"println\!(\\\"{}\\\", $0)"')
                     // In a NEAR contract (wasm32) stdout goes nowhere: the trace goes to the contract's logs instead,
                     // gathered as in the Contract arm above (a call's lines become one log, in 15000-char chunks, when
                     // its trailing empty trace runs), since NEAR fails a receipt with more than 100 logs or more than
@@ -284,28 +237,16 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
             join
                 run_target fun target =>
                     match target with
-                    | Rust (Some (Contract)) => fun () =>
-                        open rust.rust_operators
-                        open rust
-                        inl timestamp = near.block_timestamp ()
-                        inl timestamp =
-                            match trace_state.repl_start |> optionm'.unbox with
-                            | Some repl_start => timestamp - convert.u64 repl_start
-                            | None => timestamp
-                        inl timestamp_s = timestamp / 1_000_000_000
-                        inl s = timestamp_s % 60
-                        inl m = (timestamp_s / 60) % 60
-                        inl h = (timestamp_s / 3600) % 24
-                        inl str : sm'.std_string =
-                            !\\((h, m, s), $'$"format\!(\\\"{{:02}}:{{:02}}:{{:02}}\\\", $0, $1, $2)"')
-                        str |> sm'.from_std_string
                     // A wasm build runs as a NEAR contract (`///> rust -c` / `-w`), where std's clock panics ("time not
                     // implemented on this platform"): it reads the block timestamp instead, like the Fable contract arm.
                     // Elsewhere local time, as F#'s DateTime.Now, without a dependency: GetLocalTime on Windows,
                     // localtime_r (libc) on Unix.
                     | RustNative => fun () =>
                         open rust.rust_operators
-                        !\\((), $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = \\\"wasm32\\\")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern \\\"system\\\" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = \\\"wasm32\\\")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern \\\"C\\\" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = \\\"wasm32\\\")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; let mut buf = String::new(); let push = |buf: &mut String, n: u64| { if n < 10 { buf.push(char::from(48)); } buf.push_str(&n.to_string()); }; push(&mut buf, h); buf.push(char::from(58)); push(&mut buf, m); buf.push(char::from(58)); push(&mut buf, s); Rc::<str>::from(buf) }"') : string
+                        // the clock natively (seconds of the day), its hh:mm:ss text in Spiral
+                        inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
+                        inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
+                        two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
                     | TypeScript when typescript.is_native () => fun () =>
                         $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
                     | _ => fun () =>
@@ -340,7 +281,7 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                                 Lua = fun () => "%H:%M:%S"
                                 Fsharp = fun () =>
                                     match target with
-                                    | Rust _ | RustNative => join "hh:mm:ss"
+                                    | RustNative => join "hh:mm:ss"
                                     | _ => join "HH:mm:ss"
                                 Python = fun () => "%H:%M:%S"
                             }
@@ -384,6 +325,8 @@ inl trace_format level fn obj =
     obj
 
 /// ## main
+///> fsharp
+
 inl main () =
     init_trace_state None
     inl trace level text_fn (locals : () -> string) = trace level text_fn locals

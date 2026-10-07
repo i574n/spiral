@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recursive_child_refusal_without_strict_descent () =
     inl four = positive_positional_four_value ()
     inl child_refusal =

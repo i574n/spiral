@@ -1,3 +1,5 @@
+open main
+
 inl impossible_direct_marker_sync
     (schedule : typed_fx_statement_recursive_writer_raw_cas_schedule)
     : typed_fx_statement_durable_commit typed_fx_statement_durable_marker_synced =

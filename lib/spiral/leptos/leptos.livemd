@@ -1,0 +1,2989 @@
+# leptos
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust.rust_operators\nopen rust\nopen sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust.rust_operators
+  open rust
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+### a'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal a' = $'leptos::html::A'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal a' = $'leptos::html::A'
+  """,
+  timeout: 300_000
+)
+```
+
+### event
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal event = $'leptos::ev::Event'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal event = $'leptos::ev::Event'
+  """,
+  timeout: 300_000
+)
+```
+
+### mouse_event
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mouse_event = $'leptos::ev::MouseEvent'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal mouse_event = $'leptos::ev::MouseEvent'
+  """,
+  timeout: 300_000
+)
+```
+
+### button
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal button = $'leptos::html::Button'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal button = $'leptos::html::Button'
+  """,
+  timeout: 300_000
+)
+```
+
+### details
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal details = $'leptos::html::Details'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal details = $'leptos::html::Details'
+  """,
+  timeout: 300_000
+)
+```
+
+### dd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dd = $'leptos::html::Dd'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal dd = $'leptos::html::Dd'
+  """,
+  timeout: 300_000
+)
+```
+
+### div
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal div = $'leptos::html::Div'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal div = $'leptos::html::Div'
+  """,
+  timeout: 300_000
+)
+```
+
+### dl
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dl = $'leptos::html::Dl'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal dl = $'leptos::html::Dl'
+  """,
+  timeout: 300_000
+)
+```
+
+### dt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dt = $'leptos::html::Dt'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal dt = $'leptos::html::Dt'
+  """,
+  timeout: 300_000
+)
+```
+
+### footer
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal footer = $'leptos::html::Footer'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal footer = $'leptos::html::Footer'
+  """,
+  timeout: 300_000
+)
+```
+
+### header
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal header = $'leptos::html::Header'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal header = $'leptos::html::Header'
+  """,
+  timeout: 300_000
+)
+```
+
+### input
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal input = $'leptos::html::Input'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal input = $'leptos::html::Input'
+  """,
+  timeout: 300_000
+)
+```
+
+### label
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal label = $'leptos::html::Label'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal label = $'leptos::html::Label'
+  """,
+  timeout: 300_000
+)
+```
+
+### main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal main = $'leptos::html::Main'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal main = $'leptos::html::Main'
+  """,
+  timeout: 300_000
+)
+```
+
+### nav
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal nav = $'leptos::html::Nav'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal nav = $'leptos::html::Nav'
+  """,
+  timeout: 300_000
+)
+```
+
+### option'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal option' = $'leptos::html::Option_'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal option' = $'leptos::html::Option_'
+  """,
+  timeout: 300_000
+)
+```
+
+### pre
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal pre = $'leptos::html::Pre'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal pre = $'leptos::html::Pre'
+  """,
+  timeout: 300_000
+)
+```
+
+### select
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal select = $'leptos::html::Select'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal select = $'leptos::html::Select'
+  """,
+  timeout: 300_000
+)
+```
+
+### span
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal span = $'leptos::html::Span'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal span = $'leptos::html::Span'
+  """,
+  timeout: 300_000
+)
+```
+
+### summary
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal summary = $'leptos::html::Summary'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal summary = $'leptos::html::Summary'
+  """,
+  timeout: 300_000
+)
+```
+
+### table
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal table = $'leptos::html::Table'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal table = $'leptos::html::Table'
+  """,
+  timeout: 300_000
+)
+```
+
+### thead
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal thead = $'leptos::html::Thead'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal thead = $'leptos::html::Thead'
+  """,
+  timeout: 300_000
+)
+```
+
+### tbody
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tbody = $'leptos::html::Tbody'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal tbody = $'leptos::html::Tbody'
+  """,
+  timeout: 300_000
+)
+```
+
+### tr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tr = $'leptos::html::Tr'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal tr = $'leptos::html::Tr'
+  """,
+  timeout: 300_000
+)
+```
+
+### th
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal th = $'leptos::html::Th'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal th = $'leptos::html::Th'
+  """,
+  timeout: 300_000
+)
+```
+
+### td
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal td = $'leptos::html::Td'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal td = $'leptos::html::Td'
+  """,
+  timeout: 300_000
+)
+```
+
+### svg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal svg = $'leptos::svg::Svg'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal svg = $'leptos::svg::Svg'
+  """,
+  timeout: 300_000
+)
+```
+
+### path
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal path = $'leptos::svg::Path'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal path = $'leptos::svg::Path'
+  """,
+  timeout: 300_000
+)
+```
+
+### circle
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal circle = $'leptos::svg::Circle'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal circle = $'leptos::svg::Circle'
+  """,
+  timeout: 300_000
+)
+```
+
+### rect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rect = $'leptos::svg::Rect'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rect = $'leptos::svg::Rect'
+  """,
+  timeout: 300_000
+)
+```
+
+### animate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal animate = $'leptos::svg::Animate'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal animate = $'leptos::svg::Animate'
+  """,
+  timeout: 300_000
+)
+```
+
+### action
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal action t u = $'leptos::prelude::Action<`t, `u>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal action t u = $'leptos::prelude::Action<`t, `u>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_action t u = $'leptos::prelude::ArcAction<`t, `u>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_action t u = $'leptos::prelude::ArcAction<`t, `u>'
+  """,
+  timeout: 300_000
+)
+```
+
+### for
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal for = $'leptos::prelude::For'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal for = $'leptos::prelude::For'
+  """,
+  timeout: 300_000
+)
+```
+
+### show
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal show = $'leptos::prelude::Show'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal show = $'leptos::prelude::Show'
+  """,
+  timeout: 300_000
+)
+```
+
+### fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this\n// spelling.\nnominal fragment = $'leptos::prelude::Fragment'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this
+  // spelling.
+  nominal fragment = $'leptos::prelude::Fragment'
+  """,
+  timeout: 300_000
+)
+```
+
+### text
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal text = $'leptos::tachys::renderer::dom::Text'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal text = $'leptos::tachys::renderer::dom::Text'
+  """,
+  timeout: 300_000
+)
+```
+
+### route
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal route = $'leptos_router::Route'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal route = $'leptos_router::Route'
+  """,
+  timeout: 300_000
+)
+```
+
+### nested_route
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal nested_route = $'leptos_router::NestedRoute<_, _, _, _>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal nested_route = $'leptos_router::NestedRoute<_, _, _, _>'
+  """,
+  timeout: 300_000
+)
+```
+
+### route_definition
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal route_definition = $'leptos_router::RouteDefinition'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal route_definition = $'leptos_router::RouteDefinition'
+  """,
+  timeout: 300_000
+)
+```
+
+### router
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal router = $'leptos_router::Router'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal router = $'leptos_router::Router'
+  """,
+  timeout: 300_000
+)
+```
+
+### routes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal routes = $'leptos_router::Routes'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal routes = $'leptos_router::Routes'
+  """,
+  timeout: 300_000
+)
+```
+
+### html_element
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal html_element t = $'leptos::html::HtmlElement<`t, _, _>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal html_element t = $'leptos::html::HtmlElement<`t, _, _>'
+  """,
+  timeout: 300_000
+)
+```
+
+### into_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal into_view = $'leptos::IntoView'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal into_view = $'leptos::IntoView'
+  """,
+  timeout: 300_000
+)
+```
+
+### location
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal location = $'leptos_router::location::Location'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal location = $'leptos_router::location::Location'
+  """,
+  timeout: 300_000
+)
+```
+
+### navigate_options
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal navigate_options = $'leptos_router::NavigateOptions'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal navigate_options = $'leptos_router::NavigateOptions'
+  """,
+  timeout: 300_000
+)
+```
+
+### url
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal url = $'leptos_router::location::Url'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal url = $'leptos_router::location::Url'
+  """,
+  timeout: 300_000
+)
+```
+
+### memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal memo t = $'leptos::prelude::Memo<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal memo t = $'leptos::prelude::Memo<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a\n// SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.\nnominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a
+  // SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.
+  nominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'
+  """,
+  timeout: 300_000
+)
+```
+
+### rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_signal t = $'leptos::prelude::RwSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal rw_signal t = $'leptos::prelude::RwSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_rw_signal t = $'leptos::prelude::ArcRwSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_rw_signal t = $'leptos::prelude::ArcRwSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal signal t = $'leptos::prelude::Signal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal signal t = $'leptos::prelude::Signal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_signal t = $'leptos::prelude::ArcSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_signal t = $'leptos::prelude::ArcSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### read_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal read_signal t = $'leptos::prelude::ReadSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal read_signal t = $'leptos::prelude::ReadSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_read_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_read_signal t = $'leptos::prelude::ArcReadSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_read_signal t = $'leptos::prelude::ArcReadSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### write_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal write_signal t = $'leptos::prelude::WriteSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal write_signal t = $'leptos::prelude::WriteSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_write_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_write_signal t = $'leptos::prelude::ArcWriteSignal<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_write_signal t = $'leptos::prelude::ArcWriteSignal<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### resource
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal resource t u = $'leptos::prelude::Resource<`t, `u>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal resource t u = $'leptos::prelude::Resource<`t, `u>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_resource
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_resource t u = $'leptos::prelude::ArcResource<`t, `u>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_resource t u = $'leptos::prelude::ArcResource<`t, `u>'
+  """,
+  timeout: 300_000
+)
+```
+
+### local_resource
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal local_resource t u = $'leptos::prelude::LocalResource<`t, `u>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal local_resource t u = $'leptos::prelude::LocalResource<`t, `u>'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_local_resource
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_local_resource t = $'leptos::prelude::ArcLocalResource<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arc_local_resource t = $'leptos::prelude::ArcLocalResource<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### any_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal any_view = $'leptos::prelude::AnyView'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal any_view = $'leptos::prelude::AnyView'
+  """,
+  timeout: 300_000
+)
+```
+
+### view'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal view' t = $'leptos::prelude::View<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal view' t = $'leptos::prelude::View<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal view = $'leptos::prelude::AnyView'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal view = $'leptos::prelude::AnyView'
+  """,
+  timeout: 300_000
+)
+```
+
+### keyboard_event
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal keyboard_event = $'web_sys::KeyboardEvent'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal keyboard_event = $'web_sys::KeyboardEvent'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype signal_get signal t : signal t -> t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype signal_get signal t : signal t -> t
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get_untracked
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype signal_get_untracked signal t : signal t -> t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype signal_get_untracked signal t : signal t -> t
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_update
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype signal_update signal t : (t -> t) -> signal t -> ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype signal_update signal t : (t -> t) -> signal t -> ()
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_set
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype signal_set signal t : t -> signal t -> ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype signal_set signal t : t -> signal t -> ()
+  """,
+  timeout: 300_000
+)
+```
+
+### prelude
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.\ninl prelude () =\n    global \"use leptos::prelude::*;\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.
+  inl prelude () =
+      global "use leptos::prelude::*;"
+  """,
+  timeout: 300_000
+)
+```
+
+### send_wrapper
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's\n// are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).\nnominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's
+  // are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).
+  nominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### send_wrapper_new
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl send_wrapper_new forall t. (x : t) : send_wrapper t =\n    !\\\\(x, $'\"leptos::__reexports::send_wrapper::SendWrapper::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl send_wrapper_new forall t. (x : t) : send_wrapper t =
+      !\\(x, $'"leptos::__reexports::send_wrapper::SendWrapper::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### send_wrapper_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl send_wrapper_get forall t. (x : send_wrapper t) : t =\n    $'(*!x).clone()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl send_wrapper_get forall t. (x : send_wrapper t) : t =
+      $'(*!x).clone()'
+  """,
+  timeout: 300_000
+)
+```
+
+### log_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_string (text : string) : () =\n    $'leptos::logging::log\\!(\"{}\", !text)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log_string (text : string) : () =
+      $'leptos::logging::log\!("{}", !text)'
+  """,
+  timeout: 300_000
+)
+```
+
+### log
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log (text : string) : () =\n    $'leptos::logging::log\\!(\"{}\", !text)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log (text : string) : () =
+      $'leptos::logging::log\!("{}", !text)'
+  """,
+  timeout: 300_000
+)
+```
+
+### log_debug
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_debug (text : string) : () =\n    $'leptos::logging::log\\!(\"{:?}\", !text)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log_debug (text : string) : () =
+      $'leptos::logging::log\!("{:?}", !text)'
+  """,
+  timeout: 300_000
+)
+```
+
+### log_pretty
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_pretty (text : string) : () =\n    $'leptos::logging::log\\!(\"{:\\#?}\", !text)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log_pretty (text : string) : () =
+      $'leptos::logging::log\!("{:\#?}", !text)'
+  """,
+  timeout: 300_000
+)
+```
+
+### log_format
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_format fn obj =\n    inl text = #?*obj |> fn |> sm'.ellipsis_end 200\n    text |> log\n    obj","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log_format fn obj =
+      inl text = #?*obj |> fn |> sm'.ellipsis_end 200
+      text |> log
+      obj
+  """,
+  timeout: 300_000
+)
+```
+
+### mount_to_body
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl mount_to_body (view_fn : () -> view) : () =\n    $'{ leptos::prelude::mount_to_body(move || (!view_fn)()); }'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl mount_to_body (view_fn : () -> view) : () =
+      $'{ leptos::prelude::mount_to_body(move || (!view_fn)()); }'
+  """,
+  timeout: 300_000
+)
+```
+
+### view_vec_to_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view_vec_to_fragment (view : am'.vec view) : fragment =\n    !\\\\(view, $'\"leptos::prelude::Fragment::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view_vec_to_fragment (view : am'.vec view) : fragment =
+      !\\(view, $'"leptos::prelude::Fragment::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### view_list_to_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view_list_to_fragment (view : list view) : fragment =\n    view\n    |> am'.new_vec\n    |> view_vec_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view_list_to_fragment (view : list view) : fragment =
+      view
+      |> am'.new_vec
+      |> view_vec_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### element_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl element_to_view (view : view' (html_element _)) : view =\n    !\\\\(view, $'\"leptos::prelude::IntoAny::into_any($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl element_to_view (view : view' (html_element _)) : view =
+      !\\(view, $'"leptos::prelude::IntoAny::into_any($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### view_to_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view_to_fragment (view : view) : fragment =\n    [ view ]\n    |> view_list_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view_to_fragment (view : view) : fragment =
+      [ view ]
+      |> view_list_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### fragment_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fragment_to_view (fragment : fragment) : view =\n    !\\\\(fragment, $'\"leptos::prelude::AnyView::from($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fragment_to_view (fragment : fragment) : view =
+      !\\(fragment, $'"leptos::prelude::AnyView::from($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### element_to_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl element_to_fragment (view : view' (html_element _)) : fragment =\n    view\n    |> element_to_view\n    |> view_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl element_to_fragment (view : view' (html_element _)) : fragment =
+      view
+      |> element_to_view
+      |> view_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### (~:>) fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance (~:>) fragment = fun x =>\n    real\n        typecase t with\n        | array_base (view' (html_element ~el)) =>\n            inl x = a x\n            inl x = am.toList `a `int `(view' (html_element el)) x\n            inl x = listm.map `(view' (html_element el)) `view (element_to_view `el) x\n            view_list_to_fragment x\n        | list (view' (html_element ~el)) =>\n            inl x = listm.map `(view' (html_element el)) `view (element_to_view `el) x\n            view_list_to_fragment x\n        | list view =>\n            view_list_to_fragment x\n        | _ => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance (~:>) fragment = fun x =>
+      real
+          typecase t with
+          | array_base (view' (html_element ~el)) =>
+              inl x = a x
+              inl x = am.toList `a `int `(view' (html_element el)) x
+              inl x = listm.map `(view' (html_element el)) `view (element_to_view `el) x
+              view_list_to_fragment x
+          | list (view' (html_element ~el)) =>
+              inl x = listm.map `(view' (html_element el)) `view (element_to_view `el) x
+              view_list_to_fragment x
+          | list view =>
+              view_list_to_fragment x
+          | _ => x
+  """,
+  timeout: 300_000
+)
+```
+
+### (~:>) view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance (~:>) view = fun x =>\n    real\n        typecase t with\n        | view' (html_element _) => element_to_view x\n        | _ => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance (~:>) view = fun x =>
+      real
+          typecase t with
+          | view' (html_element _) => element_to_view x
+          | _ => x
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_to_view (views : am'.vec view) : view =\n    !\\\\(views, $'\"leptos::prelude::IntoAny::into_any($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_to_view (views : am'.vec view) : view =
+      !\\(views, $'"leptos::prelude::IntoAny::into_any($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### view_list_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view_list_to_view (views : list view) : view =\n    views\n    |> am'.new_vec\n    |> vec_to_view","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view_list_to_view (views : list view) : view =
+      views
+      |> am'.new_vec
+      |> vec_to_view
+  """,
+  timeout: 300_000
+)
+```
+
+### text_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl text_to_view (text : string) : view =\n    inl text = text |> sm'.to_std_string\n    !\\\\(text, $'\"leptos::prelude::IntoAny::into_any(leptos::prelude::IntoView::into_view($0))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl text_to_view (text : string) : view =
+      inl text = text |> sm'.to_std_string
+      !\\(text, $'"leptos::prelude::IntoAny::into_any(leptos::prelude::IntoView::into_view($0))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### text_to_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl text_to_fragment (text : string) : fragment =\n    text\n    |> text_to_view\n    |> view_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl text_to_fragment (text : string) : fragment =
+      text
+      |> text_to_view
+      |> view_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### macro_to_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).\ninl macro_to_view (macro : string) : view =\n    prelude ()\n    !\\($'\"leptos::prelude::IntoAny::into_any(leptos::prelude::view\\! { \" + !macro + \" })\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).
+  inl macro_to_view (macro : string) : view =
+      prelude ()
+      !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
+  """,
+  timeout: 300_000
+)
+```
+
+### macro_to_element
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl macro_to_element (macro : string) : view' (html_element _) =\n    prelude ()\n    !\\($'\"leptos::prelude::view\\! { \" + !macro + \" }\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl macro_to_element (macro : string) : view' (html_element _) =
+      prelude ()
+      !\($'"leptos::prelude::view\! { " + !macro + " }"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_any_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_any_view (view : view' _) : view =\n    !\\\\(view, $'\"leptos::prelude::IntoAny::into_any($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_any_view (view : view' _) : view =
+      !\\(view, $'"leptos::prelude::IntoAny::into_any($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_text
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_text (text : string) : text =\n    !\\\\(text, $'\"leptos::tachys::renderer::dom::Dom::create_text_node(&*$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_text (text : string) : text =
+      !\\(text, $'"leptos::tachys::renderer::dom::Dom::create_text_node(&*$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### text_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl text_view (text : string) : view =\n    text\n    |> text_to_view","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl text_view (text : string) : view =
+      text
+      |> text_to_view
+  """,
+  timeout: 300_000
+)
+```
+
+### text_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl text_fragment (text : string) : fragment =\n    text\n    |> text_view\n    |> view_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl text_fragment (text : string) : fragment =
+      text
+      |> text_view
+      |> view_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### provide_meta_context
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl provide_meta_context () : () =\n    $'leptos_meta::provide_meta_context()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl provide_meta_context () : () =
+      $'leptos_meta::provide_meta_context()'
+  """,
+  timeout: 300_000
+)
+```
+
+### provide_context
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// read back by use_context\ninl provide_context forall t. (x : t) : () =\n    inl x = x |> send_wrapper_new\n    $'leptos::context::provide_context(!x)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // read back by use_context
+  inl provide_context forall t. (x : t) : () =
+      inl x = x |> send_wrapper_new
+      $'leptos::context::provide_context(!x)'
+  """,
+  timeout: 300_000
+)
+```
+
+### use_context
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_context forall t. () : optionm'.option' t =\n    $'leptos::context::use_context::<leptos::__reexports::send_wrapper::SendWrapper<`t>>().map(|x| (*x).clone())'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl use_context forall t. () : optionm'.option' t =
+      $'leptos::context::use_context::<leptos::__reexports::send_wrapper::SendWrapper<`t>>().map(|x| (*x).clone())'
+  """,
+  timeout: 300_000
+)
+```
+
+### create_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl create_signal forall t. (value : t) : read_signal t * write_signal t =\n    !\\\\(value, $'\"leptos::prelude::signal($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl create_signal forall t. (value : t) : read_signal t * write_signal t =
+      !\\(value, $'"leptos::prelude::signal($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_rw_signal forall t. (value : t) : rw_signal t =\n    !\\\\(value, $'\"leptos::prelude::RwSignal::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_rw_signal forall t. (value : t) : rw_signal t =
+      !\\(value, $'"leptos::prelude::RwSignal::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arc_rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arc_rw_signal forall t. (value : t) : arc_rw_signal t =\n    !\\\\(value, $'\"leptos::prelude::ArcRwSignal::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_arc_rw_signal forall t. (value : t) : arc_rw_signal t =
+      !\\(value, $'"leptos::prelude::ArcRwSignal::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### read_only
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_only forall t. (value : rw_signal t) : read_signal t =\n    !\\\\(value, $'\"leptos::prelude::RwSignal::read_only(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl read_only forall t. (value : rw_signal t) : read_signal t =
+      !\\(value, $'"leptos::prelude::RwSignal::read_only(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### write_only
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_only forall t. (value : rw_signal t) : write_signal t =\n    !\\\\(value, $'\"leptos::prelude::RwSignal::write_only(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl write_only forall t. (value : rw_signal t) : write_signal t =
+      !\\(value, $'"leptos::prelude::RwSignal::write_only(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### typecheck_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl typecheck_signal forall (t : * -> *) u. (signal : t u) : () =\n    real\n        typecase t with\n        | signal => ()\n        | arc_signal => ()\n        | rw_signal => ()\n        | arc_rw_signal => ()\n        | read_signal => ()\n        | arc_read_signal => ()\n        | write_signal => ()\n        | arc_write_signal => ()\n        | memo => ()\n        | arc_memo => ()\n        | _ => error_type `(()) (\"invalid signal\", ``(t u))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl typecheck_signal forall (t : * -> *) u. (signal : t u) : () =
+      real
+          typecase t with
+          | signal => ()
+          | arc_signal => ()
+          | rw_signal => ()
+          | arc_rw_signal => ()
+          | read_signal => ()
+          | arc_read_signal => ()
+          | write_signal => ()
+          | arc_write_signal => ()
+          | memo => ()
+          | arc_memo => ()
+          | _ => error_type `(()) ("invalid signal", ``(t u))
+  """,
+  timeout: 300_000
+)
+```
+
+### is_arc_memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// An arc_memo holds a SendWrapper of its value (see arc_memo).\ninl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =\n    real\n        typecase t with\n        | arc_memo => true\n        | _ => false","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // An arc_memo holds a SendWrapper of its value (see arc_memo).
+  inl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =
+      real
+          typecase t with
+          | arc_memo => true
+          | _ => false
+  """,
+  timeout: 300_000
+)
+```
+
+### memo_get'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl memo_get' forall t. (memo : memo t) : t =\n    !\\\\(memo, $'\"$0()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl memo_get' forall t. (memo : memo t) : t =
+      !\\(memo, $'"$0()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl signal_get' forall (t : * -> *) u. (signal : t u) : u =\n    signal |> typecheck_signal\n    prelude ()\n    if is_arc_memo signal\n    then $'leptos::prelude::Get::get(&!signal).take()' : u\n    else $'leptos::prelude::Get::get(&!signal)' : u","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl signal_get' forall (t : * -> *) u. (signal : t u) : u =
+      signal |> typecheck_signal
+      prelude ()
+      if is_arc_memo signal
+      then $'leptos::prelude::Get::get(&!signal).take()' : u
+      else $'leptos::prelude::Get::get(&!signal)' : u
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get signal = signal_get'\ninstance signal_get arc_signal = signal_get'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get signal = signal_get'
+  instance signal_get arc_signal = signal_get'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get rw_signal = signal_get'\ninstance signal_get arc_rw_signal = signal_get'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get rw_signal = signal_get'
+  instance signal_get arc_rw_signal = signal_get'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get read_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get read_signal = signal_get'\ninstance signal_get arc_read_signal = signal_get'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get read_signal = signal_get'
+  instance signal_get arc_read_signal = signal_get'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get memo = signal_get'\ninstance signal_get arc_memo = signal_get'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get memo = signal_get'
+  instance signal_get arc_memo = signal_get'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_update'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl signal_update' forall (t : * -> *) u. (fn : u -> u) (signal : t u) : () =\n    signal |> typecheck_signal\n    prelude ()\n    $'leptos::prelude::Update::update(&!signal, |x: &mut `u| { *x = (!fn)(x.clone()) })'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl signal_update' forall (t : * -> *) u. (fn : u -> u) (signal : t u) : () =
+      signal |> typecheck_signal
+      prelude ()
+      $'leptos::prelude::Update::update(&!signal, |x: &mut `u| { *x = (!fn)(x.clone()) })'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_update rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_update rw_signal = signal_update'\ninstance signal_update arc_rw_signal = signal_update'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_update rw_signal = signal_update'
+  instance signal_update arc_rw_signal = signal_update'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_update write_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_update write_signal = signal_update'\ninstance signal_update arc_write_signal = signal_update'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_update write_signal = signal_update'
+  instance signal_update arc_write_signal = signal_update'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get_untracked'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl signal_get_untracked' forall (t : * -> *) u. (signal : t u) : u =\n    signal |> typecheck_signal\n    prelude ()\n    if is_arc_memo signal\n    then $'leptos::prelude::GetUntracked::get_untracked(&!signal).take()' : u\n    else $'leptos::prelude::GetUntracked::get_untracked(&!signal)' : u","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl signal_get_untracked' forall (t : * -> *) u. (signal : t u) : u =
+      signal |> typecheck_signal
+      prelude ()
+      if is_arc_memo signal
+      then $'leptos::prelude::GetUntracked::get_untracked(&!signal).take()' : u
+      else $'leptos::prelude::GetUntracked::get_untracked(&!signal)' : u
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get_untracked rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get_untracked rw_signal = signal_get_untracked'\ninstance signal_get_untracked arc_rw_signal = signal_get_untracked'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get_untracked rw_signal = signal_get_untracked'
+  instance signal_get_untracked arc_rw_signal = signal_get_untracked'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get_untracked read_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get_untracked read_signal = signal_get_untracked'\ninstance signal_get_untracked arc_read_signal = signal_get_untracked'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get_untracked read_signal = signal_get_untracked'
+  instance signal_get_untracked arc_read_signal = signal_get_untracked'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_get_untracked memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_get_untracked memo = signal_get_untracked'\ninstance signal_get_untracked arc_memo = signal_get_untracked'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_get_untracked memo = signal_get_untracked'
+  instance signal_get_untracked arc_memo = signal_get_untracked'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_set'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl signal_set' forall (t : * -> *) u. (value : u) (signal : t u) : () =\n    signal |> typecheck_signal\n    prelude ()\n    $'leptos::prelude::Set::set(&!signal, !value)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl signal_set' forall (t : * -> *) u. (value : u) (signal : t u) : () =
+      signal |> typecheck_signal
+      prelude ()
+      $'leptos::prelude::Set::set(&!signal, !value)'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_set rw_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_set rw_signal = signal_set'\ninstance signal_set arc_rw_signal = signal_set'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_set rw_signal = signal_set'
+  instance signal_set arc_rw_signal = signal_set'
+  """,
+  timeout: 300_000
+)
+```
+
+### signal_set write_signal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance signal_set write_signal = signal_set'\ninstance signal_set arc_write_signal = signal_set'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance signal_set write_signal = signal_set'
+  instance signal_set arc_write_signal = signal_set'
+  """,
+  timeout: 300_000
+)
+```
+
+### untrack
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `fn ()` without subscribing the running reactive closure to the signals it reads.\ninl untrack forall t. (fn : () -> t) : t =\n    !\\\\(fn, $'\"leptos::prelude::untrack(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // `fn ()` without subscribing the running reactive closure to the signals it reads.
+  inl untrack forall t. (fn : () -> t) : t =
+      !\\(fn, $'"leptos::prelude::untrack(move || $0())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_memo forall t. (fn : () -> t) : memo t =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::Memo::new(move |_| (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_memo forall t. (fn : () -> t) : memo t =
+      inl fn = fn |> send_wrapper_new
+      $'leptos::prelude::Memo::new(move |_| (*!fn)())'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arc_memo
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares\n// values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at\n// each memo: a generic helper would always take the second impl).\ninl new_arc_memo forall t. (fn : () -> t) : arc_memo t =\n    global \"pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }\"\n    // a closure of its own: its body may return early (`?`) with the plain value\n    inl fn = join fn\n    inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new\n    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares
+  // values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at
+  // each memo: a generic helper would always take the second impl).
+  inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
+      global "pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"
+      // a closure of its own: its body may return early (`?`) with the plain value
+      inl fn = join fn
+      inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
+      $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arc_local_resource
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// the fetcher returns a boxed future; local resources need no Send\ninl new_arc_local_resource forall t.\n    (fetcher : () -> async.future_pin t)\n    : arc_local_resource t\n    =\n    !\\\\(fetcher, $'\"leptos::prelude::ArcLocalResource::new(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // the fetcher returns a boxed future; local resources need no Send
+  inl new_arc_local_resource forall t.
+      (fetcher : () -> async.future_pin t)
+      : arc_local_resource t
+      =
+      !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(move || $0())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_action
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// action inputs and futures are Rc-based (not Send): the local constructor\ninl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =\n    !\\\\(action_fn, $'\"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // action inputs and futures are Rc-based (not Send): the local constructor
+  inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =
+      !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arc_action
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arc_action forall t u. (action_fn : t -> async.future_pin u) : arc_action t u =\n    !\\\\(action_fn, $'\"leptos::prelude::ArcAction::new_unsync(move |value: &`t| $0(value.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_arc_action forall t u. (action_fn : t -> async.future_pin u) : arc_action t u =
+      !\\(action_fn, $'"leptos::prelude::ArcAction::new_unsync(move |value: &`t| $0(value.clone()))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### action_dispatch
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl action_dispatch forall t u. (value : heap t) (action : action (heap t) u) : () =\n    $'{ leptos::prelude::Action::dispatch_local(&!action, !value.clone()); }'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl action_dispatch forall t u. (value : heap t) (action : action (heap t) u) : () =
+      $'{ leptos::prelude::Action::dispatch_local(&!action, !value.clone()); }'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action_dispatch
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_action_dispatch forall t u. (value : heap t) (action : arc_action (heap t) u) : () =\n    $'{ leptos::prelude::ArcAction::dispatch_local(&!action, !value.clone()); }'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arc_action_dispatch forall t u. (value : heap t) (action : arc_action (heap t) u) : () =
+      $'{ leptos::prelude::ArcAction::dispatch_local(&!action, !value.clone()); }'
+  """,
+  timeout: 300_000
+)
+```
+
+### action_input
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl action_input forall t u. (action : action (heap t) u) : rw_signal (optionm'.option' t) =\n    !\\\\(action, $'\"leptos::prelude::Action::input(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl action_input forall t u. (action : action (heap t) u) : rw_signal (optionm'.option' t) =
+      !\\(action, $'"leptos::prelude::Action::input(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### action_pending
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl action_pending forall t u. (action : action (heap t) u) : memo bool =\n    !\\\\(action, $'\"leptos::prelude::Action::pending(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl action_pending forall t u. (action : action (heap t) u) : memo bool =
+      !\\(action, $'"leptos::prelude::Action::pending(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action_pending
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)\ninl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =\n    inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\\\(action, $'\"leptos::prelude::ArcAction::pending(&$0)\"')\n    new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)
+  inl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =
+      inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
+      new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action_pending_fn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure\n// is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never\n// re-run: the memo is made once, outside the reader.\ninl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =\n    inl pending = action |> arc_action_pending\n    fun () => pending |> signal_get","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure
+  // is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never
+  // re-run: the memo is made once, outside the reader.
+  inl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =
+      inl pending = action |> arc_action_pending
+      fun () => pending |> signal_get
+  """,
+  timeout: 300_000
+)
+```
+
+### action_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl action_value forall t u. (action : action (heap t) u) : rw_signal (optionm'.option' u) =\n    !\\\\(action, $'\"leptos::prelude::Action::value(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl action_value forall t u. (action : action (heap t) u) : rw_signal (optionm'.option' u) =
+      !\\(action, $'"leptos::prelude::Action::value(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_action_value forall t u. (action : arc_action (heap t) u) : arc_rw_signal (optionm'.option' u) =\n    !\\\\(action, $'\"leptos::prelude::ArcAction::value(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arc_action_value forall t u. (action : arc_action (heap t) u) : arc_rw_signal (optionm'.option' u) =
+      !\\(action, $'"leptos::prelude::ArcAction::value(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_action_value_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.\ninl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =\n    prelude ()\n    $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.
+  inl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =
+      prelude ()
+      $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arc_signal_derive
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A signal of `fn ()`, which leptos re-runs when a signal it reads changes.\ninl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A signal of `fn ()`, which leptos re-runs when a signal it reads changes.
+  inl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =
+      inl fn = fn |> send_wrapper_new
+      $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_local_resource_loading
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// loading = no value yet\ninl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =\n    new_arc_signal_derive fun () =>\n        $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // loading = no value yet
+  inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =
+      new_arc_signal_derive fun () =>
+          $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
+  """,
+  timeout: 300_000
+)
+```
+
+### resource_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl resource_get forall t u. (resource : resource t u) : optionm'.option' u =\n    !\\\\(resource, $'\"leptos::prelude::Resource::get(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl resource_get forall t u. (resource : resource t u) : optionm'.option' u =
+      !\\(resource, $'"leptos::prelude::Resource::get(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### local_resource_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl local_resource_get forall t u. (resource : local_resource t u) : optionm'.option' u =\n    !\\\\(resource, $'\"leptos::prelude::LocalResource::get(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl local_resource_get forall t u. (resource : local_resource t u) : optionm'.option' u =
+      !\\(resource, $'"leptos::prelude::LocalResource::get(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arc_local_resource_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_local_resource_get forall t. (resource : arc_local_resource t) : optionm'.option' t =\n    !\\\\(resource, $'\"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arc_local_resource_get forall t. (resource : arc_local_resource t) : optionm'.option' t =
+      !\\(resource, $'"Option::map(leptos::prelude::ArcLocalResource::get(&$0), |x| x.clone())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### resource_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl resource_with forall t u v. (resource : resource t u) (fn : optionm'.option' u -> v) : v =\n    !\\\\((resource, fn), $'\"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl resource_with forall t u v. (resource : resource t u) (fn : optionm'.option' u -> v) : v =
+      !\\((resource, fn), $'"leptos::prelude::SignalWith::with(&$0, |x| $1(x.clone()))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_effect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_effect (fn : () -> ()) : () =\n    $'{ leptos::prelude::Effect::new(move |_| (!fn)()); }'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_effect (fn : () -> ()) : () =
+      $'{ leptos::prelude::Effect::new(move |_| (!fn)()); }'
+  """,
+  timeout: 300_000
+)
+```
+
+### window
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let window () : wasm.window =\n    !\\($'\"leptos::prelude::window()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let window () : wasm.window =
+      !\($'"leptos::prelude::window()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### attr_fn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.\n// Text values must be std::string::String (leptos has no attribute impls for Rc<str>).\ninl attr_fn forall t. (name : string) (fn : () -> t) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"\" + !name + \"={ move || (*!fn)() }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.
+  // Text values must be std::string::String (leptos has no attribute impls for Rc<str>).
+  inl attr_fn forall t. (name : string) (fn : () -> t) : string =
+      inl fn = fn |> send_wrapper_new
+      $'"" + !name + "={ move || (*!fn)() }"'
+  """,
+  timeout: 300_000
+)
+```
+
+### class_fn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reactive class attribute: the fixed `classes` and the ones `fn` returns.\ninl class_fn (classes : string) (fn : () -> string) : string =\n    attr_fn \"class\" fun () => classes ++# fn () |> sm'.to_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A reactive class attribute: the fixed `classes` and the ones `fn` returns.
+  inl class_fn (classes : string) (fn : () -> string) : string =
+      attr_fn "class" fun () => classes ++# fn () |> sm'.to_std_string
+  """,
+  timeout: 300_000
+)
+```
+
+### on_event
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// An event handler (`on:<name>={move |event| f(event)}`).\ninl on_event forall t. (name : string) (fn : t -> ()) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"on:\" + !name + \"={ move |event| (*!fn)(event) }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // An event handler (`on:<name>={move |event| f(event)}`).
+  inl on_event forall t. (name : string) (fn : t -> ()) : string =
+      inl fn = fn |> send_wrapper_new
+      $'"on:" + !name + "={ move |event| (*!fn)(event) }"'
+  """,
+  timeout: 300_000
+)
+```
+
+### on_click
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl on_click (fn : () -> ()) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"on:click={ move |_| (*!fn)() }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl on_click (fn : () -> ()) : string =
+      inl fn = fn |> send_wrapper_new
+      $'"on:click={ move |_| (*!fn)() }"'
+  """,
+  timeout: 300_000
+)
+```
+
+### event_target_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl event_target_value forall t. (event : t) : sm'.std_string =\n    !\\\\(event, $'\"leptos::prelude::event_target_value(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl event_target_value forall t. (event : t) : sm'.std_string =
+      !\\(event, $'"leptos::prelude::event_target_value(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### concat_props
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_props props =\n    (\"\", props)\n    ||> listm.fold fun acc (x : string) =>\n        $'\" \" + !x + !acc + \"\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl concat_props props =
+      ("", props)
+      ||> listm.fold fun acc (x : string) =>
+          $'" " + !x + !acc + ""'
+  """,
+  timeout: 300_000
+)
+```
+
+### concat_markup
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// in order (concat_props reverses)\ninl concat_markup (items : list string) : string =\n    (\"\", items)\n    ||> listm.fold fun acc (x : string) =>\n        $'\"\" + !acc + !x + \"\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // in order (concat_props reverses)
+  inl concat_markup (items : list string) : string =
+      ("", items)
+      ||> listm.fold fun acc (x : string) =>
+          $'"" + !acc + !x + ""'
+  """,
+  timeout: 300_000
+)
+```
+
+### tag_text
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// view! markup of an element whose children are markup too.\ninl tag_text (tag : string) props (children : string) : string =\n    inl props = props |> concat_props\n    $'\"<\" + !tag + \" \" + !props + \">\" + !children + \"</\" + !tag + \">\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // view! markup of an element whose children are markup too.
+  inl tag_text (tag : string) props (children : string) : string =
+      inl props = props |> concat_props
+      $'"<" + !tag + " " + !props + ">" + !children + "</" + !tag + ">"'
+  """,
+  timeout: 300_000
+)
+```
+
+### tag_raw
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):\n// children that read signals wrap those parts in reactive_view / reactive_fragment.\ninl tag_raw tag props children : string =\n    inl children = children () |> fragment_to_view\n    tag_text tag props $'\"{ !children }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):
+  // children that read signals wrap those parts in reactive_view / reactive_fragment.
+  inl tag_raw tag props children : string =
+      inl children = children () |> fragment_to_view
+      tag_text tag props $'"{ !children }"'
+  """,
+  timeout: 300_000
+)
+```
+
+### reactive_view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.\n// reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be\n// Clone (signals, memos, closures, strings), not views.\ninl reactive_view (fn : () -> view) : view =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.
+  // reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be
+  // Clone (signals, memos, closures, strings), not views.
+  inl reactive_view (fn : () -> view) : view =
+      inl fn = fn |> send_wrapper_new
+      $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'
+  """,
+  timeout: 300_000
+)
+```
+
+### reactive_fragment
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl reactive_fragment (fn : () -> fragment) : fragment =\n    reactive_view (fun () => fn () |> fragment_to_view)\n    |> view_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl reactive_fragment (fn : () -> fragment) : fragment =
+      reactive_view (fun () => fn () |> fragment_to_view)
+      |> view_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### tag_element
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tag_element tag props children : view' (html_element _) =\n    tag_raw tag props children\n    |> macro_to_element","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tag_element tag props children : view' (html_element _) =
+      tag_raw tag props children
+      |> macro_to_element
+  """,
+  timeout: 300_000
+)
+```
+
+### tag_closed_raw
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tag_closed_raw tag props =\n    inl tag : string = tag\n    inl props = props |> concat_props\n    $'\"<\" + !tag + \" \" + !props + \" />\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tag_closed_raw tag props =
+      inl tag : string = tag
+      inl props = props |> concat_props
+      $'"<" + !tag + " " + !props + " />"'
+  """,
+  timeout: 300_000
+)
+```
+
+### tag_closed
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tag_closed tag props : view' (html_element _) =\n    tag_closed_raw tag props\n    |> macro_to_element","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tag_closed tag props : view' (html_element _) =
+      tag_closed_raw tag props
+      |> macro_to_element
+  """,
+  timeout: 300_000
+)
+```
+
+### for
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl for props : view =\n    tag_closed_raw \"leptos::prelude::For\" props\n    |> macro_to_view","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl for props : view =
+      tag_closed_raw "leptos::prelude::For" props
+      |> macro_to_view
+  """,
+  timeout: 300_000
+)
+```
+
+### for
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`\n// is unpacked in Spiral by send_wrapper_get).\ninl for forall t u (signal : * -> *).\n    (signal : signal (am'.vec t))\n    (key_fn : t -> u)\n    (children' : t -> fragment)\n    : view\n    =\n    signal |> typecheck_signal\n    // read through signal_get' (an arc_memo unwraps its SendWrapper there)\n    inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new\n    inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new\n    inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new\n    for [\n        $'\"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }\"'\n        $'\"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }\"'\n        $'\"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }\"'\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`
+  // is unpacked in Spiral by send_wrapper_get).
+  inl for forall t u (signal : * -> *).
+      (signal : signal (am'.vec t))
+      (key_fn : t -> u)
+      (children' : t -> fragment)
+      : view
+      =
+      signal |> typecheck_signal
+      // read through signal_get' (an arc_memo unwraps its SendWrapper there)
+      inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new
+      inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
+      inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
+      for [
+          $'"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }"'
+          $'"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }"'
+          $'"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }"'
+      ]
+  """,
+  timeout: 300_000
+)
+```
+
+### show
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl show props : view =\n    tag_closed_raw \"leptos::prelude::Show\" props\n    |> macro_to_view","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl show props : view =
+      tag_closed_raw "leptos::prelude::Show" props
+      |> macro_to_view
+  """,
+  timeout: 300_000
+)
+```
+
+### show
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl show (when_fn : () -> bool) (fallback : () -> view) (children : () -> fragment) : view =\n    inl children = children |> send_wrapper_new\n    show [\n        attr_fn \"when\" when_fn\n        attr_fn \"fallback\" fallback\n        $'\"children=leptos::children::ToChildren::to_children(move || (*!children)())\"'\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl show (when_fn : () -> bool) (fallback : () -> view) (children : () -> fragment) : view =
+      inl children = children |> send_wrapper_new
+      show [
+          attr_fn "when" when_fn
+          attr_fn "fallback" fallback
+          $'"children=leptos::children::ToChildren::to_children(move || (*!children)())"'
+      ]
+  """,
+  timeout: 300_000
+)
+```
+
+### use_location
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_location () : location =\n    !\\($'\"leptos_router::hooks::use_location()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl use_location () : location =
+      !\($'"leptos_router::hooks::use_location()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### use_navigate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_navigate () : string -> () =\n    inl navigate : threading.arc (rust.dyn' (rust.action_fn2 (rust.ref sm'.str) navigate_options)) =\n        !\\($'\"std::sync::Arc::new(leptos_router::hooks::use_navigate())\"')\n    fun url =>\n        inl url = url |> sm'.as_str\n        !\\\\((navigate, url), $'\"$0($1, Default::default())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl use_navigate () : string -> () =
+      inl navigate : threading.arc (rust.dyn' (rust.action_fn2 (rust.ref sm'.str) navigate_options)) =
+          !\($'"std::sync::Arc::new(leptos_router::hooks::use_navigate())"')
+      fun url =>
+          inl url = url |> sm'.as_str
+          !\\((navigate, url), $'"$0($1, Default::default())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### location_hash
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl location_hash (location : location) : memo sm'.std_string =\n    !\\\\(location, $'\"$0.hash\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl location_hash (location : location) : memo sm'.std_string =
+      !\\(location, $'"$0.hash"')
+  """,
+  timeout: 300_000
+)
+```
+
+### location_pathname
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl location_pathname (location : location) : memo sm'.std_string =\n    !\\\\(location, $'\"$0.pathname\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl location_pathname (location : location) : memo sm'.std_string =
+      !\\(location, $'"$0.pathname"')
+  """,
+  timeout: 300_000
+)
+```
+
+### location_search
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl location_search (location : location) : memo sm'.std_string =\n    !\\\\(location, $'\"$0.search\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl location_search (location : location) : memo sm'.std_string =
+      !\\(location, $'"$0.search"')
+  """,
+  timeout: 300_000
+)
+```
+
+### url_try_from
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue\ninl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =\n    !\\\\(s, $'\"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue
+  inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
+      !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### url_pathname
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8's Url keeps the path private: `path()`\ninl url_pathname (url : url) : sm'.std_string =\n    !\\\\(url, $'\"$0.path().to_string()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // leptos_router 0.8's Url keeps the path private: `path()`
+  inl url_pathname (url : url) : sm'.std_string =
+      !\\(url, $'"$0.path().to_string()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### use_url
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_url () =\n    inl location = use_location ()\n\n    fun () =>\n        inl url_pathname = location |> location_pathname |> signal_get |> sm'.from_std_string\n        inl url_search = location |> location_search |> signal_get |> sm'.from_std_string\n        inl url_search =\n            if url_search = \"\"\n            then \"\"\n            else \"?\" +. url_search\n        url_pathname +. url_search\n    |> new_arc_memo","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl use_url () =
+      inl location = use_location ()
+
+      fun () =>
+          inl url_pathname = location |> location_pathname |> signal_get |> sm'.from_std_string
+          inl url_search = location |> location_search |> signal_get |> sm'.from_std_string
+          inl url_search =
+              if url_search = ""
+              then ""
+              else "?" +. url_search
+          url_pathname +. url_search
+      |> new_arc_memo
+  """,
+  timeout: 300_000
+)
+```
+
+### route
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a\n// route is view! markup, put together with the others by routes and router into one view! call.\ninl route (path : string) (view : () -> view) : string =\n    tag_closed_raw \"leptos_router::components::Route\" [\n        $'\"path=leptos_router::path\\!(\\\\\\\"\" + !path + \"\\\\\\\")\"'\n        attr_fn \"view\" view\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a
+  // route is view! markup, put together with the others by routes and router into one view! call.
+  inl route (path : string) (view : () -> view) : string =
+      tag_closed_raw "leptos_router::components::Route" [
+          $'"path=leptos_router::path\!(\\\"" + !path + "\\\")"'
+          attr_fn "view" view
+      ]
+  """,
+  timeout: 300_000
+)
+```
+
+### routes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl routes (fallback : () -> view) (routes : list string) : string =\n    tag_text \"leptos_router::components::Routes\" [\n        attr_fn \"fallback\" fallback\n    ] (routes |> concat_markup)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl routes (fallback : () -> view) (routes : list string) : string =
+      tag_text "leptos_router::components::Routes" [
+          attr_fn "fallback" fallback
+      ] (routes |> concat_markup)
+  """,
+  timeout: 300_000
+)
+```
+
+### router
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl router (routes : string) : view =\n    tag_text \"leptos_router::components::Router\" [] routes\n    |> macro_to_view","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl router (routes : string) : view =
+      tag_text "leptos_router::components::Router" [] routes
+      |> macro_to_view
+  """,
+  timeout: 300_000
+)
+```
+
+### a'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl a' props children : _ (_ a') =\n    tag_element \"a\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl a' props children : _ (_ a') =
+      tag_element "a" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### button
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl button props children : _ (_ button) =\n    tag_element \"button\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl button props children : _ (_ button) =
+      tag_element "button" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### details
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl details props children : _ (_ details) =\n    tag_element \"details\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl details props children : _ (_ details) =
+      tag_element "details" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### div
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl div props children : _ (_ div) =\n    tag_element \"div\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl div props children : _ (_ div) =
+      tag_element "div" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### footer
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl footer props children : _ (_ footer) =\n    tag_element \"footer\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl footer props children : _ (_ footer) =
+      tag_element "footer" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### header
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl header props children : _ (_ header) =\n    tag_element \"header\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl header props children : _ (_ header) =
+      tag_element "header" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### label
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl label props children : _ (_ label) =\n    tag_element \"label\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl label props children : _ (_ label) =
+      tag_element "label" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl main props children : _ (_ main) =\n    tag_element \"main\" props children\n\ninl main' () = ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl main props children : _ (_ main) =
+      tag_element "main" props children
+
+  inl main' () = ()
+  """,
+  timeout: 300_000
+)
+```
+
+### nav
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl nav props children : _ (_ nav) =\n    tag_element \"nav\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl nav props children : _ (_ nav) =
+      tag_element "nav" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### option'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl option' props children : _ (_ option') =\n    tag_element \"option\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl option' props children : _ (_ option') =
+      tag_element "option" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### option'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl option' selected children : _ (_ option') =\n    inl selected : () -> bool = join selected\n    option' [\n        $'\"selected=!selected()\"'\n    ] fun () =>\n        children |> text_to_fragment","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl option' selected children : _ (_ option') =
+      inl selected : () -> bool = join selected
+      option' [
+          $'"selected=!selected()"'
+      ] fun () =>
+          children |> text_to_fragment
+  """,
+  timeout: 300_000
+)
+```
+
+### pre
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl pre props children : _ (_ pre) =\n    tag_element \"pre\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl pre props children : _ (_ pre) =
+      tag_element "pre" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### select
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl select props children : _ (_ select) =\n    tag_element \"select\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl select props children : _ (_ select) =
+      tag_element "select" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### span
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl span props children : _ (_ span) =\n    tag_element \"span\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl span props children : _ (_ span) =
+      tag_element "span" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### summary
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl summary props children : _ (_ summary) =\n    tag_element \"summary\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl summary props children : _ (_ summary) =
+      tag_element "summary" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### table
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl table props children : _ (_ table) =\n    tag_element \"table\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl table props children : _ (_ table) =
+      tag_element "table" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### thead
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl thead props children : _ (_ thead) =\n    tag_element \"thead\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl thead props children : _ (_ thead) =
+      tag_element "thead" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### tbody
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tbody props children : _ (_ tbody) =\n    tag_element \"tbody\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tbody props children : _ (_ tbody) =
+      tag_element "tbody" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### tr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tr props children : _ (_ tr) =\n    tag_element \"tr\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tr props children : _ (_ tr) =
+      tag_element "tr" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### th
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl th props children : _ (_ th) =\n    tag_element \"th\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl th props children : _ (_ th) =
+      tag_element "th" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### td
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl td props children : _ (_ td) =\n    tag_element \"td\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl td props children : _ (_ td) =
+      tag_element "td" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### svg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl svg props children : _ (_ svg) =\n    tag_element \"svg\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl svg props children : _ (_ svg) =
+      tag_element "svg" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### path
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl path props : _ (_ path) =\n    tag_element \"path\" props (fun () => [] |> view_list_to_fragment)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl path props : _ (_ path) =
+      tag_element "path" props (fun () => [] |> view_list_to_fragment)
+  """,
+  timeout: 300_000
+)
+```
+
+### circle
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl circle props : _ (_ circle) =\n    tag_element \"circle\" props (fun () => [] |> view_list_to_fragment)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl circle props : _ (_ circle) =
+      tag_element "circle" props (fun () => [] |> view_list_to_fragment)
+  """,
+  timeout: 300_000
+)
+```
+
+### rect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rect props children : _ (_ rect) =\n    tag_element \"rect\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rect props children : _ (_ rect) =
+      tag_element "rect" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### animate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl animate props : _ (_ animate) =\n    tag_element \"animate\" props (fun () => [] |> view_list_to_fragment)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl animate props : _ (_ animate) =
+      tag_element "animate" props (fun () => [] |> view_list_to_fragment)
+  """,
+  timeout: 300_000
+)
+```
+
+### input
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl input props : _ (_ input) =\n    tag_closed \"input\" props","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl input props : _ (_ input) =
+      tag_closed "input" props
+  """,
+  timeout: 300_000
+)
+```
+
+### dd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dd props children : _ (_ dd) =\n    tag_element \"dd\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl dd props children : _ (_ dd) =
+      tag_element "dd" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### dl
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dl props children : _ (_ dl) =\n    tag_element \"dl\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl dl props children : _ (_ dl) =
+      tag_element "dl" props children
+  """,
+  timeout: 300_000
+)
+```
+
+### dt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dt props children : _ (_ dt) =\n    tag_element \"dt\" props children","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl dt props children : _ (_ dt) =
+      tag_element "dt" props children
+  """,
+  timeout: 300_000
+)
+```

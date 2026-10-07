@@ -33,6 +33,30 @@ inl inventory_raw_dfa_closure_capability_default forall alphabet {symbol_compare
     : inventory_raw_dfa_closure_capability alphabet =
     inventory_raw_dfa_closure_capability dfa_closure
 
+// The same production capabilities over main's static twins (static_regex_equal, static_reference_accepts, ...): the
+// compile-time contract compares the alphabet-erased core with these, so every replay is decided by the compiler. The
+// `_default` capabilities above wrap the `let rec` join points, whose results are run-time values; an `inl rec` check
+// over such a result (a closure list, a corpus) never terminates during partial evaluation.
+inl inventory_regex_equality_capability_static forall alphabet {symbol_compare}.
+    : inventory_regex_equality_capability alphabet =
+    inventory_regex_equality_capability (fun left right => static_regex_equal left right)
+
+inl inventory_reference_acceptance_capability_static forall alphabet {symbol_compare}.
+    : inventory_reference_acceptance_capability alphabet =
+    inventory_reference_acceptance_capability (fun value input => static_reference_accepts value input)
+
+inl inventory_acceptance_capability_static forall alphabet {symbol_compare}.
+    : inventory_acceptance_capability alphabet =
+    inventory_acceptance_capability (fun value input => static_accepts value input)
+
+inl inventory_canonical_derivative_capability_static forall alphabet {symbol_compare}.
+    : inventory_canonical_derivative_capability alphabet =
+    inventory_canonical_derivative_capability (fun value symbol => static_canonical_derivative value symbol)
+
+inl inventory_raw_dfa_closure_capability_static forall alphabet {symbol_compare; finite_alphabet}.
+    : inventory_raw_dfa_closure_capability alphabet =
+    inventory_raw_dfa_closure_capability (fun value => static_dfa_closure value)
+
 union finite_symbol_search_result length =
     | FiniteSymbolMissing :: forall length. finite_symbol_search_result length
     | FiniteSymbolFound :: forall length. finite_symbol_index length -> finite_symbol_search_result length
@@ -797,12 +821,13 @@ union inventory_input_validation length =
     | InventoryInputRejected :: forall length. inventory_input_validation length
     | InventoryInputCertified :: forall length. inventory_input length -> inventory_input_validation length
 
+// An `inl` loop: the indexed input is a compile-time value, so the index-only matchers (`inl rec` over it) terminate.
 inl inventory_input_index forall alphabet length.
     (equality : finite_symbol_equality_capability alphabet)
     (input : linear_input alphabet)
     (symbols : finite_symbol_vector alphabet length)
     : inventory_input_validation length =
-    let rec loop (input : linear_input alphabet) : inventory_input_validation length =
+    inl rec loop (input : linear_input alphabet) : inventory_input_validation length =
         match input with
         | InputEmpty => InventoryInputCertified InventoryInputEmpty
         | InputCons (symbol, rest) =>
@@ -932,13 +957,16 @@ inl rec inventory_dfa_closed_row_lookup forall total_state_count symbol_count so
 
 // Execute only through finite state/symbol indices. There is no regex transition
 // lookup and no closure-membership branch in the recursive step: an escaped target
-// cannot be constructed by the sealed matrix in the first place.
+// cannot be constructed by the sealed matrix in the first place. The loop is `inl`: the compiler runs it on a
+// compile-time input. (As a `let rec` join point the state index becomes a run-time GADT value, and partial evaluation
+// stops at its uninhabited `finite_symbol_index finite_length_zero` case: the FOR-D of
+// compiler_probe_gadt_uninhabited_payload_runtime. The run-time runner below dispatches on an i32 state instead.)
 inl inventory_dfa_closed_accepts forall symbol_count state_count.
     (acceptance : inventory_dfa_acceptance_vector state_count)
     (rows : inventory_dfa_closed_rows state_count symbol_count state_count)
     (current : finite_symbol_index state_count)
     (input : inventory_input symbol_count) : bool =
-    let rec loop
+    inl rec loop
         (current : finite_symbol_index state_count)
         (input : inventory_input symbol_count) : bool =
         match input with
@@ -949,10 +977,86 @@ inl inventory_dfa_closed_accepts forall symbol_count state_count.
             loop next rest
     loop current input
 
+// The run-time executor of the compiled core: the same start index, acceptance vector and total transition matrix,
+// with the state as an i32 and the indices of the core turned into constants of if-chains during compilation. A raw
+// symbol is located in the inventory vector at run time; one that is not there makes the input outside the inventory
+// before any transition is taken, as in the compile-time path.
+inl inventory_i32_add (a : i32) (b : i32) : i32 = !!!!Add(a,b)
+inl inventory_i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a,b)
+inl inventory_i32_lt (a : i32) (b : i32) : bool = !!!!LT(a,b)
+
+inl rec inventory_finite_index_to_i32 forall count. (index : finite_symbol_index count) : i32 =
+    match index with
+    | FiniteSymbolIndexZero => 0i32
+    | FiniteSymbolIndexSucc previous => inventory_i32_add (inventory_finite_index_to_i32 previous) 1i32
+
+inl rec inventory_runtime_symbol_index forall alphabet length.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbol : alphabet)
+    (symbols : finite_symbol_vector alphabet length)
+    (index : i32) : i32 =
+    match equality, symbols with
+    | _, FiniteSymbolVectorNil => -1i32
+    | finite_symbol_equality_capability equal, FiniteSymbolVectorCons (head, tail) =>
+        if equal symbol head then index
+        else inventory_runtime_symbol_index equality symbol tail (inventory_i32_add index 1i32)
+
+inl rec inventory_runtime_acceptance_at forall state_count.
+    (acceptance : inventory_dfa_acceptance_vector state_count) (state : i32) (index : i32) : bool =
+    match acceptance with
+    | InventoryDfaAcceptanceVectorNil => false
+    | InventoryDfaAcceptanceVectorCons (accepting, rest) =>
+        match rest with
+        | InventoryDfaAcceptanceVectorNil => accepting
+        | _ => if inventory_i32_eq state index then accepting else inventory_runtime_acceptance_at rest state (inventory_i32_add index 1i32)
+
+inl rec inventory_runtime_target forall state_count row_count.
+    (row : inventory_dfa_target_vector state_count row_count) (symbol : i32) (index : i32) : i32 =
+    match row with
+    | InventoryDfaTargetVectorNil => 0i32
+    | InventoryDfaTargetVectorCons (target, rest) =>
+        match rest with
+        | InventoryDfaTargetVectorNil => inventory_finite_index_to_i32 target
+        | _ =>
+            if inventory_i32_eq symbol index then inventory_finite_index_to_i32 target
+            else inventory_runtime_target rest symbol (inventory_i32_add index 1i32)
+
+inl rec inventory_runtime_next forall total_state_count symbol_count source_count.
+    (rows : inventory_dfa_closed_rows total_state_count symbol_count source_count) (state : i32) (symbol : i32) (index : i32) : i32 =
+    match rows with
+    | InventoryDfaClosedRowsNil => 0i32
+    | InventoryDfaClosedRowsCons (row, rest) =>
+        match rest with
+        | InventoryDfaClosedRowsNil => inventory_runtime_target row symbol 0i32
+        | _ =>
+            if inventory_i32_eq state index then inventory_runtime_target row symbol 0i32
+            else inventory_runtime_next rest state symbol (inventory_i32_add index 1i32)
+
+nominal inventory_runtime_run_capability alphabet = linear_input alphabet -> inventory_dfa_run_result
+
+inl inventory_dfa_closed_runtime_run forall alphabet symbol_count state_count.
+    (equality : finite_symbol_equality_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (core : inventory_dfa_compiled_core symbol_count state_count)
+    (input : linear_input alphabet) : inventory_dfa_run_result =
+    match core with
+    | inventory_dfa_compiled_core (start_index, acceptance, rows) =>
+        let rec loop (state : i32) (input : linear_input alphabet) : inventory_dfa_run_result =
+            match input with
+            | InputEmpty =>
+                if inventory_runtime_acceptance_at acceptance state 0i32 then InventoryDfaAccepted else InventoryDfaRejected
+            | InputCons (symbol, rest) =>
+                inl symbol_index = inventory_runtime_symbol_index equality symbol symbols 0i32
+                if inventory_i32_lt symbol_index 0i32 then InventoryDfaInputOutsideInventory
+                else loop (inventory_runtime_next rows state symbol_index 0i32) rest
+        inl ~start = inventory_finite_index_to_i32 start_index
+        loop start input
+
 nominal inventory_dfa_closed_runner_surface alphabet symbol_count state_count =
     inventory_dfa_closed_surface alphabet symbol_count state_count *
     inventory_input_index_capability alphabet symbol_count *
-    inventory_bound_acceptance_capability symbol_count
+    inventory_bound_acceptance_capability symbol_count *
+    inventory_runtime_run_capability alphabet
 
 union packed_inventory_dfa_closed_runner alphabet =
     | PackedInventoryDfaClosedRunner :
@@ -981,9 +1085,12 @@ inl seal_inventory_dfa_closed_runner forall alphabet symbol_count.
                 inl decide : inventory_bound_acceptance_capability hidden_symbol_count =
                     inventory_bound_acceptance_capability (
                         fun input => inventory_dfa_closed_accepts acceptance rows start_index input)
+                inl runtime_run : inventory_runtime_run_capability alphabet =
+                    inventory_runtime_run_capability (
+                        fun input => inventory_dfa_closed_runtime_run equality hidden_symbols (inventory_dfa_compiled_core (start_index, acceptance, rows)) input)
                 PackedInventoryDfaClosedRunnerCertified (
                     PackedInventoryDfaClosedRunner (exists (
-                        inventory_dfa_closed_runner_surface (surface, index_input, decide))))
+                        inventory_dfa_closed_runner_surface (surface, index_input, decide, runtime_run))))
 
 inl packed_inventory_dfa_closed_run forall alphabet.
     (packed : packed_inventory_dfa_closed_runner alphabet)
@@ -992,7 +1099,7 @@ inl packed_inventory_dfa_closed_run forall alphabet.
     | PackedInventoryDfaClosedRunner hidden =>
         inl exists symbol_count state_count. runner = hidden
         match runner with
-        | inventory_dfa_closed_runner_surface (_, index_input, decide) =>
+        | inventory_dfa_closed_runner_surface (_, index_input, decide, _) =>
             match index_input, decide with
             | inventory_input_index_capability index,
               inventory_bound_acceptance_capability accept =>
@@ -1010,7 +1117,7 @@ inl packed_inventory_dfa_closed_runner_replays forall alphabet.
     | PackedInventoryDfaClosedRunner hidden =>
         inl exists symbol_count state_count. runner = hidden
         match runner with
-        | inventory_dfa_closed_runner_surface (surface, _, _) =>
+        | inventory_dfa_closed_runner_surface (surface, _, _, _) =>
             match surface with
             | inventory_dfa_closed_surface (symbols, states, inventory_dfa_compiled_core (_, acceptance, rows)) =>
                 inventory_dfa_acceptance_vector_reifies production_acceptance symbols states acceptance &&
@@ -1231,16 +1338,16 @@ inl inventory_indexed_model_contract () : string =
     inl bit_equality : finite_symbol_equality_capability bit_alphabet = finite_symbol_equality_capability_default
     inl tri_equality : finite_symbol_equality_capability tri_alphabet = finite_symbol_equality_capability_default
     inl model_equality : finite_symbol_equality_capability model_alphabet = finite_symbol_equality_capability_default
-    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_default
-    inl bit_reference : inventory_reference_acceptance_capability bit_alphabet = inventory_reference_acceptance_capability_default
-    inl tri_reference : inventory_reference_acceptance_capability tri_alphabet = inventory_reference_acceptance_capability_default
-    inl bit_production : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_default
-    inl tri_production : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_default
-    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_default
-    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_default
-    inl bit_closure : inventory_raw_dfa_closure_capability bit_alphabet = inventory_raw_dfa_closure_capability_default
-    inl tri_closure : inventory_raw_dfa_closure_capability tri_alphabet = inventory_raw_dfa_closure_capability_default
-    inl model_production : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_default
+    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_static
+    inl bit_reference : inventory_reference_acceptance_capability bit_alphabet = inventory_reference_acceptance_capability_static
+    inl tri_reference : inventory_reference_acceptance_capability tri_alphabet = inventory_reference_acceptance_capability_static
+    inl bit_production : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_static
+    inl tri_production : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_static
+    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_static
+    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_static
+    inl bit_closure : inventory_raw_dfa_closure_capability bit_alphabet = inventory_raw_dfa_closure_capability_static
+    inl tri_closure : inventory_raw_dfa_closure_capability tri_alphabet = inventory_raw_dfa_closure_capability_static
+    inl model_production : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_static
 
     inl bit_symbols = bit_finite_symbol_vector ()
     inl tri_symbols = tri_finite_symbol_vector ()
@@ -1264,7 +1371,7 @@ inl inventory_indexed_model_contract () : string =
     assert_static
         (indexed_canonical_derivative_reifies bit_equality bit_regex_equal bit_derivative bit_value (zero ()) bit_symbols)
         "index-only bit canonical derivative must reify to the production derivative"
-    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_default
+    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_static
     assert_static
         (indexed_canonical_derivative_reifies tri_equality tri_regex_equal tri_derivative tri_value (tri_b ()) tri_symbols)
         "index-only ternary canonical derivative must reify to the production derivative"
@@ -1353,7 +1460,7 @@ inl inventory_indexed_model_contract () : string =
          | PackedInventoryDfaClosedRunnerCertified runner =>
             packed_inventory_dfa_closed_run_agrees_inputs
                 bit_production bit_value
-                (input_corpus_depth_two (finite_symbol_vector_to_list bit_symbols))
+                (static_input_corpus_depth_two (finite_symbol_vector_to_list bit_symbols))
                 runner)
         "closed-matrix bit runner must agree with production across the complete depth-two inventory corpus"
     assert_static
@@ -1362,7 +1469,7 @@ inl inventory_indexed_model_contract () : string =
          | PackedInventoryDfaClosedRunnerCertified runner =>
             packed_inventory_dfa_closed_run_agrees_inputs
                 tri_production tri_value
-                (input_corpus_depth_two (finite_symbol_vector_to_list tri_symbols))
+                (static_input_corpus_depth_two (finite_symbol_vector_to_list tri_symbols))
                 runner)
         "closed-matrix ternary runner must agree with production across the complete depth-two inventory corpus"
 
@@ -1407,36 +1514,60 @@ inl inventory_indexed_full_proof_contract () : string =
 // Runtime sentinel owned by the refinement site. The raw inputs are dyned only
 // after the exact symbol/state counts, input-index capability and closed DFA
 // runner have been captured together. There is no fallback transition or cast.
+inl packed_inventory_dfa_closed_runtime_run forall alphabet.
+    (packed : packed_inventory_dfa_closed_runner alphabet)
+    (input : linear_input alphabet) : inventory_dfa_run_result =
+    match packed with
+    | PackedInventoryDfaClosedRunner hidden =>
+        inl exists symbol_count state_count. runner = hidden
+        match runner with
+        | inventory_dfa_closed_runner_surface (_, _, _, inventory_runtime_run_capability run) => run input
+
+inl packed_inventory_dfa_closed_runtime_run_agrees forall alphabet.
+    (production : inventory_acceptance_capability alphabet)
+    (source : regex alphabet)
+    (input : linear_input alphabet)
+    (packed : packed_inventory_dfa_closed_runner alphabet) : bool =
+    match production with
+    | inventory_acceptance_capability production_accept =>
+        match packed_inventory_dfa_closed_runtime_run packed input with
+        | InventoryDfaAccepted => production_accept source input
+        | InventoryDfaRejected => bool_same (production_accept source input) false
+        | InventoryDfaInputOutsideInventory => false
+
 inl packed_inventory_dfa_closed_run_agrees_runtime_corpus forall alphabet.
     (production : inventory_acceptance_capability alphabet)
     (source : regex alphabet)
     (packed : packed_inventory_dfa_closed_runner alphabet)
     (inputs : input_list alphabet) : bool =
+    inl ~dynamic_source = source
     let rec loop (inputs : input_list alphabet) : bool =
         match inputs with
         | InputListNil => true
         | InputListCons (input, rest) =>
-            if packed_inventory_dfa_closed_run_agrees production source input packed then loop rest
+            if packed_inventory_dfa_closed_runtime_run_agrees production dynamic_source input packed then loop rest
             else false
     loop inputs
 
 inl inventory_indexed_closed_dfa_runtime_probe () : bool =
     inl bit_equality : finite_symbol_equality_capability bit_alphabet = finite_symbol_equality_capability_default
-    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_default
-    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_default
+    inl bit_regex_equal : inventory_regex_equality_capability bit_alphabet = inventory_regex_equality_capability_static
+    inl bit_derivative : inventory_canonical_derivative_capability bit_alphabet = inventory_canonical_derivative_capability_static
     inl bit_production : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_default
+    inl bit_replay_acceptance : inventory_acceptance_capability bit_alphabet = inventory_acceptance_capability_static
     inl bit_symbols = bit_finite_symbol_vector ()
     inl bit_source = ends_with_zero ()
     inl tri_equality : finite_symbol_equality_capability tri_alphabet = finite_symbol_equality_capability_default
-    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_default
-    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_default
+    inl tri_regex_equal : inventory_regex_equality_capability tri_alphabet = inventory_regex_equality_capability_static
+    inl tri_derivative : inventory_canonical_derivative_capability tri_alphabet = inventory_canonical_derivative_capability_static
     inl tri_production : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_default
+    inl tri_replay_acceptance : inventory_acceptance_capability tri_alphabet = inventory_acceptance_capability_static
     inl tri_symbols = tri_finite_symbol_vector ()
     inl tri_source = tri_ab_star_then_c ()
     inl model_equality : finite_symbol_equality_capability model_alphabet = finite_symbol_equality_capability_default
-    inl model_regex_equal : inventory_regex_equality_capability model_alphabet = inventory_regex_equality_capability_default
-    inl model_derivative : inventory_canonical_derivative_capability model_alphabet = inventory_canonical_derivative_capability_default
-    inl model_production : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_default
+    inl model_regex_equal : inventory_regex_equality_capability model_alphabet = inventory_regex_equality_capability_static
+    inl model_derivative : inventory_canonical_derivative_capability model_alphabet = inventory_canonical_derivative_capability_static
+    inl model_replay_acceptance : inventory_acceptance_capability model_alphabet = inventory_acceptance_capability_static
     inl model_symbols = model_two_vector ()
     inl model_source : regex model_alphabet = RegexStar (RegexChar (model_alphabet ModelA))
     match seal_inventory_dfa_closed_runner bit_equality bit_source bit_symbols,
@@ -1445,17 +1576,19 @@ inl inventory_indexed_closed_dfa_runtime_probe () : bool =
     | PackedInventoryDfaClosedRunnerCertified bit_runner,
       PackedInventoryDfaClosedRunnerCertified tri_runner,
       PackedInventoryDfaClosedRunnerCertified model_runner =>
+        // The replays (acceptance labels and every transition against the static production semantics) are decided by
+        // the compiler; the corpora, the rogue input and the production matcher (`accepts`) are run-time values.
         inl replay_ok =
-            packed_inventory_dfa_closed_runner_replays bit_regex_equal bit_derivative bit_production bit_runner &&
-            packed_inventory_dfa_closed_runner_replays tri_regex_equal tri_derivative tri_production tri_runner &&
-            packed_inventory_dfa_closed_runner_replays model_regex_equal model_derivative model_production model_runner
+            packed_inventory_dfa_closed_runner_replays bit_regex_equal bit_derivative bit_replay_acceptance bit_runner &&
+            packed_inventory_dfa_closed_runner_replays tri_regex_equal tri_derivative tri_replay_acceptance tri_runner &&
+            packed_inventory_dfa_closed_runner_replays model_regex_equal model_derivative model_replay_acceptance model_runner
         inl ~bit_inputs = input_corpus_depth_two (finite_symbol_vector_to_list bit_symbols)
         inl ~tri_inputs = input_corpus_depth_two (finite_symbol_vector_to_list tri_symbols)
         inl ~rogue_input : linear_input model_alphabet = InputCons (model_alphabet ModelC, InputEmpty)
         if replay_ok then
             if packed_inventory_dfa_closed_run_agrees_runtime_corpus bit_production bit_source bit_runner bit_inputs then
                 if packed_inventory_dfa_closed_run_agrees_runtime_corpus tri_production tri_source tri_runner tri_inputs then
-                    match packed_inventory_dfa_closed_run model_runner rogue_input with
+                    match packed_inventory_dfa_closed_runtime_run model_runner rogue_input with
                     | InventoryDfaInputOutsideInventory => true
                     | _ => false
                 else false

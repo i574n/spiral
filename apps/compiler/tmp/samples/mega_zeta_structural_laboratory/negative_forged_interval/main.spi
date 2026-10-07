@@ -1,3 +1,5 @@
+open main
+
 inl impossible_interval_for_four () :
     certified_positive_positional_candidate_interval
         (positional_zero_bit (positional_zero_bit positional_one))

@@ -1,11 +1,13 @@
+// The receipt's fence endpoints come from the takeover program: the three-takeover program cannot be typed with endpoints one -> three (the store/outbox pair argument is now a commit tree).
+open main
+
 inl impossible_multiprocess_fenced_physical_append_wrong_endpoint () :
     erp_p2p_multiprocess_fenced_physical_append_receipt
         nat_one nat_three nat_four requisition_drafted goods_partially_received =
-    inl store, outbox = erp_p2p_four_event_commit ()
     erp_p2p_multiprocess_fenced_physical_append_from_program
         (erp_p2p_fence_history_one ())
         (erp_p2p_three_takeover_program ())
-        store outbox
+        (erp_p2p_four_event_commit_tree ())
 
 inl main () =
     impossible_multiprocess_fenced_physical_append_wrong_endpoint ()

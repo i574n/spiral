@@ -71,16 +71,7 @@ inl let' fn =
 
 /// ### exec_unit
 inl exec_unit (fn : () -> ()) : () =
-    backend_switch {
-        Gleam = fun () => fn ()
-        Lua = fun () => fn ()
-        Fsharp = fun () =>
-            inl unit = $'()' : $'unit'
-            ($'(fun () -> !fn (); !unit) ()' : $'unit') |> ignore
-        Python = fun () => fn ()
-        Rust = fun () => fn ()
-        TypeScript = fun () => fn ()
-    }
+    fn ()
 
 /// ### lazy
 nominal lazy t = $'Lazy<`t>'
@@ -263,15 +254,6 @@ inl (||>) (arg1, arg2) fn =
     arg2 |> fn arg1
 
 /// ### (||>)
-
-/// ### fix_condition
-inl fix_condition x a b =
-    if x ()
-    then a () |> fun x => $'(* fix_condition then' : ()
-    else
-        $'fix_condition then *) else' : ()
-        b () |> fun x => $'(* fix_condition else' : ()
-    |> fun x => $'fix_condition else *)' : ()
 
 /// ### infer
 nominal infer = $'_'

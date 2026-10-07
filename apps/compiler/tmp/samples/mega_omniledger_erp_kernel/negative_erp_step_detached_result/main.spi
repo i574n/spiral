@@ -1,3 +1,5 @@
+open main
+
 inl impossible_erp_step_detached_result () :
     erp_plan requisition_drafted budget_reserved =
     inl requisition_value : requisition company_a usd widget_a =

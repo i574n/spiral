@@ -163,15 +163,7 @@ inl of_obj forall t. (x : t) : option' t =
             $'!x |> option.Some' : option' t
         Lua = fun () =>
             $'!x ' : option' t
-        Fsharp = fun () =>
-            $'let mutable _!x = None'
-            $'\#if \!FABLE_COMPILER && \!WASM && \!CONTRACT'
-            ((x |> $'Option.ofObj') : option' t) |> emit_unit
-            $'\#else'
-            $'Some !x '
-            $'\#endif'
-            $'|> fun x -> _!x <- Some x'
-            $'match _!x with Some x -> x | None -> failwith "optionm\'.of_obj / _!x=None"' : option' t
+        Fsharp = fun () => (x |> $'Option.ofObj') : option' t
         Python = fun () =>
             $'!x ' : option' t
         Rust = fun () => $'Some(!x.clone())' : option' t

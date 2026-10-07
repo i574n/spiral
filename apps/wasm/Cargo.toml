@@ -4,25 +4,21 @@ cargo-features = ["edition2024"]
 name = "spiral_wasm"
 workspace = "../../workspace"
 version.workspace = true
-edition.workspace = true
+# the generated code is verified with edition 2021 (the staged native builds before this crate)
+edition = "2021"
 license-file.workspace = true
 repository.workspace = true
 
+# spiral_wasm.rs is spiral_wasm.spi's native Rust output (build.ps1 regenerates it with the Spiral compiler's Rust
+# backend). near-workspaces' build script sets up the NEAR sandbox, which only exists for Linux.
 [[bin]]
 name = "spiral_wasm"
 path = "spiral_wasm.rs"
 
 [dependencies]
-fable_library_rust = { workspace = true, features = ["static_do_bindings", "datetime", "guid", "threaded"] }
-inline_colorization = { workspace = true }
-chrono = { workspace = true }
-regex = { workspace = true }
-sha2 = { workspace = true }
-serde_json = { workspace = true }
+anyhow = "1.0"
 clap = { workspace = true }
 tokio = { version = "1.40", features = ["full"] }
-anyhow = "1.0"
 near-workspaces = { version = "=0.11.1", features = ["experimental", "unstable"] }
 near-sandbox-utils = { version = ">=0.11,<1", features = ["global_install"] }
-near-token = ">=0.3,<1"
 near-sdk = "=5.11.0"

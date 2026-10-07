@@ -1,6 +1,8 @@
-inl impossible_erp_p2p_unit_outbox_detached_message () :
-    erp_p2p_unit_outbox requisition_drafted budget_reserved =
-    inl event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+// a unit outbox carries only its event; a detached forged message cannot be attached (lane H 2026-10-06 rewrite; erp_p2p_unit_event_from_plan -> _from_op)
+open main
+
+inl impossible_erp_p2p_unit_outbox_detached_message () : erp_p2p_unit_outbox requisition_drafted budget_reserved =
+    inl event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
     ErpP2PUnitOutbox (event, "forged-unit-outbox-message")
 
 inl main () =

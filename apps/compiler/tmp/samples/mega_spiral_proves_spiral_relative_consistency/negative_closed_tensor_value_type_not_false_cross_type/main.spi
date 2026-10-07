@@ -1,5 +1,6 @@
-inl impossible_closed_tensor_value_type_not_false_cross_type () :
-    exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
+open main
+
+inl impossible_closed_tensor_value_type_not_false_cross_type () : exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
     inl tensor_value :
         exact_linear_indexed_value
             exact_linear_free_context_empty

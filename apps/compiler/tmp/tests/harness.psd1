@@ -38,6 +38,34 @@
         @{ Name = 'Brzozowski'; Title = 'Brzozowski derivative matcher'; Source = 'samples/mega_brzozowski_derivatives/main.spi' }
     )
 
+    # Per-sample job timeouts (seconds) over the suite's, for programs that are slow to compile but not hangs: the
+    # Brzozowski runtime programs compile in 1-3 s single-flight and take more than the contracts suite's 30 s in hopac
+    # (2026-10-06: runtime_bench, bench_derivative and bench_staged timed out at 28 s; proof_suite took 26 s).
+    Timeouts = @{
+        'samples/mega_brzozowski_derivatives/runtime_bench' = 180
+        'samples/mega_brzozowski_derivatives/proof_suite' = 180
+        'samples/mega_brzozowski_derivatives/bench_derivative' = 180
+        'samples/mega_brzozowski_derivatives/bench_backtrack' = 180
+        'samples/mega_brzozowski_derivatives/bench_staged' = 180
+        'samples/mega_brzozowski_derivatives/bench_zero_runs_derivative' = 180
+        'samples/mega_brzozowski_derivatives/bench_zero_runs_backtrack' = 180
+        'samples/mega_brzozowski_derivatives/bench_zero_runs_staged' = 180
+        'samples/mega_brzozowski_derivatives/bench_interned' = 180
+        'samples/mega_brzozowski_derivatives/bench_zero_runs_interned' = 180
+        'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality' = 180
+        'samples/mega_brzozowski_derivatives/indexed_dfa_witness_contracts' = 180
+        'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime' = 180
+        # The older megas' all_terminals / runtime_native packages evaluate dozens of root programs (lane G, 2026-10-06).
+        'samples/mega_omniledger_erp_kernel/all_terminals' = 180
+        'samples/mega_zeta_structural_laboratory/all_terminals' = 180
+        'samples/mega_lean_cic_bottom_up_kernel/all_terminals' = 180
+        'samples/mega_spiral_proves_spiral_relative_consistency/all_terminals' = 180
+        'samples/mega_zeta_structural_laboratory/runtime_native' = 180
+        'samples/mega_omniledger_erp_kernel/runtime_native' = 180
+        'samples/mega_lean_cic_bottom_up_kernel/runtime_native' = 180
+        'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native' = 180
+    }
+
     # Extra C compiler flags per sample name, first matching wildcard wins ({shims} = tests/native-shims).
     # A c-shim.h inside a sample directory is force-included automatically.
     CFlags = @(
@@ -166,9 +194,27 @@
     )
 
     # Backends a sample is compiled to, when not all four (Fsharp, C, Rust, Delphi). Contract and
-    # megaproject samples are F# only regardless.
+    # megaproject samples are F# only, except the megaproject sub-packages listed here (runtime fixtures).
     Backends = @{
+        # The Brzozowski matchers on every native backend, exit code as the verdict (C is the oracle as usual): runtime_native
+        # (the typestate and a dozen matches), runtime_bench (derivatives, backtracking, the staged DFA and interned nodes
+        # with memoized derivatives must agree), indexed_dfa_state_cardinality (the compile-time minimized DFA's compiled
+        # core against run-time derivatives), inventory_closed_dfa_runtime (the inventory model's closed-DFA core).
+        'Fsharp,C,Rust,Delphi' = @(
+            'samples/mega_brzozowski_derivatives/indexed_dfa_state_cardinality'
+            'samples/mega_brzozowski_derivatives/inventory_closed_dfa_runtime'
+            'samples/mega_brzozowski_derivatives/runtime_bench'
+            'samples/mega_brzozowski_derivatives/runtime_native'
+            # Zeta, CIC and Self on the native backends: root contract + all_terminals, every check now a core-free op.
+            'samples/mega_lean_cic_bottom_up_kernel/runtime_native'
+            # ERP: the 24 of its unreached programs that build without F# macros (real run-time code).
+            'samples/mega_omniledger_erp_kernel/runtime_native'
+            'samples/mega_spiral_proves_spiral_relative_consistency/runtime_native'
+            'samples/mega_zeta_structural_laboratory/runtime_native'
+        )
         'C,Rust,Delphi' = @(
+            # FOR-D repro (lane G): a non-i32 main is rejected by C but emitted unbuildable by Rust and Delphi; not blessed.
+            'samples/native_main_return_type'
             'samples/arithmetic_branch'
             # hopac fix 24 (replayed arguments reversed); F# fails in both cores on the host's terminal check.
             'samples/native_literal_join_args'
@@ -245,6 +291,32 @@
             'samples/unsigned_mod'
         )
         'C' = @(
+        # FOR-D repro (lane F): a nominal pattern around a union case drops the definition silently; do not bless its error.
+        'samples/nominal_union_case_pattern'
+        # FOR-D repro (lane F): inl recursion through a run-time match never reaches EJP0040; times out until fixed.
+        'samples/runaway_inline_match_recursion'
+        # FOR-D repro (lane F): a multi-line match scrutinee does not parse; do not bless its error.
+        'samples/match_multiline_scrutinee'
+        # FOR-D repro (lane G): a nominal's phantom type parameter is filled with the wrong type during partial
+        # evaluation ("Type error in nominal constructor"); do not bless its error.
+        'samples/nominal_phantom_parameter'
+        # FOR-D repro (lane G): a type application continued on the next line inside a parameter annotation drops the
+        # definition without a diagnostic; do not bless its error.
+        'samples/multiline_type_application_dropped'
+        # FOR-D repro (lane G): a GADT constructor pattern loses the enclosing function's constraint on the element
+        # type ("Metavariable's constraints must be a subset of the forall var"); do not bless its error.
+        'samples/gadt_match_loses_constraint'
+        # FOR-D repro (lane G, a missing feature): an existential that reaches run time cannot be unpacked ("Cannot dyn
+        # an existential into a runtime var"); do not bless its error.
+        'samples/runtime_existential_unpack'
+        # FOR-D repro (lane G): Python emits self tail calls as recursion (RecursionError past ~1,000 iterations); the C
+        # row is the oracle, the Python run is by hand (see its main.spi). Not blessed.
+        'samples/python_self_tail_call_depth'
+        # lane D: an inbuilt op's argument may be an application (lane C's FOR-D).
+        'samples/op_args_application'
+        # lane D: a folder's index module (lib/lib): lib.member from the folder; and the ambiguous negative (expected: error).
+        'samples/folder_index_module'
+        'samples/folder_index_module_ambiguous'
         'samples/abi_external'
         'samples/abi_external_buffer_length_negative'
         'samples/abi_external_buffer_ownership_negative'

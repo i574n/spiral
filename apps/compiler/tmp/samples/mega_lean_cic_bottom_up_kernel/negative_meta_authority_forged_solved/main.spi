@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_meta_solved_authority_without_assignment () :
     corrected_cic_meta_authority
         (corrected_cic_meta_states_solved empty_ctx bool_sort

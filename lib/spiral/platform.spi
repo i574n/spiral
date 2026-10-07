@@ -49,8 +49,6 @@ inl is_windows' () : bool =
 /// ### is_windows
 inl is_windows () : bool =
     run_target function
-        | Rust _ => fun () =>
-            !\($'"cfg\!(windows)"')
         | RustNative => fun () =>
             $'cfg\!(windows)' : bool
         | Fsharp _ => fun () =>
@@ -70,6 +68,8 @@ inl get_executable_suffix () =
     else ""
 
 /// ## main
+///> fsharp
+
 inl main () =
     $'let is_windows () = !is_windows ()' : ()
     $'let get_executable_suffix () = !get_executable_suffix ()' : ()

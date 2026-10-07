@@ -1,7 +1,8 @@
-inl impossible_corrected_cic_unification_assignment_sort_mismatch () : i64 =
-    solve_corrected_cic_unification_constraints
-        (CorrectedCicUnificationRigid (corrected_cic_sort_zero ()))
-        (corrected_cic_unification_constraint_program_accepted ())
+// A metavariable assignment is indexed by the slot's context and sort (successor of the retired string unification solver): a Bool slot cannot be assigned the rigid term Sort zero.
+open main
+
+inl impossible_corrected_cic_unification_assignment_sort_mismatch () : corrected_cic_meta_assignment_plan empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty))) =
+    CorrectedCicMetaAssignmentPlanRigid (corrected_cic_sort_zero ())
 
 inl main () =
     impossible_corrected_cic_unification_assignment_sort_mismatch ()

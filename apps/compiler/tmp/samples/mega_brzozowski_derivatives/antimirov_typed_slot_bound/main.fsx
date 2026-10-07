@@ -1353,177 +1353,169 @@ let v51 : bool =
 if v51 then
     ()
 else
-    let v52 : string = "bit Antimirov support must fit the typed root-plus-position slot universe"
-    failwith v52
-    ()
-let v53 : US0 = US0_0
-let v54 : UH0 = UH0_2(v53)
-let v55 : US0 = US0_1
-let v56 : UH0 = UH0_2(v55)
-let v57 : UH0 = UH0_3(v54, v56)
-let v58 : UH0 = UH0_5(v57)
-let v59 : US0 = US0_0
-let v60 : UH0 = UH0_2(v59)
-let v61 : UH0 = UH0_4(v58, v60)
+    failwith<unit> "bit Antimirov support must fit the typed root-plus-position slot universe"
+let v52 : US0 = US0_0
+let v53 : UH0 = UH0_2(v52)
+let v54 : US0 = US0_1
+let v55 : UH0 = UH0_2(v54)
+let v56 : UH0 = UH0_3(v53, v55)
+let v57 : UH0 = UH0_5(v56)
+let v58 : US0 = US0_0
+let v59 : UH0 = UH0_2(v58)
+let v60 : UH0 = UH0_4(v57, v59)
+let v61 : UH0 = method0(v60)
 let v62 : UH0 = method0(v61)
-let v63 : UH0 = method0(v62)
-let v64 : UH1 = method7(v63)
-let v65 : UH1 = method9(v63, v64)
-let v66 : bool = method12(v65)
-let v67 : US0 = US0_0
-let v68 : UH0 = UH0_2(v67)
-let v69 : US0 = US0_1
-let v70 : UH0 = UH0_2(v69)
-let v71 : UH0 = UH0_3(v68, v70)
-let v72 : UH0 = UH0_5(v71)
-let v73 : US0 = US0_1
-let v74 : UH0 = UH0_2(v73)
-let v75 : UH0 = UH0_4(v72, v74)
-let v76 : UH0 = method0(v75)
-let v77 : bool = method5(v76, v62)
-let v90 : bool =
-    if v77 then
-        let v78 : US0 = US0_0
-        let v79 : UH2 = UH2_0(v78)
-        let v80 : US0 = US0_1
-        let v81 : UH2 = UH2_0(v80)
-        let v82 : UH3 = UH3_0(v79, v81)
-        let v83 : UH4 = UH4_0(v82)
-        let v84 : US0 = US0_1
-        let v85 : UH2 = UH2_0(v84)
-        let v86 : UH5 = UH5_0(v83, v85)
-        let v87 : UH6 = method13(v86)
-        let v88 : UH6 = method18(v62)
-        method19(v87, v88)
+let v63 : UH1 = method7(v62)
+let v64 : UH1 = method9(v62, v63)
+let v65 : bool = method12(v64)
+let v66 : US0 = US0_0
+let v67 : UH0 = UH0_2(v66)
+let v68 : US0 = US0_1
+let v69 : UH0 = UH0_2(v68)
+let v70 : UH0 = UH0_3(v67, v69)
+let v71 : UH0 = UH0_5(v70)
+let v72 : US0 = US0_1
+let v73 : UH0 = UH0_2(v72)
+let v74 : UH0 = UH0_4(v71, v73)
+let v75 : UH0 = method0(v74)
+let v76 : bool = method5(v75, v61)
+let v89 : bool =
+    if v76 then
+        let v77 : US0 = US0_0
+        let v78 : UH2 = UH2_0(v77)
+        let v79 : US0 = US0_1
+        let v80 : UH2 = UH2_0(v79)
+        let v81 : UH3 = UH3_0(v78, v80)
+        let v82 : UH4 = UH4_0(v81)
+        let v83 : US0 = US0_1
+        let v84 : UH2 = UH2_0(v83)
+        let v85 : UH5 = UH5_0(v82, v84)
+        let v86 : UH6 = method13(v85)
+        let v87 : UH6 = method18(v61)
+        method19(v86, v87)
     else
         false
-let v91 : bool = v90 && v66
-let v104 : bool =
-    if v91 then
-        let v92 : (UH0 -> (UH0 -> UH0)) = closure0()
-        let v93 : (UH0 -> (UH0 -> bool)) = closure2()
-        let v94 : US0 = US0_0
-        let v95 : UH2 = UH2_0(v94)
-        let v96 : US0 = US0_1
-        let v97 : UH2 = UH2_0(v96)
-        let v98 : UH3 = UH3_0(v95, v97)
-        let v99 : UH4 = UH4_0(v98)
-        let v100 : US0 = US0_1
-        let v101 : UH2 = UH2_0(v100)
-        let v102 : UH5 = UH5_0(v99, v101)
-        method20(v92, v93, v62, v102, v65)
+let v90 : bool = v89 && v65
+let v103 : bool =
+    if v90 then
+        let v91 : (UH0 -> (UH0 -> UH0)) = closure0()
+        let v92 : (UH0 -> (UH0 -> bool)) = closure2()
+        let v93 : US0 = US0_0
+        let v94 : UH2 = UH2_0(v93)
+        let v95 : US0 = US0_1
+        let v96 : UH2 = UH2_0(v95)
+        let v97 : UH3 = UH3_0(v94, v96)
+        let v98 : UH4 = UH4_0(v97)
+        let v99 : US0 = US0_1
+        let v100 : UH2 = UH2_0(v99)
+        let v101 : UH5 = UH5_0(v98, v100)
+        method20(v91, v92, v61, v101, v64)
     else
         false
-let v105 : bool = v104 = false
-if v105 then
+let v104 : bool = v103 = false
+if v104 then
     ()
 else
-    let v106 : string = "same-cardinality forged typed position tree must not certify the source regex"
-    failwith v106
-    ()
-let v107 : US8 = US8_0
-let v108 : UH11 = UH11_2(v107)
-let v109 : UH11 = UH11_5(v108)
-let v110 : UH11 = method21(v109)
-let v111 : UH11 = method21(v110)
-let v112 : UH12 = method28(v111)
-let v113 : UH12 = method30(v111, v112)
-let v114 : bool = method33(v113)
-let v115 : US8 = US8_0
-let v116 : UH11 = UH11_2(v115)
-let v117 : UH11 = UH11_5(v116)
-let v118 : UH11 = method21(v117)
-let v119 : bool = method26(v118, v110)
-let v126 : bool =
-    if v119 then
-        let v120 : US8 = US8_0
-        let v121 : UH13 = UH13_0(v120)
-        let v122 : UH14 = UH14_0(v121)
-        let v123 : UH6 = method34(v122)
-        let v124 : UH6 = method36(v110)
-        method19(v123, v124)
+    failwith<unit> "same-cardinality forged typed position tree must not certify the source regex"
+let v105 : US8 = US8_0
+let v106 : UH11 = UH11_2(v105)
+let v107 : UH11 = UH11_5(v106)
+let v108 : UH11 = method21(v107)
+let v109 : UH11 = method21(v108)
+let v110 : UH12 = method28(v109)
+let v111 : UH12 = method30(v109, v110)
+let v112 : bool = method33(v111)
+let v113 : US8 = US8_0
+let v114 : UH11 = UH11_2(v113)
+let v115 : UH11 = UH11_5(v114)
+let v116 : UH11 = method21(v115)
+let v117 : bool = method26(v116, v108)
+let v124 : bool =
+    if v117 then
+        let v118 : US8 = US8_0
+        let v119 : UH13 = UH13_0(v118)
+        let v120 : UH14 = UH14_0(v119)
+        let v121 : UH6 = method34(v120)
+        let v122 : UH6 = method36(v108)
+        method19(v121, v122)
     else
         false
-let v127 : bool = v126 && v114
-let v134 : bool =
-    if v127 then
-        let v128 : (UH11 -> (UH11 -> UH11)) = closure4()
-        let v129 : (UH11 -> (UH11 -> bool)) = closure6()
-        let v130 : US8 = US8_0
-        let v131 : UH13 = UH13_0(v130)
-        let v132 : UH14 = UH14_0(v131)
-        method37(v128, v129, v110, v132, v113)
+let v125 : bool = v124 && v112
+let v132 : bool =
+    if v125 then
+        let v126 : (UH11 -> (UH11 -> UH11)) = closure4()
+        let v127 : (UH11 -> (UH11 -> bool)) = closure6()
+        let v128 : US8 = US8_0
+        let v129 : UH13 = UH13_0(v128)
+        let v130 : UH14 = UH14_0(v129)
+        method37(v126, v127, v108, v130, v111)
     else
         false
-if v134 then
+if v132 then
     ()
 else
-    let v135 : string = "ternary star support must fit the typed root-plus-position slot universe"
-    failwith v135
-    ()
-let v136 : US8 = US8_0
-let v137 : UH11 = UH11_2(v136)
-let v138 : US8 = US8_1
-let v139 : UH11 = UH11_2(v138)
-let v140 : UH11 = UH11_3(v137, v139)
-let v141 : UH11 = UH11_5(v140)
-let v142 : US8 = US8_2
-let v143 : UH11 = UH11_2(v142)
-let v144 : UH11 = UH11_4(v141, v143)
-let v145 : UH11 = method21(v144)
-let v146 : UH11 = method21(v145)
-let v147 : UH12 = method28(v146)
-let v148 : UH12 = method30(v146, v147)
-let v149 : bool = method33(v148)
-let v150 : US8 = US8_0
-let v151 : UH11 = UH11_2(v150)
-let v152 : US8 = US8_1
-let v153 : UH11 = UH11_2(v152)
-let v154 : UH11 = UH11_3(v151, v153)
-let v155 : UH11 = UH11_5(v154)
-let v156 : US8 = US8_2
-let v157 : UH11 = UH11_2(v156)
-let v158 : UH11 = UH11_4(v155, v157)
-let v159 : UH11 = method21(v158)
-let v160 : bool = method26(v159, v145)
-let v173 : bool =
-    if v160 then
-        let v161 : US8 = US8_0
-        let v162 : UH13 = UH13_0(v161)
-        let v163 : US8 = US8_1
-        let v164 : UH13 = UH13_0(v163)
-        let v165 : UH16 = UH16_0(v162, v164)
-        let v166 : UH17 = UH17_0(v165)
-        let v167 : US8 = US8_2
-        let v168 : UH13 = UH13_0(v167)
-        let v169 : UH18 = UH18_0(v166, v168)
-        let v170 : UH6 = method38(v169)
-        let v171 : UH6 = method36(v145)
-        method19(v170, v171)
+    failwith<unit> "ternary star support must fit the typed root-plus-position slot universe"
+let v133 : US8 = US8_0
+let v134 : UH11 = UH11_2(v133)
+let v135 : US8 = US8_1
+let v136 : UH11 = UH11_2(v135)
+let v137 : UH11 = UH11_3(v134, v136)
+let v138 : UH11 = UH11_5(v137)
+let v139 : US8 = US8_2
+let v140 : UH11 = UH11_2(v139)
+let v141 : UH11 = UH11_4(v138, v140)
+let v142 : UH11 = method21(v141)
+let v143 : UH11 = method21(v142)
+let v144 : UH12 = method28(v143)
+let v145 : UH12 = method30(v143, v144)
+let v146 : bool = method33(v145)
+let v147 : US8 = US8_0
+let v148 : UH11 = UH11_2(v147)
+let v149 : US8 = US8_1
+let v150 : UH11 = UH11_2(v149)
+let v151 : UH11 = UH11_3(v148, v150)
+let v152 : UH11 = UH11_5(v151)
+let v153 : US8 = US8_2
+let v154 : UH11 = UH11_2(v153)
+let v155 : UH11 = UH11_4(v152, v154)
+let v156 : UH11 = method21(v155)
+let v157 : bool = method26(v156, v142)
+let v170 : bool =
+    if v157 then
+        let v158 : US8 = US8_0
+        let v159 : UH13 = UH13_0(v158)
+        let v160 : US8 = US8_1
+        let v161 : UH13 = UH13_0(v160)
+        let v162 : UH16 = UH16_0(v159, v161)
+        let v163 : UH17 = UH17_0(v162)
+        let v164 : US8 = US8_2
+        let v165 : UH13 = UH13_0(v164)
+        let v166 : UH18 = UH18_0(v163, v165)
+        let v167 : UH6 = method38(v166)
+        let v168 : UH6 = method36(v142)
+        method19(v167, v168)
     else
         false
-let v174 : bool = v173 && v149
-let v187 : bool =
-    if v174 then
-        let v175 : (UH11 -> (UH11 -> UH11)) = closure4()
-        let v176 : (UH11 -> (UH11 -> bool)) = closure6()
-        let v177 : US8 = US8_0
-        let v178 : UH13 = UH13_0(v177)
-        let v179 : US8 = US8_1
-        let v180 : UH13 = UH13_0(v179)
-        let v181 : UH16 = UH16_0(v178, v180)
-        let v182 : UH17 = UH17_0(v181)
-        let v183 : US8 = US8_2
-        let v184 : UH13 = UH13_0(v183)
-        let v185 : UH18 = UH18_0(v182, v184)
-        method41(v175, v176, v145, v185, v148)
+let v171 : bool = v170 && v146
+let v184 : bool =
+    if v171 then
+        let v172 : (UH11 -> (UH11 -> UH11)) = closure4()
+        let v173 : (UH11 -> (UH11 -> bool)) = closure6()
+        let v174 : US8 = US8_0
+        let v175 : UH13 = UH13_0(v174)
+        let v176 : US8 = US8_1
+        let v177 : UH13 = UH13_0(v176)
+        let v178 : UH16 = UH16_0(v175, v177)
+        let v179 : UH17 = UH17_0(v178)
+        let v180 : US8 = US8_2
+        let v181 : UH13 = UH13_0(v180)
+        let v182 : UH18 = UH18_0(v179, v181)
+        method41(v172, v173, v142, v182, v145)
     else
         false
-if v187 then
+if v184 then
     ()
 else
-    let v188 : string = "ternary cat/alt/star support must fit the typed root-plus-position slot universe"
-    failwith v188
-    ()
-let v189 : string = "brzozowski-antimirov-typed-slot-bound-green"
-v189
+    failwith<unit> "ternary cat/alt/star support must fit the typed root-plus-position slot universe"
+let v185 : string = "brzozowski-antimirov-typed-slot-bound-green"
+v185

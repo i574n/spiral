@@ -1,7 +1,8 @@
-inl impossible_erp_p2p_unit_commit_cross_stage () :
-    erp_p2p_unit_store requisition_drafted requisition_drafted *
-        (erp_p2p_unit_event requisition_drafted requisition_drafted * string) =
-    inl event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
+// a ReserveBudget unit commit cannot be typed as a requisition_drafted -> requisition_drafted store/outbox (lane H 2026-10-06 rewrite; erp_p2p_unit_event_from_plan -> _from_op; outbox replaces the old event*string pair)
+open main
+
+inl impossible_erp_p2p_unit_commit_cross_stage () : erp_p2p_unit_store requisition_drafted requisition_drafted * erp_p2p_unit_outbox requisition_drafted requisition_drafted =
+    inl event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
     erp_p2p_unit_commit_project event
 
 inl main () =

@@ -49,6 +49,11 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.to_spi(text)
   end
 
+  def to_spir(text) do
+    ensure!()
+    :spiral_kino@domain.to_spir(text)
+  end
+
   def plan(wire) do
     ensure!()
     :spiral_kino@domain.plan(wire)
@@ -68,9 +73,13 @@ defmodule Spiral.Kino.Domain do
     [index_text, timeout, len_text, after_len] = String.split(rest, "\n", parts: 4)
     len = String.to_integer(len_text)
     <<program::binary-size(len), rest::binary>> = after_len
+    [real_len_text, after_real_len] = String.split(rest, "\n", parts: 2)
+    real_len = String.to_integer(real_len_text)
+    <<real::binary-size(real_len), rest::binary>> = after_real_len
 
     decode_steps(n - 1, rest, [
-      %{index: String.to_integer(index_text), timeout: timeout, program: program} | acc
+      %{index: String.to_integer(index_text), timeout: timeout, program: program, real: real}
+      | acc
     ])
   end
 

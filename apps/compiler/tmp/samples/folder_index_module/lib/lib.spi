@@ -1,0 +1,4 @@
+// The index module of the folder lib/ (a module named like its folder, as lib/spiral's rust/rust).
+inl seven () : i32 = 7i32
+nominal wrapped = i32
+inl make_wrapped forall t. (x : t) : t = x

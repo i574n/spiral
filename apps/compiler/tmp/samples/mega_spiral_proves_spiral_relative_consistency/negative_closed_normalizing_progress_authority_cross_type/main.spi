@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_normalizing_progress_authority_cross_type () :
     exact_linear_indexed_closed_normalizing_progress_authority
         exact_linear_false_type =

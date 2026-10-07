@@ -1,10 +1,14 @@
 nominal meta_zero = string
 nominal meta_succ n = n * string
 inl reflected_runtime_add_i64 (left : i64) (right : i64) : i64 =
-    $"!left + !right"
+    !!!!Add(left, right)
 
 inl reflected_runtime_mul_i64 (left : i64) (right : i64) : i64 =
-    $"!left * !right"
+    !!!!Mult(left, right)
+
+// The run-time checks below are core-free Spiral ops (they were F# macros until 2026-10-06, so only the F# backend could
+// run them): a failed check stops the program with its message on every backend.
+inl reflected_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
 
 union rec meta_add left right total =
     | MetaAddZero :: forall right.
@@ -183,7 +187,9 @@ inl rec exact_linear_all_membership_spine_runtime forall context.
 
 inl assert_exact_linear_all_membership_spine_runtime
     (cells : i64) (local_slot_sum : i64) : () =
-    $"if !cells <> 3L || !local_slot_sum <> 0L then failwith \"exact-linear-all-membership-spine-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 3i64)
+    inl ok_1 = !!!!EQ(local_slot_sum, 0i64)
+    if ok_0 && ok_1 then () else reflected_runtime_fail "exact-linear-all-membership-spine-runtime-mismatch"
 
 inl exact_linear_all_membership_spine_terminal () : string =
     inl shape : exact_linear_free_context_shape exact_linear_unit_bool_unit_context =
@@ -257,7 +263,10 @@ inl exact_linear_unit_bool_unit_context_shape () :
 
 inl assert_exact_linear_all_used_usage_vector_runtime
     (length : i64) (used : i64) (bitmap : i64) : () =
-    $"if !length <> 3L || !used <> 3L || !bitmap <> 7L then failwith \"exact-linear-all-used-usage-vector-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(length, 3i64)
+    inl ok_1 = !!!!EQ(used, 3i64)
+    inl ok_2 = !!!!EQ(bitmap, 7i64)
+    if ok_0 && ok_1 && ok_2 then () else reflected_runtime_fail "exact-linear-all-used-usage-vector-runtime-mismatch"
 
 inl exact_linear_all_used_usage_vector_terminal () : string =
     inl length, used, bitmap =
@@ -487,7 +496,12 @@ inl exact_linear_context_indexed_lambda_runtime
 inl assert_exact_linear_context_indexed_lambda_runtime
     (tags : i64) (slots : i64) (lengths : i64)
     (used : i64) (bitmap_resources : i64) : () =
-    $"if !tags <> 2L || !slots <> 1L || !lengths <> 4L || !used <> 2L || !bitmap_resources <> 5L then failwith \"exact-linear-context-indexed-lambda-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(tags, 2i64)
+    inl ok_1 = !!!!EQ(slots, 1i64)
+    inl ok_2 = !!!!EQ(lengths, 4i64)
+    inl ok_3 = !!!!EQ(used, 2i64)
+    inl ok_4 = !!!!EQ(bitmap_resources, 5i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else reflected_runtime_fail "exact-linear-context-indexed-lambda-runtime-mismatch"
 
 inl exact_linear_context_indexed_lambda_terminal () : string =
     inl shape = exact_linear_unit_bool_context_shape ()
@@ -624,22 +638,12 @@ union exact_linear_indexed_term_index_transport source_context source_usage targ
         string ->
         exact_linear_indexed_term_index_transport context usage context usage ty
 
-inl exact_linear_indexed_term_index_transport_from_equality
-    forall source_context source_usage target_context target_usage ty.
-    (equality : exact_linear_indexed_context_usage_equality
-        source_context source_usage target_context target_usage) :
-    exact_linear_indexed_term_index_transport
-        source_context source_usage target_context target_usage ty =
+inl exact_linear_indexed_term_index_transport_from_equality forall source_context source_usage target_context target_usage ty. (equality : exact_linear_indexed_context_usage_equality source_context source_usage target_context target_usage) : exact_linear_indexed_term_index_transport source_context source_usage target_context target_usage ty =
     match equality with
     | ExactLinearIndexedContextUsageEqualityRefl note =>
         ExactLinearIndexedTermIndexTransportRefl note
 
-inl exact_linear_indexed_term_index_transport_apply
-    forall source_context source_usage target_context target_usage ty.
-    (transport : exact_linear_indexed_term_index_transport
-        source_context source_usage target_context target_usage ty)
-    (term : exact_linear_indexed_term source_context source_usage ty) :
-    exact_linear_indexed_term target_context target_usage ty =
+inl exact_linear_indexed_term_index_transport_apply forall source_context source_usage target_context target_usage ty. (transport : exact_linear_indexed_term_index_transport source_context source_usage target_context target_usage ty) (term : exact_linear_indexed_term source_context source_usage ty) : exact_linear_indexed_term target_context target_usage ty =
     match transport with
     | ExactLinearIndexedTermIndexTransportRefl _ => term
 
@@ -1011,7 +1015,10 @@ inl exact_linear_three_step_indexed_variable_renaming forall context slot usage 
         "the-third-indexed-variable-renaming-step-proves-the-plan-is-recursive")
 
 inl assert_exact_linear_recursive_indexed_variable_renaming_runtime (source_slot : i64) (target_slot : i64) (steps : i64) : () =
-    $"if !source_slot <> 0L || !target_slot <> 3L || !steps <> 3L then failwith \"exact-linear-recursive-indexed-variable-renaming-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_slot, 0i64)
+    inl ok_1 = !!!!EQ(target_slot, 3i64)
+    inl ok_2 = !!!!EQ(steps, 3i64)
+    if ok_0 && ok_1 && ok_2 then () else reflected_runtime_fail "exact-linear-recursive-indexed-variable-renaming-runtime-mismatch"
 
 type exact_linear_indexed_variable_renaming_source_context =
     exact_linear_free_context_extend
@@ -1096,7 +1103,12 @@ inl exact_linear_indexed_variable_renaming_remaining_two_steps () : exact_linear
 inl assert_exact_linear_indexed_variable_renaming_composition_runtime
     (source_slot : i64) (direct_slot : i64) (sequential_slot : i64)
     (composed_steps : i64) (split_steps : i64) : () =
-    $"if !source_slot <> 0L || !direct_slot <> 3L || !sequential_slot <> !direct_slot || !composed_steps <> 3L || !split_steps <> !composed_steps then failwith \"exact-linear-indexed-variable-renaming-composition-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_slot, 0i64)
+    inl ok_1 = !!!!EQ(direct_slot, 3i64)
+    inl ok_2 = !!!!EQ(sequential_slot, direct_slot)
+    inl ok_3 = !!!!EQ(composed_steps, 3i64)
+    inl ok_4 = !!!!EQ(split_steps, composed_steps)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else reflected_runtime_fail "exact-linear-indexed-variable-renaming-composition-runtime-mismatch"
 
 inl exact_linear_indexed_variable_renaming_composition_terminal () : string =
     inl membership : exact_linear_free_context_membership exact_linear_indexed_variable_renaming_source_context exact_linear_zero exact_linear_unit_type =
@@ -1217,7 +1229,10 @@ inl exact_linear_indexed_unit_bool_weakened_tensor_runtime (term : exact_linear_
 
 inl assert_exact_linear_indexed_unit_bool_weakened_tensor_runtime
     (unit_slot : i64) (bool_slot : i64) (slot_sum : i64) : () =
-    $"if !unit_slot <> 2L || !bool_slot <> 1L || !slot_sum <> 3L then failwith \"exact-linear-indexed-unit-bool-weakened-tensor-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(unit_slot, 2i64)
+    inl ok_1 = !!!!EQ(bool_slot, 1i64)
+    inl ok_2 = !!!!EQ(slot_sum, 3i64)
+    if ok_0 && ok_1 && ok_2 then () else reflected_runtime_fail "exact-linear-indexed-unit-bool-weakened-tensor-runtime-mismatch"
 
 inl exact_linear_indexed_unit_bool_weakened_tensor_terminal () : string =
     inl unit_slot, bool_slot, slot_sum =
@@ -1305,7 +1320,10 @@ inl exact_linear_indexed_bool_application_weakened_runtime
 
 inl assert_exact_linear_indexed_bool_application_weakened_runtime
     (function_slot : i64) (argument_slot : i64) (slot_sum : i64) : () =
-    $"if !function_slot <> 1L || !argument_slot <> 2L || !slot_sum <> 3L then failwith \"exact-linear-indexed-Bool-application-weakened-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(function_slot, 1i64)
+    inl ok_1 = !!!!EQ(argument_slot, 2i64)
+    inl ok_2 = !!!!EQ(slot_sum, 3i64)
+    if ok_0 && ok_1 && ok_2 then () else reflected_runtime_fail "exact-linear-indexed-Bool-application-weakened-runtime-mismatch"
 
 inl exact_linear_indexed_bool_application_weakened_terminal () : string =
     inl function_slot, argument_slot, slot_sum =
@@ -1349,7 +1367,8 @@ inl exact_linear_indexed_weakened_identity_lambda_runtime
     | _ => -1i64
 
 inl assert_exact_linear_indexed_weakened_identity_lambda_runtime (slot : i64) : () =
-    $"if !slot <> 0L then failwith \"exact-linear-indexed-weakened-identity-lambda-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(slot, 0i64)
+    if ok_0 then () else reflected_runtime_fail "exact-linear-indexed-weakened-identity-lambda-runtime-mismatch"
 
 inl exact_linear_indexed_weakened_identity_lambda_terminal () : string =
     inl weakened =
@@ -1404,7 +1423,9 @@ inl exact_linear_indexed_two_step_weakened_identity_lambda_runtime
 
 inl assert_exact_linear_indexed_two_step_weakened_identity_lambda_runtime
     (slot : i64) (outer_unused_cells : i64) : () =
-    $"if !slot <> 0L || !outer_unused_cells <> 2L then failwith \"exact-linear-indexed-two-step-weakened-identity-lambda-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(slot, 0i64)
+    inl ok_1 = !!!!EQ(outer_unused_cells, 2i64)
+    if ok_0 && ok_1 then () else reflected_runtime_fail "exact-linear-indexed-two-step-weakened-identity-lambda-runtime-mismatch"
 
 inl exact_linear_indexed_two_step_weakened_identity_lambda_terminal () : string =
     inl first =
@@ -1470,7 +1491,8 @@ inl rec exact_linear_indexed_outer_weakening_runtime forall source_context sourc
             (exact_linear_indexed_outer_weakening_runtime prefix)
 
 inl assert_exact_linear_indexed_outer_weakening_runtime (steps : i64) : () =
-    $"if !steps <> 2L then failwith \"exact-linear-indexed-arbitrary-outer-lambda-plan-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 2i64)
+    if ok_0 then () else reflected_runtime_fail "exact-linear-indexed-arbitrary-outer-lambda-plan-runtime-mismatch"
 
 inl exact_linear_indexed_arbitrary_outer_lambda_terminal () : string =
     inl plan : exact_linear_indexed_outer_weakening exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_bool_unit_outer_context exact_linear_indexed_bool_unit_outer_usage =
@@ -1508,7 +1530,13 @@ inl assert_exact_linear_indexed_outer_weakening_composition_runtime
     (direct_steps : i64) (sequential_steps : i64)
     (direct_slot : i64) (sequential_slot : i64)
     (direct_unused : i64) (sequential_unused : i64) : () =
-    $"if !direct_steps <> 2L || !sequential_steps <> !direct_steps || !direct_slot <> 0L || !sequential_slot <> !direct_slot || !direct_unused <> 2L || !sequential_unused <> !direct_unused then failwith \"exact-linear-indexed-outer-weakening-composition-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(direct_steps, 2i64)
+    inl ok_1 = !!!!EQ(sequential_steps, direct_steps)
+    inl ok_2 = !!!!EQ(direct_slot, 0i64)
+    inl ok_3 = !!!!EQ(sequential_slot, direct_slot)
+    inl ok_4 = !!!!EQ(direct_unused, 2i64)
+    inl ok_5 = !!!!EQ(sequential_unused, direct_unused)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else reflected_runtime_fail "exact-linear-indexed-outer-weakening-composition-runtime-mismatch"
 
 inl exact_linear_indexed_outer_weakening_composition_terminal () : string =
     inl first : exact_linear_indexed_outer_weakening exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_bool_outer_context exact_linear_indexed_bool_outer_usage =
@@ -1580,7 +1608,13 @@ inl assert_exact_linear_indexed_outer_weakening_associativity_runtime
     (left_steps : i64) (right_steps : i64)
     (left_slot : i64) (right_slot : i64)
     (left_unused : i64) (right_unused : i64) : () =
-    $"if !left_steps <> 3L || !right_steps <> !left_steps || !left_slot <> 0L || !right_slot <> !left_slot || !left_unused <> 3L || !right_unused <> !left_unused then failwith \"exact-linear-indexed-outer-weakening-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_steps, 3i64)
+    inl ok_1 = !!!!EQ(right_steps, left_steps)
+    inl ok_2 = !!!!EQ(left_slot, 0i64)
+    inl ok_3 = !!!!EQ(right_slot, left_slot)
+    inl ok_4 = !!!!EQ(left_unused, 3i64)
+    inl ok_5 = !!!!EQ(right_unused, left_unused)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else reflected_runtime_fail "exact-linear-indexed-outer-weakening-associativity-runtime-mismatch"
 
 inl exact_linear_indexed_outer_weakening_associativity_terminal () : string =
     inl first : exact_linear_indexed_outer_weakening exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_bool_outer_context exact_linear_indexed_bool_outer_usage =
@@ -1735,7 +1769,11 @@ inl exact_linear_indexed_conditional_runtime () : i64 * i64 * i64 * i64 =
 inl assert_exact_linear_indexed_conditional_runtime
     (guard_tag : i64) (then_tag : i64) (else_tag : i64)
     (conditional_tag : i64) : () =
-    $"if !guard_tag <> 3L || !then_tag <> 2L || !else_tag <> 2L || !conditional_tag <> 7L then failwith \"exact-linear-indexed-conditional-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(guard_tag, 3i64)
+    inl ok_1 = !!!!EQ(then_tag, 2i64)
+    inl ok_2 = !!!!EQ(else_tag, 2i64)
+    inl ok_3 = !!!!EQ(conditional_tag, 7i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else reflected_runtime_fail "exact-linear-indexed-conditional-runtime-mismatch"
 
 inl exact_linear_indexed_conditional_terminal () : string =
     inl guard_tag, then_tag, else_tag, conditional_tag =
@@ -1848,7 +1886,11 @@ inl exact_linear_indexed_small_step_runtime
 inl assert_exact_linear_indexed_conditional_small_step_runtime
     (true_source : i64) (true_target : i64)
     (false_source : i64) (false_target : i64) : () =
-    $"if !true_source <> 7L || !true_target <> 2L || !false_source <> 7L || !false_target <> 2L then failwith \"exact-linear-indexed-conditional-small-step-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(true_source, 7i64)
+    inl ok_1 = !!!!EQ(true_target, 2i64)
+    inl ok_2 = !!!!EQ(false_source, 7i64)
+    inl ok_3 = !!!!EQ(false_target, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else reflected_runtime_fail "exact-linear-indexed-conditional-small-step-runtime-mismatch"
 
 inl exact_linear_indexed_conditional_small_step_terminal () : string =
     inl true_source, true_target =
@@ -1865,7 +1907,11 @@ inl exact_linear_indexed_conditional_small_step_terminal () : string =
 inl assert_exact_linear_indexed_conditional_guard_step_runtime
     (source : i64) (source_guard : i64)
     (target : i64) (target_guard : i64) : () =
-    $"if !source <> 7L || !source_guard <> 7L || !target <> 7L || !target_guard <> 4L then failwith \"exact-linear-indexed-conditional-guard-step-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source, 7i64)
+    inl ok_1 = !!!!EQ(source_guard, 7i64)
+    inl ok_2 = !!!!EQ(target, 7i64)
+    inl ok_3 = !!!!EQ(target_guard, 4i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else reflected_runtime_fail "exact-linear-indexed-conditional-guard-step-runtime-mismatch"
 
 inl exact_linear_indexed_conditional_guard_step_terminal () : string =
     inl source, source_guard, target, target_guard =
@@ -1897,7 +1943,11 @@ inl exact_linear_indexed_closed_identity_beta_step_runtime
 inl assert_exact_linear_indexed_closed_identity_beta_program_runtime
     (unit_source_tag : i64) (unit_target_tag : i64)
     (bool_source_tag : i64) (bool_target_tag : i64) : () =
-    $"if !unit_source_tag <> 1L || !unit_target_tag <> 2L || !bool_source_tag <> 1L || !bool_target_tag <> 3L then failwith \"exact-linear-indexed-closed-identity-beta-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(unit_source_tag, 1i64)
+    inl ok_1 = !!!!EQ(unit_target_tag, 2i64)
+    inl ok_2 = !!!!EQ(bool_source_tag, 1i64)
+    inl ok_3 = !!!!EQ(bool_target_tag, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else reflected_runtime_fail "exact-linear-indexed-closed-identity-beta-program-runtime-mismatch"
 
 inl rec exact_linear_indexed_term_structural_size forall context usage ty.
     (term : exact_linear_indexed_term context usage ty) : i64 =
@@ -2052,7 +2102,19 @@ inl assert_exact_linear_indexed_closed_tensor_beta_runtime
     (unit_source_size : i64) (unit_target_size : i64)
     (tensor_source_tag : i64) (tensor_target_tag : i64)
     (tensor_source_size : i64) (tensor_target_size : i64) : () =
-    $"if !unit_source_tag <> 1L || !unit_target_tag <> 5L || !unit_source_size <> 6L || !unit_target_size <> 3L || !tensor_source_tag <> 1L || !tensor_target_tag <> 5L || !tensor_source_size <> 8L || !tensor_target_size <> 5L || !unit_source_size - !unit_target_size <> 3L || !tensor_source_size - !tensor_target_size <> 3L then failwith \"exact-linear-indexed-closed-tensor-beta-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(unit_source_tag, 1i64)
+    inl ok_1 = !!!!EQ(unit_target_tag, 5i64)
+    inl ok_2 = !!!!EQ(unit_source_size, 6i64)
+    inl ok_3 = !!!!EQ(unit_target_size, 3i64)
+    inl ok_4 = !!!!EQ(tensor_source_tag, 1i64)
+    inl ok_5 = !!!!EQ(tensor_target_tag, 5i64)
+    inl ok_6 = !!!!EQ(tensor_source_size, 8i64)
+    inl ok_7 = !!!!EQ(tensor_target_size, 5i64)
+    inl difference_0 = !!!!Sub(unit_source_size, unit_target_size)
+    inl ok_8 = !!!!EQ(difference_0, 3i64)
+    inl difference_1 = !!!!Sub(tensor_source_size, tensor_target_size)
+    inl ok_9 = !!!!EQ(difference_1, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else reflected_runtime_fail "exact-linear-indexed-closed-tensor-beta-runtime-mismatch"
 
 union exact_linear_indexed_closed_beta_relation result_ty =
     | ExactLinearIndexedClosedBetaIdentity :: forall ty.
@@ -2121,7 +2183,15 @@ inl assert_exact_linear_indexed_closed_beta_program_runtime
     (identity_source_size : i64) (identity_target_size : i64)
     (tensor_source_tag : i64) (tensor_target_tag : i64)
     (tensor_source_size : i64) (tensor_target_size : i64) : () =
-    $"if !identity_source_tag <> 1L || !identity_target_tag <> 2L || !identity_source_size <> 4L || !identity_target_size <> 1L || !tensor_source_tag <> 1L || !tensor_target_tag <> 5L || !tensor_source_size <> 6L || !tensor_target_size <> 3L then failwith \"exact-linear-indexed-closed-beta-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(identity_source_tag, 1i64)
+    inl ok_1 = !!!!EQ(identity_target_tag, 2i64)
+    inl ok_2 = !!!!EQ(identity_source_size, 4i64)
+    inl ok_3 = !!!!EQ(identity_target_size, 1i64)
+    inl ok_4 = !!!!EQ(tensor_source_tag, 1i64)
+    inl ok_5 = !!!!EQ(tensor_target_tag, 5i64)
+    inl ok_6 = !!!!EQ(tensor_source_size, 6i64)
+    inl ok_7 = !!!!EQ(tensor_target_size, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else reflected_runtime_fail "exact-linear-indexed-closed-beta-program-runtime-mismatch"
 
 union rec exact_linear_indexed_closed_recursive_beta_derivation domain result_ty =
     | ExactLinearIndexedClosedRecursiveBetaDerivationBound :: forall domain.
@@ -2500,7 +2570,19 @@ inl assert_exact_linear_indexed_closed_recursive_beta_materialization_runtime
     (deep_open_size : i64)
     (deep_source_size : i64)
     (deep_target_size : i64) : () =
-    $"if !identity_open_size <> 1L || !identity_source_size <> 4L || !identity_target_size <> 1L || !left_open_size <> 3L || !left_source_size <> 6L || !left_target_size <> 3L || !right_open_size <> 3L || !right_source_size <> 6L || !right_target_size <> 3L || !deep_open_size <> 7L || !deep_source_size <> 10L || !deep_target_size <> 7L then failwith \"exact-linear-indexed-closed-recursive-beta-materialization-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(identity_open_size, 1i64)
+    inl ok_1 = !!!!EQ(identity_source_size, 4i64)
+    inl ok_2 = !!!!EQ(identity_target_size, 1i64)
+    inl ok_3 = !!!!EQ(left_open_size, 3i64)
+    inl ok_4 = !!!!EQ(left_source_size, 6i64)
+    inl ok_5 = !!!!EQ(left_target_size, 3i64)
+    inl ok_6 = !!!!EQ(right_open_size, 3i64)
+    inl ok_7 = !!!!EQ(right_source_size, 6i64)
+    inl ok_8 = !!!!EQ(right_target_size, 3i64)
+    inl ok_9 = !!!!EQ(deep_open_size, 7i64)
+    inl ok_10 = !!!!EQ(deep_source_size, 10i64)
+    inl ok_11 = !!!!EQ(deep_target_size, 7i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 then () else reflected_runtime_fail "exact-linear-indexed-closed-recursive-beta-materialization-runtime-mismatch"
 
 inl exact_linear_indexed_closed_recursive_beta_derivation_terminal () : string =
     inl identity =
@@ -2759,7 +2841,13 @@ inl exact_linear_indexed_nested_lambda_substitution_target () :
 inl assert_exact_linear_indexed_nested_lambda_substitution_runtime
     (source_tag : i64) (target_tag : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_tag <> 1L || !target_tag <> 6L || !source_size <> 7L || !target_size <> 4L || !source_size - !target_size <> 3L then failwith \"exact-linear-indexed-nested-lambda-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_tag, 1i64)
+    inl ok_1 = !!!!EQ(target_tag, 6i64)
+    inl ok_2 = !!!!EQ(source_size, 7i64)
+    inl ok_3 = !!!!EQ(target_size, 4i64)
+    inl difference_0 = !!!!Sub(source_size, target_size)
+    inl ok_4 = !!!!EQ(difference_0, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else reflected_runtime_fail "exact-linear-indexed-nested-lambda-substitution-runtime-mismatch"
 
 inl exact_linear_indexed_nested_lambda_substitution_terminal () : string =
     inl source = exact_linear_indexed_nested_lambda_substitution_source ()
@@ -2957,7 +3045,15 @@ inl assert_exact_linear_indexed_application_lambda_substitution_runtime
     (source_tag : i64) (target_tag : i64)
     (source_size : i64) (target_size : i64)
     (target_body_tag : i64) (target_body_size : i64) : () =
-    $"if !source_tag <> 1L || !target_tag <> 6L || !source_size <> 8L || !target_size <> 5L || !target_body_tag <> 1L || !target_body_size <> 4L || !source_size - !target_size <> 3L then failwith \"exact-linear-indexed-application-lambda-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_tag, 1i64)
+    inl ok_1 = !!!!EQ(target_tag, 6i64)
+    inl ok_2 = !!!!EQ(source_size, 8i64)
+    inl ok_3 = !!!!EQ(target_size, 5i64)
+    inl ok_4 = !!!!EQ(target_body_tag, 1i64)
+    inl ok_5 = !!!!EQ(target_body_size, 4i64)
+    inl difference_0 = !!!!Sub(source_size, target_size)
+    inl ok_6 = !!!!EQ(difference_0, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else reflected_runtime_fail "exact-linear-indexed-application-lambda-substitution-runtime-mismatch"
 
 inl exact_linear_indexed_application_lambda_substitution_terminal () : string =
     inl source_tag, target_tag, source_size, target_size,
@@ -3100,7 +3196,13 @@ inl assert_exact_linear_indexed_application_lambda_substitution_preservation_run
     (source_tag : i64) (target_tag : i64)
     (source_size : i64) (target_size : i64)
     (source_closed : i64) (target_closed : i64) : () =
-    $"if !source_tag <> 1L || !target_tag <> 6L || !source_size <> 8L || !target_size <> 5L || !source_closed <> 1L || !target_closed <> 1L then failwith \"exact-linear-indexed-application-lambda-substitution-preservation-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_tag, 1i64)
+    inl ok_1 = !!!!EQ(target_tag, 6i64)
+    inl ok_2 = !!!!EQ(source_size, 8i64)
+    inl ok_3 = !!!!EQ(target_size, 5i64)
+    inl ok_4 = !!!!EQ(source_closed, 1i64)
+    inl ok_5 = !!!!EQ(target_closed, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else reflected_runtime_fail "exact-linear-indexed-application-lambda-substitution-preservation-runtime-mismatch"
 
 inl exact_linear_indexed_application_lambda_substitution_preservation_terminal () : string =
     inl source_tag, target_tag, source_size,
@@ -3212,7 +3314,12 @@ inl assert_exact_linear_indexed_identity_substitution_runtime
     (identity_source_size : i64) (identity_target_size : i64)
     (identity_source_tag : i64) (identity_target_tag : i64)
     (tensor_source_size : i64) (tensor_target_size : i64) : () =
-    $"if !identity_source_size <> !identity_target_size || !identity_source_tag <> !identity_target_tag || !tensor_source_size <> !tensor_target_size || !identity_source_size <= 0L || !tensor_source_size <= 0L then failwith \"exact-linear-indexed-identity-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(identity_source_size, identity_target_size)
+    inl ok_1 = !!!!EQ(identity_source_tag, identity_target_tag)
+    inl ok_2 = !!!!EQ(tensor_source_size, tensor_target_size)
+    inl ok_3 = !!!!GT(identity_source_size, 0i64)
+    inl ok_4 = !!!!GT(tensor_source_size, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else reflected_runtime_fail "exact-linear-indexed-identity-substitution-runtime-mismatch"
 
 inl exact_linear_indexed_identity_substitution_terminal () : string =
     inl identity_target =
@@ -3352,7 +3459,13 @@ inl assert_exact_linear_indexed_total_bool_literal_replacement_runtime
     (source_true : i64) (source_false : i64)
     (target_true : i64) (target_false : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_true <> 1L || !source_false <> 1L || !target_true <> 0L || !target_false <> 2L || !source_size <> !target_size || !source_size <> 3L then failwith \"exact-linear-indexed-total-Bool-literal-replacement-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_true, 1i64)
+    inl ok_1 = !!!!EQ(source_false, 1i64)
+    inl ok_2 = !!!!EQ(target_true, 0i64)
+    inl ok_3 = !!!!EQ(target_false, 2i64)
+    inl ok_4 = !!!!EQ(source_size, target_size)
+    inl ok_5 = !!!!EQ(source_size, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else reflected_runtime_fail "exact-linear-indexed-total-Bool-literal-replacement-runtime-mismatch"
 
 inl exact_linear_indexed_total_bool_literal_replacement_terminal () : string =
     inl source =
@@ -3411,7 +3524,13 @@ inl assert_exact_linear_indexed_conditional_bool_literal_replacement_runtime
     (source_true : i64) (source_false : i64)
     (target_true : i64) (target_false : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_true <> 2L || !source_false <> 1L || !target_true <> 0L || !target_false <> 3L || !source_size <> !target_size || !source_size <= 0L then failwith \"exact-linear-indexed-conditional-Bool-literal-replacement-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_true, 2i64)
+    inl ok_1 = !!!!EQ(source_false, 1i64)
+    inl ok_2 = !!!!EQ(target_true, 0i64)
+    inl ok_3 = !!!!EQ(target_false, 3i64)
+    inl ok_4 = !!!!EQ(source_size, target_size)
+    inl ok_5 = !!!!GT(source_size, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else reflected_runtime_fail "exact-linear-indexed-conditional-Bool-literal-replacement-runtime-mismatch"
 
 inl exact_linear_indexed_conditional_bool_literal_replacement_terminal () : string =
     inl source =
@@ -3509,7 +3628,16 @@ inl assert_exact_linear_indexed_bool_negation_involution_runtime
     (once_true : i64) (once_false : i64)
     (twice_true : i64) (twice_false : i64)
     (source_size : i64) (once_size : i64) (twice_size : i64) : () =
-    $"if !source_true <> 2L || !source_false <> 1L || !once_true <> 1L || !once_false <> 2L || !twice_true <> 2L || !twice_false <> 1L || !source_size <> 5L || !once_size <> !source_size || !twice_size <> !source_size then failwith \"exact-linear-indexed-Bool-negation-involution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_true, 2i64)
+    inl ok_1 = !!!!EQ(source_false, 1i64)
+    inl ok_2 = !!!!EQ(once_true, 1i64)
+    inl ok_3 = !!!!EQ(once_false, 2i64)
+    inl ok_4 = !!!!EQ(twice_true, 2i64)
+    inl ok_5 = !!!!EQ(twice_false, 1i64)
+    inl ok_6 = !!!!EQ(source_size, 5i64)
+    inl ok_7 = !!!!EQ(once_size, source_size)
+    inl ok_8 = !!!!EQ(twice_size, source_size)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else reflected_runtime_fail "exact-linear-indexed-Bool-negation-involution-runtime-mismatch"
 
 inl exact_linear_indexed_bool_negation_involution_terminal () : string =
     inl source_true, source_false, once_true, once_false,
@@ -3645,11 +3773,7 @@ union rec exact_linear_indexed_recursive_open_typed_substitution context source_
             context source_usage target_usage replacement_type
             (exact_linear_arrow_type domain codomain)
 
-inl rec exact_linear_indexed_recursive_open_typed_substitution_source
-    forall context source_usage target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution
-        context source_usage target_usage replacement_type result_type)
-    : exact_linear_indexed_term context source_usage result_type =
+inl rec exact_linear_indexed_recursive_open_typed_substitution_source forall context source_usage target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution context source_usage target_usage replacement_type result_type) : exact_linear_indexed_term context source_usage result_type =
     match proof with
     | ExactLinearIndexedRecursiveOpenTypedSubstitutionVariable payload =>
         inl exists slot. membership, single_use, _, _, note = payload
@@ -3703,11 +3827,7 @@ inl rec exact_linear_indexed_recursive_open_typed_substitution_source
             exact_linear_indexed_recursive_open_typed_substitution_source child,
             note)
 
-inl rec exact_linear_indexed_recursive_open_typed_substitution_target
-    forall context source_usage target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution
-        context source_usage target_usage replacement_type result_type)
-    : exact_linear_indexed_term context target_usage result_type =
+inl rec exact_linear_indexed_recursive_open_typed_substitution_target forall context source_usage target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution context source_usage target_usage replacement_type result_type) : exact_linear_indexed_term context target_usage result_type =
     match proof with
     | ExactLinearIndexedRecursiveOpenTypedSubstitutionVariable payload =>
         inl exists slot. _, _, _, replacement, _ = payload
@@ -4415,12 +4535,7 @@ union rec exact_linear_indexed_variable_strengthening source_context source_slot
             (exact_linear_indexed_usage_used target_tail_usage)
             head
 
-inl rec exact_linear_indexed_variable_strengthening_source
-    forall source_context source_slot source_usage target_context target_slot target_usage domain.
-    (proof : exact_linear_indexed_variable_strengthening
-        source_context source_slot source_usage
-        target_context target_slot target_usage domain)
-    : exact_linear_indexed_term source_context source_usage domain =
+inl rec exact_linear_indexed_variable_strengthening_source forall source_context source_slot source_usage target_context target_slot target_usage domain. (proof : exact_linear_indexed_variable_strengthening source_context source_slot source_usage target_context target_slot target_usage domain) : exact_linear_indexed_term source_context source_usage domain =
     match proof with
     | ExactLinearIndexedVariableStrengtheningRemoveHere (_, membership, single_use, note) =>
         ExactLinearIndexedVariable (exists (
@@ -4452,12 +4567,7 @@ inl rec exact_linear_indexed_variable_strengthening_source
                 "the-source-tail-containing-the-removed-cell-is-all-unused"),
             note))
 
-inl rec exact_linear_indexed_variable_strengthening_target
-    forall source_context source_slot source_usage target_context target_slot target_usage domain.
-    (proof : exact_linear_indexed_variable_strengthening
-        source_context source_slot source_usage
-        target_context target_slot target_usage domain)
-    : exact_linear_indexed_term target_context target_usage domain =
+inl rec exact_linear_indexed_variable_strengthening_target forall source_context source_slot source_usage target_context target_slot target_usage domain. (proof : exact_linear_indexed_variable_strengthening source_context source_slot source_usage target_context target_slot target_usage domain) : exact_linear_indexed_term target_context target_usage domain =
     match proof with
     | ExactLinearIndexedVariableStrengtheningRemoveHere (_, membership, single_use, note) =>
         ExactLinearIndexedVariable (exists (
@@ -4585,11 +4695,7 @@ union rec exact_linear_indexed_term_strengthening source_context source_usage ta
             source_context source_outer target_context target_outer
             (exact_linear_arrow_type domain codomain)
 
-inl rec exact_linear_indexed_term_strengthening_source
-    forall source_context source_usage target_context target_usage ty.
-    (proof : exact_linear_indexed_term_strengthening
-        source_context source_usage target_context target_usage ty)
-    : exact_linear_indexed_term source_context source_usage ty =
+inl rec exact_linear_indexed_term_strengthening_source forall source_context source_usage target_context target_usage ty. (proof : exact_linear_indexed_term_strengthening source_context source_usage target_context target_usage ty) : exact_linear_indexed_term source_context source_usage ty =
     match proof with
     | ExactLinearIndexedTermStrengtheningVariable payload =>
         inl exists source_slot target_slot. variable_proof, _ = payload
@@ -4628,11 +4734,7 @@ inl rec exact_linear_indexed_term_strengthening_source
             exact_linear_indexed_term_strengthening_source body_proof,
             note)
 
-inl rec exact_linear_indexed_term_strengthening_target
-    forall source_context source_usage target_context target_usage ty.
-    (proof : exact_linear_indexed_term_strengthening
-        source_context source_usage target_context target_usage ty)
-    : exact_linear_indexed_term target_context target_usage ty =
+inl rec exact_linear_indexed_term_strengthening_target forall source_context source_usage target_context target_usage ty. (proof : exact_linear_indexed_term_strengthening source_context source_usage target_context target_usage ty) : exact_linear_indexed_term target_context target_usage ty =
     match proof with
     | ExactLinearIndexedTermStrengtheningVariable payload =>
         inl exists source_slot target_slot. variable_proof, _ = payload
@@ -4979,13 +5081,7 @@ union rec exact_linear_indexed_recursive_open_typed_substitution_strengthening s
             source_context source_usage intermediate_usage target_context target_usage
             replacement_type (exact_linear_arrow_type domain codomain)
 
-inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_substitution
-    forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening
-        source_context source_usage intermediate_usage target_context target_usage
-        replacement_type result_type)
-    : exact_linear_indexed_recursive_open_typed_substitution
-        source_context source_usage intermediate_usage replacement_type result_type =
+inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_substitution forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening source_context source_usage intermediate_usage target_context target_usage replacement_type result_type) : exact_linear_indexed_recursive_open_typed_substitution source_context source_usage intermediate_usage replacement_type result_type =
     match proof with
     | ExactLinearIndexedRecursiveOpenTypedSubstitutionStrengtheningVariable payload =>
         inl exists slot. membership, single_use, selected_unused, replacement_strengthening, note = payload
@@ -5056,13 +5152,7 @@ inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_sub
             exact_linear_indexed_recursive_open_typed_substitution_strengthening_substitution child,
             note)
 
-inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_strengthening
-    forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening
-        source_context source_usage intermediate_usage target_context target_usage
-        replacement_type result_type)
-    : exact_linear_indexed_term_strengthening
-        source_context intermediate_usage target_context target_usage result_type =
+inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_strengthening forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening source_context source_usage intermediate_usage target_context target_usage replacement_type result_type) : exact_linear_indexed_term_strengthening source_context intermediate_usage target_context target_usage result_type =
     match proof with
     | ExactLinearIndexedRecursiveOpenTypedSubstitutionStrengtheningVariable payload =>
         inl exists slot. _, _, _, replacement_strengthening, _ = payload
@@ -5128,21 +5218,11 @@ inl rec exact_linear_indexed_recursive_open_typed_substitution_strengthening_str
             exact_linear_indexed_recursive_open_typed_substitution_strengthening_strengthening child,
             note)
 
-inl exact_linear_indexed_recursive_open_typed_substitution_strengthening_source
-    forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening
-        source_context source_usage intermediate_usage target_context target_usage
-        replacement_type result_type)
-    : exact_linear_indexed_term source_context source_usage result_type =
+inl exact_linear_indexed_recursive_open_typed_substitution_strengthening_source forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening source_context source_usage intermediate_usage target_context target_usage replacement_type result_type) : exact_linear_indexed_term source_context source_usage result_type =
     exact_linear_indexed_recursive_open_typed_substitution_source (
         exact_linear_indexed_recursive_open_typed_substitution_strengthening_substitution proof)
 
-inl exact_linear_indexed_recursive_open_typed_substitution_strengthening_target
-    forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type.
-    (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening
-        source_context source_usage intermediate_usage target_context target_usage
-        replacement_type result_type)
-    : exact_linear_indexed_term target_context target_usage result_type =
+inl exact_linear_indexed_recursive_open_typed_substitution_strengthening_target forall source_context source_usage intermediate_usage target_context target_usage replacement_type result_type. (proof : exact_linear_indexed_recursive_open_typed_substitution_strengthening source_context source_usage intermediate_usage target_context target_usage replacement_type result_type) : exact_linear_indexed_term target_context target_usage result_type =
     exact_linear_indexed_term_strengthening_target (
         exact_linear_indexed_recursive_open_typed_substitution_strengthening_strengthening proof)
 
@@ -8552,12 +8632,7 @@ inl exact_linear_indexed_closed_tensor_tail_lambda_value forall ty.
         body,
         "a-single-intrinsic-constructor-now-builds-closed-ty-to-ty-tensor-Unit-Lambda-values-without-specializing-the-body-to-Unit")
 
-inl exact_linear_indexed_closed_tensor_tail_lambda_value_authority forall ty.
-    (value : exact_linear_indexed_value
-        exact_linear_free_context_empty
-        exact_linear_indexed_usage_empty
-        (exact_linear_arrow_type ty
-            (exact_linear_tensor_type ty exact_linear_unit_type))) : string =
+inl exact_linear_indexed_closed_tensor_tail_lambda_value_authority forall ty. (value : exact_linear_indexed_value exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_arrow_type ty (exact_linear_tensor_type ty exact_linear_unit_type))) : string =
     match value with
     | ExactLinearIndexedValueLambda _ =>
         "the-polymorphic-TensorTail-function-is-now-reopened-as-an-intrinsic-closed-Lambda-value-before-Ready-beta-construction"
@@ -9946,12 +10021,7 @@ union exact_linear_indexed_closed_value_type_not_false ty =
         exact_linear_indexed_closed_value_type_not_false
             (exact_linear_arrow_type domain codomain)
 
-inl derive_exact_linear_indexed_closed_value_type_not_false forall ty.
-    (value : exact_linear_indexed_value
-        exact_linear_free_context_empty
-        exact_linear_indexed_usage_empty
-        ty)
-    : exact_linear_indexed_closed_value_type_not_false ty =
+inl derive_exact_linear_indexed_closed_value_type_not_false forall ty. (value : exact_linear_indexed_value exact_linear_free_context_empty exact_linear_indexed_usage_empty ty) : exact_linear_indexed_closed_value_type_not_false ty =
     match value with
     | ExactLinearIndexedValueUnit _ =>
         ExactLinearIndexedClosedValueTypeNotFalseUnit
@@ -10506,7 +10576,8 @@ inl exact_linear_indexed_closed_recursive_application_argument_congruence_depth_
         "canonical-Application-argument-congruence-now-carries-one-real-child-beta-through-three-nested-Application-contexts-and-reuses-the-same-recursive-reduction-constructor-at-Unit-and-Unit-tensor-Unit-types"
 
 inl assert_exact_linear_indexed_application_argument_depth_four_runtime (depth : i64) : () =
-    $"if !depth <> 4L then failwith \"exact-linear-indexed-Application-argument-depth-four-mismatch\""
+    inl ok_0 = !!!!EQ(depth, 4i64)
+    if ok_0 then () else reflected_runtime_fail "exact-linear-indexed-Application-argument-depth-four-mismatch"
 
 inl exact_linear_indexed_closed_recursive_application_argument_congruence_depth_four_terminal () : string =
     inl unit_argument :
@@ -10798,5 +10869,8 @@ inl exact_linear_active_indexed_surface_terminal () : string =
 
 
 
-inl main () : string =
+// The root's contract, run by main (here) and by runtime_native (on C, Rust and Delphi).
+inl self_root_contract () : string =
     exact_linear_active_indexed_surface_terminal ()
+
+inl main () : string = self_root_contract ()

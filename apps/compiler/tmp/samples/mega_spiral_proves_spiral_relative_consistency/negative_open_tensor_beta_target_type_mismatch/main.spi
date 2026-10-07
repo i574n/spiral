@@ -1,3 +1,5 @@
+open main
+
 inl impossible_open_tensor_beta_target_type_mismatch
     (step : exact_linear_indexed_open_tensor_beta_step exact_linear_unit_type)
     : exact_linear_indexed_term

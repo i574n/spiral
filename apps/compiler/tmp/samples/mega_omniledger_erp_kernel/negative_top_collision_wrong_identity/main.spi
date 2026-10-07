@@ -1,3 +1,5 @@
+open main
+
 inl impossible_top_collision_wrong_identity
     (recorded :
         typed_fx_hashed_statement_event_log

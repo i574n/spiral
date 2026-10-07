@@ -1146,200 +1146,166 @@ let v54 : bool = method10(v25)
 if v54 then
     ()
 else
-    let v55 : string = "every normalized bit corpus term must satisfy structural canonical form"
-    failwith v55
-    ()
-let v56 : bool = method20(v53)
-if v56 then
+    failwith<unit> "every normalized bit corpus term must satisfy structural canonical form"
+let v55 : bool = method20(v53)
+if v55 then
     ()
 else
-    let v57 : string = "every normalized ternary corpus term must satisfy structural canonical form"
-    failwith v57
-    ()
-let v58 : US0 = US0_0
-let v59 : US0 = US0_1
-let v60 : UH0 = UH0_0
-let v61 : UH0 = UH0_1(v59, v60)
-let v62 : UH0 = UH0_1(v58, v61)
-let v63 : bool = method30(v25, v62)
-if v63 then
+    failwith<unit> "every normalized ternary corpus term must satisfy structural canonical form"
+let v56 : US0 = US0_0
+let v57 : US0 = US0_1
+let v58 : UH0 = UH0_0
+let v59 : UH0 = UH0_1(v57, v58)
+let v60 : UH0 = UH0_1(v56, v59)
+let v61 : bool = method30(v25, v60)
+if v61 then
     ()
 else
-    let v64 : string = "every canonical bit derivative must already satisfy structural canonical form"
-    failwith v64
-    ()
-let v65 : US1 = US1_0
-let v66 : US1 = US1_1
-let v67 : US1 = US1_2
-let v68 : UH3 = UH3_0
-let v69 : UH3 = UH3_1(v67, v68)
-let v70 : UH3 = UH3_1(v66, v69)
-let v71 : UH3 = UH3_1(v65, v70)
-let v72 : bool = method35(v53, v71)
-if v72 then
+    failwith<unit> "every canonical bit derivative must already satisfy structural canonical form"
+let v62 : US1 = US1_0
+let v63 : US1 = US1_1
+let v64 : US1 = US1_2
+let v65 : UH3 = UH3_0
+let v66 : UH3 = UH3_1(v64, v65)
+let v67 : UH3 = UH3_1(v63, v66)
+let v68 : UH3 = UH3_1(v62, v67)
+let v69 : bool = method35(v53, v68)
+if v69 then
     ()
 else
-    let v73 : string = "every canonical ternary derivative must already satisfy structural canonical form"
-    failwith v73
-    ()
-let v74 : US0 = US0_1
-let v75 : UH2 = UH2_2(v74)
-let v76 : US0 = US0_0
-let v77 : UH2 = UH2_2(v76)
-let v78 : UH2 = UH2_3(v75, v77)
-let v79 : bool = method18(v78)
-let v80 : bool = v79 = false
-if v80 then
+    failwith<unit> "every canonical ternary derivative must already satisfy structural canonical form"
+let v70 : US0 = US0_1
+let v71 : UH2 = UH2_2(v70)
+let v72 : US0 = US0_0
+let v73 : UH2 = UH2_2(v72)
+let v74 : UH2 = UH2_3(v71, v73)
+let v75 : bool = method18(v74)
+let v76 : bool = v75 = false
+if v76 then
     ()
 else
-    let v81 : string = "unsorted alternation must not be canonical"
-    failwith v81
+    failwith<unit> "unsorted alternation must not be canonical"
+let v77 : US0 = US0_0
+let v78 : UH2 = UH2_2(v77)
+let v79 : UH2 = UH2_3(v78, v78)
+let v80 : bool = method18(v79)
+let v81 : bool = v80 = false
+if v81 then
     ()
+else
+    failwith<unit> "duplicate alternation must not be canonical"
 let v82 : US0 = US0_0
 let v83 : UH2 = UH2_2(v82)
-let v84 : UH2 = UH2_3(v83, v83)
-let v85 : bool = method18(v84)
-let v86 : bool = v85 = false
-if v86 then
+let v84 : US0 = US0_1
+let v85 : UH2 = UH2_2(v84)
+let v86 : UH2 = UH2_3(v83, v85)
+let v87 : UH2 = UH2_1
+let v88 : UH2 = UH2_3(v86, v87)
+let v89 : bool = method18(v88)
+let v90 : bool = v89 = false
+if v90 then
     ()
 else
-    let v87 : string = "duplicate alternation must not be canonical"
-    failwith v87
-    ()
-let v88 : US0 = US0_0
-let v89 : UH2 = UH2_2(v88)
-let v90 : US0 = US0_1
-let v91 : UH2 = UH2_2(v90)
-let v92 : UH2 = UH2_3(v89, v91)
-let v93 : UH2 = UH2_1
-let v94 : UH2 = UH2_3(v92, v93)
+    failwith<unit> "left-nested alternation must not be canonical"
+let v91 : UH2 = UH2_1
+let v92 : US0 = US0_0
+let v93 : UH2 = UH2_2(v92)
+let v94 : UH2 = UH2_4(v91, v93)
 let v95 : bool = method18(v94)
 let v96 : bool = v95 = false
 if v96 then
     ()
 else
-    let v97 : string = "left-nested alternation must not be canonical"
-    failwith v97
-    ()
-let v98 : UH2 = UH2_1
-let v99 : US0 = US0_0
+    failwith<unit> "epsilon concatenation identity must not remain in canonical form"
+let v97 : US0 = US0_0
+let v98 : UH2 = UH2_2(v97)
+let v99 : US0 = US0_1
 let v100 : UH2 = UH2_2(v99)
 let v101 : UH2 = UH2_4(v98, v100)
-let v102 : bool = method18(v101)
-let v103 : bool = v102 = false
-if v103 then
+let v102 : UH2 = UH2_4(v101, v98)
+let v103 : bool = method18(v102)
+let v104 : bool = v103 = false
+if v104 then
     ()
 else
-    let v104 : string = "epsilon concatenation identity must not remain in canonical form"
-    failwith v104
-    ()
-let v105 : US0 = US0_0
-let v106 : UH2 = UH2_2(v105)
-let v107 : US0 = US0_1
-let v108 : UH2 = UH2_2(v107)
-let v109 : UH2 = UH2_4(v106, v108)
-let v110 : UH2 = UH2_4(v109, v106)
-let v111 : bool = method18(v110)
-let v112 : bool = v111 = false
-if v112 then
+    failwith<unit> "left-associated concatenation must not remain in canonical form"
+let v105 : UH2 = UH2_0
+let v106 : UH2 = UH2_5(v105)
+let v107 : bool = method18(v106)
+let v108 : bool = v107 = false
+if v108 then
     ()
 else
-    let v113 : string = "left-associated concatenation must not remain in canonical form"
-    failwith v113
-    ()
-let v114 : UH2 = UH2_0
-let v115 : UH2 = UH2_5(v114)
-let v116 : bool = method18(v115)
-let v117 : bool = v116 = false
-if v117 then
-    ()
-else
-    let v118 : string = "star of empty must not remain in canonical form"
-    failwith v118
-    ()
-let v119 : US0 = US0_0
-let v120 : UH2 = UH2_2(v119)
-let v121 : UH2 = UH2_5(v120)
-let v122 : UH2 = UH2_5(v121)
-let v123 : bool = method18(v122)
-let v124 : bool = v123 = false
-if v124 then
+    failwith<unit> "star of empty must not remain in canonical form"
+let v109 : US0 = US0_0
+let v110 : UH2 = UH2_2(v109)
+let v111 : UH2 = UH2_5(v110)
+let v112 : UH2 = UH2_5(v111)
+let v113 : bool = method18(v112)
+let v114 : bool = v113 = false
+if v114 then
     ()
 else
-    let v125 : string = "nested star must not remain in canonical form"
-    failwith v125
-    ()
-let v126 : US0 = US0_0
-let v127 : UH2 = UH2_2(v126)
-let v128 : UH2 = UH2_5(v127)
-let v129 : UH2 = UH2_4(v128, v128)
-let v130 : bool = method18(v129)
-let v131 : bool = v130 = false
-if v131 then
+    failwith<unit> "nested star must not remain in canonical form"
+let v115 : US0 = US0_0
+let v116 : UH2 = UH2_2(v115)
+let v117 : UH2 = UH2_5(v116)
+let v118 : UH2 = UH2_4(v117, v117)
+let v119 : bool = method18(v118)
+let v120 : bool = v119 = false
+if v120 then
     ()
 else
-    let v132 : string = "duplicate adjacent stars must be reduced in canonical form"
-    failwith v132
-    ()
-let v133 : US0 = US0_1
-let v134 : UH2 = UH2_2(v133)
-let v135 : US0 = US0_0
-let v136 : UH2 = UH2_2(v135)
-let v137 : UH2 = UH2_3(v134, v136)
-let v138 : UH2 = method11(v137)
-let v139 : bool = method18(v138)
-if v139 then
+    failwith<unit> "duplicate adjacent stars must be reduced in canonical form"
+let v121 : US0 = US0_1
+let v122 : UH2 = UH2_2(v121)
+let v123 : US0 = US0_0
+let v124 : UH2 = UH2_2(v123)
+let v125 : UH2 = UH2_3(v122, v124)
+let v126 : UH2 = method11(v125)
+let v127 : bool = method18(v126)
+if v127 then
     ()
 else
-    let v140 : string = "normalization must repair unsorted alternation"
-    failwith v140
-    ()
-let v141 : US0 = US0_0
-let v142 : UH2 = UH2_2(v141)
-let v143 : UH2 = UH2_3(v142, v142)
-let v144 : UH2 = method11(v143)
-let v145 : bool = method18(v144)
-if v145 then
+    failwith<unit> "normalization must repair unsorted alternation"
+let v128 : US0 = US0_0
+let v129 : UH2 = UH2_2(v128)
+let v130 : UH2 = UH2_3(v129, v129)
+let v131 : UH2 = method11(v130)
+let v132 : bool = method18(v131)
+if v132 then
     ()
 else
-    let v146 : string = "normalization must remove duplicate alternation"
-    failwith v146
-    ()
-let v147 : UH2 = UH2_1
-let v148 : US0 = US0_0
-let v149 : UH2 = UH2_2(v148)
-let v150 : UH2 = UH2_4(v147, v149)
-let v151 : UH2 = method11(v150)
-let v152 : bool = method18(v151)
-if v152 then
+    failwith<unit> "normalization must remove duplicate alternation"
+let v133 : UH2 = UH2_1
+let v134 : US0 = US0_0
+let v135 : UH2 = UH2_2(v134)
+let v136 : UH2 = UH2_4(v133, v135)
+let v137 : UH2 = method11(v136)
+let v138 : bool = method18(v137)
+if v138 then
     ()
 else
-    let v153 : string = "normalization must remove concatenation identity"
-    failwith v153
-    ()
-let v154 : US0 = US0_0
-let v155 : UH2 = UH2_2(v154)
-let v156 : UH2 = UH2_5(v155)
-let v157 : UH2 = UH2_5(v156)
-let v158 : UH2 = method11(v157)
-let v159 : bool = method18(v158)
-if v159 then
+    failwith<unit> "normalization must remove concatenation identity"
+let v139 : US0 = US0_0
+let v140 : UH2 = UH2_2(v139)
+let v141 : UH2 = UH2_5(v140)
+let v142 : UH2 = UH2_5(v141)
+let v143 : UH2 = method11(v142)
+let v144 : bool = method18(v143)
+if v144 then
     ()
 else
-    let v160 : string = "normalization must collapse nested star"
-    failwith v160
-    ()
-let v161 : US0 = US0_0
-let v162 : UH2 = UH2_2(v161)
-let v163 : UH2 = UH2_5(v162)
-let v164 : UH2 = UH2_4(v163, v163)
-let v165 : UH2 = method11(v164)
-let v166 : bool = method18(v165)
-if v166 then
+    failwith<unit> "normalization must collapse nested star"
+let v145 : US0 = US0_0
+let v146 : UH2 = UH2_2(v145)
+let v147 : UH2 = UH2_5(v146)
+let v148 : UH2 = UH2_4(v147, v147)
+let v149 : UH2 = method11(v148)
+let v150 : bool = method18(v149)
+if v150 then
     ()
 else
-    let v167 : string = "normalization must collapse duplicate adjacent stars"
-    failwith v167
-    ()
-let v168 : string = "brzozowski-canonical-form-certificate-green"
-v168
+    failwith<unit> "normalization must collapse duplicate adjacent stars"
+let v151 : string = "brzozowski-canonical-form-certificate-green"
+v151

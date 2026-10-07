@@ -1,12 +1,19 @@
 open main
+open runtime_workload
+open runtime_interned
 
-inl main () : string =
-    inl ~bit_accept = input_110 ()
-    inl ~bit_reject = input_111 ()
-    inl ~tri_accept = input_aaa ()
-    inl ~tri_reject = input_aab ()
-    assert_true (accepts (ends_with_zero ()) bit_accept)
-    assert_false (accepts (ends_with_zero ()) bit_reject)
-    assert_true (accepts (tri_a_star ()) tri_accept)
-    assert_false (accepts (tri_a_star ()) tri_reject)
-    "brzozowski-runtime-bench-green"
+// The four matchers on the same run-time inputs (200 random 32-bit inputs against (0|1)*0 and (0|1)*1(0|1)(0|1)(0|1),
+// then 0^n and 0^n 1 for n = 1..16 against (0|00)*1): the derivative matcher, the naive backtracking matcher, the
+// staged DFA (derivatives taken by the compiler) and interned nodes with memoized derivatives (runtime_interned). Exit 0
+// when all four return the same counts and those are the counts Rust's regex crate gives on the same inputs (93, 97, 16).
+inl same_counts (left : i32 * i32 * i32) (right : i32 * i32 * i32) : () =
+    match left, right with
+    | (a, b, c), (x, y, z) =>
+        if i32_eq a x && i32_eq b y && i32_eq c z then () else failwith "brzozowski-bench-engines-disagree"
+
+inl main () : i32 =
+    inl derivative = run_workloads EngineDerivative 200i32 32i32 16i32
+    same_counts derivative (run_workloads EngineBacktrack 200i32 32i32 16i32)
+    same_counts derivative (run_workloads EngineStaged 200i32 32i32 16i32)
+    same_counts derivative (run_interned_workloads 200i32 32i32 16i32)
+    expect_counts derivative 93i32 97i32 16i32

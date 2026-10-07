@@ -310,10 +310,6 @@ instance (~:>) view = fun x =>
         | view' (html_element _) => element_to_view x
         | _ => x
 
-/// ### closure_to_view
-inl closure_to_view (closure : rust.func0 view) : view =
-    !\($'"leptos::prelude::IntoAny::into_any(move || !closure())"')
-
 /// ### vec_to_view
 inl vec_to_view (views : am'.vec view) : view =
     !\\(views, $'"leptos::prelude::IntoAny::into_any($0)"')
@@ -782,7 +778,7 @@ inl use_url () =
         inl url_search =
             if url_search = ""
             then ""
-            else $'$"?{!url_search}"'
+            else "?" +. url_search
         url_pathname +. url_search
     |> new_arc_memo
 

@@ -1,2 +1,5 @@
+packageDir: ../..
+packages:
+    mega_spiral_proves_spiral_relative_consistency-
 modules:
     main

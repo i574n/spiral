@@ -130,7 +130,10 @@ inl tri_finite_index_two () : finite_symbol_index tri_finite_length = FiniteSymb
 nominal finite_alphabet_descriptor alphabet =
     symbol_list alphabet * alphabet_cardinality
 
-let rec symbol_list_lookup forall alphabet.
+// The alphabet inventory checks below are `inl`: alphabets are finite and known at compile time, so the compiler decides
+// them, and a certificate (or an `exists` package) built under them is built under a compile-time branch.
+
+inl rec symbol_list_lookup forall alphabet.
     (symbols : symbol_list alphabet)
     (rank : alphabet_rank) : alphabet_rank_lookup alphabet =
     match symbols, rank with
@@ -138,7 +141,7 @@ let rec symbol_list_lookup forall alphabet.
     | SymbolListCons (symbol, _), AlphabetRankZero => AlphabetRankFound symbol
     | SymbolListCons (_, rest), AlphabetRankSucc next => symbol_list_lookup rest next
 
-let rec symbol_list_cardinality_matches forall alphabet.
+inl rec symbol_list_cardinality_matches forall alphabet.
     (symbols : symbol_list alphabet)
     (cardinality : alphabet_cardinality) : bool =
     match symbols, cardinality with
@@ -218,14 +221,14 @@ inl symbol_compare_pair_coherent forall alphabet {symbol_compare}.
     | SymbolGreater, SymbolLess => true
     | _ => false
 
-let rec symbol_compare_against forall alphabet {symbol_compare}.
+inl rec symbol_compare_against forall alphabet {symbol_compare}.
     (head : alphabet) (tail : symbol_list alphabet) : bool =
     match tail with
     | SymbolListNil => true
     | SymbolListCons (value, rest) =>
         if symbol_compare_pair_coherent head value then symbol_compare_against head rest else false
 
-let rec symbol_order_laws forall alphabet {symbol_compare}.
+inl rec symbol_order_laws forall alphabet {symbol_compare}.
     (symbols : symbol_list alphabet) : bool =
     match symbols with
     | SymbolListNil => true
@@ -235,7 +238,7 @@ let rec symbol_order_laws forall alphabet {symbol_compare}.
             if symbol_compare_against head tail then symbol_order_laws tail else false
         | _ => false
 
-let rec symbol_inventory_after forall alphabet {symbol_compare}.
+inl rec symbol_inventory_after forall alphabet {symbol_compare}.
     (head : alphabet) (tail : symbol_list alphabet) : bool =
     match tail with
     | SymbolListNil => true
@@ -244,7 +247,7 @@ let rec symbol_inventory_after forall alphabet {symbol_compare}.
         | SymbolLess => symbol_inventory_after head rest
         | _ => false
 
-let rec symbol_inventory_ordered forall alphabet {symbol_compare}.
+inl rec symbol_inventory_ordered forall alphabet {symbol_compare}.
     (symbols : symbol_list alphabet) : bool =
     match symbols with
     | SymbolListNil => true
@@ -255,7 +258,7 @@ inl alphabet_inventory_well_formed forall alphabet {symbol_compare}.
     (symbols : symbol_list alphabet) : bool =
     if symbol_order_laws symbols then symbol_inventory_ordered symbols else false
 
-let rec symbol_list_same forall alphabet {symbol_compare}.
+inl rec symbol_list_same forall alphabet {symbol_compare}.
     (left : symbol_list alphabet)
     (right : symbol_list alphabet) : bool =
     match left, right with
@@ -872,6 +875,144 @@ let rec regex_list_contains forall alphabet {symbol_compare}.
     | RegexListCons (head, tail) =>
         if regex_equal needle head then true else regex_list_contains needle tail
 
+// Run-time set equality of two state lists (a closure computed at compile time against one computed at run time).
+let rec regex_list_subset forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
+    match left with
+    | RegexListNil => true
+    | RegexListCons (head, tail) => if regex_list_contains head right then regex_list_subset tail right else false
+
+inl regex_list_set_equal forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
+    if regex_list_subset left right then regex_list_subset right left else false
+
+// Static derivatives: nullable/regex_compare/make_alt/make_cat/normalize/derivative again, as `inl` functions, so the
+// compiler runs them on regexes known at compile time (the `let` versions above are join points: their results are
+// run-time values). The indexed DFA capability below and runtime_workload's staged DFA take their derivatives here.
+inl rec static_nullable forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => false
+    | RegexEpsilon => true
+    | RegexChar _ => false
+    | RegexAlt (left, right) => if static_nullable left then true else static_nullable right
+    | RegexCat (left, right) => static_nullable left && static_nullable right
+    | RegexStar _ => true
+
+inl rec static_regex_compare forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : symbol_ordering =
+    match left with
+    | RegexEmpty =>
+        match right with
+        | RegexEmpty => SymbolSame
+        | _ => SymbolLess
+    | RegexEpsilon =>
+        match right with
+        | RegexEmpty => SymbolGreater
+        | RegexEpsilon => SymbolSame
+        | _ => SymbolLess
+    | RegexChar left_symbol =>
+        match right with
+        | RegexEmpty => SymbolGreater
+        | RegexEpsilon => SymbolGreater
+        | RegexChar right_symbol => symbol_compare left_symbol right_symbol
+        | _ => SymbolLess
+    | RegexCat (left_head, left_tail) =>
+        match right with
+        | RegexEmpty => SymbolGreater
+        | RegexEpsilon => SymbolGreater
+        | RegexChar _ => SymbolGreater
+        | RegexCat (right_head, right_tail) =>
+            match static_regex_compare left_head right_head with
+            | SymbolSame => static_regex_compare left_tail right_tail
+            | order => order
+        | _ => SymbolLess
+    | RegexStar left_inner =>
+        match right with
+        | RegexAlt _ => SymbolLess
+        | RegexStar right_inner => static_regex_compare left_inner right_inner
+        | _ => SymbolGreater
+    | RegexAlt (left_head, left_tail) =>
+        match right with
+        | RegexAlt (right_head, right_tail) =>
+            match static_regex_compare left_head right_head with
+            | SymbolSame => static_regex_compare left_tail right_tail
+            | order => order
+        | _ => SymbolGreater
+
+inl static_regex_equal forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : bool =
+    match static_regex_compare left right with
+    | SymbolSame => true
+    | _ => false
+
+inl rec static_alt_insert_sorted forall alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => term
+    | RegexAlt (head, tail) =>
+        match static_regex_compare term head with
+        | SymbolLess => RegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => RegexAlt (head, static_alt_insert_sorted term tail)
+    | _ =>
+        match static_regex_compare term value with
+        | SymbolLess => RegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => RegexAlt (value, term)
+
+inl rec static_make_alt forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    match left with
+    | RegexEmpty => right
+    | RegexAlt (head, tail) => static_make_alt tail (static_alt_insert_sorted head right)
+    | _ => static_alt_insert_sorted left right
+
+inl rec static_make_cat forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    match left, right with
+    | RegexEmpty, _ => RegexEmpty
+    | _, RegexEmpty => RegexEmpty
+    | RegexEpsilon, value => value
+    | value, RegexEpsilon => value
+    | RegexStar left_inner, RegexStar right_inner =>
+        if static_regex_equal left_inner right_inner then RegexStar left_inner else RegexCat (left, right)
+    | RegexCat (head, tail), value => RegexCat (head, static_make_cat tail value)
+    | _ => RegexCat (left, right)
+
+inl static_make_star forall alphabet. (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEpsilon
+    | RegexEpsilon => RegexEpsilon
+    | RegexStar inner => RegexStar inner
+    | _ => RegexStar value
+
+inl rec static_normalize forall alphabet {symbol_compare}. (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEpsilon
+    | RegexChar symbol => RegexChar symbol
+    | RegexAlt (left, right) => static_make_alt (static_normalize left) (static_normalize right)
+    | RegexCat (left, right) => static_make_cat (static_normalize left) (static_normalize right)
+    | RegexStar inner => static_make_star (static_normalize inner)
+
+inl rec static_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEmpty
+    | RegexChar expected =>
+        match symbol_compare expected symbol with
+        | SymbolSame => RegexEpsilon
+        | _ => RegexEmpty
+    | RegexAlt (left, right) => static_make_alt (static_derivative left symbol) (static_derivative right symbol)
+    | RegexCat (left, right) =>
+        if static_nullable left then static_make_alt (static_make_cat (static_derivative left symbol) right) (static_derivative right symbol)
+        else static_make_cat (static_derivative left symbol) right
+    | RegexStar inner => static_make_cat (static_derivative inner symbol) (static_make_star inner)
+
+inl static_step forall alphabet {symbol_compare}. (state : regex alphabet) (symbol : alphabet) : regex alphabet =
+    static_normalize (static_derivative state symbol)
+
+inl rec static_contains forall alphabet {symbol_compare}. (value : regex alphabet) (states : regex_list alphabet) : bool =
+    match states with
+    | RegexListNil => false
+    | RegexListCons (head, rest) => if static_regex_equal value head then true else static_contains value rest
+
+inl static_canonical_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+    static_normalize (static_derivative (static_normalize value) symbol)
+
 nominal indexed_dfa_capability alphabet =
     (regex alphabet -> regex alphabet) *
     (regex alphabet -> alphabet -> regex alphabet) *
@@ -883,9 +1024,9 @@ nominal indexed_dfa_capability alphabet =
 inl make_indexed_dfa_capability forall alphabet {symbol_compare; finite_alphabet}. () : indexed_dfa_capability alphabet =
     inl descriptor : finite_alphabet_descriptor alphabet = finite_alphabet ()
     indexed_dfa_capability (
-        normalize,
-        canonical_derivative,
-        regex_list_contains,
+        static_normalize,
+        static_canonical_derivative,
+        static_contains,
         alphabet_inventory_well_formed,
         (fun symbols => symbol_list_same symbols (finite_alphabet_symbols descriptor)),
         finite_alphabet_cardinality descriptor)
@@ -1387,6 +1528,326 @@ let rec dfa_quotient_closed forall alphabet {symbol_compare}.
         if dfa_quotient_state_closed state symbols representatives then
             dfa_quotient_closed rest symbols representatives
         else false
+
+// Static minimization: bisimulation, representative search, minimization, the minimality and quotient checks and the
+// constructive distinguishing words again, as `inl` functions over the static derivatives, so the compiler minimizes a
+// DFA whose closure it already knows (the `let rec` versions above are join points: their results are run-time values,
+// and an `inl rec` that packs their result into a length-indexed vector never terminates). indexed_dfa_state_cardinality
+// seals its minimized surfaces with these. Unlike dfa_quotient_state_closed, the quotient check compares targets over
+// the whole alphabet, not over the symbols that remain to be visited.
+inl static_nullable_same forall alphabet. (left : regex alphabet) (right : regex alphabet) : bool =
+    bool_same (static_nullable left) (static_nullable right)
+
+inl static_state_pair_same forall alphabet {symbol_compare}.
+    (left : dfa_state_pair alphabet) (right : dfa_state_pair alphabet) : bool =
+    match left, right with
+    | dfa_state_pair (left_a, left_b), dfa_state_pair (right_a, right_b) =>
+        if static_regex_equal left_a right_a then static_regex_equal left_b right_b
+        elif static_regex_equal left_a right_b then static_regex_equal left_b right_a
+        else false
+
+inl rec static_state_pair_list_contains forall alphabet {symbol_compare}.
+    (needle : dfa_state_pair alphabet) (values : dfa_state_pair_list alphabet) : bool =
+    match values with
+    | DfaStatePairNil => false
+    | DfaStatePairCons (head, tail) =>
+        if static_state_pair_same needle head then true
+        else static_state_pair_list_contains needle tail
+
+inl rec static_state_pair_enqueue_symbols forall alphabet {symbol_compare}.
+    (left : regex alphabet)
+    (right : regex alphabet)
+    (symbols : symbol_list alphabet)
+    (pending : dfa_state_pair_list alphabet)
+    : dfa_state_pair_list alphabet =
+    match symbols with
+    | SymbolListNil => pending
+    | SymbolListCons (symbol, rest) =>
+        inl next = dfa_state_pair (static_canonical_derivative left symbol, static_canonical_derivative right symbol)
+        static_state_pair_enqueue_symbols left right rest (DfaStatePairCons (next, pending))
+
+inl rec static_bisimulation_work forall alphabet {symbol_compare}.
+    (symbols : symbol_list alphabet)
+    (pending : dfa_state_pair_list alphabet)
+    (seen : dfa_state_pair_list alphabet)
+    : bool =
+    match pending with
+    | DfaStatePairNil => true
+    | DfaStatePairCons (pair, rest) =>
+        match pair with
+        | dfa_state_pair (left, right) =>
+            if static_regex_equal left right then static_bisimulation_work symbols rest seen
+            elif static_state_pair_list_contains pair seen then static_bisimulation_work symbols rest seen
+            elif static_nullable_same left right then
+                inl pending' = static_state_pair_enqueue_symbols left right symbols rest
+                static_bisimulation_work symbols pending' (DfaStatePairCons (pair, seen))
+            else false
+
+inl static_states_bisimilar forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet) (symbols : symbol_list alphabet) : bool =
+    inl pair = dfa_state_pair (static_normalize left, static_normalize right)
+    static_bisimulation_work symbols (DfaStatePairCons (pair, DfaStatePairNil)) DfaStatePairNil
+
+inl rec static_find_bisimilar_representative forall alphabet {symbol_compare}.
+    (state : regex alphabet) (representatives : regex_list alphabet) (symbols : symbol_list alphabet)
+    : dfa_representative_lookup alphabet =
+    match representatives with
+    | RegexListNil => DfaRepresentativeMissing
+    | RegexListCons (head, tail) =>
+        if static_states_bisimilar state head symbols then DfaRepresentativeFound head
+        else static_find_bisimilar_representative state tail symbols
+
+inl rec static_minimize_states_loop forall alphabet {symbol_compare}.
+    (states : regex_list alphabet) (symbols : symbol_list alphabet) (representatives : regex_list alphabet)
+    : regex_list alphabet =
+    match states with
+    | RegexListNil => representatives
+    | RegexListCons (state, rest) =>
+        match static_find_bisimilar_representative state representatives symbols with
+        | DfaRepresentativeFound _ => static_minimize_states_loop rest symbols representatives
+        | DfaRepresentativeMissing => static_minimize_states_loop rest symbols (RegexListCons (state, representatives))
+
+inl static_minimize_states forall alphabet {symbol_compare}.
+    (states : regex_list alphabet) (symbols : symbol_list alphabet) : regex_list alphabet =
+    static_minimize_states_loop states symbols RegexListNil
+
+inl rec static_states_have_representative forall alphabet {symbol_compare}.
+    (states : regex_list alphabet) (representatives : regex_list alphabet) (symbols : symbol_list alphabet) : bool =
+    match states with
+    | RegexListNil => true
+    | RegexListCons (state, rest) =>
+        match static_find_bisimilar_representative state representatives symbols with
+        | DfaRepresentativeFound _ => static_states_have_representative rest representatives symbols
+        | DfaRepresentativeMissing => false
+
+inl rec static_state_behaviorally_distinct_against forall alphabet {symbol_compare}.
+    (head : regex alphabet) (tail : regex_list alphabet) (symbols : symbol_list alphabet) : bool =
+    match tail with
+    | RegexListNil => true
+    | RegexListCons (state, rest) =>
+        if static_states_bisimilar head state symbols then false
+        else static_state_behaviorally_distinct_against head rest symbols
+
+inl rec static_minimal_by_bisimulation forall alphabet {symbol_compare}.
+    (states : regex_list alphabet) (symbols : symbol_list alphabet) : bool =
+    match states with
+    | RegexListNil => true
+    | RegexListCons (head, tail) =>
+        if static_state_behaviorally_distinct_against head tail symbols then static_minimal_by_bisimulation tail symbols
+        else false
+
+inl rec static_quotient_state_closed forall alphabet {symbol_compare}.
+    (state : regex alphabet)
+    (remaining : symbol_list alphabet)
+    (symbols : symbol_list alphabet)
+    (representatives : regex_list alphabet)
+    : bool =
+    match remaining with
+    | SymbolListNil => true
+    | SymbolListCons (symbol, rest) =>
+        inl target = static_canonical_derivative state symbol
+        match static_find_bisimilar_representative target representatives symbols with
+        | DfaRepresentativeFound _ => static_quotient_state_closed state rest symbols representatives
+        | DfaRepresentativeMissing => false
+
+inl rec static_quotient_closed forall alphabet {symbol_compare}.
+    (states : regex_list alphabet) (symbols : symbol_list alphabet) (representatives : regex_list alphabet) : bool =
+    match states with
+    | RegexListNil => true
+    | RegexListCons (state, rest) =>
+        if static_quotient_state_closed state symbols symbols representatives then
+            static_quotient_closed rest symbols representatives
+        else false
+
+inl rec static_input_snoc forall alphabet. (input : linear_input alphabet) (symbol : alphabet) : linear_input alphabet =
+    match input with
+    | InputEmpty => InputCons (symbol, InputEmpty)
+    | InputCons (head, rest) => InputCons (head, static_input_snoc rest symbol)
+
+inl rec static_constructive_pair_trace_enqueue_symbols forall alphabet {symbol_compare}.
+    (left : regex alphabet)
+    (right : regex alphabet)
+    (path : linear_input alphabet)
+    (symbols : symbol_list alphabet)
+    (pending : dfa_constructive_pair_trace_list alphabet)
+    : dfa_constructive_pair_trace_list alphabet =
+    match symbols with
+    | SymbolListNil => pending
+    | SymbolListCons (symbol, rest) =>
+        inl next_pair = dfa_state_pair (static_canonical_derivative left symbol, static_canonical_derivative right symbol)
+        inl next_trace = dfa_constructive_pair_trace (next_pair, static_input_snoc path symbol)
+        static_constructive_pair_trace_enqueue_symbols left right path rest (DfaConstructivePairTraceCons (next_trace, pending))
+
+inl rec static_constructive_distinguishing_work forall alphabet {symbol_compare}.
+    (symbols : symbol_list alphabet)
+    (pending : dfa_constructive_pair_trace_list alphabet)
+    (seen : dfa_state_pair_list alphabet)
+    : dfa_constructive_distinguishing_result alphabet =
+    match pending with
+    | DfaConstructivePairTraceNil => DfaConstructiveEquivalent
+    | DfaConstructivePairTraceCons (trace, rest) =>
+        match trace with
+        | dfa_constructive_pair_trace (pair, path) =>
+            match pair with
+            | dfa_state_pair (left, right) =>
+                if static_regex_equal left right then static_constructive_distinguishing_work symbols rest seen
+                elif static_state_pair_list_contains pair seen then static_constructive_distinguishing_work symbols rest seen
+                elif static_nullable_same left right then
+                    inl pending' = static_constructive_pair_trace_enqueue_symbols left right path symbols rest
+                    static_constructive_distinguishing_work symbols pending' (DfaStatePairCons (pair, seen))
+                else DfaConstructiveDistinguished path
+
+inl static_constructive_distinguishing_result forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet) (symbols : symbol_list alphabet)
+    : dfa_constructive_distinguishing_result alphabet =
+    inl pair = dfa_state_pair (static_normalize left, static_normalize right)
+    inl trace = dfa_constructive_pair_trace (pair, InputEmpty)
+    static_constructive_distinguishing_work symbols (DfaConstructivePairTraceCons (trace, DfaConstructivePairTraceNil)) DfaStatePairNil
+
+// The direct-language oracle (language_remainders: the suffixes a regex can leave of an input) as `inl` functions, so a
+// distinguishing word found at compile time is checked at compile time by a matcher that does not use derivatives.
+inl rec static_input_equal forall alphabet {symbol_compare}. (left : linear_input alphabet) (right : linear_input alphabet) : bool =
+    match left, right with
+    | InputEmpty, InputEmpty => true
+    | InputCons (left_symbol, left_rest), InputCons (right_symbol, right_rest) =>
+        if symbol_equal left_symbol right_symbol then static_input_equal left_rest right_rest else false
+    | _ => false
+
+inl rec static_input_list_contains forall alphabet {symbol_compare}.
+    (needle : linear_input alphabet) (values : input_list alphabet) : bool =
+    match values with
+    | InputListNil => false
+    | InputListCons (head, tail) => if static_input_equal needle head then true else static_input_list_contains needle tail
+
+inl rec static_input_list_append forall alphabet. (left : input_list alphabet) (right : input_list alphabet) : input_list alphabet =
+    match left with
+    | InputListNil => right
+    | InputListCons (head, tail) => InputListCons (head, static_input_list_append tail right)
+
+inl rec static_input_list_enqueue_new forall alphabet {symbol_compare}.
+    (candidates : input_list alphabet) (seen : input_list alphabet) (pending : input_list alphabet)
+    : input_list alphabet * input_list alphabet =
+    match candidates with
+    | InputListNil => seen, pending
+    | InputListCons (head, tail) =>
+        if static_input_list_contains head seen then static_input_list_enqueue_new tail seen pending
+        else static_input_list_enqueue_new tail (InputListCons (head, seen)) (InputListCons (head, pending))
+
+inl rec static_language_remainders forall alphabet {symbol_compare}.
+    (value : regex alphabet) (input : linear_input alphabet) : input_list alphabet =
+    match value with
+    | RegexEmpty => InputListNil
+    | RegexEpsilon => InputListCons (input, InputListNil)
+    | RegexChar expected =>
+        match input with
+        | InputEmpty => InputListNil
+        | InputCons (symbol, rest) =>
+            if symbol_equal expected symbol then InputListCons (rest, InputListNil) else InputListNil
+    | RegexAlt (left, right) =>
+        static_input_list_append (static_language_remainders left input) (static_language_remainders right input)
+    | RegexCat (left, right) => static_language_consume_right right (static_language_remainders left input)
+    | RegexStar inner =>
+        inl initial = InputListCons (input, InputListNil)
+        static_language_star_closure inner initial initial
+
+and inl static_language_consume_right forall alphabet {symbol_compare}.
+    (right : regex alphabet) (remainders : input_list alphabet) : input_list alphabet =
+    match remainders with
+    | InputListNil => InputListNil
+    | InputListCons (suffix, rest) =>
+        static_input_list_append (static_language_remainders right suffix) (static_language_consume_right right rest)
+
+and inl static_language_star_closure forall alphabet {symbol_compare}.
+    (inner : regex alphabet) (pending : input_list alphabet) (seen : input_list alphabet) : input_list alphabet =
+    match pending with
+    | InputListNil => seen
+    | InputListCons (suffix, rest) =>
+        inl candidates = static_language_remainders inner suffix
+        inl seen', pending' = static_input_list_enqueue_new candidates seen rest
+        static_language_star_closure inner pending' seen'
+
+inl static_language_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    static_input_list_contains InputEmpty (static_language_remainders value input)
+
+inl static_constructive_distinguishing_result_valid forall alphabet {symbol_compare}.
+    (left : regex alphabet)
+    (right : regex alphabet)
+    (symbols : symbol_list alphabet)
+    (result : dfa_constructive_distinguishing_result alphabet)
+    : bool =
+    match result with
+    | DfaConstructiveEquivalent => static_states_bisimilar left right symbols
+    | DfaConstructiveDistinguished input =>
+        inl left_accepts = static_language_accepts (static_normalize left) input
+        inl right_accepts = static_language_accepts (static_normalize right) input
+        if bool_same left_accepts right_accepts then false else true
+
+// Static production semantics: the canonical matcher, the unnormalized reference matcher, the raw DFA closure and the
+// depth-two input corpus again as `inl` functions. The inventory-indexed model compares its alphabet-erased core with
+// these at compile time (its `inl rec` checks never terminate on the run-time lists the `let rec` versions return).
+inl rec static_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    match input with
+    | InputEmpty => static_nullable (static_normalize value)
+    | InputCons (symbol, rest) => static_accepts (static_canonical_derivative value symbol) rest
+
+inl rec static_reference_derivative forall alphabet {symbol_compare}. (value : regex alphabet) (symbol : alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEmpty
+    | RegexChar expected => if symbol_equal expected symbol then RegexEpsilon else RegexEmpty
+    | RegexAlt (left, right) => RegexAlt (static_reference_derivative left symbol, static_reference_derivative right symbol)
+    | RegexCat (left, right) =>
+        if static_nullable left then RegexAlt (RegexCat (static_reference_derivative left symbol, right), static_reference_derivative right symbol)
+        else RegexCat (static_reference_derivative left symbol, right)
+    | RegexStar inner => RegexCat (static_reference_derivative inner symbol, RegexStar inner)
+
+inl rec static_reference_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    match input with
+    | InputEmpty => static_nullable value
+    | InputCons (symbol, rest) => static_reference_accepts (static_reference_derivative value symbol) rest
+
+inl rec static_dfa_enqueue_symbols forall alphabet {symbol_compare}.
+    (source : regex alphabet) (symbols : symbol_list alphabet) (seen : regex_list alphabet) (pending : regex_list alphabet)
+    : regex_list alphabet * regex_list alphabet =
+    match symbols with
+    | SymbolListNil => seen, pending
+    | SymbolListCons (symbol, rest) =>
+        inl next = static_canonical_derivative source symbol
+        if static_contains next seen then static_dfa_enqueue_symbols source rest seen pending
+        else static_dfa_enqueue_symbols source rest (RegexListCons (next, seen)) (RegexListCons (next, pending))
+
+inl rec static_dfa_closure_loop forall alphabet {symbol_compare}.
+    (symbols : symbol_list alphabet) (seen : regex_list alphabet) (pending : regex_list alphabet) : regex_list alphabet =
+    match pending with
+    | RegexListNil => seen
+    | RegexListCons (state, rest) =>
+        inl seen_next, pending_next = static_dfa_enqueue_symbols state symbols seen rest
+        static_dfa_closure_loop symbols seen_next pending_next
+
+inl static_dfa_closure forall alphabet {symbol_compare; finite_alphabet}. (start : regex alphabet) : regex_list alphabet =
+    inl normalized = static_normalize start
+    inl initial = RegexListCons (normalized, RegexListNil)
+    static_dfa_closure_loop (finite_alphabet_symbols (finite_alphabet ())) initial initial
+
+inl rec static_input_singletons_from_symbols forall alphabet. (symbols : symbol_list alphabet) : input_list alphabet =
+    match symbols with
+    | SymbolListNil => InputListNil
+    | SymbolListCons (symbol, rest) => InputListCons (InputCons (symbol, InputEmpty), static_input_singletons_from_symbols rest)
+
+inl rec static_input_prepend_symbol_to_corpus forall alphabet. (symbol : alphabet) (inputs : input_list alphabet) : input_list alphabet =
+    match inputs with
+    | InputListNil => InputListNil
+    | InputListCons (input, rest) => InputListCons (InputCons (symbol, input), static_input_prepend_symbol_to_corpus symbol rest)
+
+inl rec static_input_prepend_symbols_to_corpus forall alphabet. (symbols : symbol_list alphabet) (inputs : input_list alphabet) : input_list alphabet =
+    match symbols with
+    | SymbolListNil => InputListNil
+    | SymbolListCons (symbol, rest) =>
+        static_input_list_append (static_input_prepend_symbol_to_corpus symbol inputs) (static_input_prepend_symbols_to_corpus rest inputs)
+
+inl static_input_corpus_depth_two forall alphabet. (symbols : symbol_list alphabet) : input_list alphabet =
+    inl singletons = static_input_singletons_from_symbols symbols
+    static_input_list_append (InputListCons (InputEmpty, singletons)) (static_input_prepend_symbols_to_corpus symbols singletons)
 
 union sealed_minimized_dfa =
     | SealedMinimizedDfa : (exists alphabet. regex alphabet * regex_list alphabet * regex_list alphabet * bool * bool * bool)
@@ -2357,14 +2818,18 @@ inl input_abac () : linear_input tri_alphabet =
 inl input_abab () : linear_input tri_alphabet =
     InputCons (tri_a (), InputCons (tri_b (), InputCons (tri_a (), InputCons (tri_b (), InputEmpty))))
 
+// Plain Spiral, not F# text: every backend (F#, C, Rust, ...) emits its own failure for a broken expectation. The sample
+// is core-free, so its failwith is the compiler's FailWith op (core's `failwith` is the same op).
+inl failwith forall t. (msg : string) : t = !!!!FailWith(`t, msg)
+
 inl assert_static (value : bool) (message : string) : () =
-    if value then () else $"failwith !message"
+    if value then () else failwith message
 
 inl assert_true (~value : bool) : () =
-    $"if not !value then failwith \"brzozowski-expected-true\""
+    if value then () else failwith "brzozowski-expected-true"
 
 inl assert_false (~value : bool) : () =
-    $"if !value then failwith \"brzozowski-expected-false\""
+    if value then failwith "brzozowski-expected-false" else ()
 
 inl run_proof_suite () : string =
     inl accepted_input = input_110 ()

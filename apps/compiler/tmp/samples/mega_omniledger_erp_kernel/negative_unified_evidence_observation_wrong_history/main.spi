@@ -1,13 +1,15 @@
+open main
+
+// a recorded-primary fact (indexed by the one-entry primary history) cannot be observed against the empty history (RecordedHashPrimary is nullary now: the caller membership argument is retired)
+
 inl impossible_unified_evidence_observation_wrong_history () :
     typed_fx_hashed_statement_closed_decision =
     inl empty_history, _ =
         typed_fx_hashed_statement_closed_history_values ()
     decide_typed_fx_hashed_statement_closed_fact_observation
         empty_history
-        (TypedFxHashedStatementClosedFactRecordedHashAtHead (
-            TypedFxHashedStatementClosedRecordedHashPrimary (
-                TypedFxHashedStatementHistoryContainsHere
-                    "a-recorded-primary-membership-cannot-be-used-with-the-empty-history")))
+        (TypedFxHashedStatementClosedFactRecordedHashAtHead
+            TypedFxHashedStatementClosedRecordedHashPrimary)
 
 inl main () =
     impossible_unified_evidence_observation_wrong_history ()

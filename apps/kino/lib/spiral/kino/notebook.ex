@@ -37,14 +37,48 @@ defmodule Spiral.Kino.Notebook do
     path = Path.expand(path)
     opts = Keyword.put(opts, :path, path)
     text = File.read!(path)
-    doc = parse(path, text)
+    # `///! lisp` cells (apps/lisp) become Spiral here, before the plan and the exports see them
+    doc = path |> parse(text) |> expand_lisp(opts)
 
     if opts[:export_only] do
-      File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
+      write_exports(path, doc, opts)
       :ok
     else
       run_cells(path, doc, opts)
     end
+  end
+
+  # The .spi export (not with --no-spi), with --spir-path the .spir one (the `///- ... --real` cells: `spiral dib-export
+  # <nb>.dib spir`) and with --fs-path the F# one (`spiral dib-export <nb>.dib fs`).
+  defp write_exports(path, doc, opts) do
+    if opts[:spi] != false, do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
+    if opts[:spir_path], do: File.write!(opts[:spir_path], Document.to_spir(doc))
+    if opts[:fs_path], do: write_fs(doc, opts)
+  end
+
+  defp write_fs(doc, opts) do
+    spiral = Spiral.Kino.Toolchain.spiral(opts)
+    dir = Path.join(System.tmp_dir!(), "spiral_kino_fs_#{System.unique_integer([:positive])}")
+    dib = Path.join(dir, Path.basename(opts[:fs_path], ".fs") <> ".dib")
+
+    try do
+      File.mkdir_p!(dir)
+      File.write!(dib, Document.to_dib(doc))
+
+      case System.cmd(spiral || "spiral", ["dib-export", dib, "fs"], stderr_to_stdout: true) do
+        {_, 0} -> File.cp!(Path.rootname(dib) <> ".fs", opts[:fs_path])
+        {output, status} -> raise "spiral dib-export fs failed (exit #{status}): #{output}"
+      end
+    after
+      File.rm_rf(dir)
+    end
+  end
+
+  defp expand_lisp(%{cells: cells} = doc, opts) do
+    %{doc | cells: Enum.map(cells, fn
+      %{kind: :spiral, source: source} = cell -> %{cell | source: Spiral.Kino.Lisp.expand(source, opts)}
+      cell -> cell
+    end)}
   end
 
   defp run_cells(path, doc, opts) do
@@ -77,8 +111,7 @@ defmodule Spiral.Kino.Notebook do
     case status do
       :ok ->
         # `spi: false` (`--no-spi`): a notebook whose export is not Spiral (hangul exports F# with dib-export).
-        if opts[:spi] != false,
-          do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
+        write_exports(path, doc, opts)
 
         if opts[:html], do: write_html(output_path), else: :ok
 
@@ -196,10 +229,14 @@ defmodule Spiral.Kino.Notebook do
     end)
   end
 
+  # At most cell_concurrency() cells at a time (SPIRAL_KINO_CELL_CONCURRENCY, default 4): a cell's budget starts when it
+  # starts, and the shared compiler takes one compile at a time anyway. Starting every cell at once (206 in leptos) put all
+  # of them behind the same compiler queue and reboots with their clocks running: whole notebooks timed out (300 s) in
+  # the lib run while the compiler did ~1 s per compile.
   defp run_parallel(steps, opts, root) do
     steps
     |> Task.async_stream(&run_step(&1, opts, root),
-      max_concurrency: max(length(steps), 1),
+      max_concurrency: max(min(length(steps), cell_concurrency()), 1),
       ordered: true,
       timeout: :infinity
     )
@@ -212,6 +249,13 @@ defmodule Spiral.Kino.Notebook do
         text = Exception.format_exit(reason)
         {Map.put(acc, step.index, error_output(text)), durations, keep_error(status, text)}
     end)
+  end
+
+  defp cell_concurrency do
+    case Integer.parse(System.get_env("SPIRAL_KINO_CELL_CONCURRENCY") || "") do
+      {n, ""} when n > 0 -> n
+      _ -> 4
+    end
   end
 
   # A step yields one `{index, result, duration}` per cell it ran (the F# session step runs several cells).
@@ -333,6 +377,7 @@ defmodule Spiral.Kino.Notebook do
         opts
         |> run_opts(root, timeout)
         |> Keyword.put(:builders, Builders.commands(step.cell_source))
+        |> Keyword.put(:real, Map.get(step, :real, ""))
 
       case Spiral.Kino.run(step.program, opts) do
         {:ok, %Result{exit_status: status} = result} when status in [nil, 0] ->

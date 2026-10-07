@@ -18,15 +18,22 @@ Write-Output "spiral/lib/spiral/near/wallet/build.ps1 / ScriptDir: $ScriptDir / 
 $projectName = "near_wallet"
 
 if (!$SkipPreBuild) {
+    # The notebook runs through Kino and exports src/near_wallet.spi (the run's outputs keep the .dib route's names).
+    $livebook = Join-Path $ResolvedScriptDir "../../../../apps/kino/spi/livebook_dib.ps1"
+    $notebook = @("--path", "$ResolvedScriptDir/src/$projectName.livemd", "--spi-path", "$ResolvedScriptDir/src/$projectName.spi")
     if (!$SkipNotebook) {
-        { . ../../../../../deps/spiral/workspace/target/release/spiral$(_exe) dib --path "$ScriptDir/src/$projectName.dib" } | Invoke-Block -Retries 3 -Location ../../../../deps/polyglot/lib/rust/fable/fable_modules/fable-library-rust
+        { pwsh -NoProfile -File $livebook @notebook --output-path "$ResolvedScriptDir/src/$projectName.dib.ipynb" } | Invoke-Block -Retries 3
     }
-
-    { . ../../../../deps/polyglot/deps/spiral/workspace/target/release/spiral$(_exe) dib-export "$ScriptDir/src/$projectName.dib" spi } | Invoke-Block
+    else {
+        { pwsh -NoProfile -File $livebook @notebook --export-only } | Invoke-Block
+    }
 }
 
 if (!$SkipGleam) {
-    { . ../../../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "src/$projectName.spi" "src/$projectName.gleam" } | Invoke-Block
+    # src/near_wallet.gleam with the Spiral compiler's own Gleam backend.
+    if (!(BuildNativeRust "src/$projectName.spi" "src/$projectName.gleam" "lib/spiral/near/wallet" -Backend "Gleam")) {
+        throw "NATIVE-GLEAM-FAILED lib/spiral/near/wallet / compile"
+    }
 }
 
 if (!$fast) {

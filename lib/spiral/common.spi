@@ -14,7 +14,9 @@ inl retry_fn' retries fn =
         else
             trace Debug
                 fun () => "common.retry_fn\' / 루프"
-                fun () => { is_error retry = $'$"{!retry}/{!retries}"' : string; result }
+                fun () =>
+                    open sm'_operators
+                    { is_error retry = sm'.obj_to_string retry ++# "/" ++# sm'.obj_to_string retries; result }
             루프 (retry + 1)
     루프 1
 
@@ -97,11 +99,6 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
 /// ### random'
 inl random' forall t. (min : t) (max : t) : t =
     run_target function
-        | Rust (Some (Contract)) => fun () =>
-            failwith "common.random' / target=Rust(Contract)"
-        | Rust _ => fun () =>
-            open rust.rust_operators
-            !\\((min, max), $'"rand::Rng::gen_range(&mut rand::thread_rng(), $0..$1)"')
         // Native builds don't depend on `rand`: xorshift seeded once per process (std's RandomState is randomly keyed
         // per process, mixed with the clock), drawing like `gen_range` (min inclusive, max exclusive).
         | RustNative => fun () =>
@@ -118,10 +115,6 @@ inl random' forall t. (min : t) (max : t) : t =
 /// ### new_disposable
 inl new_disposable (fn : () -> ()) : disposable _ =
     run_target function
-        | Rust _ => fun () =>
-            global "type Disposable (f : unit -> unit) = interface System.IDisposable with member _.Dispose () = f ()"
-            inl fn = join fn
-            $'new Disposable (fun () -> Fable.Core.RustInterop.emitRustExpr !fn "$0()" )'
         | RustNative => fun () =>
             open rust.rust_operators
             !\\(fn, $'"$0.clone()"') : disposable _
@@ -139,6 +132,8 @@ inl new_disposable (fn : () -> ()) : disposable _ =
         | _ => fun () => null ()
 
 /// ## main
+///> fsharp
+
 inl main () =
     init_trace_state None
     inl new_disposable x : _ () = new_disposable x

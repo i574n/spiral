@@ -1,3 +1,5 @@
+open main
+
 inl impossible_application_function_substitution_target_keeps_used () :
     exact_linear_indexed_recursive_open_typed_substitution
         exact_linear_indexed_open_unit_substitution_context

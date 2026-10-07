@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_context_sort_indexed_membership_sort_mismatch () :
     corrected_cic_context_sort_indexed_selected_meta
         empty_ctx bool_sort

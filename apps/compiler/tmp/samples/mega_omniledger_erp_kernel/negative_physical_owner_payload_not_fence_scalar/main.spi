@@ -1,6 +1,9 @@
+// the physical owner payload (a string) is not the i64 fence scalar (lane H 2026-10-06 rewrite; retired erp_p2p_three_owner_fenced_lock_runtime -> erp_p2p_recoverable_fenced_lock_runtime)
+open main
+
 inl impossible_physical_owner_payload_not_fence_scalar () : i64 =
-    inl _, _, _, _, _, _, _, _, _, recovered_owner_b, _, _, _ =
-        erp_p2p_three_owner_fenced_lock_runtime ()
-    recovered_owner_b
+    inl _, _, _, _, _, _, _, _, _, _, physical_owner_sequence =
+        erp_p2p_recoverable_fenced_lock_runtime ()
+    physical_owner_sequence
 
 inl main () = ()

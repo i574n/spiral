@@ -53,6 +53,12 @@ defmodule Spiral.Kino.Targets do
 
   defp run_default(builder, output_path, opts, timeout, deadline) do
     case Builders.dispatch(builder, output_path) do
+      {:spiral, ["rust" | _] = args} ->
+        one_spiral_rust(opts, timeout, deadline, fn deadline ->
+          run_spiral(args, opts, timeout, deadline)
+          |> promote_spiral(builder, output_path, opts, timeout, deadline)
+        end)
+
       {:spiral, args} ->
         run_spiral(args, opts, timeout, deadline)
         |> promote_spiral(builder, output_path, opts, timeout, deadline)
@@ -63,11 +69,52 @@ defmodule Spiral.Kino.Targets do
       {:python, path} ->
         run_program(Toolchain.python(opts), "python", [path], opts, timeout, deadline, false)
 
+      {:bun, path} ->
+        run_program(Toolchain.bun(opts), "bun", ["run", path], opts, timeout, deadline, false)
+
       {:cc, path} ->
         run_cc(path, opts, timeout, deadline)
 
       {:dcc, path} ->
         run_dcc(path, opts, timeout, deadline)
+    end
+  end
+
+  # `spiral rust` (a `///> rust ...` cell: a cargo project in the CLI's shared packages workspace, which its cells' own
+  # `cargo test` runs share too) one at a time across the machine: the old kernel ran a notebook's cells in order, and
+  # concurrent runs delete each other's sources ("couldn't read packages\Rust\<hash>\spiral.rs", rust/testing). The
+  # wait is not charged to the cell's budget.
+  @spiral_rust_wait_ms 3_600_000
+
+  defp one_spiral_rust(opts, timeout, deadline, fun) do
+    started = System.monotonic_time(:millisecond)
+    lock = opts[:rust_lock] || Path.join(Path.dirname(Spiral.Kino.Mounts.root()), "kino-spiral-rust.lock")
+
+    result =
+      Spiral.Kino.FileLock.with_lock(
+        lock,
+        fn ->
+          waited = System.monotonic_time(:millisecond) - started
+
+          case Process.get(:spiral_kino_deadline) do
+            ms when is_integer(ms) -> Process.put(:spiral_kino_deadline, ms + waited)
+            _ -> :ok
+          end
+
+          {:ran, fun.(if deadline == :infinity, do: :infinity, else: deadline + waited)}
+        end,
+        @spiral_rust_wait_ms
+      )
+
+    case result do
+      {:ran, ran} ->
+        ran
+
+      {:error, reason} ->
+        {:error,
+         %ProcessError{
+           message: "`spiral rust` waited #{div(@spiral_rust_wait_ms, 60_000)} min for #{lock}: #{inspect(reason)} (cell budget #{inspect(timeout)})"
+         }}
     end
   end
 

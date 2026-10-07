@@ -15,8 +15,8 @@ and method0 (v0 : US0) : string =
     let v18 : Mut0 = {l0 = v1} : Mut0
     let v21 : string = $"%A{v0}"
     method2(v18, v21)
-    let v70 : string = v18.l0
-    v70
+    let v44 : string = v18.l0
+    v44
 let v0 : int32 = 1
 let v1 : US0 = US0_0(v0)
 let v2 : string = method0(v1)

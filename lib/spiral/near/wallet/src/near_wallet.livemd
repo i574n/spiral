@@ -1,0 +1,175 @@
+# near_wallet
+
+<!-- livebook:{"break_markdown":true} -->
+
+`#!import ../../../../../../polyglot/lib/fsharp/NotebooksHtml.livemd`
+
+<!-- livebook:{"break_markdown":true} -->
+
+## near_wallet
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open lustre","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open lustre
+  """,
+  timeout: 300_000
+)
+```
+
+### model
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type model = int","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type model = int
+  """,
+  timeout: 300_000
+)
+```
+
+### init
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init initial_count : model =\n    if initial_count < 0\n    then 0\n    else initial_count","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init initial_count : model =
+      if initial_count < 0
+      then 0
+      else initial_count
+  """,
+  timeout: 300_000
+)
+```
+
+### msg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union msg =\n    | Incr\n    | Decr","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union msg =
+      | Incr
+      | Decr
+  """,
+  timeout: 300_000
+)
+```
+
+### update
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl update n (model, msg) =\n    match msg with\n    | Incr => model + n\n    | Decr => model - n","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl update n (model, msg) =
+      match msg with
+      | Incr => model + n
+      | Decr => model - n
+  """,
+  timeout: 300_000
+)
+```
+
+### view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view model =\n    div [\n        style [\n            \"display\", \"flex\"\n        ]\n    ] [\n        div [\n            style [\n                \"display\", \"flex\"\n                \"flex-direction\", \"column\"\n            ]\n        ] [\n            button [\n                on_click Incr\n            ] [\n                text \"+\"\n            ]\n            p [\n                style [\n                    \"text-align\", \"center\"\n                ]\n            ] [\n                model |> sm'.obj_to_string |> text\n            ]\n            button [\n                on_click Decr\n            ] [\n                text \"-\"\n            ]\n        ]\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view model =
+      div [
+          style [
+              "display", "flex"
+          ]
+      ] [
+          div [
+              style [
+                  "display", "flex"
+                  "flex-direction", "column"
+              ]
+          ] [
+              button [
+                  on_click Incr
+              ] [
+                  text "+"
+              ]
+              p [
+                  style [
+                      "text-align", "center"
+                  ]
+              ] [
+                  model |> sm'.obj_to_string |> text
+              ]
+              button [
+                  on_click Decr
+              ] [
+                  text "-"
+              ]
+          ]
+      ]
+  """,
+  timeout: 300_000
+)
+```
+
+## tests
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam -t javascript -d lustre=\\\">=4.6.0\\\" lustre_ui=\\\"1.0.0-rc.1\\\" gleam_json=\\\">=2.0.0\\\"\n\nsimple init (update 1) view\n|> start \"#app_\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+  simple init (update 1) view
+  |> start "#app_"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam -t javascript -d lustre=\\\">=4.6.0\\\" lustre_ui=\\\"1.0.0-rc.1\\\" gleam_json=\\\">=2.0.0\\\"\n\nsimple init (update 2) view\n|> start \"#app_\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+  simple init (update 2) view
+  |> start "#app_"
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> _\n\ninl main' (n : int) =\n    simple init (update 1) view\n    |> start \"#app_\"\n\ninl main () =\n    $'!main' (0)' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> _
+
+  inl main' (n : int) =
+      simple init (update 1) view
+      |> start "#app_"
+
+  inl main () =
+      $'!main' (0)' : ()
+  """,
+  timeout: 300_000
+)
+```

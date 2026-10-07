@@ -1,3 +1,5 @@
+open main
+
 inl impossible_membership_recursion_authority_wrong_root () :
     certified_interval_positive_positional_membership_recursion_authority
         (positional_zero_bit positional_one)

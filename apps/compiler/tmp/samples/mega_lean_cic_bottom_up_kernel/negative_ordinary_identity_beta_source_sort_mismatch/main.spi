@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_ordinary_identity_beta_source_sort_mismatch () :
     corrected_cic_term empty_ctx (universe_sort universe_one) =
     inl step :

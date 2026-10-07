@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_bool_recursive_guard_outcome_mismatch ()
     : exact_linear_indexed_closed_bool_program
         exact_linear_closed_bool_true_normal =

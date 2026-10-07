@@ -24,9 +24,13 @@ defmodule Spiral.Kino do
     else
       timeout = opts[:timeout] || @default_timeout
       validate_timeout!(timeout)
-      prepared = Directives.prepare(code, opts)
+      # a `///! lisp` cell (apps/lisp) is Spiral after spl2spi.py
+      prepared = code |> Spiral.Kino.Lisp.expand(opts) |> Directives.prepare(opts)
 
       builders = cell_builders(opts, prepared)
+
+      prepared =
+        if Enum.all?(builders, &Builders.host_rust?/1), do: own_main(prepared), else: prepared
 
       if prepared.skip or Enum.any?(builders, &(&1.tool == :skip)) do
         {:ok, %Result{exit_status: 0, source: code, duration_ms: 0}}
@@ -54,7 +58,7 @@ defmodule Spiral.Kino do
 
           with {:ok, names, package_dir} <-
                  mount_packages(dir, prepared.packages, opts[:root], polyglot_root(opts)),
-               :ok <- write_package(dir, names, package_dir) do
+               :ok <- write_package(dir, names, package_dir, opts[:real]) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
         after
@@ -342,9 +346,8 @@ defmodule Spiral.Kino do
         {:error, error}
 
       {:error, output_text} ->
-        if attempt == 1 and prepared.generated_main and
-             Cell.unit_result?(restore_type_lines(output_text)) do
-          File.write!(spi, String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
+        retry = fn code ->
+          File.write!(spi, code)
 
           compile(
             dir,
@@ -360,10 +363,107 @@ defmodule Spiral.Kino do
             2,
             false
           )
-        else
-          {:error, %SpiralError{message: clean(output_text, dir), details: File.read!(spi)}}
+        end
+
+        cond do
+          attempt == 1 and prepared.generated_main and
+              Cell.unit_result?(restore_type_lines(output_text)) ->
+            retry.(String.trim_trailing(File.read!(spi), "\n") <> "\n    0i32\n")
+
+          attempt == 1 and prepared.generated_main and host and
+              value_result?(output_text, File.read!(spi)) ->
+            retry.(show_value_main(File.read!(spi)))
+
+          true ->
+            {:error, %SpiralError{message: clean(output_text, dir), details: File.read!(spi)}}
         end
     end
+  end
+
+  @main_head "inl main () : i32 =\n"
+
+  # A cell that defines its own `main ()` (physics' animation cells return plot data from it) becomes the generated
+  # main's body: `main` is renamed and called from `inl main () : i32 =`, so the unit and value retries apply to it as to
+  # any trailing expression (the Rust entry is `fn spiral_main() -> i32`: a tuple-returning main only failed in rustc).
+  @doc false
+  def own_main(%{generated_main: false, code: code} = prepared) do
+    case Regex.run(~r/^(?:let|inl) main \(\) =[ \t]*$/m, code, return: :index)
+         |> last_main(code) do
+      nil ->
+        prepared
+
+      {at, len} ->
+        renamed =
+          binary_part(code, 0, at) <>
+            "inl spiral_kino_main () =" <> binary_part(code, at + len, byte_size(code) - at - len)
+
+        %{
+          prepared
+          | code:
+              String.trim_trailing(renamed) <> "\n\n" <> @main_head <> "    spiral_kino_main ()\n",
+            generated_main: true,
+            no_value: false
+        }
+    end
+  end
+
+  def own_main(prepared), do: prepared
+
+  # the last `main ()` header, when only its body (indented or blank lines) follows it
+  defp last_main(nil, _code), do: nil
+
+  defp last_main(_first, code) do
+    [{at, len} | _] =
+      ~r/^(?:let|inl) main \(\) =[ \t]*$/m |> Regex.scan(code, return: :index) |> List.last()
+
+    rest = binary_part(code, at + len, byte_size(code) - at - len)
+
+    if rest |> String.split("\n") |> Enum.all?(&(&1 == "" or String.starts_with?(&1, " "))),
+      do: {at, len},
+      else: nil
+  end
+
+  # The generated main's only error is that its expression is not an i32 (the old route showed any value; physics'
+  # cells end in plot data): the value is bound and shown with Rust's Debug (console.show_value) instead.
+  @doc false
+  def value_result?(output, code) do
+    case :binary.matches(code, @main_head) do
+      [] ->
+        false
+
+      matches ->
+        {at, _} = List.last(matches)
+
+        # 1-based line of the main head; its body (value bindings, then the expression) is indented by 4, and the
+        # compiler reports the result's mismatch at the start of the trailing expression (column 5)
+        head = code |> binary_part(0, at) |> String.split("\n") |> length()
+
+        case Regex.scan(~r/main\.spi:(\d+):(\d+): (Unification failure\.)?/, output) do
+          [[_, line, "5", "Unification failure."]] ->
+            String.to_integer(line) > head and output =~ ~r/Got:\s*i32\b|Expected:\s*i32\b/
+
+          _ ->
+            false
+        end
+    end
+  end
+
+  @doc false
+  def show_value_main(code) do
+    {at, len} = code |> :binary.matches(@main_head) |> List.last()
+    head = binary_part(code, 0, at + len)
+    body = binary_part(code, at + len, byte_size(code) - at - len) |> String.trim_trailing()
+
+    indented =
+      body
+      |> String.split("\n")
+      |> Enum.map_join("\n", fn line ->
+        if String.trim(line) == "", do: "", else: "    " <> line
+      end)
+
+    head <>
+      "    inl spiral_kino_value =\n" <>
+      indented <> "\n    console.show_value spiral_kino_value\n    0i32\n"
   end
 
   defp compile_default(spi, output, backend, opts, timeout, deadline) do
@@ -486,8 +586,11 @@ defmodule Spiral.Kino do
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
     with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
+      # rustc without cargo: env!("CARGO_MANIFEST_DIR") (the lib's file_system.get_source_directory on native Rust) is
+      # the cell's own directory, as the old route's cargo package directory was.
       case Runner.run(Toolchain.rustc(opts), ["--edition", "2021", "-o", exe, rs],
-             timeout: budget(deadline)
+             timeout: budget(deadline),
+             env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
            ) do
         {:ok, %{exit_status: 0}} -> :ok
         {:ok, %{output: output}} -> {:error, output}
@@ -584,7 +687,9 @@ defmodule Spiral.Kino do
     |> String.trim()
   end
 
-  defp write_package(dir, names, package_dir) do
+  # `real:` (the notebook runner's `--real` cells) is real-segment code: it goes to main_real.spir, listed before main as
+  # `main_real*-` (the old .dib kernel's package layout), so the cell reaches its definitions unqualified.
+  defp write_package(dir, names, package_dir, real) do
     text = Cell.package_project(names)
 
     text =
@@ -592,6 +697,14 @@ defmodule Spiral.Kino do
         String.replace(text, "packageDir: .", "packageDir: " <> package_dir, global: false)
       else
         text
+      end
+
+    text =
+      if real in [nil, ""] do
+        text
+      else
+        File.write!(Path.join(dir, "main_real.spir"), String.trim_trailing(real) <> "\n")
+        String.replace(text, ~r/^    main$/m, "    main_real*-\n    main", global: false)
       end
 
     File.write!(Path.join(dir, "package.spiproj"), text)

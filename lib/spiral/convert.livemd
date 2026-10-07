@@ -1,0 +1,470 @@
+# convert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## convert
+
+<!-- livebook:{"break_markdown":true} -->
+
+### unativeint
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type unativeint_switch =\n    {\n        Gleam : $'unativeint'\n        Lua : $'unativeint'\n        Fsharp : $'unativeint'\n        Python : $'unativeint'\n        TypeScript : $'unativeint'\n        Cpp : $'unativeint'\n        CppHost : $'unativeint'\n        Delphi : $'unativeint'\n        Cuda : $'unativeint'\n        Rust : $'usize'\n    }\nnominal unativeint = $'backend_switch `(unativeint_switch)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type unativeint_switch =
+      {
+          Gleam : $'unativeint'
+          Lua : $'unativeint'
+          Fsharp : $'unativeint'
+          Python : $'unativeint'
+          TypeScript : $'unativeint'
+          Cpp : $'unativeint'
+          CppHost : $'unativeint'
+          Delphi : $'unativeint'
+          Cuda : $'unativeint'
+          Rust : $'usize'
+      }
+  nominal unativeint = $'backend_switch `(unativeint_switch)'
+  """,
+  timeout: 300_000
+)
+```
+
+### to'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to' forall t u. (fn : t -> option u) (x : t) : option u =\n    real\n        typecase t * u with\n        | ~x * ~x => Some `u x\n        | int * int => Some `u (conv `t `u x)\n        | float * float => Some `u (conv `t `u x)\n        | int * float => Some `u (conv `t `u x)\n        | float * int => Some `u (conv `t `u x)\n        | i64 * f64 => Some `u (conv `t `u x)\n        | f64 * i64 => Some `u (conv `t `u x)\n        | i32 * f64 => Some `u (conv `t `u x)\n        | f64 * i32 => Some `u (conv `t `u x)\n        | i64 * f32 => Some `u (conv `t `u x)\n        | f32 * i64 => Some `u (conv `t `u x)\n        | char * bool => Some `u (x = '1')\n        | bool * char => Some `u (if x then '1' else '0')\n        | bool * _ => Some `u (if x then 1 else 0)\n        | _ => fn x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to' forall t u. (fn : t -> option u) (x : t) : option u =
+      real
+          typecase t * u with
+          | ~x * ~x => Some `u x
+          | int * int => Some `u (conv `t `u x)
+          | float * float => Some `u (conv `t `u x)
+          | int * float => Some `u (conv `t `u x)
+          | float * int => Some `u (conv `t `u x)
+          | i64 * f64 => Some `u (conv `t `u x)
+          | f64 * i64 => Some `u (conv `t `u x)
+          | i32 * f64 => Some `u (conv `t `u x)
+          | f64 * i32 => Some `u (conv `t `u x)
+          | i64 * f32 => Some `u (conv `t `u x)
+          | f32 * i64 => Some `u (conv `t `u x)
+          | char * bool => Some `u (x = '1')
+          | bool * char => Some `u (if x then '1' else '0')
+          | bool * _ => Some `u (if x then 1 else 0)
+          | _ => fn x
+  """,
+  timeout: 300_000
+)
+```
+
+### to
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to forall t u. (x : t) : u =\n    if rust.rust.is_native ()\n    then\n        // native Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted\n        inl from_string : bool =\n            real\n                typecase t with\n                | string => true\n                | _ => false\n        x\n        |> to' fun x =>\n            inl y : u =\n                if from_string\n                then $'(!x).parse::<`u>().unwrap()'\n                else $'(!x as `u)'\n            Some y\n        |> optionm.value\n    else\n        x\n        |> to' fun x => $'!x ' |> Some\n        |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to forall t u. (x : t) : u =
+      if rust.rust.is_native ()
+      then
+          // native Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
+          inl from_string : bool =
+              real
+                  typecase t with
+                  | string => true
+                  | _ => false
+          x
+          |> to' fun x =>
+              inl y : u =
+                  if from_string
+                  then $'(!x).parse::<`u>().unwrap()'
+                  else $'(!x as `u)'
+              Some y
+          |> optionm.value
+      else
+          x
+          |> to' fun x => $'!x ' |> Some
+          |> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+### convert_i32_base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32_base forall t. (base : i32) (x : t) : i32 =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/int\"\n            inl (n : int), (err : int) =\n                $'case int.base_parse(!x, !base) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'\n            if err = 0\n            then n |> Some\n            else None\n            |> optionm.value\n        Lua = fun () => $'tonumber( !x, !base )' : i32\n        Fsharp = fun () => $'System.Convert.ToInt32 (!x, !base)' : i32\n        Python = fun () => $'int (!x, !base)' : i32\n        Rust = fun () => $'i32::from_str_radix(&*(!x), (!base) as u32).unwrap()' : i32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/int"
+              inl (n : int), (err : int) =
+                  $'case int.base_parse(!x, !base) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+              if err = 0
+              then n |> Some
+              else None
+              |> optionm.value
+          Lua = fun () => $'tonumber( !x, !base )' : i32
+          Fsharp = fun () => $'System.Convert.ToInt32 (!x, !base)' : i32
+          Python = fun () => $'int (!x, !base)' : i32
+          Rust = fun () => $'i32::from_str_radix(&*(!x), (!base) as u32).unwrap()' : i32
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### convert_i32
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32 forall t. (x : t) : int =\n    backend_switch {\n        Gleam = fun () => x |> convert_i32_base 10 : int\n        Lua = fun () => x |> convert_i32_base 10 : int\n        Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int\n        Python = fun () => x |> convert_i32_base 10 : int\n        // Native Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even\n        Rust = fun () =>\n            if (real typecase t with string => true | _ => false)\n            then x |> convert_i32_base 10 : int\n            elif (real typecase t with f64 => true | f32 => true | _ => false)\n            then $'((!x).round_ties_even() as i32)' : int\n            else $'(!x as i32)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl convert_i32 forall t. (x : t) : int =
+      backend_switch {
+          Gleam = fun () => x |> convert_i32_base 10 : int
+          Lua = fun () => x |> convert_i32_base 10 : int
+          Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int
+          Python = fun () => x |> convert_i32_base 10 : int
+          // Native Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
+          Rust = fun () =>
+              if (real typecase t with string => true | _ => false)
+              then x |> convert_i32_base 10 : int
+              elif (real typecase t with f64 => true | f32 => true | _ => false)
+              then $'((!x).round_ties_even() as i32)' : int
+              else $'(!x as i32)' : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### try_convert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_convert forall t u. (x : t) : option u =\n    x |> to' fun x =>\n        backend_switch {\n            Gleam = fun () =>\n                if (real typecase u with int => true | _ => false) then\n                    global \"import gleam/int\"\n                    inl (n : int), (err : int) =\n                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'\n                    if err = 0\n                    then n |> to |> Some\n                    else None : _ u\n                else x |> to |> Some\n            Lua = fun () =>\n                x |> to |> Some : _ u\n            Fsharp = fun () =>\n                resultm.from_try\n                    fun () => $'!x |> `u '\n                    eval\n                |> resultm.ok\n                : _ u\n            Python = fun () =>\n                resultm.from_try\n                    fun () => $'`u(!x)'\n                    eval\n                |> resultm.ok\n                : _ u\n            Rust = fun () =>\n                // \u0007s only converts between primitives; a string target formats the value (paths' Display, ...).\n                if (real typecase u with string => true | _ => false)\n                then Some $'Rc::<str>::from(format\\!(\"{}\", !x))'\n                elif (real typecase t with string => true | _ => false)\n                then\n                    // a string parses (an `as` cast of an Rc<str> doesn't compile); None when it doesn't, as in F#\n                    ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox\n                else Some $'((!x) as `u)'\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_convert forall t u. (x : t) : option u =
+      x |> to' fun x =>
+          backend_switch {
+              Gleam = fun () =>
+                  if (real typecase u with int => true | _ => false) then
+                      global "import gleam/int"
+                      inl (n : int), (err : int) =
+                          $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                      if err = 0
+                      then n |> to |> Some
+                      else None : _ u
+                  else x |> to |> Some
+              Lua = fun () =>
+                  x |> to |> Some : _ u
+              Fsharp = fun () =>
+                  resultm.from_try
+                      fun () => $'!x |> `u '
+                      eval
+                  |> resultm.ok
+                  : _ u
+              Python = fun () =>
+                  resultm.from_try
+                      fun () => $'`u(!x)'
+                      eval
+                  |> resultm.ok
+                  : _ u
+              Rust = fun () =>
+                  // s only converts between primitives; a string target formats the value (paths' Display, ...).
+                  if (real typecase u with string => true | _ => false)
+                  then Some $'Rc::<str>::from(format\!("{}", !x))'
+                  elif (real typecase t with string => true | _ => false)
+                  then
+                      // a string parses (an `as` cast of an Rc<str> doesn't compile); None when it doesn't, as in F#
+                      ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox
+                  else Some $'((!x) as `u)'
+          }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> rust\n\n3i32\n|> try_convert\n|> optionm.value\n|> _assert_eq' (\n    backend_switch {\n        Gleam = fun () => ($'3' : unativeint) : unativeint\n        Lua = fun () => ($'3' : unativeint) : unativeint\n        Fsharp = fun () => ($'3 |> `unativeint ' : unativeint) : unativeint\n        Python = fun () => ($'3' : unativeint) : unativeint\n        Rust = fun () => ($'3usize' : unativeint) : unativeint\n    } : unativeint\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> rust
+
+  3i32
+  |> try_convert
+  |> optionm.value
+  |> _assert_eq' (
+      backend_switch {
+          Gleam = fun () => ($'3' : unativeint) : unativeint
+          Lua = fun () => ($'3' : unativeint) : unativeint
+          Fsharp = fun () => ($'3 |> `unativeint ' : unativeint) : unativeint
+          Python = fun () => ($'3' : unativeint) : unativeint
+          Rust = fun () => ($'3usize' : unativeint) : unativeint
+      } : unativeint
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> rust\n///> cuda\n\n\"3\"\n|> try_convert\n|> _assert_eq (3i32 |> Some)\n\n\"a\"\n|> try_convert\n|> _assert_eq (None : _ int)\n\ntrue\n|> try_convert\n|> _assert_eq (1i32 |> Some)\n\nfalse\n|> try_convert\n|> _assert_eq (0i32 |> Some)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> rust
+  ///> cuda
+
+  "3"
+  |> try_convert
+  |> _assert_eq (3i32 |> Some)
+
+  "a"
+  |> try_convert
+  |> _assert_eq (None : _ int)
+
+  true
+  |> try_convert
+  |> _assert_eq (1i32 |> Some)
+
+  false
+  |> try_convert
+  |> _assert_eq (0i32 |> Some)
+  """,
+  timeout: 300_000
+)
+```
+
+### convert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert forall t u. (x : t) : u =\n    x |> try_convert |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl convert forall t u. (x : t) : u =
+      x |> try_convert |> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+### unbox
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t u. (x : t) : u =\n    backend_switch {\n        Gleam = fun () => x |> convert : u\n        Lua = fun () => x |> to : u\n        Fsharp = fun () => $'!x |> unbox<`u>' : u\n        Python = fun () => x |> to : u\n        Rust = fun () => $'(!x)' : u\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unbox forall t u. (x : t) : u =
+      backend_switch {
+          Gleam = fun () => x |> convert : u
+          Lua = fun () => x |> to : u
+          Fsharp = fun () => $'!x |> unbox<`u>' : u
+          Python = fun () => x |> to : u
+          Rust = fun () => $'(!x)' : u
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### u8
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u8 forall t. (x : t) : u8 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u8\n        Lua = fun () => x |> to : u8\n        Fsharp = fun () => x |> $'uint8' : u8\n        Python = fun () => x |> to : u8\n        Rust = fun () => $'(!x as u8)' : u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl u8 forall t. (x : t) : u8 =
+      backend_switch {
+          Gleam = fun () => x |> convert : u8
+          Lua = fun () => x |> to : u8
+          Fsharp = fun () => x |> $'uint8' : u8
+          Python = fun () => x |> to : u8
+          Rust = fun () => $'(!x as u8)' : u8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### u16
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u16 forall t. (x : t) : u16 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u16\n        Lua = fun () => x |> to : u16\n        Fsharp = fun () => x |> $'uint16' : u16\n        Python = fun () => $'!x & 0xFFFF' : u16\n        Rust = fun () => $'(!x as u16)' : u16\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl u16 forall t. (x : t) : u16 =
+      backend_switch {
+          Gleam = fun () => x |> convert : u16
+          Lua = fun () => x |> to : u16
+          Fsharp = fun () => x |> $'uint16' : u16
+          Python = fun () => $'!x & 0xFFFF' : u16
+          Rust = fun () => $'(!x as u16)' : u16
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### u64
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u64 forall t. (x : t) : u64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u64\n        Lua = fun () => x |> to : u64\n        Fsharp = fun () => x |> $'uint64' : u64\n        Python = fun () => x |> to : u64\n        Rust = fun () => $'(!x as u64)' : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl u64 forall t. (x : t) : u64 =
+      backend_switch {
+          Gleam = fun () => x |> convert : u64
+          Lua = fun () => x |> to : u64
+          Fsharp = fun () => x |> $'uint64' : u64
+          Python = fun () => x |> to : u64
+          Rust = fun () => $'(!x as u64)' : u64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### i32
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i32 forall t. (x : t) : i32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i32\n        Lua = fun () => x |> convert : i32\n        Fsharp = fun () => x |> convert : i32\n        Python = fun () => x |> convert : i32\n        // `to`: a string parses (an `as` cast of an Rc<str> doesn't compile), other values cast\n        Rust = fun () => x |> to : i32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl i32 forall t. (x : t) : i32 =
+      backend_switch {
+          Gleam = fun () => x |> convert : i32
+          Lua = fun () => x |> convert : i32
+          Fsharp = fun () => x |> convert : i32
+          Python = fun () => x |> convert : i32
+          // `to`: a string parses (an `as` cast of an Rc<str> doesn't compile), other values cast
+          Rust = fun () => x |> to : i32
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### i64
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i64 forall t. (x : t) : i64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i64\n        Lua = fun () => x |> to : i64\n        Fsharp = fun () => x |> $'int64' : i64\n        Python = fun () => x |> to : i64\n        Rust = fun () => x |> to : i64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl i64 forall t. (x : t) : i64 =
+      backend_switch {
+          Gleam = fun () => x |> convert : i64
+          Lua = fun () => x |> to : i64
+          Fsharp = fun () => x |> $'int64' : i64
+          Python = fun () => x |> to : i64
+          Rust = fun () => x |> to : i64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### f32
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f32 forall t. (x : t) : f32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f32\n        Lua = fun () => x |> to : f32\n        Fsharp = fun () => x |> $'float32' : f32\n        Python = fun () => x |> to : f32\n        Rust = fun () => $'(!x as f32)' : f32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl f32 forall t. (x : t) : f32 =
+      backend_switch {
+          Gleam = fun () => x |> convert : f32
+          Lua = fun () => x |> to : f32
+          Fsharp = fun () => x |> $'float32' : f32
+          Python = fun () => x |> to : f32
+          Rust = fun () => $'(!x as f32)' : f32
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### f64
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f64 forall t. (x : t) : f64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f64\n        Lua = fun () => x |> to : f64\n        Fsharp = fun () => x |> $'float' : f64\n        Python = fun () => x |> to : f64\n        // `to` only converts the pairs `to'` lists (u8/u32/u64/f32 -> f64 fall through to a bare `!x`).\n        Rust = fun () => $'(!x as f64)' : f64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl f64 forall t. (x : t) : f64 =
+      backend_switch {
+          Gleam = fun () => x |> convert : f64
+          Lua = fun () => x |> to : f64
+          Fsharp = fun () => x |> $'float' : f64
+          Python = fun () => x |> to : f64
+          // `to` only converts the pairs `to'` lists (u8/u32/u64/f32 -> f64 fall through to a bare `!x`).
+          Rust = fun () => $'(!x as f64)' : f64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_any forall t. (obj : t) : any =\n    obj |> to","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_any forall t. (obj : t) : any =
+      obj |> to
+  """,
+  timeout: 300_000
+)
+```
+
+### (~:>) any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance (~:>) any = to_any","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance (~:>) any = to_any
+  """,
+  timeout: 300_000
+)
+```

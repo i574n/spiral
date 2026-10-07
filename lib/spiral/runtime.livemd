@@ -1,0 +1,2307 @@
+# runtime
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators\nopen sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing\nopen file_system_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  open file_system_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## runtime
+
+<!-- livebook:{"break_markdown":true} -->
+
+### split_args
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let split_args (args : string) : result (array_base string) _ =\n    open parsing\n    inl esc = [ '\\\\'; '`' ]\n    inl quotes = [ '\"' ]\n    inl special = esc ++ quotes\n    // An escape and the char after it, as written: a slice of the input (formatting the two chars into a string costs\n    // several allocations on native Rust).\n    inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>\n        match p (t, i, s) with\n        | Ok (_, i', s') => Ok (t |> slice i i', i', s')\n        | Error e => Error e\n    inl p_esc_char c = p_char c >>. any_char () |> p_esc_pair\n    inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string\n    inl p_plain = special ++ [ ' ' ] |> many1_none_of\n    inl p_esc = esc |> listm.map p_esc_char |> choice\n    inl p_chunk = special |> many1_none_of\n    inl p_quoted = (p_chunk <|> p_esc) |> many_strings\n    inl p_quoted_all = p_quoted |> between (p_char '\"') (p_char '\"')\n    inl p_esc_root = p_esc >>% \"\" >>. p_word |> many |>> fun s => fun () => s () |> sm'.concat_list \"\"\n    inl p_esc_quote_delim =\n        esc\n        |> listm.map fun c => p_char c >>. p_char '\"' >>% '\"'\n        |> choice\n    inl p_esc_char_noquote c = p_char c >>. none_of [ '\"' ] |> p_esc_pair\n    inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice\n    inl p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings\n    inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim\n    inl ensure_progress p : parser _ = fun input, i, s =>\n        match p (input, i, s) with\n        | Ok (r, i', s') when i' = i =>\n            fail (fun _ => \"runtime.split_args / segment zero-length success\") i s\n        | other => other\n    inl p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)\n    inl p_content = p_segment |> many1_strings\n    inl p_args = spaces1 () |> sep_by p_content\n    args\n    |> run_parser p_args\n    |> resultm.map (fst >> fun (args : list string) =>\n        if rust.is_native () then\n            // one Vec of the right size (`listm'.box >> listm'.to_array'` fills and then copies it twice)\n            inl n = (0i32, args) ||> listm.fold fun n _ => n + 1\n            inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'\n            inl _ : i32 = (0i32, args) ||> listm.fold fun n (x : string) =>\n                $'!acc.borrow_mut().push(!x)' : ()\n                n + 1\n            acc\n        else args |> listm'.box |> listm'.to_array'\n    )\n    |> resultm.map_error eval","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let split_args (args : string) : result (array_base string) _ =
+      open parsing
+      inl esc = [ '\\'; '`' ]
+      inl quotes = [ '"' ]
+      inl special = esc ++ quotes
+      // An escape and the char after it, as written: a slice of the input (formatting the two chars into a string costs
+      // several allocations on native Rust).
+      inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>
+          match p (t, i, s) with
+          | Ok (_, i', s') => Ok (t |> slice i i', i', s')
+          | Error e => Error e
+      inl p_esc_char c = p_char c >>. any_char () |> p_esc_pair
+      inl p_word = special |> none_of |>> fun c => fun () => c () |> sm'.obj_to_string
+      inl p_plain = special ++ [ ' ' ] |> many1_none_of
+      inl p_esc = esc |> listm.map p_esc_char |> choice
+      inl p_chunk = special |> many1_none_of
+      inl p_quoted = (p_chunk <|> p_esc) |> many_strings
+      inl p_quoted_all = p_quoted |> between (p_char '"') (p_char '"')
+      inl p_esc_root = p_esc >>% "" >>. p_word |> many |>> fun s => fun () => s () |> sm'.concat_list ""
+      inl p_esc_quote_delim =
+          esc
+          |> listm.map fun c => p_char c >>. p_char '"' >>% '"'
+          |> choice
+      inl p_esc_char_noquote c = p_char c >>. none_of [ '"' ] |> p_esc_pair
+      inl p_esc_noquote = esc |> listm.map p_esc_char_noquote |> choice
+      inl p_quoted_esc = (p_chunk <|> p_esc_noquote) |> many_strings
+      inl p_quoted_all_esc = p_quoted_esc |> between p_esc_quote_delim p_esc_quote_delim
+      inl ensure_progress p : parser _ = fun input, i, s =>
+          match p (input, i, s) with
+          | Ok (r, i', s') when i' = i =>
+              fail (fun _ => "runtime.split_args / segment zero-length success") i s
+          | other => other
+      inl p_segment = ensure_progress (p_quoted_all_esc <|> p_quoted_all <|> p_plain <|> p_esc_root)
+      inl p_content = p_segment |> many1_strings
+      inl p_args = spaces1 () |> sep_by p_content
+      args
+      |> run_parser p_args
+      |> resultm.map (fst >> fun (args : list string) =>
+          if rust.is_native () then
+              // one Vec of the right size (`listm'.box >> listm'.to_array'` fills and then copies it twice)
+              inl n = (0i32, args) ||> listm.fold fun n _ => n + 1
+              inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
+              inl _ : i32 = (0i32, args) ||> listm.fold fun n (x : string) =>
+                  $'!acc.borrow_mut().push(!x)' : ()
+                  n + 1
+              acc
+          else args |> listm'.box |> listm'.to_array'
+      )
+      |> resultm.map_error eval
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nDebug |> set_trace_level\n[\n    \"a b c\",\n    ;[ \"a\"; \"b\"; \"c\" ]\n\n    \"e f \\\"g h\\\" i\",\n    ;[ \"e\"; \"f\"; \"g h\"; \"i\" ]\n\n    \"\\\"j k\\\" \\\"l\\\" \\\"m\\\"\",\n    ;[ \"j k\"; \"l\"; \"m\" ]\n\n    \"s -t \\\"u \\`\\\"v\\`\\\" w\\\"\",\n    ;[ \"s\"; \"-t\"; \"u \\`\\\"v\\`\\\" w\" ]\n\n    \"n -o \\\"p \\\\\\\"q\\\\\\\" r\\\"\",\n    ;[ \"n\"; \"-o\"; \"p \\\\\\\"q\\\\\\\" r\" ]\n\n    \"r -s \\\"t \\\\\\\"u\\\\\\\"\\\"\",\n    ;[ \"r\"; \"-s\"; \"t \\\\\\\"u\\\\\\\"\" ]\n\n    $'\"x -y \\\\\\\"$z -a \\'(b=\\\\\\\\\\\\\"c-id=)[a-fA-F0-9]{8}\\', { \\`$_[1] + \\`$d++ }\\\\\\\"\"',\n    ;[ \"x\"; \"-y\"; \"$z -a '(b=\\\\\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }\" ]\n\n    \"e -f \\\"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\\\"\",\n    ;[ \"e\"; \"-f\"; \"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\" ]\n\n    $'\"--l \\\\\\\\\\\\\"\\'\\'\\' m \\'\\'\\'\\\\\\\\\\\\\" \"',\n    ;[ \"--l\"; \"''' m '''\" ]\n\n    $'\"n --o --p q --r \\\\\\\"s:/t u/v.w\\\\\\\" --x \\\\\\\"y:/z.a\\\\\\\" --b c.d \\\\\\\"\\\\\\\\e{f-g}\\\\\\\" h.i \\\\\\\"j (k)\\\\\\\"\"',\n    ;[\n        \"n\"; \"--o\"; \"--p\"; \"q\"; \"--r\"; \"s:/t u/v.w\"; \"--x\"; \"y:/z.a\"; \"--b\"; \"c.d\"; \"\\\\e{f-g}\"; \"h.i\"; \"j (k)\"\n    ]\n\n    $'\"l \\\\\\\"m n:\\\\\\\\o.p\\\\\\\"\"',\n    ;[ \"l\"; \"m n:\\\\o.p\" ]\n\n    $'\"--r s \\\\\\\\\\\\\"\\' t \\'\\\\\\\\\\\\\" u v w \\\\\\\\\\\\\"x y\\\\\\\\\\\\\"\"',\n    ;[ \"--r\"; \"s\"; \"' t '\"; \"u\"; \"v\"; \"w\"; \"x y\" ]\n]\n|> _assert_fn split_args","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  Debug |> set_trace_level
+  [
+      "a b c",
+      ;[ "a"; "b"; "c" ]
+
+      "e f \"g h\" i",
+      ;[ "e"; "f"; "g h"; "i" ]
+
+      "\"j k\" \"l\" \"m\"",
+      ;[ "j k"; "l"; "m" ]
+
+      "s -t \"u \`\"v\`\" w\"",
+      ;[ "s"; "-t"; "u \`\"v\`\" w" ]
+
+      "n -o \"p \\\"q\\\" r\"",
+      ;[ "n"; "-o"; "p \\\"q\\\" r" ]
+
+      "r -s \"t \\\"u\\\"\"",
+      ;[ "r"; "-s"; "t \\\"u\\\"" ]
+
+      $'"x -y \\\"$z -a \'(b=\\\\\\"c-id=)[a-fA-F0-9]{8}\', { \`$_[1] + \`$d++ }\\\""',
+      ;[ "x"; "-y"; "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" ]
+
+      "e -f \"$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\"",
+      ;[ "e"; "-f"; "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" ]
+
+      $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "',
+      ;[ "--l"; "''' m '''" ]
+
+      $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""',
+      ;[
+          "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)"
+      ]
+
+      $'"l \\\"m n:\\\\o.p\\\""',
+      ;[ "l"; "m n:\\o.p" ]
+
+      $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""',
+      ;[ "--r"; "s"; "' t '"; "u"; "v"; "w"; "x y" ]
+  ]
+  |> _assert_fn split_args
+  """,
+  timeout: 300_000
+)
+```
+
+### split_command
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let split_command (command : string) : result (string * option string) _ =\n    open parsing\n    inl quotes = [ '\"'; '\\'' ]\n    inl p_quoted_char = quotes |> listm.map p_char |> choice\n    inl normalize = fun s => fun () => s () |> sm'.replace \"\\\\\" \"/\"\n    inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize\n    inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize\n    inl p_path = p_quoted <|> p_unquoted <|> (eof () >>% \"\")\n    inl p_args = spaces1 () >>. rest_of_line ()\n    inl p_command = p_path .>>. (p_args |> opt)\n    command\n    |> run_parser p_command\n    |> resultm.map (fst >> fun path, args => path (), args () |> optionm.map eval)\n    |> resultm.map_error eval","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let split_command (command : string) : result (string * option string) _ =
+      open parsing
+      inl quotes = [ '"'; '\'' ]
+      inl p_quoted_char = quotes |> listm.map p_char |> choice
+      inl normalize = fun s => fun () => s () |> sm'.replace "\\" "/"
+      inl p_quoted = quotes |> none_of |> many_chars |> between p_quoted_char p_quoted_char |>> normalize
+      inl p_unquoted = quotes ++ [ ' ' ] |> none_of |> many1_chars |>> normalize
+      inl p_path = p_quoted <|> p_unquoted <|> (eof () >>% "")
+      inl p_args = spaces1 () >>. rest_of_line ()
+      inl p_command = p_path .>>. (p_args |> opt)
+      command
+      |> run_parser p_command
+      |> resultm.map (fst >> fun path, args => path (), args () |> optionm.map eval)
+      |> resultm.map_error eval
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nDebug |> set_trace_level\n[\n    \"\",\n    (\"\", None)\n\n    \"/a/b/c\",\n    (\"/a/b/c\", None)\n\n    \"d e.f\",\n    (\"d\", \"e.f\" |> Some)\n\n    \"..\\\\..\\\\g.h i.j k.l\",\n    (\"../../g.h\", \"i.j k.l\" |> Some)\n\n    \"m:\\\\n\\\\o.p \\\"q.r s.t\\\"\",\n    (\"m:/n/o.p\", \"\\\"q.r s.t\\\"\" |> Some)\n\n    \"\\\"..\\\\..\\\\u v\\\\w.x\\\" \\\"y z.a\\\" b.c\",\n    (\"../../u v/w.x\", \"\\\"y z.a\\\" b.c\" |> Some)\n\n    \"\\\"..\\\\..\\\\d e.f\\\" -g \\\\\\\\\\\"h i\\\\\\\\\\\"\",\n    (\"../../d e.f\", \"-g \\\\\\\\\\\"h i\\\\\\\\\\\"\" |> Some)\n\n    \"..\\\\..\\\\j k.l -m \\\\\\\\\\\"n o\\\\\\\\\\\"\",\n    (\"../../j\", \"k.l -m \\\\\\\\\\\"n o\\\\\\\\\\\"\" |> Some)\n]\n|> _assert_fn split_command","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  Debug |> set_trace_level
+  [
+      "",
+      ("", None)
+
+      "/a/b/c",
+      ("/a/b/c", None)
+
+      "d e.f",
+      ("d", "e.f" |> Some)
+
+      "..\\..\\g.h i.j k.l",
+      ("../../g.h", "i.j k.l" |> Some)
+
+      "m:\\n\\o.p \"q.r s.t\"",
+      ("m:/n/o.p", "\"q.r s.t\"" |> Some)
+
+      "\"..\\..\\u v\\w.x\" \"y z.a\" b.c",
+      ("../../u v/w.x", "\"y z.a\" b.c" |> Some)
+
+      "\"..\\..\\d e.f\" -g \\\\\"h i\\\\\"",
+      ("../../d e.f", "-g \\\\\"h i\\\\\"" |> Some)
+
+      "..\\..\\j k.l -m \\\\\"n o\\\\\"",
+      ("../../j", "k.l -m \\\\\"n o\\\\\"" |> Some)
+  ]
+  |> _assert_fn split_command
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type execution_line =\n    {\n        process_id : int\n        line : string\n        error : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type execution_line =
+      {
+          process_id : int
+          line : string
+          error : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### process_child
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_child =\n    `(\n        native_type\n            `($'std_process_Child')\n            `($'std::process::Child')\n            \"type std_process_Child = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_child =
+      `(
+          native_type
+              `($'std_process_Child')
+              `($'std::process::Child')
+              "type std_process_Child = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### process_child_stdin
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_child_stdin =\n    `(\n        native_type\n            `($'std_process_ChildStdin')\n            `($'std::process::ChildStdin')\n            \"type std_process_ChildStdin = class end\"\n    )\n\ninl process_child_stdin\n    (child : rust.ref (rust.mut' process_child))\n    : rust.ref (rust.mut' (optionm'.option' process_child_stdin))\n    =\n    !\\\\(child, $'\"&mut $0.stdin\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_child_stdin =
+      `(
+          native_type
+              `($'std_process_ChildStdin')
+              `($'std::process::ChildStdin')
+              "type std_process_ChildStdin = class end"
+      )
+
+  inl process_child_stdin
+      (child : rust.ref (rust.mut' process_child))
+      : rust.ref (rust.mut' (optionm'.option' process_child_stdin))
+      =
+      !\\(child, $'"&mut $0.stdin"')
+  """,
+  timeout: 300_000
+)
+```
+
+## runtime
+
+<!-- livebook:{"break_markdown":true} -->
+
+### execution_options
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type execution_options =\n    {\n        command : string\n        cancellation_token : optionm'.option' threading.cancellation_token\n        environment_variables : array_base (string * string)\n        on_line : optionm'.option' (execution_line -> async.async ())\n        stdin : optionm'.option' (threading.arc (threading.mutex process_child_stdin) -> ())\n        trace : bool\n        working_directory : optionm'.option' string\n        stderr : bool\n    }\n\ninl execution_options (fn : execution_options -> execution_options) : execution_options =\n    {\n        command = \"\"\n        cancellation_token = None |> optionm'.box\n        environment_variables = ;[]\n        on_line = None |> optionm'.box\n        stdin = None |> optionm'.box\n        trace = true\n        working_directory = None |> optionm'.box\n        stderr = true\n    }\n    |> fn","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type execution_options =
+      {
+          command : string
+          cancellation_token : optionm'.option' threading.cancellation_token
+          environment_variables : array_base (string * string)
+          on_line : optionm'.option' (execution_line -> async.async ())
+          stdin : optionm'.option' (threading.arc (threading.mutex process_child_stdin) -> ())
+          trace : bool
+          working_directory : optionm'.option' string
+          stderr : bool
+      }
+
+  inl execution_options (fn : execution_options -> execution_options) : execution_options =
+      {
+          command = ""
+          cancellation_token = None |> optionm'.box
+          environment_variables = ;[]
+          on_line = None |> optionm'.box
+          stdin = None |> optionm'.box
+          trace = true
+          working_directory = None |> optionm'.box
+          stderr = true
+      }
+      |> fn
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### process_child_stderr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_child_stderr =\n    `(\n        native_type\n            `($'std_process_ChildStderr')\n            `($'std::process::ChildStderr')\n            \"type std_process_ChildStderr = class end\"\n    )\n\ninl process_child_stderr\n    (child : rust.ref (rust.mut' process_child))\n    : rust.ref (rust.mut' (optionm'.option' process_child_stderr))\n    =\n    !\\\\(child, $'\"&mut $0.stderr\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_child_stderr =
+      `(
+          native_type
+              `($'std_process_ChildStderr')
+              `($'std::process::ChildStderr')
+              "type std_process_ChildStderr = class end"
+      )
+
+  inl process_child_stderr
+      (child : rust.ref (rust.mut' process_child))
+      : rust.ref (rust.mut' (optionm'.option' process_child_stderr))
+      =
+      !\\(child, $'"&mut $0.stderr"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_child_stdout
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_child_stdout =\n    `(\n        native_type\n            `($'std_process_ChildStdout')\n            `($'std::process::ChildStdout')\n            \"type std_process_ChildStdout = class end\"\n    )\n\ninl process_child_stdout\n    (child : rust.ref (rust.mut' process_child))\n    : rust.ref (rust.mut' (optionm'.option' process_child_stdout))\n    =\n    !\\\\(child, $'\"&mut $0.stdout\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_child_stdout =
+      `(
+          native_type
+              `($'std_process_ChildStdout')
+              `($'std::process::ChildStdout')
+              "type std_process_ChildStdout = class end"
+      )
+
+  inl process_child_stdout
+      (child : rust.ref (rust.mut' process_child))
+      : rust.ref (rust.mut' (optionm'.option' process_child_stdout))
+      =
+      !\\(child, $'"&mut $0.stdout"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_command =\n    `(\n        native_type\n            `($'std_process_Command')\n            `($'std::process::Command')\n            \"type std_process_Command = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_command =
+      `(
+          native_type
+              `($'std_process_Command')
+              `($'std::process::Command')
+              "type std_process_Command = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### process_stdio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_stdio =\n    `(\n        native_type\n            `($'std_process_Stdio')\n            `($'std::process::Stdio')\n            \"type std_process_Stdio = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_stdio =
+      `(
+          native_type
+              `($'std_process_Stdio')
+              `($'std::process::Stdio')
+              "type std_process_Stdio = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### process_output
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_output =\n    `(\n        native_type\n            `($'std_process_Output')\n            `($'std::process::Output')\n            \"type std_process_Output = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_output =
+      `(
+          native_type
+              `($'std_process_Output')
+              `($'std::process::Output')
+              "type std_process_Output = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### process_exit_status
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_exit_status =\n    `(\n        native_type\n            `($'std_process_ExitStatus')\n            `($'std::process::ExitStatus')\n            \"type std_process_ExitStatus = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_exit_status =
+      `(
+          native_type
+              `($'std_process_ExitStatus')
+              `($'std::process::ExitStatus')
+              "type std_process_ExitStatus = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### process_output_status
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_output_status (output : process_output) : process_exit_status =\n    !\\\\(output, $'\"$0.status\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_output_status (output : process_output) : process_exit_status =
+      !\\(output, $'"$0.status"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_output_stdout
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_output_stdout (output : process_output) : am'.vec u8 =\n    !\\\\(output, $'\"$0.stdout\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_output_stdout (output : process_output) : am'.vec u8 =
+      !\\(output, $'"$0.stdout"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_output_stderr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_output_stderr (output : process_output) : am'.vec u8 =\n    !\\\\(output, $'\"$0.stderr\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_output_stderr (output : process_output) : am'.vec u8 =
+      !\\(output, $'"$0.stderr"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_exit_status_code
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_exit_status_code (status : process_exit_status) : optionm'.option' i32 =\n    !\\\\(status, $'\"$0.code()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_exit_status_code (status : process_exit_status) : optionm'.option' i32 =
+      !\\(status, $'"$0.code()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stdin_write_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : string) : () =\n    backend_switch {\n        Fsharp = fun () =>\n            inl stream = text |> sm'.as_bytes\n            inl stdin = join stdin\n            (!\\($'\"true; let mut !stdin = !stdin\"') : bool) |> ignore\n            (!\\\\(stdin, $'\"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()\"') : bool) |> ignore\n        // Native Rust: no join (a join point would clone the MutexGuard, which is not Clone).\n        Rust = fun () =>\n            inl stream = text |> sm'.as_bytes\n            (!\\\\((stdin, stream), $'\"true; std::io::Write::write_all(&mut *$0, $1).unwrap()\"') : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : string) : () =
+      backend_switch {
+          Fsharp = fun () =>
+              inl stream = text |> sm'.as_bytes
+              inl stdin = join stdin
+              (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+              (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
+          // Native Rust: no join (a join point would clone the MutexGuard, which is not Clone).
+          Rust = fun () =>
+              inl stream = text |> sm'.as_bytes
+              (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### stdin_flush
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stdin_flush (stdin : threading.mutex_guard process_child_stdin) : () =\n    backend_switch {\n        Fsharp = fun () =>\n            inl stdin = join stdin\n            (!\\($'\"true; let mut !stdin = !stdin\"') : bool) |> ignore\n            (!\\\\(stdin, $'\"true; std::io::Write::flush(&mut *$0).unwrap()\"') : bool) |> ignore\n        Rust = fun () =>\n            (!\\\\(stdin, $'\"true; std::io::Write::flush(&mut *$0).unwrap()\"') : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stdin_flush (stdin : threading.mutex_guard process_child_stdin) : () =
+      backend_switch {
+          Fsharp = fun () =>
+              inl stdin = join stdin
+              (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
+              (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+          Rust = fun () =>
+              (!\\(stdin, $'"true; std::io::Write::flush(&mut *$0).unwrap()"') : bool) |> ignore
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### new_process_command
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_process_command (file_name : string) : process_command =\n    !\\\\(file_name, $'\"std::process::Command::new(&*$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_process_command (file_name : string) : process_command =
+      !\\(file_name, $'"std::process::Command::new(&*$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_stdio_piped
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_stdio_piped () : process_stdio =\n    !\\($'\"std::process::Stdio::piped()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_stdio_piped () : process_stdio =
+      !\($'"std::process::Stdio::piped()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_args
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_args (args : am'.vec sm'.std_string) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\\\(args, $'\"true; std::process::Command::args(&mut !c, &*$0)\"') : bool) |> ignore\n    c |> rust.emit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_args (args : am'.vec sm'.std_string) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\\(args, $'"true; std::process::Command::args(&mut !c, &*$0)"') : bool) |> ignore
+      c |> rust.emit
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_stdout
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_stdout (stdio : process_stdio) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\($'\"true; std::process::Command::stdout(&mut !c, std::process::Stdio::piped())\"') : bool) |> ignore\n    c |> rust.emit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_stdout (stdio : process_stdio) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\($'"true; std::process::Command::stdout(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
+      c |> rust.emit
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_stderr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_stderr (stdio : process_stdio) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\($'\"true; std::process::Command::stderr(&mut !c, std::process::Stdio::piped())\"') : bool) |> ignore\n    c |> rust.emit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_stderr (stdio : process_stdio) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\($'"true; std::process::Command::stderr(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
+      c |> rust.emit
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_stdin
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_stdin (stdio : process_stdio) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\($'\"true; std::process::Command::stdin(&mut !c, std::process::Stdio::piped())\"') : bool) |> ignore\n    c |> rust.emit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_stdin (stdio : process_stdio) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\($'"true; std::process::Command::stdin(&mut !c, std::process::Stdio::piped())"') : bool) |> ignore
+      c |> rust.emit
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_current_dir
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_current_dir (dir : string) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\\\(dir, $'\"true; std::process::Command::current_dir(&mut !c, &*$0)\"') : bool) |> ignore\n    !\\($'$\"!c\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_current_dir (dir : string) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\\(dir, $'"true; std::process::Command::current_dir(&mut !c, &*$0)"') : bool) |> ignore
+      !\($'$"!c"')
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_env
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_env (key : string) (value : string) (c : process_command) : process_command =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    (!\\\\((key, value), $'\"true; std::process::Command::env(&mut !c, &*$0, &*$1)\"') : bool) |> ignore\n    c |> rust.emit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_env (key : string) (value : string) (c : process_command) : process_command =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      (!\\((key, value), $'"true; std::process::Command::env(&mut !c, &*$0, &*$1)"') : bool) |> ignore
+      c |> rust.emit
+  """,
+  timeout: 300_000
+)
+```
+
+### process_command_spawn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_command_spawn\n    (c : process_command)\n    : resultm.result' process_child stream.io_error\n    =\n    (!\\($'\"true; let mut !c = !c\"') : bool) |> ignore\n    !\\($'\"std::process::Command::spawn(&mut !c)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_command_spawn
+      (c : process_command)
+      : resultm.result' process_child stream.io_error
+      =
+      (!\($'"true; let mut !c = !c"') : bool) |> ignore
+      !\($'"std::process::Command::spawn(&mut !c)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### child_wait_with_output
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl child_wait_with_output\n    (child : process_child)\n    : resultm.result' process_output stream.io_error\n    =\n    !\\\\(child, $'\"$0.wait_with_output()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl child_wait_with_output
+      (child : process_child)
+      : resultm.result' process_output stream.io_error
+      =
+      !\\(child, $'"$0.wait_with_output()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stdio_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stdio_line\n    (stdio : result () ())\n    (trace' : bool)\n    (channel_sender : threading.arc (threading.mutex (threading.channel_sender sm'.std_string)))\n    (line : resultm.result' sm'.std_string stream.io_error)\n    : resultm.result' () sm'.std_string\n    =\n    inl highlight text =\n        $'$\"\\\\u001b[4;7m{!text}\\\\u001b[0m\"'\n    inl line =\n        match\n            line\n            |> resultm.map_error'' sm'.format'\n            |> resultm.unbox'\n        with\n        | Ok line =>\n            inl line =\n                line\n                |> sm'.from_std_string\n                // |> sm'.as_bytes\n                // |> am'.slice_to_vec\n                |> sm'.encoding_encode' (sm'.encoding_utf8' ())\n                |> rust.cow_as_ref\n                |> sm'.str_from_utf8\n                // |> sm'.utf8_decode\n                |> resultm.unwrap'\n                |> sm'.ref_to_std_string\n                // String::from_utf8_lossy(line.as_bytes()).into()\n            inl line_log = line |> sm'.from_std_string\n            inl text =\n                match stdio with\n                | Ok () => $'$\"> {!line_log}\"'\n                | Error () => $'$\"\\! {!line_log}\"'\n            if trace'\n            then trace Verbose (fun () => text) id\n            else text |> console.write_line\n            match stdio with\n            | Ok () => line\n            | Error () => line |> highlight |> sm'.to_std_string\n        | Error e =>\n            trace Critical\n                fun () => \"runtime.stdio_line\"\n                fun () => { trace' e }\n            e |> highlight |> sm'.to_std_string\n    channel_sender\n    |> threading.arc_mutex_lock\n    |> resultm.unwrap'\n    |> threading.mutex_guard_ref\n    |> threading.channel_send line\n    |> resultm.map_error'' sm'.format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stdio_line
+      (stdio : result () ())
+      (trace' : bool)
+      (channel_sender : threading.arc (threading.mutex (threading.channel_sender sm'.std_string)))
+      (line : resultm.result' sm'.std_string stream.io_error)
+      : resultm.result' () sm'.std_string
+      =
+      inl highlight text =
+          $'$"\\u001b[4;7m{!text}\\u001b[0m"'
+      inl line =
+          match
+              line
+              |> resultm.map_error'' sm'.format'
+              |> resultm.unbox'
+          with
+          | Ok line =>
+              inl line =
+                  line
+                  |> sm'.from_std_string
+                  // |> sm'.as_bytes
+                  // |> am'.slice_to_vec
+                  |> sm'.encoding_encode' (sm'.encoding_utf8' ())
+                  |> rust.cow_as_ref
+                  |> sm'.str_from_utf8
+                  // |> sm'.utf8_decode
+                  |> resultm.unwrap'
+                  |> sm'.ref_to_std_string
+                  // String::from_utf8_lossy(line.as_bytes()).into()
+              inl line_log = line |> sm'.from_std_string
+              inl text =
+                  match stdio with
+                  | Ok () => $'$"> {!line_log}"'
+                  | Error () => $'$"\! {!line_log}"'
+              if trace'
+              then trace Verbose (fun () => text) id
+              else text |> console.write_line
+              match stdio with
+              | Ok () => line
+              | Error () => line |> highlight |> sm'.to_std_string
+          | Error e =>
+              trace Critical
+                  fun () => "runtime.stdio_line"
+                  fun () => { trace' e }
+              e |> highlight |> sm'.to_std_string
+      channel_sender
+      |> threading.arc_mutex_lock
+      |> resultm.unwrap'
+      |> threading.mutex_guard_ref
+      |> threading.channel_send line
+      |> resultm.map_error'' sm'.format'
+  """,
+  timeout: 300_000
+)
+```
+
+### stdio_line_native
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not\n// `Send`); returns the text to accumulate. The reader threads already formatted io errors.\ninl stdio_line_native\n    (stdio : result () ())\n    (trace' : bool)\n    (line : resultm.result' sm'.std_string sm'.std_string)\n    : sm'.std_string\n    =\n    inl highlight text =\n        $'$\"\\\\u001b[4;7m{!text}\\\\u001b[0m\"'\n    match line |> resultm.unbox' with\n    | Ok line =>\n        inl line_log = line |> rust.clone |> sm'.from_std_string\n        inl text =\n            match stdio with\n            | Ok () => $'$\"> {!line_log}\"'\n            | Error () => $'$\"\\! {!line_log}\"'\n        if trace'\n        then trace Verbose (fun () => text) id\n        else text |> console.write_line\n        match stdio with\n        | Ok () => line\n        | Error () => line |> highlight |> sm'.to_std_string\n    | Error e =>\n        trace Critical\n            fun () => \"runtime.stdio_line\"\n            fun () => { trace' e }\n        e |> highlight |> sm'.to_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not
+  // `Send`); returns the text to accumulate. The reader threads already formatted io errors.
+  inl stdio_line_native
+      (stdio : result () ())
+      (trace' : bool)
+      (line : resultm.result' sm'.std_string sm'.std_string)
+      : sm'.std_string
+      =
+      inl highlight text =
+          $'$"\\u001b[4;7m{!text}\\u001b[0m"'
+      match line |> resultm.unbox' with
+      | Ok line =>
+          inl line_log = line |> rust.clone |> sm'.from_std_string
+          inl text =
+              match stdio with
+              | Ok () => $'$"> {!line_log}"'
+              | Error () => $'$"\! {!line_log}"'
+          if trace'
+          then trace Verbose (fun () => text) id
+          else text |> console.write_line
+          match stdio with
+          | Ok () => line
+          | Error () => line |> highlight |> sm'.to_std_string
+      | Error e =>
+          trace Critical
+              fun () => "runtime.stdio_line"
+              fun () => { trace' e }
+          e |> highlight |> sm'.to_std_string
+  """,
+  timeout: 300_000
+)
+```
+
+### command
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal command =\n    `(\n        native_type\n            `($'clap_Command')\n            `($'clap::Command')\n            \"type clap_Command = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal command =
+      `(
+          native_type
+              `($'clap_Command')
+              `($'clap::Command')
+              "type clap_Command = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_command
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_command (s : rust.static_ref sm'.str) : command =\n    !\\\\(s, $'\"clap::Command::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_command (s : rust.static_ref sm'.str) : command =
+      !\\(s, $'"clap::Command::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d clap\n\n###\"command\"\n|> new_command\n|> sm'.format_pretty\n|> _assert sm'.contains \"\\\"command\\\"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d clap
+
+  ###"command"
+  |> new_command
+  |> sm'.format_pretty
+  |> _assert sm'.contains "\"command\""
+  """,
+  timeout: 300_000
+)
+```
+
+### arg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arg =\n    `(\n        native_type\n            `($'clap_Arg')\n            `($'clap::Arg')\n            \"type clap_Arg = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arg =
+      `(
+          native_type
+              `($'clap_Arg')
+              `($'clap::Arg')
+              "type clap_Arg = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_arg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arg (s : rust.static_ref sm'.str) : arg =\n    !\\\\(s, $'\"clap::Arg::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_arg (s : rust.static_ref sm'.str) : arg =
+      !\\(s, $'"clap::Arg::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d clap\n\n###\"arg\"\n|> new_arg\n|> sm'.format_pretty\n|> _assert sm'.contains \"\\\"arg\\\"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d clap
+
+  ###"arg"
+  |> new_arg
+  |> sm'.format_pretty
+  |> _assert sm'.contains "\"arg\""
+  """,
+  timeout: 300_000
+)
+```
+
+### command_arg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_arg (arg : arg) (command : command) : command =\n    !\\\\((command, arg), $'\"clap::Command::arg($0, $1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_arg (arg : arg) (command : command) : command =
+      !\\((command, arg), $'"clap::Command::arg($0, $1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_required
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_required (value : bool) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.required($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_required (value : bool) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.required($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_require_equals
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_require_equals (value : bool) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.require_equals($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_require_equals (value : bool) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.require_equals($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_default_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_default_value (value : string) (arg : arg) : arg =\n    inl value = #value\n    // clap keeps the default for the program's lifetime: default_value wants a 'static str.\n    !\\\\((arg, value), $'\"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_default_value (value : string) (arg : arg) : arg =
+      inl value = #value
+      // clap keeps the default for the program's lifetime: default_value wants a 'static str.
+      !\\((arg, value), $'"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_default_missing_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_default_missing_value (value : string) (arg : arg) : arg =\n    inl value = #value\n    backend_switch {\n        // clap keeps the value for the program's lifetime: default_missing_value wants a static str (a leaked one).\n        Rust = fun () => !\\\\((arg, value), $'\"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))\"') : arg\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_default_missing_value (value : string) (arg : arg) : arg =
+      inl value = #value
+      backend_switch {
+          // clap keeps the value for the program's lifetime: default_missing_value wants a static str (a leaked one).
+          Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))"') : arg
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_overrides_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_overrides_with (value : string) (arg : arg) : arg =\n    inl value = #value\n    !\\\\((arg, value), $'\"$0.overrides_with($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_overrides_with (value : string) (arg : arg) : arg =
+      inl value = #value
+      !\\((arg, value), $'"$0.overrides_with($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_short
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_short (value : char) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.short($1 as char)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_short (value : char) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.short($1 as char)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_long
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_long (value : rust.static_ref sm'.str) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.long($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_long (value : rust.static_ref sm'.str) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.long($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_value_names
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_value_names (values : array_base (rust.static_ref sm'.str)) (arg : arg) : arg =\n    inl values = values |> am'.to_vec\n    !\\\\((arg, values), $'\"$0.value_names($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_value_names (values : array_base (rust.static_ref sm'.str)) (arg : arg) : arg =
+      inl values = values |> am'.to_vec
+      !\\((arg, values), $'"$0.value_names($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_num_args
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_num_args (value : i32) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.num_args($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_num_args (value : i32) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.num_args($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### value_range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal value_range =\n    `(\n        native_type\n            `($'clap_builder_ValueRange')\n            `($'clap::builder::ValueRange')\n            \"type clap_builder_ValueRange = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal value_range =
+      `(
+          native_type
+              `($'clap_builder_ValueRange')
+              `($'clap::builder::ValueRange')
+              "type clap_builder_ValueRange = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_value_range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_value_range forall t. inclusive (start : _ t) (end : _ t) : value_range =\n    inl len () =\n        0i32 |> convert.convert\n    inl start, end =\n        open am'\n        match start, end with\n        | Start start, End fn =>\n            start, len |> fn\n        | End start_fn, End end_fn =>\n            start_fn len, end_fn len\n    inl inclusive =\n        if inclusive\n        then \"=\"\n        else \"\"\n    match start, end with\n    | start, end when end =. len () => !\\\\(start, $'\"clap::builder::ValueRange::new($0..)\"')\n    | start, end => !\\\\((start, end), $'\"clap::builder::ValueRange::new($0..\" + !inclusive + \"$1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_value_range forall t. inclusive (start : _ t) (end : _ t) : value_range =
+      inl len () =
+          0i32 |> convert.convert
+      inl start, end =
+          open am'
+          match start, end with
+          | Start start, End fn =>
+              start, len |> fn
+          | End start_fn, End end_fn =>
+              start_fn len, end_fn len
+      inl inclusive =
+          if inclusive
+          then "="
+          else ""
+      match start, end with
+      | start, end when end =. len () => !\\(start, $'"clap::builder::ValueRange::new($0..)"')
+      | start, end => !\\((start, end), $'"clap::builder::ValueRange::new($0.." + !inclusive + "$1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_num_args_range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_num_args_range (value : value_range) (arg : arg) : arg =\n    !\\\\((arg, value), $'\"$0.num_args($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_num_args_range (value : value_range) (arg : arg) : arg =
+      !\\((arg, value), $'"$0.num_args($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_value_name
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_value_name (value : string) (arg : arg) : arg =\n    inl value = value |> sm'.as_str\n    !\\\\((arg, value), $'\"$0.value_name($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_value_name (value : string) (arg : arg) : arg =
+      inl value = value |> sm'.as_str
+      !\\((arg, value), $'"$0.value_name($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### value_parser
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal value_parser =\n    `(\n        native_type\n            `($'clap_builder_ValueParser')\n            `($'clap::builder::ValueParser')\n            \"type clap_builder_ValueParser = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal value_parser =
+      `(
+          native_type
+              `($'clap_builder_ValueParser')
+              `($'clap::builder::ValueParser')
+              "type clap_builder_ValueParser = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### possible_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal possible_value =\n    `(\n        native_type\n            `($'clap_builder_PossibleValue')\n            `($'clap::builder::PossibleValue')\n            \"type clap_builder_PossibleValue = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal possible_value =
+      `(
+          native_type
+              `($'clap_builder_PossibleValue')
+              `($'clap::builder::PossibleValue')
+              "type clap_builder_PossibleValue = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_possible_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_possible_value forall t. (x : t) : possible_value =\n    !\\\\(x, $'\"clap::builder::PossibleValue::new(&**$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_possible_value forall t. (x : t) : possible_value =
+      !\\(x, $'"clap::builder::PossibleValue::new(&**$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### value_parser_path_buf
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl value_parser_path_buf () : value_parser =\n    !\\($'\"clap::value_parser\\!(std::path::PathBuf)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl value_parser_path_buf () : value_parser =
+      !\($'"clap::value_parser\!(std::path::PathBuf)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### value_parser_expr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl value_parser_expr (expr : string) : value_parser =\n    !\\($'\"clap::value_parser\\!(\" + !expr + \").into()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl value_parser_expr (expr : string) : value_parser =
+      !\($'"clap::value_parser\!(" + !expr + ").into()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_value_parser
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_value_parser (values : value_parser) (arg : arg) : arg =\n    !\\\\((arg, values), $'\"$0.value_parser($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_value_parser (values : value_parser) (arg : arg) : arg =
+      !\\((arg, values), $'"$0.value_parser($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_action
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arg_action' =\n    `(\n        native_type\n            `($'clap_ArgAction')\n            `($'clap::ArgAction')\n            \"type clap_ArgAction = class end\"\n    )\n\nunion arg_action =\n    | Set\n    | Append\n    | SetTrue\n    | SetFalse\n    | Count\n    | Help\n    | HelpShort\n    | HelpLong\n    | Version\n\ninl arg_action = function\n    | Set => !\\($'\"clap::ArgAction::Set\"') : arg_action'\n    | Append => !\\($'\"clap::ArgAction::Append\"') : arg_action'\n    | SetTrue => !\\($'\"clap::ArgAction::SetTrue\"') : arg_action'\n    | SetFalse => !\\($'\"clap::ArgAction::SetFalse\"') : arg_action'\n    | Count => !\\($'\"clap::ArgAction::Count\"') : arg_action'\n    | Help => !\\($'\"clap::ArgAction::Help\"') : arg_action'\n    | HelpShort => !\\($'\"clap::ArgAction::HelpShort\"') : arg_action'\n    | HelpLong => !\\($'\"clap::ArgAction::HelpLong\"') : arg_action'\n    | Version => !\\($'\"clap::ArgAction::Version\"') : arg_action'\n\ninl arg_action (value : arg_action) (arg : arg) : arg =\n    inl value = value |> arg_action\n    !\\\\((arg, value), $'\"$0.action($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arg_action' =
+      `(
+          native_type
+              `($'clap_ArgAction')
+              `($'clap::ArgAction')
+              "type clap_ArgAction = class end"
+      )
+
+  union arg_action =
+      | Set
+      | Append
+      | SetTrue
+      | SetFalse
+      | Count
+      | Help
+      | HelpShort
+      | HelpLong
+      | Version
+
+  inl arg_action = function
+      | Set => !\($'"clap::ArgAction::Set"') : arg_action'
+      | Append => !\($'"clap::ArgAction::Append"') : arg_action'
+      | SetTrue => !\($'"clap::ArgAction::SetTrue"') : arg_action'
+      | SetFalse => !\($'"clap::ArgAction::SetFalse"') : arg_action'
+      | Count => !\($'"clap::ArgAction::Count"') : arg_action'
+      | Help => !\($'"clap::ArgAction::Help"') : arg_action'
+      | HelpShort => !\($'"clap::ArgAction::HelpShort"') : arg_action'
+      | HelpLong => !\($'"clap::ArgAction::HelpLong"') : arg_action'
+      | Version => !\($'"clap::ArgAction::Version"') : arg_action'
+
+  inl arg_action (value : arg_action) (arg : arg) : arg =
+      inl value = value |> arg_action
+      !\\((arg, value), $'"$0.action($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_index
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_index (value : i32) (arg : arg) : arg =\n    inl index : convert.unativeint =\n        if rust.is_native ()\n        then $'(!value as usize)'\n        else $'!value |> `(convert.unativeint) '\n    !\\\\((arg, index), $'\"$0.index($1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_index (value : i32) (arg : arg) : arg =
+      inl index : convert.unativeint =
+          if rust.is_native ()
+          then $'(!value as usize)'
+          else $'!value |> `(convert.unativeint) '
+      !\\((arg, index), $'"$0.index($1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_matches
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arg_matches =\n    `(\n        native_type\n            `($'clap_ArgMatches')\n            `($'clap::ArgMatches')\n            \"type clap_ArgMatches = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal arg_matches =
+      `(
+          native_type
+              `($'clap_ArgMatches')
+              `($'clap::ArgMatches')
+              "type clap_ArgMatches = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### command_get_matches
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_get_matches (command : command) : arg_matches =\n    !\\\\(command, $'\"clap::Command::get_matches($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_get_matches (command : command) : arg_matches =
+      !\\(command, $'"clap::Command::get_matches($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### command_get_matches_from
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_get_matches_from (args : array_base string) (command : command) : arg_matches =\n    inl args = args |> am'.to_vec |> am'.vec_map sm'.to_std_string\n    !\\\\(command, $'\"clap::Command::get_matches_from($0, !args)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_get_matches_from (args : array_base string) (command : command) : arg_matches =
+      inl args = args |> am'.to_vec |> am'.vec_map sm'.to_std_string
+      !\\(command, $'"clap::Command::get_matches_from($0, !args)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### command_args_override_self
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_args_override_self (yes : bool) (command : command) : command =\n    !\\\\(command, $'\"clap::Command::args_override_self($0, !yes)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_args_override_self (yes : bool) (command : command) : command =
+      !\\(command, $'"clap::Command::args_override_self($0, !yes)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### command_init_arg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_init_arg (long, short) fn command =\n    command\n    |> command_arg (\n        ###long\n        |> new_arg\n        |> arg_short short\n        |> arg_long ###long\n        |> fn\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_init_arg (long, short) fn command =
+      command
+      |> command_arg (
+          ###long
+          |> new_arg
+          |> arg_short short
+          |> arg_long ###long
+          |> fn
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_get_one
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_get_one forall t. (x : string) (matches : arg_matches) : optionm'.option' t =\n    inl x = join x\n    inl x = x |> sm'.as_str\n    !\\\\((matches, x), $'\"clap::ArgMatches::get_one(&$0, $1).cloned()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_get_one forall t. (x : string) (matches : arg_matches) : optionm'.option' t =
+      inl x = join x
+      inl x = x |> sm'.as_str
+      !\\((matches, x), $'"clap::ArgMatches::get_one(&$0, $1).cloned()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_get_flag
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_get_flag (x : string) (matches : arg_matches) : bool =\n    inl x = join x\n    inl x = x |> sm'.as_str\n    !\\\\((matches, x), $'\"clap::ArgMatches::get_flag(&$0, $1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_get_flag (x : string) (matches : arg_matches) : bool =
+      inl x = join x
+      inl x = x |> sm'.as_str
+      !\\((matches, x), $'"clap::ArgMatches::get_flag(&$0, $1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_get_many
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_get_many forall t. (x : string) (matches : arg_matches) : optionm'.option' (am'.vec t) =\n    inl x = join x\n    inl x = x |> sm'.as_str\n    !\\\\((matches, x), $'\"clap::ArgMatches::get_many(&$0, $1).map(|x| x.cloned().into_iter().collect())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_get_many forall t. (x : string) (matches : arg_matches) : optionm'.option' (am'.vec t) =
+      inl x = join x
+      inl x = x |> sm'.as_str
+      !\\((matches, x), $'"clap::ArgMatches::get_many(&$0, $1).map(|x| x.cloned().into_iter().collect())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_get_occurrences
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_get_occurrences (x : string) (matches : arg_matches) : optionm'.option' (array_base sm'.std_string) =\n    inl x = join x\n    inl x = x |> sm'.as_str\n    !\\($'\"clap::ArgMatches::get_occurrences(&!matches, !x).cloned()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_get_occurrences (x : string) (matches : arg_matches) : optionm'.option' (array_base sm'.std_string) =
+      inl x = join x
+      inl x = x |> sm'.as_str
+      !\($'"clap::ArgMatches::get_occurrences(&!matches, !x).cloned()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_subcommand
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_subcommand (matches : arg_matches) : optionm'.option' (sm'.std_string * arg_matches) =\n    !\\\\((matches, sm'.ref_to_std_string), $'\"clap::ArgMatches::subcommand(Box::leak(Box::new($0))).map(|(a, b)| ($1(a), b.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_subcommand (matches : arg_matches) : optionm'.option' (sm'.std_string * arg_matches) =
+      !\\((matches, sm'.ref_to_std_string), $'"clap::ArgMatches::subcommand(Box::leak(Box::new($0))).map(|(a, b)| ($1(a), b.clone()))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### matches_values_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl matches_values_of (x : string) (matches : arg_matches) : array_base sm'.std_string =\n    !\\\\((matches, x), $'\"clap::ArgMatches::values_of($0, &*$1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl matches_values_of (x : string) (matches : arg_matches) : array_base sm'.std_string =
+      !\\((matches, x), $'"clap::ArgMatches::values_of($0, &*$1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### command_subcommand_required
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_subcommand_required (value : bool) (command : command) : command =\n    !\\\\(command, $'\"clap::Command::subcommand_required($0, !value)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_subcommand_required (value : bool) (command : command) : command =
+      !\\(command, $'"clap::Command::subcommand_required($0, !value)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### command_subcommand
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_subcommand (subcommand : command) (command : command) : command =\n    !\\\\(command, $'\"clap::Command::subcommand($0, !subcommand)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_subcommand (subcommand : command) (command : command) : command =
+      !\\(command, $'"clap::Command::subcommand($0, !subcommand)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### value_parser_possible_values
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl value_parser_possible_values (values : array_base string) : value_parser =\n    inl values =\n        values\n        |> am'.to_vec\n        |> am'.vec_map (sm'.to_std_string >> rust.new_box >> rust.box_leak >> new_possible_value)\n    !\\\\(values, $'\"Into::<clap::builder::ValueParser>::into(clap::builder::PossibleValuesParser::new($0))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl value_parser_possible_values (values : array_base string) : value_parser =
+      inl values =
+          values
+          |> am'.to_vec
+          |> am'.vec_map (sm'.to_std_string >> rust.new_box >> rust.box_leak >> new_possible_value)
+      !\\(values, $'"Into::<clap::builder::ValueParser>::into(clap::builder::PossibleValuesParser::new($0))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### arg_union
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =\n    arg\n    |> arg_value_parser (\n        real reflection.get_union_fields_untag `union_type ()\n        |> fun x => x : _ (string * union_type)\n        |> listm.map (fst >> sm'.to_lower)\n        |> listm'.box\n        |> listm'.to_array'\n        |> value_parser_possible_values\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
+      arg
+      |> arg_value_parser (
+          real reflection.get_union_fields_untag `union_type ()
+          |> fun x => x : _ (string * union_type)
+          |> listm.map (fst >> sm'.to_lower)
+          |> listm'.box
+          |> listm'.to_array'
+          |> value_parser_possible_values
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d clap\n\n###\"command\"\n|> new_command\n|> command_init_arg (\"trace-level\", 't') (\n    real arg_union `trace_level ignore\n)\n|> command_get_matches_from ;[ \"_\"; \"--trace-level\"; \"critical\" ]\n|> matches_get_one \"trace-level\"\n|> optionm'.unwrap\n|> sm'.from_std_string\n|> reflection.union_try_pick\n|> optionm.value\n|> _assert_eq Critical","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d clap
+
+  ###"command"
+  |> new_command
+  |> command_init_arg ("trace-level", 't') (
+      real arg_union `trace_level ignore
+  )
+  |> command_get_matches_from ;[ "_"; "--trace-level"; "critical" ]
+  |> matches_get_one "trace-level"
+  |> optionm'.unwrap
+  |> sm'.from_std_string
+  |> reflection.union_try_pick
+  |> optionm.value
+  |> _assert_eq Critical
+  """,
+  timeout: 300_000
+)
+```
+
+### command_debug_assert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_debug_assert (command : command) : () =\n    !\\\\(command, $'\"clap::Command::debug_assert($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl command_debug_assert (command : command) : () =
+      !\\(command, $'"clap::Command::debug_assert($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### process
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process = $'System.Diagnostics.Process'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process = $'System.Diagnostics.Process'
+  """,
+  timeout: 300_000
+)
+```
+
+### process_start_info
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal process_start_info = $'System.Diagnostics.ProcessStartInfo'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal process_start_info = $'System.Diagnostics.ProcessStartInfo'
+  """,
+  timeout: 300_000
+)
+```
+
+### data_received_event_args
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal data_received_event_args = $'System.Diagnostics.DataReceivedEventArgs'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal data_received_event_args = $'System.Diagnostics.DataReceivedEventArgs'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_process
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_process (process_start_info : process_start_info) : process =\n    $'new `process (StartInfo = !process_start_info)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_process (process_start_info : process_start_info) : process =
+      $'new `process (StartInfo = !process_start_info)'
+  """,
+  timeout: 300_000
+)
+```
+
+### process_start
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_start (process : process) : bool =\n    $'!process.Start' ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_start (process : process) : bool =
+      $'!process.Start' ()
+  """,
+  timeout: 300_000
+)
+```
+
+### process_exit_code
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_exit_code (process : process) : i32 =\n    run_target function\n        | Fsharp => fun () => $'!process.ExitCode'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_exit_code (process : process) : i32 =
+      run_target function
+          | Fsharp => fun () => $'!process.ExitCode'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### process_id
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let process_id (process : process) : i32 =\n    run_target function\n        | Fsharp => fun () => process |> $'_.Id'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let process_id (process : process) : i32 =
+      run_target function
+          | Fsharp => fun () => process |> $'_.Id'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### process_has_exited
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let process_has_exited (process : process) : bool =\n    run_target function\n        | Fsharp => fun () => process |> $'_.HasExited'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let process_has_exited (process : process) : bool =
+      run_target function
+          | Fsharp => fun () => process |> $'_.HasExited'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### process_kill
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let process_kill (process : process) : () =\n    run_target function\n        | Fsharp => fun () => process |> $'_.Kill()'\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let process_kill (process : process) : () =
+      run_target function
+          | Fsharp => fun () => process |> $'_.Kill()'
+          | _ => fun () => ()
+  """,
+  timeout: 300_000
+)
+```
+
+### process_begin_error_read_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_begin_error_read_line (process : process) : () =\n    process |> $'_.BeginErrorReadLine()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_begin_error_read_line (process : process) : () =
+      process |> $'_.BeginErrorReadLine()'
+  """,
+  timeout: 300_000
+)
+```
+
+### process_begin_output_read_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_begin_output_read_line (process : process) : () =\n    process |> $'_.BeginOutputReadLine()'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_begin_output_read_line (process : process) : () =
+      process |> $'_.BeginOutputReadLine()'
+  """,
+  timeout: 300_000
+)
+```
+
+### process_add_output_data_received
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_add_output_data_received fn (process : process) : () =\n    $'!process.OutputDataReceived.Add !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_add_output_data_received fn (process : process) : () =
+      $'!process.OutputDataReceived.Add !fn '
+  """,
+  timeout: 300_000
+)
+```
+
+### process_add_error_data_received
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_add_error_data_received fn (process : process) : () =\n    $'!process.ErrorDataReceived.Add !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_add_error_data_received fn (process : process) : () =
+      $'!process.ErrorDataReceived.Add !fn '
+  """,
+  timeout: 300_000
+)
+```
+
+### process_wait_for_exit_async
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_wait_for_exit_async (ct : threading.cancellation_token) (process : process) : async.task () =\n    run_target function\n        | Fsharp => fun () => $'!process.WaitForExitAsync !ct '\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl process_wait_for_exit_async (ct : threading.cancellation_token) (process : process) : async.task () =
+      run_target function
+          | Fsharp => fun () => $'!process.WaitForExitAsync !ct '
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### event_data
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let event_data (e : data_received_event_args) : string =\n    run_target function\n        | Fsharp => fun () => e |> $'_.Data'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let event_data (e : data_received_event_args) : string =
+      run_target function
+          | Fsharp => fun () => e |> $'_.Data'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### current_process_kill
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let current_process_kill () =\n    run_target function\n        | Fsharp => fun () =>\n            inl fn () =\n                run_target function\n                    | Fsharp => fun () =>\n                        trace Warning (fun () => \"runtime.current_process_kill / exiting... 3\") id\n                        $'System.Threading.Thread.Sleep 500'\n                        trace Warning (fun () => \"runtime.current_process_kill / exiting... 2\") id\n                        $'System.Console.Out.Flush ()'\n                        $'System.Threading.Thread.Sleep 1000'\n                        trace Warning (fun () => \"runtime.current_process_kill / exiting... 1\") id\n                        // This is failure shutdown, not a timeout: preserve a normal nonzero status.\n                        $'System.Console.Error.Flush ()'\n                        $'System.Environment.Exit 1' : ()\n                    | _ => fun () => ()\n            inl thread : threading.thread = $'new System.Threading.Thread (!fn)'\n            thread |> $'_.Start()' : ()\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let current_process_kill () =
+      run_target function
+          | Fsharp => fun () =>
+              inl fn () =
+                  run_target function
+                      | Fsharp => fun () =>
+                          trace Warning (fun () => "runtime.current_process_kill / exiting... 3") id
+                          $'System.Threading.Thread.Sleep 500'
+                          trace Warning (fun () => "runtime.current_process_kill / exiting... 2") id
+                          $'System.Console.Out.Flush ()'
+                          $'System.Threading.Thread.Sleep 1000'
+                          trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
+                          // This is failure shutdown, not a timeout: preserve a normal nonzero status.
+                          $'System.Console.Error.Flush ()'
+                          $'System.Environment.Exit 1' : ()
+                      | _ => fun () => ()
+              inl thread : threading.thread = $'new System.Threading.Thread (!fn)'
+              thread |> $'_.Start()' : ()
+          | _ => fun () => ()
+  """,
+  timeout: 300_000
+)
+```
+
+### gc_collect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl gc_collect () =\n    run_target function\n        | Fsharp _ => fun () => $'System.GC.Collect' () : ()\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl gc_collect () =
+      run_target function
+          | Fsharp _ => fun () => $'System.GC.Collect' () : ()
+          | _ => fun () => ()
+  """,
+  timeout: 300_000
+)
+```
+
+## runtime
+
+<!-- livebook:{"break_markdown":true} -->
+
+### execute_with_options_fable
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl execute_with_options_fable (options : execution_options) : i32 * string =\n    inl command = join options.command\n    inl file_name, arguments = command |> split_command |> resultm.get\n    inl arguments =\n        arguments\n        |> optionm'.default_value \"\"\n        |> split_args\n        |> resultm.get\n        |> am'.to_vec\n        |> am'.vec_map sm'.to_std_string\n    trace Debug\n        fun () => \"runtime.execute_with_options\"\n        fun () => { file_name arguments = #?*arguments; options }\n    fun () =>\n        fun () =>\n            // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =\n                // ()\n            file_name\n            |> new_process_command\n            |> process_command_args arguments\n            |> process_command_stdout (process_stdio_piped ())\n            |> process_command_stderr (process_stdio_piped ())\n            |> process_command_stdin (process_stdio_piped ())\n            // |> new_command_mutex\n            |> fun command =>\n                match options.working_directory |> optionm'.unbox with\n                | Some working_directory => command |> process_command_current_dir working_directory\n                | None => !\\($'$\"!command\"') |> rust.emit\n            |> fun command =>\n                match options.environment_variables with\n                | ;[] => command\n                | vars =>\n                    (command, vars |> am'.to_vec)\n                    ||> am'.vec_fold' fun command (key, value) =>\n                        command |> process_command_env key value\n            |> process_command_spawn\n            |> resultm.map_error'' sm'.format'\n            |> resultm.map' (rust.emit >> optionm'.some' >> rust.emit >> threading.new_arc_mutex)\n            |> resultm.unbox'\n            |> function\n                | Ok child =>\n                    inl stdout =\n                        fun () =>\n                            child\n                            |> threading.arc_mutex_lock\n                            |> resultm.unwrap'\n                            |> threading.mutex_guard_ref_mut''\n                            |> optionm'.as_mut\n                            |> optionm'.unwrap\n                            |> process_child_stdout\n                            |> optionm'.take_ref_mut\n                            |> optionm'.unwrap\n                        |> rust.capture\n                    inl stderr =\n                        fun () =>\n                            child\n                            |> threading.arc_mutex_lock\n                            |> resultm.unwrap'\n                            |> threading.mutex_guard_ref_mut''\n                            |> optionm'.as_mut\n                            |> optionm'.unwrap\n                            |> process_child_stderr\n                            |> optionm'.take_ref_mut\n                            |> optionm'.unwrap\n                        |> rust.capture\n                    inl stdin =\n                        fun () =>\n                            child\n                            |> threading.arc_mutex_lock\n                            |> resultm.unwrap'\n                            |> threading.mutex_guard_ref_mut''\n                            |> optionm'.as_mut\n                            |> optionm'.unwrap\n                            |> process_child_stdin\n                            |> optionm'.take_ref_mut\n                            |> optionm'.unwrap\n                            |> optionm'.some'\n                            |> rust.emit\n                            |> threading.new_arc_mutex\n                        |> rust.capture\n                    inl channel_sender, channel_receiver = threading.new_channel ()\n                    inl channel_sender'' = channel_sender |> rust.emit |> threading.new_arc_mutex\n                    inl channel_sender' = channel_sender |> rust.emit |> threading.new_arc_mutex\n                    inl channel_receiver' = channel_receiver |> rust.emit |> threading.new_arc_mutex\n                    inl stdout_handle =\n                        fun () =>\n                            stdout\n                            |> stream.decode_reader_bytes_build\n                            |> stream.new_buf_reader\n                            |> stream.buf_read_lines\n                            |> iter.try_for_each fun lines =>\n                                inl channel_sender'' = channel_sender'' |> rust.clone\n                                lines\n                                |> stdio_line (Ok ()) options.trace channel_sender''\n                                |> resultm.to_try\n                        |> threading.spawn (1, 0) 1\n                    inl stderr_handle =\n                        fun () =>\n                            stderr\n                            |> stream.decode_reader_bytes_build\n                            |> stream.new_buf_reader\n                            |> stream.buf_read_lines\n                            |> iter.try_for_each fun lines =>\n                                if options.stderr |> not\n                                then Ok () |> resultm.box\n                                else\n                                    inl channel_sender' = channel_sender' |> rust.clone\n                                    lines\n                                    |> stdio_line (Error ()) options.trace channel_sender'\n                                |> resultm.to_try\n                        |> threading.spawn (1, 0) 1\n                    match options.stdin |> optionm'.unbox with\n                    | Some stdin' =>\n                        stdin\n                        |> threading.arc_mutex_lock\n                        |> resultm.unwrap'\n                        |> threading.mutex_guard_ref_mut''\n                        |> optionm'.take_ref_mut\n                        |> optionm'.map' threading.new_arc_mutex\n                        |> optionm'.unbox\n                        |> function\n                            | Some stdin =>\n                                stdin |> stdin'\n                                stdin\n                                |> threading.arc_mutex_lock'\n                                |> resultm.unwrap'\n                                |> stdin_flush\n                            | None => ()\n                    | None => ()\n                    inl output =\n                        child\n                        |> threading.arc_mutex_lock'\n                        |> resultm.unwrap'\n                        |> threading.mutex_guard_ref_mut''\n                        |> optionm'.take_ref_mut\n                        |> optionm'.unwrap\n                        |> child_wait_with_output\n                        |> resultm.map_error'' sm'.format'\n                    [ stdout_handle; stderr_handle ]\n                    |> am'.new_vec\n                    |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')\n                    match output |> resultm.unbox with\n                    | Ok output =>\n                        inl exit_code =\n                            output\n                            |> process_output_status\n                            |> process_exit_status_code\n                            |> optionm'.unbox\n                        match exit_code with\n                        | Some exit_code =>\n                            inl stdout =\n                                output\n                                |> process_output_stdout\n                                |> sm'.string_from_utf8\n                                |> resultm.unwrap'\n                            inl stderr =\n                                output\n                                |> process_output_stderr\n                                |> sm'.string_from_utf8\n                                |> resultm.unwrap'\n                            inl output =\n                                [ stdout; stderr ]\n                                |> listm.map (sm'.from_std_string >> sm'.trim)\n                                |> listm'.filter (sm'.is_empty >> not)\n                                |> sm'.concat_list \"\\n\"\n                                |> sm'.to_std_string\n                                |> Some\n                            exit_code, output, Some channel_receiver'\n                        | None =>\n                            -1,\n                            (\"runtime.execute_with_options / exit_code=None\"\n                                |> sm'.to_std_string\n                                |> Some),\n                            Some channel_receiver'\n                    | Error error =>\n                        trace Critical\n                            fun () => \"runtime.execute_with_options / output error\"\n                            fun () => { error file_name arguments = #?*arguments; options }\n                        -2i32, error |> Some, None\n                | Error error =>\n                    trace Critical\n                        fun () => \"runtime.execute_with_options / child error\"\n                        fun () => { error file_name arguments = #?*arguments; options }\n                    -1i32, error |> Some, None\n            |> function\n                | exit_code, std_trace, channel_receiver =>\n                    inl std_trace =\n                        channel_receiver\n                        |> optionm'.box\n                        |> optionm'.map' fun channel_receiver =>\n                            channel_receiver\n                            |> threading.arc_mutex_lock'\n                            |> resultm.unwrap'\n                            |> iter.iter\n                            |> iter_collect''\n                            |> am'.vec_map sm'.from_std_string\n                            |> am'.from_vec\n                            |> fun x => x : _ i32 _\n                            |> seq.of_array\n                            |> sm'.concat \"\\n\"\n                        |> optionm'.unbox\n                        |> optionm.map (sm'.trim >> sm'.to_option)\n                        |> optionm'.flatten\n                        |> optionm'.default_value (\n                            std_trace\n                            |> optionm.map sm'.from_std_string\n                            |> optionm'.default_value \"\"\n                        )\n                    trace Verbose\n                        fun () => \"runtime.execute_with_options / result\"\n                        fun () => { file_name exit_code std_trace_len = ##std_trace }\n                    new_pair exit_code std_trace\n        |> capture\n    // |> async.new_future_move\n    // |> async.block_on\n    |> fun x => x ()\n    |> from_pair","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl execute_with_options_fable (options : execution_options) : i32 * string =
+      inl command = join options.command
+      inl file_name, arguments = command |> split_command |> resultm.get
+      inl arguments =
+          arguments
+          |> optionm'.default_value ""
+          |> split_args
+          |> resultm.get
+          |> am'.to_vec
+          |> am'.vec_map sm'.to_std_string
+      trace Debug
+          fun () => "runtime.execute_with_options"
+          fun () => { file_name arguments = #?*arguments; options }
+      fun () =>
+          fun () =>
+              // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =
+                  // ()
+              file_name
+              |> new_process_command
+              |> process_command_args arguments
+              |> process_command_stdout (process_stdio_piped ())
+              |> process_command_stderr (process_stdio_piped ())
+              |> process_command_stdin (process_stdio_piped ())
+              // |> new_command_mutex
+              |> fun command =>
+                  match options.working_directory |> optionm'.unbox with
+                  | Some working_directory => command |> process_command_current_dir working_directory
+                  | None => !\($'$"!command"') |> rust.emit
+              |> fun command =>
+                  match options.environment_variables with
+                  | ;[] => command
+                  | vars =>
+                      (command, vars |> am'.to_vec)
+                      ||> am'.vec_fold' fun command (key, value) =>
+                          command |> process_command_env key value
+              |> process_command_spawn
+              |> resultm.map_error'' sm'.format'
+              |> resultm.map' (rust.emit >> optionm'.some' >> rust.emit >> threading.new_arc_mutex)
+              |> resultm.unbox'
+              |> function
+                  | Ok child =>
+                      inl stdout =
+                          fun () =>
+                              child
+                              |> threading.arc_mutex_lock
+                              |> resultm.unwrap'
+                              |> threading.mutex_guard_ref_mut''
+                              |> optionm'.as_mut
+                              |> optionm'.unwrap
+                              |> process_child_stdout
+                              |> optionm'.take_ref_mut
+                              |> optionm'.unwrap
+                          |> rust.capture
+                      inl stderr =
+                          fun () =>
+                              child
+                              |> threading.arc_mutex_lock
+                              |> resultm.unwrap'
+                              |> threading.mutex_guard_ref_mut''
+                              |> optionm'.as_mut
+                              |> optionm'.unwrap
+                              |> process_child_stderr
+                              |> optionm'.take_ref_mut
+                              |> optionm'.unwrap
+                          |> rust.capture
+                      inl stdin =
+                          fun () =>
+                              child
+                              |> threading.arc_mutex_lock
+                              |> resultm.unwrap'
+                              |> threading.mutex_guard_ref_mut''
+                              |> optionm'.as_mut
+                              |> optionm'.unwrap
+                              |> process_child_stdin
+                              |> optionm'.take_ref_mut
+                              |> optionm'.unwrap
+                              |> optionm'.some'
+                              |> rust.emit
+                              |> threading.new_arc_mutex
+                          |> rust.capture
+                      inl channel_sender, channel_receiver = threading.new_channel ()
+                      inl channel_sender'' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                      inl channel_sender' = channel_sender |> rust.emit |> threading.new_arc_mutex
+                      inl channel_receiver' = channel_receiver |> rust.emit |> threading.new_arc_mutex
+                      inl stdout_handle =
+                          fun () =>
+                              stdout
+                              |> stream.decode_reader_bytes_build
+                              |> stream.new_buf_reader
+                              |> stream.buf_read_lines
+                              |> iter.try_for_each fun lines =>
+                                  inl channel_sender'' = channel_sender'' |> rust.clone
+                                  lines
+                                  |> stdio_line (Ok ()) options.trace channel_sender''
+                                  |> resultm.to_try
+                          |> threading.spawn (1, 0) 1
+                      inl stderr_handle =
+                          fun () =>
+                              stderr
+                              |> stream.decode_reader_bytes_build
+                              |> stream.new_buf_reader
+                              |> stream.buf_read_lines
+                              |> iter.try_for_each fun lines =>
+                                  if options.stderr |> not
+                                  then Ok () |> resultm.box
+                                  else
+                                      inl channel_sender' = channel_sender' |> rust.clone
+                                      lines
+                                      |> stdio_line (Error ()) options.trace channel_sender'
+                                  |> resultm.to_try
+                          |> threading.spawn (1, 0) 1
+                      match options.stdin |> optionm'.unbox with
+                      | Some stdin' =>
+                          stdin
+                          |> threading.arc_mutex_lock
+                          |> resultm.unwrap'
+                          |> threading.mutex_guard_ref_mut''
+                          |> optionm'.take_ref_mut
+                          |> optionm'.map' threading.new_arc_mutex
+                          |> optionm'.unbox
+                          |> function
+                              | Some stdin =>
+                                  stdin |> stdin'
+                                  stdin
+                                  |> threading.arc_mutex_lock'
+                                  |> resultm.unwrap'
+                                  |> stdin_flush
+                              | None => ()
+                      | None => ()
+                      inl output =
+                          child
+                          |> threading.arc_mutex_lock'
+                          |> resultm.unwrap'
+                          |> threading.mutex_guard_ref_mut''
+                          |> optionm'.take_ref_mut
+                          |> optionm'.unwrap
+                          |> child_wait_with_output
+                          |> resultm.map_error'' sm'.format'
+                      [ stdout_handle; stderr_handle ]
+                      |> am'.new_vec
+                      |> am'.vec_for_each' (threading.join' >> resultm.unwrap' >> resultm.unwrap')
+                      match output |> resultm.unbox with
+                      | Ok output =>
+                          inl exit_code =
+                              output
+                              |> process_output_status
+                              |> process_exit_status_code
+                              |> optionm'.unbox
+                          match exit_code with
+                          | Some exit_code =>
+                              inl stdout =
+                                  output
+                                  |> process_output_stdout
+                                  |> sm'.string_from_utf8
+                                  |> resultm.unwrap'
+                              inl stderr =
+                                  output
+                                  |> process_output_stderr
+                                  |> sm'.string_from_utf8
+                                  |> resultm.unwrap'
+                              inl output =
+                                  [ stdout; stderr ]
+                                  |> listm.map (sm'.from_std_string >> sm'.trim)
+                                  |> listm'.filter (sm'.is_empty >> not)
+                                  |> sm'.concat_list "\n"
+                                  |> sm'.to_std_string
+                                  |> Some
+                              exit_code, output, Some channel_receiver'
+                          | None =>
+                              -1,
+                              ("runtime.execute_with_options / exit_code=None"
+                                  |> sm'.to_std_string
+                                  |> Some),
+                              Some channel_receiver'
+                      | Error error =>
+                          trace Critical
+                              fun () => "runtime.execute_with_options / output error"
+                              fun () => { error file_name arguments = #?*arguments; options }
+                          -2i32, error |> Some, None
+                  | Error error =>
+                      trace Critical
+                          fun () => "runtime.execute_with_options / child error"
+                          fun () => { error file_name arguments = #?*arguments; options }
+                      -1i32, error |> Some, None
+              |> function
+                  | exit_code, std_trace, channel_receiver =>
+                      inl std_trace =
+                          channel_receiver
+                          |> optionm'.box
+                          |> optionm'.map' fun channel_receiver =>
+                              channel_receiver
+                              |> threading.arc_mutex_lock'
+                              |> resultm.unwrap'
+                              |> iter.iter
+                              |> iter_collect''
+                              |> am'.vec_map sm'.from_std_string
+                              |> am'.from_vec
+                              |> fun x => x : _ i32 _
+                              |> seq.of_array
+                              |> sm'.concat "\n"
+                          |> optionm'.unbox
+                          |> optionm.map (sm'.trim >> sm'.to_option)
+                          |> optionm'.flatten
+                          |> optionm'.default_value (
+                              std_trace
+                              |> optionm.map sm'.from_std_string
+                              |> optionm'.default_value ""
+                          )
+                      trace Verbose
+                          fun () => "runtime.execute_with_options / result"
+                          fun () => { file_name exit_code std_trace_len = ##std_trace }
+                      new_pair exit_code std_trace
+          |> capture
+      // |> async.new_future_move
+      // |> async.block_on
+      |> fun x => x ()
+      |> from_pair
+  """,
+  timeout: 300_000
+)
+```
+
+### execute_with_options_native
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and\n// send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_native`),\n// runs the stdin callback, honors the cancellation token (kills the child) and waits. Child, Command, ChildStdin and the\n// receiver never leave the emitted block, so no `.clone()` is generated for them.\ninl execute_with_options_native (options : execution_options) : i32 * string =\n    inl command = join options.command\n    inl file_name, arguments = command |> split_command |> resultm.get\n    inl arguments =\n        arguments\n        |> optionm'.default_value \"\"\n        |> split_args\n        |> resultm.get\n        |> am'.to_vec\n        |> am'.vec_map sm'.to_std_string\n    trace Debug\n        fun () => \"runtime.execute_with_options\"\n        fun () => { file_name arguments = #?*arguments }\n    inl trace' = options.trace\n    inl on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =\n        line |> stdio_line_native (Ok ()) trace'\n    inl on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =\n        line |> stdio_line_native (Error ()) trace'\n    inl kind, exit_code, error, lines =\n        !\\\\(\n            (\n                file_name,\n                arguments,\n                options.working_directory,\n                options.environment_variables,\n                options.stdin,\n                options.cancellation_token,\n                options.stderr,\n                on_stdout,\n                on_stderr\n            ),\n            $'\"{ let wd: Option<std::rc::Rc<str>> = $2.clone(); let stdin_fn: Option<std::rc::Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>)>> = $4.clone(); let token: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = $5.clone(); let stderr_on: bool = $6; let mut c = std::process::Command::new(&*$0); c.args(&*$1); c.stdout(std::process::Stdio::piped()); c.stderr(std::process::Stdio::piped()); c.stdin(std::process::Stdio::piped()); if let Some(d) = &wd { c.current_dir(&**d); } for (k, v) in $3.borrow().iter() { c.env(&**k, &**v); } match c.spawn() { Err(e) => (1i32, None, Some(format\\!(\\\\\\\"{}\\\\\\\", e)), Vec::new()), Ok(mut child) => { let out = child.stdout.take().unwrap(); let err = child.stderr.take().unwrap(); let (tx, rx) = std::sync::mpsc::channel::<(bool, Result<std::string::String, std::string::String>)>(); let tx2 = tx.clone(); let h1 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(out))) { if tx.send((false, l.map_err(|e| format\\!(\\\\\\\"{}\\\\\\\", e)))).is_err() { break; } } }); let h2 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(err))) { if stderr_on && tx2.send((true, l.map_err(|e| format\\!(\\\\\\\"{}\\\\\\\", e)))).is_err() { break; } } }); if let (Some(f), Some(s)) = (&stdin_fn, child.stdin.take()) { let a = std::sync::Arc::new(std::sync::Mutex::new(s)); f(a.clone()); let _ = std::io::Write::flush(&mut *a.lock().unwrap()); } let mut lines: Vec<std::string::String> = Vec::new(); let mut cancelled = false; loop { if let Some(t) = &token { if t.load(std::sync::atomic::Ordering::SeqCst) { let _ = child.kill(); cancelled = true; break; } } match rx.recv_timeout(std::time::Duration::from_millis(100)) { Ok((false, l)) => lines.push($7(l)), Ok((true, l)) => lines.push($8(l)), Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}, Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break } } if \\!cancelled { let _ = h1.join(); let _ = h2.join(); } match child.wait() { Ok(s) => (0i32, s.code(), None, lines), Err(e) => (2i32, None, Some(format\\!(\\\\\\\"{}\\\\\\\", e)), lines) } } } }\"'\n        ) : i32 * optionm'.option' i32 * optionm'.option' sm'.std_string * am'.vec sm'.std_string\n    inl error = error |> optionm'.default_value' (sm'.to_std_string \"\") |> sm'.from_std_string\n    inl exit_code, std_trace =\n        if kind = 1 then\n            trace Critical\n                fun () => \"runtime.execute_with_options / child error\"\n                fun () => { error file_name arguments = #?*arguments }\n            -1i32, error\n        elif kind = 2 then\n            trace Critical\n                fun () => \"runtime.execute_with_options / output error\"\n                fun () => { error file_name arguments = #?*arguments }\n            -2i32, error\n        else\n            inl exit_code, fallback =\n                match exit_code |> optionm'.unbox with\n                | Some exit_code => exit_code, \"\"\n                | None => -1i32, \"runtime.execute_with_options / exit_code=None\"\n            inl text =\n                lines\n                |> am'.vec_map sm'.from_std_string\n                |> am'.from_vec\n                |> fun x => x : _ i32 _\n                |> seq.of_array\n                |> sm'.concat \"\\n\"\n                |> sm'.trim\n            exit_code, (if text = \"\" then fallback else text)\n    trace Verbose\n        fun () => \"runtime.execute_with_options / result\"\n        fun () => { file_name exit_code std_trace_len = ##std_trace }\n    exit_code, std_trace","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and
+  // send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_native`),
+  // runs the stdin callback, honors the cancellation token (kills the child) and waits. Child, Command, ChildStdin and the
+  // receiver never leave the emitted block, so no `.clone()` is generated for them.
+  inl execute_with_options_native (options : execution_options) : i32 * string =
+      inl command = join options.command
+      inl file_name, arguments = command |> split_command |> resultm.get
+      inl arguments =
+          arguments
+          |> optionm'.default_value ""
+          |> split_args
+          |> resultm.get
+          |> am'.to_vec
+          |> am'.vec_map sm'.to_std_string
+      trace Debug
+          fun () => "runtime.execute_with_options"
+          fun () => { file_name arguments = #?*arguments }
+      inl trace' = options.trace
+      inl on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+          line |> stdio_line_native (Ok ()) trace'
+      inl on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
+          line |> stdio_line_native (Error ()) trace'
+      inl kind, exit_code, error, lines =
+          !\\(
+              (
+                  file_name,
+                  arguments,
+                  options.working_directory,
+                  options.environment_variables,
+                  options.stdin,
+                  options.cancellation_token,
+                  options.stderr,
+                  on_stdout,
+                  on_stderr
+              ),
+              $'"{ let wd: Option<std::rc::Rc<str>> = $2.clone(); let stdin_fn: Option<std::rc::Rc<dyn Fn(std::sync::Arc<std::sync::Mutex<std::process::ChildStdin>>)>> = $4.clone(); let token: Option<std::sync::Arc<std::sync::atomic::AtomicBool>> = $5.clone(); let stderr_on: bool = $6; let mut c = std::process::Command::new(&*$0); c.args(&*$1); c.stdout(std::process::Stdio::piped()); c.stderr(std::process::Stdio::piped()); c.stdin(std::process::Stdio::piped()); if let Some(d) = &wd { c.current_dir(&**d); } for (k, v) in $3.borrow().iter() { c.env(&**k, &**v); } match c.spawn() { Err(e) => (1i32, None, Some(format\!(\\\"{}\\\", e)), Vec::new()), Ok(mut child) => { let out = child.stdout.take().unwrap(); let err = child.stderr.take().unwrap(); let (tx, rx) = std::sync::mpsc::channel::<(bool, Result<std::string::String, std::string::String>)>(); let tx2 = tx.clone(); let h1 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(out))) { if tx.send((false, l.map_err(|e| format\!(\\\"{}\\\", e)))).is_err() { break; } } }); let h2 = std::thread::spawn(move || { for l in std::io::BufRead::lines(std::io::BufReader::new(encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build(err))) { if stderr_on && tx2.send((true, l.map_err(|e| format\!(\\\"{}\\\", e)))).is_err() { break; } } }); if let (Some(f), Some(s)) = (&stdin_fn, child.stdin.take()) { let a = std::sync::Arc::new(std::sync::Mutex::new(s)); f(a.clone()); let _ = std::io::Write::flush(&mut *a.lock().unwrap()); } let mut lines: Vec<std::string::String> = Vec::new(); let mut cancelled = false; loop { if let Some(t) = &token { if t.load(std::sync::atomic::Ordering::SeqCst) { let _ = child.kill(); cancelled = true; break; } } match rx.recv_timeout(std::time::Duration::from_millis(100)) { Ok((false, l)) => lines.push($7(l)), Ok((true, l)) => lines.push($8(l)), Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}, Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break } } if \!cancelled { let _ = h1.join(); let _ = h2.join(); } match child.wait() { Ok(s) => (0i32, s.code(), None, lines), Err(e) => (2i32, None, Some(format\!(\\\"{}\\\", e)), lines) } } } }"'
+          ) : i32 * optionm'.option' i32 * optionm'.option' sm'.std_string * am'.vec sm'.std_string
+      inl error = error |> optionm'.default_value' (sm'.to_std_string "") |> sm'.from_std_string
+      inl exit_code, std_trace =
+          if kind = 1 then
+              trace Critical
+                  fun () => "runtime.execute_with_options / child error"
+                  fun () => { error file_name arguments = #?*arguments }
+              -1i32, error
+          elif kind = 2 then
+              trace Critical
+                  fun () => "runtime.execute_with_options / output error"
+                  fun () => { error file_name arguments = #?*arguments }
+              -2i32, error
+          else
+              inl exit_code, fallback =
+                  match exit_code |> optionm'.unbox with
+                  | Some exit_code => exit_code, ""
+                  | None => -1i32, "runtime.execute_with_options / exit_code=None"
+              inl text =
+                  lines
+                  |> am'.vec_map sm'.from_std_string
+                  |> am'.from_vec
+                  |> fun x => x : _ i32 _
+                  |> seq.of_array
+                  |> sm'.concat "\n"
+                  |> sm'.trim
+              exit_code, (if text = "" then fallback else text)
+      trace Verbose
+          fun () => "runtime.execute_with_options / result"
+          fun () => { file_name exit_code std_trace_len = ##std_trace }
+      exit_code, std_trace
+  """,
+  timeout: 300_000
+)
+```
+
+### execute_with_options
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let execute_with_options (options : execution_options) : i32 * string =\n    backend_switch {\n        Fsharp = fun () => execute_with_options_fable options\n        Rust = fun () => execute_with_options_native options\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let execute_with_options (options : execution_options) : i32 * string =
+      backend_switch {
+          Fsharp = fun () => execute_with_options_fable options
+          Rust = fun () => execute_with_options_native options
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+#### execute
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let execute command =\n    execution_options fun x => { x with\n        command = command\n    }\n    |> execute_with_options","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let execute command =
+      execution_options fun x => { x with
+          command = command
+      }
+      |> execute_with_options
+  """,
+  timeout: 300_000
+)
+```
+
+#### tests
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d chrono encoding_rs encoding_rs_io regex sha2\n\ninl content = \"╭─[ 你好，世界！こんにちは世界！ ]─╮\"\n\ninl file_name = join \"test.txt\"\ninl temp_dir, disposable =\n    #?*(file_name, content)\n    |> crypto.hash_text\n    |> file_system.create_temp_dir'\ndisposable |> use |> ignore\ninl path = temp_dir </> file_name |> file_system.normalize_path\ninl exit_code, result =\n    execute (\"pwsh -c \\\"[IO.File]::ReadAllText('\" ++# path ++# \"')\\\"\")\nexit_code |> _assert_eq 1\nresult |> _assert sm'.contains \"not find file\"\n\ncontent |> file_system.write_all_text path\n\ninl exit_code, output =\n    execution_options fun x => { x with\n        command = \"pwsh -c \\\"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('\" ++# file_name ++# \"')\\\"\"\n        working_directory = Some temp_dir |> optionm'.box\n    }\n    |> execute_with_options\n\nexit_code |> _assert_eq 0i32\noutput |> _assert_eq content","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+
+  inl content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
+
+  inl file_name = join "test.txt"
+  inl temp_dir, disposable =
+      #?*(file_name, content)
+      |> crypto.hash_text
+      |> file_system.create_temp_dir'
+  disposable |> use |> ignore
+  inl path = temp_dir </> file_name |> file_system.normalize_path
+  inl exit_code, result =
+      execute ("pwsh -c \"[IO.File]::ReadAllText('" ++# path ++# "')\"")
+  exit_code |> _assert_eq 1
+  result |> _assert sm'.contains "not find file"
+
+  content |> file_system.write_all_text path
+
+  inl exit_code, output =
+      execution_options fun x => { x with
+          command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('" ++# file_name ++# "')\""
+          working_directory = Some temp_dir |> optionm'.box
+      }
+      |> execute_with_options
+
+  exit_code |> _assert_eq 0i32
+  output |> _assert_eq content
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d chrono encoding_rs encoding_rs_io regex sha2\n\n/// task: write a script to test the real time capabilities of std capturing\n\ninl exit_code, output =\n    execution_options fun x => { x with\n        command = \"pwsh -c \\\"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\\\"Line$i`\\\"; Start-Sleep -Milliseconds 200 }\\\"\"\n        // trace = true\n    }\n    |> execute_with_options\nexit_code |> _assert_eq 0i32\noutput |> _assert sm'.contains \"Line4\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+
+  /// task: write a script to test the real time capabilities of std capturing
+
+  inl exit_code, output =
+      execution_options fun x => { x with
+          command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }\""
+          // trace = true
+      }
+      |> execute_with_options
+  exit_code |> _assert_eq 0i32
+  output |> _assert sm'.contains "Line4"
+  """,
+  timeout: 300_000
+)
+```
+
+### execute_retry
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let execute_retry retries options =\n    fun () =>\n        inl exit_code, result = options |> execute_with_options\n        if exit_code = 0\n        then Ok (exit_code, result)\n        else Error (exit_code, result)\n    |> retry_fn' retries","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let execute_retry retries options =
+      fun () =>
+          inl exit_code, result = options |> execute_with_options
+          if exit_code = 0
+          then Ok (exit_code, result)
+          else Error (exit_code, result)
+      |> retry_fn' retries
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\ninl main () =\n    init_trace_state None\n    $'let current_process_kill () = !current_process_kill ()' : ()\n    inl execution_options fn =\n        execution_options fun x =>\n            x\n            |> heap\n            |> fn\n            |> fun x => !x\n    $'let execution_options x = !execution_options x' : ()\n    inl split_args x = x |> split_args |> resultm.box\n    $'let split_args x = !split_args x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> fsharp
+
+  inl main () =
+      init_trace_state None
+      $'let current_process_kill () = !current_process_kill ()' : ()
+      inl execution_options fn =
+          execution_options fun x =>
+              x
+              |> heap
+              |> fn
+              |> fun x => !x
+      $'let execution_options x = !execution_options x' : ()
+      inl split_args x = x |> split_args |> resultm.box
+      $'let split_args x = !split_args x' : ()
+  """,
+  timeout: 300_000
+)
+```

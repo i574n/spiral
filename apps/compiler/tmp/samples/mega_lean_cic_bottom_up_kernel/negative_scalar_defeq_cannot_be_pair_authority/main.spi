@@ -1,3 +1,5 @@
+open main
+
 inl impossible_scalar_defeq_cannot_be_pair_authority () :
     corrected_cic_structural_defeq_pair_authority empty_ctx bool_sort =
     inl true_term = corrected_cic_true ()

@@ -65,12 +65,12 @@ inl indexed_authority_probe_substituted_descriptor ()
     indexed_finite_alphabet_descriptor (exists (indexed_authority_probe_substituted_vector ()))
 
 inl main () : string =
-    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
     inl bit_descriptor = bit_indexed_finite_alphabet_descriptor ()
     assert_static (indexed_finite_alphabet_descriptor_certified bit_capability bit_descriptor) "production bit indexed descriptor should certify"
     inl bit_indexed = indexed_dfa_closure bit_capability (ends_with_zero ()) bit_descriptor
     inl bit_legacy = dfa_closure (ends_with_zero ())
-    assert_static (regex_list_set_equal_capability bit_capability bit_indexed bit_legacy) "indexed bit closure must equal list closure"
+    assert_true (regex_list_set_equal bit_indexed bit_legacy) // the indexed (compile-time) closure equals the list (run-time) closure
 
     inl bit_row = indexed_dfa_transitions_from_state bit_capability (ends_with_zero ()) (bit_finite_symbol_vector ())
     match indexed_dfa_transition_lookup (bit_finite_index_one ()) bit_row with
@@ -87,7 +87,7 @@ inl main () : string =
         inl swapped_descriptor = swapped_bit_indexed_descriptor ()
         assert_static (bool_same (indexed_finite_alphabet_descriptor_certified bit_capability swapped_descriptor) false) "swapped indexed inventory must fail ordering laws"
 
-        inl authority_probe_capability = make_indexed_dfa_capability `indexed_authority_probe_alphabet ()
+        inl authority_probe_capability : indexed_dfa_capability indexed_authority_probe_alphabet = make_indexed_dfa_capability ()
         inl substituted_descriptor = indexed_authority_probe_substituted_descriptor ()
         inl substituted_symbols = indexed_finite_alphabet_symbols substituted_descriptor
         inl authority_descriptor : finite_alphabet_descriptor indexed_authority_probe_alphabet = finite_alphabet ()
@@ -99,12 +99,12 @@ inl main () : string =
         | IndexedDfaSurfaceCertified _ => ()
         | IndexedDfaSurfaceRejected => failwith "production-bit-indexed-surface-must-seal"
 
-        inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
+        inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
         inl tri_descriptor = tri_indexed_finite_alphabet_descriptor ()
         assert_static (indexed_finite_alphabet_descriptor_certified tri_capability tri_descriptor) "production ternary indexed descriptor should certify"
         inl tri_indexed = indexed_dfa_closure tri_capability (tri_ab_star_then_c ()) tri_descriptor
         inl tri_legacy = dfa_closure (tri_ab_star_then_c ())
-        assert_static (regex_list_set_equal_capability tri_capability tri_indexed tri_legacy) "indexed ternary closure must equal list closure"
+        assert_true (regex_list_set_equal tri_indexed tri_legacy)
         match seal_indexed_dfa_surface tri_capability (tri_ab_star_then_c ()) tri_descriptor with
         | IndexedDfaSurfaceCertified _ => ()
         | IndexedDfaSurfaceRejected => failwith "production-tri-indexed-surface-must-seal"

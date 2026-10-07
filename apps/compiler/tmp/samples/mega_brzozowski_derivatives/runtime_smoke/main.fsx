@@ -392,7 +392,10 @@ let v20 : US0 = US0_0
 let v21 : UH1 = UH1_2(v20)
 let v22 : UH1 = UH1_4(v19, v21)
 let v23 : bool = method0(v22, v6)
-if not v23 then failwith "brzozowski-expected-true"
+if v23 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
 let v24 : US0 = US0_0
 let v25 : UH1 = UH1_2(v24)
 let v26 : US0 = US0_1
@@ -403,7 +406,8 @@ let v30 : US0 = US0_0
 let v31 : UH1 = UH1_2(v30)
 let v32 : UH1 = UH1_4(v29, v31)
 let v33 : bool = method0(v32, v13)
-if v33 then failwith "brzozowski-expected-false"
+if v33 then
+    failwith<unit> "brzozowski-expected-false"
 let v34 : US0 = US0_0
 let v35 : UH1 = UH1_2(v34)
 let v36 : US0 = US0_1
@@ -427,8 +431,12 @@ let v53 : UH1 = UH1_4(v50, v52)
 let v54 : US3 = US3_0(v53, v13)
 let v55 : US4 = method11(v54)
 let v56 : bool = method12(v44)
-if not v56 then failwith "brzozowski-expected-true"
+if v56 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
 let v57 : bool = method12(v55)
-if v57 then failwith "brzozowski-expected-false"
+if v57 then
+    failwith<unit> "brzozowski-expected-false"
 let v58 : string = "brzozowski-runtime-smoke-green"
 v58

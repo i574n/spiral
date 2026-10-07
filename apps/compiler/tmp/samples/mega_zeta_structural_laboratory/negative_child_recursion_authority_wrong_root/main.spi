@@ -1,3 +1,6 @@
+// A child recursion authority rooted at three cannot be typed as rooted at four (the descent is now derived directly; the RecursiveDescentProven decision wrapper is retired).
+open main
+
 inl impossible_child_recursion_authority_wrong_root () :
     certified_interval_positive_positional_child_recursion_authority
         (positional_zero_bit positional_one)
@@ -13,14 +16,12 @@ inl impossible_child_recursion_authority_wrong_root () :
             PositivePositionalFactorCandidateNonunitZeroBit PositivePositionalOne,
             PositivePositionalPredecessorOneBit PositivePositionalOne,
             "the-child-authority-membership-is-rooted-at-three-not-four")
-    match derive_certified_interval_positive_positional_membership_recursive_descent
-            (positive_positional_three_value ()) membership with
-    | CertifiedIntervalPositivePositionalRecursiveDescentProven descent =>
-        derive_certified_interval_positive_positional_child_recursion_authority
-            membership
-            descent
-            (derive_positive_positional_predecessor_accessibility
-                (positive_positional_three_value ()))
+    inl descent = derive_certified_interval_positive_positional_membership_recursive_descent (positive_positional_three_value ()) membership
+    derive_certified_interval_positive_positional_child_recursion_authority
+        membership
+        descent
+        (derive_positive_positional_predecessor_accessibility
+            (positive_positional_three_value ()))
 
 inl main () =
     impossible_child_recursion_authority_wrong_root ()

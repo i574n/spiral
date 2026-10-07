@@ -85,21 +85,19 @@ type execution_line =
 /// ### process_child
 nominal process_child =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Child\")>]\n#endif\ntype std_process_Child = class end") : () -> ()
-        }
-        $'' : $'std_process_Child'
+        native_type
+            `($'std_process_Child')
+            `($'std::process::Child')
+            "type std_process_Child = class end"
     )
 
 /// ### process_child_stdin
 nominal process_child_stdin =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdin\")>]\n#endif\ntype std_process_ChildStdin = class end") : () -> ()
-        }
-        $'' : $'std_process_ChildStdin'
+        native_type
+            `($'std_process_ChildStdin')
+            `($'std::process::ChildStdin')
+            "type std_process_ChildStdin = class end"
     )
 
 inl process_child_stdin
@@ -141,11 +139,10 @@ inl execution_options (fn : execution_options -> execution_options) : execution_
 /// ### process_child_stderr
 nominal process_child_stderr =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStderr\")>]\n#endif\ntype std_process_ChildStderr = class end") : () -> ()
-        }
-        $'' : $'std_process_ChildStderr'
+        native_type
+            `($'std_process_ChildStderr')
+            `($'std::process::ChildStderr')
+            "type std_process_ChildStderr = class end"
     )
 
 inl process_child_stderr
@@ -157,11 +154,10 @@ inl process_child_stderr
 /// ### process_child_stdout
 nominal process_child_stdout =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ChildStdout\")>]\n#endif\ntype std_process_ChildStdout = class end") : () -> ()
-        }
-        $'' : $'std_process_ChildStdout'
+        native_type
+            `($'std_process_ChildStdout')
+            `($'std::process::ChildStdout')
+            "type std_process_ChildStdout = class end"
     )
 
 inl process_child_stdout
@@ -173,41 +169,37 @@ inl process_child_stdout
 /// ### process_command
 nominal process_command =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Command\")>]\n#endif\ntype std_process_Command = class end") : () -> ()
-        }
-        $'' : $'std_process_Command'
+        native_type
+            `($'std_process_Command')
+            `($'std::process::Command')
+            "type std_process_Command = class end"
     )
 
 /// ### process_stdio
 nominal process_stdio =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Stdio\")>]\n#endif\ntype std_process_Stdio = class end") : () -> ()
-        }
-        $'' : $'std_process_Stdio'
+        native_type
+            `($'std_process_Stdio')
+            `($'std::process::Stdio')
+            "type std_process_Stdio = class end"
     )
 
 /// ### process_output
 nominal process_output =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::Output\")>]\n#endif\ntype std_process_Output = class end") : () -> ()
-        }
-        $'' : $'std_process_Output'
+        native_type
+            `($'std_process_Output')
+            `($'std::process::Output')
+            "type std_process_Output = class end"
     )
 
 /// ### process_exit_status
 nominal process_exit_status =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::process::ExitStatus\")>]\n#endif\ntype std_process_ExitStatus = class end") : () -> ()
-        }
-        $'' : $'std_process_ExitStatus'
+        native_type
+            `($'std_process_ExitStatus')
+            `($'std::process::ExitStatus')
+            "type std_process_ExitStatus = class end"
     )
 
 /// ### process_output_status
@@ -395,8 +387,10 @@ inl stdio_line_native
 /// ### command
 nominal command =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::Command\")>]\n#endif\ntype clap_Command = class end"
-        $'' : $'clap_Command'
+        native_type
+            `($'clap_Command')
+            `($'clap::Command')
+            "type clap_Command = class end"
     )
 
 /// ### new_command
@@ -406,8 +400,10 @@ inl new_command (s : rust.static_ref sm'.str) : command =
 /// ### arg
 nominal arg =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::Arg\")>]\n#endif\ntype clap_Arg = class end"
-        $'' : $'clap_Arg'
+        native_type
+            `($'clap_Arg')
+            `($'clap::Arg')
+            "type clap_Arg = class end"
     )
 
 /// ### new_arg
@@ -435,18 +431,7 @@ inl arg_default_value (value : string) (arg : arg) : arg =
 /// ### arg_default_missing_value
 inl arg_default_missing_value (value : string) (arg : arg) : arg =
     inl value = #value
-    inl fable () : arg =
-        !\\((arg, value), $'"$0.default_missing_value($1)"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         // clap keeps the value for the program's lifetime: default_missing_value wants a static str (a leaked one).
         Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))"') : arg
     }
@@ -476,8 +461,10 @@ inl arg_num_args (value : i32) (arg : arg) : arg =
 /// ### value_range
 nominal value_range =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::builder::ValueRange\")>]\n#endif\ntype clap_builder_ValueRange = class end"
-        $'' : $'clap_builder_ValueRange'
+        native_type
+            `($'clap_builder_ValueRange')
+            `($'clap::builder::ValueRange')
+            "type clap_builder_ValueRange = class end"
     )
 
 /// ### new_value_range
@@ -511,15 +498,19 @@ inl arg_value_name (value : string) (arg : arg) : arg =
 /// ### value_parser
 nominal value_parser =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::builder::ValueParser\")>]\n#endif\ntype clap_builder_ValueParser = class end"
-        $'' : $'clap_builder_ValueParser'
+        native_type
+            `($'clap_builder_ValueParser')
+            `($'clap::builder::ValueParser')
+            "type clap_builder_ValueParser = class end"
     )
 
 /// ### possible_value
 nominal possible_value =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::builder::PossibleValue\")>]\n#endif\ntype clap_builder_PossibleValue = class end"
-        $'' : $'clap_builder_PossibleValue'
+        native_type
+            `($'clap_builder_PossibleValue')
+            `($'clap::builder::PossibleValue')
+            "type clap_builder_PossibleValue = class end"
     )
 
 /// ### new_possible_value
@@ -541,8 +532,10 @@ inl arg_value_parser (values : value_parser) (arg : arg) : arg =
 /// ### arg_action
 nominal arg_action' =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::ArgAction\")>]\n#endif\ntype clap_ArgAction = class end"
-        $'' : $'clap_ArgAction'
+        native_type
+            `($'clap_ArgAction')
+            `($'clap::ArgAction')
+            "type clap_ArgAction = class end"
     )
 
 union arg_action =
@@ -582,8 +575,10 @@ inl arg_index (value : i32) (arg : arg) : arg =
 /// ### arg_matches
 nominal arg_matches =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"clap::ArgMatches\")>]\n#endif\ntype clap_ArgMatches = class end"
-        $'' : $'clap_ArgMatches'
+        native_type
+            `($'clap_ArgMatches')
+            `($'clap::ArgMatches')
+            "type clap_ArgMatches = class end"
     )
 
 /// ### command_get_matches
@@ -1088,6 +1083,8 @@ let execute_retry retries options =
     |> retry_fn' retries
 
 /// ## main
+///> fsharp
+
 inl main () =
     init_trace_state None
     $'let current_process_kill () = !current_process_kill ()' : ()

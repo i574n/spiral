@@ -73,38 +73,10 @@ inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
         Lua = fun () =>
             inl target = Lua
             fn target args
+        // The .NET build: only the Fsharp arm (Fable's targets, once evaluated here under `#if FABLE_COMPILER`, are gone).
         Fsharp = fun () =>
-            inl is_unit : bool =
-                real
-                    typecase t with
-                    | () => true
-                    | _ => false
-            $'(* run_target_args\''
-            inl result = $'()' : $'unit'
-            $'run_target_args\' *)'
-            inl emit_result x : () =
-                if is_unit |> not
-                then $'let _run_target_args\'_!result = !x '
-            $'\n\#if FABLE_COMPILER || WASM || CONTRACT'
-            $'\n\#if FABLE_COMPILER_RUST && \!WASM && \!CONTRACT'
-            inl target = Rust None
-            fn target args |> emit_result
-            $'\#endif\n\#if FABLE_COMPILER_RUST && WASM'
-            inl target = Wasm |> Some |> Rust
-            fn target args |> emit_result
-            $'\#endif\n\#if FABLE_COMPILER_RUST && CONTRACT'
-            inl target = Contract |> Some |> Rust
-            fn target args |> emit_result
-            $'\#endif\n\#if FABLE_COMPILER_TYPESCRIPT'
-            inl target = TypeScript
-            fn target args |> emit_result
-            $'\#endif\n\#else'
             inl target = Fsharp
-            fn target args |> emit_result
-            $'\#endif'
-            if is_unit
-            then $'// run_target_args\' is_unit'
-            else $'_run_target_args\'_!result ' : t
+            fn target args
         Python = fun () =>
             inl target = Cuda
             fn target args
@@ -148,3 +120,33 @@ inl indent (body : () -> ()) : () =
             !!!!Indent (body())
             ()
     }
+
+/// ### native_type
+// A type that is `rs` on the native Rust backend and `fs` on the other backends, through the type-level backend_switch
+// every codegen resolves; `fsharp` declares `fs` in F# builds only (an opaque `type x = class end`, or an alias of a
+// .NET type). Used as `native_type `(fs) `(rs) "decl"` in a nominal's body (unqualified: backend is opened everywhere,
+// --real cells and modules that open rust.rust_operators included). lib/spiral's Rust types were Fable `[<Emit>]` aliases that codegenRust read back out of the F# globals.
+type native_type_switch fs rs =
+    {
+        Gleam : fs
+        Lua : fs
+        Fsharp : fs
+        Python : fs
+        TypeScript : fs
+        Cpp : fs
+        CppHost : fs
+        Delphi : fs
+        Cuda : fs
+        Rust : rs
+    }
+
+// A global only F# builds emit. In a nominal's body it runs once (nominal types are memoized), under whichever backend's
+// branch first elaborates the type; the switch runs its Fsharp arm as F# either way, so the text reaches F# builds only.
+inl fsharp_global (text : string) : () =
+    backend_switch {
+        Fsharp = fun () => global text
+    }
+
+inl native_type forall fs rs. (fsharp : string) : $'backend_switch `(native_type_switch fs rs)' =
+    fsharp_global fsharp
+    $'' : $'backend_switch `(native_type_switch fs rs)'

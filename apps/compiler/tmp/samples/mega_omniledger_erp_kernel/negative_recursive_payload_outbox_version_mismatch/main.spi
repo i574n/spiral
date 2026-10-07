@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recursive_payload_outbox_version_mismatch () =
     inl four_store, _ = erp_p2p_four_event_commit ()
     inl reserve_event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())

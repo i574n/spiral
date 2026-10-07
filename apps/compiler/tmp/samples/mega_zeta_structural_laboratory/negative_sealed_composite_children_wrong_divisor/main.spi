@@ -1,3 +1,5 @@
+open main
+
 inl impossible_sealed_composite_children_wrong_divisor
     (children :
         certified_interval_positive_positional_sealed_composite_children

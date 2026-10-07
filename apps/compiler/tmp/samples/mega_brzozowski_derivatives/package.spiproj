@@ -1,2 +1,4 @@
 modules:
     main
+    runtime_workload
+    runtime_interned

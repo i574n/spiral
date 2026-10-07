@@ -1,3 +1,5 @@
+open main
+
 inl impossible_total_substitution_domain_mismatch () :
     corrected_cic_term empty_ctx (function_sort bool_sort bool_sort) =
     inl source :

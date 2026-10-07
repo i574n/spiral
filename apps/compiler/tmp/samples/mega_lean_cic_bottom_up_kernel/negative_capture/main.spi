@@ -1,3 +1,5 @@
+open main
+
 inl impossible_context_capture () :
     corrected_cic_term
         (ctx_extend empty_ctx identity_sort)

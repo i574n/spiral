@@ -1,3 +1,5 @@
+open main
+
 inl impossible_sealed_composite_children_direct_forged_divisor forall length.
     (membership :
         certified_interval_positive_positional_factor_membership

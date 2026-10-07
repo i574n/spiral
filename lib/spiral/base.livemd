@@ -1,0 +1,1458 @@
+# base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## base
+
+<!-- livebook:{"break_markdown":true} -->
+
+### emit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl emit forall t. (x : t) : t =\n    $'!x '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl emit forall t. (x : t) : t =
+      $'!x '
+  """,
+  timeout: 300_000
+)
+```
+
+### emit_unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl emit_unit forall t. (x : t) : () =\n    $'!x '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl emit_unit forall t. (x : t) : () =
+      $'!x '
+  """,
+  timeout: 300_000
+)
+```
+
+### use
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use forall t. (x : t) : t =\n    backend_switch {\n        Gleam = fun () => $'use !x = !x ' : ()\n        Lua = fun () => $'use !x = !x ' : ()\n        Fsharp = fun () => $'use !x = !x ' : ()\n        Python = fun () => $'use !x = !x ' : ()\n        Cpp = fun () => $'use !x = !x ' : ()\n        TypeScript = fun () => $'use !x = !x ' : ()\n        // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.\n        Rust = fun () =>\n            global \"struct SpiralUse(std::rc::Rc<dyn Fn()>);\\nimpl Drop for SpiralUse {\\n    fn drop(&mut self) { (self.0)() }\\n}\"\n            $'let _spiral_use = SpiralUse((!x).clone())' : ()\n    }\n    $'!x '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl use forall t. (x : t) : t =
+      backend_switch {
+          Gleam = fun () => $'use !x = !x ' : ()
+          Lua = fun () => $'use !x = !x ' : ()
+          Fsharp = fun () => $'use !x = !x ' : ()
+          Python = fun () => $'use !x = !x ' : ()
+          Cpp = fun () => $'use !x = !x ' : ()
+          TypeScript = fun () => $'use !x = !x ' : ()
+          // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
+          Rust = fun () =>
+              global "struct SpiralUse(std::rc::Rc<dyn Fn()>);\nimpl Drop for SpiralUse {\n    fn drop(&mut self) { (self.0)() }\n}"
+              $'let _spiral_use = SpiralUse((!x).clone())' : ()
+      }
+      $'!x '
+  """,
+  timeout: 300_000
+)
+```
+
+### unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal unit = $'unit'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal unit = $'unit'
+  """,
+  timeout: 300_000
+)
+```
+
+### run_target (test)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nrun_target function\n    | Gleam => fun () => $'1 + 1'\n    | Lua => fun () => $'1 + 1'\n    | Fsharp => fun () => $'1uy + 1uy'\n    | Cuda => fun () => $'1 + 1'\n    | Rust (None) => fun () => $'1uy + 1uy'\n    | RustNative => fun () => $'1u8 + 1u8'\n    | TypeScript => fun () => $'1uy + 1uy'\n    | _ => fun () => $'2uy + 2uy'\n|> _assert_eq 2u8","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  run_target function
+      | Gleam => fun () => $'1 + 1'
+      | Lua => fun () => $'1 + 1'
+      | Fsharp => fun () => $'1uy + 1uy'
+      | Cuda => fun () => $'1 + 1'
+      | Rust (None) => fun () => $'1uy + 1uy'
+      | RustNative => fun () => $'1u8 + 1u8'
+      | TypeScript => fun () => $'1uy + 1uy'
+      | _ => fun () => $'2uy + 2uy'
+  |> _assert_eq 2u8
+  """,
+  timeout: 300_000
+)
+```
+
+### eval
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl eval fn =\n    fn ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl eval fn =
+      fn ()
+  """,
+  timeout: 300_000
+)
+```
+
+### flip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl flip fn a b =\n    fn b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl flip fn a b =
+      fn b a
+  """,
+  timeout: 300_000
+)
+```
+
+### do
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl do (body : () -> ()) : () =\n    !!!!Do (body())","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl do (body : () -> ()) : () =
+      !!!!Do (body())
+  """,
+  timeout: 300_000
+)
+```
+
+### let'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl let' fn =\n    inl result : unit =\n        backend_switch {\n            Gleam = fun () => $'Nil' : unit\n            Lua = fun () => $'nil' : unit\n            Fsharp = fun () => $'()' : unit\n            Python = fun () => $'None' : unit\n        }\n    backend_switch {\n        Gleam = fun () =>\n            $'let _let\\'_!result = {' : ()\n            fn |> indent\n            $'}' : ()\n        Lua = fun () =>\n            $'local _get_let_!result = function()' : ()\n            fn |> indent\n            $'end' : ()\n            $'local _let_!result = _get_let_!result()' : ()\n        Fsharp = fun () =>\n            $'let _let\\'_!result =' : ()\n            fn |> indent\n        Python = fun () =>\n            $'def _let\\'_!result():' : ()\n            fn |> indent\n    }\n    $'_let\\'_!result '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl let' fn =
+      inl result : unit =
+          backend_switch {
+              Gleam = fun () => $'Nil' : unit
+              Lua = fun () => $'nil' : unit
+              Fsharp = fun () => $'()' : unit
+              Python = fun () => $'None' : unit
+          }
+      backend_switch {
+          Gleam = fun () =>
+              $'let _let\'_!result = {' : ()
+              fn |> indent
+              $'}' : ()
+          Lua = fun () =>
+              $'local _get_let_!result = function()' : ()
+              fn |> indent
+              $'end' : ()
+              $'local _let_!result = _get_let_!result()' : ()
+          Fsharp = fun () =>
+              $'let _let\'_!result =' : ()
+              fn |> indent
+          Python = fun () =>
+              $'def _let\'_!result():' : ()
+              fn |> indent
+      }
+      $'_let\'_!result '
+  """,
+  timeout: 300_000
+)
+```
+
+### exec_unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl exec_unit (fn : () -> ()) : () =\n    fn ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl exec_unit (fn : () -> ()) : () =
+      fn ()
+  """,
+  timeout: 300_000
+)
+```
+
+### lazy
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lazy t = $'Lazy<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal lazy t = $'Lazy<`t>'
+  """,
+  timeout: 300_000
+)
+```
+
+### memoize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl memoize forall t. (fn : () -> t) : () -> t =\n    inl body () =\n        inl result = mut None\n        inl computed = mut false\n        fun () =>\n            if *computed\n            then *result\n            else\n                result <- fn () |> Some\n                computed <- true\n                *result\n            |> optionm.value\n        : () -> t\n    backend_switch {\n        Gleam = fun () => body ()\n        Lua = fun () => body ()\n        Fsharp = fun () =>\n            inl result : lazy t = $'lazy !fn ()'\n            fun () => $'!result.Value' : t\n        Python = fun () => body ()\n        Rust = fun () => body ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl memoize forall t. (fn : () -> t) : () -> t =
+      inl body () =
+          inl result = mut None
+          inl computed = mut false
+          fun () =>
+              if *computed
+              then *result
+              else
+                  result <- fn () |> Some
+                  computed <- true
+                  *result
+              |> optionm.value
+          : () -> t
+      backend_switch {
+          Gleam = fun () => body ()
+          Lua = fun () => body ()
+          Fsharp = fun () =>
+              inl result : lazy t = $'lazy !fn ()'
+              fun () => $'!result.Value' : t
+          Python = fun () => body ()
+          Rust = fun () => body ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ninl count = mut 0i32\ninl add =\n    fun () =>\n        count <- *count + 1\n        count\n    |> memoize\n\nadd () |> ignore\nadd () |> ignore\nadd () |> ignore\n\n*count\n|> _assert_eq 1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  inl count = mut 0i32
+  inl add =
+      fun () =>
+          count <- *count + 1
+          count
+      |> memoize
+
+  add () |> ignore
+  add () |> ignore
+  add () |> ignore
+
+  *count
+  |> _assert_eq 1
+  """,
+  timeout: 300_000
+)
+```
+
+### capture
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl capture forall t. (fn : () -> t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            fn ()\n        Lua = fun () =>\n            fn ()\n        Fsharp = fun () =>\n            inl result = dyn true\n            $'let mutable _capture_!result : `t option = None '\n            $'('\n            $'(fun () ->'\n            $'(fun () ->'\n            fn () |> emit_unit\n            $')'\n            $'|> fun x -> x ()'\n            $') () )'\n            $'|> fun x -> _capture_!result <- Some x'\n            $'match _capture_!result with Some x -> x | None -> failwith \"base.capture / _capture_!result=None\"' : t\n        Python = fun () =>\n            fn ()\n        Rust = fun () => fn ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl capture forall t. (fn : () -> t) : t =
+      backend_switch {
+          Gleam = fun () =>
+              fn ()
+          Lua = fun () =>
+              fn ()
+          Fsharp = fun () =>
+              inl result = dyn true
+              $'let mutable _capture_!result : `t option = None '
+              $'('
+              $'(fun () ->'
+              $'(fun () ->'
+              fn () |> emit_unit
+              $')'
+              $'|> fun x -> x ()'
+              $') () )'
+              $'|> fun x -> _capture_!result <- Some x'
+              $'match _capture_!result with Some x -> x | None -> failwith "base.capture / _capture_!result=None"' : t
+          Python = fun () =>
+              fn ()
+          Rust = fun () => fn ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### yield_from
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl yield_from forall (t : * -> *) u. (a : t u) : () =\n    backend_switch {\n        Fsharp = fun () => $'yield\\! !a ' : ()\n        Python = fun () => $'asyncio.run(!a())' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl yield_from forall (t : * -> *) u. (a : t u) : () =
+      backend_switch {
+          Fsharp = fun () => $'yield\! !a ' : ()
+          Python = fun () => $'asyncio.run(!a())' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### join_body
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl join_body body acc x =\n    if var_is x |> not\n    then body acc x\n    else\n        inl acc = dyn acc\n        join body acc x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl join_body body acc x =
+      if var_is x |> not
+      then body acc x
+      else
+          inl acc = dyn acc
+          join body acc x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl rec fold_list f s = function\n    | Cons (x, x') => fold_list f (f s x) x'\n    | Nil => s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  inl rec fold_list f s = function
+      | Cons (x, x') => fold_list f (f s x) x'
+      | Nil => s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[ 5i32; 4; join 3; 2; 1 ]\n|> fold_list (+) 0\n|> _assert_eq 15","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [ 5i32; 4; join 3; 2; 1 ]
+  |> fold_list (+) 0
+  |> _assert_eq 15
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[ 5i32; 4; join 3; 2; 1 ]\n|> fold_list (join_body (+)) 0\n|> _assert_eq 15","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [ 5i32; 4; join 3; 2; 1 ]
+  |> fold_list (join_body (+)) 0
+  |> _assert_eq 15
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### join_body_unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl join_body_unit body d x =\n    if var_is d |> not\n    then body x\n    else\n        inl x = dyn x\n        join body x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl join_body_unit body d x =
+      if var_is d |> not
+      then body x
+      else
+          inl x = dyn x
+          join body x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[ 5i32; 4; join 3; 2; 1 ]\n|> fold_list (fun acc n => join_body_unit ((+) acc) n n) 0\n|> _assert_eq 15","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [ 5i32; 4; join 3; 2; 1 ]
+  |> fold_list (fun acc n => join_body_unit ((+) acc) n n) 0
+  |> _assert_eq 15
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### (+.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (+.) forall t. (a : t) (b : t) : t =\n    $'!a + !b '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (+.) forall t. (a : t) (b : t) : t =
+      $'!a + !b '
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n($'3' : int) +. ($'-6' : int)\n|> _assert_eq -3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ($'3' : int) +. ($'-6' : int)
+  |> _assert_eq -3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### (-.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (-.) forall t. (a : t) (b : t) : t =\n    $'!a - !b '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (-.) forall t. (a : t) (b : t) : t =
+      $'!a - !b '
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n($'3' : i32) -. ($'6' : i32)\n|> _assert_eq -3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ($'3' : i32) -. ($'6' : i32)
+  |> _assert_eq -3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### (*.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (*.) forall t. (a : t) (b : t) : t =\n    $'!a * !b '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (*.) forall t. (a : t) (b : t) : t =
+      $'!a * !b '
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n($'3' : i32) *. ($'-1' : i32)\n|> _assert_eq -3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ($'3' : i32) *. ($'-1' : i32)
+  |> _assert_eq -3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### (/.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (/.) forall t. (a : t) (b : t) : t =\n    $'!a / !b '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (/.) forall t. (a : t) (b : t) : t =
+      $'!a / !b '
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n($'-3' : i32) /. ($'1' : i32)\n|> _assert_eq -3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ($'-3' : i32) /. ($'1' : i32)
+  |> _assert_eq -3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### (=.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (=.) forall t. (a : t) (b : t) : bool =\n    backend_switch {\n        Gleam = fun () => $'!a == !b ' : bool\n        Lua = fun () => $'!a == !b ' : bool\n        Fsharp = fun () => $'!a = !b ' : bool\n        Python = fun () => $'!a == !b ' : bool\n        Rust = fun () => $'!a == !b ' : bool\n        TypeScript = fun () => $'!a === !b ' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (=.) forall t. (a : t) (b : t) : bool =
+      backend_switch {
+          Gleam = fun () => $'!a == !b ' : bool
+          Lua = fun () => $'!a == !b ' : bool
+          Fsharp = fun () => $'!a = !b ' : bool
+          Python = fun () => $'!a == !b ' : bool
+          Rust = fun () => $'!a == !b ' : bool
+          TypeScript = fun () => $'!a === !b ' : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(($'-3' : i32) =. ($'-3' : i32))\n|> _assert_eq true","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  (($'-3' : i32) =. ($'-3' : i32))
+  |> _assert_eq true
+  """,
+  timeout: 300_000
+)
+```
+
+### (<>.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (<>.) forall t. (a : t) (b : t) : bool =\n    backend_switch {\n        Gleam = fun () => $'!a \\!= !b ' : bool\n        Lua = fun () => $'!a ~= !b ' : bool\n        Fsharp = fun () => $'!a <> !b ' : bool\n        Python = fun () => $'!a \\!= !b ' : bool\n        Rust = fun () => $'!a \\!= !b ' : bool\n        TypeScript = fun () => $'!a \\!== !b ' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (<>.) forall t. (a : t) (b : t) : bool =
+      backend_switch {
+          Gleam = fun () => $'!a \!= !b ' : bool
+          Lua = fun () => $'!a ~= !b ' : bool
+          Fsharp = fun () => $'!a <> !b ' : bool
+          Python = fun () => $'!a \!= !b ' : bool
+          Rust = fun () => $'!a \!= !b ' : bool
+          TypeScript = fun () => $'!a \!== !b ' : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(($'-3' : i32) <>. ($'3' : i32))\n|> _assert_eq true","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  (($'-3' : i32) <>. ($'3' : i32))
+  |> _assert_eq true
+  """,
+  timeout: 300_000
+)
+```
+
+### (<>..)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (<>..) a b =\n    fun () => a = b\n    |> dyn\n    |> eval\n    |> not","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (<>..) a b =
+      fun () => a = b
+      |> dyn
+      |> eval
+      |> not
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(($'-3' : i32) <>.. ($'3' : i32))\n|> _assert_eq true","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  (($'-3' : i32) <>.. ($'3' : i32))
+  |> _assert_eq true
+  """,
+  timeout: 300_000
+)
+```
+
+### append
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype append t : t -> t -> t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype append t : t -> t -> t
+  """,
+  timeout: 300_000
+)
+```
+
+### (++)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (++) a b =\n    b |> append a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (++) a b =
+      b |> append a
+  """,
+  timeout: 300_000
+)
+```
+
+### pair
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type pair_switch a b =\n    {\n        Gleam : $'\\#(`a, `b  )'\n        Lua : $'(`a, `b)'\n        Fsharp : $'(`a * `b)'\n        Python : $'(`a, `b)'\n        Rust : $'(`a, `b)'\n    }\nnominal pair a b = $'backend_switch `(pair_switch a b)'\n\ninl pair x y =\n    x, y","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type pair_switch a b =
+      {
+          Gleam : $'\#(`a, `b  )'
+          Lua : $'(`a, `b)'
+          Fsharp : $'(`a * `b)'
+          Python : $'(`a, `b)'
+          Rust : $'(`a, `b)'
+      }
+  nominal pair a b = $'backend_switch `(pair_switch a b)'
+
+  inl pair x y =
+      x, y
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\npair 1i32 2i32\n|> _assert_eq (1, 2)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  pair 1i32 2i32
+  |> _assert_eq (1, 2)
+  """,
+  timeout: 300_000
+)
+```
+
+### new_pair
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_pair forall a b. (a : a) (b : b) : pair a b =\n    backend_switch {\n        Gleam = fun () =>\n            $'\\#(!a, !b )' : pair a b\n        Lua = fun () =>\n            $'{!a, !b}' : pair a b\n        Fsharp = fun () =>\n            $'!a, !b ' : pair a b\n        Python = fun () =>\n            $'!a, !b ' : pair a b\n        Rust = fun () =>\n            // the tuple takes its fields: a join point's arguments are the codegen's copies (`.clone()`, or a move for a\n            // type without Clone), so a field value used again or captured by an `Fn` closure stays usable\n            inl a, b = join (a, b)\n            $'(!a, !b)' : pair a b\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_pair forall a b. (a : a) (b : b) : pair a b =
+      backend_switch {
+          Gleam = fun () =>
+              $'\#(!a, !b )' : pair a b
+          Lua = fun () =>
+              $'{!a, !b}' : pair a b
+          Fsharp = fun () =>
+              $'!a, !b ' : pair a b
+          Python = fun () =>
+              $'!a, !b ' : pair a b
+          Rust = fun () =>
+              // the tuple takes its fields: a join point's arguments are the codegen's copies (`.clone()`, or a move for a
+              // type without Clone), so a field value used again or captured by an `Fn` closure stays usable
+              inl a, b = join (a, b)
+              $'(!a, !b)' : pair a b
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### from_pair
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_pair forall a b. (pair : pair a b) : a * b =\n    backend_switch {\n        Gleam = fun () =>\n            $'let \\#(a, b) = !pair '\n            ($'a' : a), ($'b' : b)\n        Lua = fun () =>\n            $'local a, b = !pair[1], !pair[2]'\n            ($'a' : a), ($'b' : b)\n        Fsharp = fun () =>\n            $'let (a, b) = !pair '\n            ($'a' : a), ($'b' : b)\n        Python = fun () =>\n            $'a, b = !pair '\n            ($'a' : a), ($'b' : b)\n        Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_pair forall a b. (pair : pair a b) : a * b =
+      backend_switch {
+          Gleam = fun () =>
+              $'let \#(a, b) = !pair '
+              ($'a' : a), ($'b' : b)
+          Lua = fun () =>
+              $'local a, b = !pair[1], !pair[2]'
+              ($'a' : a), ($'b' : b)
+          Fsharp = fun () =>
+              $'let (a, b) = !pair '
+              ($'a' : a), ($'b' : b)
+          Python = fun () =>
+              $'a, b = !pair '
+              ($'a' : a), ($'b' : b)
+          Rust = fun () => ($'!pair.0.clone()' : a), ($'!pair.1.clone()' : b)
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nnew_pair \"a\" (new_pair 1i32 \"b\")\n|> from_pair\n|> _assert_eq' (\"a\", (new_pair 1i32 \"b\"))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  new_pair "a" (new_pair 1i32 "b")
+  |> from_pair
+  |> _assert_eq' ("a", (new_pair 1i32 "b"))
+  """,
+  timeout: 300_000
+)
+```
+
+### (||>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (||>) (arg1, arg2) fn =\n    arg2 |> fn arg1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (||>) (arg1, arg2) fn =
+      arg2 |> fn arg1
+  """,
+  timeout: 300_000
+)
+```
+
+### (||>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(3i32, 2i32)\n||> fun a b => a - b\n|> _assert_eq 1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  (3i32, 2i32)
+  ||> fun a b => a - b
+  |> _assert_eq 1
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(1i32, 2i32)\n||> flip pair\n|> _assert_eq (2, 1)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  (1i32, 2i32)
+  ||> flip pair
+  |> _assert_eq (2, 1)
+  """,
+  timeout: 300_000
+)
+```
+
+### infer
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal infer = $'_'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal infer = $'_'
+  """,
+  timeout: 300_000
+)
+```
+
+### infer'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal infer' t = $'_'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal infer' t = $'_'
+  """,
+  timeout: 300_000
+)
+```
+
+### any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal any = $'obj'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal any = $'obj'
+  """,
+  timeout: 300_000
+)
+```
+
+### null
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl null forall t. () : t =\n    backend_switch {\n        Gleam = fun () => $'Nil' : t\n        Lua = fun () => $'nil' : t\n        Fsharp = fun () => $'null |> unbox<`t>' : t\n        Python = fun () => $'None' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl null forall t. () : t =
+      backend_switch {
+          Gleam = fun () => $'Nil' : t
+          Lua = fun () => $'nil' : t
+          Fsharp = fun () => $'null |> unbox<`t>' : t
+          Python = fun () => $'None' : t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### defaultof
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec defaultof forall t. (() : ()) : t =\n    inl run default =\n        real\n            typecase t with\n            | string => \"\"\n            | int => 0\n            | char => '\\0'\n            | ~a * ~b => (defaultof `a ()), (defaultof `b ())\n            | option ~u => None `u\n            | ~t =>\n                if real_core.union_type_is `t then\n                    real_core.union_untag `t 0\n                        (fun k => forall v. => real_core.nominal_create `t (k, ()))\n                        (fun _ => failwith `t ($'\"defaultof / invalid tag\"' : string))\n                else default ()\n    backend_switch {\n        Gleam = fun () => run (fun () => ($'\"base.defaultof / invalid type / t: `t\"') : t) : t\n        Lua = fun () => run (fun () => ($'\"base.defaultof / invalid type / t: `t\"') : t) : t\n        Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t\n        // Python: the F# defaults (Unchecked.defaultof) of the primitives the typecase above doesn't list.\n        Python = fun () =>\n            run (fun () =>\n                real\n                    typecase t with\n                    | i8 => 0i8\n                    | i16 => 0i16\n                    | i64 => 0i64\n                    | u8 => 0u8\n                    | u16 => 0u16\n                    | u32 => 0u32\n                    | u64 => 0u64\n                    | f32 => 0.0f32\n                    | f64 => 0.0f64\n                    | bool => false\n                    | _ => $'\"base.defaultof / invalid type / t: `t\"' : t\n                : t\n            ) : t\n        Rust = fun () => run (fun () => $'Default::default()' : t) : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec defaultof forall t. (() : ()) : t =
+      inl run default =
+          real
+              typecase t with
+              | string => ""
+              | int => 0
+              | char => '\0'
+              | ~a * ~b => (defaultof `a ()), (defaultof `b ())
+              | option ~u => None `u
+              | ~t =>
+                  if real_core.union_type_is `t then
+                      real_core.union_untag `t 0
+                          (fun k => forall v. => real_core.nominal_create `t (k, ()))
+                          (fun _ => failwith `t ($'"defaultof / invalid tag"' : string))
+                  else default ()
+      backend_switch {
+          Gleam = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+          Lua = fun () => run (fun () => ($'"base.defaultof / invalid type / t: `t"') : t) : t
+          Fsharp = fun () => run (fun () => $'Unchecked.defaultof<`t>' : t) : t
+          // Python: the F# defaults (Unchecked.defaultof) of the primitives the typecase above doesn't list.
+          Python = fun () =>
+              run (fun () =>
+                  real
+                      typecase t with
+                      | i8 => 0i8
+                      | i16 => 0i16
+                      | i64 => 0i64
+                      | u8 => 0u8
+                      | u16 => 0u16
+                      | u32 => 0u32
+                      | u64 => 0u64
+                      | f32 => 0.0f32
+                      | f64 => 0.0f64
+                      | bool => false
+                      | _ => $'"base.defaultof / invalid type / t: `t"' : t
+                  : t
+              ) : t
+          Rust = fun () => run (fun () => $'Default::default()' : t) : t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n\nreal defaultof `string ()\n|> _assert_eq \"\"\n\nreal defaultof `i32 ()\n|> _assert_eq 0i32\n\nreal defaultof `(option string) ()\n|> _assert_eq (None : option string)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+
+  real defaultof `string ()
+  |> _assert_eq ""
+
+  real defaultof `i32 ()
+  |> _assert_eq 0i32
+
+  real defaultof `(option string) ()
+  |> _assert_eq (None : option string)
+  """,
+  timeout: 300_000
+)
+```
+
+### choice2'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.\ntype choice2_switch a b =\n    {\n        Gleam : $'Choice<`a, `b>'\n        Lua : $'Choice<`a, `b>'\n        Fsharp : $'Choice<`a, `b>'\n        Python : $'Choice<`a, `b>'\n        Rust : $'Result<`a, `b>'\n    }\nnominal choice2' a b = $'backend_switch `(choice2_switch a b)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
+  type choice2_switch a b =
+      {
+          Gleam : $'Choice<`a, `b>'
+          Lua : $'Choice<`a, `b>'
+          Fsharp : $'Choice<`a, `b>'
+          Python : $'Choice<`a, `b>'
+          Rust : $'Result<`a, `b>'
+      }
+  nominal choice2' a b = $'backend_switch `(choice2_switch a b)'
+  """,
+  timeout: 300_000
+)
+```
+
+### choice2_unbox
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =\n    run_target_args (fun () => choice) function\n        | Fsharp _ => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'\n        | RustNative => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
+      run_target_args (fun () => choice) function
+          | Fsharp _ => fun choice =>
+              inl c1of2 (x : t1) : _ _ t2 = C1of2 x
+              inl c2of2 (x : t2) : _ t1 _ = C2of2 x
+              inl c1of2 = join c1of2
+              inl c2of2 = join c2of2
+              $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
+          | RustNative => fun choice =>
+              inl c1of2 (x : t1) : _ _ t2 = C1of2 x
+              inl c2of2 (x : t2) : _ t1 _ = C2of2 x
+              inl c1of2 = join c1of2
+              inl c2of2 = join c2of2
+              $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'
+          | _ => fun _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref t = $'`t ref'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal ref t = $'`t ref'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_ref forall t. (x : t) : ref t =\n    $'ref !x '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_ref forall t. (x : t) : ref t =
+      $'ref !x '
+  """,
+  timeout: 300_000
+)
+```
+
+### ref_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ref_value forall t. (x : ref t) : t =\n    $'!x.Value'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ref_value forall t. (x : ref t) : t =
+      $'!x.Value'
+  """,
+  timeout: 300_000
+)
+```
+
+### ref_set_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =\n    $'!ref.Value <- !value '\n    ref","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ref_set_value forall t. (value : t) (ref : ref t) : ref t =
+      $'!ref.Value <- !value '
+      ref
+  """,
+  timeout: 300_000
+)
+```
+
+### exn
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type exn_switch =\n    {\n        Gleam : $'Nil'\n        Lua : $'nil'\n        Fsharp : $'exn'\n        Python : $'BaseException'\n        Rust : $'Rc<str>'\n        TypeScript : $'any'\n    }\nnominal exn = $'backend_switch `(exn_switch)'\n\ninl exn x =\n    x |> $'`exn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type exn_switch =
+      {
+          Gleam : $'Nil'
+          Lua : $'nil'
+          Fsharp : $'exn'
+          Python : $'BaseException'
+          Rust : $'Rc<str>'
+          TypeScript : $'any'
+      }
+  nominal exn = $'backend_switch `(exn_switch)'
+
+  inl exn x =
+      x |> $'`exn '
+  """,
+  timeout: 300_000
+)
+```
+
+### try
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)\n// goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints\n// nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local\n// counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and\n// there the hook always reports (it is the only report before the abort).\ninl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    $'{ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\"))) } }' : t\n\ninl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =\n    inl some x : option t = Some x\n    inl some = dyn some\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    backend_switch {\n        Gleam = fun () =>\n            fn () |> some\n        Lua = fun () =>\n            fn () |> some\n        Fsharp = fun () =>\n            $'let result = ref !(None : option t)'\n            $'try'\n            $'    result.Value <- !fn () |> !some '\n            $'with ex ->'\n            $'    result.Value <- !ex_fn ex '\n            $'result.Value' : option t\n        Python = fun () =>\n            $'result = !(None : option t)'\n            inl fn = dyn fn\n            inl ex_fn = dyn ex_fn\n            $'try:'\n            $'    result = !some(!fn())\\n        \\'\\'\\''\n            $'\\'\\'\\''\n            $'except Exception as e:'\n            $'    result = !ex_fn(e)'\n            $'result' : option t\n        // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).\n        Rust = fun () =>\n            catch_unwind_native (fun () => some (fn ())) ex_fn\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
+  // goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints
+  // nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local
+  // counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and
+  // there the hook always reports (it is the only report before the abort).
+  inl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
+      inl fn = dyn fn
+      inl ex_fn = dyn ex_fn
+      $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
+
+  inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
+      inl some x : option t = Some x
+      inl some = dyn some
+      inl fn = dyn fn
+      inl ex_fn = dyn ex_fn
+      backend_switch {
+          Gleam = fun () =>
+              fn () |> some
+          Lua = fun () =>
+              fn () |> some
+          Fsharp = fun () =>
+              $'let result = ref !(None : option t)'
+              $'try'
+              $'    result.Value <- !fn () |> !some '
+              $'with ex ->'
+              $'    result.Value <- !ex_fn ex '
+              $'result.Value' : option t
+          Python = fun () =>
+              $'result = !(None : option t)'
+              inl fn = dyn fn
+              inl ex_fn = dyn ex_fn
+              $'try:'
+              $'    result = !some(!fn())\n        \'\'\''
+              $'\'\'\''
+              $'except Exception as e:'
+              $'    result = !ex_fn(e)'
+              $'result' : option t
+          // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
+          Rust = fun () =>
+              catch_unwind_native (fun () => some (fn ())) ex_fn
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntry\n    fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format\n    (fun ex => $'!ex ' |> sm'.format_exception |> Some)\n|> optionm.value\n|> _assert_eq (run_target function\n    | Gleam => fun () => null ()\n    | Lua => fun () => null ()\n    | Fsharp => fun () => join \"System.IndexOutOfRangeException: Index was outside the bounds of the array.\"\n    | Cuda => fun () => \"index 1 is out of bounds for axis 0 with size 1\"\n    | Cpp => fun () => null ()\n    | Rust => fun () => \"Exception { message: \\\"index out of bounds: the len is 1 but the index is 1\\\" }\"\n    | RustNative => fun () => \"index out of bounds: the len is 1 but the index is 1\"\n    | TypeScript => fun () => \"Error: Index was outside the bounds of the array.\\\\nParameter name: index\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  try
+      fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
+      (fun ex => $'!ex ' |> sm'.format_exception |> Some)
+  |> optionm.value
+  |> _assert_eq (run_target function
+      | Gleam => fun () => null ()
+      | Lua => fun () => null ()
+      | Fsharp => fun () => join "System.IndexOutOfRangeException: Index was outside the bounds of the array."
+      | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
+      | Cpp => fun () => null ()
+      | Rust => fun () => "Exception { message: \"index out of bounds: the len is 1 but the index is 1\" }"
+      | RustNative => fun () => "index out of bounds: the len is 1 but the index is 1"
+      | TypeScript => fun () => "Error: Index was outside the bounds of the array.\\nParameter name: index"
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntry\n    fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format\n    (fun ex => $'!ex ' |> sm'.format_exception |> Some)\n|> optionm.value\n|> _assert_eq \"0\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  try
+      fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
+      (fun ex => $'!ex ' |> sm'.format_exception |> Some)
+  |> optionm.value
+  |> _assert_eq "0"
+  """,
+  timeout: 300_000
+)
+```
+
+### try_unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// F# and Python: try_unit / try_finally as one-line try statements over the closures\ninl try_unit_fsharp_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => true\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: a panic is the exception (catch_unwind_native).\n        catch_unwind_native fn (fun ex => ex_fn fun () => ex)\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl ex_fn = dyn ex_fn\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()\n                $'()' : t\n            // (a helper def: the Python codegen puts `del` lines after a variable's last use, which would split a\n            // try/except written inline)\n            Python = fun () =>\n                global \"def _spiral_try_unit(fn, ex_fn):\\n    try: fn()\\n    except Exception as ex: ex_fn(lambda: ex)\"\n                $'_spiral_try_unit(!fn, !ex_fn)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'with ex ->' : ()\n            Python = fun () => $'except Exception as ex:' : ()\n        }\n        fun () =>\n            inl ex = $'ex'\n            backend_switch {\n                Fsharp = fun () => $'()' : ()\n            }\n            inl ex () =\n                ex\n            ex_fn ex\n        |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () =>\n                $'|> ignore'\n                $'(* try_unit'\n                $'try_unit *)' : t\n            Python = fun () => $'None' : t\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // F# and Python: try_unit / try_finally as one-line try statements over the closures
+  inl try_unit_fsharp_python () : bool =
+      backend_switch {
+          Gleam = fun () => false
+          Lua = fun () => false
+          Fsharp = fun () => true
+          Python = fun () => true
+          TypeScript = fun () => false
+          Cpp = fun () => false
+          CppHost = fun () => false
+          Delphi = fun () => false
+          Cuda = fun () => false
+          Rust = fun () => false
+      }
+
+  inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
+      inl native =
+          backend_switch {
+              Gleam = fun () => false
+              Lua = fun () => false
+              Fsharp = fun () => false
+              Python = fun () => false
+              TypeScript = fun () => false
+              Cpp = fun () => false
+              CppHost = fun () => false
+              Delphi = fun () => false
+              Cuda = fun () => false
+              Rust = fun () => true
+          }
+      if native
+      then
+          // Native Rust: a panic is the exception (catch_unwind_native).
+          catch_unwind_native fn (fun ex => ex_fn fun () => ex)
+          $'()' : t
+      elif try_unit_fsharp_python ()
+      then
+          inl fn = dyn fn
+          inl ex_fn = dyn ex_fn
+          backend_switch {
+              Fsharp = fun () =>
+                  $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()
+                  $'()' : t
+              // (a helper def: the Python codegen puts `del` lines after a variable's last use, which would split a
+              // try/except written inline)
+              Python = fun () =>
+                  global "def _spiral_try_unit(fn, ex_fn):\n    try: fn()\n    except Exception as ex: ex_fn(lambda: ex)"
+                  $'_spiral_try_unit(!fn, !ex_fn)' : ()
+                  $'None' : t
+          }
+      else
+          backend_switch {
+              Gleam = fun () => $'// base.try_unit' : ()
+              Lua = fun () => $'-- base.try_unit' : ()
+              Fsharp = fun () => $'try' : ()
+              Python = fun () => $'try:' : ()
+          }
+          fn |> indent
+          backend_switch {
+              Gleam = fun () => $'// base.try_unit' : ()
+              Lua = fun () => $'-- base.try_unit' : ()
+              Fsharp = fun () => $'with ex ->' : ()
+              Python = fun () => $'except Exception as ex:' : ()
+          }
+          fun () =>
+              inl ex = $'ex'
+              backend_switch {
+                  Fsharp = fun () => $'()' : ()
+              }
+              inl ex () =
+                  ex
+              ex_fn ex
+          |> indent
+          backend_switch {
+              Gleam = fun () => $'// base.try_unit' : ()
+              Lua = fun () => $'-- base.try_unit' : ()
+              Fsharp = fun () =>
+                  $'|> ignore'
+                  $'(* try_unit'
+                  $'try_unit *)' : t
+              Python = fun () => $'None' : t
+          }
+  """,
+  timeout: 300_000
+)
+```
+
+### try_unit'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =\n    try_unit fn ex_fn","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
+      try_unit fn ex_fn
+  """,
+  timeout: 300_000
+)
+```
+
+### try_finally
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.\n        inl fn = dyn fn\n        inl finally = dyn finally\n        $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl finally = dyn finally\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () finally !finally ()' : ()\n                $'()' : t\n            Python = fun () =>\n                global \"def _spiral_try_finally(fn, finally_fn):\\n    try: fn()\\n    finally: finally_fn()\"\n                $'_spiral_try_finally(!fn, !finally)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'finally' : ()\n            Python = fun () => $'finally:' : ()\n        }\n        finally |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () =>\n                $'(* try_finally'\n                $'try_finally *)'\n                ()\n            Python = fun () => $'// base.try_finally' : ()\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
+      inl native =
+          backend_switch {
+              Gleam = fun () => false
+              Lua = fun () => false
+              Fsharp = fun () => false
+              Python = fun () => false
+              TypeScript = fun () => false
+              Cpp = fun () => false
+              CppHost = fun () => false
+              Delphi = fun () => false
+              Cuda = fun () => false
+              Rust = fun () => true
+          }
+      if native
+      then
+          // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
+          inl fn = dyn fn
+          inl finally = dyn finally
+          $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()
+          $'()' : t
+      elif try_unit_fsharp_python ()
+      then
+          inl fn = dyn fn
+          inl finally = dyn finally
+          backend_switch {
+              Fsharp = fun () =>
+                  $'try !fn () finally !finally ()' : ()
+                  $'()' : t
+              Python = fun () =>
+                  global "def _spiral_try_finally(fn, finally_fn):\n    try: fn()\n    finally: finally_fn()"
+                  $'_spiral_try_finally(!fn, !finally)' : ()
+                  $'None' : t
+          }
+      else
+          backend_switch {
+              Gleam = fun () => $'// base.try_finally' : ()
+              Lua = fun () => $'-- base.try_finally' : ()
+              Fsharp = fun () => $'try' : ()
+              Python = fun () => $'try:' : ()
+          }
+          fn |> indent
+          backend_switch {
+              Gleam = fun () => $'// base.try_finally' : ()
+              Lua = fun () => $'-- base.try_finally' : ()
+              Fsharp = fun () => $'finally' : ()
+              Python = fun () => $'finally:' : ()
+          }
+          finally |> indent
+          backend_switch {
+              Gleam = fun () => $'// base.try_finally' : ()
+              Lua = fun () => $'-- base.try_finally' : ()
+              Fsharp = fun () =>
+                  $'(* try_finally'
+                  $'try_finally *)'
+                  ()
+              Python = fun () => $'// base.try_finally' : ()
+          }
+  """,
+  timeout: 300_000
+)
+```
+
+### (:>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"prototype (~:>) r : forall t. t -> r","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  prototype (~:>) r : forall t. t -> r
+  """,
+  timeout: 300_000
+)
+```

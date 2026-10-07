@@ -189,7 +189,7 @@ inl union_to_string forall t. (x : t) : string =
                         Lua = fun () => "("
                         Fsharp = fun () =>
                             run_target function
-                                | Rust _ | RustNative => fun () => join "("
+                                | RustNative => fun () => join "("
                                 | _ => fun () => join " "
                         Python = fun () => "("
                         // Native Debug prints a union case as `US0_1(..)`.

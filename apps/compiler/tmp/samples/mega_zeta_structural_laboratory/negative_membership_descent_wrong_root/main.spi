@@ -1,3 +1,5 @@
+open main
+
 inl impossible_factor_membership_descent_wrong_root () =
     derive_certified_interval_positive_positional_membership_recursive_descent
         (positive_positional_four_value ())

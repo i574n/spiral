@@ -1,0 +1,1544 @@
+# am'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## am'
+
+<!-- livebook:{"break_markdown":true} -->
+
+### length
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl length forall dim {int} el. (a : a dim el) : dim =\n    a |> length","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl length forall dim {int} el. (a : a dim el) : dim =
+      a |> length
+  """,
+  timeout: 300_000
+)
+```
+
+### index
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index forall dim {int} el. (i : dim) (a : a dim el) : el =\n    backend_switch {\n        Gleam = fun () => index a i\n        Lua = fun () => index a i\n        Fsharp = fun () => index a i\n        Python = fun () => $'!a[!i]' : el\n        Rust = fun () => index a i\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
+      backend_switch {
+          Gleam = fun () => index a i
+          Lua = fun () => index a i
+          Fsharp = fun () => index a i
+          Python = fun () => $'!a[!i]' : el
+          Rust = fun () => index a i
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### index_base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_base forall el. (i : int) (ar : array_base el) : el =\n    ar |> a |> index i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index_base forall el. (i : int) (ar : array_base el) : el =
+      ar |> a |> index i
+  """,
+  timeout: 300_000
+)
+```
+
+### base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl base forall dim {int} el. ((a a) : a dim el) : array_base el =\n    a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl base forall dim {int} el. ((a a) : a dim el) : array_base el =
+      a
+  """,
+  timeout: 300_000
+)
+```
+
+### base'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl base' forall el. ((a a) : a int el) : array_base el =\n    a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl base' forall el. ((a a) : a int el) : array_base el =
+      a
+  """,
+  timeout: 300_000
+)
+```
+
+### generic_equable
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl generic_equable x1 x2 =\n    if length x1 <>.. length x2\n    then false\n    else\n        let rec 루프 i =\n            if i < length x1\n            then index i x1 = index i x2 && 루프 (i + 1)\n            else true\n        루프 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl generic_equable x1 x2 =
+      if length x1 <>.. length x2
+      then false
+      else
+          let rec 루프 i =
+              if i < length x1
+              then index i x1 = index i x2 && 루프 (i + 1)
+              else true
+          루프 0
+  """,
+  timeout: 300_000
+)
+```
+
+### equable
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance equable a dim {number; int} t = generic_equable","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance equable a dim {number; int} t = generic_equable
+  """,
+  timeout: 300_000
+)
+```
+
+### append
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance append a dim {int; number} t = am.append","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance append a dim {int; number} t = am.append
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n////> fsharp\n////> cuda\n////> rust\n////> typescript\n////> python\n\n// Pattern miss.\n// Got: {name : __assert_eq; actual : array_base i64 : a i64 i64; expected : array_base i64 : a i64 i64}\n\n// a' ;[ -1i64; 0 ] ++ a' ;[ 1; 2 ]\n// |> _assert_eq (a' ;[ -1; 0; 1; 2 ])\n()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ////> fsharp
+  ////> cuda
+  ////> rust
+  ////> typescript
+  ////> python
+
+  // Pattern miss.
+  // Got: {name : __assert_eq; actual : array_base i64 : a i64 i64; expected : array_base i64 : a i64 i64}
+
+  // a' ;[ -1i64; 0 ] ++ a' ;[ 1; 2 ]
+  // |> _assert_eq (a' ;[ -1; 0; 1; 2 ])
+  ()
+  """,
+  timeout: 300_000
+)
+```
+
+### map_base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map_base forall t u. (fn : t -> u) (x : array_base t) : array_base u =\n    a x\n    |> am.map fn\n    |> fun (a x : _ int _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map_base forall t u. (fn : t -> u) (x : array_base t) : array_base u =
+      a x
+      |> am.map fn
+      |> fun (a x : _ int _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+### collect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl collect forall t r. (fn : t -> a int r) (items : a int t) : a int r =\n    items\n    |> am.map fn\n    |> am.fold (++) (a ;[])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl collect forall t r. (fn : t -> a int r) (items : a int t) : a int r =
+      items
+      |> am.map fn
+      |> am.fold (++) (a ;[])
+  """,
+  timeout: 300_000
+)
+```
+
+### init_base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init_base n fn : array_base _ =\n    am.init n fn\n    |> fun (a x : _ int _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init_base n fn : array_base _ =
+      am.init n fn
+      |> fun (a x : _ int _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+### init
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init n : array_base _ =\n    init_base n id","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init n : array_base _ =
+      init_base n id
+  """,
+  timeout: 300_000
+)
+```
+
+### choose
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl choose f l =\n    (l, [])\n    ||> am.foldBack fun x acc =>\n        match f x with\n        | Some y => y :: acc\n        | None => acc\n    |> listm.toArray","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl choose f l =
+      (l, [])
+      ||> am.foldBack fun x acc =>
+          match f x with
+          | Some y => y :: acc
+          | None => acc
+      |> listm.toArray
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n////> rust // v0.get_mut()[v2.get().clone() as usize] = match v1.get().clone().as_ref() { ^ expected `i32`, found `usize`\n///> typescript\n///> cuda\n\n10\n|> init\n|> fun x => a x : _ int _\n|> choose (fun x => if x % 2 = 0 then Some x else None)\n|> _assert_eq (a' ;[ 0; 2; 4; 6; 8 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ////> rust // v0.get_mut()[v2.get().clone() as usize] = match v1.get().clone().as_ref() { ^ expected `i32`, found `usize`
+  ///> typescript
+  ///> cuda
+
+  10
+  |> init
+  |> fun x => a x : _ int _
+  |> choose (fun x => if x % 2 = 0 then Some x else None)
+  |> _assert_eq (a' ;[ 0; 2; 4; 6; 8 ])
+  """,
+  timeout: 300_000
+)
+```
+
+### sum
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sum a =\n    a |> am.fold (+) 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sum a =
+      a |> am.fold (+) 0
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n10\n|> init\n|> fun x => a x : _ int _\n|> sum\n|> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  10
+  |> init
+  |> fun x => a x : _ int _
+  |> sum
+  |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+### init_series
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init_series start end inc : array_base _ =\n    inl total = conv ((end - start) / inc) + 1\n    am.init total (conv >> (*) inc >> (+) start)\n    |> fun (a x : _ int _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init_series start end inc : array_base _ =
+      inl total = conv ((end - start) / inc) + 1
+      am.init total (conv >> (*) inc >> (+) start)
+      |> fun (a x : _ int _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ninit_series 0i32 6 2\n|> a\n|> fun x => x : _ int _\n|> _assert_eq (a ;[ 0i32; 2; 4; 6 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  init_series 0i32 6 2
+  |> a
+  |> fun x => x : _ int _
+  |> _assert_eq (a ;[ 0i32; 2; 4; 6 ])
+  """,
+  timeout: 300_000
+)
+```
+
+### head
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl head (ar : a _ _) =\n    if var_is ar || length ar > 0\n    then ar |> index 0\n    else error_type \"The length of the array should be greater than 0.\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl head (ar : a _ _) =
+      if var_is ar || length ar > 0
+      then ar |> index 0
+      else error_type "The length of the array should be greater than 0."
+  """,
+  timeout: 300_000
+)
+```
+
+### last
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl last (ar : a _ _) =\n    inl len = length ar\n    if var_is ar || len > 0\n    then ar |> index (len - 1)\n    else error_type \"The length of the array should be greater than 0.\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl last (ar : a _ _) =
+      inl len = length ar
+      if var_is ar || len > 0
+      then ar |> index (len - 1)
+      else error_type "The length of the array should be greater than 0."
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n10\n|> init\n|> fun x => a x : _ int _\n|> last\n|> _assert_eq 9","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  10
+  |> init
+  |> fun x => a x : _ int _
+  |> last
+  |> _assert_eq 9
+  """,
+  timeout: 300_000
+)
+```
+
+### try_pick
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =\n    (array, None)\n    ||> am.foldBack fun x acc =>\n        match acc with\n        | Some _ => acc\n        | None => x |> fn","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
+      (array, None)
+      ||> am.foldBack fun x acc =>
+          match acc with
+          | Some _ => acc
+          | None => x |> fn
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n////> rust // match &v23 { Spiral_builder::US0::US0_0(x) => x.clone(), _ => unreachable!(), } == 5_i32\n///> typescript\n///> cuda\n\n10\n|> init\n|> fun x => a x : _ int _\n|> try_pick (fun x => if x = 5i32 then Some x else None)\n|> _assert_eq (Some 5i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ////> rust // match &v23 { Spiral_builder::US0::US0_0(x) => x.clone(), _ => unreachable!(), } == 5_i32
+  ///> typescript
+  ///> cuda
+
+  10
+  |> init
+  |> fun x => a x : _ int _
+  |> try_pick (fun x => if x = 5i32 then Some x else None)
+  |> _assert_eq (Some 5i32)
+  """,
+  timeout: 300_000
+)
+```
+
+### indexed
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =\n    ((0, a ;[]), (a ar : _ int _))\n    ||> am.fold fun (i, acc) x =>\n        i + 1, acc ++ a ;[i, x]\n    |> snd\n    |> fun (a x : _ int _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
+      ((0, a ;[]), (a ar : _ int _))
+      ||> am.fold fun (i, acc) x =>
+          i + 1, acc ++ a ;[i, x]
+      |> snd
+      |> fun (a x : _ int _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n////> cuda // Only stack allocated primitive types (i8,i16,i32,i64 and u8,u16,u32,u64 and f32,f64 and bool) are allowed in CuPy arrays.\n///> rust\n///> typescript\n///> cuda\n\nam.init 3i32 ((*) 2)\n|> fun (a x : _ int _) => x\n|> indexed\n|> _assert_eq' ;[0i32, 0; 1, 2; 2, 4]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ////> cuda // Only stack allocated primitive types (i8,i16,i32,i64 and u8,u16,u32,u64 and f32,f64 and bool) are allowed in CuPy arrays.
+  ///> rust
+  ///> typescript
+  ///> cuda
+
+  am.init 3i32 ((*) 2)
+  |> fun (a x : _ int _) => x
+  |> indexed
+  |> _assert_eq' ;[0i32, 0; 1, 2; 2, 4]
+  """,
+  timeout: 300_000
+)
+```
+
+### slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice forall dim {int; number} el. from nearTo s : a dim el =\n    am.slice { from nearTo } s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice forall dim {int; number} el. from nearTo s : a dim el =
+      am.slice { from nearTo } s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ninl x : _ i32 _ = a ;[ 1i32; 2; 3 ]\nx |> slice 0 0 |> _assert_eq (a ;[])\nx |> slice 0 1 |> _assert_eq (a ;[ 1 ])\nx |> slice 1 1 |> _assert_eq (a ;[])\nx |> slice 1 2 |> _assert_eq (a ;[ 2 ])\nx |> slice 2 2 |> _assert_eq (a ;[])\nx |> slice 0 2 |> _assert_eq (a ;[ 1; 2 ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  inl x : _ i32 _ = a ;[ 1i32; 2; 3 ]
+  x |> slice 0 0 |> _assert_eq (a ;[])
+  x |> slice 0 1 |> _assert_eq (a ;[ 1 ])
+  x |> slice 1 1 |> _assert_eq (a ;[])
+  x |> slice 1 2 |> _assert_eq (a ;[ 2 ])
+  x |> slice 2 2 |> _assert_eq (a ;[])
+  x |> slice 0 2 |> _assert_eq (a ;[ 1; 2 ])
+  """,
+  timeout: 300_000
+)
+```
+
+### range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union range dim =\n    | Start : dim\n    | End : (() -> dim) -> dim\n\ninl range start end s =\n    inl start, end =\n        inl len () =\n            s |> length |> conv\n        match start, end with\n        | Start start, End fn =>\n            start, fn len\n        | End start_fn, End end_fn =>\n            start_fn len, end_fn len\n    s |> slice (start |> convert.unbox) (end |> convert.unbox)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union range dim =
+      | Start : dim
+      | End : (() -> dim) -> dim
+
+  inl range start end s =
+      inl start, end =
+          inl len () =
+              s |> length |> conv
+          match start, end with
+          | Start start, End fn =>
+              start, fn len
+          | End start_fn, End end_fn =>
+              start_fn len, end_fn len
+      s |> slice (start |> convert.unbox) (end |> convert.unbox)
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal vec t =\n    `(\n        native_type\n            `($'Vec<`t>')\n            `($'Vec<`t>')\n            \"type Vec<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal vec t =
+      `(
+          native_type
+              `($'Vec<`t>')
+              `($'Vec<`t>')
+              "type Vec<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### from_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_vec forall dim el. (vec : vec el) : a dim el =\n    backend_switch {\n        Rust = fun () =>\n            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)\n            inl vec = join vec\n            $'Rc::new(RefCell::new(!vec))' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_vec forall dim el. (vec : vec el) : a dim el =
+      backend_switch {
+          Rust = fun () =>
+              // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
+              inl vec = join vec
+              $'Rc::new(RefCell::new(!vec))' : a dim el
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### from_vec_base
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_vec_base forall el. (vec : vec el) : array_base el =\n    backend_switch {\n        Rust = fun () =>\n            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)\n            inl vec = join vec\n            $'Rc::new(RefCell::new(!vec))' : array_base el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_vec_base forall el. (vec : vec el) : array_base el =
+      backend_switch {
+          Rust = fun () =>
+              // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
+              inl vec = join vec
+              $'Rc::new(RefCell::new(!vec))' : array_base el
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_vec forall t. (ab : array_base t) : vec t =\n    backend_switch {\n        Rust = fun () => $'(!ab).borrow().clone()' : vec t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_vec forall t. (ab : array_base t) : vec t =
+      backend_switch {
+          Rust = fun () => $'(!ab).borrow().clone()' : vec t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_vec'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =\n    backend_switch {\n        Rust = fun () => $'(!x).clone()' : vec u\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
+      backend_switch {
+          Rust = fun () => $'(!x).clone()' : vec u
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_vec''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =\n    backend_switch {\n        Rust = fun () => $'(!x).to_vec()' : vec v\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
+      backend_switch {
+          Rust = fun () => $'(!x).to_vec()' : vec v
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_vec'''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_vec''' forall t. (ab : array_base t) : vec t =\n    !\\\\(ab, $'\"to_vec($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_vec''' forall t. (ab : array_base t) : vec t =
+      !\\(ab, $'"to_vec($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_push
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_push forall el. (el : el) (vec : vec el) : vec el =\n    inl el = join el\n    inl vec = join vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    // inl vec = vec |> rust.to_mut\n    (!\\($'\"true; !vec.push(!el)\"') : bool) |> ignore\n    !\\($'\"!vec\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_push forall el. (el : el) (vec : vec el) : vec el =
+      inl el = join el
+      inl vec = join vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      // inl vec = vec |> rust.to_mut
+      (!\($'"true; !vec.push(!el)"') : bool) |> ignore
+      !\($'"!vec"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_reverse
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_reverse forall el. (vec : vec el) : vec el =\n    inl vec = join vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.reverse()\"') : bool) |> ignore\n    !\\($'\"!vec\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_reverse forall el. (vec : vec el) : vec el =
+      inl vec = join vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.reverse()"') : bool) |> ignore
+      !\($'"!vec"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_retain
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =\n    inl vec = join vec\n    inl fn = join fn\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    // inl vec = vec |> rust.to_mut\n    (!\\($'\"true; !vec.retain(|x| !fn(x.clone()))\"') : bool) |> ignore\n    !\\($'\"!vec\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
+      inl vec = join vec
+      inl fn = join fn
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      // inl vec = vec |> rust.to_mut
+      (!\($'"true; !vec.retain(|x| !fn(x.clone()))"') : bool) |> ignore
+      !\($'"!vec"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_sort_by_key
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =\n    inl vec = join vec\n    // a tuple element is one Rust value: see rust.one_param_fn\n    inl fn = rust.one_param_fn fn\n    inl fn = join fn\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    (!\\($'\"true; !vec.sort_by_key(|x| !fn(x.clone()))\"') : bool) |> ignore\n    !\\($'\"!vec\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
+      inl vec = join vec
+      // a tuple element is one Rust value: see rust.one_param_fn
+      inl fn = rust.one_param_fn fn
+      inl fn = join fn
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
+      !\($'"!vec"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_extend
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =\n    inl el = join el\n    inl vec = join vec\n    (!\\($'\"true; let mut !vec = !vec\"') : bool) |> ignore\n    // inl vec = vec |> rust.to_mut\n    (!\\($'\"true; !vec.extend(!el)\"') : bool) |> ignore\n    !\\($'\"!vec\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
+      inl el = join el
+      inl vec = join vec
+      (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+      // inl vec = vec |> rust.to_mut
+      (!\($'"true; !vec.extend(!el)"') : bool) |> ignore
+      !\($'"!vec"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_mapi
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =\n    // a tuple element is one Rust value: see rust.one_param_fn\n    inl fn i = rust.one_param_fn (fn i)\n    inl fn = join fn\n    inl ar = join ar\n    !\\($'\"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
+      // a tuple element is one Rust value: see rust.one_param_fn
+      inl fn i = rust.one_param_fn (fn i)
+      inl fn = join fn
+      inl ar = join ar
+      !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =\n    // as vec_map': a macro bound to a tuple (element or result) would splice its first field only\n    inl fn = rust.one_param_fn fn\n    // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again\n    !\\\\((ar, fn), $'\"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
+      // as vec_map': a macro bound to a tuple (element or result) would splice its first field only
+      inl fn = rust.one_param_fn fn
+      // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again
+      !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_map'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =\n    // a tuple element is one Rust value: see rust.one_param_fn\n    inl fn = rust.one_param_fn fn\n    !\\\\((ar, fn), $'\"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
+      // a tuple element is one Rust value: see rust.one_param_fn
+      inl fn = rust.one_param_fn fn
+      !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_fold'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_fold' forall t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =\n    (!\\\\(ar, $'\"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"acc\"') !\\($'\"x\"'), $'\"true; $0 })\"') : bool) |> ignore\n    !\\($'\"_vec_fold_\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_fold' forall t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
+      (!\\(ar, $'"true; let _vec_fold_ = $0.into_iter().fold(!init, |acc, x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"acc"') !\($'"x"'), $'"true; $0 })"') : bool) |> ignore
+      !\($'"_vec_fold_"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_for_each
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\((ar, fn), $'\"true; $0.iter().for_each(|x| { $1(x.clone()); }); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\((ar, fn), $'"true; $0.iter().for_each(|x| { $1(x.clone()); }); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_for_each'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }}); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }}); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_for_each''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_for_each'' forall t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }}); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_for_each'' forall t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }}); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_for_each'''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =\n    (!\\\\(ar, $'\"true; $0.into_iter().for_each(|x| { //\"') : bool) |> ignore\n    (!\\\\(fn !\\($'\"x\"'), $'$\"true\"') : bool) |> ignore\n    (!\\($'\"true; }); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
+      (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
+      (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
+      (!\($'"true; }); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_filter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =\n    // a tuple element is one Rust value: see rust.one_param_fn\n    inl fn = rust.one_param_fn fn\n    !\\\\((ar, fn), $'\"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
+      // a tuple element is one Rust value: see rust.one_param_fn
+      inl fn = rust.one_param_fn fn
+      !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_len
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_len forall t. (vec : vec t) : convert.unativeint =\n    backend_switch {\n        Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_len forall t. (vec : vec t) : convert.unativeint =
+      backend_switch {
+          Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_chunks
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =\n    !\\\\(vec, $'\"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
+      !\\(vec, $'"$0.chunks(!n).map(|x| x.into_iter().map(|x| x.clone()).collect::<Vec<_>>()).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice t =\n    `(\n        native_type\n            `($'Slice<`t>')\n            `($'[`t]')\n            \"type Slice<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal slice t =
+      `(
+          native_type
+              `($'Slice<`t>')
+              `($'[`t]')
+              "type Slice<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### slice'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type slice'_switch el =\n    {\n        Gleam : $'Slice\\'<`el>'\n        Lua : $'Slice\\'<`el>'\n        Fsharp : $'Slice\\'<`el>'\n        Python : $'Slice\\'<`el>'\n        TypeScript : $'Slice\\'<`el>'\n        Cpp : $'Slice\\'<`el>'\n        CppHost : $'Slice\\'<`el>'\n        Delphi : $'Slice\\'<`el>'\n        Cuda : $'Slice\\'<`el>'\n        Rust : $'_'\n    }\nnominal slice' el dim =\n    `(\n        fsharp_global \"type Slice'<'T> = class end\"\n        $'' : $'backend_switch `(slice'_switch el)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type slice'_switch el =
+      {
+          Gleam : $'Slice\'<`el>'
+          Lua : $'Slice\'<`el>'
+          Fsharp : $'Slice\'<`el>'
+          Python : $'Slice\'<`el>'
+          TypeScript : $'Slice\'<`el>'
+          Cpp : $'Slice\'<`el>'
+          CppHost : $'Slice\'<`el>'
+          Delphi : $'Slice\'<`el>'
+          Cuda : $'Slice\'<`el>'
+          Rust : $'_'
+      }
+  nominal slice' el dim =
+      `(
+          fsharp_global "type Slice'<'T> = class end"
+          $'' : $'backend_switch `(slice'_switch el)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### slice''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice'' el dim =\n    `(\n        native_type\n            `($'Slice\\'_<`el>')\n            `($'[`el; 10]')\n            \"type Slice'_<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal slice'' el dim =
+      `(
+          native_type
+              `($'Slice\'_<`el>')
+              `($'[`el; 10]')
+              "type Slice'_<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### slice_singleton
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice_singleton forall dim el. (x : option el) : slice' el dim =\n    match x with\n    | Some x => !\\($'\"[!x]\"')\n    | None =>\n        !\\($'\"[\\\\\\\"\\\\\\\".to_string()]\"') : slice' el dim\n            // emit_expr `(()) `(slice' el dim) () ($'\"[@dim]\"' : string) : slice' el 10\n            // !\\( : string) : slice' el i32 // !\\($'\"[]\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice_singleton forall dim el. (x : option el) : slice' el dim =
+      match x with
+      | Some x => !\($'"[!x]"')
+      | None =>
+          !\($'"[\\\"\\\".to_string()]"') : slice' el dim
+              // emit_expr `(()) `(slice' el dim) () ($'"[@dim]"' : string) : slice' el 10
+              // !\( : string) : slice' el i32 // !\($'"[]"')
+  """,
+  timeout: 300_000
+)
+```
+
+### slice_length
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =\n    !\\($'\"!x.len()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =
+      !\($'"!x.len()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### slice_range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice_range forall t dim.\n    (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)\n    =\n    inl len () =\n        s |> slice_length\n    inl start, (end : convert.unativeint) =\n        match start, end with\n        | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert\n        | End start_fn, End end_fn =>\n            (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert\n    match start, end with\n    | start, end when end |> convert.unbox =. len () => !\\($'\"&!s[!start..]\"')\n    | start, end => !\\\\((start, end), $'\"&!s[$0..$1]\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice_range forall t dim.
+      (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)
+      =
+      inl len () =
+          s |> slice_length
+      inl start, (end : convert.unativeint) =
+          match start, end with
+          | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert
+          | End start_fn, End end_fn =>
+              (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert
+      match start, end with
+      | start, end when end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
+      | start, end => !\\((start, end), $'"&!s[$0..$1]"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_slice forall el dim. (el : el) : slice' el dim =\n    !\\\\(el, $'\"[$0; @dim as usize]\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_slice forall el dim. (el : el) : slice' el dim =
+      !\\(el, $'"[$0; @dim as usize]"')
+  """,
+  timeout: 300_000
+)
+```
+
+### as_slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_slice forall t. (x : array_base t) : rust.ref (slice t) =\n    inl x = x |> to_vec\n    !\\($'\"!x.as_slice()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_slice forall t. (x : array_base t) : rust.ref (slice t) =
+      inl x = x |> to_vec
+      !\($'"!x.as_slice()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### slice_to_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =\n    !\\\\(slice, $'\"$0.iter().map(|x| *x).collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =
+      !\\(slice, $'"$0.iter().map(|x| *x).collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### to_le_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_le_bytes forall t. (x : t) : slice' u8 8 =\n    backend_switch {\n        Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_le_bytes forall t. (x : t) : slice' u8 8 =
+      backend_switch {
+          Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### as_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_bytes forall t. (x : t) : rust.ref (slice u8) =\n    backend_switch {\n        Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
+      backend_switch {
+          Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl any forall t. (fn : t -> bool) (source : array_base t) : bool =\n    !\\($'\"!source.any(|x| !fn(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl any forall t. (fn : t -> bool) (source : array_base t) : bool =
+      !\($'"!source.any(|x| !fn(x))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iter_collect vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance iter_collect vec = fun (iter : into_iterator u) =>\n    !\\\\(iter, $'\"$0.collect::<Vec<_>>()\"')\n\ninstance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>\n    !\\\\(iter, $'\"$0.collect::<Vec<_>>()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance iter_collect vec = fun (iter : into_iterator u) =>
+      !\\(iter, $'"$0.collect::<Vec<_>>()"')
+
+  instance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>
+      !\\(iter, $'"$0.collect::<Vec<_>>()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_vec forall t. (items : list t) : vec t =\n    backend_switch {\n        Rust = fun () =>\n            inl v : vec t = $'Vec::new()'\n            items |> listm.iter fun x => $'!v.push(!x)' : ()\n            v\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_vec forall t. (items : list t) : vec t =
+      backend_switch {
+          Rust = fun () =>
+              inl v : vec t = $'Vec::new()'
+              items |> listm.iter fun x => $'!v.push(!x)' : ()
+              v
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\n[ 0i32; 1 ]\n|> new_vec\n|> sm'.format_debug'\n|> sm'.from_std_string\n|> _assert_eq \"[0, 1]\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust
+
+  [ 0i32; 1 ]
+  |> new_vec
+  |> sm'.format_debug'
+  |> sm'.from_std_string
+  |> _assert_eq "[0, 1]"
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### average
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl average forall el {number}. (a : a _ el) : el =\n    $'!a |> Array.average'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl average forall el {number}. (a : a _ el) : el =
+      $'!a |> Array.average'
+  """,
+  timeout: 300_000
+)
+```
+
+### distinct
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct forall dim el. (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then\n        // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions\n        // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need\n        inl a = $'!a ' : a int el\n        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el\n        loopw.for' {from=0; nearTo=length a} fun i =>\n            inl x = index i a\n            inl n = length r\n            inl s = mut {j=0}\n            loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>\n                s <- {j=s.j + 1}\n            if s.j = n then $'!r.borrow_mut().push(!x)' : ()\n        $'!r ' : a dim el\n    else $'!a |> Array.distinct'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl distinct forall dim el. (a : a dim el) : a dim el =
+      if rust.is_native ()
+      then
+          // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
+          // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need
+          inl a = $'!a ' : a int el
+          inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
+          loopw.for' {from=0; nearTo=length a} fun i =>
+              inl x = index i a
+              inl n = length r
+              inl s = mut {j=0}
+              loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>
+                  s <- {j=s.j + 1}
+              if s.j = n then $'!r.borrow_mut().push(!x)' : ()
+          $'!r ' : a dim el
+      else $'!a |> Array.distinct'
+  """,
+  timeout: 300_000
+)
+```
+
+### skip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skip !n '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
+      if rust.is_native ()
+      then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
+      else $'!a |> Array.skip !n '
+  """,
+  timeout: 300_000
+)
+```
+
+### skip_while
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skipWhile !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
+      if rust.is_native ()
+      then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
+      else $'!a |> Array.skipWhile !fn '
+  """,
+  timeout: 300_000
+)
+```
+
+### to_list_base'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_list_base' forall t. (items : array_base t) : listm'.list' t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gary/array\"\n            $'!items |> array.to_list' : listm'.list' t\n        Lua = fun () => items |> convert.to : listm'.list' t\n        Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t\n        Python = fun () => items |> convert.to : listm'.list' t\n        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gary/array"
+              $'!items |> array.to_list' : listm'.list' t
+          Lua = fun () => items |> convert.to : listm'.list' t
+          Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
+          Python = fun () => items |> convert.to : listm'.list' t
+          Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_list'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =\n    items |> base |> to_list_base'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =
+      items |> base |> to_list_base'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\na' ;[ -3i32; 6 ]\n|> to_list'\n|> listm'.unbox\n|> _assert_eq [ -3; 6 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  a' ;[ -3i32; 6 ]
+  |> to_list'
+  |> listm'.unbox
+  |> _assert_eq [ -3; 6 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_collect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_collect fn vec =\n    ((;[] |> to_vec), ((vec |> from_vec : _ int _) |> to_list' |> listm'.unbox))\n    ||> listm.fold fun acc x =>\n        acc |> vec_extend (fn x)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_collect fn vec =
+      ((;[] |> to_vec), ((vec |> from_vec : _ int _) |> to_list' |> listm'.unbox))
+      ||> listm.fold fun acc x =>
+          acc |> vec_extend (fn x)
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_collect_option
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_collect_option vec =\n    ((;[] |> to_vec |> Ok), ((vec |> from_vec : _ int _) |> am.toList))\n    ||> listm.fold fun acc x =>\n        x\n        |> resultm.unbox\n        |> fun x =>\n            match acc, x |> resultm.map optionm'.unbox with\n            | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok\n            | _, Error error => error |> Error\n            | _ => acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_collect_option vec =
+      ((;[] |> to_vec |> Ok), ((vec |> from_vec : _ int _) |> am.toList))
+      ||> listm.fold fun acc x =>
+          x
+          |> resultm.unbox
+          |> fun x =>
+              match acc, x |> resultm.map optionm'.unbox with
+              | Ok acc, Ok (Some x) => acc |> vec_extend x |> Ok
+              | _, Error error => error |> Error
+              | _ => acc
+  """,
+  timeout: 300_000
+)
+```
+
+### vec_collect_into
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vec_collect_into forall (c : * -> * -> *) t e.\n    (x : vec (c t e))\n    : c (vec t) e\n    =\n    !\\($'\"!x.into_iter().collect()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vec_collect_into forall (c : * -> * -> *) t e.
+      (x : vec (c t e))
+      : c (vec t) e
+      =
+      !\($'"!x.into_iter().collect()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### parallel_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl parallel_map forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =\n    $'!a |> Array.Parallel.map !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl parallel_map forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
+      $'!a |> Array.Parallel.map !fn '
+  """,
+  timeout: 300_000
+)
+```
+
+### map'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =\n    $'!a |> Array.map !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
+      $'!a |> Array.map !fn '
+  """,
+  timeout: 300_000
+)
+```
+
+### sort_by
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =\n    inl fable () = $'!a |> Array.sortBy !fn ' : a dim el\n    backend_switch {\n        Gleam = fun () => fable ()\n        Lua = fun () => fable ()\n        Fsharp = fun () => fable ()\n        Python = fun () =>\n            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.\n            inl keys = am.map fn ($'!a ' : a int el)\n            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else __k)(!keys[__i]))]' : a dim el\n        TypeScript = fun () => fable ()\n        Cpp = fun () => fable ()\n        CppHost = fun () => fable ()\n        Delphi = fun () => fable ()\n        Cuda = fun () => fable ()\n        // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders\n        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)\n        Rust = fun () =>\n            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)\n            inl a = $'!a ' : a int el\n            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;\n            // a tuple element is one Rust value (see rust.one_param_fn)\n            inl key_fn = join (rust.one_param_fn fn)\n            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el\n            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key\n            loopw.for' {from=1; nearTo=length a} fun i =>\n                inl x = index i r\n                inl k = index i keys\n                inl s = mut {j=i}\n                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>\n                    inl j = s.j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- {j=j - 1}\n                set r s.j x\n                set keys s.j k\n            $'!r ' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
+      inl fable () = $'!a |> Array.sortBy !fn ' : a dim el
+      backend_switch {
+          Gleam = fun () => fable ()
+          Lua = fun () => fable ()
+          Fsharp = fun () => fable ()
+          Python = fun () =>
+              // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.
+              inl keys = am.map fn ($'!a ' : a int el)
+              // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
+              $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
+          TypeScript = fun () => fable ()
+          Cpp = fun () => fable ()
+          CppHost = fun () => fable ()
+          Delphi = fun () => fable ()
+          Cuda = fun () => fable ()
+          // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
+          // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)
+          Rust = fun () =>
+              // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)
+              inl a = $'!a ' : a int el
+              // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;
+              // a tuple element is one Rust value (see rust.one_param_fn)
+              inl key_fn = join (rust.one_param_fn fn)
+              inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el
+              inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key
+              loopw.for' {from=1; nearTo=length a} fun i =>
+                  inl x = index i r
+                  inl k = index i keys
+                  inl s = mut {j=i}
+                  loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
+                      inl j = s.j
+                      set r j (index (j - 1) r)
+                      set keys j (index (j - 1) keys)
+                      s <- {j=j - 1}
+                  set r s.j x
+                  set keys s.j k
+              $'!r ' : a dim el
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### sort
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort forall dim el. (a : a dim el) : a dim el =\n    $'!a |> Array.sort'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sort forall dim el. (a : a dim el) : a dim el =
+      $'!a |> Array.sort'
+  """,
+  timeout: 300_000
+)
+```
+
+### sort_descending
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_descending forall dim el. (a : a dim el) : a dim el =\n    $'!a |> Array.sortDescending'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sort_descending forall dim el. (a : a dim el) : a dim el =
+      $'!a |> Array.sortDescending'
+  """,
+  timeout: 300_000
+)
+```
+
+### transpose
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl transpose forall el. (a : array_base (array_base el)) : array_base (array_base el) =\n    $'!a |> Array.transpose'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl transpose forall el. (a : array_base (array_base el)) : array_base (array_base el) =
+      $'!a |> Array.transpose'
+  """,
+  timeout: 300_000
+)
+```
+
+### try_item
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item forall dim el. (i : i32) (a : a dim el) : option el =\n    inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox\n    backend_switch {\n        Gleam = fable\n        Lua = fable\n        Fsharp = fable\n        Python = fable\n        TypeScript = fable\n        Cpp = fable\n        CppHost = fable\n        Delphi = fable\n        Cuda = fable\n        Rust = fun () =>\n            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'\n            x |> optionm'.unbox\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
+      inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+      backend_switch {
+          Gleam = fable
+          Lua = fable
+          Fsharp = fable
+          Python = fable
+          TypeScript = fable
+          Cpp = fable
+          CppHost = fable
+          Delphi = fable
+          Cuda = fable
+          Rust = fun () =>
+              inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
+              x |> optionm'.unbox
+      }
+  """,
+  timeout: 300_000
+)
+```

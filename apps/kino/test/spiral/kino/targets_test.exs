@@ -102,6 +102,32 @@ defmodule Spiral.Kino.TargetsTest do
              Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
   end
 
+  # rust/testing's `///> rust -d ...` cells ran in parallel and deleted each other's sources in the CLI's shared cargo
+  # packages workspace: `spiral rust` runs one at a time (a machine-wide lock file).
+  test "a spiral rust builder waits for the spiral rust lock" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("rust-lock")
+    lock = Path.join(dir, "rust.lock")
+    # held by a live process (this one)
+    File.write!(lock, System.pid())
+    missing = Path.join(dir, "no-spiral.exe")
+
+    task =
+      Task.async(fn ->
+        Targets.run(
+          %{tool: :rust, contract: nil, wasm: nil, deps: [], cleanup: nil},
+          Path.join(dir, "main.rs"),
+          [spiral: missing, rust_lock: lock],
+          30_000,
+          deadline()
+        )
+      end)
+
+    assert Task.yield(task, 500) == nil
+    File.rm!(lock)
+    assert {:error, %ProcessError{message: message}} = Task.await(task, 10_000)
+    assert message =~ "was not found"
+  end
+
   defp cc!(dir, name, source) do
     cc = Toolchain.cc([])
     assert is_binary(cc)

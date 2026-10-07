@@ -1,10 +1,11 @@
-inl impossible_physical_selection_cannot_force_fixed_depth () :
-    erp_p2p_fence_history nat_two =
+// a physical fence-history selection is existential and cannot be forced to fence two (lane H 2026-10-06 rewrite; retired erp_p2p_physical_fence_history_selection_from_observation -> _from_lineage)
+open main
+
+inl impossible_physical_selection_cannot_force_fixed_depth () : erp_p2p_fence_history nat_two =
     inl selection =
-        erp_p2p_physical_fence_history_selection_from_observation
+        erp_p2p_physical_fence_history_selection_from_lineage
             2i64
-            "owner-a"
-            "owner-b"
+            (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"))
     match selection with
     | erp_p2p_physical_fence_history_selection payload =>
         inl exists fence. _, history, _ = payload

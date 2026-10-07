@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recursive_beta_composite_domain_accepts_Unit_argument () :
     exact_linear_indexed_closed_recursive_beta_derivation
         (exact_linear_tensor_type exact_linear_unit_type exact_linear_bool_type)

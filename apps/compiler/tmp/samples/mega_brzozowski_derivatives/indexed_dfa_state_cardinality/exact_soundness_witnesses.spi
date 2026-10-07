@@ -89,21 +89,22 @@ inl require_exact_soundness_witness forall alphabet symbol_count state_count.
     (_ : indexed_dfa_exact_soundness_witness alphabet symbol_count state_count)
     : bool = true
 
-inl main () : string =
-    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
-    inl bit_equality = make_indexed_dfa_exact_symbol_equality `bit_alphabet ()
-    match seal_indexed_dfa_exact_soundness
-        bit_capability bit_equality (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ()) with
+// Run by the indexed_dfa_witness_contracts package (this package's main is listed before this module).
+inl indexed_dfa_exact_soundness_contract () : string =
+    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
+    inl bit_equality : indexed_dfa_exact_symbol_equality bit_alphabet = make_indexed_dfa_exact_symbol_equality ()
+    inl bit_sealed = seal_indexed_dfa_exact_soundness bit_capability bit_equality (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())
+    match bit_sealed with
     | IndexedDfaExactSoundnessRejected => failwith "bit exact-sound surface should certify"
     | IndexedDfaExactSoundnessCertified packed =>
         inl exists alphabet symbol_count state_count. witness = packed
         assert_static
             (require_exact_soundness_witness witness)
             "exact soundness typestate must preserve transition law and shared state-row cardinality"
-    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
-    inl tri_equality = make_indexed_dfa_exact_symbol_equality `tri_alphabet ()
-    match seal_indexed_dfa_exact_soundness
-        tri_capability tri_equality (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ()) with
+    inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+    inl tri_equality : indexed_dfa_exact_symbol_equality tri_alphabet = make_indexed_dfa_exact_symbol_equality ()
+    inl tri_sealed = seal_indexed_dfa_exact_soundness tri_capability tri_equality (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ())
+    match tri_sealed with
     | IndexedDfaExactSoundnessRejected => failwith "ternary exact-sound surface should certify"
     | IndexedDfaExactSoundnessCertified _ => ()
     "brzozowski-indexed-dfa-exact-soundness-green"

@@ -1,0 +1,36 @@
+# lisp (Spiral)
+
+<!-- livebook:{"break_markdown":true} -->
+
+S-expressions for Spiral: a cell whose first line is `///! lisp` holds Lisp forms, which Kino turns into Spiral source (apps/lisp/spl2spi.py) and compiles like any Spiral cell (native Rust by default). Each top-level form fits one 280-character message, so a program is a thread of tweets and a package a graph of threads (this one's longest form: 163 characters).
+
+<!-- livebook:{"break_markdown":true} -->
+
+## membership (a GADT)
+
+<!-- livebook:{"break_markdown":true} -->
+
+De Bruijn membership in a typed context, from spiral/apps/compiler/tmp/samples/mega_spiral_proves_spiral_relative_consistency: `There (Here ...)` proves Bool sits at slot one of [Unit, Bool]; `main` returns 0 when the proof's slot is 1 (apps/lisp/build.ps1 also checks that a wrong proof is rejected by the type checker).
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///! lisp\n(nominal z string)\n(nominal (s n) (tuple n string))\n(nominal unit string)\n(nominal bool string)\n(nominal nil string)\n(nominal (ext t d) (tuple t d))\n(inl add ((a i64) (b i64)) i64 (emit \"!a + !b\"))\n(union rec (mem ctx slot dom) (Here (forall t d) (-> string (mem (ext t d) z d))) (There (forall t h n d) (-> (tuple (mem t n d) string) (mem (ext t h) (s n) d))))\n(inl rec slot (forall c n d) ((m (mem c n d))) i64 (match m ((Here _) 0i64) ((There t _) (add 1i64 (slot t)))))\n(type ub (ext (ext nil bool) unit))\n(inl bool_at_1 () (mem ub (s z) bool) (There (Here \"older entry is Bool\") \"one step back\"))\n(inl main () i32 (if (= (then (bool_at_1 ()) slot) 1i64) 0i32 1i32))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///! lisp
+  (nominal z string)
+  (nominal (s n) (tuple n string))
+  (nominal unit string)
+  (nominal bool string)
+  (nominal nil string)
+  (nominal (ext t d) (tuple t d))
+  (inl add ((a i64) (b i64)) i64 (emit "!a + !b"))
+  (union rec (mem ctx slot dom) (Here (forall t d) (-> string (mem (ext t d) z d))) (There (forall t h n d) (-> (tuple (mem t n d) string) (mem (ext t h) (s n) d))))
+  (inl rec slot (forall c n d) ((m (mem c n d))) i64 (match m ((Here _) 0i64) ((There t _) (add 1i64 (slot t)))))
+  (type ub (ext (ext nil bool) unit))
+  (inl bool_at_1 () (mem ub (s z) bool) (There (Here "older entry is Bool") "one step back"))
+  (inl main () i32 (if (= (then (bool_at_1 ()) slot) 1i64) 0i32 1i32))
+  """,
+  timeout: 300_000
+)
+```

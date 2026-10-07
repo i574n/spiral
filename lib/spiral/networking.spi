@@ -6,15 +6,19 @@ open rust.rust_operators
 /// ### reqwest_response
 nominal reqwest_response =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"reqwest_wasm::Response\")>]\n#endif\ntype reqwest_Response = class end"
-        $'' : $'reqwest_Response'
+        native_type
+            `($'reqwest_Response')
+            `($'reqwest_wasm::Response')
+            "type reqwest_Response = class end"
     )
 
 /// ### reqwest_error
 nominal reqwest_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"reqwest_wasm::Error\")>]\n#endif\ntype reqwest_Error = class end"
-        $'' : $'reqwest_Error'
+        native_type
+            `($'reqwest_Error')
+            `($'reqwest_wasm::Error')
+            "type reqwest_Error = class end"
     )
 
 /// ### request_builder
@@ -36,7 +40,7 @@ type request_builder_switch =
     }
 nominal request_builder =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"reqwest_wasm::RequestBuilder\")>]\n#endif\ntype reqwest_RequestBuilder = class end"
+        fsharp_global "type reqwest_RequestBuilder = class end"
         $'' : $'backend_switch `(request_builder_switch)'
     )
 

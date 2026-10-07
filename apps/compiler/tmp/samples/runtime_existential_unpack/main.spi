@@ -1,0 +1,21 @@
+// FOR-D repro (lane G, 2026-10-06; a missing feature rather than a crash): an existential that reaches run time cannot
+// be unpacked. The package below is a run-time value (it depends on `~flag`), and `inl exists t. ... = packed` under
+// its match stops partial evaluation with "Cannot dyn an existential into a runtime var". Hit by
+// mega_omniledger_erp_kernel's erp_p2p_eight_event_recursive_atomic_payload_outbox_terminal (a typed decode authority
+// carrying an `exists`, decoded at run time), and by mega_brzozowski_derivatives before its alphabet checks were made
+// compile-time. Expected: exit 0 (the hidden type is the same `i32` in both branches, so a run-time representation
+// exists). Not blessed.
+union packed =
+    | Packed : (exists t. t * (t -> i32))
+
+inl make (flag : bool) : packed =
+    if flag then Packed (exists (1i32, fun (x : i32) => x))
+    else Packed (exists (2i32, fun (x : i32) => !!!!Sub(x, 2i32)))
+
+inl main () : i32 =
+    inl ~flag = true
+    match make flag with
+    | Packed p =>
+        inl exists t. value, project = p
+        inl result = project value
+        !!!!Sub(result, 1i32)

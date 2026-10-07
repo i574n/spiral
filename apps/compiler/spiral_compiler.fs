@@ -46912,7 +46912,9 @@ module spiral_compiler =
                 (many (expr_tight read_symbol) >>= fun syms s ->
                     match syms with
                     | [] ->
-                        (opt root_pattern_var |>> fun b ->
+                        // The nominal's pattern may be a union case without a payload (`| wrapped Zero =>`); one with a
+                        // payload takes parentheses (`| wrapped (Some x) =>`).
+                        (opt (root_pattern_var <|> (read_big_var |>> fun (r,a) -> PatUnbox(r,a,PatE r))) |>> fun b ->
                             match b with
                             | Some b ->
                                 re SemanticTokenLegend.type_variable
@@ -47230,7 +47232,7 @@ module spiral_compiler =
                         if d.is_top_down then (blockParsingRange (squares sequence_body) |>> fun (r,x) -> RawApply(o,RawV(o,unintern "array",true), RawArray(o,x))) d
                         else Error [o, ArrayLiteralsNotAllowedInBottomUp]
                     | "!!!!" ->
-                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> unary_op {d with is_top_down=false}) (skip_op ","))))
+                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> application {d with is_top_down=false}) (skip_op ","))))
                         >>= fun (r,((ra,a), b)) _ ->
                             match string_to_op a with
                             | true, op' -> Ok(RawOp(r,op',b))
@@ -48975,7 +48977,9 @@ module spiral_compiler =
                 (many (expr_tight read_symbol) >>= fun syms s ->
                     match syms with
                     | [] ->
-                        (opt root_pattern_var |>> fun b ->
+                        // The nominal's pattern may be a union case without a payload (`| wrapped Zero =>`); one with a
+                        // payload takes parentheses (`| wrapped (Some x) =>`).
+                        (opt (root_pattern_var <|> (read_big_var |>> fun (r,a) -> PatUnbox(r,a,PatE r))) |>> fun b ->
                             match b with
                             | Some b ->
                                 re SemanticTokenLegend.type_variable
@@ -49273,7 +49277,7 @@ module spiral_compiler =
                         if d.is_top_down then (blockParsingRange (squares sequence_body) |>> fun (r,x) -> RawApply(o,RawV(o,unintern "array",true), RawArray(o,x))) d
                         else Error [o, ArrayLiteralsNotAllowedInBottomUp]
                     | "!!!!" ->
-                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> unary_op {d with is_top_down=false}) (skip_op ","))))
+                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> application {d with is_top_down=false}) (skip_op ","))))
                         >>= fun (r,((ra,a), b)) _ ->
                             match string_to_op a with
                             | true, op' -> Ok(RawOp(r,op',b))
@@ -53169,6 +53173,7 @@ module spiral_compiler =
         | ExpectedRecordAsResultOfIndex of T
         | RecordIndexFailed of RecordFieldNameId
         | ModuleIndexFailed of ModuleMemberNameId
+        | ModuleIndexAmbiguous of string * string
         | ExpectedModule of T
         | ExpectedSymbol' of T
         | ExpectedSymbolInRecordWith of T
@@ -53847,6 +53852,7 @@ module spiral_compiler =
         | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
         | RecordIndexFailed a -> sprintf "The record does not have the key: %s" (RecordFieldNameIdOps.text a)
         | ModuleIndexFailed a -> sprintf "The module does not have the key: %s" (ModuleMemberNameIdOps.text a)
+        | ModuleIndexAmbiguous(folder,key) -> $"`{folder}.{key}` is ambiguous: the folder `{folder}` has a module `{key}`, and its index module `{folder}.{folder}` has a member `{key}`."
         | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
         | ExpectedSymbolInRecordWith a -> sprintf "Expected a symbol.\nGot: %s" (f a)
         | RealFunctionInTopDown -> sprintf "Real segment functions are forbidden in the top-down segment. They can only be used in `real` expressions or .spir modules."
@@ -54570,7 +54576,12 @@ module spiral_compiler =
                     | TyModule l ->
                         match f' b with
                         | TySymbol n ->
-                            match Map.tryFind (ModuleMemberNameIdOps.create n) l with
+                            // `x.key`: the module's own member, else its index module's (folder `x/` holding a module `x`).
+                            let folder = match a' with RawV(_,m,_) -> Some m | RawApply(_,_,RawSymbol(_,m)) -> Some m | _ -> None
+                            let index = folder |> Option.bind (fun m -> if m = n then None else match Map.tryFind (ModuleMemberNameIdOps.create m) l with Some (TyModule i) -> Some i | _ -> None)
+                            let direct = Map.tryFind (ModuleMemberNameIdOps.create n) l
+                            if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey (ModuleMemberNameIdOps.create n))) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, n)) else
+                            match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind (ModuleMemberNameIdOps.create n))) with
                             | Some (TyModule _ as a) ->
                                 if is_in_left_apply then
                                     match b with RawSymbol(r,_) -> hover_types.AddHover(r,(a,"")) | _ -> ()
@@ -54898,7 +54909,12 @@ module spiral_compiler =
                 | TyModule l ->
                     match f' false KindType b with
                     | TySymbol x ->
-                        match Map.tryFind (ModuleMemberNameIdOps.create x) l with
+                        // `x.key` in a type: as in terms, the module's own member, else its index module's.
+                        let folder = match a' with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
+                        let index = folder |> Option.bind (fun m -> if m = x then None else match Map.tryFind (ModuleMemberNameIdOps.create m) l with Some (TyModule i) -> Some i | _ -> None)
+                        let direct = Map.tryFind (ModuleMemberNameIdOps.create x) l
+                        if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey (ModuleMemberNameIdOps.create x))) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, x)) else
+                        match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind (ModuleMemberNameIdOps.create x))) with
                         | Some (TyModule _ as a) ->
                             if is_in_left_apply then
                                 unify r s a
@@ -55481,6 +55497,7 @@ module spiral_compiler =
         | ExpectedRecordAsResultOfIndex of T
         | RecordIndexFailed of string
         | ModuleIndexFailed of string
+        | ModuleIndexAmbiguous of string * string
         | ExpectedModule of T
         | ExpectedSymbol' of T
         | ExpectedSymbolInRecordWith of T
@@ -56081,6 +56098,7 @@ module spiral_compiler =
         | ExpectedRecordAsResultOfIndex a -> sprintf "Expected a record as result of index.\nGot: %s" (f a)
         | RecordIndexFailed a -> sprintf "The record does not have the key: %s" a
         | ModuleIndexFailed a -> sprintf "The module does not have the key: %s" a
+        | ModuleIndexAmbiguous(folder,key) -> $"`{folder}.{key}` is ambiguous: the folder `{folder}` has a module `{key}`, and its index module `{folder}.{folder}` has a member `{key}`."
         | ExpectedModule a -> sprintf "Expected a module.\nGot: %s" (f a)
         | ExpectedSymbolInRecordWith a -> sprintf "Expected a symbol.\nGot: %s" (f a)
         | RealFunctionInTopDown -> sprintf "Real segment functions are forbidden in the top-down segment. They can only be used in `real` expressions or .spir modules."
@@ -56775,7 +56793,12 @@ module spiral_compiler =
                     | TyModule l ->
                         match f' b with
                         | TySymbol n ->
-                            match Map.tryFind n l with
+                            // `x.key`: the module's own member, else its index module's (folder `x/` holding a module `x`).
+                            let folder = match a' with RawV(_,m,_) -> Some m | RawApply(_,_,RawSymbol(_,m)) -> Some m | _ -> None
+                            let index = folder |> Option.bind (fun m -> if m = n then None else match Map.tryFind m l with Some (TyModule i) -> Some i | _ -> None)
+                            let direct = Map.tryFind n l
+                            if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey n)) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, n)) else
+                            match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind n)) with
                             | Some (TyModule _ as a) ->
                                 if is_in_left_apply then
                                     match b with RawSymbol(r,_) -> hover_types.AddHover(r,(a,"")) | _ -> ()
@@ -57098,7 +57121,12 @@ module spiral_compiler =
                 | TyModule l ->
                     match f' false KindType b with
                     | TySymbol x ->
-                        match Map.tryFind x l with
+                        // `x.key` in a type: as in terms, the module's own member, else its index module's.
+                        let folder = match a' with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
+                        let index = folder |> Option.bind (fun m -> if m = x then None else match Map.tryFind m l with Some (TyModule i) -> Some i | _ -> None)
+                        let direct = Map.tryFind x l
+                        if (match direct with Some (TyModule _) -> true | _ -> false) && (index |> Option.exists (Map.containsKey x)) then errors.Add(r,ModuleIndexAmbiguous(Option.get folder, x)) else
+                        match (match direct with Some _ -> direct | None -> index |> Option.bind (Map.tryFind x)) with
                         | Some (TyModule _ as a) ->
                             if is_in_left_apply then
                                 unify r s a
@@ -58772,13 +58800,16 @@ module spiral_compiler =
                 TTypecase(p r,ty env a,b)
             | RawTSymbol(r,a) -> TSymbol(p r,a)
             | RawTApply(r,a,b) ->
+                let raw_a = a
                 match f a, f b with
                 | TRecord(_,a') & a, TSymbol(_,b') & b ->
-    
-
-                    match a' |> Map.tryPick (fun (_, k) v -> if k = b' then Some v else None) with
-                    | Some x -> x
-                    | None -> TApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
+                    // As in terms: the module's own member, else its index module's (folder `x/` holding a module `x`).
+                    let find k (m : Map<_,_>) = m |> Map.tryPick (fun (_, k') v -> if k' = k then Some v else None)
+                    let folder = match raw_a with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
+                    let index = folder |> Option.bind (fun m -> if m = b' then None else match find m a' with Some (TRecord(_,i)) -> Some i | _ -> None)
+                    match find b' a', index |> Option.bind (find b') with
+                    | Some (TRecord _), Some _ | None, None -> TApply(p r,a,b) // Ambiguous or missing (the type checker reported it): an error during partial evaluation.
+                    | Some x, _ | None, Some x -> x
                 | a,b -> TApply(p r,a,b)
             | RawTPrim(r,a) -> TPrim(a)
             | RawTTerm(r,a) -> TTerm(p r,term env a)
@@ -58844,18 +58875,32 @@ module spiral_compiler =
             | RawAnnot(_,RawJoinPoint(r,q,a,name),b) -> EJoinPoint(p r,f a,Some (ty env b),Option.map (fun (r',w) -> p r',w) q,name)
             | RawOpen (_,a,l,on_succ) -> term (prepassModule_open top_env env a l) on_succ
             | RawApply(r,a,b) ->
-                let rec loop = function
+                // `x.key` on a module: its own member, else the member of its index module (a folder `x/` holding a module
+                // `x`, as lib/spiral's rust/rust: `rust.box` works where `rust` names the folder). A key that is both a
+                // sibling of the index module and one of its members is an error, never a silent pick; so is a missing one.
+                let module_member name (m : Map<_,E>) key =
+                    let index = name |> Option.bind (fun n -> match Map.tryFind (TermNameIdOps.create n) m with Some (EModule i) when n <> key -> Some i | _ -> None)
+                    match Map.tryFind (TermNameIdOps.create key) m, index |> Option.bind (Map.tryFind (TermNameIdOps.create key)) with
+                    | Some (EModule _), Some _ -> Error (sprintf "`%s.%s` is ambiguous: the folder `%s` has a module `%s`, and its index module `%s.%s` has a member `%s`." (Option.get name) key (Option.get name) key (Option.get name) (Option.get name) key)
+                    | Some x, _ | None, Some x -> Ok x
+                    | None, None ->
+                        let keys = m |> Map.toList |> List.map (fst >> TermNameIdOps.text) |> String.concat ", "
+                        let index_keys = match index with Some i -> i |> Map.toList |> List.map (fst >> TermNameIdOps.text) |> String.concat ", " |> sprintf " (and its index module's: %s)" | None -> ""
+                        Error (sprintf "The module%s has no member `%s`. Its keys: %s%s." (match name with Some n -> sprintf " `%s`" n | None -> "") key keys index_keys)
+                let error msg = EOp(p r,ErrorType,[ELit(p r,LitString msg)])
+                let rec loop name = function
                     | EModule a' & a, EPair(_,ESymbol(_, b'),b'') & b ->
-                        match Map.tryFind (TermNameIdOps.create b') a' with
-                        | Some a -> loop (a,b'')
-                        | None -> EApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
+                        match module_member name a' b' with
+                        | Ok a -> loop (Some b') (a,b'')
+                        | Error msg -> error msg
                     | EModule a' & a, ESymbol(_,b') & b ->
-                        match Map.tryFind (TermNameIdOps.create b') a' with
-                        | Some a -> a
-                        | None -> EApply(p r,a,b) // TODO: Ditto.
+                        match module_member name a' b' with
+                        | Ok a -> a
+                        | Error msg -> error msg
                     | a,EType(_,b) -> ETypeApply(p r,a,b)
                     | a,b -> EApply(p r,a,b)
-                loop (f a, f b)
+                let name = match a with RawV(_,n,_) -> Some n | RawApply(_,_,RawSymbol(_,n)) -> Some n | _ -> None
+                loop name (f a, f b)
             | RawIfThenElse(r,a,b,c) -> EIfThenElse(p r,f a,f b,f c)
             | RawIfThen(r,a,b) -> EIfThen(p r,f a,f b)
             | RawPair(r,a,b) -> EPair(p r,f a,f b)
@@ -60122,12 +60167,16 @@ module spiral_compiler =
                 TTypecase(p r,ty env a,b)
             | RawTSymbol(r,a) -> TSymbol(p r,a)
             | RawTApply(r,a,b) ->
+                let raw_a = a
                 match f a, f b with
                 | TRecord(_,a') & a, TSymbol(_,b') & b ->
-
-                    match a' |> Map.tryPick (fun (_, k) v -> if k = b' then Some v else None) with
-                    | Some x -> x
-                    | None -> TApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
+                    // As in terms: the module's own member, else its index module's (folder `x/` holding a module `x`).
+                    let find k (m : Map<_,_>) = m |> Map.tryPick (fun (_, k') v -> if k' = k then Some v else None)
+                    let folder = match raw_a with RawTVar(_,m) -> Some m | RawTApply(_,_,RawTSymbol(_,m)) -> Some m | _ -> None
+                    let index = folder |> Option.bind (fun m -> if m = b' then None else match find m a' with Some (TRecord(_,i)) -> Some i | _ -> None)
+                    match find b' a', index |> Option.bind (find b') with
+                    | Some (TRecord _), Some _ | None, None -> TApply(p r,a,b) // Ambiguous or missing (the type checker reported it): an error during partial evaluation.
+                    | Some x, _ | None, Some x -> x
                 | a,b -> TApply(p r,a,b)
             | RawTPrim(r,a) -> TPrim(a)
             | RawTTerm(r,a) -> TTerm(p r,term env a)
@@ -60193,18 +60242,32 @@ module spiral_compiler =
             | RawAnnot(_,RawJoinPoint(r,q,a,name),b) -> EJoinPoint(p r,f a,Some (ty env b),Option.map (fun (r',w) -> p r',w) q,name)
             | RawOpen (_,a,l,on_succ) -> term (prepassModule_open top_env env a l) on_succ
             | RawApply(r,a,b) ->
-                let rec loop = function
+                // `x.key` on a module: its own member, else the member of its index module (a folder `x/` holding a module
+                // `x`, as lib/spiral's rust/rust: `rust.box` works where `rust` names the folder). A key that is both a
+                // sibling of the index module and one of its members is an error, never a silent pick; so is a missing one.
+                let module_member name (m : Map<_,E>) key =
+                    let index = name |> Option.bind (fun n -> match Map.tryFind (id n) m with Some (EModule i) when n <> key -> Some i | _ -> None)
+                    match Map.tryFind (id key) m, index |> Option.bind (Map.tryFind (id key)) with
+                    | Some (EModule _), Some _ -> Error (sprintf "`%s.%s` is ambiguous: the folder `%s` has a module `%s`, and its index module `%s.%s` has a member `%s`." (Option.get name) key (Option.get name) key (Option.get name) (Option.get name) key)
+                    | Some x, _ | None, Some x -> Ok x
+                    | None, None ->
+                        let keys = m |> Map.toList |> List.map (fst >> id) |> String.concat ", "
+                        let index_keys = match index with Some i -> i |> Map.toList |> List.map (fst >> id) |> String.concat ", " |> sprintf " (and its index module's: %s)" | None -> ""
+                        Error (sprintf "The module%s has no member `%s`. Its keys: %s%s." (match name with Some n -> sprintf " `%s`" n | None -> "") key keys index_keys)
+                let error msg = EOp(p r,ErrorType,[ELit(p r,LitString msg)])
+                let rec loop name = function
                     | EModule a' & a, EPair(_,ESymbol(_, b'),b'') & b ->
-                        match Map.tryFind b' a' with
-                        | Some a -> loop (a,b'')
-                        | None -> EApply(p r,a,b) // TODO: Will be an error during partial evaluation time. Could be substituted for an exception here, but I do not want to have errors during the prepass.
+                        match module_member name a' b' with
+                        | Ok a -> loop (Some b') (a,b'')
+                        | Error msg -> error msg
                     | EModule a' & a, ESymbol(_,b') & b ->
-                        match Map.tryFind b' a' with
-                        | Some a -> a
-                        | None -> EApply(p r,a,b) // TODO: Ditto.
+                        match module_member name a' b' with
+                        | Ok a -> a
+                        | Error msg -> error msg
                     | a,EType(_,b) -> ETypeApply(p r,a,b)
                     | a,b -> EApply(p r,a,b)
-                loop (f a, f b)
+                let name = match a with RawV(_,n,_) -> Some n | RawApply(_,_,RawSymbol(_,n)) -> Some n | _ -> None
+                loop name (f a, f b)
             | RawIfThenElse(r,a,b,c) -> EIfThenElse(p r,f a,f b,f c)
             | RawIfThen(r,a,b) -> EIfThen(p r,f a,f b)
             | RawPair(r,a,b) -> EPair(p r,f a,f b)
@@ -158432,7 +158495,7 @@ module spiral_compiler =
                         jpRecordCurrentWorkPhase JpOperationPhaseApplyRecordLookup
                         match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                         | Some a -> a
-                        | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record." b
+                        | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record. Its keys: %s." b (a |> Map.toList |> List.map (fst >> snd) |> String.concat ", ")
                     | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
                         jpRecordCurrentWorkPhase JpOperationPhaseApplyFunctionBody
                         let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
@@ -162821,12 +162884,9 @@ module spiral_compiler =
                                 || text.Contains "VarError"
                                 then
                                 trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
-                            // ws: Rust and F# builds also keep lib/spiral's Fable alias declarations met while another backend's
-                            // branch is being type-checked: nominal types are memoized, so a type first elaborated there never runs
-                            // its `global` again. F# needs the type definition; codegenRust reads them into its alias table (and
-                            // drops the F# text).
-                            if s.backend.node = env.backend
-                               || ((env.backend = "Rust" || env.backend = "Fsharp") && text.Contains "Fable.Core.Emit(") then
+                            // A global belongs to the backend whose branch runs it (lib/spiral's F#-only declarations go through
+                            // backend.fsharp_global, whose switch runs its Fsharp arm as F# in every build).
+                            if s.backend.node = env.backend then
                                 // trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
                             // && s.i.contents < 2
                             // && s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length = 2
@@ -166051,6 +166111,10 @@ module spiral_compiler =
                         let v = Option.defaultValue (fst v) (snd v) // If the union case is generalized, use the specialized destructor instead of the constructor to evaluate the type.
                         match ty s v with
                         | YVoid -> cases
+                        // A case whose payload is uninhabited (a GADT-specialized union left without cases, ...) can never be
+                        // built: dropping it prunes the match arms that would unbox it instead of evaluating them on an empty
+                        // value (lane F's compiler_probe_gadt_uninhabited_payload_runtime: 'Pattern miss').
+                        | v when ty_is_uninhabited s v -> cases
                         | v ->
                             is_degenerate <- is_degenerate && match v with YB -> true | _ -> false
                             tags.[k] <- i
@@ -166135,7 +166199,7 @@ module spiral_compiler =
                 | DRecord a, DSymbol b ->
                     match a |> Map.tryPick (fun (_, k) v -> if k = b then Some v else None) with
                     | Some a -> a
-                    | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record." b
+                    | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record. Its keys: %s." b (a |> Map.toList |> List.map (fst >> snd) |> String.concat ", ")
                 | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
                     let s : LangEnv =
                         {s with
@@ -167808,12 +167872,9 @@ module spiral_compiler =
                         || text.Contains "VarError"
                         then
                         trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
-                    // ws: Rust and F# builds also keep lib/spiral's Fable alias declarations met while another backend's
-                    // branch is being type-checked: nominal types are memoized, so a type first elaborated there never runs
-                    // its `global` again. F# needs the type definition; codegenRust reads them into its alias table (and
-                    // drops the F# text).
-                    if s.backend.node = env.backend
-                       || ((env.backend = "Rust" || env.backend = "Fsharp") && text.Contains "Fable.Core.Emit(") then
+                    // A global belongs to the backend whose branch runs it (lib/spiral's F#-only declarations go through
+                    // backend.fsharp_global, whose switch runs its Fsharp arm as F# in every build).
+                    if s.backend.node = env.backend then
                         // trace Verbose (fun () -> $"PartEval.peval / | EOp(_,Global & op,[a]) -> / s.i.contents: %A{s.i.contents} / s.cse.count: %A{s.cse |> List.map _.Count} / s.backend.node: %A{s.backend.node} / op: %A{op} / a': %A{a'} / env.backend: %A{env.backend} / x_: %A{x_} / text: %A{text}") _locals
                     // && s.i.contents < 2
                     // && s.cse |> List.map _.Count |> List.filter ((=) 0) |> List.length = 2
@@ -169950,80 +170011,14 @@ module spiral_compiler =
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
-    /// ### fableRustAliases
-    // lib/spiral's Rust types are F# aliases that Fable maps to Rust: a `global` such as
-    // `#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit("num_complex::Complex<$0>")>]\n#endif\ntype num_complex_Complex<'T> = class end`
-    // declares the alias, and macro types say `num_complex_Complex<`t>`. The native backend reads the alias table out of
-    // those globals, drops every F#-only global (F# text is never Rust) and writes the Rust type in place of each alias.
-    let private fableAliasRegex =
-        System.Text.RegularExpressions.Regex(@"Fable\.Core\.Emit\(""((?:[^""\\]|\\.)*)""\)>\]\s*(?:#endif\s*)?type\s+(\w+)")
-    let fableRustAliases (globals : string seq) =
-        let aliases = Dictionary<string, string>()
-        for g in globals do
-            for m in fableAliasRegex.Matches g do
-                aliases.[m.Groups.[2].Value] <- m.Groups.[1].Value.Replace("\\\"", "\"")
-        aliases
-    let isFsharpOnlyGlobal (g : string) =
-        g.Contains "Fable.Core." || System.Text.RegularExpressions.Regex.IsMatch(g, @"(?m)^\s*#(if|else|endif)\b")
-    // Calls into Fable's Rust runtime that lib/spiral still emits, with their std equivalents.
+    /// ### rewriteFableRustCalls
+    // lib/spiral's Rust types are type-level backend_switches (backend.native_type: the Rust arm is the Rust type, the other
+    // arms the F# stand-in its F#-only declaration names), resolved by `tyv`; Fable's `[<Emit>]` alias globals and the
+    // alias table read back out of them are gone (D41). Calls into Fable's Rust runtime that lib/spiral still emits are
+    // replaced by their std equivalents.
     let private fableRustCalls = [ "fable_library_rust::String_::fromString(", "Rc::<str>::from(" ]
-    /// `Alias<a, b>` -> the alias's Rust text with `$0`, `$1` replaced by the (balanced) generic arguments.
-    let rewriteFableRustAliases (aliases : Dictionary<string, string>) (text : string) =
-        let text = fableRustCalls |> List.fold (fun (t : string) (a, b) -> t.Replace(a, b)) text
-        if aliases.Count = 0 then text else
-        let names = aliases.Keys |> Seq.sortByDescending String.length |> Seq.map System.Text.RegularExpressions.Regex.Escape |> String.concat "|"
-        let re = System.Text.RegularExpressions.Regex($@"\b(?:{names})\b")
-        let rec once (text : string) =
-            let sb = StringBuilder(text.Length)
-            let rec loop (pos : int) =
-                let m = re.Match(text, pos)
-                if not m.Success then sb.Append(text, pos, text.Length - pos) |> ignore
-                else
-                    sb.Append(text, pos, m.Index - pos) |> ignore
-                    let target = aliases.[m.Value]
-                    let after = m.Index + m.Length
-                    if after < text.Length && text.[after] = '<' then
-                        let args = ResizeArray()
-                        let mutable depth = 0
-                        let mutable j = after
-                        let mutable start = after + 1
-                        let mutable fin = -1
-                        while fin < 0 && j < text.Length do
-                            match text.[j] with
-                            | '<' | '(' | '[' -> depth <- depth + 1
-                            | '>' when j > 0 && text.[j-1] = '-' -> () // `->` inside `Fn(..) -> T`
-                            | '>' | ')' | ']' ->
-                                depth <- depth - 1
-                                if depth = 0 then
-                                    args.Add(text.Substring(start, j - start).Trim())
-                                    fin <- j
-                            | ',' when depth = 1 ->
-                                args.Add(text.Substring(start, j - start).Trim())
-                                start <- j + 1
-                            | _ -> ()
-                            j <- j + 1
-                        if fin < 0 then
-                            sb.Append(m.Value) |> ignore
-                            loop after
-                        else
-                            let mutable r = target
-                            // Arguments first: an alias whose expansion reads like its use (`Vec<$0>`) leaves the text
-                            // unchanged, which would stop `fix` before aliases nested in its arguments are rewritten.
-                            for k in args.Count - 1 .. -1 .. 0 do r <- r.Replace($"${k}", once args.[k])
-                            sb.Append(r) |> ignore
-                            loop (fin + 1)
-                    elif target.Contains "$0" then
-                        // Used without arguments (`Vec::new()` for an alias `Vec<$0>`): leave the text alone.
-                        sb.Append(m.Value) |> ignore
-                        loop after
-                    else
-                        sb.Append(target) |> ignore
-                        loop after
-            loop 0
-            sb.ToString()
-        // Arguments can be aliases themselves.
-        let rec fix n (text : string) = let t = once text in if t = text || n = 0 then t else fix (n - 1) t
-        fix 8 text
+    let rewriteFableRustCalls (text : string) =
+        fableRustCalls |> List.fold (fun (t : string) (a, b) -> t.Replace(a, b)) text
 
     /// ### translateFsharpInterpolations
     // lib/spiral's `$'$"text {!x}"'` macros are F# interpolated strings: codegenRust prints them as
@@ -170340,8 +170335,8 @@ module spiral_compiler =
             |> String.concat "\n"
 
     /// ### nonCloneRustType
-    // The leading text of a macro type naming a std/crate type that doesn't implement Clone (either spelling: the Rust
-    // path or lib/spiral's Fable alias, which is rewritten after codegen). NEAR's persistent collections
+    // The leading text of a macro type naming a std/crate type that doesn't implement Clone (the Rust path; the `_`-joined
+    // spelling of lib/spiral's former Fable aliases also matches). NEAR's persistent collections
     // (`near_sdk::store::*`, and lib/spiral's native `near.vector`, `SpiralNearVec`) are handles on contract storage:
     // a contract's state holding one moves (its `new` returns the state), it is never cloned.
     let nonCloneRustType =
@@ -170431,6 +170426,14 @@ module spiral_compiler =
         // Opaque Rust types without `Clone` (Fable shared them behind its own pointers): a use moves the value, so a
         // single use compiles and a second one is rustc's E0382 instead of a clone that can never compile.
         let stack_union_moves = Dictionary<Union, bool>(HashIdentity.Reference)
+        // A type-level backend_switch (`$'backend_switch `(record)'`, lib/spiral's native_type) -> its Rust arm, so the
+        // checks below read the Rust type's own text.
+        let rustSwitchArm = function
+            | YMacro [Text "backend_switch "; Type (YRecord r)] as t ->
+                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameRust then Some v else None) with
+                | Some x -> x
+                | None -> t
+            | t -> t
         let rec moves = function
             // lib/spiral's per-backend types (`result'`, `option'`, ...): the Rust field, as `tyv` picks it.
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
@@ -170441,7 +170444,7 @@ module spiral_compiler =
             // `Box<T>` is Clone when T is; a boxed trait object never is (T as `tyv` reaches it: through nominals).
             | YMacro (Text a :: Type t :: _) when boxRustType.IsMatch a ->
                 env.ty_to_data t |> data_free_vars |> Array.exists (function
-                    | L(_,YMacro (Text b :: _)) when dynRustType.IsMatch b -> true
+                    | L(_,t) when (match rustSwitchArm t with YMacro (Text b :: _) -> dynRustType.IsMatch b | _ -> false) -> true
                     | L(_,t) -> moves t)
             // Result/Option/Vec are Clone only when their contents are.
             | YMacro (Text a :: rest) when cloneIfContentsRustType.IsMatch a ->
@@ -170952,8 +170955,7 @@ module spiral_compiler =
         let program = StringBuilder()
         program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]") |> ignore
         // Inner attributes (`#![...]`) must precede every item, so such globals go before the `use`s.
-        let aliases = fableRustAliases env.globals
-        let inner, globals = env.globals |> Seq.toArray |> Array.filter (isFsharpOnlyGlobal >> not) |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
+        let inner, globals = env.globals |> Seq.toArray |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
         // A closure that captures nothing lives in a `thread_local!`, whose lazy initializer builds it; a chain of them
         // (closure k's body calls closure k+1, e.g. a lazy stream of constants) nests one set of std's generic
         // initializer instances per link in rustc's monomorphization walk, which stops at `recursion_limit` (128):
@@ -170991,7 +170993,7 @@ module spiral_compiler =
             // the spawned thread: exit 101 like an uncaught panic, without a second message from `join().unwrap()`.
             program.AppendLine("#[cfg(not(target_arch = \"wasm32\"))]").AppendLine("fn main() {").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
             program.AppendLine("#[cfg(target_arch = \"wasm32\")]").AppendLine("fn main() {").AppendLine("    spiral_main();").AppendLine("}") |> ignore
-        program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineFableEmits |> rewriteFableRustAliases aliases
+        program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineFableEmits |> rewriteFableRustCalls
         |> cacheRustStringLiterals
 
     /// ## CodegenDelphi
@@ -173108,7 +173110,9 @@ module spiral_compiler =
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
                 match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameTypeScript then Some v else None) with
                 | Some x -> tup_ty x
-                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameTypeScript}' field."
+                // A type-level switch without a TypeScript arm (lib/spiral's option', exn, date_time, ... switches name
+                // the F#/Rust/Python types only) is a value TypeScript never inspects: it is only passed through.
+                | None -> "any"
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litTypeScript a) |> String.concat ""
             | YPrim a -> primTypeScript a
             | YArray a -> sprintf "Array<%s>" (tup_ty a)
@@ -174533,7 +174537,8 @@ module spiral_compiler =
             and heap : _ -> LayoutRecC = layout_tmpl "Heap"
             and mut : _ -> LayoutRecC = layout_tmpl "Mut"
             and union_tmpl is_stack : Union -> UnionRecC =
-                let inline map_iteri f x = Map.fold (fun i k v -> f i k v; i+1) 0 x |> ignore
+                // a case's tag is its key's (a GADT-indexed union keeps only its inhabited cases, so a position is not a tag)
+                let inline map_iteri f x = Map.iter (fun ((tag : int, _) as k) v -> f tag k v) x
                 union (fun s_fwd s_typ s_fun x ->
                     let i = x.tag
                     match is_stack with
@@ -175553,7 +175558,8 @@ module spiral_compiler =
             and unions : _ -> UnionRec =
                 // ws: `k` is the case's `tag * name` key; its tag equals the iteration index, so the numbering below is
                 // the peval's tag. The comments print the name only (`snd k`), as upstream does.
-                let inline map_iteri f x = Map.fold (fun i k v -> f i k v; i+1) 0 x |> ignore
+                // a case's tag is its key's (a GADT-indexed union keeps only its inhabited cases, so a position is not a tag)
+                let inline map_iteri f x = Map.iter (fun ((tag : int, _) as k) v -> f tag k v) x
                 union (fun s x ->
                     let i = x.tag
                     line s.fwd_types $"struct Union{i};" // Forward declaration for the union.
@@ -176308,28 +176314,26 @@ module spiral_compiler =
                     | UnionTag, [DUnion(_,l) | DV(L(_,YUnion l)) as x] -> sprintf "%s.tag" (tup_data x)
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
+            // A case is named by its tag (the key's), as constructions and matches name it: a GADT-indexed union keeps only
+            // its inhabited cases, so numbering by position named `US1_0` what `US1_1(..)` constructs (D31, CodegenC).
             and uheap : _ -> UnionRec = union (fun s x ->
-                let cases = Array.init x.free_vars.Count (fun i -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
+                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
                 code_env.fwd_dcls_types.Add $"UH{x.tag} = {cases}\n" // ws: the newline; upstream joined the aliases straight into the next line (py_checks: SyntaxError)
-                let mutable i = 0
-                x.free_vars |> Map.iter (fun k a ->
+                x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
                     line s $"class UH{x.tag}_{i}(NamedTuple): # {snd k}" // ws: `snd k` (cases keyed `tag * name`)
                     let s = indent s
                     a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
                     line s $"tag = {i}"
-                    i <- i+1
                     )
                 )
             and ustack : _ -> UnionRec = union (fun s x ->
-                let mutable i = 0
-                x.free_vars |> Map.iter (fun k a ->
+                x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
                     line s $"class US{x.tag}_{i}(NamedTuple): # {snd k}" // ws: `snd k`
                     let s = indent s
                     a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
                     line s $"tag = {i}"
-                    i <- i+1
                     )
-                let cases = Array.init x.free_vars.Count (fun i -> $"US{x.tag}_{i}") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
+                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> $"US{x.tag}_{i}") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
                 line s $"US{x.tag} = {cases}"
                 )
             and heap : _ -> LayoutRec = layout (fun s x ->
@@ -181237,7 +181241,9 @@ module spiral_compiler =
                                         resetEvaluationForBuild ()
                                         let (a,_),b = pevalWithInlineRestart 0
                                         emitBuildFileInitializationStage BuildFilePartialEvaluationCompleted
-                                        let generated = codegenOnLargeStack (fun () -> codegen file b a)
+                                        // LF on every OS: backends that build with StringBuilder.AppendLine (TypeScript, Python, Gleam, C++, ...) get the platform
+                                        // newline from .NET, CRLF on Windows.
+                                        let generated = codegenOnLargeStack (fun () -> codegen file b a) |> List.map (fun (f : GeneratedFile) -> {| f with code = f.code.Replace("\r\n", "\n") |})
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
                                         BuildDraft.Provisional generated
                                     let build codegen backend file_extension =
@@ -183761,7 +183767,10 @@ module spiral_compiler =
                     let a,b = tc.files.uids_file.[mid]
                     let x,_x = prepass.files.uids_file.[mid]
                     trace Verbose (fun () -> "Supervisor.supervisor_server.BuildFile.file_build.wait_type_input") _locals
-                    Hopac.start (a.state >>=* fun (has_error',_) ->
+                    // A compiler exception anywhere in type checking, the prepass or the build (a Hopac job: e.g. fill's
+                    // 'These cases should not appear in fill') used to kill the job, so the build never replied and the
+                    // caller hung at 0% CPU: report it as the build's fatal error instead.
+                    Hopac.start (Job.tryWith (a.state >>=* fun (has_error',_) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.type_input_ready / has_error: {has_error'}") _locals
                         b >>=* fun (has_error,_) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.type_path_ready / has_error: {has_error}") _locals
@@ -183823,23 +183832,47 @@ module spiral_compiler =
                             own_main || (match adds with AInclude small -> Map.containsKey "main" small.term | AOpen _ -> false), env
                             ) (false,prepassTop_env_empty) x.result >>=* fun (own_main,env) ->
                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.prepass_ready / terms: {env.term.Count} / own_main: {own_main}") _locals
-                        // A block that fails to tokenize or parse is left out of its module and the build goes on, so a
-                        // broken `main` would be replaced by an opened module's `main` without a word. When the entry
-                        // does not define `main` itself, report its tokenizer and parser errors instead. The bundles are
-                        // the ones type checking consumed (complete by now); the parser errors ride on them.
+                        // A block that fails to tokenize or parse is left out of its module and the build goes on, so its
+                        // tokenizer and parser errors are reported here (they ride on the bundles type checking consumed).
+                        // The entry file's errors always end the build: a dropped block makes callers fail with a bare
+                        // `Unbound variable`, or vanishes without a word when nothing calls it (the megas' negatives
+                        // "passed" that way). When the entry doesn't define `main`, the other files of its package are
+                        // reported too (`main` may come from an opened module). Dependencies' errors don't end the build
+                        // (a library's dead block shouldn't break its users). The entry's bundle stream is complete; for
+                        // the other files only the part already there is read (a file the entry doesn't reach may never
+                        // be bundled).
                         let entry_errors =
-                            if own_main then Job.result []
-                            else
-                                let _,_,bundles = a.input
-                                let tokenizer_errors = match Map.tryFind file s.modules with Some m -> m.tokenizer.errors | None -> []
-                                Stream.foldFun (fun errors (_,bundle : BlockBundleValue) -> errors @ bundle.errors) tokenizer_errors bundles
+                            let _,_,bundles = a.input
+                            let tokenizer_errors = match Map.tryFind file s.modules with Some m -> m.tokenizer.errors | None -> []
+                            Stream.foldFun (fun errors (_,bundle : BlockBundleValue) -> errors @ bundle.errors) tokenizer_errors bundles
+                            |> Job.map (List.map (fun e -> file, e))
+                        let package_errors =
+                            let rec available acc (stream : BlockBundleState) =
+                                if Promise.Now.isFulfilled stream then
+                                    match Promise.Now.get stream with
+                                    | Hopac.Stream.Cons((_,x : BlockBundleValue), next) -> available (acc @ x.errors) next
+                                    | Hopac.Stream.Nil -> acc
+                                else acc
+                            let rec files x acc =
+                                match x with
+                                | ProjFilesTree.File(mid,path,_) when path <> file ->
+                                    let slot = if mid < tc.files.uids_file.Length then tc.files.uids_file.[mid] else Unchecked.defaultof<_>
+                                    if isNull (box slot) || isNull (box (fst slot)) then acc
+                                    else
+                                        let _,_,bundles = (fst slot).input
+                                        let tok = match Map.tryFind path s.modules with Some m -> m.tokenizer.errors | None -> []
+                                        ((tok @ available [] bundles) |> List.map (fun e -> path, e)) @ acc
+                                | ProjFilesTree.File _ -> acc
+                                | ProjFilesTree.Directory(_,_,l) -> List.foldBack files l acc
+                            try List.foldBack files tc.files.files.tree [] with _ -> []
                         entry_errors >>=* fun entry_errors ->
+                        let entry_errors = if own_main then entry_errors else entry_errors @ package_errors
                         let body() =
                             match backend, Map.tryFind "main" env.term with
                             | "Check", _ -> BuildSkip
                             | _, _ when not (List.isEmpty entry_errors) ->
-                                let details = entry_errors |> List.map (fun ((a,_),message) -> $"\n{file}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
-                                BuildFatalError $"Cannot find `main` in file {Path.GetFileNameWithoutExtension file}: the file does not define it, and it has errors (a block that fails to parse is left out, so `main` would come from an opened module).{details}"
+                                let details = entry_errors |> List.map (fun (path,((a,_),message)) -> $"\n{path}:{a.line + 1}:{a.character + 1}: {message}") |> String.concat ""
+                                BuildFatalError $"The package of {Path.GetFileNameWithoutExtension file} has blocks that fail to tokenize or parse (such a block is left out of its module: its definitions would be missing without a word).{details}"
                             | _, Some main ->
                                 let prototypes_instances = Dictionary(env.prototypes_instances)
                                 let nominals =
@@ -183852,7 +183885,9 @@ module spiral_compiler =
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_start / backend: {backend}") _locals
                                         let (a,_),b = peval {prototypes_instances=prototypes_instances; nominals=nominals; backend=backend} main
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.peval_ready / backend: {backend}") _locals
-                                        let generated = codegen file b a
+                                        // LF on every OS: backends that build with StringBuilder.AppendLine (TypeScript, Python, Gleam, C++, ...) get the platform
+                                        // newline from .NET, CRLF on Windows.
+                                        let generated = codegen file b a |> List.map (fun (f : GeneratedFile) -> {| f with code = f.code.Replace("\r\n", "\n") |})
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         BuildOk generated
                                     let build codegen backend file_extension =
@@ -183903,7 +183938,10 @@ module spiral_compiler =
                         thread.IsBackground <- true
                         thread.Start()
                         IVar.read result >>= handle_build_result
-                        )
+                        ) (fun ex ->
+                            trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build / ex: %A{ex}") _locals
+                            fatal $"Compiler error while building {Path.GetFileNameWithoutExtension file}: {ex.GetType().Name}: {ex.Message}"
+                            IVar.tryFill res None))
                 let file_find (s : SupervisorState) pdir =
                     trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_find / pdir: {pdir}") _locals
                     let uid = (fst s.package_ids).[pdir]

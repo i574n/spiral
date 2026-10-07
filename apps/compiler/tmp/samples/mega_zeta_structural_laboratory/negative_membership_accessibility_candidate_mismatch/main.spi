@@ -1,3 +1,5 @@
+open main
+
 inl impossible_factor_membership_accessibility_candidate_mismatch () :
     positive_positional_nat positional_one *
     positive_positional_predecessor_accessibility positional_one =

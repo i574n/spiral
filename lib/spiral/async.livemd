@@ -1,0 +1,1154 @@
+# async
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+### base_let'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl base_let' x =\n    let' x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl base_let' x =
+      let' x
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### future
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal future t =\n    `(\n        native_type\n            `($'std_future_Future<`t>')\n            `($'std::future::Future<Output = `t>')\n            \"type std_future_Future<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal future t =
+      `(
+          native_type
+              `($'std_future_Future<`t>')
+              `($'std::future::Future<Output = `t>')
+              "type std_future_Future<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### future_pin
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type future_pin t = rust.pin (rust.box (rust.dyn' (future t)))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type future_pin t = rust.pin (rust.box (rust.dyn' (future t)))
+  """,
+  timeout: 300_000
+)
+```
+
+### future_pin_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type future_pin_send t = rust.pin (rust.box (rust.send (rust.dyn' (future t))))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type future_pin_send t = rust.pin (rust.box (rust.send (rust.dyn' (future t))))
+  """,
+  timeout: 300_000
+)
+```
+
+### block_on_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_on_tokio forall t. (fn : future_pin t) : t =\n    inl runtime : infer =\n        !\\($'$\"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()\"')\n    !\\\\(fn, $'\"!runtime.handle().block_on($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_on_tokio forall t. (fn : future_pin t) : t =
+      inl runtime : infer =
+          !\($'$"tokio::runtime::Builder::new_multi_thread().enable_all().build().unwrap()"')
+      !\\(fn, $'"!runtime.handle().block_on($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### block_on_futures_lite
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_on_futures_lite forall t. (fn : future_pin t) : t =\n    !\\\\(fn, $'\"futures_lite::future::block_on($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_on_futures_lite forall t. (fn : future_pin t) : t =
+      !\\(fn, $'"futures_lite::future::block_on($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### block_on_futures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_on_futures forall t. (fn : future_pin t) : t =\n    !\\\\(fn, $'\"futures::executor::block_on($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_on_futures forall t. (fn : future_pin t) : t =
+      !\\(fn, $'"futures::executor::block_on($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### block_on_async_std
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_on_async_std forall t. (fn : future_pin t) : t =\n    !\\\\(fn, $'\"async_std::task::block_on($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_on_async_std forall t. (fn : future_pin t) : t =
+      !\\(fn, $'"async_std::task::block_on($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### block_on_tokio_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_on_tokio_send forall t. (fn : future_pin_send t) : t =\n    !\\($'\"tokio::runtime::block_on(!fn)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_on_tokio_send forall t. (fn : future_pin_send t) : t =
+      !\($'"tokio::runtime::block_on(!fn)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_ext_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal stream_ext_tokio =\n    `(\n        native_type\n            `($'tokio_stream_StreamExt')\n            `($'tokio_stream::StreamExt')\n            \"type tokio_stream_StreamExt = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal stream_ext_tokio =
+      `(
+          native_type
+              `($'tokio_stream_StreamExt')
+              `($'tokio_stream::StreamExt')
+              "type tokio_stream_StreamExt = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### join_handle_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal join_handle_tokio t =\n    `(\n        native_type\n            `($'tokio_task_JoinHandle<`t>')\n            `($'tokio::task::JoinHandle<`t>')\n            \"type tokio_task_JoinHandle<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal join_handle_tokio t =
+      `(
+          native_type
+              `($'tokio_task_JoinHandle<`t>')
+              `($'tokio::task::JoinHandle<`t>')
+              "type tokio_task_JoinHandle<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_collect_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stream_collect_tokio forall t u.\n    (stream : t)\n    : future_pin (am'.vec u)\n    =\n    !\\($'\"Box::pin(tokio_stream::StreamExt::collect(!stream))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stream_collect_tokio forall t u.
+      (stream : t)
+      : future_pin (am'.vec u)
+      =
+      !\($'"Box::pin(tokio_stream::StreamExt::collect(!stream))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_collect_futures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stream_collect_futures forall t u.\n    (stream : t)\n    : future_pin (am'.vec u)\n    =\n    !\\($'\"Box::pin(futures::stream::StreamExt::collect(!stream))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stream_collect_futures forall t u.
+      (stream : t)
+      : future_pin (am'.vec u)
+      =
+      !\($'"Box::pin(futures::stream::StreamExt::collect(!stream))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_next_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stream_next_tokio forall t u.\n    (stream : t)\n    : future_pin (optionm'.option' u)\n    =\n    !\\($'\"let mut !stream = !stream\"')\n    !\\($'\"Box::pin(tokio_stream::StreamExt::next(&mut !stream))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stream_next_tokio forall t u.
+      (stream : t)
+      : future_pin (optionm'.option' u)
+      =
+      !\($'"let mut !stream = !stream"')
+      !\($'"Box::pin(tokio_stream::StreamExt::next(&mut !stream))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_filter_map_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stream_filter_map_tokio forall t u v.\n    (fn : u -> optionm'.option' v)\n    (stream : t)\n    : infer' v\n    =\n    inl fn = join fn\n    !\\($'\"tokio_stream::StreamExt::filter_map(!stream, |x| !fn(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stream_filter_map_tokio forall t u v.
+      (fn : u -> optionm'.option' v)
+      (stream : t)
+      : infer' v
+      =
+      inl fn = join fn
+      !\($'"tokio_stream::StreamExt::filter_map(!stream, |x| !fn(x))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### stream_filter_map_futures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl stream_filter_map_futures forall t u v.\n    (fn : u -> optionm'.option' v)\n    (stream : t)\n    : infer' v\n    =\n    inl fn = join fn\n    !\\($'\"futures::stream::StreamExt::filter_map(!stream, |x| async { !fn(x) })\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl stream_filter_map_futures forall t u v.
+      (fn : u -> optionm'.option' v)
+      (stream : t)
+      : infer' v
+      =
+      inl fn = join fn
+      !\($'"futures::stream::StreamExt::filter_map(!stream, |x| async { !fn(x) })"')
+  """,
+  timeout: 300_000
+)
+```
+
+### spawn_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl spawn_tokio forall t. (fn : future_pin_send t) : join_handle_tokio t =\n    !\\($'\"tokio::runtime::spawn(!fn)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl spawn_tokio forall t. (fn : future_pin_send t) : join_handle_tokio t =
+      !\($'"tokio::runtime::spawn(!fn)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### try_join_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal try_join_all t =\n    `(\n        native_type\n            `($'futures_future_TryJoinAll<`t>')\n            `($'futures::future::TryJoinAll<`t>')\n            \"type futures_future_TryJoinAll<'T> = class end\"\n    )\n\ninl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_string))) : try_join_all (future_pin (resultm.result' t sm'.std_string)) =\n    inl x = join x\n    !\\($'\"futures::future::try_join_all(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal try_join_all t =
+      `(
+          native_type
+              `($'futures_future_TryJoinAll<`t>')
+              `($'futures::future::TryJoinAll<`t>')
+              "type futures_future_TryJoinAll<'T> = class end"
+      )
+
+  inl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_string))) : try_join_all (future_pin (resultm.result' t sm'.std_string)) =
+      inl x = join x
+      !\($'"futures::future::try_join_all(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### fuse_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fuse_tokio t =\n    `(\n        native_type\n            `($'tokio_prelude_stream_Fuse<`t>')\n            `($'tokio::prelude::stream::Fuse<`t>')\n            \"type tokio_prelude_stream_Fuse<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal fuse_tokio t =
+      `(
+          native_type
+              `($'tokio_prelude_stream_Fuse<`t>')
+              `($'tokio::prelude::stream::Fuse<`t>')
+              "type tokio_prelude_stream_Fuse<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### fuse'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type fuse' t = fuse_tokio t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type fuse' t = fuse_tokio t
+  """,
+  timeout: 300_000
+)
+```
+
+### future_fuse
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl future_fuse forall t. (x : future_pin t) : fuse' (future_pin t) =\n    !\\($'\"futures::future::FutureExt::fuse(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl future_fuse forall t. (x : future_pin t) : fuse' (future_pin t) =
+      !\($'"futures::future::FutureExt::fuse(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### join_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal join_all t =\n    `(\n        native_type\n            `($'futures_future_JoinAll<`t>')\n            `($'futures::future::JoinAll<`t>')\n            \"type futures_future_JoinAll<'T> = class end\"\n    )\n\ninl join_all forall t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =\n    inl x = join x\n    !\\($'\"futures::future::join_all(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal join_all t =
+      `(
+          native_type
+              `($'futures_future_JoinAll<`t>')
+              `($'futures::future::JoinAll<`t>')
+              "type futures_future_JoinAll<'T> = class end"
+      )
+
+  inl join_all forall t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =
+      inl x = join x
+      !\($'"futures::future::join_all(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### join_all_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl join_all_send forall t. (x : am'.vec (future_pin_send t)) : join_all (future_pin_send t) =\n    inl x = join x\n    !\\($'\"futures::future::join_all(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl join_all_send forall t. (x : am'.vec (future_pin_send t)) : join_all (future_pin_send t) =
+      inl x = join x
+      !\($'"futures::future::join_all(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### join_handle'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type join_handle' t = join_handle_tokio t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type join_handle' t = join_handle_tokio t
+  """,
+  timeout: 300_000
+)
+```
+
+### await_handle
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_handle forall t. (x : join_handle' t) : t =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_handle forall t. (x : join_handle' t) : t =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### await_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_all forall t. (x : join_all (future_pin t)) : am'.vec t =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_all forall t. (x : join_all (future_pin t)) : am'.vec t =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### await_all_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_all_send forall t. (x : join_all (future_pin_send t)) : am'.vec t =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_all_send forall t. (x : join_all (future_pin_send t)) : am'.vec t =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### try_await_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_await_all forall t. (x : try_join_all (future_pin (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_await_all forall t. (x : try_join_all (future_pin (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### try_await_all_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_await_all_send forall t. (x : try_join_all (future_pin_send (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_await_all_send forall t. (x : try_join_all (future_pin_send (resultm.result' t sm'.std_string))) : resultm.result' (am'.vec t) sm'.std_string =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### await
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await forall t. (x : future_pin t) : t =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await forall t. (x : future_pin t) : t =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### await
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_send forall t. (x : future_pin_send t) : t =\n    !\\($'\"!x.await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_send forall t. (x : future_pin_send t) : t =
+      !\($'"!x.await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its\n// elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain\n// Spiral array: Fable's rayon types (`IntoIter`, and `Map` with its source stage as a phantom parameter) and the\n// type-level backend switches that chose them are gone.\ntype into_iter t = array_base t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
+  // elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain
+  // Spiral array: Fable's rayon types (`IntoIter`, and `Map` with its source stage as a phantom parameter) and the
+  // type-level backend switches that chose them are gone.
+  type into_iter t = array_base t
+  """,
+  timeout: 300_000
+)
+```
+
+### into_par_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_par_iter forall t. (x : am'.vec t) : into_iter t =\n    x |> am'.from_vec_base","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_par_iter forall t. (x : am'.vec t) : into_iter t =
+      x |> am'.from_vec_base
+  """,
+  timeout: 300_000
+)
+```
+
+### par_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =\n    // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted\n    // `|x| f(x)` can't spread.\n    // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.\n    inl n : i32 = $'(!ar.borrow().len() as i32)'\n    let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =\n        if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc\n    loop 0 (am'.new_vec []) |> am'.from_vec_base","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
+      // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted
+      // `|x| f(x)` can't spread.
+      // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.
+      inl n : i32 = $'(!ar.borrow().len() as i32)'
+      let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
+          if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
+      loop 0 (am'.new_vec []) |> am'.from_vec_base
+  """,
+  timeout: 300_000
+)
+```
+
+### par_collect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl par_collect forall t. (iter : into_iter t) : am'.vec t =\n    iter |> am'.to_vec","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl par_collect forall t. (iter : into_iter t) : am'.vec t =
+      iter |> am'.to_vec
+  """,
+  timeout: 300_000
+)
+```
+
+### try_join_all_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_join_all_iter forall t. (x : am'.vec (future_pin_send (resultm.result' t sm'.std_string))) : try_join_all (future_pin_send (resultm.result' t sm'.std_string)) =\n    inl x = join x\n    !\\($'\"futures::future::try_join_all(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_join_all_iter forall t. (x : am'.vec (future_pin_send (resultm.result' t sm'.std_string))) : try_join_all (future_pin_send (resultm.result' t sm'.std_string)) =
+      inl x = join x
+      !\($'"futures::future::try_join_all(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### future_init
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl future_init forall t. (move : bool) (x : () -> t) : infer' t =\n    (!\\($'\"true; let __future_init = Box::pin(/*\"') : bool) |> ignore\n    if move\n    then (!\\($'\"*/ async move { /*\"') : bool) |> ignore\n    else (!\\($'\"*/ async { /*\"') : bool) |> ignore\n    (!\\($'\"*/ ()\"') : bool) |> ignore\n\n    inl x' = x ()\n    // inl x' = join x'\n\n    inl depth = 1, 0\n\n    x' |> rust.fix_closure depth\n\n    !\\($'\"__future_init\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl future_init forall t. (move : bool) (x : () -> t) : infer' t =
+      (!\($'"true; let __future_init = Box::pin(/*"') : bool) |> ignore
+      if move
+      then (!\($'"*/ async move { /*"') : bool) |> ignore
+      else (!\($'"*/ async { /*"') : bool) |> ignore
+      (!\($'"*/ ()"') : bool) |> ignore
+
+      inl x' = x ()
+      // inl x' = join x'
+
+      inl depth = 1, 0
+
+      x' |> rust.fix_closure depth
+
+      !\($'"__future_init"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_future
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_future forall t. (x : () -> t) : future_pin t =\n    inl result = future_init false x\n    !\\($'\"!result\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_future forall t. (x : () -> t) : future_pin t =
+      inl result = future_init false x
+      !\($'"!result"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_future_move
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_future_move forall t. (x : () -> t) : future_pin t =\n    inl result = future_init true x\n    !\\($'\"!result\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_future_move forall t. (x : () -> t) : future_pin t =
+      inl result = future_init true x
+      !\($'"!result"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_future_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_future_send forall t. (x : () -> t) : future_pin_send t =\n    inl result = future_init false x\n    !\\($'\"!result\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_future_send forall t. (x : () -> t) : future_pin_send t =
+      inl result = future_init false x
+      !\($'"!result"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_future_move_send
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_future_move_send forall t. (x : () -> t) : future_pin_send t =\n    inl result = future_init true x\n    !\\($'\"!result\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_future_move_send forall t. (x : () -> t) : future_pin_send t =
+      inl result = future_init true x
+      !\($'"!result"')
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### async
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal async_python t =\n    `(\n        backend_switch `(()) `({}) {\n            Python = (fun () => global \"import asyncio\") : () -> ()\n        }\n        $'' : $'any'\n    )\ntype async_switch t =\n    {\n        Fsharp : $'Async<`t>'\n        Python : async_python t\n        Rust : $'std::pin::Pin<Box<dyn std::future::Future<Output = `t>>>'\n    }\nnominal async t = $'backend_switch `(async_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal async_python t =
+      `(
+          backend_switch `(()) `({}) {
+              Python = (fun () => global "import asyncio") : () -> ()
+          }
+          $'' : $'any'
+      )
+  type async_switch t =
+      {
+          Fsharp : $'Async<`t>'
+          Python : async_python t
+          Rust : $'std::pin::Pin<Box<dyn std::future::Future<Output = `t>>>'
+      }
+  nominal async t = $'backend_switch `(async_switch t)'
+  """,
+  timeout: 300_000
+)
+```
+
+### task
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal task t =\n    `(\n        typecase t with\n        | () => $'' : $'System.Threading.Tasks.Task'\n        | _ => $'' : $'System.Threading.Tasks.Task<`t>'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal task t =
+      `(
+          typecase t with
+          | () => $'' : $'System.Threading.Tasks.Task'
+          | _ => $'' : $'System.Threading.Tasks.Task<`t>'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_task
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_task forall t. (fn : () -> t) : task t =\n    run_target_args' fn function\n        | Fsharp _ => fun fn =>\n            inl result : optionm'.option' (task t) = optionm'.none' ()\n            $'let mutable _new_task_!result = !result '\n            $'task {'\n            fn () |> ignore\n            $'}'\n            $'|> fun x -> _new_task_!result <- Some x'\n            $'match _new_task_!result with Some x -> x | None -> failwith \"async.new_task / _new_task_!result=None\"'\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_task forall t. (fn : () -> t) : task t =
+      run_target_args' fn function
+          | Fsharp _ => fun fn =>
+              inl result : optionm'.option' (task t) = optionm'.none' ()
+              $'let mutable _new_task_!result = !result '
+              $'task {'
+              fn () |> ignore
+              $'}'
+              $'|> fun x -> _new_task_!result <- Some x'
+              $'match _new_task_!result with Some x -> x | None -> failwith "async.new_task / _new_task_!result=None"'
+          | _ => fun _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### await_task
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_task forall t. (a : task t) : async t =\n    run_target function\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            a |> $'Async.AwaitTask'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_task forall t. (a : task t) : async t =
+      run_target function
+          | Fsharp _
+          | TypeScript _ => fun () =>
+              a |> $'Async.AwaitTask'
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### ignore
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ignore forall t. (a : async t) : async () =\n    if rust.is_native ()\n    then $'Box::pin(async move { let _ = !a.await; })' : async ()\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Ignore'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ignore forall t. (a : async t) : async () =
+      if rust.is_native ()
+      then $'Box::pin(async move { let _ = !a.await; })' : async ()
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  a |> $'Async.Ignore'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### run_synchronously
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_synchronously forall t. (a : async t) : t =\n    run_target function\n        | Fsharp _ => fun () =>\n            a |> $'Async.RunSynchronously'\n        | Cuda => fun () =>\n            $'asyncio.run(!a())'\n        // Native Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.\n        | RustNative => fun () =>\n            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t\n        | _ => fun () => null ()\n\n// Native Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the\n// native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in\n// base.catch_unwind_native (a once-installed hook that defers to the previous one unless this thread's counter is set).\n// A panic=abort build aborts instead (and its hook always reports).\ninl catch_native forall t. (a : async t) : async (resultm.result' t exn) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\")))) } }) })' : async (resultm.result' t exn)\n\n// Native Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and\n// aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts\n// there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).\n// A panic in that first poll is kept (its report suppressed, as in catch_native) and resumed by the handle (F# raises a\n// child's exception at the await). With a\n// timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after\n// it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.\ninl start_child_native forall t. (timeout : i32) (a : async t) : async (async t) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\\!(\"The operation has timed out.\") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\\!(\"The operation has timed out.\"), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run_synchronously forall t. (a : async t) : t =
+      run_target function
+          | Fsharp _ => fun () =>
+              a |> $'Async.RunSynchronously'
+          | Cuda => fun () =>
+              $'asyncio.run(!a())'
+          // Native Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.
+          | RustNative => fun () =>
+              $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t
+          | _ => fun () => null ()
+
+  // Native Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the
+  // native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in
+  // base.catch_unwind_native (a once-installed hook that defers to the previous one unless this thread's counter is set).
+  // A panic=abort build aborts instead (and its hook always reports).
+  inl catch_native forall t. (a : async t) : async (resultm.result' t exn) =
+      $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
+
+  // Native Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and
+  // aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts
+  // there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).
+  // A panic in that first poll is kept (its report suppressed, as in catch_native) and resumed by the handle (F# raises a
+  // child's exception at the await). With a
+  // timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after
+  // it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.
+  inl start_child_native forall t. (timeout : i32) (a : async t) : async (async t) =
+      $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)
+  """,
+  timeout: 300_000
+)
+```
+
+### start
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once\n// and runs it on the thread pool.\ninl start (a : async ()) : () =\n    if rust.is_native ()\n    then a |> run_synchronously\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Start'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once
+  // and runs it on the thread pool.
+  inl start (a : async ()) : () =
+      if rust.is_native ()
+      then a |> run_synchronously
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  a |> $'Async.Start'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### start_child
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start_child forall t. (a : async t) : async (async t) =\n    if rust.is_native ()\n    then a |> start_child_native -1\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.StartChild'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl start_child forall t. (a : async t) : async (async t) =
+      if rust.is_native ()
+      then a |> start_child_native -1
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  a |> $'Async.StartChild'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### start_child_timeout
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t) =\n    if rust.is_native ()\n    then a |> start_child_native timeout\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                $'Async.StartChild (!a, !timeout)'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t) =
+      if rust.is_native ()
+      then a |> start_child_native timeout
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  $'Async.StartChild (!a, !timeout)'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### start_immediate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).\ninl start_immediate forall t. (a : async t) : () =\n    if rust.is_native ()\n    then a |> run_synchronously |> fun _ => ()\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.StartImmediate'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).
+  inl start_immediate forall t. (a : async t) : () =
+      if rust.is_native ()
+      then a |> run_synchronously |> fun _ => ()
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  a |> $'Async.StartImmediate'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### start_with_continuations
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).\ninl start_with_continuations forall t. (a : async t) : () =\n    if rust.is_native ()\n    then a |> catch_native |> run_synchronously |> fun _ => ()\n    else\n        run_target_args' a function\n            | Fsharp _\n            | TypeScript _ => fun a =>\n                $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'\n            | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).
+  inl start_with_continuations forall t. (a : async t) : () =
+      if rust.is_native ()
+      then a |> catch_native |> run_synchronously |> fun _ => ()
+      else
+          run_target_args' a function
+              | Fsharp _
+              | TypeScript _ => fun a =>
+                  $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'
+              | _ => fun _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### task_canceled_exception
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException'
+  """,
+  timeout: 300_000
+)
+```
+
+### sleep
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sleep (ms : i32) : async () =\n    run_target function\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            ms |> $'Async.Sleep'\n        | Cuda _ => fun () =>\n            $'asyncio.sleep(!ms / 1000)'\n        | RustNative => fun () =>\n            $'Box::pin(async move { std::thread::sleep(std::time::Duration::from_millis((!ms as u64))) })' : async ()\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sleep (ms : i32) : async () =
+      run_target function
+          | Fsharp _
+          | TypeScript _ => fun () =>
+              ms |> $'Async.Sleep'
+          | Cuda _ => fun () =>
+              $'asyncio.sleep(!ms / 1000)'
+          | RustNative => fun () =>
+              $'Box::pin(async move { std::thread::sleep(std::time::Duration::from_millis((!ms as u64))) })' : async ()
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### do
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl do (a : async ()) : () =\n    backend_switch {\n        Fsharp = fun () => $'do\\! !a ' : ()\n        Python = fun () => $'await !a ' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl do (a : async ()) : () =
+      backend_switch {
+          Fsharp = fun () => $'do\! !a ' : ()
+          Python = fun () => $'await !a ' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### let'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl let' forall t. (a : async t) : t =\n    $'let\\! !a = !a '\n    $'!a '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl let' forall t. (a : async t) : t =
+      $'let\! !a = !a '
+      $'!a '
+  """,
+  timeout: 300_000
+)
+```
+
+### return_await
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl return_await forall t. (a : async t) : () =\n    backend_switch {\n        Fsharp = fun () => $'return\\! !a ' : ()\n        Python = fun () => $'asyncio.run(!a())' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl return_await forall t. (a : async t) : () =
+      backend_switch {
+          Fsharp = fun () => $'return\! !a ' : ()
+          Python = fun () => $'asyncio.run(!a())' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### return_await'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl return_await' forall t. (a : async t) : t =\n    backend_switch {\n        Fsharp = fun () => $'return\\! !a ' : ()\n        Python = fun () => $'await !a()' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl return_await' forall t. (a : async t) : t =
+      backend_switch {
+          Fsharp = fun () => $'return\! !a ' : ()
+          Python = fun () => $'await !a()' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### catch'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).\ninl catch' forall t e. (a : async t) : async (choice2' t e) =\n    if rust.is_native ()\n    then\n        inl r = a |> catch_native\n        $'(!r)' : async (choice2' t e)\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Catch'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Native Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).
+  inl catch' forall t e. (a : async t) : async (choice2' t e) =
+      if rust.is_native ()
+      then
+          inl r = a |> catch_native
+          $'(!r)' : async (choice2' t e)
+      else
+          run_target function
+              | Fsharp _
+              | TypeScript _ => fun () =>
+                  a |> $'Async.Catch'
+              | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### cancellation_token
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_token () : async threading.cancellation_token =\n    $'Async.CancellationToken'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl cancellation_token () : async threading.cancellation_token =
+      $'Async.CancellationToken'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl default_cancellation_token () : threading.cancellation_token =\n    $'Async.DefaultCancellationToken'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl default_cancellation_token () : threading.cancellation_token =
+      $'Async.DefaultCancellationToken'
+  """,
+  timeout: 300_000
+)
+```
+
+### value_task
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal value_task = $'System.Threading.Tasks.ValueTask'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal value_task = $'System.Threading.Tasks.ValueTask'
+  """,
+  timeout: 300_000
+)
+```
+
+### value_task_as_task
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl value_task_as_task (task : value_task) : task () =\n    run_target function\n        | Fsharp => fun () => $'!task.AsTask' ()\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl value_task_as_task (task : value_task) : task () =
+      run_target function
+          | Fsharp => fun () => $'!task.AsTask' ()
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### await_value_task_unit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl await_value_task_unit (task : value_task) : async () =\n    task |> value_task_as_task |> await_task","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl await_value_task_unit (task : value_task) : async () =
+      task |> value_task_as_task |> await_task
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl main () =\n    ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl main () =
+      ()
+  """,
+  timeout: 300_000
+)
+```

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_accessible_composite_completion_wrong_root () :
     certified_interval_positive_positional_complete_factorization_tree
         (positional_one_bit (positional_one_bit positional_one)) =

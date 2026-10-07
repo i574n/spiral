@@ -11,8 +11,10 @@ inl base_let' x =
 /// ### future
 nominal future t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::future::Future<Output = $0>\")>]\n#endif\ntype std_future_Future<'T> = class end"
-        $'' : $'std_future_Future<`t>'
+        native_type
+            `($'std_future_Future<`t>')
+            `($'std::future::Future<Output = `t>')
+            "type std_future_Future<'T> = class end"
     )
 
 /// ### future_pin
@@ -46,15 +48,19 @@ inl block_on_tokio_send forall t. (fn : future_pin_send t) : t =
 /// ### stream_ext_tokio
 nominal stream_ext_tokio =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"tokio_stream::StreamExt\")>]\n#endif\ntype tokio_stream_StreamExt = class end"
-        $'' : $'tokio_stream_StreamExt'
+        native_type
+            `($'tokio_stream_StreamExt')
+            `($'tokio_stream::StreamExt')
+            "type tokio_stream_StreamExt = class end"
     )
 
 /// ### join_handle_tokio
 nominal join_handle_tokio t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"tokio::task::JoinHandle<$0>\")>]\n#endif\ntype tokio_task_JoinHandle<'T> = class end"
-        $'' : $'tokio_task_JoinHandle<`t>'
+        native_type
+            `($'tokio_task_JoinHandle<`t>')
+            `($'tokio::task::JoinHandle<`t>')
+            "type tokio_task_JoinHandle<'T> = class end"
     )
 
 /// ### stream_collect_tokio
@@ -104,8 +110,10 @@ inl spawn_tokio forall t. (fn : future_pin_send t) : join_handle_tokio t =
 /// ### try_join_all
 nominal try_join_all t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"futures::future::TryJoinAll<$0>\")>]\n#endif\ntype futures_future_TryJoinAll<'T> = class end"
-        $'' : $'futures_future_TryJoinAll<`t>'
+        native_type
+            `($'futures_future_TryJoinAll<`t>')
+            `($'futures::future::TryJoinAll<`t>')
+            "type futures_future_TryJoinAll<'T> = class end"
     )
 
 inl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_string))) : try_join_all (future_pin (resultm.result' t sm'.std_string)) =
@@ -115,8 +123,10 @@ inl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_s
 /// ### fuse_tokio
 nominal fuse_tokio t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"tokio::prelude::stream::Fuse<$0>\")>]\n#endif\ntype tokio_prelude_stream_Fuse<'T> = class end"
-        $'' : $'tokio_prelude_stream_Fuse<`t>'
+        native_type
+            `($'tokio_prelude_stream_Fuse<`t>')
+            `($'tokio::prelude::stream::Fuse<`t>')
+            "type tokio_prelude_stream_Fuse<'T> = class end"
     )
 
 /// ### fuse'
@@ -129,8 +139,10 @@ inl future_fuse forall t. (x : future_pin t) : fuse' (future_pin t) =
 /// ### join_all
 nominal join_all t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"futures::future::JoinAll<$0>\")>]\n#endif\ntype futures_future_JoinAll<'T> = class end"
-        $'' : $'futures_future_JoinAll<`t>'
+        native_type
+            `($'futures_future_JoinAll<`t>')
+            `($'futures::future::JoinAll<`t>')
+            "type futures_future_JoinAll<'T> = class end"
     )
 
 inl join_all forall t. (x : am'.vec (future_pin t)) : join_all (future_pin t) =
@@ -175,65 +187,28 @@ inl await_send forall t. (x : future_pin_send t) : t =
 
 /// ### into_iter
 // Native Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
-// elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`.
-nominal into_iter_fable t =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rayon::vec::IntoIter<$0>\")>]\n#endif\ntype rayon_vec_IntoIter<'T> = class end"
-        $'' : $'rayon_vec_IntoIter<`t>'
-    )
-type into_iter_switch t =
-    {
-        Fsharp : into_iter_fable t
-        Rust : $'Rc<RefCell<Vec<`t>>>'
-    }
-nominal into_iter t = $'backend_switch `(into_iter_switch t)'
+// elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain
+// Spiral array: Fable's rayon types (`IntoIter`, and `Map` with its source stage as a phantom parameter) and the
+// type-level backend switches that chose them are gone.
+type into_iter t = array_base t
 
 /// ### into_par_iter
 inl into_par_iter forall t. (x : am'.vec t) : into_iter t =
-    backend_switch {
-        Fsharp = fun () => !\\(x, $'"rayon::iter::IntoParallelIterator::into_par_iter($0)"') : into_iter t
-        Rust = fun () => $'Rc::new(RefCell::new(!x.clone()))' : into_iter t
-    }
-
-/// ### par_iter
-inl par_iter forall t. (x : am'.vec t) : into_iter t =
-    !\($'"rayon::iter::IntoParallelIterator::par_iter(!x)"')
-
-/// ### iter_map
-nominal iter_map_fable t u =
-    `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"rayon::iter::Map<$0, _>\")>]\n#endif\ntype rayon_iter_Map<'T> = class end"
-        $'' : $'rayon_iter_Map<`t>'
-    )
-type iter_map_switch t u =
-    {
-        Fsharp : iter_map_fable t u
-        Rust : $'Rc<RefCell<Vec<`u>>>'
-    }
-nominal iter_map t u = $'backend_switch `(iter_map_switch t u)'
+    x |> am'.from_vec_base
 
 /// ### par_map
-inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : iter_map (into_iter t) u =
-    backend_switch {
-        Fsharp = fun () => !\\((ar, fn), $'"rayon::iter::ParallelIterator::map($0, |x| $1(x))"') : iter_map (into_iter t) u
-        // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted
-        // `|x| f(x)` can't spread.
-        // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.
-        Rust = fun () =>
-            inl ar : array_base t = $'(!ar)'
-            inl n : i32 = $'(!ar.borrow().len() as i32)'
-            let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
-                if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
-            inl acc = loop 0 (am'.new_vec [])
-            $'Rc::new(RefCell::new(!acc))' : iter_map (into_iter t) u
-    }
+inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
+    // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted
+    // `|x| f(x)` can't spread.
+    // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.
+    inl n : i32 = $'(!ar.borrow().len() as i32)'
+    let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
+        if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
+    loop 0 (am'.new_vec []) |> am'.from_vec_base
 
 /// ### par_collect
-inl par_collect forall t u. (iter : iter_map (into_iter t) u) : am'.vec u =
-    backend_switch {
-        Fsharp = fun () => !\\(iter, $'"rayon::iter::ParallelIterator::collect($0)"') : am'.vec u
-        Rust = fun () => $'(!iter).borrow().clone()' : am'.vec u
-    }
+inl par_collect forall t. (iter : into_iter t) : am'.vec t =
+    iter |> am'.to_vec
 
 /// ### try_join_all_iter
 inl try_join_all_iter forall t. (x : am'.vec (future_pin_send (resultm.result' t sm'.std_string))) : try_join_all (future_pin_send (resultm.result' t sm'.std_string)) =
@@ -320,7 +295,6 @@ inl new_task forall t. (fn : () -> t) : task t =
 inl await_task forall t. (a : task t) : async t =
     run_target function
         | Fsharp _
-        // | Rust _
         | TypeScript _ => fun () =>
             a |> $'Async.AwaitTask'
         | _ => fun () => null ()
@@ -332,7 +306,6 @@ inl ignore forall t. (a : async t) : async () =
     else
         run_target function
             | Fsharp _
-            // | Rust _
             | TypeScript _ => fun () =>
                 a |> $'Async.Ignore'
             | _ => fun () => null ()
@@ -375,7 +348,6 @@ inl start (a : async ()) : () =
     else
         run_target function
             | Fsharp _
-            | Rust _
             | TypeScript _ => fun () =>
                 a |> $'Async.Start'
             | _ => fun () => null ()
@@ -410,7 +382,6 @@ inl start_immediate forall t. (a : async t) : () =
     else
         run_target function
             | Fsharp _
-            // | Rust _
             | TypeScript _ => fun () =>
                 a |> $'Async.StartImmediate'
             | _ => fun () => null ()
@@ -423,7 +394,6 @@ inl start_with_continuations forall t. (a : async t) : () =
     else
         run_target_args' a function
             | Fsharp _
-            | Rust _
             | TypeScript _ => fun a =>
                 $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'
             | _ => fun _ => null ()
@@ -435,7 +405,6 @@ nominal task_canceled_exception = $'System.Threading.Tasks.TaskCanceledException
 inl sleep (ms : i32) : async () =
     run_target function
         | Fsharp _
-        | Rust _
         | TypeScript _ => fun () =>
             ms |> $'Async.Sleep'
         | Cuda _ => fun () =>
@@ -480,7 +449,6 @@ inl catch' forall t e. (a : async t) : async (choice2' t e) =
     else
         run_target function
             | Fsharp _
-            // | Rust _
             | TypeScript _ => fun () =>
                 a |> $'Async.Catch'
             | _ => fun () => null ()

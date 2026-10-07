@@ -1,0 +1,103 @@
+# typescript
+
+<!-- livebook:{"break_markdown":true} -->
+
+### emit_expr
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl emit_expr forall a t. (args : a) (code : string) : t =\n    real\n        $'Fable.Core.JsInterop.emitJsExpr !args !code ' : t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl emit_expr forall a t. (args : a) (code : string) : t =
+      real
+          $'Fable.Core.JsInterop.emitJsExpr !args !code ' : t
+  """,
+  timeout: 300_000
+)
+```
+
+###
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~!\\) forall t. (code : string) : t =\n    emit_expr () code","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~!\) forall t. (code : string) : t =
+      emit_expr () code
+  """,
+  timeout: 300_000
+)
+```
+
+###
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~!\\\\) forall t u. ((args : t), (code : string)) : u =\n    emit_expr args code","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~!\\) forall t u. ((args : t), (code : string)) : u =
+      emit_expr args code
+  """,
+  timeout: 300_000
+)
+```
+
+###
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl import_all forall t. (file : string) : t =\n    real\n        $'Fable.Core.JsInterop.importAll !file ' : t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl import_all forall t. (file : string) : t =
+      real
+          $'Fable.Core.JsInterop.importAll !file ' : t
+  """,
+  timeout: 300_000
+)
+```
+
+###
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl import forall t. (name : string) (file : string) : t =\n    real\n        $'Fable.Core.JsInterop.import !name !file ' : t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl import forall t. (name : string) (file : string) : t =
+      real
+          $'Fable.Core.JsInterop.import !name !file ' : t
+  """,
+  timeout: 300_000
+)
+```
+
+### is_native
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The native TypeScript backend (codegenTypescript, `--backend TypeScript`); false in the F# build, whose `TypeScript`\n// run_target arms are Fable's (F# text).\ninl is_native () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => false\n        TypeScript = fun () => true\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // The native TypeScript backend (codegenTypescript, `--backend TypeScript`); false in the F# build, whose `TypeScript`
+  // run_target arms are Fable's (F# text).
+  inl is_native () : bool =
+      backend_switch {
+          Gleam = fun () => false
+          Lua = fun () => false
+          Fsharp = fun () => false
+          Python = fun () => false
+          TypeScript = fun () => true
+          Cpp = fun () => false
+          CppHost = fun () => false
+          Delphi = fun () => false
+          Cuda = fun () => false
+          Rust = fun () => false
+      }
+  """,
+  timeout: 300_000
+)
+```

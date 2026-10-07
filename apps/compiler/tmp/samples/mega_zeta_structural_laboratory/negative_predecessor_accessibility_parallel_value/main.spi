@@ -1,3 +1,5 @@
+open main
+
 inl impossible_predecessor_accessibility_parallel_value () :
     positive_positional_predecessor_accessibility
         (positional_zero_bit positional_one) =

@@ -1,0 +1,1291 @@
+# listm'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## listm'
+
+<!-- livebook:{"break_markdown":true} -->
+
+### append
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance append list t =\n    listm.append","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance append list t =
+      listm.append
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[ \"a\"; \"b\" ] ++ [ \"c\"; \"d\" ]\n|> _assert_eq [ \"a\"; \"b\"; \"c\"; \"d\" ]","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [ "a"; "b" ] ++ [ "c"; "d" ]
+  |> _assert_eq [ "a"; "b"; "c"; "d" ]
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### collect
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl collect forall t r. (fn : t -> list r) (items : list t) : list r =\n    items\n    |> listm.map fn\n    |> listm.fold (++) []","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl collect forall t r. (fn : t -> list r) (items : list t) : list r =
+      items
+      |> listm.map fn
+      |> listm.fold (++) []
+  """,
+  timeout: 300_000
+)
+```
+
+### replicate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl replicate count x =\n    listm.init count fun _ => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl replicate count x =
+      listm.init count fun _ => x
+  """,
+  timeout: 300_000
+)
+```
+
+### map4
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map4 f l1 l2 l3 l4 =\n    inl rec 루프 l1 l2 l3 l4 acc =\n        match l1, l2, l3, l4 with\n        | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>\n            루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)\n        | _ => acc |> listm.rev\n    루프 l1 l2 l3 l4 []","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map4 f l1 l2 l3 l4 =
+      inl rec 루프 l1 l2 l3 l4 acc =
+          match l1, l2, l3, l4 with
+          | (x1 :: xs1), (x2 :: xs2), (x3 :: xs3), (x4 :: xs4) =>
+              루프 xs1 xs2 xs3 xs4 (f x1 x2 x3 x4 :: acc)
+          | _ => acc |> listm.rev
+      루프 l1 l2 l3 l4 []
+  """,
+  timeout: 300_000
+)
+```
+
+### init_series
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init_series start end inc =\n    inl total : f64 = conv ((end - start) / inc) + 1\n    listm.init total (conv >> (*) inc >> (+) start)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init_series start end inc =
+      inl total : f64 = conv ((end - start) / inc) + 1
+      listm.init total (conv >> (*) inc >> (+) start)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninit_series 0 1 0.5\n|> _assert_eq [ 0f64; 0.5; 1 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  init_series 0 1 0.5
+  |> _assert_eq [ 0f64; 0.5; 1 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### try_item
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec try_item i = function\n    | Cons (x, _) when i = 0 => Some x\n    | Cons (_, xs) => try_item (i - 1) xs\n    | Nil => None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rec try_item i = function
+      | Cons (x, _) when i = 0 => Some x
+      | Cons (_, xs) => try_item (i - 1) xs
+      | Nil => None
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> try_item 9i32\n|> _assert_eq (Some 9)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> try_item 9i32
+  |> _assert_eq (Some 9)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> try_item 10i32\n|> _assert_eq None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> try_item 10i32
+  |> _assert_eq None
+  """,
+  timeout: 300_000
+)
+```
+
+### item
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl item i =\n    try_item i >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl item i =
+      try_item i >> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> item 9i32\n|> _assert_eq 9","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> item 9i32
+  |> _assert_eq 9
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\nfun () =>\n    listm.init 10i32 id\n    |> item 10i32\n    |> ignore\n|> _throws\n|> optionm.map sm'.format_exception\n|> _assert_eq (Some \"System.Exception: Option does not have a value.\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  fun () =>
+      listm.init 10i32 id
+      |> item 10i32
+      |> ignore
+  |> _throws
+  |> optionm.map sm'.format_exception
+  |> _assert_eq (Some "System.Exception: Option does not have a value.")
+  """,
+  timeout: 300_000
+)
+```
+
+### try_item_
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let rec try_item_ i = function\n    | Cons (x, _) when i = 0 => Some x\n    | Cons (_, xs) => try_item_ (i - 1) xs\n    | Nil => None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let rec try_item_ i = function
+      | Cons (x, _) when i = 0 => Some x
+      | Cons (_, xs) => try_item_ (i - 1) xs
+      | Nil => None
+  """,
+  timeout: 300_000
+)
+```
+
+### item_
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl item_ i =\n    try_item_ i >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl item_ i =
+      try_item_ i >> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+### sum
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sum list =\n    list |> listm.fold (+) 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sum list =
+      list |> listm.fold (+) 0
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> sum\n|> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> sum
+  |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+### unzip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unzip list =\n    (([], []), list)\n    ||> listm.fold fun (acc_x, acc_y) (x, y) =>\n        x :: acc_x, y :: acc_y\n    |> fun x, y =>\n        x |> listm.rev, y |> listm.rev","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unzip list =
+      (([], []), list)
+      ||> listm.fold fun (acc_x, acc_y) (x, y) =>
+          x :: acc_x, y :: acc_y
+      |> fun x, y =>
+          x |> listm.rev, y |> listm.rev
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> listm.map (fun x => x, x)\n|> unzip\n|> fun x, y =>\n    x |> sum\n    |> _assert_eq 45\n\n    y |> sum\n    |> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> listm.map (fun x => x, x)
+  |> unzip
+  |> fun x, y =>
+      x |> sum
+      |> _assert_eq 45
+
+      y |> sum
+      |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+### try_index_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// inl try_index_of item list =\ninl try_index_of forall b c {number}. (item : b) (list : list b) : option c =\n    // inl rec 루프 i = function\n    inl rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of item =\n    try_index_of item >> optionm.value\n\n// inl try_index_of_ item list =\ninl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =\n    // let rec 루프 i = function\n    let rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of_ item =\n    try_index_of_ item >> optionm.value\n\ninl try_index_of__ item list =\n    inl i = mut 0\n    inl list = mut list\n    inl result = mut None\n    let rec 루프 () =\n        match *list with\n        | [] => result <- None\n        | x :: xs =>\n            if x = item\n            then result <- Some *i\n            else\n                i <- *i + 1\n                list <- xs\n                루프 ()\n    루프 ()\n    *result\n\ninl index_of__ item =\n    try_index_of__ item >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // inl try_index_of item list =
+  inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
+      // inl rec 루프 i = function
+      inl rec 루프 forall a {number}. (i : a) : list b -> option a = function
+          | [] => None
+          | x :: xs =>
+              if x = item
+              then Some i
+              else 루프 (i + 1) xs
+      루프 0 list
+
+  inl index_of item =
+      try_index_of item >> optionm.value
+
+  // inl try_index_of_ item list =
+  inl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =
+      // let rec 루프 i = function
+      let rec 루프 forall a {number}. (i : a) : list b -> option a = function
+          | [] => None
+          | x :: xs =>
+              if x = item
+              then Some i
+              else 루프 (i + 1) xs
+      루프 0 list
+
+  inl index_of_ item =
+      try_index_of_ item >> optionm.value
+
+  inl try_index_of__ item list =
+      inl i = mut 0
+      inl list = mut list
+      inl result = mut None
+      let rec 루프 () =
+          match *list with
+          | [] => result <- None
+          | x :: xs =>
+              if x = item
+              then result <- Some *i
+              else
+                  i <- *i + 1
+                  list <- xs
+                  루프 ()
+      루프 ()
+      *result
+
+  inl index_of__ item =
+      try_index_of__ item >> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> index_of 5i32\n|> _assert_eq 5i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> index_of 5i32
+  |> _assert_eq 5i32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> try_index_of 10i32\n|> _assert_eq (None : option i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> try_index_of 10i32
+  |> _assert_eq (None : option i32)
+  """,
+  timeout: 300_000
+)
+```
+
+### try_find
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_find fn list =\n    inl rec 루프 = function\n        | [] => None\n        | x :: xs =>\n            if fn x\n            then Some x\n            else 루프 xs\n    루프 list\n\ninl try_find_ fn list =\n    let rec 루프 = function\n        | [] => None\n        | x :: xs =>\n            if fn x\n            then Some x\n            else 루프 xs\n    루프 list","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_find fn list =
+      inl rec 루프 = function
+          | [] => None
+          | x :: xs =>
+              if fn x
+              then Some x
+              else 루프 xs
+      루프 list
+
+  inl try_find_ fn list =
+      let rec 루프 = function
+          | [] => None
+          | x :: xs =>
+              if fn x
+              then Some x
+              else 루프 xs
+      루프 list
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> try_find ((=) 5i32)\n|> _assert_eq (Some 5i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> try_find ((=) 5i32)
+  |> _assert_eq (Some 5i32)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl find x =\n    try_find x >> optionm.value\n\ninl find_ x =\n    try_find_ x >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl find x =
+      try_find x >> optionm.value
+
+  inl find_ x =
+      try_find_ x >> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> find ((=) 5i32)\n|> _assert_eq 5i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> find ((=) 5i32)
+  |> _assert_eq 5i32
+  """,
+  timeout: 300_000
+)
+```
+
+### choose
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl choose f l =\n    (l, [])\n    ||> listm.foldBack fun x acc =>\n        match f x with\n        | Some y => y :: acc\n        | None => acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl choose f l =
+      (l, [])
+      ||> listm.foldBack fun x acc =>
+          match f x with
+          | Some y => y :: acc
+          | None => acc
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> choose (fun x => if x % 2 = 0 then Some x else None)\n|> _assert_eq [ 0; 2; 4; 6; 8 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> choose (fun x => if x % 2 = 0 then Some x else None)
+  |> _assert_eq [ 0; 2; 4; 6; 8 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### filter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl filter forall t. (fn : t -> bool) (list : list t) : list t =\n    (list, Nil)\n    ||> listm.foldBack fun x acc =>\n        if fn x then x :: acc else acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl filter forall t. (fn : t -> bool) (list : list t) : list t =
+      (list, Nil)
+      ||> listm.foldBack fun x acc =>
+          if fn x then x :: acc else acc
+  """,
+  timeout: 300_000
+)
+```
+
+### zip_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl zip_with fn xs ys =\n    inl rec 루프 acc xs ys =\n        match xs, ys with\n        | Cons (x, xs), Cons (y, ys) =>\n            루프 (fn x y :: acc) xs ys\n        | _ => listm.rev acc\n    루프 [] xs ys\n\ninl zip_with_ fn xs ys =\n    let rec 루프 acc xs ys =\n        match xs, ys with\n        | Cons (x, xs), Cons (y, ys) =>\n            루프 (fn x y :: acc) xs ys\n        | _ => listm.rev acc\n    루프 [] xs ys","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl zip_with fn xs ys =
+      inl rec 루프 acc xs ys =
+          match xs, ys with
+          | Cons (x, xs), Cons (y, ys) =>
+              루프 (fn x y :: acc) xs ys
+          | _ => listm.rev acc
+      루프 [] xs ys
+
+  inl zip_with_ fn xs ys =
+      let rec 루프 acc xs ys =
+          match xs, ys with
+          | Cons (x, xs), Cons (y, ys) =>
+              루프 (fn x y :: acc) xs ys
+          | _ => listm.rev acc
+      루프 [] xs ys
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n([ 1i32; 2; 3 ], [ 4; 5; 6 ])\n||> zip_with (+)\n|> _assert_eq [ 5; 7; 9 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  ([ 1i32; 2; 3 ], [ 4; 5; 6 ])
+  ||> zip_with (+)
+  |> _assert_eq [ 5; 7; 9 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### zip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl zip xs ys =\n    zip_with pair xs ys\n\ninl zip_ xs ys =\n    zip_with_ pair xs ys","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl zip xs ys =
+      zip_with pair xs ys
+
+  inl zip_ xs ys =
+      zip_with_ pair xs ys
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n([ 1i32; 2; 3 ], [ 4i32; 5; 6 ])\n||> zip\n|> _assert_eq [ 1, 4; 2, 5; 3, 6 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  ([ 1i32; 2; 3 ], [ 4i32; 5; 6 ])
+  ||> zip
+  |> _assert_eq [ 1, 4; 2, 5; 3, 6 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### indexed
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl indexed list =\n    (([], 0), list)\n    ||> listm.fold fun (acc, i) x =>\n        (i, x) :: acc, i + 1\n    |> fst\n    |> listm.rev","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl indexed list =
+      (([], 0), list)
+      ||> listm.fold fun (acc, i) x =>
+          (i, x) :: acc, i + 1
+      |> fst
+      |> listm.rev
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 5i32 ((*) 2)\n|> indexed\n|> _assert_eq [ 0i32, 0; 1, 2; 2, 4; 3, 6; 4, 8 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 5i32 ((*) 2)
+  |> indexed
+  |> _assert_eq [ 0i32, 0; 1, 2; 2, 4; 3, 6; 4, 8 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### group_by
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl group_by fn list =\n    (list, [])\n    ||> listm.foldBack fun x acc =>\n        inl xk = fn x\n        inl found, new_acc =\n            ((false, []), acc)\n            ||> listm.fold fun (found, acc') (k, xs) =>\n                if k = xk\n                then true, (k, x :: xs) :: acc'\n                else found, (k, xs) :: acc'\n        if found\n        then new_acc\n        else (xk, [ x ]) :: new_acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl group_by fn list =
+      (list, [])
+      ||> listm.foldBack fun x acc =>
+          inl xk = fn x
+          inl found, new_acc =
+              ((false, []), acc)
+              ||> listm.fold fun (found, acc') (k, xs) =>
+                  if k = xk
+                  then true, (k, x :: xs) :: acc'
+                  else found, (k, xs) :: acc'
+          if found
+          then new_acc
+          else (xk, [ x ]) :: new_acc
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> group_by (fun x => x % 2 = 0)\n|> _assert_eq [ true, [ 0; 2; 4; 6; 8 ]; false, [ 1; 3; 5; 7; 9 ] ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> group_by (fun x => x % 2 = 0)
+  |> _assert_eq [ true, [ 0; 2; 4; 6; 8 ]; false, [ 1; 3; 5; 7; 9 ] ]
+  """,
+  timeout: 300_000
+)
+```
+
+### forall'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl forall' fn (head :: tail) =\n    (true, tail)\n    ||> listm.fold fun acc x =>\n        acc && x = head","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl forall' fn (head :: tail) =
+      (true, tail)
+      ||> listm.fold fun acc x =>
+          acc && x = head
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n[ 1i32; 1; 1; 1; 1 ]\n|> forall' ((=) 1i32)\n|> _assert_eq true","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  [ 1i32; 1; 1; 1; 1 ]
+  |> forall' ((=) 1i32)
+  |> _assert_eq true
+  """,
+  timeout: 300_000
+)
+```
+
+### last
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl last list =\n    list\n    |> listm.rev\n    |> item 0i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl last list =
+      list
+      |> listm.rev
+      |> item 0i32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> last\n|> _assert_eq 9","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> last
+  |> _assert_eq 9
+  """,
+  timeout: 300_000
+)
+```
+
+### try_pick
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_pick fn list =\n    inl rec body fn = function\n        | [] => None\n        | x :: xs =>\n            match fn x with\n            | Some y => Some y\n            | None => 루프 xs\n    and inl 루프 list =\n        if var_is list |> not\n        then body fn list\n        else\n            inl fn = join fn\n            inl list = dyn list\n            join body fn list\n    루프 list","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_pick fn list =
+      inl rec body fn = function
+          | [] => None
+          | x :: xs =>
+              match fn x with
+              | Some y => Some y
+              | None => 루프 xs
+      and inl 루프 list =
+          if var_is list |> not
+          then body fn list
+          else
+              inl fn = join fn
+              inl list = dyn list
+              join body fn list
+      루프 list
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> try_pick (fun x => if x = 5i32 then Some x else None)\n|> _assert_eq (Some 5i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> try_pick (fun x => if x = 5i32 then Some x else None)
+  |> _assert_eq (Some 5i32)
+  """,
+  timeout: 300_000
+)
+```
+
+### exists'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl exists' f x =\n    inl rec body f = function\n        | [] => false\n        | x :: xs =>\n            if f x\n            then true\n            else 루프 xs\n    and inl 루프 list =\n        if var_is list |> not\n        then body f list\n        else\n            inl f = join f\n            inl list = dyn list\n            join body f list\n    루프 x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl exists' f x =
+      inl rec body f = function
+          | [] => false
+          | x :: xs =>
+              if f x
+              then true
+              else 루프 xs
+      and inl 루프 list =
+          if var_is list |> not
+          then body f list
+          else
+              inl f = join f
+              inl list = dyn list
+              join body f list
+      루프 x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n////> rust // can't compare `()` with `char`\n///> typescript\n///> cuda\n\n[ 'a'; 'b'; 'c' ]\n|> exists' fun x => x = 'b'\n|> _assert_eq true\n\n[ 'a'; 'b' ]\n|> exists' fun x => x = 'c'\n|> _assert_eq false\n\n[]\n|> exists' fun x => x = 'a'\n|> _assert_eq false","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ////> rust // can't compare `()` with `char`
+  ///> typescript
+  ///> cuda
+
+  [ 'a'; 'b'; 'c' ]
+  |> exists' fun x => x = 'b'
+  |> _assert_eq true
+
+  [ 'a'; 'b' ]
+  |> exists' fun x => x = 'c'
+  |> _assert_eq false
+
+  []
+  |> exists' fun x => x = 'a'
+  |> _assert_eq false
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### list'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl list'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/list\"\n        Rust = fun () => ()\n    }\ntype list'_switch t =\n    {\n        Gleam : $'List(`t)'\n        Fsharp : $'`t list'\n        Python : $'list'\n        Rust : $'Rc<Vec<`t>>'\n    }\nnominal list' t = $'backend_switch `(list'_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl list'_types () =
+      backend_switch {
+          Gleam = fun () => global "import gleam/list"
+          Rust = fun () => ()
+      }
+  type list'_switch t =
+      {
+          Gleam : $'List(`t)'
+          Fsharp : $'`t list'
+          Python : $'list'
+          Rust : $'Rc<Vec<`t>>'
+      }
+  nominal list' t = $'backend_switch `(list'_switch t)'
+  """,
+  timeout: 300_000
+)
+```
+
+### empty'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl empty' forall t. () : list' t =\n    backend_switch {\n        Gleam = fun () => $'[]' : list' t\n        Lua = fun () => $'{}' : list' t\n        Fsharp = fun () => $'[]' : list' t\n        Python = fun () => $'[]' : list' t\n        Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl empty' forall t. () : list' t =
+      backend_switch {
+          Gleam = fun () => $'[]' : list' t
+          Lua = fun () => $'{}' : list' t
+          Fsharp = fun () => $'[]' : list' t
+          Python = fun () => $'[]' : list' t
+          Rust = fun () => $'Rc::new(<Vec<`t>>::new())' : list' t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### cons'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cons' forall t. (head : t) (tail : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'[ !head, ..!tail ]' : list' t\n        Lua = fun () =>\n            $'table.insert(!tail, 1, !head)'\n            $'!tail ' : list' t\n        Fsharp = fun () => $'!head :: !tail ' : list' t\n        Python = fun () =>\n            $'!tail.insert(0, !head)'\n            $'!tail ' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl cons' forall t. (head : t) (tail : list' t) : list' t =
+      backend_switch {
+          Gleam = fun () => $'[ !head, ..!tail ]' : list' t
+          Lua = fun () =>
+              $'table.insert(!tail, 1, !head)'
+              $'!tail ' : list' t
+          Fsharp = fun () => $'!head :: !tail ' : list' t
+          Python = fun () =>
+              $'!tail.insert(0, !head)'
+              $'!tail ' : list' t
+          Rust = fun () => $'Rc::new({ let mut v = (!tail).as_ref().clone(); v.insert(0, !head); v })' : list' t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### box
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t. (list : list t) : list' t =\n    run_target function\n        | RustNative => fun () =>\n            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on native Rust).\n            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'\n            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>\n                $'!acc.borrow_mut().push(!x)' : ()\n                n + 1\n            $'Rc::new(!acc.borrow().clone())' : list' t\n        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl box forall t. (list : list t) : list' t =
+      run_target function
+          | RustNative => fun () =>
+              // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on native Rust).
+              inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
+              inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
+                  $'!acc.borrow_mut().push(!x)' : ()
+                  n + 1
+              $'Rc::new(!acc.borrow().clone())' : list' t
+          | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'
+  """,
+  timeout: 300_000
+)
+```
+
+### rev'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rev' forall t. (items : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!items |> list.reverse' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!items)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- cons' ($'!items[!i + 1]') (*result)\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () => items |> $'List.rev' : list' t\n        Python = fun () => $'list(reversed(!items))' : list' t\n        Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rev' forall t. (items : list' t) : list' t =
+      backend_switch {
+          Gleam = fun () => $'!items |> list.reverse' : list' t
+          Lua = fun () =>
+              inl result : mut (list' t) = empty' () |> mut
+              inl len = $'##(!items)' : i32
+              let rec 루프 i =
+                  if i < 0i32
+                  then *result
+                  else
+                      result <- cons' ($'!items[!i + 1]') (*result)
+                      루프 (i - 1i32)
+              루프 (len - 1i32)
+          Fsharp = fun () => items |> $'List.rev' : list' t
+          Python = fun () => $'list(reversed(!items))' : list' t
+          Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : list' t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### fold'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold' : list u\n        Lua = fun () =>\n            inl result : mut (list u) = init |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i < 0i32\n                then *result\n                else\n                    result <- $'!fn(!list[!i + 1])' :: *result\n                    루프 (i - 1i32)\n            루프 (len - 1i32)\n        Fsharp = fun () =>\n            (init, list)\n            ||> $'List.fold' join fun acc x => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            inl init = init |> box\n            $'r = !init '\n            inl list = list |> rev'\n            $'for x in !list: r = [!fn(x)] + r'\n            inl init : list u = Nil\n            inl cons (a : u) b = Cons (a, b)\n            $'r_ = !init '\n            $'for x in r: r_ = !cons (x)(r_)'\n            $'r_' : list u\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i >= len then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (Cons (fn item, acc))\n            루프 0i32 init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fold' forall t u. (fn : t -> u) (init : list u) (list : list' t) : list u =
+      backend_switch {
+          Gleam = fun () =>
+              $'let listm_fold = !list |> list.fold (!init, fn (acc, x) {'
+              $'!(Cons (fn $'x', $'acc'))' : ()
+              $'})' : ()
+              $'listm_fold' : list u
+          Lua = fun () =>
+              inl result : mut (list u) = init |> mut
+              inl len = $'##(!list)' : i32
+              let rec 루프 i =
+                  if i < 0i32
+                  then *result
+                  else
+                      result <- $'!fn(!list[!i + 1])' :: *result
+                      루프 (i - 1i32)
+              루프 (len - 1i32)
+          Fsharp = fun () =>
+              (init, list)
+              ||> $'List.fold' join fun acc x => Cons (fn x, acc)
+              : list u
+          Python = fun () =>
+              inl init = init |> box
+              $'r = !init '
+              inl list = list |> rev'
+              $'for x in !list: r = [!fn(x)] + r'
+              inl init : list u = Nil
+              inl cons (a : u) b = Cons (a, b)
+              $'r_ = !init '
+              $'for x in r: r_ = !cons (x)(r_)'
+              $'r_' : list u
+          Rust = fun () =>
+              inl len : i32 = $'(!list).len() as i32'
+              let rec 루프 (i : i32) (acc : list u) : list u =
+                  if i >= len then acc
+                  else
+                      inl item : t = $'(!list)[!i as usize].clone()'
+                      루프 (i + 1i32) (Cons (fn item, acc))
+              루프 0i32 init
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### fold_back'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'\n            $'!(Cons (fn $'x', $'acc'))' : ()\n            $'})' : ()\n            $'listm_fold_back' : list u\n        Lua = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Fsharp = fun () =>\n            (list, init)\n            ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)\n            : list u\n        Python = fun () =>\n            list\n            |> rev'\n            |> fold' fn init\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list u) : list u =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (Cons (fn item, acc))\n            루프 (len - 1i32) init\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fold_back' forall t u. (fn : t -> u) (list : list' t) (init : list u) : list u =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/list"
+              $'let listm_fold_back = !list |> list.fold_right (!init, fn (acc, x) {'
+              $'!(Cons (fn $'x', $'acc'))' : ()
+              $'})' : ()
+              $'listm_fold_back' : list u
+          Lua = fun () =>
+              list
+              |> rev'
+              |> fold' fn init
+          Fsharp = fun () =>
+              (list, init)
+              ||> $'List.foldBack' join fun x acc => Cons (fn x, acc)
+              : list u
+          Python = fun () =>
+              list
+              |> rev'
+              |> fold' fn init
+          Rust = fun () =>
+              inl len : i32 = $'(!list).len() as i32'
+              let rec 루프 (i : i32) (acc : list u) : list u =
+                  if i < 0i32 then acc
+                  else
+                      inl item : t = $'(!list)[!i as usize].clone()'
+                      루프 (i - 1i32) (Cons (fn item, acc))
+              루프 (len - 1i32) init
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### filter'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =\n    backend_switch {\n        Gleam = fun () => $'!list |> list.filter(!fn)' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if fn item\n                    then\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n                    else 루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'\"List.filter !fn\"' : list' t\n        Python = fun () => $'list(filter(!fn, !list))' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (acc : list t) : list t =\n                if i < 0i32 then acc\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)\n            루프 (len - 1i32) Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl filter' forall t. (fn : t -> bool) (list : list' t) : list' t =
+      backend_switch {
+          Gleam = fun () => $'!list |> list.filter(!fn)' : list' t
+          Lua = fun () =>
+              inl result : mut (list' t) = empty' () |> mut
+              inl len = $'##(!list)' : i32
+              let rec 루프 i =
+                  if i >= len
+                  then *result
+                  else
+                      inl item = $'!list[!i + 1]' : t
+                      if fn item
+                      then
+                          result <- cons' item (*result)
+                          루프 (i + 1i32)
+                      else 루프 (i + 1i32)
+              루프 0i32
+          Fsharp = fun () => list |> $'"List.filter !fn"' : list' t
+          Python = fun () => $'list(filter(!fn, !list))' : list' t
+          Rust = fun () =>
+              inl len : i32 = $'(!list).len() as i32'
+              let rec 루프 (i : i32) (acc : list t) : list t =
+                  if i < 0i32 then acc
+                  else
+                      inl item : t = $'(!list)[!i as usize].clone()'
+                      루프 (i - 1i32) (if fn item then Cons (item, acc) else acc)
+              루프 (len - 1i32) Nil |> box
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (list : list' t) : list' u =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.map(!fn)' : list' u\n        Lua = fun () =>\n            inl result : mut (list' u) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    result <- cons' ($'!fn(!list[!i + 1])') (*result)\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.map' fn : list' u\n        Python = fun () => $'list(map(!fn, !list))' : list' u\n        Rust = fun () => fold_back' fn list Nil |> box\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map forall t u. (fn : t -> u) (list : list' t) : list' u =
+      list'_types ()
+      backend_switch {
+          Gleam = fun () => $'!list |> list.map(!fn)' : list' u
+          Lua = fun () =>
+              inl result : mut (list' u) = empty' () |> mut
+              inl len = $'##(!list)' : i32
+              let rec 루프 i =
+                  if i >= len
+                  then *result
+                  else
+                      result <- cons' ($'!fn(!list[!i + 1])') (*result)
+                      루프 (i + 1i32)
+              루프 0i32
+          Fsharp = fun () => list |> $'List.map' fn : list' u
+          Python = fun () => $'list(map(!fn, !list))' : list' u
+          Rust = fun () => fold_back' fn list Nil |> box
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### unbox
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t. (list : list' t) : list t =\n    (list, Nil)\n    ||> fold_back' id","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unbox forall t. (list : list' t) : list t =
+      (list, Nil)
+      ||> fold_back' id
+  """,
+  timeout: 300_000
+)
+```
+
+### distinct'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct' forall t. (list : list' t) : list' t =\n    list'_types ()\n    backend_switch {\n        Gleam = fun () => $'!list |> list.unique' : list' t\n        Lua = fun () =>\n            inl result : mut (list' t) = empty' () |> mut\n            inl len = $'##(!list)' : i32\n            inl seen : mut (list t) = [] |> mut\n            let rec 루프 i =\n                if i >= len\n                then *result\n                else\n                    inl item = $'!list[!i + 1]' : t\n                    if exists' (fun x => x = item) (*seen)\n                    then 루프 (i + 1i32)\n                    else\n                        seen <- item :: *seen\n                        result <- cons' item (*result)\n                        루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => list |> $'List.distinct' : list' t\n        Python = fun () =>\n            $'x = list(set(!list))'\n            $'x.sort(key=!list.index)'\n            $'x' : list' t\n        Rust = fun () =>\n            inl len : i32 = $'(!list).len() as i32'\n            let rec 루프 (i : i32) (seen : list t) : list t =\n                if i >= len then seen\n                else\n                    inl item : t = $'(!list)[!i as usize].clone()'\n                    루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))\n            루프 0i32 Nil |> box |> rev'\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl distinct' forall t. (list : list' t) : list' t =
+      list'_types ()
+      backend_switch {
+          Gleam = fun () => $'!list |> list.unique' : list' t
+          Lua = fun () =>
+              inl result : mut (list' t) = empty' () |> mut
+              inl len = $'##(!list)' : i32
+              inl seen : mut (list t) = [] |> mut
+              let rec 루프 i =
+                  if i >= len
+                  then *result
+                  else
+                      inl item = $'!list[!i + 1]' : t
+                      if exists' (fun x => x = item) (*seen)
+                      then 루프 (i + 1i32)
+                      else
+                          seen <- item :: *seen
+                          result <- cons' item (*result)
+                          루프 (i + 1i32)
+              루프 0i32
+          Fsharp = fun () => list |> $'List.distinct' : list' t
+          Python = fun () =>
+              $'x = list(set(!list))'
+              $'x.sort(key=!list.index)'
+              $'x' : list' t
+          Rust = fun () =>
+              inl len : i32 = $'(!list).len() as i32'
+              let rec 루프 (i : i32) (seen : list t) : list t =
+                  if i >= len then seen
+                  else
+                      inl item : t = $'(!list)[!i as usize].clone()'
+                      루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
+              루프 0i32 Nil |> box |> rev'
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> rust\n///> cuda\n///> typescript\n\n[ \"1\"; \"2\"; \"2\"; \"3\" ]\n|> box\n|> distinct'\n|> unbox\n|> _assert_eq [ \"1\"; \"2\"; \"3\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> rust
+  ///> cuda
+  ///> typescript
+
+  [ "1"; "2"; "2"; "3" ]
+  |> box
+  |> distinct'
+  |> unbox
+  |> _assert_eq [ "1"; "2"; "3" ]
+  """,
+  timeout: 300_000
+)
+```
+
+### to_array'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall t. (items : list' t) : array_base t =\n    backend_switch {\n        Gleam = fun () =>\n            inl d = real defaultof `t ()\n            $'!items |> array.from_list(default: !d)' : array_base t\n        Lua = fun () =>\n            inl len = $'##(!items)' : i32\n            inl d = real defaultof `t ()\n            inl result : a _ t = am.init len (fun _ => d)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i + 1]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => items |> $'List.toArray' : array_base t\n        Python = fun () =>\n            inl len = $'len(!items)' : i32\n            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).\n            inl result : a _ t = a ($'__import__(\"numpy\").empty(!len, dtype=object)' : array_base t)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_array' forall t. (items : list' t) : array_base t =
+      backend_switch {
+          Gleam = fun () =>
+              inl d = real defaultof `t ()
+              $'!items |> array.from_list(default: !d)' : array_base t
+          Lua = fun () =>
+              inl len = $'##(!items)' : i32
+              inl d = real defaultof `t ()
+              inl result : a _ t = am.init len (fun _ => d)
+              let rec 루프 i =
+                  if i >= len then
+                      inl (a result) = result
+                      result
+                  else
+                      set result i $'!items[!i + 1]'
+                      루프 (i + 1i32)
+              루프 0i32
+          Fsharp = fun () => items |> $'List.toArray' : array_base t
+          Python = fun () =>
+              inl len = $'len(!items)' : i32
+              // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).
+              inl result : a _ t = a ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
+              let rec 루프 i =
+                  if i >= len then
+                      inl (a result) = result
+                      result
+                  else
+                      set result i $'!items[!i]'
+                      루프 (i + 1i32)
+              루프 0i32
+          Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl contains forall t. (item : t) (list : list t) : bool =\n    list\n    |> try_index_of_ item\n    |> fun x => x : _ int\n    |> (<>) None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl contains forall t. (item : t) (list : list t) : bool =
+      list
+      |> try_index_of_ item
+      |> fun x => x : _ int
+      |> (<>) None
+  """,
+  timeout: 300_000
+)
+```
+
+### pairwise
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl pairwise forall t. (list : list t) : list (t * t) =\n    let rec 루프 = function\n        | (x1 : t) :: x2 :: xs => (x1, x2) :: 루프 (x2 :: xs)\n        | _ => []\n    루프 list","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl pairwise forall t. (list : list t) : list (t * t) =
+      let rec 루프 = function
+          | (x1 : t) :: x2 :: xs => (x1, x2) :: 루프 (x2 :: xs)
+          | _ => []
+      루프 list
+  """,
+  timeout: 300_000
+)
+```

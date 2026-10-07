@@ -1,3 +1,5 @@
+open main
+
 inl impossible_multi_prime_decision_relabels_as_prime_power forall root.
     (decision : certified_arithmetic_rooted_prime_power_decision root) :
     certified_arithmetic_rooted_prime_power_decision root =

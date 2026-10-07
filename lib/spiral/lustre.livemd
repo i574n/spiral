@@ -1,0 +1,348 @@
+# lustre
+
+<!-- livebook:{"break_markdown":true} -->
+
+`#!import ../../../polyglot/lib/fsharp/NotebooksHtml.livemd`
+
+<!-- livebook:{"break_markdown":true} -->
+
+## lustre
+
+<!-- livebook:{"break_markdown":true} -->
+
+### attribute
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal attribute t =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (fun () => global \"import lustre/internals/vdom\") : () -> ()\n        }\n        $'' : $'vdom.Attribute(`t)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal attribute t =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (fun () => global "import lustre/internals/vdom") : () -> ()
+          }
+          $'' : $'vdom.Attribute(`t)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### element
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal element t =\n    `(\n        backend_switch `(()) `({}) {\n            Gleam = (fun () => global \"import lustre/element\") : () -> ()\n        }\n        $'' : $'element.Element(`t)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal element t =
+      `(
+          backend_switch `(()) `({}) {
+              Gleam = (fun () => global "import lustre/element") : () -> ()
+          }
+          $'' : $'element.Element(`t)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### text
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl text forall t. (text : string) : element t =\n    global \"import lustre/element/html\"\n    $'element.text(!text)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl text forall t. (text : string) : element t =
+      global "import lustre/element/html"
+      $'element.text(!text)'
+  """,
+  timeout: 300_000
+)
+```
+
+### on_click
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl on_click forall t. (msg : t) : attribute t =\n    global \"import lustre/event\"\n    $'event.on_click(!msg)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl on_click forall t. (msg : t) : attribute t =
+      global "import lustre/event"
+      $'event.on_click(!msg)'
+  """,
+  timeout: 300_000
+)
+```
+
+### style
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl style forall t. (styles : list (string * string)) : attribute t =\n    global \"import lustre/attribute\"\n    inl styles = styles |> listm'.box\n    $'attribute.style(!styles)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl style forall t. (styles : list (string * string)) : attribute t =
+      global "import lustre/attribute"
+      inl styles = styles |> listm'.box
+      $'attribute.style(!styles)'
+  """,
+  timeout: 300_000
+)
+```
+
+### div
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/element/html\"\n    inl attributes = attributes |> listm'.box\n    inl children = children |> listm'.box\n    $'html.div(!attributes, !children)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl div forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/element/html"
+      inl attributes = attributes |> listm'.box
+      inl children = children |> listm'.box
+      $'html.div(!attributes, !children)'
+  """,
+  timeout: 300_000
+)
+```
+
+### p
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/element/html\"\n    inl attributes = attributes |> listm'.box\n    inl children = children |> listm'.box\n    $'html.p(!attributes, !children)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl p forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/element/html"
+      inl attributes = attributes |> listm'.box
+      inl children = children |> listm'.box
+      $'html.p(!attributes, !children)'
+  """,
+  timeout: 300_000
+)
+```
+
+### button
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =\n    global \"import lustre/ui/button\"\n    inl attributes = attributes |> listm'.box\n    inl children = children |> listm'.box\n    $'button.button(!attributes, !children)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl button forall t. (attributes : list (attribute t)) (children : list (element t)) : element t =
+      global "import lustre/ui/button"
+      inl attributes = attributes |> listm'.box
+      inl children = children |> listm'.box
+      $'button.button(!attributes, !children)'
+  """,
+  timeout: 300_000
+)
+```
+
+### centre
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =\n    global \"import lustre/ui/centre\"\n    inl attributes = attributes |> listm'.box\n    $'centre.centre(!attributes, !children)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl centre forall t. (attributes : list (attribute t)) (children : element t) : element t =
+      global "import lustre/ui/centre"
+      inl attributes = attributes |> listm'.box
+      $'centre.centre(!attributes, !children)'
+  """,
+  timeout: 300_000
+)
+```
+
+### app
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal app model msg = $'lustre.App(`model, `model, `msg)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal app model msg = $'lustre.App(`model, `model, `msg)'
+  """,
+  timeout: 300_000
+)
+```
+
+### simple
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl simple forall model msg.\n    (init : model -> model)\n    (update : model * msg -> model)\n    (view : model -> element msg)\n    : app model msg\n    =\n    global \"import lustre\"\n    $'lustre.simple(!init, fn (a, b) { !update(\\#(a, b)) }, !view)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl simple forall model msg.
+      (init : model -> model)
+      (update : model * msg -> model)
+      (view : model -> element msg)
+      : app model msg
+      =
+      global "import lustre"
+      $'lustre.simple(!init, fn (a, b) { !update(\#(a, b)) }, !view)'
+  """,
+  timeout: 300_000
+)
+```
+
+### start
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start id app =\n    $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl start id app =
+      $'let assert Ok(_) = lustre.start(!app, !id, 0)' : ()
+  """,
+  timeout: 300_000
+)
+```
+
+## counter
+
+<!-- livebook:{"break_markdown":true} -->
+
+### model
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type model = int","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type model = int
+  """,
+  timeout: 300_000
+)
+```
+
+### init
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init initial_count : model =\n    if initial_count < 0\n    then 0\n    else initial_count","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init initial_count : model =
+      if initial_count < 0
+      then 0
+      else initial_count
+  """,
+  timeout: 300_000
+)
+```
+
+### msg
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union msg =\n    | Incr\n    | Decr","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union msg =
+      | Incr
+      | Decr
+  """,
+  timeout: 300_000
+)
+```
+
+### update
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl update n (model, msg) =\n    match msg with\n    | Incr => model + n\n    | Decr => model - n","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl update n (model, msg) =
+      match msg with
+      | Incr => model + n
+      | Decr => model - n
+  """,
+  timeout: 300_000
+)
+```
+
+### view
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl view model =\n    div [\n        style [\n            \"display\", \"flex\"\n        ]\n    ] [\n        div [\n            style [\n                \"display\", \"flex\"\n                \"flex-direction\", \"column\"\n            ]\n        ] [\n            button [\n                on_click Incr\n            ] [\n                text \"+\"\n            ]\n            p [\n                style [\n                    \"text-align\", \"center\"\n                ]\n            ] [\n                model |> sm'.obj_to_string |> text\n            ]\n            button [\n                on_click Decr\n            ] [\n                text \"-\"\n            ]\n        ]\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl view model =
+      div [
+          style [
+              "display", "flex"
+          ]
+      ] [
+          div [
+              style [
+                  "display", "flex"
+                  "flex-direction", "column"
+              ]
+          ] [
+              button [
+                  on_click Incr
+              ] [
+                  text "+"
+              ]
+              p [
+                  style [
+                      "text-align", "center"
+                  ]
+              ] [
+                  model |> sm'.obj_to_string |> text
+              ]
+              button [
+                  on_click Decr
+              ] [
+                  text "-"
+              ]
+          ]
+      ]
+  """,
+  timeout: 300_000
+)
+```
+
+## tests
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam -t javascript -d lustre=\\\">=4.6.0\\\" lustre_ui=\\\"1.0.0-rc.1\\\" gleam_json=\\\">=2.0.0\\\"\n\nsimple init (update 1) view\n|> start \"#app_\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+  simple init (update 1) view
+  |> start "#app_"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam -t javascript -d lustre=\\\">=4.6.0\\\" lustre_ui=\\\"1.0.0-rc.1\\\" gleam_json=\\\">=2.0.0\\\"\n\nsimple init (update 2) view\n|> start \"#app_\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+
+  simple init (update 2) view
+  |> start "#app_"
+  """,
+  timeout: 300_000
+)
+```

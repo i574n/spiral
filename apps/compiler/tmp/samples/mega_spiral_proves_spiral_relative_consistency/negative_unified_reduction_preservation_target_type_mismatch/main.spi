@@ -1,15 +1,6 @@
-inl impossible_unified_reduction_preservation_target_type_mismatch
-    (reduction : exact_linear_indexed_reduction
-        (exact_linear_free_context_extend
-            exact_linear_free_context_empty exact_linear_bool_type)
-        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
-        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
-        exact_linear_bool_type)
-    : exact_linear_indexed_term
-        (exact_linear_free_context_extend
-            exact_linear_free_context_empty exact_linear_bool_type)
-        (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty)
-        exact_linear_unit_type =
+open main
+
+inl impossible_unified_reduction_preservation_target_type_mismatch (reduction : exact_linear_indexed_reduction (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type) : exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type =
     exact_linear_indexed_reduction_preservation reduction
 
 inl main () =

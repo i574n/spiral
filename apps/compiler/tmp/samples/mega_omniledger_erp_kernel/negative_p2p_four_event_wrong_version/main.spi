@@ -1,3 +1,5 @@
+open main
+
 inl impossible_erp_p2p_four_event_wrong_version () :
     erp_p2p_event_store nat_three requisition_drafted goods_partially_received =
     inl store, _ = erp_p2p_four_event_commit ()

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_false_elimination_requires_false () :
     exact_linear_indexed_false_elimination
         exact_linear_free_context_empty

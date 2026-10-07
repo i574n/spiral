@@ -1,0 +1,4242 @@
+# sm'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --static\n\nopen sm'_real","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --static
+
+  open sm'_real
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### std_string_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nnominal std_string_real =\n    `(\n        native_type\n            `($'std_string_String')\n            `($'std::string::String')\n            \"type std_string_String = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  nominal std_string_real =
+      `(
+          native_type
+              `($'std_string_String')
+              `($'std::string::String')
+              "type std_string_String = string"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type std_string = std_string_real","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type std_string = std_string_real
+  """,
+  timeout: 300_000
+)
+```
+
+### to_string'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_string' forall t. (x : t) : std_string =\n    !\\($'$\"!x.to_string()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_string' forall t. (x : t) : std_string =
+      !\($'$"!x.to_string()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_std_string_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl from_std_string_real (str : std_string_real) : string =\n    open rust\n    rust.emit_expr `std_string_real `string str ($'\"fable_library_rust::String_::fromString($0)\"' : string)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl from_std_string_real (str : std_string_real) : string =
+      open rust
+      rust.emit_expr `std_string_real `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
+  """,
+  timeout: 300_000
+)
+```
+
+### from_std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_std_string (str : std_string) : string =\n    backend_switch {\n        // Native Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).\n        Rust = fun () => !\\\\(str, $'\"Rc::<str>::from(String::as_str(&$0))\"') : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_std_string (str : std_string) : string =
+      backend_switch {
+          // Native Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
+          Rust = fun () => !\\(str, $'"Rc::<str>::from(String::as_str(&$0))"') : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+## sm'
+
+<!-- livebook:{"break_markdown":true} -->
+
+### symbol_to_string_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl symbol_to_string_real forall t {symbol}. : string =\n    // inl x = real_core.type_lit_to_lit `t\n    // inl x = real_core.type_to_symbol `t\n    // inl x = real_core.type_lit_to_lit `t\n    // !!!!SymbolToString (`(`t))\n    inl x = real_core.type_to_symbol `t\n    !!!!SymbolToString (x)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl symbol_to_string_real forall t {symbol}. : string =
+      // inl x = real_core.type_lit_to_lit `t
+      // inl x = real_core.type_to_symbol `t
+      // inl x = real_core.type_lit_to_lit `t
+      // !!!!SymbolToString (`(`t))
+      inl x = real_core.type_to_symbol `t
+      !!!!SymbolToString (x)
+  """,
+  timeout: 300_000
+)
+```
+
+### symbol_to_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl symbol_to_string forall t {symbol}. (x : t) : string =\n    real symbol_to_string_real `t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl symbol_to_string forall t {symbol}. (x : t) : string =
+      real symbol_to_string_real `t
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\n.test\n|> symbol_to_string\n|> _assert_eq \"test\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  .test
+  |> symbol_to_string
+  |> _assert_eq "test"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\nopen testing\ninl x = .test\ninl x = symbol_to_string_real `(`x)\n_assert_eq `string \"test\" x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  open testing
+  inl x = .test
+  inl x = symbol_to_string_real `(`x)
+  _assert_eq `string "test" x
+  """,
+  timeout: 300_000
+)
+```
+
+### index
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index i (str : string) : char =\n    i |> sm.index str","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index i (str : string) : char =
+      i |> sm.index str
+  """,
+  timeout: 300_000
+)
+```
+
+### length
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl length forall dim {int}. (input : string) : dim =\n    input |> sm.length","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl length forall dim {int}. (input : string) : dim =
+      input |> sm.length
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n\n\"abc\"\n|> length\n|> _assert_eq 3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+
+  "abc"
+  |> length
+  |> _assert_eq 3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### (~##)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~##) s : int =\n    s |> length","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~##) s : int =
+      s |> length
+  """,
+  timeout: 300_000
+)
+```
+
+### to_char_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_char_list (str : string) : list char =\n    listm.init (str |> length) (fun (i : i64) => str |> index i)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_char_list (str : string) : list char =
+      listm.init (str |> length) (fun (i : i64) => str |> index i)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n\n\"abc\"\n|> to_char_list\n|> _assert_eq [ 'a'; 'b'; 'c' ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+
+  "abc"
+  |> to_char_list
+  |> _assert_eq [ 'a'; 'b'; 'c' ]
+  """,
+  timeout: 300_000
+)
+```
+
+### to_char_array
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_char_array (str : string) : array_base char =\n    am'.init_base (str |> length) (fun i => str |> index i)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_char_array (str : string) : array_base char =
+      am'.init_base (str |> length) (fun i => str |> index i)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> lua\n///> gleam\n///> fsharp\n///> cuda\n\n\"abc\"\n|> to_char_array\n|> fun x => a x : _ int _\n|> am'.to_list'\n|> listm'.unbox\n|> _assert_eq [ 'a'; 'b'; 'c' ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> lua
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+
+  "abc"
+  |> to_char_array
+  |> fun x => a x : _ int _
+  |> am'.to_list'
+  |> listm'.unbox
+  |> _assert_eq [ 'a'; 'b'; 'c' ]
+  """,
+  timeout: 300_000
+)
+```
+
+### is_empty
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_empty (input : string) : bool =\n    (input |> length) = 0i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_empty (input : string) : bool =
+      (input |> length) = 0i32
+  """,
+  timeout: 300_000
+)
+```
+
+### to_option
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_option s =\n    if s |> is_empty\n    then None\n    else s |> Some","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_option s =
+      if s |> is_empty
+      then None
+      else s |> Some
+  """,
+  timeout: 300_000
+)
+```
+
+### string_builder_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nnominal string_builder_python =\n    `(\n        global \"import io\"\n        $'' : $'io.StringIO'\n    )\ntype string_builder_switch =\n    {\n        Gleam : string\n        Fsharp : $'System.Text.StringBuilder'\n        Python : string_builder_python\n        Rust : $'String'\n    }\nnominal string_builder_real = $'backend_switch `(string_builder_switch)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  nominal string_builder_python =
+      `(
+          global "import io"
+          $'' : $'io.StringIO'
+      )
+  type string_builder_switch =
+      {
+          Gleam : string
+          Fsharp : $'System.Text.StringBuilder'
+          Python : string_builder_python
+          Rust : $'String'
+      }
+  nominal string_builder_real = $'backend_switch `(string_builder_switch)'
+  """,
+  timeout: 300_000
+)
+```
+
+### string_builder
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type string_builder = string_builder_real","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type string_builder = string_builder_real
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl string_builder (initial : string) : string_builder =\n    inl initial =\n        if initial = \"\"\n        then join initial\n        else initial\n\n    backend_switch {\n        Gleam = fun () => $'!initial ' : string_builder\n        Lua = fun () => $'!initial ' : string_builder\n        Fsharp = fun () => initial |> $'`string_builder ' : string_builder\n        Python = fun () =>\n            global \"import io\"\n            global \"class CustomStringIO(io.StringIO):\\n    def __init__(self, init=''):\\n        super().__init__()\\n        if init != '': self.write(init)\\n    def __str__(self): return self.getvalue()\\n    def __repr__(self): return self.getvalue()\"\n            $'CustomStringIO(!initial)' : string_builder\n        Rust = fun () => $'String::from(&*!initial)' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl string_builder (initial : string) : string_builder =
+      inl initial =
+          if initial = ""
+          then join initial
+          else initial
+
+      backend_switch {
+          Gleam = fun () => $'!initial ' : string_builder
+          Lua = fun () => $'!initial ' : string_builder
+          Fsharp = fun () => initial |> $'`string_builder ' : string_builder
+          Python = fun () =>
+              global "import io"
+              global "class CustomStringIO(io.StringIO):\n    def __init__(self, init=''):\n        super().__init__()\n        if init != '': self.write(init)\n    def __str__(self): return self.getvalue()\n    def __repr__(self): return self.getvalue()"
+              $'CustomStringIO(!initial)' : string_builder
+          Rust = fun () => $'String::from(&*!initial)' : string_builder
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### append_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl append_real (x : string) (s : string) : string =\n    backend_switch `string `({}) {\n        Gleam = (fun () => $'!s <> !x ' : string) : () -> string\n        Lua = (fun () => $'!s .. !x ' : string) : () -> string\n        Fsharp = (fun () => (+.) `string s x) : () -> string\n        Python = (fun () => (+.) `string s x) : () -> string\n        Rust = (fun () => $'Rc::<str>::from(format\\!(\"{}{}\", !s, !x))' : string) : () -> string\n        TypeScript = (fun () => (+.) `string s x) : () -> string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl append_real (x : string) (s : string) : string =
+      backend_switch `string `({}) {
+          Gleam = (fun () => $'!s <> !x ' : string) : () -> string
+          Lua = (fun () => $'!s .. !x ' : string) : () -> string
+          Fsharp = (fun () => (+.) `string s x) : () -> string
+          Python = (fun () => (+.) `string s x) : () -> string
+          Rust = (fun () => $'Rc::<str>::from(format\!("{}{}", !s, !x))' : string) : () -> string
+          TypeScript = (fun () => (+.) `string s x) : () -> string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### append
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl append (x : string) (s : string) : string =\n    real append_real x s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl append (x : string) (s : string) : string =
+      real append_real x s
+  """,
+  timeout: 300_000
+)
+```
+
+### (++#*)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl (++#*) (a : string) (b : string) : string =\n    append_real b a","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl (++#*) (a : string) (b : string) : string =
+      append_real b a
+  """,
+  timeout: 300_000
+)
+```
+
+### (++#)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (++#) (a : string) (b : string) : string =\n    real (++#*) a b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (++#) (a : string) (b : string) : string =
+      real (++#*) a b
+  """,
+  timeout: 300_000
+)
+```
+
+### (++\\\\#)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (++\\\\#) a b =\n    a ++# \"\\\\n\" ++# b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (++\\#) a b =
+      a ++# "\\n" ++# b
+  """,
+  timeout: 300_000
+)
+```
+
+### (++\\#)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (++\\#) a b =\n    a ++# \"\\n\" ++# b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (++\#) a b =
+      a ++# "\n" ++# b
+  """,
+  timeout: 300_000
+)
+```
+
+### format_debug_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl rec format_debug_real forall t. (x : t) : string =\n    typecase t with\n    | string => x\n    | _ =>\n        backend_switch `string `({}) {\n            Gleam =\n                (fun () =>\n                    typecase t with\n                    | char => convert.to `(`x) `string x\n                    | string_builder_real => convert.to `(`x) `string x\n                    | _ =>\n                        global \"import gleam/string\"\n                        inl x =\n                            typecase t with\n                            | array_base _ => $'!x |> array.to_list' : t\n                            | _ => x\n                        $'string.inspect(!x)' : string\n                    ) : () -> string\n            Lua =\n                (fun () =>\n                    typecase t with\n                    | ~a * ~b =>\n                        inl a, b =\n                            if not (var_is `t x)\n                            then x\n                            else ($'__v[1]._1' : a), ($'__v[1]._2' : b)\n                        inl head_str = format_debug_real `a a\n                        inl tail_str = format_debug_real `b b\n                        (++#*) head_str ((++#*) \", \" tail_str)\n                    | {} => $'table.concat(!x, \", \")   ' : string\n                    | array_base _ =>\n                        (++#*) ((++#*) \"[\" ($'table.concat(!x, \", \")' : string)) \"]\"\n                    | t =>\n                        if real_core.union_type_is `t\n                        then serialize_union `t x\n                        else $'tostring(!x)       ' : string\n                ) : () -> string\n            Fsharp = (fun () => $'$\"%A{!x}\"' : string) : () -> string\n            Python =\n                (fun () =>\n                    $'f\"{!x}\"' : string\n                ) : () -> string\n            // Native Rust: codegenRust's unions/layouts derive only `Clone` (no `Debug`), so `{:?}` is used for\n            // primitives and arrays of primitives only; unions print structurally (`Case(payload)`), tuples and arrays,\n            // list's and options of anything else element by element (so `_assert_eq'` compares their contents),\n            // anything else as a `<rust type>` placeholder.\n            Rust =\n                (fun () =>\n                    typecase t with\n                    | char => $'Rc::<str>::from(format\\!(\"{:?}\", !x as char))' : string\n                    // F#'s `%A` of an option: `Some 1` / `None`.\n                    | optionm'.option' ~a =>\n                        if real_core.prim_type_is `a\n                        then $'Rc::<str>::from(match &!x { Some(v) => format\\!(\"Some {:?}\", v), None => String::from(\"None\") })' : string\n                        else\n                            // the payload through Spiral, as an array of 0 or 1 elements (a tuple payload is one Rust value)\n                            inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a\n                            if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then \"None\"\n                            else (++#*) \"Some \" (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if real_core.prim_type_is `el\n                        then $'Rc::<str>::from(format\\!(\"{:?}\", !x.borrow()))' : string\n                        else format_debug_elements_rust `el x\n                    // a list'/seq' (`Rc<Vec<T>>`) of primitives prints through `Debug` as any nominal below; of anything\n                    // else element by element, as an array\n                    | listm'.list' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    | seq.seq' ~el =>\n                        if real_core.prim_type_is `el\n                        then format_debug_other_rust `t x\n                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)\n                    // a record field by field, as `#?` (format_real) writes one\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ => format_debug_other_rust `t x\n                ) : () -> string\n            TypeScript =\n                (fun () =>\n                    typecase t with\n                    | char => $'\"\\'\" + String.fromCharCode(!x) + \"\\'\"' : string\n                    | optionm'.option' ~a =>\n                        if $'!x === undefined' : bool\n                        then \"None\"\n                        else (++#*) \"Some \" (format_debug_real `a ($'!x ' : a))\n                    | ~a * ~b =>\n                        inl a, b = x\n                        (++#*) (format_debug_real `a a) ((++#*) \", \" (format_debug_real `b b))\n                    | array_base ~el =>\n                        if real_core.prim_type_is `el\n                        then $'\"[\" + !x.join(\", \") + \"]\"' : string\n                        else $'String(!x)' : string\n                    | {} =>\n                        inl _, fields =\n                            real_core.record_fold\n                                fun { state = separator, acc key value } =>\n                                    \"; \", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* \" = \" ++#* format_debug_real `(`value) value\n                                (\"\", \"\") x\n                        \"{ \" ++#* fields ++#* \" }\"\n                    | _ =>\n                        if real_core.union_type_is `t\n                        then serialize_union_rust `t x\n                        else $'String(!x)' : string\n                ) : () -> string\n        }\n// Native Rust, a type that is neither a primitive container nor a tuple: a primitive through `Debug`, a union\n// structurally, a nominal as its payload, anything else as a `<rust type>` placeholder.\nand inl format_debug_other_rust forall t. (x : t) : string =\n    if real_core.prim_type_is `t\n    then $'Rc::<str>::from(format\\!(\"{:?}\", !x))' : string\n    elif real_core.union_type_is `t\n    then serialize_union_rust `t x\n    // A nominal prints as its payload: a primitive (`date_time.timestamp` over `i64`: the number,\n    // as F#'s `%A`), union, tuple, array or nominal as above; a macro type through `Debug` when it\n    // implements it (autoref specialization), else the placeholder.\n    elif real_core.nominal_type_is `t\n    then\n        inl payload forall u. (y : u) : string =\n            typecase u with\n            | {} => $'Rc::<str>::from(\"<`t>\")' : string\n            | ~a -> ~b => $'Rc::<str>::from(\"<`t>\")' : string\n            | ~a * ~b => format_debug_real `u y\n            | array_base _ => format_debug_real `u y\n            | _ =>\n                if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u\n                then format_debug_real `u y\n                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\\!(\"{:?}\", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from(\"<`t>\") } } (&&W(&!y)).s() })' : string\n        inl y = real_core.nominal_strip x\n        payload `(`y) y\n    else $'Rc::<str>::from(\"<`t>\")' : string\n// Native Rust, the elements of an array (or of a list'/option' copied into one) whose elements have no `Debug`\n// (codegenRust's unions derive only `Clone`): one by one, `[a, b]` as `{:?}` prints an array of primitives.\nand inl format_debug_elements_rust forall el. (x : array_base el) : string =\n    join\n        inl n = !!!!ArrayLength(`u64, x)\n        inl i = mut `u64 (real_core.dyn 0u64)\n        inl s = mut `string (real_core.dyn \"\")\n        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>\n            inl j = !!!!LayoutIndex(i)\n            inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)\n            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* \", \" ++#* e)\n            i <- !!!!Add(j, 1u64)\n        \"[\" ++#* !!!!LayoutIndex(s) ++#* \"]\"\n    : string\n// an element in parentheses when it is a tuple, as `{:?}` prints one\nand inl format_debug_element_rust forall el. (x : el) : string =\n    typecase el with\n    | ~a * ~b => \"(\" ++#* format_debug_real `el x ++#* \")\"\n    | _ => format_debug_real `el x\nand inl serialize_union forall t. (x : t) : string =\n    join\n        $'if type(v0) ~= \"table\" then return tostring(v0) end' : ()\n        real_core.unbox x fun k, v =>\n            inl tag : string = $'__v[1].tag'\n            typecase `v with\n            | () => tag\n            | ~a * ~b =>\n                typecase a with\n                | ~c * ~d =>\n                    inl head_str = format_debug_real `c ($'__v[1]._1 ' : c)\n                    inl tail_str = format_debug_real `d ($'__v[1]._2  ' : d)\n                    inl x = format_debug_real `b ($'__v[1]._3   ' : b)\n                    tag ++#* \"(\" ++#* head_str ++#* \", \" ++#* tail_str ++#* \", \" ++#* x ++#* \")\"\n                | _ =>\n                    inl head_str = format_debug_real `a ($'__v[1]._1    ' : a)\n                    inl tail_str = format_debug_real `b ($'__v[1]._2     ' : b)\n                    (++#*) tag ((++#*) \"(\" ((++#*) head_str ((++#*) \", \" ((++#*) tail_str \")\"))))\n            | ~a =>\n                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)\n                (++#*) tag ((++#*) \"(\" ((++#*) arg_str \")\"))\n    : string\nand inl serialize_union_rust forall t. (x : t) : string =\n    join\n        real_core.unbox x fun k, v =>\n            inl name = symbol_to_string_real `(`k)\n            typecase `v with\n            | () => name\n            | _ => (++#*) name ((++#*) \"(\" ((++#*) (format_debug_real `(`v) v) \")\"))\n    : string\n\n// Native Rust `obj_to_string` (F#'s `ToString`): a non-generic nominal over a plain Rust type (guid: `Rc<str>`,\n// date_time: `chrono::NaiveDateTime`) prints through `Display`; anything else as `format_debug_real` (generic\n// nominals like `am'.vec t`, records, tuples, arrays and functions keep its placeholder).\ninl obj_to_string_rust_inner_real forall t. (x : t) : string =\n    typecase t with\n    | {} => format_debug_real `t x\n    | ~a * ~b => format_debug_real `t x\n    | ~a -> ~b => format_debug_real `t x\n    | array_base _ => format_debug_real `t x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t\n        then format_debug_real `t x\n        else $'Rc::<str>::from(format\\!(\"{}\", !x))' : string\n\ninl obj_to_string_rust_real forall t. (x : t) : string =\n    typecase t with\n    // Like F#'s `string`, where Debug differs: a char is itself, a string is not quoted.\n    | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string\n    | string => x\n    | ~f ~a => format_debug_real `t x\n    | _ =>\n        if real_core.nominal_type_is `t\n        then\n            inl x = real_core.nominal_strip x\n            obj_to_string_rust_inner_real `(`x) x\n        else format_debug_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl rec format_debug_real forall t. (x : t) : string =
+      typecase t with
+      | string => x
+      | _ =>
+          backend_switch `string `({}) {
+              Gleam =
+                  (fun () =>
+                      typecase t with
+                      | char => convert.to `(`x) `string x
+                      | string_builder_real => convert.to `(`x) `string x
+                      | _ =>
+                          global "import gleam/string"
+                          inl x =
+                              typecase t with
+                              | array_base _ => $'!x |> array.to_list' : t
+                              | _ => x
+                          $'string.inspect(!x)' : string
+                      ) : () -> string
+              Lua =
+                  (fun () =>
+                      typecase t with
+                      | ~a * ~b =>
+                          inl a, b =
+                              if not (var_is `t x)
+                              then x
+                              else ($'__v[1]._1' : a), ($'__v[1]._2' : b)
+                          inl head_str = format_debug_real `a a
+                          inl tail_str = format_debug_real `b b
+                          (++#*) head_str ((++#*) ", " tail_str)
+                      | {} => $'table.concat(!x, ", ")   ' : string
+                      | array_base _ =>
+                          (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
+                      | t =>
+                          if real_core.union_type_is `t
+                          then serialize_union `t x
+                          else $'tostring(!x)       ' : string
+                  ) : () -> string
+              Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
+              Python =
+                  (fun () =>
+                      $'f"{!x}"' : string
+                  ) : () -> string
+              // Native Rust: codegenRust's unions/layouts derive only `Clone` (no `Debug`), so `{:?}` is used for
+              // primitives and arrays of primitives only; unions print structurally (`Case(payload)`), tuples and arrays,
+              // list's and options of anything else element by element (so `_assert_eq'` compares their contents),
+              // anything else as a `<rust type>` placeholder.
+              Rust =
+                  (fun () =>
+                      typecase t with
+                      | char => $'Rc::<str>::from(format\!("{:?}", !x as char))' : string
+                      // F#'s `%A` of an option: `Some 1` / `None`.
+                      | optionm'.option' ~a =>
+                          if real_core.prim_type_is `a
+                          then $'Rc::<str>::from(match &!x { Some(v) => format\!("Some {:?}", v), None => String::from("None") })' : string
+                          else
+                              // the payload through Spiral, as an array of 0 or 1 elements (a tuple payload is one Rust value)
+                              inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
+                              if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then "None"
+                              else (++#*) "Some " (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))
+                      | ~a * ~b =>
+                          inl a, b = x
+                          (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                      | array_base ~el =>
+                          if real_core.prim_type_is `el
+                          then $'Rc::<str>::from(format\!("{:?}", !x.borrow()))' : string
+                          else format_debug_elements_rust `el x
+                      // a list'/seq' (`Rc<Vec<T>>`) of primitives prints through `Debug` as any nominal below; of anything
+                      // else element by element, as an array
+                      | listm'.list' ~el =>
+                          if real_core.prim_type_is `el
+                          then format_debug_other_rust `t x
+                          else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                      | seq.seq' ~el =>
+                          if real_core.prim_type_is `el
+                          then format_debug_other_rust `t x
+                          else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                      // a record field by field, as `#?` (format_real) writes one
+                      | {} =>
+                          inl _, fields =
+                              real_core.record_fold
+                                  fun { state = separator, acc key value } =>
+                                      "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                  ("", "") x
+                          "{ " ++#* fields ++#* " }"
+                      | _ => format_debug_other_rust `t x
+                  ) : () -> string
+              TypeScript =
+                  (fun () =>
+                      typecase t with
+                      | char => $'"\'" + String.fromCharCode(!x) + "\'"' : string
+                      | optionm'.option' ~a =>
+                          if $'!x === undefined' : bool
+                          then "None"
+                          else (++#*) "Some " (format_debug_real `a ($'!x ' : a))
+                      | ~a * ~b =>
+                          inl a, b = x
+                          (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                      | array_base ~el =>
+                          if real_core.prim_type_is `el
+                          then $'"[" + !x.join(", ") + "]"' : string
+                          else $'String(!x)' : string
+                      | {} =>
+                          inl _, fields =
+                              real_core.record_fold
+                                  fun { state = separator, acc key value } =>
+                                      "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                  ("", "") x
+                          "{ " ++#* fields ++#* " }"
+                      | _ =>
+                          if real_core.union_type_is `t
+                          then serialize_union_rust `t x
+                          else $'String(!x)' : string
+                  ) : () -> string
+          }
+  // Native Rust, a type that is neither a primitive container nor a tuple: a primitive through `Debug`, a union
+  // structurally, a nominal as its payload, anything else as a `<rust type>` placeholder.
+  and inl format_debug_other_rust forall t. (x : t) : string =
+      if real_core.prim_type_is `t
+      then $'Rc::<str>::from(format\!("{:?}", !x))' : string
+      elif real_core.union_type_is `t
+      then serialize_union_rust `t x
+      // A nominal prints as its payload: a primitive (`date_time.timestamp` over `i64`: the number,
+      // as F#'s `%A`), union, tuple, array or nominal as above; a macro type through `Debug` when it
+      // implements it (autoref specialization), else the placeholder.
+      elif real_core.nominal_type_is `t
+      then
+          inl payload forall u. (y : u) : string =
+              typecase u with
+              | {} => $'Rc::<str>::from("<`t>")' : string
+              | ~a -> ~b => $'Rc::<str>::from("<`t>")' : string
+              | ~a * ~b => format_debug_real `u y
+              | array_base _ => format_debug_real `u y
+              | _ =>
+                  if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
+                  then format_debug_real `u y
+                  else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\!("{:?}", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from("<`t>") } } (&&W(&!y)).s() })' : string
+          inl y = real_core.nominal_strip x
+          payload `(`y) y
+      else $'Rc::<str>::from("<`t>")' : string
+  // Native Rust, the elements of an array (or of a list'/option' copied into one) whose elements have no `Debug`
+  // (codegenRust's unions derive only `Clone`): one by one, `[a, b]` as `{:?}` prints an array of primitives.
+  and inl format_debug_elements_rust forall el. (x : array_base el) : string =
+      join
+          inl n = !!!!ArrayLength(`u64, x)
+          inl i = mut `u64 (real_core.dyn 0u64)
+          inl s = mut `string (real_core.dyn "")
+          loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+              inl j = !!!!LayoutIndex(i)
+              inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)
+              s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
+              i <- !!!!Add(j, 1u64)
+          "[" ++#* !!!!LayoutIndex(s) ++#* "]"
+      : string
+  // an element in parentheses when it is a tuple, as `{:?}` prints one
+  and inl format_debug_element_rust forall el. (x : el) : string =
+      typecase el with
+      | ~a * ~b => "(" ++#* format_debug_real `el x ++#* ")"
+      | _ => format_debug_real `el x
+  and inl serialize_union forall t. (x : t) : string =
+      join
+          $'if type(v0) ~= "table" then return tostring(v0) end' : ()
+          real_core.unbox x fun k, v =>
+              inl tag : string = $'__v[1].tag'
+              typecase `v with
+              | () => tag
+              | ~a * ~b =>
+                  typecase a with
+                  | ~c * ~d =>
+                      inl head_str = format_debug_real `c ($'__v[1]._1 ' : c)
+                      inl tail_str = format_debug_real `d ($'__v[1]._2  ' : d)
+                      inl x = format_debug_real `b ($'__v[1]._3   ' : b)
+                      tag ++#* "(" ++#* head_str ++#* ", " ++#* tail_str ++#* ", " ++#* x ++#* ")"
+                  | _ =>
+                      inl head_str = format_debug_real `a ($'__v[1]._1    ' : a)
+                      inl tail_str = format_debug_real `b ($'__v[1]._2     ' : b)
+                      (++#*) tag ((++#*) "(" ((++#*) head_str ((++#*) ", " ((++#*) tail_str ")"))))
+              | ~a =>
+                  inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
+                  (++#*) tag ((++#*) "(" ((++#*) arg_str ")"))
+      : string
+  and inl serialize_union_rust forall t. (x : t) : string =
+      join
+          real_core.unbox x fun k, v =>
+              inl name = symbol_to_string_real `(`k)
+              typecase `v with
+              | () => name
+              | _ => (++#*) name ((++#*) "(" ((++#*) (format_debug_real `(`v) v) ")"))
+      : string
+
+  // Native Rust `obj_to_string` (F#'s `ToString`): a non-generic nominal over a plain Rust type (guid: `Rc<str>`,
+  // date_time: `chrono::NaiveDateTime`) prints through `Display`; anything else as `format_debug_real` (generic
+  // nominals like `am'.vec t`, records, tuples, arrays and functions keep its placeholder).
+  inl obj_to_string_rust_inner_real forall t. (x : t) : string =
+      typecase t with
+      | {} => format_debug_real `t x
+      | ~a * ~b => format_debug_real `t x
+      | ~a -> ~b => format_debug_real `t x
+      | array_base _ => format_debug_real `t x
+      | ~f ~a => format_debug_real `t x
+      | _ =>
+          if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t
+          then format_debug_real `t x
+          else $'Rc::<str>::from(format\!("{}", !x))' : string
+
+  inl obj_to_string_rust_real forall t. (x : t) : string =
+      typecase t with
+      // Like F#'s `string`, where Debug differs: a char is itself, a string is not quoted.
+      | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string
+      | string => x
+      | ~f ~a => format_debug_real `t x
+      | _ =>
+          if real_core.nominal_type_is `t
+          then
+              inl x = real_core.nominal_strip x
+              obj_to_string_rust_inner_real `(`x) x
+          else format_debug_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+### format_debug
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug forall t. (x : t) : string =\n    real format_debug_real `t x\n\ninl obj_to_string_rust forall t. (x : t) : string =\n    real obj_to_string_rust_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_debug forall t. (x : t) : string =
+      real format_debug_real `t x
+
+  inl obj_to_string_rust forall t. (x : t) : string =
+      real obj_to_string_rust_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+### (~#?*)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~#?*) s =\n    s |> format_debug","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~#?*) s =
+      s |> format_debug
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\n#?*(\"1\", \"2\", \"3\")\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"#(\\\"1\\\", \\\"2\\\", \\\"3\\\")\" : string\n        Lua = fun () => \"1, 2, 3\" : string\n        Fsharp = fun () => \"struct (\\\"1\\\", \\\"2\\\", \\\"3\\\")\" : string\n        Python = fun () => \"('1', '2', '3')\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  #?*("1", "2", "3")
+  |> _assert_eq (
+      backend_switch {
+          Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+          Lua = fun () => "1, 2, 3" : string
+          Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
+          Python = fun () => "('1', '2', '3')" : string
+      }
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\n#?*{ c = \"1\"; a = \"2\"; b = \"3\" }\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"#(\\\"1\\\", \\\"2\\\", \\\"3\\\")\" : string\n        Lua = fun () => \"1, 2, 3\" : string\n        Fsharp = fun () => \"struct (\\\"1\\\", \\\"2\\\", \\\"3\\\")\" : string\n        Python = fun () => \"('1', '2', '3')\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  #?*{ c = "1"; a = "2"; b = "3" }
+  |> _assert_eq (
+      backend_switch {
+          Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+          Lua = fun () => "1, 2, 3" : string
+          Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
+          Python = fun () => "('1', '2', '3')" : string
+      }
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+### unwrap_format
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance unwrap_format option t = fun x =>\n    x\n    |> optionm.value\n    |> format_debug\n\ninstance unwrap_format result t u = fun x =>\n    x\n    |> resultm.get\n    |> format_debug","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance unwrap_format option t = fun x =>
+      x
+      |> optionm.value
+      |> format_debug
+
+  instance unwrap_format result t u = fun x =>
+      x
+      |> resultm.get
+      |> format_debug
+  """,
+  timeout: 300_000
+)
+```
+
+### obj_to_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl obj_to_string x : string =\n    backend_switch {\n        Gleam = fun () => #?*x : string\n        Lua = fun () => #?*x : string\n        Fsharp = fun () => $'!x |> _.ToString()' : string\n        Python = fun () => $'str(!x)' : string\n        Rust = fun () => obj_to_string_rust x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl obj_to_string x : string =
+      backend_switch {
+          Gleam = fun () => #?*x : string
+          Lua = fun () => #?*x : string
+          Fsharp = fun () => $'!x |> _.ToString()' : string
+          Python = fun () => $'str(!x)' : string
+          Rust = fun () => obj_to_string_rust x
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### (~#?**)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~#?**) s =\n    s |> obj_to_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~#?**) s =
+      s |> obj_to_string
+  """,
+  timeout: 300_000
+)
+```
+
+### concat_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_list separator input =\n    (input, { acc = \"\"; sep = \"\" })\n    ||> listm.foldBack fun (x : string) { acc sep } => {\n        acc = x ++# sep ++# acc\n        sep = separator\n    }\n    |> fun { acc } => acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl concat_list separator input =
+      (input, { acc = ""; sep = "" })
+      ||> listm.foldBack fun (x : string) { acc sep } => {
+          acc = x ++# sep ++# acc
+          sep = separator
+      }
+      |> fun { acc } => acc
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n[\n    \"1\"\n    \"2\"\n    \"3\"\n]\n|> fun x =>\n    inl code = (x : _) |> concat_list \"\\n\"\n    code\n    |> _assert_eq \"1\\n2\\n3\"","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  [
+      "1"
+      "2"
+      "3"
+  ]
+  |> fun x =>
+      inl code = (x : _) |> concat_list "\n"
+      code
+      |> _assert_eq "1\n2\n3"
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice forall t {number; int}. (from : t) (to : t) s : string =\n    inl to_py () =\n        if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to\n    inl trace () =\n        [\n            \"sm'.slice\"\n            \" / from: \"; from |> obj_to_string\n            \" / to: \"; to |> obj_to_string\n            \" / s |> var_is: \"; s |> var_is |> obj_to_string\n            \" / from |> var_is: \"; from |> var_is |> obj_to_string\n            \" / to |> var_is: \"; to |> var_is |> obj_to_string\n            \" / to_py (): \"; to_py () |> obj_to_string\n            \" / to_py () |> var_is: \"; to_py () |> var_is |> obj_to_string\n        ]\n        |> concat_list \"\"\n    backend_switch {\n        Gleam = fun () =>\n            // TODO: uncomment\n            // global \"import gleam/io\"\n            // $'io.println(!(trace ()))' : ()\n            sm.slice s { from to } : string\n        Lua = fun () => sm.slice s { from to } : string\n        Fsharp = fun () => sm.slice s { from to } : string\n        Python = fun () => sm.slice s { from to = to_py () } : string\n        Rust = fun () => sm.slice s { from to } : string\n        TypeScript = fun () => sm.slice s { from to } : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice forall t {number; int}. (from : t) (to : t) s : string =
+      inl to_py () =
+          if (s |> var_is) || (to |> var_is) || (from |> var_is) then to + 1 else to
+      inl trace () =
+          [
+              "sm'.slice"
+              " / from: "; from |> obj_to_string
+              " / to: "; to |> obj_to_string
+              " / s |> var_is: "; s |> var_is |> obj_to_string
+              " / from |> var_is: "; from |> var_is |> obj_to_string
+              " / to |> var_is: "; to |> var_is |> obj_to_string
+              " / to_py (): "; to_py () |> obj_to_string
+              " / to_py () |> var_is: "; to_py () |> var_is |> obj_to_string
+          ]
+          |> concat_list ""
+      backend_switch {
+          Gleam = fun () =>
+              // TODO: uncomment
+              // global "import gleam/io"
+              // $'io.println(!(trace ()))' : ()
+              sm.slice s { from to } : string
+          Lua = fun () => sm.slice s { from to } : string
+          Fsharp = fun () => sm.slice s { from to } : string
+          Python = fun () => sm.slice s { from to = to_py () } : string
+          Rust = fun () => sm.slice s { from to } : string
+          TypeScript = fun () => sm.slice s { from to } : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> fsharp\n\n\"abcdef\"\n|> slice 3i32 3i32\n|> _assert_eq \"d\"\n\n\"abcdef\"\n|> slice 1i32 3i32\n|> slice 2i32 2i32\n|> _assert_eq \"d\"\n\n\"abcdef\"\n|> slice 1i32 4i32\n|> slice 2i32 3i32\n|> slice 1i32 1i32\n|> _assert_eq \"e\"","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> fsharp
+
+  "abcdef"
+  |> slice 3i32 3i32
+  |> _assert_eq "d"
+
+  "abcdef"
+  |> slice 1i32 3i32
+  |> slice 2i32 2i32
+  |> _assert_eq "d"
+
+  "abcdef"
+  |> slice 1i32 4i32
+  |> slice 2i32 3i32
+  |> slice 1i32 1i32
+  |> _assert_eq "e"
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n\n\"abcdef\"\n|> slice 1i32 3i32\n|> _assert_eq \"bcd\"\n\n(join \"fghij\")\n|> slice 1i32 3i32\n|> _assert_eq \"ghi\"\n\n\"klmno\"\n|> slice 1i32 (join 3i32)\n|> _assert_eq \"lmn\"\n\n(join \"pqrst\")\n|> slice 1i32 (join 3i32)\n|> _assert_eq \"qrs\"\n\n\"uvwxy\"\n|> slice (join 1i32) 3i32\n|> _assert_eq \"vwx\"\n\n(join \"zabcd\")\n|> slice (join 1i32) 3i32\n|> _assert_eq \"abc\"\n\n\"efghi\"\n|> slice (join 1i32) (join 3i32)\n|> _assert_eq \"fgh\"\n\n(join \"efghi\")\n|> slice (join 1i32) (join 3i32)\n|> _assert_eq \"fgh\"\n\n\"abcdef\"\n|> slice 3i32 4i32\n|> _assert_eq \"de\"\n\n(join \"efghi\")\n|> slice (join 3i32) (join 4i32)\n|> _assert_eq \"hi\"\n\n\"bcde\"\n|> slice (join 0i32) 0i32\n|> _assert_eq \"b\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+
+  "abcdef"
+  |> slice 1i32 3i32
+  |> _assert_eq "bcd"
+
+  (join "fghij")
+  |> slice 1i32 3i32
+  |> _assert_eq "ghi"
+
+  "klmno"
+  |> slice 1i32 (join 3i32)
+  |> _assert_eq "lmn"
+
+  (join "pqrst")
+  |> slice 1i32 (join 3i32)
+  |> _assert_eq "qrs"
+
+  "uvwxy"
+  |> slice (join 1i32) 3i32
+  |> _assert_eq "vwx"
+
+  (join "zabcd")
+  |> slice (join 1i32) 3i32
+  |> _assert_eq "abc"
+
+  "efghi"
+  |> slice (join 1i32) (join 3i32)
+  |> _assert_eq "fgh"
+
+  (join "efghi")
+  |> slice (join 1i32) (join 3i32)
+  |> _assert_eq "fgh"
+
+  "abcdef"
+  |> slice 3i32 4i32
+  |> _assert_eq "de"
+
+  (join "efghi")
+  |> slice (join 3i32) (join 4i32)
+  |> _assert_eq "hi"
+
+  "bcde"
+  |> slice (join 0i32) 0i32
+  |> _assert_eq "b"
+  """,
+  timeout: 300_000
+)
+```
+
+### format_pretty_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\ninl format_pretty_real forall t. (x : t) : string =\n    run_target_args `string `t (fun () => x) function\n        | RustNative => fun x =>\n            // A Spiral union prints structurally (format_debug_real: codegenRust's unions derive only `Clone`, so `{:#?}`\n            // doesn't compile for them), and so does an array/list'/seq'/option' of anything but primitives and a tuple\n            // with such an element at any depth (their elements may be unions); anything else through `{:#?}`, as the\n            // Fable arm.\n            inl rec structural forall u. () : bool =\n                typecase u with\n                | optionm'.option' ~a => if real_core.prim_type_is `a then false else true\n                | listm'.list' ~a => if real_core.prim_type_is `a then false else true\n                | seq.seq' ~a => if real_core.prim_type_is `a then false else true\n                | array_base ~a => if real_core.prim_type_is `a then false else true\n                | ~a * ~b => if structural `a () then true else structural `b ()\n                | {} => real_core.record_type_fold (fun acc key => forall v. => if acc then true else structural `v ()) false `u\n                | _ => real_core.union_type_is `u\n            if structural `t ()\n            then format_debug_real `t x\n            else\n                open rust\n                inl result = rust.emit_expr `t `std_string_real x ($'\"format\\!(\\\\\\\"{:\\#?}\\\\\\\", $0)\"' : string)\n                from_std_string_real result\n        | _ => fun _ => format_debug_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  inl format_pretty_real forall t. (x : t) : string =
+      run_target_args `string `t (fun () => x) function
+          | RustNative => fun x =>
+              // A Spiral union prints structurally (format_debug_real: codegenRust's unions derive only `Clone`, so `{:#?}`
+              // doesn't compile for them), and so does an array/list'/seq'/option' of anything but primitives and a tuple
+              // with such an element at any depth (their elements may be unions); anything else through `{:#?}`, as the
+              // Fable arm.
+              inl rec structural forall u. () : bool =
+                  typecase u with
+                  | optionm'.option' ~a => if real_core.prim_type_is `a then false else true
+                  | listm'.list' ~a => if real_core.prim_type_is `a then false else true
+                  | seq.seq' ~a => if real_core.prim_type_is `a then false else true
+                  | array_base ~a => if real_core.prim_type_is `a then false else true
+                  | ~a * ~b => if structural `a () then true else structural `b ()
+                  | {} => real_core.record_type_fold (fun acc key => forall v. => if acc then true else structural `v ()) false `u
+                  | _ => real_core.union_type_is `u
+              if structural `t ()
+              then format_debug_real `t x
+              else
+                  open rust
+                  inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
+                  from_std_string_real result
+          | _ => fun _ => format_debug_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+### format_pretty
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_pretty forall t. (x : t) : string =\n    real format_pretty_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_pretty forall t. (x : t) : string =
+      real format_pretty_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+### prim
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl prim x = real\n    match x with\n    | (x : i8) | (x : i16) | (x : i32) | (x : i64) => \"%d\", x\n    | (x : u8) | (x : u16) | (x : u32) | (x : u64) => \"%u\", x\n    | (x : f32) | (x : f64) => \"%f\", x\n    | (x : string) => \"%s\", x\n    | (x : char) => \"%c\", x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl prim x = real
+      match x with
+      | (x : i8) | (x : i16) | (x : i32) | (x : i64) => "%d", x
+      | (x : u8) | (x : u16) | (x : u32) | (x : u64) => "%u", x
+      | (x : f32) | (x : f64) => "%f", x
+      | (x : string) => "%s", x
+      | (x : char) => "%c", x
+  """,
+  timeout: 300_000
+)
+```
+
+### printable
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nprototype printable t : t -> ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  prototype printable t : t -> ()
+  """,
+  timeout: 300_000
+)
+```
+
+### format_real
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --real\n\nlet format_real forall t. (x : t) : string =\n    inl empty : string =\n        backend_switch `string `({}) {\n            Gleam =\n                (fun () =>\n                    \"\"\n                ) : () -> string\n            Lua =\n                (fun () =>\n                    \"\"\n                ) : () -> string\n            Fsharp =\n                (fun () =>\n                    join \"\"\n                ) : () -> string\n            Python =\n                (fun () =>\n                    \"\"\n                ) : () -> string\n            Rust =\n                (fun () =>\n                    \"\"\n                ) : () -> string\n            TypeScript =\n                (fun () =>\n                    \"\"\n                ) : () -> string\n        }\n    inl result = mut `string empty\n    inl rec write x =\n        inl p ((a : string), b) =\n            inl s : string =\n                backend_switch `string `({}) {\n                    Gleam =\n                        (fun () =>\n                            match b with\n                            | (_ : string) => b : string\n                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b\n                            | _ => format_debug_real `(`b) b\n                        ) : () -> string\n                    Lua =\n                        (fun () =>\n                            match b with\n                            | (_ : string) => b : string\n                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b\n                            | _ => format_debug_real `(`b) b\n                        ) : () -> string\n                    Fsharp =\n                        (fun () =>\n                            match b with\n                            | (_ : f32) | (_ : f64) => $'$\"%+.6f{!b}\"' : string\n                            | (_ : string) => b : string\n                            | _ => $'$\"{!b}\"' : string\n                        ) : () -> string\n                    Python =\n                        (fun () =>\n                            match b with\n                            | (_ : f32) | (_ : f64) => $'\"{:.6f}\".format(!b)' : string\n                            | (_ : string) => b : string\n                            | _ => $'f\"{!b}\"' : string\n                        ) : () -> string\n                    Rust =\n                        (fun () =>\n                            match b with\n                            // F#'s `%+.6f`: an explicit sign, and .NET's names for NaN and the infinities.\n                            | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_finite() { format\\!(\"{:+.6}\", v) } else if v.is_nan() { String::from(\"NaN\") } else if v > 0.0 { String::from(\"Infinity\") } else { String::from(\"-Infinity\") } })' : string\n                            | (_ : string) => b : string\n                            | (_ : char) => $'Rc::<str>::from(format\\!(\"{}\", !b as char))' : string\n                            | _ => $'Rc::<str>::from(format\\!(\"{}\", !b))' : string\n                        ) : () -> string\n                    TypeScript =\n                        (fun () =>\n                            match b with\n                            | (_ : f32) | (_ : f64) => $'(() => { const v = !b; return Number.isFinite(v) ? (v >= 0 ? \"+\" : \"\") + v.toFixed(6) : Number.isNaN(v) ? \"NaN\" : v > 0 ? \"Infinity\" : \"-Infinity\"; })()' : string\n                            | (_ : string) => b : string\n                            | (_ : char) => $'String.fromCharCode(!b)' : string\n                            | _ => $'String(!b)' : string\n                        ) : () -> string\n                }\n            backend_switch `(()) `({}) {\n                Gleam =\n                    (fun () =>\n                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())\n                    ) : () -> ()\n                Lua =\n                    (fun () =>\n                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())\n                    ) : () -> ()\n                Fsharp =\n                    (fun () =>\n                        join\n                            result <- append_real s ((~*) `string result)\n                    ) : () -> ()\n                Python =\n                    (fun () =>\n                        join\n                            result <- append_real s ((~*) `string result)\n                    ) : () -> ()\n                Rust =\n                    (fun () =>\n                        join\n                            result <- append_real s ((~*) `string result)\n                    ) : () -> ()\n                TypeScript =\n                    (fun () =>\n                        join\n                            result <- append_real s ((~*) `string result)\n                    ) : () -> ()\n            }\n\n        match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.\n        | () => ()\n        | (x : i8) | (x : i16) | (x : i32) | (x : i64) => p (\"%d\", x)\n        | (x : u8) | (x : u16) | (x : u32) | (x : u64) => p (\"%u\", x)\n        | (x : f32) | (x : f64) => p (\"%f\", x)\n        | (x : string) => p (\"%s\", x)\n        | (x : char) => p (\"%c\", x)\n        | (x : bool) => p (\"%s\", if x then \"true\" else \"false\")\n        | (a,b) => write a . write \", \" . write b\n        | {} as x =>\n            write \"{ \"\n            inl _result =\n                real_core.record_fold\n                    fun { state = separator key value } =>\n                        write separator\n                        write (symbol_to_string_real `(`key)) . write \" = \" . write value\n                        \"; \"\n                    () x\n            write \" }\"\n        | x when real_core.symbol_is x => write (symbol_to_string_real `(`x))\n        | x when real_core.function_is x => write (x ())\n        | x when real_core.union_is x =>\n            if real_core.prototype_has `(`x) printable then printable `(`x) x\n            else\n                inl temp () =\n                    real_core.unbox x (fun (k, v) =>\n                        write k\n                        match v with\n                        | () => ()\n                        | _ => (join write \"(\" . write v . write \")\") : ()\n                        )\n                write (format_debug_real `(`x) x)\n        | x when real_core.nominal_is x =>\n            if real_core.prototype_has `(`x) printable then printable `(`x) x\n            // elif layout_is x then write *x // TODO: Deal with all the layout type cases.\n            else write (format_pretty_real `(`x) x)\n        | x => write (format_debug_real `(`x) x)\n    write x\n    (~*) `string result","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --real
+
+  let format_real forall t. (x : t) : string =
+      inl empty : string =
+          backend_switch `string `({}) {
+              Gleam =
+                  (fun () =>
+                      ""
+                  ) : () -> string
+              Lua =
+                  (fun () =>
+                      ""
+                  ) : () -> string
+              Fsharp =
+                  (fun () =>
+                      join ""
+                  ) : () -> string
+              Python =
+                  (fun () =>
+                      ""
+                  ) : () -> string
+              Rust =
+                  (fun () =>
+                      ""
+                  ) : () -> string
+              TypeScript =
+                  (fun () =>
+                      ""
+                  ) : () -> string
+          }
+      inl result = mut `string empty
+      inl rec write x =
+          inl p ((a : string), b) =
+              inl s : string =
+                  backend_switch `string `({}) {
+                      Gleam =
+                          (fun () =>
+                              match b with
+                              | (_ : string) => b : string
+                              // | (_ : f32) | (_ : f64) => format_debug `(`b) b
+                              | _ => format_debug_real `(`b) b
+                          ) : () -> string
+                      Lua =
+                          (fun () =>
+                              match b with
+                              | (_ : string) => b : string
+                              // | (_ : f32) | (_ : f64) => format_debug `(`b) b
+                              | _ => format_debug_real `(`b) b
+                          ) : () -> string
+                      Fsharp =
+                          (fun () =>
+                              match b with
+                              | (_ : f32) | (_ : f64) => $'$"%+.6f{!b}"' : string
+                              | (_ : string) => b : string
+                              | _ => $'$"{!b}"' : string
+                          ) : () -> string
+                      Python =
+                          (fun () =>
+                              match b with
+                              | (_ : f32) | (_ : f64) => $'"{:.6f}".format(!b)' : string
+                              | (_ : string) => b : string
+                              | _ => $'f"{!b}"' : string
+                          ) : () -> string
+                      Rust =
+                          (fun () =>
+                              match b with
+                              // F#'s `%+.6f`: an explicit sign, and .NET's names for NaN and the infinities.
+                              | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_finite() { format\!("{:+.6}", v) } else if v.is_nan() { String::from("NaN") } else if v > 0.0 { String::from("Infinity") } else { String::from("-Infinity") } })' : string
+                              | (_ : string) => b : string
+                              | (_ : char) => $'Rc::<str>::from(format\!("{}", !b as char))' : string
+                              | _ => $'Rc::<str>::from(format\!("{}", !b))' : string
+                          ) : () -> string
+                      TypeScript =
+                          (fun () =>
+                              match b with
+                              | (_ : f32) | (_ : f64) => $'(() => { const v = !b; return Number.isFinite(v) ? (v >= 0 ? "+" : "") + v.toFixed(6) : Number.isNaN(v) ? "NaN" : v > 0 ? "Infinity" : "-Infinity"; })()' : string
+                              | (_ : string) => b : string
+                              | (_ : char) => $'String.fromCharCode(!b)' : string
+                              | _ => $'String(!b)' : string
+                          ) : () -> string
+                  }
+              backend_switch `(()) `({}) {
+                  Gleam =
+                      (fun () =>
+                          exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
+                      ) : () -> ()
+                  Lua =
+                      (fun () =>
+                          exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
+                      ) : () -> ()
+                  Fsharp =
+                      (fun () =>
+                          join
+                              result <- append_real s ((~*) `string result)
+                      ) : () -> ()
+                  Python =
+                      (fun () =>
+                          join
+                              result <- append_real s ((~*) `string result)
+                      ) : () -> ()
+                  Rust =
+                      (fun () =>
+                          join
+                              result <- append_real s ((~*) `string result)
+                      ) : () -> ()
+                  TypeScript =
+                      (fun () =>
+                          join
+                              result <- append_real s ((~*) `string result)
+                      ) : () -> ()
+              }
+
+          match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
+          | () => ()
+          | (x : i8) | (x : i16) | (x : i32) | (x : i64) => p ("%d", x)
+          | (x : u8) | (x : u16) | (x : u32) | (x : u64) => p ("%u", x)
+          | (x : f32) | (x : f64) => p ("%f", x)
+          | (x : string) => p ("%s", x)
+          | (x : char) => p ("%c", x)
+          | (x : bool) => p ("%s", if x then "true" else "false")
+          | (a,b) => write a . write ", " . write b
+          | {} as x =>
+              write "{ "
+              inl _result =
+                  real_core.record_fold
+                      fun { state = separator key value } =>
+                          write separator
+                          write (symbol_to_string_real `(`key)) . write " = " . write value
+                          "; "
+                      () x
+              write " }"
+          | x when real_core.symbol_is x => write (symbol_to_string_real `(`x))
+          | x when real_core.function_is x => write (x ())
+          | x when real_core.union_is x =>
+              if real_core.prototype_has `(`x) printable then printable `(`x) x
+              else
+                  inl temp () =
+                      real_core.unbox x (fun (k, v) =>
+                          write k
+                          match v with
+                          | () => ()
+                          | _ => (join write "(" . write v . write ")") : ()
+                          )
+                  write (format_debug_real `(`x) x)
+          | x when real_core.nominal_is x =>
+              if real_core.prototype_has `(`x) printable then printable `(`x) x
+              // elif layout_is x then write *x // TODO: Deal with all the layout type cases.
+              else write (format_pretty_real `(`x) x)
+          | x => write (format_debug_real `(`x) x)
+      write x
+      (~*) `string result
+  """,
+  timeout: 300_000
+)
+```
+
+### format
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format forall t. (x : t) : string =\n    real format_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format forall t. (x : t) : string =
+      real format_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(\"1\", \"2\", [\"3\"; \"4\"], { b = \"5\"; c = \"6\"; a = fun () => \"7\" }, ;[ 8i32 ])\n|> format\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"1, 2, Uh0i1(\\\"3\\\", Uh0i1(\\\"4\\\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Lua = fun () => \"1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Fsharp = fun () =>\n            run_target function\n                | Rust _ | RustNative => fun () => join \"1, 2, UH0_1(\\\"3\\\", UH0_1(\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))\"\n                | TypeScript _ => fun () => join \"1, 2, UH0_1 (3, UH0_1 (4, UH0_0)), { b = 5; c = 6; a = 7 }, 8\"\n                | _ => fun () => join \"1, 2, UH0_1 (\\\"3\\\", UH0_1 (\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]\"\n            : string\n        Python = fun () => \"1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]\" : string\n        // native Rust: a union prints structurally with its case names (sm'_real.format_debug_real)\n        Rust = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
+  |> format
+  |> _assert_eq (
+      backend_switch {
+          Gleam = fun () => "1, 2, Uh0i1(\"3\", Uh0i1(\"4\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
+          Lua = fun () => "1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
+          Fsharp = fun () =>
+              run_target function
+                  | Rust _ | RustNative => fun () => join "1, 2, UH0_1(\"3\", UH0_1(\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, Array(MutCell([8]))"
+                  | TypeScript _ => fun () => join "1, 2, UH0_1 (3, UH0_1 (4, UH0_0)), { b = 5; c = 6; a = 7 }, 8"
+                  | _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]"
+              : string
+          Python = fun () => "1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]" : string
+          // native Rust: a union prints structurally with its case names (sm'_real.format_debug_real)
+          Rust = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+      }
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+### (~#?)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~#?) s =\n    s |> format","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~#?) s =
+      s |> format
+  """,
+  timeout: 300_000
+)
+```
+
+### (++#?)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (++#?) (a : string) (b : _) : string =\n    a ++# #?b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (++#?) (a : string) (b : _) : string =
+      a ++# #?b
+  """,
+  timeout: 300_000
+)
+```
+
+### to_char_array
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_char_array (str : string) : array_base char =\n    am.init (str |> length) (fun i => str |> index i)\n    |> fun (a x : _ int _) => x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_char_array (str : string) : array_base char =
+      am.init (str |> length) (fun i => str |> index i)
+      |> fun (a x : _ int _) => x
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n\n\"abc\"\n|> to_char_array\n|> format\n|> _assert_eq #?(;[ 'a'; 'b'; 'c' ])","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+
+  "abc"
+  |> to_char_array
+  |> format
+  |> _assert_eq #?(;[ 'a'; 'b'; 'c' ])
+  """,
+  timeout: 300_000
+)
+```
+
+### concat_array
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_array (separator : string) (input : a int string) =\n    (input, { acc = \"\"; sep = \"\" })\n    ||> am.foldBack fun (x : string) { acc sep } =>\n            { acc = x ++# sep ++# acc; sep = separator }\n    |> fun { acc } => acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl concat_array (separator : string) (input : a int string) =
+      (input, { acc = ""; sep = "" })
+      ||> am.foldBack fun (x : string) { acc sep } =>
+              { acc = x ++# sep ++# acc; sep = separator }
+      |> fun { acc } => acc
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> fsharp\n////> cuda // AttributeError: 'str' object has no attribute 'item'\n///> rust\n///> typescript\n///> cuda\n\n;[\n    \"1\"\n    \"2\"\n    \"3\"\n]\n|> fun x =>\n    inl code = (a x : _ int _) |> concat_array \"\\n\"\n    code\n    |> _assert_eq \"1\\n2\\n3\"","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> fsharp
+  ////> cuda // AttributeError: 'str' object has no attribute 'item'
+  ///> rust
+  ///> typescript
+  ///> cuda
+
+  ;[
+      "1"
+      "2"
+      "3"
+  ]
+  |> fun x =>
+      inl code = (a x : _ int _) |> concat_array "\n"
+      code
+      |> _assert_eq "1\n2\n3"
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+### ellipsis
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ellipsis (max : i32) (s : string) =\n    if sm.length s <= max\n    then s\n    else s |> slice 0 (max - 1) |> append \"...\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ellipsis (max : i32) (s : string) =
+      if sm.length s <= max
+      then s
+      else s |> slice 0 (max - 1) |> append "..."
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"12345\"\n|> ellipsis 2\n|> _assert_eq \"12...\"\n\n\"12345\"\n|> ellipsis 4\n|> _assert_eq \"1234...\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "12345"
+  |> ellipsis 2
+  |> _assert_eq "12..."
+
+  "12345"
+  |> ellipsis 4
+  |> _assert_eq "1234..."
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### last_index_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl last_index_of (search : string) (s : string) : i32 =\n    // Bound before run_target: a literal materialized inside its first `#if` branch is reused by the others.\n    inl search = dyn search\n    run_target function\n        | RustNative => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32\n        | _ => fun () => $'!s.LastIndexOf !search ' : i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl last_index_of (search : string) (s : string) : i32 =
+      // Bound before run_target: a literal materialized inside its first `#if` branch is reused by the others.
+      inl search = dyn search
+      run_target function
+          | RustNative => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+          | _ => fun () => $'!s.LastIndexOf !search ' : i32
+  """,
+  timeout: 300_000
+)
+```
+
+### index_of_char
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_of_char (search : char) (s : string) : int =\n    $'!s.IndexOf !search '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index_of_char (search : char) (s : string) : int =
+      $'!s.IndexOf !search '
+  """,
+  timeout: 300_000
+)
+```
+
+### index_of_char_from
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =\n    inl len = s |> length\n    inl rec body i =\n        if i >= len\n        then -1i32\n        elif c = (s |> index i)\n        then i - from\n        else 루프 (i + 1i32)\n    and inl 루프 i = join_body_unit body (if var_is i then i else len) i\n    from |> 루프","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
+      inl len = s |> length
+      inl rec body i =
+          if i >= len
+          then -1i32
+          elif c = (s |> index i)
+          then i - from
+          else 루프 (i + 1i32)
+      and inl 루프 i = join_body_unit body (if var_is i then i else len) i
+      from |> 루프
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"abcdefabc\"\n|> index_of_char_from 2i32 'a'\n|> _assert_eq 4i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "abcdefabc"
+  |> index_of_char_from 2i32 'a'
+  |> _assert_eq 4i32
+  """,
+  timeout: 300_000
+)
+```
+
+### index_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl index_of (search : string) (s : string) : int =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/list\"\n            global \"import gleam/option\"\n            global \"import gleam/string\"\n            inl g : list string =\n                $'!s |> string.to_graphemes'\n            $'let search = !search ' : ()\n            $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()\n            $'  case acc {' : ()\n            $'    option.None if item == search -> option.Some(index)' : ()\n            $'    _ -> acc' : ()\n            $'  }' : ()\n            $'})' : ()\n            $'x |> option.unwrap(-1)' : int\n        Lua = fun () => $'string.find(!s, !search) - 1' : int\n        Fsharp = fun () => $'!s.IndexOf !search ' : int\n        Python = fun () => $'!s.find(!search)' : int\n        Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl index_of (search : string) (s : string) : int =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/list"
+              global "import gleam/option"
+              global "import gleam/string"
+              inl g : list string =
+                  $'!s |> string.to_graphemes'
+              $'let search = !search ' : ()
+              $'let x = !g |> list.index_fold (option.None, fn(acc, item, index) {' : ()
+              $'  case acc {' : ()
+              $'    option.None if item == search -> option.Some(index)' : ()
+              $'    _ -> acc' : ()
+              $'  }' : ()
+              $'})' : ()
+              $'x |> option.unwrap(-1)' : int
+          Lua = fun () => $'string.find(!s, !search) - 1' : int
+          Fsharp = fun () => $'!s.IndexOf !search ' : int
+          Python = fun () => $'!s.find(!search)' : int
+          Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"123\"\n|> index_of \"2\"\n|> _assert_eq 1","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "123"
+  |> index_of "2"
+  |> _assert_eq 1
+  """,
+  timeout: 300_000
+)
+```
+
+### replicate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl replicate (n : int) (s : string) : string =\n    inl rec body i acc =\n        if i >= n\n        then acc\n        else 루프 (i + 1) (acc ++# s)\n    and inl 루프 i = join_body_unit body n i\n    루프 0 \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl replicate (n : int) (s : string) : string =
+      inl rec body i acc =
+          if i >= n
+          then acc
+          else 루프 (i + 1) (acc ++# s)
+      and inl 루프 i = join_body_unit body n i
+      루프 0 ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n\n\"12\"\n|> replicate (join 3)\n|> _assert_eq \"121212\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+
+  "12"
+  |> replicate (join 3)
+  |> _assert_eq "121212"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n\n\"12\"\n|> replicate 3\n|> _assert_eq \"121212\"","print_code":true},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test --print-code
+  ///> gleam
+  ///> fsharp
+
+  "12"
+  |> replicate 3
+  |> _assert_eq "121212"
+  """,
+  timeout: 300_000,
+  print_code: true
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"12\"\n|> replicate 3\n|> _assert_eq \"121212\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "12"
+  |> replicate 3
+  |> _assert_eq "121212"
+  """,
+  timeout: 300_000
+)
+```
+
+### pad_left
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl pad_left (total_width : int) (padding_char : char) (s : string) : string =\n    inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)\n    padding ++# s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
+      inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)
+      padding ++# s
+  """,
+  timeout: 300_000
+)
+```
+
+### pad_right
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl pad_right (total_width : int) (padding_char : char) (s : string) : string =\n    inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)\n    s ++# padding","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
+      inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)
+      s ++# padding
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"123\"\n|> pad_right 6 ' '\n|> _assert_eq \"123   \"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "123"
+  |> pad_right 6 ' '
+  |> _assert_eq "123   "
+  """,
+  timeout: 300_000
+)
+```
+
+### convert_to_utf32
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_to_utf32 (c : char) : int =\n    backend_switch {\n        Gleam = fun () => c |> convert.i32\n        Lua = fun () => c |> convert.i32\n        Fsharp = fun () =>\n            run_target_args' c function\n            | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int\n            | _ => fun c => c |> convert.i32\n        Python = fun () => $'ord(!c)' : int\n        Rust = fun () => $'(!c as `int)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl convert_to_utf32 (c : char) : int =
+      backend_switch {
+          Gleam = fun () => c |> convert.i32
+          Lua = fun () => c |> convert.i32
+          Fsharp = fun () =>
+              run_target_args' c function
+              | Fsharp => fun c => $'System.Char.ConvertToUtf32 (string !c, 0)' : int
+              | _ => fun c => c |> convert.i32
+          Python = fun () => $'ord(!c)' : int
+          Rust = fun () => $'(!c as `int)' : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### ends_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ends_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.ends_with(!value)' : bool\n        Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.endswith(!value)' : bool\n        Rust = fun () => $'!s.ends_with(&*!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(-##!value) == !value ' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ends_with (value : string) (s : string) : bool =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!s |> string.ends_with(!value)' : bool
+          Fsharp = fun () => $'!s.EndsWith (!value, false, null)' : bool
+          Python = fun () => $'!s.endswith(!value)' : bool
+          Rust = fun () => $'!s.ends_with(&*!value)' : bool
+          Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### starts_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl starts_with (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.starts_with(!value)' : bool\n        Lua = fun () => $'!value == \"\" or !s:sub(1, ##!value) == !value ' : bool\n        Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool\n        Python = fun () => $'!s.startswith(!value)' : bool\n        Rust = fun () => $'!s.starts_with(&*!value)' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl starts_with (value : string) (s : string) : bool =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!s |> string.starts_with(!value)' : bool
+          Lua = fun () => $'!value == "" or !s:sub(1, ##!value) == !value ' : bool
+          Fsharp = fun () => $'!s.StartsWith (!value, false, null)' : bool
+          Python = fun () => $'!s.startswith(!value)' : bool
+          Rust = fun () => $'!s.starts_with(&*!value)' : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### is_white_space
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_white_space (c : char) : bool =\n    c |> $'System.Char.IsWhiteSpace'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_white_space (c : char) : bool =
+      c |> $'System.Char.IsWhiteSpace'
+  """,
+  timeout: 300_000
+)
+```
+
+### substring
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl substring (start : i32) (len : i32) (str : string) : string =\n    // Native Rust: byte offsets, like the native index_of/length.\n    if rust.is_native ()\n    then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'\n    else $'!str.Substring (!start, !len)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl substring (start : i32) (len : i32) (str : string) : string =
+      // Native Rust: byte offsets, like the native index_of/length.
+      if rust.is_native ()
+      then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'
+      else $'!str.Substring (!start, !len)'
+  """,
+  timeout: 300_000
+)
+```
+
+### to_lower
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_lower (input : string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!input |> string.lowercase' : string\n        Lua = fun () => $'string.lower(!input)' : string\n        Fsharp = fun () => $'!input.ToLower' () : string\n        Python = fun () => $'!input.lower()' : string\n        Rust = fun () => $'Rc::<str>::from(!input.to_lowercase())' : string\n        TypeScript = fun () => $'!input.toLowerCase()' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_lower (input : string) : string =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!input |> string.lowercase' : string
+          Lua = fun () => $'string.lower(!input)' : string
+          Fsharp = fun () => $'!input.ToLower' () : string
+          Python = fun () => $'!input.lower()' : string
+          Rust = fun () => $'Rc::<str>::from(!input.to_lowercase())' : string
+          TypeScript = fun () => $'!input.toLowerCase()' : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_upper
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_upper (input : string) : string =\n    if rust.is_native ()\n    then $'Rc::<str>::from(!input.to_uppercase())'\n    else $'!input.ToUpper' ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_upper (input : string) : string =
+      if rust.is_native ()
+      then $'Rc::<str>::from(!input.to_uppercase())'
+      else $'!input.ToUpper' ()
+  """,
+  timeout: 300_000
+)
+```
+
+### char_to_upper
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl char_to_upper (input : char) : char =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!input |> string.uppercase' : char\n        Lua = fun () => $'string.upper(!input)' : char\n        Fsharp = fun () => $'System.Char.ToUpper !input ' : char\n        Python = fun () => $'!input.upper()' : char\n        Rust = fun () => $'!input.to_ascii_uppercase()' : char\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl char_to_upper (input : char) : char =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!input |> string.uppercase' : char
+          Lua = fun () => $'string.upper(!input)' : char
+          Fsharp = fun () => $'System.Char.ToUpper !input ' : char
+          Python = fun () => $'!input.upper()' : char
+          Rust = fun () => $'!input.to_ascii_uppercase()' : char
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### builder_append
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append (item : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'!sb <> !item ' : string_builder\n        Lua = fun () =>\n            $'!sb .. !item ' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Append' item : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.write(!item)' : int) |> ignore\n            sb\n        Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl builder_append (item : string) (sb : string_builder) : string_builder =
+      backend_switch {
+          Gleam = fun () =>
+              $'!sb <> !item ' : string_builder
+          Lua = fun () =>
+              $'!sb .. !item ' : string_builder
+          Fsharp = fun () =>
+              ($'!sb.Append' item : string_builder) |> ignore
+              sb
+          Python = fun () =>
+              ($'!sb.write(!item)' : int) |> ignore
+              sb
+          Rust = fun () => $'{ let mut r = !sb.clone(); r.push_str(&*!item); r }' : string_builder
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"ab\"\n|> string_builder\n|> builder_append \"cd\"\n|> builder_append \"ef\"\n|> obj_to_string\n|> _assert_eq \"abcdef\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "ab"
+  |> string_builder
+  |> builder_append "cd"
+  |> builder_append "ef"
+  |> obj_to_string
+  |> _assert_eq "abcdef"
+  """,
+  timeout: 300_000
+)
+```
+
+### builder_append_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_append_line (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            sb |> builder_append \"\\n\"\n        Lua = fun () =>\n            sb |> builder_append \"\\n\"\n        Fsharp = fun () =>\n            ($'!sb.AppendLine ()' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            sb |> builder_append \"\\n\"\n        Rust = fun () =>\n            sb |> builder_append \"\\n\"\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl builder_append_line (sb : string_builder) : string_builder =
+      backend_switch {
+          Gleam = fun () =>
+              sb |> builder_append "\n"
+          Lua = fun () =>
+              sb |> builder_append "\n"
+          Fsharp = fun () =>
+              ($'!sb.AppendLine ()' : string_builder) |> ignore
+              sb
+          Python = fun () =>
+              sb |> builder_append "\n"
+          Rust = fun () =>
+              sb |> builder_append "\n"
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### builder_replace
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_replace (old : string) (new : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!sb |> string.replace(!old, !new)' : string_builder\n        Lua = fun () =>\n            $'string.gsub(!sb, !old, !new)' : string_builder\n        Fsharp = fun () =>\n            ($'!sb.Replace (!old, !new)' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder\n        Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl builder_replace (old : string) (new : string) (sb : string_builder) : string_builder =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!sb |> string.replace(!old, !new)' : string_builder
+          Lua = fun () =>
+              $'string.gsub(!sb, !old, !new)' : string_builder
+          Fsharp = fun () =>
+              ($'!sb.Replace (!old, !new)' : string_builder) |> ignore
+              sb
+          Python = fun () =>
+              ($'!sb.getvalue().replace(!old, !new)' : string) |> string_builder
+          Rust = fun () => $'!sb.replace(&*!old, &*!new)' : string_builder
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"ab\"\n|> string_builder\n|> builder_append \"cd\"\n|> builder_replace \"cd\" \"ef\"\n|> builder_append \"gh\"\n|> obj_to_string\n|> _assert_eq \"abefgh\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "ab"
+  |> string_builder
+  |> builder_append "cd"
+  |> builder_replace "cd" "ef"
+  |> builder_append "gh"
+  |> obj_to_string
+  |> _assert_eq "abefgh"
+  """,
+  timeout: 300_000
+)
+```
+
+### builder_clear
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_clear (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            $'let !sb = \"\"'\n            sb\n        Lua = fun () =>\n            $'!sb = \"\"'\n            sb\n        Fsharp = fun () =>\n            ($'!sb.Clear' () : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            ($'!sb.truncate(0)' : int) |> ignore\n            ($'!sb.seek(0)' : int) |> ignore\n            sb\n        Rust = fun () => $'String::new()' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl builder_clear (sb : string_builder) : string_builder =
+      backend_switch {
+          Gleam = fun () =>
+              $'let !sb = ""'
+              sb
+          Lua = fun () =>
+              $'!sb = ""'
+              sb
+          Fsharp = fun () =>
+              ($'!sb.Clear' () : string_builder) |> ignore
+              sb
+          Python = fun () =>
+              ($'!sb.truncate(0)' : int) |> ignore
+              ($'!sb.seek(0)' : int) |> ignore
+              sb
+          Rust = fun () => $'String::new()' : string_builder
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"ab\"\n|> string_builder\n|> builder_append \"cd\"\n|> builder_clear\n|> builder_append \"gh\"\n|> obj_to_string\n|> _assert_eq \"gh\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "ab"
+  |> string_builder
+  |> builder_append "cd"
+  |> builder_clear
+  |> builder_append "gh"
+  |> obj_to_string
+  |> _assert_eq "gh"
+  """,
+  timeout: 300_000
+)
+```
+
+### builder_insert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =\n    backend_switch {\n        Gleam = fun () =>\n            inl sb = #?sb\n            inl a = sb |> slice 0 (i - 1)\n            inl b = sb |> slice i (length sb)\n            [ a; s; b ] |> concat_list \"\" |> string_builder\n        Lua = fun () =>\n            inl sb = #?sb\n            inl a = sb |> slice 0 (i - 1)\n            inl b = sb |> slice i (length sb)\n            [ a; s; b ] |> concat_list \"\" |> string_builder\n        Fsharp = fun () =>\n            ($'!sb.Insert (!i, !s)' : string_builder) |> ignore\n            sb\n        Python = fun () =>\n            inl sb = sb |> obj_to_string\n            $'\"\".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder\n        // (a char index, as .NET's Insert)\n        Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
+      backend_switch {
+          Gleam = fun () =>
+              inl sb = #?sb
+              inl a = sb |> slice 0 (i - 1)
+              inl b = sb |> slice i (length sb)
+              [ a; s; b ] |> concat_list "" |> string_builder
+          Lua = fun () =>
+              inl sb = #?sb
+              inl a = sb |> slice 0 (i - 1)
+              inl b = sb |> slice i (length sb)
+              [ a; s; b ] |> concat_list "" |> string_builder
+          Fsharp = fun () =>
+              ($'!sb.Insert (!i, !s)' : string_builder) |> ignore
+              sb
+          Python = fun () =>
+              inl sb = sb |> obj_to_string
+              $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
+          // (a char index, as .NET's Insert)
+          Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n////> rust\n////> typescript\n////> python\n\n\"ab\"\n|> string_builder\n|> builder_insert 1 \"gh\"\n|> obj_to_string\n|> _assert_eq \"aghb\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ////> rust
+  ////> typescript
+  ////> python
+
+  "ab"
+  |> string_builder
+  |> builder_insert 1 "gh"
+  |> obj_to_string
+  |> _assert_eq "aghb"
+  """,
+  timeout: 300_000
+)
+```
+
+### span_from
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl span_from pred str i0 =\n    inl len = str |> length\n    inl rec body (i : int) =\n        if i >= len\n        then i\n        elif str |> index i |> pred\n        then 루프 (i + 1)\n        else i\n    and inl 루프 i = join_body_unit body (if var_is i then i else len) i\n    i0 |> 루프","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl span_from pred str i0 =
+      inl len = str |> length
+      inl rec body (i : int) =
+          if i >= len
+          then i
+          elif str |> index i |> pred
+          then 루프 (i + 1)
+          else i
+      and inl 루프 i = join_body_unit body (if var_is i then i else len) i
+      i0 |> 루프
+  """,
+  timeout: 300_000
+)
+```
+
+### char_contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl char_contains (chars : list char) (c : char) : bool =\n    chars |> listm'.exists' ((=) c)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl char_contains (chars : list char) (c : char) : bool =
+      chars |> listm'.exists' ((=) c)
+  """,
+  timeout: 300_000
+)
+```
+
+### trim_chars
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trim_chars () =\n    [ ' '; '\\t'; '\\r'; '\\n' ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trim_chars () =
+      [ ' '; '\t'; '\r'; '\n' ]
+  """,
+  timeout: 300_000
+)
+```
+
+### trim_start
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trim_start (chars : list char) (input : string) : string =\n    inl chars = if chars = [] then trim_chars () else chars\n    inl len = input |> length\n    let rec 루프 (i : int) =\n        if i >= len\n        then len\n        elif input |> index i |> char_contains chars\n        then 루프 (i + 1)\n        else i\n    input |> slice (루프 0) (len - 1)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trim_start (chars : list char) (input : string) : string =
+      inl chars = if chars = [] then trim_chars () else chars
+      inl len = input |> length
+      let rec 루프 (i : int) =
+          if i >= len
+          then len
+          elif input |> index i |> char_contains chars
+          then 루프 (i + 1)
+          else i
+      input |> slice (루프 0) (len - 1)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n\n\"  abc  \"\n|> trim_start []\n|> _assert_eq \"abc  \"\n\n\"abcde\"\n|> trim_start []\n|> _assert_eq \"abcde\"\n\n\"abcde\"\n|> trim_start [ 'a' ]\n|> _assert_eq \"bcde\"\n\n\"abcde\"\n|> trim_start [ 'b'; 'a' ]\n|> _assert_eq \"cde\"\n\n\"abcde\"\n|> trim_start [ 'c'; 'b'; 'a' ]\n|> _assert_eq \"de\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+
+  "  abc  "
+  |> trim_start []
+  |> _assert_eq "abc  "
+
+  "abcde"
+  |> trim_start []
+  |> _assert_eq "abcde"
+
+  "abcde"
+  |> trim_start [ 'a' ]
+  |> _assert_eq "bcde"
+
+  "abcde"
+  |> trim_start [ 'b'; 'a' ]
+  |> _assert_eq "cde"
+
+  "abcde"
+  |> trim_start [ 'c'; 'b'; 'a' ]
+  |> _assert_eq "de"
+  """,
+  timeout: 300_000
+)
+```
+
+### trim_end
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trim_end (chars : list char) (input : string) : string =\n    inl chars = if chars = [] then trim_chars () else chars\n    inl len = input |> length\n    let rec 루프 (i : int) =\n        if i <= 0\n        then -1\n        elif input |> index (i - 1) |> char_contains chars\n        then 루프 (i - 1)\n        else i - 1\n    input |> slice 0 (루프 len)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trim_end (chars : list char) (input : string) : string =
+      inl chars = if chars = [] then trim_chars () else chars
+      inl len = input |> length
+      let rec 루프 (i : int) =
+          if i <= 0
+          then -1
+          elif input |> index (i - 1) |> char_contains chars
+          then 루프 (i - 1)
+          else i - 1
+      input |> slice 0 (루프 len)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n\n\"  def  \"\n|> trim_end []\n|> _assert_eq \"  def\"\n\n\"abcde\"\n|> trim_end []\n|> _assert_eq \"abcde\"\n\n\"abcde\"\n|> trim_end [ 'e' ]\n|> _assert_eq \"abcd\"\n\n\"abcde\"\n|> trim_end [ 'e'; 'd' ]\n|> _assert_eq \"abc\"\n\n\"abcde\"\n|> trim_end [ 'e'; 'd'; 'c' ]\n|> _assert_eq \"ab\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+
+  "  def  "
+  |> trim_end []
+  |> _assert_eq "  def"
+
+  "abcde"
+  |> trim_end []
+  |> _assert_eq "abcde"
+
+  "abcde"
+  |> trim_end [ 'e' ]
+  |> _assert_eq "abcd"
+
+  "abcde"
+  |> trim_end [ 'e'; 'd' ]
+  |> _assert_eq "abc"
+
+  "abcde"
+  |> trim_end [ 'e'; 'd'; 'c' ]
+  |> _assert_eq "ab"
+  """,
+  timeout: 300_000
+)
+```
+
+### trim_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trim_with (chars : list char) (input : string) : string =\n    input\n    |> trim_start chars\n    |> trim_end chars","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trim_with (chars : list char) (input : string) : string =
+      input
+      |> trim_start chars
+      |> trim_end chars
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"  jkl  \"\n|> trim_with [ ' '; '\\t'; '\\n' ]\n|> _assert_eq \"jkl\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "  jkl  "
+  |> trim_with [ ' '; '\t'; '\n' ]
+  |> _assert_eq "jkl"
+  """,
+  timeout: 300_000
+)
+```
+
+### trim
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trim (input : string) : string =\n    input |> trim_with []","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trim (input : string) : string =
+      input |> trim_with []
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"  ghi  \"\n|> trim\n|> _assert_eq \"ghi\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "  ghi  "
+  |> trim
+  |> _assert_eq "ghi"
+  """,
+  timeout: 300_000
+)
+```
+
+### concat
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat (a : string) (b : seq.seq' string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!b |> string.join(!a)' : string\n        Lua = fun () => $'table.concat(!b, !a)' : string\n        Fsharp = fun () =>\n            inl a =\n                if a = \"\\n\"\n                then join a\n                else a\n            b |> $'String.concat' a : string\n        Python = fun () =>\n            $'!a.join(!b)' : string\n        Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl concat (a : string) (b : seq.seq' string) : string =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!b |> string.join(!a)' : string
+          Lua = fun () => $'table.concat(!b, !a)' : string
+          Fsharp = fun () =>
+              inl a =
+                  if a = "\n"
+                  then join a
+                  else a
+              b |> $'String.concat' a : string
+          Python = fun () =>
+              $'!a.join(!b)' : string
+          Rust = fun () => $'Rc::<str>::from(!b.iter().map(|x| x.to_string()).collect::<Vec<_>>().join(&*!a))' : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### length'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl length' forall dim. (input : string) : dim =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'string.length(!input)' : dim\n        Lua = fun () => $'##!input ' : dim\n        Fsharp = fun () => input |> $'String.length' : dim\n        Python = fun () => $'len(!input)' : dim\n        Rust = fun () => $'(!input.len() as `dim)' : dim\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl length' forall dim. (input : string) : dim =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'string.length(!input)' : dim
+          Lua = fun () => $'##!input ' : dim
+          Fsharp = fun () => input |> $'String.length' : dim
+          Python = fun () => $'len(!input)' : dim
+          Rust = fun () => $'(!input.len() as `dim)' : dim
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n\n\"abc\"\n|> length'\n|> _assert_eq 3i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+
+  "abc"
+  |> length'
+  |> _assert_eq 3i32
+  """,
+  timeout: 300_000
+)
+```
+
+### to_string any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance to_string any =\n    obj_to_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance to_string any =
+      obj_to_string
+  """,
+  timeout: 300_000
+)
+```
+
+### replace
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl replace (old : string) (new : string) (s : string) : string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.replace(!old, !new)' : string\n        Lua = fun () =>\n            $'string.gsub(!s, !old, !new)' : string\n        Fsharp = fun () =>\n            $'!s.Replace (!old, !new)' : string\n        Python = fun () =>\n            $'!s.replace(!old, !new)' : string\n        Rust = fun () =>\n            $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl replace (old : string) (new : string) (s : string) : string =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!s |> string.replace(!old, !new)' : string
+          Lua = fun () =>
+              $'string.gsub(!s, !old, !new)' : string
+          Fsharp = fun () =>
+              $'!s.Replace (!old, !new)' : string
+          Python = fun () =>
+              $'!s.replace(!old, !new)' : string
+          Rust = fun () =>
+              $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### split
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl split (separator : string) (str : string) : array_base string =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            ($'!str |> string.split(!separator)' : listm'.list' string)\n            |> listm'.to_array'\n        Fsharp = fun () => $'!str.Split !separator ' : array_base string\n        Python = fun () => $'!str.split(!separator)' : array_base string\n        Rust = fun () =>\n            $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'\n            : array_base string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl split (separator : string) (str : string) : array_base string =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              ($'!str |> string.split(!separator)' : listm'.list' string)
+              |> listm'.to_array'
+          Fsharp = fun () => $'!str.Split !separator ' : array_base string
+          Python = fun () => $'!str.split(!separator)' : array_base string
+          Rust = fun () =>
+              $'Rc::new(RefCell::new(!str.split(&*!separator).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
+              : array_base string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### split_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl split_string (separator : array_base string) (str : string) : array_base string =\n    run_target_args (fun () => str, separator) function\n        | Fsharp => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'\n        | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join \"\"))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl split_string (separator : array_base string) (str : string) : array_base string =
+      run_target_args (fun () => str, separator) function
+          | Fsharp => fun str, separator => $'!str.Split (!separator, System.StringSplitOptions.None)'
+          | _ => fun str, separator => str |> split ((a separator : _ int _) |> seq.of_array |> concat (join ""))
+  """,
+  timeout: 300_000
+)
+```
+
+### join'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl join' (concat : string) (s : a int string) : string =\n    $'System.String.Join (!concat, !s)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl join' (concat : string) (s : a int string) : string =
+      $'System.String.Join (!concat, !s)'
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal encoding = $'System.Text.Encoding'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal encoding = $'System.Text.Encoding'
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding_utf8
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encoding_utf8 () : encoding =\n    $'`encoding.UTF8'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encoding_utf8 () : encoding =
+      $'`encoding.UTF8'
+  """,
+  timeout: 300_000
+)
+```
+
+### utf8_get_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl utf8_get_bytes (s : string) : a i32 u8 =\n    run_target function\n        | RustNative => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8\n        | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : a i32 u8","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl utf8_get_bytes (s : string) : a i32 u8 =
+      run_target function
+          | RustNative => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8
+          | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : a i32 u8
+  """,
+  timeout: 300_000
+)
+```
+
+### byte_to_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl byte_to_string (format : string) (x : u8) : string =\n    $'!x.ToString' format","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl byte_to_string (format : string) (x : u8) : string =
+      $'!x.ToString' format
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal str =\n    `(\n        native_type\n            `($'Str')\n            `($'str')\n            \"type Str = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal str =
+      `(
+          native_type
+              `($'Str')
+              `($'str')
+              "type Str = string"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### chars
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl chars (x : rust.ref str) : rust.mut' (into_iterator char) =\n    !\\\\(x, $'$\"$0.chars()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl chars (x : rust.ref str) : rust.mut' (into_iterator char) =
+      !\\(x, $'$"$0.chars()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### char_is_alphanumeric
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl char_is_alphanumeric (x : char) : bool =\n    !\\\\(x, $'$\"$0.is_alphanumeric()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl char_is_alphanumeric (x : char) : bool =
+      !\\(x, $'$"$0.is_alphanumeric()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### byte_slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl byte_slice (s : string) : rust.ref (am'.slice u8) =\n    backend_switch {\n        Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()) }' : rust.ref (am'.slice u8)\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl byte_slice (s : string) : rust.ref (am'.slice u8) =
+      backend_switch {
+          Rust = fun () => $'{ let owned: Rc<str> = (!s).clone(); Box::leak(owned.as_bytes().to_vec().into_boxed_slice()) }' : rust.ref (am'.slice u8)
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### display
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal display t =\n    `(\n        native_type\n            `($'std_fmt_Display<`t>')\n            `($'std::fmt::Display<`t>')\n            \"type std_fmt_Display<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal display t =
+      `(
+          native_type
+              `($'std_fmt_Display<`t>')
+              `($'std::fmt::Display<`t>')
+              "type std_fmt_Display<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### base64_decode_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal base64_decode_error =\n    `(\n        native_type\n            `($'base64_DecodeError')\n            `($'base64::DecodeError')\n            \"type base64_DecodeError = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal base64_decode_error =
+      `(
+          native_type
+              `($'base64_DecodeError')
+              `($'base64::DecodeError')
+              "type base64_DecodeError = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### borsh_io_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal borsh_io_error =\n    `(\n        native_type\n            `($'borsh_io_Error')\n            `($'borsh::io::Error')\n            \"type borsh_io_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal borsh_io_error =
+      `(
+          native_type
+              `($'borsh_io_Error')
+              `($'borsh::io::Error')
+              "type borsh_io_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### utf8_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal utf8_error =\n    `(\n        native_type\n            `($'std_str_Utf8Error')\n            `($'std::str::Utf8Error')\n            \"type std_str_Utf8Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal utf8_error =
+      `(
+          native_type
+              `($'std_str_Utf8Error')
+              `($'std::str::Utf8Error')
+              "type std_str_Utf8Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### from_utf8_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal from_utf8_error =\n    `(\n        native_type\n            `($'std_string_FromUtf8Error')\n            `($'std::string::FromUtf8Error')\n            \"type std_string_FromUtf8Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal from_utf8_error =
+      `(
+          native_type
+              `($'std_string_FromUtf8Error')
+              `($'std::string::FromUtf8Error')
+              "type std_string_FromUtf8Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### json_value
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal json_value =\n    `(\n        native_type\n            `($'serde_json_Value')\n            `($'serde_json::Value')\n            \"type serde_json_Value = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal json_value =
+      `(
+          native_type
+              `($'serde_json_Value')
+              `($'serde_json::Value')
+              "type serde_json_Value = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### json_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal json_error =\n    `(\n        native_type\n            `($'serde_json_Error')\n            `($'serde_json::Error')\n            \"type serde_json_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal json_error =
+      `(
+          native_type
+              `($'serde_json_Error')
+              `($'serde_json::Error')
+              "type serde_json_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### serde_wasm_bindgen_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal serde_wasm_bindgen_error =\n    `(\n        native_type\n            `($'serde_wasm_bindgen_Error')\n            `($'serde_wasm_bindgen::Error')\n            \"type serde_wasm_bindgen_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal serde_wasm_bindgen_error =
+      `(
+          native_type
+              `($'serde_wasm_bindgen_Error')
+              `($'serde_wasm_bindgen::Error')
+              "type serde_wasm_bindgen_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### js_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal js_string =\n    `(\n        native_type\n            `($'js_sys_JsString')\n            `($'js_sys::JsString')\n            \"type js_sys_JsString = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal js_string =
+      `(
+          native_type
+              `($'js_sys_JsString')
+              `($'js_sys::JsString')
+              "type js_sys_JsString = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### os_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal os_str =\n    `(\n        native_type\n            `($'std_ffi_OsStr')\n            `($'std::ffi::OsStr')\n            \"type std_ffi_OsStr = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal os_str =
+      `(
+          native_type
+              `($'std_ffi_OsStr')
+              `($'std::ffi::OsStr')
+              "type std_ffi_OsStr = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### c_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal c_str =\n    `(\n        native_type\n            `($'std_ffi_CStr')\n            `($'std::ffi::CStr')\n            \"type std_ffi_CStr = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal c_str =
+      `(
+          native_type
+              `($'std_ffi_CStr')
+              `($'std::ffi::CStr')
+              "type std_ffi_CStr = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### c_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal c_string =\n    `(\n        native_type\n            `($'std_ffi_CString')\n            `($'std::ffi::CString')\n            \"type std_ffi_CString = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal c_string =
+      `(
+          native_type
+              `($'std_ffi_CString')
+              `($'std::ffi::CString')
+              "type std_ffi_CString = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### os_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal os_string =\n    `(\n        native_type\n            `($'std_ffi_OsString')\n            `($'std::ffi::OsString')\n            \"type std_ffi_OsString = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal os_string =
+      `(
+          native_type
+              `($'std_ffi_OsString')
+              `($'std::ffi::OsString')
+              "type std_ffi_OsString = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### raw_string_literal
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl raw_string_literal (s : string) : rust.ref str =\n    backend_switch {\n        Fsharp = fun () => !\\($'\"r\\#\\\\\"\" + !s + \"\\\\\"\\#\"') : rust.ref str\n        Rust = fun () => $'(&*!s)' : rust.ref str\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl raw_string_literal (s : string) : rust.ref str =
+      backend_switch {
+          Fsharp = fun () => !\($'"r\#\\"" + !s + "\\"\#"') : rust.ref str
+          Rust = fun () => $'(&*!s)' : rust.ref str
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### raw_string_literal_static
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl raw_string_literal_static (s : string) : rust.static_ref str =\n    backend_switch {\n        Fsharp = fun () => !\\($'\"r\\#\\\\\"\" + !s + \"\\\\\"\\#\"') : rust.static_ref str\n        Rust = fun () => $'Box::leak(String::from(&*!s).into_boxed_str())' : rust.static_ref str\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl raw_string_literal_static (s : string) : rust.static_ref str =
+      backend_switch {
+          Fsharp = fun () => !\($'"r\#\\"" + !s + "\\"\#"') : rust.static_ref str
+          Rust = fun () => $'Box::leak(String::from(&*!s).into_boxed_str())' : rust.static_ref str
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### (~#)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~#) s =\n    s |> raw_string_literal","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~#) s =
+      s |> raw_string_literal
+  """,
+  timeout: 300_000
+)
+```
+
+### (~###)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (~###) s =\n    s |> raw_string_literal_static","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (~###) s =
+      s |> raw_string_literal_static
+  """,
+  timeout: 300_000
+)
+```
+
+### include_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl include_str (path : string) : rust.ref str =\n    !\\($'\"include_str\\!(\\\\\\\"\" + !path + \"\\\\\\\")\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl include_str (path : string) : rust.ref str =
+      !\($'"include_str\!(\\\"" + !path + "\\\")"')
+  """,
+  timeout: 300_000
+)
+```
+
+### as_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_str (s : string) : rust.ref str =\n    // !\\\\(s, $'\"fable_library_rust::String_::LrcStr::as_str(&$0)\"')\n    run_target_args (fun () => s) function\n        | RustNative => fun s => !\\\\(s, $'\"&*$0\"')\n        | _ => convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_str (s : string) : rust.ref str =
+      // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
+      run_target_args (fun () => s) function
+          | RustNative => fun s => !\\(s, $'"&*$0"')
+          | _ => convert.unbox
+  """,
+  timeout: 300_000
+)
+```
+
+### from_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_iter forall (t : * -> *). (s : t char) : std_string =\n    !\\\\(s, $'\"String::from_iter($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_iter forall (t : * -> *). (s : t char) : std_string =
+      !\\(s, $'"String::from_iter($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### ref_to_std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ref_to_std_string (str : rust.ref str) : std_string =\n    run_target_args (fun () => str) function\n        | RustNative => fun str => !\\\\(str, $'\"String::from($0)\"')\n        | _ => convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl ref_to_std_string (str : rust.ref str) : std_string =
+      run_target_args (fun () => str) function
+          | RustNative => fun str => !\\(str, $'"String::from($0)"')
+          | _ => convert.unbox
+  """,
+  timeout: 300_000
+)
+```
+
+### cow_to_std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cow_to_std_string (str : rust.cow str) : std_string =\n    !\\\\(str, $'\"String::from($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl cow_to_std_string (str : rust.cow str) : std_string =
+      !\\(str, $'"String::from($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### to_std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_std_string (s : string) : std_string =\n    s |> as_str |> ref_to_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_std_string (s : string) : std_string =
+      s |> as_str |> ref_to_std_string
+  """,
+  timeout: 300_000
+)
+```
+
+### as_str_std
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_str_std (s : std_string) : rust.ref str =\n    !\\\\(s, $'\"$0.as_str()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_str_std (s : std_string) : rust.ref str =
+      !\\(s, $'"$0.as_str()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_boxed_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_boxed_str (s : std_string) : rust.box str =\n    !\\\\(s, $'\"$0.into_boxed_str()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_boxed_str (s : std_string) : rust.box str =
+      !\\(s, $'"$0.into_boxed_str()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### os_string_as_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl os_string_as_ref (s : os_string) : rust.ref os_str =\n    !\\\\(s, $'\"$0.as_ref()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl os_string_as_ref (s : os_string) : rust.ref os_str =
+      !\\(s, $'"$0.as_ref()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### to_os_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_os_string (s : rust.ref os_str) : os_string =\n    !\\\\(s, $'\"$0.to_os_string()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_os_string (s : rust.ref os_str) : os_string =
+      !\\(s, $'"$0.to_os_string()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_c_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_c_string (s : std_string) : c_string =\n    !\\\\(s, $'\"std::ffi::CString::new($0).unwrap()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_c_string (s : std_string) : c_string =
+      !\\(s, $'"std::ffi::CString::new($0).unwrap()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### os_to_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl os_to_str (s : os_string) : optionm'.option' (rust.ref str) =\n    !\\\\(s, $'\"$0.to_str()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl os_to_str (s : os_string) : optionm'.option' (rust.ref str) =
+      !\\(s, $'"$0.to_str()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_os_str_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_os_str_ref s =\n    s\n    |> to_os_string\n    |> os_to_str\n    |> optionm'.unwrap\n    |> ref_to_std_string\n    |> from_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_os_str_ref s =
+      s
+      |> to_os_string
+      |> os_to_str
+      |> optionm'.unwrap
+      |> ref_to_std_string
+      |> from_std_string
+  """,
+  timeout: 300_000
+)
+```
+
+### format_custom'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_custom' (f : string) x : std_string =\n    run_target function\n        | RustNative => fun () =>\n            !\\\\(x, $'\"format\\!(\\\\\\\"\" + !f + \"\\\\\\\", $0)\"')\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_custom' (f : string) x : std_string =
+      run_target function
+          | RustNative => fun () =>
+              !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### format_debug'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug' x : std_string =\n    run_target function\n        | RustNative => fun () =>\n            !\\\\(x, $'\"format\\!(\\\\\\\"{:?}\\\\\\\", $0)\"')\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_debug' x : std_string =
+      run_target function
+          | RustNative => fun () =>
+              !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
+          | _ => fun () => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### format'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format' x : std_string =\n    run_target_args (fun () => x) function\n        | RustNative => fun x =>\n            !\\\\(x, $'\"format\\!(\\\\\\\"{}\\\\\\\", $0)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format' x : std_string =
+      run_target_args (fun () => x) function
+          | RustNative => fun x =>
+              !\\(x, $'"format\!(\\\"{}\\\", $0)"')
+          | _ => fun _ => null ()
+  """,
+  timeout: 300_000
+)
+```
+
+### format_hex'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_hex' x : std_string =\n    !\\\\(x, $'\"format\\!(\\\\\\\"{:02x}\\\\\\\", $0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_hex' x : std_string =
+      !\\(x, $'"format\!(\\\"{:02x}\\\", $0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### format''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format'' (format : string) : std_string =\n    !\\($'@@$\"format\\!(\" + !format + \")\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format'' (format : string) : std_string =
+      !\($'@@$"format\!(" + !format + ")"')
+  """,
+  timeout: 300_000
+)
+```
+
+### regex
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal regex =\n    `(\n        native_type\n            `($'regex_Regex')\n            `($'regex::Regex')\n            \"type regex_Regex = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal regex =
+      `(
+          native_type
+              `($'regex_Regex')
+              `($'regex::Regex')
+              "type regex_Regex = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### regex_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal regex_error =\n    `(\n        native_type\n            `($'regex_Error')\n            `($'regex::Error')\n            \"type regex_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal regex_error =
+      `(
+          native_type
+              `($'regex_Error')
+              `($'regex::Error')
+              "type regex_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_regex
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_regex (pattern : string) : resultm.result' regex regex_error =\n    !\\\\(pattern, $'$\"regex::Regex::new(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_regex (pattern : string) : resultm.result' regex regex_error =
+      !\\(pattern, $'$"regex::Regex::new(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### captures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal regex_captures t =\n    `(\n        native_type\n            `($'regex_Captures<`t>')\n            `($'regex::Captures<`t>')\n            \"type regex_Captures<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal regex_captures t =
+      `(
+          native_type
+              `($'regex_Captures<`t>')
+              `($'regex::Captures<`t>')
+              "type regex_Captures<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### regex_capture_matches
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal regex_capture_matches =\n    `(\n        native_type\n            `($'regex_CaptureMatches')\n            `($'regex::CaptureMatches')\n            \"type regex_CaptureMatches = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal regex_capture_matches =
+      `(
+          native_type
+              `($'regex_CaptureMatches')
+              `($'regex::CaptureMatches')
+              "type regex_CaptureMatches = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### regex_capture_names
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal regex_capture_names =\n    `(\n        native_type\n            `($'regex_CaptureNames')\n            `($'regex::CaptureNames')\n            \"type regex_CaptureNames = class end\"\n    )\n\ninl regex_capture_names (regex : regex) : regex_capture_names =\n    !\\\\(regex, $'$\"$0.capture_names()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal regex_capture_names =
+      `(
+          native_type
+              `($'regex_CaptureNames')
+              `($'regex::CaptureNames')
+              "type regex_CaptureNames = class end"
+      )
+
+  inl regex_capture_names (regex : regex) : regex_capture_names =
+      !\\(regex, $'$"$0.capture_names()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### match'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal match' =\n    `(\n        native_type\n            `($'regex_Match')\n            `($'regex::Match')\n            \"type regex_Match = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal match' =
+      `(
+          native_type
+              `($'regex_Match')
+              `($'regex::Match')
+              "type regex_Match = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### regex_captures_iter
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl regex_captures_iter (s : rust.static_ref (rust.mut' std_string)) (regex : regex) : regex_capture_matches =\n    inl regex = regex |> rust.emit\n    !\\\\(regex, $'$\"$0.captures_iter(!s)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl regex_captures_iter (s : rust.static_ref (rust.mut' std_string)) (regex : regex) : regex_capture_matches =
+      inl regex = regex |> rust.emit
+      !\\(regex, $'$"$0.captures_iter(!s)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### regex_captures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string string) =\n    // inl s = join s\n    // !\\\\(regex, $'$\"$0.captures_iter(&*!s).map(|caps| $0.capture_names().map(|x| x.and_then(|n| Some((n, caps.name(n)?.as_str())))).flatten().collect()).collect()\"')\n\n    inl s = s |> to_std_string\n    fun () =>\n        inl matches =\n            inl s = s |> rust.new_box |> rust.box_leak\n            regex |> regex_captures_iter s\n\n        (!\\($'\"true; let _regex_captures : Vec<_> = !matches.map(|x| { //\"') : bool) |> ignore\n\n        inl fn (match' : rust.static_ref (rust.mut' (regex_captures rust.static_lifetime))) : mapm.hash_map string string =\n\n            inl names = regex |> regex_capture_names\n\n            (!\\($'\"true; let _regex_captures : std::collections::HashMap<_, _> = !names.map(|x| { //\"') : bool) |> ignore\n\n            inl fn (n : string) : pair string string =\n                inl n' = n |> rust.clone\n\n                new_pair n' !\\\\(n, $'$\"!match'.name(&$0).map(|x| x.as_str()).unwrap_or(\\\\\\\"\\\\\\\").to_string().into()\"')\n\n            (!\\\\(fn !\\($'\"x.unwrap_or(\\\\\\\"\\\\\\\").to_string().into()\"'), $'\"true; $0 }).collect()\"') : bool) |> ignore\n\n            !\\($'\"_regex_captures\"')\n\n        inl x =\n            !\\($'$\"x\"')\n            |> rust.new_box\n            |> rust.box_leak\n\n        (!\\\\(fn x, $'\"true; $0 }).collect::<Vec<_>>()\"') : bool) |> ignore\n\n        !\\($'\"_regex_captures\"')\n\n    |> rust.capture_move","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string string) =
+      // inl s = join s
+      // !\\(regex, $'$"$0.captures_iter(&*!s).map(|caps| $0.capture_names().map(|x| x.and_then(|n| Some((n, caps.name(n)?.as_str())))).flatten().collect()).collect()"')
+
+      inl s = s |> to_std_string
+      fun () =>
+          inl matches =
+              inl s = s |> rust.new_box |> rust.box_leak
+              regex |> regex_captures_iter s
+
+          (!\($'"true; let _regex_captures : Vec<_> = !matches.map(|x| { //"') : bool) |> ignore
+
+          inl fn (match' : rust.static_ref (rust.mut' (regex_captures rust.static_lifetime))) : mapm.hash_map string string =
+
+              inl names = regex |> regex_capture_names
+
+              (!\($'"true; let _regex_captures : std::collections::HashMap<_, _> = !names.map(|x| { //"') : bool) |> ignore
+
+              inl fn (n : string) : pair string string =
+                  inl n' = n |> rust.clone
+
+                  new_pair n' !\\(n, $'$"!match'.name(&$0).map(|x| x.as_str()).unwrap_or(\\\"\\\").to_string().into()"')
+
+              (!\\(fn !\($'"x.unwrap_or(\\\"\\\").to_string().into()"'), $'"true; $0 }).collect()"') : bool) |> ignore
+
+              !\($'"_regex_captures"')
+
+          inl x =
+              !\($'$"x"')
+              |> rust.new_box
+              |> rust.box_leak
+
+          (!\\(fn x, $'"true; $0 }).collect::<Vec<_>>()"') : bool) |> ignore
+
+          !\($'"_regex_captures"')
+
+      |> rust.capture_move
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d regex\n\n\"fable-library-ts\\\\.(?<a>[\\\\d.]+)$\"\n|> new_regex\n|> resultm.unwrap'\n|> regex_captures \"fable_modules/fable-library-ts.4.17.0\"\n|> am'.vec_map (mapm.to_vec >> am'.vec_sort_by_key id)\n|> format_debug\n|> _assert_eq (\n    ;[\n        ;[ \"\", \"\"; \"a\", \"4.17.0\" ]\n        |> am'.to_vec\n    ]\n    |> am'.to_vec\n    |> format_debug\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d regex
+
+  "fable-library-ts\\.(?<a>[\\d.]+)$"
+  |> new_regex
+  |> resultm.unwrap'
+  |> regex_captures "fable_modules/fable-library-ts.4.17.0"
+  |> am'.vec_map (mapm.to_vec >> am'.vec_sort_by_key id)
+  |> format_debug
+  |> _assert_eq (
+      ;[
+          ;[ "", ""; "a", "4.17.0" ]
+          |> am'.to_vec
+      ]
+      |> am'.to_vec
+      |> format_debug
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+### serialize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl serialize forall t. (x : t) : resultm.result' std_string json_error =\n    !\\($'\"serde_json::to_string(&!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl serialize forall t. (x : t) : resultm.result' std_string json_error =
+      !\($'"serde_json::to_string(&!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### deserialize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl deserialize forall t. (json : string) : resultm.result' t std_string =\n    inl json = join json\n    inl json = json |> as_str\n    !\\\\(json, $'\"serde_json::from_str(&$0)\"')\n    |> resultm.map_error' fun (x : json_error) => x |> format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl deserialize forall t. (json : string) : resultm.result' t std_string =
+      inl json = join json
+      inl json = json |> as_str
+      !\\(json, $'"serde_json::from_str(&$0)"')
+      |> resultm.map_error' fun (x : json_error) => x |> format'
+  """,
+  timeout: 300_000
+)
+```
+
+### borsh_serialize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl borsh_serialize forall t. (data : t) : am'.vec u8 =\n    (!\\($'\"true; let mut data = Vec::new()\"') : bool) |> ignore\n    (!\\\\(data, $'\"true; borsh::BorshSerialize::serialize(&$0, &mut data).unwrap()\"') : bool) |> ignore\n    !\\($'\"data\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl borsh_serialize forall t. (data : t) : am'.vec u8 =
+      (!\($'"true; let mut data = Vec::new()"') : bool) |> ignore
+      (!\\(data, $'"true; borsh::BorshSerialize::serialize(&$0, &mut data).unwrap()"') : bool) |> ignore
+      !\($'"data"')
+  """,
+  timeout: 300_000
+)
+```
+
+### borsh_deserialize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl borsh_deserialize forall t. (data : array_base u8) : resultm.result' t std_string =\n    inl data = data |> am'.as_slice\n    (!\\($'\"true; let mut !data = !data\"') : bool) |> ignore\n    inl result = !\\($'\"borsh::BorshDeserialize::deserialize(&mut !data)\"')\n    result\n    |> resultm.map_error' fun (x : borsh_io_error) => x |> format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl borsh_deserialize forall t. (data : array_base u8) : resultm.result' t std_string =
+      inl data = data |> am'.as_slice
+      (!\($'"true; let mut !data = !data"') : bool) |> ignore
+      inl result = !\($'"borsh::BorshDeserialize::deserialize(&mut !data)"')
+      result
+      |> resultm.map_error' fun (x : borsh_io_error) => x |> format'
+  """,
+  timeout: 300_000
+)
+```
+
+### deserialize_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl deserialize_vec (value : json_value) : resultm.result' (am'.vec u8) std_string =\n    inl value = join value\n    !\\($'\"serde_json::from_value(!value)\"')\n    |> resultm.map_error' fun (x : json_error) => x |> format'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl deserialize_vec (value : json_value) : resultm.result' (am'.vec u8) std_string =
+      inl value = join value
+      !\($'"serde_json::from_value(!value)"')
+      |> resultm.map_error' fun (x : json_error) => x |> format'
+  """,
+  timeout: 300_000
+)
+```
+
+### encode_uri_component
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encode_uri_component (s : std_string) : js_string =\n    !\\($'\"js_sys::encode_uri_component(&!s)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encode_uri_component (s : std_string) : js_string =
+      !\($'"js_sys::encode_uri_component(&!s)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### strip_prefix
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =\n    inl s = join s\n    // a native char is a byte (`b'#'`)\n    !\\($'\"!s.strip_prefix((!prefix) as char)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =
+      inl s = join s
+      // a native char is a byte (`b'#'`)
+      !\($'"!s.strip_prefix((!prefix) as char)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### str_from_utf8
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl str_from_utf8 (bytes : rust.ref (am'.slice u8)) : resultm.result' (rust.ref str) utf8_error =\n    !\\\\(bytes, $'\"std::str::from_utf8($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl str_from_utf8 (bytes : rust.ref (am'.slice u8)) : resultm.result' (rust.ref str) utf8_error =
+      !\\(bytes, $'"std::str::from_utf8($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### string_from_utf8
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl string_from_utf8 (bytes : am'.vec u8) : resultm.result' std_string from_utf8_error =\n    inl bytes = join bytes\n    !\\\\(bytes, $'\"std::string::String::from_utf8($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl string_from_utf8 (bytes : am'.vec u8) : resultm.result' std_string from_utf8_error =
+      inl bytes = join bytes
+      !\\(bytes, $'"std::string::String::from_utf8($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### base64_decode
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl base64_decode (s : std_string) : result std_string std_string =\n    fun () =>\n        inl s = join s\n        inl bytes : resultm.result' (am'.vec u8) base64_decode_error =\n            !\\($'\"base64::Engine::decode(&base64::engine::general_purpose::STANDARD, !s)\"')\n        bytes\n        |> resultm.map_error' format'\n        |> resultm.try'\n        |> string_from_utf8\n        |> resultm.map_error' format'\n    |> fun x =>\n        join x ()\n        |> resultm.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl base64_decode (s : std_string) : result std_string std_string =
+      fun () =>
+          inl s = join s
+          inl bytes : resultm.result' (am'.vec u8) base64_decode_error =
+              !\($'"base64::Engine::decode(&base64::engine::general_purpose::STANDARD, !s)"')
+          bytes
+          |> resultm.map_error' format'
+          |> resultm.try'
+          |> string_from_utf8
+          |> resultm.map_error' format'
+      |> fun x =>
+          join x ()
+          |> resultm.unbox
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal encoding' =\n    `(\n        native_type\n            `($'encoding_rs_Encoding')\n            `($'encoding_rs::Encoding')\n            \"type encoding_rs_Encoding = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal encoding' =
+      `(
+          native_type
+              `($'encoding_rs_Encoding')
+              `($'encoding_rs::Encoding')
+              "type encoding_rs_Encoding = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding_utf8'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encoding_utf8' () : rust.ref encoding' =\n    !\\($'\"encoding_rs::UTF_8\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encoding_utf8' () : rust.ref encoding' =
+      !\($'"encoding_rs::UTF_8"')
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding_1252
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encoding_1252' () : rust.ref encoding' =\n    !\\($'\"encoding_rs::WINDOWS_1252\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encoding_1252' () : rust.ref encoding' =
+      !\($'"encoding_rs::WINDOWS_1252"')
+  """,
+  timeout: 300_000
+)
+```
+
+### encoding_encode
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encoding_encode' (encoding : rust.ref encoding') (text : string) : rust.cow (am'.slice u8) =\n    !\\\\((encoding, text), $'\"$0.encode(&*$1).0\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encoding_encode' (encoding : rust.ref encoding') (text : string) : rust.cow (am'.slice u8) =
+      !\\((encoding, text), $'"$0.encode(&*$1).0"')
+  """,
+  timeout: 300_000
+)
+```
+
+### utf8_decode
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl utf8_decode (data : am'.vec u8) : resultm.result' std_string (rust.cow str) =\n    !\\($'$\"encoding::Encoding::decode(encoding::all::UTF_8, &!data, encoding::DecoderTrap::Replace)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl utf8_decode (data : am'.vec u8) : resultm.result' std_string (rust.cow str) =
+      !\($'$"encoding::Encoding::decode(encoding::all::UTF_8, &!data, encoding::DecoderTrap::Replace)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### windows
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal windows t =\n    `(\n        native_type\n            `($'std_slice_Windows<`t>')\n            `($'std::slice::Windows<`t>')\n            \"type std_slice_Windows<'T> = class end\"\n    )\n\ninl windows (len : convert.unativeint) (source : am'.vec u8) : windows u8 =\n    inl source = source |> rust.new_box |> rust.box_leak\n    // inl source' = source |> rust.clone\n    inl result = !\\\\(len, $'\"<[_]>::windows(!source, $0)\"')\n    // source |> rust.drop\n    result","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal windows t =
+      `(
+          native_type
+              `($'std_slice_Windows<`t>')
+              `($'std::slice::Windows<`t>')
+              "type std_slice_Windows<'T> = class end"
+      )
+
+  inl windows (len : convert.unativeint) (source : am'.vec u8) : windows u8 =
+      inl source = source |> rust.new_box |> rust.box_leak
+      // inl source' = source |> rust.clone
+      inl result = !\\(len, $'"<[_]>::windows(!source, $0)"')
+      // source |> rust.drop
+      result
+  """,
+  timeout: 300_000
+)
+```
+
+### any
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl any forall t. (fn : string -> bool) (source : windows t) : bool =\n    (!\\($'\"true; let mut !source = !source\"') : bool) |> ignore\n    inl fn' x =\n        x\n        |> str_from_utf8\n        |> resultm.unwrap_or' #\"\"\n        |> ref_to_std_string\n        |> from_std_string\n        |> fn\n    !\\\\(fn', $'\"!source.any(move |x| $0(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl any forall t. (fn : string -> bool) (source : windows t) : bool =
+      (!\($'"true; let mut !source = !source"') : bool) |> ignore
+      inl fn' x =
+          x
+          |> str_from_utf8
+          |> resultm.unwrap_or' #""
+          |> ref_to_std_string
+          |> from_std_string
+          |> fn
+      !\\(fn', $'"!source.any(move |x| $0(x))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### slice_contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice_contains (text : string) (source : am'.vec u8) : bool =\n    fun () =>\n        inl source = join source\n        source\n        |> windows (text |> length |> (fun x => x : i32) |> convert.convert)\n        |> any ((=.) text)\n    |> fun x => join x ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice_contains (text : string) (source : am'.vec u8) : bool =
+      fun () =>
+          inl source = join source
+          source
+          |> windows (text |> length |> (fun x => x : i32) |> convert.convert)
+          |> any ((=.) text)
+      |> fun x => join x ()
+  """,
+  timeout: 300_000
+)
+```
+
+### as_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_bytes (text : string) : rust.ref (am'.slice u8) =\n    inl text = join text\n    !\\($'\"!text.as_bytes()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_bytes (text : string) : rust.ref (am'.slice u8) =
+      inl text = join text
+      !\($'"!text.as_bytes()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_bytes (x : std_string) : am'.vec u8 =\n    backend_switch {\n        // A copy: Spiral values can be used again after this (`into_bytes` would move the String).\n        Rust = fun () => $'(!x).as_bytes().to_vec()' : am'.vec u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_bytes (x : std_string) : am'.vec u8 =
+      backend_switch {
+          // A copy: Spiral values can be used again after this (`into_bytes` would move the String).
+          Rust = fun () => $'(!x).as_bytes().to_vec()' : am'.vec u8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+## python
+
+<!-- livebook:{"break_markdown":true} -->
+
+### encode_utf8
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl encode_utf8 (s : string) : string =\n    inl encoding = \"utf-8\"\n    backend_switch {\n        Python = fun () =>\n            $'!s.encode(!encoding)' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl encode_utf8 (s : string) : string =
+      inl encoding = "utf-8"
+      backend_switch {
+          Python = fun () =>
+              $'!s.encode(!encoding)' : string
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+## sm'
+
+<!-- livebook:{"break_markdown":true} -->
+
+### contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl contains (value : string) (s : string) : bool =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/string\"\n            $'!s |> string.contains(!value)' : bool\n        Lua = fun () => $'string.find(!s, !value, 1, true) ~= nil ' : bool\n        Fsharp = fun () => $'!s.Contains !value ' : bool\n        Python = fun () => $'!value in !s ' : bool\n        Rust = fun () => $'!s.contains(&*!value)' : bool\n        TypeScript = fun () => $'!s.includes(!value)' : bool\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl contains (value : string) (s : string) : bool =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam/string"
+              $'!s |> string.contains(!value)' : bool
+          Lua = fun () => $'string.find(!s, !value, 1, true) ~= nil ' : bool
+          Fsharp = fun () => $'!s.Contains !value ' : bool
+          Python = fun () => $'!value in !s ' : bool
+          Rust = fun () => $'!s.contains(&*!value)' : bool
+          TypeScript = fun () => $'!s.includes(!value)' : bool
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### to_string result t u
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"instance to_string result t u = fun x =>\n    real\n        open rust\n        typecase (t * u) with\n        | string * string =>\n            match x with\n            | Ok x => x\n            | Error x => \"sm'.to_string result / Error: \" ++# x\n        | std_string * std_string =>\n            match x with\n            | Ok x => from_std_string x\n            | Error x => \"sm'.to_string result / Error: \" ++# from_std_string x\n        | _ => obj_to_string `u x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  instance to_string result t u = fun x =>
+      real
+          open rust
+          typecase (t * u) with
+          | string * string =>
+              match x with
+              | Ok x => x
+              | Error x => "sm'.to_string result / Error: " ++# x
+          | std_string * std_string =>
+              match x with
+              | Ok x => from_std_string x
+              | Error x => "sm'.to_string result / Error: " ++# from_std_string x
+          | _ => obj_to_string `u x
+  """,
+  timeout: 300_000
+)
+```
+
+### format_exception
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_exception (ex : exn) : string =\n    run_target function\n        | Fsharp => fun () => $'$\"{!ex.GetType ()}: {!ex.Message}\"'\n        // Native Rust: the exception is the panic message (base.try, base.catch_unwind_native).\n        | RustNative => fun () => $'!ex ' : string\n        // Native TypeScript: JavaScript's `Error: message`.\n        | TypeScript when typescript.is_native () => fun () => $'String(!ex)' : string\n        | _ => fun () => ex |> format_debug","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_exception (ex : exn) : string =
+      run_target function
+          | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
+          // Native Rust: the exception is the panic message (base.try, base.catch_unwind_native).
+          | RustNative => fun () => $'!ex ' : string
+          // Native TypeScript: JavaScript's `Error: message`.
+          | TypeScript when typescript.is_native () => fun () => $'String(!ex)' : string
+          | _ => fun () => ex |> format_debug
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nfun () => failwith \"test\"\n|> _throws\n|> optionm.value\n|> format_exception\n|> _assert_eq (run_target function\n    | Fsharp _ => fun () => join \"System.Exception: test\"\n    | Cuda _ => fun () => \"test\"\n    | Rust _ => fun () => \"Exception { message: \\\"test\\\" }\"\n    | RustNative => fun () => \"test\"\n    | TypeScript _ => fun () => \"Error: test\"\n    | _ => fun () => null ()\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  fun () => failwith "test"
+  |> _throws
+  |> optionm.value
+  |> format_exception
+  |> _assert_eq (run_target function
+      | Fsharp _ => fun () => join "System.Exception: test"
+      | Cuda _ => fun () => "test"
+      | Rust _ => fun () => "Exception { message: \"test\" }"
+      | RustNative => fun () => "test"
+      | TypeScript _ => fun () => "Error: test"
+      | _ => fun () => null ()
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+### range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl range forall t. (start : am'.range t) (end : am'.range t) s =\n    inl is_start, start, end =\n        inl len () : int =\n            real\n                typecase t with\n                | int => length `t s\n                | _ => length' `t s\n        match start, end with\n        | Start start, End fn => true, start, len >> convert.to |> fn\n        | End start_fn, End end_fn => false, start_fn (len >> convert.to), end_fn (len >> convert.to)\n    inl start' = start |> convert.try_convert |> optionm.value : int\n    inl end' = end |> convert.try_convert |> optionm.value : int\n    inl start_is_var = start |> var_is\n    inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)\n    inl start_var_s_fixed = start_is_var && (s |> var_is |> not)\n    inl trace () =\n        [\n            \"sm'.range\"\n            \" / (s |> var_is): \"; s |> var_is |> obj_to_string\n            \" // start: \"; start |> obj_to_string\n            \" / (start |> var_is): \"; start_is_var |> obj_to_string\n            \" // end: \"; end |> obj_to_string\n            \" / (end |> var_is): \"; end |> var_is |> obj_to_string\n            \" // same_fixed: \"; same_fixed |> obj_to_string\n            \" / start_var_s_fixed: \"; start_var_s_fixed |> obj_to_string\n        ]\n        |> concat_list \"\"\n    backend_switch {\n        Gleam = fun () =>\n            // TODO: uncomment\n            // global \"import gleam/io\"\n            // $'io.println(!(trace ()))' : ()\n            ()\n        Lua = id : () -> ()\n        Fsharp = id : () -> ()\n        Python = id : () -> ()\n        Rust = id : () -> ()\n    }\n    s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl range forall t. (start : am'.range t) (end : am'.range t) s =
+      inl is_start, start, end =
+          inl len () : int =
+              real
+                  typecase t with
+                  | int => length `t s
+                  | _ => length' `t s
+          match start, end with
+          | Start start, End fn => true, start, len >> convert.to |> fn
+          | End start_fn, End end_fn => false, start_fn (len >> convert.to), end_fn (len >> convert.to)
+      inl start' = start |> convert.try_convert |> optionm.value : int
+      inl end' = end |> convert.try_convert |> optionm.value : int
+      inl start_is_var = start |> var_is
+      inl same_fixed = start = end && (start_is_var |> not) && (end |> var_is |> not)
+      inl start_var_s_fixed = start_is_var && (s |> var_is |> not)
+      inl trace () =
+          [
+              "sm'.range"
+              " / (s |> var_is): "; s |> var_is |> obj_to_string
+              " // start: "; start |> obj_to_string
+              " / (start |> var_is): "; start_is_var |> obj_to_string
+              " // end: "; end |> obj_to_string
+              " / (end |> var_is): "; end |> var_is |> obj_to_string
+              " // same_fixed: "; same_fixed |> obj_to_string
+              " / start_var_s_fixed: "; start_var_s_fixed |> obj_to_string
+          ]
+          |> concat_list ""
+      backend_switch {
+          Gleam = fun () =>
+              // TODO: uncomment
+              // global "import gleam/io"
+              // $'io.println(!(trace ()))' : ()
+              ()
+          Lua = id : () -> ()
+          Fsharp = id : () -> ()
+          Python = id : () -> ()
+          Rust = id : () -> ()
+      }
+      s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"abcde\"\n|> range (am'.Start 0i32) (am'.End eval)\n|> _assert_eq \"abcde\"\n\n(join \"fghij\")\n|> range (am'.Start 1i32) (am'.End eval)\n|> _assert_eq \"ghij\"\n\n(join \"klmno\")\n|> range (am'.Start 1i32) (am'.End fun _ => 1)\n|> _assert_eq \"l\"\n\n\"pqrst\"\n|> range (am'.Start 1i32) (am'.End fun _ => 1)\n|> _assert_eq \"q\"\n\n\"uvwxy\"\n|> range (am'.Start (join 1i32)) (am'.End fun _ => 1)\n|> _assert_eq \"v\"\n\n\"zabcd\"\n|> range (am'.Start (join 1i32)) (am'.End fun _ => join 1)\n|> _assert_eq \"a\"\n\n(join \"efghi\")\n|> range (am'.Start 1i32) (am'.End fun _ => 5)\n|> _assert_eq \"fghi\"\n\n\"jklmn\"\n|> range (am'.End fun x => 1i32) (am'.End fun _ => join 5)\n|> _assert_eq \"klmn\"\n\n\"opqrs\"\n|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1i32)\n|> _assert_eq \"pqr\"\n\n(join \"stuvw\")\n|> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)\n|> _assert_eq \"tuv\"\n\n(join \"wxyza\")\n|> range (am'.Start (join 2i32)) (am'.End fun x => x () - 2)\n|> _assert_eq \"y\"\n\n(join \"bcdef\")\n|> range (am'.Start (join 2i32)) (am'.End fun x => x () - 3)\n|> _assert_eq \"\"\n\n(join \"ghijk\")\n|> range (am'.Start (join 1i32)) (am'.End fun x => x () - 3)\n|> _assert_eq \"h\"\n\n(join \"lmnop\")\n|> range (am'.Start (join 1i32)) (am'.End fun x => x () - 4)\n|> _assert_eq \"\"\n\n(join \"qrstu\")\n|> range (am'.End fun x => x () - 4i32) (am'.End fun _ => 4)\n|> _assert_eq \"rst\"\n\n\"vwxyz\"\n|> range (am'.End fun x => join x () - 4i32) (am'.End fun _ => 4)\n|> _assert_eq \"wxy\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "abcde"
+  |> range (am'.Start 0i32) (am'.End eval)
+  |> _assert_eq "abcde"
+
+  (join "fghij")
+  |> range (am'.Start 1i32) (am'.End eval)
+  |> _assert_eq "ghij"
+
+  (join "klmno")
+  |> range (am'.Start 1i32) (am'.End fun _ => 1)
+  |> _assert_eq "l"
+
+  "pqrst"
+  |> range (am'.Start 1i32) (am'.End fun _ => 1)
+  |> _assert_eq "q"
+
+  "uvwxy"
+  |> range (am'.Start (join 1i32)) (am'.End fun _ => 1)
+  |> _assert_eq "v"
+
+  "zabcd"
+  |> range (am'.Start (join 1i32)) (am'.End fun _ => join 1)
+  |> _assert_eq "a"
+
+  (join "efghi")
+  |> range (am'.Start 1i32) (am'.End fun _ => 5)
+  |> _assert_eq "fghi"
+
+  "jklmn"
+  |> range (am'.End fun x => 1i32) (am'.End fun _ => join 5)
+  |> _assert_eq "klmn"
+
+  "opqrs"
+  |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1i32)
+  |> _assert_eq "pqr"
+
+  (join "stuvw")
+  |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+  |> _assert_eq "tuv"
+
+  (join "wxyza")
+  |> range (am'.Start (join 2i32)) (am'.End fun x => x () - 2)
+  |> _assert_eq "y"
+
+  (join "bcdef")
+  |> range (am'.Start (join 2i32)) (am'.End fun x => x () - 3)
+  |> _assert_eq ""
+
+  (join "ghijk")
+  |> range (am'.Start (join 1i32)) (am'.End fun x => x () - 3)
+  |> _assert_eq "h"
+
+  (join "lmnop")
+  |> range (am'.Start (join 1i32)) (am'.End fun x => x () - 4)
+  |> _assert_eq ""
+
+  (join "qrstu")
+  |> range (am'.End fun x => x () - 4i32) (am'.End fun _ => 4)
+  |> _assert_eq "rst"
+
+  "vwxyz"
+  |> range (am'.End fun x => join x () - 4i32) (am'.End fun _ => 4)
+  |> _assert_eq "wxy"
+  """,
+  timeout: 300_000
+)
+```
+
+### ellipsis_end
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let ellipsis_end (max : i64) (s : string) =\n    inl len = s |> length\n    if len <= max\n    then s\n    else\n        inl half = (max |> convert.f64) / 2\n        inl start_half = half |> math.ceil |> convert.i64\n        inl end_half = half |> math.floor |> convert.i64\n        inl start = s |> slice 0 (start_half - 1)\n        inl end = s |> slice (len - end_half) (len - 1)\n        [ start; \"...\"; end ]\n        |> concat_list \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let ellipsis_end (max : i64) (s : string) =
+      inl len = s |> length
+      if len <= max
+      then s
+      else
+          inl half = (max |> convert.f64) / 2
+          inl start_half = half |> math.ceil |> convert.i64
+          inl end_half = half |> math.floor |> convert.i64
+          inl start = s |> slice 0 (start_half - 1)
+          inl end = s |> slice (len - end_half) (len - 1)
+          [ start; "..."; end ]
+          |> concat_list ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n\n\"12345\"\n|> ellipsis_end 2\n|> _assert_eq \"1...5\"\n\n\"12345\"\n|> ellipsis_end 3\n|> _assert_eq \"12...5\"\n\n\"1234567\"\n|> ellipsis_end 4\n|> _assert_eq \"12...67\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+
+  "12345"
+  |> ellipsis_end 2
+  |> _assert_eq "1...5"
+
+  "12345"
+  |> ellipsis_end 3
+  |> _assert_eq "12...5"
+
+  "1234567"
+  |> ellipsis_end 4
+  |> _assert_eq "12...67"
+  """,
+  timeout: 300_000
+)
+```
+
+### format_ellipsis
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_ellipsis s =\n    s\n    |> format_debug\n    |> ellipsis_end 400","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl format_ellipsis s =
+      s
+      |> format_debug
+      |> ellipsis_end 400
+  """,
+  timeout: 300_000
+)
+```
+
+### replace_regex
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let replace_regex (pattern : string) (replacement : string) (s : string) : string =\n    run_target_args (fun () => s, pattern, replacement) function\n        | Fsharp => fun s, pattern, replacement =>\n            $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'\n        | RustNative => fun s, pattern, replacement =>\n            inl regex = pattern |> new_regex |> resultm.unwrap'\n            inl s = join s\n            !\\\\((regex, s, replacement), $'$\"$0.replace_all(&*$1, &*$2)\"')\n            |> cow_to_std_string\n            |> from_std_string\n        | Gleam => fun s, pattern, replacement =>\n            global \"import gleam/regexp\"\n            $'let assert Ok(re) = !pattern |> regexp.from_string'\n            $'re |> regexp.replace(!s, !replacement)' : string\n        | _ => fun _ => join \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let replace_regex (pattern : string) (replacement : string) (s : string) : string =
+      run_target_args (fun () => s, pattern, replacement) function
+          | Fsharp => fun s, pattern, replacement =>
+              $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'
+          | RustNative => fun s, pattern, replacement =>
+              inl regex = pattern |> new_regex |> resultm.unwrap'
+              inl s = join s
+              !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')
+              |> cow_to_std_string
+              |> from_std_string
+          | Gleam => fun s, pattern, replacement =>
+              global "import gleam/regexp"
+              $'let assert Ok(re) = !pattern |> regexp.from_string'
+              $'re |> regexp.replace(!s, !replacement)' : string
+          | _ => fun _ => join ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> gleam\n///> rust -d regex\n\n\" 123\"\n|> replace_regex \"\\\\s\\\\w2\" \"\"\n|> _assert_eq \"3\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> gleam
+  ///> rust -d regex
+
+  " 123"
+  |> replace_regex "\\s\\w2" ""
+  |> _assert_eq "3"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d regex\n\n\"    let main args =\\n        ()\\n\"\n|> replace_regex \"(?P<a> *)(?P<b>let\\\\s+main\\\\s+.*?\\\\s*=)\" \"$a[<EntryPoint>]\\n$a$b\"\n|> _assert_eq \"    [<EntryPoint>]\\n    let main args =\\n        ()\\n\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> rust -d regex
+
+  "    let main args =\n        ()\n"
+  |> replace_regex "(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)" "$a[<EntryPoint>]\n$a$b"
+  |> _assert_eq "    [<EntryPoint>]\n    let main args =\n        ()\n"
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\ninl main () =\n    $'let contains x = !contains x' : ()\n    $'let ends_with x = !ends_with x' : ()\n    $'let pad_left x = !pad_left x' : ()\n    $'let pad_right x = !pad_right x' : ()\n    $'let replace x = !replace x' : ()\n    $'let replace_regex x = !replace_regex x' : ()\n    inl slice (a : i32) (b : i32) c = slice a b c\n    $'let slice x = !slice x' : ()\n    $'let split x = !split x' : ()\n    $'let split_string x = !split_string x' : ()\n    $'let starts_with x = !starts_with x' : ()\n    $'let substring x = !substring x' : ()\n    $'let to_lower x = !to_lower x' : ()\n    $'let to_upper x = !to_upper x' : ()\n    $'let trim x = !trim x' : ()\n    $'let ellipsis x = !ellipsis x' : ()\n    $'let ellipsis_end x = !ellipsis_end x' : ()\n    $'let format_exception x = !format_exception x' : ()\n    $'let concat_array x = !concat_array x' : ()\n    inl concat a (b : seq.seq' string) = concat a b\n    $'let concat x = !concat x' : ()\n    $'let join\\' x = !join' x' : ()\n    $'let to_char_array x = !to_char_array x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> fsharp
+
+  inl main () =
+      $'let contains x = !contains x' : ()
+      $'let ends_with x = !ends_with x' : ()
+      $'let pad_left x = !pad_left x' : ()
+      $'let pad_right x = !pad_right x' : ()
+      $'let replace x = !replace x' : ()
+      $'let replace_regex x = !replace_regex x' : ()
+      inl slice (a : i32) (b : i32) c = slice a b c
+      $'let slice x = !slice x' : ()
+      $'let split x = !split x' : ()
+      $'let split_string x = !split_string x' : ()
+      $'let starts_with x = !starts_with x' : ()
+      $'let substring x = !substring x' : ()
+      $'let to_lower x = !to_lower x' : ()
+      $'let to_upper x = !to_upper x' : ()
+      $'let trim x = !trim x' : ()
+      $'let ellipsis x = !ellipsis x' : ()
+      $'let ellipsis_end x = !ellipsis_end x' : ()
+      $'let format_exception x = !format_exception x' : ()
+      $'let concat_array x = !concat_array x' : ()
+      inl concat a (b : seq.seq' string) = concat a b
+      $'let concat x = !concat x' : ()
+      $'let join\' x = !join' x' : ()
+      $'let to_char_array x = !to_char_array x' : ()
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### to_string std_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\ninstance to_string std_string = from_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  instance to_string std_string = from_std_string
+  """,
+  timeout: 300_000
+)
+```

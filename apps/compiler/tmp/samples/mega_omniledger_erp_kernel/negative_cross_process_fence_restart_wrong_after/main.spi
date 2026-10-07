@@ -1,3 +1,5 @@
+open main
+
 inl impossible_cross_process_fence_restart_wrong_after () :
     erp_p2p_cross_process_fence_restart_receipt nat_two nat_four =
     erp_p2p_cross_process_fence_restart_from_history

@@ -1,3 +1,5 @@
 open inventory_indexed_model
 
+// The package-owned proof gate: main's proof suite and the inventory-indexed model contract (its replays use the static
+// production capabilities, so the whole contract is decided during compilation).
 inl main () : string = inventory_indexed_full_proof_contract ()

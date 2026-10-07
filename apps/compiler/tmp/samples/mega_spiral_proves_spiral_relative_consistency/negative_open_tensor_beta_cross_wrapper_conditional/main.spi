@@ -1,8 +1,11 @@
+open main
+
+// forged-cross-wrapper-conditional-proof : the step constructor now takes the substitution strengthening alone (the note field is retired); the forged proof of another wrapper must still mismatch the step's indices
+
 inl impossible_open_tensor_beta_cross_wrapper_conditional () :
     exact_linear_indexed_open_tensor_beta_step exact_linear_bool_type =
     ExactLinearIndexedOpenTensorBetaStep (
-        exact_linear_indexed_open_conditional_beta_substitution_strengthening (),
-        "forged-cross-wrapper-conditional-proof")
+        exact_linear_indexed_open_conditional_beta_substitution_strengthening ())
 
 inl main () =
     impossible_open_tensor_beta_cross_wrapper_conditional ()

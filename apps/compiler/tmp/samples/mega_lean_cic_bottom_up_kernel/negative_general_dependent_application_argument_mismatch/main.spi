@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_general_dependent_application_argument_mismatch () :
     corrected_cic_term empty_ctx (universe_sort universe_one) =
     match corrected_cic_general_pi_identity_value () with

@@ -1,6 +1,6 @@
-inl impossible_mixed_rejected_obstruction_is_not_found_consistency forall root.
-    (rejected : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_factor_rejected_obstruction root) :
-    certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_factor_case root =
+open main
+
+inl impossible_mixed_rejected_obstruction_is_not_found_consistency forall root. (rejected : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_factor_rejected_obstruction root) : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_second_prime_root_factor_case root =
     CertifiedArithmeticRootedOrderedPrimePowerNFUniquenessMixedSecondPrimeRootFactorFound rejected
 
 inl main () = ()

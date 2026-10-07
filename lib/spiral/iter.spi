@@ -6,10 +6,8 @@ open rust_operators
 
 /// ### enumerate
 inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
-    // a native pair is the Rust tuple itself (Fable's is behind an Arc)
-    if rust.is_native ()
-    then !\($'"!iter.enumerate()"')
-    else !\($'"!iter.enumerate().map(std::sync::Arc::new)"')
+    // a pair is the Rust tuple itself
+    !\($'"!iter.enumerate()"')
 
 /// ### into_iter
 inl into_iter forall (t : * -> *) u. (x : t u) : into_iterator u =

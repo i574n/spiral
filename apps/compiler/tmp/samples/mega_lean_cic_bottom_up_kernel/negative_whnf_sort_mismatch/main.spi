@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_whnf_sort_mismatch () :
     corrected_cic_term empty_ctx bool_sort =
     reduce_corrected_cic_whnf

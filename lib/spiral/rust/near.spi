@@ -20,7 +20,7 @@ type vector_switch t =
     }
 nominal vector t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_sdk::store::vec::Vector<$0>\")>]\n#endif\ntype near_sdk_store_vec_Vector<'T> = class end"
+        fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
         backend_switch `(()) `({}) {
             Rust = (fun () => global "#[cfg(target_arch = \"wasm32\")]\ntype SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;\n#[cfg(not(target_arch = \"wasm32\"))]\nstruct SpiralNearVec<T>(std::vec::Vec<T>);\n#[cfg(not(target_arch = \"wasm32\"))]\nimpl<T> SpiralNearVec<T> {\n    fn len(&self) -> usize { self.0.len() }\n    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }\n    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {\n        self.0.drain((range.start as usize)..(range.end as usize))\n    }\n    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }\n}\n") : () -> ()
             Gleam = (fun () => ()) : () -> ()
@@ -39,15 +39,19 @@ nominal vector t =
 /// ### lookup_map
 nominal lookup_map k v =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_sdk::store::LookupMap<$0, $1>\")>]\n#endif\ntype near_sdk_store_LookupMap<'K, 'V> = class end"
-        $'' : $'near_sdk_store_LookupMap<`k, `v>'
+        native_type
+            `($'near_sdk_store_LookupMap<`k, `v>')
+            `($'near_sdk::store::LookupMap<`k, `v>')
+            "type near_sdk_store_LookupMap<'K, 'V> = class end"
     )
 
 /// ### iterable_set
 nominal iterable_set t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_sdk::store::IterableSet<$0>\")>]\n#endif\ntype near_sdk_store_IterableSet<'T> = class end"
-        $'' : $'near_sdk_store_IterableSet<`t>'
+        native_type
+            `($'near_sdk_store_IterableSet<`t>')
+            `($'near_sdk::store::IterableSet<`t>')
+            "type near_sdk_store_IterableSet<'T> = class end"
     )
 
 /// ### account_id
@@ -66,7 +70,7 @@ type account_id_switch =
     }
 nominal account_id =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_sdk::AccountId\")>]\n#endif\ntype near_sdk_AccountId = class end"
+        fsharp_global "type near_sdk_AccountId = class end"
         $'' : $'backend_switch `(account_id_switch)'
     )
 
@@ -80,69 +84,25 @@ inl new_iterable_set prefix =
 
 /// ### new_vector
 inl new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =
-    inl fable () : vector u8 =
-        !\\(prefix, $'"near_sdk::store::vec::Vector::new($0)"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
     }
 
 /// ### vector_extend
 inl vector_extend forall t. (vec : am'.vec t) (vector : rust.ref (rust.mut' (vector t))) : () =
-    inl fable () : () =
-        (!\\(vec, $'"true; !vector.extend($0); //"') : bool) |> ignore
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ (!vector).extend((!vec).clone()); }' : ()
     }
 
 /// ### vector_to_vec
 inl vector_to_vec forall (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
-    inl fable () : am'.vec u =
-        !\($'$"!vector.iter().map(|x| *x).collect::<Vec<_>>()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'.vec u
     }
 
 /// ### keccak512
 inl keccak512 (entropy : am'.vec u8) : am'.vec u8 =
-    inl fable () : am'.vec u8 =
-        !\\(entropy, $'$"near_sdk::env::keccak512(&$0)"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
@@ -211,150 +171,64 @@ type near_token_switch =
     }
 nominal near_token =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_token::NearToken\")>]\n#endif\ntype near_token_NearToken = class end"
+        fsharp_global "type near_token_NearToken = class end"
         $'' : $'backend_switch `(near_token_switch)'
     )
 
 /// ### near_token_sdk
 nominal near_token_sdk =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_sdk::NearToken\")>]\n#endif\ntype near_sdk_NearToken = class end"
-        $'' : $'near_sdk_NearToken'
+        native_type
+            `($'near_sdk_NearToken')
+            `($'near_sdk::NearToken')
+            "type near_sdk_NearToken = class end"
     )
 
 /// ### random_seed
 inl random_seed () : am'.vec u8 =
-    inl fable () : am'.vec u8 =
-        !\($'$"near_sdk::env::random_seed()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
     }
 
 /// ### block_timestamp
 inl block_timestamp () : u64 =
-    inl fable () : u64 =
-        !\($'$"near_sdk::env::block_timestamp()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### block_height
 inl block_height () : u64 =
-    inl fable () : u64 =
-        !\($'$"near_sdk::env::block_height()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### epoch_height
 inl epoch_height () : u64 =
-    inl fable () : u64 =
-        !\($'$"near_sdk::env::epoch_height()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
     }
 
 /// ### account_balance
 inl account_balance () : near_token =
-    inl fable () : near_token =
-        !\($'$"near_sdk::env::account_balance()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
     }
 
 /// ### predecessor_account_id
 inl predecessor_account_id () : account_id =
-    inl fable () : account_id =
-        !\($'$"near_sdk::env::predecessor_account_id()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### signer_account_id
 inl signer_account_id () : account_id =
-    inl fable () : account_id =
-        !\($'$"near_sdk::env::signer_account_id()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
     }
 
 /// ### as_yoctonear
 inl as_yoctonear forall t. (gas : t) : rust.u128 =
-    inl fable () : rust.u128 =
-        !\\(gas, $'"$0.as_yoctonear()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!gas)' : rust.u128
     }
 

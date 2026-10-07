@@ -6,15 +6,19 @@ open rust.rust_operators
 /// ### hash_map
 nominal hash_map k v =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::collections::HashMap<$0, $1>\")>]\n#endif\ntype std_collections_HashMap<'K, 'V> = class end"
-        $'' : $'std_collections_HashMap<`k, `v>'
+        native_type
+            `($'std_collections_HashMap<`k, `v>')
+            `($'std::collections::HashMap<`k, `v>')
+            "type std_collections_HashMap<'K, 'V> = class end"
     )
 
 /// ### b_tree_map
 nominal b_tree_map k v =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::collections::BTreeMap<$0, $1>\")>]\n#endif\ntype std_collections_BTreeMap<'K, 'V> = class end"
-        $'' : $'std_collections_BTreeMap<`k, `v>'
+        native_type
+            `($'std_collections_BTreeMap<`k, `v>')
+            `($'std::collections::BTreeMap<`k, `v>')
+            "type std_collections_BTreeMap<'K, 'V> = class end"
     )
 
 /// ### new_hash_map
@@ -50,16 +54,11 @@ inl from_vec forall k v. (vec : am'.vec (k * v)) : hash_map k v =
 
 /// ### from_vec_pairs
 inl from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : hash_map k v =
-    // Fable's pairs are shared pointers (`as_ref`); native Rust's are plain tuples.
-    if rust.rust.is_native ()
-    then !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
-    else !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    !\($'"std::collections::HashMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
 
 /// ### b_tree_map_from_vec_pairs
 inl b_tree_map_from_vec_pairs forall k v. (vec : am'.vec (pair k v)) : b_tree_map k v =
-    if rust.rust.is_native ()
-    then !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
-    else !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|x| x.as_ref()).map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
+    !\($'"std::collections::BTreeMap::from_iter(!vec.iter().map(|&(ref k, ref v)| (k.clone(), v.clone())))"')
 
 /// ### from_array
 inl from_array forall k v. (array : array_base (k * v)) : hash_map k v =

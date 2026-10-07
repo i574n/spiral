@@ -1,4 +1,5 @@
 open main
+open runtime_workload
 
 union rec indexed_dfa_state_vector alphabet state_count =
     | IndexedDfaStateVectorNil :: forall alphabet.
@@ -142,12 +143,20 @@ inl indexed_dfa_cardinality_program_passes forall alphabet.
     match run_indexed_dfa_cardinality_program program with
     | indexed_dfa_cardinality_check result => result
 
+// Bisimilarity, and its constructive counterpart (a distinguishing word for two inequivalent states, and the check of
+// such a word against the direct-language matcher), captured where symbol_compare is known: a surface sealed under an
+// `exists alphabet` carries this capability instead of the instance.
 nominal indexed_dfa_bisimulation_capability alphabet =
-    regex alphabet -> regex alphabet -> symbol_list alphabet -> bool
+    (regex alphabet -> regex alphabet -> symbol_list alphabet -> bool) *
+    (regex alphabet -> regex alphabet -> symbol_list alphabet -> dfa_constructive_distinguishing_result alphabet) *
+    (regex alphabet -> regex alphabet -> symbol_list alphabet -> dfa_constructive_distinguishing_result alphabet -> bool)
 
 inl indexed_dfa_bisimulation_capability_default forall alphabet {symbol_compare}.
     : indexed_dfa_bisimulation_capability alphabet =
-    indexed_dfa_bisimulation_capability (fun left right symbols => dfa_states_bisimilar left right symbols)
+    indexed_dfa_bisimulation_capability (
+        (fun left right symbols => static_states_bisimilar left right symbols),
+        (fun left right symbols => static_constructive_distinguishing_result left right symbols),
+        (fun left right symbols result => static_constructive_distinguishing_result_valid left right symbols result))
 
 union indexed_dfa_representative_index_lookup representative_count =
     | IndexedDfaRepresentativeIndexMissing :: forall representative_count.
@@ -163,8 +172,8 @@ inl rec indexed_dfa_find_representative_index forall alphabet representative_cou
     (symbols : symbol_list alphabet)
     : indexed_dfa_representative_index_lookup representative_count =
     match bisimulation_capability, representatives with
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorNil => IndexedDfaRepresentativeIndexMissing
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorCons (representative, rest) =>
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorNil => IndexedDfaRepresentativeIndexMissing
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorCons (representative, rest) =>
         if bisimilar state representative symbols then
             IndexedDfaRepresentativeIndexFound FiniteSymbolIndexZero
         else
@@ -215,8 +224,8 @@ inl rec indexed_dfa_quotient_coverage_valid forall alphabet closure_count repres
     (coverage : indexed_dfa_quotient_coverage closure_count representative_count)
     : bool =
     match bisimulation_capability, closure, coverage with
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorNil, IndexedDfaQuotientCoverageNil => true
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorCons (state, state_rest), IndexedDfaQuotientCoverageCons (representative_index, coverage_rest) =>
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorNil, IndexedDfaQuotientCoverageNil => true
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorCons (state, state_rest), IndexedDfaQuotientCoverageCons (representative_index, coverage_rest) =>
         inl representative = indexed_dfa_state_lookup representative_index representatives
         if bisimilar state representative symbols then
             indexed_dfa_quotient_coverage_valid bisimulation_capability state_rest representatives symbols coverage_rest
@@ -264,8 +273,8 @@ inl rec indexed_dfa_representative_origins_valid forall alphabet representative_
     (origins : indexed_dfa_representative_origins representative_count closure_count)
     : bool =
     match bisimulation_capability, representatives, origins with
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorNil, IndexedDfaRepresentativeOriginsNil => true
-    | indexed_dfa_bisimulation_capability bisimilar, IndexedDfaStateVectorCons (representative, rest), IndexedDfaRepresentativeOriginsCons (closure_index, origin_rest) =>
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorNil, IndexedDfaRepresentativeOriginsNil => true
+    | indexed_dfa_bisimulation_capability (bisimilar, _, _), IndexedDfaStateVectorCons (representative, rest), IndexedDfaRepresentativeOriginsCons (closure_index, origin_rest) =>
         inl origin = indexed_dfa_state_lookup closure_index closure
         if bisimilar representative origin symbols then
             indexed_dfa_representative_origins_valid bisimulation_capability rest closure symbols origin_rest
@@ -300,9 +309,9 @@ inl seal_indexed_dfa_minimized_surface forall alphabet {symbol_compare; finite_a
             inl bisimulation_capability : indexed_dfa_bisimulation_capability alphabet =
                 indexed_dfa_bisimulation_capability_default
             inl closure_list = indexed_dfa_closure_with_vector capability start symbols
-            inl representative_list = dfa_minimize_states closure_list symbol_list
-            if dfa_minimal_by_bisimulation representative_list symbol_list &&
-               dfa_quotient_closed representative_list symbol_list representative_list then
+            inl representative_list = static_minimize_states closure_list symbol_list
+            if static_minimal_by_bisimulation representative_list symbol_list &&
+               static_quotient_closed representative_list symbol_list representative_list then
                 match indexed_dfa_state_vector_pack closure_list with
                 | packed_indexed_dfa_state_vector packed_closure =>
                     inl exists closure_count. closure = packed_closure
@@ -338,17 +347,227 @@ inl indexed_dfa_minimized_surface_passes forall alphabet symbol_count closure_co
         indexed_dfa_quotient_coverage_valid bisimulation_capability closure representatives (finite_symbol_vector_to_list symbols) coverage &&
         indexed_dfa_representative_origins_valid bisimulation_capability representatives closure (finite_symbol_vector_to_list symbols) origins
 
+// The alphabet-erased compiled core of the minimized DFA: the start state's representative index, one acceptance bit
+// per representative and a total transition matrix (one target representative index per representative and symbol).
+// Every vector is indexed by the exact representative and symbol counts, so a short row, a missing state or an index
+// past the last representative is a type error. The compiler builds it from the representatives it minimized
+// (static_minimize_states); at run time only the indices remain: an i32 state and if-chains of constants.
+union rec indexed_dfa_acceptance_vector state_count =
+    | IndexedDfaAcceptanceVectorNil :: indexed_dfa_acceptance_vector finite_length_zero
+    | IndexedDfaAcceptanceVectorCons :: forall state_count.
+        bool * indexed_dfa_acceptance_vector state_count ->
+        indexed_dfa_acceptance_vector (finite_length_succ state_count)
+
+union rec indexed_dfa_target_row symbol_count representative_count =
+    | IndexedDfaTargetRowNil :: forall representative_count.
+        indexed_dfa_target_row finite_length_zero representative_count
+    | IndexedDfaTargetRowCons :: forall symbol_count representative_count.
+        finite_symbol_index representative_count * indexed_dfa_target_row symbol_count representative_count ->
+        indexed_dfa_target_row (finite_length_succ symbol_count) representative_count
+
+union rec indexed_dfa_target_matrix symbol_count source_count representative_count =
+    | IndexedDfaTargetMatrixNil :: forall symbol_count representative_count.
+        indexed_dfa_target_matrix symbol_count finite_length_zero representative_count
+    | IndexedDfaTargetMatrixCons :: forall symbol_count source_count representative_count.
+        indexed_dfa_target_row symbol_count representative_count *
+        indexed_dfa_target_matrix symbol_count source_count representative_count ->
+        indexed_dfa_target_matrix symbol_count (finite_length_succ source_count) representative_count
+
+nominal indexed_dfa_compiled_core symbol_count representative_count =
+    finite_symbol_index representative_count *
+    indexed_dfa_acceptance_vector representative_count *
+    indexed_dfa_target_matrix symbol_count representative_count representative_count
+
+inl rec indexed_dfa_acceptance_vector_build forall alphabet state_count.
+    (states : indexed_dfa_state_vector alphabet state_count) : indexed_dfa_acceptance_vector state_count =
+    match states with
+    | IndexedDfaStateVectorNil => IndexedDfaAcceptanceVectorNil
+    | IndexedDfaStateVectorCons (state, rest) =>
+        IndexedDfaAcceptanceVectorCons (static_nullable state, indexed_dfa_acceptance_vector_build rest)
+
+union indexed_dfa_target_row_validation symbol_count representative_count =
+    | IndexedDfaTargetRowRejected :: forall symbol_count representative_count.
+        indexed_dfa_target_row_validation symbol_count representative_count
+    | IndexedDfaTargetRowCertified :: forall symbol_count representative_count.
+        indexed_dfa_target_row symbol_count representative_count ->
+        indexed_dfa_target_row_validation symbol_count representative_count
+
+// Every target is the derivative's bisimilar representative: the quotient is closed, so a missing one rejects the core.
+inl rec indexed_dfa_target_row_build forall alphabet symbol_count representative_count.
+    (capability : indexed_dfa_capability alphabet)
+    (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
+    (source : regex alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (representatives : indexed_dfa_state_vector alphabet representative_count)
+    (symbol_list : symbol_list alphabet)
+    : indexed_dfa_target_row_validation symbol_count representative_count =
+    match capability, symbols with
+    | _, FiniteSymbolVectorNil => IndexedDfaTargetRowCertified IndexedDfaTargetRowNil
+    | indexed_dfa_capability (_, derive, _, _, _, _), FiniteSymbolVectorCons (symbol, rest) =>
+        inl target = derive source symbol
+        match indexed_dfa_find_representative_index bisimulation_capability target representatives symbol_list with
+        | IndexedDfaRepresentativeIndexMissing => IndexedDfaTargetRowRejected
+        | IndexedDfaRepresentativeIndexFound index =>
+            match indexed_dfa_target_row_build capability bisimulation_capability source rest representatives symbol_list with
+            | IndexedDfaTargetRowRejected => IndexedDfaTargetRowRejected
+            | IndexedDfaTargetRowCertified row => IndexedDfaTargetRowCertified (IndexedDfaTargetRowCons (index, row))
+
+union indexed_dfa_target_matrix_validation symbol_count source_count representative_count =
+    | IndexedDfaTargetMatrixRejected :: forall symbol_count source_count representative_count.
+        indexed_dfa_target_matrix_validation symbol_count source_count representative_count
+    | IndexedDfaTargetMatrixCertified :: forall symbol_count source_count representative_count.
+        indexed_dfa_target_matrix symbol_count source_count representative_count ->
+        indexed_dfa_target_matrix_validation symbol_count source_count representative_count
+
+inl rec indexed_dfa_target_matrix_build forall alphabet symbol_count source_count representative_count.
+    (capability : indexed_dfa_capability alphabet)
+    (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (sources : indexed_dfa_state_vector alphabet source_count)
+    (representatives : indexed_dfa_state_vector alphabet representative_count)
+    (symbol_list : symbol_list alphabet)
+    : indexed_dfa_target_matrix_validation symbol_count source_count representative_count =
+    match sources with
+    | IndexedDfaStateVectorNil => IndexedDfaTargetMatrixCertified IndexedDfaTargetMatrixNil
+    | IndexedDfaStateVectorCons (source, rest) =>
+        match indexed_dfa_target_row_build capability bisimulation_capability source symbols representatives symbol_list with
+        | IndexedDfaTargetRowRejected => IndexedDfaTargetMatrixRejected
+        | IndexedDfaTargetRowCertified row =>
+            match indexed_dfa_target_matrix_build capability bisimulation_capability symbols rest representatives symbol_list with
+            | IndexedDfaTargetMatrixRejected => IndexedDfaTargetMatrixRejected
+            | IndexedDfaTargetMatrixCertified matrix => IndexedDfaTargetMatrixCertified (IndexedDfaTargetMatrixCons (row, matrix))
+
+// The core together with the symbol vector it was compiled against and the symbol equality captured at the seal (the
+// run-time symbols are compared with that vector; the GADT match on the vector does not recover symbol_compare). The
+// alphabet stays visible (the inputs are of that alphabet); the two counts are hidden.
+nominal indexed_dfa_compiled_runner alphabet symbol_count representative_count =
+    (alphabet -> alphabet -> bool) * finite_symbol_vector alphabet symbol_count * indexed_dfa_compiled_core symbol_count representative_count
+
+nominal packed_indexed_dfa_compiled_runner alphabet =
+    exists symbol_count representative_count. indexed_dfa_compiled_runner alphabet symbol_count representative_count
+
+union indexed_dfa_compiled_runner_validation alphabet =
+    | IndexedDfaCompiledRunnerRejected
+    | IndexedDfaCompiledRunnerCertified : packed_indexed_dfa_compiled_runner alphabet
+
+inl seal_indexed_dfa_compiled_runner forall alphabet {symbol_compare; finite_alphabet}.
+    (capability : indexed_dfa_capability alphabet)
+    (start : regex alphabet)
+    (descriptor : indexed_finite_alphabet_descriptor alphabet)
+    : indexed_dfa_compiled_runner_validation alphabet =
+    if indexed_finite_alphabet_descriptor_certified capability descriptor then
+        match descriptor with
+        | indexed_finite_alphabet_descriptor packed_symbols =>
+            inl exists symbol_count. symbols = packed_symbols
+            inl symbol_list = finite_symbol_vector_to_list symbols
+            inl bisimulation_capability : indexed_dfa_bisimulation_capability alphabet =
+                indexed_dfa_bisimulation_capability_default
+            inl closure_list = indexed_dfa_closure_with_vector capability start symbols
+            inl representative_list = static_minimize_states closure_list symbol_list
+            if static_states_have_representative closure_list representative_list symbol_list &&
+               static_minimal_by_bisimulation representative_list symbol_list &&
+               static_quotient_closed representative_list symbol_list representative_list then
+                match indexed_dfa_state_vector_pack representative_list with
+                | packed_indexed_dfa_state_vector packed_representatives =>
+                    inl exists representative_count. representatives = packed_representatives
+                    match indexed_dfa_find_representative_index bisimulation_capability start representatives symbol_list with
+                    | IndexedDfaRepresentativeIndexMissing => IndexedDfaCompiledRunnerRejected
+                    | IndexedDfaRepresentativeIndexFound start_index =>
+                        match indexed_dfa_target_matrix_build capability bisimulation_capability symbols representatives representatives symbol_list with
+                        | IndexedDfaTargetMatrixRejected => IndexedDfaCompiledRunnerRejected
+                        | IndexedDfaTargetMatrixCertified matrix =>
+                            inl core : indexed_dfa_compiled_core symbol_count representative_count =
+                                indexed_dfa_compiled_core (start_index, indexed_dfa_acceptance_vector_build representatives, matrix)
+                            IndexedDfaCompiledRunnerCertified (packed_indexed_dfa_compiled_runner (exists (
+                                indexed_dfa_compiled_runner (symbol_equal, symbols, core))))
+            else IndexedDfaCompiledRunnerRejected
+    else IndexedDfaCompiledRunnerRejected
+
+
+inl rec indexed_dfa_acceptance_vector_count forall state_count. (acceptance : indexed_dfa_acceptance_vector state_count) : i32 =
+    match acceptance with
+    | IndexedDfaAcceptanceVectorNil => 0i32
+    | IndexedDfaAcceptanceVectorCons (_, rest) => i32_add (indexed_dfa_acceptance_vector_count rest) 1i32
+
+inl rec finite_symbol_index_to_i32 forall count. (index : finite_symbol_index count) : i32 =
+    match index with
+    | FiniteSymbolIndexZero => 0i32
+    | FiniteSymbolIndexSucc previous => i32_add (finite_symbol_index_to_i32 previous) 1i32
+
+// Run-time dispatch over the compile-time core. The last row and the last symbol are the fallbacks of their if-chains:
+// the matrix is total over the representatives, and the descriptor check proved the symbol vector lists every
+// inhabitant of the alphabet.
+inl rec indexed_dfa_acceptance_at forall state_count.
+    (acceptance : indexed_dfa_acceptance_vector state_count) (state : i32) (index : i32) : bool =
+    match acceptance with
+    | IndexedDfaAcceptanceVectorNil => failwith "brzozowski-compiled-core-without-states"
+    | IndexedDfaAcceptanceVectorCons (accepting, rest) =>
+        match rest with
+        | IndexedDfaAcceptanceVectorNil => accepting
+        | _ => if i32_eq state index then accepting else indexed_dfa_acceptance_at rest state (i32_add index 1i32)
+
+inl rec indexed_dfa_row_target forall alphabet symbol_count representative_count.
+    (equal : alphabet -> alphabet -> bool)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (row : indexed_dfa_target_row symbol_count representative_count)
+    (symbol : alphabet)
+    : i32 =
+    match symbols, row with
+    | FiniteSymbolVectorCons (expected, symbol_rest), IndexedDfaTargetRowCons (target, row_rest) =>
+        match symbol_rest with
+        | FiniteSymbolVectorNil => finite_symbol_index_to_i32 target
+        | _ =>
+            if equal symbol expected then finite_symbol_index_to_i32 target
+            else indexed_dfa_row_target equal symbol_rest row_rest symbol
+    | _ => failwith "brzozowski-compiled-core-without-symbols"
+
+inl rec indexed_dfa_matrix_next forall alphabet symbol_count source_count representative_count.
+    (equal : alphabet -> alphabet -> bool)
+    (symbols : finite_symbol_vector alphabet symbol_count)
+    (matrix : indexed_dfa_target_matrix symbol_count source_count representative_count)
+    (state : i32)
+    (index : i32)
+    (symbol : alphabet)
+    : i32 =
+    match matrix with
+    | IndexedDfaTargetMatrixNil => failwith "brzozowski-compiled-core-without-rows"
+    | IndexedDfaTargetMatrixCons (row, rest) =>
+        match rest with
+        | IndexedDfaTargetMatrixNil => indexed_dfa_row_target equal symbols row symbol
+        | _ =>
+            if i32_eq state index then indexed_dfa_row_target equal symbols row symbol
+            else indexed_dfa_matrix_next equal symbols rest state (i32_add index 1i32) symbol
+
+inl indexed_dfa_compiled_runner_accepts forall alphabet symbol_count representative_count.
+    (runner : indexed_dfa_compiled_runner alphabet symbol_count representative_count)
+    (input : linear_input alphabet)
+    : bool =
+    match runner with
+    | indexed_dfa_compiled_runner (equal, symbols, indexed_dfa_compiled_core (start_index, acceptance, matrix)) =>
+        let rec run (state : i32) (input : linear_input alphabet) : bool =
+            match input with
+            | InputEmpty => indexed_dfa_acceptance_at acceptance state 0i32
+            | InputCons (symbol, rest) => run (indexed_dfa_matrix_next equal symbols matrix state 0i32 symbol) rest
+        inl ~start = finite_symbol_index_to_i32 start_index
+        run start input
+
+inl indexed_dfa_compiled_runner_state_count forall alphabet symbol_count representative_count.
+    (runner : indexed_dfa_compiled_runner alphabet symbol_count representative_count) : i32 =
+    match runner with
+    | indexed_dfa_compiled_runner (_, _, indexed_dfa_compiled_core (_, acceptance, _)) =>
+        indexed_dfa_acceptance_vector_count acceptance
+
 type one_state_count = finite_length_succ finite_length_zero
 type two_state_count = finite_length_succ (finite_length_succ finite_length_zero)
 
 inl one_bit_state_for_control () : indexed_dfa_state_vector bit_alphabet one_state_count =
     IndexedDfaStateVectorCons (
-        normalize (ends_with_zero ()),
+        static_normalize (ends_with_zero ()),
         IndexedDfaStateVectorNil)
 
 inl one_bit_row_for_negative ()
     : indexed_dfa_exact_transition_rows bit_alphabet bit_finite_length one_state_count =
-    inl capability = make_indexed_dfa_capability `bit_alphabet ()
+    inl capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
     IndexedDfaExactTransitionRowsCons (
         indexed_dfa_transitions_from_state capability (ends_with_zero ()) (bit_finite_symbol_vector ()),
         IndexedDfaExactTransitionRowsNil)
@@ -384,16 +603,102 @@ inl require_exact_quotient_coverage_count forall alphabet closure_count represen
 
 inl two_bit_states () : indexed_dfa_state_vector bit_alphabet two_state_count =
     IndexedDfaStateVectorCons (
-        normalize (ends_with_zero ()),
+        static_normalize (ends_with_zero ()),
         IndexedDfaStateVectorCons (
-            normalize RegexEmpty,
+            static_normalize RegexEmpty,
             IndexedDfaStateVectorNil))
 
 inl second_state_index () : finite_symbol_index two_state_count =
     FiniteSymbolIndexSucc FiniteSymbolIndexZero
 
-inl main () : string =
-    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
+// Run time: the minimized compiled core against main's derivative matcher (`accepts`, derivatives at run time) on inputs
+// generated from a seed (runtime_workload's LCG and zero runs), so the compiler knows none of them. Each count is the
+// number of accepted inputs; a disagreement fails the run.
+inl compiled_runner_random_count forall symbol_count representative_count.
+    (runner : indexed_dfa_compiled_runner bit_alphabet symbol_count representative_count)
+    (value : regex bit_alphabet)
+    (count : i32)
+    (length : i32)
+    : i32 =
+    inl ~dynamic = value
+    let rec loop (count : i32) (seed : u64) (accepted : i32) : i32 =
+        if i32_lt 0i32 count then
+            match random_bit_input seed length InputEmpty with
+            | input, next =>
+                inl compiled = indexed_dfa_compiled_runner_accepts runner input
+                if bool_same compiled (accepts dynamic input) then
+                    loop (i32_sub count 1i32) next (if compiled then i32_add accepted 1i32 else accepted)
+                else failwith "brzozowski-compiled-core-disagrees-on-random-input"
+        else accepted
+    inl ~seed = 1u64
+    inl ~none = 0i32
+    loop count seed none
+
+inl compiled_runner_zero_runs forall symbol_count representative_count.
+    (runner : indexed_dfa_compiled_runner bit_alphabet symbol_count representative_count)
+    (value : regex bit_alphabet)
+    (max : i32)
+    : i32 =
+    inl ~dynamic = value
+    inl count_one (input : linear_input bit_alphabet) (accepted : i32) : i32 =
+        inl compiled = indexed_dfa_compiled_runner_accepts runner input
+        if bool_same compiled (accepts dynamic input) then (if compiled then i32_add accepted 1i32 else accepted)
+        else failwith "brzozowski-compiled-core-disagrees-on-zero-run"
+    let rec loop (n : i32) (accepted : i32) : i32 =
+        if i32_lt max n then accepted
+        else
+            inl accepted = count_one (zeros_input n InputEmpty) accepted
+            inl accepted = count_one (zeros_input n (InputCons (one (), InputEmpty))) accepted
+            loop (i32_add n 1i32) accepted
+    inl ~first = 1i32
+    inl ~none = 0i32
+    loop first none
+
+union compiled_runner_workload =
+    | CompiledRandom : i32 * i32
+    | CompiledZeroRuns : i32
+
+// Seals the minimized compiled core of `value` (the representative count is checked at compile time) and runs it.
+inl bit_compiled_runner_count
+    (capability : indexed_dfa_capability bit_alphabet)
+    (value : regex bit_alphabet)
+    (representatives : i32)
+    (workload : compiled_runner_workload)
+    : i32 =
+    match seal_indexed_dfa_compiled_runner capability value (bit_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaCompiledRunnerRejected => failwith "brzozowski-compiled-core-rejected"
+    | IndexedDfaCompiledRunnerCertified packed_runner =>
+        match packed_runner with
+        | packed_indexed_dfa_compiled_runner packed =>
+            inl exists symbol_count representative_count. runner = packed
+            assert_static
+                (i32_eq (indexed_dfa_compiled_runner_state_count runner) representatives)
+                "the compiled core must have the minimal number of states"
+            match workload with
+            | CompiledRandom (count, length) => compiled_runner_random_count runner value count length
+            | CompiledZeroRuns max => compiled_runner_zero_runs runner value max
+
+inl tri_compiled_runner_agrees (capability : indexed_dfa_capability tri_alphabet) : bool =
+    match seal_indexed_dfa_compiled_runner capability (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ()) with
+    | IndexedDfaCompiledRunnerRejected => false
+    | IndexedDfaCompiledRunnerCertified packed_runner =>
+        match packed_runner with
+        | packed_indexed_dfa_compiled_runner packed =>
+            inl exists symbol_count representative_count. runner = packed
+            inl ~value = tri_ab_star_then_c ()
+            inl ~accepted_input = input_abac ()
+            inl ~rejected_input = input_abab ()
+            if indexed_dfa_compiled_runner_accepts runner accepted_input && accepts value accepted_input then
+                if indexed_dfa_compiled_runner_accepts runner rejected_input then false
+                elif accepts value rejected_input then false
+                else true
+            else false
+
+inl expect_compiled_count (actual : i32) (expected : i32) (message : string) : () =
+    if i32_eq actual expected then () else failwith message
+
+inl main () : i32 =
+    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
     inl bit_symbols = bit_finite_symbol_vector ()
     inl bit_states = two_bit_states ()
     inl bit_rows = indexed_dfa_exact_rows_from_states bit_capability bit_symbols bit_states
@@ -406,12 +711,10 @@ inl main () : string =
     match indexed_dfa_transition_lookup (bit_finite_index_zero ()) selected_row with
     | dfa_transition (row_source, _, _) =>
         assert_static
-            (regex_equal selected_state row_source)
+            (static_regex_equal selected_state row_source)
             "one typed state index must select the corresponding state and transition row"
-    match seal_indexed_dfa_cardinality_surface
-        bit_capability
-        (ends_with_zero ())
-        (bit_indexed_finite_alphabet_descriptor ()) with
+    inl bit_cardinality = seal_indexed_dfa_cardinality_surface bit_capability (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())
+    match bit_cardinality with
     | IndexedDfaCardinalitySurfaceRejected => failwith "bit indexed cardinality surface should certify"
     | IndexedDfaCardinalitySurfaceCertified packed =>
         inl exists alphabet symbol_count state_count. surface = packed
@@ -420,11 +723,9 @@ inl main () : string =
             assert_static
                 (indexed_dfa_state_row_shape_aligned states rows)
                 "sealed bit surface must preserve exact state-row cardinality"
-    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
-    match seal_indexed_dfa_cardinality_surface
-        tri_capability
-        (tri_ab_star_then_c ())
-        (tri_indexed_finite_alphabet_descriptor ()) with
+    inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+    inl tri_cardinality = seal_indexed_dfa_cardinality_surface tri_capability (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ())
+    match tri_cardinality with
     | IndexedDfaCardinalitySurfaceRejected => failwith "ternary indexed cardinality surface should certify"
     | IndexedDfaCardinalitySurfaceCertified packed =>
         inl exists alphabet symbol_count state_count. surface = packed
@@ -433,20 +734,16 @@ inl main () : string =
             assert_static
                 (indexed_dfa_state_row_shape_aligned states rows)
                 "sealed ternary surface must preserve exact state-row cardinality"
-    match seal_indexed_dfa_minimized_surface
-        bit_capability
-        (ends_with_zero ())
-        (bit_indexed_finite_alphabet_descriptor ()) with
+    inl bit_minimized = seal_indexed_dfa_minimized_surface bit_capability (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())
+    match bit_minimized with
     | IndexedDfaMinimizedSurfaceRejected => failwith "bit minimized surface should certify typed quotient coverage"
     | IndexedDfaMinimizedSurfaceCertified packed =>
         inl exists alphabet symbol_count closure_count representative_count. surface = packed
         assert_static
             (indexed_dfa_minimized_surface_passes surface)
             "bit minimized surface must map every closure state to a finite representative index and align one row per representative"
-    match seal_indexed_dfa_minimized_surface
-        tri_capability
-        (tri_ab_star_then_c ())
-        (tri_indexed_finite_alphabet_descriptor ()) with
+    inl tri_minimized = seal_indexed_dfa_minimized_surface tri_capability (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ())
+    match tri_minimized with
     | IndexedDfaMinimizedSurfaceRejected => failwith "ternary minimized surface should certify typed quotient coverage"
     | IndexedDfaMinimizedSurfaceCertified packed =>
         inl exists alphabet symbol_count closure_count representative_count. surface = packed
@@ -468,4 +765,13 @@ inl main () : string =
     assert_static
         (matcher_batch_forall `$indexed_dfa_cardinality_program_passes cardinality_program_batch)
         "higher-ranked cardinality programs must preserve alphabet-indexed symbol/state counts before existential sealing"
-    "brzozowski-indexed-dfa-state-cardinality-green"
+    // The same counts as runtime_bench (93 and 16: also what Rust's regex crate returns on these inputs), from minimal
+    // DFAs of 2 and 3 states ((0|00)*1 has 5 derivatives: the minimization merges two pairs). runtime_bench's third
+    // regex, (0|1)*1(0|1)(0|1)(0|1), works too (16 states, count 97) but its compile-time minimization alone takes ~43 s
+    // of single-flight compilation (4 s for the rest of this program), so it is not part of the suite's program.
+    inl ~count = 200i32
+    inl ~length = 32i32
+    inl ~max_zero_run = 16i32
+    expect_compiled_count (bit_compiled_runner_count bit_capability (ends_with_zero ()) 2i32 (CompiledRandom (count, length))) 93i32 "brzozowski-compiled-ends-with-zero-count"
+    expect_compiled_count (bit_compiled_runner_count bit_capability (zero_or_two_zeros_then_one ()) 3i32 (CompiledZeroRuns max_zero_run)) 16i32 "brzozowski-compiled-zero-runs-count"
+    if tri_compiled_runner_agrees tri_capability then 0i32 else failwith "brzozowski-compiled-ternary-disagrees"

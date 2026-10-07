@@ -1,3 +1,5 @@
+open main
+
 inl impossible_membership_accessible_child_mismatch () =
     certified_interval_positive_positional_accessible_child_completion
         (positive_positional_two_value ())

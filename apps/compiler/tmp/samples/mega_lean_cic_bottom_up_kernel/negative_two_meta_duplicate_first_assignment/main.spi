@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_meta_stale_membership_reassignment () :
     corrected_cic_meta_environment
         (corrected_cic_meta_states_open empty_ctx bool_sort

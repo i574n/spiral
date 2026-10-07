@@ -1,0 +1,10 @@
+open main
+
+// Every nullary string-returning program (`inl <name> () : string`) of the root that the root's own main does not reach (found by lane G,
+// 2026-10-06: they were never compiled by the suite). Each is evaluated in turn; the program returns the last string.
+inl main () : string =
+    inl _ = corrected_cic_bool_dependent_application_program_negation_involution_terminal ()
+    inl _ = corrected_cic_indexed_unary_constructor_application_terminal ()
+    inl _ = corrected_cic_indexed_dependent_application_terminal ()
+    inl _ = corrected_cic_bool_dependent_pi_substitution_terminal ()
+    "all-terminals-green"

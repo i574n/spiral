@@ -1,3 +1,5 @@
+open main
+
 inl impossible_iota_indexed_action_reduction_cross_category () :
     cic_verified_inductive_iota_indexed_directed_reduction
         cic_verified_inductive_iota_parameter_conclusion_category =

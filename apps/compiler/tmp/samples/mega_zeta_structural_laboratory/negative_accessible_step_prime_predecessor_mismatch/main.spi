@@ -1,17 +1,15 @@
+// The Step prime derivation for three cannot carry the two-to-one predecessor proof (the derivation no longer has a separate predecessor value slot).
+open main
+
 inl impossible_accessible_step_prime_predecessor_mismatch () =
     inl three_value = positive_positional_three_value ()
-    match
-        classify_certified_interval_positive_positional_sealed_factor
-            three_value
-    with
+    match classify_certified_interval_positive_positional_sealed_factor three_value with
     | CertifiedIntervalPositivePositionalSealedPrimeClass prime_payload =>
-        inl exists length.
-            prime_material, prime_nonunit, rejected, prime_note = prime_payload
+        inl exists length. prime_material, prime_nonunit, rejected, prime_note = prime_payload
         CertifiedIntervalPositivePositionalAccessibleStepPrimeDerivation (exists (
             prime_material,
             prime_nonunit,
             rejected,
-            PositivePositionalOne,
             PositivePositionalPredecessorTwo,
             PositivePositionalLessOneZeroBit PositivePositionalOne,
             PositivePositionalPredecessorAccessibilityOne
@@ -19,7 +17,7 @@ inl impossible_accessible_step_prime_predecessor_mismatch () =
             prime_note,
             "forged-two-to-one-step-for-prime-three"))
     | _ =>
-        $"failwith \"three-was-unexpectedly-not-classified-as-prime\""
+        $"mega_runtime_fail \"three-was-unexpectedly-not-classified-as-prime\""
 
 inl main () =
     impossible_accessible_step_prime_predecessor_mismatch ()

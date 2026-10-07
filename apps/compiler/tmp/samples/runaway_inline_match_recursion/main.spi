@@ -1,0 +1,16 @@
+// FOR-D repro (lane F, 2026-10-06): an `inl rec` on a run-time value that recurses through a `match` (no `if`) unrolls
+// forever: no EJP0040 report (the guard counts nested dynamic `if`s only), the compile runs until the job timeout or
+// overflows the evaluator's stack. Expected: error[EJP0040] (the runaway inline recursion report), like
+// frontier_runaway_inline_recursion. Not blessed: a timeout is never recorded as expected.
+union rec nat =
+    | Zero
+    | Succ : nat
+
+inl rec depth (value : nat) (acc : i32) : i32 =
+    match value with
+    | Zero => acc
+    | Succ rest => depth rest acc
+
+inl main () : i32 =
+    inl ~value = Succ (Succ Zero)
+    depth value 0i32

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_close_nonempty () :
     exact_linear_indexed_closed_term exact_linear_unit_type =
     match exact_linear_indexed_fully_used_variable_term () with

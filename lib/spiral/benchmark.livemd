@@ -1,0 +1,462 @@
+## benchmark
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## fsharp
+
+<!-- livebook:{"break_markdown":true} -->
+
+### test_case_result
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type test_case_result =\n    {\n        input : string\n        expected : string\n        result : string\n        time_list : array_base i64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type test_case_result =
+      {
+          input : string
+          expected : string
+          result : string
+          time_list : array_base i64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### run'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run' forall t. count (fn : () -> t) =\n    runtime.gc_collect ()\n    inl stopwatch = date_time.stopwatch ()\n    stopwatch |> date_time.stopwatch_start\n    inl time1 = stopwatch |> date_time.stopwatch_elapsed_milliseconds\n    inl result : t =\n        am'.init_series 0 count 1i32\n        |> fun x => a x : _ int _\n        |> am'.parallel_map fun _n => fn ()\n        |> am'.last\n    inl time2 = (stopwatch |> date_time.stopwatch_elapsed_milliseconds) - time1\n    result, time2","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run' forall t. count (fn : () -> t) =
+      runtime.gc_collect ()
+      inl stopwatch = date_time.stopwatch ()
+      stopwatch |> date_time.stopwatch_start
+      inl time1 = stopwatch |> date_time.stopwatch_elapsed_milliseconds
+      inl result : t =
+          am'.init_series 0 count 1i32
+          |> fun x => a x : _ int _
+          |> am'.parallel_map fun _n => fn ()
+          |> am'.last
+      inl time2 = (stopwatch |> date_time.stopwatch_elapsed_milliseconds) - time1
+      result, time2
+  """,
+  timeout: 300_000
+)
+```
+
+### run
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run forall input expected.\n    count\n    (solutions : list (string * (input -> expected)))\n    ((input, expected) : (input * expected))\n    : test_case_result\n    =\n    inl input_str = #?*input\n\n    console.write_line \"\"\n    trace Verbose\n        fun () => \"benchmark.run\"\n        fun () => { input_str = input_str |> sm'.ellipsis_end 40 }\n\n    inl results_with_time : array_base _ =\n        solutions\n        |> listm'.indexed\n        |> listm'.box\n        |> listm'.to_array'\n        |> am'.map_base fun ((i : int), (test_name, solution)) =>\n            inl result, time =\n                fun () => solution input\n                |> run' count\n            trace Verbose\n                fun () => \"benchmark.run / solutions.map\"\n                fun () => { i = i + 1; test_name time }\n            result, time\n\n    match results_with_time |> am'.map_base fst with\n    | array when (array |> (fun x => a x : _ int _) |> am'.length) <= 1 => ()\n    | array when array |> (fun x => a x : _ int _) |> am.forall' ((=) (array |> (fun x => a x : _ int _) |> am'.index 0)) => ()\n    | results => failwith ($'$\"benchmark.run / error / results: {!results}\"' : string)\n\n    {\n        input = input_str\n        expected = #?*expected\n        result = results_with_time |> am'.map_base fst |> (fun x => a x : _ int _) |> am'.index 0 |> sm'.format_debug\n        time_list = results_with_time |> am'.map_base snd\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run forall input expected.
+      count
+      (solutions : list (string * (input -> expected)))
+      ((input, expected) : (input * expected))
+      : test_case_result
+      =
+      inl input_str = #?*input
+
+      console.write_line ""
+      trace Verbose
+          fun () => "benchmark.run"
+          fun () => { input_str = input_str |> sm'.ellipsis_end 40 }
+
+      inl results_with_time : array_base _ =
+          solutions
+          |> listm'.indexed
+          |> listm'.box
+          |> listm'.to_array'
+          |> am'.map_base fun ((i : int), (test_name, solution)) =>
+              inl result, time =
+                  fun () => solution input
+                  |> run' count
+              trace Verbose
+                  fun () => "benchmark.run / solutions.map"
+                  fun () => { i = i + 1; test_name time }
+              result, time
+
+      match results_with_time |> am'.map_base fst with
+      | array when (array |> (fun x => a x : _ int _) |> am'.length) <= 1 => ()
+      | array when array |> (fun x => a x : _ int _) |> am.forall' ((=) (array |> (fun x => a x : _ int _) |> am'.index 0)) => ()
+      | results => failwith ($'$"benchmark.run / error / results: {!results}"' : string)
+
+      {
+          input = input_str
+          expected = #?*expected
+          result = results_with_time |> am'.map_base fst |> (fun x => a x : _ int _) |> am'.index 0 |> sm'.format_debug
+          time_list = results_with_time |> am'.map_base snd
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### run_all
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_all forall input expected.\n    test_name\n    count\n    (solutions : list (string * (input -> expected)))\n    test_cases\n    =\n    console.write_line \"\"\n    console.write_line \"```\"\n    trace Verbose\n        fun () => \"benchmark.run_all\"\n        fun () => { test_name count }\n    test_cases\n    |> listm'.box\n    |> listm'.to_array'\n    |> am'.map_base (run count solutions)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run_all forall input expected.
+      test_name
+      count
+      (solutions : list (string * (input -> expected)))
+      test_cases
+      =
+      console.write_line ""
+      console.write_line "```"
+      trace Verbose
+          fun () => "benchmark.run_all"
+          fun () => { test_name count }
+      test_cases
+      |> listm'.box
+      |> listm'.to_array'
+      |> am'.map_base (run count solutions)
+  """,
+  timeout: 300_000
+)
+```
+
+### sort_result_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_result_list results =\n    inl table =\n        inl rows =\n            results\n            |> am'.map_base fun (result : test_case_result) =>\n                inl best =\n                    result.time_list\n                    |> am'.indexed\n                    |> am'.map_base fun (i, time) =>\n                        i + 1i32, time\n                    |> fun x => a x : _ int _\n                    |> am'.sort_by snd\n                    |> am'.index 0i32\n                    |> sm'.format\n                inl row =\n                    [\n                        result.input |> sm'.ellipsis_end 40 |> sm'.replace \"|\" \"\"\n                        result.expected\n                        result.result\n                        best\n                    ]\n                inl color : option console.console_color =\n                    open console\n                    match result.expected = result.result with\n                    | true => Some $'`console_color.DarkGreen'\n                    | false => Some $'`console_color.DarkRed'\n                row, color\n\n        inl header =\n            [\n                [\n                    \"input\"\n                    \"expected\"\n                    \"result\"\n                    \"best\"\n                ]\n                [\n                    \"---\"\n                    \"---\"\n                    \"---\"\n                    \"---\"\n                ]\n            ]\n            |> listm.map fun row => row, None\n            |> listm'.box\n            |> listm'.to_array'\n            |> fun x => a x : _ int _\n        a rows\n        |> am.append header\n        |> fun (a x) => x\n\n    inl formatted_table =\n        inl length_map : mapm.map i32 i64 =\n            table\n            |> am'.map_base (fst >> listm'.box >> listm'.to_array')\n            |> am'.transpose\n            |> am'.map_base fun column =>\n                column\n                |> am'.map_base sm.length\n                |> fun x => a x : _ int _\n                |> am'.sort_descending\n                |> am'.try_item 0i32\n                |> optionm'.default_value 0i64\n            |> am'.indexed\n            |> fun x => a x : _ int _\n            |> mapm.of_array\n        table\n        |> am'.map_base fun (row, color) =>\n            inl new_row =\n                row\n                |> listm'.indexed\n                |> listm.map fun (i, cell) =>\n                    cell |> sm'.pad_right (length_map |> mapm.item i |> conv) ' '\n                |> listm'.box\n                |> listm'.to_array'\n            new_row, color\n\n    console.write_line \"```\"\n    formatted_table\n    |> fun x => a x : _ int _\n    |> am'.to_list'\n    |> listm'.unbox\n    |> listm.iter fun (row, color) =>\n        match color with\n        | Some color => color |> console.set_foreground_color\n        | None => console.reset_color ()\n\n        a row |> sm'.join' \"\\t| \" |> console.write_line\n\n        console.reset_color ()\n\n    inl averages =\n        results\n        |> am'.map_base fun result =>\n            result.time_list\n            |> am'.map_base ($'float' : i64 -> f64)\n        |> am'.transpose\n        |> am'.map_base ((fun x => a x : _ int _) >> am'.average)\n        |> am'.map_base ($'int64' : f64 -> i64)\n        |> am'.indexed\n        |> fun x => a x : _ u64 _\n\n    console.write_line \"```\"\n    averages\n    |> am'.sort_by snd\n    |> am'.to_list'\n    |> listm'.unbox\n    |> listm.iter fun ((i : i32), avg) =>\n        trace Verbose\n            fun () => \"benchmark.sort_result_list / averages.iter\"\n            fun () => { i = i + 1; avg }\n    console.write_line \"```\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sort_result_list results =
+      inl table =
+          inl rows =
+              results
+              |> am'.map_base fun (result : test_case_result) =>
+                  inl best =
+                      result.time_list
+                      |> am'.indexed
+                      |> am'.map_base fun (i, time) =>
+                          i + 1i32, time
+                      |> fun x => a x : _ int _
+                      |> am'.sort_by snd
+                      |> am'.index 0i32
+                      |> sm'.format
+                  inl row =
+                      [
+                          result.input |> sm'.ellipsis_end 40 |> sm'.replace "|" ""
+                          result.expected
+                          result.result
+                          best
+                      ]
+                  inl color : option console.console_color =
+                      open console
+                      match result.expected = result.result with
+                      | true => Some $'`console_color.DarkGreen'
+                      | false => Some $'`console_color.DarkRed'
+                  row, color
+
+          inl header =
+              [
+                  [
+                      "input"
+                      "expected"
+                      "result"
+                      "best"
+                  ]
+                  [
+                      "---"
+                      "---"
+                      "---"
+                      "---"
+                  ]
+              ]
+              |> listm.map fun row => row, None
+              |> listm'.box
+              |> listm'.to_array'
+              |> fun x => a x : _ int _
+          a rows
+          |> am.append header
+          |> fun (a x) => x
+
+      inl formatted_table =
+          inl length_map : mapm.map i32 i64 =
+              table
+              |> am'.map_base (fst >> listm'.box >> listm'.to_array')
+              |> am'.transpose
+              |> am'.map_base fun column =>
+                  column
+                  |> am'.map_base sm.length
+                  |> fun x => a x : _ int _
+                  |> am'.sort_descending
+                  |> am'.try_item 0i32
+                  |> optionm'.default_value 0i64
+              |> am'.indexed
+              |> fun x => a x : _ int _
+              |> mapm.of_array
+          table
+          |> am'.map_base fun (row, color) =>
+              inl new_row =
+                  row
+                  |> listm'.indexed
+                  |> listm.map fun (i, cell) =>
+                      cell |> sm'.pad_right (length_map |> mapm.item i |> conv) ' '
+                  |> listm'.box
+                  |> listm'.to_array'
+              new_row, color
+
+      console.write_line "```"
+      formatted_table
+      |> fun x => a x : _ int _
+      |> am'.to_list'
+      |> listm'.unbox
+      |> listm.iter fun (row, color) =>
+          match color with
+          | Some color => color |> console.set_foreground_color
+          | None => console.reset_color ()
+
+          a row |> sm'.join' "\t| " |> console.write_line
+
+          console.reset_color ()
+
+      inl averages =
+          results
+          |> am'.map_base fun result =>
+              result.time_list
+              |> am'.map_base ($'float' : i64 -> f64)
+          |> am'.transpose
+          |> am'.map_base ((fun x => a x : _ int _) >> am'.average)
+          |> am'.map_base ($'int64' : f64 -> i64)
+          |> am'.indexed
+          |> fun x => a x : _ u64 _
+
+      console.write_line "```"
+      averages
+      |> am'.sort_by snd
+      |> am'.to_list'
+      |> listm'.unbox
+      |> listm.iter fun ((i : i32), avg) =>
+          trace Verbose
+              fun () => "benchmark.sort_result_list / averages.iter"
+              fun () => { i = i + 1; avg }
+      console.write_line "```"
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl is_fast () =\n    false","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  inl is_fast () =
+      false
+  """,
+  timeout: 300_000
+)
+```
+
+### empty2Tests
+
+<!-- livebook:{"break_markdown":true} -->
+
+Test: Empty2
+
+Solution: (a, a)
+Test case 1. A. Time: 59L
+
+Solution: (a, a)
+Test case 1. A. Time: 53L
+
+Input   | Expected        | Result  | Best
+---     | ---             | ---     | ---
+(a, a)  | a               | a       | (1, 59)
+(a, a)  | a               | a       | (1, 53)
+
+Averages
+Test case 1. Average Time: 56L
+
+Ranking
+Test case 1. Average Time: 56L
+
+---
+
+
+```
+01:12:03 [90mverbose[0m #1 benchmark.run_all / {count = 2000000; test_name = empty_2_tests}
+01:12:03 [90mverbose[0m #2 benchmark.run / {count = 2000000; expected = a; input = a, a; input_str = struct ("a", "a")}
+01:12:03 [90mverbose[0m #3 benchmark.run / solutions.map / {count = 2000000; expected = a; i = 0; input = a, a; input_str = struct ("a", "a"); test_name = A; time = 119}
+01:12:04 [90mverbose[0m #4 benchmark.run / solutions.map / {count = 2000000; expected = a; i = 1; input = a, a; input_str = struct ("a", "a"); test_name = B; time = 122}
+01:12:04 [90mverbose[0m #5 benchmark.run / {count = 2000000; expected = b; input = b, b; input_str = struct ("b", "b")}
+01:12:04 [90mverbose[0m #6 benchmark.run / solutions.map / {count = 2000000; expected = b; i = 0; input = b, b; input_str = struct ("b", "b"); test_name = A; time = 110}
+01:12:04 [90mverbose[0m #7 benchmark.run / solutions.map / {count = 2000000; expected = b; i = 1; input = b, b; input_str = struct ("b", "b"); test_name = B; time = 120}
+```
+Input            	| Expected	| Result	| Best             
+---              	| ---     	| ---   	| ---              
+struct ("a", "a")	| "a"     	| "a"   	| struct (1L, 119L)
+struct ("b", "b")	| "b"     	| "b"   	| struct (1L, 110L)
+```
+01:12:04 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 114; i = 0}
+01:12:04 [90mverbose[0m #9 benchmark.sort_result_list / averages.iter / {avg = 121; i = 1}
+```
+`
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun (a, _b) =>\n            a\n\n        \"B\",\n        fun (_a, b) =>\n            b\n    ]\n\ninl rec empty_2_tests () =\n    inl test_cases = [\n        (\"a\", \"a\"), \"a\"\n        (\"b\", \"b\"), \"b\"\n    ]\n\n    inl solutions = get_solutions ()\n\n    // inl is_fast () = true\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_2_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_2_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  inl get_solutions () =
+      [
+          "A",
+          fun (a, _b) =>
+              a
+
+          "B",
+          fun (_a, b) =>
+              b
+      ]
+
+  inl rec empty_2_tests () =
+      inl test_cases = [
+          ("a", "a"), "a"
+          ("b", "b"), "b"
+      ]
+
+      inl solutions = get_solutions ()
+
+      // inl is_fast () = true
+
+      inl count =
+          if is_fast ()
+          then 1000i32
+          else 2000000i32
+
+      run_all (reflection.nameof { empty_2_tests }) count solutions test_cases
+      |> sort_result_list
+
+  empty_2_tests ()
+  """,
+  timeout: 300_000
+)
+```
+
+### emptyTests
+
+<!-- livebook:{"break_markdown":true} -->
+
+Test: Empty
+
+Solution: 0
+Test case 1. A. Time: 61L
+
+Solution: 2
+Test case 1. A. Time: 62L
+
+Solution: 5
+Test case 1. A. Time: 70L
+
+Input   | Expected        | Result  | Best
+---     | ---             | ---     | ---
+0       | 0               | 0       | (1, 61)
+2       | 2               | 2       | (1, 62)
+5       | 5               | 5       | (1, 70)
+
+Averages
+Test case 1. Average Time: 64L
+
+Ranking
+Test case 1. Average Time: 64L
+
+---
+
+```
+01:21:25 [90mverbose[0m #1 benchmark.run_all / {count = 2000000; test_name = empty_1_tests}
+01:21:25 [90mverbose[0m #2 benchmark.run / {count = 2000000; expected = +1.000000; input = +0.000000; input_str = 0.0}
+01:21:25 [90mverbose[0m #3 benchmark.run / solutions.map / {count = 2000000; expected = +1.000000; i = 0; input = +0.000000; input_str = 0.0; test_name = A; time = 36}
+01:21:25 [90mverbose[0m #4 benchmark.run / {count = 2000000; expected = +3.000000; input = +2.000000; input_str = 2.0}
+01:21:25 [90mverbose[0m #5 benchmark.run / solutions.map / {count = 2000000; expected = +3.000000; i = 0; input = +2.000000; input_str = 2.0; test_name = A; time = 20}
+01:21:25 [90mverbose[0m #6 benchmark.run / {count = 2000000; expected = +6.000000; input = +5.000000; input_str = 5.0}
+01:21:25 [90mverbose[0m #7 benchmark.run / solutions.map / {count = 2000000; expected = +6.000000; i = 0; input = +5.000000; input_str = 5.0; test_name = A; time = 22}
+```
+Input	| Expected	| Result	| Best            
+---  	| ---     	| ---   	| ---             
+0.0  	| 1.0     	| 1.0   	| struct (1L, 36L)
+2.0  	| 3.0     	| 3.0   	| struct (1L, 20L)
+5.0  	| 6.0     	| 6.0   	| struct (1L, 22L)
+```
+01:21:25 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 26; i = 0}
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun n =>\n            n + 1f64\n    ]\n\ninl rec empty_1_tests () =\n    inl test_cases = [\n        0, 1\n        2, 3\n        5, 6\n    ]\n\n    inl solutions = get_solutions ()\n\n    // inl is_fast () = true\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_1_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_1_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  inl get_solutions () =
+      [
+          "A",
+          fun n =>
+              n + 1f64
+      ]
+
+  inl rec empty_1_tests () =
+      inl test_cases = [
+          0, 1
+          2, 3
+          5, 6
+      ]
+
+      inl solutions = get_solutions ()
+
+      // inl is_fast () = true
+
+      inl count =
+          if is_fast ()
+          then 1000i32
+          else 2000000i32
+
+      run_all (reflection.nameof { empty_1_tests }) count solutions test_cases
+      |> sort_result_list
+
+  empty_1_tests ()
+  """,
+  timeout: 300_000
+)
+```

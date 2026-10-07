@@ -1,11 +1,11 @@
-inl impossible_prime_product_split_found_is_product_rejection forall factor previous_count product external.
-    (descent : certified_arithmetic_prime_power_external_factor_descent factor (z_nat_succ previous_count) product external) :
-    positive_positional_nonfactor_certificate product external =
+open main
+
+inl impossible_prime_product_split_found_is_product_rejection forall factor previous_count product external. (descent : certified_arithmetic_prime_power_external_factor_descent factor (z_nat_succ previous_count) product external) : positive_positional_nonfactor_certificate product external =
     match descent with
     | CertifiedArithmeticPrimePowerExternalFactorPrimeProductSplitObstruction payload =>
         inl exists previous_product. _, _, product_found, _, _ = payload
         product_found
     | _ =>
-        failwith "only-the-prime-product-split-obstruction-branch-is-relevant"
+        mega_runtime_fail "only-the-prime-product-split-obstruction-branch-is-relevant"
 
 inl main () = ()

@@ -1,7 +1,7 @@
 # split_args / lib/spiral/parsing benchmark pipeline. See README.md.
 #   pwsh bench.ps1 -Label before                 # compile + run F# (FParsec vs pure vs runtime) and native Rust
 #   pwsh bench.ps1 -Label after -Compare before  # same, then diff results (behaviour) and timings against `before`
-#   pwsh bench.ps1 -Label x -Cells               # also time the compile of every parsing.dib test cell (F#)
+#   pwsh bench.ps1 -Label x -Cells               # also time the compile of every parsing.livemd test cell (F#)
 #   pwsh bench.ps1 -Label x -Cells -Backends None  # only the per-cell compile times
 # Outputs go to bench/parsing/target/<Label>/ (gitignored): compile times, program output, summary.tsv.
 param(
@@ -9,7 +9,7 @@ param(
     [string] $Compare,
     [ValidateSet('Fsharp', 'Rust', 'None')] [string[]] $Backends = @('Fsharp', 'Rust'),
     [switch] $Cells,
-    [string] $Dib = (Join-Path $PSScriptRoot '../../parsing.dib'), # -Cells: notebook whose test cells are compiled
+    [string] $Notebook = (Join-Path $PSScriptRoot '../../parsing.livemd'), # -Cells: notebook whose test cells are compiled
     [string] $LibDir = (Join-Path $PSScriptRoot '../../..'), # -Cells: packageDir holding the spiral package
     [switch] $SkipCompile, # reuse the generated sources of this label (only rebuild + run)
     [string] $Agent = 'parsing-bench',
@@ -156,8 +156,9 @@ foreach ($b in 'Fsharp', 'Rust') {
 if ($Cells) {
     # Every `///- --test` cell of parsing.dib that uses the pure-Spiral library (FParsec cells need the #r'd DLLs and
     # the `--test static` frontend, so they are skipped), compiled to F# as its own program.
-    $dib = Get-Content -Raw $Dib
-    $cellList = $dib -split "`n#!" | Where-Object { $_ -match '^spiral' -and $_ -match '///- --test' -and $_ -notmatch '///- --test static' -and $_ -notmatch '_ \(|\$''FParsec|parse_ |#r ' }
+    # a Spiral cell's source is its smart-cell annotation's attrs.source (spiral/apps/kino Document)
+    $sources = [regex]::Matches((Get-Content -Raw $Notebook), '<!-- livebook:(\{"chunks".*?"kind":"Elixir\.Spiral\.Kino\.SmartCell".*?\}) -->') | ForEach-Object { 'spiral' + "`n" + ($_.Groups[1].Value | ConvertFrom-Json).attrs.source }
+    $cellList = $sources | Where-Object { $_ -match '^spiral' -and $_ -match '///- --test' -and $_ -notmatch '///- --test static' -and $_ -notmatch '_ \(|\$''FParsec|parse_ |#r ' }
     $cdir = Join-Path $root 'cells'
     $i = 0
     foreach ($c in $cellList) {

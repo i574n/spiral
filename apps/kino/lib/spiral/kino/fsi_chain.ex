@@ -161,7 +161,7 @@ defmodule Spiral.Kino.FsiChain do
   """
   @spec submissions(cell(), String.t()) :: {:ok, list()} | {:error, String.t()}
   def submissions(%{kind: :fsharp, source: source}, _root) do
-    {:ok, [%{label: "input.fsx", code: strip_magic(source)}]}
+    {:ok, [%{label: "input.fsx", code: source |> strip_magic() |> nuget_refs()}]}
   end
 
   def submissions(%{kind: :import, source: path}, root), do: expand(path, [root], root, 0)
@@ -173,7 +173,7 @@ defmodule Spiral.Kino.FsiChain do
   defp expand(path, bases, root, depth) do
     path = String.trim(path)
 
-    case resolve(path, bases) do
+    case resolve(path, bases) || resolve_livemd(path, bases) do
       nil ->
         {:error,
          "#!import: #{path} was not found (looked in #{Enum.join(Enum.uniq(bases), ", ")})"}
@@ -181,10 +181,13 @@ defmodule Spiral.Kino.FsiChain do
       file ->
         case String.downcase(Path.extname(file)) do
           ext when ext in [".fs", ".fsx"] ->
-            {:ok, [%{label: Path.basename(file), code: File.read!(file)}]}
+            {:ok, [%{label: Path.basename(file), code: file |> File.read!() |> nuget_refs()}]}
 
           ".dib" ->
-            expand_dib(file, root, depth)
+            expand_notebook(file, &Document.parse_dib/1, root, depth)
+
+          ".livemd" ->
+            expand_notebook(file, &Document.parse_livemd/1, root, depth)
 
           other ->
             {:error, "#!import: #{path}: #{other} files are not supported by the F# session"}
@@ -192,8 +195,8 @@ defmodule Spiral.Kino.FsiChain do
     end
   end
 
-  defp expand_dib(file, root, depth) do
-    doc = file |> File.read!() |> String.replace("\r\n", "\n") |> Document.parse_dib()
+  defp expand_notebook(file, parse, root, depth) do
+    doc = file |> File.read!() |> String.replace("\r\n", "\n") |> parse.()
     name = Path.basename(file)
     bases = [Path.dirname(file), root]
 
@@ -202,7 +205,7 @@ defmodule Spiral.Kino.FsiChain do
     |> Enum.reduce_while({:ok, []}, fn {cell, n}, {:ok, acc} ->
       case cell do
         %{kind: :fsharp, source: source} ->
-          {:cont, {:ok, acc ++ [%{label: "#{name}[#{n}]", code: strip_magic(source)}]}}
+          {:cont, {:ok, acc ++ [%{label: "#{name}[#{n}]", code: source |> strip_magic() |> nuget_refs()}]}}
 
         %{kind: :import, source: path} ->
           case expand(path, bases, root, depth + 1) do
@@ -235,6 +238,23 @@ defmodule Spiral.Kino.FsiChain do
       |> Enum.map(&Path.expand(path, &1))
       |> Enum.find(&File.regular?/1)
     end
+  end
+
+  # `#!import x.dib` of a notebook converted to x.livemd (the .dib retired): the .livemd next to it.
+  defp resolve_livemd(path, bases) do
+    if String.downcase(Path.extname(path)) == ".dib", do: resolve(Path.rootname(path) <> ".livemd", bases)
+  end
+
+  # The .dib route's runner (dotnet-repl) ran from its tool store, 7 levels below the user's home, so notebooks reference
+  # NuGet packages as `#r @"../../../../../../../.nuget/packages/<id>/<version>/..."`: the package cache. Point such a
+  # reference at the cache itself (NUGET_PACKAGES, else ~/.nuget/packages) when the file is there.
+  defp nuget_refs(code) do
+    cache = System.get_env("NUGET_PACKAGES") || Path.join(System.user_home!(), ".nuget/packages")
+
+    Regex.replace(~r/#r\s+@?"(?:\.\.\/)+\.nuget\/packages\/([^"]+)"/, code, fn whole, rest ->
+      file = Path.join(cache, rest)
+      if File.regular?(file), do: ~s|#r @"#{file}"|, else: whole
+    end)
   end
 
   # .NET Interactive magic commands that are not F#; `#!import` lines are already their own cells.

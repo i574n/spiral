@@ -1,9 +1,11 @@
-inl impossible_corrected_cic_conversion_constraint_sort_mismatch () :
-    corrected_cic_conversion_constraint_program
-        (cic_chain_succ cic_chain_zero) =
-    CorrectedCicConversionConstraintProgramMore (exists (
-        corrected_cic_true (),
-        corrected_cic_sort_zero (),
+// A conversion-constraint cell carries one indexed structural defeq pair authority: it cannot pair True (Bool) with Sort zero (Sort one).
+open main
+
+inl impossible_corrected_cic_conversion_constraint_sort_mismatch () : corrected_cic_conversion_constraint_program (cic_chain_succ cic_chain_zero) =
+    CorrectedCicConversionConstraintProgramIntrinsicTerms (exists (
+        corrected_cic_structural_defeq_pair_authority_make
+            (corrected_cic_true ())
+            (corrected_cic_sort_zero ()),
         CorrectedCicConversionConstraintProgramDone,
         "a-single-conversion-cell-cannot-pair-Bool-with-Sort-one"))
 

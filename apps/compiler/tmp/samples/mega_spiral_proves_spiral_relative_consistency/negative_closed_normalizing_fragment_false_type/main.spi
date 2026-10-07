@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_normalizing_fragment_false_type ()
     : exact_linear_indexed_closed_value_type_not_false exact_linear_false_type =
     inl bool_fragment :

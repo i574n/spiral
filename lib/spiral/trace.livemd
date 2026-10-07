@@ -1,0 +1,535 @@
+# trace
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## trace
+
+<!-- livebook:{"break_markdown":true} -->
+
+### trace_level
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union trace_level =\n    | Verbose\n    | Debug\n    | Info\n    | Warning\n    | Critical","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union trace_level =
+      | Verbose
+      | Debug
+      | Info
+      | Warning
+      | Critical
+  """,
+  timeout: 300_000
+)
+```
+
+### severity
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl severity = function\n    | Verbose => 10\n    | Debug => 20\n    | Info => 30\n    | Warning => 40\n    | Critical => 50","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl severity = function
+      | Verbose => 10
+      | Debug => 20
+      | Info => 30
+      | Warning => 40
+      | Critical => 50
+  """,
+  timeout: 300_000
+)
+```
+
+### read_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_state () =\n    run_target function\n        // Native binaries honor TRACE_LEVEL like the F# and Python ones (None meant Verbose: every lib trace printed).\n        | RustNative => fun () =>\n            {\n                trace_level = \"TRACE_LEVEL\" |> env.get_environment_variable |> reflection.union_try_pick\n                repl_start = None\n            }\n        | TypeScript when typescript.is_native () => fun () =>\n            {\n                trace_level = \"TRACE_LEVEL\" |> env.get_environment_variable |> reflection.union_try_pick'\n                repl_start = None\n            }\n        | _ => fun () =>\n            join\n                {\n                    trace_level =\n                        inl get_result () =\n                            \"TRACE_LEVEL\"\n                            |> env.get_environment_variable\n                            |> reflection.union_try_pick\n                        backend_switch {\n                            Gleam = get_result : () -> option trace_level\n                            Lua = fun () => None : option trace_level\n                            Fsharp = get_result : () -> option trace_level\n                            Python = get_result : () -> option trace_level\n                        }\n                    repl_start =\n                        inl automation = env.get_environment_variable \"AUTOMATION\"\n                        if automation <>. \"True\"\n                        then None\n                        else\n                            date_time.now ()\n                            |> date_time.ticks\n                            |> fun (date_time.timestamp x) => x |> convert.convert\n                            |> fun (x : i64) =>\n                                backend_switch {\n                                    Gleam = fun () =>\n                                        global \"import gleam/float\"\n                                        global \"import gleam/time/timestamp\"\n                                        $'!x |> timestamp.to_unix_seconds |> float.round' : i64\n                                    Lua = fun () => x\n                                    Fsharp = fun () => x\n                                    Python = fun () => x\n                                }\n                            |> Some\n                }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl read_state () =
+      run_target function
+          // Native binaries honor TRACE_LEVEL like the F# and Python ones (None meant Verbose: every lib trace printed).
+          | RustNative => fun () =>
+              {
+                  trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
+                  repl_start = None
+              }
+          | TypeScript when typescript.is_native () => fun () =>
+              {
+                  trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick'
+                  repl_start = None
+              }
+          | _ => fun () =>
+              join
+                  {
+                      trace_level =
+                          inl get_result () =
+                              "TRACE_LEVEL"
+                              |> env.get_environment_variable
+                              |> reflection.union_try_pick
+                          backend_switch {
+                              Gleam = get_result : () -> option trace_level
+                              Lua = fun () => None : option trace_level
+                              Fsharp = get_result : () -> option trace_level
+                              Python = get_result : () -> option trace_level
+                          }
+                      repl_start =
+                          inl automation = env.get_environment_variable "AUTOMATION"
+                          if automation <>. "True"
+                          then None
+                          else
+                              date_time.now ()
+                              |> date_time.ticks
+                              |> fun (date_time.timestamp x) => x |> convert.convert
+                              |> fun (x : i64) =>
+                                  backend_switch {
+                                      Gleam = fun () =>
+                                          global "import gleam/float"
+                                          global "import gleam/time/timestamp"
+                                          $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                      Lua = fun () => x
+                                      Fsharp = fun () => x
+                                      Python = fun () => x
+                                  }
+                              |> Some
+                  }
+  """,
+  timeout: 300_000
+)
+```
+
+### trace_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type trace_state =\n    {\n        count : mut i64\n        trace_file : mut (string -> ())\n        enabled : mut bool\n        acc : mut string\n        level : mut trace_level\n        repl_start : optionm'.option' i64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type trace_state =
+      {
+          count : mut i64
+          trace_file : mut (string -> ())
+          enabled : mut bool
+          acc : mut string
+          level : mut trace_level
+          repl_start : optionm'.option' i64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### new_trace_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let new_trace_state trace_level' =\n    inl { repl_start trace_level } = read_state ()\n    {\n        count = mut 1i64\n        trace_file = mut ignore\n        enabled = mut true\n        acc = mut \"\"\n        level = trace_level |> optionm'.default_value trace_level' |> mut\n        repl_start = repl_start |> optionm'.box\n    } : trace_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  let new_trace_state trace_level' =
+      inl { repl_start trace_level } = read_state ()
+      {
+          count = mut 1i64
+          trace_file = mut ignore
+          enabled = mut true
+          acc = mut ""
+          level = trace_level |> optionm'.default_value trace_level' |> mut
+          repl_start = repl_start |> optionm'.box
+      } : trace_state
+  """,
+  timeout: 300_000
+)
+```
+
+### init_trace_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl init_trace_state trace_level : () =\n    inl trace_level = trace_level |> optionm'.default_value Verbose\n    backend_switch {\n        Gleam = fun () =>\n            global \"fn trace_state () { option.None }\"\n            $'let new_trace_state = !new_trace_state ' : ()\n            $'let trace_level = !trace_level ' : ()\n            $'let trace_state = fn () {' : ()\n            $'  case trace_state () {' : ()\n            $'    option.None -> new_trace_state(trace_level) |> option.Some' : ()\n            $'    x -> x' : ()\n            $'  }' : ()\n            $'}' : ()\n        Lua = fun () =>\n            global \"_G.trace_state = nil\"\n            $'if _G.trace_state == nil then _G.trace_state = !new_trace_state(!trace_level) end' : ()\n        Fsharp = fun () =>\n            backend_switch {\n                Fsharp = fun () =>\n                    global \"module TraceState = let mutable trace_state = None\"\n            }\n            fun () =>\n                if $'TraceState.trace_state.IsNone' then\n                    inl trace_state = new_trace_state trace_level |> optionm'.some'\n                    $'TraceState.trace_state <- !trace_state ' : ()\n            |> exec_unit\n        Python = fun () =>\n            global \"class TraceState: trace_state = None\"\n            $'if TraceState.trace_state is None: TraceState.trace_state = !new_trace_state(!trace_level)' : ()\n        TypeScript = fun () =>\n            global \"let spiral_trace_state: any = undefined;\"\n            $'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)' : ()\n        Rust = fun () =>\n            global \"fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\\n    use std::sync::OnceLock;\\n    static SLOT: OnceLock<usize> = OnceLock::new();\\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\\n    unsafe { (*(raw as *const T)).clone() }\\n}\"\n            inl fresh = fun () => new_trace_state trace_level\n            open rust.rust_operators\n            !\\\\(fresh, $'\"{ let _ = spiral_trace_hold(&$0); }\"') : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl init_trace_state trace_level : () =
+      inl trace_level = trace_level |> optionm'.default_value Verbose
+      backend_switch {
+          Gleam = fun () =>
+              global "fn trace_state () { option.None }"
+              $'let new_trace_state = !new_trace_state ' : ()
+              $'let trace_level = !trace_level ' : ()
+              $'let trace_state = fn () {' : ()
+              $'  case trace_state () {' : ()
+              $'    option.None -> new_trace_state(trace_level) |> option.Some' : ()
+              $'    x -> x' : ()
+              $'  }' : ()
+              $'}' : ()
+          Lua = fun () =>
+              global "_G.trace_state = nil"
+              $'if _G.trace_state == nil then _G.trace_state = !new_trace_state(!trace_level) end' : ()
+          Fsharp = fun () =>
+              backend_switch {
+                  Fsharp = fun () =>
+                      global "module TraceState = let mutable trace_state = None"
+              }
+              fun () =>
+                  if $'TraceState.trace_state.IsNone' then
+                      inl trace_state = new_trace_state trace_level |> optionm'.some'
+                      $'TraceState.trace_state <- !trace_state ' : ()
+              |> exec_unit
+          Python = fun () =>
+              global "class TraceState: trace_state = None"
+              $'if TraceState.trace_state is None: TraceState.trace_state = !new_trace_state(!trace_level)' : ()
+          TypeScript = fun () =>
+              global "let spiral_trace_state: any = undefined;"
+              $'if (spiral_trace_state === undefined) spiral_trace_state = !new_trace_state(!trace_level)' : ()
+          Rust = fun () =>
+              global "fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\n    use std::sync::OnceLock;\n    static SLOT: OnceLock<usize> = OnceLock::new();\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\n    unsafe { (*(raw as *const T)).clone() }\n}"
+              inl fresh = fun () => new_trace_state trace_level
+              open rust.rust_operators
+              !\\(fresh, $'"{ let _ = spiral_trace_hold(&$0); }"') : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### get_trace_state_or_init
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_trace_state_or_init trace_level : trace_state =\n    init_trace_state trace_level\n    backend_switch {\n        Gleam = fun () =>\n            inl trace_level = trace_level |> optionm'.default_value Verbose\n            $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state\n        Lua = fun () =>\n            $'_G.trace_state' : trace_state\n        Fsharp = fun () =>\n            $'TraceState.trace_state.Value' : trace_state\n        Python = fun () =>\n            $'TraceState.trace_state' : trace_state\n        TypeScript = fun () =>\n            $'spiral_trace_state' : trace_state\n        Rust = fun () =>\n            global \"fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\\n    use std::sync::OnceLock;\\n    static SLOT: OnceLock<usize> = OnceLock::new();\\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\\n    unsafe { (*(raw as *const T)).clone() }\\n}\"\n            inl level' = trace_level |> optionm'.default_value Verbose\n            inl fresh = fun () => new_trace_state level'\n            open rust.rust_operators\n            !\\\\(fresh, $'\"{ spiral_trace_hold(&$0) }\"') : trace_state\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_trace_state_or_init trace_level : trace_state =
+      init_trace_state trace_level
+      backend_switch {
+          Gleam = fun () =>
+              inl trace_level = trace_level |> optionm'.default_value Verbose
+              $'trace_state () |> option.lazy_unwrap(fn () { !new_trace_state(!trace_level) })' : trace_state
+          Lua = fun () =>
+              $'_G.trace_state' : trace_state
+          Fsharp = fun () =>
+              $'TraceState.trace_state.Value' : trace_state
+          Python = fun () =>
+              $'TraceState.trace_state' : trace_state
+          TypeScript = fun () =>
+              $'spiral_trace_state' : trace_state
+          Rust = fun () =>
+              global "fn spiral_trace_hold<T: Clone>(fresh: &std::rc::Rc<dyn Fn() -> T>) -> T {\n    use std::sync::OnceLock;\n    static SLOT: OnceLock<usize> = OnceLock::new();\n    let raw = *SLOT.get_or_init(|| Box::into_raw(Box::new((*fresh)())) as usize);\n    unsafe { (*(raw as *const T)).clone() }\n}"
+              inl level' = trace_level |> optionm'.default_value Verbose
+              inl fresh = fun () => new_trace_state level'
+              open rust.rust_operators
+              !\\(fresh, $'"{ spiral_trace_hold(&$0) }"') : trace_state
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### set_trace_level
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl set_trace_level new_level =\n    inl ({ level } & trace_state) = get_trace_state_or_init None\n    level <- new_level\n    backend_switch {\n        Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()\n        Lua = id : () -> ()\n        Fsharp = id : () -> ()\n        Python = id : () -> ()\n        // The native state is one shared mutable cell (spiral_trace_hold): the assignment above is enough.\n        Rust = id : () -> ()\n        TypeScript = id : () -> ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl set_trace_level new_level =
+      inl ({ level } & trace_state) = get_trace_state_or_init None
+      level <- new_level
+      backend_switch {
+          Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.some') }' : ()
+          Lua = id : () -> ()
+          Fsharp = id : () -> ()
+          Python = id : () -> ()
+          // The native state is one shared mutable cell (spiral_trace_hold): the assignment above is enough.
+          Rust = id : () -> ()
+          TypeScript = id : () -> ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### test_trace_level
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl test_trace_level level : bool =\n    inl state = get_trace_state_or_init None\n    inl level' = *state.level\n    inl a : int = level |> severity\n    inl b : int = level' |> severity\n    if *state.enabled |> not\n    then false\n    else a >= b","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl test_trace_level level : bool =
+      inl state = get_trace_state_or_init None
+      inl level' = *state.level
+      inl a : int = level |> severity
+      inl b : int = level' |> severity
+      if *state.enabled |> not
+      then false
+      else a >= b
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> lua\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntest_trace_level Critical |> _assert_eq true\ntest_trace_level Verbose |> _assert_eq true\nDebug |> set_trace_level\ntest_trace_level Verbose |> _assert_eq false\nVerbose |> set_trace_level\ntest_trace_level Verbose |> _assert_eq true","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> lua
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  test_trace_level Critical |> _assert_eq true
+  test_trace_level Verbose |> _assert_eq true
+  Debug |> set_trace_level
+  test_trace_level Verbose |> _assert_eq false
+  Verbose |> set_trace_level
+  test_trace_level Verbose |> _assert_eq true
+  """,
+  timeout: 300_000
+)
+```
+
+### trace_raw
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trace_raw level fn =\n    fun () =>\n        inl trace_state =\n            if level |> test_trace_level |> not\n            then None\n            else\n                inl text = fn ()\n                inl ({ count acc } & trace_state) = get_trace_state_or_init None\n                fun () =>\n                    count <- *count + 1\n                |> exec_unit\n                open rust\n                open rust.rust_operators\n                run_target_args (fun () => text, console.write_line) function\n                    // In a NEAR contract (wasm32) stdout goes nowhere: the trace goes to the contract's logs instead,\n                    // gathered as in the Contract arm above (a call's lines become one log, in 15000-char chunks, when\n                    // its trailing empty trace runs), since NEAR fails a receipt with more than 100 logs or more than\n                    // 16384 bytes of logs: spiral_trace_near_log's counter (one wasm instance per receipt) caps them at\n                    // 16000 bytes.\n                    | RustNative => fun text, _ =>\n                        global \"#[cfg(target_arch = \\\"wasm32\\\")]\\nfn spiral_trace_near_log(text: &str) {\\n    use std::sync::atomic::{AtomicUsize, Ordering};\\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\\n    let cs: Vec<char> = text.chars().collect();\\n    for c in cs.chunks(15000) {\\n        let s: String = c.iter().collect();\\n        let used = LOGGED.load(Ordering::Relaxed);\\n        let budget = 16000usize.saturating_sub(used);\\n        if budget < 13 {\\n            break;\\n        }\\n        let s = if s.len() <= budget {\\n            s\\n        } else {\\n            let mut end = budget - 12;\\n            while !s.is_char_boundary(end) {\\n                end -= 1;\\n            }\\n            format!(\\\"{} [truncated]\\\", &s[..end])\\n        };\\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\\n        near_sdk::env::log_str(&s);\\n    }\\n}\"\n                        if $'cfg\\!(target_arch = \"wasm32\")' : bool\n                        then\n                            inl new_acc =\n                                if *acc = \"\"\n                                then text\n                                elif text = \"\"\n                                then *acc\n                                else *acc ++\\# text\n                            inl chunks_len : i32 = !\\\\(new_acc, $'\"(($0.chars().count() + 14999) / 15000) as i32\"')\n                            if text <>. \"\" && chunks_len <= 1i32\n                            then acc <- new_acc\n                            else\n                                acc <- \"\"\n                                !\\\\(new_acc, $'\"{ \\#[cfg(target_arch = \\\\\\\"wasm32\\\\\\\")] spiral_trace_near_log(&$0); }\"')\n                        else !\\\\(text, $'\"println\\!(\\\\\\\"{}\\\\\\\", $0)\"')\n                    | _ => fun text, write_line =>\n                        text |> write_line\n                text |> *trace_state.trace_file\n                trace_state |> Some\n        backend_switch {\n            Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()\n            Lua = id : () -> ()\n            Fsharp = id : () -> ()\n            Python = id : () -> ()\n            Rust = id : () -> ()\n            TypeScript = id : () -> ()\n        }\n    |> exec_unit","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trace_raw level fn =
+      fun () =>
+          inl trace_state =
+              if level |> test_trace_level |> not
+              then None
+              else
+                  inl text = fn ()
+                  inl ({ count acc } & trace_state) = get_trace_state_or_init None
+                  fun () =>
+                      count <- *count + 1
+                  |> exec_unit
+                  open rust
+                  open rust.rust_operators
+                  run_target_args (fun () => text, console.write_line) function
+                      // In a NEAR contract (wasm32) stdout goes nowhere: the trace goes to the contract's logs instead,
+                      // gathered as in the Contract arm above (a call's lines become one log, in 15000-char chunks, when
+                      // its trailing empty trace runs), since NEAR fails a receipt with more than 100 logs or more than
+                      // 16384 bytes of logs: spiral_trace_near_log's counter (one wasm instance per receipt) caps them at
+                      // 16000 bytes.
+                      | RustNative => fun text, _ =>
+                          global "#[cfg(target_arch = \"wasm32\")]\nfn spiral_trace_near_log(text: &str) {\n    use std::sync::atomic::{AtomicUsize, Ordering};\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\n    let cs: Vec<char> = text.chars().collect();\n    for c in cs.chunks(15000) {\n        let s: String = c.iter().collect();\n        let used = LOGGED.load(Ordering::Relaxed);\n        let budget = 16000usize.saturating_sub(used);\n        if budget < 13 {\n            break;\n        }\n        let s = if s.len() <= budget {\n            s\n        } else {\n            let mut end = budget - 12;\n            while !s.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{} [truncated]\", &s[..end])\n        };\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\n        near_sdk::env::log_str(&s);\n    }\n}"
+                          if $'cfg\!(target_arch = "wasm32")' : bool
+                          then
+                              inl new_acc =
+                                  if *acc = ""
+                                  then text
+                                  elif text = ""
+                                  then *acc
+                                  else *acc ++\# text
+                              inl chunks_len : i32 = !\\(new_acc, $'"(($0.chars().count() + 14999) / 15000) as i32"')
+                              if text <>. "" && chunks_len <= 1i32
+                              then acc <- new_acc
+                              else
+                                  acc <- ""
+                                  !\\(new_acc, $'"{ \#[cfg(target_arch = \\\"wasm32\\\")] spiral_trace_near_log(&$0); }"')
+                          else !\\(text, $'"println\!(\\\"{}\\\", $0)"')
+                      | _ => fun text, write_line =>
+                          text |> write_line
+                  text |> *trace_state.trace_file
+                  trace_state |> Some
+          backend_switch {
+              Gleam = fun () => $'let trace_state = fn () { !(trace_state |> optionm'.box) }' : ()
+              Lua = id : () -> ()
+              Fsharp = id : () -> ()
+              Python = id : () -> ()
+              Rust = id : () -> ()
+              TypeScript = id : () -> ()
+          }
+      |> exec_unit
+  """,
+  timeout: 300_000
+)
+```
+
+### trace
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =\n    fun () =>\n        inl trace_state = get_trace_state_or_init None\n        inl time =\n            join\n                run_target fun target =>\n                    match target with\n                    // A wasm build runs as a NEAR contract (`///> rust -c` / `-w`), where std's clock panics (\"time not\n                    // implemented on this platform\"): it reads the block timestamp instead, like the Fable contract arm.\n                    // Elsewhere local time, as F#'s DateTime.Now, without a dependency: GetLocalTime on Windows,\n                    // localtime_r (libc) on Unix.\n                    | RustNative => fun () =>\n                        open rust.rust_operators\n                        // the clock natively (seconds of the day), its hh:mm:ss text in Spiral\n                        inl seconds_of_day : u64 = $'{ \\#[cfg(target_arch = \"wasm32\")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \\#[cfg(all(windows, not(target_arch = \"wasm32\")))] let (h, m, s) = { \\#[repr(C)] struct St([u16; 8]); unsafe extern \"system\" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \\#[cfg(all(unix, not(target_arch = \"wasm32\")))] let (h, m, s) = { \\#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern \"C\" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \\#[cfg(not(any(windows, unix, target_arch = \"wasm32\")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'\n                        inl two_digits (n : u64) : string = (if n < 10u64 then \"0\" else \"\") ++# sm'.obj_to_string n\n                        two_digits (seconds_of_day / 3600u64) ++# \":\" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# \":\" ++# two_digits (seconds_of_day % 60u64)\n                    | TypeScript when typescript.is_native () => fun () =>\n                        $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, \"0\"); return p(d.getHours()) + \":\" + p(d.getMinutes()) + \":\" + p(d.getSeconds()); })()' : string\n                    | _ => fun () =>\n                        match trace_state.repl_start |> optionm'.unbox with\n                        | Some repl_start =>\n                            inl t =\n                                date_time.now ()\n                                |> date_time.ticks\n                                |> fun (date_time.timestamp x) => x |> convert.convert\n                                |> fun (x : i64) =>\n                                    backend_switch {\n                                        Gleam = fun () =>\n                                            global \"import gleam/float\"\n                                            global \"import gleam/time/timestamp\"\n                                            $'!x |> timestamp.to_unix_seconds |> float.round' : i64\n                                        Lua = fun () => x\n                                        Fsharp = fun () => x\n                                        Python = fun () => x\n                                    }\n                                |> flip (-) repl_start\n                                |> date_time.time_span\n                            date_time.date_time_milliseconds\n                                1i32 1i32 1i32\n                                (t |> date_time.hours)\n                                (t |> date_time.minutes)\n                                (t |> date_time.seconds)\n                                (t |> date_time.milliseconds)\n                        | None => date_time.now ()\n                        |> date_time.format (\n                            backend_switch {\n                                Gleam = fun () => \"HH:mm:ss\"\n                                Lua = fun () => \"%H:%M:%S\"\n                                Fsharp = fun () =>\n                                    match target with\n                                    | RustNative => join \"hh:mm:ss\"\n                                    | _ => join \"HH:mm:ss\"\n                                Python = fun () => \"%H:%M:%S\"\n                            }\n                        )\n        inl level_str =\n            join\n                inl color =\n                    match level with\n                    | Verbose => console.color_bright_black ()\n                    | Debug => console.color_bright_blue ()\n                    | Info => console.color_bright_green ()\n                    | Warning => console.color_yellow ()\n                    | Critical => console.color_bright_red ()\n                inl level_str =\n                    level\n                    |> reflection.union_to_string\n                    |> sm'.to_lower\n                    |> sm'.index 0i32\n                    |> sm'.format\n                color ++# level_str ++# console.color_reset ()\n        inl text = text_fn ()\n        if text = \"\"\n        then \"\"\n        else\n            inl locals = locals ()\n            join\n                inl count = *trace_state.count\n                time ++# \" \"  ++#? count ++# level_str ++# \" \" ++# text ++# \" / \" ++#? locals\n                |> fun x =>\n                    join\n                        x\n                        |> sm'.trim_start []\n                        |> sm'.trim_end [ ' '; '/' ]\n    |> trace_raw level","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
+      fun () =>
+          inl trace_state = get_trace_state_or_init None
+          inl time =
+              join
+                  run_target fun target =>
+                      match target with
+                      // A wasm build runs as a NEAR contract (`///> rust -c` / `-w`), where std's clock panics ("time not
+                      // implemented on this platform"): it reads the block timestamp instead, like the Fable contract arm.
+                      // Elsewhere local time, as F#'s DateTime.Now, without a dependency: GetLocalTime on Windows,
+                      // localtime_r (libc) on Unix.
+                      | RustNative => fun () =>
+                          open rust.rust_operators
+                          // the clock natively (seconds of the day), its hh:mm:ss text in Spiral
+                          inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
+                          inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
+                          two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)
+                      | TypeScript when typescript.is_native () => fun () =>
+                          $'(() => { const d = new Date(); const p = (n: number) => String(n).padStart(2, "0"); return p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds()); })()' : string
+                      | _ => fun () =>
+                          match trace_state.repl_start |> optionm'.unbox with
+                          | Some repl_start =>
+                              inl t =
+                                  date_time.now ()
+                                  |> date_time.ticks
+                                  |> fun (date_time.timestamp x) => x |> convert.convert
+                                  |> fun (x : i64) =>
+                                      backend_switch {
+                                          Gleam = fun () =>
+                                              global "import gleam/float"
+                                              global "import gleam/time/timestamp"
+                                              $'!x |> timestamp.to_unix_seconds |> float.round' : i64
+                                          Lua = fun () => x
+                                          Fsharp = fun () => x
+                                          Python = fun () => x
+                                      }
+                                  |> flip (-) repl_start
+                                  |> date_time.time_span
+                              date_time.date_time_milliseconds
+                                  1i32 1i32 1i32
+                                  (t |> date_time.hours)
+                                  (t |> date_time.minutes)
+                                  (t |> date_time.seconds)
+                                  (t |> date_time.milliseconds)
+                          | None => date_time.now ()
+                          |> date_time.format (
+                              backend_switch {
+                                  Gleam = fun () => "HH:mm:ss"
+                                  Lua = fun () => "%H:%M:%S"
+                                  Fsharp = fun () =>
+                                      match target with
+                                      | RustNative => join "hh:mm:ss"
+                                      | _ => join "HH:mm:ss"
+                                  Python = fun () => "%H:%M:%S"
+                              }
+                          )
+          inl level_str =
+              join
+                  inl color =
+                      match level with
+                      | Verbose => console.color_bright_black ()
+                      | Debug => console.color_bright_blue ()
+                      | Info => console.color_bright_green ()
+                      | Warning => console.color_yellow ()
+                      | Critical => console.color_bright_red ()
+                  inl level_str =
+                      level
+                      |> reflection.union_to_string
+                      |> sm'.to_lower
+                      |> sm'.index 0i32
+                      |> sm'.format
+                  color ++# level_str ++# console.color_reset ()
+          inl text = text_fn ()
+          if text = ""
+          then ""
+          else
+              inl locals = locals ()
+              join
+                  inl count = *trace_state.count
+                  time ++# " "  ++#? count ++# level_str ++# " " ++# text ++# " / " ++#? locals
+                  |> fun x =>
+                      join
+                          x
+                          |> sm'.trim_start []
+                          |> sm'.trim_end [ ' '; '/' ]
+      |> trace_raw level
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntrace Debug (fun () => \"test1\") id\ntrace Debug (fun () => \"test2\") id\nget_trace_state_or_init None .count\n|> fun x => *x\n|> _assert_eq 3","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  trace Debug (fun () => "test1") id
+  trace Debug (fun () => "test2") id
+  get_trace_state_or_init None .count
+  |> fun x => *x
+  |> _assert_eq 3
+  """,
+  timeout: 300_000
+)
+```
+
+### trace_format
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl trace_format level fn obj =\n    inl text, locals = fn obj\n    inl locals = #?locals |> sm'.ellipsis_end 200\n    trace level (fun () => text) (fun () => locals)\n    obj","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl trace_format level fn obj =
+      inl text, locals = fn obj
+      inl locals = #?locals |> sm'.ellipsis_end 200
+      trace level (fun () => text) (fun () => locals)
+      obj
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\ninl main () =\n    init_trace_state None\n    inl trace level text_fn (locals : () -> string) = trace level text_fn locals\n    $'let trace x = !trace x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> fsharp
+
+  inl main () =
+      init_trace_state None
+      inl trace level text_fn (locals : () -> string) = trace level text_fn locals
+      $'let trace x = !trace x' : ()
+  """,
+  timeout: 300_000
+)
+```

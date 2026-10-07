@@ -1,7 +1,6 @@
-inl impossible_equal_hash_collision
-    (proof : typed_fx_statement_payload_hash_not_equal
-        typed_fx_statement_payload_hash_primary
-        typed_fx_statement_payload_hash_primary) =
+open main
+
+inl impossible_equal_hash_collision (proof : typed_fx_statement_payload_hash_not_equal typed_fx_statement_payload_hash_primary typed_fx_statement_payload_hash_primary) =
     proof
 
 inl main () =

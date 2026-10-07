@@ -1,0 +1,14 @@
+// FOR-D repro (lane G, 2026-10-06): a nominal whose first type parameter is phantom (not used in its body) gets its type
+// arguments shifted during partial evaluation: `witness 1i32` below becomes `witness i32 i32` instead of
+// `witness bool i32`, and the enclosing nominal constructor fails with "Type error in nominal constructor. Got: bool *
+// witness i32 i32 Expected: bool * witness bool i32". The type checker accepts the program; an annotation on `w` does
+// not help (seen in mega_brzozowski_derivatives' semantic witness). Expected: exit 0.
+// Not blessed: the oracle must not record the current error as the expected result.
+nominal witness phantom count = count
+nominal surface phantom count = phantom * witness phantom count
+
+inl main () : i32 =
+    inl w = witness 1i32
+    inl s = surface (true, w)
+    match s with
+    | surface (_, witness _) => 0i32

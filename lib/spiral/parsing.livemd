@@ -1,0 +1,2362 @@
+# parsing
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## fparsec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n#r @\"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll\"\n#r @\"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll\"\n\n///> _\n\n()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsec.dll"
+  #r @"../../../../../../../.nuget/packages/fparsec/2.0.0-beta2/lib/netstandard2.1/FParsecCS.dll"
+
+  ///> _
+
+  ()
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nnominal position_ = $'FParsec.Position'\nnominal parser_error_ = $'FParsec.Error.ParserError'\n\nnominal reply_ t = $'FParsec.Reply<`t>'\n\nnominal char_stream_ t = $'FParsec.CharStream<`t>'\n\n// nominal parser t u = char_stream u -> reply t\nnominal parser_ t u = $'FParsec.Primitives.Parser<`t, `u>'\n\ninl p_char_ forall t. (x : char) : parser_ char t =\n    x |> $'FParsec.CharParsers.pchar'\n\ninl p_string_ forall t. (x : string) : parser_ string t =\n    x |> $'FParsec.CharParsers.pstring'\n\ninl (>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ u v =\n    b |> $'FParsec.Primitives.(>>.)' a\n\ninl (.>>$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ t v =\n    b |> $'FParsec.Primitives.(.>>)' a\n\ninl (.>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (pair t u) v =\n    b |> $'FParsec.Primitives.(.>>.)' a\n\ninl (>>%$) forall t u v. (a : parser_ t v) (b : u) : parser_ u v =\n    b |> $'FParsec.Primitives.(>>%)' a\n\ninl (>>=$) forall t u v. (a : parser_ t v) (b : t -> parser_ u v) : parser_ u v =\n    b |> $'FParsec.Primitives.(>>=)' a\n\ninl (|>>$) forall t u v. (a : parser_ t v) (b : t -> u) : parser_ u v =\n    inl b = fun x => x |> b\n    b |> $'FParsec.Primitives.(|>>)' a\n\ninl any_char_ () : parser_ char _ =\n    $'FParsec.CharParsers.anyChar'\n\ninl any_string_ () : parser_ string _ =\n    $'FParsec.CharParsers.anyString'\n\ninl any_string__ (n : int) : parser_ string _ =\n    n |> $'FParsec.CharParsers.anyString'\n\ninl eof_ () : parser_ () _ =\n    $'FParsec.CharParsers.eof'\n\ninl spaces_ () : parser_ () () =\n    $'FParsec.CharParsers.spaces'\n\ninl spaces1_ () : parser_ () () =\n    $'FParsec.CharParsers.spaces1'\n\ninl (<|>$) forall t u. (a : parser_ t u) (b : parser_ t u) : parser_ t u =\n    b |> $'FParsec.Primitives.(<|>)' a\n\ninl many_satisfy_ forall t. (x : char -> bool) : parser_ string t =\n    x |> $'FParsec.CharParsers.manySatisfy'\n\ninl satisfy_ forall t. (x : char -> bool) : parser_ char t =\n    x |> $'FParsec.CharParsers.satisfy'\n\ninl none_of_ (x : list char) : parser_ char () =\n    x\n    |> listm'.box\n    |> listm'.to_array'\n    |> $'FParsec.CharParsers.noneOf'\n\ninl any_of_ (x : list char) : parser_ char () =\n    x\n    |> listm'.box\n    |> listm'.to_array'\n    |> $'FParsec.CharParsers.anyOf'\n\ninl skip_any_of_ (x : list char) : parser_ () () =\n    x\n    |> listm'.box\n    |> listm'.to_array'\n    |> $'FParsec.CharParsers.skipAnyOf'\n\ninl between_ forall t u v x. (a : parser_ t x) (b : parser_ u x) (c : parser_ v x) : parser_ v x =\n    c |> $'FParsec.Primitives.between' a b\n\ninl many_chars_ forall t. (x : parser_ char t) : parser_ string t =\n    x |> $'FParsec.CharParsers.manyChars'\n\ninl many1_chars_ forall t. (x : parser_ char t) : parser_ string t =\n    x |> $'FParsec.CharParsers.many1Chars'\n\ninl many_strings_ forall t. (x : parser_ string t) : parser_ string t =\n    x |> $'FParsec.CharParsers.manyStrings'\n\ninl skip_any_string_ forall t. (n : int) : parser_ () t =\n    n |> $'FParsec.CharParsers.skipAnyString'\n\ninl many1_strings_ forall t. (x : parser_ string t) : parser_ string t =\n    x |> $'FParsec.CharParsers.many1Strings'\n\ninl opt_ forall t u. (a : parser_ t u) : parser_ (optionm'.option' t) u =\n    a |> $'FParsec.Primitives.opt'\n\ninl choice_ forall t u. (a : list (parser_ t u)) : parser_ t u =\n    a\n    |> listm'.box\n    |> seq.of_list'\n    |> $'FParsec.Primitives.choice'\n\ninl delay_ forall t u. (fn : () -> parser_ t u) : parser_ t u =\n    fn |> $'FParsec.Primitives.parse.Delay'\n\ninl peek_ forall t u. (a : parser_ t u) : parser_ char u =\n    $'!a.Peek ()'\n\ninl not_followed_by_ forall t u. (a : parser_ t u) : parser_ () u =\n    a |> $'FParsec.Primitives.notFollowedBy'\n\ninl sep_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =\n    b |> $'FParsec.Primitives.sepBy' a\n\ninl sep_by1_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =\n    b |> $'FParsec.Primitives.sepBy1' a\n\ninl sep_end_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =\n    b |> $'FParsec.Primitives.sepEndBy' a\n\ninl many_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =\n    a |> $'FParsec.Primitives.many'\n\ninl many1_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =\n    a |> $'FParsec.Primitives.many1'\n\ninl many1_satisfy_ forall t. (x : char -> bool) : parser_ string t =\n    x |> $'FParsec.CharParsers.many1Satisfy'\n\nnominal parser_result'_ t u = $'FParsec.CharParsers.ParserResult<`t, `u>'\n\ninl run_ forall t. (parser : parser_ t ()) (x : string) : parser_result'_ t () =\n    global \"#r \\\"nuget: FParsec, 2.0.0-beta2\\\"\"\n    x |> $'FParsec.CharParsers.run' parser\n\nunion parser_result_ t u =\n    | Success : t * u * position_\n    | Failure : string * parser_error_ * u\n\ninl parser_result_ forall t u. = function\n    | Success (a, b, c) => $'`(parser_result'_ t u).Success (!a, !b, !c)' : parser_result'_ t u\n    | Failure (a, b, c) => $'`(parser_result'_ t u).Failure (!a, !b, !c)' : parser_result'_ t u\n\ninl parser_result'_ forall t u. (x : parser_result'_ t u) : parser_result_ t u =\n    $'let mutable _!x = None '\n    $'match !x with'\n    $'| FParsec.CharParsers.Success (a, b, c) -> (' : ()\n    $'(fun () ->'\n    $'(fun () ->'\n    (Success ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit\n    $')'\n    $'|> fun x -> x ()'\n    $') () ) | FParsec.CharParsers.Failure (a, b, c) -> (' : ()\n    $'(fun () ->'\n    $'(fun () ->'\n    (Failure ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit\n    $')'\n    $'|> fun x -> x ()'\n    $') () )' : ()\n    $'|> fun x -> _!x <- Some x'\n    $'match _!x with Some x -> x | None -> failwith \"??? / _!x=None\"'\n\ninl parse_ parser input : result _ _ =\n    match input |> run_ parser |> parser_result'_ with\n    | Success (result, b, c) => Ok (result, c)\n    | Failure (error_msg, b, c) => Error (error_msg, b)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  nominal position_ = $'FParsec.Position'
+  nominal parser_error_ = $'FParsec.Error.ParserError'
+
+  nominal reply_ t = $'FParsec.Reply<`t>'
+
+  nominal char_stream_ t = $'FParsec.CharStream<`t>'
+
+  // nominal parser t u = char_stream u -> reply t
+  nominal parser_ t u = $'FParsec.Primitives.Parser<`t, `u>'
+
+  inl p_char_ forall t. (x : char) : parser_ char t =
+      x |> $'FParsec.CharParsers.pchar'
+
+  inl p_string_ forall t. (x : string) : parser_ string t =
+      x |> $'FParsec.CharParsers.pstring'
+
+  inl (>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ u v =
+      b |> $'FParsec.Primitives.(>>.)' a
+
+  inl (.>>$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ t v =
+      b |> $'FParsec.Primitives.(.>>)' a
+
+  inl (.>>.$) forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (pair t u) v =
+      b |> $'FParsec.Primitives.(.>>.)' a
+
+  inl (>>%$) forall t u v. (a : parser_ t v) (b : u) : parser_ u v =
+      b |> $'FParsec.Primitives.(>>%)' a
+
+  inl (>>=$) forall t u v. (a : parser_ t v) (b : t -> parser_ u v) : parser_ u v =
+      b |> $'FParsec.Primitives.(>>=)' a
+
+  inl (|>>$) forall t u v. (a : parser_ t v) (b : t -> u) : parser_ u v =
+      inl b = fun x => x |> b
+      b |> $'FParsec.Primitives.(|>>)' a
+
+  inl any_char_ () : parser_ char _ =
+      $'FParsec.CharParsers.anyChar'
+
+  inl any_string_ () : parser_ string _ =
+      $'FParsec.CharParsers.anyString'
+
+  inl any_string__ (n : int) : parser_ string _ =
+      n |> $'FParsec.CharParsers.anyString'
+
+  inl eof_ () : parser_ () _ =
+      $'FParsec.CharParsers.eof'
+
+  inl spaces_ () : parser_ () () =
+      $'FParsec.CharParsers.spaces'
+
+  inl spaces1_ () : parser_ () () =
+      $'FParsec.CharParsers.spaces1'
+
+  inl (<|>$) forall t u. (a : parser_ t u) (b : parser_ t u) : parser_ t u =
+      b |> $'FParsec.Primitives.(<|>)' a
+
+  inl many_satisfy_ forall t. (x : char -> bool) : parser_ string t =
+      x |> $'FParsec.CharParsers.manySatisfy'
+
+  inl satisfy_ forall t. (x : char -> bool) : parser_ char t =
+      x |> $'FParsec.CharParsers.satisfy'
+
+  inl none_of_ (x : list char) : parser_ char () =
+      x
+      |> listm'.box
+      |> listm'.to_array'
+      |> $'FParsec.CharParsers.noneOf'
+
+  inl any_of_ (x : list char) : parser_ char () =
+      x
+      |> listm'.box
+      |> listm'.to_array'
+      |> $'FParsec.CharParsers.anyOf'
+
+  inl skip_any_of_ (x : list char) : parser_ () () =
+      x
+      |> listm'.box
+      |> listm'.to_array'
+      |> $'FParsec.CharParsers.skipAnyOf'
+
+  inl between_ forall t u v x. (a : parser_ t x) (b : parser_ u x) (c : parser_ v x) : parser_ v x =
+      c |> $'FParsec.Primitives.between' a b
+
+  inl many_chars_ forall t. (x : parser_ char t) : parser_ string t =
+      x |> $'FParsec.CharParsers.manyChars'
+
+  inl many1_chars_ forall t. (x : parser_ char t) : parser_ string t =
+      x |> $'FParsec.CharParsers.many1Chars'
+
+  inl many_strings_ forall t. (x : parser_ string t) : parser_ string t =
+      x |> $'FParsec.CharParsers.manyStrings'
+
+  inl skip_any_string_ forall t. (n : int) : parser_ () t =
+      n |> $'FParsec.CharParsers.skipAnyString'
+
+  inl many1_strings_ forall t. (x : parser_ string t) : parser_ string t =
+      x |> $'FParsec.CharParsers.many1Strings'
+
+  inl opt_ forall t u. (a : parser_ t u) : parser_ (optionm'.option' t) u =
+      a |> $'FParsec.Primitives.opt'
+
+  inl choice_ forall t u. (a : list (parser_ t u)) : parser_ t u =
+      a
+      |> listm'.box
+      |> seq.of_list'
+      |> $'FParsec.Primitives.choice'
+
+  inl delay_ forall t u. (fn : () -> parser_ t u) : parser_ t u =
+      fn |> $'FParsec.Primitives.parse.Delay'
+
+  inl peek_ forall t u. (a : parser_ t u) : parser_ char u =
+      $'!a.Peek ()'
+
+  inl not_followed_by_ forall t u. (a : parser_ t u) : parser_ () u =
+      a |> $'FParsec.Primitives.notFollowedBy'
+
+  inl sep_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+      b |> $'FParsec.Primitives.sepBy' a
+
+  inl sep_by1_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+      b |> $'FParsec.Primitives.sepBy1' a
+
+  inl sep_end_by_ forall t u v. (a : parser_ t v) (b : parser_ u v) : parser_ (listm'.list' t) v =
+      b |> $'FParsec.Primitives.sepEndBy' a
+
+  inl many_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+      a |> $'FParsec.Primitives.many'
+
+  inl many1_ forall t u. (a : parser_ t u) : parser_ (listm'.list' t) u =
+      a |> $'FParsec.Primitives.many1'
+
+  inl many1_satisfy_ forall t. (x : char -> bool) : parser_ string t =
+      x |> $'FParsec.CharParsers.many1Satisfy'
+
+  nominal parser_result'_ t u = $'FParsec.CharParsers.ParserResult<`t, `u>'
+
+  inl run_ forall t. (parser : parser_ t ()) (x : string) : parser_result'_ t () =
+      global "#r \"nuget: FParsec, 2.0.0-beta2\""
+      x |> $'FParsec.CharParsers.run' parser
+
+  union parser_result_ t u =
+      | Success : t * u * position_
+      | Failure : string * parser_error_ * u
+
+  inl parser_result_ forall t u. = function
+      | Success (a, b, c) => $'`(parser_result'_ t u).Success (!a, !b, !c)' : parser_result'_ t u
+      | Failure (a, b, c) => $'`(parser_result'_ t u).Failure (!a, !b, !c)' : parser_result'_ t u
+
+  inl parser_result'_ forall t u. (x : parser_result'_ t u) : parser_result_ t u =
+      $'let mutable _!x = None '
+      $'match !x with'
+      $'| FParsec.CharParsers.Success (a, b, c) -> (' : ()
+      $'(fun () ->'
+      $'(fun () ->'
+      (Success ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit
+      $')'
+      $'|> fun x -> x ()'
+      $') () ) | FParsec.CharParsers.Failure (a, b, c) -> (' : ()
+      $'(fun () ->'
+      $'(fun () ->'
+      (Failure ((dyn $'a'), dyn $'b', dyn $'c') : _ t u) |> emit_unit
+      $')'
+      $'|> fun x -> x ()'
+      $') () )' : ()
+      $'|> fun x -> _!x <- Some x'
+      $'match _!x with Some x -> x | None -> failwith "??? / _!x=None"'
+
+  inl parse_ parser input : result _ _ =
+      match input |> run_ parser |> parser_result'_ with
+      | Success (result, b, c) => Ok (result, c)
+      | Failure (error_msg, b, c) => Error (error_msg, b)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl split_args (args : string) : result (array_base (string * position_)) (string * parser_error_) =\n    inl esc = [ '\\\\'; '`' ]\n    inl quotes = [ '\"' ]\n    inl special = esc ++ quotes\n    inl p_esc_char c =\n        p_char_ c >>.$ any_char_ () |>>$ fun c' => $'$\"{!c}{!c'}\"'\n    inl p_word = special |> none_of_ |>>$ sm'.obj_to_string\n    inl p_plain = special ++ [ ' ' ] |> none_of_ |> many1_chars_\n    inl p_text = p_word |> many1_strings_\n    inl p_esc = esc |> listm.map p_esc_char |> choice_\n    inl p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat \"\")\n    inl p_quoted_all = p_quoted |> between_ (p_char_ '\"') (p_char_ '\"')\n    inl p_esc_root = (p_esc |>>$ (fun _ => \"\")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat \"\")\n    inl p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root\n    inl p_args = spaces1_ () |> sep_by_ p_content\n    args\n    |> parse_ p_args\n    |> resultm.map fun (a', b') =>\n        (\n            (\n                a'\n                |> listm'.to_array'\n                |> a\n                |> am.map fun x => x, b'\n                |> fun (a x : _ int _) => x\n            )\n        )\n\n[\n    \"a b c\",\n    ;[ \"a\"; \"b\"; \"c\" ]\n\n    \"e f \\\"g h\\\" i\",\n    ;[ \"e\"; \"f\"; \"g h\"; \"i\" ]\n\n    \"\\\"j k\\\" \\\"l\\\" \\\"m\\\"\",\n    ;[ \"j k\"; \"l\"; \"m\" ]\n\n    \"s -t \\\"u \\`\\\"v\\`\\\" w\\\"\",\n    ;[ \"s\"; \"-t\"; \"u \\`\\\"v\\`\\\" w\" ]\n\n    \"n -o \\\"p \\\\\\\"q\\\\\\\" r\\\"\",\n    ;[ \"n\"; \"-o\"; \"p \\\\\\\"q\\\\\\\" r\" ]\n\n    \"r -s \\\"t \\\\\\\"u\\\\\\\"\\\"\",\n    ;[ \"r\"; \"-s\"; \"t \\\\\\\"u\\\\\\\"\" ]\n\n    $'$\"x -y \\\\\\\"$z -a \\'(b=\\\\\\\\\\\\\"c-id=)[a-fA-F0-9]{{8}}\\', {{ \\`$_[1] + \\`$d++ }}\\\\\\\"\"',\n    ;[ \"x\"; \"-y\"; \"$z -a '(b=\\\\\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }\" ]\n\n    \"e -f \\\"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\\\"\",\n    ;[ \"e\"; \"-f\"; \"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\" ]\n\n    $'$\"--l \\\\\\\\\\\\\"\\'\\'\\' m \\'\\'\\'\\\\\\\\\\\\\" \"',\n    ;[ \"--l\"; \"''' m '''\" ]\n\n    $'$\"n --o --p q --r \\\\\\\"s:/t u/v.w\\\\\\\" --x \\\\\\\"y:/z.a\\\\\\\" --b c.d \\\\\\\"\\\\\\\\e{{f-g}}\\\\\\\" h.i \\\\\\\"j (k)\\\\\\\"\"',\n    ;[ \"n\"; \"--o\"; \"--p\"; \"q\"; \"--r\"; \"s:/t u/v.w\"; \"--x\"; \"y:/z.a\"; \"--b\"; \"c.d\"; \"\\\\e{f-g}\"; \"h.i\"; \"j (k)\" ]\n\n    $'\\@$\"l \"\"m n:\\\\o.p\"\"\"',\n    ;[ \"l\"; \"m n:\\\\o.p\" ]\n]\n|> listm.rev\n|> listm.map fun input, expected =>\n    input\n    |> split_args\n    |> fun x =>\n        try\n            fun () =>\n                ($'$\"\\ninput: {!input}\"' : string)\n                |> console.write_line\n                x\n                |> resultm.get\n                |> am'.map_base fst\n                |> _assert_eq' expected\n                false\n            fun ex =>\n                ($'$\"error / expected: %A{!expected} / ex: %A{!ex}\"' : string)\n                |> console.write_line\n                Some true\n        |> optionm.value\n|> listm'.filter id\n|> function\n    | [] => ()\n    | x => failwith $'$\"{!x}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  "///- --test\n///> fsharp\n\ninl split_args (args : string) : result (array_base (string * position_)) (string * parser_error_) =\n    inl esc = [ '\\\\'; '`' ]\n    inl quotes = [ '\"' ]\n    inl special = esc ++ quotes\n    inl p_esc_char c =\n        p_char_ c >>.$ any_char_ () |>>$ fun c' => $'$\"{!c}{!c'}\"'\n    inl p_word = special |> none_of_ |>>$ sm'.obj_to_string\n    inl p_plain = special ++ [ ' ' ] |> none_of_ |> many1_chars_\n    inl p_text = p_word |> many1_strings_\n    inl p_esc = esc |> listm.map p_esc_char |> choice_\n    inl p_quoted = (p_word <|>$ p_esc) |> many_ |>>$ (seq.of_list' >> sm'.concat \"\")\n    inl p_quoted_all = p_quoted |> between_ (p_char_ '\"') (p_char_ '\"')\n    inl p_esc_root = (p_esc |>>$ (fun _ => \"\")) >>.$ (p_word |> many_) |>>$ (seq.of_list' >> sm'.concat \"\")\n    inl p_content = p_plain <|>$ p_quoted_all <|>$ p_esc_root\n    inl p_args = spaces1_ () |> sep_by_ p_content\n    args\n    |> parse_ p_args\n    |> resultm.map fun (a', b') =>\n        (\n            (\n                a'\n                |> listm'.to_array'\n                |> a\n                |> am.map fun x => x, b'\n                |> fun (a x : _ int _) => x\n            )\n        )\n\n[\n    \"a b c\",\n    ;[ \"a\"; \"b\"; \"c\" ]\n\n    \"e f \\\"g h\\\" i\",\n    ;[ \"e\"; \"f\"; \"g h\"; \"i\" ]\n\n    \"\\\"j k\\\" \\\"l\\\" \\\"m\\\"\",\n    ;[ \"j k\"; \"l\"; \"m\" ]\n\n    \"s -t \\\"u \\`\\\"v\\`\\\" w\\\"\",\n    ;[ \"s\"; \"-t\"; \"u \\`\\\"v\\`\\\" w\" ]\n\n    \"n -o \\\"p \\\\\\\"q\\\\\\\" r\\\"\",\n    ;[ \"n\"; \"-o\"; \"p \\\\\\\"q\\\\\\\" r\" ]\n\n    \"r -s \\\"t \\\\\\\"u\\\\\\\"\\\"\",\n    ;[ \"r\"; \"-s\"; \"t \\\\\\\"u\\\\\\\"\" ]\n\n    $'$\"x -y \\\\\\\"$z -a \\'(b=\\\\\\\\\\\\\"c-id=)[a-fA-F0-9]{{8}}\\', {{ \\`$_[1] + \\`$d++ }}\\\\\\\"\"',\n    ;[ \"x\"; \"-y\"; \"$z -a '(b=\\\\\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }\" ]\n\n    \"e -f \\\"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\\\"\",\n    ;[ \"e\"; \"-f\"; \"$g -h '(i=`\\\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\" ]\n\n    $'$\"--l \\\\\\\\\\\\\"\\'\\'\\' m \\'\\'\\'\\\\\\\\\\\\\" \"',\n    ;[ \"--l\"; \"''' m '''\" ]\n\n    $'$\"n --o --p q --r \\\\\\\"s:/t u/v.w\\\\\\\" --x \\\\\\\"y:/z.a\\\\\\\" --b c.d \\\\\\\"\\\\\\\\e{{f-g}}\\\\\\\" h.i \\\\\\\"j (k)\\\\\\\"\"',\n    ;[ \"n\"; \"--o\"; \"--p\"; \"q\"; \"--r\"; \"s:/t u/v.w\"; \"--x\"; \"y:/z.a\"; \"--b\"; \"c.d\"; \"\\\\e{f-g}\"; \"h.i\"; \"j (k)\" ]\n\n    $'\\@$\"l \"\"m n:\\\\o.p\"\"\"',\n    ;[ \"l\"; \"m n:\\\\o.p\" ]\n]\n|> listm.rev\n|> listm.map fun input, expected =>\n    input\n    |> split_args\n    |> fun x =>\n        try\n            fun () =>\n                ($'$\"\\ninput: {!input}\"' : string)\n                |> console.write_line\n                x\n                |> resultm.get\n                |> am'.map_base fst\n                |> _assert_eq' expected\n                false\n            fun ex =>\n                ($'$\"error / expected: %A{!expected} / ex: %A{!ex}\"' : string)\n                |> console.write_line\n                Some true\n        |> optionm.value\n|> listm'.filter id\n|> function\n    | [] => ()\n    | x => failwith $'$\"{!x}\"'",
+  timeout: 300_000
+)
+```
+
+## parsing
+
+<!-- livebook:{"break_markdown":true} -->
+
+### position
+
+<!-- livebook:{"break_markdown":true} -->
+
+### range
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type range =\n    {\n        from : int\n        to : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type range =
+      {
+          from : int
+          to : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type position =\n    {\n        line : int\n        col : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type position =
+      {
+          line : int
+          col : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### parser_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal parser_state =\n    {\n        line_start : int\n        position : position\n        text_length : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal parser_state =
+      {
+          line_start : int
+          position : position
+          text_length : int
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### new_parser_state
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_parser_state (line_start : i32) (line : i32) (col : i32) (text_length : i32) =\n    { line_start position = { line col }; text_length }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_parser_state (line_start : i32) (line : i32) (col : i32) (text_length : i32) =
+      { line_start position = { line col }; text_length }
+  """,
+  timeout: 300_000
+)
+```
+
+### new_parser_state\''
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_parser_state' text_length =\n    new_parser_state 0 1 1 text_length |> parser_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_parser_state' text_length =
+      new_parser_state 0 1 1 text_length |> parser_state
+  """,
+  timeout: 300_000
+)
+```
+
+### parser_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A failure: the position it happened at and a formatter that gets the text and that position back when the message is\n// needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run\n// time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are\n// discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.\ntype parser_error =\n    {\n        format : string * int * parser_state -> string\n        i : int\n        s : parser_state\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A failure: the position it happened at and a formatter that gets the text and that position back when the message is
+  // needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run
+  // time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
+  // discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.
+  type parser_error =
+      {
+          format : string * int * parser_state -> string
+          i : int
+          s : parser_state
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### parser
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type parser t = string * int * parser_state -> result (t * int * parser_state) parser_error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type parser t = string * int * parser_state -> result (t * int * parser_state) parser_error
+  """,
+  timeout: 300_000
+)
+```
+
+### fail
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fail (format : string * int * parser_state -> string) (i : int) (s : parser_state) : result _ parser_error =\n    Error { format i s }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fail (format : string * int * parser_state -> string) (i : int) (s : parser_state) : result _ parser_error =
+      Error { format i s }
+  """,
+  timeout: 300_000
+)
+```
+
+### error_message
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl error_message (t : string) (e : parser_error) : string =\n    e.format (t, e.i, e.s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl error_message (t : string) (e : parser_error) : string =
+      e.format (t, e.i, e.s)
+  """,
+  timeout: 300_000
+)
+```
+
+### trace_entry
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Verbose entry traces of the looping combinators (kept from the quadratic-behaviour hunt). A compile-time switch:\n// while false they emit no code at all (each trace call otherwise adds ~2.4k lines of F# and ~1 min of compile time to\n// every program using these combinators); set it to true to get them back.\ninl trace_entry_enabled () =\n    false\n\ninl trace_entry (name : string) (locals : () -> _) : () =\n    if trace_entry_enabled () then\n        inl name = dyn name\n        inl locals : () -> string = dyn fun () => locals () |> sm'.format\n        join trace Verbose (fun () => name) locals","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // Verbose entry traces of the looping combinators (kept from the quadratic-behaviour hunt). A compile-time switch:
+  // while false they emit no code at all (each trace call otherwise adds ~2.4k lines of F# and ~1 min of compile time to
+  // every program using these combinators); set it to true to get them back.
+  inl trace_entry_enabled () =
+      false
+
+  inl trace_entry (name : string) (locals : () -> _) : () =
+      if trace_entry_enabled () then
+          inl name = dyn name
+          inl locals : () -> string = dyn fun () => locals () |> sm'.format
+          join trace Verbose (fun () => name) locals
+  """,
+  timeout: 300_000
+)
+```
+
+### slice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice (start : int) (end : int) (t : string) : string =\n    // An empty range is \"\" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would\n    // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.\n    // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which\n    // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).\n    inl t = dyn t\n    if start >= end then \"\"\n    else\n        t\n        |> sm'.range (am'.Start start) (am'.End fun _ => end)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl slice (start : int) (end : int) (t : string) : string =
+      // An empty range is "" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would
+      // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.
+      // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which
+      // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).
+      inl t = dyn t
+      if start >= end then ""
+      else
+          t
+          |> sm'.range (am'.Start start) (am'.End fun _ => end)
+  """,
+  timeout: 300_000
+)
+```
+
+### parse
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl parse forall t.\n    (p : parser t)\n    (t : string)\n    (s : parser_state)\n    : result ((() -> t) * (() -> string) * parser_state) (() -> string)\n    =\n    p (t, 0, s)\n    |> resultm.map fun result, i, (parser_state s' as s) =>\n        (fun () => result),\n        (fun () => t |> slice i s'.text_length),\n        s\n    |> resultm.map_error fun e =>\n        fun () => e |> error_message t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl parse forall t.
+      (p : parser t)
+      (t : string)
+      (s : parser_state)
+      : result ((() -> t) * (() -> string) * parser_state) (() -> string)
+      =
+      p (t, 0, s)
+      |> resultm.map fun result, i, (parser_state s' as s) =>
+          (fun () => result),
+          (fun () => t |> slice i s'.text_length),
+          s
+      |> resultm.map_error fun e =>
+          fun () => e |> error_message t
+  """,
+  timeout: 300_000
+)
+```
+
+### update_char
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl update_char (parser_state s) (c : char) : parser_state =\n    match c with\n    | '\\n' =>\n        { s with\n            line_start = s.line_start + s.position.col\n            position = { line = s.position.line + 1; col = 1 }\n        }\n    | _ =>\n        { s with\n            position = { line = s.position.line; col = s.position.col + 1 }\n        }\n    |> parser_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl update_char (parser_state s) (c : char) : parser_state =
+      match c with
+      | '\n' =>
+          { s with
+              line_start = s.line_start + s.position.col
+              position = { line = s.position.line + 1; col = 1 }
+          }
+      | _ =>
+          { s with
+              position = { line = s.position.line; col = s.position.col + 1 }
+          }
+      |> parser_state
+  """,
+  timeout: 300_000
+)
+```
+
+### update_span
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl update_span (t : string) (i : int) (len : int) (parser_state s' as s) : parser_state =\n    inl endi = i + len\n    let rec 루프 (i' : int) (last_nl : int) (count : int) =\n        if i' >= endi\n        then last_nl, count\n        else\n            match t |> sm'.index i' with\n            | '\\n' => 루프 (i' + 1) i' (count + 1)\n            | _ => 루프 (i' + 1) last_nl count\n    inl last_nl, n = 루프 i -1 0\n    if n = 0\n    then { s' with position = { line = s'.position.line; col = s'.position.col + len } }\n    else\n        { s' with\n            line_start = last_nl + 1\n            position =\n                {\n                    line = s'.position.line + n\n                    col = endi - last_nl\n                }\n            text_length = s'.text_length\n        }\n    |> parser_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl update_span (t : string) (i : int) (len : int) (parser_state s' as s) : parser_state =
+      inl endi = i + len
+      let rec 루프 (i' : int) (last_nl : int) (count : int) =
+          if i' >= endi
+          then last_nl, count
+          else
+              match t |> sm'.index i' with
+              | '\n' => 루프 (i' + 1) i' (count + 1)
+              | _ => 루프 (i' + 1) last_nl count
+      inl last_nl, n = 루프 i -1 0
+      if n = 0
+      then { s' with position = { line = s'.position.line; col = s'.position.col + len } }
+      else
+          { s' with
+              line_start = last_nl + 1
+              position =
+                  {
+                      line = s'.position.line + n
+                      col = endi - last_nl
+                  }
+              text_length = s'.text_length
+          }
+      |> parser_state
+  """,
+  timeout: 300_000
+)
+```
+
+### update
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl update t s =\n    s\n    |> update_span t 0 ##t","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl update t s =
+      s
+      |> update_span t 0 ##t
+  """,
+  timeout: 300_000
+)
+```
+
+### advance_while
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)\n    : int * parser_state\n    =\n    if i >= s'.text_length\n    then i, s\n    else\n        inl i' = i |> sm'.span_from fn t\n        inl i' =\n            if i' > s'.text_length\n            then s'.text_length\n            else i'\n        inl consumed = i' - i\n        if consumed = 0\n        then i, s\n        else i', s |> update_span t i consumed","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl advance_while (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
+      : int * parser_state
+      =
+      if i >= s'.text_length
+      then i, s
+      else
+          inl i' = i |> sm'.span_from fn t
+          inl i' =
+              if i' > s'.text_length
+              then s'.text_length
+              else i'
+          inl consumed = i' - i
+          if consumed = 0
+          then i, s
+          else i', s |> update_span t i consumed
+  """,
+  timeout: 300_000
+)
+```
+
+### run_parser
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_parser p t =\n    match p (t, 0, ##t |> new_parser_state') with\n    | Ok (result, i, (parser_state s' as s)) => Ok (result, t |> slice i s'.text_length, s)\n    | Error e => (fun () => e |> error_message t) |> Error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl run_parser p t =
+      match p (t, 0, ##t |> new_parser_state') with
+      | Ok (result, i, (parser_state s' as s)) => Ok (result, t |> slice i s'.text_length, s)
+      | Error e => (fun () => e |> error_message t) |> Error
+  """,
+  timeout: 300_000
+)
+```
+
+### any_char
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl any_char () : parser char = fun t, i, (parser_state s' as s) =>\n    if i >= s'.text_length then\n        fail (fun _, _, s => \"parsing.any_char / unexpected end of t / \" ++#? { s }) i s\n    else\n        inl c = t |> sm'.index i\n        Ok (c, i + 1, c |> update_char s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl any_char () : parser char = fun t, i, (parser_state s' as s) =>
+      if i >= s'.text_length then
+          fail (fun _, _, s => "parsing.any_char / unexpected end of t / " ++#? { s }) i s
+      else
+          inl c = t |> sm'.index i
+          Ok (c, i + 1, c |> update_char s)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (any_char ())\n|> (resultm.get >> sm'.format)\n|> _assert_eq #?('a', \"bc\", #?*(new_parser_state 0 1 2 3))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (any_char ())
+  |> (resultm.get >> sm'.format)
+  |> _assert_eq #?('a', "bc", #?*(new_parser_state 0 1 2 3))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abc\"\n|> parse_ (any_char_ ())\n|> unwrap_format\n|> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abc"
+  |> parse_ (any_char_ ())
+  |> unwrap_format
+  |> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+  """,
+  timeout: 300_000
+)
+```
+
+### get_max_context
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_max_context () =\n    80","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_max_context () =
+      80
+  """,
+  timeout: 300_000
+)
+```
+
+### p_char
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl p_char (c : char) : parser char =\n    fun t, i, (parser_state ({ line_start position = { line col } } as s') as s) =>\n        if i >= s'.text_length then\n            fail (fun _, _, (parser_state s') => \"parsing.p_char / unexpected end of text / \" ++#? { c s' }) i s\n        else\n            inl got = t |> sm'.index i\n            if got = c\n            then Ok (c, i + 1, got |> update_char s)\n            else\n                fail\n                    fun t, i, (parser_state { line_start position = { line col } }) =>\n                        inl line_end = i |> sm'.span_from ((<>) '\\n') t\n                        inl end = (i + get_max_context ()) |> min line_end\n                        inl line_slice = t |> slice line_start end\n                        inl new_line =\n                            inl len = ##line_slice\n                            if len > 0 && (line_slice |> sm'.index (len - 1)) = '\\n' then \"\" else \"\\n\"\n                        inl pointer_line = (\" \" |> sm'.replicate (col - 1)) ++# \"^\"\n                        \"parsing.p_char / \"\n                        ++#? { expected = c; line col }\n                        ++# \"\\n\" ++# line_slice\n                        ++# new_line\n                        ++# pointer_line ++# \"\\n\"\n                    i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl p_char (c : char) : parser char =
+      fun t, i, (parser_state ({ line_start position = { line col } } as s') as s) =>
+          if i >= s'.text_length then
+              fail (fun _, _, (parser_state s') => "parsing.p_char / unexpected end of text / " ++#? { c s' }) i s
+          else
+              inl got = t |> sm'.index i
+              if got = c
+              then Ok (c, i + 1, got |> update_char s)
+              else
+                  fail
+                      fun t, i, (parser_state { line_start position = { line col } }) =>
+                          inl line_end = i |> sm'.span_from ((<>) '\n') t
+                          inl end = (i + get_max_context ()) |> min line_end
+                          inl line_slice = t |> slice line_start end
+                          inl new_line =
+                              inl len = ##line_slice
+                              if len > 0 && (line_slice |> sm'.index (len - 1)) = '\n' then "" else "\n"
+                          inl pointer_line = (" " |> sm'.replicate (col - 1)) ++# "^"
+                          "parsing.p_char / "
+                          ++#? { expected = c; line col }
+                          ++# "\n" ++# line_slice
+                          ++# new_line
+                          ++# pointer_line ++# "\n"
+                      i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (p_char 'a')\n|> unwrap_format\n|> _assert_eq #?*('a', \"bc\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (p_char 'a')
+  |> unwrap_format
+  |> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abc\"\n|> parse_ (p_char_ 'a')\n|> unwrap_format\n|> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abc"
+  |> parse_ (p_char_ 'a')
+  |> unwrap_format
+  |> _assert_eq' #?*('a', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+  """,
+  timeout: 300_000
+)
+```
+
+### any_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl any_string len : parser string = fun t, i, (parser_state s' as s) =>\n    if s'.text_length - i >= len\n    then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)\n    else\n        fail (fun _, _, s => \"parsing.any_string / unexpected end of text / \" ++#? { s }) i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl any_string len : parser string = fun t, i, (parser_state s' as s) =>
+      if s'.text_length - i >= len
+      then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
+      else
+          fail (fun _, _, s => "parsing.any_string / unexpected end of text / " ++#? { s }) i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abcdef\"\n|> run_parser (any_string 3)\n|> unwrap_format\n|> _assert_eq #?*(\"abc\", \"def\", new_parser_state 0 1 4 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abcdef"
+  |> run_parser (any_string 3)
+  |> unwrap_format
+  |> _assert_eq #?*("abc", "def", new_parser_state 0 1 4 6)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abcdef\"\n|> parse_ (any_string__ 3)\n|> resultm.get\n|> sm'.obj_to_string\n|> _assert_eq' ((\"abc\", ($'FParsec.Position (null, 0, 1, 4)' : position_)) |> sm'.obj_to_string)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abcdef"
+  |> parse_ (any_string__ 3)
+  |> resultm.get
+  |> sm'.obj_to_string
+  |> _assert_eq' (("abc", ($'FParsec.Position (null, 0, 1, 4)' : position_)) |> sm'.obj_to_string)
+  """,
+  timeout: 300_000
+)
+```
+
+### skip_any_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_any_string len : parser () = fun t, i, (parser_state s' as s) =>\n    if s'.text_length - i >= len\n    then Ok ((), i + len, s |> update_span t i len)\n    else\n        fail (fun _, _, s => \"parsing.skip_any_string / unexpected end of text / \" ++#? { s }) i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl skip_any_string len : parser () = fun t, i, (parser_state s' as s) =>
+      if s'.text_length - i >= len
+      then Ok ((), i + len, s |> update_span t i len)
+      else
+          fail (fun _, _, s => "parsing.skip_any_string / unexpected end of text / " ++#? { s }) i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abcdef\"\n|> run_parser (skip_any_string 3)\n|> unwrap_format\n|> _assert_eq #?*((), \"def\", new_parser_state 0 1 4 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abcdef"
+  |> run_parser (skip_any_string 3)
+  |> unwrap_format
+  |> _assert_eq #?*((), "def", new_parser_state 0 1 4 6)
+  """,
+  timeout: 300_000
+)
+```
+
+### skip_many
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_many forall t. (p : parser t) : parser () = fun t, i, s =>\n    trace_entry \"parsing.skip_many\" fun () => { t_len = ##t; i s }\n    let rec 루프 (i' : int) (s' : parser_state) =\n        match p (t, i', s') with\n        | Error _ => Ok ((), i', s')\n        | Ok (_, i'', s'') =>\n            if i'' <> i'\n            then s'' |> 루프 i''\n            else fail (fun _ => \"parsing.skip_many / inner parser consumed no text\") i' s'\n    s |> 루프 i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl skip_many forall t. (p : parser t) : parser () = fun t, i, s =>
+      trace_entry "parsing.skip_many" fun () => { t_len = ##t; i s }
+      let rec 루프 (i' : int) (s' : parser_state) =
+          match p (t, i', s') with
+          | Error _ => Ok ((), i', s')
+          | Ok (_, i'', s'') =>
+              if i'' <> i'
+              then s'' |> 루프 i''
+              else fail (fun _ => "parsing.skip_many / inner parser consumed no text") i' s'
+      s |> 루프 i
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"sskkip_many\"\n|> run_parser (skip_many (p_char 's'))\n|> unwrap_format\n|> _assert_eq #?*(\"kkip_many\", new_parser_state 0 1 3 11)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "sskkip_many"
+  |> run_parser (skip_many (p_char 's'))
+  |> unwrap_format
+  |> _assert_eq #?*("kkip_many", new_parser_state 0 1 3 11)
+  """,
+  timeout: 300_000
+)
+```
+
+### skip_many1
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_many1 forall t. (a : parser t) : parser () = fun t, i, s =>\n    trace_entry \"parsing.skip_many1\" fun () => { t_len = ##t; i s }\n    match a (t, i, s) with\n    | Error e => e |> Error\n    | Ok (_, i', s') =>\n        if i' <> i\n        then skip_many a (t, i', s')\n        else fail (fun _ => \"parsing.skip_many1 / inner parser consumed no text\") i' s'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl skip_many1 forall t. (a : parser t) : parser () = fun t, i, s =>
+      trace_entry "parsing.skip_many1" fun () => { t_len = ##t; i s }
+      match a (t, i, s) with
+      | Error e => e |> Error
+      | Ok (_, i', s') =>
+          if i' <> i
+          then skip_many a (t, i', s')
+          else fail (fun _ => "parsing.skip_many1 / inner parser consumed no text") i' s'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"skip_many1\"\n|> run_parser (skip_many1 (p_char 's'))\n|> unwrap_format\n|> _assert_eq #?*(\"kip_many1\", new_parser_state 0 1 2 10)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "skip_many1"
+  |> run_parser (skip_many1 (p_char 's'))
+  |> unwrap_format
+  |> _assert_eq #?*("kip_many1", new_parser_state 0 1 2 10)
+  """,
+  timeout: 300_000
+)
+```
+
+### (>>.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun t, i, s =>\n    match a (t, i, s) with\n    | Ok (_, i', s') => b (t, i', s')\n    | Error e => e |> Error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (>>.) forall t u. (a : parser t) (b : parser u) : parser u = fun t, i, s =>
+      match a (t, i, s) with
+      | Ok (_, i', s') => b (t, i', s')
+      | Error e => e |> Error
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\\ndef\\nghi\"\n|> run_parser (skip_any_string 5 >>. p_char 'a')\n|> resultm.map_error eval\n|> _assert_eq (Error \"parsing.p_char / { expected = a; line = 2; col = 2 }\\ndef\\n ^\\n\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc\ndef\nghi"
+  |> run_parser (skip_any_string 5 >>. p_char 'a')
+  |> resultm.map_error eval
+  |> _assert_eq (Error "parsing.p_char / { expected = a; line = 2; col = 2 }\ndef\n ^\n")
+  """,
+  timeout: 300_000
+)
+```
+
+### (.>>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun t, i, s =>\n    match a (t, i, s) with\n    | Error e => e |> Error\n    | Ok (ra, i', s') =>\n        b (t, i', s')\n        |> resultm.map fun _, i'', s'' =>\n            ra, i'', s''","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (.>>) forall t u. (a : parser t) (b : parser u) : parser t = fun t, i, s =>
+      match a (t, i, s) with
+      | Error e => e |> Error
+      | Ok (ra, i', s') =>
+          b (t, i', s')
+          |> resultm.map fun _, i'', s'' =>
+              ra, i'', s''
+  """,
+  timeout: 300_000
+)
+```
+
+### (.>>.)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun t, i, s =>\n    match a (t, i, s) with\n    | Error e => e |> Error\n    | Ok (ra, i', s') =>\n        b (t, i', s')\n        |> resultm.map fun rb, i'', s'' =>\n            ((fun () => ra), (fun () => rb)), i'', s''","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (.>>.) forall t u. (a : parser t) (b : parser u) : parser ((() -> t) * (() -> u)) = fun t, i, s =>
+      match a (t, i, s) with
+      | Error e => e |> Error
+      | Ok (ra, i', s') =>
+          b (t, i', s')
+          |> resultm.map fun rb, i'', s'' =>
+              ((fun () => ra), (fun () => rb)), i'', s''
+  """,
+  timeout: 300_000
+)
+```
+
+### (>>%)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (>>%) forall t u. (a : parser t) (b : u) : parser u =\n    a >> resultm.map fun _, i', s' =>\n        b, i', s'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (>>%) forall t u. (a : parser t) (b : u) : parser u =
+      a >> resultm.map fun _, i', s' =>
+          b, i', s'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (p_char 'a' >>. p_char 'b')\n|> unwrap_format\n|> _assert_eq #?*('b', \"c\", new_parser_state 0 1 3 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (p_char 'a' >>. p_char 'b')
+  |> unwrap_format
+  |> _assert_eq #?*('b', "c", new_parser_state 0 1 3 3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abc\"\n|> parse_ (p_char_ 'a' >>.$ p_char_ 'b')\n|> resultm.get\n|> sm'.obj_to_string\n|> _assert_eq' #?**('b', ($'FParsec.Position (null, 0, 1, 3)' : position_))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abc"
+  |> parse_ (p_char_ 'a' >>.$ p_char_ 'b')
+  |> resultm.get
+  |> sm'.obj_to_string
+  |> _assert_eq' #?**('b', ($'FParsec.Position (null, 0, 1, 3)' : position_))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abc\\ndef\\nghi\"\n|> parse_ (skip_any_string_ 5 >>.$ p_char_ 'a')\n|> resultm.unwrap_err\n|> sm'.obj_to_string\n|> sm'.replace \"\\r\\n\" \"\\n\"\n|> _assert_eq \"(Error in Ln: 2 Col: 2\\ndef\\n ^\\nExpecting: 'a'\\n, Error in Ln: 2 Col: 2\\nExpecting: 'a'\\n)\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abc\ndef\nghi"
+  |> parse_ (skip_any_string_ 5 >>.$ p_char_ 'a')
+  |> resultm.unwrap_err
+  |> sm'.obj_to_string
+  |> sm'.replace "\r\n" "\n"
+  |> _assert_eq "(Error in Ln: 2 Col: 2\ndef\n ^\nExpecting: 'a'\n, Error in Ln: 2 Col: 2\nExpecting: 'a'\n)"
+  """,
+  timeout: 300_000
+)
+```
+
+### none_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl none_of (chars : list char) : parser char = fun t, i, (parser_state s' as s) =>\n    inl chars' () =\n        chars |> listm'.box |> listm'.to_array' |> sm'.format\n    if i >= s'.text_length then\n        fail (fun _, _, s => \"parsing.none_of / unexpected end of text / \" ++#? { chars' = chars' (); s }) i s\n    else\n        inl ch = t |> sm'.index i\n        if chars |> listm'.exists' ((=) ch) |> not\n        then Ok (ch, i + 1, ch |> update_char s)\n        else\n            fail\n                fun t, i, s =>\n                    \"parsing.none_of / unexpected char / \"\n                    ++#? { first_char = t |> sm'.index i; chars' = chars' (); s }\n                i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl none_of (chars : list char) : parser char = fun t, i, (parser_state s' as s) =>
+      inl chars' () =
+          chars |> listm'.box |> listm'.to_array' |> sm'.format
+      if i >= s'.text_length then
+          fail (fun _, _, s => "parsing.none_of / unexpected end of text / " ++#? { chars' = chars' (); s }) i s
+      else
+          inl ch = t |> sm'.index i
+          if chars |> listm'.exists' ((=) ch) |> not
+          then Ok (ch, i + 1, ch |> update_char s)
+          else
+              fail
+                  fun t, i, s =>
+                      "parsing.none_of / unexpected char / "
+                      ++#? { first_char = t |> sm'.index i; chars' = chars' (); s }
+                  i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> resultm.map_error eval\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Lua = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = [\\\"a\\\", \\\"b\\\", \\\"c\\\"]; s = #(0, 1, 1, 3) }\"\n        Fsharp = fun () =>\n            run_target function\n            | TypeScript _ => fun () =>\n                join\n                    \"parsing.none_of / unexpected char / \"\n                    ++# \"{ first_char = a; chars' = a,b,c; s = 0,1,1,3 }\"\n            | _ => fun () =>\n                join\n                    \"parsing.none_of / unexpected char / \"\n                    ++# \"{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }\"\n        Python = fun () =>\n            \"parsing.none_of / unexpected char / \"\n            ++# \"{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }\"\n    }\n    |> Error\n)\n\n\"def\"\n|> run_parser (none_of ['a'; 'b'; 'c'])\n|> unwrap_format\n|> _assert_eq #?*('d', \"ef\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (none_of ['a'; 'b'; 'c'])
+  |> resultm.map_error eval
+  |> _assert_eq (
+      backend_switch {
+          Gleam = fun () =>
+              "parsing.none_of / unexpected char / "
+              ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
+          Lua = fun () =>
+              "parsing.none_of / unexpected char / "
+              ++# "{ first_char = a; chars' = [\"a\", \"b\", \"c\"]; s = #(0, 1, 1, 3) }"
+          Fsharp = fun () =>
+              run_target function
+              | TypeScript _ => fun () =>
+                  join
+                      "parsing.none_of / unexpected char / "
+                      ++# "{ first_char = a; chars' = a,b,c; s = 0,1,1,3 }"
+              | _ => fun () =>
+                  join
+                      "parsing.none_of / unexpected char / "
+                      ++# "{ first_char = a; chars' = [|'a'; 'b'; 'c'|]; s = struct (0, 1, 1, 3) }"
+          Python = fun () =>
+              "parsing.none_of / unexpected char / "
+              ++# "{ first_char = a; chars' = ['a' 'b' 'c']; s = (0, 1, 1, 3) }"
+      }
+      |> Error
+  )
+
+  "def"
+  |> run_parser (none_of ['a'; 'b'; 'c'])
+  |> unwrap_format
+  |> _assert_eq #?*('d', "ef", new_parser_state 0 1 2 3)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"abc\"\n|> parse_ (none_of_ ['a'; 'b'; 'c'])\n|> resultm.unwrap_err\n|> sm'.obj_to_string\n|> sm'.replace \"\\r\\n\" \"\\n\"\n|> _assert_eq ($'\"(Error in Ln: 1 Col: 1\\nabc\\n^\\nExpecting: any char not in ‘abc’\\n, Error in Ln: 1 Col: 1\\nExpecting: any char not in ‘abc’\\n)\"')\n\n\"def\"\n|> parse_ (none_of_ ['a'; 'b'; 'c'])\n|> unwrap_format\n|> _assert_eq' #?*('d', ($'FParsec.Position (null, 0, 1, 2)' : position_))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "abc"
+  |> parse_ (none_of_ ['a'; 'b'; 'c'])
+  |> resultm.unwrap_err
+  |> sm'.obj_to_string
+  |> sm'.replace "\r\n" "\n"
+  |> _assert_eq ($'"(Error in Ln: 1 Col: 1\nabc\n^\nExpecting: any char not in ‘abc’\n, Error in Ln: 1 Col: 1\nExpecting: any char not in ‘abc’\n)"')
+
+  "def"
+  |> parse_ (none_of_ ['a'; 'b'; 'c'])
+  |> unwrap_format
+  |> _assert_eq' #?*('d', ($'FParsec.Position (null, 0, 1, 2)' : position_))
+  """,
+  timeout: 300_000
+)
+```
+
+### (<|>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun t, i, s =>\n    match a (t, i, s) with\n    | Ok _ as r => r\n    | Error _ => b (t, i, s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun t, i, s =>
+      match a (t, i, s) with
+      | Ok _ as r => r
+      | Error _ => b (t, i, s)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (p_char 'a' <|> p_char 'b')\n|> unwrap_format\n|> _assert_eq #?*('a', \"bc\", new_parser_state 0 1 2 3)\n\n\"cba\"\n|> run_parser (p_char 'a' <|> p_char 'b')\n|> resultm.map_error eval\n|> _assert_eq (Error \"parsing.p_char / { expected = b; line = 1; col = 1 }\\ncba\\n^\\n\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (p_char 'a' <|> p_char 'b')
+  |> unwrap_format
+  |> _assert_eq #?*('a', "bc", new_parser_state 0 1 2 3)
+
+  "cba"
+  |> run_parser (p_char 'a' <|> p_char 'b')
+  |> resultm.map_error eval
+  |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
+  """,
+  timeout: 300_000
+)
+```
+
+### (|>>)
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `f` maps a thunk to a thunk (the API of the lazy results this library had): both are inlined and forced here.\ninl (|>>) p f : parser _ =\n    p >> resultm.map fun r, i', s' =>\n        f (fun () => r) (), i', s'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // `f` maps a thunk to a thunk (the API of the lazy results this library had): both are inlined and forced here.
+  inl (|>>) p f : parser _ =
+      p >> resultm.map fun r, i', s' =>
+          f (fun () => r) (), i', s'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"abc\"\n|> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)\n|> unwrap_format\n|> _assert_eq #?*('A', \"bc\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "abc"
+  |> run_parser (p_char 'a' |>> fun c => fun () => c () |> sm'.char_to_upper)
+  |> unwrap_format
+  |> _assert_eq #?*('A', "bc", new_parser_state 0 1 2 3)
+  """,
+  timeout: 300_000
+)
+```
+
+### many
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many forall b c.\n    (p : _ * _ * _ -> _ (b * _ * _) c)\n    : parser (list _)\n    =\n    fun t, i, s =>\n        trace_entry \"parsing.many\" fun () => { t_len = ##t }\n        let rec 루프 (acc : list b) (i' : int) (s' : parser_state)\n            : result (list b * int * parser_state) _\n            =\n            match p (t, i', s') with\n            | Error _ => Ok (acc |> listm.rev, i', s')\n            | Ok (x, i'', s'') when i'' > i' => s'' |> 루프 (x :: acc) i''\n            | Ok _ => fail (fun _ => \"parsing.many / inner parser succeeded without consuming text\") i' s'\n        s |> 루프 [] i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many forall b c.
+      (p : _ * _ * _ -> _ (b * _ * _) c)
+      : parser (list _)
+      =
+      fun t, i, s =>
+          trace_entry "parsing.many" fun () => { t_len = ##t }
+          let rec 루프 (acc : list b) (i' : int) (s' : parser_state)
+              : result (list b * int * parser_state) _
+              =
+              match p (t, i', s') with
+              | Error _ => Ok (acc |> listm.rev, i', s')
+              | Ok (x, i'', s'') when i'' > i' => s'' |> 루프 (x :: acc) i''
+              | Ok _ => fail (fun _ => "parsing.many / inner parser succeeded without consuming text") i' s'
+          s |> 루프 [] i
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"aaabbc\"\n|> run_parser (many (p_char 'a' <|> p_char 'b'))\n|> unwrap_format\n|> _assert_eq #?*(['a'; 'a'; 'a'; 'b'; 'b'], \"c\", new_parser_state 0 1 6 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "aaabbc"
+  |> run_parser (many (p_char 'a' <|> p_char 'b'))
+  |> unwrap_format
+  |> _assert_eq #?*(['a'; 'a'; 'a'; 'b'; 'b'], "c", new_parser_state 0 1 6 6)
+  """,
+  timeout: 300_000
+)
+```
+
+### many1_chars
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many1_chars (p : parser char) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many1_chars\" fun () => { t_len = ##t; i s }\n    match p (t, i, s) with\n    | Error e => e |> Error\n    | Ok (_, i', s') =>\n        let rec 루프 (i'' : int) (s'' : parser_state) : result (string * int * parser_state) _ =\n            match p (t, i'', s'') with\n            | Error _ => Ok (t |> slice i i'', i'', s'')\n            | Ok (_, i''', s''') =>\n                if i''' <> i''\n                then s''' |> 루프 i'''\n                else fail (fun _ => \"parsing.many1_chars / inner parser succeeded without consuming text\") i'' s''\n        s' |> 루프 i'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many1_chars (p : parser char) : parser string = fun t, i, s =>
+      trace_entry "parsing.many1_chars" fun () => { t_len = ##t; i s }
+      match p (t, i, s) with
+      | Error e => e |> Error
+      | Ok (_, i', s') =>
+          let rec 루프 (i'' : int) (s'' : parser_state) : result (string * int * parser_state) _ =
+              match p (t, i'', s'') with
+              | Error _ => Ok (t |> slice i i'', i'', s'')
+              | Ok (_, i''', s''') =>
+                  if i''' <> i''
+                  then s''' |> 루프 i'''
+                  else fail (fun _ => "parsing.many1_chars / inner parser succeeded without consuming text") i'' s''
+          s' |> 루프 i'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"aaabbc\"\n|> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))\n|> unwrap_format\n|> _assert_eq #?*(\"aaabb\", \"c\", new_parser_state 0 1 6 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "aaabbc"
+  |> run_parser (many1_chars (p_char 'a' <|> p_char 'b'))
+  |> unwrap_format
+  |> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
+  """,
+  timeout: 300_000
+)
+```
+
+### many1_satisfy
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without\n// a parser call and its result thunk per character (one allocation per character on native Rust).\ninl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>\n    let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =\n        if i' >= s'.text_length\n        then i', s''\n        else\n            inl c = t |> sm'.index i'\n            if fn c\n            then 루프 (i' + 1) (c |> update_char s'')\n            else i', s''\n    inl i', s'' = 루프 i s\n    if i' > i\n    then Ok (t |> slice i i', i', s'')\n    else\n        fail (fun _, i, s => \"parsing.many1_satisfy / no matching char / \" ++#? { i s }) i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without
+  // a parser call and its result thunk per character (one allocation per character on native Rust).
+  inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
+      let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =
+          if i' >= s'.text_length
+          then i', s''
+          else
+              inl c = t |> sm'.index i'
+              if fn c
+              then 루프 (i' + 1) (c |> update_char s'')
+              else i', s''
+      inl i', s'' = 루프 i s
+      if i' > i
+      then Ok (t |> slice i i', i', s'')
+      else
+          fail (fun _, i, s => "parsing.many1_satisfy / no matching char / " ++#? { i s }) i s
+  """,
+  timeout: 300_000
+)
+```
+
+### many1_none_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `none_of chars |> many1_chars` on `many1_satisfy`.\ninl many1_none_of (chars : list char) : parser string =\n    many1_satisfy fun c => chars |> listm'.exists' ((=) c) |> not","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // `none_of chars |> many1_chars` on `many1_satisfy`.
+  inl many1_none_of (chars : list char) : parser string =
+      many1_satisfy fun c => chars |> listm'.exists' ((=) c) |> not
+  """,
+  timeout: 300_000
+)
+```
+
+### many_chars
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_chars (p : parser char) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many_chars\" fun () => { t_len = ##t; i s }\n    match many1_chars p (t, i, s) with\n    | Ok (res, i', s') => Ok (res, i', s')\n    | Error _ => Ok (\"\", i, s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many_chars (p : parser char) : parser string = fun t, i, s =>
+      trace_entry "parsing.many_chars" fun () => { t_len = ##t; i s }
+      match many1_chars p (t, i, s) with
+      | Ok (res, i', s') => Ok (res, i', s')
+      | Error _ => Ok ("", i, s)
+  """,
+  timeout: 300_000
+)
+```
+
+### advance_while_no_nl
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)\n    : int * parser_state\n    =\n    if i >= s'.text_length\n    then i, s\n    else\n        inl i' = i |> sm'.span_from fn t\n        inl i' =\n            if i' > s'.text_length\n            then s'.text_length\n            else i'\n        inl consumed = i' - i\n        if consumed = 0\n        then i, s\n        else\n            i',\n            { s' with position = { line = s'.position.line; col = s'.position.col + consumed } }\n            |> parser_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl advance_while_no_nl (fn : char -> bool) (t : string) (i : int) (parser_state s' as s)
+      : int * parser_state
+      =
+      if i >= s'.text_length
+      then i, s
+      else
+          inl i' = i |> sm'.span_from fn t
+          inl i' =
+              if i' > s'.text_length
+              then s'.text_length
+              else i'
+          inl consumed = i' - i
+          if consumed = 0
+          then i, s
+          else
+              i',
+              { s' with position = { line = s'.position.line; col = s'.position.col + consumed } }
+              |> parser_state
+  """,
+  timeout: 300_000
+)
+```
+
+### advance_newlines
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl advance_newlines (t : string) (i : int) (parser_state s' as s)\n    : int * parser_state\n    =\n    if i >= s'.text_length\n    then i, s\n    else\n        inl i' = i |> sm'.span_from ((=) '\\n') t\n        inl i' =\n            if i' > s'.text_length\n            then s'.text_length\n            else i'\n        inl consumed = i' - i\n        if consumed = 0\n        then i, s\n        else\n            i',\n            { s' with\n                line_start = i'\n                position = { line = s'.position.line + consumed; col = 1 }\n            }\n            |> parser_state","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl advance_newlines (t : string) (i : int) (parser_state s' as s)
+      : int * parser_state
+      =
+      if i >= s'.text_length
+      then i, s
+      else
+          inl i' = i |> sm'.span_from ((=) '\n') t
+          inl i' =
+              if i' > s'.text_length
+              then s'.text_length
+              else i'
+          inl consumed = i' - i
+          if consumed = 0
+          then i, s
+          else
+              i',
+              { s' with
+                  line_start = i'
+                  position = { line = s'.position.line + consumed; col = 1 }
+              }
+              |> parser_state
+  """,
+  timeout: 300_000
+)
+```
+
+### many_chars_till
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_chars_till (p : parser char) (end_p : parser _) = fun t, i, (parser_state s' as s) =>\n    trace_entry \"parsing.many_chars_till\" fun () => { t_len = ##t; i s }\n    let rec 루프 (i' : int) (s'' : parser_state) : result (string * int * parser_state) parser_error =\n        if i' >= s'.text_length\n        then Ok ((if i' > i then t |> slice i i' else \"\"), i', s'')\n        else\n            inl i'', s''' = s'' |> advance_while_no_nl (fun c => c <> '\\n') t i'\n            if i'' >= s'.text_length\n            then Ok ((if i'' > i then t |> slice i i'' else \"\"), i'', s''')\n            else\n                match end_p (t, i'', s''') with\n                | Ok _ => Ok ((if i'' > i then t |> slice i i'' else \"\"), i'', s''')\n                | Error _ =>\n                    match p (t, i'', s''') with\n                    | Error _ => Ok ((if i'' > i then t |> slice i i'' else \"\"), i'', s''')\n                    | Ok (_, i''', s'''') when i''' > i'' => s'''' |> 루프 i'''\n                    | Ok _ =>\n                        fail (fun _ => \"parsing.many_chars_till / inner parser succeeded without consuming text\") i'' s'''\n    s |> 루프 i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many_chars_till (p : parser char) (end_p : parser _) = fun t, i, (parser_state s' as s) =>
+      trace_entry "parsing.many_chars_till" fun () => { t_len = ##t; i s }
+      let rec 루프 (i' : int) (s'' : parser_state) : result (string * int * parser_state) parser_error =
+          if i' >= s'.text_length
+          then Ok ((if i' > i then t |> slice i i' else ""), i', s'')
+          else
+              inl i'', s''' = s'' |> advance_while_no_nl (fun c => c <> '\n') t i'
+              if i'' >= s'.text_length
+              then Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
+              else
+                  match end_p (t, i'', s''') with
+                  | Ok _ => Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
+                  | Error _ =>
+                      match p (t, i'', s''') with
+                      | Error _ => Ok ((if i'' > i then t |> slice i i'' else ""), i'', s''')
+                      | Ok (_, i''', s'''') when i''' > i'' => s'''' |> 루프 i'''
+                      | Ok _ =>
+                          fail (fun _ => "parsing.many_chars_till / inner parser succeeded without consuming text") i'' s'''
+      s |> 루프 i
+  """,
+  timeout: 300_000
+)
+```
+
+### many1
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many1 (p : parser _) : parser (list _) = fun t, i, s =>\n    trace_entry \"parsing.many1\" fun () => { t_len = ##t; i s }\n    match p (t, i, s) with\n    | Error e => e |> Error\n    | Ok (first, i', s') =>\n        let rec 루프 acc (i'' : int) s'' : result (list _ * int * parser_state) _ =\n            match p (t, i'', s'') with\n            | Error _ => Ok (acc |> listm.rev, i'', s'')\n            | Ok (x, i''', s''') when i''' > i'' => s''' |> 루프 (x :: acc) i'''\n            | Ok _ => fail (fun _ => \"parsing.many1 / inner parser succeeded without consuming text\") i'' s''\n        s' |> 루프 [ first ] i'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many1 (p : parser _) : parser (list _) = fun t, i, s =>
+      trace_entry "parsing.many1" fun () => { t_len = ##t; i s }
+      match p (t, i, s) with
+      | Error e => e |> Error
+      | Ok (first, i', s') =>
+          let rec 루프 acc (i'' : int) s'' : result (list _ * int * parser_state) _ =
+              match p (t, i'', s'') with
+              | Error _ => Ok (acc |> listm.rev, i'', s'')
+              | Ok (x, i''', s''') when i''' > i'' => s''' |> 루프 (x :: acc) i'''
+              | Ok _ => fail (fun _ => "parsing.many1 / inner parser succeeded without consuming text") i'' s''
+          s' |> 루프 [ first ] i'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"aaabbc\"\n|> run_parser (many1 (p_char 'a' <|> p_char 'b'))\n|> unwrap_format\n|> _assert_eq #?*([ 'a'; 'a'; 'a'; 'b'; 'b' ], \"c\", new_parser_state 0 1 6 6)\n\n\"bcc\"\n|> run_parser (many1 (p_char 'a' <|> p_char 'b'))\n|> unwrap_format\n|> _assert_eq #?*([ 'b' ], \"cc\", new_parser_state 0 1 2 3)\n\n\"cba\"\n|> run_parser (many1 (p_char 'a' <|> p_char 'b'))\n|> resultm.map_error eval\n|> _assert_eq (Error \"parsing.p_char / { expected = b; line = 1; col = 1 }\\ncba\\n^\\n\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "aaabbc"
+  |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
+  |> unwrap_format
+  |> _assert_eq #?*([ 'a'; 'a'; 'a'; 'b'; 'b' ], "c", new_parser_state 0 1 6 6)
+
+  "bcc"
+  |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
+  |> unwrap_format
+  |> _assert_eq #?*([ 'b' ], "cc", new_parser_state 0 1 2 3)
+
+  "cba"
+  |> run_parser (many1 (p_char 'a' <|> p_char 'b'))
+  |> resultm.map_error eval
+  |> _assert_eq (Error "parsing.p_char / { expected = b; line = 1; col = 1 }\ncba\n^\n")
+  """,
+  timeout: 300_000
+)
+```
+
+### concat_rev
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_rev (acc : list string) : string =\n    let rec pass (rev : bool) (xs : list string) (out : list string) : list string =\n        match xs with\n        | a :: rest =>\n            match rest with\n            | b :: rest' => pass rev rest' ((if rev then b ++# a else a ++# b) :: out)\n            | [] => a :: out\n        | [] => out\n    let rec 루프 (rev : bool) (xs : list string) : string =\n        match xs with\n        | [] => \"\"\n        | x :: rest =>\n            match rest with\n            | [] => x\n            | _ => 루프 (not rev) (pass rev xs [])\n    if rust.rust.is_native () then\n        match acc with\n        | _ :: _ :: _ :: _ =>\n            // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is\n            // last-first): three allocations instead of a string and a list node per pair and pass.\n            inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x\n            inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\\![0u8; !total as usize]))'\n            inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>\n                inl start = end - ##x\n                $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()\n                start\n            $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string\n        | _ => 루프 true acc\n    else 루프 true acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl concat_rev (acc : list string) : string =
+      let rec pass (rev : bool) (xs : list string) (out : list string) : list string =
+          match xs with
+          | a :: rest =>
+              match rest with
+              | b :: rest' => pass rev rest' ((if rev then b ++# a else a ++# b) :: out)
+              | [] => a :: out
+          | [] => out
+      let rec 루프 (rev : bool) (xs : list string) : string =
+          match xs with
+          | [] => ""
+          | x :: rest =>
+              match rest with
+              | [] => x
+              | _ => 루프 (not rev) (pass rev xs [])
+      if rust.rust.is_native () then
+          match acc with
+          | _ :: _ :: _ :: _ =>
+              // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is
+              // last-first): three allocations instead of a string and a list node per pair and pass.
+              inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x
+              inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
+              inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>
+                  inl start = end - ##x
+                  $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()
+                  start
+              $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string
+          | _ => 루프 true acc
+      else 루프 true acc
+  """,
+  timeout: 300_000
+)
+```
+
+### string_of
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it\n// through a string builder: several allocations per element on native Rust).\ninl string_of forall t. (x : t) : string =\n    real\n        match x with\n        | (_ : string) => x\n        | _ => sm'_real.format_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it
+  // through a string builder: several allocations per element on native Rust).
+  inl string_of forall t. (x : t) : string =
+      real
+          match x with
+          | (_ : string) => x
+          | _ => sm'_real.format_real `t x
+  """,
+  timeout: 300_000
+)
+```
+
+### many1_strings
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many1_strings (p : parser _) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many1_strings\" fun () => { t_len = ##t }\n    match p (t, i, s) with\n    | Error e => e |> Error\n    | Ok (r, i', s') =>\n        inl first = string_of r\n        // `acc`: the elements after the first, last first (one element, the common case, builds no list)\n        let rec 루프 (acc : list string) (i'' : int) s'' : result (string * int * _) _ =\n            match p (t, i'', s'') with\n            | Error _ =>\n                inl r =\n                    match acc with\n                    | [] => first\n                    | _ => first ++# (acc |> concat_rev)\n                Ok (r, i'', s'')\n            | Ok (r', i''', s''') when i''' > i'' => s''' |> 루프 (string_of r' :: acc) i'''\n            | Ok _ => fail (fun _ => \"parsing.many1_strings / inner parser succeeded without consuming text\") i'' s''\n        s' |> 루프 [] i'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many1_strings (p : parser _) : parser string = fun t, i, s =>
+      trace_entry "parsing.many1_strings" fun () => { t_len = ##t }
+      match p (t, i, s) with
+      | Error e => e |> Error
+      | Ok (r, i', s') =>
+          inl first = string_of r
+          // `acc`: the elements after the first, last first (one element, the common case, builds no list)
+          let rec 루프 (acc : list string) (i'' : int) s'' : result (string * int * _) _ =
+              match p (t, i'', s'') with
+              | Error _ =>
+                  inl r =
+                      match acc with
+                      | [] => first
+                      | _ => first ++# (acc |> concat_rev)
+                  Ok (r, i'', s'')
+              | Ok (r', i''', s''') when i''' > i'' => s''' |> 루프 (string_of r' :: acc) i'''
+              | Ok _ => fail (fun _ => "parsing.many1_strings / inner parser succeeded without consuming text") i'' s''
+          s' |> 루프 [] i'
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"aaabbc\"\n|> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))\n|> unwrap_format\n|> _assert_eq #?*(\"aaabb\", \"c\", new_parser_state 0 1 6 6)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "aaabbc"
+  |> run_parser (many1_strings (p_char 'a' <|> p_char 'b'))
+  |> unwrap_format
+  |> _assert_eq #?*("aaabb", "c", new_parser_state 0 1 6 6)
+  """,
+  timeout: 300_000
+)
+```
+
+### many_strings
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_strings (p : parser _) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many_strings\" fun () => { t_len = ##t }\n    match p (t, i, s) with\n    | Error _ => Ok (\"\", i, s)\n    | Ok (_, i', _) when i' = i => fail (fun _ => \"parsing.many_strings / first inner parser consumed no text\") i s\n    | Ok (r, i', s') when rust.rust.is_native () =>\n        // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev\n        // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.\n        inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'\n        inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'\n        inl first = string_of r\n        let rec 루프 (n : int) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                inl r = if n = 0 then first else $'Rc::<str>::from(!buf.borrow().as_str())' : string\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' =>\n                if n = 0 then push first\n                push (string_of r')\n                s'' |> 루프 (n + 1) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 0 i'\n    | Ok (r, i', s') =>\n        let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                // one element: the string itself (`++# \"\"` copies it on native Rust)\n                inl r = string_of r\n                inl r =\n                    match acc with\n                    | [] => r\n                    | _ => r ++# (acc |> concat_rev)\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (string_of r' :: acc) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 [] i'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many_strings (p : parser _) : parser string = fun t, i, s =>
+      trace_entry "parsing.many_strings" fun () => { t_len = ##t }
+      match p (t, i, s) with
+      | Error _ => Ok ("", i, s)
+      | Ok (_, i', _) when i' = i => fail (fun _ => "parsing.many_strings / first inner parser consumed no text") i s
+      | Ok (r, i', s') when rust.rust.is_native () =>
+          // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
+          // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.
+          inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'
+          inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
+          inl first = string_of r
+          let rec 루프 (n : int) (i' : int) s' : result (string * int * _) _ =
+              match p (t, i', s') with
+              | Error _ =>
+                  inl r = if n = 0 then first else $'Rc::<str>::from(!buf.borrow().as_str())' : string
+                  Ok (r, i', s')
+              | Ok (r', i'', s'') when i'' > i' =>
+                  if n = 0 then push first
+                  push (string_of r')
+                  s'' |> 루프 (n + 1) i''
+              | Ok _ => fail (fun _ => "parsing.many_strings / inner parser succeeded without consuming text") i' s'
+          s' |> 루프 0 i'
+      | Ok (r, i', s') =>
+          let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
+              match p (t, i', s') with
+              | Error _ =>
+                  // one element: the string itself (`++# ""` copies it on native Rust)
+                  inl r = string_of r
+                  inl r =
+                      match acc with
+                      | [] => r
+                      | _ => r ++# (acc |> concat_rev)
+                  Ok (r, i', s')
+              | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (string_of r' :: acc) i''
+              | Ok _ => fail (fun _ => "parsing.many_strings / inner parser succeeded without consuming text") i' s'
+          s' |> 루프 [] i'
+  """,
+  timeout: 300_000
+)
+```
+
+### choice
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per\n// call, which on native Rust cost one allocation per element, list node and the empty list on every call).\ninl choice forall t. (ps : list (parser t)) : parser t =\n    inl none : parser t = fun _, i, s =>\n        fail (fun _ => \"parsing.choice / no parsers succeeded\") i s\n    (ps, none) ||> listm.foldBack (<|>)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  // A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per
+  // call, which on native Rust cost one allocation per element, list node and the empty list on every call).
+  inl choice forall t. (ps : list (parser t)) : parser t =
+      inl none : parser t = fun _, i, s =>
+          fail (fun _ => "parsing.choice / no parsers succeeded") i s
+      (ps, none) ||> listm.foldBack (<|>)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"bca\"\n|> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])\n|> unwrap_format\n|> _assert_eq #?*('b', \"ca\", new_parser_state 0 1 2 3)\n\n\"cba\"\n|> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])\n|> unwrap_format\n|> _assert_eq #?*('c', \"ba\", new_parser_state 0 1 2 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "bca"
+  |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
+  |> unwrap_format
+  |> _assert_eq #?*('b', "ca", new_parser_state 0 1 2 3)
+
+  "cba"
+  |> run_parser (choice [ p_char 'a'; p_char 'b'; p_char 'c' ])
+  |> unwrap_format
+  |> _assert_eq #?*('c', "ba", new_parser_state 0 1 2 3)
+  """,
+  timeout: 300_000
+)
+```
+
+### between
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl between p_open p_close p_content : parser _ = fun t, i, s =>\n    trace_entry \"parsing.between\" fun () => { t_len = ##t; i s }\n    match p_open (t, i, s) with\n    | Ok (_, i', s') =>\n        match p_content (t, i', s') with\n        | Ok (result, i'', s'') =>\n            match p_close (t, i'', s'') with\n            | Ok (_, i''', s''') => Ok (result, i''', s''')\n            | Error e' =>\n                // the only failure that keeps run-time data (the inner error and both positions): allocates\n                fail\n                    fun t, _, _ =>\n                        inl e = fun () => e' |> error_message t\n                        inl t_len = ##t\n                        inl end' = (i' + get_max_context ()) |> min t_len\n                        inl end'' = (i'' + get_max_context ()) |> min t_len\n                        inl rest' = t |> slice i' end'\n                        inl rest'' = t |> slice i'' end''\n                        \"parsing.between / expected closing delimiter / \" ++#? { e t rest' rest'' }\n                    i'' s''\n        | Error _ =>\n            match p_close (t, i', s') with\n            | Ok (_, i''', s''') => Ok (\"\", i''', s''')\n            | Error _ =>\n                fail\n                    fun t, i', _ =>\n                        inl end' = (i' + get_max_context ()) |> min ##t\n                        inl rest' = t |> slice i' end'\n                        \"parsing.between / expected content or closing delimiter / \" ++#? { rest' }\n                    i' s'\n    | Error e => e |> Error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl between p_open p_close p_content : parser _ = fun t, i, s =>
+      trace_entry "parsing.between" fun () => { t_len = ##t; i s }
+      match p_open (t, i, s) with
+      | Ok (_, i', s') =>
+          match p_content (t, i', s') with
+          | Ok (result, i'', s'') =>
+              match p_close (t, i'', s'') with
+              | Ok (_, i''', s''') => Ok (result, i''', s''')
+              | Error e' =>
+                  // the only failure that keeps run-time data (the inner error and both positions): allocates
+                  fail
+                      fun t, _, _ =>
+                          inl e = fun () => e' |> error_message t
+                          inl t_len = ##t
+                          inl end' = (i' + get_max_context ()) |> min t_len
+                          inl end'' = (i'' + get_max_context ()) |> min t_len
+                          inl rest' = t |> slice i' end'
+                          inl rest'' = t |> slice i'' end''
+                          "parsing.between / expected closing delimiter / " ++#? { e t rest' rest'' }
+                      i'' s''
+          | Error _ =>
+              match p_close (t, i', s') with
+              | Ok (_, i''', s''') => Ok ("", i''', s''')
+              | Error _ =>
+                  fail
+                      fun t, i', _ =>
+                          inl end' = (i' + get_max_context ()) |> min ##t
+                          inl rest' = t |> slice i' end'
+                          "parsing.between / expected content or closing delimiter / " ++#? { rest' }
+                      i' s'
+      | Error e => e |> Error
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\n\"[aaabb\"\n|> parse_ (between_ (p_char_ '[') (p_char_ ']') (many1_chars_ (p_char_ 'a' <|>$ p_char_ 'b')))\n|> resultm.unwrap_err\n|> sm'.format_debug","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  "[aaabb"
+  |> parse_ (between_ (p_char_ '[') (p_char_ ']') (many1_chars_ (p_char_ 'a' <|>$ p_char_ 'b')))
+  |> resultm.unwrap_err
+  |> sm'.format_debug
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"[aaabb]\"\n|> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))\n|> unwrap_format\n|> _assert_eq #?*(\"aaabb\", \"\", new_parser_state 0 1 8 7)\n\n\"[aaabb\"\n|> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))\n|> resultm.map_error eval\n|> resultm.unwrap_err\n|> sm'.format_debug\n|> _assert_eq (\n    \"parsing.between / expected closing delimiter / \"\n    ++# \"{ e = parsing.p_char / unexpected end of text / { c = ]; \"\n    ++# \"s' = \" ++#? (new_parser_state 0 1 7 6) ++# \" }; \"\n    ++# \"t = [aaabb; rest' = aaabb; rest'' =  }\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "[aaabb]"
+  |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
+  |> unwrap_format
+  |> _assert_eq #?*("aaabb", "", new_parser_state 0 1 8 7)
+
+  "[aaabb"
+  |> run_parser (between (p_char '[') (p_char ']') (many1_chars (p_char 'a' <|> p_char 'b')))
+  |> resultm.map_error eval
+  |> resultm.unwrap_err
+  |> sm'.format_debug
+  |> _assert_eq (
+      "parsing.between / expected closing delimiter / "
+      ++# "{ e = parsing.p_char / unexpected end of text / { c = ]; "
+      ++# "s' = " ++#? (new_parser_state 0 1 7 6) ++# " }; "
+      ++# "t = [aaabb; rest' = aaabb; rest'' =  }"
+  )
+  """,
+  timeout: 300_000
+)
+```
+
+### sep_by
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sep_by forall b. p sep : parser (list b) = fun t, i, s =>\n    trace_entry \"parsing.sep_by\" fun () => { t_len = ##t; i s }\n    match p (t, i, s) with\n    | Error _ => Ok ([], i, s)\n    | Ok (first, i', s') =>\n        let rec 루프 (acc : list b) (i'' : int) s'' : result (list b * int * parser_state) _ =\n            match sep (t, i'', s'') with\n            | Error _ => Ok (acc |> listm.rev, i'', s'')\n            | Ok (_, i''', s''') =>\n                if i''' = i'' then\n                    fail (fun _ => \"parsing.sep_by / separator consumed no text\") i'' s''\n                else\n                    match p (t, i''', s''') with\n                    | Ok (x, i'''', s'''') => s'''' |> 루프 (x :: acc) i''''\n                    | Error _ => Ok (acc |> listm.rev, i'', s'')\n        s' |> 루프 [ first ] i'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sep_by forall b. p sep : parser (list b) = fun t, i, s =>
+      trace_entry "parsing.sep_by" fun () => { t_len = ##t; i s }
+      match p (t, i, s) with
+      | Error _ => Ok ([], i, s)
+      | Ok (first, i', s') =>
+          let rec 루프 (acc : list b) (i'' : int) s'' : result (list b * int * parser_state) _ =
+              match sep (t, i'', s'') with
+              | Error _ => Ok (acc |> listm.rev, i'', s'')
+              | Ok (_, i''', s''') =>
+                  if i''' = i'' then
+                      fail (fun _ => "parsing.sep_by / separator consumed no text") i'' s''
+                  else
+                      match p (t, i''', s''') with
+                      | Ok (x, i'''', s'''') => s'''' |> 루프 (x :: acc) i''''
+                      | Error _ => Ok (acc |> listm.rev, i'', s'')
+          s' |> 루프 [ first ] i'
+  """,
+  timeout: 300_000
+)
+```
+
+### sep_end_by
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sep_end_by forall b. p sep : parser (list b) = fun t, i, s =>\n    trace_entry \"parsing.sep_end_by\" fun () => { t_len = ##t; i s }\n    let rec 루프 acc i' s' =\n        match p (t, i', s') with\n        | Error _ => Ok (acc |> listm.rev, i', s')\n        | Ok (x, i'', s'') =>\n            if i'' = i' then\n                fail (fun _ => \"parsing.sep_end_by / element parser consumed no text\") i' s'\n            else\n                inl acc' = x :: acc\n                match sep (t, i'', s'') with\n                | Error _ => Ok (acc' |> listm.rev, i'', s'')\n                | Ok (_, i''', s''') =>\n                    if i''' <> i''\n                    then s''' |> 루프 acc' i'''\n                    else fail (fun _ => \"parsing.sep_end_by / separator consumed no text\") i'' s''\n    s |> 루프 [] i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sep_end_by forall b. p sep : parser (list b) = fun t, i, s =>
+      trace_entry "parsing.sep_end_by" fun () => { t_len = ##t; i s }
+      let rec 루프 acc i' s' =
+          match p (t, i', s') with
+          | Error _ => Ok (acc |> listm.rev, i', s')
+          | Ok (x, i'', s'') =>
+              if i'' = i' then
+                  fail (fun _ => "parsing.sep_end_by / element parser consumed no text") i' s'
+              else
+                  inl acc' = x :: acc
+                  match sep (t, i'', s'') with
+                  | Error _ => Ok (acc' |> listm.rev, i'', s'')
+                  | Ok (_, i''', s''') =>
+                      if i''' <> i''
+                      then s''' |> 루프 acc' i'''
+                      else fail (fun _ => "parsing.sep_end_by / separator consumed no text") i'' s''
+      s |> 루프 [] i
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"sep_end_by\"\n|> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))\n|> unwrap_format\n|> _assert_eq #?*([ 's' ], \"p_end_by\", new_parser_state 0 1 3 10)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "sep_end_by"
+  |> run_parser (sep_end_by (p_char 's' <|> p_char 'e') (p_char 'e'))
+  |> unwrap_format
+  |> _assert_eq #?*([ 's' ], "p_end_by", new_parser_state 0 1 3 10)
+  """,
+  timeout: 300_000
+)
+```
+
+### is_space
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_space c =\n    c = ' ' || c = '\\t' || c = '\\r'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_space c =
+      c = ' ' || c = '\t' || c = '\r'
+  """,
+  timeout: 300_000
+)
+```
+
+### spaces1
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>\n    inl i', s' = s |> advance_while_no_nl is_space t i\n    if i' <> i\n    then Ok ((), i', s')\n    else\n        fail\n            fun t, i, (parser_state s') =>\n                inl preview_end = (i + get_max_context ()) |> min s'.text_length\n                \"parsing.spaces1 / expected at least one space / \"\n                ++#? { rest = t |> slice i preview_end }\n            i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl spaces1 () : parser () = fun t, i, (parser_state s' as s) =>
+      inl i', s' = s |> advance_while_no_nl is_space t i
+      if i' <> i
+      then Ok ((), i', s')
+      else
+          fail
+              fun t, i, (parser_state s') =>
+                  inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                  "parsing.spaces1 / expected at least one space / "
+                  ++#? { rest = t |> slice i preview_end }
+              i s
+  """,
+  timeout: 300_000
+)
+```
+
+### spaces
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl spaces () : parser () = fun t, i, s =>\n    inl i', s' = s |> advance_while_no_nl is_space t i\n    Ok ((), i', s')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl spaces () : parser () = fun t, i, s =>
+      inl i', s' = s |> advance_while_no_nl is_space t i
+      Ok ((), i', s')
+  """,
+  timeout: 300_000
+)
+```
+
+### p_digit
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl p_digit () : parser char = fun t, i, (parser_state s' as s) =>\n    if i >= s'.text_length then\n        fail (fun _, _, s => \"parsing.p_digit / unexpected end of text / \" ++#? { s }) i s\n    else\n        match t |> sm'.index i with\n        | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c =>\n            Ok (c, i + 1, c |> update_char s)\n        | _ => fail (fun t, i, _ => \"parsing.p_digit / unexpected char / \" ++#? { c = t |> sm'.index i }) i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl p_digit () : parser char = fun t, i, (parser_state s' as s) =>
+      if i >= s'.text_length then
+          fail (fun _, _, s => "parsing.p_digit / unexpected end of text / " ++#? { s }) i s
+      else
+          match t |> sm'.index i with
+          | '0' | '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' as c =>
+              Ok (c, i + 1, c |> update_char s)
+          | _ => fail (fun t, i, _ => "parsing.p_digit / unexpected char / " ++#? { c = t |> sm'.index i }) i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"1 2 3\"\n|> run_parser (sep_by (p_digit ()) (spaces1 ()))\n|> unwrap_format\n|> _assert_eq #?*([ '1'; '2'; '3' ], \"\", new_parser_state 0 1 6 5)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "1 2 3"
+  |> run_parser (sep_by (p_digit ()) (spaces1 ()))
+  |> unwrap_format
+  |> _assert_eq #?*([ '1'; '2'; '3' ], "", new_parser_state 0 1 6 5)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n\n\"1 a 2\"\n|> run_parser (sep_by (p_digit ()) (spaces1 ()))\n|> unwrap_format\n|> _assert_eq #?*([ '1' ], \" a 2\", new_parser_state 0 1 2 5)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> typescript
+
+  "1 a 2"
+  |> run_parser (sep_by (p_digit ()) (spaces1 ()))
+  |> unwrap_format
+  |> _assert_eq #?*([ '1' ], " a 2", new_parser_state 0 1 2 5)
+  """,
+  timeout: 300_000
+)
+```
+
+### opt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl opt p : parser (option _) = fun t, i, s =>\n    match p (t, i, s) with\n    | Ok (r, i', s') => Ok (Some (fun () => r), i', s')\n    | Error _ => Ok (None, i, s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl opt p : parser (option _) = fun t, i, s =>
+      match p (t, i, s) with
+      | Ok (r, i', s') => Ok (Some (fun () => r), i', s')
+      | Error _ => Ok (None, i, s)
+  """,
+  timeout: 300_000
+)
+```
+
+### rest_of_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rest_of_line () : parser string = fun t, i, s =>\n    inl i'', s' = s |> advance_while_no_nl ((<>) '\\n') t i\n    Ok (t |> slice i i'', i'', s')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rest_of_line () : parser string = fun t, i, s =>
+      inl i'', s' = s |> advance_while_no_nl ((<>) '\n') t i
+      Ok (t |> slice i i'', i'', s')
+  """,
+  timeout: 300_000
+)
+```
+
+### eof
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl eof () : parser () = fun t, i, (parser_state s' as s) =>\n    if s'.text_length = i\n    then Ok ((), i, s)\n    else\n        fail\n            fun t, i, (parser_state s') =>\n                \"parsing.eof / expected end of text / \"\n                ++#? { rest = t |> slice i s'.text_length }\n            i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl eof () : parser () = fun t, i, (parser_state s' as s) =>
+      if s'.text_length = i
+      then Ok ((), i, s)
+      else
+          fail
+              fun t, i, (parser_state s') =>
+                  "parsing.eof / expected end of text / "
+                  ++#? { rest = t |> slice i s'.text_length }
+              i s
+  """,
+  timeout: 300_000
+)
+```
+
+### p_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl p_string (str : string) : parser string = fun t, i, (parser_state s' as s) =>\n    inl len = ##str\n    if s'.text_length - i < len then\n        fail (fun _, _, s => \"parsing.p_string / unexpected end of text / \" ++#? { expected = str; s }) i s\n    else\n        let rec eq k =\n            if k >= len\n            then true\n            else t |> sm'.index (i + k) = str |> sm'.index k && eq (k + 1)\n        if eq 0\n        then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)\n        else\n            fail\n                fun t, i, (parser_state s' as s) =>\n                    inl preview_end = (i + get_max_context ()) |> min s'.text_length\n                    inl rest = t |> slice i preview_end\n                    inl got = t |> slice i (i + len)\n                    \"parsing.p_string / unexpected string / \"\n                    ++#? { expected = str; got rest s }\n                i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl p_string (str : string) : parser string = fun t, i, (parser_state s' as s) =>
+      inl len = ##str
+      if s'.text_length - i < len then
+          fail (fun _, _, s => "parsing.p_string / unexpected end of text / " ++#? { expected = str; s }) i s
+      else
+          let rec eq k =
+              if k >= len
+              then true
+              else t |> sm'.index (i + k) = str |> sm'.index k && eq (k + 1)
+          if eq 0
+          then Ok (t |> slice i (i + len), i + len, s |> update_span t i len)
+          else
+              fail
+                  fun t, i, (parser_state s' as s) =>
+                      inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                      inl rest = t |> slice i preview_end
+                      inl got = t |> slice i (i + len)
+                      "parsing.p_string / unexpected string / "
+                      ++#? { expected = str; got rest s }
+                  i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"hello world\"\n|> run_parser (p_string \"hello\")\n|> unwrap_format\n|> _assert_eq #?*(\"hello\", \" world\", new_parser_state 0 1 6 11)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "hello world"
+  |> run_parser (p_string "hello")
+  |> unwrap_format
+  |> _assert_eq #?*("hello", " world", new_parser_state 0 1 6 11)
+  """,
+  timeout: 300_000
+)
+```
+
+### new_line
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_line () : parser char = fun t, i, (parser_state s' as s) =>\n    if i >= s'.text_length then\n        fail (fun _, _, s => \"parsing.new_line / unexpected end of text / \" ++#? { s }) i s\n    else\n        inl c = t |> sm'.index i\n        if c = '\\n'\n        then Ok (c, i + 1, c |> update_char s)\n        else\n            fail\n                fun t, i, (parser_state s' as s) =>\n                    inl preview_end = (i + get_max_context ()) |> min s'.text_length\n                    inl rest = t |> slice i preview_end\n                    \"parsing.new_line / expected new line char / \"\n                    ++#? { first_char = t |> sm'.index i; rest s }\n                i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_line () : parser char = fun t, i, (parser_state s' as s) =>
+      if i >= s'.text_length then
+          fail (fun _, _, s => "parsing.new_line / unexpected end of text / " ++#? { s }) i s
+      else
+          inl c = t |> sm'.index i
+          if c = '\n'
+          then Ok (c, i + 1, c |> update_char s)
+          else
+              fail
+                  fun t, i, (parser_state s' as s) =>
+                      inl preview_end = (i + get_max_context ()) |> min s'.text_length
+                      inl rest = t |> slice i preview_end
+                      "parsing.new_line / expected new line char / "
+                      ++#? { first_char = t |> sm'.index i; rest s }
+                  i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"hello\\nworld\"\n|> run_parser (many_chars_till (any_char ()) (new_line ()))\n|> unwrap_format\n|> _assert_eq #?*(\"hello\", \"\\nworld\", new_parser_state 0 1 6 11)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "hello\nworld"
+  |> run_parser (many_chars_till (any_char ()) (new_line ()))
+  |> unwrap_format
+  |> _assert_eq #?*("hello", "\nworld", new_parser_state 0 1 6 11)
+  """,
+  timeout: 300_000
+)
+```
+
+### many_till
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun t, i, s =>\n    trace_entry \"parsing.many_till\" fun () => { i t_len = ##t }\n    let rec 루프 (acc : list b) (i' : int) s' : result (_ * int * parser_state) _ =\n        match end_p (t, i', s') with\n        | Ok (_, i'', s'') => Ok (acc |> listm.rev, i'', s'')\n        | Error _ =>\n            match p (t, i', s') with\n            | Ok (x, i'', s'') =>\n                if i'' <> i'\n                then s'' |> 루프 (x :: acc) i''\n                else fail (fun _ => \"parsing.many_till / inner parser succeeded without consuming text\") i' s'\n            | Error e => e |> Error\n    s |> 루프 [] i","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl many_till forall b c. (p : parser b) (end_p : parser c) : parser _ = fun t, i, s =>
+      trace_entry "parsing.many_till" fun () => { i t_len = ##t }
+      let rec 루프 (acc : list b) (i' : int) s' : result (_ * int * parser_state) _ =
+          match end_p (t, i', s') with
+          | Ok (_, i'', s'') => Ok (acc |> listm.rev, i'', s'')
+          | Error _ =>
+              match p (t, i', s') with
+              | Ok (x, i'', s'') =>
+                  if i'' <> i'
+                  then s'' |> 루프 (x :: acc) i''
+                  else fail (fun _ => "parsing.many_till / inner parser succeeded without consuming text") i' s'
+              | Error e => e |> Error
+      s |> 루프 [] i
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"hello\\nworld\"\n|> run_parser (many_till (any_char ()) (new_line ()))\n|> unwrap_format\n|> _assert_eq #?*(['h'; 'e'; 'l'; 'l'; 'o'], \"world\", new_parser_state 6 2 1 11)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "hello\nworld"
+  |> run_parser (many_till (any_char ()) (new_line ()))
+  |> unwrap_format
+  |> _assert_eq #?*(['h'; 'e'; 'l'; 'l'; 'o'], "world", new_parser_state 6 2 1 11)
+  """,
+  timeout: 300_000
+)
+```
+
+### p_return
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl p_return forall t. (x : t) : parser t = fun t, i, s =>\n    Ok (x, i, s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl p_return forall t. (x : t) : parser t = fun t, i, s =>
+      Ok (x, i, s)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"abc\"\n|> run_parser (p_return 42i32)\n|> unwrap_format\n|> _assert_eq #?*(42i32, \"abc\", new_parser_state 0 1 1 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "abc"
+  |> run_parser (p_return 42i32)
+  |> unwrap_format
+  |> _assert_eq #?*(42i32, "abc", new_parser_state 0 1 1 3)
+  """,
+  timeout: 300_000
+)
+```
+
+### attempt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl attempt forall t. (p : parser t) : parser t = fun t, i, s =>\n    match p (t, i, s) with\n    | Ok (r, i', s') => Ok (r, i', s')\n    | Error e => e |> Error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl attempt forall t. (p : parser t) : parser t = fun t, i, s =>
+      match p (t, i, s) with
+      | Ok (r, i', s') => Ok (r, i', s')
+      | Error e => e |> Error
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"aabbcc\"\n|> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))\n|> resultm.map_error eval\n|> _assert_eq (Error \"parsing.p_char / { expected = c; line = 1; col = 4 }\\naabbcc\\n   ^\\n\")","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "aabbcc"
+  |> run_parser (attempt (p_char 'a' >>. p_char 'a' >>. p_char 'b' >>. p_char 'c'))
+  |> resultm.map_error eval
+  |> _assert_eq (Error "parsing.p_char / { expected = c; line = 1; col = 4 }\naabbcc\n   ^\n")
+  """,
+  timeout: 300_000
+)
+```
+
+### look_ahead
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl look_ahead (p : parser _) : parser _ = fun t, i, s =>\n    match p (t, i, s) with\n    | Ok (x, _, _) => Ok (x, i, s)\n    | Error e => e |> Error","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl look_ahead (p : parser _) : parser _ = fun t, i, s =>
+      match p (t, i, s) with
+      | Ok (x, _, _) => Ok (x, i, s)
+      | Error e => e |> Error
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"123\"\n|> run_parser (look_ahead (many1_chars (p_digit ())))\n|> unwrap_format\n|> _assert_eq #?*(\"123\", \"123\", new_parser_state 0 1 1 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "123"
+  |> run_parser (look_ahead (many1_chars (p_digit ())))
+  |> unwrap_format
+  |> _assert_eq #?*("123", "123", new_parser_state 0 1 1 3)
+  """,
+  timeout: 300_000
+)
+```
+
+### pipe2
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c = fun t, i, s =>\n    match p1 (t, i, s) with\n    | Error e => e |> Error\n    | Ok (ra, i', s') =>\n        p2 (t, i', s')\n        |> resultm.map fun rb, i'', s'' =>\n            f ((fun () => ra), (fun () => rb)), i'', s''","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl pipe2 forall a b c. (p1 : parser a) (p2 : parser b) (f : ((() -> a) * (() -> b)) -> c) : parser c = fun t, i, s =>
+      match p1 (t, i, s) with
+      | Error e => e |> Error
+      | Ok (ra, i', s') =>
+          p2 (t, i', s')
+          |> resultm.map fun rb, i'', s'' =>
+              f ((fun () => ra), (fun () => rb)), i'', s''
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"pipe2\"\n|> run_parser (pipe2 (p_string \"pipe\") (spaces () >>. p_string \"2\") (fun a, b => a () ++# b ()))\n|> unwrap_format\n|> _assert_eq #?*(\"pipe2\", \"\", new_parser_state 0 1 6 5)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "pipe2"
+  |> run_parser (pipe2 (p_string "pipe") (spaces () >>. p_string "2") (fun a, b => a () ++# b ()))
+  |> unwrap_format
+  |> _assert_eq #?*("pipe2", "", new_parser_state 0 1 6 5)
+  """,
+  timeout: 300_000
+)
+```
+
+### new_lines
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_lines () : parser () = fun t, i, s =>\n    inl i', s' = s |> advance_newlines t i\n    Ok ((), i', s')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_lines () : parser () = fun t, i, s =>
+      inl i', s' = s |> advance_newlines t i
+      Ok ((), i', s')
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"\\n\\nline1\\nline2\\n\\nline4\"\n|> run_parser (many_till (any_char ()) (new_lines ()))\n|> unwrap_format\n|> _assert_eq #?*(([] : _ char), \"line1\\nline2\\n\\nline4\", new_parser_state 2 3 1 20)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "\n\nline1\nline2\n\nline4"
+  |> run_parser (many_till (any_char ()) (new_lines ()))
+  |> unwrap_format
+  |> _assert_eq #?*(([] : _ char), "line1\nline2\n\nline4", new_parser_state 2 3 1 20)
+  """,
+  timeout: 300_000
+)
+```
+
+### new_lines1
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>\n    inl i', s'' = s |> advance_newlines t i\n    if i' <> i\n    then Ok ((), i', s'')\n    else\n        fail\n            fun t, i, (parser_state s') =>\n                inl preview_end = i + get_max_context () |> min s'.text_length\n                \"parsing.new_lines1 / expected at least one new line / \"\n                ++#? { rest = t |> slice i preview_end }\n            i s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_lines1 () : parser () = fun t, i, (parser_state s' as s) =>
+      inl i', s'' = s |> advance_newlines t i
+      if i' <> i
+      then Ok ((), i', s'')
+      else
+          fail
+              fun t, i, (parser_state s') =>
+                  inl preview_end = i + get_max_context () |> min s'.text_length
+                  "parsing.new_lines1 / expected at least one new line / "
+                  ++#? { rest = t |> slice i preview_end }
+              i s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n\"\\n\\n\\n\"\n|> run_parser (new_lines1 ())\n|> unwrap_format\n|> _assert_eq #?*(\"\", new_parser_state 3 4 1 3)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  "\n\n\n"
+  |> run_parser (new_lines1 ())
+  |> unwrap_format
+  |> _assert_eq #?*("", new_parser_state 3 4 1 3)
+  """,
+  timeout: 300_000
+)
+```

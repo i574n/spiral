@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recorded_hash_changed_caller_collision
     (collision :
         typed_fx_hashed_statement_identity_collision

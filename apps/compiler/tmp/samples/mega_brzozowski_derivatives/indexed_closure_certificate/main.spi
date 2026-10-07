@@ -128,8 +128,8 @@ inl swapped_symbol_bit_row (capability : indexed_dfa_capability bit_alphabet) : 
                 IndexedDfaTransitionVectorNil))
 
 inl main () : string =
-    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
-    inl bit_symbol_equality = make_indexed_symbol_equality `bit_alphabet ()
+    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
+    inl bit_symbol_equality : indexed_symbol_equality bit_alphabet = make_indexed_symbol_equality ()
     inl bit_descriptor = bit_indexed_finite_alphabet_descriptor ()
     inl bit_closure = indexed_dfa_closure bit_capability (ends_with_zero ()) bit_descriptor
     inl bit_symbols = bit_finite_symbol_vector ()
@@ -142,8 +142,8 @@ inl main () : string =
     match seal_sound_indexed_dfa_surface bit_capability bit_symbol_equality (ends_with_zero ()) bit_descriptor with
     | IndexedSoundDfaSurfaceCertified _ => ()
     | IndexedSoundDfaSurfaceRejected => failwith "bit-sound-indexed-surface-must-certify"
-    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
-    inl tri_symbol_equality = make_indexed_symbol_equality `tri_alphabet ()
+    inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+    inl tri_symbol_equality : indexed_symbol_equality tri_alphabet = make_indexed_symbol_equality ()
     inl tri_descriptor = tri_indexed_finite_alphabet_descriptor ()
     match seal_sound_indexed_dfa_surface tri_capability tri_symbol_equality (tri_ab_star_then_c ()) tri_descriptor with
     | IndexedSoundDfaSurfaceCertified _ => ()

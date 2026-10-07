@@ -9,7 +9,7 @@ $cwd = (Get-Location).Path
 $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null
 foreach ($arg in $args) {
-    if ($arg -in @("--path", "--output-path", "--spi-path")) {
+    if ($arg -in @("--path", "--output-path", "--spi-path", "--spir-path", "--fs-path")) {
         $key = $arg
         $fixed.Add($arg)
     }

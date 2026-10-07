@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_bool_normalization_progress_source_type_mismatch ()
     : exact_linear_indexed_term
         exact_linear_free_context_empty

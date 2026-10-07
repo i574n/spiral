@@ -1,0 +1,172 @@
+# guid
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+## guid
+
+<!-- livebook:{"break_markdown":true} -->
+
+### guid
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal guid_python =\n    `(\n        global \"import uuid\"\n        $'' : $'uuid.UUID'\n    )\ntype guid_switch =\n    {\n        Gleam : string\n        Lua : string\n        Fsharp : $'System.Guid'\n        Python : guid_python\n        Rust : $'Rc<str>'\n    }\nnominal guid = $'backend_switch `(guid_switch)'","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal guid_python =
+      `(
+          global "import uuid"
+          $'' : $'uuid.UUID'
+      )
+  type guid_switch =
+      {
+          Gleam : string
+          Lua : string
+          Fsharp : $'System.Guid'
+          Python : guid_python
+          Rust : $'Rc<str>'
+      }
+  nominal guid = $'backend_switch `(guid_switch)'
+  """,
+  timeout: 300_000
+)
+```
+
+### new_guid
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_guid (x : string) : guid =\n    run_target_args (fun () => x) function\n        | Gleam => fun x => $'!x '\n        | Lua => fun x => $'!x '\n        | Cuda => fun x =>\n            global \"import uuid\" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)\n            $'!x '\n        // Native Rust: lowercase, like System.Guid's text\n        | RustNative => fun x => $'Rc::<str>::from(!x.to_lowercase())'\n        | _ => fun x => $'!x |> `guid '","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_guid (x : string) : guid =
+      run_target_args (fun () => x) function
+          | Gleam => fun x => $'!x '
+          | Lua => fun x => $'!x '
+          | Cuda => fun x =>
+              global "import uuid" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)
+              $'!x '
+          // Native Rust: lowercase, like System.Guid's text
+          | RustNative => fun x => $'Rc::<str>::from(!x.to_lowercase())'
+          | _ => fun x => $'!x |> `guid '
+  """,
+  timeout: 300_000
+)
+```
+
+### new_raw_guid
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_raw_guid () : guid =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_uuid\"\n            $'gleam_uuid.v4_string ()' : guid\n        Lua = fun () => $'\"\"' : guid\n        Fsharp = fun () => $'System.Guid.NewGuid' () : guid\n        Python = fun () =>\n            // the nominal's type-level `global \"import uuid\"` doesn't reach the output (FINDINGS 52)\n            global \"import uuid\"\n            $'uuid.uuid4()' : guid\n        // Native Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).\n        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\\!(\"{:08x}-{:04x}-{:04x}-{:04x}-{:012x}\", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_raw_guid () : guid =
+      backend_switch {
+          Gleam = fun () =>
+              global "import gleam_uuid"
+              $'gleam_uuid.v4_string ()' : guid
+          Lua = fun () => $'""' : guid
+          Fsharp = fun () => $'System.Guid.NewGuid' () : guid
+          Python = fun () =>
+              // the nominal's type-level `global "import uuid"` doesn't reach the output (FINDINGS 52)
+              global "import uuid"
+              $'uuid.uuid4()' : guid
+          // Native Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).
+          Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### hash_guid
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type hash_guid = guid\n\nlet hash_guid (hash : string) : hash_guid =\n    run_target function\n        | _ => fun () =>\n            inl dash = \"-\"\n            join\n                inl hash = hash |> sm'.pad_left 32i32 '0'\n                inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)\n                inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)\n                inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)\n                inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)\n                inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)\n                a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e\n                |> new_guid","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type hash_guid = guid
+
+  let hash_guid (hash : string) : hash_guid =
+      run_target function
+          | _ => fun () =>
+              inl dash = "-"
+              join
+                  inl hash = hash |> sm'.pad_left 32i32 '0'
+                  inl a = hash |> sm'.range (am'.Start 0i32) (am'.End fun _ => 8)
+                  inl b = hash |> sm'.range (am'.Start 8i32) (am'.End fun _ => 12)
+                  inl c = hash |> sm'.range (am'.Start 12i32) (am'.End fun _ => 16)
+                  inl d = hash |> sm'.range (am'.Start 16i32) (am'.End fun _ => 20)
+                  inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
+                  a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
+                  |> new_guid
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"\"\n|> hash_guid\n|> _assert_eq' (\"00000000-0000-0000-0000-000000000000\" |> new_guid)\n\n\"123456789012345678901234567890123\"\n|> hash_guid\n|> _assert_eq' (\"12345678-9012-3456-7890-123456789012\" |> new_guid)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  ""
+  |> hash_guid
+  |> _assert_eq' ("00000000-0000-0000-0000-000000000000" |> new_guid)
+
+  "123456789012345678901234567890123"
+  |> hash_guid
+  |> _assert_eq' ("12345678-9012-3456-7890-123456789012" |> new_guid)
+  """,
+  timeout: 300_000
+)
+```
+
+## main
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> fsharp\n\ninl main () =\n    $'let new_guid x = !new_guid x' : ()\n    $'let hash_guid x = !hash_guid x' : ()\n    $'let new_raw_guid x = !new_raw_guid x' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///> fsharp
+
+  inl main () =
+      $'let new_guid x = !new_guid x' : ()
+      $'let hash_guid x = !hash_guid x' : ()
+      $'let new_raw_guid x = !new_raw_guid x' : ()
+  """,
+  timeout: 300_000
+)
+```

@@ -150,7 +150,9 @@ defmodule Spiral.Kino.CompilerDaemon do
           {{:error, message}, safe_stop_compiler(state)}
       end
 
-    ms = System.monotonic_time(:millisecond) - started
+    # a cold compile (the first on a fresh compiler: it loads every package) is not the cell's own time: all of it is
+    # reported as queue, so the cell's budget isn't spent on it
+    ms = if Process.delete(:spiral_kino_cold), do: 0, else: System.monotonic_time(:millisecond) - started
     result = normalize(result)
     log_compile(req, ms, result)
     retire_when_idle({:reply, {:compiled, result, ms}, state})
@@ -267,7 +269,7 @@ defmodule Spiral.Kino.CompilerDaemon do
       {:ok, state} ->
         case session(state, req) do
           {:ok, _revision} = reply ->
-            {reply, state}
+            {reply, warm(state)}
 
           {:error, :timeout} = reply ->
             {reply, stop_compiler(state)}
@@ -280,7 +282,8 @@ defmodule Spiral.Kino.CompilerDaemon do
 
               retry_compile(stop_compiler(state), req)
             else
-              {reply, state}
+              # a rejected program still loaded the packages
+              {reply, warm(state)}
             end
         end
 
@@ -294,7 +297,7 @@ defmodule Spiral.Kino.CompilerDaemon do
       {:ok, state} ->
         case session(state, req) do
           {:ok, _revision} = reply ->
-            {reply, state}
+            {reply, warm(state)}
 
           {:error, :timeout} = reply ->
             {reply, stop_compiler(state)}
@@ -307,6 +310,9 @@ defmodule Spiral.Kino.CompilerDaemon do
         {{:error, message}, state}
     end
   end
+
+  defp warm(%{compiler: %{} = compiler} = state), do: %{state | compiler: Map.put(compiler, :warm, true)}
+  defp warm(state), do: state
 
   defp prepare_compiler(state, mtime) do
     case state.compiler do
@@ -406,8 +412,16 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
+  # The first compile on a fresh compiler loads every package (minutes on a loaded machine): with the cell's budget as its
+  # timeout it timed out, the timeout stopped the compiler, and the next compile was cold again (the 14:2x lib reruns:
+  # every compile 'timeout 30xxxx ms'). A cold compile gets @cold_compile_ms at least.
+  @cold_compile_ms 1_200_000
+
   defp session(state, req) do
+    cold = not Map.get(state.compiler, :warm, false)
+    if cold, do: Process.put(:spiral_kino_cold, true)
     timeout = if req.timeout == :infinity, do: :infinity, else: max(req.timeout, 0)
+    timeout = if cold and timeout != :infinity, do: max(timeout, @cold_compile_ms), else: timeout
 
     case :gen_tcp.connect({127, 0, 0, 1}, state.compiler.bridge_port, socket_opts(), 5_000) do
       {:ok, sock} ->

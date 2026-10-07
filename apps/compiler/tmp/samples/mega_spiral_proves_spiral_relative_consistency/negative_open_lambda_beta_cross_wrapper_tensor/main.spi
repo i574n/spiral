@@ -1,3 +1,5 @@
+open main
+
 inl impossible_open_lambda_beta_cross_wrapper_tensor () :
     exact_linear_indexed_open_lambda_beta_step =
     ExactLinearIndexedOpenLambdaBetaStep (

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_p2p_commit_tree_skipped_middle () :
     erp_p2p_event_commit_tree nat_two requisition_drafted purchase_order_issued =
     inl reserve_event =

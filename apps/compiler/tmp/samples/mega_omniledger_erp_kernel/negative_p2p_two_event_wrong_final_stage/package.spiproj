@@ -1,2 +1,5 @@
+packageDir: ../..
+packages:
+    mega_omniledger_erp_kernel-
 modules:
     main

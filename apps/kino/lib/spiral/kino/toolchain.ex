@@ -53,6 +53,11 @@ defmodule Spiral.Kino.Toolchain do
     opts[:node] || System.get_env("SPIRAL_NODE") || System.find_executable("node")
   end
 
+  @spec bun(keyword()) :: String.t() | nil
+  def bun(opts) do
+    opts[:bun] || System.get_env("SPIRAL_BUN") || System.find_executable("bun")
+  end
+
   @spec pwsh(keyword()) :: String.t() | nil
   def pwsh(opts) do
     opts[:pwsh] || System.get_env("SPIRAL_PWSH") || System.find_executable("pwsh")

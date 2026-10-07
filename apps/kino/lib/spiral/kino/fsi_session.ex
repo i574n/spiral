@@ -13,9 +13,9 @@ defmodule Spiral.Kino.FsiSession do
   ends the session.
 
   The first submission (the prelude) gives the session what .NET Interactive's F# kernel opens by default:
-  `System`, `System.IO`, `System.Text`, and `Microsoft.DotNet.Interactive.Formatting` (the real `Formatter` from the
-  installed dotnet-repl / dotnet-interactive tool, so `Formatter.ListExpansionLimit`, `Formatter.Register` and
-  `x.ToDisplayString ()` work as on the old route), plus what dotnet-repl registers for an fsharp/spiral notebook:
+  `System`, `System.IO`, `System.Text`, and `Microsoft.DotNet.Interactive.Formatting` (the real `Formatter`, from its NuGet
+  package, so `Formatter.ListExpansionLimit`, `Formatter.Register` and `x.ToDisplayString ()` work as on the old
+  .dib route), plus what that route's runner (dotnet-repl) registered for an fsharp/spiral notebook:
   plain text by default and `%120A` for every object and sequence. Without that dll a small `Formatter` shim stands in
   (`ListExpansionLimit`, `Register`, `ToDisplayString` through `%120A`). `x.Display ()` prints the formatted value.
   """
@@ -101,47 +101,32 @@ defmodule Spiral.Kino.FsiSession do
         path
 
       nil ->
-        System.get_env("SPIRAL_KINO_FORMATTING_DLL") || installed_formatting_dll()
+        System.get_env("SPIRAL_KINO_FORMATTING_DLL") || :nuget
     end
   end
 
-  defp installed_formatting_dll do
-    store = Path.join([System.user_home!(), ".dotnet", "tools", ".store"])
-
-    ["dotnet-repl", "microsoft.dotnet-interactive"]
-    |> Enum.flat_map(fn tool ->
-      [
-        store,
-        tool,
-        "*",
-        tool,
-        "*",
-        "tools",
-        "*",
-        "any",
-        "Microsoft.DotNet.Interactive.Formatting.dll"
-      ]
-      |> Path.join()
-      |> String.replace("\\", "/")
-      |> Path.wildcard()
-      |> Enum.sort(:desc)
-    end)
-    |> List.first()
-  end
+  # The NuGet package fsi restores when no dll is given (its dependency Microsoft.AspNetCore.Html.Abstractions comes along).
+  @formatting_package "Microsoft.DotNet.Interactive.Formatting, 1.0.0-beta.26120.1"
 
   @doc false
   def prelude(dll) do
     formatter =
       if dll do
         # .NET Interactive also references the assembly of IHtmlContent: without it, opening the Formatting namespace
-        # makes overload resolution of e.g. `StringBuilder.Append` fail with FS1108.
-        html = Path.join(Path.dirname(dll), "Microsoft.AspNetCore.Html.Abstractions.dll")
-        html_ref = if File.regular?(html), do: ~s|#r @"#{html}"\n|, else: ""
+        # makes overload resolution of e.g. `StringBuilder.Append` fail with FS1108 (the package brings it along).
+        refs =
+          if dll == :nuget do
+            ~s|#r "nuget: #{@formatting_package}"|
+          else
+            html = Path.join(Path.dirname(dll), "Microsoft.AspNetCore.Html.Abstractions.dll")
+            html_ref = if File.regular?(html), do: ~s|#r @"#{html}"\n|, else: ""
+            html_ref <> ~s|#r @"#{dll}"|
+          end
 
         # What dotnet-repl (the .dib route's runner) sets up for an fsharp/spiral default kernel (KernelBuilder.cs,
         # Repl.cs): plain text by default, and every object and sequence formatted with `%120A`.
         """
-        #{html_ref}#r @"#{dll}"
+        #{refs}
         open Microsoft.DotNet.Interactive.Formatting
         Formatter.DefaultMimeType <- "text/plain"
         Formatter.Register (fun (x: obj) (writer: TextWriter) -> fprintfn writer "%120A" x)

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_dependent_pi_domain_mismatch () :
     corrected_cic_bool_dependent_pi =
     inl wrong_domain_binder :

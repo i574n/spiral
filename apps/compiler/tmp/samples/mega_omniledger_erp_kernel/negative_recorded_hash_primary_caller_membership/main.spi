@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recorded_hash_primary_caller_membership
     (membership :
         typed_fx_hashed_statement_history_contains

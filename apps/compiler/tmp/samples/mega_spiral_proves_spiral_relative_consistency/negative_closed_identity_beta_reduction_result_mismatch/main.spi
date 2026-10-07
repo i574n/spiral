@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_identity_beta_reduction_result_mismatch
     (relation : exact_linear_indexed_closed_identity_beta_relation exact_linear_bool_type)
     : exact_linear_indexed_reduction

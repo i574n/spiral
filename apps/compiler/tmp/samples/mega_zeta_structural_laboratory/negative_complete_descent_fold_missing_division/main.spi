@@ -1,24 +1,25 @@
-inl positive_positional_one_less_two () :
-    positive_positional_less positional_one (positional_zero_bit positional_one) =
-    PositivePositionalLessOneZeroBit PositivePositionalOne
+open main
 
-inl certified_recursive_descent_two_to_one () :
-    certified_interval_positive_positional_recursive_descent
-        (positional_zero_bit positional_one)
-        positional_one =
-    CertifiedIntervalPositivePositionalRecursiveDescent (
-        positive_positional_one_less_two (),
-        "one-is-strictly-smaller-than-two")
+// tests: a complete split must carry the structural division equation (replaces the retired complete_descent_fold / CompleteDescentFoldSplit by the current complete_factorization_tree CompleteSplit)
+inl impossible_complete_descent_fold_missing_division () : certified_interval_positive_positional_complete_factorization_tree (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
+    inl root_value = positive_positional_twelve_value ()
+    match classify_certified_interval_positive_positional_sealed_factor root_value with
+    | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
+        inl exists length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note = payload
+        inl children : certified_interval_positive_positional_sealed_composite_children (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient =
+            CertifiedIntervalPositivePositionalSealedCompositeChildren (exists (natural_value, divisor_value, quotient_value, membership, division, note))
+        CertifiedIntervalPositivePositionalCompleteSplit (exists (
+            natural_value,
+            divisor_value,
+            quotient_value,
+            membership,
+            derive_certified_interval_positive_positional_membership_recursive_descent root_value membership,
+            derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+            certified_interval_positive_positional_accessible_child_completion divisor_value (derive_positive_positional_predecessor_accessibility divisor_value),
+            certified_interval_positive_positional_accessible_child_completion quotient_value (derive_positive_positional_predecessor_accessibility quotient_value),
+            "a-split-fold-must-carry-the-structural-division-equation"))
+    | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
 
-inl impossible_complete_descent_fold_missing_division () :
-    certified_interval_positive_positional_complete_descent_fold
-        (positional_zero_bit positional_one) =
-    CertifiedIntervalPositivePositionalCompleteDescentFoldSplit (exists (
-        positive_positional_two_value (),
-        certified_recursive_descent_two_to_one (),
-        certified_recursive_descent_two_to_one (),
-        CertifiedIntervalPositivePositionalCompleteDescentFoldUnit,
-        CertifiedIntervalPositivePositionalCompleteDescentFoldUnit,
-        "a-split-fold-must-carry-the-structural-division-equation"))
-
-inl main () = impossible_complete_descent_fold_missing_division ()
+inl main () =
+    inl _ = impossible_complete_descent_fold_missing_division ()
+    ()

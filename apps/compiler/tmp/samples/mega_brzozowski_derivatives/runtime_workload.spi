@@ -1,0 +1,216 @@
+// Runtime workloads for the native backends: inputs generated at run time from a seed, matched by three engines on the
+// same backends and the same input representation: main's derivative matcher (`accepts`, derivatives at run time), a
+// naive backtracking matcher and the staged DFA (derivatives taken by the compiler), both written here. Used by
+// runtime_bench (all three must agree: the suite's native tier runs it) and by the bench_* packages (one engine each,
+// for timing; bench.ps1).
+open main
+
+// Core-free arithmetic: the compiler's ops (core's (+), (*), ... are the same ops).
+inl u64_add (a : u64) (b : u64) : u64 = !!!!Add(a,b)
+inl u64_mul (a : u64) (b : u64) : u64 = !!!!Mult(a,b)
+inl u64_and (a : u64) (b : u64) : u64 = !!!!BitwiseAnd(a,b)
+inl u64_shr (a : u64) (b : i32) : u64 = !!!!ShiftRight(a,b)
+inl u64_eq (a : u64) (b : u64) : bool = !!!!EQ(a,b)
+inl i32_add (a : i32) (b : i32) : i32 = !!!!Add(a,b)
+inl i32_sub (a : i32) (b : i32) : i32 = !!!!Sub(a,b)
+inl i32_lt (a : i32) (b : i32) : bool = !!!!LT(a,b)
+inl i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a,b)
+
+// The classic rand() LCG kept below 2^31, so no product exceeds 2^62 and no backend overflows (Rust's plain `*`
+// would panic in a debug build): seed' = (seed * 1103515245 + 12345) mod 2^31; a symbol is bit 16 of seed'.
+inl lcg_next (seed : u64) : u64 = u64_and (u64_add (u64_mul seed 1103515245u64) 12345u64) 2147483647u64
+
+inl lcg_bit (seed : u64) : bit_alphabet =
+    if u64_eq (u64_and (u64_shr seed 16i32) 1u64) 0u64 then zero () else one ()
+
+// `length` random bits consed onto `acc` (so the first symbol drawn ends up last), and the seed after them.
+let rec random_bit_input (seed : u64) (length : i32) (acc : linear_input bit_alphabet) : linear_input bit_alphabet * u64 =
+    if i32_lt 0i32 length then
+        inl next = lcg_next seed
+        random_bit_input next (i32_sub length 1i32) (InputCons (lcg_bit next, acc))
+    else acc, seed
+
+// `length` zeros in front of `acc`.
+let rec zeros_input (length : i32) (acc : linear_input bit_alphabet) : linear_input bit_alphabet =
+    if i32_lt 0i32 length then zeros_input (i32_sub length 1i32) (InputCons (zero (), acc)) else acc
+
+// A naive backtracking matcher (the strategy of a textbook recursive regex engine): the continuation is an explicit
+// stack of regexes still to match, alternatives are tried left first and a star greedily takes one more iteration
+// before it stops. It terminates only when every star body consumes input (`star_bodies_consume`), the usual
+// restriction of such engines; the workloads below check it at compile time.
+let rec backtrack_stack forall alphabet {symbol_compare}. (stack : regex_list alphabet) (input : linear_input alphabet) : bool =
+    match stack with
+    | RegexListNil =>
+        match input with
+        | InputEmpty => true
+        | InputCons _ => false
+    | RegexListCons (head, rest) =>
+        match head with
+        | RegexEmpty => false
+        | RegexEpsilon => backtrack_stack rest input
+        | RegexChar expected =>
+            match input with
+            | InputEmpty => false
+            | InputCons (symbol, tail) => if symbol_equal expected symbol then backtrack_stack rest tail else false
+        | RegexAlt (left, right) =>
+            if backtrack_stack (RegexListCons (left, rest)) input then true
+            else backtrack_stack (RegexListCons (right, rest)) input
+        | RegexCat (left, right) => backtrack_stack (RegexListCons (left, RegexListCons (right, rest))) input
+        | RegexStar inner =>
+            if backtrack_stack (RegexListCons (inner, stack)) input then true
+            else backtrack_stack rest input
+
+inl backtrack_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
+    backtrack_stack (RegexListCons (value, RegexListNil)) input
+
+inl rec star_bodies_consume forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexAlt (left, right) => star_bodies_consume left && star_bodies_consume right
+    | RegexCat (left, right) => star_bodies_consume left && star_bodies_consume right
+    | RegexStar inner => if static_nullable inner then false else star_bodies_consume inner
+    | _ => true
+
+// The staged DFA: main's static derivatives, taken by the compiler on a regex known at compile time. `staged_accepts`
+// enumerates the derivatives reachable from the start regex during partial evaluation and emits only the resulting DFA:
+// a run-time loop over an i32 state whose transitions are an if-chain of constants. No regex exists at run time.
+inl rec static_snoc forall alphabet. (states : regex_list alphabet) (value : regex alphabet) : regex_list alphabet =
+    match states with
+    | RegexListNil => RegexListCons (value, RegexListNil)
+    | RegexListCons (head, rest) => RegexListCons (head, static_snoc rest value)
+
+// The DFA states: every derivative reachable from the start, in discovery order (the start is state 0). Finite because
+// the normalization identifies alternatives up to associativity, commutativity and idempotence (Brzozowski).
+inl rec static_bit_closure (pending : regex_list bit_alphabet) (seen : regex_list bit_alphabet) : regex_list bit_alphabet =
+    match pending with
+    | RegexListNil => seen
+    | RegexListCons (state, rest) =>
+        if static_contains state seen then static_bit_closure rest seen
+        else static_bit_closure (RegexListCons (static_step state (zero ()), RegexListCons (static_step state (one ()), rest))) (static_snoc seen state)
+
+inl rec static_index_of forall alphabet {symbol_compare}. (value : regex alphabet) (states : regex_list alphabet) (index : i32) : i32 =
+    match states with
+    | RegexListNil => failwith "brzozowski-staged-state-missing"
+    | RegexListCons (head, rest) => if static_regex_equal value head then index else static_index_of value rest (i32_add index 1i32)
+
+// Run-time dispatch on the state number: an if-chain over the compile-time states, each arm a constant.
+inl rec static_next (all : regex_list bit_alphabet) (states : regex_list bit_alphabet) (symbol : bit_alphabet) (state : i32) (index : i32) : i32 =
+    match states with
+    | RegexListNil => failwith "brzozowski-staged-no-states"
+    | RegexListCons (head, rest) =>
+        inl target = static_index_of (static_step head symbol) all 0i32
+        match rest with
+        | RegexListNil => target
+        | RegexListCons _ => if i32_eq state index then target else static_next all rest symbol state (i32_add index 1i32)
+
+inl rec static_accepting (states : regex_list bit_alphabet) (state : i32) (index : i32) : bool =
+    match states with
+    | RegexListNil => false
+    | RegexListCons (head, rest) =>
+        if static_nullable head then
+            if i32_eq state index then true else static_accepting rest state (i32_add index 1i32)
+        else static_accepting rest state (i32_add index 1i32)
+
+inl staged_accepts (value : regex bit_alphabet) (input : linear_input bit_alphabet) : bool =
+    inl states = static_bit_closure (RegexListCons (static_normalize value, RegexListNil)) RegexListNil
+    let rec run (state : i32) (input : linear_input bit_alphabet) : bool =
+        match input with
+        | InputEmpty => static_accepting states state 0i32
+        | InputCons (bit_alphabet symbol, rest) =>
+            match symbol with
+            | BitZero => run (static_next states states (zero ()) state 0i32) rest
+            | BitOne => run (static_next states states (one ()) state 0i32) rest
+    inl ~start = 0i32
+    run start input
+
+union match_engine =
+    | EngineDerivative
+    | EngineBacktrack
+    | EngineStaged
+
+// The engine is a compile-time value: each program contains one matcher (or several, in runtime_bench).
+inl engine_accepts (engine : match_engine) (value : regex bit_alphabet) (input : linear_input bit_alphabet) : bool =
+    match engine with
+    | EngineDerivative => accepts value input
+    | EngineBacktrack => backtrack_accepts value input
+    | EngineStaged => staged_accepts value input
+
+// The run-time engines get the regex as a run-time value; the staged engine needs it at compile time.
+inl engine_regex (engine : match_engine) (value : regex bit_alphabet) : regex bit_alphabet =
+    match engine with
+    | EngineStaged => value
+    | _ =>
+        inl ~dynamic = value
+        dynamic
+
+inl bit_any () : regex bit_alphabet = RegexAlt (RegexChar (zero ()), RegexChar (one ()))
+
+// (0|1)*1(0|1)(0|1)(0|1): the fourth symbol from the end is 1 (the textbook regex whose minimal DFA has 2^4 states).
+inl fourth_from_end_one () : regex bit_alphabet =
+    RegexCat (RegexStar (bit_any ()),
+        RegexCat (RegexChar (one ()), RegexCat (bit_any (), RegexCat (bit_any (), bit_any ()))))
+
+// (0|00)*1: on 0^n a backtracking matcher explores every composition of n into 1s and 2s (Fibonacci(n) of them)
+// before it rejects; derivatives stay at a handful of states.
+inl zero_or_two_zeros_then_one () : regex bit_alphabet =
+    RegexCat (RegexStar (RegexAlt (RegexChar (zero ()), RegexCat (RegexChar (zero ()), RegexChar (zero ())))), RegexChar (one ()))
+
+// Matches `count` random inputs of `length` bits from `seed`; returns how many are accepted. The loop is a local join
+// point, so the engine stays a compile-time value (an engine argument of a top-level join point became a run-time tag).
+inl count_random_matches (engine : match_engine) (value : regex bit_alphabet) (length : i32) (count : i32) (seed : u64) (accepted : i32) : i32 =
+    let rec loop (count : i32) (seed : u64) (accepted : i32) : i32 =
+        if i32_lt 0i32 count then
+            match random_bit_input seed length InputEmpty with
+            | input, next =>
+                inl accepted = if engine_accepts engine value input then i32_add accepted 1i32 else accepted
+                loop (i32_sub count 1i32) next accepted
+        else accepted
+    loop count seed accepted
+
+// For n = 1 .. max: matches 0^n (rejected) and 0^n 1 (accepted); returns how many are accepted.
+inl count_zero_runs (engine : match_engine) (value : regex bit_alphabet) (n : i32) (max : i32) (accepted : i32) : i32 =
+    let rec loop (n : i32) (accepted : i32) : i32 =
+        if i32_lt max n then accepted
+        else
+            inl accepted = if engine_accepts engine value (zeros_input n InputEmpty) then i32_add accepted 1i32 else accepted
+            inl accepted = if engine_accepts engine value (zeros_input n (InputCons (one (), InputEmpty))) then i32_add accepted 1i32 else accepted
+            loop (i32_add n 1i32) accepted
+    loop n accepted
+
+// The workloads; the sizes are run-time values (`~`), so nothing is folded at compile time.
+inl run_random_workloads (engine : match_engine) (~count : i32) (~length : i32) : i32 * i32 =
+    assert_static (star_bodies_consume (ends_with_zero ())) "backtracking needs consuming star bodies"
+    assert_static (star_bodies_consume (fourth_from_end_one ())) "backtracking needs consuming star bodies"
+    inl ends_zero = engine_regex engine (ends_with_zero ())
+    inl fourth_one = engine_regex engine (fourth_from_end_one ())
+    inl ~seed = 1u64
+    inl ~none = 0i32
+    count_random_matches engine ends_zero length count seed none,
+    count_random_matches engine fourth_one length count seed none
+
+inl run_zero_runs (engine : match_engine) (~max_zero_run : i32) : i32 =
+    assert_static (star_bodies_consume (zero_or_two_zeros_then_one ())) "backtracking needs consuming star bodies"
+    inl zero_runs = engine_regex engine (zero_or_two_zeros_then_one ())
+    inl ~none = 0i32
+    inl ~first = 1i32
+    count_zero_runs engine zero_runs first max_zero_run none
+
+inl run_workloads (engine : match_engine) (count : i32) (length : i32) (max_zero_run : i32) : i32 * i32 * i32 =
+    match run_random_workloads engine count length with
+    | a, b => a, b, run_zero_runs engine max_zero_run
+
+// Exit code 0 when the counts are the expected ones (failwith otherwise: every backend fails the run its own way).
+inl expect_count (actual : i32) (expected : i32) (message : string) : () =
+    if i32_eq actual expected then () else failwith message
+
+inl expect_random_counts (counts : i32 * i32) (ends_zero : i32) (fourth_one : i32) : i32 =
+    match counts with
+    | a, b =>
+        expect_count a ends_zero "brzozowski-bench-ends-with-zero-count"
+        expect_count b fourth_one "brzozowski-bench-fourth-from-end-count"
+        0i32
+
+inl expect_counts (counts : i32 * i32 * i32) (ends_zero : i32) (fourth_one : i32) (zero_runs : i32) : i32 =
+    match counts with
+    | a, b, c =>
+        expect_count c zero_runs "brzozowski-bench-zero-runs-count"
+        expect_random_counts (a, b) ends_zero fourth_one

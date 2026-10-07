@@ -1,8 +1,10 @@
-inl impossible_quotient_accessible_parent_root_mismatch () :
-    certified_interval_positive_positional_completion_decision
-        (positional_zero_bit positional_one) =
-    synthesize_certified_interval_positive_positional_quotient_accessible_parent_factorization
-        (positive_positional_three_value ())
+open main
+
+// tests: the accessible completion synthesized for three is a tree rooted at three, never at two (replaces the retired synthesize_certified_interval_positive_positional_quotient_accessible_parent_factorization / completion_decision by the current accessible_child_completion)
+inl impossible_quotient_accessible_parent_root_mismatch () : certified_interval_positive_positional_complete_factorization_tree (positional_zero_bit positional_one) =
+    inl three = positive_positional_three_value ()
+    certified_interval_positive_positional_accessible_child_completion three (derive_positive_positional_predecessor_accessibility three)
 
 inl main () =
-    impossible_quotient_accessible_parent_root_mismatch ()
+    inl _ = impossible_quotient_accessible_parent_root_mismatch ()
+    ()

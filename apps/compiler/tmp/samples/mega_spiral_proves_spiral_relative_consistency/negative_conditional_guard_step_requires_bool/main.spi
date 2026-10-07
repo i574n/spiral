@@ -1,14 +1,6 @@
-inl impossible_conditional_guard_step_requires_bool
-    (guard_step : exact_linear_indexed_small_step
-        exact_linear_free_context_empty
-        exact_linear_indexed_usage_empty
-        exact_linear_indexed_usage_empty
-        exact_linear_unit_type)
-    : exact_linear_indexed_small_step
-        exact_linear_free_context_empty
-        exact_linear_indexed_usage_empty
-        exact_linear_indexed_usage_empty
-        exact_linear_unit_type =
+open main
+
+inl impossible_conditional_guard_step_requires_bool (guard_step : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_unit_type) : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_unit_type =
     ExactLinearIndexedConditionalGuardStep (exists (
         guard_step,
         ExactLinearIndexedUnit (

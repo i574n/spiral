@@ -1,0 +1,570 @@
+# near
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## near
+
+<!-- livebook:{"break_markdown":true} -->
+
+### vector
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type vector_switch t =\n    {\n        Gleam : $'near_sdk_store_vec_Vector<`t>'\n        Lua : $'near_sdk_store_vec_Vector<`t>'\n        Fsharp : $'near_sdk_store_vec_Vector<`t>'\n        Python : $'near_sdk_store_vec_Vector<`t>'\n        TypeScript : $'near_sdk_store_vec_Vector<`t>'\n        Cpp : $'near_sdk_store_vec_Vector<`t>'\n        CppHost : $'near_sdk_store_vec_Vector<`t>'\n        Delphi : $'near_sdk_store_vec_Vector<`t>'\n        Cuda : $'near_sdk_store_vec_Vector<`t>'\n        Rust : $'SpiralNearVec<`t>'\n    }\nnominal vector t =\n    `(\n        fsharp_global \"type near_sdk_store_vec_Vector<'T> = class end\"\n        backend_switch `(()) `({}) {\n            Rust = (fun () => global \"#[cfg(target_arch = \\\"wasm32\\\")]\\ntype SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;\\n#[cfg(not(target_arch = \\\"wasm32\\\"))]\\nstruct SpiralNearVec<T>(std::vec::Vec<T>);\\n#[cfg(not(target_arch = \\\"wasm32\\\"))]\\nimpl<T> SpiralNearVec<T> {\\n    fn len(&self) -> usize { self.0.len() }\\n    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }\\n    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {\\n        self.0.drain((range.start as usize)..(range.end as usize))\\n    }\\n    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }\\n}\\n\") : () -> ()\n            Gleam = (fun () => ()) : () -> ()\n            Lua = (fun () => ()) : () -> ()\n            Fsharp = (fun () => ()) : () -> ()\n            Python = (fun () => ()) : () -> ()\n            TypeScript = (fun () => ()) : () -> ()\n            Cpp = (fun () => ()) : () -> ()\n            CppHost = (fun () => ()) : () -> ()\n            Delphi = (fun () => ()) : () -> ()\n            Cuda = (fun () => ()) : () -> ()\n        }\n        $'' : $'backend_switch `(vector_switch t)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type vector_switch t =
+      {
+          Gleam : $'near_sdk_store_vec_Vector<`t>'
+          Lua : $'near_sdk_store_vec_Vector<`t>'
+          Fsharp : $'near_sdk_store_vec_Vector<`t>'
+          Python : $'near_sdk_store_vec_Vector<`t>'
+          TypeScript : $'near_sdk_store_vec_Vector<`t>'
+          Cpp : $'near_sdk_store_vec_Vector<`t>'
+          CppHost : $'near_sdk_store_vec_Vector<`t>'
+          Delphi : $'near_sdk_store_vec_Vector<`t>'
+          Cuda : $'near_sdk_store_vec_Vector<`t>'
+          Rust : $'SpiralNearVec<`t>'
+      }
+  nominal vector t =
+      `(
+          fsharp_global "type near_sdk_store_vec_Vector<'T> = class end"
+          backend_switch `(()) `({}) {
+              Rust = (fun () => global "#[cfg(target_arch = \"wasm32\")]\ntype SpiralNearVec<T> = near_sdk::store::vec::Vector<T>;\n#[cfg(not(target_arch = \"wasm32\"))]\nstruct SpiralNearVec<T>(std::vec::Vec<T>);\n#[cfg(not(target_arch = \"wasm32\"))]\nimpl<T> SpiralNearVec<T> {\n    fn len(&self) -> usize { self.0.len() }\n    fn extend<I: IntoIterator<Item = T>>(&mut self, iter: I) { self.0.extend(iter); }\n    fn drain(&mut self, range: std::ops::Range<u32>) -> std::vec::Drain<'_, T> {\n        self.0.drain((range.start as usize)..(range.end as usize))\n    }\n    fn iter(&self) -> std::slice::Iter<'_, T> { self.0.iter() }\n}\n") : () -> ()
+              Gleam = (fun () => ()) : () -> ()
+              Lua = (fun () => ()) : () -> ()
+              Fsharp = (fun () => ()) : () -> ()
+              Python = (fun () => ()) : () -> ()
+              TypeScript = (fun () => ()) : () -> ()
+              Cpp = (fun () => ()) : () -> ()
+              CppHost = (fun () => ()) : () -> ()
+              Delphi = (fun () => ()) : () -> ()
+              Cuda = (fun () => ()) : () -> ()
+          }
+          $'' : $'backend_switch `(vector_switch t)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### lookup_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lookup_map k v =\n    `(\n        native_type\n            `($'near_sdk_store_LookupMap<`k, `v>')\n            `($'near_sdk::store::LookupMap<`k, `v>')\n            \"type near_sdk_store_LookupMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal lookup_map k v =
+      `(
+          native_type
+              `($'near_sdk_store_LookupMap<`k, `v>')
+              `($'near_sdk::store::LookupMap<`k, `v>')
+              "type near_sdk_store_LookupMap<'K, 'V> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### iterable_set
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal iterable_set t =\n    `(\n        native_type\n            `($'near_sdk_store_IterableSet<`t>')\n            `($'near_sdk::store::IterableSet<`t>')\n            \"type near_sdk_store_IterableSet<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal iterable_set t =
+      `(
+          native_type
+              `($'near_sdk_store_IterableSet<`t>')
+              `($'near_sdk::store::IterableSet<`t>')
+              "type near_sdk_store_IterableSet<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### account_id
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type account_id_switch =\n    {\n        Gleam : $'near_sdk_AccountId'\n        Lua : $'near_sdk_AccountId'\n        Fsharp : $'near_sdk_AccountId'\n        Python : $'near_sdk_AccountId'\n        TypeScript : $'near_sdk_AccountId'\n        Cpp : $'near_sdk_AccountId'\n        CppHost : $'near_sdk_AccountId'\n        Delphi : $'near_sdk_AccountId'\n        Cuda : $'near_sdk_AccountId'\n        Rust : $'String'\n    }\nnominal account_id =\n    `(\n        fsharp_global \"type near_sdk_AccountId = class end\"\n        $'' : $'backend_switch `(account_id_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type account_id_switch =
+      {
+          Gleam : $'near_sdk_AccountId'
+          Lua : $'near_sdk_AccountId'
+          Fsharp : $'near_sdk_AccountId'
+          Python : $'near_sdk_AccountId'
+          TypeScript : $'near_sdk_AccountId'
+          Cpp : $'near_sdk_AccountId'
+          CppHost : $'near_sdk_AccountId'
+          Delphi : $'near_sdk_AccountId'
+          Cuda : $'near_sdk_AccountId'
+          Rust : $'String'
+      }
+  nominal account_id =
+      `(
+          fsharp_global "type near_sdk_AccountId = class end"
+          $'' : $'backend_switch `(account_id_switch)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_lookup_map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_lookup_map prefix =\n    !\\($'\"near_sdk::store::LookupMap::new(!prefix)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_lookup_map prefix =
+      !\($'"near_sdk::store::LookupMap::new(!prefix)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_iterable_set
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_iterable_set prefix =\n    !\\($'\"near_sdk::store::IterableSet::new(!prefix)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_iterable_set prefix =
+      !\($'"near_sdk::store::IterableSet::new(!prefix)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_vector
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::store::vec::Vector::new(!prefix); \\#[cfg(not(target_arch = \"wasm32\"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_vector (prefix : rust.ref (am'.slice u8)) : vector u8 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::store::vec::Vector::new(!prefix); \#[cfg(not(target_arch = "wasm32"))] let v = SpiralNearVec(<std::vec::Vec<u8>>::new()); v }' : vector u8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### vector_extend
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vector_extend forall t. (vec : am'.vec t) (vector : rust.ref (rust.mut' (vector t))) : () =\n    backend_switch {\n        Rust = fun () => $'{ (!vector).extend((!vec).clone()); }' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vector_extend forall t. (vec : am'.vec t) (vector : rust.ref (rust.mut' (vector t))) : () =
+      backend_switch {
+          Rust = fun () => $'{ (!vector).extend((!vec).clone()); }' : ()
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### vector_to_vec
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl vector_to_vec forall (t : * -> *) u. (vector : t (vector u)) : am'.vec u =\n    backend_switch {\n        Rust = fun () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'.vec u\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl vector_to_vec forall (t : * -> *) u. (vector : t (vector u)) : am'.vec u =
+      backend_switch {
+          Rust = fun () => $'(!vector).iter().cloned().collect::<std::vec::Vec<_>>()' : am'.vec u
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### keccak512
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl keccak512 (entropy : am'.vec u8) : am'.vec u8 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::keccak512(&(!entropy)); \\#[cfg(not(target_arch = \"wasm32\"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl keccak512 (entropy : am'.vec u8) : am'.vec u8 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::keccak512(&(!entropy)); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### log
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log text : () =\n    (!\\\\(text, $'$\"true; near_sdk::log\\!(\\\\\\\"{{}}\\\\\\\", $0)\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl log text : () =
+      (!\\(text, $'$"true; near_sdk::log\!(\\\"{{}}\\\", $0)"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### panic_str
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl panic_str (text : string) : () =\n    (!\\\\(text, $'$\"true; near_sdk::env::panic_str(&*$0); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl panic_str (text : string) : () =
+      (!\\(text, $'$"true; near_sdk::env::panic_str(&*$0); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### lookup_get
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl lookup_get forall k v.\n    (key : k)\n    (map : rust.ref (rust.mut' (lookup_map k v)))\n    : optionm'.option' (rust.ref v)\n    =\n    !\\\\(key, $'$\"!map.get(&$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl lookup_get forall k v.
+      (key : k)
+      (map : rust.ref (rust.mut' (lookup_map k v)))
+      : optionm'.option' (rust.ref v)
+      =
+      !\\(key, $'$"!map.get(&$0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### lookup_insert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl lookup_insert forall k v.\n    (key : k)\n    (value : v)\n    (map : rust.ref (rust.mut' (lookup_map k v)))\n    : ()\n    =\n    (!\\\\((key, value), $'$\"true; !map.insert(&$0, $1); //\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl lookup_insert forall k v.
+      (key : k)
+      (value : v)
+      (map : rust.ref (rust.mut' (lookup_map k v)))
+      : ()
+      =
+      (!\\((key, value), $'$"true; !map.insert(&$0, $1); //"') : bool) |> ignore
+  """,
+  timeout: 300_000
+)
+```
+
+### iterable_set_insert
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterable_set_insert forall t.\n    (x : t)\n    (set : rust.ref (rust.mut' (iterable_set t)))\n    : bool\n    =\n    !\\\\(x, $'$\"!set.insert($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iterable_set_insert forall t.
+      (x : t)
+      (set : rust.ref (rust.mut' (iterable_set t)))
+      : bool
+      =
+      !\\(x, $'$"!set.insert($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iterable_set_remove
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterable_set_remove forall t.\n    (x : rust.ref t)\n    (set : rust.ref (rust.mut' (iterable_set t)))\n    : bool\n    =\n    !\\\\(x, $'$\"!set.remove($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iterable_set_remove forall t.
+      (x : rust.ref t)
+      (set : rust.ref (rust.mut' (iterable_set t)))
+      : bool
+      =
+      !\\(x, $'$"!set.remove($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### iterable_set_contains
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterable_set_contains forall t.\n    (x : rust.ref t)\n    (set : rust.ref (rust.mut' (iterable_set t)))\n    : bool\n    =\n    !\\\\(x, $'$\"!set.contains($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iterable_set_contains forall t.
+      (x : rust.ref t)
+      (set : rust.ref (rust.mut' (iterable_set t)))
+      : bool
+      =
+      !\\(x, $'$"!set.contains($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### near_token
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type near_token_switch =\n    {\n        Gleam : $'near_token_NearToken'\n        Lua : $'near_token_NearToken'\n        Fsharp : $'near_token_NearToken'\n        Python : $'near_token_NearToken'\n        TypeScript : $'near_token_NearToken'\n        Cpp : $'near_token_NearToken'\n        CppHost : $'near_token_NearToken'\n        Delphi : $'near_token_NearToken'\n        Cuda : $'near_token_NearToken'\n        Rust : $'u128'\n    }\nnominal near_token =\n    `(\n        fsharp_global \"type near_token_NearToken = class end\"\n        $'' : $'backend_switch `(near_token_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  type near_token_switch =
+      {
+          Gleam : $'near_token_NearToken'
+          Lua : $'near_token_NearToken'
+          Fsharp : $'near_token_NearToken'
+          Python : $'near_token_NearToken'
+          TypeScript : $'near_token_NearToken'
+          Cpp : $'near_token_NearToken'
+          CppHost : $'near_token_NearToken'
+          Delphi : $'near_token_NearToken'
+          Cuda : $'near_token_NearToken'
+          Rust : $'u128'
+      }
+  nominal near_token =
+      `(
+          fsharp_global "type near_token_NearToken = class end"
+          $'' : $'backend_switch `(near_token_switch)'
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### near_token_sdk
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_sdk =\n    `(\n        native_type\n            `($'near_sdk_NearToken')\n            `($'near_sdk::NearToken')\n            \"type near_sdk_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal near_token_sdk =
+      `(
+          native_type
+              `($'near_sdk_NearToken')
+              `($'near_sdk::NearToken')
+              "type near_sdk_NearToken = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### random_seed
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl random_seed () : am'.vec u8 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::random_seed(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl random_seed () : am'.vec u8 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::random_seed(); \#[cfg(not(target_arch = "wasm32"))] let v = <std::vec::Vec<u8>>::from([1u8, 5, 4, 4, 5]); v }' : am'.vec u8
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### block_timestamp
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_timestamp () : u64 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::block_timestamp(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = 1u64; v }' : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_timestamp () : u64 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_timestamp(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### block_height
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl block_height () : u64 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::block_height(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = 1u64; v }' : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl block_height () : u64 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::block_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### epoch_height
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl epoch_height () : u64 =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::epoch_height(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = 1u64; v }' : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl epoch_height () : u64 =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::epoch_height(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u64; v }' : u64
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### account_balance
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl account_balance () : near_token =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::account_balance().as_yoctonear(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = 1u128; v }' : near_token\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl account_balance () : near_token =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::account_balance().as_yoctonear(); \#[cfg(not(target_arch = "wasm32"))] let v = 1u128; v }' : near_token
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### predecessor_account_id
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl predecessor_account_id () : account_id =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::predecessor_account_id().to_string(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = String::from(\"a\"); v }' : account_id\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl predecessor_account_id () : account_id =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::predecessor_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### signer_account_id
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl signer_account_id () : account_id =\n    backend_switch {\n        Rust = fun () => $'{ \\#[cfg(target_arch = \"wasm32\")] let v = near_sdk::env::signer_account_id().to_string(); \\#[cfg(not(target_arch = \"wasm32\"))] let v = String::from(\"a\"); v }' : account_id\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl signer_account_id () : account_id =
+      backend_switch {
+          Rust = fun () => $'{ \#[cfg(target_arch = "wasm32")] let v = near_sdk::env::signer_account_id().to_string(); \#[cfg(not(target_arch = "wasm32"))] let v = String::from("a"); v }' : account_id
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### as_yoctonear
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_yoctonear forall t. (gas : t) : rust.u128 =\n    backend_switch {\n        Rust = fun () => $'(!gas)' : rust.u128\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_yoctonear forall t. (gas : t) : rust.u128 =
+      backend_switch {
+          Rust = fun () => $'(!gas)' : rust.u128
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### near_price_in_usd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl near_price_in_usd () =\n    6.68f64","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl near_price_in_usd () =
+      6.68f64
+  """,
+  timeout: 300_000
+)
+```
+
+### gas_to_usd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl gas_to_usd (gas : u64) =\n    (gas |> convert.f64) / 10_000_000_000_000_000 * near_price_in_usd ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl gas_to_usd (gas : u64) =
+      (gas |> convert.f64) / 10_000_000_000_000_000 * near_price_in_usd ()
+  """,
+  timeout: 300_000
+)
+```
+
+### tokens_to_usd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tokens_to_usd (tokens : rust.u128) =\n    (tokens |> rust.f64) / 1_000_000_000_000_000_000_000_000 * near_price_in_usd ()","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tokens_to_usd (tokens : rust.u128) =
+      (tokens |> rust.f64) / 1_000_000_000_000_000_000_000_000 * near_price_in_usd ()
+  """,
+  timeout: 300_000
+)
+```

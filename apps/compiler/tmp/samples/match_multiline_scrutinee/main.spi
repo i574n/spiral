@@ -1,0 +1,17 @@
+// FOR-D repro (lane F, 2026-10-06): a `match` whose scrutinee application continues over several lines fails to parse
+// ("Expected: with" at the first continuation line), so the whole definition is dropped ("Cannot find `main`").
+// mega_brzozowski_derivatives/indexed_dfa_state_cardinality is written this way. Expected: exit 0 (F#-style offside
+// continuation), or a parse error that names the rule. Not blessed.
+union choice =
+    | Left
+    | Right
+
+inl pick (a : i32) (b : i32) : choice = Left
+
+inl main () : i32 =
+    inl x : i32 = 1i32
+    match pick
+        x
+        2i32 with
+    | Left => 0i32
+    | Right => 1i32

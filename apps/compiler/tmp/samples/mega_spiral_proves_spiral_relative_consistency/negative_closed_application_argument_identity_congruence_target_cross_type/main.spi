@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_application_argument_identity_congruence_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty
@@ -23,10 +25,11 @@ inl impossible_closed_application_argument_identity_congruence_target_cross_type
             argument_term,
             "the-argument-child-reduces-by-closed-identity-beta")
     exact_linear_indexed_reduction_target
-        (ExactLinearIndexedReductionClosedApplicationArgument (
+        (ExactLinearIndexedReductionClosedApplicationArgument (exists (
             function_term,
-            ExactLinearIndexedClosedAtomicReductionIdentity argument_relation,
-            "the-real-congruence-target-has-Unit-not-Bool"))
+            ExactLinearIndexedReductionClosedAtomic (
+                ExactLinearIndexedClosedAtomicReductionIdentity argument_relation),
+            "the-real-congruence-target-has-Unit-not-Bool")))
 
 inl main () =
     impossible_closed_application_argument_identity_congruence_target_cross_type ()

@@ -33,26 +33,27 @@ union indexed_dfa_distinguishing_against_validation alphabet tail_count =
         indexed_dfa_distinguishing_against alphabet tail_count ->
         indexed_dfa_distinguishing_against_validation alphabet tail_count
 
-inl rec indexed_dfa_build_distinguishing_against forall alphabet tail_count {symbol_compare}.
+// The distinguishing words come from the bisimulation capability captured at the seal (the representatives here are of
+// the sealed, existential alphabet, which has no symbol_compare instance of its own).
+inl rec indexed_dfa_build_distinguishing_against forall alphabet tail_count.
+    (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
     (head : regex alphabet)
     (tail : indexed_dfa_state_vector alphabet tail_count)
     (symbols : symbol_list alphabet)
     : indexed_dfa_distinguishing_against_validation alphabet tail_count =
-    match tail with
-    | IndexedDfaStateVectorNil =>
+    match bisimulation_capability, tail with
+    | _, IndexedDfaStateVectorNil =>
         IndexedDfaDistinguishingAgainstCertified
             IndexedDfaDistinguishingAgainstNil
-    | IndexedDfaStateVectorCons (state, rest) =>
-        inl result =
-            dfa_constructive_distinguishing_result head state symbols
+    | indexed_dfa_bisimulation_capability (_, distinguish, distinguishing_valid), IndexedDfaStateVectorCons (state, rest) =>
+        inl result = distinguish head state symbols
         match result with
         | DfaConstructiveEquivalent =>
             IndexedDfaDistinguishingAgainstRejected
         | DfaConstructiveDistinguished input =>
-            if dfa_constructive_distinguishing_result_valid
-                head state symbols result then
-                match indexed_dfa_build_distinguishing_against
-                    head rest symbols with
+            if distinguishing_valid head state symbols result then
+                inl rest_witnesses = indexed_dfa_build_distinguishing_against bisimulation_capability head rest symbols
+                match rest_witnesses with
                 | IndexedDfaDistinguishingAgainstRejected =>
                     IndexedDfaDistinguishingAgainstRejected
                 | IndexedDfaDistinguishingAgainstCertified witnesses =>
@@ -75,7 +76,8 @@ union indexed_dfa_pairwise_distinguishing_validation alphabet representative_cou
         indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count ->
         indexed_dfa_pairwise_distinguishing_validation alphabet representative_count
 
-inl rec indexed_dfa_build_pairwise_distinguishing_witnesses forall alphabet representative_count {symbol_compare}.
+inl rec indexed_dfa_build_pairwise_distinguishing_witnesses forall alphabet representative_count.
+    (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
     (representatives : indexed_dfa_state_vector alphabet representative_count)
     (symbols : symbol_list alphabet)
     : indexed_dfa_pairwise_distinguishing_validation alphabet representative_count =
@@ -84,12 +86,12 @@ inl rec indexed_dfa_build_pairwise_distinguishing_witnesses forall alphabet repr
         IndexedDfaPairwiseDistinguishingCertified
             IndexedDfaPairwiseDistinguishingWitnessesNil
     | IndexedDfaStateVectorCons (head, tail) =>
-        match indexed_dfa_build_distinguishing_against head tail symbols with
+        match indexed_dfa_build_distinguishing_against bisimulation_capability head tail symbols with
         | IndexedDfaDistinguishingAgainstRejected =>
             IndexedDfaPairwiseDistinguishingRejected
         | IndexedDfaDistinguishingAgainstCertified head_witnesses =>
-            match indexed_dfa_build_pairwise_distinguishing_witnesses
-                tail symbols with
+            inl tail_validation = indexed_dfa_build_pairwise_distinguishing_witnesses bisimulation_capability tail symbols
+            match tail_validation with
             | IndexedDfaPairwiseDistinguishingRejected =>
                 IndexedDfaPairwiseDistinguishingRejected
             | IndexedDfaPairwiseDistinguishingCertified tail_witnesses =>
@@ -169,17 +171,15 @@ inl seal_indexed_dfa_fully_semantic_minimized_surface forall alphabet {symbol_co
             _,
             rows) =>
             inl symbol_list = finite_symbol_vector_to_list symbols
-            match indexed_dfa_build_pairwise_distinguishing_witnesses
-                representatives symbol_list with
+            inl pairwise_validation = indexed_dfa_build_pairwise_distinguishing_witnesses bisimulation_capability representatives symbol_list
+            match pairwise_validation with
             | IndexedDfaPairwiseDistinguishingRejected =>
                 IndexedDfaFullySemanticMinimizedSurfaceRejected
             | IndexedDfaPairwiseDistinguishingCertified pairwise_witnesses =>
                 // The semantic seal already established quotient closure. This
                 // layer adds constructive minimality evidence and then seals it
                 // as nominal typestate.
-                inl minimality_witness :
-                    indexed_dfa_minimality_witness
-                        sealed_alphabet symbol_count representative_count =
+                inl minimality_witness =
                     indexed_dfa_minimality_witness (
                         bisimulation_capability,
                         symbols,
@@ -248,8 +248,8 @@ inl capture_indexed_dfa_fully_semantic_program forall alphabet {symbol_compare; 
         : indexed_dfa_fully_semantic_check alphabet =
         match item with
         | indexed_dfa_fully_semantic_case (program_capability, program_start, program_descriptor) =>
-            match seal_indexed_dfa_fully_semantic_minimized_surface
-                program_capability program_start program_descriptor with
+            inl sealed = seal_indexed_dfa_fully_semantic_minimized_surface program_capability program_start program_descriptor
+            match sealed with
             | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
                 indexed_dfa_fully_semantic_check false
             | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>
@@ -273,12 +273,11 @@ inl indexed_dfa_fully_semantic_program_passes forall alphabet.
     match run_indexed_dfa_fully_semantic_program program with
     | indexed_dfa_fully_semantic_check result => result
 
-inl main () : string =
-    inl bit_capability = make_indexed_dfa_capability `bit_alphabet ()
-    match seal_indexed_dfa_fully_semantic_minimized_surface
-        bit_capability
-        (ends_with_zero ())
-        (bit_indexed_finite_alphabet_descriptor ()) with
+// Run by the indexed_dfa_witness_contracts package (this package's main is listed before this module).
+inl indexed_dfa_minimality_witnesses_contract () : string =
+    inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
+    inl bit_sealed = seal_indexed_dfa_fully_semantic_minimized_surface bit_capability (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())
+    match bit_sealed with
     | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
         failwith "bit fully semantic minimized surface should certify"
     | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>
@@ -287,11 +286,9 @@ inl main () : string =
             (indexed_dfa_fully_semantic_surface_contract surface)
             "bit fully semantic surface must consume partition/minimality typestate without replay"
 
-    inl tri_capability = make_indexed_dfa_capability `tri_alphabet ()
-    match seal_indexed_dfa_fully_semantic_minimized_surface
-        tri_capability
-        (tri_ab_star_then_c ())
-        (tri_indexed_finite_alphabet_descriptor ()) with
+    inl tri_capability : indexed_dfa_capability tri_alphabet = make_indexed_dfa_capability ()
+    inl tri_sealed = seal_indexed_dfa_fully_semantic_minimized_surface tri_capability (tri_ab_star_then_c ()) (tri_indexed_finite_alphabet_descriptor ())
+    match tri_sealed with
     | IndexedDfaFullySemanticMinimizedSurfaceRejected =>
         failwith "ternary fully semantic minimized surface should certify"
     | IndexedDfaFullySemanticMinimizedSurfaceCertified packed =>

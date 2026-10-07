@@ -1,0 +1,19 @@
+open main
+
+// The Self root on the native backends: its contract and every root program its main does not reach (all_terminals),
+// exit code 0 when all of them hold. The run-time checks are core-free ops (`reflected_runtime_fail`), so they run
+// (or are decided by the compiler) on every backend.
+inl main () : i32 =
+    inl _ = self_root_contract ()
+    inl _ = exact_linear_all_membership_spine_terminal ()
+    inl _ = exact_linear_all_used_usage_vector_terminal ()
+    inl _ = exact_linear_context_indexed_lambda_terminal ()
+    inl _ = exact_linear_indexed_bool_negation_involution_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_variable_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_tensor_left_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_lambda_outer_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_tensor_right_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_application_argument_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_application_function_terminal ()
+    inl _ = exact_linear_indexed_context_strengthening_terminal ()
+    0i32

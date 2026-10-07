@@ -1,3 +1,5 @@
+open main
+
 inl impossible_legacy_completion_raw_classification () =
     CertifiedIntervalPositivePositionalLegacyCompletionRefused (
         classify_certified_interval_positive_positional_sealed_factor

@@ -200,45 +200,44 @@ inl unzip s =
 /// ### io_error
 nominal io_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::Error\")>]\ntype std_io_Error = class end\n\#else\ntype std_io_Error = string\n#endif\n"
-        $'' : $'std_io_Error'
+        native_type
+            `($'std_io_Error')
+            `($'std::io::Error')
+            "type std_io_Error = string"
     )
 
 /// ### new_io_error
 inl new_io_error (text : string) : io_error =
     run_target_args (fun () => text) function
-        | Rust _ | RustNative => fun text =>
+        | RustNative => fun text =>
             !\\(text, $'"std::io::Error::new(std::io::ErrorKind::Other, &*$0)"')
         | _ => fun text => text |> convert.unbox
 
 /// ### buf_reader
 nominal buf_reader t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::BufReader<$0>\")>]\n#endif\ntype std_io_BufReader<'T> = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::BufReader<$0>\")>]\n#endif\ntype std_io_BufReader<'T> = class end") : () -> ()
-        }
-        $'' : $'std_io_BufReader<`t>'
+        native_type
+            `($'std_io_BufReader<`t>')
+            `($'std::io::BufReader<`t>')
+            "type std_io_BufReader<'T> = class end"
     )
 
 /// ### cursor
 nominal cursor t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::Cursor<$0>\")>]\n#endif\ntype std_io_Cursor<'T> = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::Cursor<$0>\")>]\n#endif\ntype std_io_Cursor<'T> = class end") : () -> ()
-        }
-        $'' : $'std_io_Cursor<`t>'
+        native_type
+            `($'std_io_Cursor<`t>')
+            `($'std::io::Cursor<`t>')
+            "type std_io_Cursor<'T> = class end"
     )
 
 /// ### buf_reader_tokio
 nominal buf_reader_tokio t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"tokio::io::BufReader<$0>\")>]\n#endif\ntype tokio_io_BufReader<'T> = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"tokio::io::BufReader<$0>\")>]\n#endif\ntype tokio_io_BufReader<'T> = class end") : () -> ()
-        }
-        $'' : $'tokio_io_BufReader<`t>'
+        native_type
+            `($'tokio_io_BufReader<`t>')
+            `($'tokio::io::BufReader<`t>')
+            "type tokio_io_BufReader<'T> = class end"
     )
 
 /// ### new_buf_reader
@@ -252,11 +251,10 @@ inl new_cursor forall t. (x : t) : cursor t =
 /// ### lines
 nominal lines t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::Lines<$0>\")>]\n#endif\ntype std_io_Lines<'T> = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::io::Lines<$0>\")>]\n#endif\ntype std_io_Lines<'T> = class end") : () -> ()
-        }
-        $'' : $'std_io_Lines<`t>'
+        native_type
+            `($'std_io_Lines<`t>')
+            `($'std::io::Lines<`t>')
+            "type std_io_Lines<'T> = class end"
     )
 
 /// ### buf_read_lines
@@ -266,11 +264,10 @@ inl buf_read_lines forall t. (buf_reader : buf_reader t) : lines (buf_reader t) 
 /// ### decode_reader_bytes
 nominal decode_reader_bytes t u =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"encoding_rs_io::DecodeReaderBytes<$0, $1>\")>]\n#endif\ntype encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end") : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"encoding_rs_io::DecodeReaderBytes<$0, $1>\")>]\n#endif\ntype encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end") : () -> ()
-        }
-        $'' : $'encoding_rs_io_DecodeReaderBytes<`t, `u>'
+        native_type
+            `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
+            `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')
+            "type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end"
     )
 
 /// ### decode_reader_bytes_build

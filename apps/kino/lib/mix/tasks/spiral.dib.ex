@@ -14,6 +14,8 @@ defmodule Mix.Tasks.Spiral.Dib do
           path: :string,
           output_path: :string,
           spi_path: :string,
+          spir_path: :string,
+          fs_path: :string,
           export_only: :boolean,
           html: :boolean,
           spi: :boolean
@@ -26,6 +28,8 @@ defmodule Mix.Tasks.Spiral.Dib do
     case Spiral.Kino.Notebook.run(path,
            output_path: opts[:output_path],
            spi_path: opts[:spi_path],
+           spir_path: opts[:spir_path],
+           fs_path: opts[:fs_path],
            export_only: opts[:export_only] == true,
            html: opts[:html] != false,
            spi: opts[:spi] != false

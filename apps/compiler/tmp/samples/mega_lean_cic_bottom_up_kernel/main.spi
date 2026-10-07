@@ -1,3 +1,7 @@
+// Run-time checks are core-free ops (F# macros until 2026-10-06, so only the F# backend could run them); a failed check
+// stops the program with its message on every backend.
+inl mega_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
+
 nominal empty_ctx = string
 nominal universe_one = string
 nominal bool_sort = string
@@ -16,13 +20,16 @@ nominal cic_chain_zero = ()
 nominal cic_chain_succ n = n
 
 inl cic_runtime_add_i64 (left : i64) (right : i64) : i64 =
-    $"!left + !right"
+    !!!!Add(left, right)
 
 inl cic_runtime_string_equal (left : string) (right : string) : i64 =
-    $"if !left = !right then 1L else 0L"
+    inl test_0 = !!!!EQ(left, right)
+    if test_0 then 1i64 else 0i64
 
 inl cic_runtime_and_i64 (left : i64) (right : i64) : i64 =
-    $"if !left = 1L && !right = 1L then 1L else 0L"
+    inl test_0 = !!!!EQ(left, 1i64)
+    inl test_1 = !!!!EQ(right, 1i64)
+    if test_0 && test_1 then 1i64 else 0i64
 
 nominal cic_inductive_signature_parameter = string
 nominal cic_inductive_signature_recursive = string
@@ -637,7 +644,8 @@ inl rec corrected_cic_structural_defeq_witness_make forall ctx sort.
           constant_name (_, right_name) =>
             inl equal = cic_runtime_string_equal left_name right_name
             inl _ : () =
-                $"if !equal <> 1L then failwith \"corrected-cic-structural-defeq-witness-constant-mismatch\""
+                inl ok_0 = !!!!EQ(equal, 1i64)
+                if ok_0 then () else mega_runtime_fail "corrected-cic-structural-defeq-witness-constant-mismatch"
             CorrectedCicStructuralDefeqWitnessConstant (
                 left_constant,
                 right_constant,
@@ -653,7 +661,7 @@ inl rec corrected_cic_structural_defeq_witness_make forall ctx sort.
             corrected_cic_structural_defeq_witness_make left_body right_body,
             "structural-defeq-witness-recurses-through-transparent-Definition-bodies")
     | _, _ =>
-        $"failwith \"corrected-cic-structural-defeq-witness-shape-mismatch\""
+        mega_runtime_fail "corrected-cic-structural-defeq-witness-shape-mismatch"
 
 inl rec decide_corrected_cic_structural_defeq forall ctx sort.
     (left : corrected_cic_term ctx sort)
@@ -1373,7 +1381,9 @@ inl corrected_cic_selected_zero_term_from_spine forall identity.
 
 inl assert_corrected_cic_selected_typed_meta_assignment_runtime
     (selected_tag : i64) (other_tag : i64) : () =
-    $"if !selected_tag <> 1L || !other_tag <> 3L then failwith \"corrected-CIC-typed-meta-selective-assignment-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(selected_tag, 1i64)
+    inl ok_1 = !!!!EQ(other_tag, 3i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "corrected-CIC-typed-meta-selective-assignment-runtime-mismatch"
 
 inl corrected_cic_selected_typed_meta_assignment_terminal () : string =
     inl selected = CorrectedCicTypedMetaZero
@@ -1396,7 +1406,7 @@ inl corrected_cic_selected_typed_meta_assignment_terminal () : string =
     inl _ =
         match assigned_selected, assigned_other with
         | CorrectedCicSelectedTypedMetaRigid _, CorrectedCicSelectedTypedMetaOther _ => ()
-        | _ => $"failwith \"corrected-CIC-typed-meta-selective-assignment-structural-mismatch\""
+        | _ => mega_runtime_fail "corrected-CIC-typed-meta-selective-assignment-structural-mismatch"
     "typed-meta-identity-now-lives-in-the-type-index-selected-target-is-replaced-and-a-structurally-proven-different-target-is-preserved-without-runtime-existential-selection-and-the-legacy-string-unification-machine-has-now-been-physically-retired-from-the-mega-surface"
 
 union rec corrected_cic_selected_typed_meta_assignment_program selected =
@@ -1428,15 +1438,18 @@ inl rec corrected_cic_selected_typed_meta_assignment_program_runtime forall sele
         inl tail_cells, tail_rigid, tail_other =
             corrected_cic_selected_typed_meta_assignment_program_runtime tail
         inl tag = corrected_cic_selected_typed_meta_term_tag head
-        inl rigid : i64 = $"if !tag = 1L then 1L else 0L"
-        inl other : i64 = $"if !tag = 3L then 1L else 0L"
+        inl rigid : i64 = if !!!!EQ(tag, 1i64) then 1i64 else 0i64
+        inl other : i64 = if !!!!EQ(tag, 3i64) then 1i64 else 0i64
         cic_runtime_add_i64 1i64 tail_cells,
         cic_runtime_add_i64 rigid tail_rigid,
         cic_runtime_add_i64 other tail_other
 
 inl assert_corrected_cic_selected_typed_meta_assignment_program_runtime
     (cells : i64) (rigid : i64) (other : i64) : () =
-    $"if !cells <> 3L || !rigid <> 2L || !other <> 1L then failwith \"corrected-CIC-typed-meta-assignment-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 3i64)
+    inl ok_1 = !!!!EQ(rigid, 2i64)
+    inl ok_2 = !!!!EQ(other, 1i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "corrected-CIC-typed-meta-assignment-program-runtime-mismatch"
 
 inl corrected_cic_selected_typed_meta_assignment_program_terminal () : string =
     inl selected = CorrectedCicTypedMetaZero
@@ -2222,7 +2235,8 @@ inl rec corrected_cic_nested_identity_local_diamond_program_runtime_count forall
 
 inl assert_corrected_cic_nested_identity_local_diamond_program_runtime
     (count : i64) : () =
-    $"if !count <> 2L then failwith \"corrected-cic-nested-identity-local-diamond-program-count-mismatch\""
+    inl ok_0 = !!!!EQ(count, 2i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-nested-identity-local-diamond-program-count-mismatch"
 
 inl corrected_cic_nested_identity_local_diamond_program_terminal () : string =
     inl program = corrected_cic_nested_identity_local_diamond_program_value ()
@@ -2364,7 +2378,8 @@ inl rec corrected_cic_beta_let_local_diamond_program_runtime_count forall length
 
 inl assert_corrected_cic_beta_let_local_diamond_program_runtime
     (count : i64) : () =
-    $"if !count <> 2L then failwith \"corrected-cic-beta-let-local-diamond-program-count-mismatch\""
+    inl ok_0 = !!!!EQ(count, 2i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-beta-let-local-diamond-program-count-mismatch"
 
 inl corrected_cic_beta_let_local_diamond_program_terminal () : string =
     inl program = corrected_cic_beta_let_local_diamond_program_value ()
@@ -2406,7 +2421,10 @@ inl corrected_cic_local_confluence_coverage_suite_runtime
 
 inl assert_corrected_cic_local_confluence_coverage_suite_runtime
     (beta_count : i64) (beta_let_count : i64) (total : i64) : () =
-    $"if !beta_count <> 2L || !beta_let_count <> 2L || !total <> 4L then failwith \"corrected-cic-local-confluence-coverage-suite-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(beta_count, 2i64)
+    inl ok_1 = !!!!EQ(beta_let_count, 2i64)
+    inl ok_2 = !!!!EQ(total, 4i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "corrected-cic-local-confluence-coverage-suite-runtime-mismatch"
 
 inl corrected_cic_local_confluence_coverage_suite_terminal () : string =
     inl suite = corrected_cic_local_confluence_coverage_suite_value ()
@@ -2894,7 +2912,13 @@ inl rec cic_raw_bool_contextual_chain_runtime forall source target.
 inl assert_cic_raw_bool_contextual_chain_runtime
     (steps : i64) (beta : i64) (lets : i64) (context_depth : i64)
     (source_nodes : i64) (target_nodes : i64) : () =
-    $"if !steps <> 2L || !beta <> 1L || !lets <> 1L || !context_depth <> 1L || !source_nodes <> 3L || !target_nodes <> 1L then failwith \"cic-raw-Bool-contextual-chain-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 2i64)
+    inl ok_1 = !!!!EQ(beta, 1i64)
+    inl ok_2 = !!!!EQ(lets, 1i64)
+    inl ok_3 = !!!!EQ(context_depth, 1i64)
+    inl ok_4 = !!!!EQ(source_nodes, 3i64)
+    inl ok_5 = !!!!EQ(target_nodes, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-raw-Bool-contextual-chain-runtime-mismatch"
 
 inl cic_raw_bool_contextual_chain_subject_reduction_terminal () : string =
     inl source_typing = cic_raw_bool_two_step_source_typing ()
@@ -2959,7 +2983,11 @@ inl cic_corrected_lambda_body_reduction_runtime forall ctx domain codomain.
 inl assert_cic_corrected_lambda_body_reduction_runtime
     (source_size : i64) (target_size : i64)
     (source_tag : i64) (target_tag : i64) : () =
-    $"if !source_size <> 5L || !target_size <> 2L || !source_tag <> 3L || !target_tag <> 3L then failwith \"cic-corrected-lambda-body-reduction-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 5i64)
+    inl ok_1 = !!!!EQ(target_size, 2i64)
+    inl ok_2 = !!!!EQ(source_tag, 3i64)
+    inl ok_3 = !!!!EQ(target_tag, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-lambda-body-reduction-runtime-mismatch"
 
 inl cic_corrected_lambda_body_reduction_terminal () : string =
     inl outer_binder =
@@ -3022,7 +3050,11 @@ inl cic_corrected_let_body_reduction_runtime forall ctx domain codomain.
 inl assert_cic_corrected_let_body_reduction_runtime
     (source_size : i64) (target_size : i64)
     (source_tag : i64) (target_tag : i64) : () =
-    $"if !source_size <> 6L || !target_size <> 3L || !source_tag <> 5L || !target_tag <> 5L then failwith \"cic-corrected-let-body-reduction-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 6i64)
+    inl ok_1 = !!!!EQ(target_size, 3i64)
+    inl ok_2 = !!!!EQ(source_tag, 5i64)
+    inl ok_3 = !!!!EQ(target_tag, 5i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-let-body-reduction-runtime-mismatch"
 
 inl cic_corrected_let_body_reduction_terminal () : string =
     inl outer_binder =
@@ -3099,7 +3131,11 @@ inl cic_corrected_let_lambda_body_reduction_runtime
 inl assert_cic_corrected_let_lambda_body_reduction_runtime
     (source_size : i64) (target_size : i64)
     (source_tag : i64) (target_tag : i64) : () =
-    $"if !source_size <> 7L || !target_size <> 4L || !source_tag <> 5L || !target_tag <> 5L then failwith \"cic-corrected-let-lambda-body-reduction-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 7i64)
+    inl ok_1 = !!!!EQ(target_size, 4i64)
+    inl ok_2 = !!!!EQ(source_tag, 5i64)
+    inl ok_3 = !!!!EQ(target_tag, 5i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-let-lambda-body-reduction-runtime-mismatch"
 
 inl cic_corrected_let_lambda_body_reduction_terminal () : string =
     inl let_binder =
@@ -3447,7 +3483,11 @@ inl rec cic_verified_inductive_iota_indexed_recursor_component_program_runtime
 
 inl assert_cic_verified_inductive_iota_indexed_recursor_component_runtime
     (cells : i64) (motives : i64) (parameters : i64) (recursive : i64) : () =
-    $"if !cells <> 4L || !motives <> 1L || !parameters <> 1L || !recursive <> 2L then failwith \"cic-verified-inductive-iota-indexed-recursor-component-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 4i64)
+    inl ok_1 = !!!!EQ(motives, 1i64)
+    inl ok_2 = !!!!EQ(parameters, 1i64)
+    inl ok_3 = !!!!EQ(recursive, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-verified-inductive-iota-indexed-recursor-component-runtime-mismatch"
 
 inl cic_verified_inductive_iota_indexed_recursor_component_terminal () : string =
     inl parameter_conclusion =
@@ -3537,7 +3577,13 @@ inl rec cic_verified_inductive_eliminator_program_direct_conclusion_runtime
 inl assert_cic_verified_inductive_eliminator_program_direct_conclusion_runtime
     (cases : i64) (cells : i64) (matches : i64) (parameters : i64)
     (recursive : i64) (domains : i64) : () =
-    $"if !cases <> 2L || !cells <> 4L || !matches <> 4L || !parameters <> 1L || !recursive <> 2L || !domains <> 1L then failwith \"cic-verified-inductive-eliminator-program-direct-conclusion-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cases, 2i64)
+    inl ok_1 = !!!!EQ(cells, 4i64)
+    inl ok_2 = !!!!EQ(matches, 4i64)
+    inl ok_3 = !!!!EQ(parameters, 1i64)
+    inl ok_4 = !!!!EQ(recursive, 2i64)
+    inl ok_5 = !!!!EQ(domains, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-verified-inductive-eliminator-program-direct-conclusion-runtime-mismatch"
 
 inl cic_verified_inductive_eliminator_program_direct_conclusion_terminal () : string =
     inl cases, cells, matches, parameters, recursive, domains =
@@ -3626,7 +3672,12 @@ inl cic_corrected_contextual_identity_beta_runtime forall ctx ty.
 inl assert_cic_corrected_contextual_identity_beta_runtime
     (source_size : i64) (target_size : i64) (depth : i64)
     (source_tag : i64) (target_tag : i64) : () =
-    $"if !source_size <> 8L || !target_size <> 5L || !depth <> 3L || !source_tag <> 5L || !target_tag <> 5L then failwith \"cic-corrected-contextual-identity-beta-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 8i64)
+    inl ok_1 = !!!!EQ(target_size, 5i64)
+    inl ok_2 = !!!!EQ(depth, 3i64)
+    inl ok_3 = !!!!EQ(source_tag, 5i64)
+    inl ok_4 = !!!!EQ(target_tag, 5i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_terminal () : string =
     inl let_binder =
@@ -3695,7 +3746,8 @@ inl rec cic_corrected_contextual_identity_beta_program_runtime
         inl tail_cells, tail_source, tail_target, tail_depth, tail_mismatch =
             cic_corrected_contextual_identity_beta_program_runtime tail
         inl mismatch : i64 =
-            $"if !source_tag = !target_tag then 0L else 1L"
+            inl test_0 = !!!!EQ(source_tag, target_tag)
+            if test_0 then 0i64 else 1i64
         cic_runtime_add_i64 1i64 tail_cells,
         cic_runtime_add_i64 source_size tail_source,
         cic_runtime_add_i64 target_size tail_target,
@@ -3705,7 +3757,10 @@ inl rec cic_corrected_contextual_identity_beta_program_runtime
 inl assert_cic_corrected_contextual_identity_beta_program_runtime
     (cells : i64) (source_total : i64) (target_total : i64)
     (depth_total : i64) (mismatch : i64) : () =
-    $"if !cells <> 2L || !depth_total <> 1L || !mismatch <> 1L then failwith \"cic-corrected-contextual-identity-beta-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 2i64)
+    inl ok_1 = !!!!EQ(depth_total, 1i64)
+    inl ok_2 = !!!!EQ(mismatch, 1i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-program-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_program_terminal () : string =
     inl binder_value =
@@ -3783,7 +3838,8 @@ inl rec cic_corrected_contextual_identity_beta_subject_reduction_program_runtime
             inl tail_cells, tail_targets, tail_depth, tail_transitions =
                 cic_corrected_contextual_identity_beta_subject_reduction_program_runtime tail
             inl transition : i64 =
-                $"if !source_tag = !target_tag then 0L else 1L"
+                inl test_0 = !!!!EQ(source_tag, target_tag)
+                if test_0 then 0i64 else 1i64
             cic_runtime_add_i64 1i64 tail_cells,
             cic_runtime_add_i64 1i64 tail_targets,
             cic_runtime_add_i64 depth tail_depth,
@@ -3792,7 +3848,11 @@ inl rec cic_corrected_contextual_identity_beta_subject_reduction_program_runtime
 inl assert_cic_corrected_contextual_identity_beta_subject_reduction_program_runtime
     (cells : i64) (derived_targets : i64)
     (depth_total : i64) (directed_transitions : i64) : () =
-    $"if !cells <> 2L || !derived_targets <> 2L || !depth_total <> 1L || !directed_transitions <> 1L then failwith \"cic-corrected-contextual-identity-beta-subject-reduction-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 2i64)
+    inl ok_1 = !!!!EQ(derived_targets, 2i64)
+    inl ok_2 = !!!!EQ(depth_total, 1i64)
+    inl ok_3 = !!!!EQ(directed_transitions, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-subject-reduction-program-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_subject_reduction_program_terminal () : string =
     inl binder_value =
@@ -3845,7 +3905,11 @@ inl rec append_cic_corrected_contextual_identity_beta_subject_reduction_program
 inl assert_cic_corrected_contextual_identity_beta_subject_reduction_append_runtime
     (cells : i64) (derived_targets : i64)
     (depth_total : i64) (directed_transitions : i64) : () =
-    $"if !cells <> 4L || !derived_targets <> 4L || !depth_total <> 2L || !directed_transitions <> 2L then failwith \"cic-corrected-contextual-identity-beta-subject-reduction-append-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 4i64)
+    inl ok_1 = !!!!EQ(derived_targets, 4i64)
+    inl ok_2 = !!!!EQ(depth_total, 2i64)
+    inl ok_3 = !!!!EQ(directed_transitions, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-subject-reduction-append-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_subject_reduction_append_terminal () : string =
     inl binder_value =
@@ -3929,7 +3993,15 @@ inl assert_cic_corrected_contextual_identity_beta_derivation_append_coherence_ru
     (left_depth : i64) (left_transitions : i64)
     (right_cells : i64) (right_targets : i64)
     (right_depth : i64) (right_transitions : i64) : () =
-    $"if !left_cells <> 4L || !left_targets <> 4L || !left_depth <> 2L || !left_transitions <> 2L || !right_cells <> !left_cells || !right_targets <> !left_targets || !right_depth <> !left_depth || !right_transitions <> !left_transitions then failwith \"cic-corrected-contextual-identity-beta-derivation-append-coherence-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_cells, 4i64)
+    inl ok_1 = !!!!EQ(left_targets, 4i64)
+    inl ok_2 = !!!!EQ(left_depth, 2i64)
+    inl ok_3 = !!!!EQ(left_transitions, 2i64)
+    inl ok_4 = !!!!EQ(right_cells, left_cells)
+    inl ok_5 = !!!!EQ(right_targets, left_targets)
+    inl ok_6 = !!!!EQ(right_depth, left_depth)
+    inl ok_7 = !!!!EQ(right_transitions, left_transitions)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-derivation-append-coherence-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_derivation_append_coherence_terminal () : string =
     inl left_raw = cic_corrected_contextual_identity_beta_append_base_program_value ()
@@ -3957,7 +4029,15 @@ inl assert_cic_corrected_contextual_identity_beta_append_associativity_runtime
     (left_depth : i64) (left_transitions : i64)
     (right_cells : i64) (right_targets : i64)
     (right_depth : i64) (right_transitions : i64) : () =
-    $"if !left_cells <> 6L || !left_targets <> 6L || !left_depth <> 3L || !left_transitions <> 3L || !right_cells <> !left_cells || !right_targets <> !left_targets || !right_depth <> !left_depth || !right_transitions <> !left_transitions then failwith \"cic-corrected-contextual-identity-beta-append-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_cells, 6i64)
+    inl ok_1 = !!!!EQ(left_targets, 6i64)
+    inl ok_2 = !!!!EQ(left_depth, 3i64)
+    inl ok_3 = !!!!EQ(left_transitions, 3i64)
+    inl ok_4 = !!!!EQ(right_cells, left_cells)
+    inl ok_5 = !!!!EQ(right_targets, left_targets)
+    inl ok_6 = !!!!EQ(right_depth, left_depth)
+    inl ok_7 = !!!!EQ(right_transitions, left_transitions)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-append-associativity-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_append_associativity_terminal () : string =
     inl first = cic_corrected_contextual_identity_beta_append_base_program_value ()
@@ -4032,7 +4112,8 @@ inl rec cic_corrected_contextual_identity_beta_direct_subject_reduction_runtime
         inl tail_cells, tail_targets, tail_depth, tail_transitions =
             cic_corrected_contextual_identity_beta_direct_subject_reduction_runtime tail
         inl transition : i64 =
-            $"if !source_tag = !target_tag then 0L else 1L"
+            inl test_0 = !!!!EQ(source_tag, target_tag)
+            if test_0 then 0i64 else 1i64
         cic_runtime_add_i64 1i64 tail_cells,
         cic_runtime_add_i64 1i64 tail_targets,
         cic_runtime_add_i64 depth tail_depth,
@@ -4043,7 +4124,15 @@ inl assert_cic_corrected_contextual_identity_beta_direct_subject_reduction_runti
     (direct_depth : i64) (direct_transitions : i64)
     (derived_cells : i64) (derived_targets : i64)
     (derived_depth : i64) (derived_transitions : i64) : () =
-    $"if !direct_cells <> 4L || !direct_targets <> 4L || !direct_depth <> 2L || !direct_transitions <> 2L || !derived_cells <> !direct_cells || !derived_targets <> !direct_targets || !derived_depth <> !direct_depth || !derived_transitions <> !direct_transitions then failwith \"cic-corrected-contextual-identity-beta-direct-subject-reduction-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(direct_cells, 4i64)
+    inl ok_1 = !!!!EQ(direct_targets, 4i64)
+    inl ok_2 = !!!!EQ(direct_depth, 2i64)
+    inl ok_3 = !!!!EQ(direct_transitions, 2i64)
+    inl ok_4 = !!!!EQ(derived_cells, direct_cells)
+    inl ok_5 = !!!!EQ(derived_targets, direct_targets)
+    inl ok_6 = !!!!EQ(derived_depth, direct_depth)
+    inl ok_7 = !!!!EQ(derived_transitions, direct_transitions)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "cic-corrected-contextual-identity-beta-direct-subject-reduction-runtime-mismatch"
 
 inl cic_corrected_contextual_identity_beta_direct_subject_reduction_terminal () : string =
     inl left = cic_corrected_contextual_identity_beta_append_base_program_value ()
@@ -4109,7 +4198,10 @@ inl rec cic_corrected_intrinsic_target_program_runtime
 inl assert_cic_corrected_intrinsic_target_program_runtime
     (raw_cells : i64) (raw_size : i64)
     (derived_cells : i64) (derived_size : i64) : () =
-    $"if !raw_cells <> 4L || !derived_cells <> !raw_cells || !derived_size <> !raw_size then failwith \"cic-corrected-intrinsic-target-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(raw_cells, 4i64)
+    inl ok_1 = !!!!EQ(derived_cells, raw_cells)
+    inl ok_2 = !!!!EQ(derived_size, raw_size)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-intrinsic-target-program-runtime-mismatch"
 
 inl cic_corrected_intrinsic_target_program_terminal () : string =
     inl left = cic_corrected_contextual_identity_beta_append_base_program_value ()
@@ -4141,7 +4233,10 @@ inl rec append_cic_corrected_intrinsic_target_program
 inl assert_cic_corrected_intrinsic_target_append_homomorphism_runtime
     (direct_cells : i64) (direct_size : i64)
     (split_cells : i64) (split_size : i64) : () =
-    $"if !direct_cells <> 4L || !split_cells <> !direct_cells || !split_size <> !direct_size then failwith \"cic-corrected-intrinsic-target-append-homomorphism-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(direct_cells, 4i64)
+    inl ok_1 = !!!!EQ(split_cells, direct_cells)
+    inl ok_2 = !!!!EQ(split_size, direct_size)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-intrinsic-target-append-homomorphism-runtime-mismatch"
 
 inl cic_corrected_intrinsic_target_append_homomorphism_terminal () : string =
     inl left = cic_corrected_contextual_identity_beta_append_base_program_value ()
@@ -4230,7 +4325,8 @@ inl cic_corrected_three_cell_extension () :
         "the-third-step-adds-another-Bool-cell")
 
 inl assert_cic_corrected_finite_lifting_runtime (steps : i64) : () =
-    $"if !steps <> 3L then failwith \"cic-corrected-finite-lifting-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 3i64)
+    if ok_0 then () else mega_runtime_fail "cic-corrected-finite-lifting-runtime-mismatch"
 
 inl cic_corrected_finite_lifting_terminal () : string =
     inl extension = cic_corrected_three_cell_extension ()
@@ -4278,7 +4374,10 @@ inl cic_corrected_remaining_two_cell_extension () :
 inl assert_cic_corrected_context_extension_composition_runtime
     (composed_steps : i64) (split_steps : i64)
     (direct_size : i64) (sequential_size : i64) : () =
-    $"if !composed_steps <> 3L || !split_steps <> !composed_steps || !direct_size <> !sequential_size then failwith \"cic-corrected-context-extension-composition-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(composed_steps, 3i64)
+    inl ok_1 = !!!!EQ(split_steps, composed_steps)
+    inl ok_2 = !!!!EQ(direct_size, sequential_size)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-context-extension-composition-runtime-mismatch"
 
 inl cic_corrected_context_extension_composition_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4331,7 +4430,10 @@ inl cic_corrected_third_cell_extension () :
 inl assert_cic_corrected_context_extension_associativity_runtime
     (left_steps : i64) (right_steps : i64)
     (left_size : i64) (right_size : i64) : () =
-    $"if !left_steps <> 3L || !right_steps <> !left_steps || !left_size <> !right_size then failwith \"cic-corrected-context-extension-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_steps, 3i64)
+    inl ok_1 = !!!!EQ(right_steps, left_steps)
+    inl ok_2 = !!!!EQ(left_size, right_size)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-context-extension-associativity-runtime-mismatch"
 
 inl cic_corrected_context_extension_associativity_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4372,7 +4474,12 @@ type cic_corrected_three_cell_context =
 inl assert_cic_corrected_context_extension_identity_runtime
     (base_steps : i64) (left_steps : i64) (right_steps : i64)
     (base_size : i64) (left_size : i64) (right_size : i64) : () =
-    $"if !base_steps <> 3L || !left_steps <> !base_steps || !right_steps <> !base_steps || !left_size <> !base_size || !right_size <> !base_size then failwith \"cic-corrected-context-extension-identity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(base_steps, 3i64)
+    inl ok_1 = !!!!EQ(left_steps, base_steps)
+    inl ok_2 = !!!!EQ(right_steps, base_steps)
+    inl ok_3 = !!!!EQ(left_size, base_size)
+    inl ok_4 = !!!!EQ(right_size, base_size)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "cic-corrected-context-extension-identity-runtime-mismatch"
 
 inl cic_corrected_context_extension_identity_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4407,7 +4514,12 @@ inl cic_corrected_context_extension_identity_terminal () : string =
 inl assert_cic_corrected_composite_lifting_runtime
     (steps : i64) (direct_size : i64) (sequential_size : i64)
     (direct_tag : i64) (sequential_tag : i64) : () =
-    $"if !steps <> 3L || !direct_size <> 7L || !sequential_size <> !direct_size || !direct_tag <> 6L || !sequential_tag <> !direct_tag then failwith \"cic-corrected-composite-lifting-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 3i64)
+    inl ok_1 = !!!!EQ(direct_size, 7i64)
+    inl ok_2 = !!!!EQ(sequential_size, direct_size)
+    inl ok_3 = !!!!EQ(direct_tag, 6i64)
+    inl ok_4 = !!!!EQ(sequential_tag, direct_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "cic-corrected-composite-lifting-runtime-mismatch"
 
 inl cic_corrected_composite_lifting_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4443,7 +4555,11 @@ inl cic_corrected_bool_identity_lambda () :
 inl assert_cic_corrected_lambda_lifting_runtime
     (steps : i64) (direct_size : i64) (sequential_size : i64)
     (direct_tag : i64) (sequential_tag : i64) : () =
-    $"if !steps <> 3L || !direct_size < 2L || !sequential_size <> !direct_size || !sequential_tag <> !direct_tag then failwith \"cic-corrected-lambda-lifting-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 3i64)
+    inl ok_1 = !!!!GTE(direct_size, 2i64)
+    inl ok_2 = !!!!EQ(sequential_size, direct_size)
+    inl ok_3 = !!!!EQ(sequential_tag, direct_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-lambda-lifting-runtime-mismatch"
 
 inl cic_corrected_lambda_lifting_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4483,7 +4599,11 @@ inl cic_corrected_bool_let_identity_lambda () : corrected_cic_term empty_ctx (fu
 inl assert_cic_corrected_nested_binder_lifting_runtime
     (steps : i64) (direct_size : i64) (sequential_size : i64)
     (direct_tag : i64) (sequential_tag : i64) : () =
-    $"if !steps <> 3L || !direct_size < 4L || !sequential_size <> !direct_size || !sequential_tag <> !direct_tag then failwith \"cic-corrected-nested-binder-lifting-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 3i64)
+    inl ok_1 = !!!!GTE(direct_size, 4i64)
+    inl ok_2 = !!!!EQ(sequential_size, direct_size)
+    inl ok_3 = !!!!EQ(sequential_tag, direct_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-nested-binder-lifting-runtime-mismatch"
 
 inl cic_corrected_nested_binder_lifting_terminal () : string =
     inl first = cic_corrected_first_cell_extension ()
@@ -4549,7 +4669,11 @@ inl cic_corrected_three_cell_renaming () :
 inl assert_cic_corrected_explicit_renaming_runtime
     (renaming_steps : i64) (renamed_size : i64)
     (lifted_size : i64) (renamed_tag : i64) (lifted_tag : i64) : () =
-    $"if !renaming_steps <> 3L || !renamed_size < 4L || !lifted_size <> !renamed_size || !lifted_tag <> !renamed_tag then failwith \"cic-corrected-explicit-renaming-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(renaming_steps, 3i64)
+    inl ok_1 = !!!!GTE(renamed_size, 4i64)
+    inl ok_2 = !!!!EQ(lifted_size, renamed_size)
+    inl ok_3 = !!!!EQ(lifted_tag, renamed_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-explicit-renaming-runtime-mismatch"
 
 inl cic_corrected_explicit_renaming_terminal () : string =
     inl renaming = cic_corrected_three_cell_renaming ()
@@ -4584,7 +4708,11 @@ inl assert_cic_corrected_renaming_composition_runtime
     (direct_steps : i64) (sequential_steps : i64)
     (direct_size : i64) (sequential_size : i64)
     (direct_tag : i64) (sequential_tag : i64) : () =
-    $"if !direct_steps <> 3L || !sequential_steps <> !direct_steps || !direct_size <> !sequential_size || !direct_tag <> !sequential_tag then failwith \"cic-corrected-renaming-composition-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(direct_steps, 3i64)
+    inl ok_1 = !!!!EQ(sequential_steps, direct_steps)
+    inl ok_2 = !!!!EQ(direct_size, sequential_size)
+    inl ok_3 = !!!!EQ(direct_tag, sequential_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-renaming-composition-runtime-mismatch"
 
 inl cic_corrected_renaming_composition_terminal () : string =
     inl first : cic_corrected_renaming empty_ctx (ctx_extend empty_ctx bool_sort) =
@@ -4624,7 +4752,14 @@ inl assert_cic_corrected_renaming_identity_runtime
     (base_steps : i64) (left_steps : i64) (right_steps : i64)
     (base_size : i64) (left_size : i64) (right_size : i64)
     (base_tag : i64) (left_tag : i64) (right_tag : i64) : () =
-    $"if !base_steps <> 3L || !left_steps <> !base_steps || !right_steps <> !base_steps || !left_size <> !base_size || !right_size <> !base_size || !left_tag <> !base_tag || !right_tag <> !base_tag then failwith \"cic-corrected-renaming-identity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(base_steps, 3i64)
+    inl ok_1 = !!!!EQ(left_steps, base_steps)
+    inl ok_2 = !!!!EQ(right_steps, base_steps)
+    inl ok_3 = !!!!EQ(left_size, base_size)
+    inl ok_4 = !!!!EQ(right_size, base_size)
+    inl ok_5 = !!!!EQ(left_tag, base_tag)
+    inl ok_6 = !!!!EQ(right_tag, base_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "cic-corrected-renaming-identity-runtime-mismatch"
 
 inl cic_corrected_renaming_identity_terminal () : string =
     inl renaming = cic_corrected_three_cell_renaming ()
@@ -4662,7 +4797,11 @@ inl assert_cic_corrected_renaming_associativity_runtime
     (left_steps : i64) (right_steps : i64)
     (left_size : i64) (right_size : i64)
     (left_tag : i64) (right_tag : i64) : () =
-    $"if !left_steps <> 3L || !right_steps <> !left_steps || !right_size <> !left_size || !right_tag <> !left_tag then failwith \"cic-corrected-renaming-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_steps, 3i64)
+    inl ok_1 = !!!!EQ(right_steps, left_steps)
+    inl ok_2 = !!!!EQ(right_size, left_size)
+    inl ok_3 = !!!!EQ(right_tag, left_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-renaming-associativity-runtime-mismatch"
 
 inl cic_corrected_renaming_associativity_terminal () : string =
     inl first : cic_corrected_renaming empty_ctx (ctx_extend empty_ctx bool_sort) =
@@ -4771,7 +4910,15 @@ inl assert_cic_corrected_two_cell_swap_runtime
     (newest_source_size : i64) (newest_target_size : i64)
     (older_source_depth : i64) (older_target_depth : i64)
     (older_source_size : i64) (older_target_size : i64) : () =
-    $"if !newest_source_depth <> 0L || !newest_target_depth <> 1L || !newest_source_size <> 1L || !newest_target_size <> 2L || !older_source_depth <> 1L || !older_target_depth <> 0L || !older_source_size <> 2L || !older_target_size <> 1L then failwith \"cic-corrected-two-cell-swap-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(newest_source_depth, 0i64)
+    inl ok_1 = !!!!EQ(newest_target_depth, 1i64)
+    inl ok_2 = !!!!EQ(newest_source_size, 1i64)
+    inl ok_3 = !!!!EQ(newest_target_size, 2i64)
+    inl ok_4 = !!!!EQ(older_source_depth, 1i64)
+    inl ok_5 = !!!!EQ(older_target_depth, 0i64)
+    inl ok_6 = !!!!EQ(older_source_size, 2i64)
+    inl ok_7 = !!!!EQ(older_target_size, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "cic-corrected-two-cell-swap-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_terminal () : string =
     inl nsd, ntd, nss, nts =
@@ -4832,7 +4979,13 @@ inl assert_cic_corrected_two_cell_swap_application_runtime
     (source_size : i64) (target_size : i64)
     (source_function_size : i64) (target_function_size : i64)
     (source_argument_size : i64) (target_argument_size : i64) : () =
-    $"if !source_size <> 4L || !target_size <> 4L || !source_function_size <> 1L || !target_function_size <> 2L || !source_argument_size <> 2L || !target_argument_size <> 1L then failwith \"cic-corrected-two-cell-swap-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 4i64)
+    inl ok_1 = !!!!EQ(target_size, 4i64)
+    inl ok_2 = !!!!EQ(source_function_size, 1i64)
+    inl ok_3 = !!!!EQ(target_function_size, 2i64)
+    inl ok_4 = !!!!EQ(source_argument_size, 2i64)
+    inl ok_5 = !!!!EQ(target_argument_size, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-corrected-two-cell-swap-application-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_application_terminal () : string =
     inl source_size, target_size,
@@ -4940,7 +5093,12 @@ inl cic_corrected_two_cell_swap_nested_application_program () :
 inl assert_cic_corrected_two_cell_swap_program_runtime
     (program_nodes : i64) (source_size : i64) (target_size : i64)
     (source_tag : i64) (target_tag : i64) : () =
-    $"if !program_nodes <> 5L || !source_size <> 6L || !target_size <> !source_size || !source_tag <> 4L || !target_tag <> !source_tag then failwith \"cic-corrected-two-cell-swap-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(program_nodes, 5i64)
+    inl ok_1 = !!!!EQ(source_size, 6i64)
+    inl ok_2 = !!!!EQ(target_size, source_size)
+    inl ok_3 = !!!!EQ(source_tag, 4i64)
+    inl ok_4 = !!!!EQ(target_tag, source_tag)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "cic-corrected-two-cell-swap-program-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_program_terminal () : string =
     inl program = cic_corrected_two_cell_swap_nested_application_program ()
@@ -5071,7 +5229,13 @@ inl assert_cic_corrected_two_cell_swap_binder_lambda_runtime
     (source_function_depth : i64) (target_function_depth : i64)
     (source_argument_depth : i64) (target_argument_depth : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_function_depth <> 1L || !target_function_depth <> 2L || !source_argument_depth <> 0L || !target_argument_depth <> 0L || !source_size <> 5L || !target_size <> 6L then failwith \"cic-corrected-two-cell-swap-binder-lambda-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_function_depth, 1i64)
+    inl ok_1 = !!!!EQ(target_function_depth, 2i64)
+    inl ok_2 = !!!!EQ(source_argument_depth, 0i64)
+    inl ok_3 = !!!!EQ(target_argument_depth, 0i64)
+    inl ok_4 = !!!!EQ(source_size, 5i64)
+    inl ok_5 = !!!!EQ(target_size, 6i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-corrected-two-cell-swap-binder-lambda-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_binder_lambda_terminal () : string =
     inl source_function_depth, target_function_depth,
@@ -5209,7 +5373,13 @@ inl assert_cic_corrected_two_cell_swap_function_binder_runtime
     (source_function_depth : i64) (source_argument_depth : i64)
     (target_function_depth : i64) (target_argument_depth : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_function_depth <> 0L || !source_argument_depth <> 2L || !target_function_depth <> 0L || !target_argument_depth <> 1L || !source_size <> 6L || !target_size <> 5L then failwith \"cic-corrected-two-cell-swap-function-binder-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_function_depth, 0i64)
+    inl ok_1 = !!!!EQ(source_argument_depth, 2i64)
+    inl ok_2 = !!!!EQ(target_function_depth, 0i64)
+    inl ok_3 = !!!!EQ(target_argument_depth, 1i64)
+    inl ok_4 = !!!!EQ(source_size, 6i64)
+    inl ok_5 = !!!!EQ(target_size, 5i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-corrected-two-cell-swap-function-binder-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_function_binder_terminal () : string =
     inl source_function_depth, source_argument_depth,
@@ -5381,7 +5551,12 @@ inl assert_cic_corrected_two_cell_swap_recursive_function_binder_program_runtime
     (program_nodes : i64) (source_body_size : i64)
     (target_body_size : i64) (source_size : i64)
     (target_size : i64) : () =
-    $"if !program_nodes <> 5L || !source_body_size <> 7L || !target_body_size <> 6L || !source_size <> 8L || !target_size <> 7L then failwith \"cic-corrected-two-cell-swap-recursive-function-binder-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(program_nodes, 5i64)
+    inl ok_1 = !!!!EQ(source_body_size, 7i64)
+    inl ok_2 = !!!!EQ(target_body_size, 6i64)
+    inl ok_3 = !!!!EQ(source_size, 8i64)
+    inl ok_4 = !!!!EQ(target_size, 7i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "cic-corrected-two-cell-swap-recursive-function-binder-program-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_recursive_function_binder_program_terminal () : string =
     inl program_nodes, source_body_size, target_body_size,
@@ -5504,7 +5679,13 @@ inl assert_cic_corrected_two_cell_swap_nested_binder_runtime
     (source_function_depth : i64) (source_argument_depth : i64)
     (target_function_depth : i64) (target_argument_depth : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !source_function_depth <> 1L || !source_argument_depth <> 3L || !target_function_depth <> 1L || !target_argument_depth <> 2L || !source_size <= 0L || !target_size <= 0L then failwith \"cic-corrected-two-cell-swap-nested-binder-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_function_depth, 1i64)
+    inl ok_1 = !!!!EQ(source_argument_depth, 3i64)
+    inl ok_2 = !!!!EQ(target_function_depth, 1i64)
+    inl ok_3 = !!!!EQ(target_argument_depth, 2i64)
+    inl ok_4 = !!!!GT(source_size, 0i64)
+    inl ok_5 = !!!!GT(target_size, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-corrected-two-cell-swap-nested-binder-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_nested_binder_terminal () : string =
     inl source_function_depth, source_argument_depth,
@@ -5661,7 +5842,10 @@ inl cic_corrected_two_cell_swap_recursive_nested_binder_program_runtime () :
 
 inl assert_cic_corrected_two_cell_swap_recursive_nested_binder_program_runtime
     (program_nodes : i64) (source_size : i64) (target_size : i64) : () =
-    $"if !program_nodes <> 5L || !source_size <= 0L || !target_size <= 0L then failwith \"cic-corrected-two-cell-swap-recursive-nested-binder-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(program_nodes, 5i64)
+    inl ok_1 = !!!!GT(source_size, 0i64)
+    inl ok_2 = !!!!GT(target_size, 0i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "cic-corrected-two-cell-swap-recursive-nested-binder-program-runtime-mismatch"
 
 inl cic_corrected_two_cell_swap_recursive_nested_binder_program_terminal () : string =
     inl program_nodes, source_size, target_size =
@@ -5782,7 +5966,11 @@ inl cic_corrected_one_binder_substitution_runtime () :
 inl assert_cic_corrected_one_binder_substitution_runtime
     (program_nodes : i64) (source_body_size : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !program_nodes <> 3L || !source_body_size <> 5L || !source_size <> 8L || !target_size <> 4L then failwith \"cic-corrected-one-binder-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(program_nodes, 3i64)
+    inl ok_1 = !!!!EQ(source_body_size, 5i64)
+    inl ok_2 = !!!!EQ(source_size, 8i64)
+    inl ok_3 = !!!!EQ(target_size, 4i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-one-binder-substitution-runtime-mismatch"
 
 inl cic_corrected_one_binder_substitution_terminal () : string =
     inl program_nodes, source_body_size, source_size, target_size =
@@ -5824,7 +6012,11 @@ inl cic_corrected_function_binder_substitution_runtime () :
 inl assert_cic_corrected_function_binder_substitution_runtime
     (program_nodes : i64) (body_size : i64)
     (source_size : i64) (target_size : i64) : () =
-    $"if !program_nodes <> 1L || !body_size <= 0L || !source_size <= !target_size || !target_size <= 0L then failwith \"cic-corrected-function-binder-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(program_nodes, 1i64)
+    inl ok_1 = !!!!GT(body_size, 0i64)
+    inl ok_2 = !!!!GT(source_size, target_size)
+    inl ok_3 = !!!!GT(target_size, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "cic-corrected-function-binder-substitution-runtime-mismatch"
 
 inl cic_corrected_function_binder_substitution_terminal () : string =
     inl program_nodes, body_size, source_size, target_size =
@@ -5971,7 +6163,11 @@ inl rec corrected_cic_bool_dependent_application_program_runtime
 
 inl assert_corrected_cic_bool_dependent_application_program_runtime
     (cells : i64) (codomains : i64) (sizes : i64) (true_cells : i64) : () =
-    $"if !cells <> 3L || !codomains <> 4L || !sizes <= 0L || !true_cells <> 2L then failwith \"corrected-cic-Bool-dependent-application-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 3i64)
+    inl ok_1 = !!!!EQ(codomains, 4i64)
+    inl ok_2 = !!!!GT(sizes, 0i64)
+    inl ok_3 = !!!!EQ(true_cells, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "corrected-cic-Bool-dependent-application-program-runtime-mismatch"
 
 inl corrected_cic_bool_dependent_application_program_terminal () : string =
     inl program =
@@ -6045,7 +6241,15 @@ inl assert_corrected_cic_bool_dependent_application_program_append_runtime
     (cells : i64) (codomains : i64) (sizes : i64) (true_cells : i64)
     (expected_cells : i64) (expected_codomains : i64)
     (expected_sizes : i64) (expected_true_cells : i64) : () =
-    $"if !cells <> 3L || !codomains <> 4L || !sizes <= 0L || !true_cells <> 2L || !cells <> !expected_cells || !codomains <> !expected_codomains || !sizes <> !expected_sizes || !true_cells <> !expected_true_cells then failwith \"corrected-cic-Bool-dependent-application-program-append-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 3i64)
+    inl ok_1 = !!!!EQ(codomains, 4i64)
+    inl ok_2 = !!!!GT(sizes, 0i64)
+    inl ok_3 = !!!!EQ(true_cells, 2i64)
+    inl ok_4 = !!!!EQ(cells, expected_cells)
+    inl ok_5 = !!!!EQ(codomains, expected_codomains)
+    inl ok_6 = !!!!EQ(sizes, expected_sizes)
+    inl ok_7 = !!!!EQ(true_cells, expected_true_cells)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "corrected-cic-Bool-dependent-application-program-append-runtime-mismatch"
 
 inl corrected_cic_bool_dependent_application_negate
     (application : corrected_cic_bool_dependent_application)
@@ -6108,7 +6312,19 @@ inl assert_corrected_cic_bool_dependent_application_program_negation_involution_
     (once_sizes : i64) (once_true : i64)
     (twice_cells : i64) (twice_codomains : i64)
     (twice_sizes : i64) (twice_true : i64) : () =
-    $"if !original_cells <> 3L || !original_codomains <> 4L || !original_sizes <= 0L || !original_true <> 2L || !once_cells <> 3L || !once_codomains <> 5L || !once_sizes <= 0L || !once_true <> 1L || !twice_cells <> !original_cells || !twice_codomains <> !original_codomains || !twice_sizes <> !original_sizes || !twice_true <> !original_true then failwith \"corrected-cic-Bool-dependent-application-program-negation-involution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(original_cells, 3i64)
+    inl ok_1 = !!!!EQ(original_codomains, 4i64)
+    inl ok_2 = !!!!GT(original_sizes, 0i64)
+    inl ok_3 = !!!!EQ(original_true, 2i64)
+    inl ok_4 = !!!!EQ(once_cells, 3i64)
+    inl ok_5 = !!!!EQ(once_codomains, 5i64)
+    inl ok_6 = !!!!GT(once_sizes, 0i64)
+    inl ok_7 = !!!!EQ(once_true, 1i64)
+    inl ok_8 = !!!!EQ(twice_cells, original_cells)
+    inl ok_9 = !!!!EQ(twice_codomains, original_codomains)
+    inl ok_10 = !!!!EQ(twice_sizes, original_sizes)
+    inl ok_11 = !!!!EQ(twice_true, original_true)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 then () else mega_runtime_fail "corrected-cic-Bool-dependent-application-program-negation-involution-runtime-mismatch"
 
 inl corrected_cic_bool_dependent_application_program_negation_involution_terminal () : string =
     inl original_cells, original_codomains, original_sizes, original_true,
@@ -6318,7 +6534,13 @@ inl assert_cic_corrected_total_substitution_nested_lambda_let_runtime
     (source_size : i64) (target_size : i64) (target_tag : i64)
     (source_bound_here : i64) (target_bound_here : i64)
     (target_constants : i64) : () =
-    $"if !source_size <> 12L || !target_size <> 11L || !target_tag <> 3L || !source_bound_here <> 3L || !target_bound_here <> 1L || !target_constants <> 2L then failwith \"cic-corrected-total-substitution-nested-lambda-let-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 12i64)
+    inl ok_1 = !!!!EQ(target_size, 11i64)
+    inl ok_2 = !!!!EQ(target_tag, 3i64)
+    inl ok_3 = !!!!EQ(source_bound_here, 3i64)
+    inl ok_4 = !!!!EQ(target_bound_here, 1i64)
+    inl ok_5 = !!!!EQ(target_constants, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "cic-corrected-total-substitution-nested-lambda-let-runtime-mismatch"
 
 inl cic_corrected_total_substitution_nested_lambda_let_terminal () : string =
     inl source_size, target_size, target_tag,
@@ -6610,7 +6832,14 @@ inl assert_corrected_cic_recursive_codomain_application_runtime
     (sort_source_size : i64) (bool_source_size : i64)
     (sort_target_size : i64) (sort_target_constants : i64)
     (bool_target_size : i64) (bool_target_constants : i64) : () =
-    $"if !sort_source_tag <> 8L || !bool_source_tag <> 8L || !sort_source_size <> !bool_source_size || !sort_target_size <> 5L || !sort_target_constants <> 2L || !bool_target_size <> 5L || !bool_target_constants <> 3L then failwith \"corrected-cic-recursive-codomain-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(sort_source_tag, 8i64)
+    inl ok_1 = !!!!EQ(bool_source_tag, 8i64)
+    inl ok_2 = !!!!EQ(sort_source_size, bool_source_size)
+    inl ok_3 = !!!!EQ(sort_target_size, 5i64)
+    inl ok_4 = !!!!EQ(sort_target_constants, 2i64)
+    inl ok_5 = !!!!EQ(bool_target_size, 5i64)
+    inl ok_6 = !!!!EQ(bool_target_constants, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "corrected-cic-recursive-codomain-application-runtime-mismatch"
 
 inl corrected_cic_recursive_codomain_application_terminal () : string =
     inl _ = corrected_cic_recursive_single_unary_codomain_program ()
@@ -6845,7 +7074,11 @@ inl corrected_cic_programmed_dependent_application_terminal () : string =
     inl identity_source_tag, identity_target_constants,
         unary_source_tag, unary_target_constants =
         corrected_cic_programmed_dependent_application_runtime ()
-    $"if !identity_source_tag <> 8L || !identity_target_constants <> 0L || !unary_source_tag <> 8L || !unary_target_constants <> 2L then failwith \"corrected-cic-programmed-dependent-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(identity_source_tag, 8i64)
+    inl ok_1 = !!!!EQ(identity_target_constants, 0i64)
+    inl ok_2 = !!!!EQ(unary_source_tag, 8i64)
+    inl ok_3 = !!!!EQ(unary_target_constants, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "corrected-cic-programmed-dependent-application-runtime-mismatch"
     "one-dependent-application-constructor-now-consumes-a-codomain-program-and-derives-identity-or-F-of-x-targets"
 
 inl corrected_cic_indexed_sort_zero_application () :
@@ -6920,7 +7153,17 @@ inl assert_corrected_cic_indexed_unary_constructor_application_runtime
     (sort_target_constants : i64)
     (bool_target_size : i64) (bool_target_tag : i64)
     (bool_target_constants : i64) : () =
-    $"if !sort_source_size <> 6L || !sort_source_tag <> 8L || !bool_source_size <> 6L || !bool_source_tag <> 8L || !sort_target_size <> 3L || !sort_target_tag <> 4L || !sort_target_constants <> 1L || !bool_target_size <> 3L || !bool_target_tag <> 4L || !bool_target_constants <> 2L then failwith \"corrected-cic-indexed-unary-constructor-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(sort_source_size, 6i64)
+    inl ok_1 = !!!!EQ(sort_source_tag, 8i64)
+    inl ok_2 = !!!!EQ(bool_source_size, 6i64)
+    inl ok_3 = !!!!EQ(bool_source_tag, 8i64)
+    inl ok_4 = !!!!EQ(sort_target_size, 3i64)
+    inl ok_5 = !!!!EQ(sort_target_tag, 4i64)
+    inl ok_6 = !!!!EQ(sort_target_constants, 1i64)
+    inl ok_7 = !!!!EQ(bool_target_size, 3i64)
+    inl ok_8 = !!!!EQ(bool_target_tag, 4i64)
+    inl ok_9 = !!!!EQ(bool_target_constants, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "corrected-cic-indexed-unary-constructor-application-runtime-mismatch"
 
 inl corrected_cic_indexed_unary_constructor_application_terminal () : string =
     inl sort_source_size, sort_source_tag,
@@ -6961,7 +7204,13 @@ inl assert_corrected_cic_indexed_dependent_application_runtime
     (sort_source_size : i64) (sort_source_tag : i64)
     (bool_source_size : i64) (bool_source_tag : i64)
     (sort_target_tag : i64) (bool_target_tag : i64) : () =
-    $"if !sort_source_size <> 4L || !sort_source_tag <> 8L || !bool_source_size <> 4L || !bool_source_tag <> 8L || !sort_target_tag <> 0L || !bool_target_tag <> 2L then failwith \"corrected-cic-indexed-dependent-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(sort_source_size, 4i64)
+    inl ok_1 = !!!!EQ(sort_source_tag, 8i64)
+    inl ok_2 = !!!!EQ(bool_source_size, 4i64)
+    inl ok_3 = !!!!EQ(bool_source_tag, 8i64)
+    inl ok_4 = !!!!EQ(sort_target_tag, 0i64)
+    inl ok_5 = !!!!EQ(bool_target_tag, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "corrected-cic-indexed-dependent-application-runtime-mismatch"
 
 inl corrected_cic_indexed_dependent_application_terminal () : string =
     inl sort_source_size, sort_source_tag,
@@ -7000,11 +7249,21 @@ inl assert_corrected_cic_general_pi_identity_application_runtime
     (source_size : i64) (source_tag : i64)
     (source_bound : i64) (source_constants : i64)
     (target_size : i64) (target_tag : i64) (target_bound : i64) : () =
-    $"if !source_size <> 4L || !source_tag <> 8L || !source_bound <> 1L || !source_constants <> 0L || !target_size <> 1L || !target_tag <> 0L || !target_bound <> 0L then failwith \"corrected-cic-general-Pi-dependent-application-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 4i64)
+    inl ok_1 = !!!!EQ(source_tag, 8i64)
+    inl ok_2 = !!!!EQ(source_bound, 1i64)
+    inl ok_3 = !!!!EQ(source_constants, 0i64)
+    inl ok_4 = !!!!EQ(target_size, 1i64)
+    inl ok_5 = !!!!EQ(target_tag, 0i64)
+    inl ok_6 = !!!!EQ(target_bound, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "corrected-cic-general-Pi-dependent-application-runtime-mismatch"
 
 inl assert_corrected_cic_substituted_codomain_defeq_runtime
     (source_tag : i64) (decision : i64) (whnf_decision : i64) : () =
-    $"if !source_tag <> 8L || !decision <> 1L || !whnf_decision <> 1L then failwith \"corrected-cic-dependent-source-to-substituted-codomain-defeq-mismatch\""
+    inl ok_0 = !!!!EQ(source_tag, 8i64)
+    inl ok_1 = !!!!EQ(decision, 1i64)
+    inl ok_2 = !!!!EQ(whnf_decision, 1i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "corrected-cic-dependent-source-to-substituted-codomain-defeq-mismatch"
 
 inl corrected_cic_general_pi_identity_lambda_term () :
     corrected_cic_term empty_ctx (universe_sort universe_one) =
@@ -7129,7 +7388,14 @@ inl assert_corrected_cic_whnf_nested_let_beta_runtime
     (source_size : i64) (source_tag : i64) (source_bound : i64)
     (steps : i64)
     (target_size : i64) (target_tag : i64) (target_bound : i64) : () =
-    $"if !source_size <> 6L || !source_tag <> 5L || !source_bound <> 2L || !steps <> 2L || !target_size <> 1L || !target_tag <> 0L || !target_bound <> 0L then failwith \"corrected-cic-WHNF-nested-let-beta-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(source_size, 6i64)
+    inl ok_1 = !!!!EQ(source_tag, 5i64)
+    inl ok_2 = !!!!EQ(source_bound, 2i64)
+    inl ok_3 = !!!!EQ(steps, 2i64)
+    inl ok_4 = !!!!EQ(target_size, 1i64)
+    inl ok_5 = !!!!EQ(target_tag, 0i64)
+    inl ok_6 = !!!!EQ(target_bound, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "corrected-cic-WHNF-nested-let-beta-runtime-mismatch"
 
 inl corrected_cic_whnf_nested_let_beta_terminal () : string =
     inl source_size, source_tag, source_bound, steps,
@@ -7171,7 +7437,13 @@ inl assert_corrected_cic_bool_dependent_pi_substitution_runtime
     (true_body_size : i64) (false_body_bound : i64)
     (true_result_size : i64) (false_result_bound : i64)
     (false_result_constants : i64) (true_result_constants : i64) : () =
-    $"if !true_body_size <> 1L || !false_body_bound <> 1L || !true_result_size <> 1L || !false_result_bound <> 0L || !false_result_constants <> 1L || !true_result_constants <> 0L then failwith \"corrected-cic-dependent-Pi-substitution-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(true_body_size, 1i64)
+    inl ok_1 = !!!!EQ(false_body_bound, 1i64)
+    inl ok_2 = !!!!EQ(true_result_size, 1i64)
+    inl ok_3 = !!!!EQ(false_result_bound, 0i64)
+    inl ok_4 = !!!!EQ(false_result_constants, 1i64)
+    inl ok_5 = !!!!EQ(true_result_constants, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "corrected-cic-dependent-Pi-substitution-runtime-mismatch"
 
 inl corrected_cic_bool_dependent_pi_substitution_terminal () : string =
     inl true_body_size, false_body_bound,
@@ -7226,13 +7498,14 @@ inl corrected_cic_structural_defeq_runtime () : string =
               constant_name (_, right_name) =>
                 inl equal = cic_runtime_string_equal left_name right_name
                 inl _ : () =
-                    $"if !equal <> 0L then failwith \"corrected-cic-structural-constant-nondefeq-requires-distinct-names\""
+                    inl ok_0 = !!!!EQ(equal, 0i64)
+                    if ok_0 then () else mega_runtime_fail "corrected-cic-structural-constant-nondefeq-requires-distinct-names"
                 corrected_cic_structural_nondefeq_authority (
                     true_term,
                     false_term,
                     "the-active-True-False-nondefeq-authority-now-opens-the-two-Constant-names-directly-instead-of-calling-the-central-scalar-defeq-engine")
         | _, _ =>
-            $"failwith \"corrected-cic-structural-constant-nondefeq-requires-two-Constants\""
+            mega_runtime_fail "corrected-cic-structural-constant-nondefeq-requires-two-Constants"
     inl lambda_nondefeq =
         match identity_term, constant_lambda with
         | CorrectedLambda (_, identity_body),
@@ -7244,9 +7517,9 @@ inl corrected_cic_structural_defeq_runtime () : string =
                     constant_lambda,
                     "the-active-identity-versus-constant-Lambda-nondefeq-authority-is-now-derived-from-the-incompatible-BoundHere-versus-Constant-body-shapes-without-a-scalar-defeq-call")
             | _, _ =>
-                $"failwith \"corrected-cic-structural-Lambda-nondefeq-requires-BoundHere-versus-Constant\""
+                mega_runtime_fail "corrected-cic-structural-Lambda-nondefeq-requires-BoundHere-versus-Constant"
         | _, _ =>
-            $"failwith \"corrected-cic-structural-Lambda-nondefeq-requires-two-Lambdas\""
+            mega_runtime_fail "corrected-cic-structural-Lambda-nondefeq-requires-two-Lambdas"
     inl _ = corrected_cic_structural_defeq_pair_authority_witness whnf_pair
     inl _ = corrected_cic_structural_defeq_pair_authority_witness true_pair
     inl _ = corrected_cic_structural_defeq_pair_authority_witness identity_pair
@@ -7274,7 +7547,7 @@ inl corrected_cic_exact_pi_defeq_terminal () : string =
                     constant_body,
                     "the-exact-Pi-distinct-codomain-authority-is-derived-directly-from-BoundHere-versus-SortZero-under-the-same-binder-without-a-scalar-defeq-request")
             | _, _ =>
-                $"failwith \"corrected-cic-exact-Pi-distinct-codomain-requires-BoundHere-versus-SortZero\""
+                mega_runtime_fail "corrected-cic-exact-Pi-distinct-codomain-requires-BoundHere-versus-SortZero"
         inl _ = corrected_cic_structural_defeq_pair_authority_witness reflexive_authority
         inl _ = corrected_cic_structural_nondefeq_authority_note distinct_authority
         "the-corrected-CIC-exact-domain-Pi-defeq-layer-now-consumes-a-proof-carrying-reflexive-codomain-authority-and-an-exact-BoundHere-versus-SortZero-nondefeq-authority-without-reencoding-either-result-as-i64"
@@ -7298,13 +7571,14 @@ inl corrected_cic_application_congruence_runtime () : string =
               constant_name (_, right_name) =>
                 inl equal = cic_runtime_string_equal left_name right_name
                 inl _ : () =
-                    $"if !equal <> 0L then failwith \"corrected-cic-Application-congruence-nondefeq-requires-distinct-constant-names\""
+                    inl ok_0 = !!!!EQ(equal, 0i64)
+                    if ok_0 then () else mega_runtime_fail "corrected-cic-Application-congruence-nondefeq-requires-distinct-constant-names"
                 corrected_cic_structural_nondefeq_authority (
                     true_term,
                     false_term,
                     "Application-congruence-now-carries-the-exact-True-False-nondefeq-authority-instead-of-reencoding-the-argument-mismatch-through-the-scoped-scalar-decider")
         | _, _ =>
-            $"failwith \"corrected-cic-Application-congruence-nondefeq-requires-two-Constants\""
+            mega_runtime_fail "corrected-cic-Application-congruence-nondefeq-requires-two-Constants"
     inl _ = corrected_cic_structural_defeq_pair_authority_witness function_reflexive_authority
     inl _ = corrected_cic_structural_defeq_pair_authority_witness argument_reflexive_authority
     inl _ = corrected_cic_structural_nondefeq_authority_note argument_nondefeq_authority
@@ -7333,7 +7607,7 @@ inl corrected_cic_dependent_congruence_runtime () : string =
                     constant_body,
                     "dependent-congruence-body-nondefeq-is-carried-by-the-exact-BoundHere-versus-SortZero-pair-under-the-shared-domain-index")
             | _, _ =>
-                $"failwith \"corrected-cic-dependent-congruence-body-nondefeq-shape-mismatch\""
+                mega_runtime_fail "corrected-cic-dependent-congruence-body-nondefeq-shape-mismatch"
         inl argument_reflexive_authority =
             corrected_cic_structural_defeq_pair_authority_make
                 sort_zero sort_zero
@@ -7345,7 +7619,7 @@ inl corrected_cic_dependent_congruence_runtime () : string =
                     alternate_argument,
                     "dependent-congruence-argument-nondefeq-is-carried-by-the-exact-SortZero-versus-Pi-pair-instead-of-a-free-scalar-decision")
             | _, _ =>
-                $"failwith \"corrected-cic-dependent-congruence-argument-nondefeq-shape-mismatch\""
+                mega_runtime_fail "corrected-cic-dependent-congruence-argument-nondefeq-shape-mismatch"
         inl _ = scope
         inl _ = corrected_cic_structural_defeq_pair_authority_witness body_reflexive_authority
         inl _ = corrected_cic_structural_nondefeq_authority_note body_nondefeq_authority
@@ -7642,7 +7916,13 @@ inl corrected_cic_conversion_constraint_program_accepted_with_recursive_codomain
                     inl canonical_outer = corrected_cic_term_outer_tag recursive_target
                     inl replay_outer = corrected_cic_term_outer_tag expected_recursive_target
                     inl _ : () =
-                        $"if !canonical_size <> !replay_size || !canonical_constants <> !replay_constants || !canonical_bound <> !replay_bound || !canonical_applications <> !replay_applications || !canonical_applications <> 2L || !canonical_outer <> !replay_outer then failwith \"corrected-cic-recursive-codomain-summary-mismatch\""
+                        inl ok_0 = !!!!EQ(canonical_size, replay_size)
+                        inl ok_1 = !!!!EQ(canonical_constants, replay_constants)
+                        inl ok_2 = !!!!EQ(canonical_bound, replay_bound)
+                        inl ok_3 = !!!!EQ(canonical_applications, replay_applications)
+                        inl ok_4 = !!!!EQ(canonical_applications, 2i64)
+                        inl ok_5 = !!!!EQ(canonical_outer, replay_outer)
+                        if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "corrected-cic-recursive-codomain-summary-mismatch"
                     corrected_cic_conversion_constraint_program_accepted_with_substituted_codomain ()
 
 inl corrected_cic_conversion_constraint_program_accepted_with_recursive_outer_application () =
@@ -7673,7 +7953,7 @@ inl corrected_cic_conversion_constraint_solver_runtime () :
             | CorrectedCicScopedPiConstraintObstruction _ =>
                 corrected_cic_conversion_constraint_count rejected_scoped_pi
             | CorrectedCicScopedPiConstraintIntrinsic _ =>
-                $"failwith \"corrected-cic-rejected-scoped-pi-cannot-be-intrinsic\""
+                mega_runtime_fail "corrected-cic-rejected-scoped-pi-cannot-be-intrinsic"
     inl rejected_scoped_application_count =
         match rejected_scoped_application with
         | CorrectedCicConversionConstraintProgramScopedApplication payload =>
@@ -7682,7 +7962,7 @@ inl corrected_cic_conversion_constraint_solver_runtime () :
             | CorrectedCicScopedApplicationConstraintObstruction _ =>
                 corrected_cic_conversion_constraint_count rejected_scoped_application
             | CorrectedCicScopedApplicationConstraintIntrinsic _ =>
-                $"failwith \"corrected-cic-rejected-scoped-application-cannot-be-intrinsic\""
+                mega_runtime_fail "corrected-cic-rejected-scoped-application-cannot-be-intrinsic"
     corrected_cic_conversion_constraint_count accepted,
     (match rejected with
      | CorrectedCicConversionConstraintProgramNonDefeqTerms _ => corrected_cic_conversion_constraint_count rejected),
@@ -7698,7 +7978,13 @@ inl assert_corrected_cic_conversion_constraint_solver_runtime
     (rejected_scoped_application_count : i64)
     (rejected_scoped_dependent_application_count : i64)
     (rejected_substituted_codomain_count : i64) : () =
-    $"if !accepted_count <> 10L || !rejected_structural_count <> 1L || !rejected_scoped_pi_count <> 1L || !rejected_scoped_application_count <> 1L || !rejected_scoped_dependent_application_count <> 1L || !rejected_substituted_codomain_count <> 1L then failwith \"corrected-cic-conversion-constraint-solver-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted_count, 10i64)
+    inl ok_1 = !!!!EQ(rejected_structural_count, 1i64)
+    inl ok_2 = !!!!EQ(rejected_scoped_pi_count, 1i64)
+    inl ok_3 = !!!!EQ(rejected_scoped_application_count, 1i64)
+    inl ok_4 = !!!!EQ(rejected_scoped_dependent_application_count, 1i64)
+    inl ok_5 = !!!!EQ(rejected_substituted_codomain_count, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "corrected-cic-conversion-constraint-solver-runtime-mismatch"
 
 inl corrected_cic_conversion_constraint_solver_terminal () : string =
     inl accepted_count,
@@ -7753,7 +8039,13 @@ inl assert_corrected_cic_unification_solver_runtime
     (cyclic_result : i64)
     (unrelated_not_occurs : i64)
     (mixed_target_result : i64) : () =
-    $"if !accepted_result <> 1L || !accepted_count <> 3L || !cycle_detected <> 1L || !cyclic_result <> 0L || !unrelated_not_occurs <> 0L || !mixed_target_result <> 0L then failwith \"corrected-cic-unification-solver-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted_result, 1i64)
+    inl ok_1 = !!!!EQ(accepted_count, 3i64)
+    inl ok_2 = !!!!EQ(cycle_detected, 1i64)
+    inl ok_3 = !!!!EQ(cyclic_result, 0i64)
+    inl ok_4 = !!!!EQ(unrelated_not_occurs, 0i64)
+    inl ok_5 = !!!!EQ(mixed_target_result, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "corrected-cic-unification-solver-runtime-mismatch"
 
 inl corrected_cic_unification_solver_terminal () : string =
     inl accepted_result, accepted_count,
@@ -7906,7 +8198,8 @@ inl corrected_cic_environment_assign_oldest_bool forall identity.
 
 inl assert_corrected_cic_environment_bound_selected_meta_assignment_tag
     (tag : i64) : () =
-    $"if !tag <> 1L then failwith \"corrected-cic-environment-bound-selected-meta-assignment-tag-mismatch\""
+    inl ok_0 = !!!!EQ(tag, 1i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-environment-bound-selected-meta-assignment-tag-mismatch"
 
 inl corrected_cic_oldest_bool_assignment_consume
     (assigned_environment : corrected_cic_meta_environment corrected_cic_oldest_bool_solved_states) : () =
@@ -8176,19 +8469,26 @@ inl corrected_cic_newest_bool_open_membership_after_middle () :
 
 inl assert_corrected_cic_meta_membership_identity_spine_runtime
     (oldest_equal : i64) (middle_equal : i64) (newest_equal : i64) : () =
-    $"if !oldest_equal <> 1L || !middle_equal <> 1L || !newest_equal <> 1L then failwith \"corrected-CIC-membership-identity-spine-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(oldest_equal, 1i64)
+    inl ok_1 = !!!!EQ(middle_equal, 1i64)
+    inl ok_2 = !!!!EQ(newest_equal, 1i64)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "corrected-CIC-membership-identity-spine-runtime-mismatch"
 
 inl assert_corrected_cic_meta_membership_identity_spine_solver_bridge_runtime
     (newest_tag : i64) : () =
-    $"if !newest_tag <> 1L then failwith \"corrected-CIC-membership-identity-spine-solver-bridge-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(newest_tag, 1i64)
+    if ok_0 then () else mega_runtime_fail "corrected-CIC-membership-identity-spine-solver-bridge-runtime-mismatch"
 
 inl assert_corrected_cic_meta_membership_identity_spine_constraint_solver_runtime
     (newest_solved : i64) : () =
-    $"if !newest_solved <> 1L then failwith \"corrected-CIC-membership-identity-spine-constraint-solver-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(newest_solved, 1i64)
+    if ok_0 then () else mega_runtime_fail "corrected-CIC-membership-identity-spine-constraint-solver-runtime-mismatch"
 
 inl assert_corrected_cic_meta_membership_identity_spine_other_runtime
     (oldest_tag : i64) (middle_tag : i64) : () =
-    $"if !oldest_tag <> 3L || !middle_tag <> 3L then failwith \"corrected-CIC-membership-spine-Other-preservation-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(oldest_tag, 3i64)
+    inl ok_1 = !!!!EQ(middle_tag, 3i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "corrected-CIC-membership-spine-Other-preservation-runtime-mismatch"
 
 inl corrected_cic_meta_membership_identity_spine_terminal () : string =
     inl _ = corrected_cic_oldest_bool_open_membership ()
@@ -8221,7 +8521,7 @@ inl corrected_cic_meta_membership_identity_spine_terminal () : string =
         | CorrectedCicTypedMetaIdentityEqual _,
           CorrectedCicTypedMetaIdentityEqual _,
           CorrectedCicTypedMetaIdentityEqual _ => ()
-        | _ => $"failwith \"corrected-CIC-membership-identity-spine-proof-authority-mismatch\""
+        | _ => mega_runtime_fail "corrected-CIC-membership-identity-spine-proof-authority-mismatch"
 
     inl zero_replacement :
         corrected_cic_selected_typed_meta_term corrected_cic_typed_meta_zero =
@@ -8439,7 +8739,8 @@ inl corrected_cic_spine_whnf_runtime () :
 
 inl assert_corrected_cic_spine_whnf_runtime
     (steps : i64) : () =
-    $"if !steps <> 2L then failwith \"corrected-cic-spine-WHNF-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 2i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-spine-WHNF-runtime-mismatch"
 
 inl corrected_cic_spine_whnf_terminal () : string =
     inl steps, authority = corrected_cic_spine_whnf_runtime ()
@@ -8486,7 +8787,8 @@ inl corrected_cic_let_spine_whnf_runtime () :
 
 inl assert_corrected_cic_let_spine_whnf_runtime
     (steps : i64) : () =
-    $"if !steps <> 2L then failwith \"corrected-cic-let-spine-WHNF-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 2i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-let-spine-WHNF-runtime-mismatch"
 
 inl corrected_cic_let_spine_whnf_terminal () : string =
     inl steps, authority = corrected_cic_let_spine_whnf_runtime ()
@@ -8521,7 +8823,8 @@ inl corrected_cic_delta_spine_whnf_runtime () :
 
 inl assert_corrected_cic_delta_spine_whnf_runtime
     (steps : i64) : () =
-    $"if !steps <> 2L then failwith \"corrected-cic-delta-spine-WHNF-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(steps, 2i64)
+    if ok_0 then () else mega_runtime_fail "corrected-cic-delta-spine-WHNF-runtime-mismatch"
 
 inl corrected_cic_delta_spine_whnf_terminal () : string =
     inl steps, authority = corrected_cic_delta_spine_whnf_runtime ()
@@ -8612,7 +8915,8 @@ inl corrected_cic_recursive_sort_zero_replay_step_pair_authority_make
     (replay_steps : i64) :
     corrected_cic_recursive_sort_zero_replay_step_pair_authority =
     inl _ : () =
-        $"if !canonical_steps <> !replay_steps then failwith \"recursive-Sort-zero-replay-step-pair-mismatch\""
+        inl ok_0 = !!!!EQ(canonical_steps, replay_steps)
+        if ok_0 then () else mega_runtime_fail "recursive-Sort-zero-replay-step-pair-mismatch"
     corrected_cic_recursive_sort_zero_replay_step_pair_authority (
         canonical_steps,
         replay_steps,
@@ -8633,7 +8937,9 @@ inl corrected_cic_recursive_sort_zero_replay_summary_authority_make
     inl canonical_outer = corrected_cic_term_outer_tag canonical_target
     inl replay_outer = corrected_cic_term_outer_tag replay_target
     inl _ : () =
-        $"if !canonical_size <> !replay_size || !canonical_outer <> !replay_outer then failwith \"recursive-Sort-zero-replay-summary-authority-mismatch\""
+        inl ok_0 = !!!!EQ(canonical_size, replay_size)
+        inl ok_1 = !!!!EQ(canonical_outer, replay_outer)
+        if ok_0 && ok_1 then () else mega_runtime_fail "recursive-Sort-zero-replay-summary-authority-mismatch"
     corrected_cic_recursive_sort_zero_replay_summary_authority (
         step_pair,
         canonical_target,
@@ -8670,7 +8976,8 @@ inl corrected_cic_recursive_sort_zero_replay_step_recheck_authority_make
         match step_pair with
         | corrected_cic_recursive_sort_zero_replay_step_pair_authority (canonical_steps, replay_steps, _) =>
             inl _ : () =
-                $"if !canonical_steps <> !replay_steps then failwith \"recursive-Sort-zero-replay-step-recheck-authority-mismatch\""
+                inl ok_0 = !!!!EQ(canonical_steps, replay_steps)
+                if ok_0 then () else mega_runtime_fail "recursive-Sort-zero-replay-step-recheck-authority-mismatch"
             corrected_cic_recursive_sort_zero_replay_step_recheck_authority (
                 opened,
                 "recursive-Sort-zero-step-recheck-now-stores-only-the-open-summary-authority-after-rederiving-step-equality")
@@ -8695,7 +9002,9 @@ inl corrected_cic_recursive_sort_zero_replay_shape_recheck_authority_make
             inl canonical_outer = corrected_cic_term_outer_tag canonical_target
             inl replay_outer = corrected_cic_term_outer_tag replay_target
             inl _ : () =
-                $"if !canonical_size <> !replay_size || !canonical_outer <> !replay_outer then failwith \"recursive-Sort-zero-shape-recheck-authority-mismatch\""
+                inl ok_0 = !!!!EQ(canonical_size, replay_size)
+                inl ok_1 = !!!!EQ(canonical_outer, replay_outer)
+                if ok_0 && ok_1 then () else mega_runtime_fail "recursive-Sort-zero-shape-recheck-authority-mismatch"
             corrected_cic_recursive_sort_zero_replay_shape_recheck_authority (
                 opened,
                 "recursive-Sort-zero-shape-recheck-now-stores-only-the-open-summary-authority-after-rederiving-size-and-outer-shape")
@@ -8774,7 +9083,10 @@ inl corrected_cic_recursive_sort_zero_replay_metric_consistency_authority_make
             canonical_target replay_target
     inl _ = corrected_cic_recursive_sort_zero_replay_application_spine_authority_note application_spine
     inl _ : () =
-        $"if !canonical_constants <> !replay_constants || !canonical_bound <> !replay_bound || !canonical_applications <> !replay_applications then failwith \"recursive-Sort-zero-replay-term-derived-metric-consistency-mismatch\""
+        inl ok_0 = !!!!EQ(canonical_constants, replay_constants)
+        inl ok_1 = !!!!EQ(canonical_bound, replay_bound)
+        inl ok_2 = !!!!EQ(canonical_applications, replay_applications)
+        if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "recursive-Sort-zero-replay-term-derived-metric-consistency-mismatch"
     corrected_cic_recursive_sort_zero_replay_metric_consistency_authority (
         consistency,
         application_spine,
@@ -8807,7 +9119,10 @@ inl corrected_cic_recursive_sort_zero_replay_metric_open_authority_make
             inl canonical_applications = corrected_cic_term_application_count canonical_target
             inl replay_applications = corrected_cic_term_application_count replay_target
             inl _ : () =
-                $"if !canonical_constants <> !replay_constants || !canonical_bound <> !replay_bound || !canonical_applications <> !replay_applications then failwith \"recursive-Sort-zero-replay-term-derived-metric-open-mismatch\""
+                inl ok_0 = !!!!EQ(canonical_constants, replay_constants)
+                inl ok_1 = !!!!EQ(canonical_bound, replay_bound)
+                inl ok_2 = !!!!EQ(canonical_applications, replay_applications)
+                if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "recursive-Sort-zero-replay-term-derived-metric-open-mismatch"
             corrected_cic_recursive_sort_zero_replay_metric_open_authority (
                 metric,
                 consistency,
@@ -8891,10 +9206,16 @@ inl corrected_cic_recursive_sort_zero_canonical_contractum_shape_terminal () : s
                     | corrected_cic_recursive_sort_zero_replay_step_pair_authority (canonical_steps_replayed, replay_steps_replayed, step_note) =>
                         inl _ = step_note
                         inl _ : () =
-                            $"if !canonical_steps_replayed <> !replay_steps_replayed then failwith \"recursive-Sort-zero-step-pair-authority-open-mismatch\""
+                            inl ok_0 = !!!!EQ(canonical_steps_replayed, replay_steps_replayed)
+                            if ok_0 then () else mega_runtime_fail "recursive-Sort-zero-step-pair-authority-open-mismatch"
                         ()
                 inl _ : () =
-                    $"if !canonical_size <> !replay_size || !canonical_outer <> !replay_outer || !canonical_whnf_size <> !replay_whnf_size || !canonical_whnf_outer <> !replay_whnf_outer || !canonical_whnf_steps <> !replay_whnf_steps then failwith \"recursive-Sort-zero-canonical-B-of-a-over-x-WHNF-summary-mismatch\""
+                    inl ok_0 = !!!!EQ(canonical_size, replay_size)
+                    inl ok_1 = !!!!EQ(canonical_outer, replay_outer)
+                    inl ok_2 = !!!!EQ(canonical_whnf_size, replay_whnf_size)
+                    inl ok_3 = !!!!EQ(canonical_whnf_outer, replay_whnf_outer)
+                    inl ok_4 = !!!!EQ(canonical_whnf_steps, replay_whnf_steps)
+                    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "recursive-Sort-zero-canonical-B-of-a-over-x-WHNF-summary-mismatch"
                 "the-recursive-F-of-F-of-x-dependent-codomain-now-relies-on-the-indexed-application-spine-and-term-derived-metric-authorities-for-constant-bound-and-application-shape-instead-of-rechecking-six-detached-scalars-in-the-terminal"
 
 inl cic_active_corrected_kernel_surface_terminal () : string =
@@ -8971,5 +9292,8 @@ inl cic_active_corrected_kernel_surface_terminal () : string =
 
 
 
-inl main () : string =
+// The root's contract, run by main (here) and by runtime_native (on C, Rust and Delphi).
+inl cic_root_contract () : string =
     cic_active_corrected_kernel_surface_terminal ()
+
+inl main () : string = cic_root_contract ()

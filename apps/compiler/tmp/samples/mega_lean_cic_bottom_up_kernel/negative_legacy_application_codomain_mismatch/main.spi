@@ -1,5 +1,7 @@
-inl impossible_legacy_application_function_result () :
-    legacy_cic_term empty_ctx identity_sort =
-    ApplicationTerm (exists (identity_term (), true_term ()))
+// Applying the Bool identity to True yields a Bool term, not a term of the identity's own function sort (the legacy term type is retired; this targets its successor corrected_cic_term).
+open main
+
+inl impossible_legacy_application_function_result () : corrected_cic_term empty_ctx identity_sort =
+    CorrectedApplication (exists (corrected_cic_identity (), corrected_cic_true ()))
 
 inl main () = impossible_legacy_application_function_result ()

@@ -1,0 +1,9 @@
+open main
+open runtime_workload
+open runtime_interned
+
+// Timing program: interned regex nodes with memoized derivatives alone on 0^n and 0^n 1 against (0|00)*1, n = 1..26.
+// Exit 0 when 26 inputs are accepted (the regex crate's count).
+inl main () : i32 =
+    expect_count (run_interned_zero_runs 26i32) 26i32 "brzozowski-bench-zero-runs-count"
+    0i32

@@ -1,15 +1,15 @@
-inl impossible_external_crash_recovery_receipt_version_mismatch () :
-    erp_p2p_external_crash_recovery_receipt nat_four requisition_drafted goods_partially_received =
-    inl four_store, _ = erp_p2p_four_event_commit ()
-    inl reserve_event = erp_p2p_unit_event_from_plan (erp_p2p_reserve_budget_plan ())
-    inl approvals_event = erp_p2p_unit_event_from_plan (erp_p2p_collect_approvals_plan ())
-    inl purchase_event = erp_p2p_unit_event_from_plan (erp_p2p_issue_purchase_order_plan ())
-    inl _, first_outbox = erp_p2p_event_commit_then reserve_event approvals_event
-    inl _, third_outbox = erp_p2p_event_commit_one purchase_event
-    inl three_outbox =
-        erp_p2p_event_outbox_then first_outbox third_outbox (v65_add_two_one_three ())
+// an external-crash receipt cannot pair a four-event version witness with a three-event commit authority (lane H 2026-10-06 rewrite; was store/outbox pair built from retired erp_p2p_unit_event_from_plan)
+open main
+
+inl impossible_external_crash_recovery_receipt_version_mismatch () : erp_p2p_external_crash_recovery_receipt nat_four requisition_drafted goods_partially_received =
+    inl four_tree = erp_p2p_four_event_commit_tree ()
+    inl reserve_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ()))
+    inl approvals_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_collect_approvals_op ()))
+    inl purchase_commit = ErpP2PEventCommitTreeOne (erp_p2p_unit_event_from_op (erp_p2p_issue_purchase_order_op ()))
+    inl first_two : erp_p2p_event_commit_tree nat_two requisition_drafted approvals_collected = ErpP2PEventCommitTreeThen (exists (reserve_commit, approvals_commit, v65_add_one_one_two ()))
+    inl three_tree : erp_p2p_event_commit_tree nat_three requisition_drafted purchase_order_issued = ErpP2PEventCommitTreeThen (exists (first_two, purchase_commit, v65_add_two_one_three ()))
     erp_p2p_external_crash_recovery_receipt
-        (four_store, three_outbox, "forged-external-cross-version-recovery-receipt")
+        (erp_p2p_event_commit_tree_version four_tree, erp_p2p_event_commit_tree_authority three_tree, 4i64, "forged-external-cross-version-recovery-receipt")
 
 inl main () =
     impossible_external_crash_recovery_receipt_version_mismatch ()

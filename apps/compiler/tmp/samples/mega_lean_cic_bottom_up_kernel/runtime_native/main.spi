@@ -1,0 +1,12 @@
+open main
+
+// The root on the native backends: its contract and every root program its main does not reach (all_terminals), exit
+// code 0 when all of them hold. The run-time checks are core-free ops (`mega_runtime_fail`), so they run (or are decided
+// by the compiler) on every backend.
+inl main () : i32 =
+    inl _ = cic_root_contract ()
+    inl _ = corrected_cic_bool_dependent_application_program_negation_involution_terminal ()
+    inl _ = corrected_cic_indexed_unary_constructor_application_terminal ()
+    inl _ = corrected_cic_indexed_dependent_application_terminal ()
+    inl _ = corrected_cic_bool_dependent_pi_substitution_terminal ()
+    0i32

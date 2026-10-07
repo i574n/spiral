@@ -1,3 +1,5 @@
+open main
+
 inl impossible_scoped_application_obstruction_not_intrinsic () =
     inl identity_term = corrected_cic_identity ()
     inl true_term = corrected_cic_true ()

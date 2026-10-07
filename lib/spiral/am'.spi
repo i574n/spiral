@@ -141,30 +141,15 @@ inl range start end s =
 /// ### vec
 nominal vec t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Vec<$0>\")>]\n#endif\ntype Vec<'T> = class end"
-                ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Vec<$0>\")>]\n#endif\ntype Vec<'T> = class end") : () -> ()
-        }
-        $'' : $'Vec<`t>'
+        native_type
+            `($'Vec<`t>')
+            `($'Vec<`t>')
+            "type Vec<'T> = class end"
     )
 
 /// ### from_vec
 inl from_vec forall dim el. (vec : vec el) : a dim el =
-    inl fable () : a dim el =
-        !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () =>
             // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
             inl vec = join vec
@@ -173,18 +158,7 @@ inl from_vec forall dim el. (vec : vec el) : a dim el =
 
 /// ### from_vec_base
 inl from_vec_base forall el. (vec : vec el) : array_base el =
-    inl fable () : array_base el =
-        !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () =>
             // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
             inl vec = join vec
@@ -193,52 +167,19 @@ inl from_vec_base forall el. (vec : vec el) : array_base el =
 
 /// ### to_vec
 inl to_vec forall t. (ab : array_base t) : vec t =
-    inl fable () : vec t =
-        !\\(ab, $'"$0.to_vec()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!ab).borrow().clone()' : vec t
     }
 
 /// ### to_vec'
 inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
-    inl fable () : vec u =
-        !\($'$"!x.to_vec()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!x).clone()' : vec u
     }
 
 /// ### to_vec''
 inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
-    inl fable () : vec v =
-        !\($'$"!x.to_vec()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!x).to_vec()' : vec v
     }
 
@@ -274,20 +215,12 @@ inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
 /// ### vec_sort_by_key
 inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
     inl vec = join vec
-    if rust.is_native ()
-    then
-        // a tuple element is one Rust value: see rust.one_param_fn
-        inl fn = rust.one_param_fn fn
-        inl fn = join fn
-        (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-        (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
-        !\($'"!vec"')
-    else
-        inl fn = join fn
-        (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-        // inl vec = vec |> rust.to_mut
-        (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
-        !\($'"!vec"')
+    // a tuple element is one Rust value: see rust.one_param_fn
+    inl fn = rust.one_param_fn fn
+    inl fn = join fn
+    (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
+    (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
+    !\($'"!vec"')
 
 /// ### vec_extend
 inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
@@ -300,51 +233,24 @@ inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
 
 /// ### vec_mapi
 inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
-    if rust.is_native ()
-    then
-        // a tuple element is one Rust value: see rust.one_param_fn
-        inl fn i = rust.one_param_fn (fn i)
-        inl fn = join fn
-        inl ar = join ar
-        !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
-    else
-        inl fn = join fn
-        inl ar = join ar
-        !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
+    // a tuple element is one Rust value: see rust.one_param_fn
+    inl fn i = rust.one_param_fn (fn i)
+    inl fn = join fn
+    inl ar = join ar
+    !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map
 inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    if rust.is_native ()
-    then
-        // as vec_map': a macro bound to a tuple (element or result) would splice its first field only
-        inl fn = rust.one_param_fn fn
-        // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again
-        !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
-    else
-        (!\\(ar, $'"true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"') : bool) |> ignore
-        inl result = fn !\($'"x"')
-        inl is_unit =
-            real
-                typecase u with
-                | () => true
-                | _ => false
-        if is_unit
-        then (!\($'"true; }}).collect::<Vec<_>>()"') : bool) |> ignore
-        else (!\\(result, $'"true; $0 }).collect::<Vec<_>>()"') : bool) |> ignore
-        !\($'"_vec_map"')
+    // as vec_map': a macro bound to a tuple (element or result) would splice its first field only
+    inl fn = rust.one_param_fn fn
+    // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again
+    !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map'
 inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    if rust.is_native ()
-    then
-        // a tuple element is one Rust value: see rust.one_param_fn
-        inl fn = rust.one_param_fn fn
-        !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
-    else
-        inl fn = fn |> rust.func1_from
-        inl fn x =
-            fn |> rust.func1_move x
-        !\\((ar, fn), $'"$0.into_iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+    // a tuple element is one Rust value: see rust.one_param_fn
+    inl fn = rust.one_param_fn fn
+    !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_fold'
 inl vec_fold' forall t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
@@ -360,19 +266,7 @@ inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =
 inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
-    // Native Rust: close the for_each like vec_for_each'' (the reopened { balanced against Fable's own wrapping).
-    backend_switch {
-        Gleam = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Lua = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Fsharp = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Python = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        TypeScript = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Cpp = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        CppHost = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Delphi = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Cuda = fun () => (!\($'"true; }}); { //"') : bool) |> ignore
-        Rust = fun () => (!\($'"true; }}); //"') : bool) |> ignore
-    }
+    (!\($'"true; }}); //"') : bool) |> ignore
 
 /// ### vec_for_each''
 inl vec_for_each'' forall t. (fn : t -> ()) (ar : vec t) : () =
@@ -388,30 +282,13 @@ inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
 
 /// ### vec_filter
 inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
-    if rust.is_native ()
-    then
-        // a tuple element is one Rust value: see rust.one_param_fn
-        inl fn = rust.one_param_fn fn
-        !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
-    else
-        inl fn = join fn
-        inl ar = join ar
-        !\($'"!ar.into_iter().filter(|x| !fn(x.clone().clone())).collect::<Vec<_>>()"')
+    // a tuple element is one Rust value: see rust.one_param_fn
+    inl fn = rust.one_param_fn fn
+    !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
 
 /// ### vec_len
 inl vec_len forall t. (vec : vec t) : convert.unativeint =
-    inl fable () : convert.unativeint =
-        !\\(vec, $'"$0.len()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint
     }
 
@@ -422,8 +299,10 @@ inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
 /// ### slice
 nominal slice t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0]\")>]\n#endif\ntype Slice<'T> = class end"
-        $'' : $'Slice<`t>'
+        native_type
+            `($'Slice<`t>')
+            `($'[`t]')
+            "type Slice<'T> = class end"
     )
 
 /// ### slice'
@@ -442,21 +321,17 @@ type slice'_switch el =
     }
 nominal slice' el dim =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype Slice'<'T> = class end"
+        fsharp_global "type Slice'<'T> = class end"
         $'' : $'backend_switch `(slice'_switch el)'
     )
 
 /// ### slice''
 nominal slice'' el dim =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0; 10]\")>]\n#endif\ntype Slice'_<'T> = class end"
-                ) : () -> ()
-            Rust = (fun () => global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0; 10]\")>]\n#endif\ntype Slice'_<'T> = class end") : () -> ()
-        }
-        $'' : $'Slice\'_<`el>'
+        native_type
+            `($'Slice\'_<`el>')
+            `($'[`el; 10]')
+            "type Slice'_<'T> = class end"
     )
 
 /// ### slice_singleton
@@ -502,35 +377,13 @@ inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =
 
 /// ### to_le_bytes
 inl to_le_bytes forall t. (x : t) : slice' u8 8 =
-    inl fable () : slice' u8 8 =
-        !\($'$"!x.to_le_bytes()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
     }
 
 /// ### as_bytes
 inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
-    inl fable () : rust.ref (slice u8) =
-        !\($'$"!x.as_bytes()"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)
     }
 
@@ -547,23 +400,7 @@ instance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>
 
 /// ### new_vec
 inl new_vec forall t. (items : list t) : vec t =
-    inl fable () : vec t =
-        inl items =
-            (items, ("", 0i32))
-            ||> listm.foldBack fun (x : t) (acc, i) =>
-                $'"!x"' +. (if i = 0 then "" else ", ") +. acc, i + 1
-            |> fst
-        !\($'"vec\![" + !items + "]"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         Rust = fun () =>
             inl v : vec t = $'Vec::new()'
             items |> listm.iter fun x => $'!v.push(!x)' : ()

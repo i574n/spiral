@@ -1,3 +1,5 @@
+open main
+
 inl impossible_legacy_completion_refusal_arbitrary_text () =
     CertifiedIntervalPositivePositionalLegacyCompletionRefused
         (CertifiedIntervalPositivePositionalLegacyCompletionRefusalDescentUnavailable (

@@ -1,0 +1,19 @@
+open main
+
+// The derivative matcher on the native backends: runtime_smoke's and runtime_bench's checks (bit and three-letter
+// alphabets, accepted and rejected inputs, the decided typestate), with the exit code as the verdict: 0 when every one
+// holds (a broken expectation fails the run).
+inl main () : i32 =
+    inl ~bit_accept = input_110 ()
+    inl ~bit_reject = input_111 ()
+    inl ~tri_accept = input_aaa ()
+    inl ~tri_reject = input_aab ()
+    assert_true (accepts (ends_with_zero ()) bit_accept)
+    assert_false (accepts (ends_with_zero ()) bit_reject)
+    assert_true (accepts (tri_a_star ()) tri_accept)
+    assert_false (accepts (tri_a_star ()) tri_reject)
+    inl accepted_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), bit_accept))
+    inl rejected_state = decide_bit_match (BitMatcherRaw (ends_with_zero (), bit_reject))
+    assert_true (bit_match_value accepted_state)
+    assert_false (bit_match_value rejected_state)
+    0i32

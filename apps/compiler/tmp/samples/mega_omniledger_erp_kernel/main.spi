@@ -1,3 +1,7 @@
+// Run-time checks that are plain comparisons are core-free ops (F# macros until 2026-10-06); the file-system and process
+// checks are still F# macros, so this root runs on the F# backend only.
+inl mega_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
+
 nominal requisition_drafted = ()
 nominal budget_reserved = ()
 nominal approvals_collected = ()
@@ -39,7 +43,9 @@ union ordered_partial_quantity item uom =
 
 inl assert_ordered_partial_quantity_runtime
     (ordered_amount : i64) (received_amount : i64) : () =
-    $"if !received_amount <= 0L || !received_amount > !ordered_amount then failwith \"ERP-ordered-partial-quantity-invariant-mismatch\""
+    inl ok_0 = !!!!GT(received_amount, 0i64)
+    inl ok_1 = !!!!LTE(received_amount, ordered_amount)
+    if ok_0 && ok_1 then () else mega_runtime_fail "ERP-ordered-partial-quantity-invariant-mismatch"
 
 inl validate_ordered_partial_quantity forall item uom.
     (authority : ordered_partial_quantity item uom) : quantity item uom =
@@ -154,7 +160,7 @@ inl approvals () : approval_quorum po_1001 =
     ApprovalQuorum (Distinct3 (approval_manager (), approval_finance (), approval_compliance ()))
 
 inl erp_runtime_mul_i64 (left : i64) (right : i64) : i64 =
-    $"!left * !right"
+    !!!!Mult(left, right)
 
 inl rec settlement_fx_route_ratio forall source target epoch.
     (route : settlement_fx_route source target epoch) : i64 * i64 =
@@ -169,7 +175,9 @@ inl rec settlement_fx_route_ratio forall source target epoch.
         erp_runtime_mul_i64 left_denominator right_denominator
 
 inl assert_settlement_fx_route_runtime (numerator : i64) (denominator : i64) : () =
-    $"if !numerator <> 6L || !denominator <> 1L then failwith \"canonical-settlement-fx-route-mismatch\""
+    inl ok_0 = !!!!EQ(numerator, 6i64)
+    inl ok_1 = !!!!EQ(denominator, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "canonical-settlement-fx-route-mismatch"
 
 inl rec terminal forall from to. (plan : erp_plan from to) : string =
     match plan with
@@ -192,7 +200,7 @@ inl rec terminal forall from to. (plan : erp_plan from to) : string =
         terminal right
 
 inl erp_runtime_add_i64 (left : i64) (right : i64) : i64 =
-    $"!left + !right"
+    !!!!Add(left, right)
 
 nominal nat_zero = string
 nominal nat_succ n = n * string
@@ -320,7 +328,7 @@ inl erp_rate_five_proof () : runtime_money_nat erp_rate_five =
     RuntimeMoneySucc (erp_rate_four_proof ())
 
 inl runtime_add_i64 (left : i64) (right : i64) : i64 =
-    $"!left + !right"
+    !!!!Add(left, right)
 
 type erp_rate_seven = nat_succ erp_rate_six
 
@@ -829,7 +837,7 @@ inl typed_fx_determined_rounding_receipt_runtime
         1i64,
         mode,
         receipt_output,
-        $"if !step_output = !receipt_output then 0L else 1L"
+        (if !!!!EQ(step_output, receipt_output) then 0i64 else 1i64)
 
 inl rec typed_fx_determined_rounding_receipt_program_runtime
     (program : typed_fx_determined_rounding_receipt_program)
@@ -861,7 +869,12 @@ inl rec typed_fx_determined_rounding_receipt_program_runtime
 inl assert_typed_fx_determined_rounding_receipt_program_runtime
     (cells : i64) (floors : i64) (ceilings : i64)
     (outputs : i64) (mismatches : i64) : () =
-    $"if !cells <> 3L || !floors <> 1L || !ceilings <> 2L || !outputs <> 10L || !mismatches <> 0L then failwith \"typed-FX-determined-rounding-receipt-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(cells, 3i64)
+    inl ok_1 = !!!!EQ(floors, 1i64)
+    inl ok_2 = !!!!EQ(ceilings, 2i64)
+    inl ok_3 = !!!!EQ(outputs, 10i64)
+    inl ok_4 = !!!!EQ(mismatches, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "typed-FX-determined-rounding-receipt-program-runtime-mismatch"
 
 inl typed_fx_determined_rounding_receipt_program_terminal () : string =
     inl cells, floors, ceilings, outputs, mismatches =
@@ -1032,7 +1045,7 @@ inl typed_fx_signed_scaled_balanced_journal_runtime
         inl debit_runtime = runtime_money_nat_to_i64 debit
         inl credit_runtime = runtime_money_nat_to_i64 credit
         1i64, 1i64, debit_runtime, credit_runtime,
-        $"if !debit_runtime = !credit_runtime then 0L else 1L"
+        (if !!!!EQ(debit_runtime, credit_runtime) then 0i64 else 1i64)
 
 nominal typed_fx_signed_scaled_entity_currency_ledger
     entity source target input numerator denominator quotient remainder product scaled output =
@@ -1266,7 +1279,9 @@ inl rec typed_fx_statement_stream_position_serialized_runtime forall position.
 
 inl assert_typed_fx_statement_stream_position_serialized_runtime
     (encoded_cells : i64) (decoded_position : i64) : () =
-    $"if !encoded_cells <> 2L || !decoded_position <> 1L then failwith \"typed-FX-statement-stream-position-serialization-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(encoded_cells, 2i64)
+    inl ok_1 = !!!!EQ(decoded_position, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "typed-FX-statement-stream-position-serialization-runtime-mismatch"
 
 inl typed_fx_statement_stream_position_serialization_terminal () : string =
     inl position : typed_fx_statement_stream_position_value (typed_fx_statement_stream_position_next typed_fx_statement_stream_position_zero) =
@@ -1505,7 +1520,16 @@ inl assert_typed_fx_hashed_statement_event_store_decisions_runtime
     (applied : i64) (duplicate : i64) (collision : i64) (conflict : i64)
     (events : i64) (statements : i64) (debit : i64)
     (credit : i64) (mismatch : i64) : () =
-    $"if !applied <> 1L || !duplicate <> 1L || !collision <> 1L || !conflict <> 1L || !events <> 4L || !statements <> 12L || !debit <> 40L || !credit <> 40L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-event-store-decision-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(duplicate, 1i64)
+    inl ok_2 = !!!!EQ(collision, 1i64)
+    inl ok_3 = !!!!EQ(conflict, 1i64)
+    inl ok_4 = !!!!EQ(events, 4i64)
+    inl ok_5 = !!!!EQ(statements, 12i64)
+    inl ok_6 = !!!!EQ(debit, 40i64)
+    inl ok_7 = !!!!EQ(credit, 40i64)
+    inl ok_8 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "typed-FX-hashed-statement-event-store-decision-runtime-mismatch"
 
 type typed_fx_hashed_primary_position =
     typed_fx_statement_stream_position_next typed_fx_statement_stream_position_zero
@@ -1631,7 +1655,7 @@ inl rec validate_typed_fx_hashed_statement_checksummed_persisted_log
                 inl actual_checksum =
                     typed_fx_hashed_statement_command_checksum command
                 inl checksum_matches : bool =
-                    $"!stored_checksum = !actual_checksum"
+                    !!!!EQ(stored_checksum, actual_checksum)
                 if checksum_matches then
                     match command with
                     | typed_fx_hashed_statement_command (_, _, _, applied, _) =>
@@ -1661,7 +1685,9 @@ inl typed_fx_hashed_statement_checksum_validation_runtime
 
 inl assert_typed_fx_hashed_statement_checksum_validation_runtime
     (accepted : i64) (rejected : i64) : () =
-    $"if !accepted <> 1L || !rejected <> 1L then failwith \"typed-FX-hashed-statement-checksum-validation-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(rejected, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "typed-FX-hashed-statement-checksum-validation-runtime-mismatch"
 
 inl restart_typed_fx_hashed_statement_event_log_validated_runtime
     forall position history.
@@ -1682,7 +1708,16 @@ inl assert_restart_typed_fx_hashed_statement_event_log_validated_runtime
     (corrupt_stored : i64) (corrupt_actual : i64)
     (events : i64) (statements : i64)
     (debit : i64) (credit : i64) (mismatch : i64) : () =
-    $"if !valid_accepted <> 1L || !corrupt_rejected <> 1L || !corrupt_stored <> 999L || !corrupt_actual <> 23L || !events <> 1L || !statements <> 3L || !debit <> 10L || !credit <> 10L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-validated-restart-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(valid_accepted, 1i64)
+    inl ok_1 = !!!!EQ(corrupt_rejected, 1i64)
+    inl ok_2 = !!!!EQ(corrupt_stored, 999i64)
+    inl ok_3 = !!!!EQ(corrupt_actual, 23i64)
+    inl ok_4 = !!!!EQ(events, 1i64)
+    inl ok_5 = !!!!EQ(statements, 3i64)
+    inl ok_6 = !!!!EQ(debit, 10i64)
+    inl ok_7 = !!!!EQ(credit, 10i64)
+    inl ok_8 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "typed-FX-hashed-statement-validated-restart-runtime-mismatch"
 
 inl assert_typed_fx_hashed_statement_checksummed_restart_runtime
     (frames : i64) (checksum_sum : i64)
@@ -1693,7 +1728,23 @@ inl assert_typed_fx_hashed_statement_checksummed_restart_runtime
     (debit_before : i64) (debit_after : i64)
     (credit_before : i64) (credit_after : i64)
     (mismatch_before : i64) (mismatch_after : i64) : () =
-    $"if !frames <> 1L || !checksum_sum <> 23L || !stored_checksum <> 23L || !actual_checksum <> 23L || !corrupted_stored_checksum <> 999L || !corrupted_actual_checksum <> 23L || !events_before <> 1L || !events_after <> 1L || !statements_before <> 3L || !statements_after <> 3L || !debit_before <> 10L || !debit_after <> 10L || !credit_before <> 10L || !credit_after <> 10L || !mismatch_before <> 0L || !mismatch_after <> 0L then failwith \"typed-FX-hashed-statement-checksummed-restart-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(frames, 1i64)
+    inl ok_1 = !!!!EQ(checksum_sum, 23i64)
+    inl ok_2 = !!!!EQ(stored_checksum, 23i64)
+    inl ok_3 = !!!!EQ(actual_checksum, 23i64)
+    inl ok_4 = !!!!EQ(corrupted_stored_checksum, 999i64)
+    inl ok_5 = !!!!EQ(corrupted_actual_checksum, 23i64)
+    inl ok_6 = !!!!EQ(events_before, 1i64)
+    inl ok_7 = !!!!EQ(events_after, 1i64)
+    inl ok_8 = !!!!EQ(statements_before, 3i64)
+    inl ok_9 = !!!!EQ(statements_after, 3i64)
+    inl ok_10 = !!!!EQ(debit_before, 10i64)
+    inl ok_11 = !!!!EQ(debit_after, 10i64)
+    inl ok_12 = !!!!EQ(credit_before, 10i64)
+    inl ok_13 = !!!!EQ(credit_after, 10i64)
+    inl ok_14 = !!!!EQ(mismatch_before, 0i64)
+    inl ok_15 = !!!!EQ(mismatch_after, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 && ok_14 && ok_15 then () else mega_runtime_fail "typed-FX-hashed-statement-checksummed-restart-runtime-mismatch"
 
 inl typed_fx_hashed_statement_checksummed_restart_terminal () : string =
     inl journals =
@@ -1838,7 +1889,11 @@ inl typed_usd_eur_determined_tie_rounding_runtime forall output.
 
 inl assert_typed_usd_eur_determined_tie_rounding_runtime
     (modes : i64) (rounded : i64) (adjustments : i64) (tie_checks : i64) : () =
-    $"if !modes <> 1L || !rounded <> 9L || !adjustments <> 1L || !tie_checks <> 8L then failwith \"typed-usd-eur-determined-tie-rounding-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(modes, 1i64)
+    inl ok_1 = !!!!EQ(rounded, 9i64)
+    inl ok_2 = !!!!EQ(adjustments, 1i64)
+    inl ok_3 = !!!!EQ(tie_checks, 8i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "typed-usd-eur-determined-tie-rounding-runtime-mismatch"
 
 inl typed_usd_eur_determined_tie_rounding_terminal () : string =
     inl half_up : typed_usd_eur_determined_tie_rounding erp_rate_five =
@@ -1972,7 +2027,12 @@ inl assert_typed_fx_statement_stream_position_raw_decode_runtime
     (accepted : i64) (rejected : i64)
     (position : i64) (accepted_cells : i64)
     (rejected_cells : i64) : () =
-    $"if !accepted <> 1L || !rejected <> 3L || !position <> 1L || !accepted_cells <> 2L || !rejected_cells <> 4L then failwith \"typed-FX-statement-stream-position-raw-decode-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(rejected, 3i64)
+    inl ok_2 = !!!!EQ(position, 1i64)
+    inl ok_3 = !!!!EQ(accepted_cells, 2i64)
+    inl ok_4 = !!!!EQ(rejected_cells, 4i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "typed-FX-statement-stream-position-raw-decode-runtime-mismatch"
 
 inl typed_fx_statement_stream_position_raw_decode_terminal () : string =
     inl position : typed_fx_statement_stream_position_value (typed_fx_statement_stream_position_next typed_fx_statement_stream_position_zero) =
@@ -2095,7 +2155,12 @@ inl assert_typed_fx_statement_expected_position_raw_decision_runtime
     (accepted : i64) (rejected : i64)
     (expected_position : i64) (accepted_cells : i64)
     (rejected_cells : i64) : () =
-    $"if !accepted <> 1L || !rejected <> 2L || !expected_position <> 0L || !accepted_cells <> 1L || !rejected_cells <> 3L then failwith \"typed-FX-statement-expected-position-raw-decision-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(rejected, 2i64)
+    inl ok_2 = !!!!EQ(expected_position, 0i64)
+    inl ok_3 = !!!!EQ(accepted_cells, 1i64)
+    inl ok_4 = !!!!EQ(rejected_cells, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "typed-FX-statement-expected-position-raw-decision-runtime-mismatch"
 
 inl typed_fx_statement_expected_position_raw_decision_terminal () : string =
     inl expected : typed_fx_statement_expected_stream_position typed_fx_statement_stream_position_zero typed_fx_statement_stream_position_zero =
@@ -2199,7 +2264,16 @@ inl assert_typed_fx_statement_expected_raw_append_runtime
     (applied : i64) (rejected : i64) (events : i64)
     (statements : i64) (debit : i64) (credit : i64)
     (mismatch : i64) (accepted_cells : i64) (rejected_cells : i64) : () =
-    $"if !applied <> 1L || !rejected <> 1L || !events <> 1L || !statements <> 3L || !debit <> 10L || !credit <> 10L || !mismatch <> 0L || !accepted_cells <> 1L || !rejected_cells <> 2L then failwith \"typed-FX-statement-expected-raw-append-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(rejected, 1i64)
+    inl ok_2 = !!!!EQ(events, 1i64)
+    inl ok_3 = !!!!EQ(statements, 3i64)
+    inl ok_4 = !!!!EQ(debit, 10i64)
+    inl ok_5 = !!!!EQ(credit, 10i64)
+    inl ok_6 = !!!!EQ(mismatch, 0i64)
+    inl ok_7 = !!!!EQ(accepted_cells, 1i64)
+    inl ok_8 = !!!!EQ(rejected_cells, 2i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "typed-FX-statement-expected-raw-append-runtime-mismatch"
 
 inl typed_fx_statement_expected_raw_append_terminal () : string =
     inl journals =
@@ -2343,7 +2417,13 @@ inl assert_typed_fx_statement_two_writer_raw_cas_runtime
     (applied : i64) (conflict : i64)
     (winner_events : i64) (loser_events : i64)
     (mismatch : i64) (cells : i64) : () =
-    $"if !applied <> 1L || !conflict <> 1L || !winner_events <> 1L || !loser_events <> 1L || !mismatch <> 0L || !cells <> 1L then failwith \"typed-FX-statement-two-writer-raw-CAS-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(conflict, 1i64)
+    inl ok_2 = !!!!EQ(winner_events, 1i64)
+    inl ok_3 = !!!!EQ(loser_events, 1i64)
+    inl ok_4 = !!!!EQ(mismatch, 0i64)
+    inl ok_5 = !!!!EQ(cells, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-two-writer-raw-CAS-runtime-mismatch"
 
 inl typed_fx_statement_two_writer_raw_cas_terminal () : string =
     inl journals =
@@ -2461,7 +2541,13 @@ inl assert_typed_fx_statement_three_writer_raw_cas_runtime
     (applied : i64) (conflicts : i64)
     (committed_events : i64) (stale_event_views : i64)
     (mismatch : i64) (cells : i64) : () =
-    $"if !applied <> 1L || !conflicts <> 2L || !committed_events <> 1L || !stale_event_views <> 2L || !mismatch <> 0L || !cells <> 1L then failwith \"typed-FX-statement-three-writer-raw-CAS-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(conflicts, 2i64)
+    inl ok_2 = !!!!EQ(committed_events, 1i64)
+    inl ok_3 = !!!!EQ(stale_event_views, 2i64)
+    inl ok_4 = !!!!EQ(mismatch, 0i64)
+    inl ok_5 = !!!!EQ(cells, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-three-writer-raw-CAS-runtime-mismatch"
 
 inl typed_fx_statement_three_writer_raw_cas_terminal () : string =
     inl journals =
@@ -2630,7 +2716,13 @@ inl assert_typed_fx_statement_recursive_writer_raw_cas_runtime
     (applied : i64) (conflicts : i64)
     (committed_events : i64) (stale_event_views : i64)
     (mismatch : i64) (cells : i64) : () =
-    $"if !applied <> 1L || !conflicts <> 3L || !committed_events <> 1L || !stale_event_views <> 3L || !mismatch <> 0L || !cells <> 1L then failwith \"typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(conflicts, 3i64)
+    inl ok_2 = !!!!EQ(committed_events, 1i64)
+    inl ok_3 = !!!!EQ(stale_event_views, 3i64)
+    inl ok_4 = !!!!EQ(mismatch, 0i64)
+    inl ok_5 = !!!!EQ(cells, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-recursive-writer-raw-CAS-runtime-mismatch"
 
 inl typed_fx_statement_recursive_writer_raw_cas_schedule_value () : typed_fx_statement_recursive_writer_raw_cas_schedule =
     inl journals =
@@ -2746,7 +2838,22 @@ inl assert_typed_fx_statement_recursive_writer_checksummed_restart_runtime
     (restart_events : i64) (restart_statements : i64)
     (restart_debit : i64) (restart_credit : i64)
     (restart_mismatch : i64) : () =
-    $"if !applied <> 1L || !conflicts <> 3L || !committed_events <> 1L || !stale_event_views <> 3L || !schedule_mismatch <> 0L || !cells <> 1L || !frames <> 1L || !checksum_sum <> 23L || !restart_accepted <> 1L || !restart_rejected <> 0L || !restart_events <> 1L || !restart_statements <> 3L || !restart_debit <> 10L || !restart_credit <> 10L || !restart_mismatch <> 0L then failwith \"typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(conflicts, 3i64)
+    inl ok_2 = !!!!EQ(committed_events, 1i64)
+    inl ok_3 = !!!!EQ(stale_event_views, 3i64)
+    inl ok_4 = !!!!EQ(schedule_mismatch, 0i64)
+    inl ok_5 = !!!!EQ(cells, 1i64)
+    inl ok_6 = !!!!EQ(frames, 1i64)
+    inl ok_7 = !!!!EQ(checksum_sum, 23i64)
+    inl ok_8 = !!!!EQ(restart_accepted, 1i64)
+    inl ok_9 = !!!!EQ(restart_rejected, 0i64)
+    inl ok_10 = !!!!EQ(restart_events, 1i64)
+    inl ok_11 = !!!!EQ(restart_statements, 3i64)
+    inl ok_12 = !!!!EQ(restart_debit, 10i64)
+    inl ok_13 = !!!!EQ(restart_credit, 10i64)
+    inl ok_14 = !!!!EQ(restart_mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 && ok_14 then () else mega_runtime_fail "typed-FX-statement-recursive-writer-checksummed-restart-runtime-mismatch"
 
 inl typed_fx_statement_recursive_writer_checksummed_restart_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -2795,7 +2902,14 @@ inl assert_typed_fx_statement_recursive_writer_restart_invariant_runtime
     (actual_conflicts : i64) (stale_event_views : i64)
     (committed_events : i64) (restart_events : i64)
     (restart_accepted : i64) (mismatch : i64) : () =
-    $"if !applied <> 1L || !expected_conflicts <> !actual_conflicts || !stale_event_views <> !expected_conflicts || !committed_events <> 1L || !restart_events <> 1L || !restart_accepted <> 1L || !mismatch <> 0L then failwith \"typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(expected_conflicts, actual_conflicts)
+    inl ok_2 = !!!!EQ(stale_event_views, expected_conflicts)
+    inl ok_3 = !!!!EQ(committed_events, 1i64)
+    inl ok_4 = !!!!EQ(restart_events, 1i64)
+    inl ok_5 = !!!!EQ(restart_accepted, 1i64)
+    inl ok_6 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "typed-FX-statement-recursive-writer-restart-invariant-runtime-mismatch"
 
 inl typed_fx_statement_recursive_writer_restart_invariant_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -2827,7 +2941,16 @@ inl assert_typed_fx_statement_stale_writer_conflict_program_append_runtime
     (left_conflicts : i64) (left_events : i64) (left_mismatch : i64)
     (right_conflicts : i64) (right_events : i64) (right_mismatch : i64)
     (appended_conflicts : i64) (appended_events : i64) (appended_mismatch : i64) : () =
-    $"if !left_conflicts <> 2L || !left_events <> 2L || !left_mismatch <> 0L || !right_conflicts <> !left_conflicts || !right_events <> !left_events || !right_mismatch <> !left_mismatch || !appended_conflicts <> 4L || !appended_events <> 4L || !appended_mismatch <> 0L then failwith \"typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_conflicts, 2i64)
+    inl ok_1 = !!!!EQ(left_events, 2i64)
+    inl ok_2 = !!!!EQ(left_mismatch, 0i64)
+    inl ok_3 = !!!!EQ(right_conflicts, left_conflicts)
+    inl ok_4 = !!!!EQ(right_events, left_events)
+    inl ok_5 = !!!!EQ(right_mismatch, left_mismatch)
+    inl ok_6 = !!!!EQ(appended_conflicts, 4i64)
+    inl ok_7 = !!!!EQ(appended_events, 4i64)
+    inl ok_8 = !!!!EQ(appended_mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "typed-FX-statement-stale-writer-conflict-program-append-runtime-mismatch"
 
 inl typed_fx_statement_stale_writer_conflict_program_append_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -2851,7 +2974,13 @@ inl typed_fx_statement_stale_writer_conflict_program_append_terminal () : string
 inl assert_typed_fx_statement_stale_writer_conflict_program_append_associativity_runtime
     (left_conflicts : i64) (left_events : i64) (left_mismatch : i64)
     (right_conflicts : i64) (right_events : i64) (right_mismatch : i64) : () =
-    $"if !left_conflicts <> 6L || !left_events <> 6L || !left_mismatch <> 0L || !right_conflicts <> !left_conflicts || !right_events <> !left_events || !right_mismatch <> !left_mismatch then failwith \"typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(left_conflicts, 6i64)
+    inl ok_1 = !!!!EQ(left_events, 6i64)
+    inl ok_2 = !!!!EQ(left_mismatch, 0i64)
+    inl ok_3 = !!!!EQ(right_conflicts, left_conflicts)
+    inl ok_4 = !!!!EQ(right_events, left_events)
+    inl ok_5 = !!!!EQ(right_mismatch, left_mismatch)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-stale-writer-conflict-program-append-associativity-runtime-mismatch"
 
 inl typed_fx_statement_stale_writer_conflict_program_append_associativity_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -2896,7 +3025,15 @@ inl assert_typed_fx_statement_recursive_writer_appended_tail_restart_runtime
     (actual_conflicts : i64) (stale_event_views : i64)
     (committed_events : i64) (restart_events : i64)
     (restart_accepted : i64) (mismatch : i64) : () =
-    $"if !applied <> 1L || !expected_conflicts <> 5L || !actual_conflicts <> 5L || !stale_event_views <> 5L || !committed_events <> 1L || !restart_events <> 1L || !restart_accepted <> 1L || !mismatch <> 0L then failwith \"typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(expected_conflicts, 5i64)
+    inl ok_2 = !!!!EQ(actual_conflicts, 5i64)
+    inl ok_3 = !!!!EQ(stale_event_views, 5i64)
+    inl ok_4 = !!!!EQ(committed_events, 1i64)
+    inl ok_5 = !!!!EQ(restart_events, 1i64)
+    inl ok_6 = !!!!EQ(restart_accepted, 1i64)
+    inl ok_7 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "typed-FX-statement-recursive-writer-appended-tail-restart-runtime-mismatch"
 
 inl typed_fx_statement_recursive_writer_appended_tail_restart_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -2932,7 +3069,11 @@ inl typed_fx_statement_recursive_writer_crash_phase_runtime
 inl assert_typed_fx_statement_recursive_writer_crash_phase_runtime
     (old_history : i64) (new_history : i64)
     (rejected : i64) (mismatch : i64) : () =
-    $"if !old_history <> 2L || !new_history <> 1L || !rejected <> 0L || !mismatch <> 0L then failwith \"typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(old_history, 2i64)
+    inl ok_1 = !!!!EQ(new_history, 1i64)
+    inl ok_2 = !!!!EQ(rejected, 0i64)
+    inl ok_3 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "typed-FX-statement-recursive-writer-crash-phase-runtime-mismatch"
 
 inl typed_fx_statement_recursive_writer_crash_phase_terminal () : string =
     inl schedule = typed_fx_statement_recursive_writer_raw_cas_schedule_value ()
@@ -3033,7 +3174,9 @@ inl restart_typed_fx_statement_durable_commit
 
 inl assert_typed_fx_statement_indexed_durable_commit_runtime
     (accepted : i64) (mismatch : i64) : () =
-    $"if !accepted <> 1L || !mismatch <> 0L then failwith \"typed-FX-statement-indexed-durable-commit-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "typed-FX-statement-indexed-durable-commit-runtime-mismatch"
 
 inl typed_fx_statement_indexed_durable_commit_terminal () : string =
     inl prepared =
@@ -3523,7 +3666,16 @@ inl assert_typed_fx_hashed_statement_proven_retry_runtime
     (duplicate_depth : i64) (collision_depth : i64)
     (top_membership_depth : i64) (top_collision_depth : i64)
     (mismatch : i64) : () =
-    $"if !duplicate <> 1L || !collision <> 1L || !duplicate_events <> 2L || !collision_events <> 2L || !duplicate_depth <> 1L || !collision_depth <> 1L || !top_membership_depth <> 0L || !top_collision_depth <> 0L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-proven-retry-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(duplicate, 1i64)
+    inl ok_1 = !!!!EQ(collision, 1i64)
+    inl ok_2 = !!!!EQ(duplicate_events, 2i64)
+    inl ok_3 = !!!!EQ(collision_events, 2i64)
+    inl ok_4 = !!!!EQ(duplicate_depth, 1i64)
+    inl ok_5 = !!!!EQ(collision_depth, 1i64)
+    inl ok_6 = !!!!EQ(top_membership_depth, 0i64)
+    inl ok_7 = !!!!EQ(top_collision_depth, 0i64)
+    inl ok_8 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "typed-FX-hashed-statement-proven-retry-runtime-mismatch"
 
 inl typed_fx_hashed_statement_proven_retry_terminal () : string =
     inl journals =
@@ -3657,7 +3809,14 @@ inl assert_typed_fx_hashed_statement_history_enumeration_runtime
     (proof_cells : i64) (depth_sum : i64)
     (events : i64) (statements : i64)
     (debit : i64) (credit : i64) (mismatch : i64) : () =
-    $"if !proof_cells <> 2L || !depth_sum <> 1L || !events <> 2L || !statements <> 6L || !debit <> 20L || !credit <> 20L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-history-enumeration-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(proof_cells, 2i64)
+    inl ok_1 = !!!!EQ(depth_sum, 1i64)
+    inl ok_2 = !!!!EQ(events, 2i64)
+    inl ok_3 = !!!!EQ(statements, 6i64)
+    inl ok_4 = !!!!EQ(debit, 20i64)
+    inl ok_5 = !!!!EQ(credit, 20i64)
+    inl ok_6 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "typed-FX-hashed-statement-history-enumeration-runtime-mismatch"
 
 inl typed_fx_hashed_statement_history_enumeration_terminal () : string =
     inl journals =
@@ -3762,7 +3921,12 @@ inl typed_fx_hashed_statement_history_index_lookup_runtime forall position comma
 
 inl assert_typed_fx_hashed_statement_history_index_lookup_runtime
     (depth : i64) (statements : i64) (debit : i64) (credit : i64) (mismatch : i64) : () =
-    $"if !depth <> 1L || !statements <> 3L || !debit <> 10L || !credit <> 10L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-history-index-lookup-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(depth, 1i64)
+    inl ok_1 = !!!!EQ(statements, 3i64)
+    inl ok_2 = !!!!EQ(debit, 10i64)
+    inl ok_3 = !!!!EQ(credit, 10i64)
+    inl ok_4 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "typed-FX-hashed-statement-history-index-lookup-runtime-mismatch"
 
 inl typed_fx_hashed_statement_history_index_lookup_terminal () : string =
     inl journals =
@@ -3900,7 +4064,19 @@ inl assert_typed_fx_hashed_statement_identity_lookup_runtime
     (primary_debit : i64) (primary_credit : i64) (primary_mismatch : i64)
     (secondary_tag : i64) (secondary_depth : i64) (secondary_statements : i64)
     (secondary_debit : i64) (secondary_credit : i64) (secondary_mismatch : i64) : () =
-    $"if !primary_tag <> 1L || !primary_depth <> 1L || !primary_statements <> 3L || !primary_debit <> 10L || !primary_credit <> 10L || !primary_mismatch <> 0L || !secondary_tag <> 2L || !secondary_depth <> 0L || !secondary_statements <> 3L || !secondary_debit <> 10L || !secondary_credit <> 10L || !secondary_mismatch <> 0L then failwith \"typed-FX-hashed-statement-identity-lookup-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(primary_tag, 1i64)
+    inl ok_1 = !!!!EQ(primary_depth, 1i64)
+    inl ok_2 = !!!!EQ(primary_statements, 3i64)
+    inl ok_3 = !!!!EQ(primary_debit, 10i64)
+    inl ok_4 = !!!!EQ(primary_credit, 10i64)
+    inl ok_5 = !!!!EQ(primary_mismatch, 0i64)
+    inl ok_6 = !!!!EQ(secondary_tag, 2i64)
+    inl ok_7 = !!!!EQ(secondary_depth, 0i64)
+    inl ok_8 = !!!!EQ(secondary_statements, 3i64)
+    inl ok_9 = !!!!EQ(secondary_debit, 10i64)
+    inl ok_10 = !!!!EQ(secondary_credit, 10i64)
+    inl ok_11 = !!!!EQ(secondary_mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 then () else mega_runtime_fail "typed-FX-hashed-statement-identity-lookup-runtime-mismatch"
 
 inl typed_fx_hashed_statement_identity_lookup_terminal () : string =
     inl journals =
@@ -4003,7 +4179,13 @@ inl rec typed_fx_hashed_statement_membership_lookup_program_runtime forall posit
 inl assert_typed_fx_hashed_statement_membership_lookup_program_runtime
     (lookups : i64) (depth_sum : i64) (statements : i64)
     (debit : i64) (credit : i64) (mismatch : i64) : () =
-    $"if !lookups <> 2L || !depth_sum <> 1L || !statements <> 6L || !debit <> 20L || !credit <> 20L || !mismatch <> 0L then failwith \"typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(lookups, 2i64)
+    inl ok_1 = !!!!EQ(depth_sum, 1i64)
+    inl ok_2 = !!!!EQ(statements, 6i64)
+    inl ok_3 = !!!!EQ(debit, 20i64)
+    inl ok_4 = !!!!EQ(credit, 20i64)
+    inl ok_5 = !!!!EQ(mismatch, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-hashed-statement-membership-lookup-program-runtime-mismatch"
 
 inl typed_fx_hashed_statement_membership_lookup_program_terminal () : string =
     inl journals =
@@ -4092,7 +4274,19 @@ inl assert_typed_fx_hashed_statement_membership_lookup_program_append_runtime
     (left_debit : i64) (right_debit : i64)
     (left_credit : i64) (right_credit : i64)
     (left_mismatch : i64) (right_mismatch : i64) : () =
-    $"if !direct_lookups <> !left_lookups + !right_lookups || !direct_depth <> !left_depth + !right_depth || !direct_statements <> !left_statements + !right_statements || !direct_debit <> !left_debit + !right_debit || !direct_credit <> !left_credit + !right_credit || !direct_mismatch <> !left_mismatch + !right_mismatch then failwith \"typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch\""
+    inl term_0 = !!!!Add(left_lookups, right_lookups)
+    inl ok_0 = !!!!EQ(direct_lookups, term_0)
+    inl term_1 = !!!!Add(left_depth, right_depth)
+    inl ok_1 = !!!!EQ(direct_depth, term_1)
+    inl term_2 = !!!!Add(left_statements, right_statements)
+    inl ok_2 = !!!!EQ(direct_statements, term_2)
+    inl term_3 = !!!!Add(left_debit, right_debit)
+    inl ok_3 = !!!!EQ(direct_debit, term_3)
+    inl term_4 = !!!!Add(left_credit, right_credit)
+    inl ok_4 = !!!!EQ(direct_credit, term_4)
+    inl term_5 = !!!!Add(left_mismatch, right_mismatch)
+    inl ok_5 = !!!!EQ(direct_mismatch, term_5)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-hashed-statement-membership-lookup-program-append-runtime-mismatch"
 
 inl typed_fx_hashed_statement_membership_lookup_program_append_terminal () : string =
     inl journals =
@@ -4181,7 +4375,15 @@ inl assert_typed_fx_hashed_statement_identity_retry_stability_runtime
     (first_debit : i64) (first_credit : i64) (first_mismatch : i64)
     (second_tag : i64) (second_depth : i64) (second_statements : i64)
     (second_debit : i64) (second_credit : i64) (second_mismatch : i64) : () =
-    $"if !first_tag <> !second_tag || !first_depth <> !second_depth || !first_statements <> !second_statements || !first_debit <> !second_debit || !first_credit <> !second_credit || !first_mismatch <> !second_mismatch || !first_tag <> !expected_tag || !first_depth <> !expected_depth then failwith \"typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(first_tag, second_tag)
+    inl ok_1 = !!!!EQ(first_depth, second_depth)
+    inl ok_2 = !!!!EQ(first_statements, second_statements)
+    inl ok_3 = !!!!EQ(first_debit, second_debit)
+    inl ok_4 = !!!!EQ(first_credit, second_credit)
+    inl ok_5 = !!!!EQ(first_mismatch, second_mismatch)
+    inl ok_6 = !!!!EQ(first_tag, expected_tag)
+    inl ok_7 = !!!!EQ(first_depth, expected_depth)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "typed-FX-hashed-statement-identity-retry-stability-runtime-mismatch"
 
 inl typed_fx_hashed_statement_identity_retry_stability_terminal () : string =
     inl journals =
@@ -4244,7 +4446,11 @@ inl typed_fx_statement_physical_commit_roundtrip_runtime () :
 inl assert_typed_fx_statement_physical_commit_roundtrip_runtime
     (written : i64) (digest_bytes : i64)
     (recovered : i64) (digest_equal : i64) : () =
-    $"if !written <= 0L || !digest_bytes <> 32L || !recovered <> !written || !digest_equal <> 1L then failwith \"typed-FX-statement-physical-commit-roundtrip-runtime-mismatch\""
+    inl ok_0 = !!!!GT(written, 0i64)
+    inl ok_1 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_2 = !!!!EQ(recovered, written)
+    inl ok_3 = !!!!EQ(digest_equal, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 then () else mega_runtime_fail "typed-FX-statement-physical-commit-roundtrip-runtime-mismatch"
 
 inl typed_fx_statement_physical_commit_roundtrip_terminal () : string =
     inl written, digest_bytes, recovered, digest_equal =
@@ -4262,7 +4468,14 @@ inl assert_typed_fx_statement_directory_synced_interprocess_cas_runtime
     (written : i64) (digest_bytes : i64) (recovered : i64)
     (digest_equal : i64) (file_sync : i64) (directory_sync : i64)
     (winners : i64) : () =
-    $"if !written <= 0L || !digest_bytes <> 32L || !recovered <> !written || !digest_equal <> 1L || !file_sync <> 0L || !directory_sync <> 0L || !winners <> 1L then failwith \"typed-FX-statement-directory-synced-interprocess-CAS-runtime-mismatch\""
+    inl ok_0 = !!!!GT(written, 0i64)
+    inl ok_1 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_2 = !!!!EQ(recovered, written)
+    inl ok_3 = !!!!EQ(digest_equal, 1i64)
+    inl ok_4 = !!!!EQ(file_sync, 0i64)
+    inl ok_5 = !!!!EQ(directory_sync, 0i64)
+    inl ok_6 = !!!!EQ(winners, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "typed-FX-statement-directory-synced-interprocess-CAS-runtime-mismatch"
 
 inl typed_fx_statement_directory_synced_interprocess_cas_terminal () : string =
     inl written, digest_bytes, recovered, digest_equal,
@@ -4282,7 +4495,13 @@ inl assert_typed_fx_statement_crash_before_rename_restart_runtime
     (old_bytes : i64) (prepared_before : i64) (crash_exit : i64)
     (preserved_before : i64) (recovered_equal : i64)
     (prepared_after : i64) : () =
-    $"if !old_bytes <= 0L || !prepared_before < 4096L || !crash_exit <> 1L || !preserved_before <> 1L || !recovered_equal <> 1L || !prepared_after <> 0L then failwith \"typed-FX-statement-crash-before-rename-restart-runtime-mismatch\""
+    inl ok_0 = !!!!GT(old_bytes, 0i64)
+    inl ok_1 = !!!!GTE(prepared_before, 4096i64)
+    inl ok_2 = !!!!EQ(crash_exit, 1i64)
+    inl ok_3 = !!!!EQ(preserved_before, 1i64)
+    inl ok_4 = !!!!EQ(recovered_equal, 1i64)
+    inl ok_5 = !!!!EQ(prepared_after, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-crash-before-rename-restart-runtime-mismatch"
 
 inl typed_fx_statement_crash_before_rename_restart_terminal () : string =
     inl old_bytes, prepared_before, crash_exit,
@@ -4302,7 +4521,15 @@ inl assert_typed_fx_statement_crash_after_rename_restart_runtime
     (old_bytes : i64) (new_bytes : i64) (renamed : i64)
     (crash_exit : i64) (restart_sync : i64) (recovered_new : i64)
     (old_replaced : i64) (prepared_absent : i64) : () =
-    $"if !old_bytes <= 0L || !new_bytes <= 0L || !renamed <> 1L || !crash_exit <> 1L || !restart_sync <> 0L || !recovered_new <> 1L || !old_replaced <> 1L || !prepared_absent <> 1L then failwith \"typed-FX-statement-crash-after-rename-restart-runtime-mismatch\""
+    inl ok_0 = !!!!GT(old_bytes, 0i64)
+    inl ok_1 = !!!!GT(new_bytes, 0i64)
+    inl ok_2 = !!!!EQ(renamed, 1i64)
+    inl ok_3 = !!!!EQ(crash_exit, 1i64)
+    inl ok_4 = !!!!EQ(restart_sync, 0i64)
+    inl ok_5 = !!!!EQ(recovered_new, 1i64)
+    inl ok_6 = !!!!EQ(old_replaced, 1i64)
+    inl ok_7 = !!!!EQ(prepared_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "typed-FX-statement-crash-after-rename-restart-runtime-mismatch"
 
 inl typed_fx_statement_crash_after_rename_restart_terminal () : string =
     inl old_bytes, new_bytes, renamed, crash_exit,
@@ -4322,7 +4549,13 @@ inl assert_typed_fx_statement_history_digest_cas_runtime
     (old_bytes : i64) (first : i64) (stale : i64)
     (final_matches_first : i64) (prepared_absent : i64)
     (final_bytes : i64) : () =
-    $"if !old_bytes <= 0L || !first <> 1L || !stale <> 0L || !final_matches_first <> 1L || !prepared_absent <> 1L || !final_bytes <= 0L then failwith \"typed-FX-statement-history-digest-CAS-runtime-mismatch\""
+    inl ok_0 = !!!!GT(old_bytes, 0i64)
+    inl ok_1 = !!!!EQ(first, 1i64)
+    inl ok_2 = !!!!EQ(stale, 0i64)
+    inl ok_3 = !!!!EQ(final_matches_first, 1i64)
+    inl ok_4 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_5 = !!!!GT(final_bytes, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-history-digest-CAS-runtime-mismatch"
 
 inl typed_fx_statement_history_digest_cas_terminal () : string =
     inl old_bytes, first, stale, final_matches_first,
@@ -4342,7 +4575,13 @@ inl assert_typed_fx_statement_writer_owned_identity_protocol_runtime
     (applied : i64) (duplicate_exact : i64)
     (identity_collision : i64) (version_conflict : i64)
     (history_count : i64) (digest_bytes : i64) : () =
-    $"if !applied <> 1L || !duplicate_exact <> 2L || !identity_collision <> 3L || !version_conflict <> 4L || !history_count <> 1L || !digest_bytes <> 32L then failwith \"typed-FX-statement-writer-owned-identity-protocol-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 1i64)
+    inl ok_1 = !!!!EQ(duplicate_exact, 2i64)
+    inl ok_2 = !!!!EQ(identity_collision, 3i64)
+    inl ok_3 = !!!!EQ(version_conflict, 4i64)
+    inl ok_4 = !!!!EQ(history_count, 1i64)
+    inl ok_5 = !!!!EQ(digest_bytes, 32i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "typed-FX-statement-writer-owned-identity-protocol-runtime-mismatch"
 
 inl typed_fx_statement_writer_owned_identity_protocol_terminal () : string =
     inl applied, duplicate_exact, identity_collision,
@@ -4363,7 +4602,15 @@ inl assert_typed_fx_statement_interprocess_linearization_race_runtime
     (conflicts : i64) (winners : i64)
     (digest_equal : i64) (final_bytes : i64)
     (file_sync : i64) (directory_sync : i64) : () =
-    $"if !first_applied + !second_applied <> 1L || !conflicts <> 1L || !winners <> 1L || !digest_equal <> 1L || !final_bytes <= 0L || !file_sync <> 0L || !directory_sync <> 0L then failwith \"typed-FX-statement-interprocess-linearization-race-runtime-mismatch\""
+    inl term_0 = !!!!Add(first_applied, second_applied)
+    inl ok_0 = !!!!EQ(term_0, 1i64)
+    inl ok_1 = !!!!EQ(conflicts, 1i64)
+    inl ok_2 = !!!!EQ(winners, 1i64)
+    inl ok_3 = !!!!EQ(digest_equal, 1i64)
+    inl ok_4 = !!!!GT(final_bytes, 0i64)
+    inl ok_5 = !!!!EQ(file_sync, 0i64)
+    inl ok_6 = !!!!EQ(directory_sync, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "typed-FX-statement-interprocess-linearization-race-runtime-mismatch"
 
 inl typed_fx_statement_interprocess_linearization_race_terminal () : string =
     inl first_applied, second_applied, conflicts, winners,
@@ -4384,7 +4631,15 @@ inl assert_typed_fx_statement_durable_identity_batch_store_runtime
     (identity_collision : i64) (version_conflict : i64)
     (frames : i64) (valid : i64) (lookups : i64)
     (version : i64) : () =
-    $"if !applied <> 3L || !duplicate_exact <> 1L || !identity_collision <> 1L || !version_conflict <> 1L || !frames <> 3L || !valid <> 3L || !lookups <> 3L || !version <> 3L then failwith \"typed-FX-statement-durable-identity-batch-store-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(applied, 3i64)
+    inl ok_1 = !!!!EQ(duplicate_exact, 1i64)
+    inl ok_2 = !!!!EQ(identity_collision, 1i64)
+    inl ok_3 = !!!!EQ(version_conflict, 1i64)
+    inl ok_4 = !!!!EQ(frames, 3i64)
+    inl ok_5 = !!!!EQ(valid, 3i64)
+    inl ok_6 = !!!!EQ(lookups, 3i64)
+    inl ok_7 = !!!!EQ(version, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "typed-FX-statement-durable-identity-batch-store-runtime-mismatch"
 
 inl typed_fx_statement_durable_identity_batch_store_terminal () : string =
     inl applied, duplicate_exact, identity_collision,
@@ -4405,7 +4660,15 @@ inl assert_typed_fx_statement_child_owned_full_commit_race_runtime
     (winners : i64) (conflicts : i64)
     (digest_equal : i64) (prepared_absent : i64)
     (sync_receipt : i64) (committed_bytes : i64) : () =
-    $"if !first_applied + !second_applied <> 1L || !winners <> 1L || !conflicts <> 1L || !digest_equal <> 1L || !prepared_absent <> 1L || !sync_receipt <> 1L || !committed_bytes <= 0L then failwith \"typed-FX-statement-child-owned-full-commit-race-runtime-mismatch\""
+    inl term_0 = !!!!Add(first_applied, second_applied)
+    inl ok_0 = !!!!EQ(term_0, 1i64)
+    inl ok_1 = !!!!EQ(winners, 1i64)
+    inl ok_2 = !!!!EQ(conflicts, 1i64)
+    inl ok_3 = !!!!EQ(digest_equal, 1i64)
+    inl ok_4 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_5 = !!!!EQ(sync_receipt, 1i64)
+    inl ok_6 = !!!!GT(committed_bytes, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "typed-FX-statement-child-owned-full-commit-race-runtime-mismatch"
 
 inl typed_fx_statement_child_owned_full_commit_race_terminal () : string =
     inl first_applied, second_applied, winners, conflicts,
@@ -4499,7 +4762,17 @@ inl assert_typed_fx_hashed_statement_two_frame_checksum_rejection_runtime
     (valid_debit : i64) (valid_credit : i64) (valid_mismatch : i64)
     (corrupt_rejected : i64) (corrupt_stored : i64)
     (corrupt_actual : i64) (corrupt_events : i64) : () =
-    $"if !valid_accepted <> 1L || !valid_events <> 2L || !valid_statements <> 6L || !valid_debit <> 20L || !valid_credit <> 20L || !valid_mismatch <> 0L || !corrupt_rejected <> 1L || !corrupt_stored <> 999L || !corrupt_actual <> 23L || !corrupt_events <> 0L then failwith \"typed-FX-hashed-statement-two-frame-checksum-rejection-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(valid_accepted, 1i64)
+    inl ok_1 = !!!!EQ(valid_events, 2i64)
+    inl ok_2 = !!!!EQ(valid_statements, 6i64)
+    inl ok_3 = !!!!EQ(valid_debit, 20i64)
+    inl ok_4 = !!!!EQ(valid_credit, 20i64)
+    inl ok_5 = !!!!EQ(valid_mismatch, 0i64)
+    inl ok_6 = !!!!EQ(corrupt_rejected, 1i64)
+    inl ok_7 = !!!!EQ(corrupt_stored, 999i64)
+    inl ok_8 = !!!!EQ(corrupt_actual, 23i64)
+    inl ok_9 = !!!!EQ(corrupt_events, 0i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "typed-FX-hashed-statement-two-frame-checksum-rejection-runtime-mismatch"
 
 inl typed_fx_hashed_statement_two_frame_checksum_rejection_terminal () : string =
     inl valid_accepted, valid_events, valid_statements,
@@ -4521,7 +4794,15 @@ inl assert_typed_fx_statement_length_prefixed_hash_chain_outbox_runtime
     (valid : i64) (frames : i64) (payload_bytes : i64) (digest_bytes : i64)
     (outbox_bytes : i64) (tamper_rejected : i64) (corrupt_prefix_frames : i64)
     (expected_frames : i64) : () =
-    $"if !valid <> 1L || !frames <> 3L || !payload_bytes <= 0L || !digest_bytes <> 32L || !outbox_bytes <= !payload_bytes || !tamper_rejected <> 1L || !corrupt_prefix_frames <> 1L || !expected_frames <> 3L then failwith \"typed-FX-statement-length-prefixed-hash-chain-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(valid, 1i64)
+    inl ok_1 = !!!!EQ(frames, 3i64)
+    inl ok_2 = !!!!GT(payload_bytes, 0i64)
+    inl ok_3 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_4 = !!!!GT(outbox_bytes, payload_bytes)
+    inl ok_5 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_6 = !!!!EQ(corrupt_prefix_frames, 1i64)
+    inl ok_7 = !!!!EQ(expected_frames, 3i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "typed-FX-statement-length-prefixed-hash-chain-outbox-runtime-mismatch"
 
 inl typed_fx_statement_length_prefixed_hash_chain_outbox_terminal () : string =
     inl valid, frames, payload_bytes, digest_bytes,
@@ -4546,7 +4827,18 @@ inl assert_typed_fx_statement_binary_field_hash_chain_outbox_alignment_runtime
     (outbox_tamper_rejected : i64) (outbox_prefix_frames : i64)
     (first_position : i64) (last_position_plus_payload_bytes : i64)
     (primary_frame_aligned : i64) : () =
-    $"if !store_valid <> 1L || !store_frames <> 3L || !outbox_valid <> 1L || !outbox_frames <> 3L || !store_tamper_rejected <> 1L || !store_prefix_frames <> 1L || !outbox_tamper_rejected <> 1L || !outbox_prefix_frames <> 1L || !first_position <> 1L || !last_position_plus_payload_bytes <= 3L || !primary_frame_aligned <> 1L then failwith \"typed-FX-statement-binary-field-hash-chain-outbox-alignment-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(store_valid, 1i64)
+    inl ok_1 = !!!!EQ(store_frames, 3i64)
+    inl ok_2 = !!!!EQ(outbox_valid, 1i64)
+    inl ok_3 = !!!!EQ(outbox_frames, 3i64)
+    inl ok_4 = !!!!EQ(store_tamper_rejected, 1i64)
+    inl ok_5 = !!!!EQ(store_prefix_frames, 1i64)
+    inl ok_6 = !!!!EQ(outbox_tamper_rejected, 1i64)
+    inl ok_7 = !!!!EQ(outbox_prefix_frames, 1i64)
+    inl ok_8 = !!!!EQ(first_position, 1i64)
+    inl ok_9 = !!!!GT(last_position_plus_payload_bytes, 3i64)
+    inl ok_10 = !!!!EQ(primary_frame_aligned, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 then () else mega_runtime_fail "typed-FX-statement-binary-field-hash-chain-outbox-alignment-runtime-mismatch"
 
 inl typed_fx_statement_binary_field_hash_chain_outbox_alignment_terminal () : string =
     inl journals =
@@ -5188,7 +5480,9 @@ inl erp_net_intercompany_payload_frame_runtime (encoded : string) : i64 * i64 =
     $"(int64 (System.Convert.FromBase64String(!encoded).Length), int64 (System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(!encoded)).Length))"
 
 inl assert_erp_net_intercompany_payload_frame_runtime (bytes : i64) (digest : i64) : () =
-    $"if !bytes <= 0L || !digest <> 32L then failwith \"erp-NetIntercompany-payload-frame-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(digest, 32i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-NetIntercompany-payload-frame-runtime-mismatch"
 
 inl erp_net_intercompany_payload_frame_terminal () : string =
     inl operation = erp_p2p_net_intercompany_op ()
@@ -5286,7 +5580,9 @@ inl erp_net_intercompany_payload_decode_tag
 
 inl assert_erp_net_intercompany_payload_codec_runtime
     (accepted : i64) (truncated_rejected : i64) : () =
-    $"if !accepted <> 1L || !truncated_rejected <> 1L then failwith \"erp-NetIntercompany-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(truncated_rejected, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-NetIntercompany-payload-codec-runtime-mismatch"
 
 inl erp_net_intercompany_payload_codec_terminal () : string =
     inl operation = erp_p2p_net_intercompany_op ()
@@ -5305,7 +5601,8 @@ inl erp_net_intercompany_payload_codec_terminal () : string =
         inl decoded_operation = erp_net_intercompany_payload_decode_typed_operation encoded
         inl reencoded = erp_net_intercompany_operation_payload_frame decoded_operation
         inl _ : () =
-            $"if !reencoded <> !encoded then failwith \"erp-NetIntercompany-field-derived-operation-roundtrip-mismatch\""
+            inl ok_0 = !!!!EQ(reencoded, encoded)
+            if ok_0 then () else mega_runtime_fail "erp-NetIntercompany-field-derived-operation-roundtrip-mismatch"
         inl left_amount, right_amount =
             erp_p2p_net_intercompany_mirror_runtime decoded_operation
         inl _ =
@@ -5538,7 +5835,8 @@ inl erp_p2p_seven_event_commit_tree_from_net_intercompany
 
 inl assert_erp_p2p_four_event_validated_reopened_frame_count
     (reopened_frame_count : i64) : () =
-    $"if !reopened_frame_count <> 4L then failwith \"reopened-frame-count-is-not-four\""
+    inl ok_0 = !!!!EQ(reopened_frame_count, 4i64)
+    if ok_0 then () else mega_runtime_fail "reopened-frame-count-is-not-four"
 
 inl erp_p2p_seven_event_commit_from_net_intercompany
     (decoded_operation :
@@ -5667,7 +5965,13 @@ inl assert_erp_p2p_event_store_physical_roundtrip_runtime
     (store_bytes : i64) (outbox_bytes : i64)
     (store_equal : i64) (outbox_equal : i64)
     (digest_equal : i64) (tamper_rejected : i64) : () =
-    $"if !store_bytes <= 0L || !outbox_bytes <> !store_bytes || !store_equal <> 1L || !outbox_equal <> 1L || !digest_equal <> 1L || !tamper_rejected <> 1L then failwith \"erp-p2p-event-store-physical-roundtrip-runtime-mismatch\""
+    inl ok_0 = !!!!GT(store_bytes, 0i64)
+    inl ok_1 = !!!!EQ(outbox_bytes, store_bytes)
+    inl ok_2 = !!!!EQ(store_equal, 1i64)
+    inl ok_3 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_4 = !!!!EQ(digest_equal, 1i64)
+    inl ok_5 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "erp-p2p-event-store-physical-roundtrip-runtime-mismatch"
 
 inl erp_p2p_three_event_physical_roundtrip_terminal () : string =
     inl reserve_event =
@@ -5729,7 +6033,16 @@ inl assert_erp_reserve_budget_payload_codec_runtime
     (field_count : i64) (index_bound : i64) (shared_entity : i64)
     (shared_currency : i64) (amount_bound : i64) (identity_bound : i64) (roundtrip : i64)
     (digest_bytes : i64) (tamper_rejected : i64) : () =
-    $"if !field_count <> 8L || !index_bound <> 1L || !shared_entity <> 1L || !shared_currency <> 1L || !amount_bound <> 1L || !identity_bound <> 1L || !roundtrip <> 1L || !digest_bytes <> 32L || !tamper_rejected <> 1L then failwith \"erp-reserve-budget-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(field_count, 8i64)
+    inl ok_1 = !!!!EQ(index_bound, 1i64)
+    inl ok_2 = !!!!EQ(shared_entity, 1i64)
+    inl ok_3 = !!!!EQ(shared_currency, 1i64)
+    inl ok_4 = !!!!EQ(amount_bound, 1i64)
+    inl ok_5 = !!!!EQ(identity_bound, 1i64)
+    inl ok_6 = !!!!EQ(roundtrip, 1i64)
+    inl ok_7 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_8 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "erp-reserve-budget-payload-codec-runtime-mismatch"
 
 inl erp_reserve_budget_payload_codec_terminal () : string =
     inl encoded = erp_reserve_budget_payload_frame (erp_p2p_reserve_budget_plan ())
@@ -5764,7 +6077,8 @@ inl erp_reserve_budget_payload_decode_typed_operation (encoded : string) :
 
 inl assert_erp_reserve_budget_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-ReserveBudget-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-ReserveBudget-typed-decode-roundtrip-mismatch"
 
 union erp_reserve_budget_typed_decode_authority =
     | ErpReserveBudgetTypedDecodeAuthority ::
@@ -5821,7 +6135,16 @@ inl assert_erp_typed_unit_atomic_event_outbox_runtime
     (bytes : i64) (parse_valid : i64) (payload_equal : i64)
     (outbox_equal : i64) (digest_equal : i64) (prepared_absent : i64)
     (directory_sync : i64) (tamper_rejected : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !parse_valid <> 1L || !payload_equal <> 1L || !outbox_equal <> 1L || !digest_equal <> 1L || !prepared_absent <> 1L || !directory_sync <> 0L || !tamper_rejected <> 1L || !cleanup_absent <> 1L then failwith \"erp-reserve-budget-atomic-event-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(parse_valid, 1i64)
+    inl ok_2 = !!!!EQ(payload_equal, 1i64)
+    inl ok_3 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_4 = !!!!EQ(digest_equal, 1i64)
+    inl ok_5 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_6 = !!!!EQ(directory_sync, 0i64)
+    inl ok_7 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_8 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "erp-reserve-budget-atomic-event-outbox-runtime-mismatch"
 
 inl erp_net_intercompany_disk_reopened_typed_operation_terminal () : string =
     inl encoded_payload = erp_net_intercompany_operation_payload_frame (erp_p2p_net_intercompany_op ())
@@ -5896,7 +6219,15 @@ inl assert_erp_collect_approvals_payload_codec_runtime
     (field_count : i64) (document_bound : i64) (roles_distinct : i64)
     (participants_distinct : i64) (identities_bound : i64) (roundtrip : i64)
     (digest_bytes : i64) (tamper_rejected : i64) : () =
-    $"if !field_count <> 12L || !document_bound <> 1L || !roles_distinct <> 1L || !participants_distinct <> 1L || !identities_bound <> 1L || !roundtrip <> 1L || !digest_bytes <> 32L || !tamper_rejected <> 1L then failwith \"erp-collect-approvals-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(field_count, 12i64)
+    inl ok_1 = !!!!EQ(document_bound, 1i64)
+    inl ok_2 = !!!!EQ(roles_distinct, 1i64)
+    inl ok_3 = !!!!EQ(participants_distinct, 1i64)
+    inl ok_4 = !!!!EQ(identities_bound, 1i64)
+    inl ok_5 = !!!!EQ(roundtrip, 1i64)
+    inl ok_6 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_7 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "erp-collect-approvals-payload-codec-runtime-mismatch"
 
 inl erp_collect_approvals_payload_codec_terminal () : string =
     inl encoded = erp_collect_approvals_payload_frame (erp_p2p_collect_approvals_plan ())
@@ -5924,7 +6255,8 @@ inl erp_collect_approvals_payload_decode_typed_operation (encoded : string) :
 
 inl assert_erp_collect_approvals_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-CollectApprovals-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-CollectApprovals-typed-decode-roundtrip-mismatch"
 
 union erp_collect_approvals_typed_decode_authority =
     | ErpCollectApprovalsTypedDecodeAuthority :
@@ -6001,7 +6333,16 @@ inl assert_erp_issue_purchase_order_payload_codec_runtime
     (field_count : i64) (budget_bound : i64) (document_bound : i64)
     (quorum_bound : i64) (quantity_bound : i64) (identity_bound : i64) (roundtrip : i64)
     (digest_bytes : i64) (tamper_rejected : i64) : () =
-    $"if !field_count <> 19L || !budget_bound <> 1L || !document_bound <> 1L || !quorum_bound <> 1L || !quantity_bound <> 1L || !identity_bound <> 1L || !roundtrip <> 1L || !digest_bytes <> 32L || !tamper_rejected <> 1L then failwith \"erp-issue-purchase-order-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(field_count, 19i64)
+    inl ok_1 = !!!!EQ(budget_bound, 1i64)
+    inl ok_2 = !!!!EQ(document_bound, 1i64)
+    inl ok_3 = !!!!EQ(quorum_bound, 1i64)
+    inl ok_4 = !!!!EQ(quantity_bound, 1i64)
+    inl ok_5 = !!!!EQ(identity_bound, 1i64)
+    inl ok_6 = !!!!EQ(roundtrip, 1i64)
+    inl ok_7 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_8 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "erp-issue-purchase-order-payload-codec-runtime-mismatch"
 
 inl erp_issue_purchase_order_payload_codec_terminal () : string =
     inl encoded = erp_issue_purchase_order_payload_frame (erp_p2p_issue_purchase_order_plan ())
@@ -6047,7 +6388,8 @@ inl erp_issue_purchase_order_payload_decode_typed_operation (encoded : string) :
 
 inl assert_erp_issue_purchase_order_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-IssuePurchaseOrder-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-IssuePurchaseOrder-typed-decode-roundtrip-mismatch"
 
 union erp_issue_purchase_order_typed_decode_authority =
     | ErpIssuePurchaseOrderTypedDecodeAuthority :
@@ -6115,7 +6457,16 @@ inl assert_erp_receive_partial_goods_payload_codec_runtime
     (field_count : i64) (order_bound : i64) (shared_item : i64)
     (quantity_bound : i64) (location_bound : i64) (receipt_bound : i64) (roundtrip : i64)
     (digest_bytes : i64) (tamper_rejected : i64) : () =
-    $"if !field_count <> 11L || !order_bound <> 1L || !shared_item <> 1L || !quantity_bound <> 1L || !location_bound <> 1L || !receipt_bound <> 1L || !roundtrip <> 1L || !digest_bytes <> 32L || !tamper_rejected <> 1L then failwith \"erp-receive-partial-goods-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(field_count, 11i64)
+    inl ok_1 = !!!!EQ(order_bound, 1i64)
+    inl ok_2 = !!!!EQ(shared_item, 1i64)
+    inl ok_3 = !!!!EQ(quantity_bound, 1i64)
+    inl ok_4 = !!!!EQ(location_bound, 1i64)
+    inl ok_5 = !!!!EQ(receipt_bound, 1i64)
+    inl ok_6 = !!!!EQ(roundtrip, 1i64)
+    inl ok_7 = !!!!EQ(digest_bytes, 32i64)
+    inl ok_8 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "erp-receive-partial-goods-payload-codec-runtime-mismatch"
 
 inl erp_receive_partial_goods_payload_codec_terminal () : string =
     inl encoded = erp_receive_partial_goods_payload_frame (erp_p2p_receive_partial_goods_plan ())
@@ -6155,7 +6506,8 @@ inl erp_receive_partial_goods_payload_decode_typed_operation (encoded : string) 
 
 inl assert_erp_receive_partial_goods_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-ReceivePartialGoods-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-ReceivePartialGoods-typed-decode-roundtrip-mismatch"
 
 inl erp_receive_partial_goods_payload_typed_decode_terminal () : string =
     inl encoded = erp_receive_partial_goods_payload_frame (erp_p2p_receive_partial_goods_plan ())
@@ -6325,7 +6677,9 @@ inl erp_match_invoice_payload_decode_tag
 
 inl assert_erp_match_invoice_payload_codec_runtime
     (accepted : i64) (truncated_rejected : i64) : () =
-    $"if !accepted <> 1L || !truncated_rejected <> 1L then failwith \"erp-MatchInvoice-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(truncated_rejected, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-MatchInvoice-payload-codec-runtime-mismatch"
 
 inl erp_match_invoice_payload_decode_fields_runtime (encoded : string) :
     string * string * string * string * string * string * i64 * string * string * i64 * string =
@@ -6347,7 +6701,8 @@ inl erp_match_invoice_payload_decode_typed_operation (encoded : string) :
 
 inl assert_erp_match_invoice_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-MatchInvoice-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-MatchInvoice-typed-decode-roundtrip-mismatch"
 
 union erp_match_invoice_typed_decode_authority =
     | ErpMatchInvoiceTypedDecodeAuthority :
@@ -6427,7 +6782,9 @@ inl erp_settle_payment_payload_decode_tag
 
 inl assert_erp_settle_payment_payload_codec_runtime
     (accepted : i64) (truncated_rejected : i64) : () =
-    $"if !accepted <> 1L || !truncated_rejected <> 1L then failwith \"erp-SettlePayment-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(accepted, 1i64)
+    inl ok_1 = !!!!EQ(truncated_rejected, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-SettlePayment-payload-codec-runtime-mismatch"
 
 nominal erp_settle_payment_payload_typed_certificate =
     invoice_match company_a usd widget_a warehouse_north tax_brazil po_1001 *
@@ -6549,12 +6906,13 @@ inl erp_settle_payment_payload_typed_roundtrip_tag
     match decision with
     | ErpSettlePaymentPayloadTypedDecoded certificate =>
         inl rebuilt = erp_settle_payment_payload_typed_certificate_frame certificate
-        $"if !rebuilt = !encoded then 1L else 0L"
+        (if !!!!EQ(rebuilt, encoded) then 1i64 else 0i64)
     | ErpSettlePaymentPayloadTypedRejected _ => 0i64
 
 inl assert_erp_settle_payment_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-SettlePayment-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-SettlePayment-typed-decode-roundtrip-mismatch"
 
 union erp_settle_payment_typed_decode_authority =
     | ErpSettlePaymentTypedDecodeAuthority :
@@ -6568,7 +6926,7 @@ inl erp_settle_payment_typed_decode_authority_from_bytes (encoded : string) :
         inl _ = assert_erp_settle_payment_payload_typed_decode_roundtrip_runtime encoded reencoded
         ErpSettlePaymentTypedDecodeAuthority (encoded, certificate, reencoded)
     | ErpSettlePaymentPayloadTypedRejected _ =>
-        $"failwith \"disk-reopened-SettlePayment-payload-could-not-produce-a-typed-authority\""
+        mega_runtime_fail "disk-reopened-SettlePayment-payload-could-not-produce-a-typed-authority"
 
 inl erp_settle_payment_payload_codec_terminal () : string =
     inl operation = erp_p2p_settle_payment_from_decoded_net (erp_p2p_net_intercompany_op ())
@@ -6594,7 +6952,7 @@ inl erp_settle_payment_payload_codec_terminal () : string =
             assert_erp_settle_payment_typed_ratio_matches_operation_runtime
                 typed_numerator typed_denominator operation_numerator operation_denominator
         | ErpSettlePaymentPayloadTypedRejected _ =>
-            $"failwith \"canonical-SettlePayment-frame-could-not-produce-the-typed-FX-ratio-certificate\""
+            mega_runtime_fail "canonical-SettlePayment-frame-could-not-produce-the-typed-FX-ratio-certificate"
     inl _ = assert_erp_settle_payment_payload_codec_runtime typed_accepted_tag (erp_runtime_add_i64 1i64 (erp_runtime_mul_i64 -1i64 typed_rejected_tag))
     inl _ = assert_erp_settle_payment_payload_codec_runtime typed_roundtrip_tag (erp_runtime_add_i64 1i64 (erp_runtime_mul_i64 -1i64 typed_rejected_tag))
     "SettlePayment tagged frame now crosses the runtime boundary as stable typed invoice-money-payment-document evidence-and-that-stable-evidence-rebuilds-the-byte-identical-canonical-fifteen-field-frame-while-the-existential-FX-route-remains-on-the-compile-time-side-of-the-authority-boundary"
@@ -6620,7 +6978,13 @@ inl erp_close_period_payload_codec_runtime (encoded : string) :
 inl assert_erp_close_period_payload_codec_runtime
     (field_count : i64) (payment_bound : i64) (period_bound : i64)
     (gaap_bound : i64) (roundtrip : i64) (tamper_rejected : i64) : () =
-    $"if !field_count <> 10L || !payment_bound <> 1L || !period_bound <> 1L || !gaap_bound <> 1L || !roundtrip <> 1L || !tamper_rejected <> 1L then failwith \"erp-ClosePeriod-payload-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(field_count, 10i64)
+    inl ok_1 = !!!!EQ(payment_bound, 1i64)
+    inl ok_2 = !!!!EQ(period_bound, 1i64)
+    inl ok_3 = !!!!EQ(gaap_bound, 1i64)
+    inl ok_4 = !!!!EQ(roundtrip, 1i64)
+    inl ok_5 = !!!!EQ(tamper_rejected, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "erp-ClosePeriod-payload-codec-runtime-mismatch"
 
 inl erp_close_period_payload_codec_terminal () : string =
     inl encoded = erp_close_period_operation_payload_frame (erp_p2p_close_period_op ())
@@ -6665,7 +7029,8 @@ inl erp_close_period_payload_decode_typed_operation (encoded : string) :
 
 inl assert_erp_close_period_payload_typed_decode_roundtrip_runtime
     (encoded : string) (reencoded : string) : () =
-    $"if !encoded <> !reencoded then failwith \"erp-ClosePeriod-typed-decode-roundtrip-mismatch\""
+    inl ok_0 = !!!!EQ(encoded, reencoded)
+    if ok_0 then () else mega_runtime_fail "erp-ClosePeriod-typed-decode-roundtrip-mismatch"
 
 inl erp_close_period_payload_typed_decode_terminal () : string =
     inl encoded = erp_close_period_operation_payload_frame (erp_p2p_close_period_op ())
@@ -6793,7 +7158,9 @@ inl erp_p2p_physical_identity_payload_sensitivity_terminal () : string =
     inl variant_logical = erp_p2p_event_commit_authority_runtime_identity variant_authority
     inl canonical_physical = erp_p2p_event_commit_authority_physical_identity canonical_authority
     inl variant_physical = erp_p2p_event_commit_authority_physical_identity variant_authority
-    $"if !canonical_logical <> !variant_logical || !canonical_physical = !variant_physical then failwith \"erp-p2p-physical-identity-payload-sensitivity-mismatch\""
+    inl ok_0 = !!!!EQ(canonical_logical, variant_logical)
+    inl ok_1 = if !!!!EQ(canonical_physical, variant_physical) then false else true
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-p2p-physical-identity-payload-sensitivity-mismatch"
     "physical-commit-identity-now-distinguishes-same-stage-same-outbox-trees-whose-economic-payload-bytes-differ"
 
 nominal erp_p2p_event_commit_physical_authority version from to =
@@ -6883,7 +7250,12 @@ inl assert_erp_p2p_recursive_sequence_runtime
     (payload_count : i64) (outbox_count : i64)
     (store_version_bound : i64) (outbox_version_bound : i64)
     (frames_valid : i64) : () =
-    $"if !payload_count <> 4L || !outbox_count <> 4L || !store_version_bound <> 1L || !outbox_version_bound <> 1L || !frames_valid <> 1L then failwith \"erp-p2p-recursive-sequence-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(payload_count, 4i64)
+    inl ok_1 = !!!!EQ(outbox_count, 4i64)
+    inl ok_2 = !!!!EQ(store_version_bound, 1i64)
+    inl ok_3 = !!!!EQ(outbox_version_bound, 1i64)
+    inl ok_4 = !!!!EQ(frames_valid, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 then () else mega_runtime_fail "erp-p2p-recursive-sequence-runtime-mismatch"
 
 inl erp_p2p_four_event_recursive_sequence_terminal () : string =
     inl store, outbox = erp_p2p_four_event_commit ()
@@ -6905,7 +7277,9 @@ inl erp_p2p_recursive_outbox_authority_runtime
 
 inl assert_erp_p2p_recursive_outbox_authority_runtime
     (expected : i64) (distinct : i64) : () =
-    $"if !expected <> 1L || !distinct <> 1L then failwith \"erp-p2p-recursive-outbox-authority-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(expected, 1i64)
+    inl ok_1 = !!!!EQ(distinct, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-p2p-recursive-outbox-authority-runtime-mismatch"
 
 inl emit_erp_p2p_lengths () = !!!!Global("let erpP2PLengthBytes (count:int) = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(count))\nlet erpP2PReadLength (data:byte array) offset = System.BitConverter.ToInt32(data,offset) |> System.Net.IPAddress.NetworkToHostOrder")
 
@@ -6944,7 +7318,18 @@ inl assert_erp_p2p_recursive_atomic_payload_outbox_runtime
     (frame_count : i64) (payload_equal : i64) (outbox_equal : i64)
     (digest_valid : i64) (prepared_absent : i64) (directory_sync : i64)
     (tamper_rejected : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !count_bound <> 1L || !parse_valid <> 1L || !frame_count <> 4L || !payload_equal <> 1L || !outbox_equal <> 1L || !digest_valid <> 1L || !prepared_absent <> 1L || !directory_sync <> 0L || !tamper_rejected <> 1L || !cleanup_absent <> 1L then failwith \"erp-p2p-recursive-atomic-payload-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(parse_valid, 1i64)
+    inl ok_3 = !!!!EQ(frame_count, 4i64)
+    inl ok_4 = !!!!EQ(payload_equal, 1i64)
+    inl ok_5 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_6 = !!!!EQ(digest_valid, 1i64)
+    inl ok_7 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_8 = !!!!EQ(directory_sync, 0i64)
+    inl ok_9 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_10 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 then () else mega_runtime_fail "erp-p2p-recursive-atomic-payload-outbox-runtime-mismatch"
 
 inl erp_p2p_reopened_payload_sequence_count_runtime (payload_sequence : string) : i64 =
     $"if System.String.IsNullOrEmpty(!payload_sequence) then 0L else int64 (!payload_sequence.Split([|'|'|], System.StringSplitOptions.RemoveEmptyEntries).Length)"
@@ -6956,12 +7341,16 @@ inl erp_p2p_reopened_payload_sequence_at_runtime (payload_sequence : string) (in
     $"let payloads = !payload_sequence.Split([|'|'|], System.StringSplitOptions.RemoveEmptyEntries) in if !index < 0L || !index >= int64 payloads.Length then failwith \"erp-p2p-reopened-payload-sequence-index-out-of-range\" else payloads.[int !index]"
 
 inl assert_erp_p2p_reopened_payload_sequence_count_runtime (actual : i64) (expected : i64) : () =
-    $"if !actual <> !expected then failwith \"erp-p2p-reopened-payload-sequence-count-mismatch\""
+    inl ok_0 = !!!!EQ(actual, expected)
+    if ok_0 then () else mega_runtime_fail "erp-p2p-reopened-payload-sequence-count-mismatch"
 
 inl assert_erp_p2p_reopened_payload_sequence_matches_tree_runtime
     (reopened_payload_sequence : string) (expected_payload_sequence : string)
     (payload_equal : i64) (outbox_equal : i64) : () =
-    $"if !payload_equal <> 1L || !outbox_equal <> 1L || !reopened_payload_sequence <> !expected_payload_sequence then failwith \"erp-p2p-reopened-whole-history-does-not-match-commit-tree\""
+    inl ok_0 = !!!!EQ(payload_equal, 1i64)
+    inl ok_1 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_2 = !!!!EQ(reopened_payload_sequence, expected_payload_sequence)
+    if ok_0 && ok_1 && ok_2 then () else mega_runtime_fail "erp-p2p-reopened-whole-history-does-not-match-commit-tree"
 
 inl erp_p2p_reopened_payload_sequence_validate_tree forall version from to.
     (tree : erp_p2p_event_commit_tree version from to)
@@ -7211,7 +7600,18 @@ inl assert_erp_p2p_seven_event_recursive_atomic_payload_outbox_runtime
     (frame_count : i64) (payload_equal : i64) (outbox_equal : i64)
     (digest_valid : i64) (prepared_absent : i64) (directory_sync : i64)
     (tamper_rejected : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !count_bound <> 1L || !parse_valid <> 1L || !frame_count <> 7L || !payload_equal <> 1L || !outbox_equal <> 1L || !digest_valid <> 1L || !prepared_absent <> 1L || !directory_sync <> 0L || !tamper_rejected <> 1L || !cleanup_absent <> 1L then failwith \"erp-p2p-seven-event-recursive-atomic-payload-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(parse_valid, 1i64)
+    inl ok_3 = !!!!EQ(frame_count, 7i64)
+    inl ok_4 = !!!!EQ(payload_equal, 1i64)
+    inl ok_5 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_6 = !!!!EQ(digest_valid, 1i64)
+    inl ok_7 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_8 = !!!!EQ(directory_sync, 0i64)
+    inl ok_9 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_10 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 then () else mega_runtime_fail "erp-p2p-seven-event-recursive-atomic-payload-outbox-runtime-mismatch"
 
 inl erp_p2p_seven_event_recursive_atomic_payload_outbox_terminal () : string =
     inl encoded =
@@ -7259,7 +7659,18 @@ inl assert_erp_p2p_eight_event_recursive_atomic_payload_outbox_runtime
     (frame_count : i64) (payload_equal : i64) (outbox_equal : i64)
     (digest_valid : i64) (prepared_absent : i64) (directory_sync : i64)
     (tamper_rejected : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !count_bound <> 1L || !parse_valid <> 1L || !frame_count <> 8L || !payload_equal <> 1L || !outbox_equal <> 1L || !digest_valid <> 1L || !prepared_absent <> 1L || !directory_sync <> 0L || !tamper_rejected <> 1L || !cleanup_absent <> 1L then failwith \"erp-p2p-eight-event-recursive-atomic-payload-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(parse_valid, 1i64)
+    inl ok_3 = !!!!EQ(frame_count, 8i64)
+    inl ok_4 = !!!!EQ(payload_equal, 1i64)
+    inl ok_5 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_6 = !!!!EQ(digest_valid, 1i64)
+    inl ok_7 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_8 = !!!!EQ(directory_sync, 0i64)
+    inl ok_9 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_10 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 then () else mega_runtime_fail "erp-p2p-eight-event-recursive-atomic-payload-outbox-runtime-mismatch"
 
 inl erp_p2p_eight_event_recursive_atomic_payload_outbox_terminal () : string =
     inl encoded =
@@ -7288,10 +7699,8 @@ inl erp_p2p_eight_event_recursive_atomic_payload_outbox_terminal () : string =
             erp_p2p_reopened_recovery_authority_store recovery_authority
         inl reopened_outbox =
             erp_p2p_reopened_recovery_authority_outbox recovery_authority
-        inl _ = assert_erp_p2p_reopened_payload_sequence_count_runtime
-            (erp_p2p_event_store_length reopened_store) 8i64
-        inl _ = assert_erp_p2p_reopened_payload_sequence_count_runtime
-            (erp_p2p_event_outbox_length reopened_outbox) 8i64
+        inl _ = assert_erp_p2p_reopened_payload_sequence_count_runtime (erp_p2p_event_store_length reopened_store) 8i64
+        inl _ = assert_erp_p2p_reopened_payload_sequence_count_runtime (erp_p2p_event_outbox_length reopened_outbox) 8i64
         inl store_terminal = terminal (erp_p2p_event_store_replay reopened_store)
         inl outbox_terminal = terminal (erp_p2p_event_outbox_replay reopened_outbox)
         inl _ = store_terminal
@@ -7374,7 +7783,17 @@ inl assert_erp_p2p_four_event_atomic_payload_outbox_runtime
     (payload_equal : i64) (outbox_equal : i64) (digest_valid : i64)
     (prepared_absent : i64) (directory_sync : i64)
     (tamper_rejected : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !parse_valid <> 1L || !frame_count <> 4L || !payload_equal <> 1L || !outbox_equal <> 1L || !digest_valid <> 1L || !prepared_absent <> 1L || !directory_sync <> 0L || !tamper_rejected <> 1L || !cleanup_absent <> 1L then failwith \"erp-p2p-four-event-atomic-payload-outbox-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(parse_valid, 1i64)
+    inl ok_2 = !!!!EQ(frame_count, 4i64)
+    inl ok_3 = !!!!EQ(payload_equal, 1i64)
+    inl ok_4 = !!!!EQ(outbox_equal, 1i64)
+    inl ok_5 = !!!!EQ(digest_valid, 1i64)
+    inl ok_6 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_7 = !!!!EQ(directory_sync, 0i64)
+    inl ok_8 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_9 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "erp-p2p-four-event-atomic-payload-outbox-runtime-mismatch"
 
 inl erp_p2p_four_event_outbox_authority_runtime
     (reserve_outbox : string) (approvals_outbox : string)
@@ -7383,7 +7802,9 @@ inl erp_p2p_four_event_outbox_authority_runtime
 
 inl assert_erp_p2p_four_event_outbox_authority_runtime
     (expected : i64) (distinct : i64) : () =
-    $"if !expected <> 1L || !distinct <> 1L then failwith \"erp-p2p-four-event-outbox-authority-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(expected, 1i64)
+    inl ok_1 = !!!!EQ(distinct, 1i64)
+    if ok_0 && ok_1 then () else mega_runtime_fail "erp-p2p-four-event-outbox-authority-runtime-mismatch"
 
 inl erp_p2p_four_event_atomic_payload_outbox_terminal () : string =
     inl reserve_event = erp_p2p_unit_event_from_op (erp_p2p_reserve_budget_op ())
@@ -7421,7 +7842,14 @@ inl assert_erp_p2p_stage_sequence_codec_runtime
     (frame_count : i64) (store_valid : i64) (outbox_valid : i64)
     (same : i64) (roundtrip : i64) (tamper_rejected : i64)
     (digest_bytes : i64) : () =
-    $"if !frame_count <> 4L || !store_valid <> 1L || !outbox_valid <> 1L || !same <> 1L || !roundtrip <> 1L || !tamper_rejected <> 1L || !digest_bytes <> 32L then failwith \"erp-p2p-stage-sequence-codec-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(frame_count, 4i64)
+    inl ok_1 = !!!!EQ(store_valid, 1i64)
+    inl ok_2 = !!!!EQ(outbox_valid, 1i64)
+    inl ok_3 = !!!!EQ(same, 1i64)
+    inl ok_4 = !!!!EQ(roundtrip, 1i64)
+    inl ok_5 = !!!!EQ(tamper_rejected, 1i64)
+    inl ok_6 = !!!!EQ(digest_bytes, 32i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "erp-p2p-stage-sequence-codec-runtime-mismatch"
 
 inl erp_p2p_four_event_stage_sequence_codec_terminal () : string =
     inl store, outbox = erp_p2p_four_event_commit ()
@@ -7445,7 +7873,13 @@ inl erp_p2p_unit_physical_commit_runtime forall from to.
 inl assert_erp_p2p_unit_physical_commit_runtime
     (bytes : i64) (recovered_equal : i64) (prepared_absent : i64)
     (payload_bound : i64) (directory_sync : i64) (committed_absent : i64) : () =
-    $"if !bytes <= 0L || !recovered_equal <> 1L || !prepared_absent <> 1L || !payload_bound <> 1L || !directory_sync <> 0L || !committed_absent <> 1L then failwith \"erp-p2p-unit-physical-commit-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(recovered_equal, 1i64)
+    inl ok_2 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_3 = !!!!EQ(payload_bound, 1i64)
+    inl ok_4 = !!!!EQ(directory_sync, 0i64)
+    inl ok_5 = !!!!EQ(committed_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 then () else mega_runtime_fail "erp-p2p-unit-physical-commit-runtime-mismatch"
 
 inl erp_p2p_unit_physical_recovery_runtime forall from to.
     (event : erp_p2p_unit_event from to) : i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
@@ -7460,7 +7894,17 @@ inl assert_erp_p2p_unit_physical_recovery_runtime
     (before_committed_present : i64) (before_directory_sync : i64) (after_equal : i64)
     (after_prepared_absent : i64) (after_committed_present : i64) (after_directory_sync : i64)
     (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !before_equal <> 1L || !before_prepared_absent <> 1L || !before_committed_present <> 1L || !before_directory_sync <> 0L || !after_equal <> 1L || !after_prepared_absent <> 1L || !after_committed_present <> 1L || !after_directory_sync <> 0L || !cleanup_absent <> 1L then failwith \"erp-p2p-unit-physical-recovery-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(before_equal, 1i64)
+    inl ok_2 = !!!!EQ(before_prepared_absent, 1i64)
+    inl ok_3 = !!!!EQ(before_committed_present, 1i64)
+    inl ok_4 = !!!!EQ(before_directory_sync, 0i64)
+    inl ok_5 = !!!!EQ(after_equal, 1i64)
+    inl ok_6 = !!!!EQ(after_prepared_absent, 1i64)
+    inl ok_7 = !!!!EQ(after_committed_present, 1i64)
+    inl ok_8 = !!!!EQ(after_directory_sync, 0i64)
+    inl ok_9 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "erp-p2p-unit-physical-recovery-runtime-mismatch"
 
 inl assert_erp_p2p_reserve_budget_runtime (store_stage : string) (outbox_stage : string) : () =
     $"if !store_stage <> \"budget-reserved\" then failwith \"erp-p2p-reserve-budget-store-runtime-mismatch\"\nif !outbox_stage <> \"budget-reserved\" then failwith \"erp-p2p-reserve-budget-outbox-runtime-mismatch\""
@@ -7508,7 +7952,19 @@ inl assert_erp_p2p_recursive_atomic_payload_outbox_recovery_runtime
     (before_sync : i64) (after_prepared_absent : i64)
     (after_new_recovered : i64) (after_envelope_valid : i64)
     (after_frame_count : i64) (after_sync : i64) (cleanup_absent : i64) : () =
-    $"if !reopened_frame_bound <> 1L || !count_bound <> 1L || !before_prepared_present <> 1L || !before_old_preserved <> 1L || !before_prepared_removed <> 1L || !before_sync <> 0L || !after_prepared_absent <> 1L || !after_new_recovered <> 1L || !after_envelope_valid <> 1L || !after_frame_count <> !expected_version || !after_sync <> 0L || !cleanup_absent <> 1L then failwith \"erp-p2p-recursive-atomic-payload-outbox-recovery-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(reopened_frame_bound, 1i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(before_prepared_present, 1i64)
+    inl ok_3 = !!!!EQ(before_old_preserved, 1i64)
+    inl ok_4 = !!!!EQ(before_prepared_removed, 1i64)
+    inl ok_5 = !!!!EQ(before_sync, 0i64)
+    inl ok_6 = !!!!EQ(after_prepared_absent, 1i64)
+    inl ok_7 = !!!!EQ(after_new_recovered, 1i64)
+    inl ok_8 = !!!!EQ(after_envelope_valid, 1i64)
+    inl ok_9 = !!!!EQ(after_frame_count, expected_version)
+    inl ok_10 = !!!!EQ(after_sync, 0i64)
+    inl ok_11 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 then () else mega_runtime_fail "erp-p2p-recursive-atomic-payload-outbox-recovery-runtime-mismatch"
 
 nominal erp_p2p_recursive_recovery_receipt version from to =
     runtime_money_nat version * erp_p2p_reopened_recovery_authority version from to * string
@@ -7615,7 +8071,21 @@ inl assert_erp_p2p_recursive_external_crash_recovery_runtime
     (after_ready : i64) (after_killed : i64)
     (after_new_recovered : i64) (after_envelope_valid : i64)
     (after_frame_count : i64) (after_sync : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !count_bound <> 1L || !before_ready <> 1L || !before_killed <> 1L || !before_old_preserved <> 1L || !before_prepared_removed <> 1L || !before_sync <> 0L || !after_ready <> 1L || !after_killed <> 1L || !after_new_recovered <> 1L || !after_envelope_valid <> 1L || !after_frame_count <> 4L || !after_sync <> 0L || !cleanup_absent <> 1L then failwith \"erp-p2p-recursive-external-crash-recovery-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(before_ready, 1i64)
+    inl ok_3 = !!!!EQ(before_killed, 1i64)
+    inl ok_4 = !!!!EQ(before_old_preserved, 1i64)
+    inl ok_5 = !!!!EQ(before_prepared_removed, 1i64)
+    inl ok_6 = !!!!EQ(before_sync, 0i64)
+    inl ok_7 = !!!!EQ(after_ready, 1i64)
+    inl ok_8 = !!!!EQ(after_killed, 1i64)
+    inl ok_9 = !!!!EQ(after_new_recovered, 1i64)
+    inl ok_10 = !!!!EQ(after_envelope_valid, 1i64)
+    inl ok_11 = !!!!EQ(after_frame_count, 4i64)
+    inl ok_12 = !!!!EQ(after_sync, 0i64)
+    inl ok_13 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 then () else mega_runtime_fail "erp-p2p-recursive-external-crash-recovery-runtime-mismatch"
 
 nominal erp_p2p_external_crash_recovery_receipt version from to =
     runtime_money_nat version *
@@ -7681,7 +8151,23 @@ inl assert_erp_p2p_recursive_wal_recovery_runtime
     (committed_wal_seen : i64) (committed_digest_bound : i64)
     (committed_new_recovered : i64) (committed_envelope_valid : i64)
     (frame_count : i64) (committed_wal_cleared : i64) (cleanup_absent : i64) : () =
-    $"if !bytes <= 0L || !count_bound <> 1L || !prepared_wal_seen <> 1L || !prepared_digest_bound <> 1L || !prepared_candidate_removed <> 1L || !prepared_old_preserved <> 1L || !prepared_wal_cleared <> 1L || !prepared_sync <> 0L || !prepared_recovery_sync <> 0L || !committed_wal_seen <> 1L || !committed_digest_bound <> 1L || !committed_new_recovered <> 1L || !committed_envelope_valid <> 1L || !frame_count <> 4L || !committed_wal_cleared <> 1L || !cleanup_absent <> 1L then failwith \"erp-p2p-recursive-wal-recovery-runtime-mismatch\""
+    inl ok_0 = !!!!GT(bytes, 0i64)
+    inl ok_1 = !!!!EQ(count_bound, 1i64)
+    inl ok_2 = !!!!EQ(prepared_wal_seen, 1i64)
+    inl ok_3 = !!!!EQ(prepared_digest_bound, 1i64)
+    inl ok_4 = !!!!EQ(prepared_candidate_removed, 1i64)
+    inl ok_5 = !!!!EQ(prepared_old_preserved, 1i64)
+    inl ok_6 = !!!!EQ(prepared_wal_cleared, 1i64)
+    inl ok_7 = !!!!EQ(prepared_sync, 0i64)
+    inl ok_8 = !!!!EQ(prepared_recovery_sync, 0i64)
+    inl ok_9 = !!!!EQ(committed_wal_seen, 1i64)
+    inl ok_10 = !!!!EQ(committed_digest_bound, 1i64)
+    inl ok_11 = !!!!EQ(committed_new_recovered, 1i64)
+    inl ok_12 = !!!!EQ(committed_envelope_valid, 1i64)
+    inl ok_13 = !!!!EQ(frame_count, 4i64)
+    inl ok_14 = !!!!EQ(committed_wal_cleared, 1i64)
+    inl ok_15 = !!!!EQ(cleanup_absent, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 && ok_10 && ok_11 && ok_12 && ok_13 && ok_14 && ok_15 then () else mega_runtime_fail "erp-p2p-recursive-wal-recovery-runtime-mismatch"
 
 nominal erp_p2p_recursive_wal_recovery_receipt version from to =
     runtime_money_nat version *
@@ -7732,7 +8218,16 @@ inl assert_erp_p2p_recoverable_fenced_lock_runtime
     (child_ready : i64) (owner_killed : i64) (lease_expired : i64)
     (fence_advanced : i64) (stale_rejected : i64) (new_accepted : i64)
     (owner_b_installed : i64) (committed_fence_two : i64) (cleanup_synced : i64) : () =
-    $"if !child_ready <> 1L || !owner_killed <> 1L || !lease_expired <> 1L || !fence_advanced <> 1L || !stale_rejected <> 1L || !new_accepted <> 1L || !owner_b_installed <> 1L || !committed_fence_two <> 1L || !cleanup_synced <> 1L then failwith \"erp-p2p-recoverable-fenced-lock-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(child_ready, 1i64)
+    inl ok_1 = !!!!EQ(owner_killed, 1i64)
+    inl ok_2 = !!!!EQ(lease_expired, 1i64)
+    inl ok_3 = !!!!EQ(fence_advanced, 1i64)
+    inl ok_4 = !!!!EQ(stale_rejected, 1i64)
+    inl ok_5 = !!!!EQ(new_accepted, 1i64)
+    inl ok_6 = !!!!EQ(owner_b_installed, 1i64)
+    inl ok_7 = !!!!EQ(committed_fence_two, 1i64)
+    inl ok_8 = !!!!EQ(cleanup_synced, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 then () else mega_runtime_fail "erp-p2p-recoverable-fenced-lock-runtime-mismatch"
 
 inl erp_p2p_physical_owner_sequence_count (physical_owner_sequence : string) : i64 =
     $"(let parts = !physical_owner_sequence.Split([|'|'|], System.StringSplitOptions.RemoveEmptyEntries) in int64 parts.Length)"
@@ -7741,7 +8236,8 @@ inl erp_p2p_physical_owner_sequence_at (physical_owner_sequence : string) (index
     $"(let parts = !physical_owner_sequence.Split([|'|'|], System.StringSplitOptions.RemoveEmptyEntries) in let i = int !index in if i < 0 || i >= parts.Length then failwith \"erp-p2p-physical-owner-sequence-index-out-of-range\" else parts.[i])"
 
 inl assert_erp_p2p_physical_owner_sequence_cardinality (physical_owner_count : i64) (physical_fence : i64) : () =
-    $"if !physical_owner_count <> !physical_fence then failwith \"erp-p2p-physical-owner-sequence-cardinality-fence-mismatch\""
+    inl ok_0 = !!!!EQ(physical_owner_count, physical_fence)
+    if ok_0 then () else mega_runtime_fail "erp-p2p-physical-owner-sequence-cardinality-fence-mismatch"
 
 nominal erp_p2p_fence_owner fence = string
 
@@ -7910,7 +8406,15 @@ inl assert_erp_p2p_cross_process_takeover_program_runtime
     (process_count_bound : i64) (final_owner_match : i64)
     (final_fence_match : i64) (stale_rejected : i64)
     (current_accepted : i64) (cleanup : i64) : () =
-    $"if !completed_count <= 0L || !all_children <> 1L || !process_count_bound <> 1L || !final_owner_match <> 1L || !final_fence_match <> 1L || !stale_rejected <> 1L || !current_accepted <> 1L || !cleanup <> 1L then failwith \"erp-p2p-cross-process-takeover-program-runtime-mismatch\""
+    inl ok_0 = !!!!GT(completed_count, 0i64)
+    inl ok_1 = !!!!EQ(all_children, 1i64)
+    inl ok_2 = !!!!EQ(process_count_bound, 1i64)
+    inl ok_3 = !!!!EQ(final_owner_match, 1i64)
+    inl ok_4 = !!!!EQ(final_fence_match, 1i64)
+    inl ok_5 = !!!!EQ(stale_rejected, 1i64)
+    inl ok_6 = !!!!EQ(current_accepted, 1i64)
+    inl ok_7 = !!!!EQ(cleanup, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "erp-p2p-cross-process-takeover-program-runtime-mismatch"
 
 union erp_p2p_cross_process_takeover_execution from to =
     | ErpP2PCrossProcessTakeoverExecution :: forall from to.
@@ -7951,7 +8455,15 @@ inl assert_erp_p2p_cross_process_fence_restart_runtime
     (completed : i64) (child_exit : i64) (child_reopened_before : i64)
     (child_derived_after : i64) (persisted_after : i64)
     (stale_rejected : i64) (current_accepted : i64) (cleanup : i64) : () =
-    $"if !completed <> 1L || !child_exit <> 0L || !child_reopened_before <> 1L || !child_derived_after <> 1L || !persisted_after <> 1L || !stale_rejected <> 1L || !current_accepted <> 1L || !cleanup <> 1L then failwith \"erp-p2p-cross-process-fence-restart-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(completed, 1i64)
+    inl ok_1 = !!!!EQ(child_exit, 0i64)
+    inl ok_2 = !!!!EQ(child_reopened_before, 1i64)
+    inl ok_3 = !!!!EQ(child_derived_after, 1i64)
+    inl ok_4 = !!!!EQ(persisted_after, 1i64)
+    inl ok_5 = !!!!EQ(stale_rejected, 1i64)
+    inl ok_6 = !!!!EQ(current_accepted, 1i64)
+    inl ok_7 = !!!!EQ(cleanup, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 then () else mega_runtime_fail "erp-p2p-cross-process-fence-restart-runtime-mismatch"
 
 union erp_p2p_cross_process_fence_restart_receipt before after =
     | ErpP2PCrossProcessFenceRestart :: forall before.
@@ -8046,14 +8558,16 @@ inl rec erp_p2p_physical_owner_lineage_matches_history forall fence.
     match physical_lineage, history with
     | ErpP2PPhysicalOwnerLineageGenesis physical_owner,
       ErpP2PFenceGenesis (history_owner, _) =>
-        $"if !physical_owner <> !history_owner then failwith \"erp-p2p-physical-owner-lineage-genesis-mismatch\""
+        inl ok_0 = !!!!EQ(physical_owner, history_owner)
+        if ok_0 then () else mega_runtime_fail "erp-p2p-physical-owner-lineage-genesis-mismatch"
     | ErpP2PPhysicalOwnerLineageTakeover (previous_lineage, physical_owner),
       ErpP2PFenceTakeover (previous_history, history_owner, _) =>
         inl _ : () =
-            $"if !physical_owner <> !history_owner then failwith \"erp-p2p-physical-owner-lineage-takeover-mismatch\""
+            inl ok_0 = !!!!EQ(physical_owner, history_owner)
+            if ok_0 then () else mega_runtime_fail "erp-p2p-physical-owner-lineage-takeover-mismatch"
         erp_p2p_physical_owner_lineage_matches_history previous_lineage previous_history
     | _, _ =>
-        $"failwith \"erp-p2p-physical-owner-lineage-shape-mismatch\""
+        mega_runtime_fail "erp-p2p-physical-owner-lineage-shape-mismatch"
 
 nominal erp_p2p_physical_owner_lineage_history =
     exists fence. erp_p2p_fence_history fence
@@ -8111,13 +8625,16 @@ inl erp_p2p_recoverable_fenced_lock_receipt_from_snapshot_internal forall fence 
         inl expected_fence_value = runtime_money_nat_to_i64 (erp_p2p_fence_history_value history)
         inl expected_owner_text = erp_p2p_fence_history_owner history
         inl _ : () =
-            $"if !physical_owner <> !expected_owner_text || !physical_fence <> !expected_fence_value then failwith \"erp-p2p-recoverable-fenced-lock-snapshot-history-mismatch\""
+            inl ok_0 = !!!!EQ(physical_owner, expected_owner_text)
+            inl ok_1 = !!!!EQ(physical_fence, expected_fence_value)
+            if ok_0 && ok_1 then () else mega_runtime_fail "erp-p2p-recoverable-fenced-lock-snapshot-history-mismatch"
         inl _ : () =
             match history with
             | ErpP2PFenceGenesis _ => ()
             | ErpP2PFenceTakeover (previous_history, _, _) =>
                 inl expected_previous_owner = erp_p2p_fence_history_owner previous_history
-                $"if !physical_previous_owner <> !expected_previous_owner then failwith \"erp-p2p-recoverable-fenced-lock-snapshot-previous-owner-mismatch\""
+                inl ok_0 = !!!!EQ(physical_previous_owner, expected_previous_owner)
+                if ok_0 then () else mega_runtime_fail "erp-p2p-recoverable-fenced-lock-snapshot-previous-owner-mismatch"
         erp_p2p_recoverable_fenced_lock_receipt (
             erp_p2p_fence_owner physical_owner,
             store,
@@ -8136,14 +8653,16 @@ inl erp_p2p_physical_fence_history_selection_from_snapshot
     | erp_p2p_physical_fence_observation_snapshot (physical_fence, physical_lineage, physical_owner_sequence) =>
         inl lineage_owner_sequence = erp_p2p_physical_owner_lineage_sequence physical_lineage
         inl _ : () =
-            $"if !physical_owner_sequence <> !lineage_owner_sequence then failwith \"erp-p2p-physical-owner-sequence-lineage-mismatch\""
+            inl ok_0 = !!!!EQ(physical_owner_sequence, lineage_owner_sequence)
+            if ok_0 then () else mega_runtime_fail "erp-p2p-physical-owner-sequence-lineage-mismatch"
         match erp_p2p_physical_owner_lineage_history_make physical_lineage with
         | erp_p2p_physical_owner_lineage_history payload =>
             inl exists fence. history = payload
             inl expected_fence =
                 runtime_money_nat_to_i64 (erp_p2p_fence_history_value history)
             inl _ : () =
-                $"if !physical_fence <> !expected_fence then failwith \"erp-p2p-physical-lineage-selected-fence-mismatch\""
+                inl ok_0 = !!!!EQ(physical_fence, expected_fence)
+                if ok_0 then () else mega_runtime_fail "erp-p2p-physical-lineage-selected-fence-mismatch"
             erp_p2p_physical_fence_history_selection (exists (
                 snapshot,
                 history,
@@ -8401,7 +8920,14 @@ inl assert_erp_p2p_multiprocess_fenced_physical_append_runtime
     (stale_rejected : i64) (stale_created_nothing : i64)
     (current_accepted : i64) (reopened_equal : i64)
     (digest_valid : i64) (prepared_absent : i64) (cleanup : i64) : () =
-    $"if !stale_rejected <> 1L || !stale_created_nothing <> 1L || !current_accepted <> 1L || !reopened_equal <> 1L || !digest_valid <> 1L || !prepared_absent <> 1L || !cleanup <> 1L then failwith \"erp-p2p-multiprocess-fenced-physical-append-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(stale_rejected, 1i64)
+    inl ok_1 = !!!!EQ(stale_created_nothing, 1i64)
+    inl ok_2 = !!!!EQ(current_accepted, 1i64)
+    inl ok_3 = !!!!EQ(reopened_equal, 1i64)
+    inl ok_4 = !!!!EQ(digest_valid, 1i64)
+    inl ok_5 = !!!!EQ(prepared_absent, 1i64)
+    inl ok_6 = !!!!EQ(cleanup, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 then () else mega_runtime_fail "erp-p2p-multiprocess-fenced-physical-append-runtime-mismatch"
 
 union erp_p2p_multiprocess_fenced_physical_append_receipt from to version state_from state_to =
     | ErpP2PMultiprocessFencedPhysicalAppend :: forall from to version state_from state_to.
@@ -8607,7 +9133,17 @@ inl assert_erp_p2p_atomic_successor_wal_crash_cutpoint_runtime
     (before_wal : i64) (wal_process_killed : i64) (after_wal : i64)
     (rename_process_killed : i64) (after_rename : i64) (stale_preferred : i64)
     (payload_match : i64) (digest_match : i64) (no_wal : i64) (cleanup : i64) : () =
-    $"if !before_wal <> 0L || !wal_process_killed <> 1L || !after_wal <> 1L || !rename_process_killed <> 1L || !after_rename <> 2L || !stale_preferred <> 2L || !payload_match <> 1L || !digest_match <> 1L || !no_wal <> 1L || !cleanup <> 1L then failwith \"erp-p2p-atomic-successor-WAL-crash-cutpoint-runtime-mismatch\""
+    inl ok_0 = !!!!EQ(before_wal, 0i64)
+    inl ok_1 = !!!!EQ(wal_process_killed, 1i64)
+    inl ok_2 = !!!!EQ(after_wal, 1i64)
+    inl ok_3 = !!!!EQ(rename_process_killed, 1i64)
+    inl ok_4 = !!!!EQ(after_rename, 2i64)
+    inl ok_5 = !!!!EQ(stale_preferred, 2i64)
+    inl ok_6 = !!!!EQ(payload_match, 1i64)
+    inl ok_7 = !!!!EQ(digest_match, 1i64)
+    inl ok_8 = !!!!EQ(no_wal, 1i64)
+    inl ok_9 = !!!!EQ(cleanup, 1i64)
+    if ok_0 && ok_1 && ok_2 && ok_3 && ok_4 && ok_5 && ok_6 && ok_7 && ok_8 && ok_9 then () else mega_runtime_fail "erp-p2p-atomic-successor-WAL-crash-cutpoint-runtime-mismatch"
 
 union erp_p2p_atomic_successor_wal_recovery_receipt version from to =
     | ErpP2PAtomicSuccessorWalRecovery :: forall version from to.

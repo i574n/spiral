@@ -211,10 +211,10 @@ defmodule Spiral.Kino.DocumentTest do
 
     notebooks =
       Enum.map(
-        ["lib/dice.dib", "contract/dice_contract.dib", "lib/fsharp/dice_fsharp.dib"],
+        ["lib/dice.livemd", "contract/dice_contract.livemd", "lib/fsharp/dice_fsharp.livemd"],
         &Path.join(@dice, &1)
       ) ++
-        Enum.map(["documents/documents.dib", "hangul/hangul.dib"], &Path.join(alphabet, &1))
+        Enum.map(["documents/documents.livemd", "hangul/hangul.livemd"], &Path.join(alphabet, &1))
 
     # A missing exe must not pass vacuously: the comparison is this test's whole point.
     cond do
@@ -241,26 +241,18 @@ defmodule Spiral.Kino.DocumentTest do
 
     File.mkdir_p!(tmp)
 
+    # The notebooks are .livemd only; the native CLI still reads the .dib format, so each one goes to it as the .dib
+    # Document.to_dib renders (the same route Kino's F# export takes).
     try do
       for path <- notebooks do
-        if File.regular?(path) do
-          copy = Path.join(tmp, Path.basename(path))
-          File.cp!(path, copy)
-          {out, status} = System.cmd(exe, ["dib-export", copy, "spi"], stderr_to_stdout: true)
-          assert status == 0, out
-          expected = File.read!(Path.rootname(copy) <> ".spi")
-          assert Document.to_spi(Document.parse_dib(File.read!(path))) == expected, path
-
-          livemd = Path.rootname(path) <> ".livemd"
-
-          if File.regular?(livemd) do
-            assert Document.to_spi(Document.parse_livemd(File.read!(livemd))) == expected, livemd
-          else
-            skipped("#{livemd} is missing")
-          end
-        else
-          skipped("#{path} is missing")
-        end
+        assert File.regular?(path), "#{path} is missing"
+        doc = Document.parse_livemd(File.read!(path))
+        copy = Path.join(tmp, Path.basename(path, ".livemd") <> ".dib")
+        File.write!(copy, Document.to_dib(doc))
+        {out, status} = System.cmd(exe, ["dib-export", copy, "spi"], stderr_to_stdout: true)
+        assert status == 0, out
+        expected = File.read!(Path.rootname(copy) <> ".spi")
+        assert Document.to_spi(doc) == expected, path
       end
     after
       File.rm_rf!(tmp)
@@ -269,9 +261,34 @@ defmodule Spiral.Kino.DocumentTest do
 
   defp exe_suffix, do: if(match?({:win32, _}, :os.type()), do: ".exe", else: "")
 
-  # The dice and alphabet notebooks live in sibling repos; their .livemd files may not be committed yet. A missing file
-  # skips that check with a note on stderr instead of crashing the suite.
   defp skipped(what), do: IO.puts(:stderr, "document_test: skipped check, #{what}")
+
+  # A notebook's .livemd is the source of truth (the .dib files are gone): it must read back to the same text, keep its
+  # cells through the .dib rendering the native CLI reads, and export the committed .spi.
+  defp assert_livemd_round_trip(path, check_spi \\ true) do
+    assert File.regular?(path),
+           "#{path} is missing (dice and alphabet are checked out next to spiral)"
+
+    text = File.read!(path)
+    doc = Document.parse_livemd(text)
+
+    assert Document.to_livemd(doc) == text, path
+
+    again = doc |> Document.to_livemd() |> Document.parse_livemd()
+    assert cells(again) == cells(doc), path
+
+    via_dib = doc |> Document.to_dib() |> Document.parse_dib()
+    assert spiral_sources(via_dib) == spiral_sources(doc), path
+    assert fsharp_sources(via_dib) == fsharp_sources(doc), path
+    assert Document.to_spi(via_dib) == Document.to_spi(doc), path
+
+    spi = Path.rootname(path) <> ".spi"
+    if check_spi and File.regular?(spi), do: assert(Document.to_spi(doc) == File.read!(spi), spi)
+
+    doc
+  end
+
+  defp cells(doc), do: Enum.map(doc.cells, &Map.take(&1, [:kind, :source]))
 
   test "adjacent markdown and import cells round-trip through livemd" do
     doc =
@@ -306,85 +323,84 @@ defmodule Spiral.Kino.DocumentTest do
              Enum.map(doc.cells, &Map.take(&1, [:kind, :source]))
   end
 
+  test "a cell source with trailing newlines renders like the one without (the .livemd round-trips)" do
+    doc = %{
+      cells: [
+        %{kind: :markdown, source: "# t\n\n"},
+        %{kind: :spiral, source: "inl x () = 1i32\n\n"}
+      ]
+    }
+
+    text = Document.to_livemd(doc)
+
+    assert text ==
+             Document.to_livemd(%{
+               cells: [
+                 %{kind: :markdown, source: "# t"},
+                 %{kind: :spiral, source: "inl x () = 1i32"}
+               ]
+             })
+
+    assert Document.to_livemd(Document.parse_livemd(text)) == text
+  end
+
   test "alphabet notebooks round-trip through livemd" do
     alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
 
-    for rel <- ["documents/documents.dib", "hangul/hangul.dib"] do
-      path = Path.join(alphabet, rel)
-      livemd_path = Path.rootname(path) <> ".livemd"
-
-      cond do
-        not File.regular?(path) ->
-          skipped("#{path} is missing")
-
-        not File.regular?(livemd_path) ->
-          skipped("#{livemd_path} is missing")
-
-        true ->
-          doc = Document.parse_dib(File.read!(path))
-          livemd = Document.parse_livemd(File.read!(livemd_path))
-
-          assert Enum.map(livemd.cells, &Map.take(&1, [:kind, :source])) ==
-                   Enum.map(doc.cells, &Map.take(&1, [:kind, :source]))
-
-          assert Document.to_spi(doc) == Document.to_spi(livemd)
-      end
+    for rel <- ["documents/documents.livemd", "hangul/hangul.livemd"] do
+      assert_livemd_round_trip(Path.join(alphabet, rel))
     end
   end
 
+  test "the spiral library notebooks round-trip through livemd and export their committed .spi" do
+    lib = Path.expand("../../../../lib/spiral", __DIR__)
+    notebooks = Path.wildcard(Path.join(lib, "**/*.livemd"))
+    assert length(notebooks) >= 39, "#{lib} has #{length(notebooks)} notebooks"
+
+    for path <- notebooks do
+      doc = assert_livemd_round_trip(path, false)
+      assert File.regular?(Path.rootname(path) <> ".spi"), path
+
+      if Path.basename(path) == "sm'.livemd" do
+        assert Document.to_spir(doc) == File.read!(Path.join(lib, "sm'_real.spir"))
+      end
+    end
+
+    # every pair whose committed .spi is not the .livemd's export (an edit synced to one side only), named at once
+    stale =
+      for path <- notebooks,
+          spi = Path.rootname(path) <> ".spi",
+          Document.to_spi(Document.parse_livemd(File.read!(path))) != File.read!(spi),
+          do: Path.relative_to(spi, lib)
+
+    assert stale == [], "these .spi differ from their .livemd's export: #{Enum.join(stale, ", ")}"
+  end
+
   test "dice notebooks round-trip through livemd" do
-    unless File.regular?(Path.join(@dice, "lib/dice.dib")) do
-      flunk("dice checkout is not next to spiral")
-    end
+    dice = assert_livemd_round_trip(Path.join(@dice, "lib/dice.livemd"))
+    contract = assert_livemd_round_trip(Path.join(@dice, "contract/dice_contract.livemd"))
+    fsharp = assert_livemd_round_trip(Path.join(@dice, "lib/fsharp/dice_fsharp.livemd"))
 
-    for rel <- ["lib/dice.dib", "contract/dice_contract.dib", "lib/fsharp/dice_fsharp.dib"] do
-      path = Path.join(@dice, rel)
-      doc = Document.parse_dib(File.read!(path))
-      again = doc |> Document.to_livemd() |> Document.parse_livemd()
+    assert File.regular?(Path.join(@dice, "lib/dice.spi"))
+    assert File.regular?(Path.join(@dice, "contract/dice_contract.spi"))
+    assert fsharp_sources(fsharp) != []
 
-      assert spiral_sources(doc) == spiral_sources(again)
-      assert fsharp_sources(doc) == fsharp_sources(again)
+    spi = Document.to_spi(dice)
+    assert spi =~ "/// # dice (Dice)"
+    assert spi =~ "inl sixth_power_sequence () ="
+    assert spi =~ "inl main (_args : array_base string) ="
+    refute spi =~ "_assert_eq"
+    refute spi =~ "open testing"
 
-      livemd_path = Path.rootname(path) <> ".livemd"
+    spi = Document.to_spi(contract)
+    assert spi =~ "///- --package ../dice"
+    assert spi =~ "lib.dice.rotate_numbers 6"
+    refute spi =~ "_assert_eq"
+    refute spi =~ "///> rust"
 
-      livemd =
-        if File.regular?(livemd_path) do
-          livemd = Document.parse_livemd(File.read!(livemd_path))
-          assert spiral_sources(doc) == spiral_sources(livemd)
-          assert fsharp_sources(doc) == fsharp_sources(livemd)
-          livemd
-        else
-          skipped("#{livemd_path} is missing")
-          nil
-        end
-
-      if String.ends_with?(rel, "dice.dib") or String.ends_with?(rel, "dice_contract.dib") do
-        spi = Document.to_spi(doc)
-        if livemd, do: assert(spi == Document.to_spi(livemd))
-        assert spi == File.read!(Path.rootname(path) <> ".spi")
-      end
-
-      if String.ends_with?(rel, "dice.dib") do
-        spi = Document.to_spi(doc)
-        assert spi =~ "/// # dice (Dice)"
-        assert spi =~ "inl sixth_power_sequence () ="
-        assert spi =~ "inl main (_args : array_base string) ="
-        refute spi =~ "_assert_eq"
-        refute spi =~ "open testing"
-      end
-
-      if String.ends_with?(rel, "dice_contract.dib") do
-        spi = Document.to_spi(doc)
-        assert spi =~ "///- --package ../dice"
-        assert spi =~ "lib.dice.rotate_numbers 6"
-        refute spi =~ "_assert_eq"
-        refute spi =~ "///> rust"
-
-        # The `///> _` (skip) directive survives the export; the main cell's body is the contract's own business.
-        assert spi =~ "/// ### main\n///> _\n"
-        assert spi =~ ~r/^inl main \(\) =/m
-      end
-    end
+    # The `///> _` (skip) directive survives the export; the main cell's body is the contract's own business.
+    assert spi =~ "/// ### main\n///> _\n"
+    assert spi =~ ~r/^inl main \(\) =/m
   end
 
   defp spiral_sources(doc) do

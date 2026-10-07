@@ -1,9 +1,9 @@
-inl impossible_four_owner_lineage_cannot_force_nat_two () :
-    erp_p2p_fence_history nat_two =
+// the history made from a four-owner physical lineage is existential and cannot be forced to fence two (lane H 2026-10-06 rewrite; retired erp_p2p_physical_owner_lineage_from_takeover_program -> lineage constructors)
+open main
+
+inl impossible_four_owner_lineage_cannot_force_nat_two () : erp_p2p_fence_history nat_two =
     inl physical_lineage =
-        erp_p2p_physical_owner_lineage_from_takeover_program
-            "owner-a"
-            (erp_p2p_three_takeover_program ())
+        ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageTakeover (ErpP2PPhysicalOwnerLineageGenesis "owner-a", "owner-b"), "owner-c"), "owner-d")
     match erp_p2p_physical_owner_lineage_history_make physical_lineage with
     | erp_p2p_physical_owner_lineage_history payload =>
         inl exists fence. history = payload

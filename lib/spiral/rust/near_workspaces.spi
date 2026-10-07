@@ -7,85 +7,109 @@ open rust.rust_operators
 /// ### near_token_workspaces
 nominal near_token_workspaces =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::types::NearToken\")>]\n#endif\ntype near_workspaces_types_NearToken = class end"
-        $'' : $'near_workspaces_types_NearToken'
+        native_type
+            `($'near_workspaces_types_NearToken')
+            `($'near_workspaces::types::NearToken')
+            "type near_workspaces_types_NearToken = class end"
     )
 
 /// ### gas
 nominal gas =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::types::Gas\")>]\n#endif\ntype near_workspaces_types_Gas = class end"
-        $'' : $'near_workspaces_types_Gas'
+        native_type
+            `($'near_workspaces_types_Gas')
+            `($'near_workspaces::types::Gas')
+            "type near_workspaces_types_Gas = class end"
     )
 
 /// ### near_workspaces_error
 nominal near_workspaces_error =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::error::Error\")>]\n#endif\ntype near_workspaces_error_Error = class end"
-        $'' : $'near_workspaces_error_Error'
+        native_type
+            `($'near_workspaces_error_Error')
+            `($'near_workspaces::error::Error')
+            "type near_workspaces_error_Error = class end"
     )
 
 /// ### sandbox
 nominal sandbox =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::network::Sandbox\")>]\n#endif\ntype near_workspaces_network_Sandbox = class end"
-        $'' : $'near_workspaces_network_Sandbox'
+        native_type
+            `($'near_workspaces_network_Sandbox')
+            `($'near_workspaces::network::Sandbox')
+            "type near_workspaces_network_Sandbox = class end"
     )
 
 /// ### worker
 nominal worker t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::Worker<$0>\")>]\n#endif\ntype near_workspaces_Worker<'T> = class end"
-        $'' : $'near_workspaces_Worker<`t>'
+        native_type
+            `($'near_workspaces_Worker<`t>')
+            `($'near_workspaces::Worker<`t>')
+            "type near_workspaces_Worker<'T> = class end"
     )
 
 /// ### contract
 nominal contract =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::Contract\")>]\n#endif\ntype near_workspaces_Contract = class end"
-        $'' : $'near_workspaces_Contract'
+        native_type
+            `($'near_workspaces_Contract')
+            `($'near_workspaces::Contract')
+            "type near_workspaces_Contract = class end"
     )
 
 /// ### call_transaction
 nominal call_transaction =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::operations::CallTransaction\")>]\n#endif\ntype near_workspaces_operations_CallTransaction = class end"
-        $'' : $'near_workspaces_operations_CallTransaction'
+        native_type
+            `($'near_workspaces_operations_CallTransaction')
+            `($'near_workspaces::operations::CallTransaction')
+            "type near_workspaces_operations_CallTransaction = class end"
     )
 
 /// ### execution_final_result
 nominal execution_final_result =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::result::ExecutionFinalResult\")>]\n#endif\ntype near_workspaces_result_ExecutionFinalResult = class end"
-        $'' : $'near_workspaces_result_ExecutionFinalResult'
+        native_type
+            `($'near_workspaces_result_ExecutionFinalResult')
+            `($'near_workspaces::result::ExecutionFinalResult')
+            "type near_workspaces_result_ExecutionFinalResult = class end"
     )
 
 /// ### execution_result
 nominal execution_result t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::result::ExecutionResult<$0>\")>]\n#endif\ntype near_workspaces_result_ExecutionResult<'T> = class end"
-        $'' : $'near_workspaces_result_ExecutionResult<`t>'
+        native_type
+            `($'near_workspaces_result_ExecutionResult<`t>')
+            `($'near_workspaces::result::ExecutionResult<`t>')
+            "type near_workspaces_result_ExecutionResult<'T> = class end"
     )
 
 /// ### execution_success
 nominal execution_success =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::result::ExecutionSuccess\")>]\n#endif\ntype near_workspaces_result_ExecutionSuccess = class end"
-        $'' : $'near_workspaces_result_ExecutionSuccess'
+        native_type
+            `($'near_workspaces_result_ExecutionSuccess')
+            `($'near_workspaces::result::ExecutionSuccess')
+            "type near_workspaces_result_ExecutionSuccess = class end"
     )
 
 /// ### execution_failure
 nominal execution_failure =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::result::ExecutionFailure\")>]\n#endif\ntype near_workspaces_result_ExecutionFailure = class end"
-        $'' : $'near_workspaces_result_ExecutionFailure'
+        native_type
+            `($'near_workspaces_result_ExecutionFailure')
+            `($'near_workspaces::result::ExecutionFailure')
+            "type near_workspaces_result_ExecutionFailure = class end"
     )
 
 /// ### execution_outcome
 nominal execution_outcome =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"near_workspaces::result::ExecutionOutcome\")>]\n#endif\ntype near_workspaces_result_ExecutionOutcome = class end"
-        $'' : $'near_workspaces_result_ExecutionOutcome'
+        native_type
+            `($'near_workspaces_result_ExecutionOutcome')
+            `($'near_workspaces::result::ExecutionOutcome')
+            "type near_workspaces_result_ExecutionOutcome = class end"
     )
 
 /// ### sandbox_worker
@@ -182,18 +206,7 @@ inl from_tgas
     (tgas : i32)
     : gas
     =
-    inl fable () : gas =
-        !\($'"near_workspaces::types::Gas::from_tgas(!tgas)"')
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
-        Python = fun () => fable ()
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
         // Native literals are typed (`300i32`); from_tgas takes a u64.
         Rust = fun () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
     }

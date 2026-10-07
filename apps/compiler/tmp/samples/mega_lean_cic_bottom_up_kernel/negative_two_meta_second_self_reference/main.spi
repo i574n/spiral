@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_meta_self_membership_before_solution () :
     corrected_cic_meta_solved_membership empty_ctx bool_sort
         (corrected_cic_meta_states_open empty_ctx bool_sort

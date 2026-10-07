@@ -1,6 +1,14 @@
 inl (~!\\) forall t u. ((args : t), (code : string)) : u =
     $'Fable.Core.RustInterop.emitRustExpr !args !code '
 
+// A cell's value that is not an i32 (a tuple, a record, an array: physics' plot data): shown with Rust's Debug on the
+// line the runner reads the value from; a type without Debug (Spiral's unions and records derive only Clone) shows its
+// type name instead (autoref specialization: the Debug impl wins when it exists).
+inl show_value forall t. (value : t) : () =
+    inl _ : () =
+        !\\(value, $'"{ struct SpiralKinoShow<T>(T); trait SpiralKinoDebug { fn spiral_kino_show(&self) -> String; } impl<T: std::fmt::Debug> SpiralKinoDebug for SpiralKinoShow<T> { fn spiral_kino_show(&self) -> String { format\!(\\\"{:?}\\\", self.0) } } trait SpiralKinoOther { fn spiral_kino_show(&self) -> String; } impl<T> SpiralKinoOther for &SpiralKinoShow<T> { fn spiral_kino_show(&self) -> String { String::from(std::any::type_name::<T>()) } } let text = (&SpiralKinoShow(&$0)).spiral_kino_show(); let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, format\!(\\\"SPIRAL_KINO_VALUE:{}\\\", text).as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }"')
+    ()
+
 // Any Display value, like the lib's console.write_line (alphabet's hangul writes an i32: `am'.length |> console.write_line`).
 inl write_line forall t. (text : t) : () =
     inl _ : () =

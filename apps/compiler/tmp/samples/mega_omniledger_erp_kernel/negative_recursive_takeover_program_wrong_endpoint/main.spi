@@ -1,3 +1,5 @@
+open main
+
 inl impossible_recursive_takeover_program_wrong_endpoint () :
     erp_p2p_fence_takeover_program nat_one nat_three =
     erp_p2p_three_takeover_program ()

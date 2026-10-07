@@ -71,42 +71,46 @@ let rec flags_from (src : string) (i : i32) (acc : flags) : flags =
         inl k = take_token src j
         flags_from src k (Flag (text.slice_len src j (k - j), acc))
 
-let rec read_flags (xs : flags) (packages : nb) (test : i32) (timeout : string) : nb * i32 * string =
+// test: 0 a plain cell, 1 `--test` (runs; its definitions stay in the cell), 2 `--test static` (runs and, like a plain
+// cell, its definitions reach the cells after it: the old .dib kernel committed every cell but a non-static test);
+// is_real: 1 for `--real` (real-segment code: the old kernel's <module>_real.spir).
+let rec read_flags (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string) : nb * i32 * i32 * string =
     match xs with
-    | NoFlag => packages, test, timeout
+    | NoFlag => packages, test, is_real, timeout
     | Flag ("--package", Flag (path, rest)) =>
-        if text.starts_with path "--" then read_flags rest packages test timeout
-        else read_flags rest (add_nb packages path) test timeout
-    | Flag ("--package", rest) => read_flags rest packages test timeout
-    | Flag ("--test", Flag ("static", rest)) => read_flags rest packages 1i32 timeout
-    | Flag ("--test", rest) => read_flags rest packages 1i32 timeout
+        if text.starts_with path "--" then read_flags rest packages test is_real timeout
+        else read_flags rest (add_nb packages path) test is_real timeout
+    | Flag ("--package", rest) => read_flags rest packages test is_real timeout
+    | Flag ("--test", Flag ("static", rest)) => read_flags rest packages 2i32 is_real timeout
+    | Flag ("--test", rest) => read_flags rest packages (if test = 2i32 then 2i32 else 1i32) is_real timeout
+    | Flag ("--real", rest) => read_flags rest packages test 1i32 timeout
     | Flag ("--timeout", Flag (ms, rest)) =>
         inl n = text.parse_i32 ms
         inl timeout2 = if n > 0i32 then ms else timeout
-        read_flags rest packages test timeout2
-    | Flag (_, rest) => read_flags rest packages test timeout
+        read_flags rest packages test is_real timeout2
+    | Flag (_, rest) => read_flags rest packages test is_real timeout
 
-let rec scan_lines (src : string) (i : i32) (packages : nb) (test : i32) (timeout : string) (body : nb) (opens : nb) (skip : i32) : nb * i32 * string * string * nb * i32 =
+let rec scan_lines (src : string) (i : i32) (packages : nb) (test : i32) (is_real : i32) (timeout : string) (body : nb) (opens : nb) (skip : i32) : nb * i32 * i32 * string * string * nb * i32 =
     match text.next_line src i with
-    | LineDone => packages, test, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
+    | LineDone => packages, test, is_real, timeout, text.trim_trailing_newlines (join_rev body "" 0i32), rev_nb opens NoNb, skip
     | LineGot (line, next) =>
         inl trimmed = text.trim line
         if text.starts_with trimmed "///" then
             if text.starts_with trimmed "///- " then
-                inl packages2, test2, timeout2 =
-                    read_flags (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag) packages test timeout
-                scan_lines src next packages2 test2 timeout2 body opens skip
+                inl packages2, test2, is_real2, timeout2 =
+                    read_flags (flags_from (text.drop trimmed (text.length "///- ")) 0i32 NoFlag) packages test is_real timeout
+                scan_lines src next packages2 test2 is_real2 timeout2 body opens skip
             elif text.starts_with trimmed "///>" then
                 inl rest = text.trim (text.drop trimmed (text.length "///>"))
                 inl skip2 = if rest = "_" then 1i32 else skip
-                scan_lines src next packages test timeout body opens skip2
-            else scan_lines src next packages test timeout body opens skip
+                scan_lines src next packages test is_real timeout body opens skip2
+            else scan_lines src next packages test is_real timeout body opens skip
         else
             inl opens2 = if text.starts_with trimmed "open " then Nb (trimmed, opens) else opens
-            scan_lines src next packages test timeout (Nb (line, body)) opens2 skip
+            scan_lines src next packages test is_real timeout (Nb (line, body)) opens2 skip
 
-inl scan (src : string) : nb * i32 * string * string * nb * i32 =
-    scan_lines (text.replace src "\r\n" "\n") 0i32 NoNb 0i32 "" NoNb NoNb 0i32
+inl scan (src : string) : nb * i32 * i32 * string * string * nb * i32 =
+    scan_lines (text.replace src "\r\n" "\n") 0i32 NoNb 0i32 0i32 "" NoNb NoNb 0i32
 
 let rec merge (xs : nb) (more : nb) : nb =
     match more with
@@ -131,7 +135,7 @@ inl program (packages : nb) (opens : nb) (defs : nb) (body : string) : string =
 
 union rec steps =
     | NoStep
-    | Step : i32 * string * string * steps
+    | Step : i32 * string * string * string * steps
 
 let rec read_sources (src : string) (i : i32) (n : i32) (acc : sources) : sources =
     if n <= 0i32 then acc
@@ -155,45 +159,66 @@ inl load_sources (src : string) : sources =
     | LineDone => NoSource
     | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
 
-let rec walk (xs : sources) (index : i32) (packages : nb) (opens : nb) (defs : nb) (acc : steps) : steps =
+// A `--real` cell is real-segment code: like the old kernel, it runs as the real module (the real cells before it, then
+// itself; a trailing expression becomes `spiral_kino_real`, which the top-down main calls) and the real cells (not
+// tests) reach every later cell as that module (`main_real`, listed before `main`).
+inl real_entry () : string = "spiral_kino_real"
+
+inl real_program (packages : nb) (reals : nb) (body : string) : string * string =
+    inl wrapped, generated = cell.wrap body
+    if generated = 1i32 then
+        inl entry = text.replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
+        program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"), join_nb (snoc reals entry)
+    // definitions only: an empty program (its generated main shows no value, as a plain definition cell)
+    else program packages NoNb NoNb "", join_nb (snoc reals body)
+
+let rec walk (xs : sources) (index : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (acc : steps) : steps =
     match xs with
     | NoSource => acc
     | Source (kind, source, rest) =>
-        if kind <> "spiral" then walk rest (index + 1i32) packages opens defs acc
+        if kind <> "spiral" then walk rest (index + 1i32) packages opens defs reals acc
         else
-            inl cell_packages, test, timeout, body, cell_opens, skip = scan source
+            inl cell_packages, test, is_real, timeout, body, cell_opens, skip = scan source
             inl packages2 = merge packages cell_packages
-            inl code = if skip = 1i32 then "///> _" else program packages2 opens defs body
+            inl code, real_code =
+                if skip = 1i32 then "///> _", ""
+                elif is_real = 1i32 then real_program packages2 reals body
+                else program packages2 opens defs body, join_nb reals
             inl timeout_text = if timeout = "" then "-" else timeout
-            if test = 1i32 then
-                walk rest (index + 1i32) packages2 (merge opens cell_opens) defs (Step (index, timeout_text, code, acc))
-            elif skip = 1i32 then
-                walk rest (index + 1i32) packages2 opens defs (Step (index, timeout_text, code, acc))
-            elif text.trim body = "" then
-                walk rest (index + 1i32) packages2 opens defs (Step (index, timeout_text, code, acc))
+            inl step = Step (index, timeout_text, code, real_code, acc)
+            // what the later cells see: every cell but a (non-static) test, a skipped cell or an empty one
+            inl kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""
+            if is_real = 1i32 then
+                walk rest (index + 1i32) packages2 opens defs (if kept then snoc reals body else reals) step
+            elif test = 1i32 then
+                walk rest (index + 1i32) packages2 (merge opens cell_opens) defs reals step
+            elif kept then
+                walk rest (index + 1i32) packages2 opens (snoc defs body) reals step
             else
-                walk rest (index + 1i32) packages2 opens (snoc defs body) (Step (index, timeout_text, code, acc))
+                walk rest (index + 1i32) packages2 opens defs reals step
 
 let rec rev_steps (xs : steps) (acc : steps) : steps =
     match xs with
     | NoStep => acc
-    | Step (index, timeout, code, rest) => rev_steps rest (Step (index, timeout, code, acc))
+    | Step (index, timeout, code, real_code, rest) => rev_steps rest (Step (index, timeout, code, real_code, acc))
 
 let rec count_steps (xs : steps) : i32 =
     match xs with
     | NoStep => 0i32
-    | Step (_, _, _, rest) => 1i32 + count_steps rest
+    | Step (_, _, _, _, rest) => 1i32 + count_steps rest
 
+// index, timeout, then the program and the real module, each as `<byte length>\n<text>`
 let rec emit_steps (xs : steps) : string =
     match xs with
     | NoStep => ""
-    | Step (index, timeout, code, rest) =>
-        text.show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text.show_i32 (text.length code) ++ "\n" ++ code ++ emit_steps rest
+    | Step (index, timeout, code, real_code, rest) =>
+        inl head = text.show_i32 index ++ "\n" ++ timeout ++ "\n" ++ text.show_i32 (text.length code) ++ "\n" ++ code
+        head ++ text.show_i32 (text.length real_code) ++ "\n" ++ real_code ++ emit_steps rest
 
 inl plan (src : string) : string =
     match text.next_line (text.replace src "\r\n" "\n") 0i32 with
     | LineDone => "0\n"
     | LineGot (lib, next) =>
         inl packages = if lib = "-" || lib = "" then NoNb else Nb (lib, NoNb)
-        inl found = rev_steps (walk (load_sources (text.drop src next)) 0i32 packages NoNb NoNb NoStep) NoStep
+        inl found = rev_steps (walk (load_sources (text.drop src next)) 0i32 packages NoNb NoNb NoNb NoStep) NoStep
         text.show_i32 (count_steps found) ++ "\n" ++ emit_steps found

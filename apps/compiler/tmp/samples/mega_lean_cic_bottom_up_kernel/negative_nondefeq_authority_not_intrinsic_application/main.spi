@@ -1,3 +1,5 @@
+open main
+
 inl impossible_nondefeq_authority_cannot_enter_intrinsic_Application_program () =
     inl nondefeq =
         corrected_cic_structural_nondefeq_authority (

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_bool_normalization_outcome_mismatch ()
     : exact_linear_indexed_closed_bool_normalization
         exact_linear_closed_bool_true_normal =

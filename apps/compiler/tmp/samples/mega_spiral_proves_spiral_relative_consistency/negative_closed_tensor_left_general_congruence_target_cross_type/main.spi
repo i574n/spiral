@@ -1,3 +1,5 @@
+open main
+
 inl impossible_closed_tensor_left_general_congruence_target_cross_type () :
     exact_linear_indexed_term
         exact_linear_free_context_empty

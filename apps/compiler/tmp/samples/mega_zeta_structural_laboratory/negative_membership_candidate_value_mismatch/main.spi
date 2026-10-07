@@ -1,3 +1,5 @@
+open main
+
 inl impossible_factor_membership_candidate_value_mismatch () :
     certified_interval_positive_positional_factor_membership
         (positional_zero_bit positional_one)

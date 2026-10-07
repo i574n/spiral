@@ -1,0 +1,918 @@
+# stream
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## stream
+
+<!-- livebook:{"break_markdown":true} -->
+
+### stream
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union rec stream t =\n    | StreamCons : t * (() -> stream t)\n    | StreamNil","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union rec stream t =
+      | StreamCons : t * (() -> stream t)
+      | StreamNil
+  """,
+  timeout: 300_000
+)
+```
+
+### fold
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold fn init s =\n    inl rec body acc = function\n        | StreamCons (st, fn') => 루프 (fn acc st) (fn' ())\n        | StreamNil => acc\n    and inl 루프 acc = join_body body acc\n    루프 init s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fold fn init s =
+      inl rec body acc = function
+          | StreamCons (st, fn') => 루프 (fn acc st) (fn' ())
+          | StreamNil => acc
+      and inl 루프 acc = join_body body acc
+      루프 init s
+  """,
+  timeout: 300_000
+)
+```
+
+### fold_back
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fold_back fn s init =\n    inl rec body acc = function\n        | StreamCons (st, fn') => fn st (루프 acc (fn' ()))\n        | StreamNil => acc\n    and inl 루프 acc = join_body body acc\n    루프 init s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl fold_back fn s init =
+      inl rec body acc = function
+          | StreamCons (st, fn') => fn st (루프 acc (fn' ()))
+          | StreamNil => acc
+      and inl 루프 acc = join_body body acc
+      루프 init s
+  """,
+  timeout: 300_000
+)
+```
+
+### to_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_list s =\n    (s, [])\n    ||> fold_back fun x acc =>\n        x :: acc","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl to_list s =
+      (s, [])
+      ||> fold_back fun x acc =>
+          x :: acc
+  """,
+  timeout: 300_000
+)
+```
+
+### rev
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rev s =\n    (StreamNil, s)\n    ||> fold fun s x =>\n        StreamCons (x, fun () => s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl rev s =
+      (StreamNil, s)
+      ||> fold fun s x =>
+          StreamCons (x, fun () => s)
+  """,
+  timeout: 300_000
+)
+```
+
+### from_list
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_list list =\n    (list, StreamNil)\n    ||> listm.foldBack fun x acc =>\n        StreamCons (x, fun () => acc)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_list list =
+      (list, StreamNil)
+      ||> listm.foldBack fun x acc =>
+          StreamCons (x, fun () => acc)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 3i32 id\n|> from_list\n|> rev\n|> to_list\n|> _assert_eq [ 2; 1; 0 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 3i32 id
+  |> from_list
+  |> rev
+  |> to_list
+  |> _assert_eq [ 2; 1; 0 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### try_item
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item i s =\n    // inl rec body i = function\n    inl rec body forall a {number} b. (i : a) : stream b -> option b = function\n        | StreamCons (x, _) when i <= 0 => Some x\n        | StreamCons (_, fn) => 루프 (i - 1) (fn ())\n        | StreamNil => None\n    // and inl 루프 acc s' =\n    and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =\n        match var_is acc, var_is s' with\n        | false, false => body acc s'\n        | _ =>\n            inl acc = dyn acc\n            inl s' = dyn s'\n            join body acc s'\n    루프 i s\n\ninl item i =\n    try_item i >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl try_item i s =
+      // inl rec body i = function
+      inl rec body forall a {number} b. (i : a) : stream b -> option b = function
+          | StreamCons (x, _) when i <= 0 => Some x
+          | StreamCons (_, fn) => 루프 (i - 1) (fn ())
+          | StreamNil => None
+      // and inl 루프 acc s' =
+      and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =
+          match var_is acc, var_is s' with
+          | false, false => body acc s'
+          | _ =>
+              inl acc = dyn acc
+              inl s' = dyn s'
+              join body acc s'
+      루프 i s
+
+  inl item i =
+      try_item i >> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> from_list\n|> item 9i32\n|> _assert_eq 9","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> from_list
+  |> item 9i32
+  |> _assert_eq 9
+  """,
+  timeout: 300_000
+)
+```
+
+### new_infinite_stream
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_infinite_stream fn =\n    inl rec 루프 n =\n        StreamCons (fn n, fun () => 루프 (n + 1))\n    루프 0\n\ninl new_infinite_stream_ fn =\n    let rec 루프 n =\n        StreamCons (fn n, fun () => 루프 (n + 1))\n    루프 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_infinite_stream fn =
+      inl rec 루프 n =
+          StreamCons (fn n, fun () => 루프 (n + 1))
+      루프 0
+
+  inl new_infinite_stream_ fn =
+      let rec 루프 n =
+          StreamCons (fn n, fun () => 루프 (n + 1))
+      루프 0
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nnew_infinite_stream print_and_return\n|> item 4i32\n|> _assert_eq 4i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  new_infinite_stream print_and_return
+  |> item 4i32
+  |> _assert_eq 4i32
+  """,
+  timeout: 300_000
+)
+```
+
+### new_finite_stream
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_finite_stream fn max =\n    inl rec 루프 n =\n        if n >= max\n        then StreamNil\n        else StreamCons (fn n, fun () => 루프 (n + 1))\n    루프 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_finite_stream fn max =
+      inl rec 루프 n =
+          if n >= max
+          then StreamNil
+          else StreamCons (fn n, fun () => 루프 (n + 1))
+      루프 0
+  """,
+  timeout: 300_000
+)
+```
+
+### memoize
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union memoized_stream t =\n    | NotComputed : () -> stream t\n    | Computed : stream t\n\ninl memoize s =\n    // inl rec body s =\n    inl rec body forall t. (s : () -> stream t) : () -> stream t =\n        inl state = mut (NotComputed s)\n        fun () =>\n            match *state with\n            | Computed x => x\n            | NotComputed fn =>\n                inl new_state =\n                    match fn () with\n                    | StreamNil => StreamNil\n                    | StreamCons (x, fn) => StreamCons (x, 루프 fn)\n                state <- Computed new_state\n                new_state\n    // and inl 루프 s' = join_body_unit body s s'\n    and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =\n        join_body_unit body s s'\n    루프 (fun () => s)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  union memoized_stream t =
+      | NotComputed : () -> stream t
+      | Computed : stream t
+
+  inl memoize s =
+      // inl rec body s =
+      inl rec body forall t. (s : () -> stream t) : () -> stream t =
+          inl state = mut (NotComputed s)
+          fun () =>
+              match *state with
+              | Computed x => x
+              | NotComputed fn =>
+                  inl new_state =
+                      match fn () with
+                      | StreamNil => StreamNil
+                      | StreamCons (x, fn) => StreamCons (x, 루프 fn)
+                  state <- Computed new_state
+                  new_state
+      // and inl 루프 s' = join_body_unit body s s'
+      and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =
+          join_body_unit body s s'
+      루프 (fun () => s)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl memo_stream = new_finite_stream print_and_return 10 |> memoize\n\nmemo_stream ()\n|> item 3i32\n|> _assert_eq 3i32\n\nmemo_stream ()\n|> item 5i32\n|> _assert_eq 5i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  inl memo_stream = new_finite_stream print_and_return 10 |> memoize
+
+  memo_stream ()
+  |> item 3i32
+  |> _assert_eq 3i32
+
+  memo_stream ()
+  |> item 5i32
+  |> _assert_eq 5i32
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\ninl memo_stream = new_infinite_stream_ print_and_return |> memoize\n\nmemo_stream ()\n|> item 3i32\n|> _assert_eq 3i32\n\nmemo_stream ()\n|> item 5i32\n|> _assert_eq 5i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  inl memo_stream = new_infinite_stream_ print_and_return |> memoize
+
+  memo_stream ()
+  |> item 3i32
+  |> _assert_eq 3i32
+
+  memo_stream ()
+  |> item 5i32
+  |> _assert_eq 5i32
+  """,
+  timeout: 300_000
+)
+```
+
+### unfold
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unfold f x0 =\n    inl rec body x =\n        match f x with\n        | Some (x', y) => StreamCons (x', fun () => 루프 y)\n        | None => StreamNil\n    and inl 루프 x = join_body_unit body x0 x\n    루프 x0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unfold f x0 =
+      inl rec body x =
+          match f x with
+          | Some (x', y) => StreamCons (x', fun () => 루프 y)
+          | None => StreamNil
+      and inl 루프 x = join_body_unit body x0 x
+      루프 x0
+  """,
+  timeout: 300_000
+)
+```
+
+### iterate
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterate f =\n    fun x => Some (x, f x)\n    |> unfold","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iterate f =
+      fun x => Some (x, f x)
+      |> unfold
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\niterate ((*) 2) 1i32\n|> item 10i32\n|> _assert_eq 1024","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  iterate ((*) 2) 1i32
+  |> item 10i32
+  |> _assert_eq 1024
+  """,
+  timeout: 300_000
+)
+```
+
+### iterate'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterate_map f m =\n    fun x =>\n        m x\n        |> optionm.map fun x =>\n            x, f x\n    |> unfold","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl iterate_map f m =
+      fun x =>
+          m x
+          |> optionm.map fun x =>
+              x, f x
+      |> unfold
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\niterate_map ((*) 2) Some 1i32\n|> item 10i32\n|> _assert_eq 1024","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  iterate_map ((*) 2) Some 1i32
+  |> item 10i32
+  |> _assert_eq 1024
+  """,
+  timeout: 300_000
+)
+```
+
+### take_while
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl take_while cond s =\n    inl rec body i = function\n        | StreamCons (st, fn) when cond st i => StreamCons (st, fun () => 루프 (i + 1) (fn ()))\n        | _ => StreamNil\n    and inl 루프 i = join_body body i\n    루프 0 s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl take_while cond s =
+      inl rec body i = function
+          | StreamCons (st, fn) when cond st i => StreamCons (st, fun () => 루프 (i + 1) (fn ()))
+          | _ => StreamNil
+      and inl 루프 i = join_body body i
+      루프 0 s
+  """,
+  timeout: 300_000
+)
+```
+
+### sum
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sum seq =\n    seq |> fold (+) 0","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sum seq =
+      seq |> fold (+) 0
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> from_list\n|> sum\n|> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> from_list
+  |> sum
+  |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nnew_finite_stream print_and_return 10i32\n|> take_while (fun n (_ : i32) => n < 5)\n|> sum\n|> _assert_eq 10","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  new_finite_stream print_and_return 10i32
+  |> take_while (fun n (_ : i32) => n < 5)
+  |> sum
+  |> _assert_eq 10
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nnew_infinite_stream print_and_return\n|> take_while (fun n (_ : i32) => n < 5i32)\n|> sum\n|> _assert_eq 10","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  new_infinite_stream print_and_return
+  |> take_while (fun n (_ : i32) => n < 5i32)
+  |> sum
+  |> _assert_eq 10
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\niterate ((*) 6) 1i32\n|> take_while (fun _ i => i <= 7i32)\n|> to_list\n|> _assert_eq [ 1i32; 6; 36; 216; 1296; 7776; 46656; 279936 ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  iterate ((*) 6) 1i32
+  |> take_while (fun _ i => i <= 7i32)
+  |> to_list
+  |> _assert_eq [ 1i32; 6; 36; 216; 1296; 7776; 46656; 279936 ]
+  """,
+  timeout: 300_000
+)
+```
+
+### indexed
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl indexed s =\n    ((StreamNil, 0), s)\n    ||> fold fun (acc, i) x =>\n        StreamCons ((i, x), fun () => acc), i + 1\n    |> fst\n    |> rev","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl indexed s =
+      ((StreamNil, 0), s)
+      ||> fold fun (acc, i) x =>
+          StreamCons ((i, x), fun () => acc), i + 1
+      |> fst
+      |> rev
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 ((*) 2)\n|> from_list\n|> indexed\n|> item 5i32\n|> _assert_eq (5i32, 10i32)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 ((*) 2)
+  |> from_list
+  |> indexed
+  |> item 5i32
+  |> _assert_eq (5i32, 10i32)
+  """,
+  timeout: 300_000
+)
+```
+
+### map
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map fn s =\n    (s, StreamNil)\n    ||> fold_back fun x acc =>\n        StreamCons (fn x, fun () => acc)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl map fn s =
+      (s, StreamNil)
+      ||> fold_back fun x acc =>
+          StreamCons (fn x, fun () => acc)
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> from_list\n|> map ((*) 2)\n|> item 5i32\n|> _assert_eq 10i32","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> from_list
+  |> map ((*) 2)
+  |> item 5i32
+  |> _assert_eq 10i32
+  """,
+  timeout: 300_000
+)
+```
+
+### zip_with
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl zip_with fn s1 s2 =\n    inl rec 루프 s1 s2 =\n        match s1, s2 with\n        | StreamCons (st1, fn1), StreamCons (st2, fn2) =>\n            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))\n        | StreamNil, _ | _, StreamNil => StreamNil\n    루프 s1 s2\n\ninl zip_with_ fn s1 s2 =\n    let rec 루프 s1 s2 =\n        match s1, s2 with\n        | StreamCons (st1, fn1), StreamCons (st2, fn2) =>\n            StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))\n        | StreamNil, _ | _, StreamNil => StreamNil\n    루프 s1 s2","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl zip_with fn s1 s2 =
+      inl rec 루프 s1 s2 =
+          match s1, s2 with
+          | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
+              StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
+          | StreamNil, _ | _, StreamNil => StreamNil
+      루프 s1 s2
+
+  inl zip_with_ fn s1 s2 =
+      let rec 루프 s1 s2 =
+          match s1, s2 with
+          | StreamCons (st1, fn1), StreamCons (st2, fn2) =>
+              StreamCons (fn st1 st2, fun () => 루프 (fn1 ()) (fn2 ()))
+          | StreamNil, _ | _, StreamNil => StreamNil
+      루프 s1 s2
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))\n||> zip_with (+)\n|> item 2i32\n|> _assert_eq 6","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+  ||> zip_with (+)
+  |> item 2i32
+  |> _assert_eq 6
+  """,
+  timeout: 300_000
+)
+```
+
+### zip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl zip s1 s2 =\n    zip_with pair s1 s2\n\ninl zip_ s1 s2 =\n    zip_with_ pair s1 s2","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl zip s1 s2 =
+      zip_with pair s1 s2
+
+  inl zip_ s1 s2 =
+      zip_with_ pair s1 s2
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))\n||> zip\n|> item 5i32\n|> _assert_eq (5, 10)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+  ||> zip
+  |> item 5i32
+  |> _assert_eq (5, 10)
+  """,
+  timeout: 300_000
+)
+```
+
+### unzip
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unzip s =\n    // inl rec body s =\n    inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =\n        match s with\n        | StreamCons ((x, y), fn) =>\n            inl xs, ys = 루프 (fn ())\n            StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)\n        | StreamNil => pair StreamNil StreamNil\n    // and inl 루프 x =\n    and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =\n        if var_is x |> not\n        then body x\n        else\n            inl x = dyn x\n            join body x\n    루프 s","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl unzip s =
+      // inl rec body s =
+      inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =
+          match s with
+          | StreamCons ((x, y), fn) =>
+              inl xs, ys = 루프 (fn ())
+              StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)
+          | StreamNil => pair StreamNil StreamNil
+      // and inl 루프 x =
+      and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =
+          if var_is x |> not
+          then body x
+          else
+              inl x = dyn x
+              join body x
+      루프 s
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\nlistm.init 10i32 id\n|> listm.map (fun x => x, x)\n|> from_list\n|> unzip\n|> fun x, y =>\n    x |> sum\n    |> _assert_eq 45\n\n    y |> sum\n    |> _assert_eq 45","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  listm.init 10i32 id
+  |> listm.map (fun x => x, x)
+  |> from_list
+  |> unzip
+  |> fun x, y =>
+      x |> sum
+      |> _assert_eq 45
+
+      y |> sum
+      |> _assert_eq 45
+  """,
+  timeout: 300_000
+)
+```
+
+## rust
+
+<!-- livebook:{"break_markdown":true} -->
+
+### io_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal io_error =\n    `(\n        native_type\n            `($'std_io_Error')\n            `($'std::io::Error')\n            \"type std_io_Error = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal io_error =
+      `(
+          native_type
+              `($'std_io_Error')
+              `($'std::io::Error')
+              "type std_io_Error = string"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_io_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_io_error (text : string) : io_error =\n    run_target_args (fun () => text) function\n        | RustNative => fun text =>\n            !\\\\(text, $'\"std::io::Error::new(std::io::ErrorKind::Other, &*$0)\"')\n        | _ => fun text => text |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_io_error (text : string) : io_error =
+      run_target_args (fun () => text) function
+          | RustNative => fun text =>
+              !\\(text, $'"std::io::Error::new(std::io::ErrorKind::Other, &*$0)"')
+          | _ => fun text => text |> convert.unbox
+  """,
+  timeout: 300_000
+)
+```
+
+### buf_reader
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader t =\n    `(\n        native_type\n            `($'std_io_BufReader<`t>')\n            `($'std::io::BufReader<`t>')\n            \"type std_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal buf_reader t =
+      `(
+          native_type
+              `($'std_io_BufReader<`t>')
+              `($'std::io::BufReader<`t>')
+              "type std_io_BufReader<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### cursor
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cursor t =\n    `(\n        native_type\n            `($'std_io_Cursor<`t>')\n            `($'std::io::Cursor<`t>')\n            \"type std_io_Cursor<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal cursor t =
+      `(
+          native_type
+              `($'std_io_Cursor<`t>')
+              `($'std::io::Cursor<`t>')
+              "type std_io_Cursor<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### buf_reader_tokio
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader_tokio t =\n    `(\n        native_type\n            `($'tokio_io_BufReader<`t>')\n            `($'tokio::io::BufReader<`t>')\n            \"type tokio_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal buf_reader_tokio t =
+      `(
+          native_type
+              `($'tokio_io_BufReader<`t>')
+              `($'tokio::io::BufReader<`t>')
+              "type tokio_io_BufReader<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### new_buf_reader
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_buf_reader forall t. (x : t) : buf_reader t =\n    !\\\\(x, $'\"std::io::BufReader::new($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_buf_reader forall t. (x : t) : buf_reader t =
+      !\\(x, $'"std::io::BufReader::new($0)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### new_cursor
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_cursor forall t. (x : t) : cursor t =\n    !\\($'\"std::io::Cursor::new(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl new_cursor forall t. (x : t) : cursor t =
+      !\($'"std::io::Cursor::new(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### lines
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lines t =\n    `(\n        native_type\n            `($'std_io_Lines<`t>')\n            `($'std::io::Lines<`t>')\n            \"type std_io_Lines<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal lines t =
+      `(
+          native_type
+              `($'std_io_Lines<`t>')
+              `($'std::io::Lines<`t>')
+              "type std_io_Lines<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### buf_read_lines
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl buf_read_lines forall t. (buf_reader : buf_reader t) : lines (buf_reader t) =\n    !\\($'\"std::io::BufRead::lines(!buf_reader)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl buf_read_lines forall t. (buf_reader : buf_reader t) : lines (buf_reader t) =
+      !\($'"std::io::BufRead::lines(!buf_reader)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### decode_reader_bytes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal decode_reader_bytes t u =\n    `(\n        native_type\n            `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')\n            `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')\n            \"type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal decode_reader_bytes t u =
+      `(
+          native_type
+              `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
+              `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')
+              "type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### decode_reader_bytes_build
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =\n    // !\\($'\"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).build(!x)\"')\n    // !\\($'\"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).utf8_passthru(true).build(!x)\"')\n    !\\\\(x, $'\"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)\"')\n    // !\\($'\"encoding_rs_io::DecodeReaderBytes::new(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =
+      // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).build(!x)"')
+      // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).utf8_passthru(true).build(!x)"')
+      !\\(x, $'"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)"')
+      // !\($'"encoding_rs_io::DecodeReaderBytes::new(!x)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### buf_reader_read
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl buf_reader_read forall el dim.\n    (slice : am'.slice' el dim) (buf_reader : buf_reader el) : resultm.result' convert.unativeint io_error\n    =\n    (!\\($'\"true; let mut !slice = !slice\"') : bool) |> ignore\n    !\\($'\"std::io::Read::read(&mut !buf_reader, &mut !slice)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl buf_reader_read forall el dim.
+      (slice : am'.slice' el dim) (buf_reader : buf_reader el) : resultm.result' convert.unativeint io_error
+      =
+      (!\($'"true; let mut !slice = !slice"') : bool) |> ignore
+      !\($'"std::io::Read::read(&mut !buf_reader, &mut !slice)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### io_read_by_ref
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl io_read_by_ref forall t. (lines : lines t) : lines t =\n    !\\\\(lines, $'\"std::io::Read::by_ref($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl io_read_by_ref forall t. (lines : lines t) : lines t =
+      !\\(lines, $'"std::io::Read::by_ref($0)"')
+  """,
+  timeout: 300_000
+)
+```

@@ -1,0 +1,36 @@
+open main
+
+// The root on the native backends: its contract and every root program its main does not reach (all_terminals), exit
+// code 0 when all of them hold. The run-time checks are core-free ops (`mega_runtime_fail`), so they run (or are decided
+// by the compiler) on every backend.
+inl main () : i32 =
+    inl _ = zeta_root_contract ()
+    inl _ = positive_positional_predecessor_unique_terminal ()
+    inl _ = positive_positional_predecessor_less_terminal ()
+    inl _ = positive_positional_predecessor_accessibility_terminal ()
+    inl _ = positive_positional_parent_derived_child_accessibility_terminal ()
+    inl _ = certified_interval_positive_positional_factor_membership_parent_accessibility_terminal ()
+    inl _ = certified_interval_positive_positional_accessible_child_unit_terminal ()
+    inl _ = certified_interval_positive_positional_accessible_child_step_prime_terminal ()
+    inl _ = certified_interval_positive_positional_membership_accessible_child_terminal ()
+    inl _ = positive_positional_strict_predecessor_accessibility_terminal ()
+    inl _ = positive_positional_quotient_accessibility_terminal ()
+    inl _ = positive_positional_two_stage_quotient_accessibility_terminal ()
+    inl _ = positive_positional_flattened_quotient_composition_terminal ()
+    inl _ = positive_positional_generic_flattened_quotient_chain_terminal ()
+    inl _ = certified_interval_positive_positional_membership_recursion_authority_terminal ()
+    inl _ = positive_positional_transitive_predecessor_path_terminal ()
+    inl _ = positive_positional_nonidentity_three_segment_path_associativity_terminal ()
+    inl _ = positive_positional_transitive_predecessor_path_append_measure_terminal ()
+    inl _ = certified_interval_positive_positional_factor_membership_accessibility_terminal ()
+    inl _ = certified_interval_positive_positional_division_accessible_quotient_terminal ()
+    inl _ = certified_interval_positive_positional_sealed_composite_children_terminal ()
+    inl _ = certified_interval_positive_positional_membership_strict_path_terminal ()
+    inl _ = certified_interval_positive_positional_complete_reconstruction_terminal ()
+    inl _ = certified_interval_positive_positional_prime_multiplicity_run_mismatch_symmetry_terminal ()
+    inl _ = certified_interval_positive_positional_prime_multiplicity_normal_form_mismatch_symmetry_terminal ()
+    inl _ = certified_interval_positive_positional_six_structural_profile_agreement_terminal ()
+    inl _ = certified_interval_positive_positional_six_distinct_tree_normalization_terminal ()
+    inl _ = certified_interval_positive_positional_product_run_two_three_terminal ()
+    inl _ = certified_interval_positive_positional_product_run_three_two_terminal ()
+    0i32

@@ -1,3 +1,5 @@
+open main
+
 inl impossible_intrinsic_prime_one () :
     certified_interval_positive_positional_sealed_factor_class positional_one =
     CertifiedIntervalPositivePositionalSealedPrimeClass (exists (

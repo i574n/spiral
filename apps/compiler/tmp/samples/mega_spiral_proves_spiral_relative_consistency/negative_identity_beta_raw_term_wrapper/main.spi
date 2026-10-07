@@ -1,3 +1,5 @@
+open main
+
 inl impossible_identity_beta_raw_term_wrapper () :
     exact_linear_indexed_closed_identity_beta_step =
     ExactLinearIndexedClosedIdentityBetaStep (exists (

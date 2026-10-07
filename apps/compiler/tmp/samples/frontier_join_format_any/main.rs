@@ -46,8 +46,8 @@ fn method1(mut v0: US0) -> Rc<str> {
     let mut v19: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v18.clone() }));
     let mut v26: Rc<str> = method2(v0.clone());
     method3(v19.clone(), v26.clone());
-    let mut v71: Rc<str> = v19.borrow().l0.clone();
-    v71.clone()
+    let mut v45: Rc<str> = v19.borrow().l0.clone();
+    v45.clone()
 }
 fn method0() -> Rc<str> {
     let mut v0: i32 = 1i32;

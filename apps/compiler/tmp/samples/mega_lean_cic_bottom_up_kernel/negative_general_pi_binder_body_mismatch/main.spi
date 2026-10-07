@@ -1,3 +1,5 @@
+open main
+
 inl impossible_corrected_cic_general_pi_binder_body_mismatch () :
     corrected_cic_term empty_ctx (universe_sort universe_one) =
     inl bool_binder : binder empty_ctx bool_sort =

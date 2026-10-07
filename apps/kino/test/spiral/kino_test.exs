@@ -117,6 +117,67 @@ defmodule Spiral.KinoTest do
              )
   end
 
+  # physics' plot cells end in a tuple: the old route showed any value; main is i32, so the value is bound and shown with
+  # Rust's Debug instead (the compiler reports the expression line: "Got: i32 Expected: <the value's type>").
+  test "a value that is not an i32 is compiled again and shown with Debug" do
+    compile = fn %{source: source} ->
+      if String.contains?(source, "console.show_value spiral_kino_value") do
+        {:ok, "fn main() {\n    std::process::exit(main.join().unwrap());\n}\n"}
+      else
+        {:error, "main.spi:2:5: Unification failure.\nGot: i32\nExpected: string * i32"}
+      end
+    end
+
+    assert {:ok, %Result{value: ~s{("a", 1)}, source: source}} =
+             Spiral.Kino.run("\"a\", 1i32",
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value(~s{SPIRAL_KINO_VALUE:("a", 1)\n})
+             )
+
+    assert source =~ "inl main () : i32 =\n    inl spiral_kino_value =\n        \"a\", 1i32\n"
+  end
+
+  test "only an error on the generated main's expression line is a value to show" do
+    code = "///- --package x\ninl f () = 1i32\ninl main () : i32 =\n    f (), 2i32\n"
+
+    assert Spiral.Kino.value_result?(
+             "main.spi:4:5: Unification failure. Got: i32 Expected: i32 * i32",
+             code
+           )
+
+    refute Spiral.Kino.value_result?(
+             "main.spi:2:5: Unification failure. Got: i32 Expected: i32 * i32",
+             code
+           )
+
+    refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
+
+    refute Spiral.Kino.value_result?(
+             "main.spi:4:5: Unification failure. Got: i32 Expected: i32 * i32\nmain.spi:2:1: Unbound variable: g.",
+             code
+           )
+  end
+
+  test "a cell's own main () becomes the generated main's body (so its value is shown like any trailing expression)" do
+    prepared = %{
+      generated_main: false,
+      no_value: false,
+      code: "inl f () = 1i32\n\nlet main () =\n    f (), 2i32\n"
+    }
+
+    assert %{generated_main: true, code: code} = Spiral.Kino.own_main(prepared)
+
+    assert code ==
+             "inl f () = 1i32\n\ninl spiral_kino_main () =\n    f (), 2i32\n\ninl main () : i32 =\n    spiral_kino_main ()\n"
+
+    with_args = %{prepared | code: "inl main (_args : array_base string) =\n    0i32\n"}
+    assert Spiral.Kino.own_main(with_args) == with_args
+
+    not_last = %{prepared | code: "inl main () =\n    0i32\n\ninl g () = 2i32\n"}
+    assert Spiral.Kino.own_main(not_last) == not_last
+  end
+
   test "a compiler rejection is a SpiralError" do
     compile = fn _ ->
       {:error, "main.spi:1:1: Unification failure.\nGot: string\nExpected: i32"}
@@ -276,6 +337,28 @@ defmodule Spiral.KinoTest do
     assert_received {:kino_mount, mount}
     Spiral.Kino.Mounts.remove!(mount)
     File.rm_rf!(parent)
+  end
+
+  # Every cell of every parallel notebook mounts the same lib: a complete mount must not wait on the build lock (the
+  # lib run's cells timed out with `could not mount packages: :lock_timeout`).
+  test "a ready mount is used without taking its lock" do
+    target = Spiral.Kino.TestHelpers.tmp_dir!("mount_ready")
+    File.write!(Path.join(target, "package.spiproj"), "packages:\n    |core-\nmodules:\n    a\n")
+    File.write!(Path.join(target, "a.spi"), "inl one () = 1i32\n")
+    entries = [%{name: "mount_ready_pkg", target: target, kind: :link}]
+
+    assert {:ok, mount} = Spiral.Kino.Mounts.ensure(entries)
+    lock = mount <> ".lock"
+    # held by a live process (this one) for as long as the test runs
+    File.write!(lock, System.pid())
+
+    try do
+      task = Task.async(fn -> Spiral.Kino.Mounts.ensure(entries) end)
+      assert {:ok, ^mount} = Task.await(task, 5_000)
+    after
+      File.rm(lock)
+      Spiral.Kino.Mounts.remove!(mount)
+    end
   end
 
   test "two cells share one package directory" do

@@ -122,13 +122,23 @@ inl spir_cell (source : string) : bool = text.contains source "///- " && text.co
 inl test_cell (source : string) : bool =
     text.contains source "///- " && (text.contains source " --test" || text.contains source " --ignore")
 
-let rec spi_blocks (xs : cells) (acc : cells) : cells =
+union export_kind =
+    | SpiExport
+    | SpirExport
+
+// the Spiral cells of one export (with the markdown cells): the .spi takes those without ` --real`, the .spir those with it
+inl export_cell (kind : export_kind) (cell_kind : string) (source : string) : bool =
+    match kind with
+    | SpiExport => cell_kind = "spiral" && spir_cell (text.trim source) = false
+    | SpirExport => cell_kind = "spiral" && spir_cell (text.trim source)
+
+let rec export_blocks (kind : export_kind) (xs : cells) (acc : cells) : cells =
     match xs with
     | NoCell => rev_cells acc NoCell
-    | Cell (kind, source, rest) =>
-        if kind = "markdown" then spi_blocks rest (Cell (kind, source, acc))
-        elif kind = "spiral" && spir_cell (text.trim source) = false then spi_blocks rest (Cell (kind, source, acc))
-        else spi_blocks rest acc
+    | Cell (cell_kind, source, rest) =>
+        if cell_kind = "markdown" || export_cell kind cell_kind source
+        then export_blocks kind rest (Cell (cell_kind, source, acc))
+        else export_blocks kind rest acc
 
 let rec keep_docs (xs : cells) : cells =
     match xs with
@@ -205,4 +215,9 @@ inl load (src : string) : cells =
     | LineDone => NoCell
     | LineGot (count, next) => read_cells src next (text.parse_i32 count) NoCell
 
-inl to_spi (src : string) : string = emit_spi (formatted (keep_docs (spi_blocks (load src) NoCell)) NoCell)
+inl export_text (kind : export_kind) (src : string) : string = emit_spi (formatted (keep_docs (export_blocks kind (load src) NoCell)) NoCell)
+
+inl to_spi (src : string) : string = export_text SpiExport src
+
+// to_spir is `spiral dib-export <nb>.dib spir` (<nb>_real.spir): the same format, over the ///- ... --real cells
+inl to_spir (src : string) : string = export_text SpirExport src

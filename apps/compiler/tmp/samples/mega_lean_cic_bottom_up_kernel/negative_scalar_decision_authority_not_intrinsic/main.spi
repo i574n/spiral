@@ -1,3 +1,6 @@
+// A structural (scalar-decided) Pi/dependent-application relation is not an intrinsic defeq proof (the separate decision-authority wrapper is retired; the relation itself is the scalar authority now).
+open main
+
 inl impossible_scalar_decision_authority_not_intrinsic () =
     match corrected_cic_general_pi_identity_value () with
     | corrected_cic_general_pi_identity (type_binder, codomain_body, _) =>
@@ -10,14 +13,8 @@ inl impossible_scalar_decision_authority_not_intrinsic () =
                     (corrected_cic_sort_zero ())
                     codomain_body
                     (corrected_cic_sort_zero ()))
-        inl scalar_authority =
-            corrected_cic_scoped_pi_dependent_application_structural_relation_decision_authority_make
-                relation
-        inl impossible :
-            corrected_cic_scoped_pi_dependent_application_intrinsic_defeq
-                empty_ctx
-                (universe_sort universe_zero) =
-            scalar_authority
+        inl impossible : corrected_cic_scoped_pi_dependent_application_intrinsic_defeq empty_ctx (universe_sort universe_one) =
+            relation
         impossible
 
 inl main () =

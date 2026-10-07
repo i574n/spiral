@@ -1,0 +1,588 @@
+# near_workspaces
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open rust\nopen rust.rust_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open rust
+  open rust.rust_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## near
+
+<!-- livebook:{"break_markdown":true} -->
+
+### near_token_workspaces
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_workspaces =\n    `(\n        native_type\n            `($'near_workspaces_types_NearToken')\n            `($'near_workspaces::types::NearToken')\n            \"type near_workspaces_types_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal near_token_workspaces =
+      `(
+          native_type
+              `($'near_workspaces_types_NearToken')
+              `($'near_workspaces::types::NearToken')
+              "type near_workspaces_types_NearToken = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### gas
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal gas =\n    `(\n        native_type\n            `($'near_workspaces_types_Gas')\n            `($'near_workspaces::types::Gas')\n            \"type near_workspaces_types_Gas = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal gas =
+      `(
+          native_type
+              `($'near_workspaces_types_Gas')
+              `($'near_workspaces::types::Gas')
+              "type near_workspaces_types_Gas = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### near_workspaces_error
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_workspaces_error =\n    `(\n        native_type\n            `($'near_workspaces_error_Error')\n            `($'near_workspaces::error::Error')\n            \"type near_workspaces_error_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal near_workspaces_error =
+      `(
+          native_type
+              `($'near_workspaces_error_Error')
+              `($'near_workspaces::error::Error')
+              "type near_workspaces_error_Error = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### sandbox
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal sandbox =\n    `(\n        native_type\n            `($'near_workspaces_network_Sandbox')\n            `($'near_workspaces::network::Sandbox')\n            \"type near_workspaces_network_Sandbox = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal sandbox =
+      `(
+          native_type
+              `($'near_workspaces_network_Sandbox')
+              `($'near_workspaces::network::Sandbox')
+              "type near_workspaces_network_Sandbox = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### worker
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal worker t =\n    `(\n        native_type\n            `($'near_workspaces_Worker<`t>')\n            `($'near_workspaces::Worker<`t>')\n            \"type near_workspaces_Worker<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal worker t =
+      `(
+          native_type
+              `($'near_workspaces_Worker<`t>')
+              `($'near_workspaces::Worker<`t>')
+              "type near_workspaces_Worker<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### contract
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal contract =\n    `(\n        native_type\n            `($'near_workspaces_Contract')\n            `($'near_workspaces::Contract')\n            \"type near_workspaces_Contract = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal contract =
+      `(
+          native_type
+              `($'near_workspaces_Contract')
+              `($'near_workspaces::Contract')
+              "type near_workspaces_Contract = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### call_transaction
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal call_transaction =\n    `(\n        native_type\n            `($'near_workspaces_operations_CallTransaction')\n            `($'near_workspaces::operations::CallTransaction')\n            \"type near_workspaces_operations_CallTransaction = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal call_transaction =
+      `(
+          native_type
+              `($'near_workspaces_operations_CallTransaction')
+              `($'near_workspaces::operations::CallTransaction')
+              "type near_workspaces_operations_CallTransaction = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_final_result
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_final_result =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionFinalResult')\n            `($'near_workspaces::result::ExecutionFinalResult')\n            \"type near_workspaces_result_ExecutionFinalResult = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal execution_final_result =
+      `(
+          native_type
+              `($'near_workspaces_result_ExecutionFinalResult')
+              `($'near_workspaces::result::ExecutionFinalResult')
+              "type near_workspaces_result_ExecutionFinalResult = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_result
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_result t =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionResult<`t>')\n            `($'near_workspaces::result::ExecutionResult<`t>')\n            \"type near_workspaces_result_ExecutionResult<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal execution_result t =
+      `(
+          native_type
+              `($'near_workspaces_result_ExecutionResult<`t>')
+              `($'near_workspaces::result::ExecutionResult<`t>')
+              "type near_workspaces_result_ExecutionResult<'T> = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_success
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_success =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionSuccess')\n            `($'near_workspaces::result::ExecutionSuccess')\n            \"type near_workspaces_result_ExecutionSuccess = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal execution_success =
+      `(
+          native_type
+              `($'near_workspaces_result_ExecutionSuccess')
+              `($'near_workspaces::result::ExecutionSuccess')
+              "type near_workspaces_result_ExecutionSuccess = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_failure
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_failure =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionFailure')\n            `($'near_workspaces::result::ExecutionFailure')\n            \"type near_workspaces_result_ExecutionFailure = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal execution_failure =
+      `(
+          native_type
+              `($'near_workspaces_result_ExecutionFailure')
+              `($'near_workspaces::result::ExecutionFailure')
+              "type near_workspaces_result_ExecutionFailure = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### execution_outcome
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_outcome =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionOutcome')\n            `($'near_workspaces::result::ExecutionOutcome')\n            \"type near_workspaces_result_ExecutionOutcome = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  nominal execution_outcome =
+      `(
+          native_type
+              `($'near_workspaces_result_ExecutionOutcome')
+              `($'near_workspaces::result::ExecutionOutcome')
+              "type near_workspaces_result_ExecutionOutcome = class end"
+      )
+  """,
+  timeout: 300_000
+)
+```
+
+### sandbox_worker
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sandbox_worker () : resultm.result' (worker sandbox) near_workspaces_error =\n    !\\($'\"near_workspaces::sandbox().await\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl sandbox_worker () : resultm.result' (worker sandbox) near_workspaces_error =
+      !\($'"near_workspaces::sandbox().await"')
+  """,
+  timeout: 300_000
+)
+```
+
+### dev_deploy
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl dev_deploy\n    (wasm : am'.vec u8)\n    (worker : worker sandbox)\n    : async.future_pin (resultm.result' contract near_workspaces_error)\n    =\n    inl worker = worker |> rust.emit\n    !\\\\(wasm, $'\"Box::pin(!worker.dev_deploy(&$0))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl dev_deploy
+      (wasm : am'.vec u8)
+      (worker : worker sandbox)
+      : async.future_pin (resultm.result' contract near_workspaces_error)
+      =
+      inl worker = worker |> rust.emit
+      !\\(wasm, $'"Box::pin(!worker.dev_deploy(&$0))"')
+  """,
+  timeout: 300_000
+)
+```
+
+### call
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl call (fn_name : string) (contract : contract) : call_transaction =\n    !\\\\((contract, fn_name), $'\"$0.call(&*$1)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl call (fn_name : string) (contract : contract) : call_transaction =
+      !\\((contract, fn_name), $'"$0.call(&*$1)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### logs
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl logs (result : execution_final_result) : am'.vec (rust.ref sm'.str) =\n    !\\($'\"!result.logs()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl logs (result : execution_final_result) : am'.vec (rust.ref sm'.str) =
+      !\($'"!result.logs()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### into_result
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl into_result\n    (result : execution_final_result)\n    : resultm.result' execution_success execution_failure\n    =\n    !\\\\(result, $'\"$0.into_result()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl into_result
+      (result : execution_final_result)
+      : resultm.result' execution_success execution_failure
+      =
+      !\\(result, $'"$0.into_result()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### receipt_failures
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl receipt_failures (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =\n    inl result = join result\n    !\\($'\"!result.receipt_failures()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl receipt_failures (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =
+      inl result = join result
+      !\($'"!result.receipt_failures()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### receipt_outcomes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl receipt_outcomes (result : execution_final_result) : am'.vec execution_outcome =\n    inl result = join result\n    inl result : rust.ref (am'.slice execution_outcome) = !\\($'\"!result.receipt_outcomes()\"')\n    result |> rust.into","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl receipt_outcomes (result : execution_final_result) : am'.vec execution_outcome =
+      inl result = join result
+      inl result : rust.ref (am'.slice execution_outcome) = !\($'"!result.receipt_outcomes()"')
+      result |> rust.into
+  """,
+  timeout: 300_000
+)
+```
+
+### json
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_native\n    !\\\\(result, $'\"$0.json()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
+      inl result = result |> rust.clone_native
+      !\\(result, $'"$0.json()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### borsh
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_native\n    !\\\\(result, $'\"$0.borsh()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
+      inl result = result |> rust.clone_native
+      !\\(result, $'"$0.borsh()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### total_gas_burnt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl total_gas_burnt (result : execution_final_result) : gas =\n    !\\\\(result, $'\"$0.total_gas_burnt\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl total_gas_burnt (result : execution_final_result) : gas =
+      !\\(result, $'"$0.total_gas_burnt"')
+  """,
+  timeout: 300_000
+)
+```
+
+### as_gas
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_gas (gas : gas) : u64 =\n    !\\\\(gas, $'\"$0.as_gas()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_gas (gas : gas) : u64 =
+      !\\(gas, $'"$0.as_gas()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### outcomes
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl outcomes (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =\n    inl result = result |> rust.emit\n    !\\($'\"!result.outcomes()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl outcomes (result : execution_final_result) : am'.vec (rust.ref execution_outcome) =
+      inl result = result |> rust.emit
+      !\($'"!result.outcomes()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### is_success
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_success (outcome : execution_outcome) : bool =\n    !\\\\(outcome, $'\"$0.is_success()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl is_success (outcome : execution_outcome) : bool =
+      !\\(outcome, $'"$0.is_success()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### gas_burnt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl gas_burnt (outcome : execution_outcome) : gas =\n    !\\\\(outcome, $'\"$0.gas_burnt\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl gas_burnt (outcome : execution_outcome) : gas =
+      !\\(outcome, $'"$0.gas_burnt"')
+  """,
+  timeout: 300_000
+)
+```
+
+### tokens_burnt
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tokens_burnt (outcome : execution_outcome) : near_token_workspaces =\n    !\\\\(outcome, $'\"$0.tokens_burnt\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl tokens_burnt (outcome : execution_outcome) : near_token_workspaces =
+      !\\(outcome, $'"$0.tokens_burnt"')
+  """,
+  timeout: 300_000
+)
+```
+
+### transact
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl transact\n    (call : call_transaction)\n    : async.future_pin (resultm.result' execution_final_result near_workspaces_error)\n    =\n    !\\($'\"Box::pin(!call.transact())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl transact
+      (call : call_transaction)
+      : async.future_pin (resultm.result' execution_final_result near_workspaces_error)
+      =
+      !\($'"Box::pin(!call.transact())"')
+  """,
+  timeout: 300_000
+)
+```
+
+### gas
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl gas\n    (gas : gas)\n    (call : call_transaction)\n    : call_transaction\n    =\n    !\\($'\"!call.gas(!gas)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl gas
+      (gas : gas)
+      (call : call_transaction)
+      : call_transaction
+      =
+      !\($'"!call.gas(!gas)"')
+  """,
+  timeout: 300_000
+)
+```
+
+### from_tgas
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_tgas\n    (tgas : i32)\n    : gas\n    =\n    backend_switch {\n        // Native literals are typed (`300i32`); from_tgas takes a u64.\n        Rust = fun () => !\\($'\"near_workspaces::types::Gas::from_tgas(!tgas as u64)\"') : gas\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl from_tgas
+      (tgas : i32)
+      : gas
+      =
+      backend_switch {
+          // Native literals are typed (`300i32`); from_tgas takes a u64.
+          Rust = fun () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
+      }
+  """,
+  timeout: 300_000
+)
+```
+
+### as_yoctonear
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =\n    // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.\n    !\\\\(tokens, $'\"$0.as_yoctonear()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =
+      // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.
+      !\\(tokens, $'"$0.as_yoctonear()"')
+  """,
+  timeout: 300_000
+)
+```
+
+### print_usd
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl print_usd retry (result : execution_final_result) =\n    inl total_gas_burnt = result |> total_gas_burnt |> as_gas\n    inl total_gas_burnt_usd = total_gas_burnt |> near.gas_to_usd\n\n    trace Info\n        fun () => \"near_workspaces.print_usd\"\n        fun () => { retry total_gas_burnt_usd total_gas_burnt }\n\n    result\n    |> outcomes\n    |> iter.into_iter\n    |> iter.cloned\n    |> iter.for_each fun outcome =>\n        inl is_success = outcome |> is_success\n\n        inl gas_burnt = outcome |> gas_burnt |> as_gas\n        inl gas_burnt_usd = gas_burnt |> near.gas_to_usd\n\n        inl tokens_burnt = outcome |> tokens_burnt |> as_yoctonear\n        inl tokens_burnt_usd = tokens_burnt |> near.tokens_to_usd\n\n        trace Info\n            fun () => \"near_workspaces.print_usd / outcome\"\n            fun () => { is_success gas_burnt_usd tokens_burnt_usd gas_burnt tokens_burnt }","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl print_usd retry (result : execution_final_result) =
+      inl total_gas_burnt = result |> total_gas_burnt |> as_gas
+      inl total_gas_burnt_usd = total_gas_burnt |> near.gas_to_usd
+
+      trace Info
+          fun () => "near_workspaces.print_usd"
+          fun () => { retry total_gas_burnt_usd total_gas_burnt }
+
+      result
+      |> outcomes
+      |> iter.into_iter
+      |> iter.cloned
+      |> iter.for_each fun outcome =>
+          inl is_success = outcome |> is_success
+
+          inl gas_burnt = outcome |> gas_burnt |> as_gas
+          inl gas_burnt_usd = gas_burnt |> near.gas_to_usd
+
+          inl tokens_burnt = outcome |> tokens_burnt |> as_yoctonear
+          inl tokens_burnt_usd = tokens_burnt |> near.tokens_to_usd
+
+          trace Info
+              fun () => "near_workspaces.print_usd / outcome"
+              fun () => { is_success gas_burnt_usd tokens_burnt_usd gas_burnt tokens_burnt }
+  """,
+  timeout: 300_000
+)
+```

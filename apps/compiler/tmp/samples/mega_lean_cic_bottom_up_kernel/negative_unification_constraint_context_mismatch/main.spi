@@ -1,12 +1,8 @@
-inl impossible_corrected_cic_unification_constraint_context_mismatch () :
-    corrected_cic_unification_constraint_program
-        empty_ctx bool_sort
-        (cic_chain_succ cic_chain_zero) =
-    CorrectedCicUnificationConstraintProgramMore (
-        CorrectedCicUnificationRigid (corrected_cic_bound_here ()),
-        CorrectedCicUnificationRigid (corrected_cic_true ()),
-        CorrectedCicUnificationConstraintProgramDone,
-        "a-single-unification-cell-cannot-pair-different-contexts")
+// A metavariable assignment is indexed by the slot's context (successor of the retired string unification cells): a slot of the empty context cannot take a term bound under a Bool binder.
+open main
+
+inl impossible_corrected_cic_unification_constraint_context_mismatch () : corrected_cic_meta_assignment_plan empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty))) =
+    CorrectedCicMetaAssignmentPlanRigid (corrected_cic_bound_here ())
 
 inl main () =
     impossible_corrected_cic_unification_constraint_context_mismatch ()

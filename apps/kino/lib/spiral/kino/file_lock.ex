@@ -2,10 +2,15 @@ defmodule Spiral.Kino.FileLock do
   @spec with_lock(String.t(), (-> term()), non_neg_integer()) :: term()
   def with_lock(path, fun, timeout \\ 30_000) when is_function(fun, 0) do
     File.mkdir_p!(Path.dirname(path))
-    claim(path, fun, System.monotonic_time(:millisecond) + timeout)
+    now = System.monotonic_time(:millisecond)
+    claim(path, fun, now + timeout, now)
   end
 
-  defp claim(path, fun, deadline) do
+  # How often a waiter checks whether the holder died: the check runs `tasklist` on Windows (slow under load), so it is
+  # not done on every 50 ms poll.
+  @liveness_every_ms 2_000
+
+  defp claim(path, fun, deadline, next_check) do
     case File.open(path, [:write, :exclusive]) do
       {:ok, io} ->
         try do
@@ -17,17 +22,20 @@ defmodule Spiral.Kino.FileLock do
         end
 
       {:error, reason} when reason in [:eexist, :eacces] ->
-        cond do
-          holder_dead?(path) ->
-            File.rm(path)
-            claim(path, fun, deadline)
+        now = System.monotonic_time(:millisecond)
+        check? = now >= next_check
 
-          System.monotonic_time(:millisecond) > deadline ->
+        cond do
+          check? and holder_dead?(path) ->
+            File.rm(path)
+            claim(path, fun, deadline, now)
+
+          now > deadline ->
             {:error, :lock_timeout}
 
           true ->
             Process.sleep(50)
-            claim(path, fun, deadline)
+            claim(path, fun, deadline, if(check?, do: now + @liveness_every_ms, else: next_check))
         end
 
       {:error, reason} ->
@@ -43,7 +51,8 @@ defmodule Spiral.Kino.FileLock do
     case File.read(path) do
       {:ok, text} ->
         case Integer.parse(String.trim(text)) do
-          {pid, ""} -> not Spiral.Kino.Runner.os_pid_alive?(pid)
+          # this BEAM (a parallel cell of the same notebook) is alive without asking `tasklist`
+          {pid, ""} -> Integer.to_string(pid) != System.pid() and not Spiral.Kino.Runner.os_pid_alive?(pid)
           _ -> older_than_grace?(path)
         end
 

@@ -1,0 +1,542 @@
+# reflection
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\nopen testing","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test static
+
+  open testing
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"open sm'_operators","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  open sm'_operators
+  """,
+  timeout: 300_000
+)
+```
+
+## reflection
+
+<!-- livebook:{"break_markdown":true} -->
+
+### get_union_fields
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_union_fields forall union_type. () : list (string * union_type) =\n    real\n        real_core.union_to_record\n            `union_type\n            forall union_record_type. =>\n                real_core.record_type_fold\n                    fun acc key =>\n                        forall value. =>\n                            inl value =\n                                typecase value with\n                                | () => $'' : value\n                                | _ =>\n                                    backend_switch `value `({}) {\n                                        Gleam =\n                                            (fun () =>\n                                                $'Nil' : value\n                                            ) : () -> value\n                                        Lua =\n                                            (fun () =>\n                                                $'nil' : value\n                                            ) : () -> value\n                                        Fsharp =\n                                            (fun () =>\n                                                $'Unchecked.defaultof<_>' : value\n                                            ) : () -> value\n                                        // As F#'s Unchecked.defaultof<_>: a value type's zero (0 for an i32 payload),\n                                        // None (null) for everything else. Every arm is evaluated on every backend: the\n                                        // literal is_python keeps the other backends' evaluation (and numbering) as before.\n                                        Python =\n                                            (fun () =>\n                                                inl is_python =\n                                                    backend_switch `bool `({}) {\n                                                        Gleam = (fun () => false) : () -> bool\n                                                        Lua = (fun () => false) : () -> bool\n                                                        Fsharp = (fun () => false) : () -> bool\n                                                        Python = (fun () => true) : () -> bool\n                                                    }\n                                                if is_python\n                                                then\n                                                    typecase value with\n                                                    | i8 => 0i8\n                                                    | i16 => 0i16\n                                                    | i32 => 0i32\n                                                    | i64 => 0i64\n                                                    | u8 => 0u8\n                                                    | u16 => 0u16\n                                                    | u32 => 0u32\n                                                    | u64 => 0u64\n                                                    | f32 => 0.0f32\n                                                    | f64 => 0.0f64\n                                                    | bool => false\n                                                    | char => '\\0'\n                                                    | _ => $'None' : value\n                                                else $'None' : value\n                                            ) : () -> value\n                                        // native Rust: the payload type's Default (a number's 0 and bool's false, as F#'s\n                                        // zero of a value type); a payload type without Default (a Spiral union) doesn't compile\n                                        Rust =\n                                            (fun () =>\n                                                $'Default::default()' : value\n                                            ) : () -> value\n                                    }\n                            inl item = real_core.nominal_create `union_type (key, value)\n                            inl key' = sm'_real.symbol_to_string_real `(`key)\n                            (::) `(string * union_type) (key', item) acc\n                    (Nil `(string * union_type))\n                    `union_record_type","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_union_fields forall union_type. () : list (string * union_type) =
+      real
+          real_core.union_to_record
+              `union_type
+              forall union_record_type. =>
+                  real_core.record_type_fold
+                      fun acc key =>
+                          forall value. =>
+                              inl value =
+                                  typecase value with
+                                  | () => $'' : value
+                                  | _ =>
+                                      backend_switch `value `({}) {
+                                          Gleam =
+                                              (fun () =>
+                                                  $'Nil' : value
+                                              ) : () -> value
+                                          Lua =
+                                              (fun () =>
+                                                  $'nil' : value
+                                              ) : () -> value
+                                          Fsharp =
+                                              (fun () =>
+                                                  $'Unchecked.defaultof<_>' : value
+                                              ) : () -> value
+                                          // As F#'s Unchecked.defaultof<_>: a value type's zero (0 for an i32 payload),
+                                          // None (null) for everything else. Every arm is evaluated on every backend: the
+                                          // literal is_python keeps the other backends' evaluation (and numbering) as before.
+                                          Python =
+                                              (fun () =>
+                                                  inl is_python =
+                                                      backend_switch `bool `({}) {
+                                                          Gleam = (fun () => false) : () -> bool
+                                                          Lua = (fun () => false) : () -> bool
+                                                          Fsharp = (fun () => false) : () -> bool
+                                                          Python = (fun () => true) : () -> bool
+                                                      }
+                                                  if is_python
+                                                  then
+                                                      typecase value with
+                                                      | i8 => 0i8
+                                                      | i16 => 0i16
+                                                      | i32 => 0i32
+                                                      | i64 => 0i64
+                                                      | u8 => 0u8
+                                                      | u16 => 0u16
+                                                      | u32 => 0u32
+                                                      | u64 => 0u64
+                                                      | f32 => 0.0f32
+                                                      | f64 => 0.0f64
+                                                      | bool => false
+                                                      | char => '\0'
+                                                      | _ => $'None' : value
+                                                  else $'None' : value
+                                              ) : () -> value
+                                          // native Rust: the payload type's Default (a number's 0 and bool's false, as F#'s
+                                          // zero of a value type); a payload type without Default (a Spiral union) doesn't compile
+                                          Rust =
+                                              (fun () =>
+                                                  $'Default::default()' : value
+                                              ) : () -> value
+                                      }
+                              inl item = real_core.nominal_create `union_type (key, value)
+                              inl key' = sm'_real.symbol_to_string_real `(`key)
+                              (::) `(string * union_type) (key', item) acc
+                      (Nil `(string * union_type))
+                      `union_record_type
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> rust\n///> typescript\n///> cuda\n\nget_union_fields ()\n|> listm'.box\n|> listm'.to_array'\n|> a\n|> am'.sort_by snd\n|> fun (a x : _ int _) => x\n|> _assert_eq' ;[ \"Wasm\", Wasm; \"Contract\", Contract ]\n\nget_union_fields ()\n|> listm'.box\n|> listm'.to_array'\n|> a\n|> am'.sort_by snd\n|> fun (a x : _ int _) => x\n|> _assert_eq' ;[ \"Some\", Some 0i32; \"None\", None ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> rust
+  ///> typescript
+  ///> cuda
+
+  get_union_fields ()
+  |> listm'.box
+  |> listm'.to_array'
+  |> a
+  |> am'.sort_by snd
+  |> fun (a x : _ int _) => x
+  |> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
+
+  get_union_fields ()
+  |> listm'.box
+  |> listm'.to_array'
+  |> a
+  |> am'.sort_by snd
+  |> fun (a x : _ int _) => x
+  |> _assert_eq' ;[ "Some", Some 0i32; "None", None ]
+  """,
+  timeout: 300_000
+)
+```
+
+### get_union_fields_untag
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_union_fields_untag forall union_type. () : list (string * union_type) =\n    real\n        real_core.union_to_record\n            `union_type\n            forall union_record_type. =>\n                inl result =\n                    real_core.record_type_fold_back\n                        fun _key =>\n                            forall value. (acc, (i : i32)) =>\n                                inl key, item : (string * union_type) =\n                                    real_core.union_untag `union_type i\n                                        (fun key => forall value. =>\n                                            inl key' = sm'_real.symbol_to_string_real `(`key)\n                                            inl value =\n                                                typecase value with\n                                                | () => $'' : value\n                                                | _ =>\n                                                    backend_switch `value `({}) {\n                                                        Gleam =\n                                                            (fun () =>\n                                                                $'Nil' : value\n                                                            ) : () -> value\n                                                        Lua =\n                                                            (fun () =>\n                                                                $'nil' : value\n                                                            ) : () -> value\n                                                        Fsharp =\n                                                            (fun () =>\n                                                                $'Unchecked.defaultof<_>' : value\n                                                            ) : () -> value\n                                                        Python =\n                                                            (fun () =>\n                                                                $'None' : value\n                                                            ) : () -> value\n                                                        Rust =\n                                                            (fun () =>\n                                                                $'Default::default()' : value\n                                                            ) : () -> value\n                                                    }\n                                            inl item = real_core.nominal_create `union_type (key, value)\n                                            key', item\n                                        )\n                                        (fun _ =>\n                                            failwith\n                                                `(string * union_type)\n                                                \"reflection.get_union_fields_untag / invalid tag\"\n                                        )\n                                (::) `(string * union_type) (key, item) acc, (+) `i32 i 1\n                        `union_record_type\n                        (Nil `(string * union_type), 0i32)\n                inl result = fst `(list (string * union_type)) `i32 result\n                listm.rev `(string * union_type) result","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_union_fields_untag forall union_type. () : list (string * union_type) =
+      real
+          real_core.union_to_record
+              `union_type
+              forall union_record_type. =>
+                  inl result =
+                      real_core.record_type_fold_back
+                          fun _key =>
+                              forall value. (acc, (i : i32)) =>
+                                  inl key, item : (string * union_type) =
+                                      real_core.union_untag `union_type i
+                                          (fun key => forall value. =>
+                                              inl key' = sm'_real.symbol_to_string_real `(`key)
+                                              inl value =
+                                                  typecase value with
+                                                  | () => $'' : value
+                                                  | _ =>
+                                                      backend_switch `value `({}) {
+                                                          Gleam =
+                                                              (fun () =>
+                                                                  $'Nil' : value
+                                                              ) : () -> value
+                                                          Lua =
+                                                              (fun () =>
+                                                                  $'nil' : value
+                                                              ) : () -> value
+                                                          Fsharp =
+                                                              (fun () =>
+                                                                  $'Unchecked.defaultof<_>' : value
+                                                              ) : () -> value
+                                                          Python =
+                                                              (fun () =>
+                                                                  $'None' : value
+                                                              ) : () -> value
+                                                          Rust =
+                                                              (fun () =>
+                                                                  $'Default::default()' : value
+                                                              ) : () -> value
+                                                      }
+                                              inl item = real_core.nominal_create `union_type (key, value)
+                                              key', item
+                                          )
+                                          (fun _ =>
+                                              failwith
+                                                  `(string * union_type)
+                                                  "reflection.get_union_fields_untag / invalid tag"
+                                          )
+                                  (::) `(string * union_type) (key, item) acc, (+) `i32 i 1
+                          `union_record_type
+                          (Nil `(string * union_type), 0i32)
+                  inl result = fst `(list (string * union_type)) `i32 result
+                  listm.rev `(string * union_type) result
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nget_union_fields_untag ()\n|> _assert_eq' [ \"Wasm\", Wasm; \"Contract\", Contract ]\n\nget_union_fields_untag ()\n|> _assert_eq' [ \"Some\", Some (); \"None\", None ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  get_union_fields_untag ()
+  |> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
+
+  get_union_fields_untag ()
+  |> _assert_eq' [ "Some", Some (); "None", None ]
+  """,
+  timeout: 300_000
+)
+```
+
+### union_try_pick
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl union_try_pick forall t. (key : string) : option t =\n    inl fields = real get_union_fields_untag `t ()\n    fields\n    ++ (\n        fields\n        |> listm.map fun key', x =>\n            key' |> sm'.to_lower, x\n    )\n    |> listm'.box\n    |> listm'.to_array'\n    |> fun x => a x : _ int _\n    |> am'.try_pick fun key', x =>\n        if key' =. key\n        then Some x\n        else None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl union_try_pick forall t. (key : string) : option t =
+      inl fields = real get_union_fields_untag `t ()
+      fields
+      ++ (
+          fields
+          |> listm.map fun key', x =>
+              key' |> sm'.to_lower, x
+      )
+      |> listm'.box
+      |> listm'.to_array'
+      |> fun x => a x : _ int _
+      |> am'.try_pick fun key', x =>
+          if key' =. key
+          then Some x
+          else None
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"wasm\"\n|> union_try_pick\n|> _assert_eq (Some Wasm)\n\n\"Wasm\"\n|> union_try_pick\n|> _assert_eq (Some Wasm)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "wasm"
+  |> union_try_pick
+  |> _assert_eq (Some Wasm)
+
+  "Wasm"
+  |> union_try_pick
+  |> _assert_eq (Some Wasm)
+  """,
+  timeout: 300_000
+)
+```
+
+### union_try_pick'
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl union_try_pick' forall t. (key : string) : option t =\n    inl fields = real get_union_fields_untag `t ()\n    fields\n    ++ (\n        fields\n        |> listm.map fun key', x =>\n            key' |> sm'.to_lower, x\n    )\n    |> listm'.try_pick fun key', x =>\n        if key' =. key\n        then x |> Some\n        else None","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl union_try_pick' forall t. (key : string) : option t =
+      inl fields = real get_union_fields_untag `t ()
+      fields
+      ++ (
+          fields
+          |> listm.map fun key', x =>
+              key' |> sm'.to_lower, x
+      )
+      |> listm'.try_pick fun key', x =>
+          if key' =. key
+          then x |> Some
+          else None
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n\"wasm\"\n|> union_try_pick'\n|> _assert_eq (Some Wasm)\n\n\"Wasm\"\n|> union_try_pick'\n|> _assert_eq (Some Wasm)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> gleam
+  ///> lua
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  "wasm"
+  |> union_try_pick'
+  |> _assert_eq (Some Wasm)
+
+  "Wasm"
+  |> union_try_pick'
+  |> _assert_eq (Some Wasm)
+  """,
+  timeout: 300_000
+)
+```
+
+### union_to_string
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl union_to_string forall t. (x : t) : string =\n    real get_union_fields_untag `t ()\n    |> listm'.try_pick fun key, x' =>\n        if x' = x\n        then Some key\n        else\n            inl has_case =\n                real\n                    real_core.union_to_record\n                        `t\n                        forall union_record_type. =>\n                            real_core.record_type_fold_back\n                                fun _key =>\n                                    forall value. acc =>\n                                        if acc\n                                        then acc\n                                        else\n                                            typecase value with\n                                            | () => false\n                                            | _ => true\n                                `union_record_type\n                                false\n            if has_case |> not\n            then None\n            else\n                inl separator =\n                    backend_switch {\n                        Gleam = fun () => \"(\"\n                        Lua = fun () => \"(\"\n                        Fsharp = fun () =>\n                            run_target function\n                                | RustNative => fun () => join \"(\"\n                                | _ => fun () => join \" \"\n                        Python = fun () => \"(\"\n                        // Native Debug prints a union case as `US0_1(..)`.\n                        Rust = fun () => \"(\"\n                    }\n                inl x' = #?x' |> sm'.split separator |> am'.index_base 0\n                if #?x |> sm'.starts_with x'\n                then Some key\n                else None\n    |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl union_to_string forall t. (x : t) : string =
+      real get_union_fields_untag `t ()
+      |> listm'.try_pick fun key, x' =>
+          if x' = x
+          then Some key
+          else
+              inl has_case =
+                  real
+                      real_core.union_to_record
+                          `t
+                          forall union_record_type. =>
+                              real_core.record_type_fold_back
+                                  fun _key =>
+                                      forall value. acc =>
+                                          if acc
+                                          then acc
+                                          else
+                                              typecase value with
+                                              | () => false
+                                              | _ => true
+                                  `union_record_type
+                                  false
+              if has_case |> not
+              then None
+              else
+                  inl separator =
+                      backend_switch {
+                          Gleam = fun () => "("
+                          Lua = fun () => "("
+                          Fsharp = fun () =>
+                              run_target function
+                                  | RustNative => fun () => join "("
+                                  | _ => fun () => join " "
+                          Python = fun () => "("
+                          // Native Debug prints a union case as `US0_1(..)`.
+                          Rust = fun () => "("
+                      }
+                  inl x' = #?x' |> sm'.split separator |> am'.index_base 0
+                  if #?x |> sm'.starts_with x'
+                  then Some key
+                  else None
+      |> optionm.value
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nSome true\n|> union_to_string\n|> _assert_eq' \"Some\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+  ///> cuda
+  ///> rust
+  ///> typescript
+
+  Some true
+  |> union_to_string
+  |> _assert_eq' "Some"
+  """,
+  timeout: 300_000
+)
+```
+
+### nameof
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl nameof forall t. (x : t) : string =\n    real\n        real_core.record_type_fold_back\n            fun key =>\n                forall value. _ =>\n                    sm'_real.symbol_to_string_real `(`key)\n            `t\n            \"\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl nameof forall t. (x : t) : string =
+      real
+          real_core.record_type_fold_back
+              fun key =>
+                  forall value. _ =>
+                      sm'_real.symbol_to_string_real `(`key)
+              `t
+              ""
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n{ test1 = \"\"; test2 = \"\" }\n|> nameof\n|> _assert_eq' \"test1\"","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  { test1 = ""; test2 = "" }
+  |> nameof
+  |> _assert_eq' "test1"
+  """,
+  timeout: 300_000
+)
+```
+
+### get_record_fields
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_record_fields forall t u. (x : t) : list (string * u) =\n    real\n        real_core.record_type_fold_back\n            fun key =>\n                forall u'. acc =>\n                    inl k = sm'_real.symbol_to_string_real `(`key)\n                    inl v = x key\n                    (::) `(string * u') (k, v) acc\n            `t\n            (Nil `(string * u))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_record_fields forall t u. (x : t) : list (string * u) =
+      real
+          real_core.record_type_fold_back
+              fun key =>
+                  forall u'. acc =>
+                      inl k = sm'_real.symbol_to_string_real `(`key)
+                      inl v = x key
+                      (::) `(string * u') (k, v) acc
+              `t
+              (Nil `(string * u))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n\n{ a = \"1\"; b = \"2\" }\n|> get_record_fields\n|> _assert_eq' [ \"a\", \"1\"; \"b\", \"2\" ]","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+
+  { a = "1"; b = "2" }
+  |> get_record_fields
+  |> _assert_eq' [ "a", "1"; "b", "2" ]
+  """,
+  timeout: 300_000
+)
+```
+
+### get_functions_types
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_functions_types forall t {record}. (fns : t) =\n    real\n        inl get_function_type forall t. =\n            inl args forall t {record}. : list (string * string) =\n                real_core.record_type_fold_back\n                    fun key =>\n                        forall v. acc =>\n                            inl k = sm'_real.symbol_to_string_real `(`key)\n                            inl v = $'\"`v\"' : string\n                            (::) `(string * string) (k, v) acc\n                    `t\n                    (Nil `(string * string))\n\n            typecase t with\n            | ~t -> ~u => args `t, ($'\"`u\"' : string)\n\n        real_core.record_type_fold_back\n            fun key =>\n                forall v. acc =>\n                    inl k = sm'_real.symbol_to_string_real `(`key)\n                    inl args, result = get_function_type `v\n                    (::) `(string * (list (string * string) * string)) (k, (args, result)) acc\n            `(`fns)\n            (Nil `(string * (list (string * string) * string)))\n    |> fun x => x : list (string * (list (string * string) * string))","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  inl get_functions_types forall t {record}. (fns : t) =
+      real
+          inl get_function_type forall t. =
+              inl args forall t {record}. : list (string * string) =
+                  real_core.record_type_fold_back
+                      fun key =>
+                          forall v. acc =>
+                              inl k = sm'_real.symbol_to_string_real `(`key)
+                              inl v = $'"`v"' : string
+                              (::) `(string * string) (k, v) acc
+                      `t
+                      (Nil `(string * string))
+
+              typecase t with
+              | ~t -> ~u => args `t, ($'"`u"' : string)
+
+          real_core.record_type_fold_back
+              fun key =>
+                  forall v. acc =>
+                      inl k = sm'_real.symbol_to_string_real `(`key)
+                      inl args, result = get_function_type `v
+                      (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
+              `(`fns)
+              (Nil `(string * (list (string * string) * string)))
+      |> fun x => x : list (string * (list (string * string) * string))
+  """,
+  timeout: 300_000
+)
+```
+
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl one ({ a } : { a : i32 }) : i32 = a + 1\ninl two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2\ninl fns = { one two }\n\nfns\n|> get_functions_types\n|> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)\n|> listm'.box\n|> listm'.to_array'\n|> sm'.format\n|> _assert_eq' (\n    [\n        \"one\", [\"a\", \"int32\"], \"int32\"\n        \"two\", [\"a\", \"int32\"; \"b\", \"int32\"], \"int32\"\n    ]\n    |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)\n    |> listm'.box\n    |> listm'.to_array'\n    |> sm'.format\n)","print_code":false},"livebook_object":"smart_cell"} -->
+
+```elixir
+Spiral.Kino.eval!(
+  ~S"""
+  ///- --test
+  ///> fsharp
+
+  inl one ({ a } : { a : i32 }) : i32 = a + 1
+  inl two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
+  inl fns = { one two }
+
+  fns
+  |> get_functions_types
+  |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+  |> listm'.box
+  |> listm'.to_array'
+  |> sm'.format
+  |> _assert_eq' (
+      [
+          "one", ["a", "int32"], "int32"
+          "two", ["a", "int32"; "b", "int32"], "int32"
+      ]
+      |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+      |> listm'.box
+      |> listm'.to_array'
+      |> sm'.format
+  )
+  """,
+  timeout: 300_000
+)
+```

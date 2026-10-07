@@ -408,6 +408,143 @@ defmodule Spiral.Kino.NotebookTest do
     assert left < right_done and right < left_done
   end
 
+  # The old .dib kernel committed every cell but a non-static test: a `--test static` cell's definitions reach the cells
+  # after it (physics' pedal_coast, parsing's FParsec bindings).
+  test "a --test static cell's definitions reach later cells; a --test cell's do not", %{dir: dir} do
+    path = Path.join(dir, "static.dib")
+
+    File.write!(path, """
+    #!spiral
+
+    ///- --test static
+
+    inl kept () = 1i32
+
+    #!spiral
+
+    ///- --test
+
+    inl dropped () = 2i32
+    kept ()
+
+    #!spiral
+
+    ///- --test
+
+    kept () + 1i32
+    """)
+
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    assert :ok =
+             Notebook.run(path,
+               compile: compile(agent),
+               rustc: &rustc_ok/1,
+               execute: run_value("ok\n"),
+               spi: false
+             )
+
+    last = agent |> Agent.get(& &1) |> Enum.find(&calls?(&1, "kept () + 1i32"))
+    assert "inl kept () = 1i32" in lines(last)
+    refute "inl dropped () = 2i32" in lines(last)
+  end
+
+  # `--real` cells are real-segment code (the old kernel's <module>_real.spir): they never go into a top-down program;
+  # every later cell gets them as main_real.spir (`main_real*-` before main), and a real cell runs as that module with
+  # its trailing expression as `spiral_kino_real`, called from main.
+  test "--real cells become the main_real module", %{dir: dir} do
+    path = Path.join(dir, "real.dib")
+
+    File.write!(path, """
+    #!spiral
+
+    ///- --real
+
+    inl twice_real (x : i32) : i32 = x + x
+
+    #!spiral
+
+    inl twice (x : i32) : i32 = real twice_real x
+
+    #!spiral
+
+    ///- --real --test
+
+    inl y = twice_real 2i32
+    y
+
+    #!spiral
+
+    ///- --test
+
+    twice 21i32
+    """)
+
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    compile = fn %{spi_path: spi, source: source} ->
+      dir = Path.dirname(spi)
+      real = Path.join(dir, "main_real.spir")
+      proj = File.read!(Path.join(dir, "package.spiproj"))
+      real_text = if File.regular?(real), do: File.read!(real)
+      Agent.update(agent, &(&1 ++ [{source, real_text, proj}]))
+      {:ok, "fn main() {}\n"}
+    end
+
+    assert :ok =
+             Notebook.run(path,
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value("ok\n"),
+               spi: false
+             )
+
+    runs = Agent.get(agent, & &1)
+    # the definitions-only real cell is an empty program here (no lib package header), so it compiles nothing
+    assert length(runs) == 3
+
+    for {source, real, proj} <- runs do
+      refute source =~ "inl twice_real", "a real definition reached a top-down program"
+      assert real =~ "inl twice_real (x : i32) : i32 = x + x"
+      assert proj =~ ~r/^    main_real\*-\n    main$/m
+    end
+
+    {real_test, real, _} = Enum.find(runs, fn {source, _, _} -> source =~ "spiral_kino_real" end)
+    assert real_test =~ "real spiral_kino_real ()"
+
+    # the trailing value bindings and the expression: the real entry (the old kernel wrapped them as its main)
+    assert real =~ "inl spiral_kino_real () =\n    inl y = twice_real 2i32\n    y"
+
+    {_, real, _} = Enum.find(runs, fn {source, _, _} -> calls?(source, "twice 21i32") end)
+    refute real =~ "inl y = twice_real 2i32", "a real test's code reached a later cell"
+  end
+
+  # leptos (206 cells) started every cell at once: all of them waited behind the one compiler with their 300 s budgets
+  # running, and the whole notebook timed out. At most SPIRAL_KINO_CELL_CONCURRENCY (default 4) cells run at a time.
+  test "at most four cells run at a time", %{dir: dir} do
+    path = Path.join(dir, "many_cells.dib")
+    File.write!(path, Enum.map_join(1..10, "\n", &"#!spiral\n\ninl f#{&1} () = #{&1}i32\n"))
+    {:ok, agent} = Agent.start_link(fn -> {0, 0} end)
+
+    compile = fn _ctx ->
+      Agent.update(agent, fn {now, top} -> {now + 1, max(top, now + 1)} end)
+      Process.sleep(100)
+      Agent.update(agent, fn {now, top} -> {now - 1, top} end)
+      {:ok, "fn main() {}\n"}
+    end
+
+    assert :ok =
+             Notebook.run(path,
+               compile: compile,
+               rustc: &rustc_ok/1,
+               execute: run_value("ok\n"),
+               spi: false
+             )
+
+    {0, top} = Agent.get(agent, & &1)
+    assert top in 2..4
+  end
+
   defp lines(source), do: String.split(source, "\n")
   defp calls?(source, line), do: Enum.any?(lines(source), &(String.trim(&1) == line))
 

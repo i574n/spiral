@@ -1,32 +1,24 @@
-inl impossible_composite_recursion_authority_wrong_root () :
-    (exists length divisor quotient.
-        certified_interval_positive_positional_composite_recursion_authority
-            (positional_zero_bit (positional_zero_bit positional_one))
-            length divisor quotient) =
-    match classify_certified_interval_positive_positional_sealed_factor
-            (positive_positional_twelve_value ()) with
+open main
+
+// tests: a composite recursion authority built from twelve's classification is rooted at twelve, not four (rewritten against the current 7-field CompositeRecursionAuthority: membership/quotient descents + parent accessibility)
+inl impossible_composite_recursion_authority_wrong_root () : (exists length divisor quotient. certified_interval_positive_positional_composite_recursion_authority (positional_zero_bit (positional_zero_bit positional_one)) length divisor quotient) =
+    inl root_value = positive_positional_twelve_value ()
+    match classify_certified_interval_positive_positional_sealed_factor root_value with
     | CertifiedIntervalPositivePositionalSealedCompositeClass payload =>
-        inl exists length divisor quotient.
-            root_value, _, quotient_value, membership, division, _ = payload
-        match
-            derive_certified_interval_positive_positional_membership_recursive_descent
-                root_value membership,
-            derive_certified_interval_positive_positional_recursive_descent
-                root_value quotient_value
-        with
-        | CertifiedIntervalPositivePositionalRecursiveDescentProven divisor_descent,
-          CertifiedIntervalPositivePositionalRecursiveDescentProven quotient_descent =>
-            exists (
-                length,
-                divisor,
-                quotient,
-                CertifiedIntervalPositivePositionalCompositeRecursionAuthority (
-                    membership,
-                    division,
-                    quotient_value,
-                    divisor_descent,
-                    quotient_descent,
-                    "the-composite-authority-is-rooted-at-twelve-not-four"))
+        inl exists length divisor quotient. natural_value, divisor_value, quotient_value, membership, division, note = payload
+        inl children : certified_interval_positive_positional_sealed_composite_children (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) divisor quotient =
+            CertifiedIntervalPositivePositionalSealedCompositeChildren (exists (natural_value, divisor_value, quotient_value, membership, division, note))
+        exists (
+            CertifiedIntervalPositivePositionalCompositeRecursionAuthority (
+                membership,
+                division,
+                quotient_value,
+                derive_certified_interval_positive_positional_membership_recursive_descent root_value membership,
+                derive_certified_interval_positive_positional_quotient_recursive_descent_from_children children,
+                derive_positive_positional_predecessor_accessibility root_value,
+                "the-composite-authority-is-rooted-at-twelve-not-four"))
+    | _ => mega_runtime_fail "twelve-must-classify-as-composite-before-the-negative-boundary"
 
 inl main () =
-    impossible_composite_recursion_authority_wrong_root ()
+    inl _ = impossible_composite_recursion_authority_wrong_root ()
+    ()

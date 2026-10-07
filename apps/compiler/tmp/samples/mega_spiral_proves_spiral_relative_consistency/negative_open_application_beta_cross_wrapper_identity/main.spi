@@ -1,3 +1,5 @@
+open main
+
 inl impossible_open_application_beta_cross_wrapper_identity () :
     exact_linear_indexed_open_application_beta_step exact_linear_unit_type =
     ExactLinearIndexedOpenApplicationBetaStep (

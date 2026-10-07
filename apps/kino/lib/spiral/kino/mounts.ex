@@ -25,6 +25,17 @@ defmodule Spiral.Kino.Mounts do
   def ensure(entries) when is_list(entries) do
     dir = Path.join(root(), key(entries))
 
+    # A mount is complete once `ready` exists and is never rebuilt after that (an edit changes the key, so it gets a new
+    # dir): the common case takes no lock. Every cell of every parallel notebook mounts the same lib, and queueing them
+    # all on one lock file timed cells out (`:lock_timeout`) on a loaded machine.
+    if File.regular?(Path.join(dir, "ready")) do
+      {:ok, forward(dir)}
+    else
+      build_locked(dir, entries)
+    end
+  end
+
+  defp build_locked(dir, entries) do
     case Spiral.Kino.FileLock.with_lock(dir <> ".lock", fn -> build(dir, entries) end, 180_000) do
       :ok -> {:ok, forward(dir)}
       {:error, reason} when is_binary(reason) -> {:error, reason}

@@ -1,7 +1,6 @@
 param(
     $fast,
     $SkipNotebook,
-    $SkipFsx,
     $SkipPreBuild,
     $ScriptDir = $PSScriptRoot
 )
@@ -30,62 +29,32 @@ function MoveExeAside {
 # -SkipPreBuild (polyglot/scripts/init.ps1's bootstrap, before any spiral CLI exists): no dib-export and no F# output;
 # the native build only needs the Spiral compiler (lib.ps1's BuildNativeRust) and cargo.
 if (!$SkipPreBuild) {
-    { . $exe dib-export "$ResolvedScriptDir/$projectName.dib" spi } | Invoke-Block
+    # spiral.spi from the notebook, through Kino (apps/kino/spi/livebook_dib.ps1 --export-only).
+    $livebook = Join-Path $ResolvedScriptDir "../kino/spi/livebook_dib.ps1"
+    { pwsh -NoProfile -File $livebook --path "$ResolvedScriptDir/$projectName.livemd" --spi-path "$ResolvedScriptDir/$projectName.spi" --export-only } | Invoke-Block
 }
 
-if (!$SkipPreBuild -and !$SkipFsx) {
-    { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --build-file "$projectName.spi" "$projectName.fsx" } | Invoke-Block
-}
-
-# Native Rust: the spiral.spi entry (its `main` runs `run_main` on the process arguments when `rust.is_native ()`) -> a
-# crate under the target dir with the Spiral compiler's own Rust backend. The compiler writes its output next to the .spi
-# it compiles, so it compiles a staged copy (the .spi plus a package file with an absolute packageDir).
+# Native Rust: spiral.spi -> spiral.rs (tracked) with the Spiral compiler's own Rust backend: the `spiral` bin of
+# Cargo.toml, a member of the spiral workspace. Built with the workspace's release-unwind profile: lib's `try` catches
+# panics natively (the release profile aborts). mimalloc is the global allocator (D7': the CLI parses every command line
+# it runs, and the system heap was ~57 % of its native profile); build.rs sets the icon.
 $targetDir = GetTargetDir $projectName
-$nativeDir = "$targetDir/native"
-$nativeStage = "$nativeDir/spi"
-Remove-Item $nativeStage -Recurse -Force -ErrorAction Ignore
-New-Item -ItemType Directory -Force "$nativeDir/src", $nativeStage | Out-Null
-Copy-Item "$projectName.spi" $nativeStage
-Copy-Item "build.rs", "$projectName.ico" $nativeDir
-$packageDir = (ResolveLink (GetFullPath "../../deps/polyglot/deps/spiral/lib")) -replace '\\', '/'
-@("packageDir: $packageDir", 'packages:', '    |core-', '    spiral-', 'modules:', "    $projectName") | Set-Content "$nativeStage/package.spiproj"
-# The release profile keeps unwinding (lib's `try` catches panics natively). mimalloc is the global allocator (D7': the
-# CLI parses every command line it runs, and the system heap was ~57 % of its native profile); build.rs sets the icon.
-@(
-    '[package]', "name = `"$projectName`"", 'version = "0.0.1"', 'edition = "2021"', 'build = "build.rs"', '', '[workspace]', '',
-    '[[bin]]', "name = `"$projectName`"", 'path = "src/main.rs"', '',
-    '[build-dependencies]',
-    'winres = "0.1"', '',
-    '[dependencies]',
-    'mimalloc = { version = "0.1", default-features = false }',
-    'chrono = ">=0.4,<1"',
-    'regex = "1.10"',
-    'sha2 = "~0.11.0-pre.4"',
-    'serde_json = { version = "1.0", features = ["arbitrary_precision"] }',
-    'clap = "4.5"',
-    'futures = ">=0.3,<1"',
-    'encoding_rs = ">=0.8,<1"',
-    'encoding_rs_io = ">=0.1,<1"',
-    'async-walkdir = "2.0"',
-    'mlua = { version = ">=0.11.4", features = ["lua51", "vendored"] }'
-) | Set-Content "$nativeDir/Cargo.toml"
-# The first build pins the dependencies at the versions of the spiral workspace's lock file (the Fable crate,
-# Cargo.toml + spiral.rs, is a workspace member with the same dependencies; it is no longer built here).
-if (!(Test-Path "$nativeDir/Cargo.lock")) { Copy-Item "../../workspace/Cargo.lock" "$nativeDir/Cargo.lock" }
-if (!(BuildNativeRust "$nativeStage/$projectName.spi" "$nativeDir/src/main.rs" "apps/spiral")) {
+if (!(BuildNativeRust "$projectName.spi" "$projectName.rs" "apps/spiral")) {
     throw "NATIVE-RUST-FAILED apps/spiral / compile"
 }
-Add-Content "$nativeDir/src/main.rs" "#[global_allocator]`nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;"
-{ cargo +nightly-2025-11-01 build --release } | Invoke-Block -Location $nativeDir
-$nativeExe = "$nativeDir/target/release/$projectName$(_exe)"
-
+# .NET resolves a relative path against the process directory, not the pwsh location (and GetFullPath of a bare name
+# resolves to "<dir>\<name>\"): the script directory, explicitly.
+[IO.File]::AppendAllText((Join-Path $ResolvedScriptDir "$projectName.rs"), "#[global_allocator]`nstatic GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;`n")
+{ cargo +nightly-2025-11-01 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
+$cargoTarget = (cargo metadata --format-version 1 --no-deps --manifest-path ../../workspace/Cargo.toml | ConvertFrom-Json).target_directory
+$nativeExe = "$cargoTarget/release-unwind/$projectName$(_exe)"
 # Required run check before the binary replaces the shipped one:
 # - `--help` exits 0 with clap's usage, and `dib-export` of a small notebook writes the expected .spi;
-# - `dib-export` of every .dib of this repo (spi, plus spir for sm') gives byte-identical files and the same exit codes as
+# - `dib-export` of every notebook of this repo (its .livemd rendered as .dib by Kino; spi, plus spir for sm') gives byte-identical files and the same exit codes as
 #   the previous CLI (skipped when there is none, e.g. a fresh checkout; to ship an intended dib-export change, delete
 #   the previous exe first);
 # - `rust --rs-path` builds and runs a std-only program, `cuda --py-path` runs a Python program (SPIRAL_JSON output).
-$checkDir = "$nativeDir/check"
+$checkDir = "$targetDir/check"
 Remove-Item $checkDir -Recurse -Force -ErrorAction Ignore
 New-Item -ItemType Directory -Force $checkDir | Out-Null
 $failures = @()
@@ -106,8 +75,21 @@ try {
 
     if (Test-Path $exe) {
         $repoRoot = GetFullPath "../.."
-        $dibs = Get-ChildItem "$repoRoot/lib", "$repoRoot/apps" -Recurse -Filter *.dib -ErrorAction Ignore `
+        # The notebooks are .livemd only (D27): Kino renders each one as the .dib the CLI reads (Document.to_dib, the
+        # same route as Kino's F# export), and both CLIs export those.
+        $livemds = Get-ChildItem "$repoRoot/lib", "$repoRoot/apps" -Recurse -Filter *.livemd -ErrorAction Ignore `
             | Where-Object { $_.FullName -notmatch '[\\/](target|node_modules|deps|bin|obj|_build|\.git)[\\/]' }
+        $rendered = "$checkDir/livemd"
+        $sep = [IO.Path]::PathSeparator
+        $homeDir = $env:USERPROFILE ?? $env:HOME
+        $mixPath = (@("scoop/apps/erlang/current/bin", "scoop/apps/elixir/current/bin") | ForEach-Object { Join-Path $homeDir $_ } | Where-Object { Test-Path $_ }) -join $sep
+        $env:PATH, $pathBefore = "$mixPath$sep$env:PATH", $env:PATH
+        Push-Location (GetFullPath "../kino")
+        [IO.File]::WriteAllText("$checkDir/livemd.txt", (($livemds.FullName -join "`n") + "`n"))
+        try { $renderOutput = mix spiral.render_dib --out-dir $rendered --list "$checkDir/livemd.txt" 2>&1 | ForEach-Object { "$_" }; $renderExit = $LASTEXITCODE }
+        finally { Pop-Location; $env:PATH = $pathBefore }
+        if ($renderExit -ne 0) { $failures += "mix spiral.render_dib exit ${renderExit}: $($renderOutput -join ' / ')" }
+        $dibs = Get-ChildItem $rendered -Recurse -Filter *.dib -ErrorAction Ignore
         $i = 0
         foreach ($dib in $dibs) {
             $i++

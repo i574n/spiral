@@ -2101,99 +2101,95 @@ let v66 : bool = method8(v60, v65, v20)
 if v66 then
     ()
 else
-    let v67 : string = "structural remainder theorem certificate should cover every regex constructor"
-    failwith v67
-    ()
-let v68 : US1 = US1_0
-let v69 : UH8 = UH8_2(v68)
-let v70 : US1 = US1_1
-let v71 : UH8 = UH8_2(v70)
-let v72 : UH8 = UH8_3(v69, v71)
-let v73 : UH8 = UH8_5(v72)
-let v74 : US1 = US1_2
-let v75 : UH8 = UH8_2(v74)
-let v76 : UH8 = UH8_4(v73, v75)
-let v77 : US1 = US1_0
-let v78 : US1 = US1_1
-let v79 : US1 = US1_2
-let v80 : UH3 = UH3_0
-let v81 : UH3 = UH3_1(v79, v80)
-let v82 : UH3 = UH3_1(v78, v81)
-let v83 : UH3 = UH3_1(v77, v82)
-let v84 : bool = method34(v76, v83, v47)
-if v84 then
+    failwith<unit> "structural remainder theorem certificate should cover every regex constructor"
+let v67 : US1 = US1_0
+let v68 : UH8 = UH8_2(v67)
+let v69 : US1 = US1_1
+let v70 : UH8 = UH8_2(v69)
+let v71 : UH8 = UH8_3(v68, v70)
+let v72 : UH8 = UH8_5(v71)
+let v73 : US1 = US1_2
+let v74 : UH8 = UH8_2(v73)
+let v75 : UH8 = UH8_4(v72, v74)
+let v76 : US1 = US1_0
+let v77 : US1 = US1_1
+let v78 : US1 = US1_2
+let v79 : UH3 = UH3_0
+let v80 : UH3 = UH3_1(v78, v79)
+let v81 : UH3 = UH3_1(v77, v80)
+let v82 : UH3 = UH3_1(v76, v81)
+let v83 : bool = method34(v75, v82, v47)
+if v83 then
     ()
 else
-    let v85 : string = "structural remainder theorem certificate should generalize across nominal alphabets"
-    failwith v85
-    ()
-let v86 : US0 = US0_0
+    failwith<unit> "structural remainder theorem certificate should generalize across nominal alphabets"
+let v84 : US0 = US0_0
+let v85 : UH6 = UH6_2(v84)
+let v86 : US0 = US0_1
 let v87 : UH6 = UH6_2(v86)
-let v88 : US0 = US0_1
-let v89 : UH6 = UH6_2(v88)
-let v90 : UH6 = UH6_3(v87, v89)
-let v91 : UH6 = UH6_5(v90)
-let v92 : US0 = US0_0
-let v93 : UH6 = UH6_2(v92)
-let v94 : UH6 = UH6_4(v91, v93)
-let v95 : US0 = US0_1
-let v96 : US0 = US0_1
-let v97 : US0 = US0_0
-let v98 : UH2 = UH2_0
-let v99 : UH2 = UH2_1(v97, v98)
-let v100 : UH2 = UH2_1(v96, v99)
-let v101 : UH7 = method10(v94, v95, v100)
-let v102 : US0 = US0_0
+let v88 : UH6 = UH6_3(v85, v87)
+let v89 : UH6 = UH6_5(v88)
+let v90 : US0 = US0_0
+let v91 : UH6 = UH6_2(v90)
+let v92 : UH6 = UH6_4(v89, v91)
+let v93 : US0 = US0_1
+let v94 : US0 = US0_1
+let v95 : US0 = US0_0
+let v96 : UH2 = UH2_0
+let v97 : UH2 = UH2_1(v95, v96)
+let v98 : UH2 = UH2_1(v94, v97)
+let v99 : UH7 = method10(v92, v93, v98)
+let v100 : US0 = US0_0
+let v101 : UH6 = UH6_2(v100)
+let v102 : US0 = US0_1
 let v103 : UH6 = UH6_2(v102)
-let v104 : US0 = US0_1
-let v105 : UH6 = UH6_2(v104)
-let v106 : UH6 = UH6_3(v103, v105)
-let v107 : UH6 = UH6_5(v106)
-let v108 : US0 = US0_0
-let v109 : UH6 = UH6_2(v108)
-let v110 : UH6 = UH6_4(v107, v109)
-let v111 : UH6 = method12(v101)
-let v112 : bool = method13(v110, v111)
-let v144 : bool =
-    if v112 then
-        let v113 : US0 = method14(v101)
-        let v117 : US4 =
-            match v113 with
+let v104 : UH6 = UH6_3(v101, v103)
+let v105 : UH6 = UH6_5(v104)
+let v106 : US0 = US0_0
+let v107 : UH6 = UH6_2(v106)
+let v108 : UH6 = UH6_4(v105, v107)
+let v109 : UH6 = method12(v99)
+let v110 : bool = method13(v108, v109)
+let v142 : bool =
+    if v110 then
+        let v111 : US0 = method14(v99)
+        let v115 : US4 =
+            match v111 with
             | US0_1 -> (* BitOne *)
                 US4_1
             | US0_0 -> (* BitZero *)
                 US4_2
-        let v118 : bool =
-            match v117 with
+        let v116 : bool =
+            match v115 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v118 then
-            let v119 : US0 = US0_1
-            let v120 : US0 = US0_0
-            let v121 : UH2 = UH2_0
-            let v122 : UH2 = UH2_1(v120, v121)
-            let v123 : UH2 = UH2_1(v119, v122)
-            let v124 : UH2 = method15(v101)
-            let v125 : bool = method16(v123, v124)
-            if v125 then
-                let v126 : US0 = US0_0
+        if v116 then
+            let v117 : US0 = US0_1
+            let v118 : US0 = US0_0
+            let v119 : UH2 = UH2_0
+            let v120 : UH2 = UH2_1(v118, v119)
+            let v121 : UH2 = UH2_1(v117, v120)
+            let v122 : UH2 = method15(v99)
+            let v123 : bool = method16(v121, v122)
+            if v123 then
+                let v124 : US0 = US0_0
+                let v125 : UH6 = UH6_2(v124)
+                let v126 : US0 = US0_1
                 let v127 : UH6 = UH6_2(v126)
-                let v128 : US0 = US0_1
-                let v129 : UH6 = UH6_2(v128)
-                let v130 : UH6 = UH6_3(v127, v129)
-                let v131 : UH6 = UH6_5(v130)
-                let v132 : US0 = US0_0
-                let v133 : UH6 = UH6_2(v132)
-                let v134 : UH6 = UH6_4(v131, v133)
-                let v135 : US0 = US0_1
-                let v136 : UH6 = method17(v134, v135)
-                let v137 : UH6 = method25(v101)
-                let v138 : UH6 = method18(v137)
-                let v139 : bool = method13(v136, v138)
-                if v139 then
-                    method26(v101)
+                let v128 : UH6 = UH6_3(v125, v127)
+                let v129 : UH6 = UH6_5(v128)
+                let v130 : US0 = US0_0
+                let v131 : UH6 = UH6_2(v130)
+                let v132 : UH6 = UH6_4(v129, v131)
+                let v133 : US0 = US0_1
+                let v134 : UH6 = method17(v132, v133)
+                let v135 : UH6 = method25(v99)
+                let v136 : UH6 = method18(v135)
+                let v137 : bool = method13(v134, v136)
+                if v137 then
+                    method26(v99)
                 else
                     false
             else
@@ -2202,129 +2198,121 @@ let v144 : bool =
             false
     else
         false
-if v144 then
+if v142 then
     ()
 else
-    let v145 : string = "well-formed derivative remainder theorem certificate should validate"
-    failwith v145
-    ()
-let v146 : UH2 = UH2_0
+    failwith<unit> "well-formed derivative remainder theorem certificate should validate"
+let v143 : UH2 = UH2_0
+let v144 : US0 = US0_0
+let v145 : UH6 = UH6_2(v144)
+let v146 : UH6 = UH6_5(v145)
 let v147 : US0 = US0_0
-let v148 : UH6 = UH6_2(v147)
-let v149 : UH6 = UH6_5(v148)
-let v150 : US0 = US0_0
-let v151 : US0 = US0_1
-let v152 : UH2 = UH2_0
-let v153 : UH2 = UH2_1(v151, v152)
-let v154 : UH2 = UH2_1(v150, v153)
-let v155 : UH1 = method27(v149, v154)
-let v156 : bool = method31(v146, v155)
+let v148 : US0 = US0_1
+let v149 : UH2 = UH2_0
+let v150 : UH2 = UH2_1(v148, v149)
+let v151 : UH2 = UH2_1(v147, v150)
+let v152 : UH1 = method27(v146, v151)
+let v153 : bool = method31(v143, v152)
+let v154 : UH2 = UH2_0
+let v155 : UH6 = UH6_0
+let v156 : US0 = US0_1
 let v157 : UH2 = UH2_0
-let v158 : UH6 = UH6_0
-let v159 : US0 = US0_1
-let v160 : UH2 = UH2_0
-let v161 : UH2 = UH2_1(v159, v160)
-let v162 : UH1 = method27(v158, v161)
-let v163 : bool = method31(v157, v162)
-let v165 : bool =
-    if v156 then
-        v163
+let v158 : UH2 = UH2_1(v156, v157)
+let v159 : UH1 = method27(v155, v158)
+let v160 : bool = method31(v154, v159)
+let v162 : bool =
+    if v153 then
+        v160
     else
-        let v164 : bool = false = v163
-        v164
-if v165 then
+        let v161 : bool = false = v160
+        v161
+if v162 then
     ()
 else
-    let v166 : string = "acceptance-only derivative law should miss a partial-remainder mutant when both decisions reject"
-    failwith v166
-    ()
-let v167 : US0 = US0_0
-let v168 : US0 = US0_1
-let v169 : UH2 = UH2_0
-let v170 : UH2 = UH2_1(v168, v169)
-let v171 : UH2 = UH2_1(v167, v170)
-let v172 : US0 = US0_0
-let v173 : UH6 = UH6_2(v172)
-let v174 : UH6 = UH6_5(v173)
-let v175 : US0 = US0_0
-let v176 : US0 = US0_1
-let v177 : UH2 = UH2_0
-let v178 : UH2 = UH2_1(v176, v177)
-let v179 : UH2 = UH2_1(v175, v178)
-let v180 : UH1 = method27(v174, v179)
-let v181 : UH1 = method32(v171, v180)
-let v182 : UH6 = UH6_0
-let v183 : US0 = US0_1
-let v184 : UH2 = UH2_0
-let v185 : UH2 = UH2_1(v183, v184)
-let v186 : UH1 = method27(v182, v185)
-let v187 : bool = method33(v181, v186)
-let v189 : bool =
-    if v187 then
-        method33(v186, v181)
+    failwith<unit> "acceptance-only derivative law should miss a partial-remainder mutant when both decisions reject"
+let v163 : US0 = US0_0
+let v164 : US0 = US0_1
+let v165 : UH2 = UH2_0
+let v166 : UH2 = UH2_1(v164, v165)
+let v167 : UH2 = UH2_1(v163, v166)
+let v168 : US0 = US0_0
+let v169 : UH6 = UH6_2(v168)
+let v170 : UH6 = UH6_5(v169)
+let v171 : US0 = US0_0
+let v172 : US0 = US0_1
+let v173 : UH2 = UH2_0
+let v174 : UH2 = UH2_1(v172, v173)
+let v175 : UH2 = UH2_1(v171, v174)
+let v176 : UH1 = method27(v170, v175)
+let v177 : UH1 = method32(v167, v176)
+let v178 : UH6 = UH6_0
+let v179 : US0 = US0_1
+let v180 : UH2 = UH2_0
+let v181 : UH2 = UH2_1(v179, v180)
+let v182 : UH1 = method27(v178, v181)
+let v183 : bool = method33(v177, v182)
+let v185 : bool =
+    if v183 then
+        method33(v182, v177)
     else
         false
-let v190 : bool = v189 = false
-if v190 then
+let v186 : bool = v185 = false
+if v186 then
     ()
 else
-    let v191 : string = "remainder-set derivative law should reject the same partial-remainder mutant"
-    failwith v191
-    ()
-let v192 : US0 = US0_0
-let v193 : UH2 = UH2_0
-let v194 : US0 = US0_0
-let v195 : US0 = US0_0
-let v196 : UH2 = UH2_0
-let v197 : UH7 = UH7_2(v194, v195, v196)
-let v198 : US0 = US0_1
-let v199 : US0 = US0_1
-let v200 : UH2 = UH2_0
-let v201 : UH7 = UH7_2(v198, v199, v200)
-let v202 : UH7 = UH7_3(v192, v193, v197, v201)
-let v203 : bool = method26(v202)
-let v204 : bool = v203 = false
-if v204 then
+    failwith<unit> "remainder-set derivative law should reject the same partial-remainder mutant"
+let v187 : US0 = US0_0
+let v188 : UH2 = UH2_0
+let v189 : US0 = US0_0
+let v190 : US0 = US0_0
+let v191 : UH2 = UH2_0
+let v192 : UH7 = UH7_2(v189, v190, v191)
+let v193 : US0 = US0_1
+let v194 : US0 = US0_1
+let v195 : UH2 = UH2_0
+let v196 : UH7 = UH7_2(v193, v194, v195)
+let v197 : UH7 = UH7_3(v187, v188, v192, v196)
+let v198 : bool = method26(v197)
+let v199 : bool = v198 = false
+if v199 then
     ()
 else
-    let v205 : string = "certificate validation should reject a child proof from a different derivative context"
-    failwith v205
-    ()
-let v206 : UH6 = UH6_1
-let v207 : US0 = US0_0
-let v208 : UH2 = UH2_0
-let v209 : UH7 = method10(v206, v207, v208)
-let v210 : UH6 = UH6_0
-let v211 : UH6 = method12(v209)
-let v212 : bool = method13(v210, v211)
-let v232 : bool =
-    if v212 then
-        let v213 : US0 = method14(v209)
-        let v217 : US4 =
-            match v213 with
+    failwith<unit> "certificate validation should reject a child proof from a different derivative context"
+let v200 : UH6 = UH6_1
+let v201 : US0 = US0_0
+let v202 : UH2 = UH2_0
+let v203 : UH7 = method10(v200, v201, v202)
+let v204 : UH6 = UH6_0
+let v205 : UH6 = method12(v203)
+let v206 : bool = method13(v204, v205)
+let v226 : bool =
+    if v206 then
+        let v207 : US0 = method14(v203)
+        let v211 : US4 =
+            match v207 with
             | US0_1 -> (* BitOne *)
                 US4_0
             | US0_0 -> (* BitZero *)
                 US4_1
-        let v218 : bool =
-            match v217 with
+        let v212 : bool =
+            match v211 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v218 then
-            let v219 : UH2 = UH2_0
-            let v220 : UH2 = method15(v209)
-            let v221 : bool = method16(v219, v220)
-            if v221 then
-                let v222 : UH6 = UH6_0
-                let v223 : US0 = US0_0
-                let v224 : UH6 = method17(v222, v223)
-                let v225 : UH6 = method25(v209)
-                let v226 : UH6 = method18(v225)
-                let v227 : bool = method13(v224, v226)
-                if v227 then
-                    method26(v209)
+        if v212 then
+            let v213 : UH2 = UH2_0
+            let v214 : UH2 = method15(v203)
+            let v215 : bool = method16(v213, v214)
+            if v215 then
+                let v216 : UH6 = UH6_0
+                let v217 : US0 = US0_0
+                let v218 : UH6 = method17(v216, v217)
+                let v219 : UH6 = method25(v203)
+                let v220 : UH6 = method18(v219)
+                let v221 : bool = method13(v218, v220)
+                if v221 then
+                    method26(v203)
                 else
                     false
             else
@@ -2333,51 +2321,49 @@ let v232 : bool =
             false
     else
         false
-let v233 : bool = v232 = false
-if v233 then
+let v227 : bool = v226 = false
+if v227 then
     ()
 else
-    let v234 : string = "certificate validation should reject a forged source binding"
-    failwith v234
-    ()
-let v235 : US0 = US0_0
-let v236 : UH6 = UH6_2(v235)
-let v237 : US0 = US0_0
-let v238 : UH2 = UH2_0
-let v239 : UH7 = method10(v236, v237, v238)
-let v240 : US0 = US0_0
-let v241 : UH6 = UH6_2(v240)
-let v242 : UH6 = method12(v239)
-let v243 : bool = method13(v241, v242)
-let v264 : bool =
-    if v243 then
-        let v244 : US0 = method14(v239)
-        let v248 : US4 =
-            match v244 with
+    failwith<unit> "certificate validation should reject a forged source binding"
+let v228 : US0 = US0_0
+let v229 : UH6 = UH6_2(v228)
+let v230 : US0 = US0_0
+let v231 : UH2 = UH2_0
+let v232 : UH7 = method10(v229, v230, v231)
+let v233 : US0 = US0_0
+let v234 : UH6 = UH6_2(v233)
+let v235 : UH6 = method12(v232)
+let v236 : bool = method13(v234, v235)
+let v257 : bool =
+    if v236 then
+        let v237 : US0 = method14(v232)
+        let v241 : US4 =
+            match v237 with
             | US0_1 -> (* BitOne *)
                 US4_1
             | US0_0 -> (* BitZero *)
                 US4_2
-        let v249 : bool =
-            match v248 with
+        let v242 : bool =
+            match v241 with
             | US4_1 -> (* SymbolSame *)
                 true
             | _ ->
                 false
-        if v249 then
-            let v250 : UH2 = UH2_0
-            let v251 : UH2 = method15(v239)
-            let v252 : bool = method16(v250, v251)
-            if v252 then
-                let v253 : US0 = US0_0
-                let v254 : UH6 = UH6_2(v253)
-                let v255 : US0 = US0_1
-                let v256 : UH6 = method17(v254, v255)
-                let v257 : UH6 = method25(v239)
-                let v258 : UH6 = method18(v257)
-                let v259 : bool = method13(v256, v258)
-                if v259 then
-                    method26(v239)
+        if v242 then
+            let v243 : UH2 = UH2_0
+            let v244 : UH2 = method15(v232)
+            let v245 : bool = method16(v243, v244)
+            if v245 then
+                let v246 : US0 = US0_0
+                let v247 : UH6 = UH6_2(v246)
+                let v248 : US0 = US0_1
+                let v249 : UH6 = method17(v247, v248)
+                let v250 : UH6 = method25(v232)
+                let v251 : UH6 = method18(v250)
+                let v252 : bool = method13(v249, v251)
+                if v252 then
+                    method26(v232)
                 else
                     false
             else
@@ -2386,33 +2372,29 @@ let v264 : bool =
             false
     else
         false
-let v265 : bool = v264 = false
-if v265 then
+let v258 : bool = v257 = false
+if v258 then
     ()
 else
-    let v266 : string = "certificate validation should reject a forged symbol binding"
-    failwith v266
-    ()
-let v267 : UH6 = UH6_1
+    failwith<unit> "certificate validation should reject a forged symbol binding"
+let v259 : UH6 = UH6_1
+let v260 : US0 = US0_0
+let v261 : UH2 = UH2_0
+let v262 : UH7 = method10(v259, v260, v261)
+let v263 : US0 = US0_0
+let v264 : UH6 = UH6_2(v263)
+let v265 : US0 = US0_0
+let v266 : UH2 = UH2_0
+let v267 : UH7 = method10(v264, v265, v266)
 let v268 : US0 = US0_0
 let v269 : UH2 = UH2_0
-let v270 : UH7 = method10(v267, v268, v269)
-let v271 : US0 = US0_0
-let v272 : UH6 = UH6_2(v271)
-let v273 : US0 = US0_0
-let v274 : UH2 = UH2_0
-let v275 : UH7 = method10(v272, v273, v274)
-let v276 : US0 = US0_0
-let v277 : UH2 = UH2_0
-let v278 : US2 = US2_1
-let v279 : UH7 = UH7_4(v276, v277, v278, v270, v275)
-let v280 : bool = method26(v279)
-let v281 : bool = v280 = false
-if v281 then
+let v270 : US2 = US2_1
+let v271 : UH7 = UH7_4(v268, v269, v270, v262, v267)
+let v272 : bool = method26(v271)
+let v273 : bool = v272 = false
+if v273 then
     ()
 else
-    let v282 : string = "certificate validation should reject a forged nullable concatenation branch"
-    failwith v282
-    ()
-let v283 : string = "brzozowski-remainder-theorem-green"
-v283
+    failwith<unit> "certificate validation should reject a forged nullable concatenation branch"
+let v274 : string = "brzozowski-remainder-theorem-green"
+v274

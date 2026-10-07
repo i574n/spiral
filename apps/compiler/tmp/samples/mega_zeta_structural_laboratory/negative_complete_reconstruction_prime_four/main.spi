@@ -1,3 +1,5 @@
+open main
+
 inl impossible_complete_reconstruction_prime_four () :
     certified_interval_positive_positional_complete_reconstruction
         (positional_zero_bit (positional_zero_bit positional_one)) =
