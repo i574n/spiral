@@ -82,6 +82,6 @@ inl round forall t {number; float}. (x : t) : t =
 
 /// ## log_base
 inl log_base (new_base : f64) (a : f64) : f64 =
-    if rust.rust.is_native ()
+    if is_rust ()
     then $'(!a).log(!new_base)'
     else $'System.Math.Log (!a, !new_base)'

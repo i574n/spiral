@@ -12,10 +12,10 @@ $ResolvedScriptDir | Set-Location
 
 Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
 
-# The library's notebooks run through Kino (apps/kino/spi/livebook_dib.ps1: Spiral cells on the native backends, F#
-# cells on dotnet fsi) and export their .spi (sm' also its _real.spir) from the .livemd. The run's outputs keep the .dib
-# route's names (<nb>.dib.ipynb, <nb>.dib.html).
-$livebook = Join-Path $ResolvedScriptDir "../../apps/kino/spi/livebook_dib.ps1"
+# The library's notebooks run through Kino (apps/kino/spi/run_notebook.ps1: Spiral cells on the native backends, F#
+# cells on dotnet fsi) and export their .spi (sm' also its _real.spir) from the .livemd. A run writes <nb>.livemd.ipynb
+# and <nb>.livemd.html.
+$livebook = Join-Path $ResolvedScriptDir "../../apps/kino/spi/run_notebook.ps1"
 $notebooks = @(
     "physics", "parsing", "sm'", "rust/rust", "rust/testing", "rust/near", "rust/near_workspaces", "testing", "guid",
     "async", "runtime", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
@@ -34,7 +34,7 @@ if (!$fast) {
     $runs = $jobs | ForEach-Object -ThrottleLimit ($sequential ? 1 : 4) -Parallel {
         $notebook = $_.Notebook
         $arguments = $_.Arguments
-        $output = Join-Path $using:ResolvedScriptDir "$notebook.dib.ipynb"
+        $output = Join-Path $using:ResolvedScriptDir "$notebook.livemd.ipynb"
         $log = @()
         $exitCode = 1
         foreach ($attempt in 1..3) {

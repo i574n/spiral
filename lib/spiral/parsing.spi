@@ -39,7 +39,7 @@ inl new_parser_state' text_length =
 /// ### parser_error
 // A failure: the position it happened at and a formatter that gets the text and that position back when the message is
 // needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run
-// time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
+// time: Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
 // discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.
 type parser_error =
     {
@@ -77,7 +77,7 @@ inl slice (start : int) (end : int) (t : string) : string =
     // An empty range is "" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would
     // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.
     // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which
-    // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).
+    // is one past the text at its end (Rust's string_slice aborts there; strict results evaluate such slices).
     inl t = dyn t
     if start >= end then ""
     else
@@ -331,7 +331,7 @@ inl many1_chars (p : parser char) : parser string = fun t, i, s =>
 
 /// ### many1_satisfy
 // `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without
-// a parser call and its result thunk per character (one allocation per character on native Rust).
+// a parser call and its result thunk per character (one allocation per character on Rust).
 inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
     let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =
         if i' >= s'.text_length
@@ -452,10 +452,10 @@ inl concat_rev (acc : list string) : string =
             match rest with
             | [] => x
             | _ => 루프 (not rev) (pass rev xs [])
-    if rust.rust.is_native () then
+    if is_rust () then
         match acc with
         | _ :: _ :: _ :: _ =>
-            // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is
+            // Rust: one buffer of the total length, each piece copied to its place from the end (the list is
             // last-first): three allocations instead of a string and a list node per pair and pass.
             inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x
             inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
@@ -469,7 +469,7 @@ inl concat_rev (acc : list string) : string =
 
 /// ### string_of
 // `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it
-// through a string builder: several allocations per element on native Rust).
+// through a string builder: several allocations per element on Rust).
 inl string_of forall t. (x : t) : string =
     real
         match x with
@@ -502,8 +502,8 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
     match p (t, i, s) with
     | Error _ => Ok ("", i, s)
     | Ok (_, i', _) when i' = i => fail (fun _ => "parsing.many_strings / first inner parser consumed no text") i s
-    | Ok (r, i', s') when rust.rust.is_native () =>
-        // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
+    | Ok (r, i', s') when is_rust () =>
+        // Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
         // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.
         inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'
         inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
@@ -523,7 +523,7 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
         let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
             match p (t, i', s') with
             | Error _ =>
-                // one element: the string itself (`++# ""` copies it on native Rust)
+                // one element: the string itself (`++# ""` copies it on Rust)
                 inl r = string_of r
                 inl r =
                     match acc with
@@ -536,7 +536,7 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
 
 /// ### choice
 // A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per
-// call, which on native Rust cost one allocation per element, list node and the empty list on every call).
+// call, which on Rust cost one allocation per element, list node and the empty list on every call).
 inl choice forall t. (ps : list (parser t)) : parser t =
     inl none : parser t = fun _, i, s =>
         fail (fun _ => "parsing.choice / no parsers succeeded") i s

@@ -141,7 +141,7 @@ inl range start end s =
 /// ### vec
 nominal vec t =
     `(
-        native_type
+        rust_type
             `($'Vec<`t>')
             `($'Vec<`t>')
             "type Vec<'T> = class end"
@@ -299,7 +299,7 @@ inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
 /// ### slice
 nominal slice t =
     `(
-        native_type
+        rust_type
             `($'Slice<`t>')
             `($'[`t]')
             "type Slice<'T> = class end"
@@ -328,7 +328,7 @@ nominal slice' el dim =
 /// ### slice''
 nominal slice'' el dim =
     `(
-        native_type
+        rust_type
             `($'Slice\'_<`el>')
             `($'[`el; 10]')
             "type Slice'_<'T> = class end"
@@ -415,9 +415,9 @@ inl average forall el {number}. (a : a _ el) : el =
 
 /// ### distinct
 inl distinct forall dim el. (a : a dim el) : a dim el =
-    if rust.is_native ()
+    if is_rust ()
     then
-        // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
+        // Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
         // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need
         inl a = $'!a ' : a int el
         inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
@@ -433,13 +433,13 @@ inl distinct forall dim el. (a : a dim el) : a dim el =
 
 /// ### skip
 inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-    if rust.is_native ()
+    if is_rust ()
     then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
     else $'!a |> Array.skip !n '
 
 /// ### skip_while
 inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
-    if rust.is_native ()
+    if is_rust ()
     then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
     else $'!a |> Array.skipWhile !fn '
 
@@ -494,22 +494,22 @@ inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
 
 /// ### sort_by
 inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
-    inl fable () = $'!a |> Array.sortBy !fn ' : a dim el
+    inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el
     backend_switch {
-        Gleam = fun () => fable ()
-        Lua = fun () => fable ()
-        Fsharp = fun () => fable ()
+        Gleam = fun () => fsharp ()
+        Lua = fun () => fsharp ()
+        Fsharp = fun () => fsharp ()
         Python = fun () =>
             // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.
             inl keys = am.map fn ($'!a ' : a int el)
             // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
             $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
-        TypeScript = fun () => fable ()
-        Cpp = fun () => fable ()
-        CppHost = fun () => fable ()
-        Delphi = fun () => fable ()
-        Cuda = fun () => fable ()
-        // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
+        TypeScript = fun () => fsharp ()
+        Cpp = fun () => fsharp ()
+        CppHost = fun () => fsharp ()
+        Delphi = fun () => fsharp ()
+        Cuda = fun () => fsharp ()
+        // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
         // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)
         Rust = fun () =>
             // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)
@@ -547,17 +547,17 @@ inl transpose forall el. (a : array_base (array_base el)) : array_base (array_ba
 
 /// ### try_item
 inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
-    inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
     backend_switch {
-        Gleam = fable
-        Lua = fable
-        Fsharp = fable
-        Python = fable
-        TypeScript = fable
-        Cpp = fable
-        CppHost = fable
-        Delphi = fable
-        Cuda = fable
+        Gleam = fsharp
+        Lua = fsharp
+        Fsharp = fsharp
+        Python = fsharp
+        TypeScript = fsharp
+        Cpp = fsharp
+        CppHost = fsharp
+        Delphi = fsharp
+        Cuda = fsharp
         Rust = fun () =>
             inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
             x |> optionm'.unbox

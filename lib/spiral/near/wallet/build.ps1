@@ -18,11 +18,11 @@ Write-Output "spiral/lib/spiral/near/wallet/build.ps1 / ScriptDir: $ScriptDir / 
 $projectName = "near_wallet"
 
 if (!$SkipPreBuild) {
-    # The notebook runs through Kino and exports src/near_wallet.spi (the run's outputs keep the .dib route's names).
-    $livebook = Join-Path $ResolvedScriptDir "../../../../apps/kino/spi/livebook_dib.ps1"
+    # The notebook runs through Kino and exports src/near_wallet.spi (outputs <nb>.livemd.ipynb/.html).
+    $livebook = Join-Path $ResolvedScriptDir "../../../../apps/kino/spi/run_notebook.ps1"
     $notebook = @("--path", "$ResolvedScriptDir/src/$projectName.livemd", "--spi-path", "$ResolvedScriptDir/src/$projectName.spi")
     if (!$SkipNotebook) {
-        { pwsh -NoProfile -File $livebook @notebook --output-path "$ResolvedScriptDir/src/$projectName.dib.ipynb" } | Invoke-Block -Retries 3
+        { pwsh -NoProfile -File $livebook @notebook --output-path "$ResolvedScriptDir/src/$projectName.livemd.ipynb" } | Invoke-Block -Retries 3
     }
     else {
         { pwsh -NoProfile -File $livebook @notebook --export-only } | Invoke-Block
@@ -31,8 +31,8 @@ if (!$SkipPreBuild) {
 
 if (!$SkipGleam) {
     # src/near_wallet.gleam with the Spiral compiler's own Gleam backend.
-    if (!(BuildNativeRust "src/$projectName.spi" "src/$projectName.gleam" "lib/spiral/near/wallet" -Backend "Gleam")) {
-        throw "NATIVE-GLEAM-FAILED lib/spiral/near/wallet / compile"
+    if (!(BuildSpiral "src/$projectName.spi" "src/$projectName.gleam" "lib/spiral/near/wallet" -Backend "Gleam")) {
+        throw "GLEAM-FAILED lib/spiral/near/wallet / compile"
     }
 }
 

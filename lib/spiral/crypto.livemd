@@ -116,14 +116,14 @@ Spiral.Kino.eval!(
 
 ### sha256'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal sha256' =\n    `(\n        native_type\n            `($'sha2_Sha256')\n            `($'sha2::Sha256')\n            \"type sha2_Sha256 = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal sha256' =\n    `(\n        rust_type\n            `($'sha2_Sha256')\n            `($'sha2::Sha256')\n            \"type sha2_Sha256 = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal sha256' =
       `(
-          native_type
+          rust_type
               `($'sha2_Sha256')
               `($'sha2::Sha256')
               "type sha2_Sha256 = class end"
@@ -426,7 +426,7 @@ Spiral.Kino.eval!(
 
 ### hash_text
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let hash_text (~input : string) =\n    run_target function\n        | Fsharp => fun () =>\n            inl sha256 = sha256 () |> use\n            input\n            |> sm'.utf8_get_bytes\n            |> sha256_compute_hash sha256\n            |> am.map (sm'.byte_to_string \"x2\")\n            |> seq.of_array'\n            |> sm'.concat (join \"\")\n        | TypeScript => fun () =>\n            create_hash \"sha256\"\n            |> hash_update input\n            |> hash_digest \"hex\"\n        | RustNative => fun () =>\n            input\n            |> sm'.utf8_get_bytes\n            |> fun (a x) => x\n            |> am'.to_vec\n            |> stream.new_cursor\n            |> hash_read\n            |> resultm.unwrap'\n        | Cuda => fun () =>\n            hashlib_sha256 ()\n            |> sha256_update (input |> sm'.encode_utf8)\n            |> sha256_hexdigest\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let hash_text (~input : string) =\n    run_target function\n        | Fsharp => fun () =>\n            inl sha256 = sha256 () |> use\n            input\n            |> sm'.utf8_get_bytes\n            |> sha256_compute_hash sha256\n            |> am.map (sm'.byte_to_string \"x2\")\n            |> seq.of_array'\n            |> sm'.concat (join \"\")\n        | TypeScript => fun () =>\n            create_hash \"sha256\"\n            |> hash_update input\n            |> hash_digest \"hex\"\n        | Rust => fun () =>\n            input\n            |> sm'.utf8_get_bytes\n            |> fun (a x) => x\n            |> am'.to_vec\n            |> stream.new_cursor\n            |> hash_read\n            |> resultm.unwrap'\n        | Cuda => fun () =>\n            hashlib_sha256 ()\n            |> sha256_update (input |> sm'.encode_utf8)\n            |> sha256_hexdigest\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -445,7 +445,7 @@ Spiral.Kino.eval!(
               create_hash "sha256"
               |> hash_update input
               |> hash_digest "hex"
-          | RustNative => fun () =>
+          | Rust => fun () =>
               input
               |> sm'.utf8_get_bytes
               |> fun (a x) => x

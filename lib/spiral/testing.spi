@@ -187,24 +187,11 @@ inl _assert_in items x =
 
 /// ### __assert_contains
 inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
-    inl native =
-        backend_switch {
-            Gleam = fun () => false
-            Lua = fun () => false
-            Fsharp = fun () => false
-            Python = fun () => false
-            TypeScript = fun () => false
-            Cpp = fun () => false
-            CppHost = fun () => false
-            Delphi = fun () => false
-            Cuda = fun () => false
-            Rust = fun () => true
-        }
     __expect
         fun a b =>
-            if native
+            if is_rust ()
             then
-                // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
+                // Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
                 // element equal to it (the element type's PartialEq)
                 real
                     typecase u with
@@ -238,23 +225,10 @@ inl _assert_contains b a =
 inl _throws (fn : () -> ()) : option exn =
     inl none = None : option exn
     inl some (s : exn) = Some s
-    inl native =
-        backend_switch {
-            Gleam = fun () => false
-            Lua = fun () => false
-            Fsharp = fun () => false
-            Python = fun () => false
-            TypeScript = fun () => false
-            Cpp = fun () => false
-            CppHost = fun () => false
-            Delphi = fun () => false
-            Cuda = fun () => false
-            Rust = fun () => true
-        }
-    if native
+    if is_rust ()
     then
-        // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).
-        catch_unwind_native
+        // Rust: a panic is the exception (base.catch_unwind_rust: its panic report is suppressed).
+        catch_unwind_rust
             fun () =>
                 fn ()
                 none

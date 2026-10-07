@@ -1,6 +1,6 @@
 //! The Spiral Language Zed Extension.
 //!
-//! Provides comprehensive editor support for The Spiral Language (`.spi`, `.spir`, `.spiproj`, `.dib`):
+//! Provides comprehensive editor support for The Spiral Language (`.spi`, `.spir`, `.spiproj`):
 //! - Syntax highlighting, brackets, comment toggling, and auto-indentation.
 //! - Type-safe GADTs, Existentials, and Higher-Kinded Types (HKTs) modeled via `PhantomData`.
 //! - Language Server Protocol (LSP) discovery and process management.

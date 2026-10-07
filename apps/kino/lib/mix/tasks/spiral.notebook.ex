@@ -1,7 +1,7 @@
-defmodule Mix.Tasks.Spiral.Dib do
+defmodule Mix.Tasks.Spiral.Notebook do
   use Mix.Task
 
-  @shortdoc "Run a Spiral .dib or .livemd notebook through Livebook"
+  @shortdoc "Run a Spiral .livemd notebook through Livebook"
 
   @impl Mix.Task
   def run(args) do
@@ -24,7 +24,8 @@ defmodule Mix.Tasks.Spiral.Dib do
 
     path = opts[:path] || Mix.raise("missing --path")
 
-    # Like `spiral dib`: a successful run also writes <ipynb>.html through jupyter nbconvert (--no-html skips it).
+    # A successful run writes <nb>.livemd.ipynb (or --output-path) and its .html through jupyter nbconvert (--no-html
+    # skips it).
     case Spiral.Kino.Notebook.run(path,
            output_path: opts[:output_path],
            spi_path: opts[:spi_path],

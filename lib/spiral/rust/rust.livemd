@@ -32,14 +32,14 @@ Spiral.Kino.eval!(
 
 ### any
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal any =\n    `(\n        native_type\n            `($'core_any_Any')\n            `($'core::any::Any')\n            \"type core_any_Any = obj\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal any =\n    `(\n        rust_type\n            `($'core_any_Any')\n            `($'core::any::Any')\n            \"type core_any_Any = obj\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal any =
       `(
-          native_type
+          rust_type
               `($'core_any_Any')
               `($'core::any::Any')
               "type core_any_Any = obj"
@@ -51,14 +51,14 @@ Spiral.Kino.eval!(
 
 ### try
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal try t =\n    `(\n        native_type\n            `($'core_ops_Try<`t>')\n            `($'_')\n            \"type core_ops_Try<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal try t =\n    `(\n        rust_type\n            `($'core_ops_Try<`t>')\n            `($'_')\n            \"type core_ops_Try<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal try t =
       `(
-          native_type
+          rust_type
               `($'core_ops_Try<`t>')
               `($'_')
               "type core_ops_Try<'T> = class end"
@@ -70,14 +70,14 @@ Spiral.Kino.eval!(
 
 ### cow
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cow t =\n    `(\n        native_type\n            `($'std_borrow_Cow<`t>')\n            `($'std::borrow::Cow<`t>')\n            \"type std_borrow_Cow<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cow t =\n    `(\n        rust_type\n            `($'std_borrow_Cow<`t>')\n            `($'std::borrow::Cow<`t>')\n            \"type std_borrow_Cow<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal cow t =
       `(
-          native_type
+          rust_type
               `($'std_borrow_Cow<`t>')
               `($'std::borrow::Cow<`t>')
               "type std_borrow_Cow<'T> = class end"
@@ -89,14 +89,14 @@ Spiral.Kino.eval!(
 
 ### ref_cell
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref_cell t =\n    `(\n        native_type\n            `($'std_cell_RefCell<`t>')\n            `($'std::cell::RefCell<`t>')\n            \"type std_cell_RefCell<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref_cell t =\n    `(\n        rust_type\n            `($'std_cell_RefCell<`t>')\n            `($'std::cell::RefCell<`t>')\n            \"type std_cell_RefCell<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal ref_cell t =
       `(
-          native_type
+          rust_type
               `($'std_cell_RefCell<`t>')
               `($'std::cell::RefCell<`t>')
               "type std_cell_RefCell<'T> = class end"
@@ -108,14 +108,14 @@ Spiral.Kino.eval!(
 
 ### cell_ref
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cell_ref t =\n    `(\n        native_type\n            `($'std_cell_Ref<`t>')\n            `($'std::cell::Ref<`t>')\n            \"type std_cell_Ref<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cell_ref t =\n    `(\n        rust_type\n            `($'std_cell_Ref<`t>')\n            `($'std::cell::Ref<`t>')\n            \"type std_cell_Ref<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal cell_ref t =
       `(
-          native_type
+          rust_type
               `($'std_cell_Ref<`t>')
               `($'std::cell::Ref<`t>')
               "type std_cell_Ref<'T> = class end"
@@ -127,14 +127,14 @@ Spiral.Kino.eval!(
 
 ### rc
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rc t =\n    `(\n        native_type\n            `($'std_rc_Rc<`t>')\n            `($'std::rc::Rc<`t>')\n            \"type std_rc_Rc<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rc t =\n    `(\n        rust_type\n            `($'std_rc_Rc<`t>')\n            `($'std::rc::Rc<`t>')\n            \"type std_rc_Rc<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal rc t =
       `(
-          native_type
+          rust_type
               `($'std_rc_Rc<`t>')
               `($'std::rc::Rc<`t>')
               "type std_rc_Rc<'T> = class end"
@@ -146,14 +146,14 @@ Spiral.Kino.eval!(
 
 ### lifetime_ref
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime_ref (t : * -> *) u =\n    `(\n        native_type\n            `($'LifetimeRef<`(t u)>')\n            `($'`(t u)')\n            \"type LifetimeRef<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime_ref (t : * -> *) u =\n    `(\n        rust_type\n            `($'LifetimeRef<`(t u)>')\n            `($'`(t u)')\n            \"type LifetimeRef<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lifetime_ref (t : * -> *) u =
       `(
-          native_type
+          rust_type
               `($'LifetimeRef<`(t u)>')
               `($'`(t u)')
               "type LifetimeRef<'T> = class end"
@@ -165,14 +165,14 @@ Spiral.Kino.eval!(
 
 ### lifetime_join
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime_join t u =\n    `(\n        native_type\n            `($'LifetimeJoin<`t, `u>')\n            `($'`t + `(u)')\n            \"type LifetimeJoin<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime_join t u =\n    `(\n        rust_type\n            `($'LifetimeJoin<`t, `u>')\n            `($'`t + `(u)')\n            \"type LifetimeJoin<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lifetime_join t u =
       `(
-          native_type
+          rust_type
               `($'LifetimeJoin<`t, `u>')
               `($'`t + `(u)')
               "type LifetimeJoin<'T, 'U> = class end"
@@ -184,14 +184,14 @@ Spiral.Kino.eval!(
 
 ### lifetime
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime t u =\n    `(\n        native_type\n            `($'Lifetime<`t, `u>')\n            `($'`t `(u)')\n            \"type Lifetime<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lifetime t u =\n    `(\n        rust_type\n            `($'Lifetime<`t, `u>')\n            `($'`t `(u)')\n            \"type Lifetime<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lifetime t u =
       `(
-          native_type
+          rust_type
               `($'Lifetime<`t, `u>')
               `($'`t `(u)')
               "type Lifetime<'T, 'U> = class end"
@@ -203,14 +203,14 @@ Spiral.Kino.eval!(
 
 ### static_lifetime
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal static_lifetime =\n    `(\n        native_type\n            `($'StaticLifetime')\n            `($'\\'static')\n            \"type StaticLifetime = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal static_lifetime =\n    `(\n        rust_type\n            `($'StaticLifetime')\n            `($'\\'static')\n            \"type StaticLifetime = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal static_lifetime =
       `(
-          native_type
+          rust_type
               `($'StaticLifetime')
               `($'\'static')
               "type StaticLifetime = class end"
@@ -222,14 +222,14 @@ Spiral.Kino.eval!(
 
 ### ref
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref t =\n    `(\n        native_type\n            `($'Ref<`t>')\n            `($'&`(t)')\n            \"type Ref<'T> = 'T\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref t =\n    `(\n        rust_type\n            `($'Ref<`t>')\n            `($'&`(t)')\n            \"type Ref<'T> = 'T\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal ref t =
       `(
-          native_type
+          rust_type
               `($'Ref<`t>')
               `($'&`(t)')
               "type Ref<'T> = 'T"
@@ -254,14 +254,14 @@ Spiral.Kino.eval!(
 
 ### weak_rc
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal weak_rc t =\n    `(\n        native_type\n            `($'std_rc_Weak<`t>')\n            `($'std::rc::Weak<`t>')\n            \"type std_rc_Weak<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal weak_rc t =\n    `(\n        rust_type\n            `($'std_rc_Weak<`t>')\n            `($'std::rc::Weak<`t>')\n            \"type std_rc_Weak<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal weak_rc t =
       `(
-          native_type
+          rust_type
               `($'std_rc_Weak<`t>')
               `($'std::rc::Weak<`t>')
               "type std_rc_Weak<'T> = class end"
@@ -273,14 +273,14 @@ Spiral.Kino.eval!(
 
 ### box
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal box t =\n    `(\n        native_type\n            `($'Box<`t>')\n            `($'Box<`t>')\n            \"type Box<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal box t =\n    `(\n        rust_type\n            `($'Box<`t>')\n            `($'Box<`t>')\n            \"type Box<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal box t =
       `(
-          native_type
+          rust_type
               `($'Box<`t>')
               `($'Box<`t>')
               "type Box<'T> = class end"
@@ -292,14 +292,14 @@ Spiral.Kino.eval!(
 
 ### mut_cell
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mut_cell t =\n    `(\n        native_type\n            `($'MutCell<`t>')\n            `($'MutCell<`t>')\n            \"type MutCell<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mut_cell t =\n    `(\n        rust_type\n            `($'MutCell<`t>')\n            `($'MutCell<`t>')\n            \"type MutCell<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal mut_cell t =
       `(
-          native_type
+          rust_type
               `($'MutCell<`t>')
               `($'MutCell<`t>')
               "type MutCell<'T> = class end"
@@ -311,14 +311,14 @@ Spiral.Kino.eval!(
 
 ### pin
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal pin t =\n    `(\n        native_type\n            `($'std_pin_Pin<`t>')\n            `($'std::pin::Pin<`t>')\n            \"type std_pin_Pin<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal pin t =\n    `(\n        rust_type\n            `($'std_pin_Pin<`t>')\n            `($'std::pin::Pin<`t>')\n            \"type std_pin_Pin<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal pin t =
       `(
-          native_type
+          rust_type
               `($'std_pin_Pin<`t>')
               `($'std::pin::Pin<`t>')
               "type std_pin_Pin<'T> = class end"
@@ -330,14 +330,14 @@ Spiral.Kino.eval!(
 
 ### dyn'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dyn' t =\n    `(\n        native_type\n            `($'Dyn<`t>')\n            `($'dyn `(t)')\n            \"type Dyn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dyn' t =\n    `(\n        rust_type\n            `($'Dyn<`t>')\n            `($'dyn `(t)')\n            \"type Dyn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal dyn' t =
       `(
-          native_type
+          rust_type
               `($'Dyn<`t>')
               `($'dyn `(t)')
               "type Dyn<'T> = class end"
@@ -349,14 +349,14 @@ Spiral.Kino.eval!(
 
 ### fn'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn' t =\n    `(\n        native_type\n            `($'Fn<`t>')\n            `($'Fn() -> `(t)')\n            \"type Fn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn' t =\n    `(\n        rust_type\n            `($'Fn<`t>')\n            `($'Fn() -> `(t)')\n            \"type Fn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal fn' t =
       `(
-          native_type
+          rust_type
               `($'Fn<`t>')
               `($'Fn() -> `(t)')
               "type Fn<'T> = class end"
@@ -368,14 +368,14 @@ Spiral.Kino.eval!(
 
 ### action_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal action_fn t =\n    `(\n        native_type\n            `($'ActionFn<`t>')\n            `($'Fn(`t)')\n            \"type ActionFn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal action_fn t =\n    `(\n        rust_type\n            `($'ActionFn<`t>')\n            `($'Fn(`t)')\n            \"type ActionFn<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal action_fn t =
       `(
-          native_type
+          rust_type
               `($'ActionFn<`t>')
               `($'Fn(`t)')
               "type ActionFn<'T> = class end"
@@ -387,14 +387,14 @@ Spiral.Kino.eval!(
 
 ### action_fn2
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal action_fn2 t u =\n    `(\n        native_type\n            `($'ActionFn2<`t, `u>')\n            `($'Fn(`t, `u)')\n            \"type ActionFn2<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal action_fn2 t u =\n    `(\n        rust_type\n            `($'ActionFn2<`t, `u>')\n            `($'Fn(`t, `u)')\n            \"type ActionFn2<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal action_fn2 t u =
       `(
-          native_type
+          rust_type
               `($'ActionFn2<`t, `u>')
               `($'Fn(`t, `u)')
               "type ActionFn2<'T, 'U> = class end"
@@ -406,14 +406,14 @@ Spiral.Kino.eval!(
 
 ### fn_once
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn_once t =\n    `(\n        native_type\n            `($'FnOnce<`t>')\n            `($'FnOnce() -> `(t)')\n            \"type FnOnce<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn_once t =\n    `(\n        rust_type\n            `($'FnOnce<`t>')\n            `($'FnOnce() -> `(t)')\n            \"type FnOnce<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal fn_once t =
       `(
-          native_type
+          rust_type
               `($'FnOnce<`t>')
               `($'FnOnce() -> `(t)')
               "type FnOnce<'T> = class end"
@@ -425,14 +425,14 @@ Spiral.Kino.eval!(
 
 ### fn_unit
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn_unit =\n    `(\n        native_type\n            `($'FnUnit')\n            `($'Fn()')\n            \"type FnUnit = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fn_unit =\n    `(\n        rust_type\n            `($'FnUnit')\n            `($'Fn()')\n            \"type FnUnit = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal fn_unit =
       `(
-          native_type
+          rust_type
               `($'FnUnit')
               `($'Fn()')
               "type FnUnit = class end"
@@ -444,14 +444,14 @@ Spiral.Kino.eval!(
 
 ### impl
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal impl t =\n    `(\n        native_type\n            `($'Impl<`t>')\n            `($'impl `(t)')\n            \"type Impl<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal impl t =\n    `(\n        rust_type\n            `($'Impl<`t>')\n            `($'impl `(t)')\n            \"type Impl<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal impl t =
       `(
-          native_type
+          rust_type
               `($'Impl<`t>')
               `($'impl `(t)')
               "type Impl<'T> = class end"
@@ -463,14 +463,14 @@ Spiral.Kino.eval!(
 
 ### mut'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mut' t =\n    `(\n        native_type\n            `($'Mut<`t>')\n            `($'mut `(t)')\n            \"type Mut<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mut' t =\n    `(\n        rust_type\n            `($'Mut<`t>')\n            `($'mut `(t)')\n            \"type Mut<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal mut' t =
       `(
-          native_type
+          rust_type
               `($'Mut<`t>')
               `($'mut `(t)')
               "type Mut<'T> = class end"
@@ -482,14 +482,14 @@ Spiral.Kino.eval!(
 
 ### ref_mut
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref_mut t =\n    `(\n        native_type\n            `($'std_cell_RefMut<`t>')\n            `($'std::cell::RefMut<`t>')\n            \"type std_cell_RefMut<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ref_mut t =\n    `(\n        rust_type\n            `($'std_cell_RefMut<`t>')\n            `($'std::cell::RefMut<`t>')\n            \"type std_cell_RefMut<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal ref_mut t =
       `(
-          native_type
+          rust_type
               `($'std_cell_RefMut<`t>')
               `($'std::cell::RefMut<`t>')
               "type std_cell_RefMut<'T> = class end"
@@ -501,14 +501,13 @@ Spiral.Kino.eval!(
 
 ### send
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data\n// instead, as runtime.execute_with_options's native arm does). Fable's `Send<T>` and the type-level switch that\n// chose it are gone. A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity\n// type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type\n// variable t'.\nnominal send t = $'`(t)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data\n// instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity\n// type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type\n// variable t'.\nnominal send t = $'`(t)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Native Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
-  // instead, as runtime.execute_with_options's native arm does). Fable's `Send<T>` and the type-level switch that
-  // chose it are gone. A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
+  // Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
+  // instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
   // type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type
   // variable t'.
   nominal send t = $'`(t)'
@@ -519,13 +518,13 @@ Spiral.Kino.eval!(
 
 ### emit_expr
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl emit_expr forall a t. (args : a) (code : string) : t =\n    $'Fable.Core.RustInterop.emitRustExpr !args !code '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl emit_expr forall a t. (args : a) (code : string) : t =\n    $'__spiral_emit_rust !args !code '","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl emit_expr forall a t. (args : a) (code : string) : t =
-      $'Fable.Core.RustInterop.emitRustExpr !args !code '
+      $'__spiral_emit_rust !args !code '
   """,
   timeout: 300_000
 )
@@ -561,14 +560,14 @@ Spiral.Kino.eval!(
 
 ### ptr
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ptr t =\n    `(\n        native_type\n            `($'Ptr<`t>')\n            `($'*const `(t)')\n            \"type Ptr<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal ptr t =\n    `(\n        rust_type\n            `($'Ptr<`t>')\n            `($'*const `(t)')\n            \"type Ptr<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal ptr t =
       `(
-          native_type
+          rust_type
               `($'Ptr<`t>')
               `($'*const `(t)')
               "type Ptr<'T> = class end"
@@ -594,14 +593,14 @@ Spiral.Kino.eval!(
 
 ### u128
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal u128 =\n    `(\n        native_type\n            `($'u128')\n            `($'u128')\n            \"type u128 = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal u128 =\n    `(\n        rust_type\n            `($'u128')\n            `($'u128')\n            \"type u128 = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal u128 =
       `(
-          native_type
+          rust_type
               `($'u128')
               `($'u128')
               "type u128 = class end"
@@ -738,15 +737,15 @@ Spiral.Kino.eval!(
 )
 ```
 
-### clone_native
+### clone_rust
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl clone_native forall t. (x : t) : t =\n    // Native Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument\n    // (`self` methods, `match`) when the value is used again.\n    backend_switch {\n        Gleam = fun () => x\n        Lua = fun () => x\n        Fsharp = fun () => x\n        Python = fun () => x\n        TypeScript = fun () => x\n        Cpp = fun () => x\n        CppHost = fun () => x\n        Delphi = fun () => x\n        Cuda = fun () => x\n        Rust = fun () => clone x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl clone_rust forall t. (x : t) : t =\n    // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument\n    // (`self` methods, `match`) when the value is used again.\n    backend_switch {\n        Gleam = fun () => x\n        Lua = fun () => x\n        Fsharp = fun () => x\n        Python = fun () => x\n        TypeScript = fun () => x\n        Cpp = fun () => x\n        CppHost = fun () => x\n        Delphi = fun () => x\n        Cuda = fun () => x\n        Rust = fun () => clone x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  inl clone_native forall t. (x : t) : t =
-      // Native Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
+  inl clone_rust forall t. (x : t) : t =
+      // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
       // (`self` methods, `match`) when the value is used again.
       backend_switch {
           Gleam = fun () => x
@@ -1187,43 +1186,14 @@ Spiral.Kino.eval!(
 )
 ```
 
-### is_native
-
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// True only in the native Rust backend (codegenRust). Partial evaluation runs every arm of a value-level\n// backend_switch in every build, so a switch whose arms inline the caller's closures (`Fsharp = fable; Lua = fable;\n// ...`) evaluates them once per key, and nested switches multiply (8 keys, 8^depth: dice_ui never finished). This\n// switch's arms are literals, so the `if is_native () then native else fable ()` that uses it evaluates one branch.\ninl is_native () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => false\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => true\n    }","print_code":false},"livebook_object":"smart_cell"} -->
-
-```elixir
-Spiral.Kino.eval!(
-  ~S"""
-  // True only in the native Rust backend (codegenRust). Partial evaluation runs every arm of a value-level
-  // backend_switch in every build, so a switch whose arms inline the caller's closures (`Fsharp = fable; Lua = fable;
-  // ...`) evaluates them once per key, and nested switches multiply (8 keys, 8^depth: dice_ui never finished). This
-  // switch's arms are literals, so the `if is_native () then native else fable ()` that uses it evaluates one branch.
-  inl is_native () : bool =
-      backend_switch {
-          Gleam = fun () => false
-          Lua = fun () => false
-          Fsharp = fun () => false
-          Python = fun () => false
-          TypeScript = fun () => false
-          Cpp = fun () => false
-          CppHost = fun () => false
-          Delphi = fun () => false
-          Cuda = fun () => false
-          Rust = fun () => true
-      }
-  """,
-  timeout: 300_000
-)
-```
-
 ### one_param_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that\n// Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a\n// macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.\nnominal one_param t = $'(`t)'\ninl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =\n    fun (x : one_param t) =>\n        inl x : t = $'(!x)'\n        fn x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that\n// Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a\n// macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.\nnominal one_param t = $'(`t)'\ninl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =\n    fun (x : one_param t) =>\n        inl x : t = $'(!x)'\n        fn x","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Native Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
+  // Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
   // Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a
   // macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.
   nominal one_param t = $'(`t)'
@@ -1280,7 +1250,7 @@ Spiral.Kino.eval!(
 
 ### fix_closure
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fix_closure forall t. (depth : u8 * u8) (x : t) =\n    backend_switch {\n        Rust = fun () =>\n            // Native Rust emits the caller's statements flat, in the block that opened the closure\n            // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever\n            // `depth` Fable's nesting needed. The text must be a literal (codegenRust inlines literal emits only).\n            // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.\n            inl is_unit : bool =\n                real\n                    typecase t with\n                    | () => true\n                    | _ => false\n            if is_unit\n            then (!\\($'\"true; () }); //\"') : bool) |> ignore\n            else ($'true; (!x) }); //' : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fix_closure forall t. (depth : u8 * u8) (x : t) =\n    backend_switch {\n        Rust = fun () =>\n            // Rust emits the caller's statements flat, in the block that opened the closure\n            // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever\n            // `depth` says. The text must be a literal (codegenRust inlines literal emits only).\n            // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.\n            inl is_unit : bool =\n                real\n                    typecase t with\n                    | () => true\n                    | _ => false\n            if is_unit\n            then (!\\($'\"true; () }); //\"') : bool) |> ignore\n            else ($'true; (!x) }); //' : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1288,9 +1258,9 @@ Spiral.Kino.eval!(
   inl fix_closure forall t. (depth : u8 * u8) (x : t) =
       backend_switch {
           Rust = fun () =>
-              // Native Rust emits the caller's statements flat, in the block that opened the closure
+              // Rust emits the caller's statements flat, in the block that opened the closure
               // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever
-              // `depth` Fable's nesting needed. The text must be a literal (codegenRust inlines literal emits only).
+              // `depth` says. The text must be a literal (codegenRust inlines literal emits only).
               // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.
               inl is_unit : bool =
                   real
@@ -1365,14 +1335,14 @@ Spiral.Kino.eval!(
 
 ### type_emit
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal type_emit t =\n    `(\n        native_type\n            `($'TypeEmit<`t>')\n            `($'*/ `t /*')\n            \"type TypeEmit<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal type_emit t =\n    `(\n        rust_type\n            `($'TypeEmit<`t>')\n            `($'*/ `t /*')\n            \"type TypeEmit<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal type_emit t =
       `(
-          native_type
+          rust_type
               `($'TypeEmit<`t>')
               `($'*/ `t /*')
               "type TypeEmit<'T> = class end"
@@ -1384,14 +1354,14 @@ Spiral.Kino.eval!(
 
 ### partial_eq_wrapper
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal partial_eq_wrapper t =\n    `(\n        native_type\n            `($'PartialEqWrapper<`t>')\n            `($'PartialEqWrapper<`t>')\n            \"type PartialEqWrapper<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal partial_eq_wrapper t =\n    `(\n        rust_type\n            `($'PartialEqWrapper<`t>')\n            `($'PartialEqWrapper<`t>')\n            \"type PartialEqWrapper<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal partial_eq_wrapper t =
       `(
-          native_type
+          rust_type
               `($'PartialEqWrapper<`t>')
               `($'PartialEqWrapper<`t>')
               "type PartialEqWrapper<'T> = class end"
@@ -1403,7 +1373,7 @@ Spiral.Kino.eval!(
 
 ### new_partial_eq_wrapper
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_partial_eq_wrapper forall t.\n    (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)\n    (x : t)\n    : partial_eq_wrapper t\n    =\n    // Native Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`\n    // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller\n    // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.\n    global \"#[derive(Debug, Clone)]\\npub struct PartialEqWrapper<T>(pub T);\\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\\n}\"\n    $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_partial_eq_wrapper forall t.\n    (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)\n    (x : t)\n    : partial_eq_wrapper t\n    =\n    // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`\n    // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller\n    // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.\n    global \"#[derive(Debug, Clone)]\\npub struct PartialEqWrapper<T>(pub T);\\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\\n}\"\n    $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1413,7 +1383,7 @@ Spiral.Kino.eval!(
       (x : t)
       : partial_eq_wrapper t
       =
-      // Native Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
+      // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
       // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller
       // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.
       global "#[derive(Debug, Clone)]\npub struct PartialEqWrapper<T>(pub T);\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\n}"

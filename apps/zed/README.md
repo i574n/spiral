@@ -1,6 +1,6 @@
 # Spiral Language Extension for Zed
 
-This extension provides first-class support for **The Spiral Language** (`.spi`, `.spir`, `.spiproj`, `.dib`) in the [Zed](https://zed.dev) editor.
+This extension provides first-class support for **The Spiral Language** (`.spi`, `.spir`, `.spiproj`) in the [Zed](https://zed.dev) editor.
 
 It is modeled after the official Spiral VS Code extension (`VS Code Plugin`), adapting its configuration, semantic captures, and language server protocol client for Zed's native extension architecture.
 
@@ -8,7 +8,7 @@ It is modeled after the official Spiral VS Code extension (`VS Code Plugin`), ad
 
 ## Features
 
-- **File Types**: Automatically associates `.spi`, `.spir`, `.spiproj`, and `.dib` files with the Spiral language.
+- **File Types**: Automatically associates `.spi`, `.spir`, and `.spiproj` files with the Spiral language.
 - **Syntax Highlighting & Colors**:
   - Keywords: `inl`, `inm`, `inb`, `forall`, `union`, `nominal`, `real`, `type`, `open`, `match`, `typecase`, `function`, `with`, `without`, `as`, `when`, `let`, `rec`, `if`, `then`, `elif`, `else`, `join`, `join_backend`, `prototype`, `instance`, `in`, `and`, `fun`, `exists`.
   - Primitive Types: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`, `bool`, `string`, `char`, `unit`.

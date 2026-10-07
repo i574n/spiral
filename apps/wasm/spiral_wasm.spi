@@ -194,7 +194,7 @@ inl run_main (args : array_base string) : i32 =
         |> async.block_on_tokio
         |> resultm.map_error' sm'.format'
 
-    match result |> rust.clone_native |> resultm.unbox, exception with
+    match result |> rust.clone_rust |> resultm.unbox, exception with
     | Ok retries, Some exception =>
         ($'$"spiral_wasm.main / retries: {!retries} / exception: \'{!exception}\'"' : string)
         |> resultm.err |> resultm.unwrap'

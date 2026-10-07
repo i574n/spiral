@@ -550,14 +550,14 @@ Spiral.Kino.eval!(
 
 ### vec
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal vec t =\n    `(\n        native_type\n            `($'Vec<`t>')\n            `($'Vec<`t>')\n            \"type Vec<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal vec t =\n    `(\n        rust_type\n            `($'Vec<`t>')\n            `($'Vec<`t>')\n            \"type Vec<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal vec t =
       `(
-          native_type
+          rust_type
               `($'Vec<`t>')
               `($'Vec<`t>')
               "type Vec<'T> = class end"
@@ -938,14 +938,14 @@ Spiral.Kino.eval!(
 
 ### slice
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice t =\n    `(\n        native_type\n            `($'Slice<`t>')\n            `($'[`t]')\n            \"type Slice<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice t =\n    `(\n        rust_type\n            `($'Slice<`t>')\n            `($'[`t]')\n            \"type Slice<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal slice t =
       `(
-          native_type
+          rust_type
               `($'Slice<`t>')
               `($'[`t]')
               "type Slice<'T> = class end"
@@ -987,14 +987,14 @@ Spiral.Kino.eval!(
 
 ### slice''
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice'' el dim =\n    `(\n        native_type\n            `($'Slice\\'_<`el>')\n            `($'[`el; 10]')\n            \"type Slice'_<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal slice'' el dim =\n    `(\n        rust_type\n            `($'Slice\\'_<`el>')\n            `($'[`el; 10]')\n            \"type Slice'_<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal slice'' el dim =
       `(
-          native_type
+          rust_type
               `($'Slice\'_<`el>')
               `($'[`el; 10]')
               "type Slice'_<'T> = class end"
@@ -1225,15 +1225,15 @@ Spiral.Kino.eval!(
 
 ### distinct
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct forall dim el. (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then\n        // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions\n        // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need\n        inl a = $'!a ' : a int el\n        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el\n        loopw.for' {from=0; nearTo=length a} fun i =>\n            inl x = index i a\n            inl n = length r\n            inl s = mut {j=0}\n            loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>\n                s <- {j=s.j + 1}\n            if s.j = n then $'!r.borrow_mut().push(!x)' : ()\n        $'!r ' : a dim el\n    else $'!a |> Array.distinct'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl distinct forall dim el. (a : a dim el) : a dim el =\n    if is_rust ()\n    then\n        // Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions\n        // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need\n        inl a = $'!a ' : a int el\n        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el\n        loopw.for' {from=0; nearTo=length a} fun i =>\n            inl x = index i a\n            inl n = length r\n            inl s = mut {j=0}\n            loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>\n                s <- {j=s.j + 1}\n            if s.j = n then $'!r.borrow_mut().push(!x)' : ()\n        $'!r ' : a dim el\n    else $'!a |> Array.distinct'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl distinct forall dim el. (a : a dim el) : a dim el =
-      if rust.is_native ()
+      if is_rust ()
       then
-          // native Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
+          // Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
           // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need
           inl a = $'!a ' : a int el
           inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
@@ -1253,13 +1253,13 @@ Spiral.Kino.eval!(
 
 ### skip
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skip !n '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =\n    if is_rust ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skip !n '","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-      if rust.is_native ()
+      if is_rust ()
       then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
       else $'!a |> Array.skip !n '
   """,
@@ -1269,13 +1269,13 @@ Spiral.Kino.eval!(
 
 ### skip_while
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =\n    if rust.is_native ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skipWhile !fn '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =\n    if is_rust ()\n    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'\n    else $'!a |> Array.skipWhile !fn '","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
-      if rust.is_native ()
+      if is_rust ()
       then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
       else $'!a |> Array.skipWhile !fn '
   """,
@@ -1424,28 +1424,28 @@ Spiral.Kino.eval!(
 
 ### sort_by
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =\n    inl fable () = $'!a |> Array.sortBy !fn ' : a dim el\n    backend_switch {\n        Gleam = fun () => fable ()\n        Lua = fun () => fable ()\n        Fsharp = fun () => fable ()\n        Python = fun () =>\n            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.\n            inl keys = am.map fn ($'!a ' : a int el)\n            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else __k)(!keys[__i]))]' : a dim el\n        TypeScript = fun () => fable ()\n        Cpp = fun () => fable ()\n        CppHost = fun () => fable ()\n        Delphi = fun () => fable ()\n        Cuda = fun () => fable ()\n        // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders\n        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)\n        Rust = fun () =>\n            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)\n            inl a = $'!a ' : a int el\n            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;\n            // a tuple element is one Rust value (see rust.one_param_fn)\n            inl key_fn = join (rust.one_param_fn fn)\n            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el\n            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key\n            loopw.for' {from=1; nearTo=length a} fun i =>\n                inl x = index i r\n                inl k = index i keys\n                inl s = mut {j=i}\n                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>\n                    inl j = s.j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- {j=j - 1}\n                set r s.j x\n                set keys s.j k\n            $'!r ' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =\n    inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el\n    backend_switch {\n        Gleam = fun () => fsharp ()\n        Lua = fun () => fsharp ()\n        Fsharp = fun () => fsharp ()\n        Python = fun () =>\n            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.\n            inl keys = am.map fn ($'!a ' : a int el)\n            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.\n            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, \"tag\") else __k)(!keys[__i]))]' : a dim el\n        TypeScript = fun () => fsharp ()\n        Cpp = fun () => fsharp ()\n        CppHost = fun () => fsharp ()\n        Delphi = fun () => fsharp ()\n        Cuda = fun () => fsharp ()\n        // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders\n        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)\n        Rust = fun () =>\n            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)\n            inl a = $'!a ' : a int el\n            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;\n            // a tuple element is one Rust value (see rust.one_param_fn)\n            inl key_fn = join (rust.one_param_fn fn)\n            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el\n            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key\n            loopw.for' {from=1; nearTo=length a} fun i =>\n                inl x = index i r\n                inl k = index i keys\n                inl s = mut {j=i}\n                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>\n                    inl j = s.j\n                    set r j (index (j - 1) r)\n                    set keys j (index (j - 1) keys)\n                    s <- {j=j - 1}\n                set r s.j x\n                set keys s.j k\n            $'!r ' : a dim el\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
-      inl fable () = $'!a |> Array.sortBy !fn ' : a dim el
+      inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el
       backend_switch {
-          Gleam = fun () => fable ()
-          Lua = fun () => fable ()
-          Fsharp = fun () => fable ()
+          Gleam = fun () => fsharp ()
+          Lua = fun () => fsharp ()
+          Fsharp = fun () => fsharp ()
           Python = fun () =>
               // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.
               inl keys = am.map fn ($'!a ' : a int el)
               // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
               $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
-          TypeScript = fun () => fable ()
-          Cpp = fun () => fable ()
-          CppHost = fun () => fable ()
-          Delphi = fun () => fable ()
-          Cuda = fun () => fable ()
-          // native Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
+          TypeScript = fun () => fsharp ()
+          Cpp = fun () => fsharp ()
+          CppHost = fun () => fsharp ()
+          Delphi = fun () => fsharp ()
+          Cuda = fun () => fsharp ()
+          // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
           // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)
           Rust = fun () =>
               // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)
@@ -1517,23 +1517,23 @@ Spiral.Kino.eval!(
 
 ### try_item
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item forall dim el. (i : i32) (a : a dim el) : option el =\n    inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox\n    backend_switch {\n        Gleam = fable\n        Lua = fable\n        Fsharp = fable\n        Python = fable\n        TypeScript = fable\n        Cpp = fable\n        CppHost = fable\n        Delphi = fable\n        Cuda = fable\n        Rust = fun () =>\n            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'\n            x |> optionm'.unbox\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item forall dim el. (i : i32) (a : a dim el) : option el =\n    inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox\n    backend_switch {\n        Gleam = fsharp\n        Lua = fsharp\n        Fsharp = fsharp\n        Python = fsharp\n        TypeScript = fsharp\n        Cpp = fsharp\n        CppHost = fsharp\n        Delphi = fsharp\n        Cuda = fsharp\n        Rust = fun () =>\n            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'\n            x |> optionm'.unbox\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
-      inl fable () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+      inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
       backend_switch {
-          Gleam = fable
-          Lua = fable
-          Fsharp = fable
-          Python = fable
-          TypeScript = fable
-          Cpp = fable
-          CppHost = fable
-          Delphi = fable
-          Cuda = fable
+          Gleam = fsharp
+          Lua = fsharp
+          Fsharp = fsharp
+          Python = fsharp
+          TypeScript = fsharp
+          Cpp = fsharp
+          CppHost = fsharp
+          Delphi = fsharp
+          Cuda = fsharp
           Rust = fun () =>
               inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
               x |> optionm'.unbox

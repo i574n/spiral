@@ -15,7 +15,7 @@ defmodule Spiral.Kino do
   }
 
   @default_timeout 300_000
-  @default_polyglot_root Path.expand("../../../../../polyglot", __DIR__)
+  @default_workspace_root Path.expand("../../../..", __DIR__)
 
   @spec run(String.t(), keyword()) :: {:ok, Result.t()} | {:error, Exception.t()}
   def run(code, opts \\ []) when is_binary(code) do
@@ -57,7 +57,7 @@ defmodule Spiral.Kino do
           exe = Path.join(dir, exe_name())
 
           with {:ok, names, package_dir} <-
-                 mount_packages(dir, prepared.packages, opts[:root], polyglot_root(opts)),
+                 mount_packages(dir, prepared.packages, opts[:root], workspace_root(opts)),
                :ok <- write_package(dir, names, package_dir, opts[:real]) do
             run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started)
           end
@@ -107,12 +107,17 @@ defmodule Spiral.Kino do
     end
   end
 
-  @spec polyglot_root(keyword()) :: String.t()
-  def polyglot_root(opts \\ []) do
-    opts[:polyglot_root] ||
+  # The base a cell's `--package <path>` falls back to when the path is not found beside the notebook: the spiral
+  # checkout this Kino belongs to, so `../dice` names the dice checkout next to it (the polyglot checkout, the former
+  # anchor, is a sibling too). The `polyglot_root` option, config key and SPIRAL_KINO_POLYGLOT_ROOT are still read.
+  @spec workspace_root(keyword()) :: String.t()
+  def workspace_root(opts \\ []) do
+    opts[:workspace_root] || opts[:polyglot_root] ||
+      Application.get_env(:spiral_kino, :workspace_root) ||
       Application.get_env(:spiral_kino, :polyglot_root) ||
+      System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
       System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") ||
-      @default_polyglot_root
+      @default_workspace_root
   end
 
   defp show(%Result{stdout: stdout, html: html}) do
@@ -642,8 +647,8 @@ defmodule Spiral.Kino do
   end
 
   defp reject_unpatched(rust) do
-    if String.contains?(rust, "emitRustExpr") do
-      {:error, %ProcessError{message: "generated Rust still calls emitRustExpr"}}
+    if String.contains?(rust, "__spiral_emit_rust") or String.contains?(rust, "emitRustExpr") do
+      {:error, %ProcessError{message: "generated Rust still holds an emit marker (__spiral_emit_rust)"}}
     else
       :ok
     end

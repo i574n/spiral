@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -93,11 +93,11 @@ fn method1(mut v0: u64, mut v1: i32, mut v2: Rc<UH1>) -> (Rc<UH1>, u64) {
     loop {
         let mut v3: bool = 0i32 < v1;
         if v3 {
-            let mut v4: u64 = v0 * 1103515245u64;
-            let mut v5: u64 = v4 + 12345u64;
+            let mut v4: u64 = v0.wrapping_mul(1103515245u64);
+            let mut v5: u64 = v4.wrapping_add(12345u64);
             let mut v6: u64 = v5 & 2147483647u64;
-            let mut v7: i32 = v1 - 1i32;
-            let mut v8: u64 = v6 >> 16i32;
+            let mut v7: i32 = v1.wrapping_sub(1i32);
+            let mut v8: u64 = v6.wrapping_shr((16i32) as u32);
             let mut v9: u64 = v8 & 1u64;
             let mut v10: bool = v9 == 0u64;
             let mut v13: US0 = if v10 {
@@ -188,7 +188,6 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                                     US0::US0_0 => { // BitZero
                                         return US1::US1_2;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -199,10 +198,8 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                                     US0::US0_0 => { // BitZero
                                         return US1::US1_1;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         }
                     }
                     UH0::UH0_0 => { // RegexEmpty
@@ -257,7 +254,6 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -278,7 +274,6 @@ fn method6(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH0::UH0_0 => { // RegexEmpty
@@ -296,7 +291,6 @@ fn method6(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -377,7 +371,6 @@ fn method9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US1::US1_2
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -388,10 +381,8 @@ fn method9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US1::US1_1
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         };
                         match &v15 {
                             US1::US1_1 => { // SymbolSame
@@ -440,7 +431,6 @@ fn method9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -550,7 +540,6 @@ fn method4(mut v0: Rc<UH0>) -> Rc<UH0> {
             let mut v16: Rc<UH0> = method4(v15.clone());
             method10(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method12(mut v0: Rc<UH0>) -> US2 {
@@ -621,7 +610,6 @@ fn method12(mut v0: Rc<UH0>) -> US2 {
             let mut v25: Rc<UH0> = v25.clone();
             US2::US2_0
         }
-        _ => unreachable!(),
     }
 }
 fn method11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
@@ -648,7 +636,6 @@ fn method11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                     let mut v29: Rc<UH0> = method11(v25.clone(), v1.clone());
                     method5(v28.clone(), v29.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH0::UH0_2(v4) => { // RegexChar
@@ -662,7 +649,6 @@ fn method11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                         US0::US0_0 => { // BitZero
                             US1::US1_2
                         }
-                        _ => unreachable!(),
                     }
                 }
                 US0::US0_0 => { // BitZero
@@ -673,10 +659,8 @@ fn method11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                         US0::US0_0 => { // BitZero
                             US1::US1_1
                         }
-                        _ => unreachable!(),
                     }
                 }
-                _ => unreachable!(),
             };
             let mut v15: bool = match &v14 {
                 US1::US1_1 => { // SymbolSame
@@ -704,7 +688,6 @@ fn method11(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
             let mut v37: Rc<UH0> = method10(v35.clone());
             method8(v36.clone(), v37.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method3(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
@@ -732,10 +715,8 @@ fn method2(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> bool {
                     US2::US2_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -747,12 +728,12 @@ fn method0(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: u64, mut v4: i32) 
             let (mut v7, mut v8): (Rc<UH1>, u64) = method1(v3, v1, v6.clone());
             let mut v9: bool = method2(v0.clone(), v7.clone());
             let mut v11: i32 = if v9 {
-                let mut v10: i32 = v4 + 1i32;
+                let mut v10: i32 = v4.wrapping_add(1i32);
                 v10
             } else {
                 v4
             };
-            let mut v12: i32 = v2 - 1i32;
+            let mut v12: i32 = v2.wrapping_sub(1i32);
             (v0, v1, v2, v3, v4) = (v0.clone(), v1, v12, v8, v11);
             continue;
         } else {
@@ -764,7 +745,7 @@ fn method14(mut v0: i32, mut v1: Rc<UH1>) -> Rc<UH1> {
     loop {
         let mut v2: bool = 0i32 < v0;
         if v2 {
-            let mut v3: i32 = v0 - 1i32;
+            let mut v3: i32 = v0.wrapping_sub(1i32);
             let mut v4: US0 = US0::US0_0;
             let mut v5: Rc<UH1> = Rc::new(UH1::UH1_1(v4.clone(), v1.clone()));
             (v0, v1) = (v3, v5.clone());
@@ -784,7 +765,7 @@ fn method13(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
             let mut v6: Rc<UH1> = method14(v2, v5.clone());
             let mut v7: bool = method2(v0.clone(), v6.clone());
             let mut v9: i32 = if v7 {
-                let mut v8: i32 = v3 + 1i32;
+                let mut v8: i32 = v3.wrapping_add(1i32);
                 v8
             } else {
                 v3
@@ -795,12 +776,12 @@ fn method13(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
             let mut v13: Rc<UH1> = method14(v2, v12.clone());
             let mut v14: bool = method2(v0.clone(), v13.clone());
             let mut v16: i32 = if v14 {
-                let mut v15: i32 = v9 + 1i32;
+                let mut v15: i32 = v9.wrapping_add(1i32);
                 v15
             } else {
                 v9
             };
-            let mut v17: i32 = v2 + 1i32;
+            let mut v17: i32 = v2.wrapping_add(1i32);
             (v0, v1, v2, v3) = (v0.clone(), v1, v17, v16);
             continue;
         }
@@ -849,7 +830,6 @@ fn method16(mut v0: Rc<UH2>, mut v1: Rc<UH1>) -> bool {
                                             US0::US0_0 => { // BitZero
                                                 US1::US1_2
                                             }
-                                            _ => unreachable!(),
                                         }
                                     }
                                     US0::US0_0 => { // BitZero
@@ -860,10 +840,8 @@ fn method16(mut v0: Rc<UH2>, mut v1: Rc<UH1>) -> bool {
                                             US0::US0_0 => { // BitZero
                                                 US1::US1_1
                                             }
-                                            _ => unreachable!(),
                                         }
                                     }
-                                    _ => unreachable!(),
                                 };
                                 let mut v22: bool = match &v21 {
                                     US1::US1_1 => { // SymbolSame
@@ -883,7 +861,6 @@ fn method16(mut v0: Rc<UH2>, mut v1: Rc<UH1>) -> bool {
                             UH1::UH1_0 => { // InputEmpty
                                 return false;
                             }
-                            _ => unreachable!(),
                         }
                     }
                     UH0::UH0_0 => { // RegexEmpty
@@ -904,7 +881,6 @@ fn method16(mut v0: Rc<UH2>, mut v1: Rc<UH1>) -> bool {
                             continue;
                         }
                     }
-                    _ => unreachable!(),
                 }
             }
             UH2::UH2_0 => { // RegexListNil
@@ -917,10 +893,8 @@ fn method16(mut v0: Rc<UH2>, mut v1: Rc<UH1>) -> bool {
                     UH1::UH1_0 => { // InputEmpty
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -934,12 +908,12 @@ fn method15(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: u64, mut v4: i32)
             let mut v10: Rc<UH2> = Rc::new(UH2::UH2_1(v0.clone(), v9.clone()));
             let mut v11: bool = method16(v10.clone(), v7.clone());
             let mut v13: i32 = if v11 {
-                let mut v12: i32 = v4 + 1i32;
+                let mut v12: i32 = v4.wrapping_add(1i32);
                 v12
             } else {
                 v4
             };
-            let mut v14: i32 = v2 - 1i32;
+            let mut v14: i32 = v2.wrapping_sub(1i32);
             (v0, v1, v2, v3, v4) = (v0.clone(), v1, v14, v8, v13);
             continue;
         } else {
@@ -959,7 +933,7 @@ fn method17(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
             let mut v8: Rc<UH2> = Rc::new(UH2::UH2_1(v0.clone(), v7.clone()));
             let mut v9: bool = method16(v8.clone(), v6.clone());
             let mut v11: i32 = if v9 {
-                let mut v10: i32 = v3 + 1i32;
+                let mut v10: i32 = v3.wrapping_add(1i32);
                 v10
             } else {
                 v3
@@ -972,12 +946,12 @@ fn method17(mut v0: Rc<UH0>, mut v1: i32, mut v2: i32, mut v3: i32) -> i32 {
             let mut v17: Rc<UH2> = Rc::new(UH2::UH2_1(v0.clone(), v16.clone()));
             let mut v18: bool = method16(v17.clone(), v15.clone());
             let mut v20: i32 = if v18 {
-                let mut v19: i32 = v11 + 1i32;
+                let mut v19: i32 = v11.wrapping_add(1i32);
                 v19
             } else {
                 v11
             };
-            let mut v21: i32 = v2 + 1i32;
+            let mut v21: i32 = v2.wrapping_add(1i32);
             (v0, v1, v2, v3) = (v0.clone(), v1, v21, v20);
             continue;
         }
@@ -1002,14 +976,12 @@ fn method19(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         (v0, v1) = (v6, v4.clone());
                         continue;
                     }
-                    _ => unreachable!(),
                 }
             }
             UH1::UH1_0 => { // InputEmpty
                 let mut v2: bool = v0 == 1i32;
                 return v2;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1022,12 +994,12 @@ fn method18(mut v0: i32, mut v1: i32, mut v2: u64, mut v3: i32) -> i32 {
             let mut v8: i32 = 0i32;
             let mut v9: bool = method19(v8, v6.clone());
             let mut v11: i32 = if v9 {
-                let mut v10: i32 = v3 + 1i32;
+                let mut v10: i32 = v3.wrapping_add(1i32);
                 v10
             } else {
                 v3
             };
-            let mut v12: i32 = v1 - 1i32;
+            let mut v12: i32 = v1.wrapping_sub(1i32);
             (v0, v1, v2, v3) = (v0, v12, v7, v11);
             continue;
         } else {
@@ -1202,7 +1174,6 @@ fn method21(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         (v0, v1) = (v48, v18.clone());
                         continue;
                     }
-                    _ => unreachable!(),
                 }
             }
             UH1::UH1_0 => { // InputEmpty
@@ -1244,7 +1215,6 @@ fn method21(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1257,12 +1227,12 @@ fn method20(mut v0: i32, mut v1: i32, mut v2: u64, mut v3: i32) -> i32 {
             let mut v8: i32 = 0i32;
             let mut v9: bool = method21(v8, v6.clone());
             let mut v11: i32 = if v9 {
-                let mut v10: i32 = v3 + 1i32;
+                let mut v10: i32 = v3.wrapping_add(1i32);
                 v10
             } else {
                 v3
             };
-            let mut v12: i32 = v1 - 1i32;
+            let mut v12: i32 = v1.wrapping_sub(1i32);
             (v0, v1, v2, v3) = (v0, v12, v7, v11);
             continue;
         } else {
@@ -1319,14 +1289,12 @@ fn method23(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         (v0, v1) = (v11, v4.clone());
                         continue;
                     }
-                    _ => unreachable!(),
                 }
             }
             UH1::UH1_0 => { // InputEmpty
                 let mut v2: bool = v0 == 3i32;
                 return v2;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1341,7 +1309,7 @@ fn method22(mut v0: i32, mut v1: i32, mut v2: i32) -> i32 {
             let mut v6: i32 = 0i32;
             let mut v7: bool = method23(v6, v5.clone());
             let mut v9: i32 = if v7 {
-                let mut v8: i32 = v2 + 1i32;
+                let mut v8: i32 = v2.wrapping_add(1i32);
                 v8
             } else {
                 v2
@@ -1353,12 +1321,12 @@ fn method22(mut v0: i32, mut v1: i32, mut v2: i32) -> i32 {
             let mut v14: i32 = 0i32;
             let mut v15: bool = method23(v14, v13.clone());
             let mut v17: i32 = if v15 {
-                let mut v16: i32 = v9 + 1i32;
+                let mut v16: i32 = v9.wrapping_add(1i32);
                 v16
             } else {
                 v9
             };
-            let mut v18: i32 = v1 + 1i32;
+            let mut v18: i32 = v1.wrapping_add(1i32);
             (v0, v1, v2) = (v0, v18, v17);
             continue;
         }
@@ -1369,7 +1337,7 @@ fn method24(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32) -> () {
         let mut v2: bool = v1 < 8192i32;
         if v2 {
             v0.clone().borrow_mut()[v1 as usize] = 0i32;
-            let mut v3: i32 = v1 + 1i32;
+            let mut v3: i32 = v1.wrapping_add(1i32);
             (v0, v1) = (v0.clone(), v3);
             continue;
         }
@@ -1381,7 +1349,7 @@ fn method25(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: i32) -> () {
         let mut v2: bool = v1 < 1i32;
         if v2 {
             v0.clone().borrow_mut()[v1 as usize] = 0i32;
-            let mut v3: i32 = v1 + 1i32;
+            let mut v3: i32 = v1.wrapping_add(1i32);
             (v0, v1) = (v0.clone(), v3);
             continue;
         }
@@ -1442,7 +1410,7 @@ fn method27(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                     0i32
                 };
                 v3.clone().borrow_mut()[v13 as usize] = v33;
-                let mut v34: i32 = v13 + 1i32;
+                let mut v34: i32 = v13.wrapping_add(1i32);
                 v4.clone().borrow_mut()[v10 as usize] = v34;
                 v6.clone().borrow_mut()[0i32 as usize] = v34;
                 return v13;
@@ -1450,7 +1418,7 @@ fn method27(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                 return std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-interned-store-full"); } LIT.with(|lit| lit.clone()) }));
             }
         } else {
-            let mut v37: i32 = v11 - 1i32;
+            let mut v37: i32 = v11.wrapping_sub(1i32);
             let mut v38: i32 = v0.clone().borrow()[v37 as usize].clone();
             let mut v39: bool = v38 == v7;
             let mut v42: bool = if v39 {
@@ -1470,7 +1438,7 @@ fn method27(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
             if v45 {
                 return v37;
             } else {
-                let mut v46: i32 = v10 + 1i32;
+                let mut v46: i32 = v10.wrapping_add(1i32);
                 let mut v47: i32 = v46 & 8191i32;
                 (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10) = (v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v7, v8, v9, v47);
                 continue;
@@ -1479,10 +1447,10 @@ fn method27(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
     }
 }
 fn method26(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2: Rc<RefCell<Vec<i32>>>, mut v3: Rc<RefCell<Vec<i32>>>, mut v4: Rc<RefCell<Vec<i32>>>, mut v5: Rc<RefCell<Vec<i32>>>, mut v6: Rc<RefCell<Vec<i32>>>, mut v7: i32, mut v8: i32, mut v9: i32) -> i32 {
-    let mut v10: i32 = v7 * 1024i32;
-    let mut v11: i32 = v10 + v8;
-    let mut v12: i32 = v11 * 4099i32;
-    let mut v13: i32 = v12 + v9;
+    let mut v10: i32 = v7.wrapping_mul(1024i32);
+    let mut v11: i32 = v10.wrapping_add(v8);
+    let mut v12: i32 = v11.wrapping_mul(4099i32);
+    let mut v13: i32 = v12.wrapping_add(v9);
     let mut v14: i32 = v13 & 8191i32;
     method27(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v7, v8, v9, v14)
 }
@@ -1628,7 +1596,6 @@ fn method28(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                 US0::US0_0 => { // BitZero
                     0i32
                 }
-                _ => unreachable!(),
             };
             let mut v12: i32 = 0i32;
             method26(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v9, v11, v12)
@@ -1657,12 +1624,11 @@ fn method28(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                 }
             }
         }
-        _ => unreachable!(),
     }
 }
 fn method35(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2: Rc<RefCell<Vec<i32>>>, mut v3: Rc<RefCell<Vec<i32>>>, mut v4: Rc<RefCell<Vec<i32>>>, mut v5: Rc<RefCell<Vec<i32>>>, mut v6: Rc<RefCell<Vec<i32>>>, mut v7: i32, mut v8: i32) -> i32 {
-    let mut v9: i32 = v7 * 2i32;
-    let mut v10: i32 = v9 + v8;
+    let mut v9: i32 = v7.wrapping_mul(2i32);
+    let mut v10: i32 = v9.wrapping_add(v8);
     let mut v11: i32 = v5.clone().borrow()[v10 as usize].clone();
     let mut v12: bool = v11 == 0i32;
     if v12 {
@@ -1711,11 +1677,11 @@ fn method35(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                 }
             }
         };
-        let mut v42: i32 = v41 + 1i32;
+        let mut v42: i32 = v41.wrapping_add(1i32);
         v5.clone().borrow_mut()[v10 as usize] = v42;
         v41
     } else {
-        let mut v43: i32 = v11 - 1i32;
+        let mut v43: i32 = v11.wrapping_sub(1i32);
         v43
     }
 }
@@ -1736,7 +1702,6 @@ fn method34(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                         US0::US0_0 => { // BitZero
                             0i32
                         }
-                        _ => unreachable!(),
                     };
                     let mut v16: i32 = method35(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v7, v15);
                     (v0, v1, v2, v3, v4, v5, v6, v7, v8) = (v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v16, v13.clone());
@@ -1747,7 +1712,6 @@ fn method34(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
                     let mut v11: bool = v10 == 1i32;
                     return v11;
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -1763,12 +1727,12 @@ fn method32(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
             let (mut v14, mut v15): (Rc<UH1>, u64) = method1(v10, v7, v13.clone());
             let mut v16: bool = method33(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v8, v14.clone());
             let mut v18: i32 = if v16 {
-                let mut v17: i32 = v11 + 1i32;
+                let mut v17: i32 = v11.wrapping_add(1i32);
                 v17
             } else {
                 v11
             };
-            let mut v19: i32 = v9 - 1i32;
+            let mut v19: i32 = v9.wrapping_sub(1i32);
             (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11) = (v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v7, v8, v19, v15, v18);
             continue;
         } else {
@@ -1786,7 +1750,7 @@ fn method36(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
             let mut v13: Rc<UH1> = method14(v9, v12.clone());
             let mut v14: bool = method33(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v8, v13.clone());
             let mut v16: i32 = if v14 {
-                let mut v15: i32 = v10 + 1i32;
+                let mut v15: i32 = v10.wrapping_add(1i32);
                 v15
             } else {
                 v10
@@ -1797,12 +1761,12 @@ fn method36(mut v0: Rc<RefCell<Vec<i32>>>, mut v1: Rc<RefCell<Vec<i32>>>, mut v2
             let mut v20: Rc<UH1> = method14(v9, v19.clone());
             let mut v21: bool = method33(v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v8, v20.clone());
             let mut v23: i32 = if v21 {
-                let mut v22: i32 = v16 + 1i32;
+                let mut v22: i32 = v16.wrapping_add(1i32);
                 v22
             } else {
                 v16
             };
-            let mut v24: i32 = v9 + 1i32;
+            let mut v24: i32 = v9.wrapping_add(1i32);
             (v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v10) = (v0.clone(), v1.clone(), v2.clone(), v3.clone(), v4.clone(), v5.clone(), v6.clone(), v7, v8, v24, v23);
             continue;
         }

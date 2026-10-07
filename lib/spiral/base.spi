@@ -19,7 +19,7 @@ inl use forall t. (x : t) : t =
         Python = fun () => $'use !x = !x ' : ()
         Cpp = fun () => $'use !x = !x ' : ()
         TypeScript = fun () => $'use !x = !x ' : ()
-        // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
+        // Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
         Rust = fun () =>
             global "struct SpiralUse(std::rc::Rc<dyn Fn()>);\nimpl Drop for SpiralUse {\n    fn drop(&mut self) { (self.0)() }\n}"
             $'let _spiral_use = SpiralUse((!x).clone())' : ()
@@ -315,7 +315,7 @@ inl rec defaultof forall t. (() : ()) : t =
     }
 
 /// ### choice2'
-// Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
+// Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
 type choice2_switch a b =
     {
         Gleam : $'Choice<`a, `b>'
@@ -335,7 +335,7 @@ inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =
             inl c1of2 = join c1of2
             inl c2of2 = join c2of2
             $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
-        | RustNative => fun choice =>
+        | Rust => fun choice =>
             inl c1of2 (x : t1) : _ _ t2 = C1of2 x
             inl c2of2 (x : t2) : _ t1 _ = C2of2 x
             inl c1of2 = join c1of2
@@ -375,12 +375,12 @@ inl exn x =
     x |> $'`exn '
 
 /// ### try
-// Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
+// Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
 // goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints
 // nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local
 // counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and
 // there the hook always reports (it is the only report before the abort).
-inl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
+inl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
     inl fn = dyn fn
     inl ex_fn = dyn ex_fn
     $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
@@ -412,9 +412,9 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
             $'except Exception as e:'
             $'    result = !ex_fn(e)'
             $'result' : option t
-        // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
+        // Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
         Rust = fun () =>
-            catch_unwind_native (fun () => some (fn ())) ex_fn
+            catch_unwind_rust (fun () => some (fn ())) ex_fn
     }
 
 /// ### try_unit
@@ -434,23 +434,10 @@ inl try_unit_fsharp_python () : bool =
     }
 
 inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
-    inl native =
-        backend_switch {
-            Gleam = fun () => false
-            Lua = fun () => false
-            Fsharp = fun () => false
-            Python = fun () => false
-            TypeScript = fun () => false
-            Cpp = fun () => false
-            CppHost = fun () => false
-            Delphi = fun () => false
-            Cuda = fun () => false
-            Rust = fun () => true
-        }
-    if native
+    if is_rust ()
     then
-        // Native Rust: a panic is the exception (catch_unwind_native).
-        catch_unwind_native fn (fun ex => ex_fn fun () => ex)
+        // Rust: a panic is the exception (catch_unwind_rust).
+        catch_unwind_rust fn (fun ex => ex_fn fun () => ex)
         $'()' : t
     elif try_unit_fsharp_python ()
     then
@@ -506,22 +493,9 @@ inl try_unit' forall t. (ex_fn : (() -> exn) -> ()) (fn : () -> ()) : t =
 
 /// ### try_finally
 inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
-    inl native =
-        backend_switch {
-            Gleam = fun () => false
-            Lua = fun () => false
-            Fsharp = fun () => false
-            Python = fun () => false
-            TypeScript = fun () => false
-            Cpp = fun () => false
-            CppHost = fun () => false
-            Delphi = fun () => false
-            Cuda = fun () => false
-            Rust = fun () => true
-        }
-    if native
+    if is_rust ()
     then
-        // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
+        // Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
         inl fn = dyn fn
         inl finally = dyn finally
         $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()

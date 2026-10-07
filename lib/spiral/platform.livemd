@@ -115,14 +115,14 @@ Spiral.Kino.eval!(
 
 ### is_windows
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_windows () : bool =\n    run_target function\n        | RustNative => fun () =>\n            $'cfg\\!(windows)' : bool\n        | Fsharp _ => fun () =>\n            Windows |> os_platform |> is_os_platform\n        | Gleam _ => fun () =>\n            backend_switch {\n                Gleam = fun () =>\n                    global \"import gleam/erlang/os\"\n            }\n            $'os.family() == os.WindowsNt'\n        | target => fun () => failwith $'$\"platform.is_windows / target: {!target}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_windows () : bool =\n    run_target function\n        | Rust => fun () =>\n            $'cfg\\!(windows)' : bool\n        | Fsharp _ => fun () =>\n            Windows |> os_platform |> is_os_platform\n        | Gleam _ => fun () =>\n            backend_switch {\n                Gleam = fun () =>\n                    global \"import gleam/erlang/os\"\n            }\n            $'os.family() == os.WindowsNt'\n        | target => fun () => failwith $'$\"platform.is_windows / target: {!target}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl is_windows () : bool =
       run_target function
-          | RustNative => fun () =>
+          | Rust => fun () =>
               $'cfg\!(windows)' : bool
           | Fsharp _ => fun () =>
               Windows |> os_platform |> is_os_platform

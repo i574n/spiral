@@ -6,7 +6,7 @@ open rust.rust_operators
 /// ### reqwest_response
 nominal reqwest_response =
     `(
-        native_type
+        rust_type
             `($'reqwest_Response')
             `($'reqwest_wasm::Response')
             "type reqwest_Response = class end"
@@ -15,15 +15,15 @@ nominal reqwest_response =
 /// ### reqwest_error
 nominal reqwest_error =
     `(
-        native_type
+        rust_type
             `($'reqwest_Error')
             `($'reqwest_wasm::Error')
             "type reqwest_Error = class end"
     )
 
 /// ### request_builder
-// native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
-// the other backends keep the Fable alias (declared by the global below, as before)
+// Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
+// the other backends keep the F# alias (declared by the global below)
 type request_builder_switch =
     {
         Gleam : $'reqwest_RequestBuilder'
@@ -105,7 +105,7 @@ nominal tcp_client =
     `(
         backend_switch `(()) `({}) {
             Fsharp = (fun () =>
-                global "#if FABLE_COMPILER\n\ntype System_Net_Sockets_TcpClient = System.IDisposable\n\#else\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n#endif\n"
+                global "type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n"
                         ) : () -> ()
         }
         $'' : $'System_Net_Sockets_TcpClient'

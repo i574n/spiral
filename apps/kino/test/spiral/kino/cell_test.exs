@@ -3,12 +3,12 @@ defmodule Spiral.Kino.CellTest do
 
   alias Spiral.Kino.Cell
 
-  test "inlines emitRustExpr and prints the i32 value" do
+  test "inlines __spiral_emit_rust and prints the i32 value" do
     rust = """
     fn spiral_main() -> i32 {
         let mut v0: Rc<str> = "{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, $0.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }";
         let mut v1: Rc<str> = Rc::<str>::from("Hello from Spiral!");
-        Fable.Core.RustInterop.emitRustExpr v1 v0 ;
+        __spiral_emit_rust v1 v0 ;
         49i32
     }
     fn main() {
@@ -18,13 +18,13 @@ defmodule Spiral.Kino.CellTest do
     """
 
     patched = Cell.patch_rust(rust, true)
-    refute patched =~ "emitRustExpr"
+    refute patched =~ "__spiral_emit_rust"
     assert patched =~ "v1.as_ref().as_bytes()"
     assert patched =~ "SPIRAL_KINO_VALUE:{}"
     assert patched =~ "std::process::exit(0);"
   end
 
-  test "inlines an emit bound to a tuple" do
+  test "inlines an emit bound to a tuple (the former marker spelling is still read)" do
     rust = """
     fn spiral_main() -> i32 {
         let mut v0: Rc<str> = "{ spiral_trace_hold(&$0) }";
@@ -56,7 +56,7 @@ defmodule Spiral.Kino.CellTest do
     assert us < 12 * max(small_us, 20_000),
            "patch_rust: 2000 lines #{div(us, 1000)} ms vs 500 lines #{div(small_us, 1000)} ms"
 
-    refute patched =~ "emitRustExpr"
+    refute patched =~ "__spiral_emit_rust"
     assert patched =~ ~s|{ spiral_trace_hold(&v20050, "ü 50") };|
     assert patched =~ "let mut v5036: i32 = v5035 + 36i32; // ü"
     refute patched =~ "v10050"
@@ -75,7 +75,7 @@ defmodule Spiral.Kino.CellTest do
         filler <>
           "    let mut v#{10_000 + i}: Rc<str> = \"{ spiral_trace_hold(&$0, \\\"ü #{i}\\\") }\";\n" <>
           "    let mut v#{20_000 + i}: Rc<str> = Rc::<str>::from(\"ü\");\n" <>
-          "    Fable.Core.RustInterop.emitRustExpr v#{20_000 + i} v#{10_000 + i} ;\n\n\n\n"
+          "    __spiral_emit_rust v#{20_000 + i} v#{10_000 + i} ;\n\n\n\n"
       end
 
     "fn spiral_main() -> i32 {\n" <>

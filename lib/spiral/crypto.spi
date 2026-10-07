@@ -32,7 +32,7 @@ inl get_file_hash' (path : string) : result string string =
 /// ### sha256'
 nominal sha256' =
     `(
-        native_type
+        rust_type
             `($'sha2_Sha256')
             `($'sha2::Sha256')
             "type sha2_Sha256 = class end"
@@ -161,7 +161,7 @@ let hash_text (~input : string) =
             create_hash "sha256"
             |> hash_update input
             |> hash_digest "hex"
-        | RustNative => fun () =>
+        | Rust => fun () =>
             input
             |> sm'.utf8_get_bytes
             |> fun (a x) => x

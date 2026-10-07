@@ -120,14 +120,14 @@ type result'_switch t u =
         // Lua: the union too (see result'_union)
         Lua : result t u
         Fsharp : $'Result<`t, `u>'
-        // native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
+        // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
         // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
         Python : result t u
         Rust : $'Result<`t, `u>'
     }
 nominal result' t u = $'backend_switch `(result'_switch t u)'
 
-// Lua and native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
+// Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
 // `Error e` from `Ok e`
 inl result'_union () : bool =
     backend_switch {
@@ -159,7 +159,7 @@ inl result'_python () : bool =
 
 /// ### unbox
 inl unbox forall t u. (x : result' t u) : result t u =
-    // native Python: result' already is the union (see result'_switch)
+    // Python: result' already is the union (see result'_switch)
     if result'_union ()
     then $'!x ' : result t u
     else
@@ -206,7 +206,7 @@ inl unbox forall t u. (x : result' t u) : result t u =
 
 /// ### box
 inl box forall t u. (x : result t u) : result' t u =
-    // native Python: the union value itself (a known case becomes a US constructor call)
+    // Python: the union value itself (a known case becomes a US constructor call)
     if result'_union ()
     then x |> dyn |> fun x => $'!x ' : result' t u
     else
@@ -239,7 +239,7 @@ inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
 /// ### anyhow_result
 nominal anyhow_result t =
     `(
-        native_type
+        rust_type
             `($'anyhow_Result<`t>')
             `($'anyhow::Result<`t>')
             "type anyhow_Result<'T> = class end"
@@ -248,7 +248,7 @@ nominal anyhow_result t =
 /// ### anyhow_error
 nominal anyhow_error =
     `(
-        native_type
+        rust_type
             `($'anyhow_Error')
             `($'anyhow::Error')
             "type anyhow_Error = class end"
@@ -267,7 +267,7 @@ inl try' forall t u. (x : result' t u) : t =
             typecase t with
             | () => true
             | _ => false
-    // native Python has no `?`: an Error raises, as unwrap'' does
+    // Python has no `?`: an Error raises, as unwrap'' does
     if result'_union ()
     then
         match unbox x with
@@ -314,7 +314,7 @@ inl unwrap'' forall t u. (x : result' t u) : t =
             failwith msg
     else
         run_target function
-            | RustNative => fun () => x |> unwrap'
+            | Rust => fun () => x |> unwrap'
             | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
 
 /// ### unwrap_err'
@@ -355,7 +355,7 @@ inl map'' forall t e u. (fn : t -> u) (source : result' t e) : result' u e =
 
 /// ### map_error'
 inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-    if rust.is_native ()
+    if is_rust ()
     then
         inl fn = join fn
         !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
@@ -418,7 +418,7 @@ inl expect forall t u. (error : rust.ref string) (x : result' t u) : t =
 
 /// ### is_err
 inl is_err forall t u. (x : result' t u) : bool =
-    if rust.is_native ()
+    if is_rust ()
     then !\\(x, $'"$0.is_err()"')
     else
         match unbox x with
@@ -427,19 +427,19 @@ inl is_err forall t u. (x : result' t u) : bool =
 
 /// ### ok'
 inl ok' forall t. (x : result' t _) : optionm'.option' t =
-    if rust.is_native ()
+    if is_rust ()
     then !\\(x, $'"$0.ok()"')
     else x |> unbox |> ok |> optionm'.box
 
 /// ### err
 inl err forall t u. (x : u) : result' t u =
-    if rust.is_native ()
+    if is_rust ()
     then !\\(x, $'"Err($0)"')
     else (Error x : result t u) |> box
 
 /// ### ok''
 inl ok'' forall t u. (x : t) : result' t u =
-    if rust.is_native ()
+    if is_rust ()
     then !\\(x, $'"Ok($0)"')
     else (Ok x : result t u) |> box
 

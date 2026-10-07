@@ -73,14 +73,14 @@ Spiral.Kino.eval!(
 
 ### lookup_map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lookup_map k v =\n    `(\n        native_type\n            `($'near_sdk_store_LookupMap<`k, `v>')\n            `($'near_sdk::store::LookupMap<`k, `v>')\n            \"type near_sdk_store_LookupMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lookup_map k v =\n    `(\n        rust_type\n            `($'near_sdk_store_LookupMap<`k, `v>')\n            `($'near_sdk::store::LookupMap<`k, `v>')\n            \"type near_sdk_store_LookupMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lookup_map k v =
       `(
-          native_type
+          rust_type
               `($'near_sdk_store_LookupMap<`k, `v>')
               `($'near_sdk::store::LookupMap<`k, `v>')
               "type near_sdk_store_LookupMap<'K, 'V> = class end"
@@ -92,14 +92,14 @@ Spiral.Kino.eval!(
 
 ### iterable_set
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal iterable_set t =\n    `(\n        native_type\n            `($'near_sdk_store_IterableSet<`t>')\n            `($'near_sdk::store::IterableSet<`t>')\n            \"type near_sdk_store_IterableSet<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal iterable_set t =\n    `(\n        rust_type\n            `($'near_sdk_store_IterableSet<`t>')\n            `($'near_sdk::store::IterableSet<`t>')\n            \"type near_sdk_store_IterableSet<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal iterable_set t =
       `(
-          native_type
+          rust_type
               `($'near_sdk_store_IterableSet<`t>')
               `($'near_sdk::store::IterableSet<`t>')
               "type near_sdk_store_IterableSet<'T> = class end"
@@ -382,14 +382,14 @@ Spiral.Kino.eval!(
 
 ### near_token_sdk
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_sdk =\n    `(\n        native_type\n            `($'near_sdk_NearToken')\n            `($'near_sdk::NearToken')\n            \"type near_sdk_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_sdk =\n    `(\n        rust_type\n            `($'near_sdk_NearToken')\n            `($'near_sdk::NearToken')\n            \"type near_sdk_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal near_token_sdk =
       `(
-          native_type
+          rust_type
               `($'near_sdk_NearToken')
               `($'near_sdk::NearToken')
               "type near_sdk_NearToken = class end"

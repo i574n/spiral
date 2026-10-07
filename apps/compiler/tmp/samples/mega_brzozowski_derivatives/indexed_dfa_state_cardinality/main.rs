@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -129,11 +129,11 @@ fn method1(mut v0: u64, mut v1: i32, mut v2: Rc<UH1>) -> (Rc<UH1>, u64) {
     loop {
         let mut v3: bool = 0i32 < v1;
         if v3 {
-            let mut v4: u64 = v0 * 1103515245u64;
-            let mut v5: u64 = v4 + 12345u64;
+            let mut v4: u64 = v0.wrapping_mul(1103515245u64);
+            let mut v5: u64 = v4.wrapping_add(12345u64);
             let mut v6: u64 = v5 & 2147483647u64;
-            let mut v7: i32 = v1 - 1i32;
-            let mut v8: u64 = v6 >> 16i32;
+            let mut v7: i32 = v1.wrapping_sub(1i32);
+            let mut v8: u64 = v6.wrapping_shr((16i32) as u32);
             let mut v9: u64 = v8 & 1u64;
             let mut v10: bool = v9 == 0u64;
             let mut v13: US0 = if v10 {
@@ -166,7 +166,6 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         US0::US0_0 => { // BitZero
                             US1::US1_1
                         }
-                        _ => unreachable!(),
                     };
                     let mut v11: bool = match &v10 {
                         US1::US1_1 => { // SymbolSame
@@ -189,7 +188,6 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         US0::US0_0 => { // BitZero
                             US1::US1_1
                         }
-                        _ => unreachable!(),
                     };
                     let mut v17: bool = match &v16 {
                         US1::US1_1 => { // SymbolSame
@@ -213,7 +211,6 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 let mut v3: bool = v2 == false;
                 return v3;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -290,7 +287,6 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                                     US0::US0_0 => { // BitZero
                                         return US1::US1_2;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -301,10 +297,8 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                                     US0::US0_0 => { // BitZero
                                         return US1::US1_1;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         }
                     }
                     UH0::UH0_0 => { // RegexEmpty
@@ -359,7 +353,6 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -380,7 +373,6 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH0::UH0_0 => { // RegexEmpty
@@ -398,7 +390,6 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -479,7 +470,6 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US1::US1_2
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -490,10 +480,8 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US1::US1_1
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         };
                         match &v15 {
                             US1::US1_1 => { // SymbolSame
@@ -542,7 +530,6 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -652,7 +639,6 @@ fn method5(mut v0: Rc<UH0>) -> Rc<UH0> {
             let mut v16: Rc<UH0> = method5(v15.clone());
             method11(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method13(mut v0: Rc<UH0>) -> US2 {
@@ -723,7 +709,6 @@ fn method13(mut v0: Rc<UH0>) -> US2 {
             let mut v25: Rc<UH0> = v25.clone();
             US2::US2_0
         }
-        _ => unreachable!(),
     }
 }
 fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
@@ -750,7 +735,6 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                     let mut v29: Rc<UH0> = method12(v25.clone(), v1.clone());
                     method6(v28.clone(), v29.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH0::UH0_2(v4) => { // RegexChar
@@ -764,7 +748,6 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                         US0::US0_0 => { // BitZero
                             US1::US1_2
                         }
-                        _ => unreachable!(),
                     }
                 }
                 US0::US0_0 => { // BitZero
@@ -775,10 +758,8 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                         US0::US0_0 => { // BitZero
                             US1::US1_1
                         }
-                        _ => unreachable!(),
                     }
                 }
-                _ => unreachable!(),
             };
             let mut v15: bool = match &v14 {
                 US1::US1_1 => { // SymbolSame
@@ -806,7 +787,6 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
             let mut v37: Rc<UH0> = method11(v35.clone());
             method9(v36.clone(), v37.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method4(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
@@ -834,10 +814,8 @@ fn method3(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> bool {
                     US2::US2_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -857,9 +835,9 @@ fn method0(mut v0: i32, mut v1: Rc<UH0>, mut v2: i32, mut v3: u64, mut v4: i32) 
                 v12
             };
             if v13 {
-                let mut v14: i32 = v2 - 1i32;
+                let mut v14: i32 = v2.wrapping_sub(1i32);
                 let mut v16: i32 = if v10 {
-                    let mut v15: i32 = v4 + 1i32;
+                    let mut v15: i32 = v4.wrapping_add(1i32);
                     v15
                 } else {
                     v4
@@ -878,7 +856,7 @@ fn method15(mut v0: i32, mut v1: Rc<UH1>) -> Rc<UH1> {
     loop {
         let mut v2: bool = 0i32 < v0;
         if v2 {
-            let mut v3: i32 = v0 - 1i32;
+            let mut v3: i32 = v0.wrapping_sub(1i32);
             let mut v4: US0 = US0::US0_0;
             let mut v5: Rc<UH1> = Rc::new(UH1::UH1_1(v4.clone(), v1.clone()));
             (v0, v1) = (v3, v5.clone());
@@ -903,7 +881,6 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         US0::US0_0 => { // BitZero
                             US1::US1_1
                         }
-                        _ => unreachable!(),
                     };
                     let mut v12: bool = match &v11 {
                         US1::US1_1 => { // SymbolSame
@@ -924,7 +901,6 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                             US0::US0_0 => { // BitZero
                                 US1::US1_1
                             }
-                            _ => unreachable!(),
                         };
                         let mut v18: bool = match &v17 {
                             US1::US1_1 => { // SymbolSame
@@ -943,7 +919,6 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                             US0::US0_0 => { // BitZero
                                 US1::US1_1
                             }
-                            _ => unreachable!(),
                         };
                         let mut v23: bool = match &v22 {
                             US1::US1_1 => { // SymbolSame
@@ -972,7 +947,6 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                     return false;
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -995,7 +969,7 @@ fn method14(mut v0: i32, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32) -> i32 {
             };
             let mut v15: i32 = if v11 {
                 if v8 {
-                    let mut v12: i32 = v3 + 1i32;
+                    let mut v12: i32 = v3.wrapping_add(1i32);
                     v12
                 } else {
                     v3
@@ -1018,7 +992,7 @@ fn method14(mut v0: i32, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32) -> i32 {
             };
             let mut v28: i32 = if v24 {
                 if v21 {
-                    let mut v25: i32 = v15 + 1i32;
+                    let mut v25: i32 = v15.wrapping_add(1i32);
                     v25
                 } else {
                     v15
@@ -1026,7 +1000,7 @@ fn method14(mut v0: i32, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32) -> i32 {
             } else {
                 std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-compiled-core-disagrees-on-zero-run"); } LIT.with(|lit| lit.clone()) }))
             };
-            let mut v29: i32 = v2 + 1i32;
+            let mut v29: i32 = v2.wrapping_add(1i32);
             (v0, v1, v2, v3) = (v0, v1.clone(), v29, v28);
             continue;
         }
@@ -1069,7 +1043,6 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                             US3::US3_2 => { // TriC
                                 US1::US1_2
                             }
-                            _ => unreachable!(),
                         };
                         let mut v18: bool = match &v17 {
                             US1::US1_1 => { // SymbolSame
@@ -1117,7 +1090,6 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                                 US3::US3_2 => { // TriC
                                     US1::US1_2
                                 }
-                                _ => unreachable!(),
                             };
                             let mut v32: bool = match &v31 {
                                 US1::US1_1 => { // SymbolSame
@@ -1159,7 +1131,6 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                                 US3::US3_2 => { // TriC
                                     US1::US1_2
                                 }
-                                _ => unreachable!(),
                             };
                             let mut v44: bool = match &v43 {
                                 US1::US1_1 => { // SymbolSame
@@ -1185,7 +1156,6 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                     return v3;
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1352,7 +1322,6 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1373,7 +1342,6 @@ fn method22(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH2::UH2_0 => { // RegexEmpty
@@ -1391,7 +1359,6 @@ fn method22(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                 US1::US1_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -1556,7 +1523,6 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1666,7 +1632,6 @@ fn method20(mut v0: Rc<UH2>) -> Rc<UH2> {
             let mut v16: Rc<UH2> = method20(v15.clone());
             method26(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method28(mut v0: Rc<UH2>) -> US2 {
@@ -1737,7 +1702,6 @@ fn method28(mut v0: Rc<UH2>) -> US2 {
             let mut v25: Rc<UH2> = v25.clone();
             US2::US2_0
         }
-        _ => unreachable!(),
     }
 }
 fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
@@ -1764,7 +1728,6 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
                     let mut v35: Rc<UH2> = method27(v31.clone(), v1.clone());
                     method21(v34.clone(), v35.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH2::UH2_2(v4) => { // RegexChar
@@ -1841,7 +1804,6 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
             let mut v43: Rc<UH2> = method26(v41.clone());
             method24(v42.clone(), v43.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method19(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
@@ -1869,10 +1831,8 @@ fn method18(mut v0: Rc<UH2>, mut v1: Rc<UH3>) -> bool {
                     US2::US2_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }

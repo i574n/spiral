@@ -446,7 +446,7 @@ Spiral.Kino.eval!(
 
 ### process_rust
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_rust { rs_path deps trace_level runtime cleanup } =\n    open runtime\n\n    inl extension = \"rs\"\n    // `rs_path` is the Spiral compiler's native Rust output (`--backend Rust`): it is built as is, with no F#\n    // project, no Fable and no text fix-ups.\n    inl code = rs_path |> file_system.read_all_text\n\n    inl hash = #?{ extension code runtime } |> crypto.hash_text\n\n    inl workspace_name = \"spiral\"\n    // Contract (wasm) builds get their own workspace and Cargo.lock: crates locked by the default toolchain's builds\n    // (newer, edition 2024) would otherwise be kept by the NEAR toolchain's cargo, which can't parse them.\n    inl contract = runtime <> None\n    inl workspace_dir_name : string = if contract then \"spiral_contract\" else workspace_name\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id\n\n    inl package_dir =\n        get_package_dir { workspace_root name = workspace_dir_name; target = Some Rust; hash = hash |> Some }\n\n    package_dir |> file_system.create_dir |> ignore\n\n    inl workspace_dir = package_dir </> \"../../..\"\n    inl workspace_cargo_toml_path = workspace_dir </> \"Cargo.toml\"\n\n    if workspace_cargo_toml_path |> file_system.file_exists |> not\n    then get_empty_cargo_toml_content () |> file_system.write_all_text workspace_cargo_toml_path\n\n    inl cargo_toml_path = package_dir </> \"Cargo.toml\"\n\n    inl result' = {\n        extension = Some extension\n        code = None\n        code_path = None\n        output = None\n    }\n\n    inl deps =\n        inl deps =\n            if runtime = None\n            then deps\n            else\n                // TODO: simplify\n                inl has_near_sdk =\n                    deps\n                    |> am'.vec_filter (sm'.from_std_string >> sm'.contains \"near-sdk\")\n                    |> am'.vec_len\n                    |> convert.i32\n                    |> fun (n : int) => n > 0\n                // TODO: simplify with ++\n                if has_near_sdk\n                then deps\n                // Pinned like dice's contract: newer near-sdk releases need a newer rustc than the NEAR toolchain's.\n                else deps |> am'.vec_extend (;[ \"near-sdk=\\\"=5.11.0\\\"\" |> sm'.to_std_string ] |> am'.to_vec)\n                |> am'.vec_extend (;[ \"indexmap=\\\"=2.11.4\\\"\" |> sm'.to_std_string ] |> am'.to_vec)\n        deps\n        |> am'.vec_map fun dep =>\n            inl dep = dep |> sm'.from_std_string\n            if dep |> sm'.contains \"=\"\n            then dep\n            elif dep |> sm'.ends_with \"]\"\n            then dep |> sm'.replace \"[\" $'$\"={{version=\\'*\\',features=[\"' |> fun x => $'$\"{!x}}}\"'\n            else $'$\"{!dep}=\\'*\\'\"'\n        |> am'.from_vec\n        |> fun x => x : _ i32 _\n        |> seq.of_array'\n        |> sm'.concat \"\\n\"\n\n    inl new_code_path = package_dir </> $'$\"{!workspace_name}.{!extension}\"'\n\n    inl cargo_toml_content = get_cargo_toml_content { hash runtime deps }\n    inl workspace_cargo_toml_content = get_workspace_cargo_toml_content { workspace_root contract }\n\n    cargo_toml_content |> file_system.write_all_text_exists cargo_toml_path\n    workspace_cargo_toml_content |> file_system.write_all_text_exists workspace_cargo_toml_path\n\n    // A wasm/contract build is a cdylib: the near-sdk entry calls the native program's `spiral_main`.\n    inl main_code : string =\n        if runtime = None\n        then \"\"\n        else\n            $'$\"\\#[near_sdk::near_bindgen]\"'\n            ++\\# $'$\"\\#[derive(near_sdk::PanicOnDefault)]\"'\n            ++\\# $'$\"pub struct MainState {{\"'\n            ++\\# $'$\"}}\"'\n            ++\\# $'$\"\"'\n            ++\\# $'$\"\\#[near_sdk::near_bindgen]\"'\n            ++\\# $'$\"impl MainState {{\"'\n            ++\\# $'$\"    pub fn state_main() {{\"'\n            ++\\# $'$\"        spiral_main();\"'\n            ++\\# $'$\"    }}\"'\n            ++\\# $'$\"}}\"'\n\n    inl new_code =\n        if main_code = \"\"\n        then code\n        else $'$\"{!code}\\\\n\\\\n{!main_code}\\\\n\"'\n\n    new_code |> file_system.write_all_text_exists new_code_path\n\n    inl exit_code, cargo_fmt_result =\n        fun () =>\n            inl exit_code, result =\n                execution_options fun x => { x with\n                    command = $'$\"cargo fmt --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\" --\"'\n                    working_directory = workspace_root_external |> resultm.box |> resultm.ok'\n                }\n                |> execute_with_options\n\n            inl return () =\n                if exit_code = 0\n                then Ok (exit_code, result)\n                else Error (exit_code, result)\n\n            if result |> sm'.contains \"failed to load manifest for workspace member\" |> not\n            then return ()\n            else\n                inl missing_toml_path =\n                    \"failed to read `(?<a>.*?Cargo.toml)`\"\n                    |> sm'.new_regex\n                    |> resultm.unwrap'\n                    |> sm'.regex_captures result\n                    |> am'.from_vec\n                    |> fun x => x : _ i32 _\n                    |> am'.try_item 0\n                    |> optionm.map (mapm.get \"a\" >> optionm'.unbox)\n                    |> optionm'.flatten\n                match missing_toml_path with\n                | None => Error (exit_code, result)\n                | Some missing_toml_path =>\n                    if missing_toml_path |> file_system.file_exists |> not then\n                        missing_toml_path\n                        |> file_system.directory_get_parent\n                        |> optionm'.default_value' \"\"\n                        |> file_system.create_dir\n                        |> ignore\n                        get_empty_cargo_toml_content ()\n                        |> file_system.write_all_text missing_toml_path\n                    return ()\n        |> retry_fn' 3u8\n\n    if exit_code <>. 0 then\n        trace Critical\n            fun () => \"spiral.process_rust / cargo fmt error\"\n            fun () => { exit_code cargo_fmt_result }\n\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl command =\n        if runtime <> None\n        then $'$\"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\"\"'\n        else $'$\"cargo run --timings --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\"\"'\n    inl environment_variables =\n        if runtime <> None\n        then ;[]\n        else\n            inl fast = false\n            ;[\n                \"TRACE_LEVEL\", \"Verbose\"\n                \"RUSTC_WRAPPER\", \"sccache\"\n                \"RUST_BACKTRACE\", \"full\"\n                \"RUSTFLAGS\",\n                if fast\n                then \"-C prefer-dynamic -C strip=symbols -C link-arg=-s -C debuginfo=0\"\n                else \"-C prefer-dynamic\"\n            ]\n    inl exit_code, cargo_result =\n        execution_options fun x => { x with\n            command\n            environment_variables\n            working_directory = workspace_root_external |> resultm.box |> resultm.ok'\n        }\n        |> execute_with_options\n\n    // A failed build or run is the cell's failure (non-zero exit, like process_cuda's): `error` holds its message,\n    // raised after the cleanup below.\n    inl result, error =\n        if runtime = None then\n            inl external_command =\n                inl vars =\n                    a environment_variables\n                    |> am.map fun k, v => $'$\"$env:{!k}=\\'\\'{!v}\\'\\'\"' : string\n                    |> fun x => x : _ i32 _\n                    |> seq.of_array\n                    |> sm'.concat \";\"\n                inl command =\n                    a ;[\n                        vars\n                        command\n                    ]\n                    |> fun x => x : _ i32 _\n                    |> seq.of_array\n                    |> sm'.concat \";\"\n                $'$\"pwsh -c \\'{!command}\\'\"' : string\n            if exit_code <>. 0 then\n                trace Critical\n                    fun () => \"spiral.process_rust / error\"\n                    fun () => { exit_code new_code_path external_command cleanup cargo_result }\n                result', \"spiral.process_rust / error / \" ++#? { exit_code new_code_path external_command } ++# \"\\n\" ++# cargo_result\n            else\n                inl output =\n                    try\n                        fun () =>\n                            cargo_result\n                            |> sm'.split \"\\n\"\n                            |> fun x => a x : _ i32 _\n                            |> am'.skip_while fun line =>\n                                (line |> sm'.contains \"profile [optimized] target\" |> not)\n                                    && (line |> sm'.contains \"profile [unoptimized] target\" |> not)\n                                    && (line |> sm'.contains \"profile [unoptimized + debuginfo] target\" |> not)\n                            |> am'.skip 2\n                            |> seq.of_array\n                            |> sm'.concat \"\\n\"\n                        fun ex =>\n                            trace Critical\n                                fun () => \"spiral.process_rust / Exception\"\n                                fun () => { ex new_code_path external_command cargo_result }\n                            None\n                    |> optionm'.box\n                    |> optionm'.unwrap\n                { result' with\n                    code = Some new_code\n                    code_path = Some new_code_path\n                    output = Some output\n                }, \"\"\n        else\n            inl wasm_path : string =\n                $'$\"target/spiral/{!workspace_dir_name}/target/wasm32-unknown-unknown/release/spiral_{!hash}.wasm\"'\n\n            inl command =\n                inl invoke_block_path = \"scripts/invoke-block.ps1\"\n                inl spiral_wasm_command : string =\n                    inl runtime_cmd =\n                        match runtime with\n                        | Some (Wasm cmd) => cmd\n                        | Some (Contract cmd) => cmd\n                        | _ => \"\"\n                    $'$\"\\'deps/spiral/workspace/target/release/spiral_wasm -w {!wasm_path} -t debug {!runtime_cmd}\\'\"'\n                inl automation = \"AUTOMATION\" |> env.get_environment_variable\n                $'$\"pwsh -c \\\\\\\"pwsh {!invoke_block_path} {!spiral_wasm_command} -Linux -EnvironmentVariables AUTOMATION={!automation}\\`nNEAR_RPC_TIMEOUT_SECS=100\\\\\\\"\"'\n\n            if exit_code = 0 then\n                inl exit_code, spiral_wasm_result =\n                    execution_options fun x => { x with\n                        command\n                        working_directory = workspace_root |> optionm'.some'\n                    }\n                    |> execute_with_options\n\n                if exit_code = 0 then\n                    { result' with\n                        code = Some new_code\n                        code_path = Some new_code_path\n                        output = Some spiral_wasm_result\n                    }, \"\"\n                else\n                    trace Critical\n                        fun () => \"spiral.process_rust / wasm error\"\n                        fun () => {\n                            exit_code new_code_path cargo_result cleanup\n                            spiral_wasm_result = $'$\"\\\\n{!spiral_wasm_result}\"' : string\n                        }\n                    result', \"spiral.process_rust / wasm error / \" ++#? { exit_code new_code_path } ++# \"\\n\" ++# spiral_wasm_result\n            else\n                trace Critical\n                    fun () => \"spiral.process_rust / cargo error\"\n                    fun () => {\n                        exit_code new_code_path wasm_path command cleanup\n                        cargo_result = $'$\"\\\\n{!cargo_result}\"' : string\n                    }\n                result', \"spiral.process_rust / cargo error / \" ++#? { exit_code new_code_path } ++# \"\\n\" ++# cargo_result\n\n    inl ci = \"CI\" |> env.get_environment_variable\n\n    if cleanup || ci <> \"\" then\n        package_dir |> file_system.directory_delete true\n\n        inl cleanup =\n            inl build_target =\n                if runtime <> None\n                then \"wasm32-unknown-unknown/release\"\n                else \"debug\"\n\n            [ \".d\"; \".exe\"; \".pdb\"; \".wasm\"; \"\" ]\n            |> listm.map fun ext =>\n                workspace_dir </> $'$\"target/{!build_target}/spiral_{!hash}{!ext}\"'\n            |> listm.map fun path => path, path |> file_system.file_exists\n\n        trace Verbose\n            fun () => \"spiral.process_rust / cleanup\"\n            fun () => { new_code_path cleanup }\n\n        cleanup\n        |> listm'.filter snd\n        |> listm.iter (fst >> file_system.file_delete)\n\n    if error <> \"\" then\n        run_target function\n            // A clean failure (message on stderr, exit code 1): failwith panics natively (exit code 101; 0xC0000409 in a\n            // panic=abort build), and callers expect exit code 1.\n            | RustNative => fun () => $'{ eprintln\\!(\"{}\", !error); std::process::exit(1) }' : ()\n            | _ => fun () => failwith error\n    result","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_rust { rs_path deps trace_level runtime cleanup } =\n    open runtime\n\n    inl extension = \"rs\"\n    // `rs_path` is the Spiral compiler's native Rust output (`--backend Rust`): it is built as is, with no F#\n    // project, no Fable and no text fix-ups.\n    inl code = rs_path |> file_system.read_all_text\n\n    inl hash = #?{ extension code runtime } |> crypto.hash_text\n\n    inl workspace_name = \"spiral\"\n    // Contract (wasm) builds get their own workspace and Cargo.lock: crates locked by the default toolchain's builds\n    // (newer, edition 2024) would otherwise be kept by the NEAR toolchain's cargo, which can't parse them.\n    inl contract = runtime <> None\n    inl workspace_dir_name : string = if contract then \"spiral_contract\" else workspace_name\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id\n\n    inl package_dir =\n        get_package_dir { workspace_root name = workspace_dir_name; target = Some Rust; hash = hash |> Some }\n\n    package_dir |> file_system.create_dir |> ignore\n\n    inl workspace_dir = package_dir </> \"../../..\"\n    inl workspace_cargo_toml_path = workspace_dir </> \"Cargo.toml\"\n\n    if workspace_cargo_toml_path |> file_system.file_exists |> not\n    then get_empty_cargo_toml_content () |> file_system.write_all_text workspace_cargo_toml_path\n\n    inl cargo_toml_path = package_dir </> \"Cargo.toml\"\n\n    inl result' = {\n        extension = Some extension\n        code = None\n        code_path = None\n        output = None\n    }\n\n    inl deps =\n        inl deps =\n            if runtime = None\n            then deps\n            else\n                // TODO: simplify\n                inl has_near_sdk =\n                    deps\n                    |> am'.vec_filter (sm'.from_std_string >> sm'.contains \"near-sdk\")\n                    |> am'.vec_len\n                    |> convert.i32\n                    |> fun (n : int) => n > 0\n                // TODO: simplify with ++\n                if has_near_sdk\n                then deps\n                // Pinned like dice's contract: newer near-sdk releases need a newer rustc than the NEAR toolchain's.\n                else deps |> am'.vec_extend (;[ \"near-sdk=\\\"=5.11.0\\\"\" |> sm'.to_std_string ] |> am'.to_vec)\n                |> am'.vec_extend (;[ \"indexmap=\\\"=2.11.4\\\"\" |> sm'.to_std_string ] |> am'.to_vec)\n        deps\n        |> am'.vec_map fun dep =>\n            inl dep = dep |> sm'.from_std_string\n            if dep |> sm'.contains \"=\"\n            then dep\n            elif dep |> sm'.ends_with \"]\"\n            then dep |> sm'.replace \"[\" $'$\"={{version=\\'*\\',features=[\"' |> fun x => $'$\"{!x}}}\"'\n            else $'$\"{!dep}=\\'*\\'\"'\n        |> am'.from_vec\n        |> fun x => x : _ i32 _\n        |> seq.of_array'\n        |> sm'.concat \"\\n\"\n\n    inl new_code_path = package_dir </> $'$\"{!workspace_name}.{!extension}\"'\n\n    inl cargo_toml_content = get_cargo_toml_content { hash runtime deps }\n    inl workspace_cargo_toml_content = get_workspace_cargo_toml_content { workspace_root contract }\n\n    cargo_toml_content |> file_system.write_all_text_exists cargo_toml_path\n    workspace_cargo_toml_content |> file_system.write_all_text_exists workspace_cargo_toml_path\n\n    // A wasm/contract build is a cdylib: the near-sdk entry calls the native program's `spiral_main`.\n    inl main_code : string =\n        if runtime = None\n        then \"\"\n        else\n            $'$\"\\#[near_sdk::near_bindgen]\"'\n            ++\\# $'$\"\\#[derive(near_sdk::PanicOnDefault)]\"'\n            ++\\# $'$\"pub struct MainState {{\"'\n            ++\\# $'$\"}}\"'\n            ++\\# $'$\"\"'\n            ++\\# $'$\"\\#[near_sdk::near_bindgen]\"'\n            ++\\# $'$\"impl MainState {{\"'\n            ++\\# $'$\"    pub fn state_main() {{\"'\n            ++\\# $'$\"        spiral_main();\"'\n            ++\\# $'$\"    }}\"'\n            ++\\# $'$\"}}\"'\n\n    inl new_code =\n        if main_code = \"\"\n        then code\n        else $'$\"{!code}\\\\n\\\\n{!main_code}\\\\n\"'\n\n    new_code |> file_system.write_all_text_exists new_code_path\n\n    inl exit_code, cargo_fmt_result =\n        fun () =>\n            inl exit_code, result =\n                execution_options fun x => { x with\n                    command = $'$\"cargo fmt --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\" --\"'\n                    working_directory = workspace_root_external |> resultm.box |> resultm.ok'\n                }\n                |> execute_with_options\n\n            inl return () =\n                if exit_code = 0\n                then Ok (exit_code, result)\n                else Error (exit_code, result)\n\n            if result |> sm'.contains \"failed to load manifest for workspace member\" |> not\n            then return ()\n            else\n                inl missing_toml_path =\n                    \"failed to read `(?<a>.*?Cargo.toml)`\"\n                    |> sm'.new_regex\n                    |> resultm.unwrap'\n                    |> sm'.regex_captures result\n                    |> am'.from_vec\n                    |> fun x => x : _ i32 _\n                    |> am'.try_item 0\n                    |> optionm.map (mapm.get \"a\" >> optionm'.unbox)\n                    |> optionm'.flatten\n                match missing_toml_path with\n                | None => Error (exit_code, result)\n                | Some missing_toml_path =>\n                    if missing_toml_path |> file_system.file_exists |> not then\n                        missing_toml_path\n                        |> file_system.directory_get_parent\n                        |> optionm'.default_value' \"\"\n                        |> file_system.create_dir\n                        |> ignore\n                        get_empty_cargo_toml_content ()\n                        |> file_system.write_all_text missing_toml_path\n                    return ()\n        |> retry_fn' 3u8\n\n    if exit_code <>. 0 then\n        trace Critical\n            fun () => \"spiral.process_rust / cargo fmt error\"\n            fun () => { exit_code cargo_fmt_result }\n\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl command =\n        if runtime <> None\n        then $'$\"cargo +nightly-2024-07-14 build --timings --release --target wasm32-unknown-unknown --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\"\"'\n        else $'$\"cargo run --timings --manifest-path \\\\\\\"{!cargo_toml_path}\\\\\\\"\"'\n    inl environment_variables =\n        if runtime <> None\n        then ;[]\n        else\n            inl fast = false\n            ;[\n                \"TRACE_LEVEL\", \"Verbose\"\n                \"RUSTC_WRAPPER\", \"sccache\"\n                \"RUST_BACKTRACE\", \"full\"\n                \"RUSTFLAGS\",\n                if fast\n                then \"-C prefer-dynamic -C strip=symbols -C link-arg=-s -C debuginfo=0\"\n                else \"-C prefer-dynamic\"\n            ]\n    inl exit_code, cargo_result =\n        execution_options fun x => { x with\n            command\n            environment_variables\n            working_directory = workspace_root_external |> resultm.box |> resultm.ok'\n        }\n        |> execute_with_options\n\n    // A failed build or run is the cell's failure (non-zero exit, like process_cuda's): `error` holds its message,\n    // raised after the cleanup below.\n    inl result, error =\n        if runtime = None then\n            inl external_command =\n                inl vars =\n                    a environment_variables\n                    |> am.map fun k, v => $'$\"$env:{!k}=\\'\\'{!v}\\'\\'\"' : string\n                    |> fun x => x : _ i32 _\n                    |> seq.of_array\n                    |> sm'.concat \";\"\n                inl command =\n                    a ;[\n                        vars\n                        command\n                    ]\n                    |> fun x => x : _ i32 _\n                    |> seq.of_array\n                    |> sm'.concat \";\"\n                $'$\"pwsh -c \\'{!command}\\'\"' : string\n            if exit_code <>. 0 then\n                trace Critical\n                    fun () => \"spiral.process_rust / error\"\n                    fun () => { exit_code new_code_path external_command cleanup cargo_result }\n                result', \"spiral.process_rust / error / \" ++#? { exit_code new_code_path external_command } ++# \"\\n\" ++# cargo_result\n            else\n                inl output =\n                    try\n                        fun () =>\n                            cargo_result\n                            |> sm'.split \"\\n\"\n                            |> fun x => a x : _ i32 _\n                            |> am'.skip_while fun line =>\n                                (line |> sm'.contains \"profile [optimized] target\" |> not)\n                                    && (line |> sm'.contains \"profile [unoptimized] target\" |> not)\n                                    && (line |> sm'.contains \"profile [unoptimized + debuginfo] target\" |> not)\n                            |> am'.skip 2\n                            |> seq.of_array\n                            |> sm'.concat \"\\n\"\n                        fun ex =>\n                            trace Critical\n                                fun () => \"spiral.process_rust / Exception\"\n                                fun () => { ex new_code_path external_command cargo_result }\n                            None\n                    |> optionm'.box\n                    |> optionm'.unwrap\n                { result' with\n                    code = Some new_code\n                    code_path = Some new_code_path\n                    output = Some output\n                }, \"\"\n        else\n            inl wasm_path : string =\n                $'$\"target/spiral/{!workspace_dir_name}/target/wasm32-unknown-unknown/release/spiral_{!hash}.wasm\"'\n\n            inl command =\n                inl invoke_block_path = \"scripts/invoke-block.ps1\"\n                inl spiral_wasm_command : string =\n                    inl runtime_cmd =\n                        match runtime with\n                        | Some (Wasm cmd) => cmd\n                        | Some (Contract cmd) => cmd\n                        | _ => \"\"\n                    $'$\"\\'deps/spiral/workspace/target/release/spiral_wasm -w {!wasm_path} -t debug {!runtime_cmd}\\'\"'\n                inl automation = \"AUTOMATION\" |> env.get_environment_variable\n                $'$\"pwsh -c \\\\\\\"pwsh {!invoke_block_path} {!spiral_wasm_command} -Linux -EnvironmentVariables AUTOMATION={!automation}\\`nNEAR_RPC_TIMEOUT_SECS=100\\\\\\\"\"'\n\n            if exit_code = 0 then\n                inl exit_code, spiral_wasm_result =\n                    execution_options fun x => { x with\n                        command\n                        working_directory = workspace_root |> optionm'.some'\n                    }\n                    |> execute_with_options\n\n                if exit_code = 0 then\n                    { result' with\n                        code = Some new_code\n                        code_path = Some new_code_path\n                        output = Some spiral_wasm_result\n                    }, \"\"\n                else\n                    trace Critical\n                        fun () => \"spiral.process_rust / wasm error\"\n                        fun () => {\n                            exit_code new_code_path cargo_result cleanup\n                            spiral_wasm_result = $'$\"\\\\n{!spiral_wasm_result}\"' : string\n                        }\n                    result', \"spiral.process_rust / wasm error / \" ++#? { exit_code new_code_path } ++# \"\\n\" ++# spiral_wasm_result\n            else\n                trace Critical\n                    fun () => \"spiral.process_rust / cargo error\"\n                    fun () => {\n                        exit_code new_code_path wasm_path command cleanup\n                        cargo_result = $'$\"\\\\n{!cargo_result}\"' : string\n                    }\n                result', \"spiral.process_rust / cargo error / \" ++#? { exit_code new_code_path } ++# \"\\n\" ++# cargo_result\n\n    inl ci = \"CI\" |> env.get_environment_variable\n\n    if cleanup || ci <> \"\" then\n        package_dir |> file_system.directory_delete true\n\n        inl cleanup =\n            inl build_target =\n                if runtime <> None\n                then \"wasm32-unknown-unknown/release\"\n                else \"debug\"\n\n            [ \".d\"; \".exe\"; \".pdb\"; \".wasm\"; \"\" ]\n            |> listm.map fun ext =>\n                workspace_dir </> $'$\"target/{!build_target}/spiral_{!hash}{!ext}\"'\n            |> listm.map fun path => path, path |> file_system.file_exists\n\n        trace Verbose\n            fun () => \"spiral.process_rust / cleanup\"\n            fun () => { new_code_path cleanup }\n\n        cleanup\n        |> listm'.filter snd\n        |> listm.iter (fst >> file_system.file_delete)\n\n    if error <> \"\" then\n        run_target function\n            // A clean failure (message on stderr, exit code 1): failwith panics natively (exit code 101; 0xC0000409 in a\n            // panic=abort build), and callers expect exit code 1.\n            | Rust => fun () => $'{ eprintln\\!(\"{}\", !error); std::process::exit(1) }' : ()\n            | _ => fun () => failwith error\n    result","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -753,7 +753,7 @@ Spiral.Kino.eval!(
           run_target function
               // A clean failure (message on stderr, exit code 1): failwith panics natively (exit code 101; 0xC0000409 in a
               // panic=abort build), and callers expect exit code 1.
-              | RustNative => fun () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
+              | Rust => fun () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
               | _ => fun () => failwith error
       result
   """,
@@ -761,7 +761,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-## dib_export
+## export
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -980,14 +980,14 @@ Spiral.Kino.eval!(
 )
 ```
 
-### dib_output
+### export_output
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union dib_output =\n    | Fs\n    | Md\n    | Spi\n    | Spir","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union export_output =\n    | Fs\n    | Md\n    | Spi\n    | Spir","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  union dib_output =
+  union export_output =
       | Fs
       | Md
       | Spi
@@ -999,7 +999,7 @@ Spiral.Kino.eval!(
 
 ### magic
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union magic =\n    | Fsharp\n    | Markdown\n    | Spiral : dib_output\n    | Magic : string","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union magic =\n    | Fsharp\n    | Markdown\n    | Spiral : export_output\n    | Magic : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1007,7 +1007,7 @@ Spiral.Kino.eval!(
   union magic =
       | Fsharp
       | Markdown
-      | Spiral : dib_output
+      | Spiral : export_output
       | Magic : string
   """,
   timeout: 300_000
@@ -1671,16 +1671,16 @@ Spiral.Kino.eval!(
 )
 ```
 
-### parse_dib_code
+### parse_export
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl parse_dib_code output file =\n    trace Debug\n        (fun () => \"spiral.parse_dib_code\")\n        fun () => { output = output |> reflection.union_to_string; file }\n    inl t = file |> file_system.read_all_text\n    match parse output t with\n    | Ok blocks => blocks |> format_blocks output\n    | Error msg => msg () |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl parse_export output file =\n    trace Debug\n        (fun () => \"spiral.parse_export\")\n        fun () => { output = output |> reflection.union_to_string; file }\n    inl t = file |> file_system.read_all_text\n    match parse output t with\n    | Ok blocks => blocks |> format_blocks output\n    | Error msg => msg () |> failwith","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  inl parse_dib_code output file =
+  inl parse_export output file =
       trace Debug
-          (fun () => "spiral.parse_dib_code")
+          (fun () => "spiral.parse_export")
           fun () => { output = output |> reflection.union_to_string; file }
       inl t = file |> file_system.read_all_text
       match parse output t with
@@ -1691,18 +1691,18 @@ Spiral.Kino.eval!(
 )
 ```
 
-### write_dib_code
+### write_export
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_dib_code output path =\n    trace Debug\n        (fun () => \"spiral.write_dib_code\")\n        (fun () => { output = output |> reflection.union_to_string; path })\n    inl result = parse_dib_code output path\n    inl path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' \"\"\n    inl file_name_without_ext =\n        match output, path |> file_system.get_file_name_without_extension with\n        | Spir, file_name_without_ext => file_name_without_ext ++# \"_real\"\n        | _, file_name_without_ext => file_name_without_ext\n    inl output_path =\n        path_dir </> (file_name_without_ext ++# \".\" ++# (output |> reflection.union_to_string |> sm'.to_lower))\n    result |> file_system.write_all_text_exists output_path","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_export output path =\n    trace Debug\n        (fun () => \"spiral.write_export\")\n        (fun () => { output = output |> reflection.union_to_string; path })\n    inl result = parse_export output path\n    inl path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' \"\"\n    inl file_name_without_ext =\n        match output, path |> file_system.get_file_name_without_extension with\n        | Spir, file_name_without_ext => file_name_without_ext ++# \"_real\"\n        | _, file_name_without_ext => file_name_without_ext\n    inl output_path =\n        path_dir </> (file_name_without_ext ++# \".\" ++# (output |> reflection.union_to_string |> sm'.to_lower))\n    result |> file_system.write_all_text_exists output_path","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  inl write_dib_code output path =
+  inl write_export output path =
       trace Debug
-          (fun () => "spiral.write_dib_code")
+          (fun () => "spiral.write_export")
           (fun () => { output = output |> reflection.union_to_string; path })
-      inl result = parse_dib_code output path
+      inl result = parse_export output path
       inl path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' ""
       inl file_name_without_ext =
           match output, path |> file_system.get_file_name_without_extension with
@@ -1716,86 +1716,23 @@ Spiral.Kino.eval!(
 )
 ```
 
-### process_dib_export
+### process_export
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_dib_export { entries } =\n    entries\n    |> async.into_par_iter\n    |> async.par_map fun path, export =>\n        path\n        |> file_system.get_full_path\n        |> write_dib_code export\n    |> async.par_collect\n    |> ignore\n    ;[]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_export { entries } =\n    entries\n    |> async.into_par_iter\n    |> async.par_map fun path, export =>\n        path\n        |> file_system.get_full_path\n        |> write_export export\n    |> async.par_collect\n    |> ignore\n    ;[]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  inl process_dib_export { entries } =
+  inl process_export { entries } =
       entries
       |> async.into_par_iter
       |> async.par_map fun path, export =>
           path
           |> file_system.get_full_path
-          |> write_dib_code export
+          |> write_export export
       |> async.par_collect
       |> ignore
       ;[]
-  """,
-  timeout: 300_000
-)
-```
-
-## dib
-
-<!-- livebook:{"break_markdown":true} -->
-
-### process_dib
-
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_dib { path retries working_directory cleanup } =\n    inl html_path = $'$\"{!path}.html\"'\n    inl ipynb_path = $'$\"{!path}.ipynb\"'\n\n    // The notebook runs through Kino (apps/kino/spi/livebook_dib.ps1, through polyglot's deps/spiral link): Spiral cells on\n    // the native backends, F# cells on dotnet fsi. It writes the .ipynb and, after a successful run, the .html (jupyter\n    // nbconvert, LF, cell ids renumbered 1..n), what this command did itself on the dotnet repl route.\n    inl livebook = file_system.get_workspace_root () </> \"deps/spiral/apps/kino/spi/livebook_dib.ps1\"\n    inl exit_code, result =\n        let rec 루프 retry =\n            inl exit_code, result =\n                runtime.execution_options fun x => { x with\n                    command =\n                        $'$\"pwsh -NoProfile -File \\\\\\\"{!livebook}\\\\\\\" --path \\\\\\\"{!path}\\\\\\\"\"'\n                        ++# $'$\" --output-path \\\\\\\"{!ipynb_path}\\\\\\\"\"'\n                    environment_variables = ;[\n                        \"TRACE_LEVEL\", \"Verbose\"\n                    ]\n                    trace = false\n                    working_directory = working_directory |> optionm'.box\n                }\n                |> runtime.execute_with_options\n\n            if exit_code = 0 || retry >= retries\n            then exit_code, result\n            else\n                trace Warning\n                    fun () => \"spiral.process_dib / notebook error\"\n                    fun () => { exit_code result retry = $'$\"{!retry}/{!retries}\"' : string }\n                루프 (retry + 1)\n        루프 1\n    inl ci = \"CI\" |> env.get_environment_variable\n\n    if cleanup && ci = \"\" then\n        ipynb_path |> file_system.file_delete\n        html_path |> file_system.file_delete\n\n    trace Debug\n        fun () => \"spiral.process_dib / dib\"\n        fun () => { exit_code result_len = ##result }\n\n    if exit_code <>. 0\n    then $'$\"spiral.process_dib / dib / exit_code: {!exit_code} / result: \\'{!result}\\'\"' |> failwith\n    ;[\n        \"stdio\",\n        result\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
-
-```elixir
-Spiral.Kino.eval!(
-  ~S"""
-  inl process_dib { path retries working_directory cleanup } =
-      inl html_path = $'$"{!path}.html"'
-      inl ipynb_path = $'$"{!path}.ipynb"'
-
-      // The notebook runs through Kino (apps/kino/spi/livebook_dib.ps1, through polyglot's deps/spiral link): Spiral cells on
-      // the native backends, F# cells on dotnet fsi. It writes the .ipynb and, after a successful run, the .html (jupyter
-      // nbconvert, LF, cell ids renumbered 1..n), what this command did itself on the dotnet repl route.
-      inl livebook = file_system.get_workspace_root () </> "deps/spiral/apps/kino/spi/livebook_dib.ps1"
-      inl exit_code, result =
-          let rec 루프 retry =
-              inl exit_code, result =
-                  runtime.execution_options fun x => { x with
-                      command =
-                          $'$"pwsh -NoProfile -File \\\"{!livebook}\\\" --path \\\"{!path}\\\""'
-                          ++# $'$" --output-path \\\"{!ipynb_path}\\\""'
-                      environment_variables = ;[
-                          "TRACE_LEVEL", "Verbose"
-                      ]
-                      trace = false
-                      working_directory = working_directory |> optionm'.box
-                  }
-                  |> runtime.execute_with_options
-
-              if exit_code = 0 || retry >= retries
-              then exit_code, result
-              else
-                  trace Warning
-                      fun () => "spiral.process_dib / notebook error"
-                      fun () => { exit_code result retry = $'$"{!retry}/{!retries}"' : string }
-                  루프 (retry + 1)
-          루프 1
-      inl ci = "CI" |> env.get_environment_variable
-
-      if cleanup && ci = "" then
-          ipynb_path |> file_system.file_delete
-          html_path |> file_system.file_delete
-
-      trace Debug
-          fun () => "spiral.process_dib / dib"
-          fun () => { exit_code result_len = ##result }
-
-      if exit_code <>. 0
-      then $'$"spiral.process_dib / dib / exit_code: {!exit_code} / result: \'{!result}\'"' |> failwith
-      ;[
-          "stdio",
-          result
-      ]
   """,
   timeout: 300_000
 )
@@ -2082,14 +2019,14 @@ Spiral.Kino.eval!(
 
 ### process_lua
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lua =\n    `(\n        native_type\n            `($'mlua_Lua')\n            `($'mlua::Lua')\n            \"type mlua_Lua = obj\"\n    )\n\nnominal lua_function =\n    `(\n        native_type\n            `($'mlua_LuaFunction')\n            `($'mlua::prelude::LuaFunction')\n            \"type mlua_LuaFunction = obj\"\n    )\n\nnominal lua_error =\n    `(\n        native_type\n            `($'mlua_LuaError')\n            `($'mlua::prelude::LuaError')\n            \"type mlua_LuaError = obj\"\n    )\n\nnominal lua_value =\n    `(\n        native_type\n            `($'mlua_LuaValue')\n            `($'mlua::prelude::LuaValue')\n            \"type mlua_LuaValue = obj\"\n    )\n\nnominal lua_multi_value =\n    `(\n        native_type\n            `($'mlua_LuaMultiValue')\n            `($'mlua::prelude::LuaMultiValue')\n            \"type mlua_LuaMultiValue = obj\"\n    )\n\ninl lua_values_debug (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | RustNative => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(format\\!(\"{:?}\", x))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values =>\n            inl values : am'.vec (rust.ref lua_value) = !\\\\(values, $'$\"$0.iter().collect()\"')\n            values |> am'.vec_map (rust.deref >> sm'.format_debug)\n\ninl process_lua { lua_path } =\n    inl extension = \"lua\"\n\n    inl new_code_path = lua_path\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl hash = #?{ extension new_code } |> crypto.hash_text\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root =\n        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path\n\n    inl src_dir =\n        new_code_path\n        |> file_system.directory_get_parent\n        |> optionm'.default_value' \"\"\n        |> file_system.standardize_path\n\n    inl package_dir = src_dir </> \"..\" |> file_system.standardize_path\n\n    inl stdio = [] |> mut\n    inl stdio_clone = stdio |> rust.clone\n\n    inl lua : lua =\n        !\\($'$\"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()\"')\n\n    inl custom_print (args : lua_multi_value) : _ _ lua_error =\n        inl args =\n            args\n            |> lua_values_debug\n            |> am'.from_vec_base\n            |> am'.to_list_base'\n            |> listm'.unbox\n            |> sm'.concat_list \", \"\n        stdio <- args :: *stdio\n        Ok () |> resultm.box\n\n    inl custom_print : lua_function =\n        !\\\\(\n            (lua, custom_print),\n            $'$\"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()\"'\n        )\n\n    !\\\\((lua, custom_print), $'$\"$0.globals().set(\\\\\\\"print\\\\\\\", $1).unwrap()\"')\n\n    inl output : lua_multi_value =\n        inl new_code = new_code |> sm'.to_std_string\n        !\\\\((lua, new_code), $'$\"$0.load($1).eval::<mlua::MultiValue>().unwrap()\"')\n    inl output =\n        output |> lua_values_debug |> am'.from_vec |> sm'.concat_array \"\\n\"\n\n    inl stdio =\n        *stdio_clone\n        |> listm.rev\n        |> sm'.concat_list \"\\n\"\n\n    fun () =>\n        inl ci = \"CI\" |> env.get_environment_variable\n        if ci <> \"\" then\n            package_dir\n            |> file_system.directory_delete true\n    |> new_disposable\n    |> fun x => x : _ ()\n    |> use\n    |> ignore\n\n    {\n        extension = Some extension\n        code = Some new_code\n        code_path = Some new_code_path\n        output = Some output\n        stdio = Some stdio\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lua =\n    `(\n        rust_type\n            `($'mlua_Lua')\n            `($'mlua::Lua')\n            \"type mlua_Lua = obj\"\n    )\n\nnominal lua_function =\n    `(\n        rust_type\n            `($'mlua_LuaFunction')\n            `($'mlua::prelude::LuaFunction')\n            \"type mlua_LuaFunction = obj\"\n    )\n\nnominal lua_error =\n    `(\n        rust_type\n            `($'mlua_LuaError')\n            `($'mlua::prelude::LuaError')\n            \"type mlua_LuaError = obj\"\n    )\n\nnominal lua_value =\n    `(\n        rust_type\n            `($'mlua_LuaValue')\n            `($'mlua::prelude::LuaValue')\n            \"type mlua_LuaValue = obj\"\n    )\n\nnominal lua_multi_value =\n    `(\n        rust_type\n            `($'mlua_LuaMultiValue')\n            `($'mlua::prelude::LuaMultiValue')\n            \"type mlua_LuaMultiValue = obj\"\n    )\n\ninl lua_values_debug (values : lua_multi_value) : am'.vec string =\n    run_target_args (fun () => values) function\n        | Rust => fun values =>\n            $'!values.iter().map(|x| Rc::<str>::from(format\\!(\"{:?}\", x))).collect::<Vec<_>>()' : am'.vec string\n        | _ => fun values =>\n            inl values : am'.vec (rust.ref lua_value) = !\\\\(values, $'$\"$0.iter().collect()\"')\n            values |> am'.vec_map (rust.deref >> sm'.format_debug)\n\ninl process_lua { lua_path } =\n    inl extension = \"lua\"\n\n    inl new_code_path = lua_path\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl hash = #?{ extension new_code } |> crypto.hash_text\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root =\n        workspace_root_external |> resultm.box |> resultm.unwrap_or_else id |> file_system.standardize_path\n\n    inl src_dir =\n        new_code_path\n        |> file_system.directory_get_parent\n        |> optionm'.default_value' \"\"\n        |> file_system.standardize_path\n\n    inl package_dir = src_dir </> \"..\" |> file_system.standardize_path\n\n    inl stdio = [] |> mut\n    inl stdio_clone = stdio |> rust.clone\n\n    inl lua : lua =\n        !\\($'$\"mlua::Lua::new_with(mlua::StdLib::ALL_SAFE, mlua::LuaOptions::default()).unwrap()\"')\n\n    inl custom_print (args : lua_multi_value) : _ _ lua_error =\n        inl args =\n            args\n            |> lua_values_debug\n            |> am'.from_vec_base\n            |> am'.to_list_base'\n            |> listm'.unbox\n            |> sm'.concat_list \", \"\n        stdio <- args :: *stdio\n        Ok () |> resultm.box\n\n    inl custom_print : lua_function =\n        !\\\\(\n            (lua, custom_print),\n            $'$\"$0.create_function(move |_, args: mlua::prelude::LuaMultiValue| $1(args)).unwrap()\"'\n        )\n\n    !\\\\((lua, custom_print), $'$\"$0.globals().set(\\\\\\\"print\\\\\\\", $1).unwrap()\"')\n\n    inl output : lua_multi_value =\n        inl new_code = new_code |> sm'.to_std_string\n        !\\\\((lua, new_code), $'$\"$0.load($1).eval::<mlua::MultiValue>().unwrap()\"')\n    inl output =\n        output |> lua_values_debug |> am'.from_vec |> sm'.concat_array \"\\n\"\n\n    inl stdio =\n        *stdio_clone\n        |> listm.rev\n        |> sm'.concat_list \"\\n\"\n\n    fun () =>\n        inl ci = \"CI\" |> env.get_environment_variable\n        if ci <> \"\" then\n            package_dir\n            |> file_system.directory_delete true\n    |> new_disposable\n    |> fun x => x : _ ()\n    |> use\n    |> ignore\n\n    {\n        extension = Some extension\n        code = Some new_code\n        code_path = Some new_code_path\n        output = Some output\n        stdio = Some stdio\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lua =
       `(
-          native_type
+          rust_type
               `($'mlua_Lua')
               `($'mlua::Lua')
               "type mlua_Lua = obj"
@@ -2097,7 +2034,7 @@ Spiral.Kino.eval!(
 
   nominal lua_function =
       `(
-          native_type
+          rust_type
               `($'mlua_LuaFunction')
               `($'mlua::prelude::LuaFunction')
               "type mlua_LuaFunction = obj"
@@ -2105,7 +2042,7 @@ Spiral.Kino.eval!(
 
   nominal lua_error =
       `(
-          native_type
+          rust_type
               `($'mlua_LuaError')
               `($'mlua::prelude::LuaError')
               "type mlua_LuaError = obj"
@@ -2113,7 +2050,7 @@ Spiral.Kino.eval!(
 
   nominal lua_value =
       `(
-          native_type
+          rust_type
               `($'mlua_LuaValue')
               `($'mlua::prelude::LuaValue')
               "type mlua_LuaValue = obj"
@@ -2121,7 +2058,7 @@ Spiral.Kino.eval!(
 
   nominal lua_multi_value =
       `(
-          native_type
+          rust_type
               `($'mlua_LuaMultiValue')
               `($'mlua::prelude::LuaMultiValue')
               "type mlua_LuaMultiValue = obj"
@@ -2129,7 +2066,7 @@ Spiral.Kino.eval!(
 
   inl lua_values_debug (values : lua_multi_value) : am'.vec string =
       run_target_args (fun () => values) function
-          | RustNative => fun values =>
+          | Rust => fun values =>
               $'!values.iter().map(|x| Rc::<str>::from(format\!("{:?}", x))).collect::<Vec<_>>()' : am'.vec string
           | _ => fun values =>
               inl values : am'.vec (rust.ref lua_value) = !\\(values, $'$"$0.iter().collect()"')
@@ -2471,100 +2408,19 @@ Spiral.Kino.eval!(
 )
 ```
 
-## fsharp
-
-<!-- livebook:{"break_markdown":true} -->
-
-### process_fsharp
-
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl process_fsharp { spi_path } =\n    inl extension = \"fsx\"\n\n    inl new_code_path = spi_path\n    inl new_code = new_code_path |> file_system.read_all_text\n\n    inl workspace_root_external = file_system.get_workspace_root_external ()\n    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id\n\n    inl supervisor_path = workspace_root </> $\"apps/spiral/dist/Supervisor!(platform.get_executable_suffix ())\"\n    inl code_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' \"\"\n    inl file_name = new_code_path |> file_system.get_file_name_without_extension\n    inl output_path = code_dir </> $'$\"{!file_name}.{!extension}\"'\n    inl command = $'$\"{!supervisor_path} --build-file \\\\\\\"{!new_code_path}\\\\\\\" \\\\\\\"{!output_path}\\\\\\\"\"'\n    inl environment_variables =\n        ;[\n            \"TRACE_LEVEL\", \"Verbose\"\n        ]\n    inl exit_code, run_result =\n        runtime.execution_options fun x => { x with\n            command\n            environment_variables\n            working_directory = workspace_root_external |> resultm.box |> resultm.ok'\n        }\n        |> runtime.execute_with_options\n\n    inl external_command =\n        inl vars =\n            a environment_variables\n            |> am.map fun k, v => $'$\"$env:{!k}=\\'\\'{!v}\\'\\'\"' : string\n            |> fun x => x : _ i32 _\n            |> seq.of_array\n            |> sm'.concat \";\"\n        $'$\"pwsh -c \\'{!vars}; {!command}\\'\"' : string\n    if exit_code = 0 then\n        inl output =\n            try\n                fun () =>\n                    run_result\n                    |> sm'.split \"\\n\"\n                    |> fun x => a x : _ i32 _\n                    |> seq.of_array\n                    |> sm'.concat \"\\n\"\n                fun ex =>\n                    trace Critical\n                        fun () => \"spiral.process_fsharp / Exception\"\n                        fun () => { ex run_result new_code_path external_command }\n                    None\n            |> optionm'.box\n            |> optionm'.unwrap\n\n        {\n            extension = Some extension\n            code = Some new_code\n            code_path = Some new_code_path\n            output = Some output\n        }\n    else\n        trace Critical\n            fun () => \"spiral.process_fsharp / error\"\n            fun () => { exit_code run_result new_code_path external_command }\n        { extension = Some extension; code = None; code_path = None; output = None }","print_code":false},"livebook_object":"smart_cell"} -->
-
-```elixir
-Spiral.Kino.eval!(
-  ~S"""
-  inl process_fsharp { spi_path } =
-      inl extension = "fsx"
-
-      inl new_code_path = spi_path
-      inl new_code = new_code_path |> file_system.read_all_text
-
-      inl workspace_root_external = file_system.get_workspace_root_external ()
-      inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
-
-      inl supervisor_path = workspace_root </> $"apps/spiral/dist/Supervisor!(platform.get_executable_suffix ())"
-      inl code_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
-      inl file_name = new_code_path |> file_system.get_file_name_without_extension
-      inl output_path = code_dir </> $'$"{!file_name}.{!extension}"'
-      inl command = $'$"{!supervisor_path} --build-file \\\"{!new_code_path}\\\" \\\"{!output_path}\\\""'
-      inl environment_variables =
-          ;[
-              "TRACE_LEVEL", "Verbose"
-          ]
-      inl exit_code, run_result =
-          runtime.execution_options fun x => { x with
-              command
-              environment_variables
-              working_directory = workspace_root_external |> resultm.box |> resultm.ok'
-          }
-          |> runtime.execute_with_options
-
-      inl external_command =
-          inl vars =
-              a environment_variables
-              |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
-              |> fun x => x : _ i32 _
-              |> seq.of_array
-              |> sm'.concat ";"
-          $'$"pwsh -c \'{!vars}; {!command}\'"' : string
-      if exit_code = 0 then
-          inl output =
-              try
-                  fun () =>
-                      run_result
-                      |> sm'.split "\n"
-                      |> fun x => a x : _ i32 _
-                      |> seq.of_array
-                      |> sm'.concat "\n"
-                  fun ex =>
-                      trace Critical
-                          fun () => "spiral.process_fsharp / Exception"
-                          fun () => { ex run_result new_code_path external_command }
-                      None
-              |> optionm'.box
-              |> optionm'.unwrap
-
-          {
-              extension = Some extension
-              code = Some new_code
-              code_path = Some new_code_path
-              output = Some output
-          }
-      else
-          trace Critical
-              fun () => "spiral.process_fsharp / error"
-              fun () => { exit_code run_result new_code_path external_command }
-          { extension = Some extension; code = None; code_path = None; output = None }
-  """,
-  timeout: 300_000
-)
-```
-
 ## run
 
 <!-- livebook:{"break_markdown":true} -->
 
 ### get_args
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_args () =\n    {\n        fsharp = \"fsharp\", {\n            spi_path = \"spi-path\", 's'\n        }\n        gleam = \"gleam\", {\n            gleam_path = \"gleam-path\", 'g'\n            target = \"target\", 't'\n            deps = \"deps\", 'd'\n        }\n        lua = \"lua\", {\n            lua_path = \"lua-path\", 'l'\n        }\n        cuda = \"cuda\", {\n            py_path = \"py-path\", 'p'\n            env = \"env\", 'e'\n            deps = \"deps\", 'd'\n        }\n        cpp = \"cpp\", {\n            cpp_path = \"cpp-path\", 'c'\n        }\n        rust = \"rust\", {\n            rs_path = \"rs-path\", 'r'\n            deps = \"deps\", 'd'\n            wasm = \"wasm\", 'w'\n            contract = \"contract\", 'c'\n            cleanup = \"cleanup\", 'l'\n        }\n        dib = \"dib\", {\n            path = \"path\", 'p'\n            retries = \"retries\", 'r'\n            working_directory = \"working-directory\", 'w'\n            cleanup = \"cleanup\", 'l'\n            export = \"export\", 'e'\n        }\n        dib_export = \"dib-export\", {\n            entries = \"entries\", 'e'\n        }\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_args () =\n    {\n        gleam = \"gleam\", {\n            gleam_path = \"gleam-path\", 'g'\n            target = \"target\", 't'\n            deps = \"deps\", 'd'\n        }\n        lua = \"lua\", {\n            lua_path = \"lua-path\", 'l'\n        }\n        cuda = \"cuda\", {\n            py_path = \"py-path\", 'p'\n            env = \"env\", 'e'\n            deps = \"deps\", 'd'\n        }\n        cpp = \"cpp\", {\n            cpp_path = \"cpp-path\", 'c'\n        }\n        rust = \"rust\", {\n            rs_path = \"rs-path\", 'r'\n            deps = \"deps\", 'd'\n            wasm = \"wasm\", 'w'\n            contract = \"contract\", 'c'\n            cleanup = \"cleanup\", 'l'\n        }\n        notebook_export = \"export\", {\n            entries = \"entries\", 'e'\n        }\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl get_args () =
       {
-          fsharp = "fsharp", {
-              spi_path = "spi-path", 's'
-          }
           gleam = "gleam", {
               gleam_path = "gleam-path", 'g'
               target = "target", 't'
@@ -2588,14 +2444,7 @@ Spiral.Kino.eval!(
               contract = "contract", 'c'
               cleanup = "cleanup", 'l'
           }
-          dib = "dib", {
-              path = "path", 'p'
-              retries = "retries", 'r'
-              working_directory = "working-directory", 'w'
-              cleanup = "cleanup", 'l'
-              export = "export", 'e'
-          }
-          dib_export = "dib-export", {
+          notebook_export = "export", {
               entries = "entries", 'e'
           }
       }
@@ -2606,22 +2455,18 @@ Spiral.Kino.eval!(
 
 ### get_command
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_command () =\n    ###\"command\"\n    |> runtime.new_command\n    |> runtime.command_subcommand_required true\n    |> runtime.command_subcommand (\n        ###(get_args () .fsharp |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (\n            runtime.arg_required true\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .gleam |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (\n            real runtime.arg_union `gleam_target ignore\n        )\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .cuda |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).env) (\n            real runtime.arg_union `cuda_env ignore\n        )\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .rust |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .rust |> snd).rs_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).wasm) (\n            runtime.arg_num_args_range (\n                runtime.new_value_range\n                    true\n                    (am'.End eval)\n                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))\n            )\n            >> runtime.arg_require_equals true\n            >> runtime.arg_default_missing_value \"\"\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).contract) (\n            runtime.arg_num_args_range (\n                runtime.new_value_range\n                    true\n                    (am'.End eval)\n                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))\n            )\n            >> runtime.arg_require_equals true\n            >> runtime.arg_default_missing_value \"\"\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).cleanup) (\n            runtime.arg_default_value \"true\"\n            >> runtime.arg_action runtime.SetFalse\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .dib |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .dib |> snd).path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .dib |> snd).retries) (\n            runtime.arg_value_parser (runtime.value_parser_expr \"u8\")\n        )\n        |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (\n            id\n        )\n        |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (\n            runtime.arg_default_value \"true\"\n            >> runtime.arg_action runtime.SetFalse\n        )\n    )\n    |> runtime.command_subcommand (\n        inl parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =\n            trace Verbose (fun () => \"spiral.get_command\") (fun () => { s })\n            inl path = \"\" |> sm'.to_std_string\n            inl ext = \"\" |> sm'.to_std_string\n            Ok (path, ext)\n            |> resultm.box\n        ###(get_args () .dib_export |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .dib_export |> snd).entries) (\n            runtime.arg_required true\n            // >> runtime.arg_value_parser (!\\\\(parse, $'\"clap::value_parser\\!(String).into()\"'))\n            >> runtime.arg_index 1\n            >> runtime.arg_value_names ;[ ###\"PATH\"; ###\"EXT\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (2i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .lua |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (\n            runtime.arg_required true\n            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .cpp |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .cpp |> snd).cpp_path) (\n            runtime.arg_required true\n        )\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl command_alias (alias : rust.static_ref sm'.str) (command : runtime.command) : runtime.command =\n    !\\\\((command, alias), $'\"clap::Command::alias($0, $1)\"')\n\nlet get_command () =\n    ###\"command\"\n    |> runtime.new_command\n    |> runtime.command_subcommand_required true\n    |> runtime.command_subcommand (\n        ###(get_args () .gleam |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).gleam_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).target) (\n            real runtime.arg_union `gleam_target ignore\n        )\n        |> runtime.command_init_arg ((get_args () .gleam |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .cuda |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).py_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).env) (\n            real runtime.arg_union `cuda_env ignore\n        )\n        |> runtime.command_init_arg ((get_args () .cuda |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .rust |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .rust |> snd).rs_path) (\n            runtime.arg_required true\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).deps) (\n            runtime.arg_value_names ;[ ###\"NAME\"; ###\"VERSION\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (1i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).wasm) (\n            runtime.arg_num_args_range (\n                runtime.new_value_range\n                    true\n                    (am'.End eval)\n                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))\n            )\n            >> runtime.arg_require_equals true\n            >> runtime.arg_default_missing_value \"\"\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).contract) (\n            runtime.arg_num_args_range (\n                runtime.new_value_range\n                    true\n                    (am'.End eval)\n                    (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))\n            )\n            >> runtime.arg_require_equals true\n            >> runtime.arg_default_missing_value \"\"\n        )\n        |> runtime.command_init_arg ((get_args () .rust |> snd).cleanup) (\n            runtime.arg_default_value \"true\"\n            >> runtime.arg_action runtime.SetFalse\n        )\n    )\n    |> runtime.command_subcommand (\n        inl parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =\n            trace Verbose (fun () => \"spiral.get_command\") (fun () => { s })\n            inl path = \"\" |> sm'.to_std_string\n            inl ext = \"\" |> sm'.to_std_string\n            Ok (path, ext)\n            |> resultm.box\n        ###(get_args () .notebook_export |> fst)\n        |> runtime.new_command\n        // `dib-export`: its name before the .livemd notebooks, an alias for one release (apps/spiral/build.ps1 runs the\n        // previous CLI with it)\n        |> command_alias ###\"dib-export\"\n        |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (\n            runtime.arg_required true\n            // >> runtime.arg_value_parser (!\\\\(parse, $'\"clap::value_parser\\!(String).into()\"'))\n            >> runtime.arg_index 1\n            >> runtime.arg_value_names ;[ ###\"PATH\"; ###\"EXT\" ]\n            >> runtime.arg_num_args_range (\n                runtime.new_value_range\n                    false\n                    (am'.Start (2i32 |> convert.convert : convert.unativeint))\n                    (am'.End eval)\n            )\n            >> runtime.arg_action runtime.Append\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .lua |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (\n            runtime.arg_required true\n            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())\n        )\n    )\n    |> runtime.command_subcommand (\n        ###(get_args () .cpp |> fst)\n        |> runtime.new_command\n        |> runtime.command_init_arg ((get_args () .cpp |> snd).cpp_path) (\n            runtime.arg_required true\n        )\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
+  inl command_alias (alias : rust.static_ref sm'.str) (command : runtime.command) : runtime.command =
+      !\\((command, alias), $'"clap::Command::alias($0, $1)"')
+
   let get_command () =
       ###"command"
       |> runtime.new_command
       |> runtime.command_subcommand_required true
-      |> runtime.command_subcommand (
-          ###(get_args () .fsharp |> fst)
-          |> runtime.new_command
-          |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
-              runtime.arg_required true
-          )
-      )
       |> runtime.command_subcommand (
           ###(get_args () .gleam |> fst)
           |> runtime.new_command
@@ -2704,32 +2549,18 @@ Spiral.Kino.eval!(
           )
       )
       |> runtime.command_subcommand (
-          ###(get_args () .dib |> fst)
-          |> runtime.new_command
-          |> runtime.command_init_arg ((get_args () .dib |> snd).path) (
-              runtime.arg_required true
-          )
-          |> runtime.command_init_arg ((get_args () .dib |> snd).retries) (
-              runtime.arg_value_parser (runtime.value_parser_expr "u8")
-          )
-          |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (
-              id
-          )
-          |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
-              runtime.arg_default_value "true"
-              >> runtime.arg_action runtime.SetFalse
-          )
-      )
-      |> runtime.command_subcommand (
           inl parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =
               trace Verbose (fun () => "spiral.get_command") (fun () => { s })
               inl path = "" |> sm'.to_std_string
               inl ext = "" |> sm'.to_std_string
               Ok (path, ext)
               |> resultm.box
-          ###(get_args () .dib_export |> fst)
+          ###(get_args () .notebook_export |> fst)
           |> runtime.new_command
-          |> runtime.command_init_arg ((get_args () .dib_export |> snd).entries) (
+          // `dib-export`: its name before the .livemd notebooks, an alias for one release (apps/spiral/build.ps1 runs the
+          // previous CLI with it)
+          |> command_alias ###"dib-export"
+          |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (
               runtime.arg_required true
               // >> runtime.arg_value_parser (!\\(parse, $'"clap::value_parser\!(String).into()"'))
               >> runtime.arg_index 1
@@ -2765,7 +2596,7 @@ Spiral.Kino.eval!(
 
 ### run
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resultm.result' string string) =\n    fun () =>\n        match matches |> runtime.matches_subcommand |> optionm'.unbox with\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .gleam |> fst) =>\n\n            inl gleam_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl target =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .gleam |> snd).target |> fst)\n                |> optionm'.unbox\n                |> optionm.map (\n                    sm'.from_std_string\n                    >> reflection.union_try_pick\n                )\n                |> optionm'.flatten\n                |> optionm'.default_value Erlang\n\n            inl deps : am'.vec sm'.std_string =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .gleam |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl command_result =\n                process_gleam { gleam_path target deps }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .lua |> fst) =>\n\n            inl lua_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl command_result =\n                process_lua { lua_path }\n                |> fun { extension code output stdio } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", stdio |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .cuda |> fst) =>\n\n            inl py_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cuda |> snd).py_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl env =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cuda |> snd).env |> fst)\n                |> optionm'.unbox\n                |> optionm.map (\n                    sm'.from_std_string\n                    >> reflection.union_try_pick\n                )\n                |> optionm'.flatten\n                |> optionm'.default_value Pip\n\n            inl deps : am'.vec sm'.std_string =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl command_result =\n                process_cuda { py_path env deps }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .cpp |> fst) =>\n\n            inl cpp_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cpp |> snd).cpp_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl command_result =\n                process_cpp { cpp_path }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n            when (subcommand |> sm'.from_std_string) = (get_args () .dib |> fst) =>\n\n            inl path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .dib |> snd).path |> fst)\n                |> optionm'.map'' (\n                    sm'.from_std_string\n                    >> file_system.absolute_path\n                )\n                |> optionm'.unwrap\n\n            inl retries =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .dib |> snd).retries |> fst)\n                |> optionm'.default_value' 1u8\n\n            inl working_directory =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .dib |> snd).working_directory |> fst)\n                |> optionm'.unbox\n                |> optionm.map sm'.from_std_string\n\n            inl cleanup =\n                arg_matches\n                |> runtime.matches_get_flag ((get_args () .dib |> snd).cleanup |> fst)\n\n            process_dib { path retries working_directory cleanup }\n\n        | Some (subcommand, arg_matches)\n            when (subcommand |> sm'.from_std_string) = (get_args () .dib_export |> fst) =>\n\n            inl deps : am'.vec (sm'.std_string * sm'.std_string) =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl entries =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .dib_export |> snd).entries |> fst)\n                |> optionm'.unbox\n                |> optionm.map (fun (entries : am'.vec sm'.std_string) =>\n                    entries\n                    |> fun x =>\n                        !\\\\(x, $'$\"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()\"')\n                        : am'.vec (am'.vec sm'.std_string)\n                    |> am'.vec_map' fun chunk =>\n                        inl exts () =\n                            reflection.get_union_fields_untag () : _ (_ * dib_output)\n                        chunk\n                        |> am'.from_vec_base\n                        |> am'.to_list_base'\n                        |> listm'.unbox\n                        |> function\n                            | [ path; ext ] =>\n                                match ext |> sm'.from_std_string |> reflection.union_try_pick with\n                                | Some (ext : dib_output) => (path |> sm'.from_std_string, ext) |> Ok\n                                | None => \"spiral.run / invalid ext / \" ++#? { ext exts } |> Error\n                            | _ =>\n                                \"spiral.run / invalid entries / \" ++#? { entries = entries |> rust.clone; exts }\n                                |> Error\n                            |> resultm.get\n                    |> am'.from_vec_base\n                    |> am'.to_list_base'\n                    |> listm'.unbox\n                )\n                |> optionm'.default_value []\n                |> listm'.box\n                |> listm'.to_array'\n                |> am'.to_vec\n\n            process_dib_export { entries }\n\n        | matches =>\n            match matches with\n            | Some (subcommand, arg_matches)\n                    when (subcommand |> sm'.from_std_string) = (get_args () .rust |> fst) =>\n\n                inl rs_path =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).rs_path |> fst)\n                    |> optionm'.unbox\n                    |> optionm.value\n                    |> sm'.from_std_string\n\n                inl deps : am'.vec sm'.std_string =\n                    arg_matches\n                    |> runtime.matches_get_many ((get_args () .rust |> snd).deps |> fst)\n                    |> optionm'.unbox\n                    |> optionm'.default_value (;[] |> am'.to_vec)\n\n                inl cleanup =\n                    arg_matches\n                    |> runtime.matches_get_flag ((get_args () .rust |> snd).cleanup |> fst)\n\n                inl wasm =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).wasm |> fst)\n                    |> optionm'.unbox\n                    |> optionm.map sm'.from_std_string\n\n                inl contract =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).contract |> fst)\n                    |> optionm'.unbox\n                    |> optionm.map sm'.from_std_string\n\n                inl runtime =\n                    match wasm, contract with\n                    | Some wasm, _ => Wasm wasm |> Some\n                    | _, Some contract => Contract contract |> Some\n                    | _ => None\n\n                process_rust { rs_path deps trace_level runtime cleanup }\n\n            | Some (subcommand, arg_matches) =>\n                trace Debug\n                    fun () => \"spiral.run / invalid subcommand\"\n                    fun () => { subcommand arg_matches }\n\n                { extension = None; code = None; code_path = None; output = None }\n            | _ =>\n                { extension = None; code = None; code_path = None; output = None }\n            |> fun { extension code code_path output } =>\n                ;[\n                    \"extension\", extension |> optionm'.default_value \"\"\n                    \"code\", code |> optionm'.default_value \"\"\n                    \"code_path\", code_path |> optionm'.default_value \"\"\n                    \"output\", output |> optionm'.default_value \"\"\n                ]\n        |> am'.to_vec\n        |> am'.vec_map' fun k, v =>\n            new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n        |> mapm.b_tree_map_from_vec_pairs\n        |> sm'.serialize\n        |> resultm.map_error' (sm'.format' >> sm'.from_std_string)\n        |> resultm.map' sm'.from_std_string\n    |> async.new_future_move","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resultm.result' string string) =\n    fun () =>\n        match matches |> runtime.matches_subcommand |> optionm'.unbox with\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .gleam |> fst) =>\n\n            inl gleam_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .gleam |> snd).gleam_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl target =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .gleam |> snd).target |> fst)\n                |> optionm'.unbox\n                |> optionm.map (\n                    sm'.from_std_string\n                    >> reflection.union_try_pick\n                )\n                |> optionm'.flatten\n                |> optionm'.default_value Erlang\n\n            inl deps : am'.vec sm'.std_string =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .gleam |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl command_result =\n                process_gleam { gleam_path target deps }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .lua |> fst) =>\n\n            inl lua_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .lua |> snd).lua_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl command_result =\n                process_lua { lua_path }\n                |> fun { extension code output stdio } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", stdio |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .cuda |> fst) =>\n\n            inl py_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cuda |> snd).py_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl env =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cuda |> snd).env |> fst)\n                |> optionm'.unbox\n                |> optionm.map (\n                    sm'.from_std_string\n                    >> reflection.union_try_pick\n                )\n                |> optionm'.flatten\n                |> optionm'.default_value Pip\n\n            inl deps : am'.vec sm'.std_string =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl command_result =\n                process_cuda { py_path env deps }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n                when (subcommand |> sm'.from_std_string) = (get_args () .cpp |> fst) =>\n\n            inl cpp_path =\n                arg_matches\n                |> runtime.matches_get_one ((get_args () .cpp |> snd).cpp_path |> fst)\n                |> optionm'.unbox\n                |> optionm.value\n                |> sm'.from_std_string\n\n            inl command_result =\n                process_cpp { cpp_path }\n                |> fun { extension code output } =>\n                    ;[\n                        \"extension\", extension |> optionm'.default_value \"\"\n                        \"code\", code |> optionm'.default_value \"\"\n                        \"output\", output |> optionm'.default_value \"\"\n                    ]\n\n            ;[\n                \"command_result\",\n                command_result\n                |> am'.to_vec\n                |> am'.vec_map' fun k, v =>\n                    new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n                |> mapm.b_tree_map_from_vec_pairs\n                |> sm'.serialize\n                |> resultm.unwrap'\n                |> sm'.from_std_string\n            ]\n\n        | Some (subcommand, arg_matches)\n            when (subcommand |> sm'.from_std_string) = (get_args () .notebook_export |> fst) =>\n\n            inl deps : am'.vec (sm'.std_string * sm'.std_string) =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .cuda |> snd).deps |> fst)\n                |> optionm'.unbox\n                |> optionm'.default_value (;[] |> am'.to_vec)\n\n            inl entries =\n                arg_matches\n                |> runtime.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)\n                |> optionm'.unbox\n                |> optionm.map (fun (entries : am'.vec sm'.std_string) =>\n                    entries\n                    |> fun x =>\n                        !\\\\(x, $'$\"$0.chunks_exact(2).map(|chunk| chunk.to_vec()).collect()\"')\n                        : am'.vec (am'.vec sm'.std_string)\n                    |> am'.vec_map' fun chunk =>\n                        inl exts () =\n                            reflection.get_union_fields_untag () : _ (_ * export_output)\n                        chunk\n                        |> am'.from_vec_base\n                        |> am'.to_list_base'\n                        |> listm'.unbox\n                        |> function\n                            | [ path; ext ] =>\n                                match ext |> sm'.from_std_string |> reflection.union_try_pick with\n                                | Some (ext : export_output) => (path |> sm'.from_std_string, ext) |> Ok\n                                | None => \"spiral.run / invalid ext / \" ++#? { ext exts } |> Error\n                            | _ =>\n                                \"spiral.run / invalid entries / \" ++#? { entries = entries |> rust.clone; exts }\n                                |> Error\n                            |> resultm.get\n                    |> am'.from_vec_base\n                    |> am'.to_list_base'\n                    |> listm'.unbox\n                )\n                |> optionm'.default_value []\n                |> listm'.box\n                |> listm'.to_array'\n                |> am'.to_vec\n\n            process_export { entries }\n\n        | matches =>\n            match matches with\n            | Some (subcommand, arg_matches)\n                    when (subcommand |> sm'.from_std_string) = (get_args () .rust |> fst) =>\n\n                inl rs_path =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).rs_path |> fst)\n                    |> optionm'.unbox\n                    |> optionm.value\n                    |> sm'.from_std_string\n\n                inl deps : am'.vec sm'.std_string =\n                    arg_matches\n                    |> runtime.matches_get_many ((get_args () .rust |> snd).deps |> fst)\n                    |> optionm'.unbox\n                    |> optionm'.default_value (;[] |> am'.to_vec)\n\n                inl cleanup =\n                    arg_matches\n                    |> runtime.matches_get_flag ((get_args () .rust |> snd).cleanup |> fst)\n\n                inl wasm =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).wasm |> fst)\n                    |> optionm'.unbox\n                    |> optionm.map sm'.from_std_string\n\n                inl contract =\n                    arg_matches\n                    |> runtime.matches_get_one ((get_args () .rust |> snd).contract |> fst)\n                    |> optionm'.unbox\n                    |> optionm.map sm'.from_std_string\n\n                inl runtime =\n                    match wasm, contract with\n                    | Some wasm, _ => Wasm wasm |> Some\n                    | _, Some contract => Contract contract |> Some\n                    | _ => None\n\n                process_rust { rs_path deps trace_level runtime cleanup }\n\n            | Some (subcommand, arg_matches) =>\n                trace Debug\n                    fun () => \"spiral.run / invalid subcommand\"\n                    fun () => { subcommand arg_matches }\n\n                { extension = None; code = None; code_path = None; output = None }\n            | _ =>\n                { extension = None; code = None; code_path = None; output = None }\n            |> fun { extension code code_path output } =>\n                ;[\n                    \"extension\", extension |> optionm'.default_value \"\"\n                    \"code\", code |> optionm'.default_value \"\"\n                    \"code_path\", code_path |> optionm'.default_value \"\"\n                    \"output\", output |> optionm'.default_value \"\"\n                ]\n        |> am'.to_vec\n        |> am'.vec_map' fun k, v =>\n            new_pair (sm'.to_std_string k) (sm'.to_std_string v)\n        |> mapm.b_tree_map_from_vec_pairs\n        |> sm'.serialize\n        |> resultm.map_error' (sm'.format' >> sm'.from_std_string)\n        |> resultm.map' sm'.from_std_string\n    |> async.new_future_move","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2932,36 +2763,7 @@ Spiral.Kino.eval!(
               ]
 
           | Some (subcommand, arg_matches)
-              when (subcommand |> sm'.from_std_string) = (get_args () .dib |> fst) =>
-
-              inl path =
-                  arg_matches
-                  |> runtime.matches_get_one ((get_args () .dib |> snd).path |> fst)
-                  |> optionm'.map'' (
-                      sm'.from_std_string
-                      >> file_system.absolute_path
-                  )
-                  |> optionm'.unwrap
-
-              inl retries =
-                  arg_matches
-                  |> runtime.matches_get_one ((get_args () .dib |> snd).retries |> fst)
-                  |> optionm'.default_value' 1u8
-
-              inl working_directory =
-                  arg_matches
-                  |> runtime.matches_get_one ((get_args () .dib |> snd).working_directory |> fst)
-                  |> optionm'.unbox
-                  |> optionm.map sm'.from_std_string
-
-              inl cleanup =
-                  arg_matches
-                  |> runtime.matches_get_flag ((get_args () .dib |> snd).cleanup |> fst)
-
-              process_dib { path retries working_directory cleanup }
-
-          | Some (subcommand, arg_matches)
-              when (subcommand |> sm'.from_std_string) = (get_args () .dib_export |> fst) =>
+              when (subcommand |> sm'.from_std_string) = (get_args () .notebook_export |> fst) =>
 
               inl deps : am'.vec (sm'.std_string * sm'.std_string) =
                   arg_matches
@@ -2971,7 +2773,7 @@ Spiral.Kino.eval!(
 
               inl entries =
                   arg_matches
-                  |> runtime.matches_get_many ((get_args () .dib_export |> snd).entries |> fst)
+                  |> runtime.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)
                   |> optionm'.unbox
                   |> optionm.map (fun (entries : am'.vec sm'.std_string) =>
                       entries
@@ -2980,7 +2782,7 @@ Spiral.Kino.eval!(
                           : am'.vec (am'.vec sm'.std_string)
                       |> am'.vec_map' fun chunk =>
                           inl exts () =
-                              reflection.get_union_fields_untag () : _ (_ * dib_output)
+                              reflection.get_union_fields_untag () : _ (_ * export_output)
                           chunk
                           |> am'.from_vec_base
                           |> am'.to_list_base'
@@ -2988,7 +2790,7 @@ Spiral.Kino.eval!(
                           |> function
                               | [ path; ext ] =>
                                   match ext |> sm'.from_std_string |> reflection.union_try_pick with
-                                  | Some (ext : dib_output) => (path |> sm'.from_std_string, ext) |> Ok
+                                  | Some (ext : export_output) => (path |> sm'.from_std_string, ext) |> Ok
                                   | None => "spiral.run / invalid ext / " ++#? { ext exts } |> Error
                               | _ =>
                                   "spiral.run / invalid entries / " ++#? { entries = entries |> rust.clone; exts }
@@ -3003,7 +2805,7 @@ Spiral.Kino.eval!(
                   |> listm'.to_array'
                   |> am'.to_vec
 
-              process_dib_export { entries }
+              process_export { entries }
 
           | matches =>
               match matches with
@@ -3176,43 +2978,6 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']\n\ninl file_name = \"test.dib\"\ninl code =\n    \"#!meta\\n\\n{\\\"kernelInfo\\\":{\\\"defaultKernelName\\\":\\\"fsharp\\\",\\\"items\\\":[]}}\\n\\n#!fsharp\\n\\n3 - 6\\n\"\n\ninl temp_dir, disposable =\n    #?*(file_name, code)\n    |> crypto.hash_text\n    |> file_system.create_temp_dir'\ndisposable |> use |> ignore\ninl path = temp_dir </> file_name |> file_system.normalize_path\n\ncode\n|> file_system.write_all_text path\n\nget_command ()\n|> runtime.command_get_matches_from ($'$\"_ dib -lp {!path}\"' |> runtime.split_args |> resultm.get)\n|> run Verbose\n|> async.block_on_futures\n|> resultm.unwrap'\n|> __assert sm'.contains Silent \"<pre>-3\"\n\n$'$\"{!path}.html\"'\n|> file_system.read_all_text\n|> __assert sm'.contains Silent \"\\\"cell-id=1\\\"\"","print_code":false},"livebook_object":"smart_cell"} -->
-
-```elixir
-Spiral.Kino.eval!(
-  ~S"""
-  ///- --test
-  ///> rust -d async-walkdir chrono clap encoding_rs encoding_rs_io futures rand rayon regex serde_json sha2 mlua['lua51','vendored']
-
-  inl file_name = "test.dib"
-  inl code =
-      "#!meta\n\n{\"kernelInfo\":{\"defaultKernelName\":\"fsharp\",\"items\":[]}}\n\n#!fsharp\n\n3 - 6\n"
-
-  inl temp_dir, disposable =
-      #?*(file_name, code)
-      |> crypto.hash_text
-      |> file_system.create_temp_dir'
-  disposable |> use |> ignore
-  inl path = temp_dir </> file_name |> file_system.normalize_path
-
-  code
-  |> file_system.write_all_text path
-
-  get_command ()
-  |> runtime.command_get_matches_from ($'$"_ dib -lp {!path}"' |> runtime.split_args |> resultm.get)
-  |> run Verbose
-  |> async.block_on_futures
-  |> resultm.unwrap'
-  |> __assert sm'.contains Silent "<pre>-3"
-
-  $'$"{!path}.html"'
-  |> file_system.read_all_text
-  |> __assert sm'.contains Silent "\"cell-id=1\""
-  """,
-  timeout: 300_000
-)
-```
-
 ## tests
 
 <!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tests () =\n    testing.run_tests {\n        verify_app = get_command >> runtime.command_debug_assert\n    }","print_code":false},"livebook_object":"smart_cell"} -->
@@ -3231,7 +2996,7 @@ Spiral.Kino.eval!(
 
 ## main
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> _\n\ninl run_main (args : array_base string) : i32 =\n    inl trace_state = get_trace_state_or_init (Debug |> Some)\n    // Notebook builders opt into one JSON document on stdout, regardless of TRACE_LEVEL.\n    inl json_protocol = (env.get_environment_variable \"SPIRAL_JSON\") = \"1\"\n    inl trace_enabled = trace_state.enabled\n    if json_protocol then trace_enabled <- false\n\n    trace Debug\n        fun () => \"spiral.main\"\n        fun () => { args }\n\n    inl command = get_command ()\n    inl arg_matches = command |> runtime.command_get_matches\n\n    inl trace_state_level = trace_state.level\n\n    inl result =\n        arg_matches\n        |> run *trace_state_level\n        |> async.block_on_futures\n        |> resultm.unwrap'\n\n    if json_protocol || *trace_state_level = Info\n    then result |> console.write_line\n\n    0i32\n\n// One entry for every backend: F# (and Fable from it) gets `tests` and an F# `main args`; the native Rust backend\n// runs `run_main` on the process arguments (codegenRust wraps it in `spiral_main`).\ninl main () =\n    if rust.is_native () then\n        inl args =\n            $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'\n            : array_base string\n        run_main args |> ignore\n    else\n        $'let tests () = !tests ()' : ()\n        $'let main args = !run_main args' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///> _\n\ninl run_main (args : array_base string) : i32 =\n    inl trace_state = get_trace_state_or_init (Debug |> Some)\n    // Notebook builders opt into one JSON document on stdout, regardless of TRACE_LEVEL.\n    inl json_protocol = (env.get_environment_variable \"SPIRAL_JSON\") = \"1\"\n    inl trace_enabled = trace_state.enabled\n    if json_protocol then trace_enabled <- false\n\n    trace Debug\n        fun () => \"spiral.main\"\n        fun () => { args }\n\n    inl command = get_command ()\n    inl arg_matches = command |> runtime.command_get_matches\n\n    inl trace_state_level = trace_state.level\n\n    inl result =\n        arg_matches\n        |> run *trace_state_level\n        |> async.block_on_futures\n        |> resultm.unwrap'\n\n    if json_protocol || *trace_state_level = Info\n    then result |> console.write_line\n\n    0i32\n\n// One entry for every backend: F# (and Fable from it) gets `tests` and an F# `main args`; the native Rust backend\n// runs `run_main` on the process arguments (codegenRust wraps it in `spiral_main`).\ninl main () =\n    if is_rust () then\n        inl args =\n            $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'\n            : array_base string\n        run_main args |> ignore\n    else\n        $'let tests () = !tests ()' : ()\n        $'let main args = !run_main args' : ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -3268,7 +3033,7 @@ Spiral.Kino.eval!(
   // One entry for every backend: F# (and Fable from it) gets `tests` and an F# `main args`; the native Rust backend
   // runs `run_main` on the process arguments (codegenRust wraps it in `spiral_main`).
   inl main () =
-      if rust.is_native () then
+      if is_rust () then
           inl args =
               $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
               : array_base string

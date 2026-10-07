@@ -554,11 +554,11 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
         run_target function
             // A clean failure (message on stderr, exit code 1): failwith panics natively (exit code 101; 0xC0000409 in a
             // panic=abort build), and callers expect exit code 1.
-            | RustNative => fun () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
+            | Rust => fun () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
             | _ => fun () => failwith error
     result
 
-/// ## dib_export
+/// ## export
 
 /// ### magic_marker
 inl magic_marker () : parser string =
@@ -585,8 +585,8 @@ inl content () =
         trace Verbose (fun () => "spiral.content") (fun () => { s_len = ##s })
         s
 
-/// ### dib_output
-union dib_output =
+/// ### export_output
+union export_output =
     | Fs
     | Md
     | Spi
@@ -596,7 +596,7 @@ union dib_output =
 union magic =
     | Fsharp
     | Markdown
-    | Spiral : dib_output
+    | Spiral : export_output
     | Magic : string
 
 /// ### kernel_outputs
@@ -820,22 +820,22 @@ inl parse output t =
         |> Ok
     | Error error_msg => error_msg |> Error
 
-/// ### parse_dib_code
-inl parse_dib_code output file =
+/// ### parse_export
+inl parse_export output file =
     trace Debug
-        (fun () => "spiral.parse_dib_code")
+        (fun () => "spiral.parse_export")
         fun () => { output = output |> reflection.union_to_string; file }
     inl t = file |> file_system.read_all_text
     match parse output t with
     | Ok blocks => blocks |> format_blocks output
     | Error msg => msg () |> failwith
 
-/// ### write_dib_code
-inl write_dib_code output path =
+/// ### write_export
+inl write_export output path =
     trace Debug
-        (fun () => "spiral.write_dib_code")
+        (fun () => "spiral.write_export")
         (fun () => { output = output |> reflection.union_to_string; path })
-    inl result = parse_dib_code output path
+    inl result = parse_export output path
     inl path_dir = path |> file_system.directory_get_parent |> optionm'.default_value' ""
     inl file_name_without_ext =
         match output, path |> file_system.get_file_name_without_extension with
@@ -845,68 +845,17 @@ inl write_dib_code output path =
         path_dir </> (file_name_without_ext ++# "." ++# (output |> reflection.union_to_string |> sm'.to_lower))
     result |> file_system.write_all_text_exists output_path
 
-/// ### process_dib_export
-inl process_dib_export { entries } =
+/// ### process_export
+inl process_export { entries } =
     entries
     |> async.into_par_iter
     |> async.par_map fun path, export =>
         path
         |> file_system.get_full_path
-        |> write_dib_code export
+        |> write_export export
     |> async.par_collect
     |> ignore
     ;[]
-
-/// ## dib
-
-/// ### process_dib
-inl process_dib { path retries working_directory cleanup } =
-    inl html_path = $'$"{!path}.html"'
-    inl ipynb_path = $'$"{!path}.ipynb"'
-
-    // The notebook runs through Kino (apps/kino/spi/livebook_dib.ps1, through polyglot's deps/spiral link): Spiral cells on
-    // the native backends, F# cells on dotnet fsi. It writes the .ipynb and, after a successful run, the .html (jupyter
-    // nbconvert, LF, cell ids renumbered 1..n), what this command did itself on the dotnet repl route.
-    inl livebook = file_system.get_workspace_root () </> "deps/spiral/apps/kino/spi/livebook_dib.ps1"
-    inl exit_code, result =
-        let rec 루프 retry =
-            inl exit_code, result =
-                runtime.execution_options fun x => { x with
-                    command =
-                        $'$"pwsh -NoProfile -File \\\"{!livebook}\\\" --path \\\"{!path}\\\""'
-                        ++# $'$" --output-path \\\"{!ipynb_path}\\\""'
-                    environment_variables = ;[
-                        "TRACE_LEVEL", "Verbose"
-                    ]
-                    trace = false
-                    working_directory = working_directory |> optionm'.box
-                }
-                |> runtime.execute_with_options
-
-            if exit_code = 0 || retry >= retries
-            then exit_code, result
-            else
-                trace Warning
-                    fun () => "spiral.process_dib / notebook error"
-                    fun () => { exit_code result retry = $'$"{!retry}/{!retries}"' : string }
-                루프 (retry + 1)
-        루프 1
-    inl ci = "CI" |> env.get_environment_variable
-
-    if cleanup && ci = "" then
-        ipynb_path |> file_system.file_delete
-        html_path |> file_system.file_delete
-
-    trace Debug
-        fun () => "spiral.process_dib / dib"
-        fun () => { exit_code result_len = ##result }
-
-    if exit_code <>. 0
-    then $'$"spiral.process_dib / dib / exit_code: {!exit_code} / result: \'{!result}\'"' |> failwith
-    ;[
-        "stdio",
-        result
-    ]
 
 /// ## gleam
 
@@ -1166,7 +1115,7 @@ inl process_gleam { gleam_path target deps } =
 /// ### process_lua
 nominal lua =
     `(
-        native_type
+        rust_type
             `($'mlua_Lua')
             `($'mlua::Lua')
             "type mlua_Lua = obj"
@@ -1174,7 +1123,7 @@ nominal lua =
 
 nominal lua_function =
     `(
-        native_type
+        rust_type
             `($'mlua_LuaFunction')
             `($'mlua::prelude::LuaFunction')
             "type mlua_LuaFunction = obj"
@@ -1182,7 +1131,7 @@ nominal lua_function =
 
 nominal lua_error =
     `(
-        native_type
+        rust_type
             `($'mlua_LuaError')
             `($'mlua::prelude::LuaError')
             "type mlua_LuaError = obj"
@@ -1190,7 +1139,7 @@ nominal lua_error =
 
 nominal lua_value =
     `(
-        native_type
+        rust_type
             `($'mlua_LuaValue')
             `($'mlua::prelude::LuaValue')
             "type mlua_LuaValue = obj"
@@ -1198,7 +1147,7 @@ nominal lua_value =
 
 nominal lua_multi_value =
     `(
-        native_type
+        rust_type
             `($'mlua_LuaMultiValue')
             `($'mlua::prelude::LuaMultiValue')
             "type mlua_LuaMultiValue = obj"
@@ -1206,7 +1155,7 @@ nominal lua_multi_value =
 
 inl lua_values_debug (values : lua_multi_value) : am'.vec string =
     run_target_args (fun () => values) function
-        | RustNative => fun values =>
+        | Rust => fun values =>
             $'!values.iter().map(|x| Rc::<str>::from(format\!("{:?}", x))).collect::<Vec<_>>()' : am'.vec string
         | _ => fun values =>
             inl values : am'.vec (rust.ref lua_value) = !\\(values, $'$"$0.iter().collect()"')
@@ -1461,80 +1410,11 @@ inl process_cpp { cpp_path } =
         else
             failwith ("spiral.process_cpp / child failed\n" ++# run_result)
 
-/// ## fsharp
-
-/// ### process_fsharp
-inl process_fsharp { spi_path } =
-    inl extension = "fsx"
-
-    inl new_code_path = spi_path
-    inl new_code = new_code_path |> file_system.read_all_text
-
-    inl workspace_root_external = file_system.get_workspace_root_external ()
-    inl workspace_root = workspace_root_external |> resultm.box |> resultm.unwrap_or_else id
-
-    inl supervisor_path = workspace_root </> $"apps/spiral/dist/Supervisor!(platform.get_executable_suffix ())"
-    inl code_dir = new_code_path |> file_system.directory_get_parent |> optionm'.default_value' ""
-    inl file_name = new_code_path |> file_system.get_file_name_without_extension
-    inl output_path = code_dir </> $'$"{!file_name}.{!extension}"'
-    inl command = $'$"{!supervisor_path} --build-file \\\"{!new_code_path}\\\" \\\"{!output_path}\\\""'
-    inl environment_variables =
-        ;[
-            "TRACE_LEVEL", "Verbose"
-        ]
-    inl exit_code, run_result =
-        runtime.execution_options fun x => { x with
-            command
-            environment_variables
-            working_directory = workspace_root_external |> resultm.box |> resultm.ok'
-        }
-        |> runtime.execute_with_options
-
-    inl external_command =
-        inl vars =
-            a environment_variables
-            |> am.map fun k, v => $'$"$env:{!k}=\'\'{!v}\'\'"' : string
-            |> fun x => x : _ i32 _
-            |> seq.of_array
-            |> sm'.concat ";"
-        $'$"pwsh -c \'{!vars}; {!command}\'"' : string
-    if exit_code = 0 then
-        inl output =
-            try
-                fun () =>
-                    run_result
-                    |> sm'.split "\n"
-                    |> fun x => a x : _ i32 _
-                    |> seq.of_array
-                    |> sm'.concat "\n"
-                fun ex =>
-                    trace Critical
-                        fun () => "spiral.process_fsharp / Exception"
-                        fun () => { ex run_result new_code_path external_command }
-                    None
-            |> optionm'.box
-            |> optionm'.unwrap
-
-        {
-            extension = Some extension
-            code = Some new_code
-            code_path = Some new_code_path
-            output = Some output
-        }
-    else
-        trace Critical
-            fun () => "spiral.process_fsharp / error"
-            fun () => { exit_code run_result new_code_path external_command }
-        { extension = Some extension; code = None; code_path = None; output = None }
-
 /// ## run
 
 /// ### get_args
 inl get_args () =
     {
-        fsharp = "fsharp", {
-            spi_path = "spi-path", 's'
-        }
         gleam = "gleam", {
             gleam_path = "gleam-path", 'g'
             target = "target", 't'
@@ -1558,30 +1438,19 @@ inl get_args () =
             contract = "contract", 'c'
             cleanup = "cleanup", 'l'
         }
-        dib = "dib", {
-            path = "path", 'p'
-            retries = "retries", 'r'
-            working_directory = "working-directory", 'w'
-            cleanup = "cleanup", 'l'
-            export = "export", 'e'
-        }
-        dib_export = "dib-export", {
+        notebook_export = "export", {
             entries = "entries", 'e'
         }
     }
 
 /// ### get_command
+inl command_alias (alias : rust.static_ref sm'.str) (command : runtime.command) : runtime.command =
+    !\\((command, alias), $'"clap::Command::alias($0, $1)"')
+
 let get_command () =
     ###"command"
     |> runtime.new_command
     |> runtime.command_subcommand_required true
-    |> runtime.command_subcommand (
-        ###(get_args () .fsharp |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .fsharp |> snd).spi_path) (
-            runtime.arg_required true
-        )
-    )
     |> runtime.command_subcommand (
         ###(get_args () .gleam |> fst)
         |> runtime.new_command
@@ -1664,32 +1533,18 @@ let get_command () =
         )
     )
     |> runtime.command_subcommand (
-        ###(get_args () .dib |> fst)
-        |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .dib |> snd).path) (
-            runtime.arg_required true
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).retries) (
-            runtime.arg_value_parser (runtime.value_parser_expr "u8")
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).working_directory) (
-            id
-        )
-        |> runtime.command_init_arg ((get_args () .dib |> snd).cleanup) (
-            runtime.arg_default_value "true"
-            >> runtime.arg_action runtime.SetFalse
-        )
-    )
-    |> runtime.command_subcommand (
         inl parse (s : rust.ref sm'.str) : resultm.result' (sm'.std_string * sm'.std_string) sm'.std_string =
             trace Verbose (fun () => "spiral.get_command") (fun () => { s })
             inl path = "" |> sm'.to_std_string
             inl ext = "" |> sm'.to_std_string
             Ok (path, ext)
             |> resultm.box
-        ###(get_args () .dib_export |> fst)
+        ###(get_args () .notebook_export |> fst)
         |> runtime.new_command
-        |> runtime.command_init_arg ((get_args () .dib_export |> snd).entries) (
+        // `dib-export`: its name before the .livemd notebooks, an alias for one release (apps/spiral/build.ps1 runs the
+        // previous CLI with it)
+        |> command_alias ###"dib-export"
+        |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (
             runtime.arg_required true
             // >> runtime.arg_value_parser (!\\(parse, $'"clap::value_parser\!(String).into()"'))
             >> runtime.arg_index 1
@@ -1882,36 +1737,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
             ]
 
         | Some (subcommand, arg_matches)
-            when (subcommand |> sm'.from_std_string) = (get_args () .dib |> fst) =>
-
-            inl path =
-                arg_matches
-                |> runtime.matches_get_one ((get_args () .dib |> snd).path |> fst)
-                |> optionm'.map'' (
-                    sm'.from_std_string
-                    >> file_system.absolute_path
-                )
-                |> optionm'.unwrap
-
-            inl retries =
-                arg_matches
-                |> runtime.matches_get_one ((get_args () .dib |> snd).retries |> fst)
-                |> optionm'.default_value' 1u8
-
-            inl working_directory =
-                arg_matches
-                |> runtime.matches_get_one ((get_args () .dib |> snd).working_directory |> fst)
-                |> optionm'.unbox
-                |> optionm.map sm'.from_std_string
-
-            inl cleanup =
-                arg_matches
-                |> runtime.matches_get_flag ((get_args () .dib |> snd).cleanup |> fst)
-
-            process_dib { path retries working_directory cleanup }
-
-        | Some (subcommand, arg_matches)
-            when (subcommand |> sm'.from_std_string) = (get_args () .dib_export |> fst) =>
+            when (subcommand |> sm'.from_std_string) = (get_args () .notebook_export |> fst) =>
 
             inl deps : am'.vec (sm'.std_string * sm'.std_string) =
                 arg_matches
@@ -1921,7 +1747,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
 
             inl entries =
                 arg_matches
-                |> runtime.matches_get_many ((get_args () .dib_export |> snd).entries |> fst)
+                |> runtime.matches_get_many ((get_args () .notebook_export |> snd).entries |> fst)
                 |> optionm'.unbox
                 |> optionm.map (fun (entries : am'.vec sm'.std_string) =>
                     entries
@@ -1930,7 +1756,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                         : am'.vec (am'.vec sm'.std_string)
                     |> am'.vec_map' fun chunk =>
                         inl exts () =
-                            reflection.get_union_fields_untag () : _ (_ * dib_output)
+                            reflection.get_union_fields_untag () : _ (_ * export_output)
                         chunk
                         |> am'.from_vec_base
                         |> am'.to_list_base'
@@ -1938,7 +1764,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                         |> function
                             | [ path; ext ] =>
                                 match ext |> sm'.from_std_string |> reflection.union_try_pick with
-                                | Some (ext : dib_output) => (path |> sm'.from_std_string, ext) |> Ok
+                                | Some (ext : export_output) => (path |> sm'.from_std_string, ext) |> Ok
                                 | None => "spiral.run / invalid ext / " ++#? { ext exts } |> Error
                             | _ =>
                                 "spiral.run / invalid entries / " ++#? { entries = entries |> rust.clone; exts }
@@ -1953,7 +1779,7 @@ let rec run trace_level (matches : runtime.arg_matches) : async.future_pin (resu
                 |> listm'.to_array'
                 |> am'.to_vec
 
-            process_dib_export { entries }
+            process_export { entries }
 
         | matches =>
             match matches with
@@ -2060,7 +1886,7 @@ inl run_main (args : array_base string) : i32 =
 // One entry for every backend: F# (and Fable from it) gets `tests` and an F# `main args`; the native Rust backend
 // runs `run_main` on the process arguments (codegenRust wraps it in `spiral_main`).
 inl main () =
-    if rust.is_native () then
+    if is_rust () then
         inl args =
             $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
             : array_base string

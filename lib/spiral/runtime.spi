@@ -12,7 +12,7 @@ let split_args (args : string) : result (array_base string) _ =
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
     // An escape and the char after it, as written: a slice of the input (formatting the two chars into a string costs
-    // several allocations on native Rust).
+    // several allocations on Rust).
     inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>
         match p (t, i, s) with
         | Ok (_, i', s') => Ok (t |> slice i i', i', s')
@@ -44,7 +44,7 @@ let split_args (args : string) : result (array_base string) _ =
     args
     |> run_parser p_args
     |> resultm.map (fst >> fun (args : list string) =>
-        if rust.is_native () then
+        if is_rust () then
             // one Vec of the right size (`listm'.box >> listm'.to_array'` fills and then copies it twice)
             inl n = (0i32, args) ||> listm.fold fun n _ => n + 1
             inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
@@ -85,7 +85,7 @@ type execution_line =
 /// ### process_child
 nominal process_child =
     `(
-        native_type
+        rust_type
             `($'std_process_Child')
             `($'std::process::Child')
             "type std_process_Child = class end"
@@ -94,7 +94,7 @@ nominal process_child =
 /// ### process_child_stdin
 nominal process_child_stdin =
     `(
-        native_type
+        rust_type
             `($'std_process_ChildStdin')
             `($'std::process::ChildStdin')
             "type std_process_ChildStdin = class end"
@@ -139,7 +139,7 @@ inl execution_options (fn : execution_options -> execution_options) : execution_
 /// ### process_child_stderr
 nominal process_child_stderr =
     `(
-        native_type
+        rust_type
             `($'std_process_ChildStderr')
             `($'std::process::ChildStderr')
             "type std_process_ChildStderr = class end"
@@ -154,7 +154,7 @@ inl process_child_stderr
 /// ### process_child_stdout
 nominal process_child_stdout =
     `(
-        native_type
+        rust_type
             `($'std_process_ChildStdout')
             `($'std::process::ChildStdout')
             "type std_process_ChildStdout = class end"
@@ -169,7 +169,7 @@ inl process_child_stdout
 /// ### process_command
 nominal process_command =
     `(
-        native_type
+        rust_type
             `($'std_process_Command')
             `($'std::process::Command')
             "type std_process_Command = class end"
@@ -178,7 +178,7 @@ nominal process_command =
 /// ### process_stdio
 nominal process_stdio =
     `(
-        native_type
+        rust_type
             `($'std_process_Stdio')
             `($'std::process::Stdio')
             "type std_process_Stdio = class end"
@@ -187,7 +187,7 @@ nominal process_stdio =
 /// ### process_output
 nominal process_output =
     `(
-        native_type
+        rust_type
             `($'std_process_Output')
             `($'std::process::Output')
             "type std_process_Output = class end"
@@ -196,7 +196,7 @@ nominal process_output =
 /// ### process_exit_status
 nominal process_exit_status =
     `(
-        native_type
+        rust_type
             `($'std_process_ExitStatus')
             `($'std::process::ExitStatus')
             "type std_process_ExitStatus = class end"
@@ -226,7 +226,7 @@ inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : 
             inl stdin = join stdin
             (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
             (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
-        // Native Rust: no join (a join point would clone the MutexGuard, which is not Clone).
+        // Rust: no join (a join point would clone the MutexGuard, which is not Clone).
         Rust = fun () =>
             inl stream = text |> sm'.as_bytes
             (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
@@ -354,10 +354,10 @@ inl stdio_line
     |> threading.channel_send line
     |> resultm.map_error'' sm'.format'
 
-/// ### stdio_line_native
-// Native Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not
+/// ### stdio_line_rust
+// Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not
 // `Send`); returns the text to accumulate. The reader threads already formatted io errors.
-inl stdio_line_native
+inl stdio_line_rust
     (stdio : result () ())
     (trace' : bool)
     (line : resultm.result' sm'.std_string sm'.std_string)
@@ -387,7 +387,7 @@ inl stdio_line_native
 /// ### command
 nominal command =
     `(
-        native_type
+        rust_type
             `($'clap_Command')
             `($'clap::Command')
             "type clap_Command = class end"
@@ -400,7 +400,7 @@ inl new_command (s : rust.static_ref sm'.str) : command =
 /// ### arg
 nominal arg =
     `(
-        native_type
+        rust_type
             `($'clap_Arg')
             `($'clap::Arg')
             "type clap_Arg = class end"
@@ -461,7 +461,7 @@ inl arg_num_args (value : i32) (arg : arg) : arg =
 /// ### value_range
 nominal value_range =
     `(
-        native_type
+        rust_type
             `($'clap_builder_ValueRange')
             `($'clap::builder::ValueRange')
             "type clap_builder_ValueRange = class end"
@@ -498,7 +498,7 @@ inl arg_value_name (value : string) (arg : arg) : arg =
 /// ### value_parser
 nominal value_parser =
     `(
-        native_type
+        rust_type
             `($'clap_builder_ValueParser')
             `($'clap::builder::ValueParser')
             "type clap_builder_ValueParser = class end"
@@ -507,7 +507,7 @@ nominal value_parser =
 /// ### possible_value
 nominal possible_value =
     `(
-        native_type
+        rust_type
             `($'clap_builder_PossibleValue')
             `($'clap::builder::PossibleValue')
             "type clap_builder_PossibleValue = class end"
@@ -532,7 +532,7 @@ inl arg_value_parser (values : value_parser) (arg : arg) : arg =
 /// ### arg_action
 nominal arg_action' =
     `(
-        native_type
+        rust_type
             `($'clap_ArgAction')
             `($'clap::ArgAction')
             "type clap_ArgAction = class end"
@@ -567,7 +567,7 @@ inl arg_action (value : arg_action) (arg : arg) : arg =
 /// ### arg_index
 inl arg_index (value : i32) (arg : arg) : arg =
     inl index : convert.unativeint =
-        if rust.is_native ()
+        if is_rust ()
         then $'(!value as usize)'
         else $'!value |> `(convert.unativeint) '
     !\\((arg, index), $'"$0.index($1)"')
@@ -575,7 +575,7 @@ inl arg_index (value : i32) (arg : arg) : arg =
 /// ### arg_matches
 nominal arg_matches =
     `(
-        native_type
+        rust_type
             `($'clap_ArgMatches')
             `($'clap::ArgMatches')
             "type clap_ArgMatches = class end"
@@ -769,8 +769,8 @@ inl gc_collect () =
 
 /// ## runtime
 
-/// ### execute_with_options_fable
-inl execute_with_options_fable (options : execution_options) : i32 * string =
+/// ### execute_with_options_fsharp
+inl execute_with_options_fsharp (options : execution_options) : i32 * string =
     inl command = join options.command
     inl file_name, arguments = command |> split_command |> resultm.get
     inl arguments =
@@ -988,12 +988,12 @@ inl execute_with_options_fable (options : execution_options) : i32 * string =
     |> fun x => x ()
     |> from_pair
 
-/// ### execute_with_options_native
-// Native Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and
-// send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_native`),
+/// ### execute_with_options_rust
+// Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and
+// send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_rust`),
 // runs the stdin callback, honors the cancellation token (kills the child) and waits. Child, Command, ChildStdin and the
 // receiver never leave the emitted block, so no `.clone()` is generated for them.
-inl execute_with_options_native (options : execution_options) : i32 * string =
+inl execute_with_options_rust (options : execution_options) : i32 * string =
     inl command = join options.command
     inl file_name, arguments = command |> split_command |> resultm.get
     inl arguments =
@@ -1008,9 +1008,9 @@ inl execute_with_options_native (options : execution_options) : i32 * string =
         fun () => { file_name arguments = #?*arguments }
     inl trace' = options.trace
     inl on_stdout (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
-        line |> stdio_line_native (Ok ()) trace'
+        line |> stdio_line_rust (Ok ()) trace'
     inl on_stderr (line : resultm.result' sm'.std_string sm'.std_string) : sm'.std_string =
-        line |> stdio_line_native (Error ()) trace'
+        line |> stdio_line_rust (Error ()) trace'
     inl kind, exit_code, error, lines =
         !\\(
             (
@@ -1060,8 +1060,8 @@ inl execute_with_options_native (options : execution_options) : i32 * string =
 /// ### execute_with_options
 let execute_with_options (options : execution_options) : i32 * string =
     backend_switch {
-        Fsharp = fun () => execute_with_options_fable options
-        Rust = fun () => execute_with_options_native options
+        Fsharp = fun () => execute_with_options_fsharp options
+        Rust = fun () => execute_with_options_rust options
     }
 
 /// #### execute

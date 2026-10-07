@@ -17,14 +17,14 @@ Spiral.Kino.eval!(
 
 ### hash_map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal hash_map k v =\n    `(\n        native_type\n            `($'std_collections_HashMap<`k, `v>')\n            `($'std::collections::HashMap<`k, `v>')\n            \"type std_collections_HashMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal hash_map k v =\n    `(\n        rust_type\n            `($'std_collections_HashMap<`k, `v>')\n            `($'std::collections::HashMap<`k, `v>')\n            \"type std_collections_HashMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal hash_map k v =
       `(
-          native_type
+          rust_type
               `($'std_collections_HashMap<`k, `v>')
               `($'std::collections::HashMap<`k, `v>')
               "type std_collections_HashMap<'K, 'V> = class end"
@@ -36,14 +36,14 @@ Spiral.Kino.eval!(
 
 ### b_tree_map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal b_tree_map k v =\n    `(\n        native_type\n            `($'std_collections_BTreeMap<`k, `v>')\n            `($'std::collections::BTreeMap<`k, `v>')\n            \"type std_collections_BTreeMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal b_tree_map k v =\n    `(\n        rust_type\n            `($'std_collections_BTreeMap<`k, `v>')\n            `($'std::collections::BTreeMap<`k, `v>')\n            \"type std_collections_BTreeMap<'K, 'V> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal b_tree_map k v =
       `(
-          native_type
+          rust_type
               `($'std_collections_BTreeMap<`k, `v>')
               `($'std::collections::BTreeMap<`k, `v>')
               "type std_collections_BTreeMap<'K, 'V> = class end"

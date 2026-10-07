@@ -138,7 +138,7 @@ Spiral.Kino.eval!(
 
 ### color_reset
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_reset () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[0m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[0m\")' : string\n        | _ => fun () => $'\"\\\\u001b[0m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_reset () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[0m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[0m\")' : string\n        | _ => fun () => $'\"\\\\u001b[0m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -147,7 +147,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[0m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
           | _ => fun () => $'"\\u001b[0m"'
   """,
   timeout: 300_000
@@ -156,7 +156,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_black
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_black () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[90m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[90m\")' : string\n        | _ => fun () => $'\"\\\\u001b[90m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_black () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[90m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[90m\")' : string\n        | _ => fun () => $'\"\\\\u001b[90m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -165,7 +165,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[90m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
           | _ => fun () => $'"\\u001b[90m"'
   """,
   timeout: 300_000
@@ -174,7 +174,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_red
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_red () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[91m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[91m\")' : string\n        | _ => fun () => $'\"\\\\u001b[91m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_red () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[91m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[91m\")' : string\n        | _ => fun () => $'\"\\\\u001b[91m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -183,7 +183,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[91m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
           | _ => fun () => $'"\\u001b[91m"'
   """,
   timeout: 300_000
@@ -192,7 +192,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_green
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_green () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[92m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[92m\")' : string\n        | _ => fun () => $'\"\\\\u001b[92m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_green () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[92m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[92m\")' : string\n        | _ => fun () => $'\"\\\\u001b[92m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -201,7 +201,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[92m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
           | _ => fun () => $'"\\u001b[92m"'
   """,
   timeout: 300_000
@@ -210,7 +210,7 @@ Spiral.Kino.eval!(
 
 ### color_yellow
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_yellow () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[93m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[93m\")' : string\n        | _ => fun () => $'\"\\\\u001b[93m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_yellow () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[93m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[93m\")' : string\n        | _ => fun () => $'\"\\\\u001b[93m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -219,7 +219,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[93m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
           | _ => fun () => $'"\\u001b[93m"'
   """,
   timeout: 300_000
@@ -228,7 +228,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_blue
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_blue () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[94m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[94m\")' : string\n        | _ => fun () => $'\"\\\\u001b[94m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_blue () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[94m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[94m\")' : string\n        | _ => fun () => $'\"\\\\u001b[94m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -237,7 +237,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[94m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
           | _ => fun () => $'"\\u001b[94m"'
   """,
   timeout: 300_000
@@ -246,7 +246,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_magenta
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_magenta () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[95m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[95m\")' : string\n        | _ => fun () => $'\"\\\\u001b[95m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_magenta () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[95m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[95m\")' : string\n        | _ => fun () => $'\"\\\\u001b[95m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -255,7 +255,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[95m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
           | _ => fun () => $'"\\u001b[95m"'
   """,
   timeout: 300_000
@@ -264,7 +264,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_cyan
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_cyan () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[96m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[96m\")' : string\n        | _ => fun () => $'\"\\\\u001b[96m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_cyan () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[96m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[96m\")' : string\n        | _ => fun () => $'\"\\\\u001b[96m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -273,7 +273,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[96m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
           | _ => fun () => $'"\\u001b[96m"'
   """,
   timeout: 300_000
@@ -282,7 +282,7 @@ Spiral.Kino.eval!(
 
 ### color_bright_white
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_white () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[97m\"'\n        | Lua _ => fun () => $'\"\"'\n        | RustNative => fun () => $'Rc::<str>::from(\"\\\\u{001b}[97m\")' : string\n        | _ => fun () => $'\"\\\\u001b[97m\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl color_bright_white () =\n    run_target function\n        | Gleam _ => fun () => $'\"\\\\u{001b}[97m\"'\n        | Lua _ => fun () => $'\"\"'\n        | Rust => fun () => $'Rc::<str>::from(\"\\\\u{001b}[97m\")' : string\n        | _ => fun () => $'\"\\\\u001b[97m\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -291,7 +291,7 @@ Spiral.Kino.eval!(
       run_target function
           | Gleam _ => fun () => $'"\\u{001b}[97m"'
           | Lua _ => fun () => $'""'
-          | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
+          | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
           | _ => fun () => $'"\\u001b[97m"'
   """,
   timeout: 300_000

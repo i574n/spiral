@@ -1,4 +1,4 @@
-packageDir: ../../deps/polyglot/deps/spiral/lib
+packageDir: ../../lib
 packages:
     |core-
     spiral-

@@ -39,7 +39,7 @@ nominal vector t =
 /// ### lookup_map
 nominal lookup_map k v =
     `(
-        native_type
+        rust_type
             `($'near_sdk_store_LookupMap<`k, `v>')
             `($'near_sdk::store::LookupMap<`k, `v>')
             "type near_sdk_store_LookupMap<'K, 'V> = class end"
@@ -48,7 +48,7 @@ nominal lookup_map k v =
 /// ### iterable_set
 nominal iterable_set t =
     `(
-        native_type
+        rust_type
             `($'near_sdk_store_IterableSet<`t>')
             `($'near_sdk::store::IterableSet<`t>')
             "type near_sdk_store_IterableSet<'T> = class end"
@@ -178,7 +178,7 @@ nominal near_token =
 /// ### near_token_sdk
 nominal near_token_sdk =
     `(
-        native_type
+        rust_type
             `($'near_sdk_NearToken')
             `($'near_sdk::NearToken')
             "type near_sdk_NearToken = class end"

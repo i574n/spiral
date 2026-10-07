@@ -1,9 +1,9 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method1(mut v0: i32) -> i32 {
     loop {
-        let mut v1: i32 = v0 - 1i32;
+        let mut v1: i32 = v0.wrapping_sub(1i32);
         let mut v2: bool = v1 == 0i32;
         if v2 {
             return 0i32;

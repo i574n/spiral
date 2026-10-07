@@ -43,7 +43,7 @@ defmodule Spiral.Kino.DocumentTest do
 
     spi = Document.to_spi(doc)
 
-    # Like `spiral dib-export`: the dropped test cell leaves the heading directly on the next code cell.
+    # Like `spiral export`: the dropped test cell leaves the heading directly on the next code cell.
     assert spi ==
              """
              /// # demo
@@ -142,7 +142,7 @@ defmodule Spiral.Kino.DocumentTest do
     refute spi =~ "///>"
   end
 
-  test "the export keeps directive lines of code cells and follows dib-export's markdown rules" do
+  test "the export keeps directive lines of code cells and follows the CLI export's markdown rules" do
     doc =
       Document.parse_dib("""
       #!markdown
@@ -205,7 +205,7 @@ defmodule Spiral.Kino.DocumentTest do
              """
   end
 
-  test "the export equals spiral dib-export on the dice and alphabet notebooks" do
+  test "the export equals spiral export on the dice and alphabet notebooks" do
     exe = Path.expand("../../../../workspace/target/release/spiral" <> exe_suffix(), __DIR__)
     alphabet = Path.expand("../../../../../alphabet/apps", __DIR__)
 
@@ -219,37 +219,36 @@ defmodule Spiral.Kino.DocumentTest do
     # A missing exe must not pass vacuously: the comparison is this test's whole point.
     cond do
       File.regular?(exe) ->
-        compare_with_dib_export(exe, notebooks)
+        compare_with_cli_export(exe, notebooks)
 
-      System.get_env("SPIRAL_KINO_SKIP_DIB_EXPORT") in ["1", "true"] ->
-        skipped("#{exe} is missing (SPIRAL_KINO_SKIP_DIB_EXPORT is set)")
+      (System.get_env("SPIRAL_KINO_SKIP_CLI_EXPORT") || System.get_env("SPIRAL_KINO_SKIP_DIB_EXPORT")) in ["1", "true"] ->
+        skipped("#{exe} is missing (SPIRAL_KINO_SKIP_CLI_EXPORT is set)")
 
       true ->
         flunk(
           "#{exe} is missing: build it (cargo build --release in spiral/workspace) " <>
-            "or set SPIRAL_KINO_SKIP_DIB_EXPORT=1 to skip this comparison"
+            "or set SPIRAL_KINO_SKIP_CLI_EXPORT=1 to skip this comparison"
         )
     end
   end
 
-  defp compare_with_dib_export(exe, notebooks) do
+  defp compare_with_cli_export(exe, notebooks) do
     tmp =
       Path.join(
         System.tmp_dir!(),
-        "spiral_kino_test/dib_export_#{System.unique_integer([:positive])}"
+        "spiral_kino_test/cli_export_#{System.unique_integer([:positive])}"
       )
 
     File.mkdir_p!(tmp)
 
-    # The notebooks are .livemd only; the native CLI still reads the .dib format, so each one goes to it as the .dib
-    # Document.to_dib renders (the same route Kino's F# export takes).
+    # The CLI reads the cell text Document.to_cell_text renders from the .livemd (the same route Kino's F# export takes).
     try do
       for path <- notebooks do
         assert File.regular?(path), "#{path} is missing"
         doc = Document.parse_livemd(File.read!(path))
-        copy = Path.join(tmp, Path.basename(path, ".livemd") <> ".dib")
-        File.write!(copy, Document.to_dib(doc))
-        {out, status} = System.cmd(exe, ["dib-export", copy, "spi"], stderr_to_stdout: true)
+        copy = Path.join(tmp, Path.basename(path, ".livemd") <> ".cells")
+        File.write!(copy, Document.to_cell_text(doc))
+        {out, status} = System.cmd(exe, ["export", copy, "spi"], stderr_to_stdout: true)
         assert status == 0, out
         expected = File.read!(Path.rootname(copy) <> ".spi")
         assert Document.to_spi(doc) == expected, path
@@ -263,8 +262,8 @@ defmodule Spiral.Kino.DocumentTest do
 
   defp skipped(what), do: IO.puts(:stderr, "document_test: skipped check, #{what}")
 
-  # A notebook's .livemd is the source of truth (the .dib files are gone): it must read back to the same text, keep its
-  # cells through the .dib rendering the native CLI reads, and export the committed .spi.
+  # A notebook's .livemd is the source of truth: it must read back to the same text, keep its cells through the cell text
+  # the CLI's export reads, and export the committed .spi.
   defp assert_livemd_round_trip(path, check_spi \\ true) do
     assert File.regular?(path),
            "#{path} is missing (dice and alphabet are checked out next to spiral)"
@@ -277,10 +276,10 @@ defmodule Spiral.Kino.DocumentTest do
     again = doc |> Document.to_livemd() |> Document.parse_livemd()
     assert cells(again) == cells(doc), path
 
-    via_dib = doc |> Document.to_dib() |> Document.parse_dib()
-    assert spiral_sources(via_dib) == spiral_sources(doc), path
-    assert fsharp_sources(via_dib) == fsharp_sources(doc), path
-    assert Document.to_spi(via_dib) == Document.to_spi(doc), path
+    via_text = doc |> Document.to_cell_text() |> Document.parse_dib()
+    assert spiral_sources(via_text) == spiral_sources(doc), path
+    assert fsharp_sources(via_text) == fsharp_sources(doc), path
+    assert Document.to_spi(via_text) == Document.to_spi(doc), path
 
     spi = Path.rootname(path) <> ".spi"
     if check_spi and File.regular?(spi), do: assert(Document.to_spi(doc) == File.read!(spi), spi)

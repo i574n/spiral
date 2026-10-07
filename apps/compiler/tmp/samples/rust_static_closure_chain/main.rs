@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 #![recursion_limit = "512"]
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -578,17 +578,16 @@ fn method0(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
     loop {
         match &*v0 {
             UH0::UH0_0(v2, v3) => { // Cons
-                let mut v2: u64 = v2.clone();
+                let mut v2: u64 = *v2;
                 let mut v3: Rc<dyn Fn() -> Rc<UH0>> = v3.clone();
                 let mut v4: Rc<UH0> = v3();
-                let mut v5: u64 = v1 + v2;
+                let mut v5: u64 = v1.wrapping_add(v2);
                 (v0, v1) = (v4.clone(), v5);
                 continue;
             }
             UH0::UH0_1 => { // Nil
                 return v1;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -598,7 +597,7 @@ fn spiral_main() -> i32 {
     let mut v2: Rc<UH0> = Rc::new(UH0::UH0_0(v0, v1.clone()));
     let mut v3: u64 = 0u64;
     let mut v4: u64 = method0(v2.clone(), v3);
-    let mut v5: u64 = v4 % 200u64;
+    let mut v5: u64 = v4.wrapping_rem(200u64);
     let mut v6: i32 = (v5 as i32);
     v6
 }

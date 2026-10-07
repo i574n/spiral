@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -41,12 +41,11 @@ fn spiral_main() -> i32 {
         }
         US0::US0_1(v2, v3) => { // Item
             let mut v2: Rc<str> = v2.clone();
-            let mut v3: i32 = v3.clone();
+            let mut v3: i32 = *v3;
             let mut v4: i32 = (v2.clone().len() as i32);
-            let mut v5: i32 = v4 + v3;
+            let mut v5: i32 = v4.wrapping_add(v3);
             v5
         }
-        _ => unreachable!(),
     };
     let mut v8: US0 = method1(v0.clone());
     let mut v14: i32 = match &v8 {
@@ -55,14 +54,13 @@ fn spiral_main() -> i32 {
         }
         US0::US0_1(v9, v10) => { // Item
             let mut v9: Rc<str> = v9.clone();
-            let mut v10: i32 = v10.clone();
+            let mut v10: i32 = *v10;
             let mut v11: i32 = (v9.clone().len() as i32);
-            let mut v12: i32 = v11 + v10;
+            let mut v12: i32 = v11.wrapping_add(v10);
             v12
         }
-        _ => unreachable!(),
     };
-    let mut v15: i32 = v7 + v14;
+    let mut v15: i32 = v7.wrapping_add(v14);
     v15
 }
 #[cfg(not(target_arch = "wasm32"))]

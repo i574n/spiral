@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)] struct Outcome(i32); impl Outcome { fn json(self) -> i32 { self.0 + 1 } fn borsh(self) -> i32 { self.0 * 2 } }
@@ -7,7 +7,7 @@ fn spiral_main() -> i32 {
     let mut v1: Outcome = Outcome(v0);
     let mut v2: i32 = v1.clone().json();
     let mut v3: i32 = v1.borsh();
-    let mut v4: i32 = v2 + v3;
+    let mut v4: i32 = v2.wrapping_add(v3);
     v4
 }
 #[cfg(not(target_arch = "wasm32"))]

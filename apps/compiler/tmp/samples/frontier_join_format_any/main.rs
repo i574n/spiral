@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -22,7 +22,7 @@ fn method2(mut v0: US0) -> Rc<str> {
             v27.clone()
         }
         US0::US0_0(v1) => { // Some
-            let mut v1: i32 = v1.clone();
+            let mut v1: i32 = *v1;
             let mut v3: Rc<str> = Rc::<str>::from(format!("{:?}", v1));
             let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
             let mut v7: Rc<str> = Rc::<str>::from(format!("{}{}", v3, v6));
@@ -32,7 +32,6 @@ fn method2(mut v0: US0) -> Rc<str> {
             let mut v23: Rc<str> = Rc::<str>::from(format!("{}{}", v22, v11));
             v23.clone()
         }
-        _ => unreachable!(),
     }
 }
 fn method3(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {

@@ -1,5 +1,5 @@
 inl (~!\\) forall t u. ((args : t), (code : string)) : u =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+    $'__spiral_emit_rust !args !code '
 
 // A cell's value that is not an i32 (a tuple, a record, an array: physics' plot data): shown with Rust's Debug on the
 // line the runner reads the value from; a type without Debug (Spiral's unions and records derive only Clone) shows its

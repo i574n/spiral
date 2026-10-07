@@ -408,14 +408,14 @@ module Program =
 #endif
 
 
-    /// The single-flight Rust backend prints `emitRustExpr` as a call and keeps the
+    /// The single-flight Rust backend prints the emit marker (`__spiral_emit_rust`, or its Fable-era spelling) as a call and keeps the
     /// snippet in a separate string binding. Inline the snippet and drop that binding.
     let private rewriteRustEmitExpr (generated : string) =
-        if not (generated.Contains("Fable.Core.RustInterop.emitRustExpr", StringComparison.Ordinal)) then generated
+        if not (generated.Contains("__spiral_emit_rust", StringComparison.Ordinal) || generated.Contains("Fable.Core.RustInterop.emitRustExpr", StringComparison.Ordinal)) then generated
         else
             let lines = generated.Split([|"\r\n"; "\n"|], StringSplitOptions.None)
             let bindingPattern = Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (""(?:\\.|[^""\\])*"");\s*$")
-            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )Fable\.Core\.RustInterop\.emitRustExpr (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+            let emitPattern = Regex(@"^(?<prefix>\s*let mut v[0-9]+: [^=]+ = )(?:__spiral_emit_rust|Fable\.Core\.RustInterop\.emitRustExpr) (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
             let unescape (literal : string) =
                 let body = literal.Substring(1, literal.Length - 2)
                 let text = StringBuilder()
@@ -928,6 +928,67 @@ module Program =
         ()
 #endif
 
+    /// Supervisor's commands (polyglot apps/spiral/Supervisor.fs) and the spiral CLI's `fsharp`, as subcommands of this
+    /// host ("onion commands"), so builds call the compiler directly:
+    ///   build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error]   (Supervisor's `--build-file IN OUT` spelling
+    ///                                                                       too; the backend comes from OUT's extension)
+    ///   fsharp IN.spi [IN.spi ...] [--timeout MS]                         (`--spi-path`/`-s IN` too; writes IN.fsx beside IN)
+    /// Exit code 0 when every file compiled, 5 when one failed (its errors on stderr), 3 on timeout, 2 on bad arguments.
+    let private parseBuildFileArgs (argv : string []) =
+        let positional = ResizeArray<string>()
+        let mutable timeoutMs = 60 * 60 * 1000
+        let mutable exitOnError = false
+        let mutable error = None
+        let mutable i = 1
+        while error.IsNone && i < argv.Length do
+            match argv.[i] with
+            | "--build-file" | "build-file" -> i <- i + 1
+            | "--exit-on-error" -> exitOnError <- true; i <- i + 1
+            | "--timeout" | "--timeout-ms" when i + 1 < argv.Length ->
+                (match Int32.TryParse argv.[i + 1] with
+                 | true, ms when ms > 0 -> timeoutMs <- ms; i <- i + 2
+                 | _ -> error <- Some $"{argv.[i]} must be a positive 32-bit integer")
+            | "--spi-path" | "-s" when i + 1 < argv.Length -> positional.Add argv.[i + 1]; i <- i + 2
+            | x when x.StartsWith "-" -> error <- Some $"unknown option {x}"
+            | x -> positional.Add x; i <- i + 1
+        match error with
+        | Some e -> Error e
+        | None ->
+            try
+                if argv.[0] = "fsharp" then
+                    if positional.Count = 0 then Error "fsharp: no input .spi"
+                    else Ok ([ for x in positional -> "Fsharp", x, Path.ChangeExtension(x, ".fsx") ], timeoutMs, exitOnError)
+                elif positional.Count = 0 || positional.Count % 2 <> 0 then Error "build-file: expected IN OUT pairs"
+                else Ok ([ for k in 0 .. 2 .. positional.Count - 1 -> backendOfOutput positional.[k + 1], positional.[k], positional.[k + 1] ], timeoutMs, exitOnError)
+            with e -> Error e.Message
+
+    let private runBuildFiles (jobs : (string * string * string) list) (timeoutMs : int) (exitOnError : bool) =
+        let mutable result = 5
+        let work () =
+            let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
+            let router = DiagnosticRouter()
+            let revisions = SourceRevisionStore()
+            let cache = CompilationCache(List.length jobs > 1)
+            startDiagnosticPump server.errors router
+            let mutable failed = 0
+            for backend, input, output in jobs do
+                if not (exitOnError && failed > 0) then
+                    match compileOne server.supervisor router revisions cache server.job_val backend input output with
+                    | Ok (bytes, binding, revisionMode) ->
+                        printfn "compiled %s -> %s (%s, %d bytes, entry=%s, revision=%s, pid=%d)" input output backend bytes binding revisionMode Environment.ProcessId
+                    | Error message ->
+                        eprintfn "%s" message
+                        failed <- failed + 1
+            result <- if failed = 0 then 0 else 5
+        let thread = Threading.Thread(Threading.ThreadStart(fun () -> try work () with error -> eprintfn "%s" error.Message), 64 * 1024 * 1024)
+        thread.IsBackground <- true
+        thread.Start()
+        // Hard exit either way: a timed-out compile leaves compiler threads running that would keep the process alive.
+        if thread.Join timeoutMs then exit result
+        else
+            eprintfn "build-file timed out after %d ms" timeoutMs
+            exit 3
+
     [<EntryPoint>]
     let main argv =
         configureHopacFromEnvironment ()
@@ -953,10 +1014,18 @@ module Program =
             let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
             // Hard exit: a timed-out job leaves compiler threads running that would keep the process alive.
             exit (runBatch argv.[1] argv.[2] timeoutMs)
+        elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
+            match parseBuildFileArgs argv with
+            | Ok (jobs, timeoutMs, exitOnError) -> runBuildFiles jobs timeoutMs exitOnError
+            | Error message ->
+                eprintfn "%s" message
+                2
         elif argv.Length = 2 || (argv.Length = 4 && argv.[0] = "--backend") then
             let backend, input, output =
                 if argv.Length = 4 then argv.[1], argv.[2], argv.[3]
                 else backendOfOutput argv.[1], argv.[0], argv.[1]
+            // The harness's and Kino's short names for the two upstream multi-file backends.
+            let backend = match backend with "Cpp" -> "Cpp + Cuda" | "Python" -> "Python + Cuda" | b -> b
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()
             let revisions = SourceRevisionStore()
@@ -975,5 +1044,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi"
+            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
             2

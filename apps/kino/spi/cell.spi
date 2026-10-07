@@ -212,7 +212,7 @@ let rec subst (payload : string) (args : lines) (i : i32) : string =
 
 inl expand (prefix : string) (args : string) (code : string) (known : pairs) : string =
     inl payload = find_pair known code
-    if payload = "" then prefix ++ "Fable.Core.RustInterop.emitRustExpr " ++ args ++ " " ++ code ++ " ;"
+    if payload = "" then prefix ++ "__spiral_emit_rust " ++ args ++ " " ++ code ++ " ;"
     else prefix ++ subst payload (split_args args) 0i32 ++ ";"
 
 inl ends_with_eq (src : string) : bool =
@@ -220,9 +220,11 @@ inl ends_with_eq (src : string) : bool =
     if text.length t = 0i32 then false
     else text.index t (text.length t - 1i32) = '='
 
+// The compiler's emit marker; the spelling before 2026-10-07 (`Fable.Core.RustInterop.emitRustExpr`) is still read.
 inl emit_of (line : string) : string * string * string =
-    inl marker = "Fable.Core.RustInterop.emitRustExpr"
-    inl at = text.find_from line marker 0i32
+    inl new_at = text.find_from line "__spiral_emit_rust" 0i32
+    inl marker = if new_at >= 0i32 then "__spiral_emit_rust" else "Fable.Core.RustInterop.emitRustExpr"
+    inl at = if new_at >= 0i32 then new_at else text.find_from line marker 0i32
     if at < 0i32 then "", "", ""
     else
         inl before = text.take line at

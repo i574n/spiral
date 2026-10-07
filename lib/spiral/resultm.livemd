@@ -238,7 +238,7 @@ Spiral.Kino.eval!(
 
 ### result'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl result'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/result\"\n    }\ntype result'_switch t u =\n    {\n        Gleam : $'Result(`t, `u)'\n        // Lua: the union too (see result'_union)\n        Lua : result t u\n        Fsharp : $'Result<`t, `u>'\n        // native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay\n        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)\n        Python : result t u\n        Rust : $'Result<`t, `u>'\n    }\nnominal result' t u = $'backend_switch `(result'_switch t u)'\n\n// Lua and native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell\n// `Error e` from `Ok e`\ninl result'_union () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => true\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl result'_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl result'_types () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/result\"\n    }\ntype result'_switch t u =\n    {\n        Gleam : $'Result(`t, `u)'\n        // Lua: the union too (see result'_union)\n        Lua : result t u\n        Fsharp : $'Result<`t, `u>'\n        // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay\n        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)\n        Python : result t u\n        Rust : $'Result<`t, `u>'\n    }\nnominal result' t u = $'backend_switch `(result'_switch t u)'\n\n// Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell\n// `Error e` from `Ok e`\ninl result'_union () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => true\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl result'_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -253,14 +253,14 @@ Spiral.Kino.eval!(
           // Lua: the union too (see result'_union)
           Lua : result t u
           Fsharp : $'Result<`t, `u>'
-          // native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
+          // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
           // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
           Python : result t u
           Rust : $'Result<`t, `u>'
       }
   nominal result' t u = $'backend_switch `(result'_switch t u)'
 
-  // Lua and native Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
+  // Lua and Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
   // `Error e` from `Ok e`
   inl result'_union () : bool =
       backend_switch {
@@ -296,13 +296,13 @@ Spiral.Kino.eval!(
 
 ### unbox
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t u. (x : result' t u) : result t u =\n    // native Python: result' already is the union (see result'_switch)\n    if result'_union ()\n    then $'!x ' : result t u\n    else\n        inl ok x : result t u = Ok x\n        inl error x : result t u = Error x\n        inl ok = join ok\n        inl error = join error\n        backend_switch {\n            Gleam = fun () =>\n                $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u\n            Lua = fun () =>\n                $'local resultm_ok = !ok '\n                $'local resultm_error = !error '\n                $'local r = nil'\n                $'if !x ~= nil then'\n                $'    r = resultm_ok(!x)'\n                $'else'\n                $'    r = resultm_error(!x)'\n                $'end'\n                $'r' : result t u\n            Fsharp = fun () =>\n                real\n                    typecase t with\n                    | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u\n                    | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u\n                : result t u\n            // unused (Python takes the branch above); kept so the other backends' output stays unchanged\n            Python = fun () =>\n                $'ok = !ok '\n                $'error = !error '\n                $'r = None'\n                $'if !x is not None:'\n                $'    r = ok(!x)'\n                $'else:'\n                $'    r = error(!x)'\n                $'r' : result t u\n            Rust = fun () =>\n                real\n                    typecase t with\n                    | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u\n                    | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u\n                : result t u\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t u. (x : result' t u) : result t u =\n    // Python: result' already is the union (see result'_switch)\n    if result'_union ()\n    then $'!x ' : result t u\n    else\n        inl ok x : result t u = Ok x\n        inl error x : result t u = Error x\n        inl ok = join ok\n        inl error = join error\n        backend_switch {\n            Gleam = fun () =>\n                $'case !x { Ok(x) -> !ok(x) Error(x) -> !error(x) }' : result t u\n            Lua = fun () =>\n                $'local resultm_ok = !ok '\n                $'local resultm_error = !error '\n                $'local r = nil'\n                $'if !x ~= nil then'\n                $'    r = resultm_ok(!x)'\n                $'else'\n                $'    r = resultm_error(!x)'\n                $'end'\n                $'r' : result t u\n            Fsharp = fun () =>\n                real\n                    typecase t with\n                    | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u\n                    | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u\n                : result t u\n            // unused (Python takes the branch above); kept so the other backends' output stays unchanged\n            Python = fun () =>\n                $'ok = !ok '\n                $'error = !error '\n                $'r = None'\n                $'if !x is not None:'\n                $'    r = ok(!x)'\n                $'else:'\n                $'    r = error(!x)'\n                $'r' : result t u\n            Rust = fun () =>\n                real\n                    typecase t with\n                    | () => $'match !x { Ok(()) => !ok(), Err(e) => !error(e) }' : result t u\n                    | _ => $'match !x { Ok(x) => !ok(x), Err(e) => !error(e) }' : result t u\n                : result t u\n        }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl unbox forall t u. (x : result' t u) : result t u =
-      // native Python: result' already is the union (see result'_switch)
+      // Python: result' already is the union (see result'_switch)
       if result'_union ()
       then $'!x ' : result t u
       else
@@ -353,13 +353,13 @@ Spiral.Kino.eval!(
 
 ### box
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t u. (x : result t u) : result' t u =\n    // native Python: the union value itself (a known case becomes a US constructor call)\n    if result'_union ()\n    then x |> dyn |> fun x => $'!x ' : result' t u\n    else\n        match x with\n        | Ok x =>\n            backend_switch {\n                Gleam = fun () => $'Ok(!x)' : result' t u\n                Lua = fun () => $'!x ' : result' t u\n                Fsharp = fun () => $'Ok !x ' : result' t u\n                // unused (Python takes the branch above); kept so the other backends' output stays unchanged\n                Python = fun () => $'!x ' : result' t u\n                Rust = fun () => $'Ok::<`t, `u>(!x)' : result' t u\n            }\n        | Error err =>\n            backend_switch {\n                Gleam = fun () => $'Error(!err)' : result' t u\n                Lua = fun () => $'!err ' : result' t u\n                Fsharp = fun () => $'Error !err ' : result' t u\n                Python = fun () => $'!err ' : result' t u\n                Rust = fun () => $'Err::<`t, `u>(!err)' : result' t u\n            }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t u. (x : result t u) : result' t u =\n    // Python: the union value itself (a known case becomes a US constructor call)\n    if result'_union ()\n    then x |> dyn |> fun x => $'!x ' : result' t u\n    else\n        match x with\n        | Ok x =>\n            backend_switch {\n                Gleam = fun () => $'Ok(!x)' : result' t u\n                Lua = fun () => $'!x ' : result' t u\n                Fsharp = fun () => $'Ok !x ' : result' t u\n                // unused (Python takes the branch above); kept so the other backends' output stays unchanged\n                Python = fun () => $'!x ' : result' t u\n                Rust = fun () => $'Ok::<`t, `u>(!x)' : result' t u\n            }\n        | Error err =>\n            backend_switch {\n                Gleam = fun () => $'Error(!err)' : result' t u\n                Lua = fun () => $'!err ' : result' t u\n                Fsharp = fun () => $'Error !err ' : result' t u\n                Python = fun () => $'!err ' : result' t u\n                Rust = fun () => $'Err::<`t, `u>(!err)' : result' t u\n            }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl box forall t u. (x : result t u) : result' t u =
-      // native Python: the union value itself (a known case becomes a US constructor call)
+      // Python: the union value itself (a known case becomes a US constructor call)
       if result'_union ()
       then x |> dyn |> fun x => $'!x ' : result' t u
       else
@@ -430,14 +430,14 @@ Spiral.Kino.eval!(
 
 ### anyhow_result
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal anyhow_result t =\n    `(\n        native_type\n            `($'anyhow_Result<`t>')\n            `($'anyhow::Result<`t>')\n            \"type anyhow_Result<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal anyhow_result t =\n    `(\n        rust_type\n            `($'anyhow_Result<`t>')\n            `($'anyhow::Result<`t>')\n            \"type anyhow_Result<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal anyhow_result t =
       `(
-          native_type
+          rust_type
               `($'anyhow_Result<`t>')
               `($'anyhow::Result<`t>')
               "type anyhow_Result<'T> = class end"
@@ -449,14 +449,14 @@ Spiral.Kino.eval!(
 
 ### anyhow_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal anyhow_error =\n    `(\n        native_type\n            `($'anyhow_Error')\n            `($'anyhow::Error')\n            \"type anyhow_Error = class end\"\n    )\n\ninl anyhow_error error : anyhow_error =\n    backend_switch {\n        // Native strings are `Rc<str>` (not Send + Sync): anyhow takes them through a format string.\n        Rust = fun () => !\\\\(error, $'\"anyhow::anyhow\\!(\\\\\\\"{}\\\\\\\", $0)\"') : anyhow_error\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal anyhow_error =\n    `(\n        rust_type\n            `($'anyhow_Error')\n            `($'anyhow::Error')\n            \"type anyhow_Error = class end\"\n    )\n\ninl anyhow_error error : anyhow_error =\n    backend_switch {\n        // Native strings are `Rc<str>` (not Send + Sync): anyhow takes them through a format string.\n        Rust = fun () => !\\\\(error, $'\"anyhow::anyhow\\!(\\\\\\\"{}\\\\\\\", $0)\"') : anyhow_error\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal anyhow_error =
       `(
-          native_type
+          rust_type
               `($'anyhow_Error')
               `($'anyhow::Error')
               "type anyhow_Error = class end"
@@ -474,7 +474,7 @@ Spiral.Kino.eval!(
 
 ### try'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try' forall t u. (x : result' t u) : t =\n    inl is_unit =\n        real\n            typecase t with\n            | () => true\n            | _ => false\n    // native Python has no `?`: an Error raises, as unwrap'' does\n    if result'_union ()\n    then\n        match unbox x with\n        | Ok x => x\n        | Error e =>\n            inl msg : string =\n                if result'_python ()\n                then $'f\"resultm.try\\' / e: {!e}\"'\n                else $'\"resultm.try\\' / e: \" .. tostring(!e)'\n            failwith msg\n    elif is_unit\n    then (!\\\\(x, $'\"true; $0?\"') : bool) |> fun _ => $''\n    else !\\\\(x, $'\"$0?\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try' forall t u. (x : result' t u) : t =\n    inl is_unit =\n        real\n            typecase t with\n            | () => true\n            | _ => false\n    // Python has no `?`: an Error raises, as unwrap'' does\n    if result'_union ()\n    then\n        match unbox x with\n        | Ok x => x\n        | Error e =>\n            inl msg : string =\n                if result'_python ()\n                then $'f\"resultm.try\\' / e: {!e}\"'\n                else $'\"resultm.try\\' / e: \" .. tostring(!e)'\n            failwith msg\n    elif is_unit\n    then (!\\\\(x, $'\"true; $0?\"') : bool) |> fun _ => $''\n    else !\\\\(x, $'\"$0?\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -485,7 +485,7 @@ Spiral.Kino.eval!(
               typecase t with
               | () => true
               | _ => false
-      // native Python has no `?`: an Error raises, as unwrap'' does
+      // Python has no `?`: an Error raises, as unwrap'' does
       if result'_union ()
       then
           match unbox x with
@@ -544,7 +544,7 @@ Spiral.Kino.eval!(
 
 ### unwrap''
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unwrap'' forall t u. (x : result' t u) : t =\n    if result'_union ()\n    then\n        match unbox x with\n        | Ok x => x\n        | Error e =>\n            inl msg : string =\n                if result'_python ()\n                then $'f\"resultm.unwrap\\'\\' / e: {!e}\"'\n                else $'\"resultm.unwrap\\'\\' / e: \" .. tostring(!e)'\n            failwith msg\n    else\n        run_target function\n            | RustNative => fun () => x |> unwrap'\n            | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $\"resultm.unwrap\\'\\' / e: {e}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unwrap'' forall t u. (x : result' t u) : t =\n    if result'_union ()\n    then\n        match unbox x with\n        | Ok x => x\n        | Error e =>\n            inl msg : string =\n                if result'_python ()\n                then $'f\"resultm.unwrap\\'\\' / e: {!e}\"'\n                else $'\"resultm.unwrap\\'\\' / e: \" .. tostring(!e)'\n            failwith msg\n    else\n        run_target function\n            | Rust => fun () => x |> unwrap'\n            | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $\"resultm.unwrap\\'\\' / e: {e}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -562,7 +562,7 @@ Spiral.Kino.eval!(
               failwith msg
       else
           run_target function
-              | RustNative => fun () => x |> unwrap'
+              | Rust => fun () => x |> unwrap'
               | _ => fun () => $'match !x with Ok x -> x | Error e -> failwith $"resultm.unwrap\'\' / e: {e}"'
   """,
   timeout: 300_000
@@ -647,13 +647,13 @@ Spiral.Kino.eval!(
 
 ### map_error'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =\n    if rust.is_native ()\n    then\n        inl fn = join fn\n        !\\\\((source, fn), $'\"$0.map_err(|x| $1(x))\"')\n    else source |> unbox |> map_error fn |> box","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =\n    if is_rust ()\n    then\n        inl fn = join fn\n        !\\\\((source, fn), $'\"$0.map_err(|x| $1(x))\"')\n    else source |> unbox |> map_error fn |> box","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl map_error' forall t e u. (fn : e -> u) (source : result' t e) : result' t u =
-      if rust.is_native ()
+      if is_rust ()
       then
           inl fn = join fn
           !\\((source, fn), $'"$0.map_err(|x| $1(x))"')
@@ -810,13 +810,13 @@ Spiral.Kino.eval!(
 
 ### is_err
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_err forall t u. (x : result' t u) : bool =\n    if rust.is_native ()\n    then !\\\\(x, $'\"$0.is_err()\"')\n    else\n        match unbox x with\n        | Ok _ => false\n        | Error _ => true","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_err forall t u. (x : result' t u) : bool =\n    if is_rust ()\n    then !\\\\(x, $'\"$0.is_err()\"')\n    else\n        match unbox x with\n        | Ok _ => false\n        | Error _ => true","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl is_err forall t u. (x : result' t u) : bool =
-      if rust.is_native ()
+      if is_rust ()
       then !\\(x, $'"$0.is_err()"')
       else
           match unbox x with
@@ -829,13 +829,13 @@ Spiral.Kino.eval!(
 
 ### ok'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ok' forall t. (x : result' t _) : optionm'.option' t =\n    if rust.is_native ()\n    then !\\\\(x, $'\"$0.ok()\"')\n    else x |> unbox |> ok |> optionm'.box","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ok' forall t. (x : result' t _) : optionm'.option' t =\n    if is_rust ()\n    then !\\\\(x, $'\"$0.ok()\"')\n    else x |> unbox |> ok |> optionm'.box","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl ok' forall t. (x : result' t _) : optionm'.option' t =
-      if rust.is_native ()
+      if is_rust ()
       then !\\(x, $'"$0.ok()"')
       else x |> unbox |> ok |> optionm'.box
   """,
@@ -845,13 +845,13 @@ Spiral.Kino.eval!(
 
 ### err
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl err forall t u. (x : u) : result' t u =\n    if rust.is_native ()\n    then !\\\\(x, $'\"Err($0)\"')\n    else (Error x : result t u) |> box","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl err forall t u. (x : u) : result' t u =\n    if is_rust ()\n    then !\\\\(x, $'\"Err($0)\"')\n    else (Error x : result t u) |> box","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl err forall t u. (x : u) : result' t u =
-      if rust.is_native ()
+      if is_rust ()
       then !\\(x, $'"Err($0)"')
       else (Error x : result t u) |> box
   """,
@@ -861,13 +861,13 @@ Spiral.Kino.eval!(
 
 ### ok''
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ok'' forall t u. (x : t) : result' t u =\n    if rust.is_native ()\n    then !\\\\(x, $'\"Ok($0)\"')\n    else (Ok x : result t u) |> box","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ok'' forall t u. (x : t) : result' t u =\n    if is_rust ()\n    then !\\\\(x, $'\"Ok($0)\"')\n    else (Ok x : result t u) |> box","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl ok'' forall t u. (x : t) : result' t u =
-      if rust.is_native ()
+      if is_rust ()
       then !\\(x, $'"Ok($0)"')
       else (Ok x : result t u) |> box
   """,

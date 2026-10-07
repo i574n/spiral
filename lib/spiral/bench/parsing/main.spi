@@ -2,7 +2,7 @@
 /// Entry for every backend: pure-Spiral vs runtime.split_args (the CLI's), plus the FParsec reference (same grammar)
 /// where FParsec exists (F#).
 inl main () =
-    if rust.rust.is_native () then
+    if is_rust () then
         harness.run_all [
             "pure", pure_split.split_args
             "runtime", runtime.split_args

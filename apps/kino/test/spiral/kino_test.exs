@@ -9,7 +9,7 @@ defmodule Spiral.KinoTest do
   fn spiral_main() -> i32 {
       let mut v0: Rc<str> = "{ let mut out = std::io::stdout(); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, $0.as_ref().as_bytes()); let _ = <std::io::Stdout as std::io::Write>::write_all(&mut out, &[10u8]); let _ = <std::io::Stdout as std::io::Write>::flush(&mut out); }";
       let mut v1: Rc<str> = Rc::<str>::from("Hello from Spiral!");
-      Fable.Core.RustInterop.emitRustExpr v1.clone() v0 ;
+      __spiral_emit_rust v1.clone() v0 ;
       49i32
   }
   fn main() {
@@ -61,7 +61,7 @@ defmodule Spiral.KinoTest do
              )
 
     assert stdout =~ "v1.as_ref().as_bytes()"
-    refute stdout =~ "emitRustExpr"
+    refute stdout =~ "__spiral_emit_rust"
   end
 
   test "a unit body is compiled again as 0i32 and has no value" do
@@ -558,5 +558,20 @@ defmodule Spiral.KinoTest do
   test "Kino.Render shows the value" do
     assert %{type: :terminal_text, text: "49"} = Kino.Render.to_livebook(%Result{value: "49"})
     assert %{type: :plain_text, text: "(no value)"} = Kino.Render.to_livebook(%Result{})
+  end
+
+  test "the package fallback root is this spiral checkout; the polyglot_root option still overrides it" do
+    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") || System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") do
+      root = Spiral.Kino.workspace_root()
+      assert File.regular?(Path.join(root, "apps/kino/mix.exs")), root
+    end
+
+    assert Spiral.Kino.workspace_root(polyglot_root: "/x") == "/x"
+    assert Spiral.Kino.workspace_root(workspace_root: "/y", polyglot_root: "/x") == "/y"
+  end
+
+  test "the core package defaults to spiral's fork clone, else polyglot's" do
+    dir = Spiral.Kino.Toolchain.default_package_dir()
+    assert String.ends_with?(dir, "deps/The-Spiral-Language/VS Code Plugin"), dir
   end
 end

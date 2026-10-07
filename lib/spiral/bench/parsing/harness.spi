@@ -162,7 +162,7 @@ inl run_all impls =
     impls
     |> listm.iter fun impl_name, split =>
         let rec 루프 (i : i32) : () =
-            // explicit unit result for the exit branch (see README: native Rust loop codegen)
+            // explicit unit result for the exit branch (see README: Rust loop codegen)
             if i >= n then ()
             else
                 inl case_name, input = cases |> am'.index_base i

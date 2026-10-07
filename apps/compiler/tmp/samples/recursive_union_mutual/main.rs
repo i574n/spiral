@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -44,7 +44,6 @@ fn spiral_main() -> i32 {
         UH0::UH0_1 => { // StopA
             0i32
         }
-        _ => unreachable!(),
     }
 }
 #[cfg(not(target_arch = "wasm32"))]

@@ -324,14 +324,14 @@ Spiral.Kino.eval!(
 
 ### parser_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A failure: the position it happened at and a formatter that gets the text and that position back when the message is\n// needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run\n// time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are\n// discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.\ntype parser_error =\n    {\n        format : string * int * parser_state -> string\n        i : int\n        s : parser_state\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A failure: the position it happened at and a formatter that gets the text and that position back when the message is\n// needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run\n// time: Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are\n// discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.\ntype parser_error =\n    {\n        format : string * int * parser_state -> string\n        i : int\n        s : parser_state\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   // A failure: the position it happened at and a formatter that gets the text and that position back when the message is
   // needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run
-  // time: native Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
+  // time: Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
   // discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.
   type parser_error =
       {
@@ -410,7 +410,7 @@ Spiral.Kino.eval!(
 
 ### slice
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice (start : int) (end : int) (t : string) : string =\n    // An empty range is \"\" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would\n    // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.\n    // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which\n    // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).\n    inl t = dyn t\n    if start >= end then \"\"\n    else\n        t\n        |> sm'.range (am'.Start start) (am'.End fun _ => end)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl slice (start : int) (end : int) (t : string) : string =\n    // An empty range is \"\" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would\n    // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.\n    // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which\n    // is one past the text at its end (Rust's string_slice aborts there; strict results evaluate such slices).\n    inl t = dyn t\n    if start >= end then \"\"\n    else\n        t\n        |> sm'.range (am'.Start start) (am'.End fun _ => end)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -419,7 +419,7 @@ Spiral.Kino.eval!(
       // An empty range is "" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would
       // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.
       // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which
-      // is one past the text at its end (native Rust's string_slice aborts there; strict results evaluate such slices).
+      // is one past the text at its end (Rust's string_slice aborts there; strict results evaluate such slices).
       inl t = dyn t
       if start >= end then ""
       else
@@ -1295,13 +1295,13 @@ Spiral.Kino.eval!(
 
 ### many1_satisfy
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without\n// a parser call and its result thunk per character (one allocation per character on native Rust).\ninl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>\n    let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =\n        if i' >= s'.text_length\n        then i', s''\n        else\n            inl c = t |> sm'.index i'\n            if fn c\n            then 루프 (i' + 1) (c |> update_char s'')\n            else i', s''\n    inl i', s'' = 루프 i s\n    if i' > i\n    then Ok (t |> slice i i', i', s'')\n    else\n        fail (fun _, i, s => \"parsing.many1_satisfy / no matching char / \" ++#? { i s }) i s","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without\n// a parser call and its result thunk per character (one allocation per character on Rust).\ninl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>\n    let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =\n        if i' >= s'.text_length\n        then i', s''\n        else\n            inl c = t |> sm'.index i'\n            if fn c\n            then 루프 (i' + 1) (c |> update_char s'')\n            else i', s''\n    inl i', s'' = 루프 i s\n    if i' > i\n    then Ok (t |> slice i i', i', s'')\n    else\n        fail (fun _, i, s => \"parsing.many1_satisfy / no matching char / \" ++#? { i s }) i s","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   // `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without
-  // a parser call and its result thunk per character (one allocation per character on native Rust).
+  // a parser call and its result thunk per character (one allocation per character on Rust).
   inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
       let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =
           if i' >= s'.text_length
@@ -1502,7 +1502,7 @@ Spiral.Kino.eval!(
 
 ### concat_rev
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_rev (acc : list string) : string =\n    let rec pass (rev : bool) (xs : list string) (out : list string) : list string =\n        match xs with\n        | a :: rest =>\n            match rest with\n            | b :: rest' => pass rev rest' ((if rev then b ++# a else a ++# b) :: out)\n            | [] => a :: out\n        | [] => out\n    let rec 루프 (rev : bool) (xs : list string) : string =\n        match xs with\n        | [] => \"\"\n        | x :: rest =>\n            match rest with\n            | [] => x\n            | _ => 루프 (not rev) (pass rev xs [])\n    if rust.rust.is_native () then\n        match acc with\n        | _ :: _ :: _ :: _ =>\n            // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is\n            // last-first): three allocations instead of a string and a list node per pair and pass.\n            inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x\n            inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\\![0u8; !total as usize]))'\n            inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>\n                inl start = end - ##x\n                $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()\n                start\n            $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string\n        | _ => 루프 true acc\n    else 루프 true acc","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_rev (acc : list string) : string =\n    let rec pass (rev : bool) (xs : list string) (out : list string) : list string =\n        match xs with\n        | a :: rest =>\n            match rest with\n            | b :: rest' => pass rev rest' ((if rev then b ++# a else a ++# b) :: out)\n            | [] => a :: out\n        | [] => out\n    let rec 루프 (rev : bool) (xs : list string) : string =\n        match xs with\n        | [] => \"\"\n        | x :: rest =>\n            match rest with\n            | [] => x\n            | _ => 루프 (not rev) (pass rev xs [])\n    if is_rust () then\n        match acc with\n        | _ :: _ :: _ :: _ =>\n            // Rust: one buffer of the total length, each piece copied to its place from the end (the list is\n            // last-first): three allocations instead of a string and a list node per pair and pass.\n            inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x\n            inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\\![0u8; !total as usize]))'\n            inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>\n                inl start = end - ##x\n                $'!buf.borrow_mut()[!start as usize..!end as usize].copy_from_slice(!x.as_bytes())' : ()\n                start\n            $'unsafe { Rc::<str>::from(std::str::from_utf8_unchecked(&!buf.borrow())) }' : string\n        | _ => 루프 true acc\n    else 루프 true acc","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1522,10 +1522,10 @@ Spiral.Kino.eval!(
               match rest with
               | [] => x
               | _ => 루프 (not rev) (pass rev xs [])
-      if rust.rust.is_native () then
+      if is_rust () then
           match acc with
           | _ :: _ :: _ :: _ =>
-              // Native Rust: one buffer of the total length, each piece copied to its place from the end (the list is
+              // Rust: one buffer of the total length, each piece copied to its place from the end (the list is
               // last-first): three allocations instead of a string and a list node per pair and pass.
               inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x
               inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
@@ -1543,13 +1543,13 @@ Spiral.Kino.eval!(
 
 ### string_of
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it\n// through a string builder: several allocations per element on native Rust).\ninl string_of forall t. (x : t) : string =\n    real\n        match x with\n        | (_ : string) => x\n        | _ => sm'_real.format_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it\n// through a string builder: several allocations per element on Rust).\ninl string_of forall t. (x : t) : string =\n    real\n        match x with\n        | (_ : string) => x\n        | _ => sm'_real.format_real `t x","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   // `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it
-  // through a string builder: several allocations per element on native Rust).
+  // through a string builder: several allocations per element on Rust).
   inl string_of forall t. (x : t) : string =
       real
           match x with
@@ -1612,7 +1612,7 @@ Spiral.Kino.eval!(
 
 ### many_strings
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_strings (p : parser _) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many_strings\" fun () => { t_len = ##t }\n    match p (t, i, s) with\n    | Error _ => Ok (\"\", i, s)\n    | Ok (_, i', _) when i' = i => fail (fun _ => \"parsing.many_strings / first inner parser consumed no text\") i s\n    | Ok (r, i', s') when rust.rust.is_native () =>\n        // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev\n        // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.\n        inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'\n        inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'\n        inl first = string_of r\n        let rec 루프 (n : int) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                inl r = if n = 0 then first else $'Rc::<str>::from(!buf.borrow().as_str())' : string\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' =>\n                if n = 0 then push first\n                push (string_of r')\n                s'' |> 루프 (n + 1) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 0 i'\n    | Ok (r, i', s') =>\n        let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                // one element: the string itself (`++# \"\"` copies it on native Rust)\n                inl r = string_of r\n                inl r =\n                    match acc with\n                    | [] => r\n                    | _ => r ++# (acc |> concat_rev)\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (string_of r' :: acc) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 [] i'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl many_strings (p : parser _) : parser string = fun t, i, s =>\n    trace_entry \"parsing.many_strings\" fun () => { t_len = ##t }\n    match p (t, i, s) with\n    | Error _ => Ok (\"\", i, s)\n    | Ok (_, i', _) when i' = i => fail (fun _ => \"parsing.many_strings / first inner parser consumed no text\") i s\n    | Ok (r, i', s') when is_rust () =>\n        // Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev\n        // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.\n        inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'\n        inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'\n        inl first = string_of r\n        let rec 루프 (n : int) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                inl r = if n = 0 then first else $'Rc::<str>::from(!buf.borrow().as_str())' : string\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' =>\n                if n = 0 then push first\n                push (string_of r')\n                s'' |> 루프 (n + 1) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 0 i'\n    | Ok (r, i', s') =>\n        let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =\n            match p (t, i', s') with\n            | Error _ =>\n                // one element: the string itself (`++# \"\"` copies it on Rust)\n                inl r = string_of r\n                inl r =\n                    match acc with\n                    | [] => r\n                    | _ => r ++# (acc |> concat_rev)\n                Ok (r, i', s')\n            | Ok (r', i'', s'') when i'' > i' => s'' |> 루프 (string_of r' :: acc) i''\n            | Ok _ => fail (fun _ => \"parsing.many_strings / inner parser succeeded without consuming text\") i' s'\n        s' |> 루프 [] i'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1622,8 +1622,8 @@ Spiral.Kino.eval!(
       match p (t, i, s) with
       | Error _ => Ok ("", i, s)
       | Ok (_, i', _) when i' = i => fail (fun _ => "parsing.many_strings / first inner parser consumed no text") i s
-      | Ok (r, i', s') when rust.rust.is_native () =>
-          // Native Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
+      | Ok (r, i', s') when is_rust () =>
+          // Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
           // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.
           inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'
           inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
@@ -1643,7 +1643,7 @@ Spiral.Kino.eval!(
           let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
               match p (t, i', s') with
               | Error _ =>
-                  // one element: the string itself (`++# ""` copies it on native Rust)
+                  // one element: the string itself (`++# ""` copies it on Rust)
                   inl r = string_of r
                   inl r =
                       match acc with
@@ -1660,13 +1660,13 @@ Spiral.Kino.eval!(
 
 ### choice
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per\n// call, which on native Rust cost one allocation per element, list node and the empty list on every call).\ninl choice forall t. (ps : list (parser t)) : parser t =\n    inl none : parser t = fun _, i, s =>\n        fail (fun _ => \"parsing.choice / no parsers succeeded\") i s\n    (ps, none) ||> listm.foldBack (<|>)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per\n// call, which on Rust cost one allocation per element, list node and the empty list on every call).\ninl choice forall t. (ps : list (parser t)) : parser t =\n    inl none : parser t = fun _, i, s =>\n        fail (fun _ => \"parsing.choice / no parsers succeeded\") i s\n    (ps, none) ||> listm.foldBack (<|>)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   // A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per
-  // call, which on native Rust cost one allocation per element, list node and the empty list on every call).
+  // call, which on Rust cost one allocation per element, list node and the empty list on every call).
   inl choice forall t. (ps : list (parser t)) : parser t =
       inl none : parser t = fun _, i, s =>
           fail (fun _ => "parsing.choice / no parsers succeeded") i s

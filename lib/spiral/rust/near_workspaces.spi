@@ -7,7 +7,7 @@ open rust.rust_operators
 /// ### near_token_workspaces
 nominal near_token_workspaces =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_types_NearToken')
             `($'near_workspaces::types::NearToken')
             "type near_workspaces_types_NearToken = class end"
@@ -16,7 +16,7 @@ nominal near_token_workspaces =
 /// ### gas
 nominal gas =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_types_Gas')
             `($'near_workspaces::types::Gas')
             "type near_workspaces_types_Gas = class end"
@@ -25,7 +25,7 @@ nominal gas =
 /// ### near_workspaces_error
 nominal near_workspaces_error =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_error_Error')
             `($'near_workspaces::error::Error')
             "type near_workspaces_error_Error = class end"
@@ -34,7 +34,7 @@ nominal near_workspaces_error =
 /// ### sandbox
 nominal sandbox =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_network_Sandbox')
             `($'near_workspaces::network::Sandbox')
             "type near_workspaces_network_Sandbox = class end"
@@ -43,7 +43,7 @@ nominal sandbox =
 /// ### worker
 nominal worker t =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_Worker<`t>')
             `($'near_workspaces::Worker<`t>')
             "type near_workspaces_Worker<'T> = class end"
@@ -52,7 +52,7 @@ nominal worker t =
 /// ### contract
 nominal contract =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_Contract')
             `($'near_workspaces::Contract')
             "type near_workspaces_Contract = class end"
@@ -61,7 +61,7 @@ nominal contract =
 /// ### call_transaction
 nominal call_transaction =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_operations_CallTransaction')
             `($'near_workspaces::operations::CallTransaction')
             "type near_workspaces_operations_CallTransaction = class end"
@@ -70,7 +70,7 @@ nominal call_transaction =
 /// ### execution_final_result
 nominal execution_final_result =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_result_ExecutionFinalResult')
             `($'near_workspaces::result::ExecutionFinalResult')
             "type near_workspaces_result_ExecutionFinalResult = class end"
@@ -79,7 +79,7 @@ nominal execution_final_result =
 /// ### execution_result
 nominal execution_result t =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_result_ExecutionResult<`t>')
             `($'near_workspaces::result::ExecutionResult<`t>')
             "type near_workspaces_result_ExecutionResult<'T> = class end"
@@ -88,7 +88,7 @@ nominal execution_result t =
 /// ### execution_success
 nominal execution_success =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_result_ExecutionSuccess')
             `($'near_workspaces::result::ExecutionSuccess')
             "type near_workspaces_result_ExecutionSuccess = class end"
@@ -97,7 +97,7 @@ nominal execution_success =
 /// ### execution_failure
 nominal execution_failure =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_result_ExecutionFailure')
             `($'near_workspaces::result::ExecutionFailure')
             "type near_workspaces_result_ExecutionFailure = class end"
@@ -106,7 +106,7 @@ nominal execution_failure =
 /// ### execution_outcome
 nominal execution_outcome =
     `(
-        native_type
+        rust_type
             `($'near_workspaces_result_ExecutionOutcome')
             `($'near_workspaces::result::ExecutionOutcome')
             "type near_workspaces_result_ExecutionOutcome = class end"
@@ -153,12 +153,12 @@ inl receipt_outcomes (result : execution_final_result) : am'.vec execution_outco
 
 /// ### json
 inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
-    inl result = result |> rust.clone_native
+    inl result = result |> rust.clone_rust
     !\\(result, $'"$0.json()"')
 
 /// ### borsh
 inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
-    inl result = result |> rust.clone_native
+    inl result = result |> rust.clone_rust
     !\\(result, $'"$0.borsh()"')
 
 /// ### total_gas_burnt

@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -233,7 +233,6 @@ fn method0(mut v0: Rc<UH0>) -> Rc<UH1> {
         UH0::UH0_0 => { // SymbolListNil
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method2(mut v0: Rc<UH1>, mut v1: Rc<UH1>) -> Rc<UH1> {
@@ -247,7 +246,6 @@ fn method2(mut v0: Rc<UH1>, mut v1: Rc<UH1>) -> Rc<UH1> {
         UH1::UH1_0 => { // InputListNil
             v1.clone()
         }
-        _ => unreachable!(),
     }
 }
 fn method3(mut v0: US0, mut v1: Rc<UH1>) -> Rc<UH1> {
@@ -262,7 +260,6 @@ fn method3(mut v0: US0, mut v1: Rc<UH1>) -> Rc<UH1> {
         UH1::UH1_0 => { // InputListNil
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method1(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> Rc<UH1> {
@@ -277,7 +274,6 @@ fn method1(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> Rc<UH1> {
         UH0::UH0_0 => { // SymbolListNil
             { thread_local!{ static CASE: Rc<UH1> = Rc::new(UH1::UH1_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method4(mut v0: Rc<UH3>) -> Rc<UH4> {
@@ -293,7 +289,6 @@ fn method4(mut v0: Rc<UH3>) -> Rc<UH4> {
         UH3::UH3_0 => { // SymbolListNil
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method6(mut v0: Rc<UH4>, mut v1: Rc<UH4>) -> Rc<UH4> {
@@ -307,7 +302,6 @@ fn method6(mut v0: Rc<UH4>, mut v1: Rc<UH4>) -> Rc<UH4> {
         UH4::UH4_0 => { // InputListNil
             v1.clone()
         }
-        _ => unreachable!(),
     }
 }
 fn method7(mut v0: US1, mut v1: Rc<UH4>) -> Rc<UH4> {
@@ -322,7 +316,6 @@ fn method7(mut v0: US1, mut v1: Rc<UH4>) -> Rc<UH4> {
         UH4::UH4_0 => { // InputListNil
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method5(mut v0: Rc<UH3>, mut v1: Rc<UH4>) -> Rc<UH4> {
@@ -337,7 +330,6 @@ fn method5(mut v0: Rc<UH3>, mut v1: Rc<UH4>) -> Rc<UH4> {
         UH3::UH3_0 => { // SymbolListNil
             { thread_local!{ static CASE: Rc<UH4> = Rc::new(UH4::UH4_0); } CASE.with(|case| case.clone()) }
         }
-        _ => unreachable!(),
     }
 }
 fn method9(mut v0: i32, mut v1: Rc<UH2>) -> US3 {
@@ -353,7 +345,6 @@ fn method9(mut v0: i32, mut v1: Rc<UH2>) -> US3 {
                     US0::US0_0 => { // BitZero
                         US4::US4_1
                     }
-                    _ => unreachable!(),
                 };
                 let mut v12: bool = match &v11 {
                     US4::US4_1 => { // SymbolSame
@@ -373,7 +364,6 @@ fn method9(mut v0: i32, mut v1: Rc<UH2>) -> US3 {
                         US0::US0_0 => { // BitZero
                             US4::US4_0
                         }
-                        _ => unreachable!(),
                     };
                     let mut v17: bool = match &v16 {
                         US4::US4_1 => { // SymbolSame
@@ -421,7 +411,6 @@ fn method9(mut v0: i32, mut v1: Rc<UH2>) -> US3 {
                     return US3::US3_1;
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -498,7 +487,6 @@ fn method15(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> US4 {
                                     US0::US0_0 => { // BitZero
                                         return US4::US4_2;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -509,10 +497,8 @@ fn method15(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> US4 {
                                     US0::US0_0 => { // BitZero
                                         return US4::US4_1;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         }
                     }
                     UH7::UH7_0 => { // RegexEmpty
@@ -567,7 +553,6 @@ fn method15(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> US4 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -588,7 +573,6 @@ fn method14(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> Rc<UH7> {
                 US4::US4_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH7::UH7_0 => { // RegexEmpty
@@ -606,7 +590,6 @@ fn method14(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> Rc<UH7> {
                 US4::US4_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -687,7 +670,6 @@ fn method17(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US4::US4_2
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -698,10 +680,8 @@ fn method17(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US4::US4_1
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         };
                         match &v15 {
                             US4::US4_1 => { // SymbolSame
@@ -750,7 +730,6 @@ fn method17(mut v0: Rc<UH7>, mut v1: Rc<UH7>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -860,7 +839,6 @@ fn method12(mut v0: Rc<UH7>) -> Rc<UH7> {
             let mut v16: Rc<UH7> = method12(v15.clone());
             method18(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method20(mut v0: Rc<UH7>) -> US5 {
@@ -931,7 +909,6 @@ fn method20(mut v0: Rc<UH7>) -> US5 {
             let mut v25: Rc<UH7> = v25.clone();
             US5::US5_0
         }
-        _ => unreachable!(),
     }
 }
 fn method19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
@@ -958,7 +935,6 @@ fn method19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
                     let mut v29: Rc<UH7> = method19(v25.clone(), v1.clone());
                     method13(v28.clone(), v29.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH7::UH7_2(v4) => { // RegexChar
@@ -972,7 +948,6 @@ fn method19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
                         US0::US0_0 => { // BitZero
                             US4::US4_2
                         }
-                        _ => unreachable!(),
                     }
                 }
                 US0::US0_0 => { // BitZero
@@ -983,10 +958,8 @@ fn method19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
                         US0::US0_0 => { // BitZero
                             US4::US4_1
                         }
-                        _ => unreachable!(),
                     }
                 }
-                _ => unreachable!(),
             };
             let mut v15: bool = match &v14 {
                 US4::US4_1 => { // SymbolSame
@@ -1014,7 +987,6 @@ fn method19(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
             let mut v37: Rc<UH7> = method18(v35.clone());
             method16(v36.clone(), v37.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method11(mut v0: Rc<UH7>, mut v1: US0) -> Rc<UH7> {
@@ -1042,10 +1014,8 @@ fn method10(mut v0: Rc<UH7>, mut v1: Rc<UH2>) -> bool {
                     US5::US5_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1069,7 +1039,6 @@ fn method8(mut v0: Rc<UH7>, mut v1: Rc<UH1>) -> bool {
                         let mut v8: bool = v7 == false;
                         v8
                     }
-                    _ => unreachable!(),
                 };
                 if v11 {
                     (v0, v1) = (v0.clone(), v3.clone());
@@ -1081,7 +1050,6 @@ fn method8(mut v0: Rc<UH7>, mut v1: Rc<UH1>) -> bool {
             UH1::UH1_0 => { // InputListNil
                 return true;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1120,7 +1088,6 @@ fn method22(mut v0: i32, mut v1: Rc<UH5>) -> US3 {
                         US1::US1_2 => { // TriC
                             US4::US4_2
                         }
-                        _ => unreachable!(),
                     };
                     let mut v20: bool = match &v19 {
                         US4::US4_1 => { // SymbolSame
@@ -1143,7 +1110,6 @@ fn method22(mut v0: i32, mut v1: Rc<UH5>) -> US3 {
                             US1::US1_2 => { // TriC
                                 US4::US4_1
                             }
-                            _ => unreachable!(),
                         };
                         let mut v27: bool = match &v26 {
                             US4::US4_1 => { // SymbolSame
@@ -1215,7 +1181,6 @@ fn method22(mut v0: i32, mut v1: Rc<UH5>) -> US3 {
                     return US3::US3_1;
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1382,7 +1347,6 @@ fn method28(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> US4 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1403,7 +1367,6 @@ fn method27(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> Rc<UH8> {
                 US4::US4_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH8::UH8_0 => { // RegexEmpty
@@ -1421,7 +1384,6 @@ fn method27(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> Rc<UH8> {
                 US4::US4_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -1586,7 +1548,6 @@ fn method30(mut v0: Rc<UH8>, mut v1: Rc<UH8>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1696,7 +1657,6 @@ fn method25(mut v0: Rc<UH8>) -> Rc<UH8> {
             let mut v16: Rc<UH8> = method25(v15.clone());
             method31(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method33(mut v0: Rc<UH8>) -> US5 {
@@ -1767,7 +1727,6 @@ fn method33(mut v0: Rc<UH8>) -> US5 {
             let mut v25: Rc<UH8> = v25.clone();
             US5::US5_0
         }
-        _ => unreachable!(),
     }
 }
 fn method32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
@@ -1794,7 +1753,6 @@ fn method32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
                     let mut v35: Rc<UH8> = method32(v31.clone(), v1.clone());
                     method26(v34.clone(), v35.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH8::UH8_2(v4) => { // RegexChar
@@ -1871,7 +1829,6 @@ fn method32(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
             let mut v43: Rc<UH8> = method31(v41.clone());
             method29(v42.clone(), v43.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method24(mut v0: Rc<UH8>, mut v1: US1) -> Rc<UH8> {
@@ -1899,10 +1856,8 @@ fn method23(mut v0: Rc<UH8>, mut v1: Rc<UH5>) -> bool {
                     US5::US5_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1926,7 +1881,6 @@ fn method21(mut v0: Rc<UH8>, mut v1: Rc<UH4>) -> bool {
                         let mut v8: bool = v7 == false;
                         v8
                     }
-                    _ => unreachable!(),
                 };
                 if v11 {
                     (v0, v1) = (v0.clone(), v3.clone());
@@ -1938,7 +1892,6 @@ fn method21(mut v0: Rc<UH8>, mut v1: Rc<UH4>) -> bool {
             UH4::UH4_0 => { // InputListNil
                 return true;
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1977,7 +1930,6 @@ fn method34(mut v0: i32, mut v1: Rc<UH6>) -> US3 {
                         US2::US2_2 => { // ModelC
                             US4::US4_2
                         }
-                        _ => unreachable!(),
                     };
                     let mut v19: bool = match &v18 {
                         US4::US4_1 => { // SymbolSame
@@ -2022,7 +1974,6 @@ fn method34(mut v0: i32, mut v1: Rc<UH6>) -> US3 {
                     return US3::US3_1;
                 }
             }
-            _ => unreachable!(),
         }
     }
 }

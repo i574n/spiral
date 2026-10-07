@@ -7,7 +7,7 @@
 
 nominal std_string_real =
     `(
-        native_type
+        rust_type
             `($'std_string_String')
             `($'std::string::String')
             "type std_string_String = string"
@@ -22,7 +22,7 @@ nominal std_string_real =
 
 inl from_std_string_real (str : std_string_real) : string =
     open rust
-    rust.emit_expr `std_string_real `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
+    rust.emit_expr `std_string_real `string str ($'"Rc::<str>::from($0)"' : string)
 
 /// ### from_std_string
 
@@ -340,11 +340,10 @@ inl obj_to_string_rust_real forall t. (x : t) : string =
 
 inl format_pretty_real forall t. (x : t) : string =
     run_target_args `string `t (fun () => x) function
-        | RustNative => fun x =>
+        | Rust => fun x =>
             // A Spiral union prints structurally (format_debug_real: codegenRust's unions derive only `Clone`, so `{:#?}`
             // doesn't compile for them), and so does an array/list'/seq'/option' of anything but primitives and a tuple
-            // with such an element at any depth (their elements may be unions); anything else through `{:#?}`, as the
-            // Fable arm.
+            // with such an element at any depth (their elements may be unions); anything else through `{:#?}`.
             inl rec structural forall u. () : bool =
                 typecase u with
                 | optionm'.option' ~a => if real_core.prim_type_is `a then false else true

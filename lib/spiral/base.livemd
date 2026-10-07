@@ -47,7 +47,7 @@ Spiral.Kino.eval!(
 
 ### use
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use forall t. (x : t) : t =\n    backend_switch {\n        Gleam = fun () => $'use !x = !x ' : ()\n        Lua = fun () => $'use !x = !x ' : ()\n        Fsharp = fun () => $'use !x = !x ' : ()\n        Python = fun () => $'use !x = !x ' : ()\n        Cpp = fun () => $'use !x = !x ' : ()\n        TypeScript = fun () => $'use !x = !x ' : ()\n        // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.\n        Rust = fun () =>\n            global \"struct SpiralUse(std::rc::Rc<dyn Fn()>);\\nimpl Drop for SpiralUse {\\n    fn drop(&mut self) { (self.0)() }\\n}\"\n            $'let _spiral_use = SpiralUse((!x).clone())' : ()\n    }\n    $'!x '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use forall t. (x : t) : t =\n    backend_switch {\n        Gleam = fun () => $'use !x = !x ' : ()\n        Lua = fun () => $'use !x = !x ' : ()\n        Fsharp = fun () => $'use !x = !x ' : ()\n        Python = fun () => $'use !x = !x ' : ()\n        Cpp = fun () => $'use !x = !x ' : ()\n        TypeScript = fun () => $'use !x = !x ' : ()\n        // Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.\n        Rust = fun () =>\n            global \"struct SpiralUse(std::rc::Rc<dyn Fn()>);\\nimpl Drop for SpiralUse {\\n    fn drop(&mut self) { (self.0)() }\\n}\"\n            $'let _spiral_use = SpiralUse((!x).clone())' : ()\n    }\n    $'!x '","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -60,7 +60,7 @@ Spiral.Kino.eval!(
           Python = fun () => $'use !x = !x ' : ()
           Cpp = fun () => $'use !x = !x ' : ()
           TypeScript = fun () => $'use !x = !x ' : ()
-          // Native Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
+          // Rust: F#'s `use` disposes at the end of the scope; a Drop guard over the disposable's closure.
           Rust = fun () =>
               global "struct SpiralUse(std::rc::Rc<dyn Fn()>);\nimpl Drop for SpiralUse {\n    fn drop(&mut self) { (self.0)() }\n}"
               $'let _spiral_use = SpiralUse((!x).clone())' : ()
@@ -86,7 +86,7 @@ Spiral.Kino.eval!(
 
 ### run_target (test)
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nrun_target function\n    | Gleam => fun () => $'1 + 1'\n    | Lua => fun () => $'1 + 1'\n    | Fsharp => fun () => $'1uy + 1uy'\n    | Cuda => fun () => $'1 + 1'\n    | Rust (None) => fun () => $'1uy + 1uy'\n    | RustNative => fun () => $'1u8 + 1u8'\n    | TypeScript => fun () => $'1uy + 1uy'\n    | _ => fun () => $'2uy + 2uy'\n|> _assert_eq 2u8","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\nrun_target function\n    | Gleam => fun () => $'1 + 1'\n    | Lua => fun () => $'1 + 1'\n    | Fsharp => fun () => $'1uy + 1uy'\n    | Cuda => fun () => $'1 + 1'\n    | Rust (None) => fun () => $'1uy + 1uy'\n    | Rust => fun () => $'1u8 + 1u8'\n    | TypeScript => fun () => $'1uy + 1uy'\n    | _ => fun () => $'2uy + 2uy'\n|> _assert_eq 2u8","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -105,7 +105,7 @@ Spiral.Kino.eval!(
       | Fsharp => fun () => $'1uy + 1uy'
       | Cuda => fun () => $'1 + 1'
       | Rust (None) => fun () => $'1uy + 1uy'
-      | RustNative => fun () => $'1u8 + 1u8'
+      | Rust => fun () => $'1u8 + 1u8'
       | TypeScript => fun () => $'1uy + 1uy'
       | _ => fun () => $'2uy + 2uy'
   |> _assert_eq 2u8
@@ -1034,12 +1034,12 @@ Spiral.Kino.eval!(
 
 ### choice2'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.\ntype choice2_switch a b =\n    {\n        Gleam : $'Choice<`a, `b>'\n        Lua : $'Choice<`a, `b>'\n        Fsharp : $'Choice<`a, `b>'\n        Python : $'Choice<`a, `b>'\n        Rust : $'Result<`a, `b>'\n    }\nnominal choice2' a b = $'backend_switch `(choice2_switch a b)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.\ntype choice2_switch a b =\n    {\n        Gleam : $'Choice<`a, `b>'\n        Lua : $'Choice<`a, `b>'\n        Fsharp : $'Choice<`a, `b>'\n        Python : $'Choice<`a, `b>'\n        Rust : $'Result<`a, `b>'\n    }\nnominal choice2' a b = $'backend_switch `(choice2_switch a b)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Native Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
+  // Rust: `Result` (Choice1Of2 = Ok, Choice2Of2 = Err), the shape async.catch' produces.
   type choice2_switch a b =
       {
           Gleam : $'Choice<`a, `b>'
@@ -1056,7 +1056,7 @@ Spiral.Kino.eval!(
 
 ### choice2_unbox
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =\n    run_target_args (fun () => choice) function\n        | Fsharp _ => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'\n        | RustNative => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl choice2_unbox forall t1 t2. (choice : choice2' t1 t2) : choice2 t1 t2 =\n    run_target_args (fun () => choice) function\n        | Fsharp _ => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'\n        | Rust => fun choice =>\n            inl c1of2 (x : t1) : _ _ t2 = C1of2 x\n            inl c2of2 (x : t2) : _ t1 _ = C2of2 x\n            inl c1of2 = join c1of2\n            inl c2of2 = join c2of2\n            $'match !choice { Ok(x) => (!c1of2)(x), Err(x) => (!c2of2)(x) }'\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1069,7 +1069,7 @@ Spiral.Kino.eval!(
               inl c1of2 = join c1of2
               inl c2of2 = join c2of2
               $'match !choice with Choice1Of2 x -> !c1of2 x | Choice2Of2 x -> !c2of2 x'
-          | RustNative => fun choice =>
+          | Rust => fun choice =>
               inl c1of2 (x : t1) : _ _ t2 = C1of2 x
               inl c2of2 (x : t2) : _ t1 _ = C2of2 x
               inl c1of2 = join c1of2
@@ -1164,17 +1164,17 @@ Spiral.Kino.eval!(
 
 ### try
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)\n// goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints\n// nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local\n// counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and\n// there the hook always reports (it is the only report before the abort).\ninl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    $'{ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\"))) } }' : t\n\ninl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =\n    inl some x : option t = Some x\n    inl some = dyn some\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    backend_switch {\n        Gleam = fun () =>\n            fn () |> some\n        Lua = fun () =>\n            fn () |> some\n        Fsharp = fun () =>\n            $'let result = ref !(None : option t)'\n            $'try'\n            $'    result.Value <- !fn () |> !some '\n            $'with ex ->'\n            $'    result.Value <- !ex_fn ex '\n            $'result.Value' : option t\n        Python = fun () =>\n            $'result = !(None : option t)'\n            inl fn = dyn fn\n            inl ex_fn = dyn ex_fn\n            $'try:'\n            $'    result = !some(!fn())\\n        \\'\\'\\''\n            $'\\'\\'\\''\n            $'except Exception as e:'\n            $'    result = !ex_fn(e)'\n            $'result' : option t\n        // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).\n        Rust = fun () =>\n            catch_unwind_native (fun () => some (fn ())) ex_fn\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)\n// goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints\n// nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local\n// counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and\n// there the hook always reports (it is the only report before the abort).\ninl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    $'{ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\"))) } }' : t\n\ninl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =\n    inl some x : option t = Some x\n    inl some = dyn some\n    inl fn = dyn fn\n    inl ex_fn = dyn ex_fn\n    backend_switch {\n        Gleam = fun () =>\n            fn () |> some\n        Lua = fun () =>\n            fn () |> some\n        Fsharp = fun () =>\n            $'let result = ref !(None : option t)'\n            $'try'\n            $'    result.Value <- !fn () |> !some '\n            $'with ex ->'\n            $'    result.Value <- !ex_fn ex '\n            $'result.Value' : option t\n        Python = fun () =>\n            $'result = !(None : option t)'\n            inl fn = dyn fn\n            inl ex_fn = dyn ex_fn\n            $'try:'\n            $'    result = !some(!fn())\\n        \\'\\'\\''\n            $'\\'\\'\\''\n            $'except Exception as e:'\n            $'    result = !ex_fn(e)'\n            $'result' : option t\n        // Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).\n        Rust = fun () =>\n            catch_unwind_rust (fun () => some (fn ())) ex_fn\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Native Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
+  // Rust only: runs `fn` under `catch_unwind`; a panic (the native exception: failwith panics with its message)
   // goes to `ex_fn` as its message. While `fn` runs, this thread's panic reports are suppressed (F#'s try ... with prints
   // nothing): the call site installs, once, a panic hook that defers to the previous one unless its thread-local
   // counter is set, so nested and concurrent sites compose. A panic=abort build (wasm32, contracts) aborts instead, and
   // there the hook always reports (it is the only report before the abort).
-  inl catch_unwind_native forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
+  inl catch_unwind_rust forall t. (fn : () -> t) (ex_fn : exn -> t) : t =
       inl fn = dyn fn
       inl ex_fn = dyn ex_fn
       $'{ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(x) => x, Err(e) => (!ex_fn)(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic"))) } }' : t
@@ -1206,16 +1206,16 @@ Spiral.Kino.eval!(
               $'except Exception as e:'
               $'    result = !ex_fn(e)'
               $'result' : option t
-          // Native Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
+          // Rust: a panic is the exception (caught where unwinding is on; a panic=abort build aborts).
           Rust = fun () =>
-              catch_unwind_native (fun () => some (fn ())) ex_fn
+              catch_unwind_rust (fun () => some (fn ())) ex_fn
       }
   """,
   timeout: 300_000
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntry\n    fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format\n    (fun ex => $'!ex ' |> sm'.format_exception |> Some)\n|> optionm.value\n|> _assert_eq (run_target function\n    | Gleam => fun () => null ()\n    | Lua => fun () => null ()\n    | Fsharp => fun () => join \"System.IndexOutOfRangeException: Index was outside the bounds of the array.\"\n    | Cuda => fun () => \"index 1 is out of bounds for axis 0 with size 1\"\n    | Cpp => fun () => null ()\n    | Rust => fun () => \"Exception { message: \\\"index out of bounds: the len is 1 but the index is 1\\\" }\"\n    | RustNative => fun () => \"index out of bounds: the len is 1 but the index is 1\"\n    | TypeScript => fun () => \"Error: Index was outside the bounds of the array.\\\\nParameter name: index\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\ntry\n    fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format\n    (fun ex => $'!ex ' |> sm'.format_exception |> Some)\n|> optionm.value\n|> _assert_eq (run_target function\n    | Gleam => fun () => null ()\n    | Lua => fun () => null ()\n    | Fsharp => fun () => join \"System.IndexOutOfRangeException: Index was outside the bounds of the array.\"\n    | Cuda => fun () => \"index 1 is out of bounds for axis 0 with size 1\"\n    | Cpp => fun () => null ()\n    | Rust => fun () => \"Exception { message: \\\"index out of bounds: the len is 1 but the index is 1\\\" }\"\n    | Rust => fun () => \"index out of bounds: the len is 1 but the index is 1\"\n    | TypeScript => fun () => \"Error: Index was outside the bounds of the array.\\\\nParameter name: index\"\n)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1237,7 +1237,7 @@ Spiral.Kino.eval!(
       | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
       | Cpp => fun () => null ()
       | Rust => fun () => "Exception { message: \"index out of bounds: the len is 1 but the index is 1\" }"
-      | RustNative => fun () => "index out of bounds: the len is 1 but the index is 1"
+      | Rust => fun () => "index out of bounds: the len is 1 but the index is 1"
       | TypeScript => fun () => "Error: Index was outside the bounds of the array.\\nParameter name: index"
   )
   """,
@@ -1269,7 +1269,7 @@ Spiral.Kino.eval!(
 
 ### try_unit
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// F# and Python: try_unit / try_finally as one-line try statements over the closures\ninl try_unit_fsharp_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => true\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: a panic is the exception (catch_unwind_native).\n        catch_unwind_native fn (fun ex => ex_fn fun () => ex)\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl ex_fn = dyn ex_fn\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()\n                $'()' : t\n            // (a helper def: the Python codegen puts `del` lines after a variable's last use, which would split a\n            // try/except written inline)\n            Python = fun () =>\n                global \"def _spiral_try_unit(fn, ex_fn):\\n    try: fn()\\n    except Exception as ex: ex_fn(lambda: ex)\"\n                $'_spiral_try_unit(!fn, !ex_fn)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'with ex ->' : ()\n            Python = fun () => $'except Exception as ex:' : ()\n        }\n        fun () =>\n            inl ex = $'ex'\n            backend_switch {\n                Fsharp = fun () => $'()' : ()\n            }\n            inl ex () =\n                ex\n            ex_fn ex\n        |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () =>\n                $'|> ignore'\n                $'(* try_unit'\n                $'try_unit *)' : t\n            Python = fun () => $'None' : t\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// F# and Python: try_unit / try_finally as one-line try statements over the closures\ninl try_unit_fsharp_python () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => true\n        Python = fun () => true\n        TypeScript = fun () => false\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }\n\ninl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =\n    if is_rust ()\n    then\n        // Rust: a panic is the exception (catch_unwind_rust).\n        catch_unwind_rust fn (fun ex => ex_fn fun () => ex)\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl ex_fn = dyn ex_fn\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () with ex -> !ex_fn (fun () -> ex)' : ()\n                $'()' : t\n            // (a helper def: the Python codegen puts `del` lines after a variable's last use, which would split a\n            // try/except written inline)\n            Python = fun () =>\n                global \"def _spiral_try_unit(fn, ex_fn):\\n    try: fn()\\n    except Exception as ex: ex_fn(lambda: ex)\"\n                $'_spiral_try_unit(!fn, !ex_fn)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () => $'with ex ->' : ()\n            Python = fun () => $'except Exception as ex:' : ()\n        }\n        fun () =>\n            inl ex = $'ex'\n            backend_switch {\n                Fsharp = fun () => $'()' : ()\n            }\n            inl ex () =\n                ex\n            ex_fn ex\n        |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_unit' : ()\n            Lua = fun () => $'-- base.try_unit' : ()\n            Fsharp = fun () =>\n                $'|> ignore'\n                $'(* try_unit'\n                $'try_unit *)' : t\n            Python = fun () => $'None' : t\n        }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1290,23 +1290,10 @@ Spiral.Kino.eval!(
       }
 
   inl try_unit forall t. (fn : () -> ()) (ex_fn : (() -> exn) -> ()) : t =
-      inl native =
-          backend_switch {
-              Gleam = fun () => false
-              Lua = fun () => false
-              Fsharp = fun () => false
-              Python = fun () => false
-              TypeScript = fun () => false
-              Cpp = fun () => false
-              CppHost = fun () => false
-              Delphi = fun () => false
-              Cuda = fun () => false
-              Rust = fun () => true
-          }
-      if native
+      if is_rust ()
       then
-          // Native Rust: a panic is the exception (catch_unwind_native).
-          catch_unwind_native fn (fun ex => ex_fn fun () => ex)
+          // Rust: a panic is the exception (catch_unwind_rust).
+          catch_unwind_rust fn (fun ex => ex_fn fun () => ex)
           $'()' : t
       elif try_unit_fsharp_python ()
       then
@@ -1376,28 +1363,15 @@ Spiral.Kino.eval!(
 
 ### try_finally
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.\n        inl fn = dyn fn\n        inl finally = dyn finally\n        $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl finally = dyn finally\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () finally !finally ()' : ()\n                $'()' : t\n            Python = fun () =>\n                global \"def _spiral_try_finally(fn, finally_fn):\\n    try: fn()\\n    finally: finally_fn()\"\n                $'_spiral_try_finally(!fn, !finally)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'finally' : ()\n            Python = fun () => $'finally:' : ()\n        }\n        finally |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () =>\n                $'(* try_finally'\n                $'try_finally *)'\n                ()\n            Python = fun () => $'// base.try_finally' : ()\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =\n    if is_rust ()\n    then\n        // Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.\n        inl fn = dyn fn\n        inl finally = dyn finally\n        $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()\n        $'()' : t\n    elif try_unit_fsharp_python ()\n    then\n        inl fn = dyn fn\n        inl finally = dyn finally\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn () finally !finally ()' : ()\n                $'()' : t\n            Python = fun () =>\n                global \"def _spiral_try_finally(fn, finally_fn):\\n    try: fn()\\n    finally: finally_fn()\"\n                $'_spiral_try_finally(!fn, !finally)' : ()\n                $'None' : t\n        }\n    else\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'try' : ()\n            Python = fun () => $'try:' : ()\n        }\n        fn |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () => $'finally' : ()\n            Python = fun () => $'finally:' : ()\n        }\n        finally |> indent\n        backend_switch {\n            Gleam = fun () => $'// base.try_finally' : ()\n            Lua = fun () => $'-- base.try_finally' : ()\n            Fsharp = fun () =>\n                $'(* try_finally'\n                $'try_finally *)'\n                ()\n            Python = fun () => $'// base.try_finally' : ()\n        }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl try_finally forall t. (fn : () -> ()) (finally : () -> ()) : t =
-      inl native =
-          backend_switch {
-              Gleam = fun () => false
-              Lua = fun () => false
-              Fsharp = fun () => false
-              Python = fun () => false
-              TypeScript = fun () => false
-              Cpp = fun () => false
-              CppHost = fun () => false
-              Delphi = fun () => false
-              Cuda = fun () => false
-              Rust = fun () => true
-          }
-      if native
+      if is_rust ()
       then
-          // Native Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
+          // Rust: `finally` runs after `fn` returns or panics; the panic then continues unwinding.
           inl fn = dyn fn
           inl finally = dyn finally
           $'{ let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| (!fn)())); (!finally)(); if let Err(e) = r { std::panic::resume_unwind(e) } }' : ()

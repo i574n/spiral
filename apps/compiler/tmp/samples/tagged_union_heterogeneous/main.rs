@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -17,7 +17,7 @@ impl US0 {
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_1(v2) => { // Flag
-            let mut v2: bool = v2.clone();
+            let mut v2: bool = *v2;
             if v2 {
                 9i32
             } else {
@@ -25,10 +25,9 @@ fn method0(mut v0: US0) -> i32 {
             }
         }
         US0::US0_0(v1) => { // Hit
-            let mut v1: i32 = v1.clone();
+            let mut v1: i32 = *v1;
             v1
         }
-        _ => unreachable!(),
     }
 }
 fn spiral_main() -> i32 {
@@ -39,7 +38,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(true)
     };
     let mut v4: i32 = method0(v3.clone());
-    let mut v5: i32 = v4 - 9i32;
+    let mut v5: i32 = v4.wrapping_sub(9i32);
     v5
 }
 #[cfg(not(target_arch = "wasm32"))]

@@ -31,14 +31,14 @@ Spiral.Kino.eval!(
 
 ### reqwest_response
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_response =\n    `(\n        native_type\n            `($'reqwest_Response')\n            `($'reqwest_wasm::Response')\n            \"type reqwest_Response = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_response =\n    `(\n        rust_type\n            `($'reqwest_Response')\n            `($'reqwest_wasm::Response')\n            \"type reqwest_Response = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal reqwest_response =
       `(
-          native_type
+          rust_type
               `($'reqwest_Response')
               `($'reqwest_wasm::Response')
               "type reqwest_Response = class end"
@@ -50,14 +50,14 @@ Spiral.Kino.eval!(
 
 ### reqwest_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_error =\n    `(\n        native_type\n            `($'reqwest_Error')\n            `($'reqwest_wasm::Error')\n            \"type reqwest_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal reqwest_error =\n    `(\n        rust_type\n            `($'reqwest_Error')\n            `($'reqwest_wasm::Error')\n            \"type reqwest_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal reqwest_error =
       `(
-          native_type
+          rust_type
               `($'reqwest_Error')
               `($'reqwest_wasm::Error')
               "type reqwest_Error = class end"
@@ -69,13 +69,13 @@ Spiral.Kino.eval!(
 
 ### request_builder
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;\n// the other backends keep the Fable alias (declared by the global below, as before)\ntype request_builder_switch =\n    {\n        Gleam : $'reqwest_RequestBuilder'\n        Lua : $'reqwest_RequestBuilder'\n        Fsharp : $'reqwest_RequestBuilder'\n        Python : $'reqwest_RequestBuilder'\n        TypeScript : $'reqwest_RequestBuilder'\n        Cpp : $'reqwest_RequestBuilder'\n        CppHost : $'reqwest_RequestBuilder'\n        Delphi : $'reqwest_RequestBuilder'\n        Cuda : $'reqwest_RequestBuilder'\n        C : $'reqwest_RequestBuilder'\n        Rust : $'reqwest_wasm::RequestBuilder'\n    }\nnominal request_builder =\n    `(\n        fsharp_global \"type reqwest_RequestBuilder = class end\"\n        $'' : $'backend_switch `(request_builder_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;\n// the other backends keep the F# alias (declared by the global below)\ntype request_builder_switch =\n    {\n        Gleam : $'reqwest_RequestBuilder'\n        Lua : $'reqwest_RequestBuilder'\n        Fsharp : $'reqwest_RequestBuilder'\n        Python : $'reqwest_RequestBuilder'\n        TypeScript : $'reqwest_RequestBuilder'\n        Cpp : $'reqwest_RequestBuilder'\n        CppHost : $'reqwest_RequestBuilder'\n        Delphi : $'reqwest_RequestBuilder'\n        Cuda : $'reqwest_RequestBuilder'\n        C : $'reqwest_RequestBuilder'\n        Rust : $'reqwest_wasm::RequestBuilder'\n    }\nnominal request_builder =\n    `(\n        fsharp_global \"type reqwest_RequestBuilder = class end\"\n        $'' : $'backend_switch `(request_builder_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // native Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
-  // the other backends keep the Fable alias (declared by the global below, as before)
+  // Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
+  // the other backends keep the F# alias (declared by the global below)
   type request_builder_switch =
       {
           Gleam : $'reqwest_RequestBuilder'
@@ -250,7 +250,7 @@ Spiral.Kino.eval!(
 
 ### tcp_client
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tcp_client =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"#if FABLE_COMPILER\\n\\ntype System_Net_Sockets_TcpClient = System.IDisposable\\n\\#else\\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\\n#endif\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_Net_Sockets_TcpClient'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal tcp_client =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_Net_Sockets_TcpClient'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -259,7 +259,7 @@ Spiral.Kino.eval!(
       `(
           backend_switch `(()) `({}) {
               Fsharp = (fun () =>
-                  global "#if FABLE_COMPILER\n\ntype System_Net_Sockets_TcpClient = System.IDisposable\n\#else\ntype System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n#endif\n"
+                  global "type System_Net_Sockets_TcpClient = System.Net.Sockets.TcpClient\n"
                           ) : () -> ()
           }
           $'' : $'System_Net_Sockets_TcpClient'

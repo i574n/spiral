@@ -698,14 +698,14 @@ Spiral.Kino.eval!(
 
 ### io_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal io_error =\n    `(\n        native_type\n            `($'std_io_Error')\n            `($'std::io::Error')\n            \"type std_io_Error = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal io_error =\n    `(\n        rust_type\n            `($'std_io_Error')\n            `($'std::io::Error')\n            \"type std_io_Error = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal io_error =
       `(
-          native_type
+          rust_type
               `($'std_io_Error')
               `($'std::io::Error')
               "type std_io_Error = string"
@@ -717,14 +717,14 @@ Spiral.Kino.eval!(
 
 ### new_io_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_io_error (text : string) : io_error =\n    run_target_args (fun () => text) function\n        | RustNative => fun text =>\n            !\\\\(text, $'\"std::io::Error::new(std::io::ErrorKind::Other, &*$0)\"')\n        | _ => fun text => text |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_io_error (text : string) : io_error =\n    run_target_args (fun () => text) function\n        | Rust => fun text =>\n            !\\\\(text, $'\"std::io::Error::new(std::io::ErrorKind::Other, &*$0)\"')\n        | _ => fun text => text |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl new_io_error (text : string) : io_error =
       run_target_args (fun () => text) function
-          | RustNative => fun text =>
+          | Rust => fun text =>
               !\\(text, $'"std::io::Error::new(std::io::ErrorKind::Other, &*$0)"')
           | _ => fun text => text |> convert.unbox
   """,
@@ -734,14 +734,14 @@ Spiral.Kino.eval!(
 
 ### buf_reader
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader t =\n    `(\n        native_type\n            `($'std_io_BufReader<`t>')\n            `($'std::io::BufReader<`t>')\n            \"type std_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader t =\n    `(\n        rust_type\n            `($'std_io_BufReader<`t>')\n            `($'std::io::BufReader<`t>')\n            \"type std_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal buf_reader t =
       `(
-          native_type
+          rust_type
               `($'std_io_BufReader<`t>')
               `($'std::io::BufReader<`t>')
               "type std_io_BufReader<'T> = class end"
@@ -753,14 +753,14 @@ Spiral.Kino.eval!(
 
 ### cursor
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cursor t =\n    `(\n        native_type\n            `($'std_io_Cursor<`t>')\n            `($'std::io::Cursor<`t>')\n            \"type std_io_Cursor<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal cursor t =\n    `(\n        rust_type\n            `($'std_io_Cursor<`t>')\n            `($'std::io::Cursor<`t>')\n            \"type std_io_Cursor<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal cursor t =
       `(
-          native_type
+          rust_type
               `($'std_io_Cursor<`t>')
               `($'std::io::Cursor<`t>')
               "type std_io_Cursor<'T> = class end"
@@ -772,14 +772,14 @@ Spiral.Kino.eval!(
 
 ### buf_reader_tokio
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader_tokio t =\n    `(\n        native_type\n            `($'tokio_io_BufReader<`t>')\n            `($'tokio::io::BufReader<`t>')\n            \"type tokio_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal buf_reader_tokio t =\n    `(\n        rust_type\n            `($'tokio_io_BufReader<`t>')\n            `($'tokio::io::BufReader<`t>')\n            \"type tokio_io_BufReader<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal buf_reader_tokio t =
       `(
-          native_type
+          rust_type
               `($'tokio_io_BufReader<`t>')
               `($'tokio::io::BufReader<`t>')
               "type tokio_io_BufReader<'T> = class end"
@@ -819,14 +819,14 @@ Spiral.Kino.eval!(
 
 ### lines
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lines t =\n    `(\n        native_type\n            `($'std_io_Lines<`t>')\n            `($'std::io::Lines<`t>')\n            \"type std_io_Lines<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal lines t =\n    `(\n        rust_type\n            `($'std_io_Lines<`t>')\n            `($'std::io::Lines<`t>')\n            \"type std_io_Lines<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal lines t =
       `(
-          native_type
+          rust_type
               `($'std_io_Lines<`t>')
               `($'std::io::Lines<`t>')
               "type std_io_Lines<'T> = class end"
@@ -852,14 +852,14 @@ Spiral.Kino.eval!(
 
 ### decode_reader_bytes
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal decode_reader_bytes t u =\n    `(\n        native_type\n            `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')\n            `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')\n            \"type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal decode_reader_bytes t u =\n    `(\n        rust_type\n            `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')\n            `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')\n            \"type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal decode_reader_bytes t u =
       `(
-          native_type
+          rust_type
               `($'encoding_rs_io_DecodeReaderBytes<`t, `u>')
               `($'encoding_rs_io::DecodeReaderBytes<`t, `u>')
               "type encoding_rs_io_DecodeReaderBytes<'T, 'U> = class end"

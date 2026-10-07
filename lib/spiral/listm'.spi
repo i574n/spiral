@@ -287,8 +287,8 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
 /// ### box
 inl box forall t. (list : list t) : list' t =
     run_target function
-        | RustNative => fun () =>
-            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on native Rust).
+        | Rust => fun () =>
+            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on Rust).
             inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
             inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
                 $'!acc.borrow_mut().push(!x)' : ()

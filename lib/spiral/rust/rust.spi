@@ -8,7 +8,7 @@ type any_base = any
 /// ### any
 nominal any =
     `(
-        native_type
+        rust_type
             `($'core_any_Any')
             `($'core::any::Any')
             "type core_any_Any = obj"
@@ -17,7 +17,7 @@ nominal any =
 /// ### try
 nominal try t =
     `(
-        native_type
+        rust_type
             `($'core_ops_Try<`t>')
             `($'_')
             "type core_ops_Try<'T> = class end"
@@ -26,7 +26,7 @@ nominal try t =
 /// ### cow
 nominal cow t =
     `(
-        native_type
+        rust_type
             `($'std_borrow_Cow<`t>')
             `($'std::borrow::Cow<`t>')
             "type std_borrow_Cow<'T> = class end"
@@ -35,7 +35,7 @@ nominal cow t =
 /// ### ref_cell
 nominal ref_cell t =
     `(
-        native_type
+        rust_type
             `($'std_cell_RefCell<`t>')
             `($'std::cell::RefCell<`t>')
             "type std_cell_RefCell<'T> = class end"
@@ -44,7 +44,7 @@ nominal ref_cell t =
 /// ### cell_ref
 nominal cell_ref t =
     `(
-        native_type
+        rust_type
             `($'std_cell_Ref<`t>')
             `($'std::cell::Ref<`t>')
             "type std_cell_Ref<'T> = class end"
@@ -53,7 +53,7 @@ nominal cell_ref t =
 /// ### rc
 nominal rc t =
     `(
-        native_type
+        rust_type
             `($'std_rc_Rc<`t>')
             `($'std::rc::Rc<`t>')
             "type std_rc_Rc<'T> = class end"
@@ -62,7 +62,7 @@ nominal rc t =
 /// ### lifetime_ref
 nominal lifetime_ref (t : * -> *) u =
     `(
-        native_type
+        rust_type
             `($'LifetimeRef<`(t u)>')
             `($'`(t u)')
             "type LifetimeRef<'T> = class end"
@@ -71,7 +71,7 @@ nominal lifetime_ref (t : * -> *) u =
 /// ### lifetime_join
 nominal lifetime_join t u =
     `(
-        native_type
+        rust_type
             `($'LifetimeJoin<`t, `u>')
             `($'`t + `(u)')
             "type LifetimeJoin<'T, 'U> = class end"
@@ -80,7 +80,7 @@ nominal lifetime_join t u =
 /// ### lifetime
 nominal lifetime t u =
     `(
-        native_type
+        rust_type
             `($'Lifetime<`t, `u>')
             `($'`t `(u)')
             "type Lifetime<'T, 'U> = class end"
@@ -89,7 +89,7 @@ nominal lifetime t u =
 /// ### static_lifetime
 nominal static_lifetime =
     `(
-        native_type
+        rust_type
             `($'StaticLifetime')
             `($'\'static')
             "type StaticLifetime = class end"
@@ -98,7 +98,7 @@ nominal static_lifetime =
 /// ### ref
 nominal ref t =
     `(
-        native_type
+        rust_type
             `($'Ref<`t>')
             `($'&`(t)')
             "type Ref<'T> = 'T"
@@ -110,7 +110,7 @@ nominal static_ref t = ref (lifetime static_lifetime t)
 /// ### weak_rc
 nominal weak_rc t =
     `(
-        native_type
+        rust_type
             `($'std_rc_Weak<`t>')
             `($'std::rc::Weak<`t>')
             "type std_rc_Weak<'T> = class end"
@@ -119,7 +119,7 @@ nominal weak_rc t =
 /// ### box
 nominal box t =
     `(
-        native_type
+        rust_type
             `($'Box<`t>')
             `($'Box<`t>')
             "type Box<'T> = class end"
@@ -128,7 +128,7 @@ nominal box t =
 /// ### mut_cell
 nominal mut_cell t =
     `(
-        native_type
+        rust_type
             `($'MutCell<`t>')
             `($'MutCell<`t>')
             "type MutCell<'T> = class end"
@@ -137,7 +137,7 @@ nominal mut_cell t =
 /// ### pin
 nominal pin t =
     `(
-        native_type
+        rust_type
             `($'std_pin_Pin<`t>')
             `($'std::pin::Pin<`t>')
             "type std_pin_Pin<'T> = class end"
@@ -146,7 +146,7 @@ nominal pin t =
 /// ### dyn'
 nominal dyn' t =
     `(
-        native_type
+        rust_type
             `($'Dyn<`t>')
             `($'dyn `(t)')
             "type Dyn<'T> = class end"
@@ -155,7 +155,7 @@ nominal dyn' t =
 /// ### fn'
 nominal fn' t =
     `(
-        native_type
+        rust_type
             `($'Fn<`t>')
             `($'Fn() -> `(t)')
             "type Fn<'T> = class end"
@@ -164,7 +164,7 @@ nominal fn' t =
 /// ### action_fn
 nominal action_fn t =
     `(
-        native_type
+        rust_type
             `($'ActionFn<`t>')
             `($'Fn(`t)')
             "type ActionFn<'T> = class end"
@@ -173,7 +173,7 @@ nominal action_fn t =
 /// ### action_fn2
 nominal action_fn2 t u =
     `(
-        native_type
+        rust_type
             `($'ActionFn2<`t, `u>')
             `($'Fn(`t, `u)')
             "type ActionFn2<'T, 'U> = class end"
@@ -182,7 +182,7 @@ nominal action_fn2 t u =
 /// ### fn_once
 nominal fn_once t =
     `(
-        native_type
+        rust_type
             `($'FnOnce<`t>')
             `($'FnOnce() -> `(t)')
             "type FnOnce<'T> = class end"
@@ -191,7 +191,7 @@ nominal fn_once t =
 /// ### fn_unit
 nominal fn_unit =
     `(
-        native_type
+        rust_type
             `($'FnUnit')
             `($'Fn()')
             "type FnUnit = class end"
@@ -200,7 +200,7 @@ nominal fn_unit =
 /// ### impl
 nominal impl t =
     `(
-        native_type
+        rust_type
             `($'Impl<`t>')
             `($'impl `(t)')
             "type Impl<'T> = class end"
@@ -209,7 +209,7 @@ nominal impl t =
 /// ### mut'
 nominal mut' t =
     `(
-        native_type
+        rust_type
             `($'Mut<`t>')
             `($'mut `(t)')
             "type Mut<'T> = class end"
@@ -218,23 +218,22 @@ nominal mut' t =
 /// ### ref_mut
 nominal ref_mut t =
     `(
-        native_type
+        rust_type
             `($'std_cell_RefMut<`t>')
             `($'std::cell::RefMut<`t>')
             "type std_cell_RefMut<'T> = class end"
     )
 
 /// ### send
-// Native Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
-// instead, as runtime.execute_with_options's native arm does). Fable's `Send<T>` and the type-level switch that
-// chose it are gone. A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
+// Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
+// instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
 // type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type
 // variable t'.
 nominal send t = $'`(t)'
 
 /// ### emit_expr
 inl emit_expr forall a t. (args : a) (code : string) : t =
-    $'Fable.Core.RustInterop.emitRustExpr !args !code '
+    $'__spiral_emit_rust !args !code '
 
 /// ### (~!\\)
 inl (~!\) forall t. (code : string) : t =
@@ -247,7 +246,7 @@ inl (~!\\) forall t u. ((args : t), (code : string)) : u =
 /// ### ptr
 nominal ptr t =
     `(
-        native_type
+        rust_type
             `($'Ptr<`t>')
             `($'*const `(t)')
             "type Ptr<'T> = class end"
@@ -260,7 +259,7 @@ inl ptr_read forall t. (x : ptr t) : t =
 /// ### u128
 nominal u128 =
     `(
-        native_type
+        rust_type
             `($'u128')
             `($'u128')
             "type u128 = class end"
@@ -304,9 +303,9 @@ inl emit' forall t. (x : t) : t =
 inl clone forall t. (x : t) : t =
     !\\(x, $'"$0.clone()"')
 
-/// ### clone_native
-inl clone_native forall t. (x : t) : t =
-    // Native Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
+/// ### clone_rust
+inl clone_rust forall t. (x : t) : t =
+    // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
     // (`self` methods, `match`) when the value is used again.
     backend_switch {
         Gleam = fun () => x
@@ -453,27 +452,8 @@ inl into forall t u. (x : t) : u =
 inl ops_deref forall t. (ref : t) : t =
     !\\(ref, $'"core::ops::Deref::deref(&$0)"')
 
-/// ### is_native
-// True only in the native Rust backend (codegenRust). Partial evaluation runs every arm of a value-level
-// backend_switch in every build, so a switch whose arms inline the caller's closures (`Fsharp = fable; Lua = fable;
-// ...`) evaluates them once per key, and nested switches multiply (8 keys, 8^depth: dice_ui never finished). This
-// switch's arms are literals, so the `if is_native () then native else fable ()` that uses it evaluates one branch.
-inl is_native () : bool =
-    backend_switch {
-        Gleam = fun () => false
-        Lua = fun () => false
-        Fsharp = fun () => false
-        Python = fun () => false
-        TypeScript = fun () => false
-        Cpp = fun () => false
-        CppHost = fun () => false
-        Delphi = fun () => false
-        Cuda = fun () => false
-        Rust = fun () => true
-    }
-
 /// ### one_param_fn
-// Native Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
+// Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
 // Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a
 // macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.
 nominal one_param t = $'(`t)'
@@ -498,9 +478,9 @@ inl break x : () =
 inl fix_closure forall t. (depth : u8 * u8) (x : t) =
     backend_switch {
         Rust = fun () =>
-            // Native Rust emits the caller's statements flat, in the block that opened the closure
+            // Rust emits the caller's statements flat, in the block that opened the closure
             // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever
-            // `depth` Fable's nesting needed. The text must be a literal (codegenRust inlines literal emits only).
+            // `depth` says. The text must be a literal (codegenRust inlines literal emits only).
             // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.
             inl is_unit : bool =
                 real
@@ -542,7 +522,7 @@ inl capture_move forall t. (fn : () -> t) : t =
 /// ### type_emit
 nominal type_emit t =
     `(
-        native_type
+        rust_type
             `($'TypeEmit<`t>')
             `($'*/ `t /*')
             "type TypeEmit<'T> = class end"
@@ -551,7 +531,7 @@ nominal type_emit t =
 /// ### partial_eq_wrapper
 nominal partial_eq_wrapper t =
     `(
-        native_type
+        rust_type
             `($'PartialEqWrapper<`t>')
             `($'PartialEqWrapper<`t>')
             "type PartialEqWrapper<'T> = class end"
@@ -563,7 +543,7 @@ inl new_partial_eq_wrapper forall t.
     (x : t)
     : partial_eq_wrapper t
     =
-    // Native Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
+    // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
     // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller
     // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.
     global "#[derive(Debug, Clone)]\npub struct PartialEqWrapper<T>(pub T);\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\n}"

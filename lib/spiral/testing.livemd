@@ -428,30 +428,17 @@ Spiral.Kino.eval!(
 
 ### __assert_contains
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    __expect\n        fun a b =>\n            if native\n            then\n                // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an\n                // element equal to it (the element type's PartialEq)\n                real\n                    typecase u with\n                    | string =>\n                        // a native char is a `u8`; a string in a string: a substring\n                        typecase t with\n                        | char => $'!a.contains(!b as char)' : bool\n                        | _ => $'!a.contains(&*!b)' : bool\n                    | array_base _ => $'!a.borrow().contains(&!b)' : bool\n                    | _ => $'!a.iter().any(|x| *x == !b)' : bool\n            else\n                a\n                |> $'List.ofSeq'\n                |> fun x => x : listm'.list' t\n                |> $'List.tryFind' ((=) b)\n                |> optionm'.unbox\n                |> fun (x : option t) => x <> None\n        trace\n        // TODO: forall nameof (Cannot dyn a forall into a runtime var.)\n        // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.\n        // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string\n        // (reflection.nameof { __assert_contains })\n        \"__assert_contains\"\n        b\n        a\n\ninl _assert_contains b a =\n    __assert_contains Console b a","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =\n    __expect\n        fun a b =>\n            if is_rust ()\n            then\n                // Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an\n                // element equal to it (the element type's PartialEq)\n                real\n                    typecase u with\n                    | string =>\n                        // a native char is a `u8`; a string in a string: a substring\n                        typecase t with\n                        | char => $'!a.contains(!b as char)' : bool\n                        | _ => $'!a.contains(&*!b)' : bool\n                    | array_base _ => $'!a.borrow().contains(&!b)' : bool\n                    | _ => $'!a.iter().any(|x| *x == !b)' : bool\n            else\n                a\n                |> $'List.ofSeq'\n                |> fun x => x : listm'.list' t\n                |> $'List.tryFind' ((=) b)\n                |> optionm'.unbox\n                |> fun (x : option t) => x <> None\n        trace\n        // TODO: forall nameof (Cannot dyn a forall into a runtime var.)\n        // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.\n        // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string\n        // (reflection.nameof { __assert_contains })\n        \"__assert_contains\"\n        b\n        a\n\ninl _assert_contains b a =\n    __assert_contains Console b a","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
-      inl native =
-          backend_switch {
-              Gleam = fun () => false
-              Lua = fun () => false
-              Fsharp = fun () => false
-              Python = fun () => false
-              TypeScript = fun () => false
-              Cpp = fun () => false
-              CppHost = fun () => false
-              Delphi = fun () => false
-              Cuda = fun () => false
-              Rust = fun () => true
-          }
       __expect
           fun a b =>
-              if native
+              if is_rust ()
               then
-                  // native Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
+                  // Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
                   // element equal to it (the element type's PartialEq)
                   real
                       typecase u with
@@ -515,7 +502,7 @@ Spiral.Kino.eval!(
 
 ### _throws
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl _throws (fn : () -> ()) : option exn =\n    inl none = None : option exn\n    inl some (s : exn) = Some s\n    inl native =\n        backend_switch {\n            Gleam = fun () => false\n            Lua = fun () => false\n            Fsharp = fun () => false\n            Python = fun () => false\n            TypeScript = fun () => false\n            Cpp = fun () => false\n            CppHost = fun () => false\n            Delphi = fun () => false\n            Cuda = fun () => false\n            Rust = fun () => true\n        }\n    if native\n    then\n        // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).\n        catch_unwind_native\n            fun () =>\n                fn ()\n                none\n            some\n    else\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn (); !none with ex -> ex |> !some ' : option exn\n            Python = fun () =>\n                $'fn = !fn '\n                $'none = !none '\n                $'some = !some '\n                $'try: fn(); x = none '\n                $'except Exception as ex: x = some(ex)'\n                $'x' : option exn\n            TypeScript = fun () =>\n                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl _throws (fn : () -> ()) : option exn =\n    inl none = None : option exn\n    inl some (s : exn) = Some s\n    if is_rust ()\n    then\n        // Rust: a panic is the exception (base.catch_unwind_rust: its panic report is suppressed).\n        catch_unwind_rust\n            fun () =>\n                fn ()\n                none\n            some\n    else\n        backend_switch {\n            Fsharp = fun () =>\n                $'try !fn (); !none with ex -> ex |> !some ' : option exn\n            Python = fun () =>\n                $'fn = !fn '\n                $'none = !none '\n                $'some = !some '\n                $'try: fn(); x = none '\n                $'except Exception as ex: x = some(ex)'\n                $'x' : option exn\n            TypeScript = fun () =>\n                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn\n        }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -523,23 +510,10 @@ Spiral.Kino.eval!(
   inl _throws (fn : () -> ()) : option exn =
       inl none = None : option exn
       inl some (s : exn) = Some s
-      inl native =
-          backend_switch {
-              Gleam = fun () => false
-              Lua = fun () => false
-              Fsharp = fun () => false
-              Python = fun () => false
-              TypeScript = fun () => false
-              Cpp = fun () => false
-              CppHost = fun () => false
-              Delphi = fun () => false
-              Cuda = fun () => false
-              Rust = fun () => true
-          }
-      if native
+      if is_rust ()
       then
-          // Native Rust: a panic is the exception (base.catch_unwind_native: its panic report is suppressed).
-          catch_unwind_native
+          // Rust: a panic is the exception (base.catch_unwind_rust: its panic report is suppressed).
+          catch_unwind_rust
               fun () =>
                   fn ()
                   none

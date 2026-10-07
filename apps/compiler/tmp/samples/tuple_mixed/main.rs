@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 fn method0(mut v0: f32) -> (bool, f32, i32) {
@@ -9,7 +9,7 @@ fn method1(mut v0: bool, mut v1: f32, mut v2: i32) -> i32 {
     if v0 {
         let mut v3: bool = v1 >= 3.5f32;
         if v3 {
-            let mut v4: i32 = v2 - 7i32;
+            let mut v4: i32 = v2.wrapping_sub(7i32);
             v4
         } else {
             1i32

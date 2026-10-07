@@ -56,7 +56,7 @@ Spiral.Kino.eval!(
 
 ### new_guid
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_guid (x : string) : guid =\n    run_target_args (fun () => x) function\n        | Gleam => fun x => $'!x '\n        | Lua => fun x => $'!x '\n        | Cuda => fun x =>\n            global \"import uuid\" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)\n            $'!x '\n        // Native Rust: lowercase, like System.Guid's text\n        | RustNative => fun x => $'Rc::<str>::from(!x.to_lowercase())'\n        | _ => fun x => $'!x |> `guid '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_guid (x : string) : guid =\n    run_target_args (fun () => x) function\n        | Gleam => fun x => $'!x '\n        | Lua => fun x => $'!x '\n        | Cuda => fun x =>\n            global \"import uuid\" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)\n            $'!x '\n        // Rust: lowercase, like System.Guid's text\n        | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'\n        | _ => fun x => $'!x |> `guid '","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -68,8 +68,8 @@ Spiral.Kino.eval!(
           | Cuda => fun x =>
               global "import uuid" // `uuid.UUID` annotations (the nominal's own global is dropped, FINDINGS 52)
               $'!x '
-          // Native Rust: lowercase, like System.Guid's text
-          | RustNative => fun x => $'Rc::<str>::from(!x.to_lowercase())'
+          // Rust: lowercase, like System.Guid's text
+          | Rust => fun x => $'Rc::<str>::from(!x.to_lowercase())'
           | _ => fun x => $'!x |> `guid '
   """,
   timeout: 300_000
@@ -78,7 +78,7 @@ Spiral.Kino.eval!(
 
 ### new_raw_guid
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_raw_guid () : guid =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_uuid\"\n            $'gleam_uuid.v4_string ()' : guid\n        Lua = fun () => $'\"\"' : guid\n        Fsharp = fun () => $'System.Guid.NewGuid' () : guid\n        Python = fun () =>\n            // the nominal's type-level `global \"import uuid\"` doesn't reach the output (FINDINGS 52)\n            global \"import uuid\"\n            $'uuid.uuid4()' : guid\n        // Native Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).\n        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\\!(\"{:08x}-{:04x}-{:04x}-{:04x}-{:012x}\", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_raw_guid () : guid =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_uuid\"\n            $'gleam_uuid.v4_string ()' : guid\n        Lua = fun () => $'\"\"' : guid\n        Fsharp = fun () => $'System.Guid.NewGuid' () : guid\n        Python = fun () =>\n            // the nominal's type-level `global \"import uuid\"` doesn't reach the output (FINDINGS 52)\n            global \"import uuid\"\n            $'uuid.uuid4()' : guid\n        // Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).\n        Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\\!(\"{:08x}-{:04x}-{:04x}-{:04x}-{:012x}\", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -94,7 +94,7 @@ Spiral.Kino.eval!(
               // the nominal's type-level `global "import uuid"` doesn't reach the output (FINDINGS 52)
               global "import uuid"
               $'uuid.uuid4()' : guid
-          // Native Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).
+          // Rust: a std-only random v4 UUID string (RandomState's per-process random keys + the clock).
           Rust = fun () => $'{ use std::hash::{BuildHasher, Hasher}; let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); let a = h.finish(); h.write_u64(a); let b = h.finish(); let a = (a & 0xffff_ffff_ffff_0fff) | 0x4000; let b = (b & 0x3fff_ffff_ffff_ffff) | 0x8000_0000_0000_0000; Rc::<str>::from(format\!("{:08x}-{:04x}-{:04x}-{:04x}-{:012x}", a >> 32, (a >> 16) & 0xffff, a & 0xffff, b >> 48, b & 0xffff_ffff_ffff)) }' : guid
       }
   """,

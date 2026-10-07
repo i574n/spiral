@@ -64,7 +64,7 @@ inl color_reset () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[0m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[0m")' : string
         | _ => fun () => $'"\\u001b[0m"'
 
 /// ### color_bright_black
@@ -72,7 +72,7 @@ inl color_bright_black () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[90m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[90m")' : string
         | _ => fun () => $'"\\u001b[90m"'
 
 /// ### color_bright_red
@@ -80,7 +80,7 @@ inl color_bright_red () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[91m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[91m")' : string
         | _ => fun () => $'"\\u001b[91m"'
 
 /// ### color_bright_green
@@ -88,7 +88,7 @@ inl color_bright_green () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[92m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[92m")' : string
         | _ => fun () => $'"\\u001b[92m"'
 
 /// ### color_yellow
@@ -96,7 +96,7 @@ inl color_yellow () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[93m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[93m")' : string
         | _ => fun () => $'"\\u001b[93m"'
 
 /// ### color_bright_blue
@@ -104,7 +104,7 @@ inl color_bright_blue () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[94m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[94m")' : string
         | _ => fun () => $'"\\u001b[94m"'
 
 /// ### color_bright_magenta
@@ -112,7 +112,7 @@ inl color_bright_magenta () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[95m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[95m")' : string
         | _ => fun () => $'"\\u001b[95m"'
 
 /// ### color_bright_cyan
@@ -120,7 +120,7 @@ inl color_bright_cyan () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[96m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[96m")' : string
         | _ => fun () => $'"\\u001b[96m"'
 
 /// ### color_bright_white
@@ -128,5 +128,5 @@ inl color_bright_white () =
     run_target function
         | Gleam _ => fun () => $'"\\u{001b}[97m"'
         | Lua _ => fun () => $'""'
-        | RustNative => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
+        | Rust => fun () => $'Rc::<str>::from("\\u{001b}[97m")' : string
         | _ => fun () => $'"\\u001b[97m"'

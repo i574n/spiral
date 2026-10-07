@@ -34,9 +34,7 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
       {"DOTNET_NOLOGO", "1"},
       {"DOTNET_CLI_TELEMETRY_OPTOUT", "1"},
       {"SPIRAL_WORKSPACE_ROOT", System.get_env("SPIRAL_WORKSPACE_ROOT") || Path.expand("../compiler/tmp", root)},
-      {"SPIRAL_COMPILER_PACKAGE_DIR",
-       System.get_env("SPIRAL_COMPILER_PACKAGE_DIR") ||
-         Path.expand("../../../polyglot/deps/The-Spiral-Language/VS Code Plugin", root)}
+      {"SPIRAL_COMPILER_PACKAGE_DIR", System.get_env("SPIRAL_COMPILER_PACKAGE_DIR") || core_package_dir(root)}
     ]
 
     env = if bundled?(dotnet), do: [{"DOTNET_ROOT", Path.dirname(dotnet)} | env], else: env
@@ -48,6 +46,15 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
       )
 
     if status != 0, do: Mix.raise(output)
+  end
+
+  # The `|core-` package: the fork spiral's scripts/init.ps1 clones (spiral/deps/The-Spiral-Language), else polyglot's
+  # clone of it (as Spiral.Kino.Toolchain.default_package_dir/0, which is not compiled yet when this runs).
+  defp core_package_dir(root) do
+    candidates =
+      Enum.map(["../../deps", "../../../polyglot/deps"], &Path.expand(&1 <> "/The-Spiral-Language/VS Code Plugin", root))
+
+    Enum.find(candidates, &File.regular?(Path.join(&1, "core/package.spiproj"))) || hd(candidates)
   end
 
   defp gleam_build(root) do

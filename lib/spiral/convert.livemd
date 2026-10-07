@@ -75,15 +75,15 @@ Spiral.Kino.eval!(
 
 ### to
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to forall t u. (x : t) : u =\n    if rust.rust.is_native ()\n    then\n        // native Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted\n        inl from_string : bool =\n            real\n                typecase t with\n                | string => true\n                | _ => false\n        x\n        |> to' fun x =>\n            inl y : u =\n                if from_string\n                then $'(!x).parse::<`u>().unwrap()'\n                else $'(!x as `u)'\n            Some y\n        |> optionm.value\n    else\n        x\n        |> to' fun x => $'!x ' |> Some\n        |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to forall t u. (x : t) : u =\n    if is_rust ()\n    then\n        // Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted\n        inl from_string : bool =\n            real\n                typecase t with\n                | string => true\n                | _ => false\n        x\n        |> to' fun x =>\n            inl y : u =\n                if from_string\n                then $'(!x).parse::<`u>().unwrap()'\n                else $'(!x as `u)'\n            Some y\n        |> optionm.value\n    else\n        x\n        |> to' fun x => $'!x ' |> Some\n        |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl to forall t u. (x : t) : u =
-      if rust.rust.is_native ()
+      if is_rust ()
       then
-          // native Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
+          // Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
           inl from_string : bool =
               real
                   typecase t with
@@ -135,7 +135,7 @@ Spiral.Kino.eval!(
 
 ### convert_i32
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32 forall t. (x : t) : int =\n    backend_switch {\n        Gleam = fun () => x |> convert_i32_base 10 : int\n        Lua = fun () => x |> convert_i32_base 10 : int\n        Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int\n        Python = fun () => x |> convert_i32_base 10 : int\n        // Native Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even\n        Rust = fun () =>\n            if (real typecase t with string => true | _ => false)\n            then x |> convert_i32_base 10 : int\n            elif (real typecase t with f64 => true | f32 => true | _ => false)\n            then $'((!x).round_ties_even() as i32)' : int\n            else $'(!x as i32)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32 forall t. (x : t) : int =\n    backend_switch {\n        Gleam = fun () => x |> convert_i32_base 10 : int\n        Lua = fun () => x |> convert_i32_base 10 : int\n        Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int\n        Python = fun () => x |> convert_i32_base 10 : int\n        // Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even\n        Rust = fun () =>\n            if (real typecase t with string => true | _ => false)\n            then x |> convert_i32_base 10 : int\n            elif (real typecase t with f64 => true | f32 => true | _ => false)\n            then $'((!x).round_ties_even() as i32)' : int\n            else $'(!x as i32)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -146,7 +146,7 @@ Spiral.Kino.eval!(
           Lua = fun () => x |> convert_i32_base 10 : int
           Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int
           Python = fun () => x |> convert_i32_base 10 : int
-          // Native Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
+          // Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
           Rust = fun () =>
               if (real typecase t with string => true | _ => false)
               then x |> convert_i32_base 10 : int

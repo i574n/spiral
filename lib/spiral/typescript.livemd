@@ -74,30 +74,3 @@ Spiral.Kino.eval!(
   timeout: 300_000
 )
 ```
-
-### is_native
-
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The native TypeScript backend (codegenTypescript, `--backend TypeScript`); false in the F# build, whose `TypeScript`\n// run_target arms are Fable's (F# text).\ninl is_native () : bool =\n    backend_switch {\n        Gleam = fun () => false\n        Lua = fun () => false\n        Fsharp = fun () => false\n        Python = fun () => false\n        TypeScript = fun () => true\n        Cpp = fun () => false\n        CppHost = fun () => false\n        Delphi = fun () => false\n        Cuda = fun () => false\n        Rust = fun () => false\n    }","print_code":false},"livebook_object":"smart_cell"} -->
-
-```elixir
-Spiral.Kino.eval!(
-  ~S"""
-  // The native TypeScript backend (codegenTypescript, `--backend TypeScript`); false in the F# build, whose `TypeScript`
-  // run_target arms are Fable's (F# text).
-  inl is_native () : bool =
-      backend_switch {
-          Gleam = fun () => false
-          Lua = fun () => false
-          Fsharp = fun () => false
-          Python = fun () => false
-          TypeScript = fun () => true
-          Cpp = fun () => false
-          CppHost = fun () => false
-          Delphi = fun () => false
-          Cuda = fun () => false
-          Rust = fun () => false
-      }
-  """,
-  timeout: 300_000
-)
-```

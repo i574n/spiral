@@ -54,15 +54,15 @@ $toolchain = & {
     . (Join-Path $bundleScripts "env.ps1")
     $dotnet = try { Resolve-SpiralDotnet } catch { $null }
     if (-not $dotnet) {
-        Write-Host "livebook_dib.ps1 / no .NET 11 SDK: scripts/install-dotnet.ps1"
+        Write-Host "run_notebook.ps1 / no .NET 11 SDK: scripts/install-dotnet.ps1"
         & (Join-Path $bundleScripts "install-dotnet.ps1") | Out-Host
         $dotnet = Resolve-SpiralDotnet
     }
     $dll = if ($env:SPIRAL_COMPILER_DLL) { $env:SPIRAL_COMPILER_DLL } else { Get-SpiralCompilerDll "single-flight" }
     if (-not (Test-Path -LiteralPath $dll)) {
-        Write-Host "livebook_dib.ps1 / no compiler at $dll`: scripts/build.ps1 -Mode single-flight"
+        Write-Host "run_notebook.ps1 / no compiler at $dll`: scripts/build.ps1 -Mode single-flight"
         & (Join-Path $bundleScripts "build.ps1") -Mode single-flight | Out-Host
-        if (-not (Test-Path -LiteralPath $dll)) { throw "livebook_dib.ps1 / the compiler build wrote no $dll" }
+        if (-not (Test-Path -LiteralPath $dll)) { throw "run_notebook.ps1 / the compiler build wrote no $dll" }
     }
     $packageDir = try { Get-SpiralPackageDir } catch { $null }
     [pscustomobject]@{ Dotnet = $dotnet; Dll = $dll; PackageDir = $packageDir }
@@ -80,10 +80,10 @@ if (-not (Test-Path "deps/kino/mix.exs")) {
     foreach ($task in "local.hex", "local.rebar", "deps.get") {
         $taskArgs = $task -like "local.*" ? @("--force", "--if-missing") : @()
         & $mix $task @taskArgs
-        if ($LASTEXITCODE -ne 0) { throw "livebook_dib.ps1 / mix $task failed (exit code $LASTEXITCODE)" }
+        if ($LASTEXITCODE -ne 0) { throw "run_notebook.ps1 / mix $task failed (exit code $LASTEXITCODE)" }
     }
 }
 
-& $mix spiral.dib @fixed
+& $mix spiral.notebook @fixed
 if ($null -eq $LASTEXITCODE) { exit 1 }
 exit $LASTEXITCODE

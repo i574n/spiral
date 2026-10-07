@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
@@ -16,12 +16,12 @@ fn spiral_main() -> i32 {
     let mut v5: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[1i32 as usize].clone();
     let mut v6: i32 = v4.clone().borrow()[0i32 as usize].clone();
     let mut v7: i32 = v4.clone().borrow()[1i32 as usize].clone();
-    let mut v8: i32 = v6 + v7;
+    let mut v8: i32 = v6.wrapping_add(v7);
     let mut v9: i32 = v5.clone().borrow()[0i32 as usize].clone();
-    let mut v10: i32 = v8 + v9;
+    let mut v10: i32 = v8.wrapping_add(v9);
     let mut v11: i32 = v5.clone().borrow()[1i32 as usize].clone();
-    let mut v12: i32 = v10 + v11;
-    let mut v13: i32 = v12 - 18i32;
+    let mut v12: i32 = v10.wrapping_add(v11);
+    let mut v13: i32 = v12.wrapping_sub(18i32);
     v13
 }
 #[cfg(not(target_arch = "wasm32"))]

@@ -370,7 +370,7 @@ defmodule Spiral.Kino.NotebookTest do
     refute Enum.at(sources, 0) =~ "not_spiral_emitter"
 
     spi = File.read!(Path.join(dir, "skip.spi"))
-    # Like `spiral dib-export`, the export keeps the cell verbatim, directive line included.
+    # Like `spiral export`, the export keeps the cell verbatim, directive line included.
     assert spi == "inl value () = 1i32\n\n///> _\n\nnot_spiral_emitter\n"
   end
 

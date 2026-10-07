@@ -133,7 +133,7 @@ Spiral.Kino.eval!(
 
 ### file_info
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"#if FABLE_COMPILER\\ntype System_IO_FileInfo = bool\\n\\#else\\ntype System_IO_FileInfo = System.IO.FileInfo\\n#endif\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_FileInfo'\n    )\n\ninl file_info (path : string) : file_info =\n    run_target function\n        | Fsharp => fun () => $'!path |> `file_info '\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"type System_IO_FileInfo = System.IO.FileInfo\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_FileInfo'\n    )\n\ninl file_info (path : string) : file_info =\n    run_target function\n        | Fsharp => fun () => $'!path |> `file_info '\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -142,7 +142,7 @@ Spiral.Kino.eval!(
       `(
           backend_switch `(()) `({}) {
               Fsharp = (fun () =>
-                  global "#if FABLE_COMPILER\ntype System_IO_FileInfo = bool\n\#else\ntype System_IO_FileInfo = System.IO.FileInfo\n#endif\n"
+                  global "type System_IO_FileInfo = System.IO.FileInfo\n"
                           ) : () -> ()
           }
           $'' : $'System_IO_FileInfo'
@@ -159,7 +159,7 @@ Spiral.Kino.eval!(
 
 ### directory_info
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal directory_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"#if FABLE_COMPILER\\ntype System_IO_DirectoryInfo = bool\\n\\#else\\ntype System_IO_DirectoryInfo = System.IO.DirectoryInfo\\n#endif\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_DirectoryInfo'\n    )\n\ninl directory_info (path : string) : directory_info =\n    run_target function\n        | Fsharp => fun () => $'!path |> `directory_info '\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal directory_info =\n    `(\n        backend_switch `(()) `({}) {\n            Fsharp = (fun () =>\n                global \"type System_IO_DirectoryInfo = System.IO.DirectoryInfo\\n\"\n                        ) : () -> ()\n        }\n        $'' : $'System_IO_DirectoryInfo'\n    )\n\ninl directory_info (path : string) : directory_info =\n    run_target function\n        | Fsharp => fun () => $'!path |> `directory_info '\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -168,7 +168,7 @@ Spiral.Kino.eval!(
       `(
           backend_switch `(()) `({}) {
               Fsharp = (fun () =>
-                  global "#if FABLE_COMPILER\ntype System_IO_DirectoryInfo = bool\n\#else\ntype System_IO_DirectoryInfo = System.IO.DirectoryInfo\n#endif\n"
+                  global "type System_IO_DirectoryInfo = System.IO.DirectoryInfo\n"
                           ) : () -> ()
           }
           $'' : $'System_IO_DirectoryInfo'
@@ -387,15 +387,15 @@ Spiral.Kino.eval!(
 
 ### get_source_directory
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_source_directory () =\n    run_target function\n        // Natively the crate's directory, fixed at build time (F#/Fable substitute the source file's directory).\n        | RustNative => fun () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => fun () => $'__SOURCE_DIRECTORY__' : string","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_source_directory () =\n    run_target function\n        // Rust: the crate's directory, fixed at build time (F# substitutes the source file's directory).\n        | Rust => fun () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => fun () => $'__SOURCE_DIRECTORY__' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl get_source_directory () =
       run_target function
-          // Natively the crate's directory, fixed at build time (F#/Fable substitute the source file's directory).
-          | RustNative => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
+          // Rust: the crate's directory, fixed at build time (F# substitutes the source file's directory).
+          | Rust => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
           | _ => fun () => $'__SOURCE_DIRECTORY__' : string
   """,
   timeout: 300_000
@@ -424,14 +424,14 @@ Spiral.Kino.eval!(
 
 ### display
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal display =\n    `(\n        native_type\n            `($'std_path_Display')\n            `($'std::path::Display')\n            \"type std_path_Display = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal display =\n    `(\n        rust_type\n            `($'std_path_Display')\n            `($'std::path::Display')\n            \"type std_path_Display = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal display =
       `(
-          native_type
+          rust_type
               `($'std_path_Display')
               `($'std::path::Display')
               "type std_path_Display = string"
@@ -443,14 +443,14 @@ Spiral.Kino.eval!(
 
 ### path
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal path =\n    `(\n        native_type\n            `($'std_path_Path')\n            `($'std::path::Path')\n            \"type std_path_Path = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal path =\n    `(\n        rust_type\n            `($'std_path_Path')\n            `($'std::path::Path')\n            \"type std_path_Path = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal path =
       `(
-          native_type
+          rust_type
               `($'std_path_Path')
               `($'std::path::Path')
               "type std_path_Path = class end"
@@ -462,14 +462,14 @@ Spiral.Kino.eval!(
 
 ### path_buf
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal path_buf =\n    `(\n        native_type\n            `($'std_path_PathBuf')\n            `($'std::path::PathBuf')\n            \"type std_path_PathBuf = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal path_buf =\n    `(\n        rust_type\n            `($'std_path_PathBuf')\n            `($'std::path::PathBuf')\n            \"type std_path_PathBuf = string\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal path_buf =
       `(
-          native_type
+          rust_type
               `($'std_path_PathBuf')
               `($'std::path::PathBuf')
               "type std_path_PathBuf = string"
@@ -481,14 +481,14 @@ Spiral.Kino.eval!(
 
 ### new_path_buf
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_path_buf (path : sm'.std_string) : path_buf =\n    run_target function\n        | RustNative => fun () => !\\\\(path, $'\"std::path::PathBuf::from($0)\"')\n        | _ => fun () => path |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_path_buf (path : sm'.std_string) : path_buf =\n    run_target function\n        | Rust => fun () => !\\\\(path, $'\"std::path::PathBuf::from($0)\"')\n        | _ => fun () => path |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl new_path_buf (path : sm'.std_string) : path_buf =
       run_target function
-          | RustNative => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
+          | Rust => fun () => !\\(path, $'"std::path::PathBuf::from($0)"')
           | _ => fun () => path |> convert.unbox
   """,
   timeout: 300_000
@@ -553,14 +553,14 @@ Spiral.Kino.eval!(
 
 ### path_buf_display
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl path_buf_display (path_buf : path_buf) : display =\n    run_target_args (fun () => path_buf) function\n        | RustNative => fun path_buf =>\n            inl path_buf = join path_buf\n            !\\($'\"!path_buf.display()\"')\n        | _ => fun path_buf => path_buf |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl path_buf_display (path_buf : path_buf) : display =\n    run_target_args (fun () => path_buf) function\n        | Rust => fun path_buf =>\n            inl path_buf = join path_buf\n            !\\($'\"!path_buf.display()\"')\n        | _ => fun path_buf => path_buf |> convert.unbox","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl path_buf_display (path_buf : path_buf) : display =
       run_target_args (fun () => path_buf) function
-          | RustNative => fun path_buf =>
+          | Rust => fun path_buf =>
               inl path_buf = join path_buf
               !\($'"!path_buf.display()"')
           | _ => fun path_buf => path_buf |> convert.unbox
@@ -655,14 +655,14 @@ Spiral.Kino.eval!(
 
 ### dir_entry
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dir_entry =\n    `(\n        native_type\n            `($'async_walkdir_DirEntry')\n            `($'async_walkdir::DirEntry')\n            \"type async_walkdir_DirEntry = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal dir_entry =\n    `(\n        rust_type\n            `($'async_walkdir_DirEntry')\n            `($'async_walkdir::DirEntry')\n            \"type async_walkdir_DirEntry = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal dir_entry =
       `(
-          native_type
+          rust_type
               `($'async_walkdir_DirEntry')
               `($'async_walkdir::DirEntry')
               "type async_walkdir_DirEntry = class end"
@@ -674,14 +674,14 @@ Spiral.Kino.eval!(
 
 ### walk_dir
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal walk_dir =\n    `(\n        native_type\n            `($'async_walkdir_WalkDir')\n            `($'async_walkdir::WalkDir')\n            \"type async_walkdir_WalkDir = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal walk_dir =\n    `(\n        rust_type\n            `($'async_walkdir_WalkDir')\n            `($'async_walkdir::WalkDir')\n            \"type async_walkdir_WalkDir = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal walk_dir =
       `(
-          native_type
+          rust_type
               `($'async_walkdir_WalkDir')
               `($'async_walkdir::WalkDir')
               "type async_walkdir_WalkDir = class end"
@@ -693,14 +693,14 @@ Spiral.Kino.eval!(
 
 ### async_walkdir_filtering
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal async_walkdir_filtering =\n    `(\n        native_type\n            `($'async_walkdir_Filtering')\n            `($'async_walkdir::Filtering')\n            \"type async_walkdir_Filtering = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal async_walkdir_filtering =\n    `(\n        rust_type\n            `($'async_walkdir_Filtering')\n            `($'async_walkdir::Filtering')\n            \"type async_walkdir_Filtering = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal async_walkdir_filtering =
       `(
-          native_type
+          rust_type
               `($'async_walkdir_Filtering')
               `($'async_walkdir::Filtering')
               "type async_walkdir_Filtering = class end"
@@ -728,14 +728,14 @@ Spiral.Kino.eval!(
 
 ### async_walkdir_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal async_walkdir_error =\n    `(\n        native_type\n            `($'async_walkdir_Error')\n            `($'async_walkdir::Error')\n            \"type async_walkdir_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal async_walkdir_error =\n    `(\n        rust_type\n            `($'async_walkdir_Error')\n            `($'async_walkdir::Error')\n            \"type async_walkdir_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal async_walkdir_error =
       `(
-          native_type
+          rust_type
               `($'async_walkdir_Error')
               `($'async_walkdir::Error')
               "type async_walkdir_Error = class end"
@@ -763,13 +763,13 @@ Spiral.Kino.eval!(
 
 ### walk_dir_filter
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    if rust.is_native () then\n        // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the\n        // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's\n        // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter\n        // closure binds `f` whole: edition 2021 would otherwise capture only the field `f.0` (the non-Send closure).\n        global \"struct SpiralAssertSend<T>(T);\\nunsafe impl<T> Send for SpiralAssertSend<T> {}\\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\\n    type Output = T::Output;\\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\\n}\"\n        inl fn entry =\n            inl future = fn entry\n            async.new_future_move_send fun () =>\n                inl result = future |> async.await_send\n                inl filtering : async_walkdir_filtering =\n                    match result with\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    else\n        inl fn entry = async.new_future_send fun () =>\n            inl result = fn entry |> async.await_send\n            inl filtering : async_walkdir_filtering =\n                match result with\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    if is_rust () then\n        // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the\n        // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's\n        // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter\n        // closure binds `f` whole: edition 2021 would otherwise capture only the field `f.0` (the non-Send closure).\n        global \"struct SpiralAssertSend<T>(T);\\nunsafe impl<T> Send for SpiralAssertSend<T> {}\\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\\n    type Output = T::Output;\\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\\n}\"\n        inl fn entry =\n            inl future = fn entry\n            async.new_future_move_send fun () =>\n                inl result = future |> async.await_send\n                inl filtering : async_walkdir_filtering =\n                    match result with\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    else\n        inl fn entry = async.new_future_send fun () =>\n            inl result = fn entry |> async.await_send\n            inl filtering : async_walkdir_filtering =\n                match result with\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
-      if rust.is_native () then
+      if is_rust () then
           // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the
           // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's
           // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter
@@ -803,14 +803,14 @@ Spiral.Kino.eval!(
 
 ### file_type
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file_type =\n    `(\n        native_type\n            `($'std_fs_FileType')\n            `($'std::fs::FileType')\n            \"type std_fs_FileType = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file_type =\n    `(\n        rust_type\n            `($'std_fs_FileType')\n            `($'std::fs::FileType')\n            \"type std_fs_FileType = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal file_type =
       `(
-          native_type
+          rust_type
               `($'std_fs_FileType')
               `($'std::fs::FileType')
               "type std_fs_FileType = class end"
@@ -851,14 +851,14 @@ Spiral.Kino.eval!(
 
 ### file
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file =\n    `(\n        native_type\n            `($'std_fs_File')\n            `($'std::fs::File')\n            \"type std_fs_File = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal file =\n    `(\n        rust_type\n            `($'std_fs_File')\n            `($'std::fs::File')\n            \"type std_fs_File = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal file =
       `(
-          native_type
+          rust_type
               `($'std_fs_File')
               `($'std::fs::File')
               "type std_fs_File = class end"
@@ -982,14 +982,14 @@ Spiral.Kino.eval!(
 
 ### (< />)
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let (</>) (a : string) (b : string) : string =\n    run_target_args (fun () => a, b) function\n        | RustNative => fun a, b =>\n            a\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_join b\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | TypeScript => fun a, b =>\n            a |> ts_path_join b\n        | Fsharp => fun a, b =>\n            $'System.IO.Path.Combine (!a, !b)'\n        | target => fun a, b => failwith $'$\"file_system.(</>) / target: {!target} / a: {!a} / b: {!b}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let (</>) (a : string) (b : string) : string =\n    run_target_args (fun () => a, b) function\n        | Rust => fun a, b =>\n            a\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_join b\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | TypeScript => fun a, b =>\n            a |> ts_path_join b\n        | Fsharp => fun a, b =>\n            $'System.IO.Path.Combine (!a, !b)'\n        | target => fun a, b => failwith $'$\"file_system.(</>) / target: {!target} / a: {!a} / b: {!b}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let (</>) (a : string) (b : string) : string =
       run_target_args (fun () => a, b) function
-          | RustNative => fun a, b =>
+          | Rust => fun a, b =>
               a
               |> sm'.to_std_string
               |> new_path_buf
@@ -1009,14 +1009,14 @@ Spiral.Kino.eval!(
 
 ### get_temp_path
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_temp_path () : string =\n    run_target function\n        | RustNative => fun () =>\n            !\\($'\"std::env::temp_dir()\"')\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Path.GetTempPath' ()\n        | target => fun () => failwith $'$\"file_system.get_temp_path / target: {!target}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_temp_path () : string =\n    run_target function\n        | Rust => fun () =>\n            !\\($'\"std::env::temp_dir()\"')\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Path.GetTempPath' ()\n        | target => fun () => failwith $'$\"file_system.get_temp_path / target: {!target}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let get_temp_path () : string =
       run_target function
-          | RustNative => fun () =>
+          | Rust => fun () =>
               !\($'"std::env::temp_dir()"')
               |> path_buf_display
               |> sm'.format'
@@ -1031,7 +1031,7 @@ Spiral.Kino.eval!(
 
 ### get_file_name
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFileName'\n        | RustNative => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IPathBasename = abstract basename: path: string -> string\"\n            inl path' : $'IPathBasename' = typescript.import_all \"path\"\n            !\\\\(path, $'\"!path'.basename($0)\"')\n        | target => fun path => failwith $'$\"file_system.get_file_name / target: {!target} / path: {!path}\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFileName'\n        | Rust => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IPathBasename = abstract basename: path: string -> string\"\n            inl path' : $'IPathBasename' = typescript.import_all \"path\"\n            !\\\\(path, $'\"!path'.basename($0)\"')\n        | target => fun path => failwith $'$\"file_system.get_file_name / target: {!target} / path: {!path}\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1040,7 +1040,7 @@ Spiral.Kino.eval!(
       run_target_args' path function
           | Fsharp => fun path =>
               path |> $'System.IO.Path.GetFileName'
-          | RustNative => fun path =>
+          | Rust => fun path =>
               path
               |> sm'.to_std_string
               |> new_path_buf
@@ -1061,14 +1061,14 @@ Spiral.Kino.eval!(
 
 ### get_file_name_without_extension
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name_without_extension (path : string) : string =\n    run_target_args' path function\n        | RustNative => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl file_stem = !\\\\(path_buf, $'\"$0.file_stem()\"')\n            match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with\n            | Some file_stem => file_stem\n            | None => \"\"\n        | _ => fun path =>\n            path |> $'System.IO.Path.GetFileNameWithoutExtension'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_file_name_without_extension (path : string) : string =\n    run_target_args' path function\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl file_stem = !\\\\(path_buf, $'\"$0.file_stem()\"')\n            match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with\n            | Some file_stem => file_stem\n            | None => \"\"\n        | _ => fun path =>\n            path |> $'System.IO.Path.GetFileNameWithoutExtension'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let get_file_name_without_extension (path : string) : string =
       run_target_args' path function
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               inl file_stem = !\\(path_buf, $'"$0.file_stem()"')
               match file_stem |> optionm'.map' sm'.from_os_str_ref |> optionm'.unbox with
@@ -1083,7 +1083,7 @@ Spiral.Kino.eval!(
 
 ### get_directory_name
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_directory_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp _ => fun path =>\n            path |> $'System.IO.Path.GetDirectoryName'\n        | RustNative => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_directory_name (path : string) : string =\n    run_target_args' path function\n        | Fsharp _ => fun path =>\n            path |> $'System.IO.Path.GetDirectoryName'\n        | Rust => fun path =>\n            path\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.map' sm'.from_os_str_ref\n            |> optionm'.unbox\n            |> optionm'.default_value \"\"\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1092,7 +1092,7 @@ Spiral.Kino.eval!(
       run_target_args' path function
           | Fsharp _ => fun path =>
               path |> $'System.IO.Path.GetDirectoryName'
-          | RustNative => fun path =>
+          | Rust => fun path =>
               path
               |> sm'.to_std_string
               |> new_path_buf
@@ -1108,14 +1108,14 @@ Spiral.Kino.eval!(
 
 ### get_extension
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_extension (path : string) : string =\n    run_target_args' path function\n        | RustNative => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            !\\\\(path_buf, $'\"$0.extension()\"')\n            |> optionm'.unwrap\n            |> sm'.from_os_str_ref\n        | _ => fun path =>\n            path |> $'System.IO.Path.GetExtension'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_extension (path : string) : string =\n    run_target_args' path function\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            !\\\\(path_buf, $'\"$0.extension()\"')\n            |> optionm'.unwrap\n            |> sm'.from_os_str_ref\n        | _ => fun path =>\n            path |> $'System.IO.Path.GetExtension'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let get_extension (path : string) : string =
       run_target_args' path function
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               !\\(path_buf, $'"$0.extension()"')
               |> optionm'.unwrap
@@ -1129,7 +1129,7 @@ Spiral.Kino.eval!(
 
 ### directory_separator_char
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_separator_char () : char =\n    run_target function\n        // The native char is a byte.\n        | RustNative => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char\n        | TypeScript _ => fun () => '/'\n        | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_separator_char () : char =\n    run_target function\n        // The native char is a byte.\n        | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char\n        | TypeScript _ => fun () => '/'\n        | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1137,7 +1137,7 @@ Spiral.Kino.eval!(
   let directory_separator_char () : char =
       run_target function
           // The native char is a byte.
-          | RustNative => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
+          | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
           | TypeScript _ => fun () => '/'
           | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'
   """,
@@ -1147,14 +1147,14 @@ Spiral.Kino.eval!(
 
 ### get_current_directory
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_current_directory () : string =\n    run_target function\n        | RustNative => fun () =>\n            inl current_dir = !\\($'\"std::env::current_dir()\"') : resultm.result' path_buf stream.io_error\n            current_dir\n            |> resultm.unwrap'\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => fun () =>\n            open typescript_operators\n            global \"type IFs = abstract realpathSync: path: string -> string\"\n            inl fs : $'IFs' = typescript.import_all \"fs\"\n            !\\($'\"fs.realpathSync(\\'.\\')\"')\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_current_directory () : string =\n    run_target function\n        | Rust => fun () =>\n            inl current_dir = !\\($'\"std::env::current_dir()\"') : resultm.result' path_buf stream.io_error\n            current_dir\n            |> resultm.unwrap'\n            |> path_buf_display\n            |> sm'.format'\n            |> sm'.from_std_string\n        | Fsharp => fun () =>\n            $'System.IO.Directory.GetCurrentDirectory' ()\n        | TypeScript _ => fun () =>\n            open typescript_operators\n            global \"type IFs = abstract realpathSync: path: string -> string\"\n            inl fs : $'IFs' = typescript.import_all \"fs\"\n            !\\($'\"fs.realpathSync(\\'.\\')\"')\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let get_current_directory () : string =
       run_target function
-          | RustNative => fun () =>
+          | Rust => fun () =>
               inl current_dir = !\($'"std::env::current_dir()"') : resultm.result' path_buf stream.io_error
               current_dir
               |> resultm.unwrap'
@@ -1190,7 +1190,7 @@ Spiral.Kino.eval!(
 
 ### directory_exists
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Directory.Exists'\n        | RustNative => fun path =>\n            inl path = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path && path_buf_is_dir path\n        | TypeScript => fun path =>\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            open typescript_operators\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Directory.Exists'\n        | Rust => fun path =>\n            inl path = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path && path_buf_is_dir path\n        | TypeScript => fun path =>\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            open typescript_operators\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1199,7 +1199,7 @@ Spiral.Kino.eval!(
       run_target_args' path function
           | Fsharp => fun path =>
               path |> $'System.IO.Directory.Exists'
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path = path |> sm'.to_std_string |> new_path_buf
               path_buf_exists path && path_buf_is_dir path
           | TypeScript => fun path =>
@@ -1215,7 +1215,7 @@ Spiral.Kino.eval!(
 
 ### directory_get_parent
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_get_parent (path : string) : optionm'.option' string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            inl parent : directory_info = path |> $'System.IO.Directory.GetParent'\n            if parent =. null ()\n            then None\n            else parent |> directory_info_full_name |> Some\n            |> optionm'.box\n        | RustNative => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl parent = path_buf |> path_buf_parent\n            parent\n            |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)\n        | TypeScript _ => fun path =>\n            open typescript_operators\n            global \"type IPathDirname = abstract dirname: path: string -> string\"\n            inl path' : $'IPathDirname' = typescript.import_all \"path\"\n            inl parent = !\\\\(path, $'\"!path'.dirname($0)\"')\n            if parent = path\n            then None\n            else parent |> Some\n            |> optionm'.box\n        | _ => fun _ => optionm'.none' ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_get_parent (path : string) : optionm'.option' string =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            inl parent : directory_info = path |> $'System.IO.Directory.GetParent'\n            if parent =. null ()\n            then None\n            else parent |> directory_info_full_name |> Some\n            |> optionm'.box\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            inl parent = path_buf |> path_buf_parent\n            parent\n            |> optionm'.map' (path_buf_display >> sm'.format' >> sm'.from_std_string)\n        | TypeScript _ => fun path =>\n            open typescript_operators\n            global \"type IPathDirname = abstract dirname: path: string -> string\"\n            inl path' : $'IPathDirname' = typescript.import_all \"path\"\n            inl parent = !\\\\(path, $'\"!path'.dirname($0)\"')\n            if parent = path\n            then None\n            else parent |> Some\n            |> optionm'.box\n        | _ => fun _ => optionm'.none' ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1228,7 +1228,7 @@ Spiral.Kino.eval!(
               then None
               else parent |> directory_info_full_name |> Some
               |> optionm'.box
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               inl parent = path_buf |> path_buf_parent
               parent
@@ -1304,7 +1304,7 @@ Spiral.Kino.eval!(
 
 ### file_copy
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_copy (new_path : string) (old_path : string) : () =\n    run_target_args' (old_path, new_path) function\n        | Fsharp => fun old_path, new_path =>\n            $'System.IO.File.Copy (!old_path, !new_path, true)'\n        | RustNative => fun old_path, new_path =>\n            inl result : _ _ stream.io_error = !\\\\((old_path, new_path), $'\"std::fs::copy(&*$0, &*$1)\"')\n            match result |> resultm.map_error' sm'.format' |> resultm.unbox with\n            | Ok (result : u64) =>\n                trace Debug\n                    fun () => \"file_system.file_copy\"\n                    fun () => { old_path new_path result }\n            | Error error =>\n                trace Warning\n                    fun () => \"file_system.file_copy\"\n                    fun () => { old_path new_path error }\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_copy (new_path : string) (old_path : string) : () =\n    run_target_args' (old_path, new_path) function\n        | Fsharp => fun old_path, new_path =>\n            $'System.IO.File.Copy (!old_path, !new_path, true)'\n        | Rust => fun old_path, new_path =>\n            inl result : _ _ stream.io_error = !\\\\((old_path, new_path), $'\"std::fs::copy(&*$0, &*$1)\"')\n            match result |> resultm.map_error' sm'.format' |> resultm.unbox with\n            | Ok (result : u64) =>\n                trace Debug\n                    fun () => \"file_system.file_copy\"\n                    fun () => { old_path new_path result }\n            | Error error =>\n                trace Warning\n                    fun () => \"file_system.file_copy\"\n                    fun () => { old_path new_path error }\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1313,7 +1313,7 @@ Spiral.Kino.eval!(
       run_target_args' (old_path, new_path) function
           | Fsharp => fun old_path, new_path =>
               $'System.IO.File.Copy (!old_path, !new_path, true)'
-          | RustNative => fun old_path, new_path =>
+          | Rust => fun old_path, new_path =>
               inl result : _ _ stream.io_error = !\\((old_path, new_path), $'"std::fs::copy(&*$0, &*$1)"')
               match result |> resultm.map_error' sm'.format' |> resultm.unbox with
               | Ok (result : u64) =>
@@ -1332,7 +1332,7 @@ Spiral.Kino.eval!(
 
 ### file_exists
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.File.Exists'\n        | RustNative => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists (path : string) : bool =\n    run_target_args' path function\n        | Fsharp => fun path =>\n            path |> $'System.IO.File.Exists'\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            path_buf_exists path_buf && path_buf_is_file path_buf\n        | TypeScript => fun path =>\n            open typescript_operators\n            global \"type IFsExistsSync = abstract existsSync: path: string -> bool\"\n            inl fs : $'IFsExistsSync' = typescript.import_all \"fs\"\n            !\\\\((fs, path), $'\"$0.existsSync($1)\"')\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1341,7 +1341,7 @@ Spiral.Kino.eval!(
       run_target_args' path function
           | Fsharp => fun path =>
               path |> $'System.IO.File.Exists'
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               path_buf_exists path_buf && path_buf_is_file path_buf
           | TypeScript => fun path =>
@@ -1357,7 +1357,7 @@ Spiral.Kino.eval!(
 
 ### directory_delete
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_delete recursive (path : string) : () =\n    run_target_args' (path, recursive) function\n        | Fsharp => fun path, recursive =>\n            $'System.IO.Directory.Delete (!path, !recursive)'\n        | RustNative => fun path, recursive =>\n            if path |> directory_exists then\n                if recursive\n                then !\\\\(path, $'\"std::fs::remove_dir_all(&*$0).unwrap()\"')\n                else !\\\\(path, $'\"std::fs::remove_dir(&*$0).unwrap()\"')\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_delete recursive (path : string) : () =\n    run_target_args' (path, recursive) function\n        | Fsharp => fun path, recursive =>\n            $'System.IO.Directory.Delete (!path, !recursive)'\n        | Rust => fun path, recursive =>\n            if path |> directory_exists then\n                if recursive\n                then !\\\\(path, $'\"std::fs::remove_dir_all(&*$0).unwrap()\"')\n                else !\\\\(path, $'\"std::fs::remove_dir(&*$0).unwrap()\"')\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1366,7 +1366,7 @@ Spiral.Kino.eval!(
       run_target_args' (path, recursive) function
           | Fsharp => fun path, recursive =>
               $'System.IO.Directory.Delete (!path, !recursive)'
-          | RustNative => fun path, recursive =>
+          | Rust => fun path, recursive =>
               if path |> directory_exists then
                   if recursive
                   then !\\(path, $'"std::fs::remove_dir_all(&*$0).unwrap()"')
@@ -1379,7 +1379,7 @@ Spiral.Kino.eval!(
 
 ### write_all_text
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_all_text (path : string) (text : string) : () =\n    run_target_args' (path, text) function\n        | Fsharp => fun path, text =>\n            $'System.IO.File.WriteAllText (!path, !text)'\n        | RustNative => fun path, text =>\n            !\\\\((path, text), $'\"std::fs::write(&*$0, &*$1).unwrap()\"')\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_all_text (path : string) (text : string) : () =\n    run_target_args' (path, text) function\n        | Fsharp => fun path, text =>\n            $'System.IO.File.WriteAllText (!path, !text)'\n        | Rust => fun path, text =>\n            !\\\\((path, text), $'\"std::fs::write(&*$0, &*$1).unwrap()\"')\n        | _ => fun _ => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1388,7 +1388,7 @@ Spiral.Kino.eval!(
       run_target_args' (path, text) function
           | Fsharp => fun path, text =>
               $'System.IO.File.WriteAllText (!path, !text)'
-          | RustNative => fun path, text =>
+          | Rust => fun path, text =>
               !\\((path, text), $'"std::fs::write(&*$0, &*$1).unwrap()"')
           | _ => fun _ => ()
   """,
@@ -1398,7 +1398,7 @@ Spiral.Kino.eval!(
 
 ### read_all_bytes
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_all_bytes (path : string) : am'.vec u8 =\n    run_target function\n        | Fsharp => fun () =>\n            $'!path |> System.IO.File.ReadAllBytes'\n            |> am'.to_vec\n        | RustNative => fun () =>\n            path |> read |> resultm.unwrap'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_all_bytes (path : string) : am'.vec u8 =\n    run_target function\n        | Fsharp => fun () =>\n            $'!path |> System.IO.File.ReadAllBytes'\n            |> am'.to_vec\n        | Rust => fun () =>\n            path |> read |> resultm.unwrap'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1408,7 +1408,7 @@ Spiral.Kino.eval!(
           | Fsharp => fun () =>
               $'!path |> System.IO.File.ReadAllBytes'
               |> am'.to_vec
-          | RustNative => fun () =>
+          | Rust => fun () =>
               path |> read |> resultm.unwrap'
           | _ => fun () => null ()
   """,
@@ -1418,7 +1418,7 @@ Spiral.Kino.eval!(
 
 ### read_all_text
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_all_text (path : string) : string =\n    run_target function\n        | Fsharp => fun () =>\n            $'!path |> System.IO.File.ReadAllText'\n        | RustNative => fun () =>\n            path\n            |> read_all_bytes\n            |> sm'.string_from_utf8\n            |> resultm.unwrap'\n            |> sm'.from_std_string\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl read_all_text (path : string) : string =\n    run_target function\n        | Fsharp => fun () =>\n            $'!path |> System.IO.File.ReadAllText'\n        | Rust => fun () =>\n            path\n            |> read_all_bytes\n            |> sm'.string_from_utf8\n            |> resultm.unwrap'\n            |> sm'.from_std_string\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1427,7 +1427,7 @@ Spiral.Kino.eval!(
       run_target function
           | Fsharp => fun () =>
               $'!path |> System.IO.File.ReadAllText'
-          | RustNative => fun () =>
+          | Rust => fun () =>
               path
               |> read_all_bytes
               |> sm'.string_from_utf8
@@ -1441,7 +1441,7 @@ Spiral.Kino.eval!(
 
 ### directory_create_symbolic_link
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl directory_create_symbolic_link (target : string) (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | RustNative => fun () =>\n            (!\\\\((target, path), $'\"true; \\#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n            (!\\\\((target, path), $'\"true; \\#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl directory_create_symbolic_link (target : string) (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => fun () =>\n            (!\\\\((target, path), $'\"true; \\#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n            (!\\\\((target, path), $'\"true; \\#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1451,7 +1451,7 @@ Spiral.Kino.eval!(
           | Fsharp => fun () =>
               ($'System.IO.Directory.CreateSymbolicLink (!path, !target)' : file_system_info)
               |> ignore
-          | RustNative => fun () =>
+          | Rust => fun () =>
               (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_dir(&*$0, &*$1).unwrap()"') : bool) |> ignore
               (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
           | _ => fun () => ()
@@ -1462,7 +1462,7 @@ Spiral.Kino.eval!(
 
 ### file_create_symbolic_link
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl file_create_symbolic_link (target : string) (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | RustNative => fun () =>\n            (!\\\\((target, path), $'\"true; \\#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n            (!\\\\((target, path), $'\"true; \\#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl file_create_symbolic_link (target : string) (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)\n            |> ignore\n        | Rust => fun () =>\n            (!\\\\((target, path), $'\"true; \\#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n            (!\\\\((target, path), $'\"true; \\#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()\"') : bool) |> ignore\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1472,7 +1472,7 @@ Spiral.Kino.eval!(
           | Fsharp => fun () =>
               ($'System.IO.File.CreateSymbolicLink (!path, !target)' : file_system_info)
               |> ignore
-          | RustNative => fun () =>
+          | Rust => fun () =>
               (!\\((target, path), $'"true; \#[cfg(windows)] std::os::windows::fs::symlink_file(&*$0, &*$1).unwrap()"') : bool) |> ignore
               (!\\((target, path), $'"true; \#[cfg(unix)] std::os::unix::fs::symlink(&*$0, &*$1).unwrap()"') : bool) |> ignore
           | _ => fun () => ()
@@ -1581,7 +1581,7 @@ Spiral.Kino.eval!(
 
 ### file_delete
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl file_delete (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            path |> $'System.IO.File.Delete'\n        | RustNative => fun () =>\n            inl result : resultm.result' () stream.io_error =\n                if path |> file_exists\n                then !\\\\(path, $'\"std::fs::remove_file(&*$0)\"')\n                else Ok () |> resultm.box\n            match result |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok () => ()\n            | Error error' => trace Critical (fun () => \"file_system.file_delete\") fun () => { error' }\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl file_delete (path : string) : () =\n    run_target function\n        | Fsharp => fun () =>\n            path |> $'System.IO.File.Delete'\n        | Rust => fun () =>\n            inl result : resultm.result' () stream.io_error =\n                if path |> file_exists\n                then !\\\\(path, $'\"std::fs::remove_file(&*$0)\"')\n                else Ok () |> resultm.box\n            match result |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok () => ()\n            | Error error' => trace Critical (fun () => \"file_system.file_delete\") fun () => { error' }\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1590,7 +1590,7 @@ Spiral.Kino.eval!(
       run_target function
           | Fsharp => fun () =>
               path |> $'System.IO.File.Delete'
-          | RustNative => fun () =>
+          | Rust => fun () =>
               inl result : resultm.result' () stream.io_error =
                   if path |> file_exists
                   then !\\(path, $'"std::fs::remove_file(&*$0)"')
@@ -1606,7 +1606,7 @@ Spiral.Kino.eval!(
 
 ### read_link
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let read_link (path : string) : resultm.result' path_buf stream.io_error =\n    let run 루프 n error path' =\n        inl name = path' |> get_file_name\n        inl parent = path' |> directory_get_parent |> optionm'.unbox\n        inl error'' = #?error\n        match parent with\n        | _ when n >= 11 =>\n            ($'$\"file_system.read_link / \"' : string)\n            +. $'$\"path: {!path} / n: {!n} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n        | Some parent when path' <>. \"\" =>\n            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok parent' =>\n                (parent' |> path_buf_display |> convert.convert) </> name\n                |> sm'.to_std_string\n                |> new_path_buf\n                |> resultm.ok''\n            | Error error' =>\n                ($'$\"file_system.read_link / \"' : string)\n                +. $'$\"error\\': {!error'} / error: {!error''} / name: {!name}\"'\n                |> stream.new_io_error\n                |> resultm.err\n        | _ =>\n            ($'$\"file_system.read_link / run / The file or directory is not a reparse point. / \"' : string)\n            +. $'$\"path: {!path} / error: {!error''} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n\n    run_target function\n        | RustNative => fun () =>\n            if path |> directory_exists\n            then !\\\\(path, $'\"std::fs::read_link(&*$0)\"')\n            else\n                // let rec 루프 n path' =\n                let rec 루프 forall t {number}.\n                    (n : t)\n                    (path' : string)\n                    : resultm.result' path_buf stream.io_error\n                    =\n                    run_target function\n                        | RustNative => fun () =>\n                            inl result : _ _ stream.io_error = !\\\\(path', $'\"std::fs::read_link(&*$0)\"')\n                            inl result = result |> resultm.map_error' sm'.format |> resultm.unbox\n                            match result with\n                            | Ok x => x |> resultm.ok''\n                            | Error error => path' |> run 루프 n error\n                        | _ => fun () => null ()\n                path |> 루프 0u8\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            // let rec 루프 n path' =\n            let rec 루프 forall t {number}.\n                (n : t)\n                (path' : string)\n                : resultm.result' path_buf stream.io_error\n                =\n                inl result =\n                    path'\n                    |> directory_info\n                    |> directory_info_attributes\n                    |> file_attributes_has_flag (file_attributes_reparse_point ())\n                if result then\n                    path'\n                    |> file_info\n                    |> file_info_link_target\n                    |> convert.unbox\n                    |> resultm.ok''\n                else\n                    inl error =\n                        ($'$\"file_system.read_link / Fsharp / \"' : string)\n                        +. $'$\"The file or directory is not a reparse point. / \"'\n                        +. $'$\"path: {!path} / result: {!result} / path\\': {!path'} / n: {!n}\"'\n                        |> stream.new_io_error\n                    path' |> run 루프 n error\n            path |> 루프 0u8\n        | _ => fun () => $'Unchecked.defaultof<_>'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let read_link (path : string) : resultm.result' path_buf stream.io_error =\n    let run 루프 n error path' =\n        inl name = path' |> get_file_name\n        inl parent = path' |> directory_get_parent |> optionm'.unbox\n        inl error'' = #?error\n        match parent with\n        | _ when n >= 11 =>\n            ($'$\"file_system.read_link / \"' : string)\n            +. $'$\"path: {!path} / n: {!n} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n        | Some parent when path' <>. \"\" =>\n            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok parent' =>\n                (parent' |> path_buf_display |> convert.convert) </> name\n                |> sm'.to_std_string\n                |> new_path_buf\n                |> resultm.ok''\n            | Error error' =>\n                ($'$\"file_system.read_link / \"' : string)\n                +. $'$\"error\\': {!error'} / error: {!error''} / name: {!name}\"'\n                |> stream.new_io_error\n                |> resultm.err\n        | _ =>\n            ($'$\"file_system.read_link / run / The file or directory is not a reparse point. / \"' : string)\n            +. $'$\"path: {!path} / error: {!error''} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n\n    run_target function\n        | Rust => fun () =>\n            if path |> directory_exists\n            then !\\\\(path, $'\"std::fs::read_link(&*$0)\"')\n            else\n                // let rec 루프 n path' =\n                let rec 루프 forall t {number}.\n                    (n : t)\n                    (path' : string)\n                    : resultm.result' path_buf stream.io_error\n                    =\n                    run_target function\n                        | Rust => fun () =>\n                            inl result : _ _ stream.io_error = !\\\\(path', $'\"std::fs::read_link(&*$0)\"')\n                            inl result = result |> resultm.map_error' sm'.format |> resultm.unbox\n                            match result with\n                            | Ok x => x |> resultm.ok''\n                            | Error error => path' |> run 루프 n error\n                        | _ => fun () => null ()\n                path |> 루프 0u8\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            // let rec 루프 n path' =\n            let rec 루프 forall t {number}.\n                (n : t)\n                (path' : string)\n                : resultm.result' path_buf stream.io_error\n                =\n                inl result =\n                    path'\n                    |> directory_info\n                    |> directory_info_attributes\n                    |> file_attributes_has_flag (file_attributes_reparse_point ())\n                if result then\n                    path'\n                    |> file_info\n                    |> file_info_link_target\n                    |> convert.unbox\n                    |> resultm.ok''\n                else\n                    inl error =\n                        ($'$\"file_system.read_link / Fsharp / \"' : string)\n                        +. $'$\"The file or directory is not a reparse point. / \"'\n                        +. $'$\"path: {!path} / result: {!result} / path\\': {!path'} / n: {!n}\"'\n                        |> stream.new_io_error\n                    path' |> run 루프 n error\n            path |> 루프 0u8\n        | _ => fun () => $'Unchecked.defaultof<_>'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1641,7 +1641,7 @@ Spiral.Kino.eval!(
               |> resultm.err
 
       run_target function
-          | RustNative => fun () =>
+          | Rust => fun () =>
               if path |> directory_exists
               then !\\(path, $'"std::fs::read_link(&*$0)"')
               else
@@ -1652,7 +1652,7 @@ Spiral.Kino.eval!(
                       : resultm.result' path_buf stream.io_error
                       =
                       run_target function
-                          | RustNative => fun () =>
+                          | Rust => fun () =>
                               inl result : _ _ stream.io_error = !\\(path', $'"std::fs::read_link(&*$0)"')
                               inl result = result |> resultm.map_error' sm'.format |> resultm.unbox
                               match result with
@@ -1804,7 +1804,7 @@ Spiral.Kino.eval!(
 
 ### get_full_path
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_full_path (path : string) : string =\n    run_target_args (fun () => path) function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFullPath'\n        | RustNative => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            if path_buf |> path_buf_exists |> not then\n                inl current_dir = get_current_directory ()\n                current_dir </> path\n                |> normalize_path\n                |> sm'.split \"/\"\n                |> fun x =>\n                    ((a x : _ i32 _), (0i32, (a ;[] : _ i32 _)))\n                    ||> am.foldBack fun x level, acc =>\n                        match x, level with\n                        | \"..\", _ => level + 1, acc\n                        | \".\", _ => level, acc\n                        | _, 0 when x |> sm'.ends_with \":\" => 0, a ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) \":\" ] ++ acc\n                        | _, 0 => 0, a ;[ x ] ++ acc\n                        | _ => level - 1, acc\n                |> snd\n                |> seq.of_array'\n                |> sm'.concat (directory_separator_char () |> sm'.obj_to_string)\n            else\n                inl path : resultm.result' path_buf stream.io_error =\n                    !\\\\(path, $'\"std::fs::canonicalize(&*$0)\"')\n                path\n                |> resultm.unwrap'\n                |> path_buf_display\n                |> sm'.format'\n                |> sm'.from_std_string\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let get_full_path (path : string) : string =\n    run_target_args (fun () => path) function\n        | Fsharp => fun path =>\n            path |> $'System.IO.Path.GetFullPath'\n        | Rust => fun path =>\n            inl path_buf = path |> sm'.to_std_string |> new_path_buf\n            if path_buf |> path_buf_exists |> not then\n                inl current_dir = get_current_directory ()\n                current_dir </> path\n                |> normalize_path\n                |> sm'.split \"/\"\n                |> fun x =>\n                    ((a x : _ i32 _), (0i32, (a ;[] : _ i32 _)))\n                    ||> am.foldBack fun x level, acc =>\n                        match x, level with\n                        | \"..\", _ => level + 1, acc\n                        | \".\", _ => level, acc\n                        | _, 0 when x |> sm'.ends_with \":\" => 0, a ;[ sm'.(++#) (current_dir |> sm'.slice 0i32 0i32) \":\" ] ++ acc\n                        | _, 0 => 0, a ;[ x ] ++ acc\n                        | _ => level - 1, acc\n                |> snd\n                |> seq.of_array'\n                |> sm'.concat (directory_separator_char () |> sm'.obj_to_string)\n            else\n                inl path : resultm.result' path_buf stream.io_error =\n                    !\\\\(path, $'\"std::fs::canonicalize(&*$0)\"')\n                path\n                |> resultm.unwrap'\n                |> path_buf_display\n                |> sm'.format'\n                |> sm'.from_std_string\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1813,7 +1813,7 @@ Spiral.Kino.eval!(
       run_target_args (fun () => path) function
           | Fsharp => fun path =>
               path |> $'System.IO.Path.GetFullPath'
-          | RustNative => fun path =>
+          | Rust => fun path =>
               inl path_buf = path |> sm'.to_std_string |> new_path_buf
               if path_buf |> path_buf_exists |> not then
                   inl current_dir = get_current_directory ()
@@ -2077,14 +2077,14 @@ Spiral.Kino.eval!(
 
 ### create_dir
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let create_dir dir =\n    run_target_args' dir function\n        | RustNative => fun dir =>\n            match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with\n            | Ok () =>\n                trace Verbose\n                    fun () => \"file_system.create_dir\"\n                    fun () => { dir }\n            | Error error =>\n                trace Critical\n                    fun () => \"file_system.create_dir\"\n                    fun () => { dir error }\n            inl disposable : _ () = new_disposable fun () =>\n                dir\n                |> directory_delete true\n            disposable\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let create_dir dir =\n    run_target_args' dir function\n        | Rust => fun dir =>\n            match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with\n            | Ok () =>\n                trace Verbose\n                    fun () => \"file_system.create_dir\"\n                    fun () => { dir }\n            | Error error =>\n                trace Critical\n                    fun () => \"file_system.create_dir\"\n                    fun () => { dir error }\n            inl disposable : _ () = new_disposable fun () =>\n                dir\n                |> directory_delete true\n            disposable\n        | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let create_dir dir =
       run_target_args' dir function
-          | RustNative => fun dir =>
+          | Rust => fun dir =>
               match dir |> create_dir_all |> resultm.map_error' sm'.format' |> resultm.unbox with
               | Ok () =>
                   trace Verbose
@@ -2295,14 +2295,14 @@ Spiral.Kino.eval!(
 
 ### file_exists_content
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists_content path content : bool =\n    run_target function\n        | RustNative => fun () =>\n            if path |> file_exists |> not\n            then false\n            else\n                inl existing_content = path |> read_all_text\n                content = existing_content\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let file_exists_content path content : bool =\n    run_target function\n        | Rust => fun () =>\n            if path |> file_exists |> not\n            then false\n            else\n                inl existing_content = path |> read_all_text\n                content = existing_content\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let file_exists_content path content : bool =
       run_target function
-          | RustNative => fun () =>
+          | Rust => fun () =>
               if path |> file_exists |> not
               then false
               else

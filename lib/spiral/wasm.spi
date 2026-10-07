@@ -5,7 +5,7 @@ open rust_operators
 /// ### rexie
 nominal rexie =
     `(
-        native_type
+        rust_type
             `($'rexie_Rexie')
             `($'rexie::Rexie')
             "type rexie_Rexie = class end"
@@ -14,7 +14,7 @@ nominal rexie =
 /// ### rexie_store
 nominal rexie_store =
     `(
-        native_type
+        rust_type
             `($'rexie_Store')
             `($'rexie::Store')
             "type rexie_Store = class end"
@@ -23,7 +23,7 @@ nominal rexie_store =
 /// ### rexie_transaction
 nominal rexie_transaction =
     `(
-        native_type
+        rust_type
             `($'rexie_Transaction')
             `($'rexie::Transaction')
             "type rexie_Transaction = class end"
@@ -32,7 +32,7 @@ nominal rexie_transaction =
 /// ### rexie_error
 nominal rexie_error =
     `(
-        native_type
+        rust_type
             `($'rexie_Error')
             `($'rexie::Error')
             "type rexie_Error = class end"
@@ -41,7 +41,7 @@ nominal rexie_error =
 /// ### js_value
 nominal js_value =
     `(
-        native_type
+        rust_type
             `($'wasm_bindgen_JsValue')
             `($'wasm_bindgen::JsValue')
             "type wasm_bindgen_JsValue = class end"
@@ -50,7 +50,7 @@ nominal js_value =
 /// ### closure
 nominal closure t =
     `(
-        native_type
+        rust_type
             `($'wasm_bindgen_closure_Closure<`t>')
             `($'wasm_bindgen::closure::Closure<`t>')
             "type wasm_bindgen_closure_Closure<'T> = class end"
@@ -59,7 +59,7 @@ nominal closure t =
 /// ### js_function
 nominal js_function =
     `(
-        native_type
+        rust_type
             `($'js_sys_Function')
             `($'js_sys::Function')
             "type js_sys_Function = class end"
@@ -68,7 +68,7 @@ nominal js_function =
 /// ### window
 nominal window =
     `(
-        native_type
+        rust_type
             `($'web_sys_Window')
             `($'web_sys::Window')
             "type web_sys_Window = class end"
@@ -77,7 +77,7 @@ nominal window =
 /// ### document
 nominal document =
     `(
-        native_type
+        rust_type
             `($'web_sys_Document')
             `($'web_sys::Document')
             "type web_sys_Document = class end"
@@ -86,7 +86,7 @@ nominal document =
 /// ### html_element
 nominal html_element =
     `(
-        native_type
+        rust_type
             `($'web_sys_HtmlElement')
             `($'web_sys::HtmlElement')
             "type web_sys_HtmlElement = class end"
@@ -95,7 +95,7 @@ nominal html_element =
 /// ### storage
 nominal storage =
     `(
-        native_type
+        rust_type
             `($'web_sys_Storage')
             `($'web_sys::Storage')
             "type web_sys_Storage = class end"
@@ -103,8 +103,8 @@ nominal storage =
 
 /// ### closure_wrap
 inl closure_wrap forall t. (x : rust.box t) : closure t =
-    // native Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)
-    inl x = if rust.is_native () then x else join x
+    // Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)
+    inl x = if is_rust () then x else join x
     !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
 
 /// ### closure_forget

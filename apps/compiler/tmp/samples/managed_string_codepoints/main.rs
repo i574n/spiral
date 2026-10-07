@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
@@ -32,10 +32,10 @@ fn method1(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3: i32, mut v4: i32, mu
             let mut v12: i32 = if v10 {
                 v4
             } else {
-                let mut v11: i32 = v4 + 1i32;
+                let mut v11: i32 = v4.wrapping_add(1i32);
                 v11
             };
-            let mut v13: i32 = v3 + 1i32;
+            let mut v13: i32 = v3.wrapping_add(1i32);
             (v0, v1, v2, v3, v4, v5) = (v0.clone(), v1, v2, v13, v12, v5);
             continue;
         }
@@ -56,7 +56,7 @@ fn method2(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3: i32, mut v4: i32, mu
                 v10
             };
             if v11 {
-                let mut v12: i32 = v4 + 1i32;
+                let mut v12: i32 = v4.wrapping_add(1i32);
                 (v0, v1, v2, v3, v4, v5, v6) = (v0.clone(), v1, v2, v3, v12, v5, v6);
                 continue;
             } else {
@@ -64,8 +64,8 @@ fn method2(mut v0: Rc<str>, mut v1: u8, mut v2: u8, mut v3: i32, mut v4: i32, mu
                 if v14 {
                     return v4;
                 } else {
-                    let mut v15: i32 = v4 + 1i32;
-                    let mut v16: i32 = v5 + 1i32;
+                    let mut v15: i32 = v4.wrapping_add(1i32);
+                    let mut v16: i32 = v5.wrapping_add(1i32);
                     (v0, v1, v2, v3, v4, v5, v6) = (v0.clone(), v1, v2, v3, v15, v16, v6);
                     continue;
                 }
@@ -103,7 +103,7 @@ fn spiral_main() -> i32 {
     let mut v26: i32 = 0i32;
     let mut v27: i32 = 10i32;
     let mut v28: i32 = method2(v6.clone(), v21, v23, v24, v25, v26, v27);
-    let mut v29: i32 = v28 - 1i32;
+    let mut v29: i32 = v28.wrapping_sub(1i32);
     let mut v30: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v19 as i64, v29 as i64);
     let mut v31: i32 = 1i32;
     let mut v32: u8 = method0(v0.clone(), v31);
@@ -123,7 +123,7 @@ fn spiral_main() -> i32 {
     let mut v46: i32 = 0i32;
     let mut v47: i32 = 10i32;
     let mut v48: i32 = method2(v6.clone(), v41, v43, v44, v45, v46, v47);
-    let mut v49: i32 = v48 - 1i32;
+    let mut v49: i32 = v48.wrapping_sub(1i32);
     let mut v50: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v39 as i64, v49 as i64);
     let mut v51: i32 = 1i32;
     let mut v52: u8 = method0(v0.clone(), v51);
@@ -143,7 +143,7 @@ fn spiral_main() -> i32 {
     let mut v66: i32 = 0i32;
     let mut v67: i32 = 10i32;
     let mut v68: i32 = method2(v6.clone(), v61, v63, v64, v65, v66, v67);
-    let mut v69: i32 = v68 - 1i32;
+    let mut v69: i32 = v68.wrapping_sub(1i32);
     let mut v70: Rc<str> = string_slice(&{ thread_local!{ static LIT: Rc<str> = Rc::<str>::from("Aéλ🙂Z"); } LIT.with(|lit| lit.clone()) }, v59 as i64, v69 as i64);
     let mut v71: i32 = 1i32;
     let mut v72: u8 = method0(v0.clone(), v71);

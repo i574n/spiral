@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -220,7 +220,6 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
                                     US0::US0_0 => { // BitZero
                                         return US2::US2_2;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -231,10 +230,8 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
                                     US0::US0_0 => { // BitZero
                                         return US2::US2_1;
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         }
                     }
                     UH2::UH2_0 => { // RegexEmpty
@@ -289,7 +286,6 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -310,7 +306,6 @@ fn method4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                 US2::US2_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH2::UH2_0 => { // RegexEmpty
@@ -328,7 +323,6 @@ fn method4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                 US2::US2_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -409,7 +403,6 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US2::US2_2
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
                             US0::US0_0 => { // BitZero
@@ -420,10 +413,8 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                                     US0::US0_0 => { // BitZero
                                         US2::US2_1
                                     }
-                                    _ => unreachable!(),
                                 }
                             }
-                            _ => unreachable!(),
                         };
                         match &v15 {
                             US2::US2_1 => { // SymbolSame
@@ -472,7 +463,6 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -582,7 +572,6 @@ fn method2(mut v0: Rc<UH2>) -> Rc<UH2> {
             let mut v16: Rc<UH2> = method2(v15.clone());
             method8(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method10(mut v0: Rc<UH2>) -> US3 {
@@ -653,7 +642,6 @@ fn method10(mut v0: Rc<UH2>) -> US3 {
             let mut v25: Rc<UH2> = v25.clone();
             US3::US3_0
         }
-        _ => unreachable!(),
     }
 }
 fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
@@ -680,7 +668,6 @@ fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
                     let mut v29: Rc<UH2> = method9(v25.clone(), v1.clone());
                     method3(v28.clone(), v29.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH2::UH2_2(v4) => { // RegexChar
@@ -694,7 +681,6 @@ fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
                         US0::US0_0 => { // BitZero
                             US2::US2_2
                         }
-                        _ => unreachable!(),
                     }
                 }
                 US0::US0_0 => { // BitZero
@@ -705,10 +691,8 @@ fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
                         US0::US0_0 => { // BitZero
                             US2::US2_1
                         }
-                        _ => unreachable!(),
                     }
                 }
-                _ => unreachable!(),
             };
             let mut v15: bool = match &v14 {
                 US2::US2_1 => { // SymbolSame
@@ -736,7 +720,6 @@ fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
             let mut v37: Rc<UH2> = method8(v35.clone());
             method6(v36.clone(), v37.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method1(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
@@ -764,10 +747,8 @@ fn method0(mut v0: Rc<UH2>, mut v1: Rc<UH0>) -> bool {
                     US3::US3_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -934,7 +915,6 @@ fn method16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -955,7 +935,6 @@ fn method15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
                 US2::US2_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
         UH3::UH3_0 => { // RegexEmpty
@@ -973,7 +952,6 @@ fn method15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
                 US2::US2_1 => { // SymbolSame
                     v1.clone()
                 }
-                _ => unreachable!(),
             }
         }
     }
@@ -1138,7 +1116,6 @@ fn method18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
                     }
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1248,7 +1225,6 @@ fn method13(mut v0: Rc<UH3>) -> Rc<UH3> {
             let mut v16: Rc<UH3> = method13(v15.clone());
             method19(v16.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method21(mut v0: Rc<UH3>) -> US3 {
@@ -1319,7 +1295,6 @@ fn method21(mut v0: Rc<UH3>) -> US3 {
             let mut v25: Rc<UH3> = v25.clone();
             US3::US3_0
         }
-        _ => unreachable!(),
     }
 }
 fn method20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
@@ -1346,7 +1321,6 @@ fn method20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
                     let mut v35: Rc<UH3> = method20(v31.clone(), v1.clone());
                     method14(v34.clone(), v35.clone())
                 }
-                _ => unreachable!(),
             }
         }
         UH3::UH3_2(v4) => { // RegexChar
@@ -1423,7 +1397,6 @@ fn method20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
             let mut v43: Rc<UH3> = method19(v41.clone());
             method17(v42.clone(), v43.clone())
         }
-        _ => unreachable!(),
     }
 }
 fn method12(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
@@ -1451,10 +1424,8 @@ fn method11(mut v0: Rc<UH3>, mut v1: Rc<UH1>) -> bool {
                     US3::US3_0 => { // Nullable
                         return true;
                     }
-                    _ => unreachable!(),
                 }
             }
-            _ => unreachable!(),
         }
     }
 }
@@ -1466,7 +1437,6 @@ fn method22(mut v0: US4) -> US5 {
             let mut v3: bool = method0(v1.clone(), v2.clone());
             US5::US5_1(v1.clone(), v2.clone(), v3)
         }
-        _ => unreachable!(),
     }
 }
 fn method23(mut v0: US5) -> bool {
@@ -1474,10 +1444,9 @@ fn method23(mut v0: US5) -> bool {
         US5::US5_1(v1, v2, v3) => { // BitMatcherDecided
             let mut v1: Rc<UH2> = v1.clone();
             let mut v2: Rc<UH0> = v2.clone();
-            let mut v3: bool = v3.clone();
+            let mut v3: bool = *v3;
             v3
         }
-        _ => unreachable!(),
     }
 }
 fn spiral_main() -> i32 {

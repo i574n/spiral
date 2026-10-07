@@ -40,9 +40,9 @@ inl to' forall t u. (fn : t -> option u) (x : t) : option u =
 
 /// ### to
 inl to forall t u. (x : t) : u =
-    if rust.rust.is_native ()
+    if is_rust ()
     then
-        // native Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
+        // Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
         inl from_string : bool =
             real
                 typecase t with
@@ -85,7 +85,7 @@ inl convert_i32 forall t. (x : t) : int =
         Lua = fun () => x |> convert_i32_base 10 : int
         Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int
         Python = fun () => x |> convert_i32_base 10 : int
-        // Native Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
+        // Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
         Rust = fun () =>
             if (real typecase t with string => true | _ => false)
             then x |> convert_i32_base 10 : int

@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32, l1: i32 }
@@ -7,7 +7,7 @@ fn spiral_main() -> i32 {
     v0.borrow_mut().l0 = 3i32;
     v0.borrow_mut().l1 = 4i32;
     let (mut v1, mut v2): (i32, i32) = (v0.borrow().l0.clone(), v0.borrow().l1.clone());
-    let mut v3: i32 = v1 + v2;
+    let mut v3: i32 = v1.wrapping_add(v2);
     v3
 }
 #[cfg(not(target_arch = "wasm32"))]

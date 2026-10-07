@@ -56,7 +56,7 @@ function Heavy([scriptblock] $b) {
 }
 $compileTimes = [ordered]@{}
 
-# The compiler of the polyglot spiral bundle (as lib.ps1's BuildNativeRust), run from the entry's directory.
+# The compiler of the polyglot spiral bundle (as lib.ps1's BuildSpiral), run from the entry's directory.
 function Invoke-BundleCompiler([string] $backend, [string] $in, [string] $out) {
     . (Join-Path $here '../../../../deps/polyglot/scripts/spiral-bundle.ps1')
     # The bundle points DOTNET_ROOT at its .NET 11 toolchain; the F# benchmark exe (net9.0) must keep the system one.
@@ -154,7 +154,7 @@ foreach ($b in 'Fsharp', 'Rust') {
 }
 
 if ($Cells) {
-    # Every `///- --test` cell of parsing.dib that uses the pure-Spiral library (FParsec cells need the #r'd DLLs and
+    # Every `///- --test` cell of parsing.livemd that uses the pure-Spiral library (FParsec cells need the #r'd DLLs and
     # the `--test static` frontend, so they are skipped), compiled to F# as its own program.
     # a Spiral cell's source is its smart-cell annotation's attrs.source (spiral/apps/kino Document)
     $sources = [regex]::Matches((Get-Content -Raw $Notebook), '<!-- livebook:(\{"chunks".*?"kind":"Elixir\.Spiral\.Kino\.SmartCell".*?\}) -->') | ForEach-Object { 'spiral' + "`n" + ($_.Groups[1].Value | ConvertFrom-Json).attrs.source }

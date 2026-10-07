@@ -11,7 +11,7 @@ inl base_let' x =
 /// ### future
 nominal future t =
     `(
-        native_type
+        rust_type
             `($'std_future_Future<`t>')
             `($'std::future::Future<Output = `t>')
             "type std_future_Future<'T> = class end"
@@ -48,7 +48,7 @@ inl block_on_tokio_send forall t. (fn : future_pin_send t) : t =
 /// ### stream_ext_tokio
 nominal stream_ext_tokio =
     `(
-        native_type
+        rust_type
             `($'tokio_stream_StreamExt')
             `($'tokio_stream::StreamExt')
             "type tokio_stream_StreamExt = class end"
@@ -57,7 +57,7 @@ nominal stream_ext_tokio =
 /// ### join_handle_tokio
 nominal join_handle_tokio t =
     `(
-        native_type
+        rust_type
             `($'tokio_task_JoinHandle<`t>')
             `($'tokio::task::JoinHandle<`t>')
             "type tokio_task_JoinHandle<'T> = class end"
@@ -110,7 +110,7 @@ inl spawn_tokio forall t. (fn : future_pin_send t) : join_handle_tokio t =
 /// ### try_join_all
 nominal try_join_all t =
     `(
-        native_type
+        rust_type
             `($'futures_future_TryJoinAll<`t>')
             `($'futures::future::TryJoinAll<`t>')
             "type futures_future_TryJoinAll<'T> = class end"
@@ -123,7 +123,7 @@ inl try_join_all forall t. (x : am'.vec (future_pin (resultm.result' t sm'.std_s
 /// ### fuse_tokio
 nominal fuse_tokio t =
     `(
-        native_type
+        rust_type
             `($'tokio_prelude_stream_Fuse<`t>')
             `($'tokio::prelude::stream::Fuse<`t>')
             "type tokio_prelude_stream_Fuse<'T> = class end"
@@ -139,7 +139,7 @@ inl future_fuse forall t. (x : future_pin t) : fuse' (future_pin t) =
 /// ### join_all
 nominal join_all t =
     `(
-        native_type
+        rust_type
             `($'futures_future_JoinAll<`t>')
             `($'futures::future::JoinAll<`t>')
             "type futures_future_JoinAll<'T> = class end"
@@ -186,10 +186,9 @@ inl await_send forall t. (x : future_pin_send t) : t =
     !\($'"!x.await"')
 
 /// ### into_iter
-// Native Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
+// Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
 // elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain
-// Spiral array: Fable's rayon types (`IntoIter`, and `Map` with its source stage as a phantom parameter) and the
-// type-level backend switches that chose them are gone.
+// Spiral array.
 type into_iter t = array_base t
 
 /// ### into_par_iter
@@ -301,7 +300,7 @@ inl await_task forall t. (a : task t) : async t =
 
 /// ### ignore
 inl ignore forall t. (a : async t) : async () =
-    if rust.is_native ()
+    if is_rust ()
     then $'Box::pin(async move { let _ = !a.await; })' : async ()
     else
         run_target function
@@ -317,33 +316,33 @@ inl run_synchronously forall t. (a : async t) : t =
             a |> $'Async.RunSynchronously'
         | Cuda => fun () =>
             $'asyncio.run(!a())'
-        // Native Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.
-        | RustNative => fun () =>
+        // Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.
+        | Rust => fun () =>
             $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t
         | _ => fun () => null ()
 
-// Native Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the
+// Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the
 // native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in
-// base.catch_unwind_native (a once-installed hook that defers to the previous one unless this thread's counter is set).
+// base.catch_unwind_rust (a once-installed hook that defers to the previous one unless this thread's counter is set).
 // A panic=abort build aborts instead (and its hook always reports).
-inl catch_native forall t. (a : async t) : async (resultm.result' t exn) =
+inl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =
     $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
 
-// Native Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and
+// Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and
 // aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts
 // there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).
-// A panic in that first poll is kept (its report suppressed, as in catch_native) and resumed by the handle (F# raises a
+// A panic in that first poll is kept (its report suppressed, as in catch_rust) and resumed by the handle (F# raises a
 // child's exception at the await). With a
 // timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after
 // it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.
-inl start_child_native forall t. (timeout : i32) (a : async t) : async (async t) =
+inl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =
     $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)
 
 /// ### start
-// Native Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once
+// Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once
 // and runs it on the thread pool.
 inl start (a : async ()) : () =
-    if rust.is_native ()
+    if is_rust ()
     then a |> run_synchronously
     else
         run_target function
@@ -354,8 +353,8 @@ inl start (a : async ()) : () =
 
 /// ### start_child
 inl start_child forall t. (a : async t) : async (async t) =
-    if rust.is_native ()
-    then a |> start_child_native -1
+    if is_rust ()
+    then a |> start_child_rust -1
     else
         run_target function
             | Fsharp _
@@ -365,8 +364,8 @@ inl start_child forall t. (a : async t) : async (async t) =
 
 /// ### start_child_timeout
 inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t) =
-    if rust.is_native ()
-    then a |> start_child_native timeout
+    if is_rust ()
+    then a |> start_child_rust timeout
     else
         run_target function
             | Fsharp _
@@ -375,9 +374,9 @@ inl start_child_timeout forall t. (timeout : i32) (a : async t) : async (async t
             | _ => fun () => null ()
 
 /// ### start_immediate
-// Native Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).
+// Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).
 inl start_immediate forall t. (a : async t) : () =
-    if rust.is_native ()
+    if is_rust ()
     then a |> run_synchronously |> fun _ => ()
     else
         run_target function
@@ -387,10 +386,10 @@ inl start_immediate forall t. (a : async t) : () =
             | _ => fun () => null ()
 
 /// ### start_with_continuations
-// Native Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).
+// Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).
 inl start_with_continuations forall t. (a : async t) : () =
-    if rust.is_native ()
-    then a |> catch_native |> run_synchronously |> fun _ => ()
+    if is_rust ()
+    then a |> catch_rust |> run_synchronously |> fun _ => ()
     else
         run_target_args' a function
             | Fsharp _
@@ -409,7 +408,7 @@ inl sleep (ms : i32) : async () =
             ms |> $'Async.Sleep'
         | Cuda _ => fun () =>
             $'asyncio.sleep(!ms / 1000)'
-        | RustNative => fun () =>
+        | Rust => fun () =>
             $'Box::pin(async move { std::thread::sleep(std::time::Duration::from_millis((!ms as u64))) })' : async ()
         | _ => fun () => null ()
 
@@ -440,11 +439,11 @@ inl return_await' forall t. (a : async t) : t =
     }
 
 /// ### catch'
-// Native Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).
+// Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).
 inl catch' forall t e. (a : async t) : async (choice2' t e) =
-    if rust.is_native ()
+    if is_rust ()
     then
-        inl r = a |> catch_native
+        inl r = a |> catch_rust
         $'(!r)' : async (choice2' t e)
     else
         run_target function

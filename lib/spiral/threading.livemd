@@ -31,14 +31,14 @@ Spiral.Kino.eval!(
 
 ### join_handle
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal join_handle t =\n    `(\n        native_type\n            `($'std_thread_JoinHandle<`t>')\n            `($'std::thread::JoinHandle<`t>')\n            \"type std_thread_JoinHandle<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal join_handle t =\n    `(\n        rust_type\n            `($'std_thread_JoinHandle<`t>')\n            `($'std::thread::JoinHandle<`t>')\n            \"type std_thread_JoinHandle<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal join_handle t =
       `(
-          native_type
+          rust_type
               `($'std_thread_JoinHandle<`t>')
               `($'std::thread::JoinHandle<`t>')
               "type std_thread_JoinHandle<'T> = class end"
@@ -105,14 +105,14 @@ Spiral.Kino.eval!(
 
 ### arc
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc t =\n    `(\n        native_type\n            `($'std_sync_Arc<`t>')\n            `($'std::sync::Arc<`t>')\n            \"type std_sync_Arc<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc t =\n    `(\n        rust_type\n            `($'std_sync_Arc<`t>')\n            `($'std::sync::Arc<`t>')\n            \"type std_sync_Arc<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal arc t =
       `(
-          native_type
+          rust_type
               `($'std_sync_Arc<`t>')
               `($'std::sync::Arc<`t>')
               "type std_sync_Arc<'T> = class end"
@@ -138,14 +138,14 @@ Spiral.Kino.eval!(
 
 ### mutex
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mutex t =\n    `(\n        native_type\n            `($'std_sync_Mutex<`t>')\n            `($'std::sync::Mutex<`t>')\n            \"type std_sync_Mutex<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mutex t =\n    `(\n        rust_type\n            `($'std_sync_Mutex<`t>')\n            `($'std::sync::Mutex<`t>')\n            \"type std_sync_Mutex<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal mutex t =
       `(
-          native_type
+          rust_type
               `($'std_sync_Mutex<`t>')
               `($'std::sync::Mutex<`t>')
               "type std_sync_Mutex<'T> = class end"
@@ -185,14 +185,14 @@ Spiral.Kino.eval!(
 
 ### rw_lock
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock t =\n    `(\n        native_type\n            `($'std_sync_RwLock<`t>')\n            `($'std::sync::RwLock<`t>')\n            \"type std_sync_RwLock<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock t =\n    `(\n        rust_type\n            `($'std_sync_RwLock<`t>')\n            `($'std::sync::RwLock<`t>')\n            \"type std_sync_RwLock<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal rw_lock t =
       `(
-          native_type
+          rust_type
               `($'std_sync_RwLock<`t>')
               `($'std::sync::RwLock<`t>')
               "type std_sync_RwLock<'T> = class end"
@@ -353,14 +353,14 @@ Spiral.Kino.eval!(
 
 ### mutex_guard
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mutex_guard t =\n    `(\n        native_type\n            `($'std_sync_MutexGuard<`t>')\n            `($'std::sync::MutexGuard<`t>')\n            \"type std_sync_MutexGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal mutex_guard t =\n    `(\n        rust_type\n            `($'std_sync_MutexGuard<`t>')\n            `($'std::sync::MutexGuard<`t>')\n            \"type std_sync_MutexGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal mutex_guard t =
       `(
-          native_type
+          rust_type
               `($'std_sync_MutexGuard<`t>')
               `($'std::sync::MutexGuard<`t>')
               "type std_sync_MutexGuard<'T> = class end"
@@ -372,14 +372,14 @@ Spiral.Kino.eval!(
 
 ### rw_lock_read_guard
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock_read_guard t =\n    `(\n        native_type\n            `($'std_sync_RwLockReadGuard<`t>')\n            `($'std::sync::RwLockReadGuard<`t>')\n            \"type std_sync_RwLockReadGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock_read_guard t =\n    `(\n        rust_type\n            `($'std_sync_RwLockReadGuard<`t>')\n            `($'std::sync::RwLockReadGuard<`t>')\n            \"type std_sync_RwLockReadGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal rw_lock_read_guard t =
       `(
-          native_type
+          rust_type
               `($'std_sync_RwLockReadGuard<`t>')
               `($'std::sync::RwLockReadGuard<`t>')
               "type std_sync_RwLockReadGuard<'T> = class end"
@@ -391,14 +391,14 @@ Spiral.Kino.eval!(
 
 ### rw_lock_write_guard
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock_write_guard t =\n    `(\n        native_type\n            `($'std_sync_RwLockWriteGuard<`t>')\n            `($'std::sync::RwLockWriteGuard<`t>')\n            \"type std_sync_RwLockWriteGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal rw_lock_write_guard t =\n    `(\n        rust_type\n            `($'std_sync_RwLockWriteGuard<`t>')\n            `($'std::sync::RwLockWriteGuard<`t>')\n            \"type std_sync_RwLockWriteGuard<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal rw_lock_write_guard t =
       `(
-          native_type
+          rust_type
               `($'std_sync_RwLockWriteGuard<`t>')
               `($'std::sync::RwLockWriteGuard<`t>')
               "type std_sync_RwLockWriteGuard<'T> = class end"
@@ -410,14 +410,14 @@ Spiral.Kino.eval!(
 
 ### poison_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal poison_error t =\n    `(\n        native_type\n            `($'std_sync_PoisonError<`t>')\n            `($'std::sync::PoisonError<`t>')\n            \"type std_sync_PoisonError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal poison_error t =\n    `(\n        rust_type\n            `($'std_sync_PoisonError<`t>')\n            `($'std::sync::PoisonError<`t>')\n            \"type std_sync_PoisonError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal poison_error t =
       `(
-          native_type
+          rust_type
               `($'std_sync_PoisonError<`t>')
               `($'std::sync::PoisonError<`t>')
               "type std_sync_PoisonError<'T> = class end"
@@ -429,14 +429,14 @@ Spiral.Kino.eval!(
 
 ### try_lock_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal try_lock_error t =\n    `(\n        native_type\n            `($'std_sync_TryLockError<`t>')\n            `($'std::sync::TryLockError<`t>')\n            \"type std_sync_TryLockError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal try_lock_error t =\n    `(\n        rust_type\n            `($'std_sync_TryLockError<`t>')\n            `($'std::sync::TryLockError<`t>')\n            \"type std_sync_TryLockError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal try_lock_error t =
       `(
-          native_type
+          rust_type
               `($'std_sync_TryLockError<`t>')
               `($'std::sync::TryLockError<`t>')
               "type std_sync_TryLockError<'T> = class end"
@@ -642,14 +642,14 @@ Spiral.Kino.eval!(
 
 ### channel_receiver
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal channel_receiver t =\n    `(\n        native_type\n            `($'std_sync_mpsc_Receiver<`t>')\n            `($'std::sync::mpsc::Receiver<`t>')\n            \"type std_sync_mpsc_Receiver<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal channel_receiver t =\n    `(\n        rust_type\n            `($'std_sync_mpsc_Receiver<`t>')\n            `($'std::sync::mpsc::Receiver<`t>')\n            \"type std_sync_mpsc_Receiver<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal channel_receiver t =
       `(
-          native_type
+          rust_type
               `($'std_sync_mpsc_Receiver<`t>')
               `($'std::sync::mpsc::Receiver<`t>')
               "type std_sync_mpsc_Receiver<'T> = class end"
@@ -661,14 +661,14 @@ Spiral.Kino.eval!(
 
 ### channel_sender
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal channel_sender t =\n    `(\n        native_type\n            `($'std_sync_mpsc_Sender<`t>')\n            `($'std::sync::mpsc::Sender<`t>')\n            \"type std_sync_mpsc_Sender<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal channel_sender t =\n    `(\n        rust_type\n            `($'std_sync_mpsc_Sender<`t>')\n            `($'std::sync::mpsc::Sender<`t>')\n            \"type std_sync_mpsc_Sender<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal channel_sender t =
       `(
-          native_type
+          rust_type
               `($'std_sync_mpsc_Sender<`t>')
               `($'std::sync::mpsc::Sender<`t>')
               "type std_sync_mpsc_Sender<'T> = class end"
@@ -694,14 +694,14 @@ Spiral.Kino.eval!(
 
 ### send_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal send_error t =\n    `(\n        native_type\n            `($'std_sync_mpsc_SendError<`t>')\n            `($'std::sync::mpsc::SendError<`t>')\n            \"type std_sync_mpsc_SendError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal send_error t =\n    `(\n        rust_type\n            `($'std_sync_mpsc_SendError<`t>')\n            `($'std::sync::mpsc::SendError<`t>')\n            \"type std_sync_mpsc_SendError<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal send_error t =
       `(
-          native_type
+          rust_type
               `($'std_sync_mpsc_SendError<`t>')
               `($'std::sync::mpsc::SendError<`t>')
               "type std_sync_mpsc_SendError<'T> = class end"
@@ -731,7 +731,7 @@ Spiral.Kino.eval!(
 
 ### sleep
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sleep (n : i32) : () =\n    run_target function\n        | Fsharp => fun () => $'System.Threading.Thread.Sleep' n\n        | RustNative => fun () => $'std::thread::sleep(std::time::Duration::from_millis(!n as u64))' : ()\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl sleep (n : i32) : () =\n    run_target function\n        | Fsharp => fun () => $'System.Threading.Thread.Sleep' n\n        | Rust => fun () => $'std::thread::sleep(std::time::Duration::from_millis(!n as u64))' : ()\n        | _ => fun () => ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -739,7 +739,7 @@ Spiral.Kino.eval!(
   inl sleep (n : i32) : () =
       run_target function
           | Fsharp => fun () => $'System.Threading.Thread.Sleep' n
-          | RustNative => fun () => $'std::thread::sleep(std::time::Duration::from_millis(!n as u64))' : ()
+          | Rust => fun () => $'std::thread::sleep(std::time::Duration::from_millis(!n as u64))' : ()
           | _ => fun () => ()
   """,
   timeout: 300_000
@@ -842,14 +842,14 @@ Spiral.Kino.eval!(
 
 ### cancellation_source_token
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =\n    // Native Rust: a source and its token share one `Arc<AtomicBool>`.\n    if rust.is_native ()\n    then $'!x.clone()'\n    else $'!x.Token'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =\n    // Rust: a source and its token share one `Arc<AtomicBool>`.\n    if is_rust ()\n    then $'!x.clone()'\n    else $'!x.Token'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =
-      // Native Rust: a source and its token share one `Arc<AtomicBool>`.
-      if rust.is_native ()
+      // Rust: a source and its token share one `Arc<AtomicBool>`.
+      if is_rust ()
       then $'!x.clone()'
       else $'!x.Token'
   """,
@@ -859,7 +859,7 @@ Spiral.Kino.eval!(
 
 ### cancellation_source_cancel
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_cancel (x : cancellation_token_source) : () =\n    run_target function\n        | Fsharp => fun () =>\n            $'!x.Cancel' ()\n        | RustNative => fun () => $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_cancel (x : cancellation_token_source) : () =\n    run_target function\n        | Fsharp => fun () =>\n            $'!x.Cancel' ()\n        | Rust => fun () => $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -868,7 +868,7 @@ Spiral.Kino.eval!(
       run_target function
           | Fsharp => fun () =>
               $'!x.Cancel' ()
-          | RustNative => fun () => $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
+          | Rust => fun () => $'!x.store(true, std::sync::atomic::Ordering::SeqCst)' : ()
           | _ => fun () => null ()
   """,
   timeout: 300_000
@@ -920,13 +920,13 @@ Spiral.Kino.eval!(
 
 ### token_none
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl token_none () : cancellation_token =\n    if rust.is_native ()\n    then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'\n    else $'`cancellation_token.None'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl token_none () : cancellation_token =\n    if is_rust ()\n    then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'\n    else $'`cancellation_token.None'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl token_none () : cancellation_token =
-      if rust.is_native ()
+      if is_rust ()
       then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'
       else $'`cancellation_token.None'
   """,
@@ -964,13 +964,13 @@ Spiral.Kino.eval!(
 
 ### new_cancellation_token_source
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_cancellation_token_source () : cancellation_token_source =\n    if rust.is_native ()\n    then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'\n    else $'new `cancellation_token_source ()'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_cancellation_token_source () : cancellation_token_source =\n    if is_rust ()\n    then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'\n    else $'new `cancellation_token_source ()'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl new_cancellation_token_source () : cancellation_token_source =
-      if rust.is_native ()
+      if is_rust ()
       then $'std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false))'
       else $'new `cancellation_token_source ()'
   """,
@@ -978,13 +978,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl token_cancellation_requested (ct : cancellation_token) : bool =\n    if rust.is_native ()\n    then $'!ct.load(std::sync::atomic::Ordering::SeqCst)'\n    else $'!ct.IsCancellationRequested'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl token_cancellation_requested (ct : cancellation_token) : bool =\n    if is_rust ()\n    then $'!ct.load(std::sync::atomic::Ordering::SeqCst)'\n    else $'!ct.IsCancellationRequested'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl token_cancellation_requested (ct : cancellation_token) : bool =
-      if rust.is_native ()
+      if is_rust ()
       then $'!ct.load(std::sync::atomic::Ordering::SeqCst)'
       else $'!ct.IsCancellationRequested'
   """,

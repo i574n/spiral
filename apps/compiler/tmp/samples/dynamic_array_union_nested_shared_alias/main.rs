@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
@@ -23,11 +23,10 @@ fn method0(mut v0: US0) -> i32 {
             let mut v1: Rc<RefCell<Vec<Rc<RefCell<Vec<i32>>>>>> = v1.clone();
             let mut v2: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[0i32 as usize].clone();
             let mut v3: i32 = v2.clone().borrow()[0i32 as usize].clone();
-            let mut v4: i32 = v3 + 1i32;
+            let mut v4: i32 = v3.wrapping_add(1i32);
             v2.clone().borrow_mut()[0i32 as usize] = v4;
             0i32
         }
-        _ => unreachable!(),
     }
 }
 fn method1(mut v0: US0) -> i32 {
@@ -41,14 +40,13 @@ fn method1(mut v0: US0) -> i32 {
             let mut v3: Rc<RefCell<Vec<i32>>> = v1.clone().borrow()[1i32 as usize].clone();
             let mut v4: i32 = v2.clone().borrow()[0i32 as usize].clone();
             let mut v5: i32 = v2.clone().borrow()[1i32 as usize].clone();
-            let mut v6: i32 = v4 + v5;
+            let mut v6: i32 = v4.wrapping_add(v5);
             let mut v7: i32 = v3.clone().borrow()[0i32 as usize].clone();
-            let mut v8: i32 = v6 + v7;
+            let mut v8: i32 = v6.wrapping_add(v7);
             let mut v9: i32 = v3.clone().borrow()[1i32 as usize].clone();
-            let mut v10: i32 = v8 + v9;
+            let mut v10: i32 = v8.wrapping_add(v9);
             v10
         }
-        _ => unreachable!(),
     }
 }
 fn spiral_main() -> i32 {
@@ -66,8 +64,8 @@ fn spiral_main() -> i32 {
     let mut v5: i32 = method0(v4.clone());
     let mut v6: US0 = US0::US0_1(v1.clone());
     let mut v7: i32 = method1(v6.clone());
-    let mut v8: i32 = v7 + v5;
-    let mut v9: i32 = v8 - 19i32;
+    let mut v8: i32 = v7.wrapping_add(v5);
+    let mut v9: i32 = v8.wrapping_sub(19i32);
     v9
 }
 #[cfg(not(target_arch = "wasm32"))]

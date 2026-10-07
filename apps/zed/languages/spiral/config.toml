@@ -1,6 +1,6 @@
 name = "Spiral"
 grammar = "rust"
-path_suffixes = ["spi", "spir", "spiproj", "dib"]
+path_suffixes = ["spi", "spir", "spiproj"]
 line_comments = ["// "]
 block_comment = { start = "(* ", prefix = "", end = " *)", tab_size = 0 }
 autoclose_before = " }])\n"

@@ -165821,12 +165821,12 @@ module spiral_compiler =
         let private table = System.Runtime.CompilerServices.ConditionalWeakTable<ResizeArray<string>, HashSet<string>>()
         let get (globals : ResizeArray<string>) = table.GetValue(globals, fun g -> HashSet<string>(g))
 
-    /// ### NativeGapTrace
-    /// SPIRAL_NATIVE_GAP_TRACE=1: when a macro carries lib/spiral's native Rust gap marker (backend.spi's
-    /// `compile_error!("... no native Rust arm ...")` fallback), print the Spiral call chain once to stderr, so one
-    /// compile names every lib function that still needs a native arm.
-    module NativeGapTrace =
-        let enabled = System.Environment.GetEnvironmentVariable "SPIRAL_NATIVE_GAP_TRACE" = "1"
+    /// ### RustGapTrace
+    /// SPIRAL_RUST_GAP_TRACE=1: when a macro carries lib/spiral's Rust gap marker (backend.spi's
+    /// `compile_error!("... no Rust arm ...")` fallback), print the Spiral call chain once to stderr, so one
+    /// compile names every lib function that still needs a Rust arm.
+    module RustGapTrace =
+        let enabled = System.Environment.GetEnvironmentVariable "SPIRAL_RUST_GAP_TRACE" = "1"
         /// BackendSwitch evaluates the other backends' branches only to check their types (into a throwaway seq):
         /// gaps reached there never reach the output.
         let validating = new System.Threading.ThreadLocal<int>(fun () -> 0)
@@ -165839,7 +165839,7 @@ module spiral_compiler =
                     |> List.filter (fun f -> not (f.StartsWith "backend.spi"))
                     |> List.truncate 8
                     |> String.concat " < "
-                if seen.Add frames then eprintfn "NATIVE-GAP %s | %s" text frames
+                if seen.Add frames then eprintfn "RUST-GAP %s | %s" text frames
 
     let peval (env : PartEvalTopEnv) (x : E) =
         let join_point_method = Dictionary(HashIdentity.Structural)
@@ -166631,8 +166631,8 @@ module spiral_compiler =
                 else raise_type_error s <| sprintf "The two side do not have the same type.\nGot: %s\nExpected: %s" (show_ty c_ty') (show_ty c_ty)
             | EMacro(r,a,b) ->
                 let s = add_trace s r
-                if NativeGapTrace.enabled then
-                    a |> List.iter (function MText x when x.Contains "native Rust arm" -> NativeGapTrace.report s.trace (x.Trim()) | _ -> ())
+                if RustGapTrace.enabled then
+                    a |> List.iter (function MText x when x.Contains "Rust arm" -> RustGapTrace.report s.trace (x.Trim()) | _ -> ())
                 let a = a |> List.map (function MText x -> CMText x | MTerm (x,b) -> CMTerm(term s x |> dyn false s, b) | MType x -> CMType(ty s x) | MLitType x -> CMTypeLit(ty s x |> assert_ty_lit s))
                 match s.cse with
                 | table :: _ -> CseDirectiveBarrier.apply (table :> System.Collections.Generic.IDictionary<_,_>) (a |> Seq.choose (function CMText x -> Some x | _ -> None))
@@ -166917,12 +166917,12 @@ module spiral_compiler =
                             | Some key when backend_switch_validated.ContainsKey key -> validate_type backend_switch_validated.[key]
                             | _ ->
                                 let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
-                                NativeGapTrace.validating.Value <- NativeGapTrace.validating.Value + 1
+                                RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
                                     let t' = data_to_ty s (apply s (b, DB))
                                     key |> Option.iter (fun key -> backend_switch_validated.[key] <- t')
                                     validate_type t'
-                                finally NativeGapTrace.validating.Value <- NativeGapTrace.validating.Value - 1
+                                finally RustGapTrace.validating.Value <- RustGapTrace.validating.Value - 1
                     )
                 | a -> raise_type_error s <| sprintf "Expected an record.\nGot: %s" (show_data a)
                 match d with
@@ -170011,14 +170011,9 @@ module spiral_compiler =
         | YSymbol x -> x
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
-    /// ### rewriteFableRustCalls
-    // lib/spiral's Rust types are type-level backend_switches (backend.native_type: the Rust arm is the Rust type, the other
-    // arms the F# stand-in its F#-only declaration names), resolved by `tyv`; Fable's `[<Emit>]` alias globals and the
-    // alias table read back out of them are gone (D41). Calls into Fable's Rust runtime that lib/spiral still emits are
-    // replaced by their std equivalents.
-    let private fableRustCalls = [ "fable_library_rust::String_::fromString(", "Rc::<str>::from(" ]
-    let rewriteFableRustCalls (text : string) =
-        fableRustCalls |> List.fold (fun (t : string) (a, b) -> t.Replace(a, b)) text
+    /// ### rustEmitMarkers
+    // The emit marker's spellings (inlineRustEmits): lib/spiral's, and the Fable-era one emitters outside it may still print.
+    let rustEmitMarkers = [ "__spiral_emit_rust"; "Fable.Core.RustInterop.emitRustExpr" ]
 
     /// ### translateFsharpInterpolations
     // lib/spiral's `$'$"text {!x}"'` macros are F# interpolated strings: codegenRust prints them as
@@ -170078,7 +170073,7 @@ module spiral_compiler =
     /// ### foldStringBindings
     // lib/spiral builds some emitted Rust text at compile time with F#'s string `+` (`rust.fix_closure'`'s closing
     // braces, `am'.new_vec`), which natively is a runtime `+` on Rc<str>. When every part of a string binding is a literal
-    // or an already folded variable, replace it with the literal, so inlineFableEmits sees the code text again.
+    // or an already folded variable, replace it with the literal, so inlineRustEmits sees the code text again.
     let foldStringBindings (generated : string) =
         let rx (p : string) = System.Text.RegularExpressions.Regex p
         let binding = rx @"^(?<ind>[ \t]*)let mut (?<v>v[0-9]+): Rc<str> = (?<rhs>.*?);[ \t]*\r?$"
@@ -170236,18 +170231,19 @@ module spiral_compiler =
             else not (rest.StartsWith "(" || rest.StartsWith "[" || rest.StartsWith "?")
         else n = "" || n.StartsWith ")" || n.StartsWith "," || n.StartsWith ";" || n.StartsWith "}" || n.StartsWith "]"
 
-    /// ### inlineFableEmits
-    // lib/spiral's `!\\(args, $'"rust text with $0"')` is Fable's `emitRustExpr`: codegenRust prints it as
-    // `Fable.Core.RustInterop.emitRustExpr (a, b) vN ;` with the text in an earlier `let mut vN: Rc<str> = "...";`.
+    /// ### inlineRustEmits
+    // lib/spiral's `!\\(args, $'"rust text with $0"')` (rust.emit_expr) is the emit marker `__spiral_emit_rust`: codegenRust
+    // prints it as `__spiral_emit_rust (a, b) vN ;` with the text in an earlier `let mut vN: Rc<str> = "...";`. The
+    // marker's Fable-era spelling `Fable.Core.RustInterop.emitRustExpr` is accepted too (emitters outside lib/spiral).
     // Inline the text (with `$i` replaced by the arguments) and drop the binding, bound (`let mut v: T = ...`) or in
     // statement position. Hosts used to do this after the fact (Eval/Supervisor/the tmp host's rewriteRustEmitExpr).
-    let inlineFableEmits (generated : string) =
-        if not (generated.Contains("Fable.Core.RustInterop.emitRustExpr", System.StringComparison.Ordinal)) then generated
+    let inlineRustEmits (generated : string) =
+        if not (rustEmitMarkers |> List.exists (fun (m : string) -> generated.Contains(m, System.StringComparison.Ordinal))) then generated
         else
             let lines = generated.Split([|"\r\n"; "\n"|], System.StringSplitOptions.None)
             let bindingPattern = System.Text.RegularExpressions.Regex(@"^\s*let mut (v[0-9]+): Rc<str> = (?:Rc::<str>::from\()?(""(?:\\.|[^""\\])*"")\)?;\s*$")
             let emitPattern =
-                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)Fable\.Core\.RustInterop\.emitRustExpr (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
+                System.Text.RegularExpressions.Regex(@"^(?<prefix>\s*(?:let .+? = )?)(?:__spiral_emit_rust|Fable\.Core\.RustInterop\.emitRustExpr) (?<args>.*?) (?<code>v[0-9]+) ;\s*$")
             let unescape (literal : string) =
                 let body = literal.Substring(1, literal.Length - 2)
                 let text = StringBuilder()
@@ -170426,7 +170422,7 @@ module spiral_compiler =
         // Opaque Rust types without `Clone` (Fable shared them behind its own pointers): a use moves the value, so a
         // single use compiles and a second one is rustc's E0382 instead of a clone that can never compile.
         let stack_union_moves = Dictionary<Union, bool>(HashIdentity.Reference)
-        // A type-level backend_switch (`$'backend_switch `(record)'`, lib/spiral's native_type) -> its Rust arm, so the
+        // A type-level backend_switch (`$'backend_switch `(record)'`, lib/spiral's rust_type) -> its Rust arm, so the
         // checks below read the Rust type's own text.
         let rustSwitchArm = function
             | YMacro [Text "backend_switch "; Type (YRecord r)] as t ->
@@ -170461,6 +170457,13 @@ module spiral_compiler =
                     r
             | _ -> false
         let var (L(i,t)) = if is_copy t || moves t then $"v{i}" else $"v{i}.clone()"
+        let rust_int (a : Data) =
+            match data_term_vars a with
+            | [|WV(L(_,YPrim p))|] -> (match p with Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T -> true | _ -> false)
+            | [|WLit l|] -> (match lit_to_primitive_type l with Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T -> true | _ -> false)
+            | _ -> false
+        // A method receiver: a name or literal as is, anything else (`-1i32`, an expression) parenthesized.
+        let rust_receiver (x : string) = if System.Text.RegularExpressions.Regex.IsMatch(x, @"^[A-Za-z_0-9]+$") then x else $"({x})"
         let args x = x |> Array.map var |> String.concat ", "
         let show_w = function WV x -> var x | WLit a -> litRust a
         // Macros are target code: their variables are named, not cloned, so `!a = !b` assigns.
@@ -170468,7 +170471,7 @@ module spiral_compiler =
         let macro_args x = x |> data_term_vars |> Array.map macro_var |> String.concat ", "
         // emitRustExpr's argument tuple: one `$k` per element of the tuple's spine. An element that is itself a tuple
         // (or a record) is one argument, written as a Rust tuple like `(!x)` writes it; flattening it would shift
-        // every later `$k`. A trailing tuple shares the spine, so inlineFableEmits groups surplus arguments instead.
+        // every later `$k`. A trailing tuple shares the spine, so inlineRustEmits groups surplus arguments instead.
         // Liveness for macro splices. A macro names its variables (it's target code), so one that moves its argument
         // (a `self` method, `match`, `into_iter`, a call) leaves the variable moved: a later use was rustc's E0382, and
         // in an `Fn` closure even the first use was E0507. For each statement, `live_after` tells which variables the
@@ -170649,8 +170652,8 @@ module spiral_compiler =
                     let s : string =
                       match part with
                       | CMText x -> x
-                      // lib/spiral's emit_expr: `emitRustExpr !args !code`, the arguments that `$0`, `$1`, ... name.
-                      | CMTerm (x,false) when (text (k-1)).EndsWith "Fable.Core.RustInterop.emitRustExpr " -> emit_args (again k) x
+                      // lib/spiral's emit_expr: `__spiral_emit_rust !args !code`, the arguments that `$0`, `$1`, ... name.
+                      | CMTerm (x,false) when (let t = text (k-1) in rustEmitMarkers |> List.exists (fun m -> t.EndsWith (m + " "))) -> emit_args (again k) x
                       | CMTerm (x,inl) ->
                           // The whole text so far (a `format!(` several splices back still encloses this one).
                           let name w = match w with WV (L(i,_)) when rustSpliceConsumes (sb.ToString()) (text (k+1)) -> clone_or_name (again k i) w | _ -> macro_var w
@@ -170702,7 +170705,9 @@ module spiral_compiler =
                 let moving = union_has_moving_field union_rec
                 let scrutinee (L(i,_)) = match x'.layout with UHeap -> $"&*v{i}" | UStack when moving -> $"v{i}" | UStack -> $"&v{i}"
                 let bind_field (L(v,t)) =
-                    if not (moves t) then $"let mut v{v}: {tyv t} = v{v}.clone();"
+                    // A Copy field bound through a reference is copied out (`*v`), not cloned.
+                    if is_copy t then (match x'.layout with UStack when moving -> $"let mut v{v}: {tyv t} = v{v};" | _ -> $"let mut v{v}: {tyv t} = *v{v};")
+                    elif not (moves t) then $"let mut v{v}: {tyv t} = v{v}.clone();"
                     else match x'.layout with UStack -> $"let mut v{v}: {tyv t} = v{v};" | UHeap -> $"let mut v{v} = v{v};"
                 let case_tag k =
                     union_rec.free_vars
@@ -170728,6 +170733,9 @@ module spiral_compiler =
                         ) on_succs
                     match on_fail with
                     | Some b -> line s'' "_ => {"; block s'' b; line s'' "}"
+                    // Every case matched: the match is exhaustive as Rust sees it (a pruned GADT union declares only the
+                    // cases that can inhabit it). Several scrutinees pair equal cases only, so they keep the fallback.
+                    | None when List.length is = 1 && on_succs.Count > 0 && on_succs.Count = union_rec.free_vars.Count -> ()
                     | None -> line s'' "_ => unreachable!(),"
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
@@ -170819,7 +170827,12 @@ module spiral_compiler =
                 | ArrayIndex, [a;b] -> $"{tup a}.borrow()[{tup b} as usize].clone()"
                 | ArrayIndexSet, [a;b;c] -> $"{tup a}.borrow_mut()[{tup b} as usize] = {tup c}"
 
-                // Math
+                // Math. Integers wrap on overflow, as in C, F# and Delphi (Rust's `+` panics in a debug build).
+                | (Add | Sub | Mult | Div | Mod | ShiftLeft | ShiftRight), [a;b] when rust_int a ->
+                    let m = match op with Add -> "wrapping_add" | Sub -> "wrapping_sub" | Mult -> "wrapping_mul" | Div -> "wrapping_div" | Mod -> "wrapping_rem" | ShiftLeft -> "wrapping_shl" | _ -> "wrapping_shr"
+                    let b = match op with ShiftLeft | ShiftRight -> $"({tup b}) as u32" | _ -> tup b
+                    $"{rust_receiver (tup a)}.{m}({b})"
+                | Neg, [a] when rust_int a -> $"{rust_receiver (tup a)}.wrapping_neg()"
                 | Add, [a;b] -> $"{tup a} + {tup b}"
                 | Sub, [a;b] -> $"{tup a} - {tup b}"
                 | Mult, [a;b] -> $"{tup a} * {tup b}"
@@ -170953,7 +170966,7 @@ module spiral_compiler =
         binds {text=main; indent=4} x
 
         let program = StringBuilder()
-        program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]") |> ignore
+        program.AppendLine("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]") |> ignore
         // Inner attributes (`#![...]`) must precede every item, so such globals go before the `use`s.
         let inner, globals = env.globals |> Seq.toArray |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
         // A closure that captures nothing lives in a `thread_local!`, whose lazy initializer builds it; a chain of them
@@ -170975,6 +170988,13 @@ module spiral_compiler =
         if exports.Count > 0 then
             exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
         else
+            // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] | [|YPrim Int32T|] -> ()
+                | _ -> raise_codegen_error "The return type of main in the Rust backend should be a 32-bit int (or unit)."
+            | _ -> ()
             // A unit `main` exits with 0: its tail (`()`, an `if` without `else`, a unit call) becomes a statement.
             let main =
                 let unitMain =
@@ -170993,7 +171013,7 @@ module spiral_compiler =
             // the spawned thread: exit 101 like an uncaught panic, without a second message from `join().unwrap()`.
             program.AppendLine("#[cfg(not(target_arch = \"wasm32\"))]").AppendLine("fn main() {").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
             program.AppendLine("#[cfg(target_arch = \"wasm32\")]").AppendLine("fn main() {").AppendLine("    spiral_main();").AppendLine("}") |> ignore
-        program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineFableEmits |> rewriteFableRustCalls
+        program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> cacheRustStringLiterals
 
     /// ## CodegenDelphi
@@ -171491,6 +171511,13 @@ module spiral_compiler =
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
 
+        // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
+        match Array.tryLast x with
+        | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+            match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+            | [||] | [|YPrim Int32T|] -> ()
+            | _ -> raise_codegen_error "The return type of main in the Delphi backend should be a 32-bit int (or unit)."
+        | _ -> ()
         emit_function "SpiralMain" [||] (YPrim Int32T) x false
 
         let program = StringBuilder()
@@ -181261,11 +181288,11 @@ module spiral_compiler =
                                         | BuildBackendC -> build CodegenC.codegenC "C" ".c"
                                         | BuildBackendPythonCuda -> build_many (CodegenPython.codegen default_env) "Python"
                                         | BuildBackendCppCuda -> build_many (CodegenCpp.codegen default_env) "CppHost"
-                                        | BuildBackendCudaCppUnavailable -> BuildDraft.FatalError "Cuda C++ backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 5/8/2024
-                                        | BuildBackendPythonUnavailable -> BuildDraft.FatalError "Python backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                        | BuildBackendUpmemPythonCUnavailable -> BuildDraft.FatalError "UPMEM backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 11/3/2023
-                                        | BuildBackendHlsCppUnavailable -> BuildDraft.FatalError "HLS C++ backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 10/17/2023
-                                        | BuildBackendCythonUnavailable -> BuildDraft.FatalError "Cython backend is currently not accessible in Microsoft.DotNet.Interactive.Spiral. Please use an earlier version to access it." // Date: 12/27/2022
+                                        | BuildBackendCudaCppUnavailable -> BuildDraft.FatalError "Cuda C++ backend is not available in this Spiral compiler (removed upstream; an earlier compiler version has it)." // Date: 5/8/2024
+                                        | BuildBackendPythonUnavailable -> BuildDraft.FatalError "Python backend is not available in this Spiral compiler (removed upstream; an earlier compiler version has it)." // Date: 11/3/2023
+                                        | BuildBackendUpmemPythonCUnavailable -> BuildDraft.FatalError "UPMEM backend is not available in this Spiral compiler (removed upstream; an earlier compiler version has it)." // Date: 11/3/2023
+                                        | BuildBackendHlsCppUnavailable -> BuildDraft.FatalError "HLS C++ backend is not available in this Spiral compiler (removed upstream; an earlier compiler version has it)." // Date: 10/17/2023
+                                        | BuildBackendCythonUnavailable -> BuildDraft.FatalError "Cython backend is not available in this Spiral compiler (removed upstream; an earlier compiler version has it)." // Date: 12/27/2022
                                         | BuildBackendUnknown unknownBackend -> BuildDraft.FatalError $"Cannot recognize the backend: {unknownBackend}"
     
 
@@ -184334,49 +184361,47 @@ module spiral_compiler =
 #if SPIRAL_CORE_HOPAC
     /// ## startParentWatcher
     let startParentWatcher () =
-        if [ "dotnet-repl" ] |> List.contains assemblyName |> not then
-            let parentAsyncChild = async {
-                let parentProcessId = getParentProcessId ()
-                trace Verbose
-                    (fun () -> "spiral_compiler.startParentWatcher")
-                    (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
+        let parentAsyncChild = async {
+            let parentProcessId = getParentProcessId ()
+            trace Verbose
+                (fun () -> "spiral_compiler.startParentWatcher")
+                (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
     
 
-                if parentProcessId > 0u then
-                    let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
-                    do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
-                    trace Debug
-                        (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
-                        (fun () -> $"{_locals ()}")
-                    do! Async.Sleep 1000
-                    DiagJson.forceProcessExitDirect 1 DiagJson.LegacyExitParentObserverAfterNativeRootComplete
-            }
+            if parentProcessId > 0u then
+                let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
+                do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
+                trace Debug
+                    (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
+                    (fun () -> $"{_locals ()}")
+                do! Async.Sleep 1000
+                DiagJson.forceProcessExitDirect 1 DiagJson.LegacyExitParentObserverAfterNativeRootComplete
+        }
     
 
-            HopacExtensions.start (Job.fromAsync parentAsyncChild)
+        HopacExtensions.start (Job.fromAsync parentAsyncChild)
     
 
 #else
     /// ## startParentWatcher
     let inline startParentWatcher () =
-        if [ "dotnet-repl" ] |> List.contains assemblyName |> not then
-            let parentAsyncChild = async {
-                let parentProcessId = getParentProcessId ()
-                trace Verbose
-                    (fun () -> "spiral_compiler.startParentWatcher")
-                    (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
+        let parentAsyncChild = async {
+            let parentProcessId = getParentProcessId ()
+            trace Verbose
+                (fun () -> "spiral_compiler.startParentWatcher")
+                (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
 
-                if parentProcessId > 0u then
-                    let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
-                    do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
-                    trace Debug
-                        (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
-                        (fun () -> $"{_locals ()}")
-                    System.Threading.Thread.Sleep 1000
-                    System.Environment.Exit 1
-            }
+            if parentProcessId > 0u then
+                let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
+                do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
+                trace Debug
+                    (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
+                    (fun () -> $"{_locals ()}")
+                System.Threading.Thread.Sleep 1000
+                System.Environment.Exit 1
+        }
 
-            parentAsyncChild |> Async.Start
+        parentAsyncChild |> Async.Start
 
 #endif
 #if SPIRAL_CORE_HOPAC

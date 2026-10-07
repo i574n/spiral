@@ -47,7 +47,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl run test =\n    if env.get_environment_variable \"TEST\" = \"1\"\n    then\n        // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it\n        if rust.rust.is_native () then test () else ()\n    else\n        runtime.execution_options fun x => { x with\n            command = \"cargo +nightly-2025-11-01 test --timings -- --show-output\"\n            working_directory = file_system.get_source_directory () |> Some |> optionm'.box\n            environment_variables = ;[ \"TEST\", \"1\" ]\n        }\n        |> runtime.execute_with_options\n        |> fun exit_code, result =>\n            exit_code |> _assert_eq 0i32\n            result |> _assert sm'.contains \"test result: ok. 1 passed; 0 failed; 0 ignored;\"\n\n    if rust.rust.is_native () |> not then\n        $'let tests () = !test ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl run test =\n    if env.get_environment_variable \"TEST\" = \"1\"\n    then\n        // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it\n        if is_rust () then test () else ()\n    else\n        runtime.execution_options fun x => { x with\n            command = \"cargo +nightly-2025-11-01 test --timings -- --show-output\"\n            working_directory = file_system.get_source_directory () |> Some |> optionm'.box\n            environment_variables = ;[ \"TEST\", \"1\" ]\n        }\n        |> runtime.execute_with_options\n        |> fun exit_code, result =>\n            exit_code |> _assert_eq 0i32\n            result |> _assert sm'.contains \"test result: ok. 1 passed; 0 failed; 0 ignored;\"\n\n    if is_rust () |> not then\n        $'let tests () = !test ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -58,7 +58,7 @@ Spiral.Kino.eval!(
       if env.get_environment_variable "TEST" = "1"
       then
           // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it
-          if rust.rust.is_native () then test () else ()
+          if is_rust () then test () else ()
       else
           runtime.execution_options fun x => { x with
               command = "cargo +nightly-2025-11-01 test --timings -- --show-output"
@@ -70,7 +70,7 @@ Spiral.Kino.eval!(
               exit_code |> _assert_eq 0i32
               result |> _assert sm'.contains "test result: ok. 1 passed; 0 failed; 0 ignored;"
 
-      if rust.rust.is_native () |> not then
+      if is_rust () |> not then
           $'let tests () = !test ()' : ()
   """,
   timeout: 300_000

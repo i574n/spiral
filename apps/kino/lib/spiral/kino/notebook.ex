@@ -21,6 +21,7 @@ defmodule Spiral.Kino.Notebook do
     :rustc_bin,
     :workspace,
     :package_dir,
+    :workspace_root,
     :polyglot_root,
     :env,
     :print_code
@@ -48,8 +49,8 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # The .spi export (not with --no-spi), with --spir-path the .spir one (the `///- ... --real` cells: `spiral dib-export
-  # <nb>.dib spir`) and with --fs-path the F# one (`spiral dib-export <nb>.dib fs`).
+  # The .spi export (not with --no-spi), with --spir-path the .spir one (the `///- ... --real` cells: `spiral export
+  # <nb>.cells spir`) and with --fs-path the F# one (`spiral export <nb>.cells fs`).
   defp write_exports(path, doc, opts) do
     if opts[:spi] != false, do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
     if opts[:spir_path], do: File.write!(opts[:spir_path], Document.to_spir(doc))
@@ -59,18 +60,32 @@ defmodule Spiral.Kino.Notebook do
   defp write_fs(doc, opts) do
     spiral = Spiral.Kino.Toolchain.spiral(opts)
     dir = Path.join(System.tmp_dir!(), "spiral_kino_fs_#{System.unique_integer([:positive])}")
-    dib = Path.join(dir, Path.basename(opts[:fs_path], ".fs") <> ".dib")
+    cells = Path.join(dir, Path.basename(opts[:fs_path], ".fs") <> ".cells")
 
     try do
       File.mkdir_p!(dir)
-      File.write!(dib, Document.to_dib(doc))
+      File.write!(cells, Document.to_cell_text(doc))
 
-      case System.cmd(spiral || "spiral", ["dib-export", dib, "fs"], stderr_to_stdout: true) do
-        {_, 0} -> File.cp!(Path.rootname(dib) <> ".fs", opts[:fs_path])
-        {output, status} -> raise "spiral dib-export fs failed (exit #{status}): #{output}"
+      case cli_export(spiral || "spiral", cells, "fs") do
+        {_, 0} -> File.cp!(Path.rootname(cells) <> ".fs", opts[:fs_path])
+        {output, status} -> raise "spiral export fs failed (exit #{status}): #{output}"
       end
     after
       File.rm_rf(dir)
+    end
+  end
+
+  # `spiral export`; a CLI built before the rename only knows it as `dib-export` (kept as an alias for one release),
+  # so an unknown-subcommand failure retries under the old name.
+  defp cli_export(spiral, path, kind) do
+    case System.cmd(spiral, ["export", path, kind], stderr_to_stdout: true) do
+      {output, status} when status != 0 ->
+        if output =~ "unrecognized subcommand",
+          do: System.cmd(spiral, ["dib-export", path, kind], stderr_to_stdout: true),
+          else: {output, status}
+
+      result ->
+        result
     end
   end
 
@@ -110,7 +125,7 @@ defmodule Spiral.Kino.Notebook do
 
     case status do
       :ok ->
-        # `spi: false` (`--no-spi`): a notebook whose export is not Spiral (hangul exports F# with dib-export).
+        # `spi: false` (`--no-spi`): a notebook whose export is not Spiral (hangul exports F#, --fs-path).
         write_exports(path, doc, opts)
 
         if opts[:html], do: write_html(output_path), else: :ok
@@ -120,14 +135,14 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # The old route's html step (spiral.spi process_dib): `jupyter nbconvert <ipynb> --to html --HTMLExporter.theme=dark`
-  # after a successful run, LF line endings, and nbconvert's random 8-hex cell ids renumbered 1..n so the html is
-  # reproducible. Without jupyter on PATH the html is skipped with a note (the ipynb is the result).
+  # The html step: `jupyter nbconvert <ipynb> --to html --HTMLExporter.theme=dark` after a successful run, LF line
+  # endings, and nbconvert's random 8-hex cell ids renumbered 1..n so the html is reproducible. Without jupyter on PATH
+  # the html is skipped with a note (the ipynb is the result).
   @spec write_html(String.t()) :: :ok | {:error, String.t()}
   def write_html(ipynb) do
     case System.find_executable("jupyter") do
       nil ->
-        IO.puts(:stderr, "spiral.dib: jupyter is not on PATH; skipping the html for #{ipynb}")
+        IO.puts(:stderr, "spiral.notebook: jupyter is not on PATH; skipping the html for #{ipynb}")
         :ok
 
       jupyter ->
@@ -171,7 +186,7 @@ defmodule Spiral.Kino.Notebook do
   end
 
   defp execute(doc, opts, root) do
-    workspace = Spiral.Kino.polyglot_root(opts)
+    workspace = Spiral.Kino.workspace_root(opts)
     cells = Enum.map(doc.cells, &canon_cell(&1, root, workspace))
     lib = find_spiral_lib(opts[:path]) || "-"
 

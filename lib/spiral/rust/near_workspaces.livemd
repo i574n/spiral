@@ -31,14 +31,14 @@ Spiral.Kino.eval!(
 
 ### near_token_workspaces
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_workspaces =\n    `(\n        native_type\n            `($'near_workspaces_types_NearToken')\n            `($'near_workspaces::types::NearToken')\n            \"type near_workspaces_types_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_token_workspaces =\n    `(\n        rust_type\n            `($'near_workspaces_types_NearToken')\n            `($'near_workspaces::types::NearToken')\n            \"type near_workspaces_types_NearToken = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal near_token_workspaces =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_types_NearToken')
               `($'near_workspaces::types::NearToken')
               "type near_workspaces_types_NearToken = class end"
@@ -50,14 +50,14 @@ Spiral.Kino.eval!(
 
 ### gas
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal gas =\n    `(\n        native_type\n            `($'near_workspaces_types_Gas')\n            `($'near_workspaces::types::Gas')\n            \"type near_workspaces_types_Gas = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal gas =\n    `(\n        rust_type\n            `($'near_workspaces_types_Gas')\n            `($'near_workspaces::types::Gas')\n            \"type near_workspaces_types_Gas = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal gas =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_types_Gas')
               `($'near_workspaces::types::Gas')
               "type near_workspaces_types_Gas = class end"
@@ -69,14 +69,14 @@ Spiral.Kino.eval!(
 
 ### near_workspaces_error
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_workspaces_error =\n    `(\n        native_type\n            `($'near_workspaces_error_Error')\n            `($'near_workspaces::error::Error')\n            \"type near_workspaces_error_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal near_workspaces_error =\n    `(\n        rust_type\n            `($'near_workspaces_error_Error')\n            `($'near_workspaces::error::Error')\n            \"type near_workspaces_error_Error = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal near_workspaces_error =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_error_Error')
               `($'near_workspaces::error::Error')
               "type near_workspaces_error_Error = class end"
@@ -88,14 +88,14 @@ Spiral.Kino.eval!(
 
 ### sandbox
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal sandbox =\n    `(\n        native_type\n            `($'near_workspaces_network_Sandbox')\n            `($'near_workspaces::network::Sandbox')\n            \"type near_workspaces_network_Sandbox = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal sandbox =\n    `(\n        rust_type\n            `($'near_workspaces_network_Sandbox')\n            `($'near_workspaces::network::Sandbox')\n            \"type near_workspaces_network_Sandbox = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal sandbox =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_network_Sandbox')
               `($'near_workspaces::network::Sandbox')
               "type near_workspaces_network_Sandbox = class end"
@@ -107,14 +107,14 @@ Spiral.Kino.eval!(
 
 ### worker
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal worker t =\n    `(\n        native_type\n            `($'near_workspaces_Worker<`t>')\n            `($'near_workspaces::Worker<`t>')\n            \"type near_workspaces_Worker<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal worker t =\n    `(\n        rust_type\n            `($'near_workspaces_Worker<`t>')\n            `($'near_workspaces::Worker<`t>')\n            \"type near_workspaces_Worker<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal worker t =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_Worker<`t>')
               `($'near_workspaces::Worker<`t>')
               "type near_workspaces_Worker<'T> = class end"
@@ -126,14 +126,14 @@ Spiral.Kino.eval!(
 
 ### contract
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal contract =\n    `(\n        native_type\n            `($'near_workspaces_Contract')\n            `($'near_workspaces::Contract')\n            \"type near_workspaces_Contract = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal contract =\n    `(\n        rust_type\n            `($'near_workspaces_Contract')\n            `($'near_workspaces::Contract')\n            \"type near_workspaces_Contract = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal contract =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_Contract')
               `($'near_workspaces::Contract')
               "type near_workspaces_Contract = class end"
@@ -145,14 +145,14 @@ Spiral.Kino.eval!(
 
 ### call_transaction
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal call_transaction =\n    `(\n        native_type\n            `($'near_workspaces_operations_CallTransaction')\n            `($'near_workspaces::operations::CallTransaction')\n            \"type near_workspaces_operations_CallTransaction = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal call_transaction =\n    `(\n        rust_type\n            `($'near_workspaces_operations_CallTransaction')\n            `($'near_workspaces::operations::CallTransaction')\n            \"type near_workspaces_operations_CallTransaction = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal call_transaction =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_operations_CallTransaction')
               `($'near_workspaces::operations::CallTransaction')
               "type near_workspaces_operations_CallTransaction = class end"
@@ -164,14 +164,14 @@ Spiral.Kino.eval!(
 
 ### execution_final_result
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_final_result =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionFinalResult')\n            `($'near_workspaces::result::ExecutionFinalResult')\n            \"type near_workspaces_result_ExecutionFinalResult = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_final_result =\n    `(\n        rust_type\n            `($'near_workspaces_result_ExecutionFinalResult')\n            `($'near_workspaces::result::ExecutionFinalResult')\n            \"type near_workspaces_result_ExecutionFinalResult = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal execution_final_result =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_result_ExecutionFinalResult')
               `($'near_workspaces::result::ExecutionFinalResult')
               "type near_workspaces_result_ExecutionFinalResult = class end"
@@ -183,14 +183,14 @@ Spiral.Kino.eval!(
 
 ### execution_result
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_result t =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionResult<`t>')\n            `($'near_workspaces::result::ExecutionResult<`t>')\n            \"type near_workspaces_result_ExecutionResult<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_result t =\n    `(\n        rust_type\n            `($'near_workspaces_result_ExecutionResult<`t>')\n            `($'near_workspaces::result::ExecutionResult<`t>')\n            \"type near_workspaces_result_ExecutionResult<'T> = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal execution_result t =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_result_ExecutionResult<`t>')
               `($'near_workspaces::result::ExecutionResult<`t>')
               "type near_workspaces_result_ExecutionResult<'T> = class end"
@@ -202,14 +202,14 @@ Spiral.Kino.eval!(
 
 ### execution_success
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_success =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionSuccess')\n            `($'near_workspaces::result::ExecutionSuccess')\n            \"type near_workspaces_result_ExecutionSuccess = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_success =\n    `(\n        rust_type\n            `($'near_workspaces_result_ExecutionSuccess')\n            `($'near_workspaces::result::ExecutionSuccess')\n            \"type near_workspaces_result_ExecutionSuccess = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal execution_success =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_result_ExecutionSuccess')
               `($'near_workspaces::result::ExecutionSuccess')
               "type near_workspaces_result_ExecutionSuccess = class end"
@@ -221,14 +221,14 @@ Spiral.Kino.eval!(
 
 ### execution_failure
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_failure =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionFailure')\n            `($'near_workspaces::result::ExecutionFailure')\n            \"type near_workspaces_result_ExecutionFailure = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_failure =\n    `(\n        rust_type\n            `($'near_workspaces_result_ExecutionFailure')\n            `($'near_workspaces::result::ExecutionFailure')\n            \"type near_workspaces_result_ExecutionFailure = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal execution_failure =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_result_ExecutionFailure')
               `($'near_workspaces::result::ExecutionFailure')
               "type near_workspaces_result_ExecutionFailure = class end"
@@ -240,14 +240,14 @@ Spiral.Kino.eval!(
 
 ### execution_outcome
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_outcome =\n    `(\n        native_type\n            `($'near_workspaces_result_ExecutionOutcome')\n            `($'near_workspaces::result::ExecutionOutcome')\n            \"type near_workspaces_result_ExecutionOutcome = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal execution_outcome =\n    `(\n        rust_type\n            `($'near_workspaces_result_ExecutionOutcome')\n            `($'near_workspaces::result::ExecutionOutcome')\n            \"type near_workspaces_result_ExecutionOutcome = class end\"\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   nominal execution_outcome =
       `(
-          native_type
+          rust_type
               `($'near_workspaces_result_ExecutionOutcome')
               `($'near_workspaces::result::ExecutionOutcome')
               "type near_workspaces_result_ExecutionOutcome = class end"
@@ -368,13 +368,13 @@ Spiral.Kino.eval!(
 
 ### json
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_native\n    !\\\\(result, $'\"$0.json()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_rust\n    !\\\\(result, $'\"$0.json()\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl json (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
-      inl result = result |> rust.clone_native
+      inl result = result |> rust.clone_rust
       !\\(result, $'"$0.json()"')
   """,
   timeout: 300_000
@@ -383,13 +383,13 @@ Spiral.Kino.eval!(
 
 ### borsh
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_native\n    !\\\\(result, $'\"$0.borsh()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =\n    inl result = result |> rust.clone_rust\n    !\\\\(result, $'\"$0.borsh()\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl borsh (result : execution_final_result) : resultm.result' sm'.std_string near_workspaces_error =
-      inl result = result |> rust.clone_native
+      inl result = result |> rust.clone_rust
       !\\(result, $'"$0.borsh()"')
   """,
   timeout: 300_000

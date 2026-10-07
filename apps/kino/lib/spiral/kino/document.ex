@@ -50,17 +50,17 @@ defmodule Spiral.Kino.Document do
   defp text_cell?(%{kind: kind}) when kind in [:markdown, :import], do: true
   defp text_cell?(_), do: false
 
-  # The cells in the .dib format the spiral CLI's dib-export reads: `#!<kind>` on its own line, then the cell, up to the
-  # next `#!` line (trimmed). The F# export goes through it (Notebook): `spiral dib-export <nb>.dib fs` wraps the cells
-  # in the module a `# Name (Namespace)` heading declares and indents them.
-  @spec to_dib(%{cells: [map()]}) :: String.t()
-  def to_dib(%{cells: cells}) do
-    cells |> Enum.map_join("\n\n", &dib_cell/1) |> newline()
+  # The cells as the text the spiral CLI's `export` reads: `#!<kind>` on its own line, then the cell, up to the next `#!`
+  # line (trimmed). The F# export goes through it (Notebook): `spiral export <nb>.cells fs` wraps the cells in the module
+  # a `# Name (Namespace)` heading declares and indents them.
+  @spec to_cell_text(%{cells: [map()]}) :: String.t()
+  def to_cell_text(%{cells: cells}) do
+    cells |> Enum.map_join("\n\n", &text_cell/1) |> newline()
   end
 
-  defp dib_cell(%{kind: :import, source: source}), do: "#!import #{source}"
-  defp dib_cell(%{kind: :code, language: language, source: source}), do: "#!#{language}\n\n#{source}"
-  defp dib_cell(%{kind: kind, source: source}), do: "#!#{kind}\n\n#{source}"
+  defp text_cell(%{kind: :import, source: source}), do: "#!import #{source}"
+  defp text_cell(%{kind: :code, language: language, source: source}), do: "#!#{language}\n\n#{source}"
+  defp text_cell(%{kind: kind, source: source}), do: "#!#{kind}\n\n#{source}"
 
   @spec to_spir(%{cells: [map()]}) :: String.t()
   def to_spir(%{cells: cells}) do

@@ -1,4 +1,4 @@
-#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_patterns, unreachable_code, while_true)]
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
 enum US0 {
@@ -43,7 +43,6 @@ fn spiral_main() -> i32 {
         US0::US0_1 => { // SEmpty
             0i32
         }
-        _ => unreachable!(),
     };
     let mut v10: Box<dyn Fn() -> i32> = Box::new(|| 7i32) as Box<dyn Fn() -> i32>;
     let mut v13: Rc<UH0> = if v1 {
@@ -60,9 +59,8 @@ fn spiral_main() -> i32 {
         UH0::UH0_1 => { // HEmpty
             0i32
         }
-        _ => unreachable!(),
     };
-    let mut v18: i32 = v9 + v17;
+    let mut v18: i32 = v9.wrapping_add(v17);
     v18
 }
 #[cfg(not(target_arch = "wasm32"))]

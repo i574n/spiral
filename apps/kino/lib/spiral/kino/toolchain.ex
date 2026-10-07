@@ -6,10 +6,24 @@ defmodule Spiral.Kino.Toolchain do
     opts[:workspace] || System.get_env("SPIRAL_WORKSPACE_ROOT") || @workspace
   end
 
+  # The `|core-` package: The-Spiral-Language's `VS Code Plugin` in the fork that spiral's scripts/init.ps1 clones
+  # (spiral/deps/The-Spiral-Language), else polyglot's clone of it (the checkout next to spiral).
+  @spiral_root Path.expand("../../../../..", __DIR__)
+  @core_package "deps/The-Spiral-Language/VS Code Plugin"
+
   @spec package_dir(keyword()) :: String.t()
   def package_dir(opts) do
-    opts[:package_dir] || System.get_env("SPIRAL_COMPILER_PACKAGE_DIR") ||
-      Path.join(Spiral.Kino.polyglot_root(opts), "deps/The-Spiral-Language/VS Code Plugin")
+    opts[:package_dir] || System.get_env("SPIRAL_COMPILER_PACKAGE_DIR") || default_package_dir()
+  end
+
+  @spec default_package_dir() :: String.t()
+  def default_package_dir do
+    candidates = [
+      Path.join(@spiral_root, @core_package),
+      Path.join([@spiral_root, "../polyglot", @core_package]) |> Path.expand()
+    ]
+
+    Enum.find(candidates, &File.regular?(Path.join(&1, "core/package.spiproj"))) || hd(candidates)
   end
 
   @spec compiler_dll(keyword()) :: String.t()

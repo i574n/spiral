@@ -49,7 +49,7 @@ inl is_windows' () : bool =
 /// ### is_windows
 inl is_windows () : bool =
     run_target function
-        | RustNative => fun () =>
+        | Rust => fun () =>
             $'cfg\!(windows)' : bool
         | Fsharp _ => fun () =>
             Windows |> os_platform |> is_os_platform

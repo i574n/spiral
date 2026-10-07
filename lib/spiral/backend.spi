@@ -19,22 +19,22 @@ inl backend_switch forall t. x : t =
                             $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
                         Cpp = fun () =>
                             $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
-                        // Native Rust (codegenRust). Every key of a BackendSwitch is evaluated in every build, so a
-                        // missing arm can't fail partial evaluation (that would break the F# builds too). A unit arm
-                        // is a visible no-op, like the other backends' fallbacks; a value arm is a rustc error, which
-                        // only fires when native Rust code actually reaches the call.
+                        // Rust (codegenRust). Every key of a BackendSwitch is evaluated in every build, so a missing arm
+                        // can't fail partial evaluation (that would break the F# builds too). A unit arm is a visible
+                        // no-op, like the other backends' fallbacks; a value arm is a rustc error, which only fires when
+                        // Rust code actually reaches the call.
                         Rust = fun () =>
                             typecase t with
-                            | () => $'() /* backend_switch: no native Rust arm (lib/spiral) */' : t
-                            | _ => $'compile_error\!("backend_switch: this lib/spiral function has no native Rust arm yet")' : t
+                            | () => $'() /* backend_switch: no Rust arm (lib/spiral) */' : t
+                            | _ => $'compile_error\!("backend_switch: this lib/spiral function has no Rust arm yet")' : t
                         // C++ host (upstream CodegenCpp names its host backend CppHost).
                         CppHost = fun () =>
                             $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
-                        // Native TypeScript (CodegenTypescript): no lib/spiral arms yet.
+                        // TypeScript (CodegenTypescript): lib/spiral arms are being added.
                         TypeScript = fun () =>
                             typecase t with
-                            | () => $'undefined /* backend_switch: no native TypeScript arm (lib/spiral) */' : t
-                            | _ => $'(() => { throw new Error("backend_switch: this lib/spiral function has no native TypeScript arm yet") })()' : t
+                            | () => $'undefined /* backend_switch: no TypeScript arm (lib/spiral) */' : t
+                            | _ => $'(() => { throw new Error("backend_switch: this lib/spiral function has no TypeScript arm yet") })()' : t
                     })
                 )
         !!!!BackendSwitch ({
@@ -49,20 +49,14 @@ inl backend_switch forall t. x : t =
             TypeScript = fun () => backend "TypeScript"
         })
 
-union target =
-    | Wasm
-    | Contract
-
-// `RustNative` is the native Rust backend (codegenRust, `--backend Rust`), kept apart from the Fable `Rust`
-// target so that a library arm never serves both: `Rust _` arms are F# text for Fable, `RustNative` arms Rust text.
+// The target a run_target arm runs for: the backend of the build (Python builds are `Cuda`, C++ host builds `Cpp`).
 union backend =
     | Gleam
     | Lua
     | Fsharp
     | Cuda
     | Cpp
-    | Rust : option target
-    | RustNative
+    | Rust
     | TypeScript
 
 inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
@@ -73,7 +67,6 @@ inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
         Lua = fun () =>
             inl target = Lua
             fn target args
-        // The .NET build: only the Fsharp arm (Fable's targets, once evaluated here under `#if FABLE_COMPILER`, are gone).
         Fsharp = fun () =>
             inl target = Fsharp
             fn target args
@@ -84,15 +77,33 @@ inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
             inl target = Cpp
             fn target args
         Rust = fun () =>
-            inl target = RustNative
+            inl target = Rust
             fn target args
-        // Native TypeScript: the `TypeScript` target, as Fable's; arms tell them apart with typescript.is_native ().
         TypeScript = fun () =>
             inl target = TypeScript
             fn target args
         CppHost = fun () =>
             inl target = Cpp
             fn target args
+    }
+
+/// ### is_rust
+// True only in the Rust backend (codegenRust). Partial evaluation runs every arm of a value-level backend_switch in
+// every build, so a switch whose arms inline the caller's closures evaluates them once per key, and nested switches
+// multiply (8 keys, 8^depth: dice_ui never finished). This switch's arms are literals, so an
+// `if is_rust () then .. else ..` evaluates one branch.
+inl is_rust () : bool =
+    backend_switch {
+        Gleam = fun () => false
+        Lua = fun () => false
+        Fsharp = fun () => false
+        Python = fun () => false
+        TypeScript = fun () => false
+        Cpp = fun () => false
+        CppHost = fun () => false
+        Delphi = fun () => false
+        Cuda = fun () => false
+        Rust = fun () => true
     }
 
 inl run_target_args forall t u. (args : () -> u) (fn : backend -> (u -> t)) : t =
@@ -121,12 +132,12 @@ inl indent (body : () -> ()) : () =
             ()
     }
 
-/// ### native_type
-// A type that is `rs` on the native Rust backend and `fs` on the other backends, through the type-level backend_switch
+/// ### rust_type
+// A type that is `rs` on the Rust backend and `fs` on the other backends, through the type-level backend_switch
 // every codegen resolves; `fsharp` declares `fs` in F# builds only (an opaque `type x = class end`, or an alias of a
-// .NET type). Used as `native_type `(fs) `(rs) "decl"` in a nominal's body (unqualified: backend is opened everywhere,
-// --real cells and modules that open rust.rust_operators included). lib/spiral's Rust types were Fable `[<Emit>]` aliases that codegenRust read back out of the F# globals.
-type native_type_switch fs rs =
+// .NET type). Used as `rust_type `(fs) `(rs) "decl"` in a nominal's body (unqualified: backend is opened everywhere,
+// --real cells and modules that open rust.rust_operators included).
+type rust_type_switch fs rs =
     {
         Gleam : fs
         Lua : fs
@@ -147,6 +158,6 @@ inl fsharp_global (text : string) : () =
         Fsharp = fun () => global text
     }
 
-inl native_type forall fs rs. (fsharp : string) : $'backend_switch `(native_type_switch fs rs)' =
+inl rust_type forall fs rs. (fsharp : string) : $'backend_switch `(rust_type_switch fs rs)' =
     fsharp_global fsharp
-    $'' : $'backend_switch `(native_type_switch fs rs)'
+    $'' : $'backend_switch `(rust_type_switch fs rs)'

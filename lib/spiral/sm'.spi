@@ -22,7 +22,7 @@ inl to_string' forall t. (x : t) : std_string =
 /// ### from_std_string
 inl from_std_string (str : std_string) : string =
     backend_switch {
-        // Native Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
+        // Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
         Rust = fun () => !\\(str, $'"Rc::<str>::from(String::as_str(&$0))"') : string
     }
 
@@ -238,7 +238,7 @@ inl last_index_of (search : string) (s : string) : i32 =
     // Bound before run_target: a literal materialized inside its first `#if` branch is reused by the others.
     inl search = dyn search
     run_target function
-        | RustNative => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
+        | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
         | _ => fun () => $'!s.LastIndexOf !search ' : i32
 
 /// ### index_of_char
@@ -342,8 +342,8 @@ inl is_white_space (c : char) : bool =
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
-    // Native Rust: byte offsets, like the native index_of/length.
-    if rust.is_native ()
+    // Rust: byte offsets, like the native index_of/length.
+    if is_rust ()
     then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'
     else $'!str.Substring (!start, !len)'
 
@@ -362,7 +362,7 @@ inl to_lower (input : string) : string =
 
 /// ### to_upper
 inl to_upper (input : string) : string =
-    if rust.is_native ()
+    if is_rust ()
     then $'Rc::<str>::from(!input.to_uppercase())'
     else $'!input.ToUpper' ()
 
@@ -606,7 +606,7 @@ inl encoding_utf8 () : encoding =
 /// ### utf8_get_bytes
 inl utf8_get_bytes (s : string) : a i32 u8 =
     run_target function
-        | RustNative => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8
+        | Rust => fun () => $'Rc::new(RefCell::new(!s.as_bytes().to_vec()))' : a i32 u8
         | _ => fun () => s |> (encoding_utf8 () |> $'_.GetBytes') : a i32 u8
 
 /// ### byte_to_string
@@ -618,7 +618,7 @@ inl byte_to_string (format : string) (x : u8) : string =
 /// ### str
 nominal str =
     `(
-        native_type
+        rust_type
             `($'Str')
             `($'str')
             "type Str = string"
@@ -641,7 +641,7 @@ inl byte_slice (s : string) : rust.ref (am'.slice u8) =
 /// ### display
 nominal display t =
     `(
-        native_type
+        rust_type
             `($'std_fmt_Display<`t>')
             `($'std::fmt::Display<`t>')
             "type std_fmt_Display<'T> = class end"
@@ -650,7 +650,7 @@ nominal display t =
 /// ### base64_decode_error
 nominal base64_decode_error =
     `(
-        native_type
+        rust_type
             `($'base64_DecodeError')
             `($'base64::DecodeError')
             "type base64_DecodeError = class end"
@@ -659,7 +659,7 @@ nominal base64_decode_error =
 /// ### borsh_io_error
 nominal borsh_io_error =
     `(
-        native_type
+        rust_type
             `($'borsh_io_Error')
             `($'borsh::io::Error')
             "type borsh_io_Error = class end"
@@ -668,7 +668,7 @@ nominal borsh_io_error =
 /// ### utf8_error
 nominal utf8_error =
     `(
-        native_type
+        rust_type
             `($'std_str_Utf8Error')
             `($'std::str::Utf8Error')
             "type std_str_Utf8Error = class end"
@@ -677,7 +677,7 @@ nominal utf8_error =
 /// ### from_utf8_error
 nominal from_utf8_error =
     `(
-        native_type
+        rust_type
             `($'std_string_FromUtf8Error')
             `($'std::string::FromUtf8Error')
             "type std_string_FromUtf8Error = class end"
@@ -686,7 +686,7 @@ nominal from_utf8_error =
 /// ### json_value
 nominal json_value =
     `(
-        native_type
+        rust_type
             `($'serde_json_Value')
             `($'serde_json::Value')
             "type serde_json_Value = class end"
@@ -695,7 +695,7 @@ nominal json_value =
 /// ### json_error
 nominal json_error =
     `(
-        native_type
+        rust_type
             `($'serde_json_Error')
             `($'serde_json::Error')
             "type serde_json_Error = class end"
@@ -704,7 +704,7 @@ nominal json_error =
 /// ### serde_wasm_bindgen_error
 nominal serde_wasm_bindgen_error =
     `(
-        native_type
+        rust_type
             `($'serde_wasm_bindgen_Error')
             `($'serde_wasm_bindgen::Error')
             "type serde_wasm_bindgen_Error = class end"
@@ -713,7 +713,7 @@ nominal serde_wasm_bindgen_error =
 /// ### js_string
 nominal js_string =
     `(
-        native_type
+        rust_type
             `($'js_sys_JsString')
             `($'js_sys::JsString')
             "type js_sys_JsString = class end"
@@ -722,7 +722,7 @@ nominal js_string =
 /// ### os_str
 nominal os_str =
     `(
-        native_type
+        rust_type
             `($'std_ffi_OsStr')
             `($'std::ffi::OsStr')
             "type std_ffi_OsStr = class end"
@@ -731,7 +731,7 @@ nominal os_str =
 /// ### c_str
 nominal c_str =
     `(
-        native_type
+        rust_type
             `($'std_ffi_CStr')
             `($'std::ffi::CStr')
             "type std_ffi_CStr = class end"
@@ -740,7 +740,7 @@ nominal c_str =
 /// ### c_string
 nominal c_string =
     `(
-        native_type
+        rust_type
             `($'std_ffi_CString')
             `($'std::ffi::CString')
             "type std_ffi_CString = class end"
@@ -749,7 +749,7 @@ nominal c_string =
 /// ### os_string
 nominal os_string =
     `(
-        native_type
+        rust_type
             `($'std_ffi_OsString')
             `($'std::ffi::OsString')
             "type std_ffi_OsString = class end"
@@ -785,7 +785,7 @@ inl include_str (path : string) : rust.ref str =
 inl as_str (s : string) : rust.ref str =
     // !\\(s, $'"fable_library_rust::String_::LrcStr::as_str(&$0)"')
     run_target_args (fun () => s) function
-        | RustNative => fun s => !\\(s, $'"&*$0"')
+        | Rust => fun s => !\\(s, $'"&*$0"')
         | _ => convert.unbox
 
 /// ### from_iter
@@ -795,7 +795,7 @@ inl from_iter forall (t : * -> *). (s : t char) : std_string =
 /// ### ref_to_std_string
 inl ref_to_std_string (str : rust.ref str) : std_string =
     run_target_args (fun () => str) function
-        | RustNative => fun str => !\\(str, $'"String::from($0)"')
+        | Rust => fun str => !\\(str, $'"String::from($0)"')
         | _ => convert.unbox
 
 /// ### cow_to_std_string
@@ -842,21 +842,21 @@ inl from_os_str_ref s =
 /// ### format_custom'
 inl format_custom' (f : string) x : std_string =
     run_target function
-        | RustNative => fun () =>
+        | Rust => fun () =>
             !\\(x, $'"format\!(\\\"" + !f + "\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format_debug'
 inl format_debug' x : std_string =
     run_target function
-        | RustNative => fun () =>
+        | Rust => fun () =>
             !\\(x, $'"format\!(\\\"{:?}\\\", $0)"')
         | _ => fun () => null ()
 
 /// ### format'
 inl format' x : std_string =
     run_target_args (fun () => x) function
-        | RustNative => fun x =>
+        | Rust => fun x =>
             !\\(x, $'"format\!(\\\"{}\\\", $0)"')
         | _ => fun _ => null ()
 
@@ -871,7 +871,7 @@ inl format'' (format : string) : std_string =
 /// ### regex
 nominal regex =
     `(
-        native_type
+        rust_type
             `($'regex_Regex')
             `($'regex::Regex')
             "type regex_Regex = class end"
@@ -880,7 +880,7 @@ nominal regex =
 /// ### regex_error
 nominal regex_error =
     `(
-        native_type
+        rust_type
             `($'regex_Error')
             `($'regex::Error')
             "type regex_Error = class end"
@@ -893,7 +893,7 @@ inl new_regex (pattern : string) : resultm.result' regex regex_error =
 /// ### captures
 nominal regex_captures t =
     `(
-        native_type
+        rust_type
             `($'regex_Captures<`t>')
             `($'regex::Captures<`t>')
             "type regex_Captures<'T> = class end"
@@ -902,7 +902,7 @@ nominal regex_captures t =
 /// ### regex_capture_matches
 nominal regex_capture_matches =
     `(
-        native_type
+        rust_type
             `($'regex_CaptureMatches')
             `($'regex::CaptureMatches')
             "type regex_CaptureMatches = class end"
@@ -911,7 +911,7 @@ nominal regex_capture_matches =
 /// ### regex_capture_names
 nominal regex_capture_names =
     `(
-        native_type
+        rust_type
             `($'regex_CaptureNames')
             `($'regex::CaptureNames')
             "type regex_CaptureNames = class end"
@@ -923,7 +923,7 @@ inl regex_capture_names (regex : regex) : regex_capture_names =
 /// ### match'
 nominal match' =
     `(
-        native_type
+        rust_type
             `($'regex_Match')
             `($'regex::Match')
             "type regex_Match = class end"
@@ -1041,7 +1041,7 @@ inl base64_decode (s : std_string) : result std_string std_string =
 /// ### encoding'
 nominal encoding' =
     `(
-        native_type
+        rust_type
             `($'encoding_rs_Encoding')
             `($'encoding_rs::Encoding')
             "type encoding_rs_Encoding = class end"
@@ -1066,7 +1066,7 @@ inl utf8_decode (data : am'.vec u8) : resultm.result' std_string (rust.cow str) 
 /// ### windows
 nominal windows t =
     `(
-        native_type
+        rust_type
             `($'std_slice_Windows<`t>')
             `($'std::slice::Windows<`t>')
             "type std_slice_Windows<'T> = class end"
@@ -1156,10 +1156,10 @@ instance to_string result t u = fun x =>
 inl format_exception (ex : exn) : string =
     run_target function
         | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
-        // Native Rust: the exception is the panic message (base.try, base.catch_unwind_native).
-        | RustNative => fun () => $'!ex ' : string
-        // Native TypeScript: JavaScript's `Error: message`.
-        | TypeScript when typescript.is_native () => fun () => $'String(!ex)' : string
+        // Rust: the exception is the panic message (base.try, base.catch_unwind_rust).
+        | Rust => fun () => $'!ex ' : string
+        // TypeScript: JavaScript's `Error: message`.
+        | TypeScript => fun () => $'String(!ex)' : string
         | _ => fun () => ex |> format_debug
 
 /// ### range
@@ -1228,7 +1228,7 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
     run_target_args (fun () => s, pattern, replacement) function
         | Fsharp => fun s, pattern, replacement =>
             $'System.Text.RegularExpressions.Regex.Replace (!s, !pattern, !replacement)'
-        | RustNative => fun s, pattern, replacement =>
+        | Rust => fun s, pattern, replacement =>
             inl regex = pattern |> new_regex |> resultm.unwrap'
             inl s = join s
             !\\((regex, s, replacement), $'$"$0.replace_all(&*$1, &*$2)"')

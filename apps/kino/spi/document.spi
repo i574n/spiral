@@ -109,7 +109,7 @@ inl parse_dib (src : string) : string =
     wire (walk (text.replace src "\r\n" "\n") 0i32 NoCell "" "")
 
 
-// to_spi is `spiral dib-export <nb>.dib spi` (apps/spiral/spiral.spi: parse, format_block, format_blocks) byte for byte,
+// to_spi is `spiral export <nb>.cells spi` (apps/spiral/spiral.spi: parse, format_block, format_blocks) byte for byte,
 // so a .spi regenerated from the .livemd equals the one exported from the .dib:
 // - only markdown and Spiral cells count; a Spiral cell with `///- ` and ` --real` belongs to the .spir export;
 // - a markdown cell is kept only when another markdown or Spiral cell follows it;
@@ -219,5 +219,5 @@ inl export_text (kind : export_kind) (src : string) : string = emit_spi (formatt
 
 inl to_spi (src : string) : string = export_text SpiExport src
 
-// to_spir is `spiral dib-export <nb>.dib spir` (<nb>_real.spir): the same format, over the ///- ... --real cells
+// to_spir is `spiral export <nb>.cells spir` (<nb>_real.spir): the same format, over the ///- ... --real cells
 inl to_spir (src : string) : string = export_text SpirExport src
