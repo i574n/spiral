@@ -84,10 +84,8 @@ if (Test-Command "cargo") {
         cargo binstall -y sccache
         if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo binstall sccache failed (exit code $LASTEXITCODE)" }
     }
-    if (!(Test-Command "cargo-outdated")) {
-        cargo binstall -y --git https://$domain/$owner/cargo-outdated.git --locked cargo-outdated
-        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo binstall cargo-outdated failed (exit code $LASTEXITCODE)" }
-    }
+    try { & "$PSScriptRoot/patched-crates/install.ps1" cargo-outdated }
+    catch { Write-Output "init.ps1 / patched cargo-outdated failed: $($_.Exception.Message)" }
 }
 
 if ($IsWindows -and !(Test-Command "rsync")) {
