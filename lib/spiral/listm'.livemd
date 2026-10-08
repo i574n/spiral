@@ -324,14 +324,12 @@ Spiral.Kino.eval!(
 
 ### try_index_of
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// inl try_index_of item list =\ninl try_index_of forall b c {number}. (item : b) (list : list b) : option c =\n    // inl rec 루프 i = function\n    inl rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of item =\n    try_index_of item >> optionm.value\n\n// inl try_index_of_ item list =\ninl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =\n    // let rec 루프 i = function\n    let rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of_ item =\n    try_index_of_ item >> optionm.value\n\ninl try_index_of__ item list =\n    inl i = mut 0\n    inl list = mut list\n    inl result = mut None\n    let rec 루프 () =\n        match *list with\n        | [] => result <- None\n        | x :: xs =>\n            if x = item\n            then result <- Some *i\n            else\n                i <- *i + 1\n                list <- xs\n                루프 ()\n    루프 ()\n    *result\n\ninl index_of__ item =\n    try_index_of__ item >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =\n    inl rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of item =\n    try_index_of item >> optionm.value\n\ninl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =\n    let rec 루프 forall a {number}. (i : a) : list b -> option a = function\n        | [] => None\n        | x :: xs =>\n            if x = item\n            then Some i\n            else 루프 (i + 1) xs\n    루프 0 list\n\ninl index_of_ item =\n    try_index_of_ item >> optionm.value\n\ninl try_index_of__ item list =\n    inl i = mut 0\n    inl list = mut list\n    inl result = mut None\n    let rec 루프 () =\n        match *list with\n        | [] => result <- None\n        | x :: xs =>\n            if x = item\n            then result <- Some *i\n            else\n                i <- *i + 1\n                list <- xs\n                루프 ()\n    루프 ()\n    *result\n\ninl index_of__ item =\n    try_index_of__ item >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // inl try_index_of item list =
   inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
-      // inl rec 루프 i = function
       inl rec 루프 forall a {number}. (i : a) : list b -> option a = function
           | [] => None
           | x :: xs =>
@@ -343,9 +341,7 @@ Spiral.Kino.eval!(
   inl index_of item =
       try_index_of item >> optionm.value
 
-  // inl try_index_of_ item list =
   inl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =
-      // let rec 루프 i = function
       let rec 루프 forall a {number}. (i : a) : list b -> option a = function
           | [] => None
           | x :: xs =>
@@ -812,7 +808,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n////> rust // can't compare `()` with `char`\n///> typescript\n///> cuda\n\n[ 'a'; 'b'; 'c' ]\n|> exists' fun x => x = 'b'\n|> _assert_eq true\n\n[ 'a'; 'b' ]\n|> exists' fun x => x = 'c'\n|> _assert_eq false\n\n[]\n|> exists' fun x => x = 'a'\n|> _assert_eq false","print_code":true},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test --print-code\n///> gleam\n///> fsharp\n///> cuda\n///> typescript\n///> cuda\n\n[ 'a'; 'b'; 'c' ]\n|> exists' fun x => x = 'b'\n|> _assert_eq true\n\n[ 'a'; 'b' ]\n|> exists' fun x => x = 'c'\n|> _assert_eq false\n\n[]\n|> exists' fun x => x = 'a'\n|> _assert_eq false","print_code":true},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -821,7 +817,6 @@ Spiral.Kino.eval!(
   ///> gleam
   ///> fsharp
   ///> cuda
-  ////> rust // can't compare `()` with `char`
   ///> typescript
   ///> cuda
 
@@ -920,7 +915,7 @@ Spiral.Kino.eval!(
 
 ### box
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t. (list : list t) : list' t =\n    run_target function\n        | Rust => fun () =>\n            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on Rust).\n            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'\n            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>\n                $'!acc.borrow_mut().push(!x)' : ()\n                n + 1\n            $'Rc::new(!acc.borrow().clone())' : list' t\n        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t. (list : list t) : list' t =\n    run_target function\n        | Rust => fun () =>\n            inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'\n            inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>\n                $'!acc.borrow_mut().push(!x)' : ()\n                n + 1\n            $'Rc::new(!acc.borrow().clone())' : list' t\n        | _ => fun () => (list, empty' ()) ||> listm.foldBack cons'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -928,7 +923,6 @@ Spiral.Kino.eval!(
   inl box forall t. (list : list t) : list' t =
       run_target function
           | Rust => fun () =>
-              // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on Rust).
               inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
               inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
                   $'!acc.borrow_mut().push(!x)' : ()
@@ -1251,7 +1245,7 @@ Spiral.Kino.eval!(
 
 ### to_array'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall t. (items : list' t) : array_base t =\n    backend_switch {\n        Gleam = fun () =>\n            inl d = real defaultof `t ()\n            $'!items |> array.from_list(default: !d)' : array_base t\n        Lua = fun () =>\n            inl len = $'##(!items)' : i32\n            inl d = real defaultof `t ()\n            inl result : a _ t = am.init len (fun _ => d)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i + 1]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => items |> $'List.toArray' : array_base t\n        Python = fun () =>\n            inl len = $'len(!items)' : i32\n            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).\n            inl result : a _ t = a ($'__import__(\"numpy\").empty(!len, dtype=object)' : array_base t)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t\n        TypeScript = fun () => $'[...!items]' : array_base t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall t. (items : list' t) : array_base t =\n    backend_switch {\n        Gleam = fun () =>\n            inl d = real defaultof `t ()\n            $'!items |> array.from_list(default: !d)' : array_base t\n        Lua = fun () =>\n            inl len = $'##(!items)' : i32\n            inl d = real defaultof `t ()\n            inl result : a _ t = am.init len (fun _ => d)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i + 1]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Fsharp = fun () => items |> $'List.toArray' : array_base t\n        Python = fun () =>\n            inl len = $'len(!items)' : i32\n            inl result : a _ t = a ($'__import__(\"numpy\").empty(!len, dtype=object)' : array_base t)\n            let rec 루프 i =\n                if i >= len then\n                    inl (a result) = result\n                    result\n                else\n                    set result i $'!items[!i]'\n                    루프 (i + 1i32)\n            루프 0i32\n        Rust = fun () => $'Rc::new(RefCell::new((!items).as_ref().clone()))' : array_base t\n        TypeScript = fun () => $'[...!items]' : array_base t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1276,7 +1270,6 @@ Spiral.Kino.eval!(
           Fsharp = fun () => items |> $'List.toArray' : array_base t
           Python = fun () =>
               inl len = $'len(!items)' : i32
-              // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).
               inl result : a _ t = a ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
               let rec 루프 i =
                   if i >= len then

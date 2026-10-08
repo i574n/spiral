@@ -32,6 +32,5 @@ foreach ($item in $_args) {
 if ($key) {
     $mergedArgs[$key] = $True
 }
-# Write-Output "invoke-block.ps1 / Get-Location: $(Get-Location) / path: $path / _args: $($mergedArgs | ConvertTo-Json)"
 
 { Invoke-Block @mergedArgs } | Invoke-Block

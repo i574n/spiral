@@ -6,7 +6,6 @@ open rust_operators
 
 /// ### enumerate
 inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
-    // a pair is the Rust tuple itself
     !\($'"!iter.enumerate()"')
 
 /// ### into_iter

@@ -75,7 +75,7 @@ Spiral.Kino.eval!(
 
 ### to
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to forall t u. (x : t) : u =\n    if is_rust ()\n    then\n        // Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted\n        inl from_string : bool =\n            real\n                typecase t with\n                | string => true\n                | _ => false\n        x\n        |> to' fun x =>\n            inl y : u =\n                if from_string\n                then $'(!x).parse::<`u>().unwrap()'\n                else $'(!x as `u)'\n            Some y\n        |> optionm.value\n    else\n        x\n        |> to' fun x => $'!x ' |> Some\n        |> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to forall t u. (x : t) : u =\n    if is_rust ()\n    then\n        inl from_string : bool =\n            real\n                typecase t with\n                | string => true\n                | _ => false\n        x\n        |> to' fun x =>\n            inl y : u =\n                if from_string\n                then $'(!x).parse::<`u>().unwrap()'\n                else $'(!x as `u)'\n            Some y\n        |> optionm.value\n    else\n        x\n        |> to' fun x => $'!x ' |> Some\n        |> optionm.value\n\ninl numeric_conv forall t u. (x : t) : u =\n    if (real typecase t with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | f32 => true | f64 => true | _ => false)\n    then real conv `t `u x\n    else $'!x ' : u","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -83,7 +83,6 @@ Spiral.Kino.eval!(
   inl to forall t u. (x : t) : u =
       if is_rust ()
       then
-          // Rust: the target's implicit conversion (`$'!x '`) would assign the value unconverted
           inl from_string : bool =
               real
                   typecase t with
@@ -101,6 +100,11 @@ Spiral.Kino.eval!(
           x
           |> to' fun x => $'!x ' |> Some
           |> optionm.value
+
+  inl numeric_conv forall t u. (x : t) : u =
+      if (real typecase t with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | f32 => true | f64 => true | _ => false)
+      then real conv `t `u x
+      else $'!x ' : u
   """,
   timeout: 300_000
 )
@@ -136,7 +140,7 @@ Spiral.Kino.eval!(
 
 ### convert_i32
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32 forall t. (x : t) : int =\n    backend_switch {\n        Gleam = fun () => x |> convert_i32_base 10 : int\n        Lua = fun () => x |> convert_i32_base 10 : int\n        Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int\n        Python = fun () => x |> convert_i32_base 10 : int\n        // Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even\n        Rust = fun () =>\n            if (real typecase t with string => true | _ => false)\n            then x |> convert_i32_base 10 : int\n            elif (real typecase t with f64 => true | f32 => true | _ => false)\n            then $'((!x).round_ties_even() as i32)' : int\n            else $'(!x as i32)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl convert_i32 forall t. (x : t) : int =\n    backend_switch {\n        Gleam = fun () => x |> convert_i32_base 10 : int\n        Lua = fun () => x |> convert_i32_base 10 : int\n        Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int\n        Python = fun () => x |> convert_i32_base 10 : int\n        Rust = fun () =>\n            if (real typecase t with string => true | _ => false)\n            then x |> convert_i32_base 10 : int\n            elif (real typecase t with f64 => true | f32 => true | _ => false)\n            then $'((!x).round_ties_even() as i32)' : int\n            else $'(!x as i32)' : int\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -147,7 +151,6 @@ Spiral.Kino.eval!(
           Lua = fun () => x |> convert_i32_base 10 : int
           Fsharp = fun () => $'System.Convert.ToInt32(!x)' : int
           Python = fun () => x |> convert_i32_base 10 : int
-          // Rust: like System.Convert.ToInt32, a string parses and a float rounds half to even
           Rust = fun () =>
               if (real typecase t with string => true | _ => false)
               then x |> convert_i32_base 10 : int
@@ -162,7 +165,7 @@ Spiral.Kino.eval!(
 
 ### try_convert
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_convert forall t u. (x : t) : option u =\n    x |> to' fun x =>\n        backend_switch {\n            Gleam = fun () =>\n                if (real typecase u with int => true | _ => false) then\n                    global \"import gleam/int\"\n                    inl (n : int), (err : int) =\n                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'\n                    if err = 0\n                    then n |> to |> Some\n                    else None : _ u\n                else x |> to |> Some\n            Lua = fun () =>\n                x |> to |> Some : _ u\n            Fsharp = fun () =>\n                resultm.from_try\n                    fun () => $'!x |> `u '\n                    eval\n                |> resultm.ok\n                : _ u\n            Python = fun () =>\n                resultm.from_try\n                    fun () => $'`u(!x)'\n                    eval\n                |> resultm.ok\n                : _ u\n            Rust = fun () =>\n                // \u0007s only converts between primitives; a string target formats the value (paths' Display, ...).\n                if (real typecase u with string => true | _ => false)\n                then Some $'Rc::<str>::from(format\\!(\"{}\", !x))'\n                elif (real typecase t with string => true | _ => false)\n                then\n                    // a string parses (an `as` cast of an Rc<str> doesn't compile); None when it doesn't, as in F#\n                    ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox\n                else Some $'((!x) as `u)'\n        }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_convert forall t u. (x : t) : option u =\n    x |> to' fun x =>\n        backend_switch {\n            Gleam = fun () =>\n                if (real typecase u with int => true | _ => false) then\n                    global \"import gleam/int\"\n                    inl (n : int), (err : int) =\n                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'\n                    if err = 0\n                    then n |> to |> Some\n                    else None : _ u\n                else x |> to |> Some\n            Lua = fun () =>\n                x |> to |> Some : _ u\n            Fsharp = fun () =>\n                resultm.from_try\n                    fun () => $'!x |> `u '\n                    eval\n                |> resultm.ok\n                : _ u\n            Python = fun () =>\n                resultm.from_try\n                    fun () => $'`u(!x)'\n                    eval\n                |> resultm.ok\n                : _ u\n            Rust = fun () =>\n                if (real typecase u with string => true | _ => false)\n                then Some $'Rc::<str>::from(format\\!(\"{}\", !x))'\n                elif (real typecase t with string => true | _ => false)\n                then\n                    ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox\n                else Some $'((!x) as `u)'\n        }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -194,12 +197,10 @@ Spiral.Kino.eval!(
                   |> resultm.ok
                   : _ u
               Rust = fun () =>
-                  // s only converts between primitives; a string target formats the value (paths' Display, ...).
                   if (real typecase u with string => true | _ => false)
                   then Some $'Rc::<str>::from(format\!("{}", !x))'
                   elif (real typecase t with string => true | _ => false)
                   then
-                      // a string parses (an `as` cast of an Rc<str> doesn't compile); None when it doesn't, as in F#
                       ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox
                   else Some $'((!x) as `u)'
           }
@@ -303,7 +304,7 @@ Spiral.Kino.eval!(
 
 ### u8
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u8 forall t. (x : t) : u8 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u8\n        Lua = fun () => x |> to : u8\n        Fsharp = fun () => x |> $'uint8' : u8\n        Python = fun () => x |> to : u8\n        Rust = fun () => $'(!x as u8)' : u8\n        TypeScript = fun () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u8 forall t. (x : t) : u8 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u8\n        Lua = fun () => x |> to : u8\n        Fsharp = fun () => x |> $'uint8' : u8\n        Python = fun () => x |> to : u8\n        Rust = fun () => $'(!x as u8)' : u8\n        TypeScript = fun () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8\n        Zig = fun () => numeric_conv x : u8\n        Lean = fun () => numeric_conv x : u8\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -316,6 +317,8 @@ Spiral.Kino.eval!(
           Python = fun () => x |> to : u8
           Rust = fun () => $'(!x as u8)' : u8
           TypeScript = fun () => $'Number(BigInt.asUintN(8, BigInt(!x)))' : u8
+          Zig = fun () => numeric_conv x : u8
+          Lean = fun () => numeric_conv x : u8
       }
   """,
   timeout: 300_000
@@ -324,7 +327,7 @@ Spiral.Kino.eval!(
 
 ### u16
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u16 forall t. (x : t) : u16 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u16\n        Lua = fun () => x |> to : u16\n        Fsharp = fun () => x |> $'uint16' : u16\n        Python = fun () => $'!x & 0xFFFF' : u16\n        Rust = fun () => $'(!x as u16)' : u16\n        TypeScript = fun () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u16 forall t. (x : t) : u16 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u16\n        Lua = fun () => x |> to : u16\n        Fsharp = fun () => x |> $'uint16' : u16\n        Python = fun () => $'!x & 0xFFFF' : u16\n        Rust = fun () => $'(!x as u16)' : u16\n        TypeScript = fun () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16\n        Zig = fun () => numeric_conv x : u16\n        Lean = fun () => numeric_conv x : u16\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -337,6 +340,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'!x & 0xFFFF' : u16
           Rust = fun () => $'(!x as u16)' : u16
           TypeScript = fun () => $'Number(BigInt.asUintN(16, BigInt(!x)))' : u16
+          Zig = fun () => numeric_conv x : u16
+          Lean = fun () => numeric_conv x : u16
       }
   """,
   timeout: 300_000
@@ -345,7 +350,7 @@ Spiral.Kino.eval!(
 
 ### u64
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u64 forall t. (x : t) : u64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u64\n        Lua = fun () => x |> to : u64\n        Fsharp = fun () => x |> $'uint64' : u64\n        Python = fun () => x |> to : u64\n        Rust = fun () => $'(!x as u64)' : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl u64 forall t. (x : t) : u64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : u64\n        Lua = fun () => x |> to : u64\n        Fsharp = fun () => x |> $'uint64' : u64\n        Python = fun () => x |> to : u64\n        Rust = fun () => $'(!x as u64)' : u64\n        Zig = fun () => numeric_conv x : u64\n        Lean = fun () => numeric_conv x : u64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -357,6 +362,8 @@ Spiral.Kino.eval!(
           Fsharp = fun () => x |> $'uint64' : u64
           Python = fun () => x |> to : u64
           Rust = fun () => $'(!x as u64)' : u64
+          Zig = fun () => numeric_conv x : u64
+          Lean = fun () => numeric_conv x : u64
       }
   """,
   timeout: 300_000
@@ -365,7 +372,7 @@ Spiral.Kino.eval!(
 
 ### i32
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i32 forall t. (x : t) : i32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i32\n        Lua = fun () => x |> convert : i32\n        Fsharp = fun () => x |> convert : i32\n        Python = fun () => x |> convert : i32\n        // `to`: a string parses (an `as` cast of an Rc<str> doesn't compile), other values cast\n        Rust = fun () => x |> to : i32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i32 forall t. (x : t) : i32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i32\n        Lua = fun () => x |> convert : i32\n        Fsharp = fun () => x |> convert : i32\n        Python = fun () => x |> convert : i32\n        Rust = fun () => x |> to : i32\n        Zig = fun () => numeric_conv x : i32\n        Lean = fun () => numeric_conv x : i32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -376,8 +383,9 @@ Spiral.Kino.eval!(
           Lua = fun () => x |> convert : i32
           Fsharp = fun () => x |> convert : i32
           Python = fun () => x |> convert : i32
-          // `to`: a string parses (an `as` cast of an Rc<str> doesn't compile), other values cast
           Rust = fun () => x |> to : i32
+          Zig = fun () => numeric_conv x : i32
+          Lean = fun () => numeric_conv x : i32
       }
   """,
   timeout: 300_000
@@ -386,7 +394,7 @@ Spiral.Kino.eval!(
 
 ### i64
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i64 forall t. (x : t) : i64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i64\n        Lua = fun () => x |> to : i64\n        Fsharp = fun () => x |> $'int64' : i64\n        Python = fun () => x |> to : i64\n        Rust = fun () => x |> to : i64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl i64 forall t. (x : t) : i64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : i64\n        Lua = fun () => x |> to : i64\n        Fsharp = fun () => x |> $'int64' : i64\n        Python = fun () => x |> to : i64\n        Rust = fun () => x |> to : i64\n        Zig = fun () => numeric_conv x : i64\n        Lean = fun () => numeric_conv x : i64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -398,6 +406,8 @@ Spiral.Kino.eval!(
           Fsharp = fun () => x |> $'int64' : i64
           Python = fun () => x |> to : i64
           Rust = fun () => x |> to : i64
+          Zig = fun () => numeric_conv x : i64
+          Lean = fun () => numeric_conv x : i64
       }
   """,
   timeout: 300_000
@@ -406,7 +416,7 @@ Spiral.Kino.eval!(
 
 ### f32
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f32 forall t. (x : t) : f32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f32\n        Lua = fun () => x |> to : f32\n        Fsharp = fun () => x |> $'float32' : f32\n        Python = fun () => x |> to : f32\n        Rust = fun () => $'(!x as f32)' : f32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f32 forall t. (x : t) : f32 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f32\n        Lua = fun () => x |> to : f32\n        Fsharp = fun () => x |> $'float32' : f32\n        Python = fun () => x |> to : f32\n        Rust = fun () => $'(!x as f32)' : f32\n        Zig = fun () => numeric_conv x : f32\n        Lean = fun () => numeric_conv x : f32\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -418,6 +428,8 @@ Spiral.Kino.eval!(
           Fsharp = fun () => x |> $'float32' : f32
           Python = fun () => x |> to : f32
           Rust = fun () => $'(!x as f32)' : f32
+          Zig = fun () => numeric_conv x : f32
+          Lean = fun () => numeric_conv x : f32
       }
   """,
   timeout: 300_000
@@ -426,7 +438,7 @@ Spiral.Kino.eval!(
 
 ### f64
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f64 forall t. (x : t) : f64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f64\n        Lua = fun () => x |> to : f64\n        Fsharp = fun () => x |> $'float' : f64\n        Python = fun () => x |> to : f64\n        // `to` only converts the pairs `to'` lists (u8/u32/u64/f32 -> f64 fall through to a bare `!x`).\n        Rust = fun () => $'(!x as f64)' : f64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl f64 forall t. (x : t) : f64 =\n    backend_switch {\n        Gleam = fun () => x |> convert : f64\n        Lua = fun () => x |> to : f64\n        Fsharp = fun () => x |> $'float' : f64\n        Python = fun () => x |> to : f64\n        Rust = fun () => $'(!x as f64)' : f64\n        Zig = fun () => numeric_conv x : f64\n        Lean = fun () => numeric_conv x : f64\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -437,8 +449,9 @@ Spiral.Kino.eval!(
           Lua = fun () => x |> to : f64
           Fsharp = fun () => x |> $'float' : f64
           Python = fun () => x |> to : f64
-          // `to` only converts the pairs `to'` lists (u8/u32/u64/f32 -> f64 fall through to a bare `!x`).
           Rust = fun () => $'(!x as f64)' : f64
+          Zig = fun () => numeric_conv x : f64
+          Lean = fun () => numeric_conv x : f64
       }
   """,
   timeout: 300_000

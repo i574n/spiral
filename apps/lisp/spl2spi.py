@@ -18,7 +18,6 @@ INFIX = {'=', '+', '-', '*', '<>', '<', '>', '<=', '>=', '&&', '||'}
 
 
 def read(text):
-    # Smart quotes from phone keyboards and similar transports become plain ASCII quotes.
     text = text.replace('\u201c', '"').replace('\u201d', '"')
     stack, top, pos = [], [], 0
     while pos < len(text):

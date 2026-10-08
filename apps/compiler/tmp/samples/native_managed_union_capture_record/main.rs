@@ -17,10 +17,10 @@ impl US0 {
 fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v12: i32 = match &v0 {
-            US0::US0_0 => { // Empty
+            US0::US0_0 => {
                 3i32
             }
-            US0::US0_1(v2, v3) => { // Item
+            US0::US0_1(v2, v3) => {
                 let mut v2: Rc<str> = v2.clone();
                 let mut v3: Rc<RefCell<Vec<i32>>> = v3.clone();
                 let mut v4: i32 = (v2.clone().len() as i32);

@@ -19,7 +19,7 @@ impl US0 {
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v7: i32 = match &v0 {
-            US0::US0_2(v3) => { // Flag
+            US0::US0_2(v3) => {
                 let mut v3: bool = *v3;
                 if v3 {
                     11i32
@@ -27,11 +27,11 @@ fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
                     5i32
                 }
             }
-            US0::US0_1(v2) => { // Hit
+            US0::US0_1(v2) => {
                 let mut v2: i32 = *v2;
                 v2
             }
-            US0::US0_0 => { // Idle
+            US0::US0_0 => {
                 3i32
             }
         };

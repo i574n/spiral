@@ -47,7 +47,7 @@ fn method0() -> Rc<UH0> {
 fn spiral_main() -> i32 {
     let mut v0: Rc<UH0> = method0();
     match &*v0 {
-        UH0::UH0_1(v1, v2) => { // Box
+        UH0::UH0_1(v1, v2) => {
             let mut v1: i32 = *v1;
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: bool = v1 == 7i32;
@@ -57,7 +57,7 @@ fn spiral_main() -> i32 {
                 3i32
             }
         }
-        UH0::UH0_0 => { // Empty
+        UH0::UH0_0 => {
             1i32
         }
     }

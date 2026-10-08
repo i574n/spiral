@@ -51,6 +51,33 @@ defmodule Spiral.KinoTest do
     assert result.exit_status == 0
   end
 
+  test "a host Rust cell runs from the notebook's directory, else from its own" do
+    parent = self()
+
+    execute = fn %{exe_path: exe, cwd: cwd} ->
+      send(parent, {:ran, exe, cwd})
+      {:ok, %{exit_status: 0, output: "", duration_ms: 1}}
+    end
+
+    root = Spiral.Kino.TestHelpers.tmp_dir!("host_cwd")
+
+    assert {:ok, _} =
+             Spiral.Kino.run("1i32",
+               compile: &compile_ok/1,
+               rustc: &rustc_ok/1,
+               execute: execute,
+               root: root
+             )
+
+    assert_received {:ran, _exe, ^root}
+
+    assert {:ok, _} =
+             Spiral.Kino.run("1i32", compile: &compile_ok/1, rustc: &rustc_ok/1, execute: execute)
+
+    assert_received {:ran, exe, cwd}
+    assert cwd == Path.dirname(exe)
+  end
+
   test "print_code puts the patched Rust in front of stdout" do
     assert {:ok, %Result{stdout: stdout, value: "3"}} =
              Spiral.Kino.run("1i32 + 2i32",
@@ -117,8 +144,6 @@ defmodule Spiral.KinoTest do
              )
   end
 
-  # physics' plot cells end in a tuple: the old route showed any value; main is i32, so the value is bound and shown with
-  # Rust's Debug instead (the compiler reports the expression line: "Got: i32 Expected: <the value's type>").
   test "a value that is not an i32 is compiled again and shown with Debug" do
     compile = fn %{source: source} ->
       if String.contains?(source, "console.show_value spiral_kino_value") do
@@ -153,10 +178,11 @@ defmodule Spiral.KinoTest do
 
     refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
 
-    # a piped expression's last stage (parsing's F# `... |> sm'.format_debug` cell) is reported at that stage, on the
-    # body's last line; the same mismatch on an earlier body line is a real error
     piped = "inl main () : i32 =\n    \"[a\"\n    |> parse\n    |> sm'.format_debug\n"
-    stage = "Unification failure. Got:      string * parser_error_ -> i32 Expected: string * parser_error_ -> string"
+
+    stage =
+      "Unification failure. Got:      string * parser_error_ -> i32 Expected: string * parser_error_ -> string"
+
     assert Spiral.Kino.value_result?("main.spi:4:8: " <> stage, piped)
     refute Spiral.Kino.value_result?("main.spi:3:8: " <> stage, piped)
 
@@ -287,8 +313,6 @@ defmodule Spiral.KinoTest do
     shares_sibling_mount(fn parent -> "#{String.replace(parent, "\\", "/")}/somewhere" end)
   end
 
-  # dice's own package.spiproj: packageDir: deps/polyglot/deps/spiral/lib (relative) seen through the junction is a
-  # second path to the spiral lib the cell already mounts -> the lib is loaded twice ("Got: stream u8 Expected: stream u8").
   test "a relative packageDir shares the sibling mount too" do
     shares_sibling_mount(fn _parent -> "deps/somewhere/lib" end)
   end
@@ -351,8 +375,6 @@ defmodule Spiral.KinoTest do
     File.rm_rf!(parent)
   end
 
-  # Every cell of every parallel notebook mounts the same lib: a complete mount must not wait on the build lock (the
-  # lib run's cells timed out with `could not mount packages: :lock_timeout`).
   test "a ready mount is used without taking its lock" do
     target = Spiral.Kino.TestHelpers.tmp_dir!("mount_ready")
     File.write!(Path.join(target, "package.spiproj"), "packages:\n    |core-\nmodules:\n    a\n")
@@ -361,7 +383,6 @@ defmodule Spiral.KinoTest do
 
     assert {:ok, mount} = Spiral.Kino.Mounts.ensure(entries)
     lock = mount <> ".lock"
-    # held by a live process (this one) for as long as the test runs
     File.write!(lock, System.pid())
 
     try do
@@ -573,7 +594,8 @@ defmodule Spiral.KinoTest do
   end
 
   test "the package fallback root is this spiral checkout; the polyglot_root option still overrides it" do
-    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") || System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") do
+    unless System.get_env("SPIRAL_KINO_WORKSPACE_ROOT") ||
+             System.get_env("SPIRAL_KINO_POLYGLOT_ROOT") do
       root = Spiral.Kino.workspace_root()
       assert File.regular?(Path.join(root, "apps/kino/mix.exs")), root
     end

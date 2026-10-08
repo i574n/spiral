@@ -44,12 +44,10 @@ inl from_list list =
 
 /// ### try_item
 inl try_item i s =
-    // inl rec body i = function
     inl rec body forall a {number} b. (i : a) : stream b -> option b = function
         | StreamCons (x, _) when i <= 0 => Some x
         | StreamCons (_, fn) => 루프 (i - 1) (fn ())
         | StreamNil => None
-    // and inl 루프 acc s' =
     and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =
         match var_is acc, var_is s' with
         | false, false => body acc s'
@@ -87,7 +85,6 @@ union memoized_stream t =
     | Computed : stream t
 
 inl memoize s =
-    // inl rec body s =
     inl rec body forall t. (s : () -> stream t) : () -> stream t =
         inl state = mut (NotComputed s)
         fun () =>
@@ -100,7 +97,6 @@ inl memoize s =
                     | StreamCons (x, fn) => StreamCons (x, 루프 fn)
                 state <- Computed new_state
                 new_state
-    // and inl 루프 s' = join_body_unit body s s'
     and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =
         join_body_unit body s s'
     루프 (fun () => s)
@@ -179,14 +175,12 @@ inl zip_ s1 s2 =
 
 /// ### unzip
 inl unzip s =
-    // inl rec body s =
     inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =
         match s with
         | StreamCons ((x, y), fn) =>
             inl xs, ys = 루프 (fn ())
             StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)
         | StreamNil => pair StreamNil StreamNil
-    // and inl 루프 x =
     and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =
         if var_is x |> not
         then body x
@@ -272,10 +266,7 @@ nominal decode_reader_bytes t u =
 
 /// ### decode_reader_bytes_build
 inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =
-    // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).build(!x)"')
-    // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).utf8_passthru(true).build(!x)"')
     !\\(x, $'"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)"')
-    // !\($'"encoding_rs_io::DecodeReaderBytes::new(!x)"')
 
 /// ### buf_reader_read
 inl buf_reader_read forall el dim.

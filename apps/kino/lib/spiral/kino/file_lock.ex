@@ -6,8 +6,6 @@ defmodule Spiral.Kino.FileLock do
     claim(path, fun, now + timeout, now)
   end
 
-  # How often a waiter checks whether the holder died: the check runs `tasklist` on Windows (slow under load), so it is
-  # not done on every 50 ms poll.
   @liveness_every_ms 2_000
 
   defp claim(path, fun, deadline, next_check) do
@@ -43,15 +41,12 @@ defmodule Spiral.Kino.FileLock do
     end
   end
 
-  # A holder creates the file and then writes its pid: an empty (or unparsable) file is a holder caught between the
-  # two, so it counts as held until it is older than this grace period (then its writer died before writing).
   @grace_s 5
 
   defp holder_dead?(path) do
     case File.read(path) do
       {:ok, text} ->
         case Integer.parse(String.trim(text)) do
-          # this BEAM (a parallel cell of the same notebook) is alive without asking `tasklist`
           {pid, ""} -> Integer.to_string(pid) != System.pid() and not Spiral.Kino.Runner.os_pid_alive?(pid)
           _ -> older_than_grace?(path)
         end

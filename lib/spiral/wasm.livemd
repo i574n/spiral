@@ -223,13 +223,12 @@ Spiral.Kino.eval!(
 
 ### closure_wrap
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl closure_wrap forall t. (x : rust.box t) : closure t =\n    // Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)\n    inl x = if is_rust () then x else join x\n    !\\($'\"wasm_bindgen::closure::Closure::wrap(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl closure_wrap forall t. (x : rust.box t) : closure t =\n    inl x = if is_rust () then x else join x\n    !\\($'\"wasm_bindgen::closure::Closure::wrap(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl closure_wrap forall t. (x : rust.box t) : closure t =
-      // Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)
       inl x = if is_rust () then x else join x
       !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
   """,

@@ -19,7 +19,6 @@ let rec nth_line (xs : lines) (i : i32) : string =
     | NoLine => ""
     | Line (s, rest) => if i = 0i32 then s else nth_line rest (i - 1i32)
 
-// Tail recursive, appending to the left (linear on Erlang; the right fold copied the tail once per line).
 let rec join_from (xs : lines) (acc : string) : string =
     match xs with
     | NoLine => acc
@@ -99,7 +98,6 @@ inl wrap (code : string) : string * i32 =
     if block >= 0i32 && main_line (nth_line xs block) then text.ensure_nl code, 0i32
     else
         inl at = search_top xs (n - 1i32) -1i32
-        // 2: no top-level expression (only definitions/opens); like the old route, the cell shows no value.
         if at < 0i32 then text.ensure_nl code ++ "inl main () : i32 = 0i32\n", 2i32
         else text.ensure_nl (join_lines (map_main xs 0i32 at)), 1i32
 
@@ -220,7 +218,6 @@ inl ends_with_eq (src : string) : bool =
     if text.length t = 0i32 then false
     else text.index t (text.length t - 1i32) = '='
 
-// The compiler's emit marker; the spelling before 2026-10-07 (`Fable.Core.RustInterop.emitRustExpr`) is still read.
 inl emit_of (line : string) : string * string * string =
     inl new_at = text.find_from line "__spiral_emit_rust" 0i32
     inl marker = if new_at >= 0i32 then "__spiral_emit_rust" else "Fable.Core.RustInterop.emitRustExpr"
@@ -268,7 +265,6 @@ inl patch_rust (rust : string) (show_value : string) : string =
     inl known = snippets xs NoPair
     inl joined = join_lines (rewrite_lines xs known)
     inl collapsed = text.collapse_newlines joined
-    // Since D1 (native failwith = panic) the compiler ends main with a join that maps a panic to exit code 101.
     inl joined_exit = "std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });"
     if show_value = "1" then
         text.replace (text.replace collapsed "std::process::exit(main.join().unwrap());" (show_exit ())) joined_exit (show_join ())
@@ -334,8 +330,6 @@ inl unit_pair (got : string) (expected : string) : bool =
         inl e_ok, e = prefix_before expected "-> i32"
         if g_ok = 1i32 && e_ok = 1i32 && g = e then true
         else
-            // A generic last call (`x |> console.write_line` with `forall t`) unifies the other way round:
-            // Got: i32 -> i32, Expected: i32 -> ().
             inl g_ok, g = prefix_before got "-> i32"
             inl e_ok, e = prefix_before expected "-> ()"
             if g_ok = 1i32 && e_ok = 1i32 && g = e then true else false

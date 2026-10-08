@@ -127,7 +127,6 @@ defmodule Spiral.Kino.Builders do
 
   def dispatch(%{tool: :python, deps: [], env: nil}, path), do: {:python, path}
 
-  # The native TypeScript backend's output runs under bun (it runs .ts directly and installs imported packages itself).
   def dispatch(%{tool: :typescript}, path), do: {:bun, path}
 
   def dispatch(%{tool: :c}, path), do: {:cc, path}
@@ -457,8 +456,6 @@ defmodule Spiral.Kino.Builders do
 
   defp dep_args(deps), do: Enum.flat_map(deps, fn dep -> ["--deps", dep_arg(dep)] end)
 
-  # The CLI writes a `name=version` dep into Cargo.toml as is, but the builder line's quotes are gone after tokenizing
-  # (`pyo3='=0.26.0'` -> `pyo3==0.26.0`, invalid TOML: polyglot/lib/math): the version goes back in a TOML literal string.
   defp dep_arg(%{raw: raw, name: name, version: version}) when is_binary(version) do
     if String.contains?(raw, "=") and not String.contains?(raw, ["\"", "'"]) and
          not String.starts_with?(version, "{"),

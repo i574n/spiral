@@ -3,7 +3,6 @@ defmodule Spiral.Kino.FsiSessionTest do
 
   alias Spiral.Kino.{FsiChain, FsiSession, Notebook, Runner, Toolchain}
 
-  # A cold `dotnet fsi` takes 15-25 s to start on this box; budgets are load-tolerant.
   @moduletag timeout: 600_000
 
   setup do
@@ -23,12 +22,10 @@ defmodule Spiral.Kino.FsiSessionTest do
       assert {:ok, %{output: "", value: nil}} =
                FsiSession.submit(s, "type US0 = A | B\nlet x = A")
 
-      # The same type name again, in a later submission (an accumulated script fails here with a duplicate type).
       assert {:ok, %{output: "y=C 3 x=A"}} =
                FsiSession.submit(s, "type US0 = C of int\nlet y = C 3\nprintfn \"y=%A x=%A\" y x")
 
       assert {:ok, %{value: "3"}} = FsiSession.submit(s, "1 + 2")
-      # A unit expression and a definition-only cell show no value.
       assert {:ok, %{value: nil}} = FsiSession.submit(s, "printfn \"\"")
       assert {:ok, %{value: nil}} = FsiSession.submit(s, "let z = 1")
 
@@ -41,7 +38,6 @@ defmodule Spiral.Kino.FsiSessionTest do
       assert {:error, %{reason: :failed, output: compile}} =
                FsiSession.submit(s, "let a = 1\nundefinedThing + 1", label: "cell.fsx")
 
-      # Positions are relative to the submission, under its label.
       assert compile =~ "cell.fsx(2,1): error FS0039"
 
       assert {:error, %{reason: :failed, output: thrown}} =
@@ -50,11 +46,8 @@ defmodule Spiral.Kino.FsiSessionTest do
       assert thrown =~ "System.Exception: boom"
       assert thrown =~ "Stopped due to error"
 
-      # The session survives failed submissions.
       assert {:ok, %{value: "4"}} = FsiSession.submit(s, "z + 3")
 
-      # polyglot's Notebooks.dib sets Formatter.ListExpansionLimit; values are shown the way dotnet-repl registers them
-      # for an fsharp/spiral notebook: `%120A`.
       assert {:ok, _} = FsiSession.submit(s, "Formatter.ListExpansionLimit <- 3")
 
       assert {:ok, %{value: "[1; 2; 3; 4; 5; 6; 7; 8; 9; 10]"}} =
@@ -63,7 +56,6 @@ defmodule Spiral.Kino.FsiSessionTest do
       assert {:ok, %{value: "Some (1006, [5; 4; 3; 2])"}} =
                FsiSession.submit(s, "Some (1006, [ 5; 4; 3; 2 ])")
 
-      # ToDisplayString on an inline generic and Display on a registered type, as polyglot's Testing.dib uses them.
       assert {:ok, %{output: shown}} =
                FsiSession.submit(s, """
                let inline show actual = printfn $"{actual.ToDisplayString ()}"
@@ -74,7 +66,6 @@ defmodule Spiral.Kino.FsiSessionTest do
                Shown(7).Display () |> ignore
                """)
 
-      # dotnet-repl's default mime type is text/plain, so Display shows `%120A` (the html formatter is not preferred).
       assert shown =~ "[1; 2]"
       assert shown =~ "Shown"
     after
@@ -209,7 +200,6 @@ defmodule Spiral.Kino.FsiSessionTest do
     assert shown =~ "First 1"
     assert failed =~ "input.fsx(1,1): error FS0039"
     assert running =~ "still running"
-    # `///- --ignore` cells are skipped, as the .dib route's runner skips them.
     assert ignored == ""
     assert Enum.at(code, 4)["execution_count"] == nil
     assert timed_out =~ "timed out after 3s"

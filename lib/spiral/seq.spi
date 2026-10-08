@@ -157,18 +157,14 @@ inl memoize_ seq =
             new_state
 
 /// ### iterate
-// inl iterate f x0 num_steps =
 inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-    // inl rec 루프 x n =
     inl rec 루프 forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
         else 루프 (f x) (n - 1)
     루프 x0 num_steps
 
-// inl iterate_ f x0 num_steps =
 inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-    // let rec 루프 x n =
     let rec 루프 forall c {number}. (x : a) (n : c) : a =
         if n <= 0
         then x
@@ -285,7 +281,6 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
             global "import gary/array"
             $'!items |> array.from_list' : a dim t
         Fsharp = fun () => items |> $'Seq.toArray' : a dim t
-        // A numpy object array (listm'.to_array'): `np` is not bound in Python output and CuPy holds primitives only.
         Python = fun () =>
             inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'
             $'!x ' : a dim t
@@ -313,7 +308,6 @@ inl cast' forall t u. (items : u) : seq' t =
         Gleam = fun () => $'!items ' : seq' t
         Fsharp = fun () => items |> $'Seq.cast' : seq' t
         Python = fun () => $'list(!items)' : seq' t
-        // Rust: a seq'/list' (`Rc<Vec<t>>`) or an array as is, else anything `IntoIterator<Item = t>`.
         Rust = fun () =>
             inl x : seq' t =
                 real
@@ -324,7 +318,6 @@ inl cast' forall t u. (items : u) : seq' t =
                     | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                     | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
             x
-        // TypeScript: an array or any iterable.
         TypeScript = fun () => $'Array.from(!items)' : seq' t
     }
 

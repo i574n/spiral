@@ -1,6 +1,4 @@
 /// # pure_split
-/// Pure-Spiral (lib/spiral/parsing) port of parsing.dib's FParsec split_args grammar, combinator for combinator, so
-/// it is compared against FParsec on the same grammar. runtime.split_args (the real consumer) is benchmarked as well.
 open sm'_operators
 
 /// ### split_args

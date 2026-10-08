@@ -58,7 +58,7 @@ var
 begin
   while True do begin
       case v0.tag of
-          0: begin // Cons
+          0: begin
               v2 := v0.c0_0;
               v3 := v0.c0_1;
               v4 := v3.Invoke;
@@ -69,7 +69,7 @@ begin
               v1 := tmp5;
               Continue;
           end;
-          1: begin // Nil
+          1: begin
               Result := v1;
               Exit;
           end;
@@ -99,6 +99,8 @@ begin
   v8 := v5 + v7;
   Result := v8;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

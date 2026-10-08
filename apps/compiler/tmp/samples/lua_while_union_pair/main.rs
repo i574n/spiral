@@ -61,23 +61,23 @@ fn spiral_main() -> i32 {
     };
     let mut v19: Rc<UH0> = v9.borrow().l0.clone();
     let mut v38: i32 = match &*v19 {
-        UH0::UH0_1(v20, v21) => { // Cons
+        UH0::UH0_1(v20, v21) => {
             let mut v20: i32 = *v20;
             let mut v21: Rc<UH0> = v21.clone();
             match &*v21 {
-                UH0::UH0_1(v22, v23) => { // Cons
+                UH0::UH0_1(v22, v23) => {
                     let mut v22: i32 = *v22;
                     let mut v23: Rc<UH0> = v23.clone();
                     match &*v23 {
-                        UH0::UH0_1(v24, v25) => { // Cons
+                        UH0::UH0_1(v24, v25) => {
                             let mut v24: i32 = *v24;
                             let mut v25: Rc<UH0> = v25.clone();
                             match &*v25 {
-                                UH0::UH0_1(v26, v27) => { // Cons
+                                UH0::UH0_1(v26, v27) => {
                                     let mut v26: i32 = *v26;
                                     let mut v27: Rc<UH0> = v27.clone();
                                     match &*v27 {
-                                        UH0::UH0_0 => { // Nil
+                                        UH0::UH0_0 => {
                                             let mut v28: i32 = v20.wrapping_mul(64i32);
                                             let mut v29: i32 = v22.wrapping_mul(16i32);
                                             let mut v30: i32 = v28.wrapping_add(v29);

@@ -13,6 +13,8 @@ begin
   v2 := v0 + v1;
   Result := v2;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

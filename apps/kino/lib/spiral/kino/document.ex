@@ -13,8 +13,6 @@ defmodule Spiral.Kino.Document do
     text = String.replace(text, "\r\n", "\n")
 
     cells =
-      # A fence opens and closes at the start of a line (as in Markdown): a ``` inside a cell (a Spiral string
-      # holding a fence, benchmark.dib) does not end it.
       Regex.split(~r/(^<!-- livebook:\{"spiral_code":"[^"]+"\} -->\n\n```[^\n]*\n.*?^```[ \t]*(?:\n|\z)|^```(?:elixir|fsharp|spiral)\n.*?^```[ \t]*(?:\n|\z))/sm, text, include_captures: true)
       |> Enum.flat_map(&livemd_part/1)
 
@@ -40,9 +38,6 @@ defmodule Spiral.Kino.Document do
     |> newline()
   end
 
-  # A cell's source as parse_livemd reads it back (a code cell without trailing newlines, markdown trimmed), so the
-  # rendered .livemd always round-trips: a Spiral source ending in "\n" was written into the smart-cell attrs with it
-  # and read back without it (rust/testing.livemd after a scripted sync).
   defp canonical(%{kind: :markdown, source: source} = cell), do: %{cell | source: String.trim(source)}
   defp canonical(%{kind: :import} = cell), do: cell
   defp canonical(%{source: source} = cell), do: %{cell | source: String.trim_trailing(source, "\n")}
@@ -50,9 +45,6 @@ defmodule Spiral.Kino.Document do
   defp text_cell?(%{kind: kind}) when kind in [:markdown, :import], do: true
   defp text_cell?(_), do: false
 
-  # The cells as the text the spiral CLI's `export` reads: `#!<kind>` on its own line, then the cell, up to the next `#!`
-  # line (trimmed). The F# export goes through it (Notebook): `spiral export <nb>.cells fs` wraps the cells in the module
-  # a `# Name (Namespace)` heading declares and indents them.
   @spec to_cell_text(%{cells: [map()]}) :: String.t()
   def to_cell_text(%{cells: cells}) do
     cells |> Enum.map_join("\n\n", &text_cell/1) |> newline()
@@ -74,7 +66,6 @@ defmodule Spiral.Kino.Document do
 
   defp livemd_part(part) do
     cond do
-      # a host code cell (pwsh, mermaid, ...): its language rides in the annotation, the fence holds the source
       match?([_, _], Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)) ->
         [_, language] = Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)
         body = part |> String.replace(~r/\A<!-- livebook:[^\n]*\n\n/, "") |> fence_body()

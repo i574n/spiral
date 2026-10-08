@@ -11,8 +11,6 @@ let split_args (args : string) : result (array_base string) _ =
     inl esc = [ '\\'; '`' ]
     inl quotes = [ '"' ]
     inl special = esc ++ quotes
-    // An escape and the char after it, as written: a slice of the input (formatting the two chars into a string costs
-    // several allocations on Rust).
     inl p_esc_pair (p : parser _) : parser string = fun t, i, s =>
         match p (t, i, s) with
         | Ok (_, i', s') => Ok (t |> slice i i', i', s')
@@ -45,7 +43,6 @@ let split_args (args : string) : result (array_base string) _ =
     |> run_parser p_args
     |> resultm.map (fst >> fun (args : list string) =>
         if is_rust () then
-            // one Vec of the right size (`listm'.box >> listm'.to_array'` fills and then copies it twice)
             inl n = (0i32, args) ||> listm.fold fun n _ => n + 1
             inl acc : array_base string = $'Rc::new(RefCell::new(Vec::with_capacity(!n as usize)))'
             inl _ : i32 = (0i32, args) ||> listm.fold fun n (x : string) =>
@@ -226,7 +223,6 @@ inl stdin_write_all (stdin : threading.mutex_guard process_child_stdin) (text : 
             inl stdin = join stdin
             (!\($'"true; let mut !stdin = !stdin"') : bool) |> ignore
             (!\\(stdin, $'"true; std::io::Write::write_all(&mut *$0, !stream).unwrap()"') : bool) |> ignore
-        // Rust: no join (a join point would clone the MutexGuard, which is not Clone).
         Rust = fun () =>
             inl stream = text |> sm'.as_bytes
             (!\\((stdin, stream), $'"true; std::io::Write::write_all(&mut *$0, $1).unwrap()"') : bool) |> ignore
@@ -322,15 +318,11 @@ inl stdio_line
             inl line =
                 line
                 |> sm'.from_std_string
-                // |> sm'.as_bytes
-                // |> am'.slice_to_vec
                 |> sm'.encoding_encode' (sm'.encoding_utf8' ())
                 |> rust.cow_as_ref
                 |> sm'.str_from_utf8
-                // |> sm'.utf8_decode
                 |> resultm.unwrap'
                 |> sm'.ref_to_std_string
-                // String::from_utf8_lossy(line.as_bytes()).into()
             inl line_log = line |> sm'.from_std_string
             inl text =
                 match stdio with
@@ -355,8 +347,6 @@ inl stdio_line
     |> resultm.map_error'' sm'.format'
 
 /// ### stdio_line_rust
-// Rust: `stdio_line` without the channel, run on the calling thread (trace state and strings are `Rc`, not
-// `Send`); returns the text to accumulate. The reader threads already formatted io errors.
 inl stdio_line_rust
     (stdio : result () ())
     (trace' : bool)
@@ -425,14 +415,12 @@ inl arg_require_equals (value : bool) (arg : arg) : arg =
 /// ### arg_default_value
 inl arg_default_value (value : string) (arg : arg) : arg =
     inl value = #value
-    // clap keeps the default for the program's lifetime: default_value wants a 'static str.
     !\\((arg, value), $'"$0.default_value(&*Box::leak(String::from($1).into_boxed_str()))"')
 
 /// ### arg_default_missing_value
 inl arg_default_missing_value (value : string) (arg : arg) : arg =
     inl value = #value
     backend_switch {
-        // clap keeps the value for the program's lifetime: default_missing_value wants a static str (a leaked one).
         Rust = fun () => !\\((arg, value), $'"$0.default_missing_value(&*Box::leak(String::from($1).into_boxed_str()))"') : arg
     }
 
@@ -753,7 +741,6 @@ let current_process_kill () =
                         $'System.Console.Out.Flush ()'
                         $'System.Threading.Thread.Sleep 1000'
                         trace Warning (fun () => "runtime.current_process_kill / exiting... 1") id
-                        // This is failure shutdown, not a timeout: preserve a normal nonzero status.
                         $'System.Console.Error.Flush ()'
                         $'System.Environment.Exit 1' : ()
                     | _ => fun () => ()
@@ -785,15 +772,12 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
         fun () => { file_name arguments = #?*arguments; options }
     fun () =>
         fun () =>
-            // inl new_command_mutex (command : rust.ref (rust.mut' process_command)) : threading.arc (threading.mutex process_command) =
-                // ()
             file_name
             |> new_process_command
             |> process_command_args arguments
             |> process_command_stdout (process_stdio_piped ())
             |> process_command_stderr (process_stdio_piped ())
             |> process_command_stdin (process_stdio_piped ())
-            // |> new_command_mutex
             |> fun command =>
                 match options.working_directory |> optionm'.unbox with
                 | Some working_directory => command |> process_command_current_dir working_directory
@@ -983,16 +967,10 @@ inl execute_with_options_fsharp (options : execution_options) : i32 * string =
                         fun () => { file_name exit_code std_trace_len = ##std_trace }
                     new_pair exit_code std_trace
         |> capture
-    // |> async.new_future_move
-    // |> async.block_on
     |> fun x => x ()
     |> from_pair
 
 /// ### execute_with_options_rust
-// Rust (`Rc` strings and closures are not `Send`): the reader threads own the child's stdout/stderr pipes and
-// send plain `String` lines over `std::sync::mpsc`; the calling thread traces and accumulates them (`stdio_line_rust`),
-// runs the stdin callback, honors the cancellation token (kills the child) and waits. Child, Command, ChildStdin and the
-// receiver never leave the emitted block, so no `.clone()` is generated for them.
 inl execute_with_options_rust (options : execution_options) : i32 * string =
     inl command = join options.command
     inl file_name, arguments = command |> split_command |> resultm.get

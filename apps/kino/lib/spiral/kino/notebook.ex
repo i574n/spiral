@@ -24,7 +24,9 @@ defmodule Spiral.Kino.Notebook do
     :workspace_root,
     :polyglot_root,
     :env,
-    :print_code
+    :print_code,
+    :plot,
+    :render_plot
   ]
   @lib_rels [
     "deps/polyglot/deps/spiral/lib/spiral",
@@ -38,7 +40,6 @@ defmodule Spiral.Kino.Notebook do
     path = Path.expand(path)
     opts = Keyword.put(opts, :path, path)
     text = File.read!(path)
-    # `///! lisp` cells (apps/lisp) become Spiral here, before the plan and the exports see them
     doc = path |> parse(text) |> expand_lisp(opts)
 
     if opts[:export_only] do
@@ -49,8 +50,6 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # The .spi export (not with --no-spi), with --spir-path the .spir one (the `///- ... --real` cells: `spiral export
-  # <nb>.cells spir`) and with --fs-path the F# one (`spiral export <nb>.cells fs`).
   defp write_exports(path, doc, opts) do
     if opts[:spi] != false, do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
     if opts[:spir_path], do: File.write!(opts[:spir_path], Document.to_spir(doc))
@@ -75,8 +74,6 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # `spiral export`; a CLI built before the rename only knows it as `dib-export` (kept as an alias for one release),
-  # so an unknown-subcommand failure retries under the old name.
   defp cli_export(spiral, path, kind) do
     case System.cmd(spiral, ["export", path, kind], stderr_to_stdout: true) do
       {output, status} when status != 0 ->
@@ -125,7 +122,6 @@ defmodule Spiral.Kino.Notebook do
 
     case status do
       :ok ->
-        # `spi: false` (`--no-spi`): a notebook whose export is not Spiral (hangul exports F#, --fs-path).
         write_exports(path, doc, opts)
 
         if opts[:html], do: write_html(output_path), else: :ok
@@ -135,9 +131,6 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # The html step: `jupyter nbconvert <ipynb> --to html --HTMLExporter.theme=dark` after a successful run, LF line
-  # endings, and nbconvert's random 8-hex cell ids renumbered 1..n so the html is reproducible. Without jupyter on PATH
-  # the html is skipped with a note (the ipynb is the result).
   @spec write_html(String.t()) :: :ok | {:error, String.t()}
   def write_html(ipynb) do
     case System.find_executable("jupyter") do
@@ -201,7 +194,6 @@ defmodule Spiral.Kino.Notebook do
     fsi? = fsi_session?(opts)
     steps = Enum.sort_by(spiral ++ host_steps(cells, fsi?) ++ fsi_steps(cells, fsi?), & &1.index)
 
-    # An F#-only notebook (dice_fsharp) needs no Spiral compiler.
     case if(spiral == [], do: :ok, else: ensure_compiler(opts)) do
       :ok ->
         {outputs, durations, status} =
@@ -244,10 +236,6 @@ defmodule Spiral.Kino.Notebook do
     end)
   end
 
-  # At most cell_concurrency() cells at a time (SPIRAL_KINO_CELL_CONCURRENCY, default 4): a cell's budget starts when it
-  # starts, and the shared compiler takes one compile at a time anyway. Starting every cell at once (206 in leptos) put all
-  # of them behind the same compiler queue and reboots with their clocks running: whole notebooks timed out (300 s) in
-  # the lib run while the compiler did ~1 s per compile.
   defp run_parallel(steps, opts, root) do
     steps
     |> Task.async_stream(&run_step(&1, opts, root),
@@ -273,7 +261,6 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  # A step yields one `{index, result, duration}` per cell it ran (the F# session step runs several cells).
   defp collect(entries, acc) do
     Enum.reduce(entries, acc, fn
       {index, {:ok, outputs}, ms}, {acc, durations, status} ->
@@ -315,10 +302,6 @@ defmodule Spiral.Kino.Notebook do
     ]
   end
 
-  # F# cells and `#!import`s run on one long-lived `dotnet fsi` (Spiral.Kino.FsiSession), each as its own
-  # submission, like the .dib route's .NET Interactive kernel. A `:host` callback (tests) or
-  # SPIRAL_KINO_FSHARP=script keeps the older path: every F# cell re-runs all earlier ones as one `dotnet fsi --exec`
-  # script, and imports are not run.
   defp fsi_session?(opts) do
     opts[:host] == nil and System.get_env("SPIRAL_KINO_FSHARP") != "script"
   end
@@ -348,9 +331,6 @@ defmodule Spiral.Kino.Notebook do
 
   defp fsharp?(cell), do: match?({:fsharp, _}, Targets.host_key(cell))
 
-  # Host cells (F#/Python/Lua/JS/pwsh) run through the same job slots as Spiral cells' rustc/run: run_parallel starts
-  # every step at once, and a notebook of many F# cells must not start one `dotnet fsi` per cell at the same time.
-  # The budget starts once the slot is held.
   defp dispatch_step(%{kind: :host} = step, opts, root) do
     {result, _waited} = Spiral.Kino.Slots.run(fn -> dispatch_host(step, opts, root) end)
     result
@@ -542,7 +522,12 @@ defmodule Spiral.Kino.Notebook do
         ]
       end
 
-    stdout ++ value
+    stdout ++ Enum.map(result.displays, &display_output/1) ++ value
+  end
+
+  @doc false
+  def display_output(%{mime: mime, data: data}) do
+    %{"output_type" => "display_data", "metadata" => %{}, "data" => %{mime => jupyter_lines(data)}}
   end
 
   defp error_output(text) do

@@ -1,9 +1,4 @@
 /// # harness
-/// Shared benchmark harness for split_args implementations (see README.md).
-/// Every implementation is a function `string -> result (array_base string) _`.
-/// Output lines (tab separated):
-///   RESULT <impl> <case> <len> <args joined by |>   (correctness, compared across impls/runs by bench.ps1)
-///   TIME <impl> <case> <len> <iters> <ns_per_call> <checksum>
 open sm'_operators
 
 /// ### now_s
@@ -65,7 +60,6 @@ let join_args (arr : array_base string) : string =
     루프 0 ""
 
 /// ### repeat_join
-/// `n` copies of `s` separated by single spaces.
 let repeat_join (s : string) (n : i32) : string =
     let rec 루프 (i : i32) (acc : string) : string =
         if i >= n
@@ -74,13 +68,11 @@ let repeat_join (s : string) (n : i32) : string =
     루프 0 ""
 
 /// ### quoted_arg
-/// `prefix "<n chars of `ab c `>" suffix`: one long quoted argument (exposes per-char string building).
 let quoted_arg (n : i32) : string =
     inl body = "ab c" |> sm'.replicate (n / 4)
     "x \"" ++# body ++# "\" y"
 
 /// ### measure
-/// Calibrates the iteration count to ~50 ms per batch, then returns the best of 5 batches.
 inl measure (count : string -> i32) (input : string) : f64 * i32 * i32 =
     inl batch (iters : i32) : f64 * i32 =
         inl t0 = now_s ()
@@ -124,10 +116,6 @@ inl run_case (impl_name : string) split (case_name : string) (input : string) : 
     )
 
 /// ### cases
-/// runtime.dib's split_args test inputs (the real consumer's test set), CLI command lines, and generated inputs for
-/// scaling: `cli_xN` = N copies of a CLI line (1x/4x/16x length), `quoted_N` = one quoted argument of N chars.
-/// A runtime array, so the per-case code is emitted once (unrolling the cases at compile time made the bench itself
-/// take minutes to compile).
 let cases () : array_base (string * string) =
     inl cli = "dotnet repl --exit-after-run --run \"c:/home/git/spiral/lib/spiral/parsing.dib\" --output-path \"c:/home/git/spiral/lib/spiral/parsing.dib.ipynb\""
     ;[
@@ -155,14 +143,12 @@ let cases () : array_base (string * string) =
     ]
 
 /// ### run_all
-/// `impls` : list (string * (string -> result (array_base string) string)); each impl's code is emitted once.
 inl run_all impls =
     inl cases = cases ()
     inl n : i32 = cases |> a |> am'.length
     impls
     |> listm.iter fun impl_name, split =>
         let rec 루프 (i : i32) : () =
-            // explicit unit result for the exit branch (see README: Rust loop codegen)
             if i >= n then ()
             else
                 inl case_name, input = cases |> am'.index_base i

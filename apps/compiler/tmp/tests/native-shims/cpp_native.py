@@ -39,7 +39,7 @@ def main():
     if not cxx:
         print("no-toolchain: no C++ compiler (SPIRAL_CXX, g++, clang++)")
         sys.exit(3)
-    flags = ["-std=c++20", "-O2", "-w"]  # -w: generated unions trip -Wreorder (upstream text)
+    flags = ["-std=c++20", "-O2", "-w"]
     objs, link = [], []
     if needs_cuda(base + ".cu"):
         nvcc = tool("SPIRAL_NVCC", "nvcc")

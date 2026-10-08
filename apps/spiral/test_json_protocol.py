@@ -57,7 +57,6 @@ class JsonProtocol(unittest.TestCase):
         self.assertIn("cudaErrorInsufficientDriver", result.stdout + result.stderr)
 
     def test_rust_build_failure_is_a_failure_with_cargo_diagnostic(self):
-        # `spiral rust` used to trace the cargo error and still exit 0 with an empty result.
         with tempfile.TemporaryDirectory(prefix="spiral json rust ") as folder:
             source = Path(folder) / "main.rs"
             source.write_text('fn main() { let _x: i32 = "rust-protocol-failure"; }\n', encoding="utf-8")
@@ -70,7 +69,6 @@ class JsonProtocol(unittest.TestCase):
                 errors="replace",
                 timeout=600,
             )
-        # A clean exit 1, not a panic=abort crash (0xC0000409 on Windows).
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn("spiral.process_rust / error", result.stdout + result.stderr)
         self.assertIn("rust-protocol-failure", result.stdout + result.stderr)

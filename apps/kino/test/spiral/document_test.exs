@@ -43,7 +43,6 @@ defmodule Spiral.Kino.DocumentTest do
 
     spi = Document.to_spi(doc)
 
-    # Like `spiral export`: the dropped test cell leaves the heading directly on the next code cell.
     assert spi ==
              """
              /// # demo
@@ -216,7 +215,6 @@ defmodule Spiral.Kino.DocumentTest do
       ) ++
         Enum.map(["documents/documents.livemd", "hangul/hangul.livemd"], &Path.join(alphabet, &1))
 
-    # A missing exe must not pass vacuously: the comparison is this test's whole point.
     cond do
       File.regular?(exe) ->
         compare_with_cli_export(exe, notebooks)
@@ -241,7 +239,6 @@ defmodule Spiral.Kino.DocumentTest do
 
     File.mkdir_p!(tmp)
 
-    # The CLI reads the cell text Document.to_cell_text renders from the .livemd (the same route Kino's F# export takes).
     try do
       for path <- notebooks do
         assert File.regular?(path), "#{path} is missing"
@@ -262,8 +259,6 @@ defmodule Spiral.Kino.DocumentTest do
 
   defp skipped(what), do: IO.puts(:stderr, "document_test: skipped check, #{what}")
 
-  # A notebook's .livemd is the source of truth: it must read back to the same text, keep its cells through the cell text
-  # the CLI's export reads, and export the committed .spi.
   defp assert_livemd_round_trip(path, check_spi \\ true) do
     assert File.regular?(path),
            "#{path} is missing (dice and alphabet are checked out next to spiral)"
@@ -365,7 +360,6 @@ defmodule Spiral.Kino.DocumentTest do
       end
     end
 
-    # every pair whose committed .spi is not the .livemd's export (an edit synced to one side only), named at once
     stale =
       for path <- notebooks,
           spi = Path.rootname(path) <> ".spi",
@@ -397,7 +391,6 @@ defmodule Spiral.Kino.DocumentTest do
     refute spi =~ "_assert_eq"
     refute spi =~ "///> rust"
 
-    # The `///> _` (skip) directive survives the export; the main cell's body is the contract's own business.
     assert spi =~ "/// ### main\n///> _\n"
     assert spi =~ ~r/^inl main \(\) =/m
   end

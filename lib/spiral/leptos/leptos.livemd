@@ -470,13 +470,11 @@ Spiral.Kino.eval!(
 
 ### fragment
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this\n// spelling.\nnominal fragment = $'leptos::prelude::Fragment'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal fragment = $'leptos::prelude::Fragment'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this
-  // spelling.
   nominal fragment = $'leptos::prelude::Fragment'
   """,
   timeout: 300_000
@@ -641,13 +639,11 @@ Spiral.Kino.eval!(
 
 ### arc_memo
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a\n// SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.\nnominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a
-  // SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.
   nominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'
   """,
   timeout: 300_000
@@ -916,12 +912,11 @@ Spiral.Kino.eval!(
 
 ### prelude
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.\ninl prelude () =\n    global \"use leptos::prelude::*;\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl prelude () =\n    global \"use leptos::prelude::*;\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.
   inl prelude () =
       global "use leptos::prelude::*;"
   """,
@@ -931,13 +926,11 @@ Spiral.Kino.eval!(
 
 ### send_wrapper
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's\n// are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).\nnominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's
-  // are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).
   nominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'
   """,
   timeout: 300_000
@@ -1253,12 +1246,11 @@ Spiral.Kino.eval!(
 
 ### macro_to_view
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).\ninl macro_to_view (macro : string) : view =\n    prelude ()\n    !\\($'\"leptos::prelude::IntoAny::into_any(leptos::prelude::view\\! { \" + !macro + \" })\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl macro_to_view (macro : string) : view =\n    prelude ()\n    !\\($'\"leptos::prelude::IntoAny::into_any(leptos::prelude::view\\! { \" + !macro + \" })\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).
   inl macro_to_view (macro : string) : view =
       prelude ()
       !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
@@ -1357,12 +1349,11 @@ Spiral.Kino.eval!(
 
 ### provide_context
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// read back by use_context\ninl provide_context forall t. (x : t) : () =\n    inl x = x |> send_wrapper_new\n    $'leptos::context::provide_context(!x)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl provide_context forall t. (x : t) : () =\n    inl x = x |> send_wrapper_new\n    $'leptos::context::provide_context(!x)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // read back by use_context
   inl provide_context forall t. (x : t) : () =
       inl x = x |> send_wrapper_new
       $'leptos::context::provide_context(!x)'
@@ -1483,12 +1474,11 @@ Spiral.Kino.eval!(
 
 ### is_arc_memo
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// An arc_memo holds a SendWrapper of its value (see arc_memo).\ninl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =\n    real\n        typecase t with\n        | arc_memo => true\n        | _ => false","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =\n    real\n        typecase t with\n        | arc_memo => true\n        | _ => false","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // An arc_memo holds a SendWrapper of its value (see arc_memo).
   inl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =
       real
           typecase t with
@@ -1737,12 +1727,11 @@ Spiral.Kino.eval!(
 
 ### untrack
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// `fn ()` without subscribing the running reactive closure to the signals it reads.\ninl untrack forall t. (fn : () -> t) : t =\n    !\\\\(fn, $'\"leptos::prelude::untrack(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl untrack forall t. (fn : () -> t) : t =\n    !\\\\(fn, $'\"leptos::prelude::untrack(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // `fn ()` without subscribing the running reactive closure to the signals it reads.
   inl untrack forall t. (fn : () -> t) : t =
       !\\(fn, $'"leptos::prelude::untrack(move || $0())"')
   """,
@@ -1767,17 +1756,13 @@ Spiral.Kino.eval!(
 
 ### new_arc_memo
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares\n// values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at\n// each memo: a generic helper would always take the second impl).\ninl new_arc_memo forall t. (fn : () -> t) : arc_memo t =\n    global \"pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }\"\n    // a closure of its own: its body may return early (`?`) with the plain value\n    inl fn = join fn\n    inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new\n    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =\n    global \"pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }\"\n    inl fn = join fn\n    inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new\n    $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares
-  // values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at
-  // each memo: a generic helper would always take the second impl).
   inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
       global "pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"
-      // a closure of its own: its body may return early (`?`) with the plain value
       inl fn = join fn
       inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
       $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'
@@ -1788,12 +1773,11 @@ Spiral.Kino.eval!(
 
 ### new_arc_local_resource
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// the fetcher returns a boxed future; local resources need no Send\ninl new_arc_local_resource forall t.\n    (fetcher : () -> async.future_pin t)\n    : arc_local_resource t\n    =\n    !\\\\(fetcher, $'\"leptos::prelude::ArcLocalResource::new(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arc_local_resource forall t.\n    (fetcher : () -> async.future_pin t)\n    : arc_local_resource t\n    =\n    !\\\\(fetcher, $'\"leptos::prelude::ArcLocalResource::new(move || $0())\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // the fetcher returns a boxed future; local resources need no Send
   inl new_arc_local_resource forall t.
       (fetcher : () -> async.future_pin t)
       : arc_local_resource t
@@ -1806,12 +1790,11 @@ Spiral.Kino.eval!(
 
 ### new_action
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// action inputs and futures are Rc-based (not Send): the local constructor\ninl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =\n    !\\\\(action_fn, $'\"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =\n    !\\\\(action_fn, $'\"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // action inputs and futures are Rc-based (not Send): the local constructor
   inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =
       !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
   """,
@@ -1891,12 +1874,11 @@ Spiral.Kino.eval!(
 
 ### arc_action_pending
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)\ninl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =\n    inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\\\(action, $'\"leptos::prelude::ArcAction::pending(&$0)\"')\n    new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =\n    inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\\\(action, $'\"leptos::prelude::ArcAction::pending(&$0)\"')\n    new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)
   inl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =
       inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
       new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool
@@ -1907,14 +1889,11 @@ Spiral.Kino.eval!(
 
 ### arc_action_pending_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure\n// is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never\n// re-run: the memo is made once, outside the reader.\ninl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =\n    inl pending = action |> arc_action_pending\n    fun () => pending |> signal_get","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =\n    inl pending = action |> arc_action_pending\n    fun () => pending |> signal_get","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure
-  // is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never
-  // re-run: the memo is made once, outside the reader.
   inl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =
       inl pending = action |> arc_action_pending
       fun () => pending |> signal_get
@@ -1953,12 +1932,11 @@ Spiral.Kino.eval!(
 
 ### arc_action_value_get
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.\ninl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =\n    prelude ()\n    $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =\n    prelude ()\n    $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.
   inl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =
       prelude ()
       $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
@@ -1969,12 +1947,11 @@ Spiral.Kino.eval!(
 
 ### new_arc_signal_derive
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A signal of `fn ()`, which leptos re-runs when a signal it reads changes.\ninl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // A signal of `fn ()`, which leptos re-runs when a signal it reads changes.
   inl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =
       inl fn = fn |> send_wrapper_new
       $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'
@@ -1985,12 +1962,11 @@ Spiral.Kino.eval!(
 
 ### arc_local_resource_loading
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// loading = no value yet\ninl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =\n    new_arc_signal_derive fun () =>\n        $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =\n    new_arc_signal_derive fun () =>\n        $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // loading = no value yet
   inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =
       new_arc_signal_derive fun () =>
           $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
@@ -2085,13 +2061,11 @@ Spiral.Kino.eval!(
 
 ### attr_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.\n// Text values must be std::string::String (leptos has no attribute impls for Rc<str>).\ninl attr_fn forall t. (name : string) (fn : () -> t) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"\" + !name + \"={ move || (*!fn)() }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl attr_fn forall t. (name : string) (fn : () -> t) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"\" + !name + \"={ move || (*!fn)() }\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.
-  // Text values must be std::string::String (leptos has no attribute impls for Rc<str>).
   inl attr_fn forall t. (name : string) (fn : () -> t) : string =
       inl fn = fn |> send_wrapper_new
       $'"" + !name + "={ move || (*!fn)() }"'
@@ -2102,12 +2076,11 @@ Spiral.Kino.eval!(
 
 ### class_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// A reactive class attribute: the fixed `classes` and the ones `fn` returns.\ninl class_fn (classes : string) (fn : () -> string) : string =\n    attr_fn \"class\" fun () => classes ++# fn () |> sm'.to_std_string","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl class_fn (classes : string) (fn : () -> string) : string =\n    attr_fn \"class\" fun () => classes ++# fn () |> sm'.to_std_string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // A reactive class attribute: the fixed `classes` and the ones `fn` returns.
   inl class_fn (classes : string) (fn : () -> string) : string =
       attr_fn "class" fun () => classes ++# fn () |> sm'.to_std_string
   """,
@@ -2117,12 +2090,11 @@ Spiral.Kino.eval!(
 
 ### on_event
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// An event handler (`on:<name>={move |event| f(event)}`).\ninl on_event forall t. (name : string) (fn : t -> ()) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"on:\" + !name + \"={ move |event| (*!fn)(event) }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl on_event forall t. (name : string) (fn : t -> ()) : string =\n    inl fn = fn |> send_wrapper_new\n    $'\"on:\" + !name + \"={ move |event| (*!fn)(event) }\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // An event handler (`on:<name>={move |event| f(event)}`).
   inl on_event forall t. (name : string) (fn : t -> ()) : string =
       inl fn = fn |> send_wrapper_new
       $'"on:" + !name + "={ move |event| (*!fn)(event) }"'
@@ -2178,12 +2150,11 @@ Spiral.Kino.eval!(
 
 ### concat_markup
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// in order (concat_props reverses)\ninl concat_markup (items : list string) : string =\n    (\"\", items)\n    ||> listm.fold fun acc (x : string) =>\n        $'\"\" + !acc + !x + \"\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl concat_markup (items : list string) : string =\n    (\"\", items)\n    ||> listm.fold fun acc (x : string) =>\n        $'\"\" + !acc + !x + \"\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // in order (concat_props reverses)
   inl concat_markup (items : list string) : string =
       ("", items)
       ||> listm.fold fun acc (x : string) =>
@@ -2195,12 +2166,11 @@ Spiral.Kino.eval!(
 
 ### tag_text
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// view! markup of an element whose children are markup too.\ninl tag_text (tag : string) props (children : string) : string =\n    inl props = props |> concat_props\n    $'\"<\" + !tag + \" \" + !props + \">\" + !children + \"</\" + !tag + \">\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tag_text (tag : string) props (children : string) : string =\n    inl props = props |> concat_props\n    $'\"<\" + !tag + \" \" + !props + \">\" + !children + \"</\" + !tag + \">\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // view! markup of an element whose children are markup too.
   inl tag_text (tag : string) props (children : string) : string =
       inl props = props |> concat_props
       $'"<" + !tag + " " + !props + ">" + !children + "</" + !tag + ">"'
@@ -2211,13 +2181,11 @@ Spiral.Kino.eval!(
 
 ### tag_raw
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):\n// children that read signals wrap those parts in reactive_view / reactive_fragment.\ninl tag_raw tag props children : string =\n    inl children = children () |> fragment_to_view\n    tag_text tag props $'\"{ !children }\"'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl tag_raw tag props children : string =\n    inl children = children () |> fragment_to_view\n    tag_text tag props $'\"{ !children }\"'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):
-  // children that read signals wrap those parts in reactive_view / reactive_fragment.
   inl tag_raw tag props children : string =
       inl children = children () |> fragment_to_view
       tag_text tag props $'"{ !children }"'
@@ -2228,14 +2196,11 @@ Spiral.Kino.eval!(
 
 ### reactive_view
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.\n// reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be\n// Clone (signals, memos, closures, strings), not views.\ninl reactive_view (fn : () -> view) : view =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl reactive_view (fn : () -> view) : view =\n    inl fn = fn |> send_wrapper_new\n    $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.
-  // reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be
-  // Clone (signals, memos, closures, strings), not views.
   inl reactive_view (fn : () -> view) : view =
       inl fn = fn |> send_wrapper_new
       $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'
@@ -2322,13 +2287,11 @@ Spiral.Kino.eval!(
 
 ### for
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`\n// is unpacked in Spiral by send_wrapper_get).\ninl for forall t u (signal : * -> *).\n    (signal : signal (am'.vec t))\n    (key_fn : t -> u)\n    (children' : t -> fragment)\n    : view\n    =\n    signal |> typecheck_signal\n    // read through signal_get' (an arc_memo unwraps its SendWrapper there)\n    inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new\n    inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new\n    inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new\n    for [\n        $'\"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }\"'\n        $'\"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }\"'\n        $'\"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }\"'\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl for forall t u (signal : * -> *).\n    (signal : signal (am'.vec t))\n    (key_fn : t -> u)\n    (children' : t -> fragment)\n    : view\n    =\n    signal |> typecheck_signal\n    inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new\n    inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new\n    inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new\n    for [\n        $'\"each={ move || (*!items)().into_iter().map(leptos::__reexports::send_wrapper::SendWrapper::new).collect::<Vec<_>>() }\"'\n        $'\"key={ move |x: &leptos::__reexports::send_wrapper::SendWrapper<_>| (*!key)(x.clone()) }\"'\n        $'\"children={ move |x: leptos::__reexports::send_wrapper::SendWrapper<_>| (*!child)(x) }\"'\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`
-  // is unpacked in Spiral by send_wrapper_get).
   inl for forall t u (signal : * -> *).
       (signal : signal (am'.vec t))
       (key_fn : t -> u)
@@ -2336,7 +2299,6 @@ Spiral.Kino.eval!(
       : view
       =
       signal |> typecheck_signal
-      // read through signal_get' (an arc_memo unwraps its SendWrapper there)
       inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new
       inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
       inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
@@ -2460,12 +2422,11 @@ Spiral.Kino.eval!(
 
 ### url_try_from
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue\ninl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =\n    !\\\\(s, $'\"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =\n    !\\\\(s, $'\"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue
   inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
       !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())"')
   """,
@@ -2475,12 +2436,11 @@ Spiral.Kino.eval!(
 
 ### url_pathname
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8's Url keeps the path private: `path()`\ninl url_pathname (url : url) : sm'.std_string =\n    !\\\\(url, $'\"$0.path().to_string()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl url_pathname (url : url) : sm'.std_string =\n    !\\\\(url, $'\"$0.path().to_string()\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // leptos_router 0.8's Url keeps the path private: `path()`
   inl url_pathname (url : url) : sm'.std_string =
       !\\(url, $'"$0.path().to_string()"')
   """,
@@ -2490,7 +2450,7 @@ Spiral.Kino.eval!(
 
 ### use_url
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_url () =\n    inl location = use_location ()\n\n    fun () =>\n        inl url_pathname = location |> location_pathname |> signal_get |> sm'.from_std_string\n        inl url_search = location |> location_search |> signal_get |> sm'.from_std_string\n        inl url_search =\n            if url_search = \"\"\n            then \"\"\n            else \"?\" +. url_search\n        url_pathname +. url_search\n    |> new_arc_memo","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl use_url () =\n    inl location = use_location ()\n\n    fun () =>\n        inl url_pathname = location |> location_pathname |> signal_get |> sm'.from_std_string\n        inl url_search = location |> location_search |> signal_get |> sm'.from_std_string\n        inl url_search =\n            if url_search = \"\"\n            then \"\"\n            else \"?\" ++# url_search\n        url_pathname ++# url_search\n    |> new_arc_memo","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -2504,8 +2464,8 @@ Spiral.Kino.eval!(
           inl url_search =
               if url_search = ""
               then ""
-              else "?" +. url_search
-          url_pathname +. url_search
+              else "?" ++# url_search
+          url_pathname ++# url_search
       |> new_arc_memo
   """,
   timeout: 300_000
@@ -2514,13 +2474,11 @@ Spiral.Kino.eval!(
 
 ### route
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a\n// route is view! markup, put together with the others by routes and router into one view! call.\ninl route (path : string) (view : () -> view) : string =\n    tag_closed_raw \"leptos_router::components::Route\" [\n        $'\"path=leptos_router::path\\!(\\\\\\\"\" + !path + \"\\\\\\\")\"'\n        attr_fn \"view\" view\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl route (path : string) (view : () -> view) : string =\n    tag_closed_raw \"leptos_router::components::Route\" [\n        $'\"path=leptos_router::path\\!(\\\\\\\"\" + !path + \"\\\\\\\")\"'\n        attr_fn \"view\" view\n    ]","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a
-  // route is view! markup, put together with the others by routes and router into one view! call.
   inl route (path : string) (view : () -> view) : string =
       tag_closed_raw "leptos_router::components::Route" [
           $'"path=leptos_router::path\!(\\\"" + !path + "\\\")"'

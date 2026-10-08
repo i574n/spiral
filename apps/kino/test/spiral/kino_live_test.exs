@@ -1,8 +1,6 @@
 defmodule Spiral.KinoLiveTest do
   use ExUnit.Case, async: false
 
-  # Load-tolerant budgets: these compile through the shared daemon, which may be busy (or cold) on a loaded machine;
-  # a cell that needs more than @budget is a real failure, not a slow box.
   @moduletag timeout: 900_000
   @budget 600_000
 

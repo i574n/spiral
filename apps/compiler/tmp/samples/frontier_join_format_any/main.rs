@@ -17,11 +17,11 @@ impl US0 {
 struct Mut0 { l0: Rc<str> }
 fn method2(mut v0: US0) -> Rc<str> {
     match &v0 {
-        US0::US0_1 => { // None
-            let mut v28: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
-            v28.clone()
+        US0::US0_1 => {
+            let mut v29: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
+            v29.clone()
         }
-        US0::US0_0(v1) => { // Some
+        US0::US0_0(v1) => {
             let mut v1: i32 = *v1;
             let mut v3: Rc<str> = Rc::<str>::from(format!("{:?}", v1));
             let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
@@ -41,12 +41,12 @@ fn method3(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
     ()
 }
 fn method1(mut v0: US0) -> Rc<str> {
-    let mut v30: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let mut v31: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v30.clone() }));
-    let mut v38: Rc<str> = method2(v0.clone());
-    method3(v31.clone(), v38.clone());
-    let mut v64: Rc<str> = v31.borrow().l0.clone();
-    v64.clone()
+    let mut v20: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    let mut v21: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v20.clone() }));
+    let mut v28: Rc<str> = method2(v0.clone());
+    method3(v21.clone(), v28.clone());
+    let mut v49: Rc<str> = v21.borrow().l0.clone();
+    v49.clone()
 }
 fn method0() -> Rc<str> {
     let mut v0: i32 = 1i32;

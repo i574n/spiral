@@ -68,7 +68,6 @@ inl render props_fn : _ _ =
                                     ] fun () =>
                                         inl item = item |> sm'.from_std_string
                                         :>[
-                                            // reactive: the check follows the selected item
                                             leptos.reactive_view fun () =>
                                                 match
                                                     item,

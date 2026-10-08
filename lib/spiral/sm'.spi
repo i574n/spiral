@@ -22,7 +22,6 @@ inl to_string' forall t. (x : t) : std_string =
 /// ### from_std_string
 inl from_std_string (str : std_string) : string =
     backend_switch {
-        // Rust: copies (`Rc::<str>::from(s)` would move a String that is used again).
         Rust = fun () => !\\(str, $'"Rc::<str>::from(String::as_str(&$0))"') : string
     }
 
@@ -115,12 +114,10 @@ inl format_debug forall t. (x : t) : string =
 
 inl obj_to_string_rust forall t. (x : t) : string =
     real obj_to_string_rust_real `t x
-// TypeScript: a char is its byte (a number), shown as the character, as the other backends do.
 inl obj_to_string_typescript forall t. (x : t) : string =
     if (real typecase t with char => true | _ => false)
     then $'String.fromCharCode(!x)' : string
     else $'String(!x)' : string
-// Zig: text through the prelude's arena (a string as is, a char as the character, a bool as true/false, numbers in decimal).
 inl obj_to_string_zig forall t. (x : t) : string =
     if (real typecase t with string => true | _ => false) then $'!x ' : string
     elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
@@ -154,6 +151,7 @@ inl obj_to_string x : string =
         Rust = fun () => obj_to_string_rust x
         TypeScript = fun () => obj_to_string_typescript x
         Zig = fun () => obj_to_string_zig x
+        Lean = fun () => $'toString !x ' : string
     }
 
 /// ### (~#?**)
@@ -187,15 +185,14 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         |> concat_list ""
     backend_switch {
         Gleam = fun () =>
-            // TODO: uncomment
-            // global "import gleam/io"
-            // $'io.println(!(trace ()))' : ()
             sm.slice s { from to } : string
         Lua = fun () => sm.slice s { from to } : string
         Fsharp = fun () => sm.slice s { from to } : string
         Python = fun () => sm.slice s { from to = to_py () } : string
         Rust = fun () => sm.slice s { from to } : string
         TypeScript = fun () => sm.slice s { from to } : string
+        Zig = fun () => sm.slice s { from to } : string
+        Lean = fun () => sm.slice s { from to } : string
     }
 
 /// ### format_pretty_real
@@ -251,7 +248,6 @@ inl ellipsis (max : i32) (s : string) =
 
 /// ### last_index_of
 inl last_index_of (search : string) (s : string) : i32 =
-    // Bound before run_target: a literal materialized inside its first `#if` branch is reused by the others.
     inl search = dyn search
     run_target function
         | Rust => fun () => $'!s.rfind(&*!search).map(|i| i as i32).unwrap_or(-1)' : i32
@@ -295,6 +291,8 @@ inl index_of (search : string) (s : string) : int =
         Python = fun () => $'!s.find(!search)' : int
         Rust = fun () => $'!s.find(&*!search).map(|i| i as `int).unwrap_or(-1)' : int
         TypeScript = fun () => $'!s.indexOf(!search)' : int
+        Zig = fun () => $'(if (std.mem.indexOf(u8, !s, !search)) |i| \@as(`int, \@intCast(i)) else -1)' : int
+        Lean = fun () => $'(if (!search).isEmpty then 0 else match (!s).splitOn !search with | [_] => -1 | p :: _ => `int.ofNat p.utf8ByteSize | [] => -1)' : int
     }
 
 /// ### replicate
@@ -341,6 +339,8 @@ inl ends_with (value : string) (s : string) : bool =
         Rust = fun () => $'!s.ends_with(&*!value)' : bool
         TypeScript = fun () => $'!s.endsWith(!value)' : bool
         Lua = fun () => $'!value == "" or !s:sub(-##!value) == !value ' : bool
+        Zig = fun () => $'std.mem.endsWith(u8, !s, !value)' : bool
+        Lean = fun () => $'(!s).endsWith !value ' : bool
     }
 
 /// ### starts_with
@@ -354,6 +354,8 @@ inl starts_with (value : string) (s : string) : bool =
         Python = fun () => $'!s.startswith(!value)' : bool
         Rust = fun () => $'!s.starts_with(&*!value)' : bool
         TypeScript = fun () => $'!s.startsWith(!value)' : bool
+        Zig = fun () => $'std.mem.startsWith(u8, !s, !value)' : bool
+        Lean = fun () => $'(!s).startsWith !value ' : bool
     }
 
 /// ### is_white_space
@@ -362,7 +364,6 @@ inl is_white_space (c : char) : bool =
 
 /// ### substring
 inl substring (start : i32) (len : i32) (str : string) : string =
-    // Rust: byte offsets, like the native index_of/length.
     if is_rust ()
     then $'Rc::<str>::from(&(!str)[((!start) as usize)..(((!start) + (!len)) as usize)])'
     else $'!str.Substring (!start, !len)'
@@ -378,13 +379,24 @@ inl to_lower (input : string) : string =
         Python = fun () => $'!input.lower()' : string
         Rust = fun () => $'Rc::<str>::from(!input.to_lowercase())' : string
         TypeScript = fun () => $'!input.toLowerCase()' : string
+        Zig = fun () => $'(std.ascii.allocLowerString(spiral_gpa, !input) catch \@panic("out of memory"))' : string
+        Lean = fun () => $'(!input).toLower' : string
     }
 
 /// ### to_upper
 inl to_upper (input : string) : string =
-    if is_rust ()
-    then $'Rc::<str>::from(!input.to_uppercase())'
-    else $'!input.ToUpper' ()
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/string"
+            $'!input |> string.uppercase' : string
+        Lua = fun () => $'string.upper(!input)' : string
+        Fsharp = fun () => $'!input.ToUpper' () : string
+        Python = fun () => $'!input.upper()' : string
+        Rust = fun () => $'Rc::<str>::from(!input.to_uppercase())' : string
+        TypeScript = fun () => $'!input.toUpperCase()' : string
+        Zig = fun () => $'(std.ascii.allocUpperString(spiral_gpa, !input) catch \@panic("out of memory"))' : string
+        Lean = fun () => $'(!input).toUpper' : string
+    }
 
 /// ### char_to_upper
 inl char_to_upper (input : char) : char =
@@ -397,6 +409,8 @@ inl char_to_upper (input : char) : char =
         Python = fun () => $'!input.upper()' : char
         Rust = fun () => $'!input.to_ascii_uppercase()' : char
         TypeScript = fun () => $'String.fromCharCode(!input).toUpperCase().charCodeAt(0)' : char
+        Zig = fun () => $'std.ascii.toUpper(!input)' : char
+        Lean = fun () => $'(!input).toUpper' : char
     }
 
 /// ### builder_append
@@ -490,7 +504,6 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
         Python = fun () =>
             inl sb = sb |> obj_to_string
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
-        // (a char index, as .NET's Insert)
         Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
     }
 
@@ -577,6 +590,8 @@ inl length' forall dim. (input : string) : dim =
         Fsharp = fun () => input |> $'String.length' : dim
         Python = fun () => $'len(!input)' : dim
         Rust = fun () => $'(!input.len() as `dim)' : dim
+        Zig = fun () => $'\@as(`dim, \@intCast(!input.len))' : dim
+        Lean = fun () => $'(`dim.ofNat (!input).utf8ByteSize)' : dim
     }
 
 /// ### to_string any
@@ -599,6 +614,10 @@ inl replace (old : string) (new : string) (s : string) : string =
             $'Rc::<str>::from(!s.replace(&*!old, &*!new))' : string
         TypeScript = fun () =>
             $'!s.split(!old).join(!new)' : string
+        Zig = fun () =>
+            $'(std.mem.replaceOwned(u8, spiral_gpa, !s, !old, !new) catch \@panic("out of memory"))' : string
+        Lean = fun () =>
+            $'(!s).replace !old !new ' : string
     }
 
 /// ### split
@@ -965,8 +984,6 @@ inl regex_captures_iter (s : rust.static_ref (rust.mut' std_string)) (regex : re
 
 /// ### regex_captures
 let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string string) =
-    // inl s = join s
-    // !\\(regex, $'$"$0.captures_iter(&*!s).map(|caps| $0.capture_names().map(|x| x.and_then(|n| Some((n, caps.name(n)?.as_str())))).flatten().collect()).collect()"')
 
     inl s = s |> to_std_string
     fun () =>
@@ -1040,7 +1057,6 @@ inl encode_uri_component (s : std_string) : js_string =
 /// ### strip_prefix
 inl strip_prefix (prefix : char) (s : std_string) : optionm'.option' (rust.ref str) =
     inl s = join s
-    // a native char is a byte (`b'#'`)
     !\($'"!s.strip_prefix((!prefix) as char)"')
 
 /// ### str_from_utf8
@@ -1103,9 +1119,7 @@ nominal windows t =
 
 inl windows (len : convert.unativeint) (source : am'.vec u8) : windows u8 =
     inl source = source |> rust.new_box |> rust.box_leak
-    // inl source' = source |> rust.clone
     inl result = !\\(len, $'"<[_]>::windows(!source, $0)"')
-    // source |> rust.drop
     result
 
 /// ### any
@@ -1137,7 +1151,6 @@ inl as_bytes (text : string) : rust.ref (am'.slice u8) =
 /// ### into_bytes
 inl into_bytes (x : std_string) : am'.vec u8 =
     backend_switch {
-        // A copy: Spiral values can be used again after this (`into_bytes` would move the String).
         Rust = fun () => $'(!x).as_bytes().to_vec()' : am'.vec u8
     }
 
@@ -1164,6 +1177,8 @@ inl contains (value : string) (s : string) : bool =
         Python = fun () => $'!value in !s ' : bool
         Rust = fun () => $'!s.contains(&*!value)' : bool
         TypeScript = fun () => $'!s.includes(!value)' : bool
+        Zig = fun () => $'(std.mem.indexOf(u8, !s, !value) \!= null)' : bool
+        Lean = fun () => $'(!s).contains !value ' : bool
     }
 
 /// ### to_string result t u
@@ -1185,9 +1200,7 @@ instance to_string result t u = fun x =>
 inl format_exception (ex : exn) : string =
     run_target function
         | Fsharp => fun () => $'$"{!ex.GetType ()}: {!ex.Message}"'
-        // Rust: the exception is the panic message (base.try, base.catch_unwind_rust).
         | Rust => fun () => $'!ex ' : string
-        // TypeScript: JavaScript's `Error: message`.
         | TypeScript => fun () => $'String(!ex)' : string
         | _ => fun () => ex |> format_debug
 
@@ -1221,9 +1234,6 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
         |> concat_list ""
     backend_switch {
         Gleam = fun () =>
-            // TODO: uncomment
-            // global "import gleam/io"
-            // $'io.println(!(trace ()))' : ()
             ()
         Lua = id : () -> ()
         Fsharp = id : () -> ()

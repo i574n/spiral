@@ -4,10 +4,6 @@ defmodule Mix.Tasks.Spiral.RenderCells do
 
   @shortdoc "Render .livemd notebooks as the cell text the spiral CLI's `export` reads"
 
-  # mix spiral.render_cells --out-dir <dir> --list <file>   (the notebooks' paths, one per line: a long list of paths
-  # through mix.bat and cmd mangles quotes and hits the command line limit)
-  # Each notebook is written as <dir>/<n>/<name>.cells (n = its position, 1-based), so two notebooks with one name don't
-  # collide. apps/spiral/build.ps1 compares the previous and the new CLI's `export` on these.
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("loadpaths")

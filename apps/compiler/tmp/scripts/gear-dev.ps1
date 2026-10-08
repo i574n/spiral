@@ -1,37 +1,13 @@
-<#
-.SYNOPSIS
-Fast type-check loop for a compiler core: split it into gear projects and rebuild only what an edit touched.
-
-.DESCRIPTION
-1. `spiral-split gears` emits the core into <cache>/gear-dev/<mode>/emit (~40 s for the hopac core).
-2. Files whose content changed are copied into <cache>/gear-dev/<mode>/build; unchanged files keep their
-   timestamps, so MSBuild sees them as up to date. The build directory has its own Directory.Build.props
-   with fixed output paths and reference assemblies.
-3. The first run (or -Full) builds everything through GearRoot. Later runs build only gears with a changed
-   part or project, in dependency order and without walking project references. When a gear's IL surface
-   changes, its dependents are rebuilt too. More than 8 gears to rebuild stops the run unless -Force.
-4. A copy of compiler/host is built against the gears: a runnable compiler for SPIRAL_COMPILER_DLL.
-
-See lanes/splitter/README.md.
-
-.EXAMPLE
-pwsh scripts/gear-dev.ps1               # hopac core
-pwsh scripts/gear-dev.ps1 -Full         # rebuild every gear
-pwsh scripts/gear-dev.ps1 -Force        # rebuild however many gears the edit dirtied
-#>
 param(
     [ValidateSet('hopac', 'single-flight')][string]$Mode = 'hopac',
     [switch]$Full,
     [switch]$Force,
-    # Parallel MSBuild nodes for full builds. Each runs its own F# compiler (the peval gear alone takes
-    # several GB), so this stays low; raise it on machines with plenty of memory.
     [int]$MaxNodes = 2
 )
 . $PSScriptRoot/env.ps1
 
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
-# The splitter reads one core: this mode's side of the merged file's section pairs.
 $core = Get-SpiralCoreProjection $Mode (Join-Path $cache "gear-dev/$Mode/core.fs")
 $splitter = Join-Path $cache ('splitter-target/release/spiral-split' + $(if ($IsWindows) { '.exe' } else { '' }))
 $overlay = Join-Path $cache "bin/$Mode/SpiralCompilerRuntimeCompat/Release/net11.0"
@@ -44,16 +20,9 @@ $build = Join-Path $root 'build'
 New-Item -ItemType Directory -Force $build | Out-Null
 $clock = [Diagnostics.Stopwatch]::StartNew()
 
-# ---- 1. emit
-# The previous emission's anchors keep its gears and part/gear numbers (splitter README, "Stable gears"), so
-# adding a declaration rebuilds the gears around it instead of renumbering every later part. -Full re-plans
-# from scratch (contiguous numbering, fresh packing).
 $anchors = Join-Path $root 'anchors.tsv'
 if ($Full) {
     Remove-Item -LiteralPath $anchors -ErrorAction SilentlyContinue
-    # -Full rebuilds every gear anyway; outputs and surface copies of the previous plan's gears (same names,
-    # other contents once the plan is renumbered) made consumers compile against stale assemblies: FS0193
-    # "... from compilation unit 'SpiralCompilerGear0018' did not contain ... 'WorkItem`4'" (2026-10-01).
     Remove-Item -LiteralPath (Join-Path $build '.out') -Recurse -Force -ErrorAction SilentlyContinue
 }
 if (Test-Path -LiteralPath $anchors) { $env:SPIRAL_GEAR_ANCHORS = $anchors } else { Remove-Item Env:SPIRAL_GEAR_ANCHORS -ErrorAction SilentlyContinue }
@@ -61,11 +30,6 @@ if (Test-Path -LiteralPath $anchors) { $env:SPIRAL_GEAR_ANCHORS = $anchors } els
 if ($LASTEXITCODE -ne 0) { throw 'spiral-split gears failed' }
 $emitSeconds = [int]$clock.Elapsed.TotalSeconds
 
-# Anchors keep gears stable but shard packing is re-planned on every emission: once enough shards straddle old
-# gear boundaries, the anchored partition merges every gear on the resulting cycles (2026-09-30: 137 -> 9 gears,
-# one of 169,541 lines, so no parallelism, plus an FS2014 in Debug). The splitter now detects that and falls
-# back to a fresh plan (SPIRAL_GEAR_ANCHOR_MAX_MERGE); this is the second check. Syncing a collapsed plan would
-# also save its anchors for every later run, so refuse it, even under -Force; -Full re-plans from scratch.
 if (-not $Full) {
     $previousGears = @(Get-ChildItem $build -Filter 'Gear*.fsproj' -ErrorAction SilentlyContinue | Where-Object BaseName -ne 'GearRoot').Count
     $emittedGears = @(Get-ChildItem $emit -Filter 'Gear*.fsproj' | Where-Object BaseName -ne 'GearRoot').Count
@@ -75,7 +39,6 @@ if (-not $Full) {
     }
 }
 
-# ---- 2. sync changed sources and projects
 $changed = [Collections.Generic.HashSet[string]]::new()
 $emitted = Get-ChildItem $emit -File | Where-Object { $_.Extension -in '.fs', '.fsproj' }
 $copies = @($emitted | Where-Object {
@@ -86,8 +49,6 @@ foreach ($file in $copies) { [void]$changed.Add($file.Name) }
 $names = [Collections.Generic.HashSet[string]]::new([string[]]@($emitted.Name))
 $stale = @(Get-ChildItem $build -File | Where-Object { $_.Extension -in '.fs', '.fsproj' -and -not $names.Contains($_.Name) })
 foreach ($file in $stale) { [void]$changed.Add($file.Name) }
-# An edit that renumbers parts or reshapes gears costs about a full build. Say so before syncing anything,
-# so an aborted run leaves the build directory as it was and the next run sees the same changes.
 if (-not $Full -and -not $Force -and (Test-Path (Join-Path $build '.out/full-build.ok'))) {
     $projects = @(Get-ChildItem $emit -Filter 'Gear*.fsproj' | Where-Object BaseName -ne 'GearRoot')
     $wouldRebuild = @($projects | Where-Object {
@@ -100,7 +61,6 @@ if (-not $Full -and -not $Force -and (Test-Path (Join-Path $build '.out/full-bui
 }
 foreach ($file in $copies) { Copy-Item -LiteralPath $file.FullName -Destination (Join-Path $build $file.Name) -Force }
 foreach ($file in $stale) { Remove-Item -LiteralPath $file.FullName }
-# build/ now holds this emission's numbering; the next emission anchors to it.
 Copy-Item -LiteralPath (Join-Path $emit 'anchors.tsv') -Destination $anchors -Force
 if ($changed.Count -and $changed.Count -le 10) { Write-Host "   changed: $(@($changed) -join ', ')" }
 $outputs = (Join-Path $build '.out').Replace('\', '/')
@@ -120,7 +80,6 @@ $props = @"
 $propsPath = Join-Path $build 'Directory.Build.props'
 if (-not (Test-Path $propsPath) -or (Get-Content $propsPath -Raw) -ne $props) { Set-Content -LiteralPath $propsPath -Value $props -NoNewline; $Full = $true }
 
-# ---- 3. which gears changed, in dependency order
 $gears = [ordered]@{}
 foreach ($project in Get-ChildItem $build -Filter 'Gear*.fsproj' | Where-Object BaseName -ne 'GearRoot' | Sort-Object Name) {
     $text = Get-Content $project.FullName -Raw
@@ -133,8 +92,6 @@ $dirty = [Collections.Generic.HashSet[string]]::new()
 foreach ($name in $gears.Keys) {
     if ($changed.Contains("$name.fsproj") -or @($gears[$name].Parts | Where-Object { $changed.Contains($_) }).Count) { [void]$dirty.Add($name) }
 }
-# A compile killed mid-write (e.g. for low memory) leaves an empty assembly in obj/ that MSBuild then
-# trusts as up to date; drop it so the gear really recompiles.
 foreach ($name in $gears.Keys) {
     $assembly = Get-Item -LiteralPath "$outputs/bin/$name/Debug/net11.0/SpiralCompiler$name.dll" -ErrorAction SilentlyContinue
     if ($assembly -and $assembly.Length) { continue }
@@ -152,10 +109,6 @@ foreach ($name in $gears.Keys) { Visit $name }
 $dependents = @{}
 foreach ($name in $gears.Keys) { foreach ($dep in $gears[$name].Deps) { if (-not $dependents[$dep]) { $dependents[$dep] = @() }; $dependents[$dep] += $name } }
 
-# F# reference assemblies are not stable across body-only edits: a changed string literal rewrites most
-# of the file (metadata heaps shift, the MVID follows the whole compilation). What dependents and the host
-# bind to is the IL surface, so that is what gets compared: type, method, field and property names,
-# attributes and signature blobs, without bodies, heap offsets, MVID or F#'s range-bearing resources.
 if (-not ('SpiralGearSurface' -as [type])) {
     Add-Type -TypeDefinition @'
 using System;
@@ -218,19 +171,12 @@ public static class SpiralGearSurface {
 }
 '@
 }
-# Each gear's reference assembly is copied to surface/ only when its IL surface changes; the host compiles
-# against those copies, so a body-only edit leaves it up to date. Update-Surface says how it changed:
-# 'same', 'grew' (members only added: dependents built against the old surface still bind to everything
-# they use, so they do not rebuild; a new declaration used to rebuild every dependent of its gear, 75 of
-# 138 gears for one `let`) or 'changed' with the names it lost (removed or altered types and members):
-# then only the dependents whose assembly references one of those names rebuild.
 $surfaceDir = Join-Path $outputs 'surface'
 New-Item -ItemType Directory -Force $surfaceDir | Out-Null
 function Update-Surface([string]$name) {
     $ref = "$outputs/obj/$name/Debug/net11.0/ref/SpiralCompiler$name.dll"
     $surfacePath = Join-Path $surfaceDir "$name.surface"
     $copy = Join-Path $surfaceDir "SpiralCompiler$name.dll"
-    # Surfaces recorded before descriptions were kept: describe the stored copy instead.
     $old = if (Test-Path -LiteralPath $surfacePath) { [IO.File]::ReadAllText($surfacePath) } else { [SpiralGearSurface]::Describe($copy) }
     $new = [SpiralGearSurface]::Describe($ref)
     if (-not $new -or $new -eq $old) { return [pscustomobject]@{ Kind = 'same'; Lost = @() } }
@@ -241,21 +187,15 @@ function Update-Surface([string]$name) {
     [pscustomobject]@{ Kind = $(if ($lost.Count) { 'changed' } else { 'grew' }); Lost = $lost }
 }
 
-# ---- 4. build
-# Written only after a successful full build, so an interrupted one is redone rather than trusted.
 $stamp = Join-Path $build '.out/full-build.ok'
 $firstBuild = -not (Test-Path $stamp)
 $built = 0
 $errors = @()
-# Gears are built one at a time below; past a handful, MSBuild's own graph build (parallel, skipping
-# up-to-date gears) wins. A declaration added or removed renumbers every later part, dirtying most gears.
 $wide = $dirty.Count -gt 8
 if ($Full -or $firstBuild -or $wide) {
     $log = & $dotnet build (Join-Path $build 'GearRoot.fsproj') "-m:$MaxNodes" -nologo -v:q 2>&1
     $errors = @($log | Select-String ': error ' | ForEach-Object { $_.Line -replace ' \[.*$', '' } | Sort-Object -Unique)
     $built = if ($wide -and -not ($Full -or $firstBuild)) { $dirty.Count } else { $gears.Count }
-    # A graph build that stopped part way leaves gears whose sources are synced but never compiled; without
-    # the stamp the next run goes through MSBuild's graph build again, which rebuilds exactly those.
     if ($LASTEXITCODE -eq 0 -and -not $errors.Count) { Set-Content -LiteralPath $stamp -Value (Get-Date -Format s) }
     else { Remove-Item -LiteralPath $stamp -ErrorAction SilentlyContinue }
 } elseif ($dirty.Count -or $changed.Contains('GearRoot.fs') -or $changed.Contains('GearRoot.fsproj')) {
@@ -268,7 +208,6 @@ if ($Full -or $firstBuild -or $wide) {
         $built++
         $errors += @($log | Select-String ': error ' | ForEach-Object { $_.Line -replace ' \[.*$', '' } | Sort-Object -Unique)
         if ($errors.Count) { break }
-        # Dependents only need rebuilding when the IL surface lost or changed something they reference.
         $surface = Update-Surface $name
         if ($surface.Kind -eq 'changed') {
             foreach ($dependent in @($dependents[$name])) {
@@ -278,14 +217,12 @@ if ($Full -or $firstBuild -or $wide) {
             }
         }
     }
-    # GearRoot is not a gear, but GearRoot.initialize names the parts holding module-level `do`s.
     if (-not $errors.Count -and ($changed.Contains('GearRoot.fs') -or $changed.Contains('GearRoot.fsproj'))) {
         $log = & $dotnet build (Join-Path $build 'GearRoot.fsproj') -nologo -v:q --no-restore -p:BuildProjectReferences=false 2>&1
         $errors += @($log | Select-String ': error ' | ForEach-Object { $_.Line -replace ' \[.*$', '' } | Sort-Object -Unique)
     }
 }
 if (-not $errors.Count) {
-    # MSBuild graph builds do not say which gears they recompiled; refresh every surface after one.
     foreach ($name in @($gears.Keys) + 'GearRoot') {
         if ($Full -or $firstBuild -or $wide -or $name -eq 'GearRoot' -or -not (Test-Path -LiteralPath (Join-Path $surfaceDir "SpiralCompiler$name.dll"))) {
             [void](Update-Surface $name)
@@ -296,25 +233,18 @@ $errors | Select-Object -First 30 | ForEach-Object { Write-Host "   $_" -Foregro
 Write-Host ("== {0}: emit {1} s, {2} changed files, {3}/{4} gears built, {5} errors, {6} s" -f $Mode, $emitSeconds, $changed.Count, $built, $gears.Count, $errors.Count, [int]$clock.Elapsed.TotalSeconds)
 if ($errors.Count) { exit 1 }
 
-# ---- 5. a runnable compiler: the host, bound to the gear assemblies instead of SpiralCompilerCore
-# The host opens `spiral_compiler`; the split core defines the same names across spiral_compiler_PartNNNN
-# modules, so the copied host opens every part in source order (later parts shadow earlier ones, as later
-# definitions do in the monolith).
 $hostDir = Join-Path $root 'host'
 New-Item -ItemType Directory -Force $hostDir | Out-Null
-# Part numbers are stable across emissions, not ordered: anchors.tsv lists the declarations in source order.
 $partOrder = [Collections.Generic.List[string]]::new()
 $seenParts = [Collections.Generic.HashSet[string]]::new()
 foreach ($line in [IO.File]::ReadLines($anchors) | Select-Object -Skip 1) {
-    $cells = $line.Split("`t")   # declaration keys never hold tabs; they may hold quotes, so no Import-Csv
+    $cells = $line.Split("`t")
     $part = 'Part{0:D4}' -f [int]$cells[$cells.Length - 2]
     if ($seenParts.Add($part)) { $partOrder.Add($part) }
 }
 $unanchored = @(Get-ChildItem $build -Filter 'Part*.fs' | Where-Object { $_.BaseName -match '^Part\d+$' -and -not $seenParts.Contains($_.BaseName) } | Sort-Object { [int]$_.BaseName.Substring(4) })
 if ($unanchored.Count) { Write-Host "   warning: $($unanchored.Count) parts not in anchors.tsv; opened last" -ForegroundColor Yellow; $unanchored | ForEach-Object { $partOrder.Add($_.BaseName) } }
 $partOpens = ($partOrder | ForEach-Object { "open spiral_compiler_$_" }) -join "`n"
-# The split also dissolves nested modules (`HopacExtensions.forceConcurrency` now lives at the top of some
-# part); the splitter's qualified-rewrites map says where, and the host copy gets the same rewrite.
 $rewrites = @{}
 Import-Csv (Join-Path $emit 'qualified-rewrites.tsv') -Delimiter "`t" | ForEach-Object { $rewrites[$_.source_symbol] = $_.generated_symbol }
 $qualify = [Text.RegularExpressions.MatchEvaluator]{
@@ -335,8 +265,6 @@ foreach ($name in $hostSources) {
     $text = [regex]::Replace($text, "(?<![\w.'])[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)+", $qualify)
     $text = [regex]::Replace($text, '(?m)^open spiral_compiler\r?$', $partOpens)
     if ($name -eq 'Program.fs') {
-        # The monolith runs its module-level `do`s the first time the host touches the core, right after
-        # Hopac is configured; split, they only run when GearRoot.initialize reads their parts.
         $initialized = [regex]::new('(?m)^([ \t]*)configureHopacFromEnvironment \(\)(\r?)$').Replace($text, "`$1configureHopacFromEnvironment ()`$2`n`$1GearRoot.initialize ()`$2", 1)
         if ($initialized -eq $text) { throw 'gear-dev: no configureHopacFromEnvironment () call in Program.fs to initialize the gears after' }
         $text = $initialized
@@ -345,9 +273,6 @@ foreach ($name in $hostSources) {
     if (-not (Test-Path $target) -or (Get-Content $target -Raw) -ne $text) { Set-Content -LiteralPath $target -Value $text -NoNewline }
 }
 $define = if ($Mode -eq 'hopac') { 'SPIRAL_CORE_HOPAC' } else { 'SPIRAL_CORE_SINGLE_FLIGHT' }
-# The host compiles against the surface/ copies of the gears' reference assemblies, and the implementation
-# assemblies are copied next to it after the build. A ProjectReference to GearRoot would instead feed the
-# implementation assemblies (new on every edit) to the compile and have MSBuild evaluate every gear.
 $assemblies = @($gears.Keys) + 'GearRoot'
 $gearReferences = ($assemblies | ForEach-Object {
     "    <Reference Include=`"SpiralCompiler$_`"><HintPath>$outputs/surface/SpiralCompiler$_.dll</HintPath><Private>false</Private></Reference>"
@@ -392,7 +317,6 @@ $hostErrors = @($log | Select-String ': error ' | ForEach-Object { $_.Line -repl
 $hostErrors | Select-Object -First 20 | ForEach-Object { Write-Host "   $_" -ForegroundColor Red }
 $dll = Get-ChildItem (Join-Path $hostDir '.out/bin') -Recurse -Filter 'SpiralCompiler.dll' -ErrorAction SilentlyContinue | Select-Object -First 1
 if ($dll) {
-    # Only each gear's own output: dependents hold copies that go stale when built with BuildProjectReferences=false.
     $own = foreach ($name in $assemblies) { Get-Item -LiteralPath "$outputs/bin/$name/Debug/net11.0/SpiralCompiler$name.dll" -ErrorAction SilentlyContinue }
     foreach ($gearDll in $own) {
         $target = Join-Path $dll.DirectoryName $gearDll.Name

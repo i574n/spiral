@@ -154,21 +154,21 @@ fn method1(mut v0: u64, mut v1: i32, mut v2: Rc<UH1>) -> (Rc<UH1>, u64) {
 fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
     loop {
         match &*v1 {
-            UH1::UH1_1(v4, v5) => { // InputCons
+            UH1::UH1_1(v4, v5) => {
                 let mut v4: US0 = v4.clone();
                 let mut v5: Rc<UH1> = v5.clone();
                 let mut v6: bool = v0 == 0i32;
                 let mut v19: i32 = if v6 {
                     let mut v10: US1 = match &v4 {
-                        US0::US0_1 => { // BitOne
+                        US0::US0_1 => {
                             US1::US1_2
                         }
-                        US0::US0_0 => { // BitZero
+                        US0::US0_0 => {
                             US1::US1_1
                         }
                     };
                     let mut v11: bool = match &v10 {
-                        US1::US1_1 => { // SymbolSame
+                        US1::US1_1 => {
                             true
                         }
                         _ => {
@@ -182,15 +182,15 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                     }
                 } else {
                     let mut v16: US1 = match &v4 {
-                        US0::US0_1 => { // BitOne
+                        US0::US0_1 => {
                             US1::US1_2
                         }
-                        US0::US0_0 => { // BitZero
+                        US0::US0_0 => {
                             US1::US1_1
                         }
                     };
                     let mut v17: bool = match &v16 {
-                        US1::US1_1 => { // SymbolSame
+                        US1::US1_1 => {
                             true
                         }
                         _ => {
@@ -206,7 +206,7 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 (v0, v1) = (v19, v5.clone());
                 continue;
             }
-            UH1::UH1_0 => { // InputEmpty
+            UH1::UH1_0 => {
                 let mut v2: bool = v0 == 0i32;
                 let mut v3: bool = v2 == false;
                 return v3;
@@ -217,16 +217,16 @@ fn method2(mut v0: i32, mut v1: Rc<UH1>) -> bool {
 fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
     loop {
         match &*v0 {
-            UH0::UH0_3(v53, v54) => { // RegexAlt
+            UH0::UH0_3(v53, v54) => {
                 let mut v53: Rc<UH0> = v53.clone();
                 let mut v54: Rc<UH0> = v54.clone();
                 match &*v1 {
-                    UH0::UH0_3(v55, v56) => { // RegexAlt
+                    UH0::UH0_3(v55, v56) => {
                         let mut v55: Rc<UH0> = v55.clone();
                         let mut v56: Rc<UH0> = v56.clone();
                         let mut v57: US1 = method8(v53.clone(), v55.clone());
                         match &v57 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 (v0, v1) = (v54.clone(), v56.clone());
                                 continue;
                             }
@@ -240,16 +240,16 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            UH0::UH0_4(v28, v29) => { // RegexCat
+            UH0::UH0_4(v28, v29) => {
                 let mut v28: Rc<UH0> = v28.clone();
                 let mut v29: Rc<UH0> = v29.clone();
                 match &*v1 {
-                    UH0::UH0_4(v34, v35) => { // RegexCat
+                    UH0::UH0_4(v34, v35) => {
                         let mut v34: Rc<UH0> = v34.clone();
                         let mut v35: Rc<UH0> = v35.clone();
                         let mut v36: US1 = method8(v28.clone(), v34.clone());
                         match &v36 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 (v0, v1) = (v29.clone(), v35.clone());
                                 continue;
                             }
@@ -258,14 +258,14 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                             }
                         }
                     }
-                    UH0::UH0_2(v32) => { // RegexChar
+                    UH0::UH0_2(v32) => {
                         let mut v32: US0 = v32.clone();
                         return US1::US1_2;
                     }
-                    UH0::UH0_0 => { // RegexEmpty
+                    UH0::UH0_0 => {
                         return US1::US1_2;
                     }
-                    UH0::UH0_1 => { // RegexEpsilon
+                    UH0::UH0_1 => {
                         return US1::US1_2;
                     }
                     _ => {
@@ -273,38 +273,38 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            UH0::UH0_2(v10) => { // RegexChar
+            UH0::UH0_2(v10) => {
                 let mut v10: US0 = v10.clone();
                 match &*v1 {
-                    UH0::UH0_2(v13) => { // RegexChar
+                    UH0::UH0_2(v13) => {
                         let mut v13: US0 = v13.clone();
                         match &v10 {
-                            US0::US0_1 => { // BitOne
+                            US0::US0_1 => {
                                 match &v13 {
-                                    US0::US0_1 => { // BitOne
+                                    US0::US0_1 => {
                                         return US1::US1_1;
                                     }
-                                    US0::US0_0 => { // BitZero
+                                    US0::US0_0 => {
                                         return US1::US1_2;
                                     }
                                 }
                             }
-                            US0::US0_0 => { // BitZero
+                            US0::US0_0 => {
                                 match &v13 {
-                                    US0::US0_1 => { // BitOne
+                                    US0::US0_1 => {
                                         return US1::US1_0;
                                     }
-                                    US0::US0_0 => { // BitZero
+                                    US0::US0_0 => {
                                         return US1::US1_1;
                                     }
                                 }
                             }
                         }
                     }
-                    UH0::UH0_0 => { // RegexEmpty
+                    UH0::UH0_0 => {
                         return US1::US1_2;
                     }
-                    UH0::UH0_1 => { // RegexEpsilon
+                    UH0::UH0_1 => {
                         return US1::US1_2;
                     }
                     _ => {
@@ -312,9 +312,9 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            UH0::UH0_0 => { // RegexEmpty
+            UH0::UH0_0 => {
                 match &*v1 {
-                    UH0::UH0_0 => { // RegexEmpty
+                    UH0::UH0_0 => {
                         return US1::US1_1;
                     }
                     _ => {
@@ -322,12 +322,12 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            UH0::UH0_1 => { // RegexEpsilon
+            UH0::UH0_1 => {
                 match &*v1 {
-                    UH0::UH0_0 => { // RegexEmpty
+                    UH0::UH0_0 => {
                         return US1::US1_2;
                     }
-                    UH0::UH0_1 => { // RegexEpsilon
+                    UH0::UH0_1 => {
                         return US1::US1_1;
                     }
                     _ => {
@@ -335,15 +335,15 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
                     }
                 }
             }
-            UH0::UH0_5(v44) => { // RegexStar
+            UH0::UH0_5(v44) => {
                 let mut v44: Rc<UH0> = v44.clone();
                 match &*v1 {
-                    UH0::UH0_3(v45, v46) => { // RegexAlt
+                    UH0::UH0_3(v45, v46) => {
                         let mut v45: Rc<UH0> = v45.clone();
                         let mut v46: Rc<UH0> = v46.clone();
                         return US1::US1_0;
                     }
-                    UH0::UH0_5(v48) => { // RegexStar
+                    UH0::UH0_5(v48) => {
                         let mut v48: Rc<UH0> = v48.clone();
                         (v0, v1) = (v44.clone(), v48.clone());
                         continue;
@@ -358,36 +358,36 @@ fn method8(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> US1 {
 }
 fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
     match &*v1 {
-        UH0::UH0_3(v2, v3) => { // RegexAlt
+        UH0::UH0_3(v2, v3) => {
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: Rc<UH0> = v3.clone();
             let mut v4: US1 = method8(v0.clone(), v2.clone());
             match &v4 {
-                US1::US1_2 => { // SymbolGreater
+                US1::US1_2 => {
                     let mut v6: Rc<UH0> = method7(v0.clone(), v3.clone());
                     Rc::new(UH0::UH0_3(v2.clone(), v6.clone()))
                 }
-                US1::US1_0 => { // SymbolLess
+                US1::US1_0 => {
                     Rc::new(UH0::UH0_3(v0.clone(), v1.clone()))
                 }
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     v1.clone()
                 }
             }
         }
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             v0.clone()
         }
         _ => {
             let mut v11: US1 = method8(v0.clone(), v1.clone());
             match &v11 {
-                US1::US1_2 => { // SymbolGreater
+                US1::US1_2 => {
                     Rc::new(UH0::UH0_3(v1.clone(), v0.clone()))
                 }
-                US1::US1_0 => { // SymbolLess
+                US1::US1_0 => {
                     Rc::new(UH0::UH0_3(v0.clone(), v1.clone()))
                 }
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     v1.clone()
                 }
             }
@@ -397,14 +397,14 @@ fn method7(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
 fn method6(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
     loop {
         match &*v0 {
-            UH0::UH0_3(v2, v3) => { // RegexAlt
+            UH0::UH0_3(v2, v3) => {
                 let mut v2: Rc<UH0> = v2.clone();
                 let mut v3: Rc<UH0> = v3.clone();
                 let mut v4: Rc<UH0> = method7(v2.clone(), v1.clone());
                 (v0, v1) = (v3.clone(), v4.clone());
                 continue;
             }
-            UH0::UH0_0 => { // RegexEmpty
+            UH0::UH0_0 => {
                 return v1.clone();
             }
             _ => {
@@ -416,11 +416,11 @@ fn method6(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
 fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
     loop {
         match &*v0 {
-            UH0::UH0_3(v18, v19) => { // RegexAlt
+            UH0::UH0_3(v18, v19) => {
                 let mut v18: Rc<UH0> = v18.clone();
                 let mut v19: Rc<UH0> = v19.clone();
                 match &*v1 {
-                    UH0::UH0_3(v20, v21) => { // RegexAlt
+                    UH0::UH0_3(v20, v21) => {
                         let mut v20: Rc<UH0> = v20.clone();
                         let mut v21: Rc<UH0> = v21.clone();
                         let mut v22: bool = method10(v18.clone(), v20.clone());
@@ -436,11 +436,11 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            UH0::UH0_4(v26, v27) => { // RegexCat
+            UH0::UH0_4(v26, v27) => {
                 let mut v26: Rc<UH0> = v26.clone();
                 let mut v27: Rc<UH0> = v27.clone();
                 match &*v1 {
-                    UH0::UH0_4(v28, v29) => { // RegexCat
+                    UH0::UH0_4(v28, v29) => {
                         let mut v28: Rc<UH0> = v28.clone();
                         let mut v29: Rc<UH0> = v29.clone();
                         let mut v30: bool = method10(v26.clone(), v28.clone());
@@ -456,35 +456,35 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            UH0::UH0_2(v4) => { // RegexChar
+            UH0::UH0_2(v4) => {
                 let mut v4: US0 = v4.clone();
                 match &*v1 {
-                    UH0::UH0_2(v5) => { // RegexChar
+                    UH0::UH0_2(v5) => {
                         let mut v5: US0 = v5.clone();
                         let mut v15: US1 = match &v4 {
-                            US0::US0_1 => { // BitOne
+                            US0::US0_1 => {
                                 match &v5 {
-                                    US0::US0_1 => { // BitOne
+                                    US0::US0_1 => {
                                         US1::US1_1
                                     }
-                                    US0::US0_0 => { // BitZero
+                                    US0::US0_0 => {
                                         US1::US1_2
                                     }
                                 }
                             }
-                            US0::US0_0 => { // BitZero
+                            US0::US0_0 => {
                                 match &v5 {
-                                    US0::US0_1 => { // BitOne
+                                    US0::US0_1 => {
                                         US1::US1_0
                                     }
-                                    US0::US0_0 => { // BitZero
+                                    US0::US0_0 => {
                                         US1::US1_1
                                     }
                                 }
                             }
                         };
                         match &v15 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 return true;
                             }
                             _ => {
@@ -497,9 +497,9 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            UH0::UH0_0 => { // RegexEmpty
+            UH0::UH0_0 => {
                 match &*v1 {
-                    UH0::UH0_0 => { // RegexEmpty
+                    UH0::UH0_0 => {
                         return true;
                     }
                     _ => {
@@ -507,9 +507,9 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            UH0::UH0_1 => { // RegexEpsilon
+            UH0::UH0_1 => {
                 match &*v1 {
-                    UH0::UH0_1 => { // RegexEpsilon
+                    UH0::UH0_1 => {
                         return true;
                     }
                     _ => {
@@ -517,10 +517,10 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
                     }
                 }
             }
-            UH0::UH0_5(v34) => { // RegexStar
+            UH0::UH0_5(v34) => {
                 let mut v34: Rc<UH0> = v34.clone();
                 match &*v1 {
-                    UH0::UH0_5(v35) => { // RegexStar
+                    UH0::UH0_5(v35) => {
                         let mut v35: Rc<UH0> = v35.clone();
                         (v0, v1) = (v34.clone(), v35.clone());
                         continue;
@@ -535,36 +535,36 @@ fn method10(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> bool {
 }
 fn method9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
     match &*v0 {
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
         }
         _ => {
             match &*v1 {
-                UH0::UH0_0 => { // RegexEmpty
+                UH0::UH0_0 => {
                     { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
                 }
                 _ => {
                     match &*v0 {
-                        UH0::UH0_1 => { // RegexEpsilon
+                        UH0::UH0_1 => {
                             v1.clone()
                         }
                         _ => {
                             match &*v1 {
-                                UH0::UH0_1 => { // RegexEpsilon
+                                UH0::UH0_1 => {
                                     v0.clone()
                                 }
                                 _ => {
                                     match &*v0 {
-                                        UH0::UH0_4(v12, v13) => { // RegexCat
+                                        UH0::UH0_4(v12, v13) => {
                                             let mut v12: Rc<UH0> = v12.clone();
                                             let mut v13: Rc<UH0> = v13.clone();
                                             let mut v14: Rc<UH0> = method9(v13.clone(), v1.clone());
                                             Rc::new(UH0::UH0_4(v12.clone(), v14.clone()))
                                         }
-                                        UH0::UH0_5(v4) => { // RegexStar
+                                        UH0::UH0_5(v4) => {
                                             let mut v4: Rc<UH0> = v4.clone();
                                             match &*v1 {
-                                                UH0::UH0_5(v5) => { // RegexStar
+                                                UH0::UH0_5(v5) => {
                                                     let mut v5: Rc<UH0> = v5.clone();
                                                     let mut v6: bool = method10(v4.clone(), v5.clone());
                                                     if v6 {
@@ -593,13 +593,13 @@ fn method9(mut v0: Rc<UH0>, mut v1: Rc<UH0>) -> Rc<UH0> {
 }
 fn method11(mut v0: Rc<UH0>) -> Rc<UH0> {
     match &*v0 {
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_1 => { // RegexEpsilon
+        UH0::UH0_1 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_5(v3) => { // RegexStar
+        UH0::UH0_5(v3) => {
             let mut v3: Rc<UH0> = v3.clone();
             Rc::new(UH0::UH0_5(v3.clone()))
         }
@@ -610,31 +610,31 @@ fn method11(mut v0: Rc<UH0>) -> Rc<UH0> {
 }
 fn method5(mut v0: Rc<UH0>) -> Rc<UH0> {
     match &*v0 {
-        UH0::UH0_3(v5, v6) => { // RegexAlt
+        UH0::UH0_3(v5, v6) => {
             let mut v5: Rc<UH0> = v5.clone();
             let mut v6: Rc<UH0> = v6.clone();
             let mut v7: Rc<UH0> = method5(v5.clone());
             let mut v8: Rc<UH0> = method5(v6.clone());
             method6(v7.clone(), v8.clone())
         }
-        UH0::UH0_4(v10, v11) => { // RegexCat
+        UH0::UH0_4(v10, v11) => {
             let mut v10: Rc<UH0> = v10.clone();
             let mut v11: Rc<UH0> = v11.clone();
             let mut v12: Rc<UH0> = method5(v10.clone());
             let mut v13: Rc<UH0> = method5(v11.clone());
             method9(v12.clone(), v13.clone())
         }
-        UH0::UH0_2(v3) => { // RegexChar
+        UH0::UH0_2(v3) => {
             let mut v3: US0 = v3.clone();
             Rc::new(UH0::UH0_2(v3.clone()))
         }
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_1 => { // RegexEpsilon
+        UH0::UH0_1 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_5(v15) => { // RegexStar
+        UH0::UH0_5(v15) => {
             let mut v15: Rc<UH0> = v15.clone();
             let mut v16: Rc<UH0> = method5(v15.clone());
             method11(v16.clone())
@@ -643,25 +643,25 @@ fn method5(mut v0: Rc<UH0>) -> Rc<UH0> {
 }
 fn method13(mut v0: Rc<UH0>) -> US2 {
     match &*v0 {
-        UH0::UH0_3(v5, v6) => { // RegexAlt
+        UH0::UH0_3(v5, v6) => {
             let mut v5: Rc<UH0> = v5.clone();
             let mut v6: Rc<UH0> = v6.clone();
             let mut v7: US2 = method13(v5.clone());
             let mut v8: US2 = method13(v6.clone());
             match &v7 {
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     US2::US2_0
                 }
                 _ => {
                     match &v8 {
-                        US2::US2_0 => { // Nullable
+                        US2::US2_0 => {
                             US2::US2_0
                         }
                         _ => {
                             match &v7 {
-                                US2::US2_1 => { // NonNullable
+                                US2::US2_1 => {
                                     match &v8 {
-                                        US2::US2_1 => { // NonNullable
+                                        US2::US2_1 => {
                                             US2::US2_1
                                         }
                                         _ => unreachable!(),
@@ -674,15 +674,15 @@ fn method13(mut v0: Rc<UH0>) -> US2 {
                 }
             }
         }
-        UH0::UH0_4(v16, v17) => { // RegexCat
+        UH0::UH0_4(v16, v17) => {
             let mut v16: Rc<UH0> = v16.clone();
             let mut v17: Rc<UH0> = v17.clone();
             let mut v18: US2 = method13(v16.clone());
             let mut v19: US2 = method13(v17.clone());
             match &v18 {
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     match &v19 {
-                        US2::US2_0 => { // Nullable
+                        US2::US2_0 => {
                             US2::US2_0
                         }
                         _ => {
@@ -695,17 +695,17 @@ fn method13(mut v0: Rc<UH0>) -> US2 {
                 }
             }
         }
-        UH0::UH0_2(v3) => { // RegexChar
+        UH0::UH0_2(v3) => {
             let mut v3: US0 = v3.clone();
             US2::US2_1
         }
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             US2::US2_1
         }
-        UH0::UH0_1 => { // RegexEpsilon
+        UH0::UH0_1 => {
             US2::US2_0
         }
-        UH0::UH0_5(v25) => { // RegexStar
+        UH0::UH0_5(v25) => {
             let mut v25: Rc<UH0> = v25.clone();
             US2::US2_0
         }
@@ -713,23 +713,23 @@ fn method13(mut v0: Rc<UH0>) -> US2 {
 }
 fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
     match &*v0 {
-        UH0::UH0_3(v19, v20) => { // RegexAlt
+        UH0::UH0_3(v19, v20) => {
             let mut v19: Rc<UH0> = v19.clone();
             let mut v20: Rc<UH0> = v20.clone();
             let mut v21: Rc<UH0> = method12(v19.clone(), v1.clone());
             let mut v22: Rc<UH0> = method12(v20.clone(), v1.clone());
             method6(v21.clone(), v22.clone())
         }
-        UH0::UH0_4(v24, v25) => { // RegexCat
+        UH0::UH0_4(v24, v25) => {
             let mut v24: Rc<UH0> = v24.clone();
             let mut v25: Rc<UH0> = v25.clone();
             let mut v26: US2 = method13(v24.clone());
             match &v26 {
-                US2::US2_1 => { // NonNullable
+                US2::US2_1 => {
                     let mut v31: Rc<UH0> = method12(v24.clone(), v1.clone());
                     method9(v31.clone(), v25.clone())
                 }
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     let mut v27: Rc<UH0> = method12(v24.clone(), v1.clone());
                     let mut v28: Rc<UH0> = method9(v27.clone(), v25.clone());
                     let mut v29: Rc<UH0> = method12(v25.clone(), v1.clone());
@@ -737,32 +737,32 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                 }
             }
         }
-        UH0::UH0_2(v4) => { // RegexChar
+        UH0::UH0_2(v4) => {
             let mut v4: US0 = v4.clone();
             let mut v14: US1 = match &v4 {
-                US0::US0_1 => { // BitOne
+                US0::US0_1 => {
                     match &v1 {
-                        US0::US0_1 => { // BitOne
+                        US0::US0_1 => {
                             US1::US1_1
                         }
-                        US0::US0_0 => { // BitZero
+                        US0::US0_0 => {
                             US1::US1_2
                         }
                     }
                 }
-                US0::US0_0 => { // BitZero
+                US0::US0_0 => {
                     match &v1 {
-                        US0::US0_1 => { // BitOne
+                        US0::US0_1 => {
                             US1::US1_0
                         }
-                        US0::US0_0 => { // BitZero
+                        US0::US0_0 => {
                             US1::US1_1
                         }
                     }
                 }
             };
             let mut v15: bool = match &v14 {
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     true
                 }
                 _ => {
@@ -775,13 +775,13 @@ fn method12(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
                 { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
             }
         }
-        UH0::UH0_0 => { // RegexEmpty
+        UH0::UH0_0 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_1 => { // RegexEpsilon
+        UH0::UH0_1 => {
             { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) }
         }
-        UH0::UH0_5(v35) => { // RegexStar
+        UH0::UH0_5(v35) => {
             let mut v35: Rc<UH0> = v35.clone();
             let mut v36: Rc<UH0> = method12(v35.clone(), v1.clone());
             let mut v37: Rc<UH0> = method11(v35.clone());
@@ -797,21 +797,21 @@ fn method4(mut v0: Rc<UH0>, mut v1: US0) -> Rc<UH0> {
 fn method3(mut v0: Rc<UH0>, mut v1: Rc<UH1>) -> bool {
     loop {
         match &*v1 {
-            UH1::UH1_1(v6, v7) => { // InputCons
+            UH1::UH1_1(v6, v7) => {
                 let mut v6: US0 = v6.clone();
                 let mut v7: Rc<UH1> = v7.clone();
                 let mut v8: Rc<UH0> = method4(v0.clone(), v6.clone());
                 (v0, v1) = (v8.clone(), v7.clone());
                 continue;
             }
-            UH1::UH1_0 => { // InputEmpty
+            UH1::UH1_0 => {
                 let mut v2: Rc<UH0> = method5(v0.clone());
                 let mut v3: US2 = method13(v2.clone());
                 match &v3 {
-                    US2::US2_1 => { // NonNullable
+                    US2::US2_1 => {
                         return false;
                     }
-                    US2::US2_0 => { // Nullable
+                    US2::US2_0 => {
                         return true;
                     }
                 }
@@ -869,21 +869,21 @@ fn method15(mut v0: i32, mut v1: Rc<UH1>) -> Rc<UH1> {
 fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
     loop {
         match &*v1 {
-            UH1::UH1_1(v5, v6) => { // InputCons
+            UH1::UH1_1(v5, v6) => {
                 let mut v5: US0 = v5.clone();
                 let mut v6: Rc<UH1> = v6.clone();
                 let mut v7: bool = v0 == 0i32;
                 let mut v26: i32 = if v7 {
                     let mut v11: US1 = match &v5 {
-                        US0::US0_1 => { // BitOne
+                        US0::US0_1 => {
                             US1::US1_2
                         }
-                        US0::US0_0 => { // BitZero
+                        US0::US0_0 => {
                             US1::US1_1
                         }
                     };
                     let mut v12: bool = match &v11 {
-                        US1::US1_1 => { // SymbolSame
+                        US1::US1_1 => {
                             true
                         }
                         _ => {
@@ -895,15 +895,15 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                     let mut v13: bool = v0 == 1i32;
                     if v13 {
                         let mut v17: US1 = match &v5 {
-                            US0::US0_1 => { // BitOne
+                            US0::US0_1 => {
                                 US1::US1_2
                             }
-                            US0::US0_0 => { // BitZero
+                            US0::US0_0 => {
                                 US1::US1_1
                             }
                         };
                         let mut v18: bool = match &v17 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 true
                             }
                             _ => {
@@ -913,15 +913,15 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                         1i32
                     } else {
                         let mut v22: US1 = match &v5 {
-                            US0::US0_1 => { // BitOne
+                            US0::US0_1 => {
                                 US1::US1_2
                             }
-                            US0::US0_0 => { // BitZero
+                            US0::US0_0 => {
                                 US1::US1_1
                             }
                         };
                         let mut v23: bool = match &v22 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 true
                             }
                             _ => {
@@ -938,7 +938,7 @@ fn method16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 (v0, v1) = (v26, v6.clone());
                 continue;
             }
-            UH1::UH1_0 => { // InputEmpty
+            UH1::UH1_0 => {
                 let mut v2: bool = v0 == 0i32;
                 if v2 {
                     return true;
@@ -1009,13 +1009,13 @@ fn method14(mut v0: i32, mut v1: Rc<UH0>, mut v2: i32, mut v3: i32) -> i32 {
 fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
     loop {
         match &*v1 {
-            UH3::UH3_1(v5, v6) => { // InputCons
+            UH3::UH3_1(v5, v6) => {
                 let mut v5: US3 = v5.clone();
                 let mut v6: Rc<UH3> = v6.clone();
                 let mut v7: bool = v0 == 0i32;
                 let mut v47: i32 = if v7 {
                     let mut v10: US1 = match &v5 {
-                        US3::US3_0 => { // TriA
+                        US3::US3_0 => {
                             US1::US1_1
                         }
                         _ => {
@@ -1023,7 +1023,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                         }
                     };
                     let mut v11: bool = match &v10 {
-                        US1::US1_1 => { // SymbolSame
+                        US1::US1_1 => {
                             true
                         }
                         _ => {
@@ -1034,18 +1034,18 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                         0i32
                     } else {
                         let mut v17: US1 = match &v5 {
-                            US3::US3_0 => { // TriA
+                            US3::US3_0 => {
                                 US1::US1_0
                             }
-                            US3::US3_1 => { // TriB
+                            US3::US3_1 => {
                                 US1::US1_1
                             }
-                            US3::US3_2 => { // TriC
+                            US3::US3_2 => {
                                 US1::US1_2
                             }
                         };
                         let mut v18: bool = match &v17 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 true
                             }
                             _ => {
@@ -1062,7 +1062,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                     let mut v21: bool = v0 == 1i32;
                     if v21 {
                         let mut v24: US1 = match &v5 {
-                            US3::US3_0 => { // TriA
+                            US3::US3_0 => {
                                 US1::US1_1
                             }
                             _ => {
@@ -1070,7 +1070,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                             }
                         };
                         let mut v25: bool = match &v24 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 true
                             }
                             _ => {
@@ -1081,18 +1081,18 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                             2i32
                         } else {
                             let mut v31: US1 = match &v5 {
-                                US3::US3_0 => { // TriA
+                                US3::US3_0 => {
                                     US1::US1_0
                                 }
-                                US3::US3_1 => { // TriB
+                                US3::US3_1 => {
                                     US1::US1_1
                                 }
-                                US3::US3_2 => { // TriC
+                                US3::US3_2 => {
                                     US1::US1_2
                                 }
                             };
                             let mut v32: bool = match &v31 {
-                                US1::US1_1 => { // SymbolSame
+                                US1::US1_1 => {
                                     true
                                 }
                                 _ => {
@@ -1103,7 +1103,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                         }
                     } else {
                         let mut v36: US1 = match &v5 {
-                            US3::US3_0 => { // TriA
+                            US3::US3_0 => {
                                 US1::US1_1
                             }
                             _ => {
@@ -1111,7 +1111,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                             }
                         };
                         let mut v37: bool = match &v36 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 true
                             }
                             _ => {
@@ -1122,18 +1122,18 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                             2i32
                         } else {
                             let mut v43: US1 = match &v5 {
-                                US3::US3_0 => { // TriA
+                                US3::US3_0 => {
                                     US1::US1_0
                                 }
-                                US3::US3_1 => { // TriB
+                                US3::US3_1 => {
                                     US1::US1_1
                                 }
-                                US3::US3_2 => { // TriC
+                                US3::US3_2 => {
                                     US1::US1_2
                                 }
                             };
                             let mut v44: bool = match &v43 {
-                                US1::US1_1 => { // SymbolSame
+                                US1::US1_1 => {
                                     true
                                 }
                                 _ => {
@@ -1147,7 +1147,7 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                 (v0, v1) = (v47, v6.clone());
                 continue;
             }
-            UH3::UH3_0 => { // InputEmpty
+            UH3::UH3_0 => {
                 let mut v2: bool = v0 == 0i32;
                 if v2 {
                     return false;
@@ -1162,16 +1162,16 @@ fn method17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
 fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
     loop {
         match &*v0 {
-            UH2::UH2_3(v59, v60) => { // RegexAlt
+            UH2::UH2_3(v59, v60) => {
                 let mut v59: Rc<UH2> = v59.clone();
                 let mut v60: Rc<UH2> = v60.clone();
                 match &*v1 {
-                    UH2::UH2_3(v61, v62) => { // RegexAlt
+                    UH2::UH2_3(v61, v62) => {
                         let mut v61: Rc<UH2> = v61.clone();
                         let mut v62: Rc<UH2> = v62.clone();
                         let mut v63: US1 = method23(v59.clone(), v61.clone());
                         match &v63 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 (v0, v1) = (v60.clone(), v62.clone());
                                 continue;
                             }
@@ -1185,16 +1185,16 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            UH2::UH2_4(v34, v35) => { // RegexCat
+            UH2::UH2_4(v34, v35) => {
                 let mut v34: Rc<UH2> = v34.clone();
                 let mut v35: Rc<UH2> = v35.clone();
                 match &*v1 {
-                    UH2::UH2_4(v40, v41) => { // RegexCat
+                    UH2::UH2_4(v40, v41) => {
                         let mut v40: Rc<UH2> = v40.clone();
                         let mut v41: Rc<UH2> = v41.clone();
                         let mut v42: US1 = method23(v34.clone(), v40.clone());
                         match &v42 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 (v0, v1) = (v35.clone(), v41.clone());
                                 continue;
                             }
@@ -1203,14 +1203,14 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                             }
                         }
                     }
-                    UH2::UH2_2(v38) => { // RegexChar
+                    UH2::UH2_2(v38) => {
                         let mut v38: US3 = v38.clone();
                         return US1::US1_2;
                     }
-                    UH2::UH2_0 => { // RegexEmpty
+                    UH2::UH2_0 => {
                         return US1::US1_2;
                     }
-                    UH2::UH2_1 => { // RegexEpsilon
+                    UH2::UH2_1 => {
                         return US1::US1_2;
                     }
                     _ => {
@@ -1218,15 +1218,15 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            UH2::UH2_2(v10) => { // RegexChar
+            UH2::UH2_2(v10) => {
                 let mut v10: US3 = v10.clone();
                 match &*v1 {
-                    UH2::UH2_2(v13) => { // RegexChar
+                    UH2::UH2_2(v13) => {
                         let mut v13: US3 = v13.clone();
                         match &v10 {
-                            US3::US3_0 => { // TriA
+                            US3::US3_0 => {
                                 match &v13 {
-                                    US3::US3_0 => { // TriA
+                                    US3::US3_0 => {
                                         return US1::US1_1;
                                     }
                                     _ => {
@@ -1236,28 +1236,28 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                             }
                             _ => {
                                 match &v13 {
-                                    US3::US3_0 => { // TriA
+                                    US3::US3_0 => {
                                         return US1::US1_2;
                                     }
                                     _ => {
                                         match &v10 {
-                                            US3::US3_1 => { // TriB
+                                            US3::US3_1 => {
                                                 match &v13 {
-                                                    US3::US3_1 => { // TriB
+                                                    US3::US3_1 => {
                                                         return US1::US1_1;
                                                     }
-                                                    US3::US3_2 => { // TriC
+                                                    US3::US3_2 => {
                                                         return US1::US1_0;
                                                     }
                                                     _ => unreachable!(),
                                                 }
                                             }
-                                            US3::US3_2 => { // TriC
+                                            US3::US3_2 => {
                                                 match &v13 {
-                                                    US3::US3_1 => { // TriB
+                                                    US3::US3_1 => {
                                                         return US1::US1_2;
                                                     }
-                                                    US3::US3_2 => { // TriC
+                                                    US3::US3_2 => {
                                                         return US1::US1_1;
                                                     }
                                                     _ => unreachable!(),
@@ -1270,10 +1270,10 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                             }
                         }
                     }
-                    UH2::UH2_0 => { // RegexEmpty
+                    UH2::UH2_0 => {
                         return US1::US1_2;
                     }
-                    UH2::UH2_1 => { // RegexEpsilon
+                    UH2::UH2_1 => {
                         return US1::US1_2;
                     }
                     _ => {
@@ -1281,9 +1281,9 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            UH2::UH2_0 => { // RegexEmpty
+            UH2::UH2_0 => {
                 match &*v1 {
-                    UH2::UH2_0 => { // RegexEmpty
+                    UH2::UH2_0 => {
                         return US1::US1_1;
                     }
                     _ => {
@@ -1291,12 +1291,12 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            UH2::UH2_1 => { // RegexEpsilon
+            UH2::UH2_1 => {
                 match &*v1 {
-                    UH2::UH2_0 => { // RegexEmpty
+                    UH2::UH2_0 => {
                         return US1::US1_2;
                     }
-                    UH2::UH2_1 => { // RegexEpsilon
+                    UH2::UH2_1 => {
                         return US1::US1_1;
                     }
                     _ => {
@@ -1304,15 +1304,15 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
                     }
                 }
             }
-            UH2::UH2_5(v50) => { // RegexStar
+            UH2::UH2_5(v50) => {
                 let mut v50: Rc<UH2> = v50.clone();
                 match &*v1 {
-                    UH2::UH2_3(v51, v52) => { // RegexAlt
+                    UH2::UH2_3(v51, v52) => {
                         let mut v51: Rc<UH2> = v51.clone();
                         let mut v52: Rc<UH2> = v52.clone();
                         return US1::US1_0;
                     }
-                    UH2::UH2_5(v54) => { // RegexStar
+                    UH2::UH2_5(v54) => {
                         let mut v54: Rc<UH2> = v54.clone();
                         (v0, v1) = (v50.clone(), v54.clone());
                         continue;
@@ -1327,36 +1327,36 @@ fn method23(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US1 {
 }
 fn method22(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     match &*v1 {
-        UH2::UH2_3(v2, v3) => { // RegexAlt
+        UH2::UH2_3(v2, v3) => {
             let mut v2: Rc<UH2> = v2.clone();
             let mut v3: Rc<UH2> = v3.clone();
             let mut v4: US1 = method23(v0.clone(), v2.clone());
             match &v4 {
-                US1::US1_2 => { // SymbolGreater
+                US1::US1_2 => {
                     let mut v6: Rc<UH2> = method22(v0.clone(), v3.clone());
                     Rc::new(UH2::UH2_3(v2.clone(), v6.clone()))
                 }
-                US1::US1_0 => { // SymbolLess
+                US1::US1_0 => {
                     Rc::new(UH2::UH2_3(v0.clone(), v1.clone()))
                 }
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     v1.clone()
                 }
             }
         }
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             v0.clone()
         }
         _ => {
             let mut v11: US1 = method23(v0.clone(), v1.clone());
             match &v11 {
-                US1::US1_2 => { // SymbolGreater
+                US1::US1_2 => {
                     Rc::new(UH2::UH2_3(v1.clone(), v0.clone()))
                 }
-                US1::US1_0 => { // SymbolLess
+                US1::US1_0 => {
                     Rc::new(UH2::UH2_3(v0.clone(), v1.clone()))
                 }
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     v1.clone()
                 }
             }
@@ -1366,14 +1366,14 @@ fn method22(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
 fn method21(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     loop {
         match &*v0 {
-            UH2::UH2_3(v2, v3) => { // RegexAlt
+            UH2::UH2_3(v2, v3) => {
                 let mut v2: Rc<UH2> = v2.clone();
                 let mut v3: Rc<UH2> = v3.clone();
                 let mut v4: Rc<UH2> = method22(v2.clone(), v1.clone());
                 (v0, v1) = (v3.clone(), v4.clone());
                 continue;
             }
-            UH2::UH2_0 => { // RegexEmpty
+            UH2::UH2_0 => {
                 return v1.clone();
             }
             _ => {
@@ -1385,11 +1385,11 @@ fn method21(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
 fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
     loop {
         match &*v0 {
-            UH2::UH2_3(v24, v25) => { // RegexAlt
+            UH2::UH2_3(v24, v25) => {
                 let mut v24: Rc<UH2> = v24.clone();
                 let mut v25: Rc<UH2> = v25.clone();
                 match &*v1 {
-                    UH2::UH2_3(v26, v27) => { // RegexAlt
+                    UH2::UH2_3(v26, v27) => {
                         let mut v26: Rc<UH2> = v26.clone();
                         let mut v27: Rc<UH2> = v27.clone();
                         let mut v28: bool = method25(v24.clone(), v26.clone());
@@ -1405,11 +1405,11 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            UH2::UH2_4(v32, v33) => { // RegexCat
+            UH2::UH2_4(v32, v33) => {
                 let mut v32: Rc<UH2> = v32.clone();
                 let mut v33: Rc<UH2> = v33.clone();
                 match &*v1 {
-                    UH2::UH2_4(v34, v35) => { // RegexCat
+                    UH2::UH2_4(v34, v35) => {
                         let mut v34: Rc<UH2> = v34.clone();
                         let mut v35: Rc<UH2> = v35.clone();
                         let mut v36: bool = method25(v32.clone(), v34.clone());
@@ -1425,15 +1425,15 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            UH2::UH2_2(v4) => { // RegexChar
+            UH2::UH2_2(v4) => {
                 let mut v4: US3 = v4.clone();
                 match &*v1 {
-                    UH2::UH2_2(v5) => { // RegexChar
+                    UH2::UH2_2(v5) => {
                         let mut v5: US3 = v5.clone();
                         let mut v21: US1 = match &v4 {
-                            US3::US3_0 => { // TriA
+                            US3::US3_0 => {
                                 match &v5 {
-                                    US3::US3_0 => { // TriA
+                                    US3::US3_0 => {
                                         US1::US1_1
                                     }
                                     _ => {
@@ -1443,28 +1443,28 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                             }
                             _ => {
                                 match &v5 {
-                                    US3::US3_0 => { // TriA
+                                    US3::US3_0 => {
                                         US1::US1_2
                                     }
                                     _ => {
                                         match &v4 {
-                                            US3::US3_1 => { // TriB
+                                            US3::US3_1 => {
                                                 match &v5 {
-                                                    US3::US3_1 => { // TriB
+                                                    US3::US3_1 => {
                                                         US1::US1_1
                                                     }
-                                                    US3::US3_2 => { // TriC
+                                                    US3::US3_2 => {
                                                         US1::US1_0
                                                     }
                                                     _ => unreachable!(),
                                                 }
                                             }
-                                            US3::US3_2 => { // TriC
+                                            US3::US3_2 => {
                                                 match &v5 {
-                                                    US3::US3_1 => { // TriB
+                                                    US3::US3_1 => {
                                                         US1::US1_2
                                                     }
-                                                    US3::US3_2 => { // TriC
+                                                    US3::US3_2 => {
                                                         US1::US1_1
                                                     }
                                                     _ => unreachable!(),
@@ -1477,7 +1477,7 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                             }
                         };
                         match &v21 {
-                            US1::US1_1 => { // SymbolSame
+                            US1::US1_1 => {
                                 return true;
                             }
                             _ => {
@@ -1490,9 +1490,9 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            UH2::UH2_0 => { // RegexEmpty
+            UH2::UH2_0 => {
                 match &*v1 {
-                    UH2::UH2_0 => { // RegexEmpty
+                    UH2::UH2_0 => {
                         return true;
                     }
                     _ => {
@@ -1500,9 +1500,9 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            UH2::UH2_1 => { // RegexEpsilon
+            UH2::UH2_1 => {
                 match &*v1 {
-                    UH2::UH2_1 => { // RegexEpsilon
+                    UH2::UH2_1 => {
                         return true;
                     }
                     _ => {
@@ -1510,10 +1510,10 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     }
                 }
             }
-            UH2::UH2_5(v40) => { // RegexStar
+            UH2::UH2_5(v40) => {
                 let mut v40: Rc<UH2> = v40.clone();
                 match &*v1 {
-                    UH2::UH2_5(v41) => { // RegexStar
+                    UH2::UH2_5(v41) => {
                         let mut v41: Rc<UH2> = v41.clone();
                         (v0, v1) = (v40.clone(), v41.clone());
                         continue;
@@ -1528,36 +1528,36 @@ fn method25(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
 }
 fn method24(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
         }
         _ => {
             match &*v1 {
-                UH2::UH2_0 => { // RegexEmpty
+                UH2::UH2_0 => {
                     { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
                 }
                 _ => {
                     match &*v0 {
-                        UH2::UH2_1 => { // RegexEpsilon
+                        UH2::UH2_1 => {
                             v1.clone()
                         }
                         _ => {
                             match &*v1 {
-                                UH2::UH2_1 => { // RegexEpsilon
+                                UH2::UH2_1 => {
                                     v0.clone()
                                 }
                                 _ => {
                                     match &*v0 {
-                                        UH2::UH2_4(v12, v13) => { // RegexCat
+                                        UH2::UH2_4(v12, v13) => {
                                             let mut v12: Rc<UH2> = v12.clone();
                                             let mut v13: Rc<UH2> = v13.clone();
                                             let mut v14: Rc<UH2> = method24(v13.clone(), v1.clone());
                                             Rc::new(UH2::UH2_4(v12.clone(), v14.clone()))
                                         }
-                                        UH2::UH2_5(v4) => { // RegexStar
+                                        UH2::UH2_5(v4) => {
                                             let mut v4: Rc<UH2> = v4.clone();
                                             match &*v1 {
-                                                UH2::UH2_5(v5) => { // RegexStar
+                                                UH2::UH2_5(v5) => {
                                                     let mut v5: Rc<UH2> = v5.clone();
                                                     let mut v6: bool = method25(v4.clone(), v5.clone());
                                                     if v6 {
@@ -1586,13 +1586,13 @@ fn method24(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
 }
 fn method26(mut v0: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_1); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_1 => { // RegexEpsilon
+        UH2::UH2_1 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_1); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_5(v3) => { // RegexStar
+        UH2::UH2_5(v3) => {
             let mut v3: Rc<UH2> = v3.clone();
             Rc::new(UH2::UH2_5(v3.clone()))
         }
@@ -1603,31 +1603,31 @@ fn method26(mut v0: Rc<UH2>) -> Rc<UH2> {
 }
 fn method20(mut v0: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
-        UH2::UH2_3(v5, v6) => { // RegexAlt
+        UH2::UH2_3(v5, v6) => {
             let mut v5: Rc<UH2> = v5.clone();
             let mut v6: Rc<UH2> = v6.clone();
             let mut v7: Rc<UH2> = method20(v5.clone());
             let mut v8: Rc<UH2> = method20(v6.clone());
             method21(v7.clone(), v8.clone())
         }
-        UH2::UH2_4(v10, v11) => { // RegexCat
+        UH2::UH2_4(v10, v11) => {
             let mut v10: Rc<UH2> = v10.clone();
             let mut v11: Rc<UH2> = v11.clone();
             let mut v12: Rc<UH2> = method20(v10.clone());
             let mut v13: Rc<UH2> = method20(v11.clone());
             method24(v12.clone(), v13.clone())
         }
-        UH2::UH2_2(v3) => { // RegexChar
+        UH2::UH2_2(v3) => {
             let mut v3: US3 = v3.clone();
             Rc::new(UH2::UH2_2(v3.clone()))
         }
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_1 => { // RegexEpsilon
+        UH2::UH2_1 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_1); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_5(v15) => { // RegexStar
+        UH2::UH2_5(v15) => {
             let mut v15: Rc<UH2> = v15.clone();
             let mut v16: Rc<UH2> = method20(v15.clone());
             method26(v16.clone())
@@ -1636,25 +1636,25 @@ fn method20(mut v0: Rc<UH2>) -> Rc<UH2> {
 }
 fn method28(mut v0: Rc<UH2>) -> US2 {
     match &*v0 {
-        UH2::UH2_3(v5, v6) => { // RegexAlt
+        UH2::UH2_3(v5, v6) => {
             let mut v5: Rc<UH2> = v5.clone();
             let mut v6: Rc<UH2> = v6.clone();
             let mut v7: US2 = method28(v5.clone());
             let mut v8: US2 = method28(v6.clone());
             match &v7 {
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     US2::US2_0
                 }
                 _ => {
                     match &v8 {
-                        US2::US2_0 => { // Nullable
+                        US2::US2_0 => {
                             US2::US2_0
                         }
                         _ => {
                             match &v7 {
-                                US2::US2_1 => { // NonNullable
+                                US2::US2_1 => {
                                     match &v8 {
-                                        US2::US2_1 => { // NonNullable
+                                        US2::US2_1 => {
                                             US2::US2_1
                                         }
                                         _ => unreachable!(),
@@ -1667,15 +1667,15 @@ fn method28(mut v0: Rc<UH2>) -> US2 {
                 }
             }
         }
-        UH2::UH2_4(v16, v17) => { // RegexCat
+        UH2::UH2_4(v16, v17) => {
             let mut v16: Rc<UH2> = v16.clone();
             let mut v17: Rc<UH2> = v17.clone();
             let mut v18: US2 = method28(v16.clone());
             let mut v19: US2 = method28(v17.clone());
             match &v18 {
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     match &v19 {
-                        US2::US2_0 => { // Nullable
+                        US2::US2_0 => {
                             US2::US2_0
                         }
                         _ => {
@@ -1688,17 +1688,17 @@ fn method28(mut v0: Rc<UH2>) -> US2 {
                 }
             }
         }
-        UH2::UH2_2(v3) => { // RegexChar
+        UH2::UH2_2(v3) => {
             let mut v3: US3 = v3.clone();
             US2::US2_1
         }
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             US2::US2_1
         }
-        UH2::UH2_1 => { // RegexEpsilon
+        UH2::UH2_1 => {
             US2::US2_0
         }
-        UH2::UH2_5(v25) => { // RegexStar
+        UH2::UH2_5(v25) => {
             let mut v25: Rc<UH2> = v25.clone();
             US2::US2_0
         }
@@ -1706,23 +1706,23 @@ fn method28(mut v0: Rc<UH2>) -> US2 {
 }
 fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
     match &*v0 {
-        UH2::UH2_3(v25, v26) => { // RegexAlt
+        UH2::UH2_3(v25, v26) => {
             let mut v25: Rc<UH2> = v25.clone();
             let mut v26: Rc<UH2> = v26.clone();
             let mut v27: Rc<UH2> = method27(v25.clone(), v1.clone());
             let mut v28: Rc<UH2> = method27(v26.clone(), v1.clone());
             method21(v27.clone(), v28.clone())
         }
-        UH2::UH2_4(v30, v31) => { // RegexCat
+        UH2::UH2_4(v30, v31) => {
             let mut v30: Rc<UH2> = v30.clone();
             let mut v31: Rc<UH2> = v31.clone();
             let mut v32: US2 = method28(v30.clone());
             match &v32 {
-                US2::US2_1 => { // NonNullable
+                US2::US2_1 => {
                     let mut v37: Rc<UH2> = method27(v30.clone(), v1.clone());
                     method24(v37.clone(), v31.clone())
                 }
-                US2::US2_0 => { // Nullable
+                US2::US2_0 => {
                     let mut v33: Rc<UH2> = method27(v30.clone(), v1.clone());
                     let mut v34: Rc<UH2> = method24(v33.clone(), v31.clone());
                     let mut v35: Rc<UH2> = method27(v31.clone(), v1.clone());
@@ -1730,12 +1730,12 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
                 }
             }
         }
-        UH2::UH2_2(v4) => { // RegexChar
+        UH2::UH2_2(v4) => {
             let mut v4: US3 = v4.clone();
             let mut v20: US1 = match &v4 {
-                US3::US3_0 => { // TriA
+                US3::US3_0 => {
                     match &v1 {
-                        US3::US3_0 => { // TriA
+                        US3::US3_0 => {
                             US1::US1_1
                         }
                         _ => {
@@ -1745,28 +1745,28 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
                 }
                 _ => {
                     match &v1 {
-                        US3::US3_0 => { // TriA
+                        US3::US3_0 => {
                             US1::US1_2
                         }
                         _ => {
                             match &v4 {
-                                US3::US3_1 => { // TriB
+                                US3::US3_1 => {
                                     match &v1 {
-                                        US3::US3_1 => { // TriB
+                                        US3::US3_1 => {
                                             US1::US1_1
                                         }
-                                        US3::US3_2 => { // TriC
+                                        US3::US3_2 => {
                                             US1::US1_0
                                         }
                                         _ => unreachable!(),
                                     }
                                 }
-                                US3::US3_2 => { // TriC
+                                US3::US3_2 => {
                                     match &v1 {
-                                        US3::US3_1 => { // TriB
+                                        US3::US3_1 => {
                                             US1::US1_2
                                         }
-                                        US3::US3_2 => { // TriC
+                                        US3::US3_2 => {
                                             US1::US1_1
                                         }
                                         _ => unreachable!(),
@@ -1779,7 +1779,7 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
                 }
             };
             let mut v21: bool = match &v20 {
-                US1::US1_1 => { // SymbolSame
+                US1::US1_1 => {
                     true
                 }
                 _ => {
@@ -1792,13 +1792,13 @@ fn method27(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
                 { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
             }
         }
-        UH2::UH2_0 => { // RegexEmpty
+        UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_1 => { // RegexEpsilon
+        UH2::UH2_1 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
         }
-        UH2::UH2_5(v41) => { // RegexStar
+        UH2::UH2_5(v41) => {
             let mut v41: Rc<UH2> = v41.clone();
             let mut v42: Rc<UH2> = method27(v41.clone(), v1.clone());
             let mut v43: Rc<UH2> = method26(v41.clone());
@@ -1814,21 +1814,21 @@ fn method19(mut v0: Rc<UH2>, mut v1: US3) -> Rc<UH2> {
 fn method18(mut v0: Rc<UH2>, mut v1: Rc<UH3>) -> bool {
     loop {
         match &*v1 {
-            UH3::UH3_1(v6, v7) => { // InputCons
+            UH3::UH3_1(v6, v7) => {
                 let mut v6: US3 = v6.clone();
                 let mut v7: Rc<UH3> = v7.clone();
                 let mut v8: Rc<UH2> = method19(v0.clone(), v6.clone());
                 (v0, v1) = (v8.clone(), v7.clone());
                 continue;
             }
-            UH3::UH3_0 => { // InputEmpty
+            UH3::UH3_0 => {
                 let mut v2: Rc<UH2> = method20(v0.clone());
                 let mut v3: US2 = method28(v2.clone());
                 match &v3 {
-                    US2::US2_1 => { // NonNullable
+                    US2::US2_1 => {
                         return false;
                     }
-                    US2::US2_0 => { // Nullable
+                    US2::US2_0 => {
                         return true;
                     }
                 }

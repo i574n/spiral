@@ -68,7 +68,7 @@ Spiral.Kino.eval!(
 
 ### write_line
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_line obj : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.println(!obj)' : ()\n        Lua = fun () => $'print(!obj)' : ()\n        Fsharp = fun () =>\n            fun () => obj |> $'System.Console.WriteLine'\n            |> exec_unit\n        Python = fun () => $'print(!obj)' : ()\n        Rust = fun () => $'println\\!(\"{}\", !obj)' : ()\n        TypeScript = fun () => $'console.log(!obj)' : ()\n        // Zig: the generated program's prelude writes to stdout (spiralPrintAny: strings as text, numbers in decimal)\n        Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_line obj : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.println(!obj)' : ()\n        Lua = fun () => $'print(!obj)' : ()\n        Fsharp = fun () =>\n            fun () => obj |> $'System.Console.WriteLine'\n            |> exec_unit\n        Python = fun () => $'print(!obj)' : ()\n        Rust = fun () => $'println\\!(\"{}\", !obj)' : ()\n        TypeScript = fun () => $'console.log(!obj)' : ()\n        Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()\n        Lean = fun () => $'IO.println (toString !obj)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -85,8 +85,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'print(!obj)' : ()
           Rust = fun () => $'println\!("{}", !obj)' : ()
           TypeScript = fun () => $'console.log(!obj)' : ()
-          // Zig: the generated program's prelude writes to stdout (spiralPrintAny: strings as text, numbers in decimal)
           Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()
+          Lean = fun () => $'IO.println (toString !obj)' : ()
       }
   """,
   timeout: 300_000
@@ -95,7 +95,7 @@ Spiral.Kino.eval!(
 
 ### write
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write forall t. (x : t) : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.print(!x)' : ()\n        Lua = fun () => $'io.write(!x)' : ()\n        Fsharp = fun () => $'!x |> System.Console.Write' : ()\n        Python = fun () => $'print(!x, end=\"\")' : ()\n        Rust = fun () => $'{ use std::io::Write; print\\!(\"{}\", !x); std::io::stdout().flush().unwrap(); }' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!x))' : ()\n        Zig = fun () => $'spiralPrintAny(!x)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write forall t. (x : t) : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.print(!x)' : ()\n        Lua = fun () => $'io.write(!x)' : ()\n        Fsharp = fun () => $'!x |> System.Console.Write' : ()\n        Python = fun () => $'print(!x, end=\"\")' : ()\n        Rust = fun () => $'{ use std::io::Write; print\\!(\"{}\", !x); std::io::stdout().flush().unwrap(); }' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!x))' : ()\n        Zig = fun () => $'spiralPrintAny(!x)' : ()\n        Lean = fun () => $'IO.print (toString !x)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -111,6 +111,7 @@ Spiral.Kino.eval!(
           Rust = fun () => $'{ use std::io::Write; print\!("{}", !x); std::io::stdout().flush().unwrap(); }' : ()
           TypeScript = fun () => $'process.stdout.write(String(!x))' : ()
           Zig = fun () => $'spiralPrintAny(!x)' : ()
+          Lean = fun () => $'IO.print (toString !x)' : ()
       }
   """,
   timeout: 300_000
@@ -119,7 +120,7 @@ Spiral.Kino.eval!(
 
 ### write_ln
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_ln l : () =\n    write l\n    backend_switch {\n        Gleam = fun () => write_line () : ()\n        Lua = fun () => write_line () : ()\n        Fsharp = fun () => write_line () : ()\n        Python = fun () => $\"print()\" : ()\n        Cuda = fun () => $'printf(\"\\\\n\")' : ()\n        Rust = fun () => $'println\\!()' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_ln l : () =\n    write l\n    backend_switch {\n        Gleam = fun () => write_line () : ()\n        Lua = fun () => write_line () : ()\n        Fsharp = fun () => write_line () : ()\n        Python = fun () => $\"print()\" : ()\n        Cuda = fun () => $'printf(\"\\\\n\")' : ()\n        Rust = fun () => $'println\\!()' : ()\n        Zig = fun () => $'spiralPrint(&[_]u8{10})' : ()\n        Lean = fun () => $'IO.println \"\"' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -133,6 +134,8 @@ Spiral.Kino.eval!(
           Python = fun () => $"print()" : ()
           Cuda = fun () => $'printf("\\n")' : ()
           Rust = fun () => $'println\!()' : ()
+          Zig = fun () => $'spiralPrint(&[_]u8{10})' : ()
+          Lean = fun () => $'IO.println ""' : ()
       }
   """,
   timeout: 300_000

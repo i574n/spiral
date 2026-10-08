@@ -20,6 +20,15 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     end
   end
 
+  test "the Windows daemon starts through cmd with its own output files" do
+    assert CompilerClient.daemon_command_line(
+             ~S"C:\e\elixir.bat",
+             ~S"C:\r\k.log",
+             ~S"C:\r\k.err.log"
+           ) ==
+             ~S{/d /c ""C:\e\elixir.bat" -S mix spiral.compiler_daemon 1>"C:\r\k.log" 2>"C:\r\k.err.log""}
+  end
+
   test "queued clients share one compiler and do not overlap" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("daemon")
     {:ok, agent} = Agent.start_link(fn -> [] end)
@@ -90,9 +99,6 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert Enum.max(queues) - Enum.min(queues) >= 200
   end
 
-  # Regression for the dice dib cells 23/24 (2026-10-03): every `_assert_eq` test cell compiles twice (the first attempt
-  # fails with "Got: () Expected: i32" and is retried with `0i32` appended). Error and timeout replies carried no queue
-  # time, so the first attempt's whole wait behind the other cells was charged to the cell budget (658 s "compile").
   for {outcome, reply, expected} <- [
         {"error", {:error, "Unification failure. Got: () Expected: i32"},
          {:error, "Unification failure. Got: () Expected: i32"}},

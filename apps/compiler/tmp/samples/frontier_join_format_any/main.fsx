@@ -12,11 +12,11 @@ and method3 (v0 : Mut0, v1 : string) : unit =
     ()
 and method1 (v0 : US0) : string =
     let v1 : string = method2()
-    let v30 : Mut0 = {l0 = v1} : Mut0
-    let v33 : string = $"%A{v0}"
-    method3(v30, v33)
-    let v63 : string = v30.l0
-    v63
+    let v20 : Mut0 = {l0 = v1} : Mut0
+    let v23 : string = $"%A{v0}"
+    method3(v20, v23)
+    let v48 : string = v20.l0
+    v48
 and method0 () : string =
     let v0 : int32 = 1
     let v1 : US0 = US0_0(v0)

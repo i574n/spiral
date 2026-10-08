@@ -28,6 +28,9 @@ defmodule Spiral.Kino.Directives do
     end
   end
 
+  @main_from_expression "1"
+  @main_from_definitions_only "2"
+
   defp decode(<<"ok\n", rest::binary>>) do
     [print, timeout, generated, packages, skip, code] = String.split(rest, "\n", parts: 6)
 
@@ -36,9 +39,8 @@ defmodule Spiral.Kino.Directives do
        code: code,
        print_code: print == "1",
        timeout: if(timeout == "-", do: nil, else: String.to_integer(timeout)),
-       generated_main: generated != "0",
-       # "2": the cell has no top-level expression (only definitions), so it shows no value (the old route's output).
-       no_value: generated == "2",
+       generated_main: generated in [@main_from_expression, @main_from_definitions_only],
+       no_value: generated == @main_from_definitions_only,
        packages: if(packages == "", do: [], else: String.split(packages, "\t")),
        skip: skip == "1"
      }}

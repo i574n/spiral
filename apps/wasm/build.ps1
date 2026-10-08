@@ -11,7 +11,6 @@ $ErrorActionPreference = "Stop"
 
 $projectName = "spiral_wasm"
 
-# The notebook runs through Kino and exports spiral_wasm.spi (outputs <nb>.livemd.ipynb/.html).
 $livebook = Join-Path $ScriptDir "../kino/spi/run_notebook.ps1"
 $notebook = @("--path", "$ScriptDir/$projectName.livemd", "--spi-path", "$ScriptDir/$projectName.spi")
 if (!$fast -and !$SkipNotebook) {
@@ -23,13 +22,6 @@ else {
 
 $targetDir = GetTargetDir $projectName
 
-# Rust: spiral_wasm.spi (its `main` has a `Rust` arm that runs `run_main` with the process args) -> spiral_wasm.rs
-# (tracked) with the Spiral compiler's own Rust backend: the `spiral_wasm` bin of Cargo.toml, a member of the spiral
-# workspace (its lock pins the older transitive deps near-workspaces needs). near-workspaces' build script sets up the
-# NEAR sandbox, which only exists for Linux, so it builds there (its own target dir: target/linux), with the workspace's
-# release-unwind profile. Running it needs a contract .wasm and a NEAR sandbox (the spiral CLI's `rust -c` cells do that),
-# so the required check is that the binary builds and its clap command answers `--help` (exit code 0, the `--wasm`
-# argument listed). It then ships as workspace/target/release/spiral_wasm, the path the spiral CLI runs.
 if (!(BuildSpiral "$projectName.spi" "$projectName.rs" "apps/wasm")) {
     throw "RUST-FAILED apps/wasm / compile"
 }

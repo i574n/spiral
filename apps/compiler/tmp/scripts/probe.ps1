@@ -1,28 +1,13 @@
-# Compile one sample directly, several times if asked, and optionally look inside the compiler while it runs.
-# The fast loop for small fixes: one fixture in seconds, no suite, no oracle.
-#
-#   pwsh scripts/probe.ps1 mega_brzozowski_derivatives/negative_antimirov_slot_shape -Repeat 5   # races
-#   pwsh scripts/probe.ps1 frontier_hello -Mode single-flight -Backend C                        # compare lanes
-#   pwsh scripts/probe.ps1 mega_spiral_proves_spiral_relative_consistency -Profile 40           # where time goes
-#   pwsh scripts/probe.ps1 <sample> -Stacks 12        # stack dump if still running after 12 s (hangs)
-#
-# The sample compiles in place (its outputs are rewritten, as by scripts/test.ps1). Each run's stdout/stderr go
-# to <cache>/probes/<sample>/; the table shows exit code, wall time and the first result line. Profiles and
-# stacks use dotnet-trace/dotnet-stack, installed into <cache>/tools on first use.
 param(
     [Parameter(Mandatory, Position = 0)][string]$Sample,
     [ValidateSet('single-flight', 'sf', 'hopac', 'hp')][string]$Mode = 'hopac',
     [ValidateSet('Fsharp', 'C', 'Rust', 'Delphi', 'TypeScript', 'Cpp', 'Python')][string]$Backend = 'Fsharp',
     [int]$Repeat = 1,
     [int]$BudgetSec = 180,
-    # Take a stack dump of the compiler after this many seconds if it is still running (0: never).
     [int]$Stacks = 0,
-    # Record a sampled-thread profile for this many seconds (0: none), starting after -ProfileDelay seconds.
     [int]$Profile = 0,
     [int]$ProfileDelay = 5,
-    # Hopac workers (SPIRAL_HOPAC_WORKERS and SPIRAL_DOP); 0 keeps the default of one per core.
     [int]$Workers = 0,
-    # Keep the diagnostic JSONL rows and HUD (SPIRAL_DIAG_QUIET=0); off by default, like scripts/test.ps1.
     [switch]$Loud
 )
 . $PSScriptRoot/env.ps1
@@ -35,7 +20,6 @@ $dir = Join-Path $BundleRoot "samples/$Sample"
 $entry = @('main.spi', 'main.spir') | ForEach-Object { Join-Path $dir $_ } | Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $entry) { throw "no main.spi or main.spir in $dir" }
 $ext = @{ Fsharp = '.fsx'; C = '.c'; Rust = '.rs'; Delphi = '.pas'; TypeScript = '.ts'; Cpp = '.cpp'; Python = '.py' }[$Backend]
-# The core's ids for the multi-file backends (they also write main.corelib.hpp/.hpp/.cu, main_auto.py).
 $backendId = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }[$Backend] ?? $Backend
 $output = [IO.Path]::ChangeExtension($entry, $ext)
 $logDir = Join-Path $cache ("probes/" + ($Sample -replace '[\\/]', '__'))

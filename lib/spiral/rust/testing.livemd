@@ -26,14 +26,12 @@ Spiral.Kino.eval!(
 
 ### run_tests'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_tests' tests =\n    // Each test becomes a top-level `#[test] fn <name>()` that selects itself by name and re-enters spiral_main() (on a big-stack thread, as\n    // main() does); this function then runs only the selected test.\n    inl fields = reflection.get_record_fields tests\n    global \"thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }\"\n    fields\n    |> listm.iter fun name, (fn : string -> ()) =>\n        inl (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)\n        global (\"#[test] fn \" ++ name ++ \"() { std::thread::Builder::new().stack_size(1 << 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(\\\"\" ++ name ++ \"\\\")); spiral_main() }).unwrap().join().unwrap(); }\")\n        if $'SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&*!name)))' then\n            fn name","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_tests' tests =\n    inl fields = reflection.get_record_fields tests\n    global \"thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }\"\n    fields\n    |> listm.iter fun name, (fn : string -> ()) =>\n        inl (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)\n        global (\"#[test] fn \" ++ name ++ \"() { std::thread::Builder::new().stack_size(1 << 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(\\\"\" ++ name ++ \"\\\")); spiral_main() }).unwrap().join().unwrap(); }\")\n        if $'SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&*!name)))' then\n            fn name","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl run_tests' tests =
-      // Each test becomes a top-level `#[test] fn <name>()` that selects itself by name and re-enters spiral_main() (on a big-stack thread, as
-      // main() does); this function then runs only the selected test.
       inl fields = reflection.get_record_fields tests
       global "thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }"
       fields
@@ -47,7 +45,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl run test =\n    if env.get_environment_variable \"TEST\" = \"1\"\n    then\n        // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it\n        if is_rust () then test () else ()\n    else\n        runtime.execution_options fun x => { x with\n            command = \"cargo +nightly-2025-11-01 test --timings -- --show-output\"\n            working_directory = file_system.get_source_directory () |> Some |> optionm'.box\n            environment_variables = ;[ \"TEST\", \"1\" ]\n        }\n        |> runtime.execute_with_options\n        |> fun exit_code, result =>\n            exit_code |> _assert_eq 0i32\n            result |> _assert sm'.contains \"test result: ok. 1 passed; 0 failed; 0 ignored;\"\n\n    if is_rust () |> not then\n        $'let tests () = !test ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test static\n\ninl run test =\n    if env.get_environment_variable \"TEST\" = \"1\"\n    then\n        if is_rust () then test () else ()\n    else\n        runtime.execution_options fun x => { x with\n            command = \"cargo +nightly-2025-11-01 test --timings -- --show-output\"\n            working_directory = file_system.get_source_directory () |> Some |> optionm'.box\n            environment_variables = ;[ \"TEST\", \"1\" ]\n        }\n        |> runtime.execute_with_options\n        |> fun exit_code, result =>\n            exit_code |> _assert_eq 0i32\n            result |> _assert sm'.contains \"test result: ok. 1 passed; 0 failed; 0 ignored;\"\n\n    if is_rust () |> not then\n        $'let tests () = !test ()' : ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -57,7 +55,6 @@ Spiral.Kino.eval!(
   inl run test =
       if env.get_environment_variable "TEST" = "1"
       then
-          // native Rust: a `#[test] fn` re-enters main with its test selected (run_tests'); run it
           if is_rust () then test () else ()
       else
           runtime.execution_options fun x => { x with

@@ -40,6 +40,8 @@ begin
   v2 := 39;
   Result := method0(v1, v2);
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

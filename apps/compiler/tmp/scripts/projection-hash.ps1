@@ -1,9 +1,3 @@
-# Hash each core's projection of spiral_compiler.fs (the text the hopac and single-flight builds compile).
-# A pure move of #if SPIRAL_CORE_HOPAC markers must leave both hashes unchanged; -IgnoreHeaders skips `/// ## `
-# section header lines, which such moves may add.
-#
-#   pwsh scripts/projection-hash.ps1                    # before the edit
-#   pwsh scripts/projection-hash.ps1 -IgnoreHeaders     # after a move that added headers: compare with a -IgnoreHeaders run before
 param([switch]$IgnoreHeaders)
 . $PSScriptRoot/env.ps1
 $dir = Join-Path ([IO.Path]::GetTempPath()) "spiral-projection-$PID"

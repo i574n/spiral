@@ -25,9 +25,6 @@ defmodule Spiral.Kino.Mounts do
   def ensure(entries) when is_list(entries) do
     dir = Path.join(root(), key(entries))
 
-    # A mount is complete once `ready` exists and is never rebuilt after that (an edit changes the key, so it gets a new
-    # dir): the common case takes no lock. Every cell of every parallel notebook mounts the same lib, and queueing them
-    # all on one lock file timed cells out (`:lock_timeout`) on a loaded machine.
     if File.regular?(Path.join(dir, "ready")) do
       {:ok, forward(dir)}
     else
@@ -64,10 +61,6 @@ defmodule Spiral.Kino.Mounts do
   def share_mounted_deps?(target, sibling_names) do
     text = File.read!(Path.join(target, "package.spiproj"))
 
-    # Any packageDir (absolute or relative): when every package it names is mounted next to it, its packageDir is
-    # rewritten to the mount so the cell and the package share ONE copy of each dependency. A relative packageDir seen
-    # through the junction is a second path to the same files (e.g. dice's `deps/polyglot/deps/spiral/lib` beside the
-    # notebook's spiral lib), and the compiler then loads the lib twice: "Got: stream u8 Expected: stream u8".
     case Regex.run(~r/^packageDir:\s*(.+)$/m, text) do
       [_, _dir] ->
         deps = local_package_names(text)
@@ -111,9 +104,6 @@ defmodule Spiral.Kino.Mounts do
   end
 
   defp key(entries) do
-    # The "v2" salt retires mounts built before shadows linked files as files (their module links were junctions).
-    # A shadow holds a rewritten copy of the target's package.spiproj, so its mtime is part of the key: an edit to it
-    # builds a fresh mount instead of reusing the stale copy.
     payload =
       entries
       |> Enum.sort_by(& &1.name)
@@ -175,9 +165,6 @@ defmodule Spiral.Kino.Mounts do
     end
   end
 
-  # A junction can only point at a directory: a shadowed package whose modules sit at its root (alphabet's hangul:
-  # hanja.spi next to package.spiproj) needs file links, or the compiler sees each module as a directory ("Package has
-  # an error"). A file symlink (Developer Mode / privilege), else a hard link (same volume), else a copy.
   defp link_file(link, target) do
     {_, status} =
       System.cmd("cmd", ["/c", "mklink", win_path(link), win_path(target)],

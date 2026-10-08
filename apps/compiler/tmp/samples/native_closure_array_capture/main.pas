@@ -37,6 +37,8 @@ begin
   v1 := ClosureCreate0(v0);
   Result := v1.Invoke(40);
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

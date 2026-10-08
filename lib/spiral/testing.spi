@@ -191,12 +191,9 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
         fun a b =>
             if is_rust ()
             then
-                // Rust: a string contains a char, an array (`Rc<RefCell<Vec<T>>>`) or a list/seq (`Rc<Vec<T>>`) an
-                // element equal to it (the element type's PartialEq)
                 real
                     typecase u with
                     | string =>
-                        // a native char is a `u8`; a string in a string: a substring
                         typecase t with
                         | char => $'!a.contains(!b as char)' : bool
                         | _ => $'!a.contains(&*!b)' : bool
@@ -210,10 +207,6 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
                 |> optionm'.unbox
                 |> fun (x : option t) => x <> None
         trace
-        // TODO: forall nameof (Cannot dyn a forall into a runtime var.)
-        // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.
-        // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string
-        // (reflection.nameof { __assert_contains })
         "__assert_contains"
         b
         a
@@ -227,7 +220,6 @@ inl _throws (fn : () -> ()) : option exn =
     inl some (s : exn) = Some s
     if is_rust ()
     then
-        // Rust: a panic is the exception (base.catch_unwind_rust: its panic report is suppressed).
         catch_unwind_rust
             fun () =>
                 fn ()

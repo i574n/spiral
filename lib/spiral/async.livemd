@@ -522,14 +522,11 @@ Spiral.Kino.eval!(
 
 ### into_iter
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its\n// elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain\n// Spiral array.\ntype into_iter t = array_base t","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type into_iter t = array_base t","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust maps the rayon pipeline (into_par_iter / par_map / par_collect) to a sequential map over an array: its
-  // elements (`Rc<str>`, `Rc<dyn Fn>`) and the closures' captured trace state are not `Send`. Every stage is a plain
-  // Spiral array.
   type into_iter t = array_base t
   """,
   timeout: 300_000
@@ -552,15 +549,12 @@ Spiral.Kino.eval!(
 
 ### par_map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =\n    // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted\n    // `|x| f(x)` can't spread.\n    // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.\n    inl n : i32 = $'(!ar.borrow().len() as i32)'\n    let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =\n        if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc\n    loop 0 (am'.new_vec []) |> am'.from_vec_base","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =\n    inl n : i32 = $'(!ar.borrow().len() as i32)'\n    let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =\n        if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc\n    loop 0 (am'.new_vec []) |> am'.from_vec_base","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl par_map forall t u. (fn : t -> u) (ar : into_iter t) : into_iter u =
-      // Spiral's own map: a closure over a tuple takes its fields as separate parameters, which an emitted
-      // `|x| f(x)` can't spread.
-      // Pushed in order: a new array would be filled with `Default::default()`, which `Result` and others lack.
       inl n : i32 = $'(!ar.borrow().len() as i32)'
       let rec loop (i : i32) (acc : am'.vec u) : am'.vec u =
           if i < n then loop (i + 1) (acc |> am'.vec_push (fn (am'.index_base i ar))) else acc
@@ -601,7 +595,7 @@ Spiral.Kino.eval!(
 
 ### future_init
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl future_init forall t. (move : bool) (x : () -> t) : infer' t =\n    (!\\($'\"true; let __future_init = Box::pin(/*\"') : bool) |> ignore\n    if move\n    then (!\\($'\"*/ async move { /*\"') : bool) |> ignore\n    else (!\\($'\"*/ async { /*\"') : bool) |> ignore\n    (!\\($'\"*/ ()\"') : bool) |> ignore\n\n    inl x' = x ()\n    // inl x' = join x'\n\n    inl depth = 1, 0\n\n    x' |> rust.fix_closure depth\n\n    !\\($'\"__future_init\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl future_init forall t. (move : bool) (x : () -> t) : infer' t =\n    (!\\($'\"true; let __future_init = Box::pin(/*\"') : bool) |> ignore\n    if move\n    then (!\\($'\"*/ async move { /*\"') : bool) |> ignore\n    else (!\\($'\"*/ async { /*\"') : bool) |> ignore\n    (!\\($'\"*/ ()\"') : bool) |> ignore\n\n    inl x' = x ()\n\n    inl depth = 1, 0\n\n    x' |> rust.fix_closure depth\n\n    !\\($'\"__future_init\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -614,7 +608,6 @@ Spiral.Kino.eval!(
       (!\($'"*/ ()"') : bool) |> ignore
 
       inl x' = x ()
-      // inl x' = join x'
 
       inl depth = 1, 0
 
@@ -798,7 +791,7 @@ Spiral.Kino.eval!(
 
 ### run_synchronously
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_synchronously forall t. (a : async t) : t =\n    run_target function\n        | Fsharp _ => fun () =>\n            a |> $'Async.RunSynchronously'\n        | Cuda => fun () =>\n            $'asyncio.run(!a())'\n        // Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.\n        | Rust => fun () =>\n            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t\n        | _ => fun () => null ()\n\n// Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the\n// native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in\n// base.catch_unwind_rust (a once-installed hook that defers to the previous one unless this thread's counter is set).\n// A panic=abort build aborts instead (and its hook always reports).\ninl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\")))) } }) })' : async (resultm.result' t exn)\n\n// Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and\n// aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts\n// there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).\n// A panic in that first poll is kept (its report suppressed, as in catch_rust) and resumed by the handle (F# raises a\n// child's exception at the await). With a\n// timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after\n// it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.\ninl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\\!(\"The operation has timed out.\") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\\!(\"The operation has timed out.\"), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl run_synchronously forall t. (a : async t) : t =\n    run_target function\n        | Fsharp _ => fun () =>\n            a |> $'Async.RunSynchronously'\n        | Cuda => fun () =>\n            $'asyncio.run(!a())'\n        | Rust => fun () =>\n            $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t\n        | _ => fun () => null ()\n\ninl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or(\"panic\")))) } }) })' : async (resultm.result' t exn)\n\ninl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =\n    $'Box::pin({ thread_local\\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\\!(panic = \"abort\") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\\!(\"The operation has timed out.\") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\\!(\"The operation has timed out.\"), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -809,25 +802,13 @@ Spiral.Kino.eval!(
               a |> $'Async.RunSynchronously'
           | Cuda => fun () =>
               $'asyncio.run(!a())'
-          // Rust: a minimal executor (std only): poll on this thread, parked until the future's waker unparks it.
           | Rust => fun () =>
               $'{ struct SpiralThreadWaker(std::thread::Thread); impl std::task::Wake for SpiralThreadWaker { fn wake(self: std::sync::Arc<Self>) { self.0.unpark(); } } let waker = std::task::Waker::from(std::sync::Arc::new(SpiralThreadWaker(std::thread::current()))); let mut cx = std::task::Context::from_waker(&waker); let mut f = !a; loop { match std::future::Future::poll(f.as_mut(), &mut cx) { std::task::Poll::Ready(v) => break v, std::task::Poll::Pending => std::thread::park() } } }' : t
           | _ => fun () => null ()
 
-  // Rust only (async.catch', start_with_continuations): every poll of `a` runs under catch_unwind; a panic (the
-  // native exception, as in base.try) becomes Err with its message, and its panic report is suppressed like in
-  // base.catch_unwind_rust (a once-installed hook that defers to the previous one unless this thread's counter is set).
-  // A panic=abort build aborts instead (and its hook always reports).
   inl catch_rust forall t. (a : async t) : async (resultm.result' t exn) =
       $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; std::future::poll_fn(move |cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); match r { Ok(std::task::Poll::Ready(v)) => std::task::Poll::Ready(Ok(v)), Ok(std::task::Poll::Pending) => std::task::Poll::Pending, Err(e) => std::task::Poll::Ready(Err(Rc::<str>::from(e.downcast_ref::<String>().map(|s| s.as_str()).or_else(|| e.downcast_ref::<&str>().copied()).unwrap_or("panic")))) } }) })' : async (resultm.result' t exn)
 
-  // Rust only (async.start_child, start_child_timeout; timeout < 0 = none). Native futures hold `Rc` state and
-  // aren't `Send`, so the child can't run on another thread: it is polled once when the outer async runs (it starts
-  // there, like F#'s child) and then each time the returned handle is polled (cooperative, on the awaiting thread).
-  // A panic in that first poll is kept (its report suppressed, as in catch_rust) and resumed by the handle (F# raises a
-  // child's exception at the await). With a
-  // timeout, a timer thread wakes the handle at the deadline; a child still pending then, or one that finished after
-  // it, makes the handle panic with .NET's TimeoutException message. A blocking poll can't be preempted.
   inl start_child_rust forall t. (timeout : i32) (a : async t) : async (async t) =
       $'Box::pin({ thread_local\! { static QUIET: std::cell::Cell<u32> = std::cell::Cell::new(0); } static HOOK: std::sync::Once = std::sync::Once::new(); HOOK.call_once(|| { let prev = std::panic::take_hook(); std::panic::set_hook(Box::new(move |info| if cfg\!(panic = "abort") || QUIET.with(|q| q.get()) == 0 { prev(info) })) }); let mut f = !a; let timeout_ms: i32 = !timeout; async move { let deadline = if timeout_ms >= 0 { Some(std::time::Instant::now() + std::time::Duration::from_millis(timeout_ms as u64)) } else { None }; let first = std::future::poll_fn(|cx| { QUIET.with(|q| q.set(q.get() + 1)); let r = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| std::future::Future::poll(f.as_mut(), cx))); QUIET.with(|q| q.set(q.get() - 1)); std::task::Poll::Ready(r) }).await; let mut done = match first { Ok(std::task::Poll::Ready(v)) => Some(Ok((v, std::time::Instant::now()))), Ok(std::task::Poll::Pending) => None, Err(e) => Some(Err(e)) }; let mut timer: Option<std::sync::Arc<std::sync::Mutex<std::task::Waker>>> = None; let h: std::pin::Pin<Box<dyn std::future::Future<Output = `t>>> = Box::pin(std::future::poll_fn(move |cx| { if done.is_none() { if let std::task::Poll::Ready(v) = std::future::Future::poll(f.as_mut(), cx) { done = Some(Ok((v, std::time::Instant::now()))) } } match done.take() { Some(Err(e)) => std::panic::resume_unwind(e), Some(Ok((v, at))) => if deadline.map_or(false, |d| at > d) { panic\!("The operation has timed out.") } else { std::task::Poll::Ready(v) }, None => match deadline { Some(d) if std::time::Instant::now() >= d => panic\!("The operation has timed out."), Some(d) => { match &timer { Some(w) => *w.lock().unwrap() = cx.waker().clone(), None => { let w = std::sync::Arc::new(std::sync::Mutex::new(cx.waker().clone())); let w2 = w.clone(); std::thread::spawn(move || { let now = std::time::Instant::now(); if d > now { std::thread::sleep(d - now) } w2.lock().unwrap().wake_by_ref() }); timer = Some(w) } } std::task::Poll::Pending }, None => std::task::Poll::Pending } } })); h } })' : async (async t)
   """,
@@ -837,13 +818,11 @@ Spiral.Kino.eval!(
 
 ### start
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once\n// and runs it on the thread pool.\ninl start (a : async ()) : () =\n    if is_rust ()\n    then a |> run_synchronously\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Start'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start (a : async ()) : () =\n    if is_rust ()\n    then a |> run_synchronously\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Start'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust: runs to completion on the calling thread (std executor), as the future isn't `Send`; F# returns at once
-  // and runs it on the thread pool.
   inl start (a : async ()) : () =
       if is_rust ()
       then a |> run_synchronously
@@ -902,12 +881,11 @@ Spiral.Kino.eval!(
 
 ### start_immediate
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).\ninl start_immediate forall t. (a : async t) : () =\n    if is_rust ()\n    then a |> run_synchronously |> fun _ => ()\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.StartImmediate'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start_immediate forall t. (a : async t) : () =\n    if is_rust ()\n    then a |> run_synchronously |> fun _ => ()\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.StartImmediate'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust: runs to completion on the calling thread (F# starts on it too, and continues on the thread pool).
   inl start_immediate forall t. (a : async t) : () =
       if is_rust ()
       then a |> run_synchronously |> fun _ => ()
@@ -924,12 +902,11 @@ Spiral.Kino.eval!(
 
 ### start_with_continuations
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).\ninl start_with_continuations forall t. (a : async t) : () =\n    if is_rust ()\n    then a |> catch_rust |> run_synchronously |> fun _ => ()\n    else\n        run_target_args' a function\n            | Fsharp _\n            | TypeScript _ => fun a =>\n                $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'\n            | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl start_with_continuations forall t. (a : async t) : () =\n    if is_rust ()\n    then a |> catch_rust |> run_synchronously |> fun _ => ()\n    else\n        run_target_args' a function\n            | Fsharp _\n            | TypeScript _ => fun a =>\n                $'Async.StartWithContinuations (!a, ignore, ignore, ignore)'\n            | _ => fun _ => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust: runs to completion on the calling thread; the result and a panic are ignored (F#'s three `ignore`s).
   inl start_with_continuations forall t. (a : async t) : () =
       if is_rust ()
       then a |> catch_rust |> run_synchronously |> fun _ => ()
@@ -1047,12 +1024,11 @@ Spiral.Kino.eval!(
 
 ### catch'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).\ninl catch' forall t e. (a : async t) : async (choice2' t e) =\n    if is_rust ()\n    then\n        inl r = a |> catch_rust\n        $'(!r)' : async (choice2' t e)\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Catch'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl catch' forall t e. (a : async t) : async (choice2' t e) =\n    if is_rust ()\n    then\n        inl r = a |> catch_rust\n        $'(!r)' : async (choice2' t e)\n    else\n        run_target function\n            | Fsharp _\n            | TypeScript _ => fun () =>\n                a |> $'Async.Catch'\n            | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust: a panic in any poll (failwith panics) is the exception (`e` must be `exn`, the panic message).
   inl catch' forall t e. (a : async t) : async (choice2' t e) =
       if is_rust ()
       then

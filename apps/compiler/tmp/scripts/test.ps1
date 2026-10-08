@@ -1,84 +1,36 @@
-<#
-.SYNOPSIS
-Compiles the Spiral corpora with one compiler mode and scores the result against the
-single-flight baseline (<cache>/baseline/EXPECTED.tsv, written by -Bless).
-
-.DESCRIPTION
-Suites (combine freely):
-  frontier   samples/frontier_*           smallest programs the Hopac core must finish first
-  smoke      tests/harness.psd1 Smoke     a few seconds of broad coverage
-  examples   samples/<name>               backend fixtures (F#, C, Rust, Delphi)
-  contracts  samples/contract_*,          type-system contract cases (F#), and the megaprojects'
-             samples/mega_*/<package>     sub-packages
-  mega       tests/harness.psd1 Mega      the five megaprojects
-  all        everything above
-
-A sample is a directory with main.spi (top-down) or main.spir (bottom-up) and package.spiproj.
-samples/core is the portable `core-` package the fixtures share; `|core-` resolves to The-Spiral-Language's
-core through the repo's deps/polyglot link (Get-SpiralPackageDir). Hand-written tables (smoke list, known
-failures, megaproject roots, C flags, backends) are tests/harness.psd1.
-
-The compiler writes its output next to its source (samples/<name>/main.c, ...), replacing the previous
-one; those files are committed, so `git diff samples` shows what a run changed. A run holds a lock, so two
-runs (e.g. hopac and single-flight) never write the same files at once. Run records, the oracle baseline,
-scoreboards and native binaries live in the cache directory.
-
-Every compile of one worker runs inside a single warm compiler process (`SpiralCompiler --batch`),
-so startup and core-library parsing are paid once. A job that hangs past -TimeoutSec or crashes the
-process is recorded and the worker restarts after it.
-
-With -Native, C/Rust/Delphi residuals are built and run. C is the semantic oracle: Rust and Delphi
-must reproduce its exit code and stdout.
-
-.EXAMPLE
-pwsh scripts/test.ps1 -Mode hopac -Suite frontier            # the hopac inner loop
-pwsh scripts/test.ps1 -Suite all -Native                      # full single-flight regression run
-pwsh scripts/test.ps1 -Suite all -Native -Bless               # refresh the single-flight baseline
-pwsh scripts/test.ps1 -Mode hopac -Suite all -Record          # update the hopac scoreboard (<cache>/scoreboards)
-#>
 param(
     [ValidateSet('single-flight', 'sf', 'hopac', 'hp')][string]$Mode = 'single-flight',
-    # One or more of: frontier, smoke, examples, contracts, mega, all (comma-separated works from any shell).
     [string[]]$Suite = @('smoke'),
     [string]$Filter,
-    # Restrict to some of: Fsharp, C, Rust, Delphi.
     [string[]]$Backend,
     [int]$TimeoutSec = 0,
     [int]$Parallel = 0,
     [switch]$Native,
     [switch]$Bless,
     [switch]$Record,
-    # One compiler process per job. Default on in hopac mode, whose core serves one BuildFile per process.
     [switch]$FreshProcess,
-    # Warm processes that end after a job returning an error (SPIRAL_BATCH_RECYCLE_AFTER_ERROR): the next job
-    # gets a fresh process only where an abandoned build could leak into it (FRONTIER.md fix 57). Experimental.
     [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
-    # Workspace root for the compiler (SPIRAL_WORKSPACE_ROOT). Defaults to this directory.
-    [string]$WorkspaceRoot
+    [string]$WorkspaceRoot,
+    [ValidateSet('Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
 )
 . $PSScriptRoot/env.ps1
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
-# Per-job timeouts stay small: fast samples compile in well under a second once the core library is warm,
-# so anything slower is a hang (the expected Hopac failure mode) and should cost seconds, not minutes.
-# A fresh hopac process needs ~9-12 s for a trivial program (startup, core warm-up, commit and run-end
-# grace), and the host reports a stall as an error 7 s before the job timeout, so 20 s is the floor.
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $freshProcess = if ($WarmRecycle) { $false } elseif ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
 if ($WarmRecycle) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
-# Default workers from the machine: a hopac job keeps 2-3 cores busy (its own worker pool), a single-flight
-# job about one; each needs up to ~1.5 GB, so free memory caps both (a 2-worker run was once killed for it).
 if ($Parallel -le 0) {
     $cpus = [Environment]::ProcessorCount
     $byCpu = if ($mode -eq 'hopac') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }
     $freeGb = try { (Get-CimInstance Win32_OperatingSystem -ErrorAction Stop).FreePhysicalMemory / 1MB } catch { 3 }
     $Parallel = [int][Math]::Max(1, [Math]::Min($byCpu, [Math]::Floor($freeGb / 1.5)))
 }
+if ($Bless -and $Probe) { throw '-Probe runs are never blessed: they only measure a backend against the C rows' }
 if ($Bless -and $mode -ne 'single-flight') { throw '-Bless records the oracle baseline and is only valid in single-flight mode' }
 
 $dotnet = Resolve-SpiralDotnet
@@ -88,48 +40,33 @@ if (-not (Test-Path $compiler)) { throw "compiler not built: $compiler`nrun: pws
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $runDir = Join-Path $cache "runs/$mode-$stamp"
 $nativeRoot = Join-Path $cache "native/$mode"
-# The compiler's working directory: the Hopac core creates target/ folders relative to it.
 $scratch = Join-Path $cache "scratch/$mode"
 New-Item -ItemType Directory -Force $runDir, $nativeRoot, $scratch | Out-Null
 
-# Outputs are written in place, so only one run at a time. The lock is a named mutex (one per cache dir), not a file
-# handle: a run that dies abandons the mutex and the next run takes it, while an exclusive test.lock handle stayed held
-# by a run stuck in process teardown and blocked every later run (2026-10-07 06:40).
 $lockName = 'Global\spiral-test-run-' + [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($cache.ToLowerInvariant()))).Substring(0, 16)
 $lock = [Threading.Mutex]::new($false, $lockName)
 $lockHeld = $false
 try { $lockHeld = $lock.WaitOne(0) } catch [Threading.AbandonedMutexException] { $lockHeld = $true }
 if (-not $lockHeld) { throw "another scripts/test.ps1 run is compiling the samples in place (mutex $lockName)" }
-# Every compile mirrors its console stream to <timestamp>.jsonl next to the staged core (up to MBs each);
-# a few days of runs filled the disk once, so keep only the last 12 hours.
 $staleLogs = (Get-Date).AddHours(-12)
 Get-ChildItem (Join-Path $cache 'core-src') -Filter '*.jsonl' -Recurse -File -ErrorAction SilentlyContinue |
     Where-Object { $_.LastWriteTime -lt $staleLogs } | Remove-Item -Force -ErrorAction SilentlyContinue
 $env:SPIRAL_WORKSPACE_ROOT = if ($WorkspaceRoot) { (Resolve-Path $WorkspaceRoot).Path } else { $BundleRoot }
-$env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir   # where `|core-` resolves
-# Nobody reads the hopac core's diagnostic JSONL rows in a suite run, and they cost ~20% of a compile;
-# set SPIRAL_DIAG_QUIET=0 beforehand to keep them (single-flight ignores it).
+$env:SPIRAL_COMPILER_PACKAGE_DIR = Get-SpiralPackageDir
 if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
-# A 256 MB gen0 budget for the compiler processes: partial evaluation runs on deep stacks, and every gen0
-# collection scans the whole stack, so fewer collections pay off superlinearly (a 1,000-level inline recursion:
-# 13-15 s -> 9.5 s in hopac). The runtime reads it only from the environment, so it is set here.
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
-# ------------------------------------------------------------------ discovery
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
-# Harness backend names that differ from the compiler's: the upstream C++/CUDA and Python backends.
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Lean = 'lean'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
-# harness.psd1 AlsoTypeScript: samples that also get a TypeScript row (judged against C like the ts_* fixtures).
 function New-Sample([string]$suite, [string]$sourcePath, [string[]]$backends) {
     $id = Get-Rel (Split-Path $sourcePath)
     if ($harness.AlsoTypeScript -and $id -in $harness.AlsoTypeScript -and $backends -notcontains 'TypeScript') { $backends = @($backends) + 'TypeScript' }
     [pscustomobject]@{ Suite = $suite; Id = $id; Input = $sourcePath; Backends = $backends }
 }
 
-# The entry of a sample directory: main.spi, or main.spir for bottom-up fixtures.
 function Get-Entry([string]$dir) {
     foreach ($name in 'main.spi', 'main.spir') {
         $path = Join-Path $dir $name
@@ -138,30 +75,29 @@ function Get-Entry([string]$dir) {
     $null
 }
 
-# Contract cases and megaproject sub-packages are type-system checks compiled to F# only (a megaproject sub-package
-# listed in harness.psd1 Backends gets those backends).
 function Test-ContractSample([string]$relative) { $relative -like 'samples/contract_*' -or $relative -like 'samples/mega_*' }
 
-# harness.psd1 lists the samples compiled to fewer than all four backends.
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
-# harness.psd1 Zig lists the samples that also get a Zig row (the backend being brought up; C is its oracle).
-$zigSamples = @{}
-foreach ($sample in @($harness.Zig)) { if ($sample) { $zigSamples[$sample] = $true } }
-function Add-ZigBackend([string]$relative, [string[]]$backends) {
-    if ($zigSamples.ContainsKey($relative) -and $backends -notcontains 'Zig') { @($backends) + 'Zig' } else { @($backends) }
+$listedSamples = @{}
+foreach ($listed in 'Zig', 'Lean', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+function Add-ListedBackends([string]$relative, [string[]]$backends) {
+    $result = @($backends)
+    foreach ($listed in 'Zig', 'Lean', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
+    if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
+    $result
 }
 function Get-ExampleBackends([string]$dir) {
     $relative = 'samples/' + (Split-Path $dir -Leaf)
     $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp', 'C', 'Rust', 'Delphi') }
-    Add-ZigBackend $relative $backends
+    Add-ListedBackends $relative $backends
 }
 
 function Get-Samples([string]$suite) {
     switch ($suite) {
         'frontier' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'frontier_*' | ForEach-Object {
-                New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ZigBackend "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Delphi')) }
+                New-Sample 'frontier' (Get-Entry $_.FullName) (Add-ListedBackends "samples/$($_.Name)" @('Fsharp', 'C', 'Rust', 'Delphi')) }
         }
         'smoke' {
             $harness.Smoke | ForEach-Object {
@@ -177,13 +113,11 @@ function Get-Samples([string]$suite) {
         'contracts' {
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'contract_*' | Where-Object { Get-Entry $_.FullName } | ForEach-Object {
                 New-Sample 'contracts' (Get-Entry $_.FullName) @('Fsharp') }
-            # Megaproject sub-packages; the megaproject roots themselves are the mega suite. F# only, unless harness.psd1
-            # Backends lists the sub-package (a runtime fixture whose native builds and runs join the -Native tier).
             Get-ChildItem (Join-Path $BundleRoot 'samples') -Directory -Filter 'mega_*' | ForEach-Object {
                 Get-ChildItem $_.FullName -Directory | Where-Object { (Test-Path (Join-Path $_.FullName 'package.spiproj')) -and (Get-Entry $_.FullName) } | ForEach-Object {
                     $relative = Get-Rel $_.FullName
                     $backends = if ($sampleBackends.ContainsKey($relative)) { $sampleBackends[$relative] } else { @('Fsharp') }
-                    New-Sample 'contracts' (Get-Entry $_.FullName) $backends } }
+                    New-Sample 'contracts' (Get-Entry $_.FullName) (Add-ListedBackends $relative $backends) } }
         }
         'mega' {
             $harness.Mega | ForEach-Object {
@@ -197,22 +131,21 @@ $samples = $suites | ForEach-Object { Get-Samples $_ } | Sort-Object Id -Unique
 if ($Filter) { $samples = $samples | Where-Object { $_.Id -match $Filter } }
 
 $jobs = foreach ($sample in $samples) {
-    # harness.psd1 Timeouts: per-sample overrides for programs that are slow to compile but not hangs.
     $timeout = if ($TimeoutSec -gt 0) { $TimeoutSec } elseif ($harness.Timeouts -and $harness.Timeouts.ContainsKey($sample.Id)) { $harness.Timeouts[$sample.Id] } else { $suiteTimeoutSec[$sample.Suite] }
     foreach ($b in $sample.Backends) {
         if ($Backend -and $Backend -notcontains $b) { continue }
         [pscustomobject]@{ Key = "$($sample.Id)|$b"; Suite = $sample.Suite; Id = $sample.Id; Backend = $b; Input = $sample.Input
             CoreBackend = $(if ($coreBackend.ContainsKey($b)) { $coreBackend[$b] } else { $b })
-            Output = [IO.Path]::ChangeExtension($sample.Input, $extension[$b]); TimeoutSec = $timeout
+            Output = $(if ($b -eq $Probe) { Join-Path $scratch "probe/$($sample.Id)/main.$($extension[$b])" } else { [IO.Path]::ChangeExtension($sample.Input, $extension[$b]) }); TimeoutSec = $timeout
             Native = Join-Path $nativeRoot "$($sample.Id)/$b" }
     }
 }
+if ($Probe) { $jobs | Where-Object Backend -eq $Probe | ForEach-Object { New-Item -ItemType Directory -Force (Split-Path $_.Output) | Out-Null } }
 $jobs = @($jobs)
 if ($jobs.Count -eq 0) { throw 'no jobs selected' }
 $timeoutText = if ($TimeoutSec -gt 0) { "${TimeoutSec}s" } else { 'per suite' }
 Write-Host "== $mode | suites: $($suites -join ',') | $($jobs.Count) jobs | $Parallel worker(s) | timeout $timeoutText | run dir $runDir"
 
-# ------------------------------------------------------------------ compile (warm batch workers)
 $workerScript = {
     param($dotnet, $compiler, $jobs, $dir, $index, $fresh, $workDir)
     $results = @{}
@@ -223,14 +156,11 @@ $workerScript = {
         $jobsPath = Join-Path $dir "worker$index-$attempt.jobs.tsv"
         $resultsPath = Join-Path $dir "worker$index-$attempt.results.tsv"
         $logPath = Join-Path $dir "worker$index-$attempt.log"
-        # -FreshProcess: one compile per process (the Hopac core treats BuildFile as one-shot per process).
         $batch = if ($fresh) { @($remaining[0]) } else { $remaining }
         $batch | ForEach-Object { "$($_.Key)`t$($_.CoreBackend)`t$($_.Input)`t$($_.Output)`t$($_.TimeoutSec * 1000)" } | Set-Content $jobsPath
         $arguments = @($compiler, '--batch', $jobsPath, $resultsPath)
-        # Run from the scratch dir: the Hopac core creates target/ folders relative to the current directory.
         $process = Start-Process -FilePath $dotnet -ArgumentList $arguments -NoNewWindow -PassThru -WorkingDirectory $workDir `
             -RedirectStandardOutput "$logPath.out" -RedirectStandardError $logPath
-        # Watchdog: the host enforces each job's timeout itself; this only catches a wedged process.
         $deadline = [DateTime]::UtcNow.AddSeconds((($batch | Measure-Object TimeoutSec -Sum).Sum) + 60)
         $killed = $false
         while (-not $process.HasExited) {
@@ -255,7 +185,6 @@ $workerScript = {
             $remaining = @($remaining | Select-Object -Skip ($cut + 1)) + $rest
         }
         elseif ($exitCode -eq 4 -and $firstMissing -ge 0) {
-            # Recycled after an error (-WarmRecycle): the jobs it did not reach go to a fresh process.
             $remaining = @($remaining | Select-Object -Skip $firstMissing) + $rest
         }
         elseif ($firstMissing -ge 0) {
@@ -271,7 +200,6 @@ $workerScript = {
     $results
 }
 
-# All backends of one sample go to the same worker: the core writes into the sample's directory.
 $groups = @{}
 $sampleIndex = 0
 foreach ($bySample in ($jobs | Group-Object Id)) {
@@ -288,30 +216,22 @@ $partials = $workers | ForEach-Object -ThrottleLimit $Parallel -Parallel {
     & $runner $using:dotnet $using:compiler $_.Jobs $using:runDir $_.Index $using:freshProcess $using:scratch
 }
 foreach ($p in $partials) { foreach ($k in $p.Keys) { $compiled[$k] = $p[$k] } }
-# A core's "BuildFile stalled" is its own timeout report (the host's deadline is 3 s before the job's): score it as
-# a timeout, so it never matches an expected rejection and -Bless skips it. Hopac's runaway-recursion rows had
-# passed as `error` parity on the stall alone (2026-10-01).
 foreach ($k in @($compiled.Keys)) {
     $c = $compiled[$k]
     if ($c.Status -eq 'error' -and $c.Detail -match '^FatalError: BuildFile stalled') { $c.Status = 'timeout' }
 }
 Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
-# "emitted": the job timed out or crashed, but the core had already written its output during this run.
-# That is the Hopac lane's typical state (work done, termination protocol never seals), so it is scored
-# separately from a plain hang. F# and C only: Rust/Delphi go through a C file the host puts back.
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
     $c.Detail = "output written, compile did not return ($($c.Detail))"
 }
 
-# ------------------------------------------------------------------ native tier (C oracle, Rust, Delphi)
 $tools = Get-SpiralNativeTools
-# Zig: the real compiler, not a Scoop shim (the shim runs it as a child, one more process between a timeout and the kill).
 $zigExe = $tools.Zig
 if ($zigExe -and $zigExe -match '[\\/]scoop[\\/]shims[\\/]') {
     $shim = [IO.Path]::ChangeExtension($zigExe, '.shim')
@@ -334,7 +254,6 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
     foreach ($a in $arguments) { $info.ArgumentList.Add($a) }
     $info.WorkingDirectory = $workDir
-    # stdin is closed at once: a program that reads input gets EOF instead of waiting on the harness's console.
     $info.RedirectStandardInput = $true
     $info.RedirectStandardOutput = $true
     $info.RedirectStandardError = $true
@@ -344,9 +263,6 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     $out = $p.StandardOutput.ReadToEndAsync()
     $err = $p.StandardError.ReadToEndAsync()
     if (-not $p.WaitForExit($timeoutSec * 1000)) { try { $p.Kill($true) } catch { }; return [pscustomobject]@{ Exit = 'timeout'; Out = ''; Err = '' } }
-    # Every wait is bounded: a child process that inherited stdout/stderr keeps the pipes open after this process
-    # exits, and an unbounded read (or the parameterless WaitForExit, which waits for them) hung a whole -Bless run
-    # silently (2026-10-07 06:09, after a Zig build). Such a row reports 'hung-output' and the run goes on.
     if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($out, $err), 15000)) {
         return [pscustomobject]@{ Exit = 'hung-output'; Out = ''; Err = 'stdout/stderr still open 15 s after exit (a child process holds them)' }
     }
@@ -357,15 +273,53 @@ function Build-And-Run($job) {
     $dir = $binDir
     New-Item -ItemType Directory -Force $binDir | Out-Null
     if ($job.Backend -eq 'TypeScript') {
-        # No build step: node strips the types and runs main.ts in a worker with a large stack (run_main.mjs).
         if (-not $tools.Node) { return 'no-toolchain' }
         $run = Invoke-Native $tools.Node @('--experimental-strip-types', '--no-warnings', (Join-Path $shimDir 'run_main.mjs'), $job.Output) $binDir 30
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
+    if ($job.Backend -eq 'Lean') {
+        if (-not $tools.Lean) { return 'no-toolchain' }
+        $elanBin = Split-Path $tools.Lean
+        if (-not $env:ELAN_HOME -and (Split-Path $elanBin -Leaf) -eq 'bin' -and (Test-Path (Join-Path $elanBin 'elan*'))) { $env:ELAN_HOME = Split-Path $elanBin }
+        $run = Invoke-Native $tools.Lean @('--run', $job.Output) $binDir 180
+        if ("$($run.Exit)" -ne '0' -and ($run.Out + $run.Err) -match '\.lean:\d+:\d+: error') {
+            $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_ -match 'error' } | Select-Object -First 1) -replace '\s+', ' ').Trim()
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Lua') {
+        if (-not $tools.Lua) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.Lua @((Join-Path $shimDir 'run_main.lua'), $job.Output) $binDir 60
+        if ($run.Err -match 'SPIRAL-LUA-LOAD-ERROR (.*)') { return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $Matches[1].Substring(0, [Math]::Min(300, $Matches[1].Length)) } }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Gleam') {
+        if (-not $tools.Gleam -or -not $tools.Erl) { return 'no-toolchain' }
+        $erlBin = Split-Path $tools.Erl
+        if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $erlBin)) { $env:PATH = "$erlBin$([IO.Path]::PathSeparator)$env:PATH" }
+        $project = Join-Path $scratch 'gleam-native'
+        if (-not (Test-Path (Join-Path $project 'gleam.toml'))) { Copy-Item (Join-Path $shimDir 'gleam') $project -Recurse -Force }
+        $programFile = Join-Path $project 'src/main.gleam'
+        Copy-Item $job.Output $programFile -Force
+        (Get-Item $programFile).LastWriteTime = Get-Date
+        $build = Invoke-Native $tools.Gleam @('build', '--no-print-progress') $project 180
+        if ("$($build.Exit)" -ne '0') {
+            $msg = if (($build.Out + "`n" + $build.Err) -match '(?m)^error: (.*)') { $Matches[1] } else { "gleam build exit $($build.Exit)" }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $run = Invoke-Native $tools.Gleam @('run', '--no-print-progress', '-m', 'spiral_run') $project 180
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
     if ($job.Backend -eq 'Python') {
-        # No build step: run main() of the generated module on the CPU path (corelib.py picks numpy without a GPU).
         if (-not $tools.Python) { return 'no-toolchain' }
         $env:PYTHONDONTWRITEBYTECODE = '1'
         $env:SPIRAL_CUDA = '0'
@@ -379,19 +333,13 @@ function Build-And-Run($job) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
         'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
-        # Debug on Zig's own backend (-fno-llvm): ~1.5 s a build instead of ~30 s with LLVM (ReleaseSafe); overflow and bounds
-        # checks stay on (the generated code wraps integer ops explicitly). No import library (writing one next to an absolute
-        # -femit-bin path fails on Windows: BadPathName). The caches belong to this run (see $zigCache): a Zig process stuck
-        # holding the shared cache's lock made every later build wait at 0% CPU (2026-10-07 06:09/06:44; it took a reboot).
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }
-            $b = Invoke-Native $zigExe @('build-exe', $job.Output, '-O', 'Debug', '-fno-llvm', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', "$zigCache-local", '--global-cache-dir', $zigCache) $dir 120
-            # A timed-out build may leave its lock behind: the rest of the run builds in a fresh cache.
+            $b = Invoke-Native $zigExe @('build-exe', $job.Output, '-O', 'ReleaseFast', '--stack', '1073741824', '-fno-emit-implib', "-femit-bin=$exe", '--cache-dir', "$zigCache-local", '--global-cache-dir', $zigCache) $dir 120
             if ($b.Exit -eq 'timeout') { $script:zigCacheGen++; $script:zigCache = Join-Path $scratch "zig-cache-$stamp-$($script:zigCacheGen)" }
             $b
         }
         'Cpp' {
-            # cpp_native.py: g++ for the CppHost part, nvcc only when the program entered `join_backend CudaHost`.
             if (-not $tools.Python) { return 'no-toolchain' }
             $b = Invoke-Native $tools.Python @((Join-Path $shimDir 'cpp_native.py'), $job.Output, $exe) $dir 180
             if ("$($b.Exit)" -eq '3') { return 'no-toolchain' }
@@ -419,15 +367,12 @@ if ($Native) {
         if ($r -is [string]) { $r = [pscustomobject]@{ Status = $r; Exit = ''; Stdout = ''; Detail = '' } }
         $nativeResults[$job.Key] = $r
         $done++
-        # A progress line per native job: the run's log keeps moving, so a monitor tells a slow tier from a hung one.
         Write-Host ("native {0}/{1} {2} {3}: {4} exit {5} ({6:N1}s)" -f $done, $nativeJobs.Count, $job.Id, $job.Backend, $r.Status, $r.Exit, $jobWatch.Elapsed.TotalSeconds)
     }
-    # This run's Zig caches (best effort: one a stuck process still locks stays until the next reboot).
     Get-ChildItem $scratch -Directory -Filter "zig-cache-$stamp-*" -ErrorAction SilentlyContinue | ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
     Write-Host ("== native tier in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 }
 
-# ------------------------------------------------------------------ rows, oracle, baseline
 $expectedPath = Get-SpiralBaselinePath
 $expected = @{}
 if (Test-Path $expectedPath) { Import-Csv $expectedPath -Delimiter "`t" | ForEach-Object { $expected["$($_.id)|$($_.backend)"] = $_ } }
@@ -446,14 +391,10 @@ $rows = foreach ($job in $jobs) {
 }
 $rows = @($rows)
 
-# Rust, Delphi and TypeScript must reproduce the native behaviour of the C residual of the same sample.
 $byId = $rows | Group-Object id -AsHashTable
-# Negative fixtures fail by design and each runtime reports failure with its own code (C abort, Rust panic
-# 101, FPC runtime error 2xx), so "both failed" agrees. Diagnosed issues listed in harness.psd1 Known are
-# reported as `known` instead of failing the run.
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =
@@ -465,16 +406,19 @@ foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 
 foreach ($row in $rows) {
     $reason = $known["$($row.id)|$($row.backend)"]
     if ($reason -and ($row.oracle -eq 'DISAGREE' -or $row.native -eq 'build-fail')) { $row.oracle = 'known'; $row.detail = "known: $reason; $($row.detail)" }
+}$jobOutput = @{}
+foreach ($job in $jobs) { $jobOutput[$job.Key] = $job.Output }
+$cOnlyHelper = 'DynamicArray(Reserve|Resize|Capacity)\d|spiral_abi_lib|\(\(uint8_t\)'
+foreach ($row in $rows | Where-Object { $_.backend -ne 'C' -and ($_.oracle -eq 'DISAGREE' -or $_.native -eq 'build-fail') }) {
+    $output = $jobOutput["$($row.id)|$($row.backend)"]
+    if ($output -and (Test-Path $output) -and (Select-String -LiteralPath $output -Pattern $cOnlyHelper -Quiet)) { $row.oracle = 'c-only'; $row.detail = "c-only: the sample uses a C-only helper; $($row.detail)" }
 }
 
-# Baseline verdict. single-flight: regression check. hopac: parity with the single-flight oracle.
-# An expected rejection is only matched by a rejection (`error`); a hang or crash never counts as one.
 foreach ($row in $rows) {
     $e = $expected["$($row.id)|$($row.backend)"]
     if (-not $e) { $row.baseline = 'new'; continue }
     $produced = $row.compile -in 'ok', 'emitted'
     $broken = if ($mode -eq 'hopac') { 'missing' } else { 'REGRESSED' }
-    # A missing toolchain on this machine (e.g. no fpc) is not a difference in the program's behaviour.
     $nativeMatch = (-not $Native) -or ($e.native -ne 'ran') -or ($row.native -eq 'no-toolchain') -or ($row.native -eq 'ran' -and $e.exit -eq $row.exit -and $e.stdout -eq $row.stdout)
     $row.baseline =
         if ($e.compile -in 'timeout', 'crash', 'not-run') { if ($produced) { 'FIXED' } else { 'no-oracle' } }
@@ -491,10 +435,7 @@ $resultPath = Join-Path $runDir 'results.tsv'
 $rows | Export-Csv $resultPath -Delimiter "`t" -NoTypeInformation -UseQuotes Never
 Copy-Item $resultPath (Join-Path $cache "results/latest-$mode.tsv") -Force -ErrorAction SilentlyContinue
 
-# ------------------------------------------------------------------ summary
 function Count($set, $pred) {
-    # A filtered suite can reject every fixture before any native run. PowerShell
-    # assigns $null to that empty pipeline; do not evaluate a property on $null.
     if ($null -eq $set) { return 0 }
     @($set | Where-Object $pred).Count
 }
@@ -518,12 +459,10 @@ $bad = @($rows | Where-Object { $_.baseline -in 'REGRESSED', 'NATIVE-DIFF' -or (
 foreach ($b in $bad | Select-Object -First 20) { Write-Host "  !! $($b.id) [$($b.backend)] $($b.baseline) $($b.oracle) $($b.detail)" -ForegroundColor Red }
 Write-Host "results: $resultPath"
 Write-Host "outputs: written next to their sources; git diff samples shows what changed"
+if ($Probe) { Write-Host "probe outputs ($Probe): $(Join-Path $scratch 'probe')" }
 
-# ------------------------------------------------------------------ bless / record
 if ($Bless) {
     $existing = if (Test-Path $expectedPath) { @(Import-Csv $expectedPath -Delimiter "`t") } else { @() }
-    # A timeout depends on the machine and its load, not on the program: never record one as expected (the
-    # oracle must be deterministic). Such a row keeps its previous oracle entry, if any.
     $blessable = @($rows | Where-Object { $_.compile -ne 'timeout' })
     $skipped = $rows.Count - $blessable.Count
     if ($skipped) { Write-Host "not blessed: $skipped timeout row(s), they keep their previous oracle entry" -ForegroundColor Yellow }

@@ -1,7 +1,3 @@
-//! Launch the single-flight Spiral compiler for Zed.
-//!
-//! The compiler is the one built from `spiral/apps/compiler` into the
-//! single-flight cache (`SpiralCompiler.dll`). The Rust backend is the default.
 
 use std::path::{Path, PathBuf};
 use zed_extension_api::{settings::LspSettings, Command, LanguageServerId, Result, Worktree};

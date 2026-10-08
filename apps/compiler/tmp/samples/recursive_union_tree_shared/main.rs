@@ -16,10 +16,10 @@ impl UH0 {
 }
 fn method0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
-        UH0::UH0_0 => { // Leaf
+        UH0::UH0_0 => {
             0i32
         }
-        UH0::UH0_1(v1, v2, v3) => { // Node
+        UH0::UH0_1(v1, v2, v3) => {
             let mut v1: i32 = *v1;
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: Rc<UH0> = v3.clone();

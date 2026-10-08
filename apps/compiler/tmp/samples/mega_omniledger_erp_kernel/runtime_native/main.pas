@@ -4433,7 +4433,7 @@ begin
       v621 := US0_1(v548, v583, v619);
   end;
   case v621.tag of
-      0: begin // TypedFxHashedStatementChecksumValidationAccepted
+      0: begin
           v625 := v621.c0_0;
           v626 := v621.c0_1;
           v627 := v621.c0_2;
@@ -4450,7 +4450,7 @@ begin
           v647 := v628;
           v648 := v629;
       end;
-      1: begin // TypedFxHashedStatementChecksumValidationRejected
+      1: begin
           v622 := v621.c1_0;
           v623 := v621.c1_1;
           v624 := v621.c1_2;
@@ -4812,7 +4812,7 @@ begin
       v904 := US0_1(v831, v866, v902);
   end;
   case v904.tag of
-      0: begin // TypedFxHashedStatementChecksumValidationAccepted
+      0: begin
           v908 := v904.c0_0;
           v909 := v904.c0_1;
           v910 := v904.c0_2;
@@ -4829,7 +4829,7 @@ begin
           v930 := v911;
           v931 := v912;
       end;
-      1: begin // TypedFxHashedStatementChecksumValidationRejected
+      1: begin
           v905 := v904.c1_0;
           v906 := v904.c1_1;
           v907 := v904.c1_2;
@@ -6272,7 +6272,7 @@ begin
       v1972 := US0_1(v1899, v1934, v1970);
   end;
   case v1972.tag of
-      0: begin // TypedFxHashedStatementChecksumValidationAccepted
+      0: begin
           v1976 := v1972.c0_0;
           v1977 := v1972.c0_1;
           v1978 := v1972.c0_2;
@@ -6289,7 +6289,7 @@ begin
           v1998 := v1979;
           v1999 := v1980;
       end;
-      1: begin // TypedFxHashedStatementChecksumValidationRejected
+      1: begin
           v1973 := v1972.c1_0;
           v1974 := v1972.c1_1;
           v1975 := v1972.c1_2;
@@ -6821,7 +6821,7 @@ begin
       v2377 := US0_1(v2304, v2339, v2375);
   end;
   case v2377.tag of
-      0: begin // TypedFxHashedStatementChecksumValidationAccepted
+      0: begin
           v2381 := v2377.c0_0;
           v2382 := v2377.c0_1;
           v2383 := v2377.c0_2;
@@ -6838,7 +6838,7 @@ begin
           v2403 := v2384;
           v2404 := v2385;
       end;
-      1: begin // TypedFxHashedStatementChecksumValidationRejected
+      1: begin
           v2378 := v2377.c1_0;
           v2379 := v2377.c1_1;
           v2380 := v2377.c1_2;
@@ -7278,7 +7278,7 @@ begin
       v2714 := US0_1(v2641, v2676, v2712);
   end;
   case v2714.tag of
-      0: begin // TypedFxHashedStatementChecksumValidationAccepted
+      0: begin
           v2718 := v2714.c0_0;
           v2719 := v2714.c0_1;
           v2720 := v2714.c0_2;
@@ -7295,7 +7295,7 @@ begin
           v2740 := v2721;
           v2741 := v2722;
       end;
-      1: begin // TypedFxHashedStatementChecksumValidationRejected
+      1: begin
           v2715 := v2714.c1_0;
           v2716 := v2714.c1_1;
           v2717 := v2714.c1_2;
@@ -8534,6 +8534,8 @@ begin
   end;
   Result := 0;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

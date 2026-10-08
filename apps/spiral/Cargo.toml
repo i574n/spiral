@@ -4,7 +4,6 @@ cargo-features = ["edition2024"]
 name = "spiral"
 workspace = "../../workspace"
 version.workspace = true
-# the generated code is verified with edition 2021 (the staged native builds before this crate)
 edition = "2021"
 license-file.workspace = true
 repository.workspace = true
@@ -14,8 +13,6 @@ build = "build.rs"
 [build-dependencies]
 winres = "0.1"
 
-# spiral.rs is spiral.spi's native Rust output (build.ps1 regenerates it with the Spiral compiler's Rust backend), with
-# mimalloc as the global allocator. Built with the workspace's release-unwind profile: lib's `try` catches panics.
 [[bin]]
 name = "spiral"
 path = "spiral.rs"

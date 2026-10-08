@@ -128,23 +128,23 @@ begin
   end;
   v19 := v9.l0;
   case v19.tag of
-      1: begin // Cons
+      1: begin
           v20 := v19.c1_0;
           v21 := v19.c1_1;
           case v21.tag of
-              1: begin // Cons
+              1: begin
                   v22 := v21.c1_0;
                   v23 := v21.c1_1;
                   case v23.tag of
-                      1: begin // Cons
+                      1: begin
                           v24 := v23.c1_0;
                           v25 := v23.c1_1;
                           case v25.tag of
-                              1: begin // Cons
+                              1: begin
                                   v26 := v25.c1_0;
                                   v27 := v25.c1_1;
                                   case v27.tag of
-                                      0: begin // Nil
+                                      0: begin
                                           v28 := v20 * 64;
                                           v29 := v22 * 16;
                                           v30 := v28 + v29;
@@ -185,6 +185,8 @@ begin
   v44 := v42 - v43;
   Result := v44;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

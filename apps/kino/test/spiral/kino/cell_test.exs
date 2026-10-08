@@ -29,7 +29,6 @@ defmodule Spiral.Kino.CellTest do
     exits = "import sys\ndef main():\n    return 3\n\nif __name__ == '__main__': sys.exit(main())\n"
 
     assert Cell.patch_python(exits) == "import sys\ndef main():\n    return 3\n\n" <> entry
-    # The older entry (prints) stays as it is.
     assert Cell.patch_python("def main():\n    return 3\n\n" <> entry) == "def main():\n    return 3\n\n" <> entry
   end
 
@@ -52,9 +51,6 @@ defmodule Spiral.Kino.CellTest do
     assert patched =~ "let (mut v2, mut v3): (i32, i32) = { spiral_trace_hold(&v1) };"
   end
 
-  # The patch used to be about O(n^2.3) (grapheme-walking string ops in the Gleam domain): 400 lines took 40 s.
-  # Load-tolerant: a 4x longer input must cost about 4x (linear), not 16-25x. The absolute bound is generous because a
-  # loaded machine slows both sizes alike (a fixed 1 s failed at 1.37 s next to a notebook run).
   test "patching a 2000-line main.rs is linear" do
     {small_us, _} = :timer.tc(fn -> Cell.patch_rust(big_rust(12), true) end)
     rust = big_rust(50)
@@ -167,7 +163,6 @@ defmodule Spiral.Kino.CellTest do
 
     assert Cell.unit_result?("Got:      ()\nExpected: i32\")]")
     assert Cell.unit_result?("Unification failure.\nGot:      i32 -> i32\nExpected: i32 -> ()")
-    # a trailing `function | [] => () | x => failwith ...` (parsing's split_args test)
     assert Cell.unit_result?("main.spi:261:17: Unification failure. Got:      i32\nExpected: ()")
     refute Cell.unit_result?("Got:      i32\nExpected: string")
     refute Cell.unit_result?("Got:      string\nExpected: i32")

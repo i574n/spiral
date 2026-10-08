@@ -11,8 +11,6 @@ $owner = ($url -split '/' | Select-Object -Last 2 | Select-Object -First 1) -rep
 $domain = ($url -split '/' | Select-Object -Last 3 | Select-Object -First 1) ?? $env:GITHUB_SERVER_URL -replace 'https?://', ''
 Write-Output "init.ps1 / url: $url / owner: $owner / domain: $domain"
 
-# The-Spiral-Language fork: only its `VS Code Plugin/core` is used, as the `|core-` package (the compiler finds it
-# through apps/compiler/tmp/scripts/env.ps1 Get-SpiralPackageDir, Kino through its toolchain); nothing is copied from it.
 $fork = "../deps/The-Spiral-Language"
 if (!(Test-Path "$fork/.git")) {
     New-Item -ItemType Directory -Force ../deps | Out-Null
@@ -23,8 +21,6 @@ if (!(Test-Path "$fork/.git")) {
     if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / git pull in $fork failed (exit code $LASTEXITCODE), keeping the checkout" }
 }
 
-# Toolchains the builds and notebooks of this repo use. Each step runs only when its tool is missing, except rustup's
-# installs (no-ops when present).
 function Test-Command([string] $Name) { [bool](Get-Command $Name -ErrorAction Ignore) }
 if (!(Test-Command "rustup")) {
     if ($IsWindows) {
@@ -37,29 +33,26 @@ if (!(Test-Command "rustup")) {
         /bin/sh $rustupInit -y --default-toolchain none
     }
 }
-# rustup's proxies (cargo, rustc) live in ~/.cargo/bin; a runner can have rustup on PATH without that directory
-# (GitHub windows-2025: 'cargo' not recognized here, which stopped init before it cloned polyglot).
 $cargoBin = Join-Path $HOME '.cargo/bin'
 if ((Test-Path $cargoBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -contains $cargoBin)) {
     $env:PATH = "$cargoBin$([IO.Path]::PathSeparator)$env:PATH"
 }
-# nightly-2025-05-09: the default (Kino's rustc cells, wasm); nightly-2024-07-14: the NEAR contract toolchain
-# (`spiral rust --contract`); nightly-2025-11-01: the CLI, apps and `cargo test` builds.
-rustup install nightly-2025-05-09
-rustup default nightly-2025-05-09
-rustup +nightly-2025-05-09 target add wasm32-unknown-unknown
-rustup +nightly-2025-05-09 component add clippy rust-src rustfmt
-rustup install nightly-2024-07-14
-rustup +nightly-2024-07-14 target add wasm32-unknown-unknown
-rustup +nightly-2024-07-14 component add clippy rust-src rustfmt
-rustup install nightly-2025-11-01
+$defaultKinoWasmToolchain = "nightly-2025-05-09"
+$nearContractToolchain = "nightly-2024-07-14"
+$appBuildToolchain = "nightly-2025-11-01"
+rustup install $defaultKinoWasmToolchain
+rustup default $defaultKinoWasmToolchain
+rustup +$defaultKinoWasmToolchain target add wasm32-unknown-unknown
+rustup +$defaultKinoWasmToolchain component add clippy rust-src rustfmt
+rustup install $nearContractToolchain
+rustup +$nearContractToolchain target add wasm32-unknown-unknown
+rustup +$nearContractToolchain component add clippy rust-src rustfmt
+rustup install $appBuildToolchain
 
 if (!(Test-Command "bun") -and !(Test-Path (Join-Path $HOME ".bun/bin/bun$($IsWindows ? '.exe' : '')"))) {
     if ($IsWindows) { Invoke-RestMethod bun.sh/install.ps1 | Invoke-Expression } else { curl -fsSL https://bun.sh/install | bash }
 }
 
-# jupyter nbconvert (the notebooks' html outputs), mpmath/cupy (`spiral cuda`). Ubuntu's system Python is externally
-# managed (PEP 668): pip refuses a plain install there.
 if (Test-Command "pip") {
     $pipArgs = $IsLinux ? @("--break-system-packages") : @()
     pip install @pipArgs -r ../requirements.txt
@@ -68,7 +61,6 @@ if (Test-Command "pip") {
     Write-Output "init.ps1 / no pip: the notebooks' html outputs need jupyter (pip install -r requirements.txt)"
 }
 
-# trunk (wasm app bundles: `spiral gleam` targets, lib/spiral/near/wallet).
 if (!(Test-Command "trunk")) {
     if (Test-Command "cargo") {
         cargo +nightly-2025-11-01 install trunk --version 0.21.14 --locked
@@ -76,21 +68,51 @@ if (!(Test-Command "trunk")) {
     } else { Write-Output "init.ps1 / no cargo on PATH: trunk not installed" }
 }
 
-# Kino (apps/kino) needs Elixir >= 1.18 with its OTP and Gleam >= 1.14 (README "CI"); the .NET 11 SDK and the compiler it
-# provides itself (spi/run_notebook.ps1).
 foreach ($tool in "elixir", "gleam") {
     if (!(Test-Command $tool)) { Write-Output "init.ps1 / $tool is not on PATH: notebooks (apps/kino) need it" }
 }
 
-# polyglot: spiral's workflow still runs polyglot's init (scripts/workflow.ps1); deps/polyglot links it.
-if (!$fast) {
-    Set-Location (New-Item -ItemType Directory -Path "../.." -Force)
-    git clone --recurse-submodules https://$domain/$owner/polyglot.git # --branch gh-pages
-    Set-Location polyglot
-    git pull
-    Set-Location $ScriptDir
+if (Test-Command "cargo") {
+    if (!(Test-Command "cargo-binstall")) {
+        if ($IsWindows) {
+            Invoke-Expression (Invoke-WebRequest "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
+        } else {
+            curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+        }
+    }
+    if (!(Test-Command "sccache")) {
+        cargo binstall -y sccache
+        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo binstall sccache failed (exit code $LASTEXITCODE)" }
+    }
+    if (!(Test-Command "cargo-outdated")) {
+        cargo binstall -y --git https://$domain/$owner/cargo-outdated.git --locked cargo-outdated
+        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / cargo binstall cargo-outdated failed (exit code $LASTEXITCODE)" }
+    }
+}
+
+if ($IsWindows -and !(Test-Command "rsync")) {
+    if (Test-Command "choco") {
+        choco install rsync -y
+        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / choco install rsync failed (exit code $LASTEXITCODE)" }
+    } else { Write-Output "init.ps1 / no rsync and no choco: scripts/publish.ps1 needs rsync" }
+}
+
+$bunBin = Join-Path $HOME '.bun/bin'
+if ((Test-Path $bunBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -contains $bunBin)) {
+    $env:PATH = "$bunBin$([IO.Path]::PathSeparator)$env:PATH"
+}
+if (Test-Command "bunx") {
+    bunx --bun playwright@1.44.0 install
+    if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / playwright browsers install failed (exit code $LASTEXITCODE)" }
 }
 
 . ./core.ps1
 
-EnsureSymbolicLink -Path "../deps/polyglot" -Target "../../polyglot"
+if ($IsWindows -and (Test-Command "wsl")) {
+    $distributions = (wsl --list --quiet) -replace "`0", ""
+    if (-not ($distributions -contains "Ubuntu")) {
+        wsl --install Ubuntu --no-launch
+    }
+    { sudo sh init.sh } | Invoke-Block -Linux -OnError Continue
+    { sh init.sh } | Invoke-Block -Linux -OnError Continue
+}

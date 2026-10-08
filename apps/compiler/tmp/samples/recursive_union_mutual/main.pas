@@ -40,15 +40,17 @@ begin
       v5 := UH0_1;
   end;
   case v5.tag of
-      0: begin // A
+      0: begin
           v6 := v5.c0_0;
           Result := 0;
       end;
-      1: begin // StopA
+      1: begin
           Result := 0;
       end;
   end;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

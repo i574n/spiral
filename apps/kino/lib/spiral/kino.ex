@@ -4,6 +4,7 @@ defmodule Spiral.Kino do
     Cell,
     CompilerClient,
     Directives,
+    Display,
     Mounts,
     ProcessError,
     Result,
@@ -24,7 +25,6 @@ defmodule Spiral.Kino do
     else
       timeout = opts[:timeout] || @default_timeout
       validate_timeout!(timeout)
-      # a `///! lisp` cell (apps/lisp) is Spiral after spl2spi.py
       prepared = code |> Spiral.Kino.Lisp.expand(opts) |> Directives.prepare(opts)
 
       builders = cell_builders(opts, prepared)
@@ -37,8 +37,6 @@ defmodule Spiral.Kino do
       else
         builders = if builders == [], do: [Builders.default()], else: builders
 
-        # A `///- --timeout` directive is part of the cell and wins over the caller's budget (a Livebook smart cell
-        # always passes `timeout:`; the notebook runner passes the same directive value).
         timeout = prepared.timeout || timeout
         started = System.monotonic_time(:millisecond)
 
@@ -107,9 +105,6 @@ defmodule Spiral.Kino do
     end
   end
 
-  # The base a cell's `--package <path>` falls back to when the path is not found beside the notebook: the spiral
-  # checkout this Kino belongs to, so `../dice` names the dice checkout next to it (the polyglot checkout, the former
-  # anchor, is a sibling too). The `polyglot_root` option, config key and SPIRAL_KINO_POLYGLOT_ROOT are still read.
   @spec workspace_root(keyword()) :: String.t()
   def workspace_root(opts \\ []) do
     opts[:workspace_root] || opts[:polyglot_root] ||
@@ -120,13 +115,19 @@ defmodule Spiral.Kino do
       @default_workspace_root
   end
 
-  defp show(%Result{stdout: stdout, html: html}) do
+  defp show(%Result{stdout: stdout, html: html, displays: displays}) do
     if stdout != "" do
       IO.write(if String.ends_with?(stdout, "\n"), do: stdout, else: stdout <> "\n")
     end
 
     Enum.each(html, &Kino.render(Kino.HTML.new(&1)))
+    Enum.each(displays, &Kino.render(display_kino(&1)))
   end
+
+  @doc false
+  def display_kino(%{mime: "text/html", data: data}), do: Kino.HTML.new(data)
+  def display_kino(%{mime: "image/" <> _ = mime, data: data}), do: Kino.Image.new(data, mime)
+  def display_kino(%{data: data}), do: Kino.Text.new(data)
 
   defp cell_builders(opts, prepared) do
     if Keyword.has_key?(opts, :builders), do: opts[:builders], else: prepared.builders
@@ -168,13 +169,25 @@ defmodule Spiral.Kino do
           run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
         end)
       else
-        File.write!(output, if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text))
+        File.write!(
+          output,
+          if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text)
+        )
 
         case in_slot(fn ->
                timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
              end) do
           {:ok, %{stdout: stdout} = ran} ->
-            {:ok, chunk(builder, shown_stdout(prepared, text, stdout), Map.get(ran, :value))}
+            {displays, stdout} = Display.extract(stdout)
+
+            {:ok,
+             chunk(
+               builder,
+               shown_stdout(prepared, text, stdout),
+               Map.get(ran, :value),
+               0,
+               displays
+             )}
 
           other ->
             other
@@ -230,19 +243,28 @@ defmodule Spiral.Kino do
          :ok <- timed(:rustc_ms, fn -> rustc(rs, exe, opts, timeout, deadline) end),
          {:ok, ran} <- timed(:run_ms, fn -> execute(exe, opts, timeout, deadline) end) do
       {value, stdout} = Cell.split_output(ran.output)
+      {displays, stdout} = Display.extract(stdout)
+      {value, value_displays} = Display.from_value(value, opts)
 
       {:ok,
-       chunk(Builders.default(), shown_stdout(prepared, rust, stdout), value, ran.exit_status)}
+       chunk(
+         Builders.default(),
+         shown_stdout(prepared, rust, stdout),
+         value,
+         ran.exit_status,
+         displays ++ value_displays
+       )}
     end
   end
 
-  defp chunk(builder, stdout, value, status \\ 0) do
+  defp chunk(builder, stdout, value, status, displays) do
     %{
       ext: String.trim_leading(Builders.ext(builder), "."),
       tool: builder.tool,
       stdout: stdout,
       value: value,
-      exit_status: status
+      exit_status: status,
+      displays: displays
     }
   end
 
@@ -279,6 +301,7 @@ defmodule Spiral.Kino do
     %Result{
       value: value,
       stdout: stdout,
+      displays: Enum.flat_map(chunks, & &1.displays),
       source: File.read!(spi),
       exit_status: status,
       duration_ms: System.monotonic_time(:millisecond) - started,
@@ -387,9 +410,6 @@ defmodule Spiral.Kino do
 
   @main_head "inl main () : i32 =\n"
 
-  # A cell that defines its own `main ()` (physics' animation cells return plot data from it) becomes the generated
-  # main's body: `main` is renamed and called from `inl main () : i32 =`, so the unit and value retries apply to it as to
-  # any trailing expression (the Rust entry is `fn spiral_main() -> i32`: a tuple-returning main only failed in rustc).
   @doc false
   def own_main(%{generated_main: false, code: code} = prepared) do
     case Regex.run(~r/^(?:let|inl) main \(\) =[ \t]*$/m, code, return: :index)
@@ -414,7 +434,6 @@ defmodule Spiral.Kino do
 
   def own_main(prepared), do: prepared
 
-  # the last `main ()` header, when only its body (indented or blank lines) follows it
   defp last_main(nil, _code), do: nil
 
   defp last_main(_first, code) do
@@ -428,9 +447,6 @@ defmodule Spiral.Kino do
       else: nil
   end
 
-  # The generated main's only error is that its expression is not an i32 (the old route showed any value; physics'
-  # cells end in plot data, parsing's F# cells in a formatted error): the value is bound and shown instead
-  # (console.show_value: Rust's Debug on the value line the runner reads, a plain print on the other backends).
   @doc false
   def value_result?(output, code) do
     case :binary.matches(code, @main_head) do
@@ -440,9 +456,6 @@ defmodule Spiral.Kino do
       matches ->
         {at, _} = List.last(matches)
 
-        # 1-based line of the main head; its body (value bindings, then the expression) is indented by 4, and the
-        # compiler reports the result's mismatch at the start of the trailing expression (column 5), or, for a piped
-        # expression (`x |> f`), at the last stage, on the body's last line
         head = code |> binary_part(0, at) |> String.split("\n") |> length()
         last = code |> String.trim_trailing() |> String.split("\n") |> length()
 
@@ -617,8 +630,6 @@ defmodule Spiral.Kino do
 
   defp rustc_default(rs, exe, opts, timeout, deadline) do
     with :ok <- require_tool(Toolchain.rustc(opts), "rustc") do
-      # rustc without cargo: env!("CARGO_MANIFEST_DIR") (the lib's file_system.get_source_directory on native Rust) is
-      # the cell's own directory, as the old route's cargo package directory was.
       case Runner.run(Toolchain.rustc(opts), ["--edition", "2021", "-o", exe, rs],
              timeout: budget(deadline),
              env: [{"CARGO_MANIFEST_DIR", Path.dirname(rs)}]
@@ -632,8 +643,10 @@ defmodule Spiral.Kino do
   end
 
   defp execute(exe, opts, timeout, deadline) do
-    case invoke(opts[:execute], %{exe_path: exe}, fn ->
-           Runner.run(exe, [], timeout: budget(deadline), cd: Path.dirname(exe))
+    cwd = opts[:root] || Path.dirname(exe)
+
+    case invoke(opts[:execute], %{exe_path: exe, cwd: cwd}, fn ->
+           Runner.run(exe, [], timeout: budget(deadline), cd: cwd)
          end) do
       {:ok, ran} ->
         {:ok, ran}
@@ -674,7 +687,8 @@ defmodule Spiral.Kino do
 
   defp reject_unpatched(rust) do
     if String.contains?(rust, "__spiral_emit_rust") or String.contains?(rust, "emitRustExpr") do
-      {:error, %ProcessError{message: "generated Rust still holds an emit marker (__spiral_emit_rust)"}}
+      {:error,
+       %ProcessError{message: "generated Rust still holds an emit marker (__spiral_emit_rust)"}}
     else
       :ok
     end
@@ -718,8 +732,6 @@ defmodule Spiral.Kino do
     |> String.trim()
   end
 
-  # `real:` (the notebook runner's `--real` cells) is real-segment code: it goes to main_real.spir, listed before main as
-  # `main_real*-` (the old .dib kernel's package layout), so the cell reaches its definitions unqualified.
   defp write_package(dir, names, package_dir, real) do
     text = Cell.package_project(names)
 

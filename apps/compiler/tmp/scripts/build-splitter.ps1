@@ -1,11 +1,3 @@
-<#
-.SYNOPSIS
-Builds the spiral-split Rust workspace into the cache directory.
-
-.EXAMPLE
-pwsh scripts/build-splitter.ps1            # release build of the CLI
-pwsh scripts/build-splitter.ps1 -Test      # cargo test for the whole workspace (every crate, even after a failure)
-#>
 param([switch]$Test)
 . $PSScriptRoot/env.ps1
 

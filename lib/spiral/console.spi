@@ -32,8 +32,8 @@ inl write_line obj : () =
         Python = fun () => $'print(!obj)' : ()
         Rust = fun () => $'println\!("{}", !obj)' : ()
         TypeScript = fun () => $'console.log(!obj)' : ()
-        // Zig: the generated program's prelude writes to stdout (spiralPrintAny: strings as text, numbers in decimal)
         Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()
+        Lean = fun () => $'IO.println (toString !obj)' : ()
     }
 
 /// ### write
@@ -48,6 +48,7 @@ inl write forall t. (x : t) : () =
         Rust = fun () => $'{ use std::io::Write; print\!("{}", !x); std::io::stdout().flush().unwrap(); }' : ()
         TypeScript = fun () => $'process.stdout.write(String(!x))' : ()
         Zig = fun () => $'spiralPrintAny(!x)' : ()
+        Lean = fun () => $'IO.print (toString !x)' : ()
     }
 
 /// ### write_ln
@@ -60,6 +61,8 @@ inl write_ln l : () =
         Python = fun () => $"print()" : ()
         Cuda = fun () => $'printf("\\n")' : ()
         Rust = fun () => $'println\!()' : ()
+        Zig = fun () => $'spiralPrint(&[_]u8{10})' : ()
+        Lean = fun () => $'IO.println ""' : ()
     }
 
 /// ### color_reset

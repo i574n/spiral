@@ -4,10 +4,6 @@ defmodule Mix.Tasks.Spiral.Edit do
 
   @shortdoc "Replace a text in one cell of a .livemd notebook (the cell is re-rendered, its smart-cell attributes too)"
 
-  # mix spiral.edit --path <nb>.livemd --old <file> --new <file>
-  # The text of --old must occur exactly once across the notebook's cells; it becomes the text of --new and the notebook
-  # is rendered again by Document (a Spiral cell's source lives twice in a .livemd: in its smart-cell attributes and in
-  # its Spiral.Kino.eval! call, so a plain text edit of the .livemd can't change it).
   @impl Mix.Task
   def run(args) do
     Mix.Task.run("loadpaths")

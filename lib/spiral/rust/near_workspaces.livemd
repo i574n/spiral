@@ -518,7 +518,7 @@ Spiral.Kino.eval!(
 
 ### from_tgas
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_tgas\n    (tgas : i32)\n    : gas\n    =\n    backend_switch {\n        // Native literals are typed (`300i32`); from_tgas takes a u64.\n        Rust = fun () => !\\($'\"near_workspaces::types::Gas::from_tgas(!tgas as u64)\"') : gas\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl from_tgas\n    (tgas : i32)\n    : gas\n    =\n    backend_switch {\n        Rust = fun () => !\\($'\"near_workspaces::types::Gas::from_tgas(!tgas as u64)\"') : gas\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -528,7 +528,6 @@ Spiral.Kino.eval!(
       : gas
       =
       backend_switch {
-          // Native literals are typed (`300i32`); from_tgas takes a u64.
           Rust = fun () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
       }
   """,
@@ -538,13 +537,12 @@ Spiral.Kino.eval!(
 
 ### as_yoctonear
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =\n    // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.\n    !\\\\(tokens, $'\"$0.as_yoctonear()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =\n    !\\\\(tokens, $'\"$0.as_yoctonear()\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =
-      // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.
       !\\(tokens, $'"$0.as_yoctonear()"')
   """,
   timeout: 300_000

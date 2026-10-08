@@ -126,12 +126,9 @@ defmodule Spiral.Kino.TargetsTest do
              Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
   end
 
-  # rust/testing's `///> rust -d ...` cells ran in parallel and deleted each other's sources in the CLI's shared cargo
-  # packages workspace: `spiral rust` runs one at a time (a machine-wide lock file).
   test "a spiral rust builder waits for the spiral rust lock" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("rust-lock")
     lock = Path.join(dir, "rust.lock")
-    # held by a live process (this one)
     File.write!(lock, System.pid())
     missing = Path.join(dir, "no-spiral.exe")
 

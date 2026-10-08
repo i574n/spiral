@@ -16,7 +16,7 @@ impl UH0 {
 }
 fn method0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
-        UH0::UH0_1(v1, v2) => { // Cons
+        UH0::UH0_1(v1, v2) => {
             let mut v1: Rc<RefCell<Vec<i32>>> = v1.clone();
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: i32 = (v1.clone().borrow().len() as i32);
@@ -24,7 +24,7 @@ fn method0(mut v0: Rc<UH0>) -> i32 {
             let mut v5: i32 = v3.wrapping_add(v4);
             v5
         }
-        UH0::UH0_0 => { // Nil
+        UH0::UH0_0 => {
             0i32
         }
     }

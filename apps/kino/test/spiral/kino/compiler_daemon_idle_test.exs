@@ -3,8 +3,6 @@ defmodule Spiral.Kino.CompilerDaemonIdleTest do
 
   alias Spiral.Kino.CompilerDaemon
 
-  # A serving daemon (one with on_retire) retires by itself after idle_ms without a compile, so an idle daemon never
-  # holds its compiler (GBs) for hours; an in-process server (no on_retire) never idles out.
   test "a serving daemon retires after its idle time" do
     test = self()
 

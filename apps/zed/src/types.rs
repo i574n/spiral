@@ -1,19 +1,7 @@
-//! Type-level programming abstractions using `PhantomData` to simulate:
-//! 1. GADTs (Generalized Algebraic Data Types)
-//! 2. Existential types (Existential quantification)
-//! 3. Higher-Kinded Types (HKTs via the Brand / Type Family pattern)
-//!
-//! These patterns mirror the foundational type system concepts of The Spiral Language
-//! and provide compile-time guarantees for Spiral AST expressions, token kinds, and
-//! language server protocol state transitions.
 
 use std::marker::PhantomData;
 
-// ============================================================================
-// 1. GADTs (Generalized Algebraic Data Types) via PhantomData
-// ============================================================================
 
-/// Trait marking types that can index a GADT expression.
 pub trait TypeTag: 'static + Send + Sync {
     type Value: Clone + PartialEq + std::fmt::Debug + 'static;
     fn type_name() -> &'static str;
@@ -64,7 +52,6 @@ impl TypeTag for UnitTag {
     }
 }
 
-/// The untyped/erased underlying representation of a GADT expression.
 #[derive(Debug, Clone)]
 enum ExprRaw {
     LitInt(i64),
@@ -78,13 +65,6 @@ enum ExprRaw {
     IfThenElse(Box<ExprRaw>, Box<ExprRaw>, Box<ExprRaw>),
 }
 
-/// A GADT Expression indexed by its evaluated result type `T`.
-///
-/// In Spiral:
-/// `union expr a = LitInt : i64 -> expr int | Add : expr int * expr int -> expr int | ...`
-///
-/// In Rust, `PhantomData<fn() -> T>` simulates the GADT index, making invalid operations
-/// (e.g. adding two boolean expressions) reject at compile time.
 pub struct GadtExpr<T: TypeTag> {
     raw: ExprRaw,
     _phantom: PhantomData<fn() -> T>,
@@ -190,7 +170,6 @@ impl<A: TypeTag> GadtExpr<A> {
         }
     }
 
-    /// Evaluates the GADT expression, returning the exact statically-known return type `T::Value`.
     pub fn eval(&self) -> A::Value
     where
         A::Value: FromDyn,
@@ -296,9 +275,6 @@ where
     T::Value::from_dyn(eval_dyn(raw))
 }
 
-// ============================================================================
-// Token GADT: Type-safe Spiral Lexical Tokens
-// ============================================================================
 
 pub trait TokenKindTag: 'static + Send + Sync {
     fn kind_name() -> &'static str;
@@ -371,7 +347,6 @@ impl TokenKindTag for CommentTag {
     }
 }
 
-/// A strongly-typed token parametrized by its lexical kind.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GadtToken<K: TokenKindTag> {
     pub text: String,
@@ -399,7 +374,6 @@ impl<K: TokenKindTag> GadtToken<K> {
     }
 }
 
-// Protocol State Machine GADT
 pub trait ProtocolPhase: 'static + Send + Sync {
     fn phase_name() -> &'static str;
 }
@@ -469,9 +443,6 @@ impl ProtocolClient<SessionActive> {
     }
 }
 
-// ============================================================================
-// 2. Existentials via PhantomData
-// ============================================================================
 
 pub trait AnyTokenView: Send + Sync {
     fn kind(&self) -> &'static str;
@@ -503,8 +474,6 @@ impl<K: TokenKindTag> AnyTokenView for GadtToken<K> {
     }
 }
 
-/// Existential container that hides the specific `K: TokenKindTag` parameter.
-/// In Spiral: `union any_token = | AnyToken : forall k. GadtToken k -> any_token`
 pub struct ExistentialToken {
     inner: Box<dyn AnyTokenView>,
     _witness: PhantomData<()>,
@@ -539,29 +508,22 @@ impl ExistentialToken {
     }
 }
 
-// ============================================================================
-// 3. Higher-Kinded Types (HKTs) via the Brand Pattern & PhantomData
-// ============================================================================
 
-/// Trait representing a Higher-Kinded Type constructor `F<_>`.
 pub trait Hkt: 'static {
     type Applied<T>;
 }
 
-/// The Brand wrapper associating a type family `F` with an applied type `T`.
 pub struct Brand<F: Hkt, T> {
     _family: PhantomData<F>,
     _elem: PhantomData<T>,
 }
 
-/// Functor abstraction over a Higher-Kinded Type constructor.
 pub trait Functor: Hkt {
     fn fmap<A, B, Func>(fa: Self::Applied<A>, f: Func) -> Self::Applied<B>
     where
         Func: FnMut(A) -> B;
 }
 
-/// Applicative abstraction over a Higher-Kinded Type constructor.
 pub trait Applicative: Functor {
     fn pure<A>(val: A) -> Self::Applied<A>;
     fn zip_with<A, B, C, Func>(
@@ -573,16 +535,13 @@ pub trait Applicative: Functor {
         Func: FnMut(A, B) -> C;
 }
 
-/// Monad abstraction over a Higher-Kinded Type constructor.
 pub trait Monad: Applicative {
     fn flat_map<A, B, Func>(fa: Self::Applied<A>, f: Func) -> Self::Applied<B>
     where
         Func: FnMut(A) -> Self::Applied<B>;
 }
 
-// Type families:
 
-/// Vec higher-kinded type family: `Vec<_>`
 pub struct VecFamily;
 impl Hkt for VecFamily {
     type Applied<T> = Vec<T>;
@@ -619,7 +578,6 @@ impl Monad for VecFamily {
     }
 }
 
-/// Option higher-kinded type family: `Option<_>`
 pub struct OptionFamily;
 impl Hkt for OptionFamily {
     type Applied<T> = Option<T>;
@@ -656,9 +614,6 @@ impl Monad for OptionFamily {
     }
 }
 
-// ============================================================================
-// Unit Tests verifying GADTs, Existentials, and HKTs
-// ============================================================================
 
 #[cfg(test)]
 mod tests {
@@ -702,7 +657,6 @@ mod tests {
         let op: GadtToken<OperatorTag> = GadtToken::new("->", 1, 5);
         assert_eq!(op.kind(), "operator");
 
-        // Pack into heterogeneous existential container
         let stream: Vec<ExistentialToken> =
             vec![ExistentialToken::pack(kw), ExistentialToken::pack(op)];
 

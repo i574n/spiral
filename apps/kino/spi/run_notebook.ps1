@@ -25,9 +25,6 @@ foreach ($arg in $args) {
         $fixed.Add($arg)
     }
 }
-# Run mix from the project's real path: callers reach this script through symlinked routes (dice/deps/polyglot/deps/
-# spiral/...), and mix links _build/dev/lib/spiral_kino/priv to the project path it runs from, so a different route makes
-# it recreate that link, which fails on Windows ("Cannot remove symlink ... not owner").
 function Resolve-RealPath([string] $Path) {
     $full = [IO.Path]::GetFullPath($Path)
     $current = [IO.Path]::GetPathRoot($full)
@@ -42,12 +39,6 @@ Set-Location (Resolve-RealPath (Join-Path $PSScriptRoot ".."))
 $mix = Join-Path $elixir "mix.bat"
 if (-not (Test-Path $mix)) { $mix = "mix" }
 
-# A fresh checkout (a CI runner) has neither the Spiral compiler nor the hex deps; both steps below run only when their
-# output is missing, so a dev machine just checks two paths.
-# 1. The single-flight SpiralCompiler.dll and the .NET 11 SDK it runs on, in the spiral-bin cache (%LOCALAPPDATA%\spiral-bin,
-#    ~/.cache/spiral-bin on Linux): `mix compile` regenerates the Gleam domain with it and every cell compiles with it.
-#    The compiler bundle's own scripts install and build them (polyglot's spiral-bundle.ps1 does the same for the app
-#    builds; CI's setup-dotnet only provides .NET 9).
 $bundleScripts = Join-Path (Get-Location) "../compiler/tmp/scripts"
 $dotnetRoot = $env:DOTNET_ROOT
 $toolchain = & {
@@ -67,15 +58,11 @@ $toolchain = & {
     $packageDir = try { Get-SpiralPackageDir } catch { $null }
     [pscustomobject]@{ Dotnet = $dotnet; Dll = $dll; PackageDir = $packageDir }
 }
-# Resolve-SpiralDotnet points DOTNET_ROOT at the .NET 11 SDK; the cells' own tools must keep the caller's (Kino sets it
-# per compile).
 $env:DOTNET_ROOT = $dotnetRoot
 $env:SPIRAL_DOTNET = $toolchain.Dotnet
 $env:SPIRAL_COMPILER_DLL = $toolchain.Dll
 if (-not $env:SPIRAL_COMPILER_PACKAGE_DIR -and $toolchain.PackageDir) { $env:SPIRAL_COMPILER_PACKAGE_DIR = $toolchain.PackageDir }
 
-# 2. The hex deps (kino). `--if-missing` keeps an installed Hex/rebar; on a fresh machine it installs them without the
-#    interactive prompt `mix deps.get` would otherwise show.
 if (-not (Test-Path "deps/kino/mix.exs")) {
     foreach ($task in "local.hex", "local.rebar", "deps.get") {
         $taskArgs = $task -like "local.*" ? @("--force", "--if-missing") : @()

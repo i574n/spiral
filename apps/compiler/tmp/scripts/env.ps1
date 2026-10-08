@@ -1,7 +1,3 @@
-# Shared environment for the spiral-bin scripts. Dot-source it: `. $PSScriptRoot/env.ps1`.
-# Works on Windows and Linux (PowerShell 7+). Nothing here writes inside the bundle: builds,
-# outputs, toolchains and results all live under the cache directory.
-
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version 3.0
 
@@ -24,24 +20,17 @@ function ConvertTo-SpiralMode([string]$Mode) {
     }
 }
 
-# The single-flight core is the repo's main compiler source (apps/compiler/spiral_compiler.fs); the hopac
-# core is still a lane of its own until it meets the promotion criterion in AGENTS.md.
-# Both cores live in apps/compiler/spiral_compiler.fs: sections they share appear once, the others as whole
-# `#if SPIRAL_CORE_HOPAC` (hopac) / `#else` (single-flight) pairs. The F# builds compile the file with the
-# symbol set per mode; tools that need one core without the pairs (the splitter) use Get-SpiralCoreProjection.
 function Get-SpiralCoreSource([string]$Mode) {
     [void](ConvertTo-SpiralMode $Mode)
     Join-Path (Split-Path $BundleRoot -Parent) 'spiral_compiler.fs'
 }
 
-# Writes the given mode's core to $Destination: the merged file with only that mode's branch of every
-# `#if SPIRAL_CORE_HOPAC` pair (markers at column 0; other directives are left alone). Returns $Destination.
 function Get-SpiralCoreProjection([string]$Mode, [string]$Destination) {
     $hopac = (ConvertTo-SpiralMode $Mode) -eq 'hopac'
     $text = [IO.File]::ReadAllText((Get-SpiralCoreSource $Mode))
     $out = [Text.StringBuilder]::new($text.Length)
     $depth = 0
-    $ours = [Collections.Generic.List[object]]::new()   # @(depth, inHopacBranch) per open SPIRAL_CORE_HOPAC block
+    $ours = [Collections.Generic.List[object]]::new()
     foreach ($line in [regex]::Split($text, '(?<=\n)')) {
         if ($line.Length -eq 0) { continue }
         $bare = $line.TrimEnd("`r", "`n")
@@ -65,8 +54,6 @@ function Test-DotnetHasSdk11([string]$Dotnet) {
     try { (& $Dotnet --list-sdks 2>$null) -match '^11\.' } catch { $false }
 }
 
-# The compiler targets net11.0. Resolution order: $env:SPIRAL_DOTNET, the cache-local toolchain
-# installed by scripts/install-dotnet.ps1, then dotnet on PATH if it carries an 11.x SDK.
 function Resolve-SpiralDotnet {
     $exe = if ($IsWindows) { 'dotnet.exe' } else { 'dotnet' }
     $candidates = @()
@@ -89,7 +76,6 @@ function Resolve-SpiralDotnet {
 function Resolve-SpiralTool([string]$Name, [string[]]$Candidates) {
     foreach ($candidate in $Candidates) {
         if (-not $candidate) { continue }
-        # Applications only: package-manager shims such as scoop's fpc.ps1 cannot be started as processes.
         $command = Get-Command $candidate -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($command) { return $command.Source }
     }
@@ -102,34 +88,29 @@ function Get-SpiralNativeTools {
         Rustc = Resolve-SpiralTool 'rustc' @($env:SPIRAL_RUSTC, 'rustc')
         Fpc = Resolve-SpiralTool 'fpc' @($env:SPIRAL_FPC, 'fpc')
         Zig = Resolve-SpiralTool 'zig' @($env:SPIRAL_ZIG, 'zig')
+        Lean = Resolve-SpiralTool 'lean' @($env:SPIRAL_LEAN, 'lean', $(if ($env:ELAN_HOME) { Join-Path $env:ELAN_HOME 'bin/lean' }), (Join-Path $HOME '.elan/bin/lean'), (Join-Path $HOME 'scoop/persist/elan/.elan/bin/lean'))
+        Gleam = Resolve-SpiralTool 'gleam' @($env:SPIRAL_GLEAM, 'gleam')
+        Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')
+        Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
         Node = Resolve-SpiralTool 'node' @($env:SPIRAL_NODE, 'node')
         Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, 'python', 'python3')
     }
 }
 
-# The C++/CUDA and Python backends read their runtime (corelib.cuh, corelib.py) from here rather than from a
-# possibly stale copy next to the compiler binary.
 if (-not $env:SPIRAL_CODEGEN_RUNTIME_DIR) {
     $env:SPIRAL_CODEGEN_RUNTIME_DIR = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../../runtime'))
 }
 
 function Get-SpiralCompilerDll([string]$Mode, [string]$Configuration = 'Release') {
-    # SPIRAL_COMPILER_DLL runs another build of the host, e.g. the split one from scripts/gear-dev.ps1.
     if ($env:SPIRAL_COMPILER_DLL) { return $env:SPIRAL_COMPILER_DLL }
     $mode = ConvertTo-SpiralMode $Mode
     Join-Path (Get-SpiralCacheDir) "bin/$mode/SpiralCompiler/$Configuration/net11.0/SpiralCompiler.dll"
 }
 
-# Generated test results live in the cache, not in the tree: the single-flight oracle (written by
-# `test.ps1 -Bless`) and each lane's scoreboard (written by `test.ps1 -Record`).
 function Get-SpiralBaselinePath { Join-Path (Get-SpiralCacheDir) 'baseline/EXPECTED.tsv' }
 function Get-SpiralScoreboardPath([string]$Mode) { Join-Path (Get-SpiralCacheDir) "scoreboards/$(ConvertTo-SpiralMode $Mode).tsv" }
 
-# Where `packages: |core-` resolves: the standard library in The-Spiral-Language's `VS Code Plugin/core`. Never copied
-# here.
 function Get-SpiralPackageDir {
-    # spiral's scripts/init.ps1 clones the fork into spiral/deps/The-Spiral-Language; polyglot's clone of it is the
-    # fallback (through spiral's deps/polyglot link, else the checkout next to spiral).
     $candidates = @(
         $env:SPIRAL_COMPILER_PACKAGE_DIR,
         (Join-Path $BundleRoot '../../../deps/The-Spiral-Language/VS Code Plugin'),
@@ -142,8 +123,6 @@ function Get-SpiralPackageDir {
     throw 'The-Spiral-Language core package not found: run scripts/init.ps1 (clones it to deps/The-Spiral-Language) or set SPIRAL_COMPILER_PACKAGE_DIR.'
 }
 
-# Flat directory of the compiler's dependency DLLs (compiler/lib/Packages.props plus the SDK's FSharp.Core),
-# for projects the splitter generates. Built into the cache on first use; nothing binary lives in the tree.
 function Get-SpiralLibDir {
     $cache = Get-SpiralCacheDir
     $lib = Join-Path $cache 'lib'
@@ -160,7 +139,6 @@ function Get-FileSha256([string]$Path) {
     (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
-# Residual text hash that ignores line-ending and trailing-whitespace differences.
 function Get-TextSha256([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) { return '' }
     $text = [IO.File]::ReadAllText($Path) -replace "`r`n", "`n"

@@ -184,13 +184,11 @@ inl format (format : string) (date_time : date_time) : string =
             global "import tempo/datetime"
             inl tempo_date_time : tempo_date_time =
                 date_time |> split_date_time |> new_timestamp_gleam |> $'datetime.from_timestamp'
-            // inl tempo_date_time : tempo_date_time = $'!tempo_date_time |> datetime.add(!duration)'
             inl format =
                 if format = ""
                 then "M-D-YY hh:mm:ss A"
                 else format
             $'!tempo_date_time |> datetime.format(tempo.Custom(!format))' : string
-            // #?{ date_time format date time_of_day duration timestamp tempo_date_time }
         Lua = fun () =>
             inl date_time = join date_time
             if format <> ""
@@ -216,8 +214,6 @@ inl format (format : string) (date_time : date_time) : string =
             elif get_year date_time < 1000
             then $'\'{dt.month}-{dt.day}-{dt.year} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
             else $'\'{dt.month}-{dt.day}-{dt:%y} {dt:%I}:{dt:%M}:{dt:%S} {dt:%p}\'.format(dt=!date_time)' : string
-        // Rust: like Lua/Python, a non-empty format is a strftime (chrono) format. The default is F#'s
-        // "M-d-y hh:mm:ss tt" (`y`: the year mod 100, unpadded).
         Rust = fun () =>
             inl format =
                 if format = ""
@@ -269,7 +265,6 @@ inl max_value () : date_time =
         Python = fun () =>
             global "import datetime"
             $'datetime.datetime.max' : date_time
-        // .NET's MaxValue: the last 100 ns tick of 9999-12-31
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 999999900).unwrap()' : date_time
     }
 
@@ -324,35 +319,6 @@ inl date_time_milliseconds
             inl calendar_month : resultm.result' calendar_month () =
                 $"!month |> month.from_int"
             inl calendar_month = calendar_month |> resultm.unbox |> resultm.get
-            // TODO: types
-            // inl month =
-            //     match month with
-            //     | 1 => January
-            //     | 2 => February
-            //     | 3 => March
-            //     | 4 => April
-            //     | 5 => May
-            //     | 6 => June
-            //     | 7 => July
-            //     | 8 => August
-            //     | 9 => September
-            //     | 10 => October
-            //     | 11 => November
-            //     | 12 => December
-            // inl month : infer =
-            //     match month with
-            //     | January => $'calendar.January'
-            //     | February => $'calendar.February'
-            //     | March => $'calendar.March'
-            //     | April => $'calendar.April'
-            //     | May => $'calendar.May'
-            //     | June => $'calendar.June'
-            //     | July => $'calendar.July'
-            //     | August => $'calendar.August'
-            //     | September => $'calendar.September'
-            //     | October => $'calendar.October'
-            //     | November => $'calendar.November'
-            //     | December => $'calendar.December'
             inl date : date_gleam = $'calendar.Date(#year, #calendar_month, #day)'
             inl nanoseconds = millisecond * 1000000
             inl time_of_day : time_of_day_gleam = $'calendar.TimeOfDay(#hour, #minute, #second, #nanoseconds)'
@@ -399,7 +365,6 @@ inl date_time_utc
         Python = fun () =>
             global "import datetime"
             $'datetime.datetime(!year, !month, !day, !hour, !minute, !second, tzinfo=datetime.timezone.utc)' : date_time
-        // Rust: a NaiveDateTime has no kind (see specify_date_kind)
         Rust = fun () =>
             $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_opt(!hour as u32, !minute as u32, !second as u32).unwrap()' : date_time
     }
@@ -423,7 +388,6 @@ inl specify_date_kind (kind : date_time_kind) (date_time : date_time) : date_tim
                 | Local => $'System.DateTimeKind.Local'
             $'System.DateTime.SpecifyKind (!date_time, !kind)' : date_time
         Python = fun () => $'!date_time.replace(tzinfo=None)' : date_time
-        // Rust: a chrono::NaiveDateTime carries no kind; the value is unchanged.
         Rust = fun () => date_time
     }
 
@@ -436,7 +400,6 @@ inl to_universal_time (date_time : date_time) : date_time =
         Python = fun () =>
             global "import datetime"
             $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
-        // Rust: like Python, the wall-clock value is kept (a NaiveDateTime has no kind to convert from).
         Rust = fun () => date_time
     }
 
@@ -455,7 +418,6 @@ type time_span_switch =
         Fsharp : $'System.TimeSpan'
         Python : time_span_python
         Rust : $'chrono::TimeDelta'
-        // TypeScript: milliseconds (a Date minus a Date)
         TypeScript : $'number'
     }
 nominal time_span = $'backend_switch `(time_span_switch)'
@@ -468,7 +430,6 @@ inl time_span x : time_span =
         Python = fun () =>
             global "import datetime"
             $'datetime.timedelta(!x)' : time_span
-        // Rust: x is a count of 100 ns ticks, like F#'s TimeSpan (int64)
         Rust = fun () =>
             $'(chrono::TimeDelta::microseconds((!x as i64) / 10) + chrono::TimeDelta::nanoseconds(((!x as i64) % 10) * 100))' : time_span
     }
@@ -484,7 +445,6 @@ inl new_time_span (a : date_time) (b : date_time) : time_span =
             |> convert.convert
             |> fun x => x : int
             |> convert.convert
-        // Contracts have no clock (now () is null there): no DateTime arithmetic either.
         | _ => fun () => $'!b - !a '
 
 /// ### total_seconds
@@ -504,7 +464,6 @@ inl total_seconds (time_span : time_span) : f64 =
                 inl seconds = time_span |> convert.unbox : f64
                 seconds * 10000000 |> convert.convert : i64
             | Cuda => fun () => $'!time_span.total_seconds() * 10000000' : i64
-            // Rust: the TimeDelta's 100 ns ticks (num_seconds truncates toward zero; the sub-second rest fits)
             | Rust => fun () =>
                 $'{ let t = !time_span; t.num_seconds() * 10000000 + (t - chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100 }' : i64
             | _ => fun () => time_span |> $'_.Ticks' : i64
@@ -526,7 +485,6 @@ inl days (time_span : time_span) : f64 =
             seconds / 86400 |> convert.convert : f64
         Fsharp = fun () => time_span |> $'_.TotalDays' : f64
         Python = fun () => $'!time_span.days' : f64
-        // Rust: F#'s TotalDays (100 ns ticks / ticks per day)
         Rust = fun () =>
             $'{ let t = !time_span; (t.num_seconds() * 10000000 + (t - chrono::TimeDelta::seconds(t.num_seconds())).num_nanoseconds().unwrap() / 100) as f64 / 864000000000.0 }' : f64
     }
@@ -636,13 +594,9 @@ inl milliseconds (time_span : time_span) : i32 =
 /// ### time_span_format
 inl time_span_format (format : string) (time_span : time_span) : string =
     run_target_args (fun () => format, time_span) function
-        // TypeScript: ""/"c" -> .NET's constant format [-][d.]hh:mm:ss[.fffffff] (time_span is milliseconds); otherwise the
-        // hh, mm and ss tokens of a .NET custom format, as the Rust arm.
         | TypeScript => fun format, time_span =>
             $'(() => { const t = !time_span; const f = !format; const neg = t < 0; const a = Math.abs(t); const d = Math.floor(a / 86400000); const h = Math.floor(a / 3600000) % 24; const m = Math.floor(a / 60000) % 60; const s = Math.floor(a / 1000) % 60; const ms = Math.round(a % 1000); const p = (n: number) => String(n).padStart(2, "0"); if (f === "" || f === "c") return (neg ? "-" : "") + (d > 0 ? d + "." : "") + p(h) + ":" + p(m) + ":" + p(s) + (ms > 0 ? "." + String(ms * 10000).padStart(7, "0") : ""); return f.replace("hh", p(h)).replace("mm", p(m)).replace("ss", p(s)); })()' : string
         | Rust => fun format, time_span =>
-            // Rust: ""/"c" -> .NET's constant format [-][d.]hh:mm:ss[.fffffff]; otherwise the hh, mm and ss
-            // tokens of a .NET custom format.
             $'{ let t = !time_span; let f: &str = &(!format); let neg = t < chrono::TimeDelta::zero(); let a = if neg { -t } else { t }; let n = a.num_seconds() * 10000000 + (a - chrono::TimeDelta::seconds(a.num_seconds())).num_nanoseconds().unwrap() / 100; let (d, h, m, s, x) = (n / 864000000000, (n / 36000000000) % 24, (n / 600000000) % 60, (n / 10000000) % 60, n % 10000000); if f.is_empty() || f == "c" { Rc::<str>::from(format\!("{}{}{:02}:{:02}:{:02}{}", if neg { "-" } else { "" }, if d > 0 { format\!("{}.", d) } else { std::string::String::new() }, h, m, s, if x > 0 { format\!(".{:07}", x) } else { std::string::String::new() })) } else { Rc::<str>::from(f.replace("hh", &format\!("{:02}", h)).replace("mm", &format\!("{:02}", m)).replace("ss", &format\!("{:02}", s))) } }' : string
         | _ => fun format, time_span =>
             backend_switch {
@@ -794,7 +748,6 @@ inl stopwatch () : stopwatch =
     backend_switch {
         Fsharp = fun () => $'`stopwatch ()' : stopwatch
         Python = fun () => $'`stopwatch ' : stopwatch
-        // Rust: an Instant runs from its creation (stopwatch_start is a no-op there)
         Rust = fun () => $'std::time::Instant::now()' : stopwatch
     }
 
@@ -942,8 +895,6 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
         prefix ++# time_zone ++# guid_range |> guid.new_guid
     run_target function
         | Rust => fun () =>
-            // The layout: yyyyMMdd-HHmm-ss + 7 consecutive fraction digits split 2-4-1, then the
-            // utc offset sign and hhmm.
             inl prefix : string =
                 $'{ let s = !date_time.format("%Y%m%d-%H%M-%S%f").to_string(); Rc::<str>::from(format\!("{}-{}-{}", &s[0..18], &s[18..22], &s[22..23])) }'
             inl time_zone = date_time |> get_utc_offset (time_zone_local ())

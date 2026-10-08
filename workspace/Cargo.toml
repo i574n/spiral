@@ -4,6 +4,7 @@ cargo-features = ["profile-rustflags"]
 resolver = "2"
 members = [
     "../apps/dir-tree-html",
+    "../apps/plot",
     "../apps/spiral",
     "../apps/wasm",
     "../lib/spiral/near/wallet",
@@ -36,8 +37,6 @@ panic = "abort"
 overflow-checks = true
 rustflags = ["-C", "link-arg=-s"]
 
-# The native CLIs (apps/spiral, apps/wasm): spiral lib's `try` catches panics natively, which the release profile's
-# panic = "abort" rules out (cargo sets panic per profile, not per package), and they run compiler-heavy work (opt-level 3).
 [profile.release-unwind]
 inherits = "release"
 panic = "unwind"

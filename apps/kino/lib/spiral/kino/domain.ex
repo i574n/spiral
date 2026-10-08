@@ -59,7 +59,6 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.plan(wire)
   end
 
-  # Every length on the wire is a byte count, as in the domain's byte-offset text helpers (spi/text.spi).
   def decode_plan(wire) do
     case String.split(wire, "\n", parts: 2) do
       [count, rest] -> decode_steps(String.to_integer(count), rest, [])

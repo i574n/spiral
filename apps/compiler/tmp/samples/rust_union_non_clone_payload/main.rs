@@ -35,12 +35,12 @@ fn spiral_main() -> i32 {
         US0::US0_1
     };
     let mut v9: i32 = match v5 {
-        US0::US0_0(v6) => { // SBoxed
+        US0::US0_0(v6) => {
             let mut v6: Box<dyn Fn() -> i32> = v6;
             let mut v7: i32 = (v6)();
             v7
         }
-        US0::US0_1 => { // SEmpty
+        US0::US0_1 => {
             0i32
         }
     };
@@ -51,12 +51,12 @@ fn spiral_main() -> i32 {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
     };
     let mut v17: i32 = match &*v13 {
-        UH0::UH0_0(v14) => { // HBoxed
+        UH0::UH0_0(v14) => {
             let mut v14 = v14;
             let mut v15: i32 = (v14)();
             v15
         }
-        UH0::UH0_1 => { // HEmpty
+        UH0::UH0_1 => {
             0i32
         }
     };

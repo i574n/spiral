@@ -103,7 +103,6 @@ nominal storage =
 
 /// ### closure_wrap
 inl closure_wrap forall t. (x : rust.box t) : closure t =
-    // Rust: a Box<dyn Fn> isn't Clone, so it goes to the macro as is (a join point's argument is cloned)
     inl x = if is_rust () then x else join x
     !\($'"wasm_bindgen::closure::Closure::wrap(!x)"')
 

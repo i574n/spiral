@@ -842,13 +842,12 @@ Spiral.Kino.eval!(
 
 ### cancellation_source_token
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =\n    // Rust: a source and its token share one `Arc<AtomicBool>`.\n    if is_rust ()\n    then $'!x.clone()'\n    else $'!x.Token'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =\n    if is_rust ()\n    then $'!x.clone()'\n    else $'!x.Token'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =
-      // Rust: a source and its token share one `Arc<AtomicBool>`.
       if is_rust ()
       then $'!x.clone()'
       else $'!x.Token'

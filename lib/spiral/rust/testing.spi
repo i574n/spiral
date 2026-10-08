@@ -3,8 +3,6 @@ open rust.rust_operators
 
 /// ### run_tests'
 inl run_tests' tests =
-    // Each test becomes a top-level `#[test] fn <name>()` that selects itself by name and re-enters spiral_main() (on a big-stack thread, as
-    // main() does); this function then runs only the selected test.
     inl fields = reflection.get_record_fields tests
     global "thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }"
     fields

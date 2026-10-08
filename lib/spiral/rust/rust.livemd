@@ -501,15 +501,11 @@ Spiral.Kino.eval!(
 
 ### send
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data\n// instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity\n// type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type\n// variable t'.\nnominal send t = $'`(t)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal send t = $'`(t)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
-  // instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
-  // type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type
-  // variable t'.
   nominal send t = $'`(t)'
   """,
   timeout: 300_000
@@ -739,14 +735,12 @@ Spiral.Kino.eval!(
 
 ### clone_rust
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl clone_rust forall t. (x : t) : t =\n    // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument\n    // (`self` methods, `match`) when the value is used again.\n    backend_switch {\n        Gleam = fun () => x\n        Lua = fun () => x\n        Fsharp = fun () => x\n        Python = fun () => x\n        TypeScript = fun () => x\n        Cpp = fun () => x\n        CppHost = fun () => x\n        Delphi = fun () => x\n        Cuda = fun () => x\n        Rust = fun () => clone x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl clone_rust forall t. (x : t) : t =\n    backend_switch {\n        Gleam = fun () => x\n        Lua = fun () => x\n        Fsharp = fun () => x\n        Python = fun () => x\n        TypeScript = fun () => x\n        Cpp = fun () => x\n        CppHost = fun () => x\n        Delphi = fun () => x\n        Cuda = fun () => x\n        Rust = fun () => clone x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl clone_rust forall t. (x : t) : t =
-      // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
-      // (`self` methods, `match`) when the value is used again.
       backend_switch {
           Gleam = fun () => x
           Lua = fun () => x
@@ -906,7 +900,7 @@ Spiral.Kino.eval!(
 
 ### to_mut
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_mut forall t. (x : t) : () =\n    (!\\($'\"true; // 1\"') : bool) |> ignore\n    !\\($'\"let mut !x = !x\"') : ()\n    // (!\\($'\"true; !x\"') : bool) |> ignore\n    // !\\($'\"!x\"')\n    // inl result = !\\($'\"!x\"') : mut' t\n    // !\\($'\"!result\"')\n    // inl result = !\\($'\"*/ // a\"') : mut' t\n    // inl result = !\\($'\"!x\"') : mut' t\n    // result |> fun x => $'!x |> unbox // b'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_mut forall t. (x : t) : () =\n    (!\\($'\"true; // 1\"') : bool) |> ignore\n    !\\($'\"let mut !x = !x\"') : ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -914,13 +908,6 @@ Spiral.Kino.eval!(
   inl to_mut forall t. (x : t) : () =
       (!\($'"true; // 1"') : bool) |> ignore
       !\($'"let mut !x = !x"') : ()
-      // (!\($'"true; !x"') : bool) |> ignore
-      // !\($'"!x"')
-      // inl result = !\($'"!x"') : mut' t
-      // !\($'"!result"')
-      // inl result = !\($'"*/ // a"') : mut' t
-      // inl result = !\($'"!x"') : mut' t
-      // result |> fun x => $'!x |> unbox // b'
   """,
   timeout: 300_000
 )
@@ -1188,14 +1175,11 @@ Spiral.Kino.eval!(
 
 ### one_param_fn
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that\n// Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a\n// macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.\nnominal one_param t = $'(`t)'\ninl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =\n    fun (x : one_param t) =>\n        inl x : t = $'(!x)'\n        fn x","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"nominal one_param t = $'(`t)'\ninl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =\n    fun (x : one_param t) =>\n        inl x : t = $'(!x)'\n        fn x","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
-  // Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a
-  // macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.
   nominal one_param t = $'(`t)'
   inl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =
       fun (x : one_param t) =>
@@ -1250,7 +1234,7 @@ Spiral.Kino.eval!(
 
 ### fix_closure
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fix_closure forall t. (depth : u8 * u8) (x : t) =\n    backend_switch {\n        Rust = fun () =>\n            // Rust emits the caller's statements flat, in the block that opened the closure\n            // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever\n            // `depth` says. The text must be a literal (codegenRust inlines literal emits only).\n            // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.\n            inl is_unit : bool =\n                real\n                    typecase t with\n                    | () => true\n                    | _ => false\n            if is_unit\n            then (!\\($'\"true; () }); //\"') : bool) |> ignore\n            else ($'true; (!x) }); //' : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl fix_closure forall t. (depth : u8 * u8) (x : t) =\n    backend_switch {\n        Rust = fun () =>\n            inl is_unit : bool =\n                real\n                    typecase t with\n                    | () => true\n                    | _ => false\n            if is_unit\n            then (!\\($'\"true; () }); //\"') : bool) |> ignore\n            else ($'true; (!x) }); //' : bool) |> ignore\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1258,10 +1242,6 @@ Spiral.Kino.eval!(
   inl fix_closure forall t. (depth : u8 * u8) (x : t) =
       backend_switch {
           Rust = fun () =>
-              // Rust emits the caller's statements flat, in the block that opened the closure
-              // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever
-              // `depth` says. The text must be a literal (codegenRust inlines literal emits only).
-              // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.
               inl is_unit : bool =
                   real
                       typecase t with
@@ -1373,7 +1353,7 @@ Spiral.Kino.eval!(
 
 ### new_partial_eq_wrapper
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_partial_eq_wrapper forall t.\n    (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)\n    (x : t)\n    : partial_eq_wrapper t\n    =\n    // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`\n    // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller\n    // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.\n    global \"#[derive(Debug, Clone)]\\npub struct PartialEqWrapper<T>(pub T);\\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\\n}\"\n    $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_partial_eq_wrapper forall t.\n    (eq_fn : ref (partial_eq_wrapper t) -> ref (partial_eq_wrapper t) -> bool)\n    (x : t)\n    : partial_eq_wrapper t\n    =\n    global \"#[derive(Debug, Clone)]\\npub struct PartialEqWrapper<T>(pub T);\\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\\n}\"\n    $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1383,9 +1363,6 @@ Spiral.Kino.eval!(
       (x : t)
       : partial_eq_wrapper t
       =
-      // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
-      // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller
-      // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.
       global "#[derive(Debug, Clone)]\npub struct PartialEqWrapper<T>(pub T);\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\n}"
       $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
   """,

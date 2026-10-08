@@ -23,9 +23,7 @@ inl props () : props =
 
 inl render props_fn children : _ (_ div) =
     inl props : props = props () |> props_fn
-    // tested here: the summary's class closure can't capture right_element (a view isn't Clone)
     inl right_element_none = props.right_element = None
-    // bound outside the closure: a closure that reads a field of `props` captures all of it, the view too
     inl summary_class = props.summary_class
     inl right_element' =
         props.right_element
@@ -56,12 +54,10 @@ inl render props_fn children : _ (_ div) =
                             div [
                                 $'"class=\\\"flex items-center gap-2\\\""'
                             ] fun () =>
-                                // not a join point (its arguments would include the right_element view)
                                 inl title = props.title
                                 span [
                                     $'"class=\\\"[font-size:14px] [line-height:21px] [padding-right:11px]\\\""'
                                 ] fun () =>
-                                    // reactive: a title can read signals, like dropdown's selected item
                                     leptos.reactive_fragment fun () =>
                                         title ()
                                         |> text_fragment

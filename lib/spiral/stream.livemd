@@ -146,18 +146,16 @@ Spiral.Kino.eval!(
 
 ### try_item
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item i s =\n    // inl rec body i = function\n    inl rec body forall a {number} b. (i : a) : stream b -> option b = function\n        | StreamCons (x, _) when i <= 0 => Some x\n        | StreamCons (_, fn) => 루프 (i - 1) (fn ())\n        | StreamNil => None\n    // and inl 루프 acc s' =\n    and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =\n        match var_is acc, var_is s' with\n        | false, false => body acc s'\n        | _ =>\n            inl acc = dyn acc\n            inl s' = dyn s'\n            join body acc s'\n    루프 i s\n\ninl item i =\n    try_item i >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl try_item i s =\n    inl rec body forall a {number} b. (i : a) : stream b -> option b = function\n        | StreamCons (x, _) when i <= 0 => Some x\n        | StreamCons (_, fn) => 루프 (i - 1) (fn ())\n        | StreamNil => None\n    and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =\n        match var_is acc, var_is s' with\n        | false, false => body acc s'\n        | _ =>\n            inl acc = dyn acc\n            inl s' = dyn s'\n            join body acc s'\n    루프 i s\n\ninl item i =\n    try_item i >> optionm.value","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl try_item i s =
-      // inl rec body i = function
       inl rec body forall a {number} b. (i : a) : stream b -> option b = function
           | StreamCons (x, _) when i <= 0 => Some x
           | StreamCons (_, fn) => 루프 (i - 1) (fn ())
           | StreamNil => None
-      // and inl 루프 acc s' =
       and inl 루프 forall a {number} b. (acc : a) (s' : stream b) : option b =
           match var_is acc, var_is s' with
           | false, false => body acc s'
@@ -246,7 +244,7 @@ Spiral.Kino.eval!(
 
 ### memoize
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union memoized_stream t =\n    | NotComputed : () -> stream t\n    | Computed : stream t\n\ninl memoize s =\n    // inl rec body s =\n    inl rec body forall t. (s : () -> stream t) : () -> stream t =\n        inl state = mut (NotComputed s)\n        fun () =>\n            match *state with\n            | Computed x => x\n            | NotComputed fn =>\n                inl new_state =\n                    match fn () with\n                    | StreamNil => StreamNil\n                    | StreamCons (x, fn) => StreamCons (x, 루프 fn)\n                state <- Computed new_state\n                new_state\n    // and inl 루프 s' = join_body_unit body s s'\n    and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =\n        join_body_unit body s s'\n    루프 (fun () => s)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"union memoized_stream t =\n    | NotComputed : () -> stream t\n    | Computed : stream t\n\ninl memoize s =\n    inl rec body forall t. (s : () -> stream t) : () -> stream t =\n        inl state = mut (NotComputed s)\n        fun () =>\n            match *state with\n            | Computed x => x\n            | NotComputed fn =>\n                inl new_state =\n                    match fn () with\n                    | StreamNil => StreamNil\n                    | StreamCons (x, fn) => StreamCons (x, 루프 fn)\n                state <- Computed new_state\n                new_state\n    and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =\n        join_body_unit body s s'\n    루프 (fun () => s)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -256,7 +254,6 @@ Spiral.Kino.eval!(
       | Computed : stream t
 
   inl memoize s =
-      // inl rec body s =
       inl rec body forall t. (s : () -> stream t) : () -> stream t =
           inl state = mut (NotComputed s)
           fun () =>
@@ -269,7 +266,6 @@ Spiral.Kino.eval!(
                       | StreamCons (x, fn) => StreamCons (x, 루프 fn)
                   state <- Computed new_state
                   new_state
-      // and inl 루프 s' = join_body_unit body s s'
       and inl 루프 forall t. (s' : () -> stream t) : () -> stream t =
           join_body_unit body s s'
       루프 (fun () => s)
@@ -644,20 +640,18 @@ Spiral.Kino.eval!(
 
 ### unzip
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unzip s =\n    // inl rec body s =\n    inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =\n        match s with\n        | StreamCons ((x, y), fn) =>\n            inl xs, ys = 루프 (fn ())\n            StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)\n        | StreamNil => pair StreamNil StreamNil\n    // and inl 루프 x =\n    and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =\n        if var_is x |> not\n        then body x\n        else\n            inl x = dyn x\n            join body x\n    루프 s","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unzip s =\n    inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =\n        match s with\n        | StreamCons ((x, y), fn) =>\n            inl xs, ys = 루프 (fn ())\n            StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)\n        | StreamNil => pair StreamNil StreamNil\n    and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =\n        if var_is x |> not\n        then body x\n        else\n            inl x = dyn x\n            join body x\n    루프 s","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl unzip s =
-      // inl rec body s =
       inl rec body forall a b. (s : stream (a * b)) : stream a * stream b =
           match s with
           | StreamCons ((x, y), fn) =>
               inl xs, ys = 루프 (fn ())
               StreamCons (x, fun () => xs), StreamCons (y, fun () => ys)
           | StreamNil => pair StreamNil StreamNil
-      // and inl 루프 x =
       and inl 루프 forall a b. (x : stream (a * b)) : stream a * stream b =
           if var_is x |> not
           then body x
@@ -871,16 +865,13 @@ Spiral.Kino.eval!(
 
 ### decode_reader_bytes_build
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =\n    // !\\($'\"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).build(!x)\"')\n    // !\\($'\"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).utf8_passthru(true).build(!x)\"')\n    !\\\\(x, $'\"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)\"')\n    // !\\($'\"encoding_rs_io::DecodeReaderBytes::new(!x)\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =\n    !\\\\(x, $'\"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl decode_reader_bytes_build forall t. (x : t) : decode_reader_bytes t (am'.vec u8) =
-      // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).build(!x)"')
-      // !\($'"encoding_rs_io::DecodeReaderBytesBuilder::new().encoding(Some(encoding_rs::UTF_8)).utf8_passthru(true).build(!x)"')
       !\\(x, $'"encoding_rs_io::DecodeReaderBytesBuilder::new().utf8_passthru(true).build($0)"')
-      // !\($'"encoding_rs_io::DecodeReaderBytes::new(!x)"')
   """,
   timeout: 300_000
 )

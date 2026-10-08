@@ -1,5 +1,3 @@
-# Build spiral-zed and probe the two fixtures. The ok module checks clean.
-# The bad module is rejected. Exit 0 means both of those happened.
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 cargo test

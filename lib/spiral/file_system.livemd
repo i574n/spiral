@@ -387,14 +387,13 @@ Spiral.Kino.eval!(
 
 ### get_source_directory
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_source_directory () =\n    run_target function\n        // Rust: the crate's directory, fixed at build time (F# substitutes the source file's directory).\n        | Rust => fun () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => fun () => $'__SOURCE_DIRECTORY__' : string","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_source_directory () =\n    run_target function\n        | Rust => fun () => $'Rc::<str>::from(env\\!(\"CARGO_MANIFEST_DIR\"))' : string\n        | _ => fun () => $'__SOURCE_DIRECTORY__' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl get_source_directory () =
       run_target function
-          // Rust: the crate's directory, fixed at build time (F# substitutes the source file's directory).
           | Rust => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
           | _ => fun () => $'__SOURCE_DIRECTORY__' : string
   """,
@@ -748,15 +747,13 @@ Spiral.Kino.eval!(
 
 ### new_walk_dir
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_walk_dir (dir : string) : walk_dir =\n    !\\\\(dir, $'\"async_walkdir::WalkDir::new(&*$0)\"')\n    // inl walk_dir : walk_dir = walk_dir |> rust.to_mut\n    // (!\\($'\"true; let mut !walk_dir = !walk_dir\"') : bool) |> ignore","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_walk_dir (dir : string) : walk_dir =\n    !\\\\(dir, $'\"async_walkdir::WalkDir::new(&*$0)\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl new_walk_dir (dir : string) : walk_dir =
       !\\(dir, $'"async_walkdir::WalkDir::new(&*$0)"')
-      // inl walk_dir : walk_dir = walk_dir |> rust.to_mut
-      // (!\($'"true; let mut !walk_dir = !walk_dir"') : bool) |> ignore
   """,
   timeout: 300_000
 )
@@ -764,17 +761,13 @@ Spiral.Kino.eval!(
 
 ### walk_dir_filter
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    if is_rust () then\n        // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the\n        // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's\n        // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter\n        // closure binds `f` whole: edition 2021 would otherwise capture only the field `f.0` (the non-Send closure).\n        global \"struct SpiralAssertSend<T>(T);\\nunsafe impl<T> Send for SpiralAssertSend<T> {}\\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\\n    type Output = T::Output;\\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\\n}\"\n        inl fn entry =\n            inl future = fn entry\n            async.new_future_move_send fun () =>\n                inl result = future |> async.await_send\n                inl filtering : async_walkdir_filtering =\n                    match result with\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    else\n        inl fn entry = async.new_future_send fun () =>\n            inl result = fn entry |> async.await_send\n            inl filtering : async_walkdir_filtering =\n                match result with\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =\n    if is_rust () then\n        global \"struct SpiralAssertSend<T>(T);\\nunsafe impl<T> Send for SpiralAssertSend<T> {}\\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\\n    type Output = T::Output;\\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\\n}\"\n        inl fn entry =\n            inl future = fn entry\n            async.new_future_move_send fun () =>\n                inl result = future |> async.await_send\n                inl filtering : async_walkdir_filtering =\n                    match result with\n                    | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                    | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                    | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n                filtering\n        !\\\\((walk_dir, fn), $'\"{ let f = SpiralAssertSend($1); async_walkdir::WalkDir::filter($0, move |x| { let f = &f; SpiralAssertSend((f.0)(x)) }) }\"')\n    else\n        inl fn entry = async.new_future_send fun () =>\n            inl result = fn entry |> async.await_send\n            inl filtering : async_walkdir_filtering =\n                match result with\n                | Ignore => !\\($'\"async_walkdir::Filtering::Ignore\"')\n                | IgnoreDir => !\\($'\"async_walkdir::Filtering::IgnoreDir\"')\n                | Continue => !\\($'\"async_walkdir::Filtering::Continue\"')\n            filtering\n        !\\\\((walk_dir, fn), $'\"async_walkdir::WalkDir::filter($0, move |x| $1(x))\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
       if is_rust () then
-          // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the
-          // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's
-          // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter
-          // closure binds `f` whole: edition 2021 would otherwise capture only the field `f.0` (the non-Send closure).
           global "struct SpiralAssertSend<T>(T);\nunsafe impl<T> Send for SpiralAssertSend<T> {}\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\n    type Output = T::Output;\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\n}"
           inl fn entry =
               inl future = fn entry
@@ -1126,14 +1119,13 @@ Spiral.Kino.eval!(
 
 ### directory_separator_char
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_separator_char () : char =\n    run_target function\n        // The native char is a byte.\n        | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char\n        | TypeScript _ => fun () => '/'\n        | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let directory_separator_char () : char =\n    run_target function\n        | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char\n        | TypeScript _ => fun () => '/'\n        | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   let directory_separator_char () : char =
       run_target function
-          // The native char is a byte.
           | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
           | TypeScript _ => fun () => '/'
           | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'
@@ -1241,7 +1233,7 @@ Spiral.Kino.eval!(
 
 ### create_temp_path'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let create_temp_path' (guid : guid.guid) =\n    run_target_args' guid function\n        | _ => fun guid =>\n            get_temp_path ()\n            </> join \"!create_temp_path_\" // TODO: replace ! (generates invalid links)\n            </> (env.get_entry_assembly_name ())\n            </> (guid |> sm'.obj_to_string)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let create_temp_path' (guid : guid.guid) =\n    run_target_args' guid function\n        | _ => fun guid =>\n            get_temp_path ()\n            </> join \"!create_temp_path_\"\n            </> (env.get_entry_assembly_name ())\n            </> (guid |> sm'.obj_to_string)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1250,7 +1242,7 @@ Spiral.Kino.eval!(
       run_target_args' guid function
           | _ => fun guid =>
               get_temp_path ()
-              </> join "!create_temp_path_" // TODO: replace ! (generates invalid links)
+              </> join "!create_temp_path_"
               </> (env.get_entry_assembly_name ())
               </> (guid |> sm'.obj_to_string)
   """,
@@ -1487,7 +1479,7 @@ Spiral.Kino.eval!(
 
 ### find_parent
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let find_parent file_type name root_dir =\n    inl is_file = file_type = File\n    inl exists_fn = if is_file then file_exists else directory_exists\n    let rec 루프 dir =\n        if dir </> name |> exists_fn\n        then dir |> Ok\n        else\n            inl parent = dir |> directory_get_parent\n            match parent |> optionm'.unbox with\n            | Some parent => parent |> 루프\n            | None =>\n                sm'.(++#) \"file_system.find_parent / No parent for \" (if is_file then \"file\" else \"dir\")\n                +. $'$\" \\'{!name}\\' at \\'{!root_dir}\\' (until \\'{!dir}\\')\"'\n                |> fun x => x : string\n                |> Error\n    root_dir |> 루프","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let find_parent file_type name root_dir =\n    inl is_file = file_type = File\n    inl exists_fn = if is_file then file_exists else directory_exists\n    let rec 루프 dir =\n        if dir </> name |> exists_fn\n        then dir |> Ok\n        else\n            inl parent = dir |> directory_get_parent\n            match parent |> optionm'.unbox with\n            | Some parent => parent |> 루프\n            | None =>\n                sm'.(++#) \"file_system.find_parent / No parent for \" (if is_file then \"file\" else \"dir\")\n                ++# $'$\" \\'{!name}\\' at \\'{!root_dir}\\' (until \\'{!dir}\\')\"'\n                |> fun x => x : string\n                |> Error\n    root_dir |> 루프","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1504,7 +1496,7 @@ Spiral.Kino.eval!(
               | Some parent => parent |> 루프
               | None =>
                   sm'.(++#) "file_system.find_parent / No parent for " (if is_file then "file" else "dir")
-                  +. $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
+                  ++# $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
                   |> fun x => x : string
                   |> Error
       root_dir |> 루프
@@ -1536,7 +1528,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    fun () =>\n        join\n            // Rust's source directory is its crate's (CARGO_MANIFEST_DIR: a temp crate under Kino); a Rust cell's working\n            // directory is in the checkout.\n            get_current_directory ()\n            |> find_parent file_type file\n            |> resultm.get\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.try'\n            |> sm'.from_os_str_ref\n            |> Some\n            |> optionm'.box\n    |> fun x => x () |> optionm'.unbox\n    |> optionm'.default_value \"\"\n|> am'.distinct\n|> fun result =>\n    result |> am'.length |> _assert_eq 1i32\n    index result 0i32 |> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> rust\n\na ;[ Directory, \"workspace\"; File, \"README.md\" ]\n|> am.map fun file_type, file =>\n    fun () =>\n        join\n            get_current_directory ()\n            |> find_parent file_type file\n            |> resultm.get\n            |> sm'.to_std_string\n            |> new_path_buf\n            |> path_buf_file_name\n            |> optionm'.try'\n            |> sm'.from_os_str_ref\n            |> Some\n            |> optionm'.box\n    |> fun x => x () |> optionm'.unbox\n    |> optionm'.default_value \"\"\n|> am'.distinct\n|> fun result =>\n    result |> am'.length |> _assert_eq 1i32\n    index result 0i32 |> _assert_eq \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1548,8 +1540,6 @@ Spiral.Kino.eval!(
   |> am.map fun file_type, file =>
       fun () =>
           join
-              // Rust's source directory is its crate's (CARGO_MANIFEST_DIR: a temp crate under Kino); a Rust cell's working
-              // directory is in the checkout.
               get_current_directory ()
               |> find_parent file_type file
               |> resultm.get
@@ -1598,7 +1588,7 @@ Spiral.Kino.eval!(
 
 ### read_link
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let read_link (path : string) : resultm.result' path_buf stream.io_error =\n    let run 루프 n error path' =\n        inl name = path' |> get_file_name\n        inl parent = path' |> directory_get_parent |> optionm'.unbox\n        inl error'' = #?error\n        match parent with\n        | _ when n >= 11 =>\n            ($'$\"file_system.read_link / \"' : string)\n            +. $'$\"path: {!path} / n: {!n} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n        | Some parent when path' <>. \"\" =>\n            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok parent' =>\n                (parent' |> path_buf_display |> convert.convert) </> name\n                |> sm'.to_std_string\n                |> new_path_buf\n                |> resultm.ok''\n            | Error error' =>\n                ($'$\"file_system.read_link / \"' : string)\n                +. $'$\"error\\': {!error'} / error: {!error''} / name: {!name}\"'\n                |> stream.new_io_error\n                |> resultm.err\n        | _ =>\n            ($'$\"file_system.read_link / run / The file or directory is not a reparse point. / \"' : string)\n            +. $'$\"path: {!path} / error: {!error''} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n\n    run_target function\n        | Rust => fun () =>\n            if path |> directory_exists\n            then !\\\\(path, $'\"std::fs::read_link(&*$0)\"')\n            else\n                // let rec 루프 n path' =\n                let rec 루프 forall t {number}.\n                    (n : t)\n                    (path' : string)\n                    : resultm.result' path_buf stream.io_error\n                    =\n                    run_target function\n                        | Rust => fun () =>\n                            inl result : _ _ stream.io_error = !\\\\(path', $'\"std::fs::read_link(&*$0)\"')\n                            inl result = result |> resultm.map_error' sm'.format |> resultm.unbox\n                            match result with\n                            | Ok x => x |> resultm.ok''\n                            | Error error => path' |> run 루프 n error\n                        | _ => fun () => null ()\n                path |> 루프 0u8\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            // let rec 루프 n path' =\n            let rec 루프 forall t {number}.\n                (n : t)\n                (path' : string)\n                : resultm.result' path_buf stream.io_error\n                =\n                inl result =\n                    path'\n                    |> directory_info\n                    |> directory_info_attributes\n                    |> file_attributes_has_flag (file_attributes_reparse_point ())\n                if result then\n                    path'\n                    |> file_info\n                    |> file_info_link_target\n                    |> convert.unbox\n                    |> resultm.ok''\n                else\n                    inl error =\n                        ($'$\"file_system.read_link / Fsharp / \"' : string)\n                        +. $'$\"The file or directory is not a reparse point. / \"'\n                        +. $'$\"path: {!path} / result: {!result} / path\\': {!path'} / n: {!n}\"'\n                        |> stream.new_io_error\n                    path' |> run 루프 n error\n            path |> 루프 0u8\n        | _ => fun () => $'Unchecked.defaultof<_>'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"let read_link (path : string) : resultm.result' path_buf stream.io_error =\n    let run 루프 n error path' =\n        inl name = path' |> get_file_name\n        inl parent = path' |> directory_get_parent |> optionm'.unbox\n        inl error'' = #?error\n        match parent with\n        | _ when n >= 11 =>\n            ($'$\"file_system.read_link / \"' : string)\n            ++# $'$\"path: {!path} / n: {!n} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n        | Some parent when path' <>. \"\" =>\n            match 루프 (n + 1) parent |> resultm.map_error' sm'.format |> resultm.unbox with\n            | Ok parent' =>\n                (parent' |> path_buf_display |> convert.convert) </> name\n                |> sm'.to_std_string\n                |> new_path_buf\n                |> resultm.ok''\n            | Error error' =>\n                ($'$\"file_system.read_link / \"' : string)\n                ++# $'$\"error\\': {!error'} / error: {!error''} / name: {!name}\"'\n                |> stream.new_io_error\n                |> resultm.err\n        | _ =>\n            ($'$\"file_system.read_link / run / The file or directory is not a reparse point. / \"' : string)\n            ++# $'$\"path: {!path} / error: {!error''} / path\\': {!path'} / name: {!name}\"'\n            |> stream.new_io_error\n            |> resultm.err\n\n    run_target function\n        | Rust => fun () =>\n            if path |> directory_exists\n            then !\\\\(path, $'\"std::fs::read_link(&*$0)\"')\n            else\n                let rec 루프 forall t {number}.\n                    (n : t)\n                    (path' : string)\n                    : resultm.result' path_buf stream.io_error\n                    =\n                    run_target function\n                        | Rust => fun () =>\n                            inl result : _ _ stream.io_error = !\\\\(path', $'\"std::fs::read_link(&*$0)\"')\n                            inl result = result |> resultm.map_error' sm'.format |> resultm.unbox\n                            match result with\n                            | Ok x => x |> resultm.ok''\n                            | Error error => path' |> run 루프 n error\n                        | _ => fun () => null ()\n                path |> 루프 0u8\n        | Fsharp _\n        | TypeScript _ => fun () =>\n            let rec 루프 forall t {number}.\n                (n : t)\n                (path' : string)\n                : resultm.result' path_buf stream.io_error\n                =\n                inl result =\n                    path'\n                    |> directory_info\n                    |> directory_info_attributes\n                    |> file_attributes_has_flag (file_attributes_reparse_point ())\n                if result then\n                    path'\n                    |> file_info\n                    |> file_info_link_target\n                    |> convert.unbox\n                    |> resultm.ok''\n                else\n                    inl error =\n                        ($'$\"file_system.read_link / Fsharp / \"' : string)\n                        ++# $'$\"The file or directory is not a reparse point. / \"'\n                        ++# $'$\"path: {!path} / result: {!result} / path\\': {!path'} / n: {!n}\"'\n                        |> stream.new_io_error\n                    path' |> run 루프 n error\n            path |> 루프 0u8\n        | _ => fun () => $'Unchecked.defaultof<_>'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1611,7 +1601,7 @@ Spiral.Kino.eval!(
           match parent with
           | _ when n >= 11 =>
               ($'$"file_system.read_link / "' : string)
-              +. $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
+              ++# $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
               |> stream.new_io_error
               |> resultm.err
           | Some parent when path' <>. "" =>
@@ -1623,12 +1613,12 @@ Spiral.Kino.eval!(
                   |> resultm.ok''
               | Error error' =>
                   ($'$"file_system.read_link / "' : string)
-                  +. $'$"error\': {!error'} / error: {!error''} / name: {!name}"'
+                  ++# $'$"error\': {!error'} / error: {!error''} / name: {!name}"'
                   |> stream.new_io_error
                   |> resultm.err
           | _ =>
               ($'$"file_system.read_link / run / The file or directory is not a reparse point. / "' : string)
-              +. $'$"path: {!path} / error: {!error''} / path\': {!path'} / name: {!name}"'
+              ++# $'$"path: {!path} / error: {!error''} / path\': {!path'} / name: {!name}"'
               |> stream.new_io_error
               |> resultm.err
 
@@ -1637,7 +1627,6 @@ Spiral.Kino.eval!(
               if path |> directory_exists
               then !\\(path, $'"std::fs::read_link(&*$0)"')
               else
-                  // let rec 루프 n path' =
                   let rec 루프 forall t {number}.
                       (n : t)
                       (path' : string)
@@ -1654,7 +1643,6 @@ Spiral.Kino.eval!(
                   path |> 루프 0u8
           | Fsharp _
           | TypeScript _ => fun () =>
-              // let rec 루프 n path' =
               let rec 루프 forall t {number}.
                   (n : t)
                   (path' : string)
@@ -1674,8 +1662,8 @@ Spiral.Kino.eval!(
                   else
                       inl error =
                           ($'$"file_system.read_link / Fsharp / "' : string)
-                          +. $'$"The file or directory is not a reparse point. / "'
-                          +. $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
+                          ++# $'$"The file or directory is not a reparse point. / "'
+                          ++# $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
                           |> stream.new_io_error
                       path' |> run 루프 n error
               path |> 루프 0u8
@@ -1718,15 +1706,12 @@ Spiral.Kino.eval!(
 
 ### get_workspace_root
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_workspace_root () =\n    // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory\n    // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through\n    // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.\n    inl repo_root = env.get_environment_variable \"SPIRAL_REPO_ROOT\"\n    if repo_root <> \"\"\n    then repo_root |> normalize_path\n    else\n        inl dirs =\n            [ get_current_directory; get_source_directory; fun () => \"/workspaces\" ]\n        let run dir =\n            dir\n            |> find_parent Directory (\"spiral\" </> \"workspace\")\n            |> function\n                | Ok dir => dir |> normalize_path |> Some\n                | Error error =>\n                    trace Warning\n                        fun () => \"file_system.get_workspace_root\"\n                        fun () => { dir error }\n                    None\n        inl root =\n            (None, dirs)\n            ||> listm.fold fun acc dir =>\n                match acc with\n                | Some dir => Some dir\n                | None => dir () |> run\n            |> optionm.value\n        inl root =\n            match root |> get_file_name with\n            | \"deps\" =>\n                root\n                |> directory_get_parent\n                |> optionm'.get'\n                |> run\n                |> optionm.value\n            | _ => root\n        root </> \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get_workspace_root () =\n    inl repo_root = env.get_environment_variable \"SPIRAL_REPO_ROOT\"\n    if repo_root <> \"\"\n    then repo_root |> normalize_path\n    else\n        inl dirs =\n            [ get_current_directory; get_source_directory; fun () => \"/workspaces\" ]\n        let run dir =\n            dir\n            |> find_parent Directory (\"spiral\" </> \"workspace\")\n            |> function\n                | Ok dir => dir |> normalize_path |> Some\n                | Error error =>\n                    trace Warning\n                        fun () => \"file_system.get_workspace_root\"\n                        fun () => { dir error }\n                    None\n        inl root =\n            (None, dirs)\n            ||> listm.fold fun acc dir =>\n                match acc with\n                | Some dir => Some dir\n                | None => dir () |> run\n            |> optionm.value\n        inl root =\n            match root |> get_file_name with\n            | \"deps\" =>\n                root\n                |> directory_get_parent\n                |> optionm'.get'\n                |> run\n                |> optionm.value\n            | _ => root\n        root </> \"spiral\"","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl get_workspace_root () =
-      // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory
-      // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through
-      // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.
       inl repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
       if repo_root <> ""
       then repo_root |> normalize_path

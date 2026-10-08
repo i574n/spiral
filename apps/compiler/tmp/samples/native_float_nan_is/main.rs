@@ -2,26 +2,26 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let mut v2: f32 = f32::NAN;
-    let mut v6: f64 = f64::NAN;
-    let mut v8: f32 = 1.0f32;
-    let mut v9: f64 = 1.0f64;
-    let mut v10: bool = (v2).is_nan();
-    let mut v12: bool = if v10 {
-        let mut v11: bool = (v6).is_nan();
-        v11
+    let mut v3: f32 = f32::NAN;
+    let mut v8: f64 = f64::NAN;
+    let mut v10: f32 = 1.0f32;
+    let mut v11: f64 = 1.0f64;
+    let mut v12: bool = (v3).is_nan();
+    let mut v14: bool = if v12 {
+        let mut v13: bool = (v8).is_nan();
+        v13
     } else {
         false
     };
-    if v12 {
-        let mut v13: bool = (v8).is_nan();
-        let mut v15: bool = if v13 {
+    if v14 {
+        let mut v15: bool = (v10).is_nan();
+        let mut v17: bool = if v15 {
             true
         } else {
-            let mut v14: bool = (v9).is_nan();
-            v14
+            let mut v16: bool = (v11).is_nan();
+            v16
         };
-        if v15 {
+        if v17 {
             2i32
         } else {
             0i32

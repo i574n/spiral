@@ -12,7 +12,6 @@ inl render label (loading' : () -> bool) (on_click : () -> ()) =
         :>[
             label |> leptos.text_view
 
-            // reactive: the spinner follows loading'
             leptos.reactive_view fun () =>
                 if loading' ()
                 then loading.render (fun () => "[width:15px] [height:14px]") |> leptos.element_to_view

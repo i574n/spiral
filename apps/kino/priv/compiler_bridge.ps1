@@ -61,8 +61,6 @@ function Invoke-Compiler([string]$backend, [string]$source, [string]$target, [st
 
 Remove-SocketFile $Socket
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $Socket) | Out-Null
-# Debug trace of every request/response, opt-in: SPIRAL_KINO_BRIDGE_TRACE=1 writes `<socket>.trace` (started fresh by
-# each bridge; the daemon quotes it when the bridge closes). Off by default, so the file never grows unattended.
 $trace = if ($env:SPIRAL_KINO_BRIDGE_TRACE -in @('1', 'true')) { "$Socket.trace" } else { $null }
 if (Test-Path -LiteralPath "$Socket.trace") { Remove-Item -LiteralPath "$Socket.trace" -Force }
 function Note([string]$msg) {
@@ -94,8 +92,6 @@ try {
   Note "bridge=$bridgePort"
   [Console]::Error.WriteLine("spiral-kino-bridge port=$bridgePort compiler=$($compiler.Id)")
 
-  # The bridge lives only as long as its daemon (the process that started it) and its compiler: a blocking accept left
-  # orphaned bridges, each holding a multi-GB compiler server, after their daemon died (seven on 2026-10-07).
   $parent = (Get-Process -Id $PID).Parent
   :serve while ($true) {
     $client = $null

@@ -9,34 +9,19 @@ namespace Polyglot
 module spiral_compiler =
 
 #if SPIRAL_CORE_HOPAC
-    /// Hopac perf experiments: SPIRAL_HOPAC_EXP=<flag>[,<flag>...] switches off one evaluator subsystem at a time, to
-    /// measure what it costs and whether the suite still needs it. Off (empty) is the default behaviour.
     module HopacPerfExperiment =
         let private flags =
             match System.Environment.GetEnvironmentVariable "SPIRAL_HOPAC_EXP" with
             | null | "" -> Set.empty
             | text -> text.Split([| ','; ';'; ' ' |], System.StringSplitOptions.RemoveEmptyEntries) |> Set.ofArray
         let has (flag: string) = Set.contains flag flags
-        /// The whole-subtree replay registration at a (non-fuse) term entry. Default since 2026-10-03: only once
-        /// sequential mode was requested (a hot re-entry, EJP0011W), which is when the re-entry prefetch and the
-        /// term-cycle fuse paths make the direct evaluator read the replay store. Before that, only the replay driver
-        /// (parent cache handoffs) used the per-entry thunks, and no suite row's output depended on it (2026-10-03,
-        /// -Suite all -Native); bodies entered before a mid-run sequential request stay unregistered. The walk plus the
-        /// parent-handoff wakes it triggered were 35-55% of a mega root's evaluator thread.
-        /// `termreg`: at every entry (the old behaviour); `noreg`: never.
         let alwaysTermRegistration = has "termreg"
         let noTermRegistration = has "noreg"
-        /// The same for the replay registration at a (non-fuse) type entry: only once sequential mode was requested.
-        /// `tyreg`: at every entry (the old behaviour); `notyreg`: never.
         let alwaysTypeRegistration = has "tyreg"
         let noTypeRegistration = has "notyreg"
-        /// Queue parent cache handoffs but don't run the wake callbacks (replay driver tick) synchronously.
         let noHandoffWake = has "nowake"
-        /// Don't queue parent cache handoffs at all.
         let noHandoff = has "nohandoff"
 
-    /// Evaluator node entries (EvalCycleGuard.enter): progress evidence for the JP watchdog and the progress plateau
-    /// guard. Defined first so the diagnostics modules can read it.
     module EvalProgress =
         let mutable steps = 0L
 
@@ -81,8 +66,6 @@ module spiral_compiler =
 
     module FastRuntimeFormat =
 
-        // Boundary-only replacement for high-arity PrintfFormat sites.
-        // The literal is unchanged; boxing removes formatting arity from the F# type graph.
         let private invariantCulture = System.Globalization.CultureInfo.InvariantCulture
 
         let private appendInvariant (builder:System.Text.StringBuilder) (format:string) (value:obj) =
@@ -94,8 +77,6 @@ module spiral_compiler =
                 | _ ->
                     builder.Append(value.ToString()) |> ignore
 
-        // Keep object formatting behind an explicit render boundary, but avoid
-        // F# structural %A reflection as a hidden domain serializer.
         let pretty (value:obj) = if isNull value then "null" else value.ToString()
         let objectText (value:obj) = if isNull value then "null" else value.ToString()
 
@@ -167,12 +148,8 @@ module spiral_compiler =
                             appendInvariant builder ("F" + System.Convert.ToString(digits, invariantCulture)) value
                         | other -> invalidArg "template" ("FastRuntimeFormat unsupported specifier %" + string other)
                         templateIndex <- cursor + 1
-            // Telemetry rendering must never become terminal authority. If a
-            // mechanically migrated callsite still supplies extra values, keep
-            // the durable row alive and let explicit fields expose the drift.
             builder.ToString()
 
-    // Generic native-Hopac structural cutover scaffold. Version labels are external control; code names stay stable.
     type NativeCutoverTermKind =
         | NativeCutoverTermKind
 
@@ -325,9 +302,6 @@ module spiral_compiler =
           allows_compile_breaks : bool
           no_fabrication : bool }
 
-    // MIGRATION final destructive migration scaffold: EvalWorklist becomes a legacy shim,
-    // every native evaluation return must carry an exact-once semantic fact or a typed poison,
-    // and portable CIC/HVM seams are represented as domain values instead of string classifiers.
     type NativeCutoverShimOnlyStage = class end
     type NativeCutoverSemanticFactStage = class end
     type NativeCutoverRejectedNoFactStage = class end
@@ -439,10 +413,6 @@ module spiral_compiler =
         eventAdapterRef : uint32
     }
 
-    // Breakthrough consolidation: authority exclusion is a
-    // first-class proof, not a comment. The legacy evaluator can translate ingress
-    // and execute reducer-granted work only; every semantic and terminal capability
-    // is structurally absent from the shim.
     type NativeCutoverLegacyAuthorityExclusionProof = private {
         proofRef : uint32
         rootSelectionExcluded : bool
@@ -508,11 +478,6 @@ module spiral_compiler =
         type ContentDigest = private | ContentDigest of string
 
         module ContentDigest =
-            // Digests identify things inside one compile (work units, receipts, refs); nothing outside the
-            // process checks them. SHA-256 (with the UTF-8 encoding, concatenations and a memo whose key hashing
-            // cost as much) was ~25% of a large compile (FRONTIER.md fix 39), so this is a fast non-cryptographic
-            // 256-bit hash: four independently seeded 64-bit lanes over the UTF-16 text, each finished with
-            // MurmurHash3's fmix64. The format is unchanged: 64 lowercase hex digits, ':', the label.
             let inline private fmix64 (k0: uint64) =
                 let mutable k = k0
                 k <- k ^^^ (k >>> 33)
@@ -548,12 +513,10 @@ module spiral_compiler =
             let ofText label (text:string) =
                 ContentDigest(hexOf (lanes label (if isNull text then "<null>" else text)) + ":" + label)
 
-            /// The same fast hash for other in-process identity refs (was SHA-256 at each site).
             let hash64 (text:string) =
                 let struct (a, _, _, _) = lanes "" (if isNull text then "" else text)
                 a
 
-            /// 64 lowercase hex digits of the fast hash, where a SHA-256 hex string was the identity.
             let hex256 (text:string) = hexOf (lanes "" (if isNull text then "" else text))
 
             let text (ContentDigest value) = value
@@ -627,9 +590,6 @@ module spiral_compiler =
 
         module InternedTextIdOps =
             let private gate = obj()
-            // Hopac perf: sites and shapes are interned on every evaluator node entry, from every worker. Lookups of
-            // an existing (kind, text) are lock-free reads of a concurrent table holding the finished id; only a miss
-            // takes the lock, which keeps slots numbered in first-seen order exactly as before.
             [<Sealed>]
             type private InternedTextIdentityComparer() =
                 interface System.Collections.Generic.IEqualityComparer<struct (uint32 * string)> with
@@ -894,9 +854,6 @@ module spiral_compiler =
             CompilerIdentityKernel.InternedTextId.create<GlobalNameKind> value
         let text (value:GlobalNameId) = CompilerIdentityKernel.InternedTextIdOps.text value
 
-    // Source-language namespaces are open-world, so use interned phantom IDs
-    // rather than a closed DU.  Term/type/constraint namespaces remain distinct
-    // even when the parser supplied the same lexical spelling.
     type TermNameKind private () =
         static member InternedKindTag () = 0x110003u
     type TypeNameKind private () =
@@ -961,7 +918,6 @@ module spiral_compiler =
         let private byValue : System.Collections.Generic.Dictionary<uint32,string> =
             System.Collections.Generic.Dictionary<uint32,string>()
 
-        // In-process identity refs: the fast hash of ContentDigest (fix 39), not SHA-256.
         let private identityOf label (parts:seq<string>) = label + "|" + (parts |> String.concat "|")
 
         let digest64 label parts = CompilerIdentityKernel.ContentDigest.hash64 (identityOf label parts)
@@ -1673,684 +1629,22 @@ module spiral_compiler =
         | RootCompleteHandoffBudgetFastFail -> "fast_fail_root_complete_handoff"
         | RootCompleteHandoffBudgetLegacyWide -> "legacy_wide_root_complete_handoff"
 
-    /// MIGRATION DYNAMIC-DB APPLY JOIN:
-    /// - MIGRATION proved the leaf-complete queued replay drain fires and moved the
-    ///   frontier through concrete EUnitTest/EV/ELet/EOp reductions into the true
-    ///   dynamic-join blocker at rust.spi:257.
-    /// - The remaining repeat is a dynamic head after a DV arg where the next arg is DB:
-    ///   runtime_function_apply_requires_dyn_typecheck@arg1/DB.  Treat DB as a
-    ///   late-bound dynamic-join apply candidate so the existing runDynamicJoinApplyAfterDefinition
-    ///   path gets a chance to decide, instead of parking on the generic dyn-typecheck blocker.
-    /// - This is fail-closed: no DB/DV/Data is fabricated, concrete replay still runs first,
-    ///   and failure remains semantic_dynamic_join_apply_blocked / explicit_dynamic_join_apply_required.
-    ///
-    /// MIGRATION HOTFIX REPLAY-FINGERPRINT CANDIDATE TYPE:
-    /// - MIGRATION introduced a compile-time ambiguity: liveNonRepeat only touched the
-    ///   shared `status` field, so F# inferred it against ReplayTask at the filter site
-    ///   even though the candidate list is Frame option slots.
-    /// - This hotfix pins liveNonRepeat to Frame, preserving MIGRATION scheduler
-    ///   semantics without changing runtime policy, writer/codegen gates, or retry caps.
-    /// - Expected MIGRATION runtime should now reach the intended progress-yield
-    ///   telemetry instead of failing at FS0001 on ReplayTask versus Frame.
-    ///
-    /// Spiral Compiler - Partial Evaluation Engine (par)
-    ///
-    /// MIGRATION STALE-RETARGET YIELD + TRUTHFUL BLOCKER REPORTING:
-    /// - MIGRATION correctly quarantined repeated stale_root_complete retargets, but the
-    ///   terminal stale-retarget blocker could still monopolize retry_stop while pending
-    ///   alternate work existed, and the outer retry_stop telemetry still labelled the
-    ///   abort as a generic semantic_step_partial.
-    /// - Stale-retarget blockers now park in their kind slot and yield to a non-terminal
-    ///   alternate frontier before stopping.  The final resume-blocked diagnostic now reports
-    ///   the actual canonical blocker status instead of flattening it to semantic_step_partial.
-    /// - This remains fail-closed: a stale root proof is never reused for a different cell,
-    ///   no Ty/Data is fabricated, no retry cap is raised, and writer/codegen gates stay closed.
-    ///
-    /// MIGRATION FINGERPRINT YIELD TRAMPOLINE:
-/// - MIGRATION proved stale-root quarantine can yield to another frontier, but the
-///   selected path then exhausted ordinary retry budget on a TTerm
-///   semantic_replay_fingerprint_repeat_blocked at spiral.spi:2670.
-/// - Progress-bearing fingerprint-yields now get a bounded replay trampoline and
-///   preserve the selected frontier across one retry instead of discarding it with
-///   EvalWorklist.reset().
-/// - The fingerprint-yield selector can fall back to a live same-cycle frontier
-///   when no independent kind slot exists, still refusing repeat/terminal frames.
-/// - This is scheduler-only: no Ty/Data is fabricated, no stale proof is promoted,
-///   no cap is unbounded, and writer/codegen gates remain closed.
-///
-/// MIGRATION STALE ROOT RETARGET QUARANTINE:
-    /// - MIGRATION made TV value-missing explicit and stopped terminal retry drains, but the
-    ///   final runtime kept retargeting an old semantic_root_complete shell to fresh TRecord/TFun
-    ///   cells until the same parent-continuation cycle reappeared.
-    /// - Repeated stale_root_complete retargets for the same incoming cell are now counted and
-    ///   quarantined as semantic_stale_root_retarget_blocked instead of rebuilding another
-    ///   continuation envelope from a stale proof shell.
-    /// - This remains fail-closed: the old root witness is not reused as proof for a different
-    ///   cell, no Ty/Data is fabricated, no retry cap is raised, and writer/codegen gates stay closed.
-    ///
-    /// MIGRATION TYPE-VARIABLE CHILD BLOCKER:
-    /// - MIGRATION reached the TFun arg child scheduler, but the child TV at spiral.spi:2669
-    ///   had no materialized type environment and repeated as ty_value_missing_store until
-    ///   the fingerprint guard fired; retry_stop also kept re-draining terminal cycle blockers.
-    /// - TV value-missing is now a first-class terminal worklist status with explicit
-    ///   type-variable environment diagnostics, and retry drain stops once a non-yieldable
-    ///   terminal blocker is canonical.
-    /// - This remains fail-closed: no YFun/YMetavar is fabricated, no root proof is forged,
-    ///   no retry cap is raised, and writer/codegen gates remain closed until a true root witness exists.
-    ///
-    /// MIGRATION PARENT-CYCLE TERMINALIZATION:
-    /// - MIGRATION successfully detected parent-continuation cycles, but retry_stop still
-    ///   rewrapped the same blocked TFun->TRecord continuation as a fresh continuation_envelope.
-    /// - Parent-continuation cycle blockers are now first-class terminal worklist statuses,
-    ///   re-peeked after replay commits, and eligible to yield to another live frontier.
-    /// - This remains fail-closed: no type/value is fabricated, no retry cap is raised, and
-    ///   writer/codegen gates remain closed until a real semantic_root_complete witness exists.
-    ///
-    /// MIGRATION PARENT CONTINUATION CYCLE GUARD:
-    /// - MIGRATION exposed a pure parent-continuation livelock: TFun<->TB replay cells
-    ///   both resolved store values and immediately resumed each other, growing step ids
-    ///   forever before the TFun child scheduler could fire.
-    /// - MIGRATION keeps the store fail-closed but records parent-continuation edge counts;
-    ///   after a bounded repeat cap it emits an explicit parent-cycle blocker instead of
-    ///   scheduling another parent replay task.  No caps are raised and no Ty is fabricated.
-    ///
-    /// MIGRATION TFUN CHILD REPLAY:
-    /// - MIGRATION proved the ETypeApply type-arg TTerm reaches the ty replay driver, but the TTerm conversion immediately forces an annotated function type and then repeats on TFun.
-    /// - TFun now has an explicit TypeFunSpine for arg/body children, schedules the missing child through ty_replay_driver, and resumes the parent only after normal child type replay has materialized both sides.
-    /// - TTerm conversion diagnostics now preserve the hidden conversion failure detail instead of collapsing every failure into ty_tterm_conversion_blocked.
-    /// - This remains scheduler-only and fail-closed: no YFun is fabricated without child values, no root proof is forged, no writer/codegen gate opens, and the root-complete yield cap is not increased.
-    ///
-    /// MIGRATION TTERM TERM CHILD REPLAY:
-    /// - MIGRATION proved ETypeApply type-arg child replay is live: eval_worklist_type_apply_child_replay_scheduled/type_apply_type_arg_child fired and the old explicit type-arg stepper disappeared.
-    /// - The new terminal is deeper in the typed replay driver: TTerm reaches the ty queue but its embedded term is still opaque, causing ty_shape_dispatch_dispatched:TTerm fingerprint repeats.
-    /// - TTerm now records a TypeTermSpine, schedules the embedded term as a term replay child, then converts the stored term value with data_to_ty only after that child is concrete.
-    /// - The bridge is scheduler-only and fail-closed: no type value is fabricated, no root proof is forged, no writer/codegen gate is opened, and TFun remains the next likely frontier.
-    ///
-    /// MIGRATION TYPE-APPLY TYPE-ARG CHILD REPLAY:
-    /// - MIGRATION proved the generic apply child scheduler works: the EApply success now emits eval_worklist_apply_child_replay_scheduled and drives into ETypeApply.
-    /// - The new terminal is narrower: ETypeApply schedules its type argument with term_type_apply_type_arg_scheduled, then parks on explicit_eval_worklist_type_apply_type_arg_stepper_required because only the function child had a replay queue bridge.
-    /// - Schedule the missing ETypeApply type argument as a replay child too, emitting eval_worklist_type_apply_child_replay_scheduled with role=type_apply_type_arg_child.
-    /// - This is scheduler-only and fail-closed: the type argument still must resolve through normal ty replay; no term/type value, root proof, writer permission, or JP closure is fabricated.
-    ///
-    /// MIGRATION APPLY HEAD/ARG CHILD REPLAY:
-    /// - MIGRATION cleared the hot reentrant replay-driver spin and restored replay step/reduce/commit progress, but the runtime still exhausted the stable root-complete handoff budget around an ELet success child.
-    /// - The decisive child made progress to term_apply_spine_head_scheduled for an EApply success, then fell back to an explicit apply-head stepper instead of staying as a queued replay child.
-    /// - Schedule generic EApply head/arg children as replay tasks just like ELet body/success children, so the success EApply can drive its ETypeApply/argument subtree without relying on another root-complete handoff.
-    /// - This is scheduler-only and fail-closed: it never invents a term value, never marks semantic_root_complete, and keeps writer/JP pending-body gates unchanged.
-    ///
-    /// MIGRATION REENTRANT REPLAY-POKE SUPPRESSION:
-    /// - MIGRATION cleared the let-success blocker, but the runtime could then spin on the same ty_replay_driver replay_id while a typed replay reducer was already on-stack.
-    /// - Suppress semantic-cell-attached self-pokes during an active replay-driver reduction; the current driver continues, while reentrant cells remain attached as evidence.
-    /// - Preserves MIGRATION ELet child replay scheduling and all writer/JP pending-body safety gates.
-    ///
-    /// MIGRATION DYNAMIC-HEAD FUNCTION ARG JOIN:
-    /// - MIGRATION proved the selected-frontier force path works, but it kept selecting the same term semantic_dynamic_join_apply_blocked child until the root-yield budget exhausted.
-    /// - The blocked child was not arbitrary: tryDynamicJoinApplyReplayDataWithContext reached runtime_function_apply_requires_dyn_typecheck@arg1/DFunction, meaning a dynamic replay head was being applied to a function-like value.
-    /// - Treat dynamic-head + function/record-like argument as a late-bound dynamic-join frontier, not as terminal generic dyn-typecheck failure; the existing runDynamicJoinApplyAfterDefinition bridge still must produce the value.
-    /// - This is fail-closed: no value/root proof is invented, writer gates stay closed, and failure remains a named dynamic_join_apply_failed detail if the bridge cannot resolve it.
-    ///
-    /// MIGRATION STABLE ROOT REPEAT FORCE:
-    /// - MIGRATION compiled and avoided the writer/placeholder shrink path, but the runtime moved back into stable semantic_root_complete handoff repetition.
-    /// - The selected-frontier repeat ledger correctly detected the same dynamic-join child repeating, but when no alternate frontier existed it aborted instead of spending the bounded root-yield budget on the only live child.
-    /// - If the repeated candidate hits repeat_cap and no fallback exists, force-select that same live child with eval_worklist_selected_frontier_repeat_forced; this remains scheduler-only and cannot unlock writer/root proofs.
-    ///
-    /// MIGRATION FSHARP STATIC FORMAT HOTFIX:
-    /// - Fixes MIGRATION compile error FS0001 at jp_wait_cycle_preflight by using a single
-    ///   static sprintf format literal instead of runtime string concatenation.
-    /// - Preserves the MIGRATION pending-JP-body close gate semantics unchanged.
-    /// - MIGRATION advanced into real jp_wait replay and reached BuildOk, but the writer correctly rejected a tiny F# output because jp_wait_cycle_preflight had forced the barrier closed while method/closure JP body dictionaries were still empty.
-    /// - Gate BuildFile.replay_root_complete reason recording on no outstanding JP body work: when semantic_root_complete appears with pending/enqueued JP bodies, emit eval_worklist_jp_wait_root_complete_pending_jobs_deferred, reset only the local fuse, and keep waiting.
-    /// - This keeps the writer fail-closed, prevents CODEGEN JP PLACEHOLDER BuildOk shrink attempts, and preserves the no-pending fast-close path for real replay-root completion.
-    ///
-    /// MIGRATION JP-WAIT LEAF RETRY:
-    /// - MIGRATION moved past the root-complete/yield-cap loop and into jp_wait_cycle_drain, storing real source values and resolving dynamic joins, but then stopped on a semantic_leaf_complete frame whose parent continuation was not yet registered.
-    /// - Add a bounded retry handoff for leaf-complete/parent-continuation-missing states under sequential term-cycle recovery: emit eval_worklist_leaf_parent_continuation_retry, reset the fuse, and spend one normal retry instead of aborting immediately.
-    /// - This is fail-closed: it never marks semantic_root_complete, never creates BuildOk, never opens writer gates, and remains capped by the existing retry trampoline.
-    ///
-    /// MIGRATION SELECTED-FRONTIER REPEAT LEDGER:
-    /// - MIGRATION proved the post-cap handoff extension works through attempt 73, but the same root-complete proof kept selecting the same term semantic_dynamic_join_apply_blocked frontier until yield_used overflowed the bounded cap.
-    /// - Add a selected-frontier fingerprint ledger for stable root-complete yields: if the same blocked root chooses the same alternate frontier repeatedly, emit eval_worklist_selected_frontier_repeat_blocked and try a different live frontier before spending another yield.
-    /// - This is a scheduler liveness guard only: no cap increase, no invented dynamic value, no forged semantic_root_complete, and writer/codegen gates remain unchanged.
-    ///
-    /// MIGRATION ROOT-COMPLETE POST-CAP HANDOFF:
-    /// - MIGRATION proved the trampoline extension fires, but the next forced-sequential EJP0011 still skipped the root-complete handoff branch because that branch used the old base cap.
-    /// - Use the same bounded yield-extension budget when deciding whether a replay-complete frontier may run the stable-root/yield ledger.
-    /// - Emit eval_worklist_root_complete_handoff_cap_extended when post-base-cap root-complete replay is admitted, preserving fail-closed semantics and keeping writer/codegen gates untouched.
-    ///
-    /// MIGRATION ROOT-COMPLETE YIELD CAP ACCOUNTING:
-    /// - MIGRATION proved stable-root yielding works, but the final yield at the old root-complete cap requested the next retry after the trampoline cap.
-    /// - Keep the ordinary retry cap unchanged, but add a bounded yield-extension budget that only unlocks retries after eval_worklist_stable_root_complete_yielded actually selected a live frontier.
-    /// - Emit eval_worklist_root_complete_yield_retry_budget and eval_worklist_root_complete_trampoline_extended so the next log separates progress-bearing scheduler handoffs from unbounded retry inflation.
-    /// - Safety remains fail-closed: no BuildOk is forged, no semantic value is invented, and writer/shrink gates remain unchanged.
-    ///
-    /// MIGRATION STABLE ROOT-COMPLETE YIELD:
-    /// - MIGRATION proved the dynamic-record bridge and source-value store advance, then stopped on stable_root_complete_livelock while pending alternate work remained.
-    /// - When a completed root frontier repeats up to the stable handoff cap, park it in its kind slot and yield to a live non-root alternate frontier before aborting.
-    /// - Emit eval_worklist_stable_root_complete_yielded so the next runtime log can distinguish real completed-root monopoly from a genuine writer/codegen failure.
-    /// - Safety remains fail-closed: no BuildOk is forged, semantic_root_complete is not created, and writer/shrink gates remain unchanged.
-    ///
-    /// MIGRATION DYNAMIC-RECORD JOIN FALLBACK:
-    /// - MIGRATION proved the higher-order DFunction bridge now fires, but the next concrete frontier is a DRecord body-stepper failure inside tryDynamicJoinApplyReplayDataWithContext.
-    /// - Let the late-bound dynamic join fallback handle the same record-like carriers that the outer DRecord bridge already detects, instead of only retrying DFunction arguments.
-    /// - When a record-like dynamic join still blocks, emit eval_worklist_dynamic_record_apply_blocked and park it as semantic_dynamic_join_apply_blocked so the existing yield gate can select another live frontier.
-    /// - Safety remains fail-closed: concrete apply still runs first, no record/DB value is invented, replay-root completion is not forged, and writer/shrink gates remain unchanged.
-    ///
-    /// MIGRATION DYNAMIC-ARG APPLY YIELD:
-    /// - MIGRATION proved the replay-fingerprint yield fires, but retry_stop still aborts after term_apply_function_body_dynamic_arg_blocked ... runtime_function_apply_requires_dyn_typecheck@arg1/DB.
-    /// - Give that state an explicit semantic_dynamic_join_apply_blocked status, park it like the repeat frontier, and yield to an alternate live kind so the pending TFun/type side can continue.
-    /// - Emit eval_worklist_dynamic_join_apply_blocked and eval_worklist_dynamic_arg_apply_yielded; bump the bounded retry drain to twelve passes for this two-kind handoff without changing retry caps.
-    /// - Safety remains fail-closed: no DB/DV value is invented, no semantic_root_complete is forged, and writer/shrink gates remain unchanged.
-    ///
-    /// MIGRATION REPLAY-FINGERPRINT YIELD:
-    /// - MIGRATION proved the higher-order bridge moved past the previous @arg0/DFunction loop, but the runtime now parks on semantic_replay_fingerprint_repeat_blocked after repeated EUnitTest/DRecord replay fingerprints.
-    /// - Treat the fingerprint repeat as a typed blocked frontier, not as the canonical retry sink: park it in its kind slot and yield to another live non-repeat frontier when one exists.
-    /// - Emit eval_worklist_replay_fingerprint_repeat_yielded so the next log can prove the scheduler moved off the blocked fingerprint instead of burning retry_stop passes.
-    /// - Safety remains fail-closed: no values are invented, replay-root completion is not forged, and writer/shrink gates remain unchanged.
-    ///
-    /// MIGRATION DYNAMIC-FUNCTION APPLY-BODY BRIDGE:
-    /// - MIGRATION runtime did not reach writer/BuildOk; it spent 210 replay reductions in a parent-replay loop after function_body_stepper_failed ... @arg0/DFunction.
-    /// - Extend the late-bound dynamic join apply bridge to higher-order function arguments only after the normal concrete DFunction body attempt has already failed.
-    /// - Emit eval_worklist_apply_function_body_dynamic_function_bridge so the next runtime log can distinguish higher-order dynamic progress from repeated body-child scheduling.
-    /// - Safety remains fail-closed: no value is invented, regular concrete apply still gets first chance, and a result is accepted only through the existing dynamic-join continuation.
-    ///
-    /// MIGRATION DYNAMIC-RECORD FUNCTION-BODY BRIDGE:
-    /// - MIGRATION proved real ty replay progress to semantic_root_complete, then exposed the next frontier at explicit_eval_worklist_function_body_stepper_required.
-    /// - The failing body stepper reason includes function_body_stepper_failed ... @arg0/DRecord, which is the same dynamic runtime frontier handled by the dynamic join bridge.
-    /// - Treat dynamic-record function-body failures as bridgeable evidence before materializing another doomed body replay child.
-    /// - Emit eval_worklist_apply_function_body_dynamic_record_bridge so the next runtime log can prove placeholder bridge progress versus a true missing body stepper.
-    /// - Safety remains fail-closed: no BuildOk is opened, no writer witness is faked, and a bridge value is only accepted through the existing late-bound dynamic join continuation.
-    ///
-    /// MIGRATION CROSS-KIND ACTIVE-REPLAY POKE SUPPRESSION:
-    /// - MIGRATION proved real replay progress: term replay reduced ETypeApply -> EApply and suppressed deferred same-kind child pokes.
-    /// - The new tail is a cross-kind poke hazard: ty_entry/TTerm attaches while term_replay_driver is already active, and the generic replay poke re-enters replay_id=36 without reducing.
-    /// - Active replay driver kind is now classified; incoming cells from the opposite evaluator kind are allowed as evidence but do not poke the active driver.
-    /// - Emit eval_worklist_cross_kind_replay_poke_suppressed so the next runtime log can distinguish safe backpressure from a missing type-term bridge.
-    /// - Safety remains fail-closed: no typed value is invented, writer gate stays closed, and the existing replay tick must still produce the next reduction.
-    ///
-    /// MIGRATION SAME-NODE PARENT-REPLAY SELF-POKE GUARD:
-    /// - MIGRATION moved past ESeq: the runtime tail is now a compact scheduled_parent_replay loop in ty_replay_driver around the same TJoinPoint' node.
-    /// - Same-node same-shape parent replay cells are deferred instead of overwriting the active parent frame and poking the driver recursively.
-    /// - Emit eval_worklist_same_node_replay_poke_suppressed / same_node_parent_replay_cell_deferred so the next runtime log can distinguish useful child deferral from self-poke churn.
-    /// - Safety remains fail-closed: no typed value is invented, writer gate stays closed, and the parent replay must still advance through existing stores/continuations.
-    ///
-    /// MIGRATION SEQ CHILD REPLAY DRIVER:
-    /// - MIGRATION proved the pure StringLitToSymbol op path: term_op_pure_value_resolved:StringLitToSymbol/1_root_resolved appeared and op-impl-required disappeared.
-    /// - The new terminal is ESeq: the driver can identify term_seq_second_scheduled, but commitNext was only explicit_eval_worklist_seq_second_stepper_required, leaving no queued child replay.
-    /// - ESeq first/second children now schedule as immediate typed replay tasks, emitting eval_worklist_seq_child_replay_scheduled and reusing the existing seq parent-continuation.
-    /// - Safety remains fail-closed: the first child must still resolve to unit/placeholder-unit, the second must still produce a real term value, and writer gate stays closed.
-    ///
-    /// MIGRATION STRING-LIT SYMBOL PURE OP:
-    /// - MIGRATION proved the RecordWith child driver was live: record-with child replay scheduled, parent replay advanced through many replay steps, and fingerprint-repeat disappeared.
-    /// - The new narrow terminal is EOp/StringLitToSymbol/1: all args are available, but the pure op resolver returns unimplemented and leaves the enclosing RecordWith partial.
-    /// - StringLitToSymbol now maps DLit/DTLit LitString to DSymbol, and SymbolToString maps DSymbol back to DLit LitString, before the generic op-impl-required frontier.
-    /// - Safety remains fail-closed: only exact literal/string-symbol cases resolve; writer gate stays closed and mixed/unknown operands still require explicit op implementation.
-    ///
-    /// MIGRATION RECORD-WITH CHILD DRIVER + PRIMITIVE TERM LEAVES:
-    /// - MIGRATION proved the type-apply function child driver: eval_worklist_type_apply_function_child_scheduled fired and the child replay reached root-complete.
-    /// - The final terminal moved to RecordWith scheduling the same EApply child repeatedly, then parking on semantic_replay_fingerprint_repeat_blocked.
-    /// - RecordWith child selection now queues the selected child as an immediate typed replay task, emitting eval_worklist_record_with_child_replay_scheduled.
-    /// - ELit/ESymbol leaves are handled before the generic term dispatcher, so hydrated literal/symbol cells do not fall into explicit_eval_worklist_term_stepper_required.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and child values must still resolve through the existing replay store / parent continuation path.
-    ///
-    /// MIGRATION TYPE-APPLY FUNCTION CHILD DRIVER:
-    /// - MIGRATION proved the EApply body bridge worked: body child scheduling and child-value consumption both fired.
-    /// - The next terminal was ETypeApply-as-function at spiral.spi:2670/2671: the driver returned explicit_eval_worklist_type_apply_function_stepper_required and stopped with no queued replay.
-    /// - A missing type-apply function child now schedules an immediate typed replay task, emitting eval_worklist_type_apply_function_child_scheduled.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and the child still must resolve through the existing replay store / parent continuation path.
-    ///
-    /// MIGRATION APPLY FUNCTION-BODY REPLAY BRIDGE:
-    /// - MIGRATION proved RecordWith child scheduling and moved the hot frontier to EApply: the replay now blocks inside a DFunction body with PartEvalTypeError instead of on the opaque RecordWith thunk.
-    /// - Add a late-bound apply-function-body replay bridge, analogous to the type-apply body bridge, so a failing function body can be registered as a real child term with parent continuation.
-    /// - The EApply driver now first consumes any resolved function-body child, then schedules the body child and emits eval_worklist_apply_function_body_scheduled before retrying the whole apply thunk.
-    /// - Safety remains fail-closed: no body value is invented, writer gate stays closed, and repeated body failures remain explicit function-body/frontier evidence.
-    ///
-    /// MIGRATION RECORD-WITH CHILD-SPINE BRIDGE:
-    /// - MIGRATION proved the explicit ERecordWith branch: the replay driver no longer fell through generic term_shape_dispatch, but the thunk still blocked with PartEvalTypeError and then fingerprint-repeat parked.
-    /// - RegisterReplayTerm now records a conservative RecordWith child spine (path/key/value/remove expressions) and parent continuations before installing the fail-closed thunk.
-    /// - The replay driver schedules the first unresolved RecordWith child before retrying the whole thunk, emitting eval_worklist_record_with_child_scheduled; only when all children are ready does it attempt tryTermDetailed.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and failed thunks stay partial rather than pretending root completion.
-    ///
-    /// MIGRATION RECORD-WITH REPLAY BRIDGE:
-    /// - MIGRATION proved payload hydration and type-apply root completion, then exposed a final repeat at spiral.spi:2671: ERecordWith fell through to the generic term_shape_dispatch fallback.
-    /// - The compiler already registers a fail-closed ERecordWith replay thunk; the replay driver now tries tryTermDetailed for ERecordWith before parking an explicit record-with frontier.
-    /// - Emit eval_worklist_record_with_replay_blocked when the thunk is present but still missing a child value, so the next round sees the real child gap instead of generic dispatch churn.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and failed thunks stay partial rather than pretending root completion.
-    ///
-    /// MIGRATION PAYLOAD-CELL HYDRATION BRIDGE:
-    /// - MIGRATION moved past missing-payload duplicates; the new terminal had scheduled_parent_replay carrying semantic_eval_payload(...) but no hydrated ReplayCell in the driver.
-    /// - When a replay task has a typed semantic_eval_payload and the current frontier cell is absent, the driver now reconstructs the ReplayCell from the payload before choosing driver_ready_replay_cell.
-    /// - This is conservative: it only parses the exact compact payload format emitted by formatCellPayload, does not invent values, and keeps writer gate closed.
-    /// - The new proof signal is eval_worklist_replay_payload_cell_hydrated; absence means the next gap is elsewhere, not silently bypassed.
-    ///
-    /// MIGRATION BLOCKED-PAYLOAD DUPLICATE FRONTIER:
-    /// - MIGRATION proved deferred-child poke suppression: the replay advanced through replay_step/replay_reduce instead of re-entering before reduction.
-    /// - The new terminal is a duplicate continuation envelope at sm'_operators.spi:19 with semantic_eval_payload_missing and driver_blocked_semantic_payload.
-    /// - Identical blocked missing-payload replay tasks are no longer rerun blindly; they are parked as semantic_payload_required and diagnosed by eval_worklist_blocked_replay_duplicate_suppressed.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and the next real semantic payload may still promote the frame normally.
-    ///
-    /// MIGRATION DEFERRED-CHILD POKE SUPPRESSION:
-    /// - MIGRATION proved the anti-repeat ledger was not reached because the parent replay driver was re-entered before it could reduce.
-    /// - Deferred EForall' child cells now keep the parent ETypeApply replay queued without immediately poking the driver recursively.
-    /// - Emit eval_worklist_deferred_replay_poke_suppressed and let the already scheduled parent replay tick run to replay_step/replay_reduce.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and deferred cells remain evidence rather than frontier overwrite.
-    ///
-    /// MIGRATION REPLAY FINGERPRINT ANTI-REPEAT:
-    /// - MIGRATION proved active replay preservation but exposed a smaller loop: the same continuation cursor replays EAnnot repeatedly as semantic_step_partial.
-    /// - Track replay driver fingerprints by driver/key/semantic node/cursor/outcome/next and stop rescheduling the same partial replay after a bounded repeat.
-    /// - Emit eval_worklist_replay_fingerprint_repeat and park the frame as semantic_replay_fingerprint_repeat_blocked, preserving the exact explicit stepper requirement.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and the repeat becomes a typed diagnostic frontier instead of a fake root completion.
-    ///
-    /// MIGRATION ACTIVE-REPLAY CELL PRESERVATION:
-    /// - Extends MIGRATION's parent-replay preservation to root continuation replays.
-    /// - MIGRATION added same-kind child-cell defer, but the replay driver rewrote scheduled_parent_replay to driver_ready_replay_cell before attachSemanticCell could observe it.
-    /// - Preserve scheduled_parent_replay while the queued parent task is active, so incoming EForall'/child cells are deferred instead of replacing the EApply/ETypeApply parent frame.
-    /// - This targets the MIGRATION loop: EApply(parent) -> EForall'(child) -> semantic_step_partial -> resume_parent_replay_driver forever.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and parent replay must still resolve through existing value stores.
-    ///
-    /// MIGRATION PARENT-RESUME CELL DEFER:
-    /// - MIGRATION proved the parent-continuation edge works, but exposed a hot loop where the same ETypeApply parent is resumed and immediately overwritten by its EForall' child again.
-    /// - While a scheduled_parent_replay is active, same-kind incoming child cells no longer replace the parent cell; they are deferred and the queued parent replay is poked.
-    /// - This keeps the typed parent in the replay driver long enough to consume the already-resolved child value instead of re-dispatching the child forever.
-    /// - Safety remains fail-closed: no value is invented, writer gate stays closed, and stale root retargeting is preserved.
-    ///
-    /// MIGRATION FRAME-DERIVED PARENT CONTINUATION:
-    /// - MIGRATION proved stale root retargeting, but the new terminal was a real EOp value under real_core.spir:150.
-    /// - The EOp replay completed as semantic_leaf_complete while the frame still represented the parent ETypeApply at spiral.spi:2671.
-    /// - Same-kind semantic-cell attachment now records a conservative frame-derived parent continuation before replacing the frame cell.
-    /// - This preserves fail-closed value replay: only a typed child value may resume the parent; writer gate remains closed.
-    ///
-    /// MIGRATION STALE TY ROOT-COMPLETE RETARGETING:
-    /// - MIGRATION no longer aborted; it live-looped ty_entry on an old semantic_root_complete frontier at listm.spi:6.
-    /// - The incoming cell was a new TJoinPoint' from runtime.spi:330, so the root-complete witness was stale for the current node.
-    /// - Same-kind terminal frames with mismatched semantic cells are now retargeted to a fresh continuation envelope instead of attempting build forever.
-    /// - Writer gate remains closed; this is a liveness/diagnostic patch, not a BuildOk shortcut.
-    ///
-    /// MIGRATION REPLAY PAYLOAD REFRESH + WRITEGUARD SHRINK FRONTIER:
-    /// - MIGRATION proved BigStack handoff works: term replay reached semantic_root_complete and source-value returns.
-    /// - The new terminal was a continuation envelope at sm'.spi:446 with semantic_eval_payload_missing and a duplicate driver_blocked_semantic_payload replay task.
-    /// - Duplicate replay scheduling now refreshes a previously blocked task when a later same-key envelope carries semantic payload/cell, and reruns blocked duplicate drivers.
-    /// - WriteGuard stays closed: replay-complete tiny/shrink outputs remain rejected rather than persisted.
-    ///
-    /// MIGRATION ESYMBOL LEAF REPLAY REGISTRATION:
-    /// - MIGRATION proved the let/apply child scheduling and advanced into repeated semantic_root_complete handoffs.
-    /// - The final abort was no longer a missing let body: it was a stale root-complete witness while the current term was ESymbol.
-    /// - Register ESymbol as a concrete DSymbol leaf in replay term stores, including child/head/arg matches, so source-key/root-complete handoff can return a real value.
-    ///
-    /// MIGRATION LET/APPLY CHILD SCHEDULING:
-    /// - MIGRATION moved past the generic EMacro hole and exposed a concrete ELet body miss under runtime fixture path:5.
-    /// - Let replay now has an explicit child spine, so replay_let_body_value_missing:EApply schedules that EApply child instead of replaying the same let.
-    /// - EApply head readiness now requires a resolved value, not merely a registered thunk, avoiding value_store_race -> apply_impl_required.
-    ///
-    /// MIGRATION EMACRO/LET REPLAY VALUE GATE:
-    /// - MIGRATION proved multi-pass retry drain, then stalled on a concrete EMacro child under runtime fixture path.
-    /// - The replay driver now resolves EMacro and ELet through the value store before falling back to shape-dispatch partials.
-    /// - EMacro replay thunks mirror the real macro evaluator while remaining fail-closed under tryTermDetailed.
-    ///
-    /// MIGRATION RETRY DRAIN MULTI-PASS:
-    /// - MIGRATION recovered stale ESeq root-complete witnesses, then exposed a narrower EApply arg frontier.
-    /// - drainAfterActiveRun now performs up to eight bounded synchronous passes and emits eval_worklist_retry_drain_continue.
-    /// - This preserves retry caps, placeholder/shrink guards, and the writer gate while allowing replay-created child work to run immediately.
-    ///
-    /// MIGRATION WRITE-GATE HARDENING:
-    /// - MIGRATION proved the dynamic join path by reaching term_apply_dynamic_join_value_resolved,
-    ///   then BuildOk wrote while the run still reported unstable=True.
-    /// - Replay-stable existing-output writes now require both the BuildFile.replay_root_complete
-    ///   cache reason and a live EvalWorklist semantic_root_complete witness.
-    /// - WRITE_ABORT/WRITE_SUMMARY telemetry exposes replayCompleteNow and replayStableWrites
-    ///   so future logs can distinguish safe replay recovery from a false-success writer opening.
-    ///
-    /// MIGRATION ACTIVE FUSE KIND-LOCAL RESET:
-    /// - MIGRATION proved completed-kind resets but exposed live cross-kind fuses.
-    /// - Term/ty global fuse handlers now reset when the active fuse key belongs to the other evaluator kind.
-    ///
-    /// MIGRATION RECORD-WITH REPLAY LATE-BOUND APPLY FIX:
-    /// - MIGRATION added ERecordWith replay before the recursive apply function was in lexical scope.
-    /// - Record modify replay now uses EvalReplayValueStore.runApplyAfterDefinition, the same late-bound bridge used by EApply.
-    /// - This clears the two FS0039 compile errors without reintroducing envvars or weakening the writer gate.
-    ///
-    /// MIGRATION RECORD-WITH TERM REPLAY + ROOT-COMPLETE TERM GATING:
-    /// - MIGRATION compiled and proved the MIGRATION root-complete returns, then exposed a stricter
-    ///   frontier: term global-fuse could observe a completed ty witness while the current ERecordWith
-    ///   had no replay term value.
-    /// - RegisterReplayTerm now has a conservative ERecordWith thunk that mirrors the real evaluator's
-    ///   record construction/update/remove semantics without faking values.
-    /// - The term global-fuse path now treats missing current term values as a named partial frontier
-    ///   instead of a false root-complete term success.  Envvars and writer gate remain untouched.
-    ///
-    /// MIGRATION BIGSTACK TRYRUN INDENTATION FIX:
-    /// - MIGRATION accidentally injected EvalReplayTermReturn into the generic BigStack.tryRun catch,
-    ///   where the function returns 'T option rather than Data; this broke F# offside parsing at line ~12390.
-    /// - MIGRATION removes that misplaced catch and keeps the typed term replay sentinel only in term_core,
-    ///   where the surrounding function returns Data and the catch is semantically valid.
-    /// - Runtime behavior from MIGRATION is otherwise preserved: root-complete witness re-peek, no envvars,
-    ///   no fake completion, no writer gate relaxation.
-    ///
-    /// MIGRATION STALE-CONTINUATION ROOT WITNESS RE-PEEK:
-    /// - MIGRATION removed the codegen evalCell NullReference, then exposed the real frontier:
-    ///   synchronous replay commits semantic_root_complete, but local runBounded callers can still
-    ///   observe the older continuation_envelope frame and burn retries as semantic_cycle_after_sequential_retry.
-    /// - drainAfterActiveRun now re-peeks the canonical EvalWorklist frontier after replay drivers run.
-    /// - Global term/type fuse entry points also trust EvalWorklist.hasReplayComplete(), returning
-    ///   EvalReplayTyReturn/EvalReplayTermReturn when the value store proves the root already reduced.
-    /// - Writer safety remains unchanged: no envvars, no fake completion, no write gate relaxation.
-    ///
-    /// MIGRATION CODEGEN TY_TO_DATA REPLAY CELL NULL-SAFETY:
-    /// - MIGRATION compiled through the prior record-label ambiguity and proved jp_wait can close
-    ///   after semantic_root_complete, then F# codegen re-entered ty_to_data while TermCycleFuse
-    ///   was still armed.
-    /// - The PartEvalResult ty_to_data environment intentionally has seq = null; evalCell now
-    ///   measures LangEnv with null-safe counters instead of dereferencing s.seq.Count.
-    /// - This keeps the MIGRATION replay-return policy intact, preserves envvar hygiene, and
-    ///   does not open the writer gate from a codegen-only semantic payload.
-    ///
-    /// MIGRATION TYPE-INFERENCE FIX + MIGRATION HARDCODED POLICY:
-    /// - MIGRATION removed the F# codegen NullReference by taking the safe sequential bind path, but left
-    ///   a diagnostic env-var branch.  MIGRATION removes env-var policy from the compiler hot path: UI,
-    ///   DOP, and F# bind emission are all hardcoded/deterministic.
-    /// - The MIGRATION runtime log shows retry_stop repeatedly reaching semantic_root_complete for a ty/TFun
-    ///   at spiral.spi:2670, then burning retry budget as semantic_cycle_after_sequential_retry.
-    /// - Direct typed cycle handlers now return EvalReplayTyReturn when their explicit worklist frame proves
-    ///   semantic_root_complete, instead of discarding the typed replay result and escalating EJP0011.
-    /// - MIGRATION fixes the F# record-label ambiguity by annotating the direct replay helper as
-    ///   EvalWorklist.Frame option, preventing inference through CompHealth.status : HealthSt.
-    ///
-    /// MIGRATION SAFE F# CODEGEN AFTER REPLAY-COMPLETE:
-    /// - MIGRATION proved semantic_root_complete and closed the jp_wait barrier, then crashed in F# codegen
-    ///   through parMapBoundedSync because the F# backend binds pass mutates shared codegen state.
-    /// - F# bind emission became sequential-by-default; MIGRATION removes the remaining diagnostic env-var fork.
-    /// - parMapBoundedSync preserves the original worker exception stack and logs the worker index/type,
-    ///   so future console diagnostics point to the failing codegen leaf instead of the rethrow site.
-    ///
-    /// MIGRATION TYPED TApply REPLAY + CONSOLE CAP SNAPSHOT:
-    /// - registerReplayTy now stores exact TApply thunks, so forced sequential Hopac replay can reduce
-    ///   record/symbol lookup, nominal/metavar/apply residuals, and YTypeFunction application before retrying.
-    /// - Console heartbeat JSON/startup lines carry a compact capability snapshot for downstream log parsers.
-    ///
-    /// MIGRATION JP-WAIT ROOT-COMPLETE BARRIER CLOSE:
-    /// - MIGRATION proved term/EV full-trace replay can become semantic_root_complete inside jp_wait preflight.
-    /// - The waiter still emitted EJP0011 immediately after that success, forcing redundant retries and losing liveness.
-    /// - When jp_wait_cycle_preflight sees semantic_root_complete, close the local JP barrier and return to the build attempt.
-    /// - If a global type fuse re-enters after a completed typed replay, raise a typed replay-return sentinel and yield the stored Ty.
-    /// - Writer safety remains gated by the replay-root witness ledger and BuildFile.replay_root_complete.
-    ///
-    /// MIGRATION REPLAY-COMPLETE WRITE WITNESS:
-    /// - MIGRATION proved semantic_root_complete survives retry_stop_drain and triggers retry_after_replay_root_complete.
-    /// - The subsequent BuildOk writer still saw replayCompleteNow=false because the frontier witness was generation-local.
-    /// - A short-lived replay-root ledger now preserves the typed root-complete proof across the retry invalidation,
-    ///   but only the writer may consume it and only when BuildFile.replay_root_complete reasons are present.
-    ///
-    /// MIGRATION BUILD-HYGIENE + CONSOLE JSON REPAIR:
-    /// - MIGRATION registered EApply whole-spine thunks before the local apply function was in lexical scope,
-    ///   producing FS0039 at the two capture sites. MIGRATION removes that premature capture.
-    /// - Function-body application remains fail-closed as explicit_eval_worklist_apply_impl_required until an
-    ///   apply-after-definition continuation can be introduced without violating F# scope or writer safety.
-    /// - Console JSON heartbeat now escapes string fields and exports extra/panel payloads for pasteable
-    ///   Hopac/frontier diagnostics without enabling cursor-mutating TUI behavior.
-    ///
-    /// MIGRATION TY-ROOT TASK STATUS REPAIR:
-    /// - MIGRATION intended root ty leaves to complete, but rootTraceReplayAllowed saw (replayTaskStatusToString task.status) after driver mutation.
-    /// - The gate now accepts driver_ready replay tasks and uses the typed cell cursor as well as the frame cursor.
-    /// - This fixes the MIGRATION log where TV reached cursor=32/32 but still committed semantic_leaf_complete.
-    /// - Writer safety remains gated by BuildFile.replay_root_complete; term EV leaves still do not unlock writes.
-    ///
-    /// MIGRATION TY-ROOT LEAF COMPLETION GATE:
-    /// - The MIGRATION log moved the frontier from term/Dyn to a ty replay root at listm.spi:13.
-    /// - A root ty continuation whose own typed value resolves may now become semantic_root_complete.
-    /// - Term EV leaves still cannot unlock writes; only typed root replay or composite parent-resume can retry.
-    /// - Failure stays semantic_step_partial, so unstable writes remain locked behind semantic_root_complete.
-    ///
-    /// MIGRATION PARENT-RESUME ROOT GATE:
-    /// - The MIGRATION log resolved Dyn/1, but the replay driver forgot that the next cell came from a parent-resume task.
-    /// - MIGRATION preserves scheduled parent-resume identity through task status/key checks.
-    /// - A composite value reached by parent-resume may become semantic_root_complete only when no further parent exists.
-    /// - Failure stays semantic_step_partial, so unstable writes remain locked behind semantic_root_complete.
-    ///
-    /// MIGRATION ADD/2 TERM OP STEPPER:
-    /// - MIGRATION named the remaining EOp frontier as Add/2. MIGRATION resolves exact literal Add and zero identities,
-    ///   but keeps symbolic Add partial until residual-op construction exists.
-    ///
-    /// MIGRATION CONDITION-FIRST TERM STEPPER:
-    /// - MIGRATION moved one frontier back to term replay: EIfThenElse was captured but only dispatched as an opaque term shape.
-    /// - MIGRATION records conditional spines (condition/then/else node ids + shapes), resolves literal boolean conditions
-    ///   through the existing value store, and retargets replay to the selected branch only when the condition is value-backed.
-    /// - Non-literal or missing conditions stay semantic_step_partial, so the 323-line false-success writer path remains closed.
-    /// 
-    ///
-    /// ARCHITECTURE: TRUE Hopac-based parallel join-point specialization with SOTA features.
-    /// 
-    /// MIGRATION EV VALUE-STORE STEPPER:
-    /// - MIGRATION proved the safety gate: partial replay no longer writes the 323-line false-success residual.
-    /// - The next missing ingredient is not another retry; it is a typed value boundary. MIGRATION registers term EV
-    ///
-    ///   nodes in a replay value store and only marks semantic_leaf_complete when the replay driver resolves a
-    ///   captured EV through that store.
-    /// - Non-EV shapes still remain semantic_step_partial, so replay completion is value-backed rather than a
-    ///   textual dispatcher label.
-    ///
-    /// MIGRATION BOUNDED EVAL-WORKLIST TRAMPOLINE:
-    /// - Consume the MIGRATION ready_explicit_loop frame with a bounded non-recursive trampoline,
-    ///   emitting eval_worklist_step/eval_worklist_run JSONL instead of stopping at a marker event.
-    /// - The trampoline intentionally runs on frame metadata first: it advances the captured trace cursor
-    ///   and stops with continuation_envelope carrying replay anchors until term/ty replay is wired into the frame payload.
-    /// - Direct term/ty cycle sites now seed the worklist immediately after tripping the fuse, so retry_stop
-    ///   is no longer the first place that can observe the evaluator frontier.
-    /// - Still generic: no listm/runtime hardcode, no budget/env knob, no new DU cases in the compiler AST.
-    ///
-    /// MIGRATION RETRY-STOP WORKLIST MATERIALIZATION:
-    /// - Fix the MIGRATION hole where direct sequential evaluator EJP0011 reached retry_stop with
-    ///   eval_worklist_panel pending=0 because only jp_wait-observed fuses called EvalWorklist.capture.
-    /// - Add a small worklist lifecycle: reset per attempt, ensure-capture from TermCycleFuse, and
-    ///   promote one frame to ready_explicit_loop so console/JSONL prove the frontier survived.
-    /// - Keep this source-generic and policy-stable: no listm/runtime hardcodes, no budget tuning, no env var.
-    ///
-    /// MIGRATION WORKLIST VISIBILITY + CONSOLE FRONTIER:
-    /// - Promote the MIGRATION EvalWorklist seed into an inspectable pending frontier with snapshot/panel helpers.
-    /// - Thread the captured frame into JP console diagnostics so stalled Hopac runs show both scheduler state
-    ///   and evaluator-frontier state in the same pasteable panel.
-    /// - Emit a machine-readable eval_worklist_panel event at capture/retry-stop boundaries; still no source-specific
-    ///   stdlib hacks and no new env-var fallback policy.
-    /// - This is the last scaffold before replacing recursive term/ty descent with a real explicit EvalWorklist loop.
-    ///
-    /// MIGRATION GENERIC WORKLIST FRAME SEED:
-    /// - This is the first actual explicit worklist data structure, not another guard-budget tweak.
-    /// - Adds EvalWorklist.Frame plus a bounded pending queue that captures kind/key/site/depth/re/trace
-    ///   from the current term-cycle fuse.
-    /// - jp_wait now records an eval_worklist_frame before raising the explicit-worklist frontier,
-    ///   preserving a resumable evaluator frame shape for the upcoming loop implementation.
-    /// - Still generic: no source-specific isKnownX checks and no fallback env vars.
-    ///
-    /// MIGRATION FRONTIER TRACE TYPE-ORDER FIX:
-    /// - Fix FS0039 by removing premature Trace annotations from TermCycleFuse.
-    /// - Let F# infer the trace element type from later s.trace/PartEvalTypeError usage, after Trace is declared.
-    /// - Preserve MIGRATION semantics: source-generic frontier trace carry, no env vars, no guard-budget tuning.
-    ///
-    /// MIGRATION HONEST FRONTIER TRACE CARRY:
-    /// - Acknowledge the last ~20 rounds as mostly containment/diagnostic work: useful, but not a
-    ///   semantic fix for the recursive evaluator frontier.
-    /// - Start the actual worklist boundary by carrying a compact trace inside TermCycleFuse itself.
-    ///   jp_wait no longer has to raise an empty-trace frontier when it observes a worker fuse.
-    /// - Keep the policy generic: no source-specific branches, no isKnownX checks, no fallback env vars.
-    /// - The next round must use this captured frontier trace to replace the recursive term/ty descent
-    ///   with an explicit evaluator worklist at the repeated deep-cycle shape.
 
-    /// MIGRATION EXPLICIT EVAL-WORKLIST FRONTIER SCAFFOLD:
-    /// - No source-specific policy branches and no environment variables.
-    /// - Convert the repeated deep sequential EJP0011 cycle into a generic worklist frontier,
-    ///   avoiding a pointless parallel->sequential replay when jp_wait already observed the fuse.
-    /// - Centralize frontier JSON emission in EvalWorklistFrontier so the next round can replace
-    ///   recursive evaluator descent with an explicit stack/worklist at one integration point.
-    /// - Keep trace compact and useful; the policy lives on evaluator shape, not source filenames.
 
-    /// EARLY REENTRY PREFETCH:
-    /// - A prior regression showed that EJP0014 can fire before TermCycleFuse has a frontier,
-    ///   while the sidecar already contains EJP0011W ty/term re-entry keys.
-    /// - Under forced sequential mode, prefetch the first keyed re-entry warning into TermCycleFuse
-    ///   and attach its typed semantic cell, so jp_stall_preflight has something real to drain.
-    /// - This does not mark completion or open the writer; only the existing typed replay driver can
-    ///   produce semantic_root_complete.
 
-    /// MIGRATION JP-WAIT CYCLE PREFLIGHT:
-    /// - MIGRATION removed the initial EJP0014 stall, but the log showed the forced-sequential
-    ///   path now enters through jp_wait_observed_sequential_replay_repeat_guard and only reaches
-    ///   semantic_root_complete later in retry_stop.
-    /// - Drain the live explicit worklist with a larger bounded slice inside the jp_wait
-    ///   cycle-fuse branch itself, before raising EJP0011, and emit jp_cycle_preflight JSON.
-    /// - This remains liveness-only: replay completion is produced only by the typed stepper,
-    ///   and the writer gate is unchanged.
 
-    /// MIGRATION JP-STALL WORKLIST PREFLIGHT:
-    /// - MIGRATION proved the replay-root write witness by producing replayStableWrites=1,
-    ///   but the run still began with a 30s forced-sequential EJP0014 stall.
-    /// - Before an EJP0014 retry/invalidation, drain any live explicit worklist frontier
-    ///   and emit jp_stall_preflight JSON, so console-only logs show whether liveness work
-    ///   reached semantic_root_complete or whether the stall really has no captured frontier.
-    /// - The preflight does not mark success; only typed replay may produce semantic_root_complete.
 
-    /// MIGRATION GENERIC STACK-SAFE FRONTIER ESCALATION:
-    /// - No source-specific policy branches and no environment variables.
-    /// - Stop letting the same forced-sequential evaluator cycle climb to ~10k frames.
-    ///   The generic stack-safe frontier now trips at 4096 depth with a 1024 re-entry cap.
-    /// - Forced-sequential jp_wait no longer steals evaluator work; it only watches liveness,
-    ///   so a single huge stolen job cannot hide the elapsed stall cap.
-    /// - Retry JSON carries a policy_next marker pointing at the stack-safe worklist refactor.
 
-    /// MIGRATION WAITER-FIRST FRONTIER HARDENING:
-    /// - No source-specific policy branches and no environment variables.
-    /// - Forced-sequential jp_wait now checks its elapsed stall fuse before stealing work,
-    ///   so the waiter cannot spend tens of seconds executing one more saturated evaluator job.
-    /// - Forced-sequential waiters only help during a tiny warmup window; after that workers run
-    ///   jobs while the waiter remains responsive enough to report the real frontier.
-    /// - EJP0014 under forced sequential emits a generic eval_frontier JSON event.
-    ///
-    /// MIGRATION GENERIC FORCED-SEQUENTIAL STALL HARDENING:
-    /// - No source-specific policy branches. Forced-seq waits now use a hard elapsed cap,
-    ///   so incidental progress cannot postpone EJP0014 forever.
-    /// - Retry diagnostics for scheduler stalls are compacted around policy + hotkeys,
-    ///   keeping trace useful while avoiding sidecar walls.
-    ///
-    /// MIGRATION WRITE_ABORT CONSOLE DIAG:
-    /// When WriteGuard blocks output (unstable generation, large shrink, or truncation suspects),
-    /// the compiler now prints a compact diag block to stderr (recent invalidations + sidecar tail)
-    /// so console logs alone are sufficient to drive the remaining SOTA debugging.
-        /// MIGRATION: TERM-CYCLE SOTA DIAG + NO-RETRY POLICY
-    /// - Treat EJP0011 (type/term cycle) as NON-RETRYABLE inside BuildFile (no invalidation storm).
-    /// - Emit machine-parseable JSON lines for term_cycle + retry events to make console logs sufficient.
-    /// - Add a small per-key watchdog so repeated term cycles in the same generation are surfaced as PANIC.
-    ///
-///
-    /// MIGRATION COMPREHENSIVE SOTA HOPAC FINALIZATION:
-    /// This release addresses the type mismatch errors ("The variables compared for equality 
-    /// This release addresses the type mismatch errors ("The variables compared for equality
-    /// have to have the same type") occurring during retry by implementing:
-    /// 
-    ///
-    /// 1. FULL JP DICT CLEARING ON GENERATION INVALIDATION:
-    ///    - All IVar-based JP dictionaries (method, closure, type) are now properly cleared
-    ///    - Prevents stale IVars with inconsistent types from leaking across retry attempts
-    ///    - Added explicit clear of join_point_method, join_point_closure caches
-    /// 
-    ///
-    /// 2. GENERATION-AWARE IVAR WAITING:
-    ///    - jp_ivar_wait now checks generation at entry AND exit
-    ///    - Generation changes become typed cancellation/retry evidence; EJP0008 remains diagnostic compatibility only
-    ///    - Stale IVar results never become authority after a generation invalidation
-    /// 
-    ///
-    /// 3. BACKEND_SWITCH VALIDATION HARDENING:
-    ///    - Non-current branch validation now checks generation before AND after
-    ///    - If generation changes during validation, skip remaining branches
-    ///    - Prevents partial validation state from corrupting type inference
-    /// 
-    ///
-    /// 4. TYPE COMPARISON SAFETY:
-    ///    - ty_eq_allow_jp_placeholders now handles generation-stale comparisons
-    ///    - Added fallback to string comparison for types from different generations
-    ///    - Prevents spurious type equality failures during retry
-    /// 
-    ///
-    /// 5. RETRY MECHANISM IMPROVEMENTS:
-    ///    - Clear more state on retry (jp_type_cells, diagnostic caches)
-    ///    - Force workers shutdown before retry to prevent in-flight corruption
-    ///    - Reset countdown event to initial state for clean parallel restart
-    ///
-    /// MIGRATION NESTED BACKEND_SWITCH STACK OVERFLOW FIX:
-    /// Nested backend_switch calls caused stack exhaustion. When outer backend_switch
-    /// validates non-current branches (for type soundness), it fully evaluates them.
-    /// If a branch contains another backend_switch, deep recursion can overflow stack
-    /// before ERecordWith even starts processing (error at i=0, gen=1).
-    /// 
-    ///
-    /// Fixes:
-    /// - Early stack check at ERecordWith entry with BigStack pivot attempt
-    /// - Backend_switch non-current branch validation uses BigStack when stack low
-    /// - Stack-aware validation skips non-critical validation when stack exhausted
-    /// - Safe fallback: if BigStack unavailable, skip type validation for non-current branches
-    ///
-    /// MIGRATION TASKCANCELEDEXCEPTION FIX (retained):
-    /// - Workers use timeout-based polling (100ms) instead of CancellationToken
-    /// - Explicit shutdown flag (jp_workers_shutdown) checked each iteration
-    /// - Outer try-catch wraps entire worker to catch ANY exception
-    ///
-    /// MIGRATION DEADLOCK FIX (retained):
-    /// - Worker count = jp_dop*8 (compensates for blocking in jp_ev_wait)
-    /// - jp_ev_wait drains 64 items per iteration + ThreadPool fallback
-    ///
-    /// MIGRATION SOTA IMPLEMENTATION:
-    /// This version implements the full SOTA parallel architecture with:
-    /// - Hopac-based work scheduling via bounded work queue + work-stealing
-    /// - No permanent quiescence mirror gate; parallelism is owned by the work graph
-    /// - LoopSpecializationGuard prevents unbounded specialization (루프 fix)
-    /// - BitNet B1.58 ternary neural network for cache pattern prediction
-    /// - Waiters remain observers; dedicated workers own every queue body
-    ///
-    /// KEY FIXES FROM MIGRATION:
-    /// 1. work-graph quiescence cannot permanently kill parallelism
-    /// 2. Work queue with Hopac fibers for cooperative scheduling
-    /// 3. Dedicated workers plus typed compensation preserve wait liveness
-    /// 4. LoopSpecializationGuard integrated in JPMethod dispatch (EJP0012)
-    /// 5. BitMamba verifyPrediction for online accuracy tracking
-    ///
-    /// PARALLELISM MODEL:
-    /// - jp_start enqueues work to bounded queue (backpressure at jp_max_pending)
-    /// - Hopac workers drain queue cooperatively via SemaphoreSlim
-    /// - jp_wait does work-stealing while waiting for completion
-    /// - The operational graph tracks completion; display projections are diagnostic only
-    /// - NO sequential fallback - parallel always, errors handled via retry
-    ///
-    /// BITNET B1.58 INTEGRATION:
-    /// Pattern predictor uses ternary weights {-1, 0, +1} for efficient inference.
-    /// Online learning via verifyPrediction() tracks accuracy in diagnostics.
-    ///
-    /// LOOP SPECIALIZATION GUARD (EJP0012):
-    /// Caps specializations per JP name (default: 5000) to prevent unbounded growth
-    /// from patterns like 루프 in listm'.spi that create unique keys per iteration.
-    ///
-    /// EXPECTED BEHAVIOR:
-    /// - CPU utilization should be high (all cores busy with work-stealing)
-    /// - No OS thread blocking during normal operation
-    /// - Loop specialization capped at 5000 per JP name
-    /// - Graceful degradation under contention
 
-    /// [CONSOLE-1211-001] Shared console coordinator for append-only logs plus a bottom HUD.
-    /// The coordinator keeps the existing stderr log stream intact while repainting a small
-    /// absolute-position HUD at the bottom of interactive terminals.  Redirected stderr stays
-    /// pure append-only JSON/text for CI and file captures.
     open Hopac
 
     let private startHopacJob (j:Hopac.Job<unit>) : unit =
-        // Scheduler-owned launch only.  Calling Hopac.run(Job.start ...) from a
-        // Hopac worker nests a scheduler boundary and can wedge BuildFile before
-        // a.state/prepass admission.  The pre-regression implementation used the
-        // direct asynchronous primitive, so preserve that observable contract.
         Hopac.start j
 
     module CompilerConsoleHud88 =
         open System
         open System.Threading
 
-        // Request epoch is presentation/runtime authority for the long-lived Supervisor.
-        // Terminal actor projections from an earlier BuildFile request must never be
-        // observable as receipts of the current request.
         let private supervisorBuildRequestEpochGate = obj()
         let mutable private supervisorBuildRequestEpochMs = Environment.TickCount64
         let supervisorBuildRequestEpochNow () =
@@ -2379,13 +1673,6 @@ module spiral_compiler =
                     terminalDurableRunEndObservation <- TerminalDurableRunEndObserved
                     terminalDurableRunEndIvar)
             Hopac.IVar.tryFill ivar ()
-        // The run-end IVar is filled when the durable writer persists the run-end receipt, but that receipt
-        // is only produced after the terminal reducer seals the run, and the seal waits for the committed
-        // BuildFile result, which waits here: a cycle that left every BuildFile unanswered. The writer's
-        // run-end state is also never reopened for a second request in the same process. Bound the wait:
-        // when the receipt has not arrived within the grace period, the result boundary itself is the
-        // run end. SPIRAL_RUN_END_GRACE_MS overrides the grace (default 20 ms: the receipt cannot arrive
-        // first, so the grace was 500 ms of pure latency at the end of every compile).
         let private terminalRunEndGraceMs =
             match System.Int32.TryParse(System.Environment.GetEnvironmentVariable "SPIRAL_RUN_END_GRACE_MS") with
             | true, value when value >= 0 -> value
@@ -2570,9 +1857,6 @@ module spiral_compiler =
                 + windowsTaskbarRequestCompletionText completion
 
         let private windowsTaskbarRequestCompletionOf (_kind:string) (_eventId:string) =
-            // JSON rows are evidence, not request boundaries. run_end is handled only
-            // after its own durable append, so the footer can never precede the row
-            // that authorizes it.
             None
 
         let private windowsTaskbarTerminalOutcomeOf (kind:string) (eventId:string) =
@@ -2651,10 +1935,6 @@ module spiral_compiler =
         let mutable private requestObserverDrain : (TerminalObserverDrainRequestReason -> unit) = fun _ -> ()
         let installObserverDrain handler = requestObserverDrain <- handler
 
-        // Terminal presentation consumes an indexed closure proof.
-        // Mutable snapshots may contribute evidence, but they cannot authorize the
-        // physical exit or the final JSONL row.  Each constructor advances exactly
-        // one phantom stage, making skipped closure obligations unrepresentable.
         type TerminalSemanticDebtClosedStage = class end
         type TerminalPromiseCellsClosedStage = class end
         type TerminalSpecializationWorklistClosedStage = class end
@@ -2963,9 +2243,6 @@ module spiral_compiler =
         let terminalFinalRowCapabilityRefText capability =
             terminalClosureEvidenceRefText capability.capabilityRef
 
-        // Taskbar presentation is owned in-process. External helper processes and
-        // crash sidecars were migration drift: they introduced a second lifetime,
-        // raced the durable writer and could clear green before semantic quiescence.
         let private windowsTaskbarOriginalTitle =
             try Console.Title with _ -> ""
         let mutable private windowsTaskbarWindows : nativeint list = []
@@ -2997,9 +2274,6 @@ module spiral_compiler =
             try
                 (instance :?> ITaskbarList3), TaskbarCreationDirectCast
             with :? InvalidCastException ->
-                // Some modern .NET/Windows combinations return an RCW that does not
-                // satisfy the F# cast even though the COM object exposes ITaskbarList3.
-                // Query the interface explicitly before giving up the COM fallback.
                 let unknown = Marshal.GetIUnknownForObject(instance)
                 let mutable interfacePointer = 0n
                 let mutable interfaceId = typeof<ITaskbarList3>.GUID
@@ -3171,10 +2445,6 @@ module spiral_compiler =
         let private windowsTaskbarProvisionalCompletionCeiling = 99.9
 
         let private applyWindowsTaskbarProgress bounded =
-            // A projected percentage is presentation only.  Keep the request in
-            // determinate Normal mode so Windows can fill the bar, but cap a live
-            // 100% projection below completion.  Only a dispositive request or
-            // process boundary may neutralize the taskbar.
             let acceptsProgress =
                 match windowsTaskbarShutdownLatch with
                 | TaskbarShutdownLatched _ -> false
@@ -3229,9 +2499,6 @@ module spiral_compiler =
 
         let private completeWindowsTaskbarForReason reason =
             installWindowsTaskbarShutdownHooks()
-            // Process/physical-boundary presentation shares the bounded shutdown
-            // path. Taskbar ownership is never terminal authority and therefore
-            // cannot hold process exit behind an unbounded UI lock.
             tryApplyWindowsTaskbarShutdownReason reason
 
         let private windowsTaskbarRequestCompletionExitCode = function
@@ -3239,8 +2506,6 @@ module spiral_compiler =
             | TaskbarRequestFailed(_, exitCode) -> exitCode
 
         let private applyWindowsTaskbarRequestCompletion completion =
-            // A build boundary clears presentation but deliberately leaves the
-            // process shutdown latch open so the next request can paint again.
             let exitCode = windowsTaskbarRequestCompletionExitCode completion
             applyWindowsTaskbarTerminalState exitCode
             windowsTaskbarStatus <-
@@ -3257,8 +2522,6 @@ module spiral_compiler =
                         windowsTaskbarStatus <-
                             TaskbarOperationalFailed(TaskbarRequestCompletionUpdate, ex.GetType().Name, ex.HResult)
                 else
-                    // Request-completion presentation is observer-only. A stuck UI owner
-                    // must never hold a durable terminal closure after its receipts commit.
                     windowsTaskbarStatus <-
                         TaskbarOperationalFailed(TaskbarRequestCompletionUpdate, "TaskbarRequestGateTimeout", 0)
             finally
@@ -3273,14 +2536,9 @@ module spiral_compiler =
         let private completeWindowsTaskbarForDurableTerminalFailure exitCode =
             completeWindowsTaskbarForRequest (TaskbarRequestFailed(TaskbarDurableTerminalFailureBoundary, exitCode))
 
-        // The supervisor is a long-lived server. These request-boundary functions
-        // clear presentation exactly when the BuildFile response is committed to
-        // its IVar, without latching process shutdown or waiting for process exit.
         let beginSupervisorBuildRequest () =
             installWindowsTaskbarShutdownHooks()
             let _requestEpochMs = advanceSupervisorBuildRequestEpoch ()
-            // Request-scoped completion authority must reset independently of any
-            // process/taskbar shutdown latch carried by the long-lived Supervisor.
             terminalDurableRunEndReset ()
             requestFooterReset ()
             lock windowsTaskbarGate (fun () ->
@@ -3320,9 +2578,6 @@ module spiral_compiler =
 
         let private gate = obj()
 
-        // MIGRATION destructive migration : the HUD no longer rebuilds authority
-        // by reparsing whatever JSON line happened to arrive last. The reducer publishes
-        // one coherent typed snapshot; the painter is an observer of that immutable value.
         type ReducerHudProgressPhase =
             | ReducerHudDiscovering
             | ReducerHudMaterial
@@ -3556,9 +2811,6 @@ module spiral_compiler =
 
         open Hopac
 
-        // Bonus migration : the authoritative HUD snapshot is actor-owned.
-        // No lock or mutable cell can publish a mixed generation.  JSON and the
-        // visible painter are read-only consumers of this mailbox.
         type ReducerHudMailboxMessage =
             | ReducerHudPublishTerminalBlockers of ReducerHudBlocker list * IVar<unit>
             | ReducerHudPublishSnapshot of ReducerHudSnapshot * IVar<ReducerHudSnapshotAdvance>
@@ -3570,10 +2822,6 @@ module spiral_compiler =
             terminalBlockers : ReducerHudBlocker list
         }
 
-        // MIGRATION: the mailbox remains the only writer, while visual/cancel
-        // observers consume an immutable projection mirror.  This deliberately
-        // forbids Hopac.run from paint and shutdown paths, avoiding nested-run
-        // scheduler deadlock without giving the mirror mutation authority.
         let private reducerHudProjectionGate = obj()
         let private reducerHudBootstrapSnapshot () : ReducerHudSnapshot =
             { generation = 0L
@@ -3655,8 +2903,6 @@ module spiral_compiler =
         let private installReducerHudProjection snapshot blockers =
             let projected = { snapshot with blockers = (snapshot.blockers @ blockers) |> List.distinct }
             lock reducerHudProjectionGate (fun () -> reducerHudProjection <- Some projected)
-            // Taskbar projection changes only when a new immutable reducer snapshot is
-            // installed. The 20 FPS clock painter must remain a pure console observer.
             let progressPct =
                 if projected.work.semantic.totalMid <= 0L then 0.0
                 else 100.0 * float projected.work.semantic.retiredCost / float projected.work.semantic.totalMid
@@ -3754,8 +3000,6 @@ module spiral_compiler =
 
         let publishReducerHudTerminalBlockers (blockers:ReducerHudBlocker list) =
             ensureReducerHudMailboxStarted()
-            // Fire-and-ack in the actor lane. Callers never block a Hopac worker
-            // by starting a nested scheduler run merely to update a visual projection.
             startHopacJob (job {
                 let reply = IVar<unit>()
                 do! Ch.send reducerHudMailbox (ReducerHudPublishTerminalBlockers(blockers, reply))
@@ -3771,8 +3015,6 @@ module spiral_compiler =
 
         let readReducerHudSnapshot () =
             ensureReducerHudMailboxStarted()
-            // Projection-only and bounded: safe from Hopac jobs, Ctrl+C handlers,
-            // final HUD persistence and ordinary compiler threads.
             readReducerHudProjection ()
 
         let private reducerHudProgressPhaseText = function
@@ -3797,9 +3039,6 @@ module spiral_compiler =
             match exitCode with
             | Some code when code <> 0 -> ReducerHudOutcomeFailedClosed
             | Some 0 when runEndObserved -> ReducerHudOutcomeSuccessful
-            // A durable run_end proves closure ordering, not success by itself. A
-            // failed-closed chain may publish run_end before its exit-code overlay is
-            // physically authoritative; keep that projection Open rather than green.
             | _ -> ReducerHudOutcomeOpen
 
         let private reducerHudOutcomeText = function
@@ -3994,8 +3233,6 @@ module spiral_compiler =
                 invalidOp "The Spiral live HUD contract requires exactly fifty detailed rows."
         let mutable private hudLines : string[] = [||]
         let mutable private hudRevision = 0L
-        // Smooth frames read an immutable semantic-board projection instead of
-        // contending on the durable HUD/file-log gate at 20 FPS.
         let private progressHudSemanticBoardGate = obj()
         let mutable private progressHudSemanticBoardSnapshot : string[] = [||]
 
@@ -4024,7 +3261,6 @@ module spiral_compiler =
         let mutable private lastWindowWidth = 0
         let mutable private lastWindowHeight = 0
         let mutable private lastLogBottomRow = 0
-        // Observer-only compatibility cache. Reducer, footer and physical exit never read it.
         let private observerHudTelemetryKey key =
             CompilerIdentityKernel.ContentDigest.ofText "observer-hud-telemetry-field" key
 
@@ -4050,9 +3286,6 @@ module spiral_compiler =
         let mutable private hudRealtimeLastCpuMs = 0.0
         let mutable private hudElapsedPulseLastMs = 0L
 
-        // MIGRATION: typed repaint seam for the HUD renderer.  The raw log remains
-        // append-only, but interactive terminals need a prepaint before a long JSON
-        // line can monopolize the console writer.
         type private HudPaintPhaseId =
             | HudPaintPreLogAppend
             | HudPaintPostLogAppend
@@ -4131,9 +3364,6 @@ module spiral_compiler =
 
         let private supportsHud () =
             try
-                // MIGRATION: hardcoded policy.  Interactive stderr gets ANSI bottom HUD;
-                // redirected stderr gets plain JSONL.  No environment variables or host
-                // switches participate in the compiler contract.
                 (not Console.IsErrorRedirected)
                 && Console.WindowHeight >= hudRows + 8
                 && Console.WindowWidth >= 80
@@ -4161,17 +3391,12 @@ module spiral_compiler =
             match fileLogState with
             | Some state -> state
             | None when System.String.Equals(System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET", "1", System.StringComparison.Ordinal) ->
-                // Quiet (batch) runs keep no per-process JSONL mirror: nobody reads it, its writes and flushes
-                // were ~4% of a compile, and a day of suite runs once filled the disk with them.
                 let state = CompilerFileLogDisabled (CompilerIdentityKernel.OperationalReasonIdOps.create "SPIRAL_DIAG_QUIET")
                 fileLogState <- Some state
                 state
             | None ->
                 try
                     Directory.CreateDirectory(fileLogSourceDirectory) |> ignore
-                    // The JSONL contract has one in-process writer authority.  Permit readers,
-                    // but reject a second writer handle so accidental bypass paths cannot create
-                    // torn/sparse records under concurrent emission.
                     let fs = new FileStream(fileLogPath, FileMode.OpenOrCreate, FileAccess.Write, FileShare.Read, 4096)
                     fs.Seek(0L, SeekOrigin.End) |> ignore
                     let state = CompilerFileLogOpen fs
@@ -4270,9 +3495,6 @@ module spiral_compiler =
                     match initFileLogUnlocked() with
                     | CompilerFileLogOpen fs ->
                         try
-                            // A JSONL frame has one physical append authority.  Seek to the
-                            // current end for every complete frame so a stale file position can
-                            // never create a sparse NUL hole after truncation or host interference.
                             fs.Seek(0L, SeekOrigin.End) |> ignore
                             let frameBytes = fileLogUtf8.GetBytes(s + "\n")
                             fs.Write(frameBytes, 0, frameBytes.Length)
@@ -4292,9 +3514,6 @@ module spiral_compiler =
                     | CompilerFileLogDisabled _ ->
                         ())
 
-        // MIGRATION: catch exception evidence before console-only handlers erase it.
-        // First-chance capture is sparse and deduplicated; unhandled/unobserved paths
-        // persist only bounded typed message data plus the CLR stack.
         type private ExceptionCaptureReentryState =
             | ExceptionCaptureIdle
             | ExceptionCaptureActive
@@ -4364,8 +3583,6 @@ module spiral_compiler =
                             FastRuntimeFormat.format "EvalVisitBudgetFailure(kind=%s|key=%s|site=%s|visit=%s/%s|unproductive_streak=%s|unproductive_age_ms=%s)" [| box (fieldText "Data0"); box (fieldText "Data1"); box (fieldText "Data2"); box (fieldText "Data3"); box (fieldText "Data4"); box (fieldText "Data5"); box (fieldText "Data6") |]
                             |> compactBounded)
                     | "InvalidOperationException" ->
-                        // System.InvalidOperationException owns a materialized string message;
-                        // unlike recursive F# union/list payload formatters it is safe to bound here.
                         let message = ex.Message
                         if isNull message || message = "" then None else Some(compactBounded message)
                     | _ -> None
@@ -4431,10 +3648,6 @@ module spiral_compiler =
                             1L, false)
                 if accepted && tryEnterExceptionCapture () then
                     try
-                        // Never call ex.Message or ex.ToString here. F# exception fields may
-                        // contain very deep semantic lists, and their generated formatter is
-                        // recursive. For PartEvalTypeError only, reflect the already-materialized
-                        // string payload and cap it before emitting the CLR stack.
                         let semanticMessage = runtimeExceptionBoundedSemanticMessage ex
                         let structuredFields = runtimeExceptionStructuredFieldsJson ex
                         let payloadRaw = runtimeExceptionStackTrace ex
@@ -4458,8 +3671,6 @@ module spiral_compiler =
         let captureBuildBoundaryException source (ex:exn) =
             captureRuntimeException "build_boundary" source ex
 
-        // Public reducer failure helpers intentionally live beside the durable HUD/file writer.
-        // External callers must qualify CompilerConsoleHud88 rather than DiagJson so declaration ownership stays explicit.
         let captureReducerBoundaryException source (ex:exn) =
             captureRuntimeException "reducer_boundary" source ex
 
@@ -4481,9 +3692,6 @@ module spiral_compiler =
                         exceptionCaptureHooksInstalled <- true
                         true)
             if shouldInstall then
-                // MIGRATION: FirstChanceException is intentionally not subscribed.
-                // Spiral uses PartEvalTypeError as control flow; global first-chance
-                // capture serialized enormous expected stacks and stole CPU/HUD time.
                 try AppDomain.CurrentDomain.UnhandledException.Add(fun args ->
                     match args.ExceptionObject with
                     | :? exn as ex -> captureRuntimeException "unhandled" "AppDomain.UnhandledException" ex
@@ -4525,9 +3733,6 @@ module spiral_compiler =
             | ProgressHudFlushBuffered -> "buffered_terminal_stream"
             | ProgressHudFlushRedirectedEachFrame -> "redirected_flush_each_visible_frame"
 
-        // MIGRATION: ANSI scroll-region control, JSON console lines and HUD frames
-        // must share one stream and one arbiter. The MIGRATION stdout HUD could
-        // race stderr JSON, so the terminal cursor state was never atomic.
         let private progressHudConsoleWriteGate = obj()
         let private progressHudDiffGate = obj()
         let mutable private progressHudLastRenderedLines : string array = [||]
@@ -4561,8 +3766,6 @@ module spiral_compiler =
             if String.IsNullOrWhiteSpace s then ""
             else s.Replace("\r", " ").Replace("\n", " ").Replace("\t", " ")
 
-        // MIGRATION: HUD formatting must never be the final fatal silence.
-        // Emit exception type/message/stack as JSONL, then replay the raw line.
         let private emitHudExceptionUnlocked (scope: string) (line: string) (ex: exn) =
             try
                 let escJson (s: string) =
@@ -4597,8 +3800,6 @@ module spiral_compiler =
                 if String.IsNullOrWhiteSpace x then "-"
                 else x
             let s = if s.Length > width then s.Substring(0, width) else s
-            // MIGRATION: keep columns stable with trailing blanks after each value,
-            // matching the requested "spacing to the right of values" HUD layout.
             s.PadRight(width)
 
         let private colL width (s: string) =
@@ -4657,10 +3858,6 @@ module spiral_compiler =
             let mutable v = 0L
             if Int64.TryParse((if isNull s then "" else s).Trim(), &v) then v else 0L
 
-        // MIGRATION: typed progress/ETA estimator.  The rich historical score is
-        // still exported as runtime_activity_score, but percentage/ETA authority
-        // now comes from graph remaining/total plus a fused EWMA rate.  Topology
-        // witnesses pause the ETA clock rather than decaying throughput to zero.
         type GraphProgressPhaseId =
             | GraphProgressMaterial
             | GraphProgressTopologyPause
@@ -4766,12 +3963,6 @@ module spiral_compiler =
             | GraphDiscoveryClosed -> "DiscoveryClosed"
             | GraphDiscoveryOpen(p50,p90) -> sprintf "DiscoveryOpen(undiscovered_p50=%d|undiscovered_p90=%d)" p50 p90
 
-        // Promote the hot WorkUnit stasis/credit/ETA horizon from
-        // renderer strings into typed local DUs.  This keeps the JSON/HUD text
-        // as erasure only while the scheduler spine reasons over algebraic
-        // states: zero-fact bind repeat-cap, material credit, or deferred live
-        // lease.  The next migration can consume these cases directly in the
-        // terminal commit gate instead of re-parsing rendered strings.
         type GraphStasisReasonId =
             | GraphStasisZeroFactOrTopologyWait of sameStateRepeat:int64
             | GraphStasisMaterialOrFreshProgress
@@ -4890,12 +4081,6 @@ module spiral_compiler =
             state.lastPoisonTail <- poisonTail
             nextRate, nextVariance, System.Math.Sqrt(max 0.0 nextVariance), phaseReset
 
-        // MIGRATION: multi-horizon ETA authority.  The single EWMA remains as a
-        // backwards-compatible field, but terminal/success ETA now prefers a
-        // fused short/medium/session rate.  Topology pauses freeze decay, rescue
-        // with zero work keeps the last physical rate and lowers confidence, and
-        // model/poison-tail transitions reset the responsive horizon instead of
-        // blindly carrying stale slope.
         type GraphProgressHorizonState = {
             mutable lastTsMs : int64
             mutable shortRate : float
@@ -4924,8 +4109,6 @@ module spiral_compiler =
         let private graphProgressHorizonSnapshotText (x:GraphProgressHorizonSnapshot) =
             FastRuntimeFormat.format "GraphProgressHorizon(short=%.4f|medium=%.4f|session=%.4f|fused=%.4f|variance=%.4f|sigma=%.4f|confidence=%.4f|samples=%d|phase_reset=%b|topology_pause=%b|rescue_unknown_live=%b)" [| box x.shortRate; box x.mediumRate; box x.sessionRate; box x.fusedRate; box x.variance; box x.sigma; box x.confidenceProbability; box x.samples; box x.phaseTransitionReset; box x.topologyClockPaused; box x.rescueUnknownButLive |]
 
-        // MIGRATION: close out the assessment contract by making the JSON/HUD expose
-        // a conservative exact-once work ledger contract instead of another score field.
         type WorkLedgerExactOnceDisposition =
             | WorkLedgerExactOncePending
             | WorkLedgerExactOnceRunning
@@ -5063,9 +4246,6 @@ module spiral_compiler =
                 let height = safeHeight()
                 let logBottom = logBottomRow0()
                 if (not splitInstalled) || width <> lastWindowWidth || height <> lastWindowHeight || logBottom <> lastLogBottomRow then
-                    // ANSI scroll-region split:
-                    // rows 1..logBottom+1 are the normal append-only log stream;
-                    // the last hudRows rows are outside the scroll region and are redrawn as a HUD.
                     ansi (sprintf "%s1;%dr" esc (logBottom + 1))
                     ansi (sprintf "%s%d;1H" esc (logBottom + 1))
                     splitInstalled <- true
@@ -5098,8 +4278,6 @@ module spiral_compiler =
                 installSplitUnlocked()
                 let width = safeWidth()
                 let start = hudStartRow0()
-                // Save/restore keeps the active log cursor inside the scroll region,
-                // so log lines keep appending above the HUD instead of fighting it.
                 ansi (sprintf "%ss" esc)
                 for i = 0 to hudRows - 1 do
                     let row1 = start + i + 1
@@ -5109,9 +4287,6 @@ module spiral_compiler =
                 ansi (sprintf "%su" esc)
 
         let private flushFinalRowDurablyUnlocked () =
-            // `fileLogState` owns one shared FileStream. Flush is an operation on
-            // that same mutable instance, so it must share the physical writer gate
-            // with Seek/Write; a separate HUD lock is not sufficient serialization.
             lock fileLogWriteGate (fun () ->
                 match fileLogState with
                 | Some (CompilerFileLogOpen fs) ->
@@ -5123,14 +4298,8 @@ module spiral_compiler =
                     with _ -> false
                 | _ -> false)
 
-        // The reducer snapshot remains authoritative for compiler state, while the physical-boundary
-        // observation is an observer-only overlay carrying receipts that may be committed after the
-        // last reducer HUD publication but before Environment.Exit.
         let mutable private terminalPresentationPhysicalBoundaryObservation : (string * string * int) option = None
 
-        // Final console, footer and shutdown diagnostics prefer one immutable ReducerHudSnapshot.
-        // If shutdown races before the reducer publishes one, persist the last rendered HUD rows
-        // as an observer-only fallback so the JSONL always ends with a reconstructable board.
         let private emitFinalHudSnapshotUnlocked () =
             if not (finalHudCommitted()) then
                 let finalRowCapability = tryAcquireTerminalFinalRowCapability ()
@@ -5152,8 +4321,6 @@ module spiral_compiler =
                             else
                                 invalidOp "terminal final-row capability could not be committed after durable HUD emission"
                         | None when physicalBoundaryFinalRowAuthorized ->
-                            // The process has already crossed the typed physical-boundary authority.
-                            // This only closes presentation persistence; it cannot authorize compiler exit.
                             finalHudPersistenceState <- FinalHudCommitted
                         | None -> ()
                 appendFileLogLineSerialized (
@@ -5214,11 +4381,6 @@ module spiral_compiler =
                     let physicalExitReceiptObserved = snapshotPhysicalExitReceiptObserved || boundaryPhysicalExitReceiptObserved
                     let runEndObserved = durableRunEndObserved || runEndReceiptObserved
                     let finalRowPhysicallyAuthorized = finalRowAuthorized && runEndReceiptObserved && physicalExitReceiptObserved
-                    // The physical-boundary observation is populated only after the typed exit
-                    // boundary is selected. It may therefore complete a stale reducer HUD snapshot,
-                    // but it remains observer-only and cannot authorize compiler control flow.
-                    // Durable run_end observation is independently truthful even when the physical
-                    // boundary has not yet been selected; do not erase that fact from the final HUD.
                     let physicalExitObserved = finalRowPhysicallyAuthorized
                     let reportedRunEndReceiptRef =
                         if boundaryRunEndReceiptObserved then boundaryRunEndReceiptRef
@@ -5260,10 +4422,6 @@ module spiral_compiler =
                         |> Option.defaultValue "null"
                     let criticalPathStateJson = fileLogEscJson (reducerHudCriticalPathText snapshot.eta.criticalPath)
                     let scopeInvariantSatisfied = snapshot.work.semantic.retiredCost <= snapshot.work.semantic.totalMid
-                    // Denominator exactness is a discovery property, not a completion property.
-                    // Remaining known work may be non-zero while the total is already exact; requiring
-                    // retired=total conflated "finished" with "we know how much exists" and made the
-                    // final HUD claim an inexact denominator for the 7651/7653 case.
                     let semanticDenominatorExact =
                         scopeInvariantSatisfied
                         && snapshot.work.semantic.totalHigh = snapshot.work.semantic.totalMid
@@ -5288,15 +4446,8 @@ module spiral_compiler =
                                 exitCode = None
                                 sealedAtMs = None }
                     let reducerRows = reducerHudLines monotonicNowMs observedSnapshot
-                    // The final board has two authority bands: rows 1..33 are the immutable
-                    // semantic/detail projection, while rows 34..50 are replaced by the final
-                    // reducer generation.  Terminal phase/receipt authority therefore remains
-                    // snapshot-pure without duplicating the reducer band at both ends.
                     let liveRows =
                         if finalRowPhysicallyAuthorized then
-                            // Preserve the immutable semantic/detail band in rows 1..33 and
-                            // replace only the terminal authority band in rows 34..50.  Using
-                            // reducerRows as both sources duplicated the same seventeen rows.
                             progressHudSemanticBoardRead ()
                         elif hudLines.Length > 0 then
                             Array.copy hudLines
@@ -5314,7 +4465,6 @@ module spiral_compiler =
                                     (hudKv "row" (sprintf "%d/%d" (i + 1) hudRows))
                                     (hudKv "phase" phase)
                                     (hudKv "possession" possession))
-                    // Quiet mode (tests, probes, apps builds) keeps stderr for the result and the error: the 50-row final HUD buried it.
                     if System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET" <> "1" then
                         rows |> Array.iter (fun row -> Console.Error.WriteLine("[spiral_hud_final] " + row))
                     appendFileLogLineSerialized (
@@ -5323,9 +4473,6 @@ module spiral_compiler =
                     |> Array.iteri (fun i row ->
                         let clean = cleanText row
                         let isFinalRow = finalRowPhysicallyAuthorized && i = rows.Length - 1
-                        // Persist the receipt-pair audit immediately before the unique final row.
-                        // This ordering makes the receipt impossible to lose behind an earlier HUD
-                        // flush while keeping `final_row=true` as the physical tail of the JSONL.
                         if isFinalRow then
                             appendFileLogLineSerialized (
                                 FastRuntimeFormat.format "{\"v\":2,\"ts_ms\":%d,\"pid\":%d,\"tid\":%d,\"kind\":\"terminal_durable_receipt_pair_observed\",\"generation\":%d,\"possession_stage_du\":%s,\"outcome_du\":%s,\"run_end_receipt_ref\":%s,\"physical_exit_receipt_ref\":%s,\"exit_code\":%s,\"closure_proof_ref\":%s,\"final_row_capability_observed\":%b,\"authority\":\"physical_boundary_receipt_pair_plus_optional_final_row_capability\",\"control_authority\":false,\"next\":\"persist_unique_final_row_then_process_exit\"}" [| box nowMs; box pid; box tid; box snapshot.generation; box (fileLogEscJson possession); box (fileLogEscJson outcomeDu); box (fileLogEscJson reportedRunEndReceiptRef); box (fileLogEscJson reportedPhysicalExitReceiptRef); box (fileLogEscJson (reportedExitCode |> Option.map string |> Option.defaultValue "")); box (fileLogEscJson finalRowCapabilityRef); box finalRowCapabilityAuthorized |])
@@ -5340,8 +4487,6 @@ module spiral_compiler =
         let mutable private finalHudFileHandlersInstalled = false
 
         let private flushFileLogUnlocked () =
-            // The name means "not under the HUD gate"; the shared FileStream itself
-            // still has exactly one physical authority for Seek/Write/Flush.
             lock fileLogWriteGate (fun () ->
                 match fileLogState with
                 | Some (CompilerFileLogOpen fs) ->
@@ -5429,20 +4574,12 @@ module spiral_compiler =
                 finalHudFileHandlersInstalled <- true
                 try
                     AppDomain.CurrentDomain.ProcessExit.AddHandler(EventHandler(fun _ _ ->
-                        // ProcessExit runs inside Environment.Exit and must never wait for HUD/file gates.
-                        // Normal host return and cancel paths already commit presentation before teardown;
-                        // the emergency deadman emits only best-effort breadcrumbs before invoking exit.
                         terminalShutdownRequested <- true))
                 with _ -> ()
                 try
                     Console.CancelKeyPress.AddHandler(ConsoleCancelEventHandler(fun _ args ->
-                        // Hold the default SIGINT for one bounded in-process footer transaction.
-                        // No helper process or sidecar owns recovery; the durable writer gets
-                        // up to one second to seal the fifty-row JSONL tail before termination.
                         args.Cancel <- true
                         terminalShutdownRequested <- true
-                        // Neutralize before contending on the HUD/file gate. Background
-                        // progress frames are shutdown-latched and cannot repaint green.
                         tryApplyWindowsTaskbarShutdownReason TaskbarCancelKeyPress
                         let mutable taken = false
                         try
@@ -5484,10 +4621,6 @@ module spiral_compiler =
             | HudMuxBusy
             | HudMuxInterrupted
 
-        // Heartbeat/HUD refresh must never wait behind replay-log flush storms.
-        // A thread interruption while attempting the mux is a shutdown/control
-        // observation, not a formatter failure.  Convert it to a typed miss so the
-        // caller can skip the optional projection without emitting an exception row.
         let tryWithLock (waitMs: int) (f: unit -> unit) =
             let mutable taken = false
             let decision =
@@ -5686,9 +4819,6 @@ module spiral_compiler =
             match advancedConsoleProjectionFamilyId kind with
             | None -> AdvancedConsoleProjectionPassThrough
             | Some family ->
-                // MIGRATION: projection identity must describe semantic state, not
-                // freshly minted receipt/revision ids. Volatile refs defeated compaction
-                // and produced more than 84k duplicate projections in historical runtime.
                 let signature =
                     [ AdvancedConsoleStateHashField
                       AdvancedConsoleGraphStateHashField
@@ -5761,18 +4891,12 @@ module spiral_compiler =
             let isTerminal = terminalLine lineToWrite
             if not shouldWrite then ()
             elif terminalShutdownRequested && (finalHudCommitted() || not isTerminal) then
-                // The physical presentation epilogue owns shutdown. Intermediate terminal
-                // receipts remain appendable until that epilogue starts, preserving the full
-                // JSONL transaction before the final HUD tail is committed.
                 flushFileLogUnlocked()
             else
                 appendFileLogLineSerialized lineToWrite
                 match compilerConsoleProjectionDispositionFor lineToWrite isTerminal with
                 | CompilerConsoleProjectionFileOnly -> ()
                 | disposition ->
-                    // JSONL remains complete. The interactive console receives only
-                    // human-facing projections and terminal receipts, so machine telemetry
-                    // cannot invalidate the 50-row diff cache or monopolize the HUD lane.
                     let consoleLine =
                         if lineToWrite.Length <= 2048 then lineToWrite
                         else lineToWrite.Substring(0, 1792) + sprintf " … [console projection truncated; full_jsonl_chars=%d]" lineToWrite.Length
@@ -5797,9 +4921,6 @@ module spiral_compiler =
             if not (Object.ReferenceEquals(s, null)) then
                 try withLock (fun () -> writeLineUnlocked s)
                 with _ ->
-                    // A failed mux may preserve ordinary narration, but never append
-                    // beneath a committed footer. The final HUD remains the last JSONL
-                    // transaction even when a writer is interrupted while acquiring it.
                     if not (terminalShutdownRequested && finalHudCommitted()) then
                         appendFileLogLineSerialized s
 
@@ -5898,10 +5019,6 @@ module spiral_compiler =
                 if Int64.TryParse(v, &parsed) then v else "0"
             | _ -> "0"
 
-        // MIGRATION: DiagJson lives outside the HUD module, so the Phase 2
-        // counters need a typed exported seam instead of calling the private
-        // unlocked cache helper directly.  The lookup still locks the HUD
-        // state and returns a JSON-ready numeric string.
         type Phase2HudCounterId =
             | Phase2HudCounterHolesPatchedTotal
             | Phase2HudCounterMonoQueueDepth
@@ -5930,10 +5047,6 @@ module spiral_compiler =
             if not (String.IsNullOrWhiteSpace key) && not (String.IsNullOrWhiteSpace value) then
                 observerHudTelemetryCache.[observerHudTelemetryKey key] <- cleanText value
 
-        // MIGRATION: MIGRATION assessment asked for strongest terminal pinning immune
-        // to chatter plus an aggregate hard semantic blocker list.  MIGRATION
-        // emitted the fields, but the HUD still treated them like ordinary last-line
-        // cache entries.  Move the retention policy into typed HUD decisions.
         type StrongestTerminalPinDecisionId =
             | StrongestTerminalPinNoCandidate
             | StrongestTerminalPinPromote
@@ -6406,8 +5519,6 @@ module spiral_compiler =
                 try
                     withLock (fun () ->
                         let kind = jsonScalarField "kind" line
-                        // Canonical JSONL is a sink only.  It cannot install HUD rows,
-                        // update cached fields or reconstruct any terminal predecessor.
                         writeLineUnlocked line
                         if kind = "run_end" then
                             completeWindowsTaskbarForRequest (TaskbarRequestSucceeded(TaskbarRunEndBoundary, 0))
@@ -6415,9 +5526,6 @@ module spiral_compiler =
                 with ex ->
                     emitHudExceptionUnlocked "writeProgressJsonLine" line ex
 
-        // MIGRATION: smooth frames repaint the 15 typed authority rows while
-        // semantic events refresh the aligned lower flex-grid. JSON never owns
-        // progress or terminal completion.
         type private ProgressHudVisibleFrameHealth =
             | ProgressHudVisibleFrameHealthy
             | ProgressHudVisibleFrameFaulted of
@@ -6443,8 +5551,6 @@ module spiral_compiler =
         let mutable private progressHudEffectiveFrameLastMs = 0L
         let mutable private progressHudVisibleFrameHealth =
             ProgressHudVisibleFrameHealthy
-        // Diff state is declared beside the shared console compositor so log writes
-        // can invalidate stale row caches before the next smooth frame.
 
         let private recordProgressHudVisibleFrame observation =
             lock progressHudVisibleFrameGate (fun () ->
@@ -6471,8 +5577,6 @@ module spiral_compiler =
                 progressHudEffectiveFrameLastMs,
                 progressHudVisibleFrameHealthText progressHudVisibleFrameHealth)
 
-        // Quiet (batch) runs keep stderr for the result and the error: the live 50-row grid's first frame came
-        // before every report. The frame still counts as painted for the HUD's own bookkeeping.
         let private hudQuiet =
             System.String.Equals(System.Environment.GetEnvironmentVariable "SPIRAL_DIAG_QUIET", "1", System.StringComparison.Ordinal)
 
@@ -6485,8 +5589,6 @@ module spiral_compiler =
                 let writer, lane = progressHudWriterAndLane()
                 let flushPolicy = progressHudFlushPolicyFor lane
                 lock progressHudConsoleWriteGate (fun () ->
-                    // The split and frame are one transaction on stderr. Console
-                    // diagnostics cannot interleave with cursor movement anymore.
                     if supportsHud() then installSplitUnlocked()
                     writer.Write(text)
                     match flushPolicy with
@@ -6600,10 +5702,6 @@ module spiral_compiler =
                         (hudKv "authority" "immutable_reducer"))
 
         let private paintReducerHudSnapshotDirect nowMs =
-            // Restore the proven smooth-clock contract: the dedicated 50ms ticker
-            // renders against the immutable reducer snapshot on every frame. The
-            // row diff keeps terminal IO proportional to what changed, so elapsed
-            // and ETA remain visibly live without repainting the full 50-row board.
             match readReducerHudProjection () with
             | None -> false
             | Some snapshot ->
@@ -6649,9 +5747,6 @@ module spiral_compiler =
                 false
 
         let refreshProgressJsonLineNonBlocking (_line: string) =
-            // Semantic JSON publishers are observer-only and never trigger console paint.
-            // The dedicated 50 ms ticker is the sole visible-frame authority and renders
-            // directly from the immutable reducer projection.
             ()
 
         let writeProgressJsonLineNonBlocking (line: string) =
@@ -6659,21 +5754,12 @@ module spiral_compiler =
                 try
                     let wrote =
                         tryWithLock 1 (fun () ->
-                            // Health/start receipts are JSONL telemetry only. They never
-                            // replace the typed authority rows or mint flex-grid completion.
                             writeLineUnlocked line)
                     if not wrote then
-                        // A busy semantic gate may delay heartbeat narration, but it must
-                        // never bypass the shared console compositor and overwrite HUD rows.
-                        // Preserve the evidence in the one durable JSONL only.
                         appendFileLogLineSerialized line
                 with ex ->
                     emitHudExceptionUnlocked "writeProgressJsonLineNonBlocking" line ex
 
-        // Destructive migration: one actor owns every durable JSONL
-        // append. The old busy-mux fallback opened a second FileStream and could
-        // interleave bytes with the primary StreamWriter. That state is now
-        // unrepresentable: callers submit a request and receive one durable ack.
         type DurableJsonWriteKind =
             | DurableTerminalReceipt
             | DurableRunEndReceipt
@@ -6779,12 +5865,6 @@ module spiral_compiler =
             | DurableRunEndReceipt, DurableRunEndOpen -> DurableRunEndCommitted
             | _ -> state
 
-        // The durable writer is a lock-serialized synchronous append. It used to be a Hopac actor (a mailbox
-        // served on the Hopac pool) that synchronous callers waited on through a bridge thread. The evaluator
-        // writes durable rows from Hopac workers, so each such write parked a worker until another worker ran
-        // the actor: with one worker every build deadlocked in partial evaluation, and with N workers builds
-        // stalled at random once N writes were in flight. The actor body was already a locked write; the lock
-        // is now the whole writer, with the same sequence numbers, dedupe, run-end transition and outcomes.
         let mutable private durableJsonWriterState : DurableJsonWriterState option = None
 
         let private ensureDurableJsonWriterStarted () =
@@ -6830,13 +5910,9 @@ module spiral_compiler =
                     sprintf "{\"kind\":\"durable_json_writer_fault\",\"line_ref\":\"%s\",\"exception_type\":%s,\"durable_writer_du\":\"SingleWriterLock\",\"console_policy_du\":\"DurableFileOnlyOnMuxFailure\"}"
                         (durableJsonLineRefText lineRef) (fileLogEscJson exceptionType))
             | _ -> ()
-            // Filling the run-end IVar only wakes readers; it never blocks the writer.
             if runEndCommitted then startHopacJob (terminalDurableRunEndObserveJob())
             outcome
 
-        // Durable writes have two call surfaces. Host threads may synchronously wait for
-        // the receipt. A Hopac reducer transition captures typed candidates synchronously,
-        // then the surrounding job submits and acknowledges them in order through the actor.
         let private durableJsonHopacJobCapture =
             System.Threading.AsyncLocal<DurableJsonHopacCaptureState>()
 
@@ -6885,9 +5961,6 @@ module spiral_compiler =
                     | DurableWritePersisted _
                     | DurableWriteDuplicate _
                     | DurableWriteRunEndAlreadyCommitted _ -> ()
-                // Apply presentation only after every ordered receipt in this reducer
-                // batch has persisted. A taskbar/UI lock can no longer split the
-                // run_end -> physical_exit -> total_order_chain durable sequence.
                 for completion in completions do
                     let candidate, outcome = completion
                     applyDurableTaskbarCompletionAfterPersistence candidate outcome
@@ -7081,7 +6154,6 @@ module spiral_compiler =
         open System.Diagnostics
         open System.Text
 
-        /// [CONSOLE-176-001] Serialize stderr writes to avoid Hopac interleaving.
         module ConsoleMux88 =
             let withLock (f: unit -> unit) = CompilerConsoleHud88.withLock f
             let writeLine (s: string) = CompilerConsoleHud88.writeLine s
@@ -7160,13 +6232,11 @@ module spiral_compiler =
         let mutable ticks = 0L
         let private progressStateGate = obj()
 
-        // [CONSOLE-193-001] Rate/ETA snapshots (heartbeat-local moving estimate).
         let mutable last_subi_snap = 0L
         let mutable last_sub_ms_snap = 0L
         let mutable last_rate_per_s = 0.0
 
 
-        // [CONSOLE-195-001] Detect progress counter resets inside the same gen and mark epochs.
         let mutable epoch = 0
         let mutable last_seen_gen = Int64.MinValue
         let mutable last_overall_raw = -1.0
@@ -7197,16 +6267,11 @@ module spiral_compiler =
               panelf = (fun () -> "")
               statsf = (fun () -> "") }
 
-        // [CONSOLE-377-001] JSON mode must be machine-parseable even when tags/panels
-        // contain quotes, backslashes or multiline frontier dumps. Keep this local and
-        // allocation-bounded; heartbeat cadence is seconds, not inner-loop hot path.
         let private json_escape (s: string) =
             if obj.ReferenceEquals(s, null) then ""
             else
                 s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\r", "\\r").Replace("\n", "\\n").Replace("\t", "\\t")
 
-        // MIGRATION: compact console capability snapshot.  This keeps append-only logs
-        // useful for UI/CI reconstruction without reintroducing cursor-mutating TUI output.
         let private console_caps () =
             let safe (f: unit -> string) =
                 try f() with _ -> "?"
@@ -7240,7 +6305,6 @@ module spiral_compiler =
             if stage_i < 0 then stage_i <- 0
             if stage_i > stage_n then stage_i <- stage_n
             last_touch_ms <- sw.ElapsedMilliseconds
-            // SOTA: avoid newline spam; stage transitions are reflected by the heartbeat UI.
             touch (ProgressHeartbeatStage(stage_i, stage_n)) (providers.genf())
 
         let sub (i: int64) (n: int64) =
@@ -7260,18 +6324,11 @@ module spiral_compiler =
             try
                 if Console.IsErrorRedirected then false
                 else
-                    // If any cursor API throws, assume no TTY.
                     let _ = Console.CursorTop
                     let _ = Console.BufferWidth
                     true
             with _ -> false
 
-        // [CONSOLE-198-001] UI mode selection (deterministic; no env var reads):
-        // - "off" when stderr redirected (CI/logs)
-        // - "ansi_tui" when cursor controls are available
-        // - "ansi_line" when we can color but not safely reposition
-        // - "line" fallback
-        // [CONSOLE-202-002] Re-enable ANSI modes (still append-only; no cursor moves).
         type ConsoleUiMode =
             | ConsoleUiOff
             | ConsoleUiAnsiLine
@@ -7289,22 +6346,17 @@ module spiral_compiler =
             | ConsoleUiJson -> "json"
 
         let get_ui_mode () =
-            // MIGRATION: no env-var UI policy. Console mode is a closed runtime capability.
             if Console.IsErrorRedirected then ConsoleUiOff
             elif ui_supports_unicode && ui_supports_ansi then ConsoleUiAnsiLine
             elif ui_supports_unicode then ConsoleUiAnsiLine
             else ConsoleUiLine
 
 
-        // TUI keeps a fixed height to avoid scroll spam.
         let tui_height = 1 + 6
         let mutable tui_started = false
 
         let ui_keep_log = false
 
-        // MIGRATION: advanced console logging without cursor mutation.  Panels are
-        // typed before rendering so future modes can extend the contract without
-        // reintroducing stringly if/else ladders or CI newline spam.
         type ConsolePanelPolicy =
             | ConsolePanelOff
             | ConsolePanelInlineFirstLine
@@ -7345,13 +6397,10 @@ module spiral_compiler =
         let mutable started = 0
         let private heartbeat () =
             while true do
-                // MIGRATION: prediction ticks are emitted from this background heartbeat,
-                // not from the evaluator/join hot path.
                 Thread.Sleep 1000
                 let now = sw.ElapsedMilliseconds
                 let g = providers.genf()
                 let ui_mode = get_ui_mode ()
-                // Snapshot all mutable counters so each line is internally consistent.
                 let si = stage_i
                 let sn = stage_n
                 let subi = sub_i
@@ -7366,7 +6415,6 @@ module spiral_compiler =
                 let _stageBasePct = if sn > 0 then (float (max 0 (si - 1)) / float sn) * 100.0 else Double.NaN
                 let subpct = if subn > 0L then (float subi / float subn) * 100.0 else Double.NaN
 
-                // [CONSOLE-193-001] Update moving rate estimate and compute ETA.
                 let dt = now - last_sub_ms_snap
                 let dsub = subi - last_subi_snap
                 if last_sub_ms_snap = 0L then
@@ -7377,7 +6425,6 @@ module spiral_compiler =
                     last_sub_ms_snap <- now
                     last_subi_snap <- subi
                 elif dt > 15000L && dsub = 0L && last_rate_per_s > 0.0 then
-                    // [CONSOLE-195-002] Decay rate during stalls so ETA expands instead of lying.
                     last_rate_per_s <- last_rate_per_s * 0.5
                     last_sub_ms_snap <- now
                     last_subi_snap <- subi
@@ -7390,7 +6437,6 @@ module spiral_compiler =
                     elif etaSec < 120L then sprintf "%ds" etaSec
                     elif etaSec < 7200L then sprintf "%dm%ds" (etaSec/60L) (etaSec%60L)
                     else sprintf "%dh%dm" (etaSec/3600L) ((etaSec%3600L)/60L)
-                // SOTA: stage 3 dominates wall time; weight it so overall keeps moving instead of plateauing at 75%.
                 let stageW =
                     if sn = 4 then [| 0.05; 0.05; 0.85; 0.05 |]
                     else Array.init (max 1 sn) (fun _ -> 1.0 / float (max 1 sn))
@@ -7404,7 +6450,6 @@ module spiral_compiler =
                 for j = 0 to stageIdx0 - 1 do acc <- acc + stageW.[j]
                 let overallPctRaw = (acc + stageW.[stageIdx0] * subFrac) * 100.0
 
-                // [CONSOLE-195-003] Detect regressions in overallPct when sub counters restart inside the same gen.
                 let mutable did_reset = false
                 if g <> last_seen_gen then
                     last_seen_gen <- g
@@ -7414,7 +6459,6 @@ module spiral_compiler =
                     epoch <- epoch + 1
                     did_reset <- true
                     last_overall_raw <- overallPctRaw
-                    // Reset snapshots so rate/ETA does not carry across unrelated phases.
                     last_sub_ms_snap <- now
                     last_subi_snap <- subi
                     last_rate_per_s <- 0.0
@@ -7439,7 +6483,6 @@ module spiral_compiler =
                     let fill = Microsoft.FSharp.Core.String.replicate f bar_fill
                     let empty = Microsoft.FSharp.Core.String.replicate e bar_empty
                     if ui_mode = ConsoleUiAnsiLine || ui_mode = ConsoleUiAnsiTui then
-                        // [CONSOLE-176-002] ANSI-safe, newline-based bars (no in-place refresh).
                         $"\u001b[32m{fill}\u001b[0m\u001b[2m{empty}\u001b[0m"
                     else
                         fill + empty
@@ -7468,58 +6511,17 @@ module spiral_compiler =
                 let line =
                     match ui_mode with
                     | ConsoleUiJson ->
-                        // JSONL (one object per refresh) for machine-readable profiling.
-                        // MIGRATION: include escaped extra/panel so Hopac/frontier state can be consumed by tools.
                         FastRuntimeFormat.format "{\"app\":\"spiral\",\"phase\":\"%s\",\"ui\":\"%s\",\"gen\":%d,\"overall_pct\":%.4f,\"overall_cap_pct\":%.4f,\"overall_rem_pct\":%.4f,\"stage_i\":%d,\"stage_n\":%d,\"sub_i\":%d,\"sub_n\":%d,\"sub_pct\":%.4f,\"sub_rem\":%d,\"t_s\":%d,\"mem_private_mb\":%.0f,\"mem_gc_mb\":%.0f,\"tick\":%d,\"silent_ms\":%d,\"rate_per_s\":%.4f,\"eta\":\"%s\",\"tag\":\"%s\",\"extra\":\"%s\",\"panel\":\"%s\",\"caps\":\"%s\"}" [| box phase; box (consoleUiModeText ui_mode); box g; box overallPct; box overallCapPct; box capRemPct; box si; box sn; box subi; box subn; box subpct; box subRem; box (now/1000L); box privateMb; box gcMb; box tks; box silent; box last_rate_per_s; box (json_escape etaStr); box (json_escape ttag); box (json_escape extra); box (json_escape panel); box (json_escape (console_caps())) |]
                     | ConsoleUiOff
                     | ConsoleUiAnsiLine
                     | ConsoleUiAnsiMulti
                     | ConsoleUiAnsiTui
                     | ConsoleUiLine ->
-                        // Append-only compact bars (default).
                         FastRuntimeFormat.format "[spiral] %s %.1f%% phase=%s sub=%.1f%% eta=%s gen=%d%s tag=%s %s%s" [| box barS; box overallPct; box phase; box subpct; box etaStr; box g; box epStr; box ttag; box extra; box panelSuffix |]
 
                 if ui_mode <> ConsoleUiOff then
                     CompilerConsoleHud88.updateHudText line panel
 
-                // [CONSOLE-208-001] TUI/in-place refresh disabled (paste-friendly, append-only logs).
-                // Restore the commented block when we reach 100% SOTA interactive console.
-                (*
-                match ui_mode with
-                | "ansi_tui" ->
-                    let panelLines =
-                        if System.String.IsNullOrEmpty panel then [||]
-                        else panel.Replace("\r","").Split('\n') |> Array.filter (fun pl -> not (System.String.IsNullOrEmpty pl))
-                    let lines = ResizeArray<string>(tui_height)
-                    lines.Add(line)
-                    for i = 0 to panelLines.Length - 1 do
-                        if lines.Count < tui_height then
-                            lines.Add($"\u001b[2m[spiral] | {panelLines.[i]}\u001b[0m")
-                    while lines.Count < tui_height do lines.Add("")
-                    ConsoleMux88.withLock (fun () ->
-                        if tui_started then
-                            Console.Error.Write($"\u001b[{tui_height}F")
-                        else
-                            tui_started <- true
-                        for i = 0 to tui_height - 1 do
-                            Console.Error.Write("\u001b[2K")
-                            Console.Error.Write(lines.[i])
-                            if i < tui_height - 1 then Console.Error.Write("\n")
-                    )
-                | "ansi_line" ->
-                    ConsoleMux88.writeLineAnsi line
-                    if not (System.String.IsNullOrEmpty panel) then
-                        for pl in panel.Replace("\r","").Split('\n') do
-                            if not (System.String.IsNullOrEmpty pl) then
-                                ConsoleMux88.writeLineAnsi ($"\u001b[2m[spiral] | {pl}\u001b[0m")
-                | "line" ->
-                    ConsoleMux88.writeLine line
-                    if not (System.String.IsNullOrEmpty panel) then
-                        for pl in panel.Replace("\r","").Split('\n') do
-                            if not (System.String.IsNullOrEmpty pl) then
-                                ConsoleMux88.writeLine ($"[spiral] | {pl}")
-                | _ -> ()
-                *)
                 match ui_mode with
                 | ConsoleUiAnsiMulti
                 | ConsoleUiAnsiTui ->
@@ -7540,7 +6542,6 @@ module spiral_compiler =
                 stage 0 4
                 sub 0L 1L
                 touch ProgressHeartbeatStart (providers.genf())
-                // [CONSOLE-283-002] Emit console capability snapshot once (append-only).
                 let ui = get_ui_mode ()
                 if ui <> ConsoleUiOff then
                     ConsoleMux88.writeLine (
@@ -7551,12 +6552,6 @@ module spiral_compiler =
 
     open FSharp.Core
 
-    /// [JP-TIME-245-001] Global JP progress clock hook.
-    /// MIGRATION: replay helpers are defined outside the lexical scope where BuildFile
-    /// binds peval_sw, so watchdog progress must go through an early, swappable clock
-    /// instead of referencing peval_sw directly. BuildFile installs the peval-relative
-    /// clock immediately after creating peval_sw. Until then, this is inert and preserves
-    /// compile order.
     type JpProgressClockStamp =
         | JpProgressClockDormant
         | JpProgressClockObserved of int64
@@ -7611,29 +6606,13 @@ module spiral_compiler =
     let private jp_required_work_slice_progress_continuations =
         System.Collections.Generic.Dictionary<JpRequiredWorkSliceProgressKey, JpRequiredWorkSliceProgressState>()
     let mutable private jp_required_work_slice_progress_sequence = 0L
-    // Re-entering a declared body is currently much more expensive than extending a
-    // materialized continuation: runtime profiles show the 4x recovery slice retiring
-    // roughly four times the operations at comparable active wall time. Snapshot refs
-    // are affine/unique, so stability is measured by the ordinal-free semantic-position
-    // fingerprint, never by snapshot identity. Claim the single-owner recovery lane
-    // after four stable-position yields instead of paying repeated root re-entry.
     let private jp_declared_body_finish_through_threshold = 4
     let private jp_declared_body_finish_through_budget_multiplier = 4
-    // Long-lived declared bodies can make real semantic-position progress while paying
-    // repeated 256-op resume overhead.  Grant a smaller 2x slice before the 4x
-    // single-owner finish-through lane, but only while operation progress is recent and
-    // queue pressure is bounded.  These thresholds are structural scheduler policy;
-    // source path, symbol, span, and diagnostic text never participate.
     let private jp_declared_body_progressing_recovery_age_ms = 30000L
     let private jp_declared_body_progressing_recovery_min_operations = 1024L
     let private jp_declared_body_progressing_recovery_idle_guard_ms = 5000L
     let private jp_declared_body_progressing_recovery_queue_cap = 8
     let private jp_declared_body_progressing_recovery_multiplier = 2
-    // Once a declared body has proved sustained operation progress and no semantic
-    // work is queued behind it, use the already-established 4x bounded-slice ceiling.
-    // This is still cooperative: bounded queue pressure drops back to the 2x
-    // progressing policy and larger pressure to the normal slice, while checkpoint
-    // freshness remains independent liveness evidence.
     let private jp_declared_body_progressing_exclusive_age_ms = jp_declared_body_progressing_recovery_age_ms * 2L
     let private jp_declared_body_progressing_exclusive_min_operations = jp_declared_body_progressing_recovery_min_operations * 2L
     let private jp_declared_body_progressing_exclusive_multiplier = jp_declared_body_finish_through_budget_multiplier
@@ -7733,13 +6712,6 @@ module spiral_compiler =
             jp_required_work_slice_progress_continuations.Clear()
             jp_declared_body_finish_through_owner <- None)
 
-    // MIGRATION: root-witness/global-fuse partial-current deferrals are valid
-    // only while they expose fresh work. If the same partial current keeps
-    // looping under the same preserved root witness, terminalize the liveness
-    // bug instead of requiring a manual interrupt.
-    // MIGRATION: this helper must stay non-inline. F# inline expansion cannot
-    // legally capture the private ConcurrentDictionary across the generated
-    // module boundary, which produced FS1113 at the helper definition.
     let private jp_global_fuse_partial_current_counts =
         System.Collections.Concurrent.ConcurrentDictionary<CompilerIdentityKernel.ContentDigest,int>()
     let jp_note_global_fuse_partial_current (key: string) =
@@ -7748,10 +6720,6 @@ module spiral_compiler =
             let keyRef = CompilerIdentityKernel.ContentDigest.ofText "jp-global-fuse-partial-current" key
             jp_global_fuse_partial_current_counts.AddOrUpdate(keyRef, 1, fun _ old -> old + 1)
 
-    // MIGRATION: the historical runtime log was truncated by thousands of identical
-    // semantic_root_complete source-value store receipts for the same type key.
-    // Keep the semantic store and JP progress heartbeat on every occurrence, but
-    // sample the diagnostic stream so the next frontier remains visible.
     let private jp_source_value_store_counts =
         System.Collections.Concurrent.ConcurrentDictionary<CompilerIdentityKernel.ContentDigest,int>()
 
@@ -7764,8 +6732,6 @@ module spiral_compiler =
     let jp_unique_source_value_store_count () =
         jp_source_value_store_counts.Count
 
-    // MIGRATION: each exact semantic epoch may request at most one owner-debt
-    // cascade. Repeated drain observations of the same fact are procedural.
     let private jp_owner_debt_cascade_epochs =
         System.Collections.Concurrent.ConcurrentDictionary<int64,byte>()
 
@@ -7796,23 +6762,16 @@ module spiral_compiler =
     /// ## spiral_compiler
     open FSharp.Core
 
-    // #!import '../../../polyglot/deps/The-Spiral-Language/The Spiral Language 2/Supervisor.fs'
 
-    // #if !INTERACTIVE
-    // open Polyglot
     open Common
-    // open Lib
-    // #endif
 
 #if SPIRAL_CORE_HOPAC
     /// ## HopacRuntimeHelpers
-    // Hopac-only helpers the rest of hopac's core relies on (diagnostics sidecar, Interlocked wrappers).
     open System
     open System.Threading
     
 
     /// ### InterlockedEx
-    /// Helpers to avoid inref/byref overload friction (especially with F# ref cells).
         
     
     
@@ -7820,14 +6779,12 @@ module spiral_compiler =
 
 
     /// ### DiagSidecar
-    /// Best-effort, non-blocking telemetry buffer for diagnostics.
-    /// Always enabled in MIGRATION+ for better parallel debugging. Lightweight enough to leave on.
     module DiagSidecar =
         open System
         open System.Collections.Concurrent
     
 
-        let private maxItems = 512  // Increased buffer
+        let private maxItems = 512
         let private q = ConcurrentQueue<string>()
 
         type DiagSidecarKeyKind private () =
@@ -7842,9 +6799,6 @@ module spiral_compiler =
         let private keyedCounts = System.Collections.Concurrent.ConcurrentDictionary<DiagSidecarKeyId,int>()
         let  private isPow2 (x:int) = x > 0 && (x &&& (x-1)) = 0
 
-        // MIGRATION: keep the hot re-entry key classifier as a closed DU.
-        // The sidecar still emits readable text, but the accounting path no longer
-        // routes term/ty hotness by ad-hoc duplicated string branches.
         type DiagReentryHotKindId =
             | DiagReentryHotTerm
             | DiagReentryHotTy
@@ -7866,12 +6820,11 @@ module spiral_compiler =
                 | _ -> None
 
 
-        let enabled () = true  // MIGRATION: always on
+        let enabled () = true
     
 
         let private enqueueRaw (msg: string) =
             q.Enqueue msg
-            // best-effort trim: we prefer losing oldest telemetry to blocking the compiler.
             while q.Count > maxItems do
                 let mutable v = Unchecked.defaultof<string>
                 q.TryDequeue(&v) |> ignore
@@ -7911,8 +6864,6 @@ module spiral_compiler =
                     else None)
 
         let private noteEjp0011Hot (msg: string) =
-            // Only EJP0011W re-entry lines count. Checking for the code first skips tokenizing every other message
-            // (the split was ~3.5% of a hopac evaluator thread on lean_cic, 2026-10-02).
             if not (String.IsNullOrEmpty msg) && msg.Contains("EJP0011W", StringComparison.Ordinal) then
                 try
                     match tryReentryHotKind msg, tryReentryFieldValue DiagReentryKey msg with
@@ -7922,7 +6873,6 @@ module spiral_compiler =
                     | _ -> ()
                 with _ -> ()
 
-        /// Emit sampled diagnostics (auto-keyed). First 3 always, then powers-of-two.
         let emit (msg: string) =
             noteEjp0011Hot msg
             let key = keyOf msg
@@ -7935,11 +6885,7 @@ module spiral_compiler =
             else
                 ()
 
-        /// Emit sampled diagnostics keyed by <key>. First 3 always, then powers-of-two.
         let emitKeyedSample (key: string) (msg: string) =
-            // MIGRATION: keyed sidecar sampling was the missing seam in MIGRATION.
-            // Human EJP0011W lines could reach the retry sidecar through this path
-            // while bypassing the hotkey counters read by build_retry_sota_triage.
             noteEjp0011Hot msg
             let keyId = DiagSidecarKeyIdOps.create key
             let c = keyedCounts.AddOrUpdate(keyId, 1, (fun _ old -> old + 1))
@@ -7949,11 +6895,6 @@ module spiral_compiler =
             else
                 ()
 
-        /// `emitKeyedSample "[spiral_compiler] EJP0011W|<kind>|<nodeKey>" "[spiral_compiler] EJP0011W <kind> re-entry
-        /// (key, non-fatal): key=<nodeKey> depth=<depth> site=<site>"` with the same counters, but the texts are only
-        /// built for a row that is kept: the evaluator calls it on every second entry of a source key.
-        // Per nodeKey instance (the evaluator keeps one string per source range): whether the message has a `key=`
-        // token, and the two counter ids, interned on first use in the original order.
         let private reentryTermKeyIds = System.Runtime.CompilerServices.ConditionalWeakTable<string, System.Tuple<bool, DiagSidecarKeyId, DiagSidecarKeyId>>()
         let private reentryTyKeyIds = System.Runtime.CompilerServices.ConditionalWeakTable<string, System.Tuple<bool, DiagSidecarKeyId, DiagSidecarKeyId>>()
 
@@ -7974,7 +6915,6 @@ module spiral_compiler =
                             if firstKeyToken.Length = 0 then
                                 System.Tuple.Create(false, Unchecked.defaultof<DiagSidecarKeyId>, Unchecked.defaultof<DiagSidecarKeyId>)
                             else
-                                // noteEjp0011Hot's parse of that message: the first `key=` token.
                                 let hotKeyId = DiagSidecarKeyIdOps.create (reentryHotPrefix hotKind + firstKeyToken)
                                 let keyId = DiagSidecarKeyIdOps.create ("[spiral_compiler] EJP0011W|" + kindText + "|" + nodeKey)
                                 System.Tuple.Create(true, hotKeyId, keyId))
@@ -8001,7 +6941,6 @@ module spiral_compiler =
             key.Length >= prefix.Length
             && String.Compare(key, 0, prefix, 0, prefix.Length, StringComparison.Ordinal) = 0
 
-        /// Snapshot of top-k keyed counters matching a typed hot-key family (descending by count).
         let snapshotTopKeyed (hotKind:DiagReentryHotKindId) (k: int) : (string * int) list =
             try
                 keyedCounts.ToArray()
@@ -8018,14 +6957,11 @@ module spiral_compiler =
             let i = k.LastIndexOf('|')
             if i >= 0 && i + 1 < k.Length then k.Substring(i + 1) else k
 
-        /// Human-friendly compact hotkeys string (k items). Each item is "<shortKey>:<count>".
         let snapshotTopKeyedShort (hotKind:DiagReentryHotKindId) (k: int) : string =
             snapshotTopKeyed hotKind k
             |> List.map (fun (key,c) -> sprintf "%s:%d" (shortKey key) c)
             |> String.concat " "
 
-        /// Total count for a typed hot-key family. Used by structured retry triage
-        /// to distinguish "no hotkey evidence" from "hotkey evidence was truncated from top-k".
         let snapshotTopKeyedCount (hotKind:DiagReentryHotKindId) : int =
             try
                 keyedCounts.ToArray()
@@ -8050,12 +6986,10 @@ module spiral_compiler =
     
 
     /// ### dump_spiral_env_once
-    /// Back-compat alias used by newer error paths.
     let dump_spiral_env_once () = DiagSidecar.emitEnvSnapshotOnce ()
     
 
     /// ### map_try_find_by_string
-    /// Helper for maps keyed by (id, backend) pairs.
     let map_try_find_by_string (backend: string) (m: Map<(int * string), 'a>) : 'a option =
         m |> Map.tryPick (fun (_, b) v -> if b = backend then Some v else None)
     
@@ -128463,7 +127397,7 @@ module spiral_compiler =
             | RetryWaitStalled -> "stalled"
             | RetryWaitCapped -> "capped"
 
-        let retryWaitPressureFor waitedMs stalledMs cappedMs =
+        let retryWaitPressureFor (waitedMs : int64) (stalledMs : int64) (cappedMs : int) =
             if waitedMs < 0L then RetryWaitUnknown
             elif waitedMs >= int64 cappedMs then RetryWaitCapped
             elif waitedMs > int64 stalledMs then RetryWaitStalled
@@ -170009,14 +168943,9 @@ module spiral_compiler =
 #endif
 #if SPIRAL_CORE_HOPAC
     /// ## CodegenAdapter
-    // What the backends shared by both cores (CodegenRust, CodegenDelphi, CodegenC, CodegenCpp, CodegenPython) need
-    // from a partial evaluation result. Hopac interns union tags and layout keys, keys methods with their range type
-    // and keeps join point bodies in one-shot cells.
     let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty [] * Ty>) = let args, _, _ = key.node in args
-    /// A table for CodegenUtils' `memo`.
     let codegenMemoTable (comparer : IEqualityComparer<'k>) : System.Collections.Concurrent.ConcurrentDictionary<'k, 'v> =
         System.Collections.Concurrent.ConcurrentDictionary(comparer)
-    /// RefCounting's decrement table (read by the C, C++ and Python backends).
     type RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary<TypedBind, TyV Set>
     let refcDecrTable () : RefcDecrTable = System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Reference)
     let refcDecrAdd (table : RefcDecrTable) key value = table.TryAdd(key, value) |> ignore
@@ -170026,22 +168955,16 @@ module spiral_compiler =
     let codegenClosureBody (env : PartEvalResult) backend jp_body key =
         let jp_dict, _, _ = env.join_point_closure.[jp_body]
         jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
-    /// NEW: the backend a join point body was evaluated for (`join_backend CudaDevice` -> "CudaDevice"). Upstream's
-    /// generators read it as `(fst jp_body).node`; hopac's owner is a JpBodyOwnerIdentity.
     let codegenOwnerBackendName (jp_body : JpBodyOwnerIdentity) = JpBodyOwnerIdentity.backendText jp_body
 
 #else
     /// ## CodegenAdapter
-    // What the backends shared by both cores (CodegenRust, CodegenDelphi, CodegenC, CodegenCpp, CodegenPython) need
-    // from a partial evaluation result, in the names hopac's side uses (it interns union tags and layout keys).
     module UnionTagIdOps =
         let text (tag : string) = tag
     module LayoutFieldNameIdOps =
         let matchesText (fieldId : string) (text : string) = fieldId = text
     let codegenMethodKeyArgs (key : ConsedNode<RData [] * Ty []>) = fst key.node
-    /// A table for CodegenUtils' `memo`.
     let codegenMemoTable (comparer : IEqualityComparer<'k>) : Dictionary<'k, 'v> = Dictionary(comparer)
-    /// RefCounting's decrement table (read by the C, C++ and Python backends).
     type RefcDecrTable = Dictionary<TypedBind, TyV Set>
     let refcDecrTable () : RefcDecrTable = Dictionary(HashIdentity.Reference)
     let refcDecrAdd (table : RefcDecrTable) key value = table.Add(key, value)
@@ -170053,7 +168976,6 @@ module spiral_compiler =
         match (fst env.join_point_closure.[jp_body]).[key] with
         | Some(domain_args, body) -> domain_args, body
         | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
-    /// NEW: the backend a join point body was evaluated for (`join_backend CudaDevice` -> "CudaDevice").
     let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
 
 #endif
@@ -170098,7 +169020,6 @@ module spiral_compiler =
             strb.Append '"' |> ignore
             sprintf "Rc::<str>::from(%s)" (strb.ToString())
         | LitChar x ->
-            // Like the C backend, a char is one UTF-8 byte.
             if int x > 127 then raise_codegen_error $"The Rust backend represents chars as bytes; '{x}' is not ASCII."
             match x with
             | '\n' -> @"b'\n'"
@@ -170133,14 +169054,9 @@ module spiral_compiler =
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
     /// ### rustEmitMarkers
-    // The emit marker (inlineRustEmits): lib/spiral's rust.emit_expr prints it (Fable's `Fable.Core.RustInterop.emitRustExpr`
-    // spelling was read until every emitter had switched, 2026-10-07).
     let rustEmitMarkers = [ "__spiral_emit_rust" ]
 
     /// ### translateFsharpInterpolations
-    // lib/spiral's `$'$"text {!x}"'` macros are F# interpolated strings: codegenRust prints them as
-    // `let mut vN: Rc<str> = $"text {v1}";`. When every hole is a plain variable, the same text is a Rust format string
-    // (`{{`/`}}` and the escapes carry over; F#'s `%%` is `%`). Other holes are F# expressions: left for rustc to report.
     let translateFsharpInterpolations (generated : string) =
         if not (generated.Contains("= $\"", System.StringComparison.Ordinal)) then generated
         else
@@ -170152,12 +169068,9 @@ module spiral_compiler =
                 let mutable i = 0
                 while ok && i < body.Length do
                     let c = body.[i]
-                    // F#'s `\u001b` is Rust's `\u{001b}`; other escapes carry over.
                     if c = '\\' && i + 5 < body.Length && body.[i + 1] = 'u' && System.Text.RegularExpressions.Regex.IsMatch(body.Substring(i + 2, 4), "^[0-9a-fA-F]{4}$") then
                         fmt.Append("\\u{").Append(body.Substring(i + 2, 4)).Append('}') |> ignore; i <- i + 6
                     elif c = '\\' && i + 1 < body.Length then
-                        // Escapes both languages share carry over; F# keeps an unknown escape (`\.` in a regex) as a
-                        // backslash and the character, which Rust rejects.
                         match body.[i + 1] with
                         | 'n' | 'r' | 't' | '\\' | '0' | '\'' | '"' as e -> fmt.Append('\\').Append(e) |> ignore
                         | 'a' -> fmt.Append("\\x07") |> ignore
@@ -170172,7 +169085,6 @@ module spiral_compiler =
                     elif c = '{' then
                         let close = body.IndexOf('}', i)
                         let hole = if close < 0 then "" else body.Substring(i + 1, close - i - 1)
-                        // A variable, or a numeric literal (both languages print `3u8` as `3`).
                         if System.Text.RegularExpressions.Regex.IsMatch(hole, @"^(v[0-9]+|-?[0-9]+(?:[iu](?:8|16|32|64|size))?)$") then
                             fmt.Append("{}") |> ignore
                             args.Add hole
@@ -170182,20 +169094,15 @@ module spiral_compiler =
                     else fmt.Append(c) |> ignore; i <- i + 1
                 if not ok then None
                 elif args.Count = 0 then
-                    // No holes: a plain literal, so an emit marker's code binding stays inlinable.
                     let literal = fmt.ToString().Replace("{{", "{").Replace("}}", "}")
                     Some ("Rc::<str>::from(\"" + literal + "\")")
                 else Some $"""Rc::<str>::from(format!("{fmt}", {String.concat ", " args}))"""
-            // Whole text: a string with a newline spans lines (Rust literals may contain raw newlines too).
             pattern.Replace(generated, System.Text.RegularExpressions.MatchEvaluator(fun m ->
                 match translate m.Groups.["body"].Value with
                 | Some expression -> m.Groups.["prefix"].Value + expression + ";"
                 | None -> m.Value))
 
     /// ### foldStringBindings
-    // lib/spiral builds some emitted Rust text at compile time with F#'s string `+` (`rust.fix_closure'`'s closing
-    // braces, `am'.new_vec`), which natively is a runtime `+` on Rc<str>. When every part of a string binding is a literal
-    // or an already folded variable, replace it with the literal, so inlineRustEmits sees the code text again.
     let foldStringBindings (generated : string) =
         let rx (p : string) = System.Text.RegularExpressions.Regex p
         let binding = rx @"^(?<ind>[ \t]*)let mut (?<v>v[0-9]+): Rc<str> = (?<rhs>.*?);[ \t]*\r?$"
@@ -170222,7 +169129,6 @@ module spiral_compiler =
             s.ToString()
         let escape (s : string) = s.Replace("\\", "\\\\").Replace("\"", "\\\"").Replace("\n", "\\n").Replace("\r", "\\r").Replace("\t", "\\t")
         let known = Dictionary<string, string>(System.StringComparer.Ordinal)
-        // Splits `a + "b + c" + v1` on top-level ` + ` (outside string literals).
         let splitPlus (e : string) =
             let parts = ResizeArray<string>()
             let mutable start = 0
@@ -170291,13 +169197,11 @@ module spiral_compiler =
                         $"{ind}let mut {v}: Rc<str> = Rc::<str>::from(\"{lit}\");{cr}"
                     | None ->
                         known.Remove v |> ignore
-                        // An F# `+` chain with runtime parts (`"a" + v1 + v2`): Rust has no `+` on Rc<str>, use format!.
                         match splitPlus m.Groups.["rhs"].Value with
                         | _ :: _ :: _ as parts when parts |> List.forall (fun p -> System.Text.RegularExpressions.Regex.IsMatch(p, @"^((?:string )?v[0-9]+|""(?:[^""\\]|\\.)*""|\$""(?:[^""\\{}]|\\.)*"")$")) ->
                             let fmt = StringBuilder()
                             let args = ResizeArray<string>()
                             for p in parts do
-                                // `string vN` is F#'s conversion: Display does the same.
                                 if p.StartsWith "string " then fmt.Append "{}" |> ignore; args.Add(p.Substring 7)
                                 elif p.StartsWith "v" then fmt.Append "{}" |> ignore; args.Add p
                                 else
@@ -170313,18 +169217,10 @@ module spiral_compiler =
         |> String.concat "\n"
 
     /// ### rustSpliceConsumes
-    // Whether a variable spliced into Rust text between `prev` and `next` is moved there: an argument, an element, the
-    // scrutinee of `match`/`for`, the whole text, or the receiver of a method that takes `self`. A spliced variable
-    // that is still used afterwards is cloned only in these places; anywhere else (a `&mut self` receiver such as
-    // `push`, a borrow, an index, either side of an assignment, a format hole) a clone would compile and silently
-    // drop a mutation or change nothing, so the text keeps the variable itself.
-    // `json`/`borsh`: near-workspaces' ExecutionFinalResult (and reqwest's Response/RequestBuilder) take `self`.
     let private rustConsumingMethod =
-        // A tuple field moves out only when taken as a value (`!x.0;`), not when borrowed on (`!x.0.clone()`).
         System.Text.RegularExpressions.Regex(@"^\.\s*(?:(?:into_\w+|unwrap\w*|expect\w*|ok|err|map|map_err|map_or\w*|and_then|or_else|unzip|collect|sum|count|fold|for_each|json|borsh)\b|[0-9]+\s*(?:$|[),;}\]]))")
     let private rustPrevKeyword = System.Text.RegularExpressions.Regex(@"(?:^|[^\w])(?:match|in)$")
     let private rustPrevBlocks = System.Text.RegularExpressions.Regex(@"(?:&|&\s*mut|\*|=|(?:^|[^\w])let(?:\s+mut)?|\{)$")
-    // An argument of a macro call (`format!(..)`, `println!(..)`, `write!(..)`): the formatting macros borrow it.
     let private rustInMacroCall (p : string) =
         let mutable depth = 0
         let mutable i = p.Length - 1
@@ -170340,13 +169236,11 @@ module spiral_compiler =
         let p = prev.TrimEnd()
         let n = next.TrimStart()
         if rustInMacroCall p then false
-        // An operand (`!a + !b`, `=> !x`, `|| !x`): operators don't mutate their operands; keep today's text.
         elif (p.Length > 0 && "+-*/%^|<>".IndexOf p.[p.Length - 1] >= 0) || (n.Length > 0 && "+-*/%^|<>".IndexOf n.[0] >= 0) then false
         elif rustPrevKeyword.IsMatch p then true
         elif rustPrevBlocks.IsMatch p then false
         elif n.StartsWith "." then rustConsumingMethod.IsMatch n
         elif n.StartsWith "=" || (n.Length >= 2 && n.[1] = '=' && "+-*/%|&^".IndexOf n.[0] >= 0) || n.StartsWith "<<=" || n.StartsWith ">>=" then false
-        // `(!x)` that only groups: what follows the parenthesis decides (`(!f)()` calls, `(!v).push(..)` borrows).
         elif n.StartsWith ")" && p.EndsWith "(" && (p.Length = 1 || not (System.Char.IsLetterOrDigit p.[p.Length - 2] || "_>)!".IndexOf p.[p.Length - 2] >= 0)) then
             let rest = n.Substring(1).TrimStart()
             if rest.StartsWith "." then rustConsumingMethod.IsMatch rest
@@ -170354,10 +169248,6 @@ module spiral_compiler =
         else n = "" || n.StartsWith ")" || n.StartsWith "," || n.StartsWith ";" || n.StartsWith "}" || n.StartsWith "]"
 
     /// ### inlineRustEmits
-    // lib/spiral's `!\\(args, $'"rust text with $0"')` (rust.emit_expr) is the emit marker `__spiral_emit_rust`: codegenRust
-    // prints it as `__spiral_emit_rust (a, b) vN ;` with the text in an earlier `let mut vN: Rc<str> = "...";`.
-    // Inline the text (with `$i` replaced by the arguments) and drop the binding, bound (`let mut v: T = ...`) or in
-    // statement position. Hosts used to do this after the fact (Eval/Supervisor/the tmp host's rewriteRustEmitExpr).
     let inlineRustEmits (generated : string) =
         if not (rustEmitMarkers |> List.exists (fun (m : string) -> generated.Contains(m, System.StringComparison.Ordinal))) then generated
         else
@@ -170411,7 +169301,6 @@ module spiral_compiler =
             for index = 0 to lines.Length - 1 do
                 let binding = bindingPattern.Match lines.[index]
                 if binding.Success then
-                    // Fable's emit unescapes `{{`/`}}` to single braces (lib/spiral writes `"true; }}); { //"`).
                     snippets.[binding.Groups.[1].Value] <- (unescape binding.Groups.[2].Value).Replace("{{", "{").Replace("}}", "}")
                     bindingLine.[binding.Groups.[1].Value] <- index
                 let emitted = emitPattern.Match lines.[index]
@@ -170421,20 +169310,14 @@ module spiral_compiler =
                     | (true, payload), (true, lineIndex) ->
                         drop.Add lineIndex |> ignore
                         let args = splitArgs emitted.Groups.["args"].Value
-                        // A tuple in last position shares the spine of the argument tuple (`!\\(t, "$0")` with a pair `t`
-                        // arrives as two arguments): when the text names fewer arguments than it got, the last one it
-                        // names is the rest, as one Rust tuple (Fable dropped the surplus, so `$0` was a tuple's first field).
                         let named = System.Text.RegularExpressions.Regex.Matches(payload, @"\$([0-9]+)") |> Seq.map (fun m -> int m.Groups.[1].Value + 1) |> Seq.fold max 0
                         let args =
                             if named >= 1 && args.Length > named then
                                 List.take (named - 1) args @ [List.skip (named - 1) args |> String.concat ", " |> sprintf "(%s)"]
                             else args
                         let args = List.toArray args
-                        // codegenRust writes `vN.clone()` for a variable the function still uses later (else `vN`): the
-                        // clone stays only where the text moves the argument (rustSpliceConsumes).
                         let expression =
                             System.Text.RegularExpressions.Regex.Replace(payload, @"\$([0-9]+)", System.Text.RegularExpressions.MatchEvaluator(fun m ->
-                                // `$12` with fewer arguments is `$1` and a `2`, as plain textual replacement had it.
                                 let mutable digits = m.Groups.[1].Value
                                 while digits.Length > 1 && int digits >= args.Length do digits <- digits.Substring(0, digits.Length - 1)
                                 let k = int digits
@@ -170445,35 +169328,22 @@ module spiral_compiler =
                                     let a = if borrow a <> a && rustSpliceConsumes (payload.Substring(0, m.Index)) next then a else borrow a
                                     a + m.Groups.[1].Value.Substring(digits.Length)))
                         rewritten.[index] <- emitted.Groups.["prefix"].Value + expression + ";"
-                    | _ -> () // the text isn't a literal binding: leave the call for rustc to report
+                    | _ -> ()
             rewritten
             |> Array.mapi (fun index line -> if drop.Contains index then None else Some line)
             |> Array.choose id
             |> String.concat "\n"
 
     /// ### nonCloneRustType
-    // The leading text of a macro type naming a std/crate type that doesn't implement Clone (the Rust path; the `_`-joined
-    // spelling of lib/spiral's former Fable aliases also matches). NEAR's persistent collections
-    // (`near_sdk::store::*`, and lib/spiral's native `near.vector`, `SpiralNearVec`) are handles on contract storage:
-    // a contract's state holding one moves (its `new` returns the state), it is never cloned.
     let nonCloneRustType =
         System.Text.RegularExpressions.Regex(
             @"^\s*(?:SpiralNearVec|near_sdk(?:::|_)store(?:::|_)(?:[a-z_]+(?:::|_))?(?:Vector|LookupMap|LookupSet|UnorderedMap|UnorderedSet|IterableMap|IterableSet|TreeMap|LazyOption|Lazy)|(?:std(?:::|_)sync(?:::|_))?MutexGuard|(?:std(?:::|_)process(?:::|_))?(?:Command|Child|ChildStdin|ChildStdout|ChildStderr)|(?:std(?:::|_)fs(?:::|_))?File|(?:std(?:::|_)thread(?:::|_))?JoinHandle|(?:async_walkdir(?:::|_))?Filtering|std(?:::|_)io(?:::|_)Error|anyhow(?:::|_)Error|near_workspaces(?:::|_)error(?:::|_)Error|(?:std(?:::|_)pin(?:::|_))?Pin|(?:leptos(?:::|_)(?:prelude|dom)(?:::|_))?(?:AnyView|Fragment)_?|(?:reqwest(?:_wasm)?(?:::|_))?RequestBuilder|(?:rexie(?:::|_))?Rexie|Box\s*<\s*dyn)\b")
-    // `Box<` followed by a type argument (lib/spiral's `rust.box t`): Clone only when the argument is, and never for a trait
-    // object (`rust.dyn' ..`, either spelling: the Rust `dyn` or the Fable alias `Dyn<..>`).
     let boxRustType = System.Text.RegularExpressions.Regex(@"^\s*(?:std(?:::|_)boxed(?:::|_))?Box\s*<\s*$")
     let dynRustType = System.Text.RegularExpressions.Regex(@"^\s*(?:dyn\b|Dyn\s*<)")
-    // Generic std types that are Clone exactly when their type arguments are.
     let cloneIfContentsRustType =
         System.Text.RegularExpressions.Regex(@"^\s*(?:Result|Option|(?:std(?:::|_)vec(?:::|_))?Vec)\s*<")
 
     /// ### cacheRustStringLiterals
-    // The last pass over the program text: a string literal `Rc::<str>::from("...")` is built once per thread and
-    // cloned (an Rc<str> is immutable, so sharing it is unobservable); every evaluation allocated a fresh RcBox before,
-    // e.g. the "" and separators of string-building loops. Runs after the passes that read literals in that form.
-    // Macro text may spell the type with its path (`std::rc::Rc::<str>::from(..)`, `::std::rc::..`): that literal is
-    // replaced as a whole, keeping the path in the cached block; behind any other path (`crate::Rc::..`) or an
-    // identifier, it is left alone (rewriting only the `Rc::..` suffix produced `std::rc::{ thread_local!.. }`).
     let cacheRustStringLiterals (text : string) =
         let literal = System.Text.RegularExpressions.Regex(@"(?<![\w:])((?:::)?std::rc::)?Rc::<str>::from\(""((?:[^""\\]|\\.)*)""\)")
         literal.Replace(text, System.Text.RegularExpressions.MatchEvaluator(fun m ->
@@ -170481,12 +169351,9 @@ module spiral_compiler =
             "{ thread_local!{ static LIT: " + path + "Rc<str> = " + path + "Rc::<str>::from(\"" + m.Groups.[2].Value + "\"); } LIT.with(|lit| lit.clone()) }"))
 
     /// ### codegenRust
-    /// Values are shared as in F#: everything that is not a primitive lives behind an `Rc` and is cloned at
-    /// each use, arrays and mutable layouts behind `Rc<RefCell<_>>`, closures are `Rc<dyn Fn>`.
     let codegenRust (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let functions = ResizeArray()
-        // `pub fn`s for the program's exports; a program with exports is a library (no `main`).
         let exports = ResizeArray()
         let closure_of_var = Dictionary<int, int>()
         let export_names = HashSet<string>()
@@ -170534,17 +169401,10 @@ module spiral_compiler =
                 if dirty then print false show r
                 r
 
-        // Set while writing a method that calls itself in tail position (Rust has no guaranteed tail
-        // calls; the C compiler turns them into jumps): tail values `return`, the self call reassigns the
-        // parameters and `continue`s the loop around the body.
         let mutable self_loop : (int * L<Tag,Ty> []) option = None
         let without_self_loop f = let saved = self_loop in self_loop <- None; f (); self_loop <- saved
         let is_copy = function YPrim StringT -> false | YPrim _ -> true | _ -> false
-        // Opaque Rust types without `Clone` (Fable shared them behind its own pointers): a use moves the value, so a
-        // single use compiles and a second one is rustc's E0382 instead of a clone that can never compile.
         let stack_union_moves = Dictionary<Union, bool>(HashIdentity.Reference)
-        // A type-level backend_switch (`$'backend_switch `(record)'`, lib/spiral's rust_type) -> its Rust arm, so the
-        // checks below read the Rust type's own text.
         let rustSwitchArm = function
             | YMacro [Text "backend_switch "; Type (YRecord r)] as t ->
                 match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameRust then Some v else None) with
@@ -170552,27 +169412,22 @@ module spiral_compiler =
                 | None -> t
             | t -> t
         let rec moves = function
-            // lib/spiral's per-backend types (`result'`, `option'`, ...): the Rust field, as `tyv` picks it.
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
                 match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameRust then Some v else None) with
                 | Some t -> env.ty_to_data t |> data_free_vars |> Array.exists (fun (L(_,t)) -> moves t)
                 | None -> false
             | YMacro (Text a :: _) when nonCloneRustType.IsMatch a -> true
-            // `Box<T>` is Clone when T is; a boxed trait object never is (T as `tyv` reaches it: through nominals).
             | YMacro (Text a :: Type t :: _) when boxRustType.IsMatch a ->
                 env.ty_to_data t |> data_free_vars |> Array.exists (function
                     | L(_,t) when (match rustSwitchArm t with YMacro (Text b :: _) -> dynRustType.IsMatch b | _ -> false) -> true
                     | L(_,t) -> moves t)
-            // Result/Option/Vec are Clone only when their contents are.
             | YMacro (Text a :: rest) when cloneIfContentsRustType.IsMatch a ->
                 rest |> List.exists (function Type t | TypeLit t -> env.ty_to_data t |> data_free_vars |> Array.exists (fun (L(_,t)) -> moves t) | Text _ -> false)
-            // A stack union is an enum value: it derives Clone only when no case carries a value that moves. Heap
-            // unions are behind an Rc (cloned as such), so they never move.
             | YUnion u when u.Item.layout = UStack ->
                 match stack_union_moves.TryGetValue u with
                 | true, r -> r
                 | _ ->
-                    stack_union_moves.[u] <- false // a stack union can't contain itself; this only guards the lookup
+                    stack_union_moves.[u] <- false
                     let r = u.Item.cases |> Map.exists (fun _ t -> env.ty_to_data t |> data_free_vars |> Array.exists (fun (L(_,t)) -> moves t))
                     stack_union_moves.[u] <- r
                     r
@@ -170583,27 +169438,16 @@ module spiral_compiler =
             | [|WV(L(_,YPrim p))|] -> (match p with Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T -> true | _ -> false)
             | [|WLit l|] -> (match lit_to_primitive_type l with Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T -> true | _ -> false)
             | _ -> false
-        // A method receiver: a name or literal as is, anything else (`-1i32`, an expression) parenthesized.
         let rust_receiver (x : string) = if System.Text.RegularExpressions.Regex.IsMatch(x, @"^[A-Za-z_0-9]+$") then x else $"({x})"
         let args x = x |> Array.map var |> String.concat ", "
         let show_w = function WV x -> var x | WLit a -> litRust a
-        // Macros are target code: their variables are named, not cloned, so `!a = !b` assigns.
         let macro_var = function WV (L(i,_)) -> $"v{i}" | WLit a -> litRust a
         let macro_args x = x |> data_term_vars |> Array.map macro_var |> String.concat ", "
-        // The emit marker's argument tuple: one `$k` per element of the tuple's spine. An element that is itself a tuple
-        // (or a record) is one argument, written as a Rust tuple like `(!x)` writes it; flattening it would shift
-        // every later `$k`. A trailing tuple shares the spine, so inlineRustEmits groups surplus arguments instead.
-        // Liveness for macro splices. A macro names its variables (it's target code), so one that moves its argument
-        // (a `self` method, `match`, `into_iter`, a call) leaves the variable moved: a later use was rustc's E0382, and
-        // in an `Fn` closure even the first use was E0507. For each statement, `live_after` tells which variables the
-        // rest of the function body still uses (later statements, the continuation of enclosing blocks, the rest of a
-        // loop, a closure's captures); a splice of such a variable in a moving position (rustSpliceConsumes) is cloned.
         let live_after = Dictionary<TypedBind, int -> bool>(HashIdentity.Reference)
         let current_live = ref (fun (_ : int) -> false)
         let tags_of_data (d : Data) = data_free_vars d |> Array.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
         let tags_of_vars (x : TyV seq) = x |> Seq.fold (fun s (L(i,_)) -> Set.add i s) Set.empty
         let outer_none = fun (_ : int) -> false
-        // Records each statement's continuation and returns the variables the block uses.
         let rec live_binds (outer : int -> bool) (x : TypedBind []) : Set<int> =
             let mutable rest = Set.empty
             for k = x.Length - 1 downto 0 do
@@ -170619,7 +169463,6 @@ module spiral_compiler =
             | TyArrayLiteral(_,l) | TyOp(_,l) -> l |> List.fold (fun s d -> s + tags_of_data d) Set.empty
             | TyToLayout(x,_) | TyUnionBox(_,x,_) | TyFailwith(_,x) | TyConv(_,x) | TyArrayCreate(_,x) | TyArrayLength(_,x) | TyStringLength(_,x) -> tags_of_data x
             | TyWhile((_,cond),body) ->
-                // The condition and every use in the body (minus the body's own bindings, fresh each round) come again.
                 let uses = live_binds outer_none body - defs_binds body
                 let loop = tags_of_vars cond + uses
                 live_binds (fun i -> loop.Contains i || after i) body |> ignore
@@ -170649,7 +169492,6 @@ module spiral_compiler =
                 on_succs |> Map.fold (fun s _ (lets,b) -> s + (lets |> List.fold (fun s d -> s + tags_of_data d) Set.empty) + defs_binds b) s
             | TyIntSwitch(_,on_succ,on_fail) -> on_succ |> Array.fold (fun s b -> s + defs_binds b) (defs_binds on_fail)
             | _ -> Set.empty
-        // A spliced variable that a clone can copy and that is used again: later in the function, or by this same text.
         let splice_live (again : bool) = function WV (L(i,t)) -> not (is_copy t) && not (moves t) && (again || current_live.Value i) | WLit _ -> false
         let clone_or_name again w = match w with WV (L(i,_)) when splice_live again w -> $"v{i}.clone()" | _ -> macro_var w
         let emit_args (again : int -> bool) x =
@@ -170701,7 +169543,6 @@ module spiral_compiler =
         and param_list x = x |> Array.map (fun (L(i,t)) -> $"mut v{i}: {tyv t}") |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             Array.iter (fun b ->
-                // The statement's continuation, for its macro splices (bodies printed meanwhile set their own).
                 let saved = current_live.Value
                 current_live.Value <- (match live_after.TryGetValue b with | true, f -> f | _ -> outer_none)
                 match b with
@@ -170725,8 +169566,6 @@ module spiral_compiler =
                 match a with
                 | JPMethod(a,c) -> sprintf "method%i(%s)" (method (a,c)).tag (args b)
                 | JPClosure(a,c) -> sprintf "closure%i(%s)" (closure (a,c)).tag (args b)
-            // The binding that receives a value: `let mut v: T =` for one variable, a tuple pattern for several.
-            // `impl Trait` (or lib/spiral's `Impl<..>` alias of it) can't annotate a `let`: rustc infers it.
             let annot t = let x = tyv t in if x.StartsWith "impl " || x.StartsWith "Impl<" then "_" else x
             let binding d =
                 match data_free_vars d with
@@ -170740,7 +169579,6 @@ module spiral_compiler =
                 match d with
                 | None -> line s (if self_loop.IsSome then $"return {x};" else x)
                 | Some d -> match binding d with Some b -> line s $"{b} {x};" | None -> line s $"{x};"
-            // A construct with blocks: `head` opens it, `f` writes its body, and it closes with `}` (plus `;` as a statement).
             let complex head (f : CodegenEnv -> unit) =
                 match d with
                 | None -> line s head; f s; line s "}"
@@ -170765,7 +169603,6 @@ module spiral_compiler =
             | TyMacro a ->
                 let a = List.toArray a
                 let text k = if k >= 0 && k < a.Length then (match a.[k] with CMText t -> t | _ -> "") else ""
-                // The variables each splice names: one that this text splices again later is used again.
                 let tags = a |> Array.map (function CMTerm (x,_) -> data_term_vars x |> Array.choose (function WV (L(i,_)) -> Some i | WLit _ -> None) | _ -> [||])
                 let again k i = (tags.[k] |> Array.filter ((=) i)).Length > 1 || Seq.exists (fun j -> Array.contains i tags.[j]) (seq { k + 1 .. a.Length - 1 })
                 let sb = StringBuilder()
@@ -170773,10 +169610,8 @@ module spiral_compiler =
                     let s : string =
                       match part with
                       | CMText x -> x
-                      // lib/spiral's emit_expr: `__spiral_emit_rust !args !code`, the arguments that `$0`, `$1`, ... name.
                       | CMTerm (x,false) when (let t = text (k-1) in rustEmitMarkers |> List.exists (fun m -> t.EndsWith (m + " "))) -> emit_args (again k) x
                       | CMTerm (x,inl) ->
-                          // The whole text so far (a `format!(` several splices back still encloses this one).
                           let name w = match w with WV (L(i,_)) when rustSpliceConsumes (sb.ToString()) (text (k+1)) -> clone_or_name (again k i) w | _ -> macro_var w
                           if inl then x |> data_term_vars |> Array.map name |> String.concat ", "
                           else match data_term_vars x with [|w|] -> name w | _ -> tup x
@@ -170821,12 +169656,9 @@ module spiral_compiler =
                     match x'.layout with
                     | UHeap -> uheap x'.cases, "UH"
                     | UStack -> ustack x'.cases, "US"
-                // A stack union with a non-Clone field moves (see `moves`): matched by value, its fields bind without a
-                // clone. A heap union stays behind its Rc, so such a field can only be borrowed.
                 let moving = union_has_moving_field union_rec
                 let scrutinee (L(i,_)) = match x'.layout with UHeap -> $"&*v{i}" | UStack when moving -> $"v{i}" | UStack -> $"&v{i}"
                 let bind_field (L(v,t)) =
-                    // A Copy field bound through a reference is copied out (`*v`), not cloned.
                     if is_copy t then (match x'.layout with UStack when moving -> $"let mut v{v}: {tyv t} = v{v};" | _ -> $"let mut v{v}: {tyv t} = *v{v};")
                     elif not (moves t) then $"let mut v{v}: {tyv t} = v{v}.clone();"
                     else match x'.layout with UStack -> $"let mut v{v}: {tyv t} = v{v};" | UHeap -> $"let mut v{v} = v{v};"
@@ -170847,15 +169679,13 @@ module spiral_compiler =
                                 | [||] -> union_case_name prefix union_rec.tag i
                                 | vars -> vars |> Array.map (fun (L(v,_)) -> $"v{v}") |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec.tag i))
                         let pattern = match patterns with [x] -> x | x -> String.concat ", " x |> sprintf "(%s)"
-                        line s'' $"{pattern} => {{ // {UnionTagIdOps.text k}"
+                        line s'' $"{pattern} => {{"
                         fields |> List.iter (Array.iter (fun x -> line (indent s'') (bind_field x)))
                         block s'' b
                         line s'' "}"
                         ) on_succs
                     match on_fail with
                     | Some b -> line s'' "_ => {"; block s'' b; line s'' "}"
-                    // Every case matched: the match is exhaustive as Rust sees it (a pruned GADT union declares only the
-                    // cases that can inhabit it). Several scrutinees pair equal cases only, so they keep the fallback.
                     | None when List.length is = 1 && on_succs.Count > 0 && on_succs.Count = union_rec.free_vars.Count -> ()
                     | None -> line s'' "_ => unreachable!(),"
             | TyUnionBox(a,b,c) ->
@@ -170873,7 +169703,6 @@ module spiral_compiler =
                     | [||] -> union_case_name prefix union_rec.tag i
                     | x -> Array.map show_w x |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec.tag i)
                 match c.layout with
-                // A case without fields is one shared value per thread instead of an allocation per use.
                 | UHeap when Array.isEmpty (data_term_vars b) ->
                     $"{{ thread_local!{{ static CASE: Rc<{prefix}{union_rec.tag}> = Rc::new({value}); }} CASE.with(|case| case.clone()) }}"
                 | UHeap -> $"Rc::new({value})"
@@ -170916,8 +169745,6 @@ module spiral_compiler =
             | TyArrayCreate(a,b) -> simple $"Rc::new(RefCell::new(vec![<{tup_ty a}>::default(); {tup b} as usize]))"
             | TyArrayLength(a,b) -> length (a,b) ".borrow().len()"
             | TyStringLength(a,b) -> length (a,b) ".len()"
-            // A panic (D1), so a catch_unwind (base.try, testing) can catch it; uncaught, the hook prints it once and the
-            // process exits 101 (see `fn main`). The payload is a String for downcast_ref::<String>.
             | TyFailwith(a,b) -> simple $"std::panic::panic_any::<std::string::String>(format!(\"{{}}\", {tup b}))"
             | TyConv(a,b) ->
                 match a with
@@ -170931,7 +169758,6 @@ module spiral_compiler =
                     match closure_of_var.TryGetValue i with
                     | true, tag -> tag
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
-                // Strings cross as `&str` and come back as `Rc<str>`.
                 let parameters = env.ty_to_data domain |> data_free_vars
                 let decl = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", "
                 let call = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
@@ -170948,7 +169774,6 @@ module spiral_compiler =
                 | ArrayIndex, [a;b] -> $"{tup a}.borrow()[{tup b} as usize].clone()"
                 | ArrayIndexSet, [a;b;c] -> $"{tup a}.borrow_mut()[{tup b} as usize] = {tup c}"
 
-                // Math. Integers wrap on overflow, as in C, F# and Delphi (Rust's `+` panics in a debug build).
                 | (Add | Sub | Mult | Div | Mod | ShiftLeft | ShiftRight), [a;b] when rust_int a ->
                     let m = match op with Add -> "wrapping_add" | Sub -> "wrapping_sub" | Mult -> "wrapping_mul" | Div -> "wrapping_div" | Mod -> "wrapping_rem" | ShiftLeft -> "wrapping_shl" | _ -> "wrapping_shr"
                     let b = match op with ShiftLeft | ShiftRight -> $"({tup b}) as u32" | _ -> tup b
@@ -170986,7 +169811,6 @@ module spiral_compiler =
                 | StdoutFlush, [] -> "{ use std::io::Write; std::io::stdout().flush().unwrap(); }"
                 | MonotonicDelayMs, [a] -> $"std::thread::sleep(std::time::Duration::from_millis({tup a} as u64))"
                 | Printf, [DLit (LitString fmt); b] ->
-                    // The text goes into the format string (braces doubled); litRust spells a string as Rc::<str>::from("..").
                     let rfmt = StringBuilder()
                     let args = ResizeArray()
                     for p in printf_pieces fmt (data_term_vars b) do
@@ -171011,7 +169835,6 @@ module spiral_compiler =
             )
         and union_type prefix (s : CodegenEnv) (x : UnionRecFsharp) =
             let name = $"{prefix}{x.tag}"
-            // A case carrying a value without Clone (a File, a Box<dyn Fn>) can't derive it: the enum then moves.
             if not (union_has_moving_field x) then line s "#[derive(Clone)]"
             line s $"enum {name} {{"
             x.free_vars |> Map.iter (fun (i,_) a ->
@@ -171046,8 +169869,6 @@ module spiral_compiler =
                     self_loop <- Some (x.tag, x.free_vars)
                     line (indent s) "loop {"
                     binds (indent (indent s)) x.body
-                    // A unit method's branch without the self call can end on an implicit `else ()` that emits no
-                    // `return`: it would fall back into the loop and spin forever. Non-unit paths always return.
                     if tup_ty x.range = "()" then line (indent (indent s)) "return ();"
                     line (indent s) "}"
                 else
@@ -171076,14 +169897,11 @@ module spiral_compiler =
                 let domain_tys = x.domain_args |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
                 let range = tup_ty x.range
                 line s $"fn closure{x.tag}({param_list x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
-                // The captures outlive every call: the next call uses them again (and an `Fn` closure can't move them).
                 let captured = tags_of_vars x.free_vars
                 live_binds (fun i -> captured.Contains i) x.body |> ignore
                 if Array.isEmpty x.free_vars then
-                    // Nothing captured: one closure per thread instead of an allocation per call.
                     line (indent s) $"thread_local!{{ static CLOSURE: Rc<dyn Fn({domain_tys}) -> {range}> = Rc::new(move |{param_list x.domain_args}| -> {range} {{"
                     without_self_loop (fun () -> binds (indent (indent s)) x.body)
-                    // One line, as the plain `})` it replaces: eoie keeps every crate under 1000 lines (lane W).
                     line (indent s) "}); } CLOSURE.with(|closure| closure.clone())"
                 else
                     line (indent s) $"Rc::new(move |{param_list x.domain_args}| -> {range} {{"
@@ -171098,19 +169916,11 @@ module spiral_compiler =
 
         let program = StringBuilder()
         program.Append("#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]") |> ignore
-        // Inner attributes (`#![...]`) must precede every item, so such globals go before the `use`s.
         let inner, globals = env.globals |> Seq.toArray |> Array.partition (fun (x : string) -> x.TrimStart().StartsWith "#![")
-        // A closure that captures nothing lives in a `thread_local!`, whose lazy initializer builds it; a chain of them
-        // (closure k's body calls closure k+1, e.g. a lazy stream of constants) nests one set of std's generic
-        // initializer instances per link in rustc's monomorphization walk, which stops at `recursion_limit` (128):
-        // "reached the recursion limit while instantiating ... CLOSURE::__init" (the dice contract's 64-link chain on
-        // wasm32). The program's static closures bound the chain, so past 16 of them the limit grows with their count
-        // (unless a global already sets it).
         let static_closures = functions |> Seq.sumBy (fun (x : string) -> System.Text.RegularExpressions.Regex.Matches(x, @"thread_local!\{ static CLOSURE:").Count)
         if static_closures > 16 && not (inner |> Array.exists (fun x -> x.Contains "recursion_limit")) then
             let mutable limit = 256
             while limit < 4 * static_closures + 64 do limit <- limit * 2
-            // On the allow line: generated code stays line-lean (eoie's 1000-line crates, lane W).
             program.Append($" #![recursion_limit = \"{limit}\"]") |> ignore
         program.AppendLine() |> ignore
         inner |> Array.iter (fun x -> program.AppendLine(x) |> ignore)
@@ -171121,18 +169931,15 @@ module spiral_compiler =
         if exports.Count > 0 then
             exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
         else
-            // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
             match Array.tryLast x with
             | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
                 match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
                 | [||] | [|YPrim Int32T|] -> ()
                 | _ -> raise_codegen_error "The return type of main in the Rust backend should be a 32-bit int (or unit)."
             | _ -> ()
-            // A unit `main` exits with 0: its tail (`()`, an `if` without `else`, a unit call) becomes a statement.
             let main =
                 let unitMain =
                     match Array.tryLast x with
-                    // Term values, not free variables: a literal result (`42i32`) has none of the latter.
                     | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) -> Array.isEmpty (data_term_vars d)
                     | _ -> true
                 let text = main.ToString().TrimEnd()
@@ -171141,10 +169948,6 @@ module spiral_compiler =
                 elif text.EndsWith "}" || text.EndsWith ";" || text = "" then text + "\n    0\n"
                 else text + ";\n    0\n"
             program.AppendLine("fn spiral_main() -> i32 {").Append(main).AppendLine("}") |> ignore
-            // A large stack: mutual tail recursion that the C compiler turns into jumps recurses here. wasm32 has no
-            // threads to spawn (the browser runs `main` once). A panic (failwith, D1) was already reported by the hook on
-            // the spawned thread: exit 101 like an uncaught panic, without a second message from `join().unwrap()`.
-            // Four lines, as before the wasm32 arm (eoie's 1000-line crates; Kino replaces the exit line by its text).
             program.AppendLine("fn main() { #[cfg(target_arch = \"wasm32\")] { spiral_main(); return; }").AppendLine("    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();").AppendLine("    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });").AppendLine("}") |> ignore
         program.ToString() |> translateFsharpInterpolations |> foldStringBindings |> inlineRustEmits
         |> cacheRustStringLiterals
@@ -171175,7 +169978,6 @@ module spiral_compiler =
             elif Double.IsNaN x then "NaN"
             else x.ToString("R") |> add_dec_point |> fun x -> if x.StartsWith "-" then $"({x})" else x
         | LitString x ->
-            // Pascal quotes with '' and spells control characters (and the UTF-8 bytes of the rest) as #n.
             if x = "" then "''" else
             let strb = StringBuilder()
             let mutable quoted = false
@@ -171217,14 +170019,9 @@ module spiral_compiler =
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
     /// ### BindsReturnDelphi
-    /// Where a statement's value goes: into these locals, or the function's result (Tail with its type).
     type BindsReturnDelphi = DLocal of TyV [] | DTail of Ty
 
     /// ### codegenDelphi
-    /// Statement-oriented like the C backend: every value is assigned to a local declared in the function's
-    /// `var` section. Arrays and strings are Pascal's reference-counted dynamic arrays and AnsiStrings;
-    /// heap unions, mutable layouts and closures are classes (FPC 3.2 has no ARC for classes, so they are
-    /// not freed); immutable layouts, stack unions and tuples are records.
     let codegenDelphi (env : PartEvalResult) (x : TypedBind []) =
         let forwards = ResizeArray()
         let types = ResizeArray()
@@ -171256,7 +170053,6 @@ module spiral_compiler =
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then globals.Add x
 
-        // Locals of the function being generated, in declaration order.
         let new_locals (parameters : TyV []) =
             let names = HashSet(parameters |> Array.map (fun (L(i,_)) -> i))
             let decls = ResizeArray<string>()
@@ -171273,8 +170069,6 @@ module spiral_compiler =
             global' "function StringSlice(const value: AnsiString; from, upto: Int64): AnsiString;\nvar len: Int64;\nbegin\n  len := Length(value);\n  if (from < 0) or (from > len) or (upto < from - 1) or (upto >= len) then Halt(3);\n  if upto < from then Exit('');\n  if ((Ord(value[from + 1]) and $C0) = $80) or ((upto + 1 < len) and ((Ord(value[upto + 2]) and $C0) = $80)) then Halt(3);\n  Result := Copy(value, from + 1, upto - from + 1);\nend;"
 
         let layout_tags = Dictionary<Ty, LayoutRecFsharp>(HashIdentity.Structural)
-        // The method being written when it calls itself in tail position: its body loops, tail values
-        // `Exit`, and the self call reassigns the parameters and `Continue`s.
         let mutable self_loop : (int * TyV []) option = None
         let rec tyv x =
             match x with
@@ -171301,14 +170095,12 @@ module spiral_compiler =
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
-        // "" for unit: such functions are procedures.
         and tup_ty x =
             match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
             | [||] -> ""
             | [|x|] -> x
             | x -> sprintf "TTuple%i" (tuple_type x)
         and tup d = data_term_vars d |> Array.map show_w |> String.concat ", "
-        // A value of type `range`: one term, or a tuple record built with that type's constructor.
         and tup_as (range : Ty) d =
             match data_term_vars d with
             | [||] -> ""
@@ -171318,7 +170110,6 @@ module spiral_compiler =
         and header name (parameters : TyV []) (range : string) =
             let ps = match param_list parameters with "" -> "" | ps -> $"({ps})"
             if range = "" then $"procedure {name}{ps}" else $"function {name}{ps}: {range}"
-        // A function (or class method) with the locals it declared.
         and emit_function (name : string) (parameters : TyV []) (range : Ty) (body : TypedBind []) (forward : bool) =
             emit_function' None name parameters range body forward
         and emit_function' (self_tag : int option) (name : string) (parameters : TyV []) (range : Ty) (body : TypedBind []) (forward : bool) =
@@ -171396,7 +170187,6 @@ module spiral_compiler =
                 line s "end;"
             | TyJoinPoint(JPMethod(a,c),args) when (match ret, self_loop with DTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value
-                // Through temporaries: the new arguments may read the parameters being replaced.
                 let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
                 Array.iter2 (fun tmp (L(i,_)) -> line s $"{tmp} := v{i};") temps args
                 Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} := {tmp};") parameters temps
@@ -171431,7 +170221,7 @@ module spiral_compiler =
                 line s $"case {head} of"
                 on_succs |> Map.iter (fun k (a,b) ->
                     let c = case_index k
-                    line (indent s) $"{c}: begin // {UnionTagIdOps.text k}"
+                    line (indent s) $"{c}: begin"
                     List.iter2 (fun (L(v,_)) a ->
                         data_free_vars a |> Array.iteri (fun f (L(i,_) as field) ->
                             declare locals field
@@ -171630,7 +170420,6 @@ module spiral_compiler =
                     let fields = free_vars |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t};") |> String.concat " "
                     let invoke = header "Invoke" domain_args (tup_ty range)
                     types.Add($"  TClosure{tag} = class(TFun{parent}) {fields} {invoke}; override; end;")
-                    // The body refers to its free variables as the object's fields.
                     let saved = bodies.Count
                     emit_function $"TClosure{tag}.Invoke" domain_args range body false
                     let assigns = free_vars |> Array.map (fun (L(i,_)) -> $"c.v{i} := v{i};") |> String.concat " "
@@ -171649,7 +170438,6 @@ module spiral_compiler =
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
 
-        // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
         match Array.tryLast x with
         | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
             match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
@@ -171668,7 +170456,7 @@ module spiral_compiler =
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         headers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
-        program.AppendLine("begin").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
+        program.AppendLine("var SpiralOutputBuffer: array[0..65535] of Char;").AppendLine("begin").AppendLine("  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));").AppendLine("  Halt(SpiralMain);").AppendLine("end.").ToString()
 
     /// ## CodegenZig
 
@@ -171696,7 +170484,6 @@ module spiral_compiler =
             elif Double.IsNaN x then "std.math.nan(f64)"
             else let r = x.ToString "R" |> add_dec_point in $"@as(f64, {r})"
         | LitString x ->
-            // UTF-8 bytes; printable ASCII as is, the rest as \xNN.
             let strb = StringBuilder("\"")
             for b in Text.Encoding.UTF8.GetBytes x do
                 match char b with
@@ -171736,16 +170523,56 @@ module spiral_compiler =
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
     /// ### zigPrelude
-    /// The runtime every generated program starts with: a single-threaded Io and an arena (set by `main`), output, failure,
-    /// C-style conversions, strings and arrays. Memory is never freed (an arena, released at exit).
     let zigPrelude = """const std = @import("std");
-var spiral_threaded: std.Io.Threaded = .init_single_threaded;
+const builtin = @import("builtin");
 var spiral_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-var spiral_io: std.Io = undefined;
+extern "kernel32" fn GetStdHandle(id: u32) callconv(.winapi) ?*anyopaque;
+extern "kernel32" fn WriteFile(handle: ?*anyopaque, buffer: [*]const u8, length: u32, written: ?*u32, overlapped: ?*anyopaque) callconv(.winapi) i32;
+fn spiralWrite(stream: u2, bytes: []const u8) void {
+    if (builtin.os.tag == .windows) {
+        const handle = GetStdHandle(if (stream == 1) 0xFFFFFFF5 else 0xFFFFFFF4);
+        var rest = bytes;
+        while (rest.len > 0) {
+            var written: u32 = 0;
+            const chunk: u32 = @intCast(@min(rest.len, 1 << 30));
+            if (WriteFile(handle, rest.ptr, chunk, &written, null) == 0) return;
+            rest = rest[written..];
+        }
+    } else if (builtin.os.tag == .linux) {
+        var rest = bytes;
+        while (rest.len > 0) {
+            const n = std.os.linux.write(stream, rest.ptr, rest.len);
+            if (@as(isize, @bitCast(n)) <= 0) return;
+            rest = rest[n..];
+        }
+    } else {
+        _ = std.c.write(stream, bytes.ptr, bytes.len);
+    }
+}
+pub const panic = std.debug.FullPanic(spiralPanic);
+fn spiralPanic(message: []const u8, _: ?usize) noreturn {
+    spiralFlush();
+    spiralWrite(2, message);
+    spiralWrite(2, "\n");
+    std.process.exit(3);
+}
 var spiral_gpa: std.mem.Allocator = undefined;
 var spiral_true: bool = true;
+var spiral_out_buffer: [1 << 16]u8 = undefined;
+var spiral_out_len: usize = 0;
+fn spiralFlush() void {
+    if (spiral_out_len == 0) return;
+    spiralWrite(1, spiral_out_buffer[0..spiral_out_len]);
+    spiral_out_len = 0;
+}
 fn spiralPrint(s: []const u8) void {
-    std.Io.File.stdout().writeStreamingAll(spiral_io, s) catch {};
+    if (s.len > spiral_out_buffer.len - spiral_out_len) spiralFlush();
+    if (s.len > spiral_out_buffer.len) {
+        spiralWrite(1, s);
+        return;
+    }
+    @memcpy(spiral_out_buffer[spiral_out_len..][0..s.len], s);
+    spiral_out_len += s.len;
 }
 fn spiralPrintAny(x: anytype) void {
     const T = @TypeOf(x);
@@ -171758,8 +170585,9 @@ fn spiralPrintAny(x: anytype) void {
     spiralPrint(s);
 }
 fn spiralFail(s: []const u8) noreturn {
-    std.Io.File.stderr().writeStreamingAll(spiral_io, s) catch {};
-    std.Io.File.stderr().writeStreamingAll(spiral_io, "\n") catch {};
+    spiralFlush();
+    spiralWrite(2, s);
+    spiralWrite(2, "\n");
     std.process.exit(1);
 }
 fn spiralConv(comptime T: type, x: anytype) T {
@@ -171805,18 +170633,12 @@ fn spiralCreate(comptime T: type, v: T) *T {
 """
 
     /// ### BindsReturnZig
-    /// Where a statement's value goes: into these locals, or out of the function (Tail with its type).
     type BindsReturnZig = ZLocal of TyV [] | ZTail of Ty
 
     /// ### ZigLayoutRec
     type ZigLayoutRec = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
 
     /// ### codegenZig
-    /// Statement-oriented like the C and Delphi backends: every value goes into a local declared (`var vN: T =
-    /// undefined; _ = &vN;`, which also keeps Zig's unused/never-mutated checks quiet) at the top of its function.
-    /// Integers wrap (`+%`) as in C; strings are byte slices; heap layouts, heap unions, closures and arrays live in the
-    /// process arena and are never freed; stack unions are tagged structs, tuples structs. A closure is a `FunN` value:
-    /// a context pointer and a function taking it first.
     let codegenZig (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let bodies = ResizeArray()
@@ -171846,7 +170668,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let has_added = HashSet env.globals
             fun x -> if has_added.Add(x) then globals.Add x
 
-        // Locals of the function being generated: the declared ids and their declarations, in order.
         let new_locals (parameters : TyV []) = HashSet(parameters |> Array.map (fun (L(i,_)) -> i)), ResizeArray<string>()
         let text (s : CodegenEnv) = s.text.ToString()
 
@@ -171862,8 +170683,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let args' x = data_term_vars x |> Array.map show_w |> String.concat ", "
 
         let layout_tags = Dictionary<Ty, ZigLayoutRec>(HashIdentity.Structural)
-        // The method being written when it calls itself in tail position: its body loops, tail values `return` and
-        // the self call reassigns the parameters and `continue`s.
         let self_loop : (int * TyV []) option ref = ref None
         let rec tyv x =
             match x with
@@ -171890,17 +170709,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
-        // "void" for unit.
         and tup_ty x =
             match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
             | [||] -> "void"
             | [|x|] -> x
             | x -> sprintf "Tuple%i" (tuple_type x)
-        // An array element: unit elements are `u8` placeholders (Zig has zero-size slices, but `void` values can't be
-        // indexed into locals).
         and tup_ty' x = match tup_ty x with "void" -> "u8" | t -> t
         and tup d = data_term_vars d |> Array.map show_w |> String.concat ", "
-        // A value of type `range`: one term, or a tuple struct.
         and tup_as (range : Ty) d =
             match data_term_vars d with
             | [||] -> ""
@@ -171910,8 +170725,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let fields = x |> Array.mapi (fun k w -> $".f{k} = {show_w w}") |> String.concat ", "
                 $"Tuple{tag}{{ {fields} }}"
         and param_list (x : TyV []) = x |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
-        // A function: its parameters copied into locals (Zig rejects an unused parameter and a pointless discard of a
-        // used one alike), its locals, then the body.
         and emit_function (name : string) (self_tag : int option) (parameters : TyV []) (extra : string) (range : Ty) (body : TypedBind []) (tail : string) =
             let range' = tup_ty range
             let locals = new_locals parameters
@@ -171990,7 +170803,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s "}"
             | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with ZTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
                 let parameters = snd self_loop.Value.Value
-                // Through temporaries: the new arguments may read the parameters being replaced.
                 let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
                 Array.iter2 (fun tmp (L(i,_)) -> line s $"{tmp} = v{i};") temps b
                 Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} = {tmp};") parameters temps
@@ -172025,7 +170837,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s $"switch ({head}) {{"
                 on_succs |> Map.iter (fun k (a,b) ->
                     let c = case_index k
-                    line (indent s) $"{c} => {{ // {UnionTagIdOps.text k}"
+                    line (indent s) $"{c} => {{"
                     List.iter2 (fun (L(v,_)) a ->
                         data_free_vars a |> Array.iteri (fun f (L(i,_) as field) ->
                             declare locals field
@@ -172080,8 +170892,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyArrayCreate(a,b) -> return' $"spiralNewArray({tup_ty' a}, {tup b})"
             | TyArrayLength(a,b) | TyStringLength(a,b) -> return' $"@as({tyv a}, @intCast({tup b}.len))"
             | TyFailwith(a,b) ->
-                // A noreturn call ends its block for Zig: in the middle of one (a value position) it goes behind a
-                // condition Zig can't fold, so the statements after it still compile.
                 match ret with
                 | ZTail _ -> line s $"spiralFail({tup b});"
                 | ZLocal _ -> line s $"if (spiral_true) spiralFail({tup b});"
@@ -172134,9 +170944,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | Sin, _ -> unary (sprintf "@sin(%s)") l
                 | Cos, _ -> unary (sprintf "@cos(%s)") l
                 | NanIs, _ -> unary (sprintf "std.math.isNan(%s)") l
-                | StdoutFlush, [] -> "{}"
+                | StdoutFlush, [] -> "spiralFlush()"
                 | Printf, [DLit (LitString fmt); b] ->
-                    // Several pieces become several calls (`return'` writes `_ = <x>;`); spiralPrint takes literals and slices.
                     match printf_pieces fmt (data_term_vars b) with
                     | [] -> "{}"
                     | [Choice2Of2 (_, (WV _ as a))] -> $"spiralPrintAny({show_w a})"
@@ -172214,15 +171023,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     let free_vars = rdata_free_vars args
                     let domain_args = data_free_vars domain_args
                     let parent = fun_type (domain, range)
-                    // The environment struct (a byte when nothing is captured: a pointer to a zero-size type isn't an
-                    // `*anyopaque`).
                     let fields = free_vars |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}, ") |> String.concat ""
                     types.Add($"const ClosureEnv{tag} = struct {{ {fields}pad: u8 = 0 }};")
-                    // The body reads its captures out of the environment into locals first.
                     let loads = free_vars |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = env.v{i}; _ = &v{i};") |> String.concat "\n"
                     let prologue = $"    const env: *ClosureEnv{tag} = @ptrCast(@alignCast(ctx)); _ = &env;\n{loads}"
                     emit_function $"closure{tag}" None domain_args "ctx: *anyopaque" range body ""
-                    // Insert the prologue after the function's opening line (the functions its body called were added first).
                     let head = $"fn closure{tag}("
                     let saved = bodies.FindLastIndex(fun (b : string) -> b.StartsWith head)
                     let f : string = bodies.[saved]
@@ -172242,7 +171047,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
 
-        // The entry's shape on every backend (C's): `main` returns an i32 exit code, or unit (exit code 0).
         let unitMain =
             match Array.tryLast x with
             | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
@@ -172251,27 +171055,478 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | [|YPrim Int32T|] -> false
                 | _ -> raise_codegen_error "The return type of main in the Zig backend should be a 32-bit int (or unit)."
             | _ -> true
-        // A unit main is a `void` function the entry calls before exiting with 0.
         if unitMain then
             emit_function "spiralMainUnit" None [||] "" YB x ""
             bodies.Add("fn spiralMain() i32 {\n    spiralMainUnit();\n    return 0;\n}\n")
         else emit_function "spiralMain" None [||] "" (YPrim Int32T) x ""
         let program = StringBuilder()
-        program.AppendLine("// Generated by the Spiral compiler (Zig backend). Build: zig build-exe main.zig -O ReleaseSafe (or -O Debug -fno-llvm: seconds)") |> ignore
+        ()
         program.Append(zigPrelude) |> ignore
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
-        // A single-threaded Io and a page-backed arena: the smallest std setup (`std.process.Init` pulls in the threaded
-        // Io and the debug allocator: a 3x slower build for nothing these programs use).
         program.AppendLine("pub fn main() void {") |> ignore
-        program.AppendLine("    spiral_io = spiral_threaded.io();").AppendLine("    spiral_gpa = spiral_arena.allocator();") |> ignore
-        // On a 1 GB thread, as the Rust entry: mutual tail recursion that the C compiler turns into jumps recurses here.
-        program.AppendLine("    var code: i32 = 0;") |> ignore
-        program.AppendLine("    const thread = std.Thread.spawn(.{ .stack_size = 1 << 30 }, spiralMainThread, .{&code}) catch @panic(\"cannot start the main thread\");") |> ignore
-        program.AppendLine("    thread.join();").AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(code))));").AppendLine("}") |> ignore
-        program.AppendLine("fn spiralMainThread(code: *i32) void {").AppendLine("    code.* = spiralMain();").AppendLine("}") |> ignore
+        program.AppendLine("    spiral_gpa = spiral_arena.allocator();").AppendLine("    const code = spiralMain();").AppendLine("    spiralFlush();") |> ignore
+        program.AppendLine("    std.process.exit(@truncate(@as(u32, @bitCast(code))));").AppendLine("}") |> ignore
+        program.ToString()
+
+    /// ## CodegenLean
+
+    /// ### backend_nameLean
+    let backend_nameLean = "Lean"
+
+    /// ### leanString
+    let leanString (x : string) =
+        let strb = StringBuilder("\"")
+        for c in x do
+            match c with
+            | '"' -> strb.Append "\\\"" |> ignore
+            | '\\' -> strb.Append "\\\\" |> ignore
+            | '\n' -> strb.Append "\\n" |> ignore
+            | '\r' -> strb.Append "\\r" |> ignore
+            | '\t' -> strb.Append "\\t" |> ignore
+            | c when int c >= 32 && int c < 127 -> strb.Append c |> ignore
+            | c when int c < 32 || int c = 127 -> strb.Append(sprintf "\\x%02x" (int c)) |> ignore
+            | c -> strb.Append c |> ignore
+        strb.Append('"').ToString()
+
+    /// ### litLean
+    let litLean = function
+        | LitInt8 x -> $"({x} : Int8)"
+        | LitInt16 x -> $"({x} : Int16)"
+        | LitInt32 x -> $"({x} : Int32)"
+        | LitInt64 x -> $"({x} : Int64)"
+        | LitUInt8 x -> $"({x} : UInt8)"
+        | LitUInt16 x -> $"({x} : UInt16)"
+        | LitUInt32 x -> $"({x} : UInt32)"
+        | LitUInt64 x -> $"({x} : UInt64)"
+        | LitFloat32 x ->
+            if x = infinityf then "(1.0 / 0.0 : Float32)"
+            elif x = -infinityf then "(-1.0 / 0.0 : Float32)"
+            elif Single.IsNaN x then "(0.0 / 0.0 : Float32)"
+            else let r = x.ToString "R" |> add_dec_point in $"({r} : Float32)"
+        | LitFloat64 x ->
+            if x = infinity then "(1.0 / 0.0 : Float)"
+            elif x = -infinity then "(-1.0 / 0.0 : Float)"
+            elif Double.IsNaN x then "(0.0 / 0.0 : Float)"
+            else let r = x.ToString "R" |> add_dec_point in $"({r} : Float)"
+        | LitString x -> leanString x
+        | LitChar x ->
+            match x with
+            | '\'' -> "'\\''"
+            | '\\' -> "'\\\\'"
+            | '\n' -> "'\\n'"
+            | '\r' -> "'\\r'"
+            | '\t' -> "'\\t'"
+            | c when int c >= 32 && int c < 127 -> $"'{c}'"
+            | c when int c < 32 || int c = 127 -> sprintf "'\\x%02x'" (int c)
+            | c -> $"'{c}'"
+        | LitBool x -> if x then "true" else "false"
+
+    /// ### primLean
+    let primLean = function
+        | Int8T -> "Int8" | Int16T -> "Int16" | Int32T -> "Int32" | Int64T -> "Int64"
+        | UInt8T -> "UInt8" | UInt16T -> "UInt16" | UInt32T -> "UInt32" | UInt64T -> "UInt64"
+        | Float32T -> "Float32" | Float64T -> "Float"
+        | BoolT -> "Bool" | StringT -> "String" | CharT -> "Char"
+
+    /// ### leanPrelude
+    let leanPrelude =
+        "set_option linter.all false\n" +
+        "class SpiralToInt (α : Type) where toI : α → Int\n" +
+        "instance : SpiralToInt Int8 := ⟨Int8.toInt⟩\ninstance : SpiralToInt Int16 := ⟨Int16.toInt⟩\n" +
+        "instance : SpiralToInt Int32 := ⟨Int32.toInt⟩\ninstance : SpiralToInt Int64 := ⟨Int64.toInt⟩\n" +
+        "instance : SpiralToInt UInt8 := ⟨fun x => x.toNat⟩\ninstance : SpiralToInt UInt16 := ⟨fun x => x.toNat⟩\n" +
+        "instance : SpiralToInt UInt32 := ⟨fun x => x.toNat⟩\ninstance : SpiralToInt UInt64 := ⟨fun x => x.toNat⟩\n" +
+        "instance : SpiralToInt Float := ⟨fun x => if x < 0 then -(Int.ofNat (Float.toUInt64 (-x)).toNat) else Int.ofNat (Float.toUInt64 x).toNat⟩\n" +
+        "instance : SpiralToInt Float32 := ⟨fun x => if x < 0 then -(Int.ofNat (Float32.toUInt64 (-x)).toNat) else Int.ofNat (Float32.toUInt64 x).toNat⟩\n" +
+        "def spiralFail {α : Type} (msg : String) : IO α := throw (IO.userError msg)\n" +
+        "def spiralIdx {α : Type} [SpiralToInt α] (i : α) : Nat := (SpiralToInt.toI i).toNat\n" +
+        "def spiralAbort {α : Type} [Inhabited α] : IO α := do (← IO.getStdout).flush; IO.Process.exit 3\n" +
+        "def spiralIsContinuation (b : UInt8) : Bool := b &&& 0xC0 == 0x80\n" +
+        "def spiralIndex {α : Type} (xs : Array α) (i : Nat) : IO α := match xs[i]? with\n  | some x => pure x\n  | none => IO.Process.exit 3\n" +
+        "def spiralStringSlice (s : String) (a b : Int) : IO String := do\n  let bytes := s.toUTF8\n  let length : Int := bytes.size\n  if a < 0 || a > length || b < a - 1 || b >= length then spiralAbort\n  else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort\n  else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)\n"
+
+    /// ### codegenLean
+    let codegenLean (env : PartEvalResult) (x : TypedBind []) =
+        let bodies = ResizeArray()
+        let types = ResizeArray()
+        let union_names = ResizeArray<string>()
+        let structure_names = ResizeArray<string>()
+        let union_tags = ResizeArray<string>()
+        let memo_ref (f : 'k -> int -> unit) =
+            let dict = Dictionary<'k, int>(HashIdentity.Reference)
+            fun (k : 'k) ->
+                match dict.TryGetValue k with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[k] <- tag
+                    f k tag
+                    tag
+        let globals = ResizeArray()
+        let memo (f : 'k -> int -> unit) =
+            let dict = Dictionary<'k, int>(HashIdentity.Structural)
+            fun (k : 'k) ->
+                match dict.TryGetValue k with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[k] <- tag
+                    f k tag
+                    tag
+        let global' =
+            let has_added = HashSet env.globals
+            fun x -> if has_added.Add(x) then globals.Add x
+        let new_locals (parameters : TyV []) = HashSet(parameters |> Array.map (fun (L(i,_)) -> i)), ResizeArray<string>()
+        let text (s : CodegenEnv) = s.text.ToString()
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let is_int d = match prim_of d with Some (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) -> true | _ -> false
+        let is_float d = match prim_of d with Some (Float32T | Float64T) -> true | _ -> false
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litLean a
+        let unsupported what = raise_codegen_error $"The Lean backend doesn't support {what} yet."
+        let self_loop : (int * TyV []) option ref = ref None
+        let fresh = ref 0
+        let next_fresh () = fresh.Value <- fresh.Value + 1; fresh.Value
+        let rec tyv x =
+            match x with
+            | YPrim a -> primLean a
+            | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameLean then Some v else None) with
+                | Some x -> tup_ty x
+                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameLean}' field."
+            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> unsupported "type literals") |> String.concat ""
+            | YUnion a -> $"U{union_tag a.Item.cases}"
+            | YLayout(_,Heap) as a -> $"H{(layout a).tag}"
+            | YLayout(_,HeapMutable) as a -> $"(IO.Ref M{(layout a).tag})"
+            | YLayout _ -> unsupported "stack layout types"
+            | YArray a -> $"(IO.Ref (Array {tup_ty a}))"
+            | YFun(a,b,_) ->
+                match tyvs a with
+                | [||] -> $"(Unit → IO {tup_ty b})"
+                | ps -> ps |> Array.map (fun (L(_,t)) -> $"{tyv t} → ") |> String.concat "" |> fun ps -> $"({ps}IO {tup_ty b})"
+            | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
+            | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
+            | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
+        and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
+        and tup_ty x =
+            match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
+            | [||] -> "Unit"
+            | [|x|] -> x
+            | xs -> xs |> String.concat " × " |> sprintf "(%s)"
+        and tup d =
+            match data_term_vars d with
+            | [||] -> "()"
+            | [|x|] -> show_w x
+            | xs -> xs |> Array.map show_w |> String.concat ", " |> sprintf "(%s)"
+        and union_case_index (cases : Map<int * string, Ty>) k =
+            cases |> Seq.map (fun (KeyValue ((_,k'),_)) -> k') |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+        and union_memo = lazy (memo_ref (fun (cases : Map<int * string, Ty>) tag ->
+            let ctors =
+                cases |> Map.toArray |> Array.mapi (fun c (_, t) ->
+                    let fields = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> $"{tyv t} → ") |> String.concat ""
+                    $"  | c{c} : {fields}U{tag}")
+            let tags = Array.init ctors.Length (fun c -> $"  | .c{c} .. => {c}")
+            types.Add($"""inductive U{tag} where{"\n"}{String.concat "\n" ctors}{"\n"}""")
+            union_names.Add($"U{tag}")
+            union_tags.Add($"""def U{tag}.spiralTag : U{tag} → Int32{"\n"}{String.concat "\n" tags}{"\n"}""")))
+        and union_tag (cases : Map<int * string, Ty>) : int = union_memo.Force() cases
+        and layout_tags = Dictionary<Ty, ZigLayoutRec>(HashIdentity.Structural)
+        and layout (x : Ty) : ZigLayoutRec =
+            match layout_tags.TryGetValue x with
+            | true, r -> r
+            | _ ->
+                match x with
+                | YLayout(d,lay) ->
+                    let d = env.ty_to_data d
+                    let free_vars, by_key =
+                        match d with
+                        | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                        | _ -> data_free_vars d, Map.empty
+                    let r = {data=d; free_vars=free_vars; free_vars_by_key=by_key; tag=layout_tags.Count}
+                    layout_tags.[x] <- r
+                    let name = match lay with HeapMutable -> $"M{r.tag}" | _ -> $"H{r.tag}"
+                    let fields = r.free_vars |> Array.map (fun (L(i,t)) -> $"  l{i} : {tyv t}\n") |> String.concat ""
+                    types.Add($"structure {name} where\n{fields}")
+                    structure_names.Add name
+                    r
+                | _ -> raise_codegen_error $"Compiler error: Expected a layout type.\nGot: %s{show_ty x}"
+        and call (name : string) (args : TyV []) =
+            match args with
+            | [||] -> $"(← {name})"
+            | args -> args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat " " |> fun a -> $"(← {name} {a})"
+        and emit_function (name : string) (self_tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let locals = new_locals parameters
+            let s = {text=StringBuilder(); indent=4}
+            let saved = self_loop.Value
+            match self_tag with
+            | Some tag when self_tail tag body ->
+                self_loop.Value <- Some (tag, parameters)
+                line s "repeat"
+                binds locals (indent s) (ZTail range) body
+            | _ ->
+                self_loop.Value <- None
+                binds locals s (ZTail range) body
+            self_loop.Value <- saved
+            let ps = parameters |> Array.map (fun (L(i,t)) -> $" (p{i} : {tyv t})") |> String.concat ""
+            let copies = parameters |> Array.map (fun (L(i,t)) -> $"    let mut v{i} : {tyv t} := p{i}\n") |> String.concat ""
+            let decls = snd locals |> Seq.map (sprintf "    %s\n") |> String.concat ""
+            bodies.Add($"partial def {name}{ps} : IO {tup_ty range} := do\n{copies}{decls}{text s}")
+        and declare (names : HashSet<int>, decls : ResizeArray<string>) (L(i,t)) =
+            if names.Add i then
+                match t with
+                | YArray _ -> decls.Add($"let mut v{i} : {tyv t} ← IO.mkRef #[]")
+                | YLayout(_,HeapMutable) -> decls.Add($"let mut v{i} : {tyv t} ← IO.mkRef default")
+                | _ -> decls.Add($"let mut v{i} : {tyv t} := default")
+        and binds locals (s : CodegenEnv) (ret : BindsReturnZig) (stmts : TypedBind []) =
+            let emitted_before = s.text.Length
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try let d = data_free_vars d
+                        d |> Array.iter (declare locals)
+                        op locals s (ZLocal d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) -> try op locals s ret a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try match ret with
+                        | ZLocal l -> Array.iter2 (fun (L(i,_)) b -> line s $"v{i} := {show_w b}") l (data_term_vars d)
+                        | ZTail range ->
+                            match data_term_vars d with
+                            | [||] -> line s "return ()"
+                            | _ -> line s $"return {tup d}"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+            if s.text.Length = emitted_before then line s "pure ()"
+        and op locals (s : CodegenEnv) (ret : BindsReturnZig) a =
+            let binds = binds locals
+            let return' (x : string) =
+                match ret with
+                | ZLocal [||] -> line s $"let _ := {x}"
+                | ZLocal [|L(i,_)|] -> line s $"v{i} := {x}"
+                | ZLocal l ->
+                    let k = next_fresh ()
+                    let names = l |> Array.mapi (fun j _ -> $"r{k}_{j}")
+                    line s $"""let ({String.concat ", " names}) := {x}"""
+                    Array.iter2 (fun (L(i,_)) n -> line s $"v{i} := {n}") l names
+                | ZTail range -> if tup_ty range = "Unit" then (line s $"let _ := {x}"; line s "return ()") else line s $"return {x}"
+            let jp (a, b) =
+                match a with
+                | JPMethod(a,c) -> call $"method{(method (a,c)).tag}" b
+                | JPClosure(a,c) ->
+                    let tag = (closure (a,c)).tag
+                    match b with
+                    | [||] -> $"closure{tag}"
+                    | b -> b |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat " " |> fun a -> $"(closure{tag} {a})"
+            let layout_index (i : int) (fields : TyV []) (mutable' : bool) =
+                let source = if mutable' then $"(← v{i}.get)" else $"v{i}"
+                match ret with
+                | ZLocal l -> Array.iter2 (fun (L(t,_)) (L(f,_)) -> line s $"v{t} := {source}.l{f}") l fields
+                | ZTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
+            match a with
+            | TyMacro a ->
+                let text = a |> List.map (function CMText x -> x | CMTerm (x,_) -> tup x | CMType x -> tup_ty x | CMTypeLit _ -> unsupported "type literals") |> String.concat ""
+                match ret with
+                | ZLocal [||] -> line s text
+                | ZTail range when tup_ty range = "Unit" -> line s text; line s "return ()"
+                | _ -> return' text
+            | TyIf(cond,tr,fl) ->
+                line s $"if {tup cond} then"
+                binds (indent s) ret tr
+                line s "else"
+                binds (indent s) ret fl
+            | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with ZTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
+                let parameters = snd self_loop.Value.Value
+                let temps = b |> Array.map (fun (L(i,_)) -> $"t{i}")
+                Array.iter2 (fun tmp (L(i,_)) -> line s $"let {tmp} := v{i}") temps b
+                Array.iter2 (fun (L(i,_)) tmp -> line s $"v{i} := {tmp}") parameters temps
+                line s "continue"
+            | TyJoinPoint(a,args) -> return' (jp (a, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Lean backend does not support nesting other backends."
+            | TyWhile(a,b) ->
+                line s "repeat"
+                line (indent s) $"if !{jp a} then break"
+                binds (indent s) (ZLocal [||]) b
+            | TyDo a | TyIndent a -> binds s ret a
+            | TyFailwith(_,b) -> line s $"spiralFail {tup b}"
+            | TyConv(a,b) ->
+                match a with
+                | YPrim (Int8T | Int16T | Int32T | Int64T as t) -> return' $"({primLean t}.ofInt (SpiralToInt.toI {tup b}))"
+                | YPrim (UInt8T | UInt16T | UInt32T | UInt64T as t) -> return' $"({primLean t}.ofInt (SpiralToInt.toI {tup b}))"
+                | YPrim Float64T -> return' (if is_float b then tup b else $"(Float.ofInt (SpiralToInt.toI {tup b}))")
+                | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
+            | TyStringLength(a,b) -> return' $"({tyv a}.ofNat {tup b}.utf8ByteSize)"
+            | TyOp(ArrayIndexSet, [a;b;c]) ->
+                line s $"{tup a}.modify (fun xs => xs.set! (spiralIdx {tup b}) {tup c})"
+                match ret with ZTail _ -> line s "return ()" | _ -> ()
+            | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(Printf, [DLit (LitString fmt); b]) ->
+                printf_pieces fmt (data_term_vars b) |> List.iter (function
+                    | Choice1Of2 t -> line s $"IO.print {leanString t}"
+                    | Choice2Of2 (_, w) -> line s $"IO.print (toString {show_w w})")
+                match ret with ZTail _ -> line s "return ()" | _ -> ()
+            | TyOp(op,l) ->
+                let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
+                let unary f = match l with [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
+                let float_ns = match l with x :: _ when prim_of x = Some Float32T -> "Float32" | _ -> "Float"
+                let shift o = match l with [a;b] when prim_of a <> prim_of b && prim_of a <> None -> $"({tup a} {o} ({primLean (prim_of a).Value}.ofInt (SpiralToInt.toI {tup b})))" | _ -> bin (fun a b -> $"({a} {o} {b})")
+                match op, l with
+                | Dyn,[a] -> tup a
+                | UnionTag, [DV(L(i,YUnion u))] -> $"(U{union_tag u.Item.cases}.spiralTag v{i})"
+                | ArrayIndex, [a;b] -> $"(← spiralIndex (← {tup a}.get) (spiralIdx {tup b}))"
+                | StringIndex, [a;b] -> $"(Char.ofNat ({tup a}.toUTF8.get! (spiralIdx {tup b})).toNat)"
+                | StringSlice, [a;b;c] -> $"(← spiralStringSlice {tup a} (SpiralToInt.toI {tup b}) (SpiralToInt.toI {tup c}))"
+                | StaticStringConcat, _ -> bin (sprintf "(%s ++ %s)")
+                | Add, _ -> bin (sprintf "(%s + %s)")
+                | Sub, _ -> bin (sprintf "(%s - %s)")
+                | Mult, _ -> bin (sprintf "(%s * %s)")
+                | Div, _ -> bin (sprintf "(%s / %s)")
+                | Mod, _ -> bin (sprintf "(%s %% %s)")
+                | Pow, [a;_] when is_float a -> bin (sprintf "(%s.pow %s %s)" float_ns)
+                | LT, _ -> bin (sprintf "(decide (%s < %s))")
+                | LTE, _ -> bin (sprintf "(decide (%s <= %s))")
+                | GT, _ -> bin (sprintf "(decide (%s > %s))")
+                | GTE, _ -> bin (sprintf "(decide (%s >= %s))")
+                | EQ, _ -> bin (sprintf "(%s == %s)")
+                | NEQ, _ -> bin (sprintf "(%s != %s)")
+                | BoolAnd, _ -> bin (sprintf "(%s && %s)")
+                | BoolOr, _ -> bin (sprintf "(%s || %s)")
+                | BitwiseAnd, _ -> bin (sprintf "(%s &&& %s)")
+                | BitwiseOr, _ -> bin (sprintf "(%s ||| %s)")
+                | BitwiseXor, _ -> bin (sprintf "(%s ^^^ %s)")
+                | BitwiseComplement, _ -> unary (sprintf "(~~~%s)")
+                | ShiftLeft, _ -> shift "<<<"
+                | ShiftRight, _ -> shift ">>>"
+                | Neg, _ -> unary (sprintf "(-%s)")
+                | Log, _ -> unary (sprintf "(%s.log %s)" float_ns)
+                | Exp, _ -> unary (sprintf "(%s.exp %s)" float_ns)
+                | Tanh, _ -> unary (sprintf "(%s.tanh %s)" float_ns)
+                | Sqrt, _ -> unary (sprintf "(%s.sqrt %s)" float_ns)
+                | Sin, _ -> unary (sprintf "(%s.sin %s)" float_ns)
+                | Cos, _ -> unary (sprintf "(%s.cos %s)" float_ns)
+                | NanIs, _ -> unary (sprintf "(%s.isNaN %s)" float_ns)
+                | StdoutFlush, [] -> "(← (← IO.getStdout).flush)"
+                | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Lean backend" op l.Length
+                |> return'
+            | TyUnionUnbox(is,x,on_succs,on_fail) ->
+                let x' = x.Item
+                let tag = union_tag x'.cases
+                line s ($"match " + (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", ") + " with")
+                on_succs |> Map.iter (fun k (a,b) ->
+                    let c = union_case_index x'.cases k
+                    let fields = a |> List.map data_free_vars
+                    fields |> List.iter (Array.iter (declare locals))
+                    let pats = fields |> List.map (fun fs -> $"U{tag}.c{c}" + (fs |> Array.map (fun (L(i,_)) -> $" f{i}") |> String.concat ""))
+                    line s ("| " + String.concat ", " pats + " =>")
+                    fields |> List.iter (Array.iter (fun (L(i,_)) -> line (indent s) $"v{i} := f{i}"))
+                    binds (indent s) ret b)
+                let wildcard = "| " + (is |> List.map (fun _ -> "_") |> String.concat ", ") + " =>"
+                match on_fail with
+                | Some b -> line s wildcard; binds (indent s) ret b
+                | None when is.Length > 1 || on_succs.Count < x'.cases.Count -> line s wildcard; line (indent s) "spiralFail \"union unbox: unreachable case\""
+                | None -> ()
+            | TyUnionBox(a,b,c) ->
+                let c = c.Item
+                let tag = union_tag c.cases
+                let i = union_case_index c.cases a
+                match data_term_vars b |> Array.map show_w with
+                | [||] -> return' $"U{tag}.c{i}"
+                | args -> return' $"""(U{tag}.c{i} {String.concat " " args})"""
+            | TyToLayout(a,b) ->
+                let r = layout b
+                let values = data_term_vars a |> Array.map show_w |> Array.map ((+) " ") |> String.concat ""
+                match b with
+                | YLayout(_,HeapMutable) -> return' $"(← IO.mkRef (M{r.tag}.mk{values}))"
+                | _ -> return' $"(H{r.tag}.mk{values})"
+            | TyLayoutIndexAll(L(i,(YLayout(_,lay) as a))) -> layout_index i (layout a).free_vars (lay = HeapMutable)
+            | TyLayoutIndexByKey(L(i,(YLayout(_,lay) as a)),key) ->
+                (layout a).free_vars_by_key |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
+                |> Option.iter (fun fields -> layout_index i fields (lay = HeapMutable))
+            | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
+            | TyLayoutMutableSet(L(i,t),b,c) ->
+                let r = layout t
+                let a = List.fold (fun s k ->
+                    match s with
+                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
+                    | _ -> raise_codegen_error "Compiler error: Expected a record.") r.data b
+                let updates = Array.map2 (fun (L(i',_)) b -> $"l{i'} := {show_w b}") (data_free_vars a) (data_term_vars c) |> String.concat ", "
+                line s $"v{i}.modify (fun r => {{ r with {updates} }})"
+                match ret with ZTail _ -> line s "return ()" | _ -> ()
+            | TyArrayLiteral(a,b) -> return' $"""(← IO.mkRef (#[{b |> List.map tup |> String.concat ", "}] : Array {tup_ty a}))"""
+            | TyArrayCreate(a,b) ->
+                match tyvs a with
+                | [|L(_,(YArray _ | YLayout(_,HeapMutable)))|] -> return' $"(← IO.mkRef (← (Array.replicate (spiralIdx {tup b}) ()).mapM (fun _ => IO.mkRef default)))"
+                | _ -> return' $"(← IO.mkRef (Array.replicate (spiralIdx {tup b}) (default : {tup_ty a})))"
+            | TyArrayLength(a,b) -> return' $"({tyv a}.ofNat (← {tup b}.get).size)"
+            | TyIntSwitch(L(i,_),on_succ,on_fail) ->
+                line s $"match v{i}.toInt with"
+                on_succ |> Array.iteri (fun k b -> line s $"| {k} =>"; binds (indent s) ret b)
+                line s "| _ =>"
+                binds (indent s) ret on_fail
+            | TyApply(L(i,_),b) ->
+                match data_term_vars b |> Array.map show_w with
+                | [||] -> return' $"(← v{i} ())"
+                | args -> return' $"""(← v{i} {String.concat " " args})"""
+            | TySizeOf _ -> unsupported "sizeof"
+        and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
+            let args = codegenMethodKeyArgs key
+            match codegenMethodBody env "Lean" jp_body key with
+            | body, range, _ -> emit_function $"method{tag}" (Some tag) (rdata_free_vars args) range body))
+        and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+        and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
+            match fun_ty with
+            | YFun(_,range,_) ->
+                match codegenClosureBody env "Lean" jp_body key with
+                | domain_args, body ->
+                    let captured = rdata_free_vars args
+                    let domain = data_free_vars domain_args
+                    emit_function $"closure{tag}" None (Array.append captured domain) range body
+                    if domain.Length = 0 then
+                        let at = bodies.Count - 1
+                        let head = $"partial def closure{tag}"
+                        let f : string = bodies.[at]
+                        if f.StartsWith head then
+                            let colon = f.IndexOf(" : IO ")
+                            bodies.[at] <- f.Substring(0, colon) + " (_ : Unit)" + f.Substring(colon)
+            | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
+        and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+
+        let unitMain =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Lean backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiralMain" None [||] (if unitMain then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.Append(leanPrelude) |> ignore
+        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        if types.Count > 0 then
+            program.AppendLine("mutual") |> ignore
+            types |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
+            program.AppendLine("end") |> ignore
+            Seq.append union_names structure_names |> Seq.iter (fun (x : string) -> program.AppendLine($"deriving instance Inhabited for {x}") |> ignore)
+            union_tags |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
+        program.AppendLine("mutual") |> ignore
+        bodies |> Seq.iter (fun x -> program.Append(x) |> ignore)
+        program.AppendLine("end") |> ignore
+        program.AppendLine("def main : IO UInt32 := do") |> ignore
+        if unitMain then program.AppendLine("  spiralMain").AppendLine("  return 0") |> ignore
+        else program.AppendLine("  let code ← spiralMain").AppendLine("  return code.toUInt32") |> ignore
         program.ToString()
 
     /// ## CodegenGleam
@@ -172423,8 +171678,48 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 || x.[0] = '}'
             fun x -> if preserves_duplicate_fragment x || has_added.Add(x) then env.globals.Add x
 
+        let externals = System.Collections.Generic.List<string>()
+        let erlangMath (name : string) (arg : string) =
+            let decl = $"@external(erlang, \"math\", \"{name}\")\npub fn spiral_math_{name}(x: Float) -> Float"
+            if not (externals.Contains decl) then externals.Add decl
+            $"spiral_math_{name}({arg})"
+
         let mutable while_id = 0
 
+        let spiralArrays () =
+            global' "import gary"
+            global' "import gary/array"
+            global' "import gleam/list"
+            global' "import gleam/option"
+            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
+            if not (externals.Contains decl) then externals.Add decl
+        let spiralRefs () =
+            spiralArrays ()
+            let decl = "pub type SpiralRef(a) {\n  SpiralRef(key: SpiralArrayKey)\n}\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_ref_store(key: SpiralArrayKey, value: a) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_ref_load(key: SpiralArrayKey) -> a\n\npub fn spiral_ref_new(value: a) -> SpiralRef(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_ref_store(key, value)\n  SpiralRef(key: key)\n}\n\npub fn spiral_ref_get(reference: SpiralRef(a)) -> a {\n  spiral_ref_load(reference.key)\n}\n\npub fn spiral_ref_set(reference: SpiralRef(a), value: a) -> Nil {\n  let _ = spiral_ref_store(reference.key, value)\n  Nil\n}"
+            if not (externals.Contains decl) then externals.Add decl
+        let integerWidth (d : Data) =
+            let width = function
+                | Int8T -> Some (8, true) | Int16T -> Some (16, true) | Int32T -> Some (32, true) | Int64T -> Some (64, true)
+                | UInt8T -> Some (8, false) | UInt16T -> Some (16, false) | UInt32T -> Some (32, false) | UInt64T -> Some (64, false)
+                | _ -> None
+            match d with
+            | DV(L(_,YPrim t)) -> width t
+            | DLit l -> width (lit_to_primitive_type l)
+            | _ -> None
+        let spiralIntegers () =
+            global' "import gleam/int"
+            let decl = "pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {\n  let half = int.bitwise_shift_left(1, bits - 1)\n  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half\n}\n\npub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {\n  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)\n}\n\npub fn spiral_int_power(base: Int, exponent: Int) -> Int {\n  case exponent <= 0 {\n    True -> 1\n    False -> base * spiral_int_power(base, exponent - 1)\n  }\n}\n\n@external(erlang, \"math\", \"pow\")\npub fn spiral_math_pow(base: Float, exponent: Float) -> Float"
+            if not (externals.Contains decl) then externals.Add decl
+        let wrapInteger (d : Data) (text : string) =
+            match integerWidth d with
+            | Some (bits, true) -> spiralIntegers (); $"spiral_wrap_signed({text}, {bits})"
+            | Some (bits, false) -> spiralIntegers (); $"spiral_wrap_unsigned({text}, {bits})"
+            | None -> text
+        let spiralStrings () =
+            global' "import gleam/bit_array"
+            global' "import gleam/string"
+            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_length(text: String) -> Int {\n  bit_array.byte_size(bit_array.from_string(text))\n}\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> spiral_halt(3)\n      }\n    _ -> spiral_halt(3)\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> spiral_halt(3)\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> spiral_halt(3)\n              }\n            Error(_) -> spiral_halt(3)\n          }\n      }\n  }\n}"
+            if not (externals.Contains decl) then externals.Add decl
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -172435,7 +171730,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | YLayout(_,lay) as a ->
                 match lay with
                 | Heap -> sprintf "Heap%i" (heap a).tag
-                | HeapMutable -> sprintf "Mut%i" (mut a).tag
+                | HeapMutable -> spiralRefs (); sprintf "SpiralRef(Mut%i)" (mut a).tag
                 | StackMutable -> raise_codegen_error "Compiler error: The F# backend doesn't support stack mutable layout types."
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
@@ -172445,14 +171740,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litGleam a) |> String.concat ""
             | YPrim a -> primGleam a
             | YArray a ->
-                global' "import gary"
-                global' "import gary/array"
-                sprintf "gary.ErlangArray(%s)" (tup_ty a)
+                spiralArrays ()
+                sprintf "SpiralArray(%s)" (tup_ty a)
             | YFun(a,b,FT_Vanilla) -> sprintf "fn(%s) -> %s" (tup_ty a) (tup_ty b)
             | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
             | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
-        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i :    %s" i (tup_ty t)) |> String.concat ", "
+        and args_tys x = x |> Array.map (fun (L(i,t)) -> sprintf "v%i: %s" i (tup_ty t)) |> String.concat ", "
         and binds (s : CodegenEnv) (x : TypedBind []) =
             Array.iter (function
                 | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
@@ -172461,14 +171755,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 ) x
         and tup x =
             match data_term_vars x with
-            | [||] -> "Nil      "
+            | [||] -> "Nil"
             | [|x|] -> show_w x
-            | x -> $"""#({x |> Array.map show_w |> String.concat ", "})      """
+            | x -> $"""#({x |> Array.map show_w |> String.concat ", "})"""
         and tup_ty x =
             match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
-            | [||] -> "Nil       "
+            | [||] -> "Nil"
             | [|x|] -> x
-            | x -> String.concat ", " x |> sprintf "#(%s)       "
+            | x -> String.concat ", " x |> sprintf "#(%s)"
         and op s d a =
             let a'' = a
             let jp (a, b) =
@@ -172484,18 +171778,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
                         | "" -> "Nil"
                         | xs -> sprintf "#(%s)" xs
                     let code = sprintf "closure%i(%s)" tag fv
-                    let comment =
-                        $"// args: %A{args} / d: %A{d} / b': %A{b} / b: %A{b}"
-                        |> SpiralSm.replace "\r\n" ""
-                        |> SpiralSm.replace "\n" ""
-                        |> fun c -> $"{c |> SpiralSm.ellipsis 1000}\n"
-                    code + " " + comment
+                    code
             let free_vars do_annot x =
-                let f (L(i,t)) = if do_annot then sprintf "v%i :  %s" i (tyv t) else sprintf "v%i" i
+                let f (L(i,t)) = if do_annot then sprintf "v%i: %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
-                | [||] -> "Nil         "
+                | [||] -> "Nil"
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)         "
+                | x -> Array.map f x |> String.concat ", " |> sprintf "#(%s)"
             let simple x =
                 match d with
                 | None -> x
@@ -172516,16 +171805,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let layout_vars a =
                 let f i x =
                     match x with
-                    | WV(L(i',_)) -> sprintf "l%i :  v%i" i i'
-                    | WLit x -> sprintf "l%i :  %s" i (litGleam x)
+                    | WV(L(i',_)) -> sprintf "l%i: v%i" i i'
+                    | WLit x -> sprintf "l%i: %s" i (litGleam x)
                 a |> data_term_vars |> Array.mapi f |> String.concat ", "
-            // ws: several fields bind a tuple (`let #(a, b) = #(v.l0, v.l1)`; the plain list was a syntax error, lane W).
-            let layout_index i x =
-                x |> Array.map (fun (L(i',_)) -> sprintf "v%i.l%i " i i')
+            let layout_index_from (source : string) x =
+                x |> Array.map (fun (L(i',_)) -> sprintf "%s.l%i" source i')
                 |> function [||] -> () | [|x|] -> simple x | l -> String.concat ", " l |> sprintf "#(%s)" |> simple
             let length (a,b) =
-                global' "import gleam/string"
-                sprintf "string.length(%s)" (tup b)
+                spiralStrings ()
+                sprintf "spiral_string_length(%s)" (tup b)
                 |> simple
             let listToArray panic x =
                 global' "import gary/array"
@@ -172545,7 +171833,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TySizeOf t -> simple $"0"
             | TyIf(cond,tr,fl) ->
                 complex <| fun s ->
-                // line s (sprintf "if %s then" (tup cond))
                 line s (sprintf "case %s {" (tup cond))
                 line (indent s) "True -> {"
                 binds (indent (indent s)) tr
@@ -172566,11 +171853,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Gleam backend does not support nesting other backends."
             | TyWhile(a, b) ->
-                // Gleam has no loops and no mutable locals: a mutation (array or mutable layout set) rebinds its
-                // variable. The loop is a recursive function over every outer variable the condition and the body read;
-                // the body's rebindings reach the recursive call by shadowing, and the exit returns the mutated ones,
-                // which the call site rebinds. (A rebinding inside a nested `case` branch stays in that branch, as it
-                // does outside loops.)
                 let fv x = x |> data_free_vars |> Set
                 let rec fv_binds (x : TypedBind []) =
                     Array.foldBack (fun k vs ->
@@ -172623,7 +171905,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 print
                     false
                     (fun s id' ->
-                        // Annotated: Gleam needs the type of a record before a field access (`v1.l0`).
                         line s $"loop{id'} ({args_tys (Set.toArray vars)}) {{"
                         line (indent s) $"case {jp a} {{"
                         line (indent (indent s)) "True -> {"
@@ -172647,11 +171928,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 binds (indent s) a
             | TyIntSwitch(L(i,_),on_succ,on_fail) ->
                 complex <| fun s ->
-                line s (sprintf "case v%i   {" i)
+                line s (sprintf "case v%i {" i)
                 Array.iteri (fun i x ->
-                    line (indent s) (sprintf "%i ->   {" i)
+                    line (indent s) (sprintf "%i -> {" i)
                     binds (indent (indent s)) x
-                    line (indent s) "}   "
+                    line (indent s) "}"
                     ) on_succ
                 line (indent s) "_ -> {"
                 binds (indent (indent s)) on_fail
@@ -172659,7 +171940,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 complex <| fun s ->
                 let case_tags = x.Item.tags
-                line s ($"""case {is |> List.map (fun (L(i,_)) -> $"v{i}  ") |> String.concat ",  "}  {{""")
+                line s ($"""case {is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ","}  {{""")
                 let prefix =
                     let x = x.Item
                     match x.layout with
@@ -172674,10 +171955,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
                             | x -> sprintf "(%s)" (args x)
                             |> sprintf "%si%i%s" prefix i
                             )
-                        |> String.concat ",  "
-                    line (indent s) (sprintf "%s ->  { // %s" cases (UnionTagIdOps.text k))
+                        |> String.concat ","
+                    line (indent s) (sprintf "%s -> {" cases)
                     binds (indent (indent s)) b
-                    line (indent s) "}  "
+                    line (indent s) "}"
                     ) on_succs
                 match on_fail with
                 | Some on_fail -> on_fail |> Some
@@ -172708,49 +171989,46 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | YLayout(_,layout) ->
                     match layout with
                     | Heap -> if a = "" then sprintf "Heap%i()" (heap b).tag else sprintf "Heap%i(%s)" (heap b).tag a
-                    | HeapMutable -> if a = "" then sprintf "Mut%i()" (mut b).tag else sprintf "Mut%i(%s)" (mut b).tag a
+                    | HeapMutable -> spiralRefs (); if a = "" then sprintf "spiral_ref_new(Mut%i())" (mut b).tag else sprintf "spiral_ref_new(Mut%i(%s))" (mut b).tag a
                     | StackMutable -> raise_codegen_error "The F# backend doesn't support stack mutable layout types."
                     | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
                 | _ -> raise_codegen_error $"Compiler error: Expected a layout type (4).\nGot: %s{show_ty b}"
                 |> simple
             | TyLayoutIndexAll(L(i,YLayout(_,lay) & a)) ->
                 match lay with
-                | Heap -> heap a
-                | HeapMutable -> mut a
+                | Heap -> (heap a).free_vars |> layout_index_from $"v{i}"
+                | HeapMutable -> (mut a).free_vars |> layout_index_from $"spiral_ref_get(v{i})"
                 | StackMutable -> raise_codegen_error "The Gleam backend doesn't support indexing into stack mutable layout types."
                 | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-                |> fun x -> x.free_vars |> layout_index i
             | TyLayoutIndexByKey(L(i,YLayout(_,lay) & a),key) ->
-                match lay with
-                | Heap -> heap a
-                | HeapMutable -> mut a
-                | StackMutable -> raise_codegen_error "The Gleam backend doesn't support indexing into stack mutable layout types."
-                | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
-                |> fun x ->
-                    x.free_vars_by_key
-                    |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
-                    |> Option.iter (layout_index i)
+                let source, record =
+                    match lay with
+                    | Heap -> $"v{i}", heap a
+                    | HeapMutable -> $"spiral_ref_get(v{i})", mut a
+                    | StackMutable -> raise_codegen_error "The Gleam backend doesn't support indexing into stack mutable layout types."
+                    | StackRefs | HeapRefs -> raise_codegen_error "This backend doesn't support the stack and heap refs layout types."
+                record.free_vars_by_key
+                |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None)
+                |> Option.iter (layout_index_from source)
             | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
             | TyLayoutMutableSet(L(i,t),b,c) ->
                 let a = List.fold (fun s k ->
                     match s with
                     | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
                     | _ -> raise_codegen_error "Compiler error: Expected a record.") (mut t).data b
-                let a_vars = data_free_vars a
-                Array.iter2 (fun (L(i',_)) b ->
-                    if a_vars |> Array.length > 1
-                    then line s (sprintf "let v%i = %s(..v%i, l%i: %s)" i (tup_ty t) i i' (show_w b))
-                    else line s (sprintf "let v%i = %s(l%i: %s)" i (tup_ty t) i' (show_w b))
-                    ) a_vars (data_term_vars c)
+                let updates = Array.map2 (fun (L(i',_)) b -> sprintf "l%i: %s" i' (show_w b)) (data_free_vars a) (data_term_vars c) |> String.concat ", "
+                if (data_free_vars a).Length = (mut t).free_vars.Length then line s (sprintf "spiral_ref_set(v%i, Mut%i(%s))" i (mut t).tag updates)
+                else line s (sprintf "spiral_ref_set(v%i, Mut%i(..spiral_ref_get(v%i), %s))" i (mut t).tag i updates)
             | TyArrayLiteral(a,b) ->
-                $"""[ {List.map tup b |> String.concat ", "} ]"""
-                |> listToArray "spiral_compiler..TyArrayLiteral"
+                spiralArrays ()
+                $"""spiral_array_from_list([ {List.map tup b |> String.concat ", "} ])"""
                 |> simple
-            | TyArrayCreate(a,b) -> $"[]" |> listToArray "spiral_compiler..TyArrayCreate" |> simple
+            | TyArrayCreate(a,b) ->
+                spiralArrays ()
+                $"spiral_array_create({tup b})" |> simple
             | TyArrayLength(a,b) ->
-                global' "import gary/array"
-                sprintf "array.get_size(%s)" (tup b)
-                |> simple
+                spiralArrays ()
+                $"{tup b}.size" |> simple
             | TyStringLength(a,b) -> length (a,b)
             | TyFailwith(a,b) -> simple (sprintf "panic as %s" (tup b))
             | TyConv(a,b) ->
@@ -172775,7 +172053,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                       let domain_is_nil =
                         env.ty_to_data domain |> data_free_vars |> Array.isEmpty
                       if arg_code |> SpiralSm.trim = "Nil" then
-                        if domain_is_nil then sprintf "v%i( Nil      )" i else sprintf "v%i " i
+                        if domain_is_nil then sprintf "v%i(Nil)" i else sprintf "v%i " i
                       else
                         if domain_is_nil then $"v%i{i}( {arg_code}(      Nil)  ) "
                         else sprintf "v%i( %s  )" i arg_code
@@ -172783,12 +172061,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                       sprintf "v%i( %s  )" i arg_code
                 call
                 |> fun code ->
-                    let comment =
-                        $"// tup_ty t: {tup_ty t} / b: %A{b} / d: %A{d} / a'': %A{a''}"
-                        |> SpiralSm.replace "\r\n" ""
-                        |> SpiralSm.replace "\n" ""
-                        |> fun c -> $"{c |> SpiralSm.ellipsis 1000}\n"
-                    $"{call} {comment}"
+                    call
                 |> simple
             | TyOp(Export, [DLit (LitString name); DV(L(i,YFun(domain,range,_)))]) ->
                 if not (export_names.Add name) then raise_codegen_error $"Duplicate export: {name}."
@@ -172821,61 +172094,48 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StaticStringConcat, [a;b] -> sprintf "{ %s } <> { %s }" (tup a) (tup b)
                 | StringIndex, [a;b] ->
-                    global' "import gleam/string"
-                    sprintf "%s |> string.slice(%s, 1)" (tup a) (tup b)
+                    spiralStrings ()
+                    sprintf "spiral_string_index(%s, %s)" (tup a) (tup b)
                 | StringSlice, [a;b;c] ->
-                    global' "import gleam/string"
-                    sprintf "%s |> string.slice(%s, %s - %s + 1)" (tup a) (tup b) (tup c) (tup b)
+                    spiralStrings ()
+                    sprintf "spiral_string_slice(%s, %s, %s)" (tup a) (tup b) (tup c)
                 | ArrayIndex, [a;b] ->
-                    global' "import gary/array"
-                    $"{tup a} " +
-                    $"|> array.get({tup b}) " +
-                    $"|> fn(x) -> _ {{ " +
-                    $"     case x {{ " +
-                    $"       Ok(x) -> x " +
-                    $"       Error(_) -> panic as \"spiral_compiler..ArrayIndex / i: {tup b}\" " +
-                    $"     }} " +
-                    $"   }} "
+                    spiralArrays ()
+                    $"spiral_array_get({tup a}, {tup b})"
                 | ArrayIndexSet, [a;b;c] ->
-                    global' "import gary/array"
-                    global' "import gleam/result"
-                    $"let {tup a} = {tup a} |> array.set({tup b}, {tup c}) |> result.unwrap({tup a})"
+                    spiralArrays ()
+                    $"spiral_array_set({tup a}, {tup b}, {tup c})"
 
-                // Math
-                | Add, [a;b] -> $"{a |> tup} +{a |> dot} {b |> tup}"
-                | Sub, [a;b] -> $"{a |> tup} -{a |> dot} {b |> tup}"
-                | Mult, [a;b] -> $"{a |> tup} *{a |> dot} {b |> tup}"
+                | Add, [a;b] -> wrapInteger a $"{a |> tup} +{a |> dot} {b |> tup}"
+                | Sub, [a;b] -> wrapInteger a $"{a |> tup} -{a |> dot} {b |> tup}"
+                | Mult, [a;b] -> wrapInteger a $"{a |> tup} *{a |> dot} {b |> tup}"
                 | Div, [a;b] -> $"{a |> tup} /{a |> dot} {b |> tup}"
                 | Mod, [a;b] -> $"{a |> tup} %%{a |> dot} {b |> tup}"
-                | Pow, [a;b] -> $"{a |> tup} **{a |> dot} {b |> tup}"
-                | LT, [a;b] -> sprintf "%s < %s" (tup a) (tup b)
-                | LTE, [a;b] -> sprintf "%s <= %s" (tup a) (tup b)
+                | Pow, [a;b] -> if dot a = "." then (spiralIntegers (); $"spiral_math_pow({tup a}, {tup b})") else (spiralIntegers (); wrapInteger a $"spiral_int_power({tup a}, {tup b})")
+                | LT, [a;b] -> $"{a |> tup} <{a |> dot} {b |> tup}"
+                | LTE, [a;b] -> $"{a |> tup} <={a |> dot} {b |> tup}"
                 | EQ, [a;b] -> sprintf "%s == %s" (tup a) (tup b)
                 | NEQ, [a;b] -> sprintf "%s != %s" (tup a) (tup b)
-                | GT, [a;b] -> sprintf "%s > %s" (tup a) (tup b)
-                | GTE, [a;b] -> sprintf "%s >= %s" (tup a) (tup b)
+                | GT, [a;b] -> $"{a |> tup} >{a |> dot} {b |> tup}"
+                | GTE, [a;b] -> $"{a |> tup} >={a |> dot} {b |> tup}"
                 | BoolAnd, [a;b] -> sprintf "%s && %s" (tup a) (tup b)
                 | BoolOr, [a;b] -> sprintf "%s || %s" (tup a) (tup b)
-                | BitwiseAnd, [a;b] -> sprintf "%s &&& %s" (tup a) (tup b)
-                | BitwiseOr, [a;b] -> sprintf "%s ||| %s" (tup a) (tup b)
-                | BitwiseXor, [a;b] -> sprintf "%s ^^^ %s" (tup a) (tup b)
-                | BitwiseComplement, [a] -> sprintf "~~~%s" (tup a)
+                | BitwiseAnd, [a;b] -> spiralIntegers (); $"int.bitwise_and({tup a}, {tup b})"
+                | BitwiseOr, [a;b] -> spiralIntegers (); $"int.bitwise_or({tup a}, {tup b})"
+                | BitwiseXor, [a;b] -> spiralIntegers (); $"int.bitwise_exclusive_or({tup a}, {tup b})"
+                | BitwiseComplement, [a] -> spiralIntegers (); wrapInteger a $"int.bitwise_not({tup a})"
 
-                | ShiftLeft, [a;b] -> sprintf "%s <<< %s" (tup a) (tup b)
-                | ShiftRight, [a;b] -> sprintf "%s >>> %s" (tup a) (tup b)
+                | ShiftLeft, [a;b] -> spiralIntegers (); wrapInteger a $"int.bitwise_shift_left({tup a}, {tup b})"
+                | ShiftRight, [a;b] -> spiralIntegers (); $"int.bitwise_shift_right({tup a}, {tup b})"
 
-                | Neg, [x] -> sprintf " -%s" (tup x)
-                | Log, [x] -> sprintf "log %s" (tup x)
-                | Exp, [x] -> sprintf "exp %s" (tup x)
-                | Tanh, [x] -> sprintf "tanh %s" (tup x)
-                | Sqrt, [x] -> sprintf "sqrt %s" (tup x)
-                | Sin, [x] -> sprintf "sin %s" (tup x)
-                | Cos, [x] -> sprintf "cos %s" (tup x)
-                | NanIs, [x] ->
-                    match x with
-                    | DLit(LitFloat32 _) | DV(L(_,YPrim Float32T)) -> sprintf "Single.IsNaN(%s)" (tup x)
-                    | DLit(LitFloat64 _) | DV(L(_,YPrim Float64T)) -> sprintf "Double.IsNaN(%s)" (tup x)
-                    | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
+                | Neg, [x] -> if dot x = "." then $"0.0 -. {tup x}" else wrapInteger x $"0 - {tup x}"
+                | Log, [x] -> erlangMath "log" (tup x)
+                | Exp, [x] -> erlangMath "exp" (tup x)
+                | Tanh, [x] -> erlangMath "tanh" (tup x)
+                | Sqrt, [x] -> erlangMath "sqrt" (tup x)
+                | Sin, [x] -> erlangMath "sin" (tup x)
+                | Cos, [x] -> erlangMath "cos" (tup x)
+                | NanIs, [x] -> "False"
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
                     let ty =
@@ -172885,7 +172145,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     let items =
                         h.cases
                         |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                            $"#({ty}i{i}, {i})          "
+                            $"#({ty}i{i}, {i})"
                         )
                         |> String.concat ", "
                     global' "import gleam/dict"
@@ -172947,7 +172207,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     if is_fn
                     then $"{range_ty} {{ fn(_)"
                     else range_ty
-                line s $"method{x.tag} ({args_tys x.free_vars}) -> {ret} {{"
+                line s $"method{x.tag}({args_tys x.free_vars}) -> {ret} {{"
                 binds (indent s) x.body
                 if is_fn
                 then line s "(    Nil  )}}"
@@ -173004,7 +172264,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     | [| L(i, _) |] -> sprintf "v%i" i
                     | _ -> "dom"
 
-                line s (sprintf "closure%i (capt : %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
+                line s (sprintf "closure%i(capt: %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
                 line (indent s) (sprintf "fn (%s) {" dom_name)
 
                 match x.domain_args with
@@ -173030,10 +172290,25 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
         let program = StringBuilder()
         env.globals |> Seq.distinct |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        externals |> Seq.iter (fun (x : string) -> program.AppendLine(x).AppendLine() |> ignore)
         types |> Seq.iteri (fun i x -> program.Append("pub type ").Append(x) |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append("pub fn ").Append(x) |> ignore)
         exports |> Seq.iter (fun x -> program.Append(x) |> ignore)
-        program.Append($"pub fn main () {{ {main} }}").ToString()
+        let silenceUnusedBindings (code : string) =
+            let names = System.Text.RegularExpressions.Regex(@"\bv\d+\b")
+            let bindings = System.Text.RegularExpressions.Regex(@"\blet\s+(#\([^)]*\)|v\d+)\s*=|(?<=[(,]\s*)(v\d+)(?=:)")
+            System.Text.RegularExpressions.Regex(@"(?m)^(?=pub fn )").Split(code)
+            |> Array.map (fun chunk ->
+                let counts = names.Matches(chunk) |> Seq.countBy (fun m -> m.Value) |> dict
+                let unused =
+                    bindings.Matches(chunk)
+                    |> Seq.collect (fun m -> names.Matches(m.Value) |> Seq.map (fun n -> n.Value))
+                    |> Seq.filter (fun name -> counts.[name] = 1)
+                    |> Set.ofSeq
+                if unused.IsEmpty then chunk
+                else names.Replace(chunk, fun m -> if unused.Contains m.Value then "_" + m.Value else m.Value))
+            |> String.concat ""
+        program.Append($"pub fn main() {{\n{main}}}\n").ToString() |> silenceUnusedBindings
 
     /// ## CodegenLua
 
@@ -173051,14 +172326,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | LitUInt32 x -> sprintf "%i" x
         | LitUInt64 x -> sprintf "%i" x
         | LitFloat32 x ->
-            if x = infinityf then "infinityf"
-            elif x = -infinityf then "-infinityf"
-            elif Single.IsNaN x then "nanf"
+            if x = infinityf then "math.huge"
+            elif x = -infinityf then "(-math.huge)"
+            elif Single.IsNaN x then "(0/0)"
             else x.ToString("R") |> add_dec_point |> sprintf "%s"
         | LitFloat64 x ->
-            if x = infinity then "infinity"
-            elif x = -infinity then "-infinity"
-            elif Double.IsNaN x then "nan"
+            if x = infinity then "math.huge"
+            elif x = -infinity then "(-math.huge)"
+            elif Double.IsNaN x then "(0/0)"
             else x.ToString("R") |> add_dec_point
         | LitString x ->
             let strb = StringBuilder(x.Length+2)
@@ -173123,14 +172398,34 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
     /// ### codegenLua
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
-        let targetLua54 = false
+        let luaHelpers = System.Collections.Generic.List<string>()
+        let useLuaHelper (text : string) = if not (luaHelpers.Contains text) then luaHelpers.Add text
+        let luaWrapHelpers =
+            "local function spiral_wrap_unsigned(value, bits)\n    return value % (2 ^ bits)\nend\nlocal function spiral_wrap_signed(value, bits)\n    local modulus = 2 ^ bits\n    value = value % modulus\n    if value >= modulus / 2 then value = value - modulus end\n    return value\nend\nlocal function spiral_mul_mod32(a, b)\n    a = a % 4294967296\n    b = b % 4294967296\n    local a_low = a % 65536\n    local a_high = (a - a_low) / 65536\n    return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296\nend\n"
+        let luaBitHelpers =
+            "local function spiral_bit_combine(a, b, keep)\n    a = a % 4294967296\n    b = b % 4294967296\n    local result, place = 0, 1\n    for _ = 1, 32 do\n        local a_bit, b_bit = a % 2, b % 2\n        if keep(a_bit, b_bit) then result = result + place end\n        a = (a - a_bit) / 2\n        b = (b - b_bit) / 2\n        place = place * 2\n    end\n    return result\nend\nlocal bit = bit32 or bit or {\n    band = function(a, b) return spiral_bit_combine(a, b, function(x, y) return x == 1 and y == 1 end) end,\n    bor = function(a, b) return spiral_bit_combine(a, b, function(x, y) return x == 1 or y == 1 end) end,\n    bxor = function(a, b) return spiral_bit_combine(a, b, function(x, y) return x ~= y end) end,\n    bnot = function(a) return 4294967295 - a % 4294967296 end,\n    lshift = function(a, n) return (a % 4294967296) * 2 ^ n % 4294967296 end,\n    rshift = function(a, n) return math.floor((a % 4294967296) / 2 ^ n) end,\n}\n"
+        let luaIntegerWidth (d : Data) =
+            let width = function
+                | Int8T -> Some (8, true) | Int16T -> Some (16, true) | Int32T -> Some (32, true) | Int64T -> Some (64, true)
+                | UInt8T -> Some (8, false) | UInt16T -> Some (16, false) | UInt32T -> Some (32, false) | UInt64T -> Some (64, false)
+                | _ -> None
+            match d with
+            | DV(L(_,YPrim t)) -> width t
+            | DLit l -> width (lit_to_primitive_type l)
+            | _ -> None
+        let luaWrap (d : Data) (text : string) =
+            match luaIntegerWidth d with
+            | Some (bits, signed) when bits <= 32 ->
+                useLuaHelper luaWrapHelpers
+                if signed then $"spiral_wrap_signed({text}, {bits})" else $"spiral_wrap_unsigned({text}, {bits})"
+            | _ -> text
+        let luaBit (d : Data) (call : string) =
+            useLuaHelper luaBitHelpers
+            luaWrap d call
 
         let types = ResizeArray()
         let functions = ResizeArray()
 
-        // A compound op whose result binds no variable is written inline, so a `return` at the end of one of its
-        // blocks would leave the enclosing function (a while body's unit result too). While this is set, `binds`
-        // drops a block's trailing return: a returned op becomes a statement, returned data is dropped.
         let mutable discard_tail = false
 
         let print is_type show r =
@@ -173161,6 +172456,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 if dirty then print true show r
                 r
 
+        let luaCaseIndex (cases : Map<int * string, Ty>) tag =
+            cases |> Seq.tryFindIndex (fun (KeyValue ((_, name), _)) -> UnionTagIdOps.text tag = name)
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text tag}.")
         let union show =
             let dict = codegenMemoTable HashIdentity.Reference
             let f (a : Map<int * string,Ty>) : UnionRecLua = {free_vars=a |> Map.map (fun _ -> env.ty_to_data >> data_free_vars); tag=dict.Count}
@@ -173229,12 +172527,12 @@ fn spiralCreate(comptime T: type, v: T) *T {
             Array.iter (function
                 | TyLet(d,trace,a) -> try op s (Some d) a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 | TyLocalReturnOp(trace,a,_) -> try op s None a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
-                | TyLocalReturnData(d,trace) -> try line s $"return {tup d}          " with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) -> try line s $"return {tup d}" with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
                 ) x
             discard_tail <- discard
         and tup x =
             match data_term_vars x with
-            | [||] -> "nil      "
+            | [||] -> "nil"
             | [|x|] -> show_w x
             | x ->
                 x
@@ -173243,9 +172541,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 |> sprintf "{ %s }"
         and tup_ty x =
             match env.ty_to_data x |> data_free_vars |> Array.map (fun (L(_,x)) -> tyv x) with
-            | [||] -> "nil       "
+            | [||] -> "nil"
             | [|x|] -> x
-            | x -> String.concat ", " x |> sprintf "#(%s)       "
+            | x -> String.concat ", " x |> sprintf "#(%s)"
         and op s d a =
             let a'' = a
             let jp (a, b) =
@@ -173264,15 +172562,15 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i" i else sprintf "v%i" i
                 match data_free_vars x with
-                | [||] -> "nil         "
+                | [||] -> "nil"
                 | [|x|] -> f x
-                | x -> Array.map f x |> String.concat ", " |> sprintf "%s                  "
+                | x -> Array.map f x |> String.concat ", " |> sprintf "%s"
             let simple x =
                 match d with
-                | None -> $"return {x}           "
+                | None -> $"return {x}"
                 | Some d ->
                     match data_free_vars d with
-                    | [||] -> $"{x}            "
+                    | [||] -> $"{x}"
                     | [|_|] ->
                         let names = free_vars false d |> SpiralSm.trim
                         sprintf "local %s = %s" names x
@@ -173291,10 +172589,12 @@ fn spiralCreate(comptime T: type, v: T) *T {
                         f s
                         discard_tail <- discard
                     | d ->
-                        line s $"local get{d} = function()"
+                        let getter = "get" + d.Split(',').[0].Trim()
+                        line s $"local {getter} = function()"
                         f (indent s)
                         line s $"end"
-                        line s $"local {d} = get{d}()"
+                        if d.Contains "," then line s $"local {d} = (table.unpack or unpack)({getter}())"
+                        else line s $"local {d} = {getter}()"
             let layout_vars a =
                 let f i x =
                     match x with
@@ -173305,8 +172605,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let fields = x |> Array.map (fun (L(i',_)) -> $"v{i} ~= nil and v{i}.l{i'}")
                 match fields, d with
                 | [||], _ -> ()
-                // Several fields are several values, not a packed table: `local a, b = x.l0, x.l1` (`simple` would unpack
-                // them as one table: "table expected, got number"; MAIN's cube port, cube.lua:336).
                 | fields, Some d when fields.Length > 1 && (data_free_vars d).Length = fields.Length ->
                     line s (sprintf "local %s = %s" (free_vars false d |> SpiralSm.trim) (String.concat ", " fields))
                 | fields, _ -> simple (String.concat ", " fields)
@@ -173324,14 +172622,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s "else"
                 match fl with
                 | [|TyLocalReturnData(DB,_)|] ->
-                    line (indent s) "-- return nil"
+                    ()
                 | _ ->
                     binds (indent s) fl
                 line s "end"
             | TyJoinPoint(a,args) -> simple (jp (a, args))
             | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Lua backend does not support nesting other backends."
             | TyWhile(a, b) ->
-                // An inline loop over the enclosing locals; the body's unit result is discarded (see discard_tail).
                 complex <| fun s ->
                 line s (sprintf "while %s do" (jp a))
                 let discard = discard_tail
@@ -173382,7 +172679,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
                 let mutable first = true
                 Map.iter (fun k (a,bnds) ->
-                    let i = case_tags.[k]
+                    let i = luaCaseIndex x.Item.cases k
                     let guard =
                         is
                         |> List.mapi (fun idx _ ->
@@ -173405,8 +172702,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                         | Some arr -> arr.Length
                         | None -> 0
 
-                    // Each scrutinee's payload: its pattern's variables in field order (`_1`, `_2`, ...), the order
-                    // the case constructor stores them in. A case with several fields has a tuple of them as pattern.
                     if payloadArity > 0 then
                         a |> List.iteri (fun idx pat ->
                             data_free_vars pat |> Array.iteri (fun k (L(j,_)) ->
@@ -173425,7 +172720,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     line s "end"
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
-                let i = c.tags.[a]
+                let i = luaCaseIndex c.cases a
                 let vars =
                     match data_term_vars b with
                     | [||] -> ""
@@ -173476,8 +172771,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 (List.map tup b |> String.concat ", " |> sprintf "{ %s }")
                 |> simple
             | TyArrayCreate(a,b) ->
-                // A new array's elements are their type's default, as in C (calloc) and the other backends; Lua's
-                // empty table read nil (MAIN's cube port: 'attempt to compare nil with number').
                 match a with
                 | YPrim (Float32T | Float64T) -> Some "0.0"
                 | YPrim BoolT -> Some "false"
@@ -173492,12 +172785,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 sprintf "#(%s)" (tup b)
                 |> simple
             | TyStringLength(a,b) -> length (a,b)
-            // `_G.error`: lib text may bind a local named `error` (resultm's Lua unbox), which a bare call would reach.
             | TyFailwith(a,b) -> simple (sprintf "_G.error(%s)" (tup b))
             | TyConv(a,b) ->
                 let d = tup b
-                // A float to an integer truncates toward zero, as C does (Lua's numbers stay floats otherwise, and a float
-                // index reads nil: MAIN's cube port, 'attempt to compare nil with number').
                 let from_float = match data_term_vars b with [|WV(L(_,YPrim (Float32T | Float64T)))|] | [|WLit (LitFloat32 _ | LitFloat64 _)|] -> true | _ -> false
                 match a with
                 | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) when from_float -> simple $"(math.modf({d}))"
@@ -173521,6 +172811,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 match op, l with
                 | Dyn,[a] -> tup a
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | StaticStringConcat, [a;b] -> sprintf "(%s .. %s)" (tup a) (tup b)
                 | StringIndex, [a;b] ->
                     sprintf "string.sub(%s, (%s)+1, (%s)+1)" (tup a) (tup b) (tup b)
                 | StringSlice, [a;b;c] ->
@@ -173528,18 +172819,16 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | ArrayIndex, [a;b] ->
                     sprintf "(%s)[(%s)+1]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] ->
-                    // A statement must not start with `(`: Lua reads it as a call on the previous line's value
-                    // ("ambiguous syntax (function call x new statement)").
                     let target = tup a
                     if System.Text.RegularExpressions.Regex.IsMatch(target, @"^[A-Za-z_][A-Za-z0-9_]*$") then sprintf "%s[(%s)+1] = %s" target (tup b) (tup c)
                     else sprintf ";(%s)[(%s)+1] = %s" target (tup b) (tup c)
 
-                // Math
-                | Add, [a;b] -> sprintf "%s + %s" (tup a) (tup b)
-                | Sub, [a;b] -> sprintf "%s - %s" (tup a) (tup b)
-                | Mult, [a;b] -> sprintf "%s * %s" (tup a) (tup b)
-                // Integers divide and take the remainder toward zero, as C does (Lua's `/` is float division and its `%`
-                // floors: MAIN's cube port checksum differed).
+                | Add, [a;b] -> luaWrap a (sprintf "(%s + %s)" (tup a) (tup b))
+                | Sub, [a;b] -> luaWrap a (sprintf "(%s - %s)" (tup a) (tup b))
+                | Mult, [a;b] ->
+                    match luaIntegerWidth a with
+                    | Some (32, _) -> useLuaHelper luaWrapHelpers; luaWrap a (sprintf "spiral_mul_mod32(%s, %s)" (tup a) (tup b))
+                    | _ -> luaWrap a (sprintf "(%s * %s)" (tup a) (tup b))
                 | Div, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
                     sprintf "(math.modf(%s / %s))" (tup a) (tup b)
                 | Mod, [a;b] when (match data_term_vars a with [|WV(L(_,YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T)))|] | [|WLit (LitInt8 _ | LitInt16 _ | LitInt32 _ | LitInt64 _ | LitUInt8 _ | LitUInt16 _ | LitUInt32 _ | LitUInt64 _)|] -> true | _ -> false) ->
@@ -173555,27 +172844,24 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | GTE, [a;b] -> sprintf "%s >= %s" (tup a) (tup b)
                 | BoolAnd, [a;b] -> sprintf "(%s) and (%s)" (tup a) (tup b)
                 | BoolOr, [a;b] -> sprintf "(%s) or (%s)" (tup a) (tup b)
-                | BitwiseAnd, [a;b] ->
-                    if targetLua54 then sprintf "(%s) & (%s)" (tup a) (tup b) else "bit.band(" + (tup a) + ", " + (tup b) + ")"
-                | BitwiseOr, [a;b] ->
-                    if targetLua54 then sprintf "(%s) | (%s)" (tup a) (tup b) else "bit.bor(" + (tup a) + ", " + (tup b) + ")"
-                | BitwiseXor, [a;b] ->
-                    if targetLua54 then sprintf "(%s) ~ (%s)" (tup a) (tup b) else "bit.bxor(" + (tup a) + ", " + (tup b) + ")"
-                | BitwiseComplement, [a] ->
-                    if targetLua54 then sprintf "~(%s)" (tup a) else "bit.bnot(" + (tup a) + ")"
-                | ShiftLeft, [a;b] ->
-                    if targetLua54 then sprintf "(%s) << (%s)" (tup a) (tup b) else "bit.lshift(" + (tup a) + ", " + (tup b) + ")"
+                | BitwiseAnd, [a;b] -> luaBit a (sprintf "bit.band(%s, %s)" (tup a) (tup b))
+                | BitwiseOr, [a;b] -> luaBit a (sprintf "bit.bor(%s, %s)" (tup a) (tup b))
+                | BitwiseXor, [a;b] -> luaBit a (sprintf "bit.bxor(%s, %s)" (tup a) (tup b))
+                | BitwiseComplement, [a] -> luaBit a (sprintf "bit.bnot(%s)" (tup a))
+                | ShiftLeft, [a;b] -> luaBit a (sprintf "bit.lshift(%s, %s)" (tup a) (tup b))
                 | ShiftRight, [a;b] ->
-                    if targetLua54 then sprintf "(%s) >> (%s)" (tup a) (tup b) else "bit.rshift(" + (tup a) + ", " + (tup b) + ")"
+                    match luaIntegerWidth a with
+                    | Some (_, true) -> luaWrap a (sprintf "math.floor(%s / 2 ^ %s)" (tup a) (tup b))
+                    | _ -> luaBit a (sprintf "bit.rshift(%s, %s)" (tup a) (tup b))
 
-                | Neg, [x] -> sprintf "-(%s)" (tup x)
+                | Neg, [x] -> luaWrap x (sprintf "-(%s)" (tup x))
                 | Log, [x] -> sprintf "math.log(%s)" (tup x)
                 | Exp, [x] -> sprintf "math.exp(%s)" (tup x)
                 | Tanh, [x] -> sprintf "math.tanh(%s)" (tup x)
                 | Sqrt, [x] -> sprintf "math.sqrt(%s)" (tup x)
                 | Sin, [x] -> sprintf "math.sin(%s)" (tup x)
                 | Cos, [x] -> sprintf "math.cos(%s)" (tup x)
-                | NanIs, [x] -> sprintf "tostring(%s) == 'nan'" (tup x)
+                | NanIs, [x] -> sprintf "(%s ~= %s)" (tup x) (tup x)
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
                     let ty =
@@ -173597,8 +172883,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     |> List.map (function
                         | Choice1Of2 t -> litLua (LitString t)
                         | Choice2Of2 ('s', a) -> show_w a
-                        // Lua 5.1's %d is a C long (32 bits on Windows); 64-bit integers print through %.0f (exact up to
-                        // 2^53; `+ 0.0` turns a -0 into 0).
                         | Choice2Of2 (_, (WV(L(_,YPrim (Int64T | UInt64T))) | WLit (LitInt64 _ | LitUInt64 _) as a)) -> "string.format(\"%.0f\", " + show_w a + " + 0.0)"
                         | Choice2Of2 (_, a) -> "string.format(\"%d\", " + show_w a + ")")
                     |> String.concat ", " |> sprintf "io.write(%s)"
@@ -173696,13 +172980,52 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
         let program = StringBuilder()
 
-        if not targetLua54 then
-            program.Append("local bit = bit32 or bit\n") |> ignore
-        else
-            program.Append("-- lua 5.4 ops\n") |> ignore
+        luaHelpers |> Seq.iter (fun (x : string) -> program.Append(x) |> ignore)
+        let definitions =
+            Seq.append types functions
+            |> Seq.collect (fun (text : string) ->
+                System.Text.RegularExpressions.Regex.Matches(text, @"(?m)^(?:function\s+(\w+)\(|(\w+)\s*=\s*function\()")
+                |> Seq.map (fun m -> if m.Groups.[1].Success then m.Groups.[1].Value else m.Groups.[2].Value))
+            |> Seq.distinct
+            |> Array.ofSeq
+        let chunkLocals = System.Text.RegularExpressions.Regex.Matches(main.ToString(), @"(?m)^local\s").Count
+        let helperLocals = luaHelpers |> Seq.sumBy (fun (x : string) -> System.Text.RegularExpressions.Regex.Matches(x, @"(?m)^local\s").Count)
+        if definitions.Length > 0 && definitions.Length + chunkLocals + helperLocals < 190 then
+            program.Append("local ").Append(String.concat ", " definitions).Append("\n") |> ignore
         types |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
         functions |> Seq.iteri (fun i x -> program.Append(x).Append("\n") |> ignore)
-        program.Append(main.ToString()).ToString()
+        let spillChunkLocals (code : string) =
+            let declared =
+                System.Text.RegularExpressions.Regex.Matches(code, @"(?m)^local\s+([A-Za-z_]\w*(?:\s*,\s*[A-Za-z_]\w*)*)\s*=")
+                |> Seq.collect (fun m -> m.Groups.[1].Value.Split(',') |> Seq.map (fun s -> s.Trim()))
+                |> HashSet
+            if declared.Count < 150 then code
+            else
+                let isNamePart (c : char) = Char.IsLetterOrDigit c || c = '_'
+                let rewritten = StringBuilder("local spilled = {}\n")
+                let mutable i = 0
+                while i < code.Length do
+                    let c = code.[i]
+                    if c = '"' || c = '\'' then
+                        let start = i
+                        i <- i + 1
+                        while i < code.Length && code.[i] <> c do
+                            if code.[i] = '\\' then i <- i + 1
+                            i <- i + 1
+                        i <- min code.Length (i + 1)
+                        rewritten.Append(code, start, i - start) |> ignore
+                    elif (Char.IsLetter c || c = '_') && (i = 0 || not (isNamePart code.[i - 1] || code.[i - 1] = '.' || code.[i - 1] = ':')) then
+                        let mutable j = i + 1
+                        while j < code.Length && isNamePart code.[j] do j <- j + 1
+                        let name = code.Substring(i, j - i)
+                        if declared.Contains name then rewritten.Append("spilled.").Append(name) |> ignore
+                        else rewritten.Append(name) |> ignore
+                        i <- j
+                    else
+                        rewritten.Append(c) |> ignore
+                        i <- i + 1
+                System.Text.RegularExpressions.Regex.Replace(rewritten.ToString(), @"(?m)^local\s+(spilled\.)", "$1")
+        program.Append(spillChunkLocals (main.ToString())).ToString()
 
     /// ## CodegenTypescript
 
@@ -173710,7 +173033,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
     let backend_nameTypeScript = "TypeScript"
 
     /// ### litTypeScriptString
-    /// A JS string literal: JSON-style escapes, with control characters and U+2028/U+2029 spelled \uXXXX.
     let litTypeScriptString (x : string) =
         let strb = StringBuilder(x.Length + 2)
         strb.Append '"' |> ignore
@@ -173728,8 +173050,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         strb.ToString()
 
     /// ### litTypeScriptFloat
-    /// The exact value of the double (a float32 literal is passed widened, so `0.1f32` is written as the double nearest
-    /// the float, which Math.fround leaves unchanged). Negative values are parenthesized for unary contexts.
     let litTypeScriptFloat (x : float) =
         if Double.IsPositiveInfinity x then "Infinity"
         elif Double.IsNegativeInfinity x then "(-Infinity)"
@@ -173752,7 +173072,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | LitFloat64 x -> litTypeScriptFloat x
         | LitString x -> litTypeScriptString x
         | LitChar x ->
-            // Like the C, Rust and Delphi backends, a char is one UTF-8 byte (a number 0..255 here).
             if int x > 127 then raise_codegen_error $"The TypeScript backend represents chars as UTF-8 bytes; '{x}' is not ASCII."
             sprintf "%i" (int x)
         | LitBool x -> if x then "true" else "false"
@@ -173771,8 +173090,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | x -> raise_codegen_error "Compiler error: Expecting a type literal in the macro."
 
     /// ### TsNumKind
-    /// How a primitive is held: a JS number with an integer of `bits` (char is an unsigned byte), a bigint, a float32
-    /// kept exact by Math.fround, a float64, or not a number (bool, string).
     type TsNumKind =
         | TsSmallInt of bits : int * signed : bool
         | TsBigInt of signed : bool
@@ -173795,8 +173112,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | BoolT | StringT -> TsNotNumber
 
     /// ### tsWrapSmall
-    /// Brings an integer-valued JS number into the range of a C integer type, as C's conversion on assignment does.
-    /// ToInt32/ToUint32 truncate toward zero first, so this also implements C's integer division.
     let tsWrapSmall bits signed (x : string) =
         match bits, signed with
         | 32, true -> $"({x}) | 0"
@@ -173810,8 +173125,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
     let tsWrapBig signed (x : string) = if signed then $"BigInt.asIntN(64, {x})" else $"BigInt.asUintN(64, {x})"
 
     /// ### BindsReturnTypeScript
-    /// Where a statement's value goes: new locals (`let v: T = x;`), locals declared before a block construct
-    /// (`v = x;`), or the function's result (`return x;`; TsReturnVoid when the value is unit).
     type BindsReturnTypeScript =
         | TsDeclare of TyV []
         | TsAssign of TyV []
@@ -173819,14 +173132,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | TsReturnVoid
 
     /// ### codegenTypeScript
-    /// Statement-oriented like the C and Delphi backends (JS has no if/switch expressions). Integers up to 32 bits are
-    /// numbers kept in range after every op, 64-bit integers are bigints, unions and layouts are object literals typed
-    /// by `type` aliases, closures are arrows returned by `closure<n>(captures)`. Only erasable TypeScript is emitted,
-    /// so `node --experimental-strip-types` and `bun` run the output directly.
     let codegenTypeScript (env : PartEvalResult) (x : TypedBind []) =
         let types = ResizeArray()
         let functions = ResizeArray()
-        // `export function`s for the program's exports; a program with exports is a library (no `main`).
         let exports = ResizeArray()
         let helpers = ResizeArray<string>()
         let helper_names = HashSet<string>()
@@ -173876,8 +173184,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 if dirty then print false show r
                 r
 
-        // Set while writing a method that calls itself in tail position (JS has no tail calls): its body runs in
-        // `tail: while (true)`, tail values `return`, and the self call reassigns the parameters and `continue tail`s.
         let mutable self_loop : (int * TyV []) option = None
 
         let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> litTypeScript a
@@ -173895,13 +173201,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let has_added = HashSet env.globals
             fun x -> if preservesDuplicateGlobalFragment x || has_added.Add(x) then env.globals.Add x
 
-        // Runtime helpers, each emitted once and only when used.
         let helper (name : string) (text : string) = if helper_names.Add name then helpers.Add text
         let array_helpers () =
             helper "spiral_array_index" "function spiral_array_index<T>(array: T[], index: number): T {\n    if (!(index >= 0 && index < array.length)) throw new RangeError(\"array index \" + index + \" out of bounds for length \" + array.length);\n    return array[index];\n}"
             helper "spiral_array_set" "function spiral_array_set<T>(array: T[], index: number, value: T): void {\n    if (!(index >= 0 && index < array.length)) throw new RangeError(\"array index \" + index + \" out of bounds for length \" + array.length);\n    array[index] = value;\n}"
-        // Strings are JS strings; length, index and slice see their UTF-8 bytes, as in C (a one-entry cache keeps a loop
-        // over one string linear).
         let string_helpers () =
             helper "spiral_utf8" "const spiral_utf8_encoder = new TextEncoder();\nconst spiral_utf8_decoder = new TextDecoder(\"utf-8\");\nlet spiral_utf8_last = \"\";\nlet spiral_utf8_bytes: Uint8Array = new Uint8Array(0);\nfunction spiral_utf8(value: string): Uint8Array {\n    if (value !== spiral_utf8_last) {\n        spiral_utf8_bytes = spiral_utf8_encoder.encode(value);\n        spiral_utf8_last = value;\n    }\n    return spiral_utf8_bytes;\n}\nfunction spiral_string_length(value: string): number {\n    return spiral_utf8(value).length;\n}\nfunction spiral_string_index(value: string, index: number): number {\n    const bytes = spiral_utf8(value);\n    if (!(index >= 0 && index < bytes.length)) throw new RangeError(\"string index \" + index + \" out of bounds for length \" + bytes.length);\n    return bytes[index];\n}\n// The C backend's StringSlice: inclusive bounds, an empty slice when to = from - 1, and a failure for bounds outside\n// the string or inside a code point: exit code 3, like C's abort() and the Rust/Delphi helpers (in run_main.mjs's\n// worker, process.exit ends the worker with that code).\nfunction spiral_slice_abort(message: string): never {\n    console.error(message);\n    process.exit(3);\n}\nfunction spiral_string_slice(value: string, from: number, to: number): string {\n    const bytes = spiral_utf8(value);\n    const length = bytes.length;\n    if (from < 0 || from > length || to < from - 1 || to >= length) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" out of bounds for length \" + length);\n    if (to < from) return \"\";\n    if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" splits a code point\");\n    return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));\n}"
         let delay_helper () =
@@ -173927,8 +173230,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | YMacro [Text "backend_switch "; Type (YRecord r)] ->
                 match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameTypeScript then Some v else None) with
                 | Some x -> tup_ty x
-                // A type-level switch without a TypeScript arm (lib/spiral's option', exn, date_time, ... switches name
-                // the F#/Rust/Python types only) is a value TypeScript never inspects: it is only passed through.
                 | None -> "any"
             | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_ty a | TypeLit a -> type_litTypeScript a) |> String.concat ""
             | YPrim a -> primTypeScript a
@@ -173939,7 +173240,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
         and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
         and params_ty x = tyvs x |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat ", "
-        // "void" for unit, a TS tuple for several values.
         and tyvs_ty (x : TyV []) =
             match x |> Array.map (fun (L(_,t)) -> tyv t) with
             | [||] -> "void"
@@ -173952,7 +173252,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | [||] -> "undefined"
             | [|x|] -> show_w x
             | x -> Array.map show_w x |> String.concat ", " |> sprintf "[%s]"
-        // What C's zero-filled ArrayCreate holds, per element type.
         and zero (t : Ty) =
             match t with
             | YPrim (Int64T | UInt64T) -> "0n"
@@ -173967,7 +173266,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TyLet(d,trace,a) ->
                     try let d = data_free_vars d
                         if is_block_op a then
-                            // A block construct: declare its locals here, its branches assign them.
                             declare s d
                             op s (TsAssign d) a
                         else
@@ -174003,7 +173301,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TsReturnVoid ->
                     line s $"{x};"
                     if self_loop.IsSome then line s "return;"
-            // After a statement that produces unit in tail position: leave the self-call loop.
             let unit_done () = if is_tail && self_loop.IsSome then line s "return;"
             let block (s : CodegenEnv) ret (x : TypedBind []) = binds (indent s) ret x
             let jp (a, b) =
@@ -174019,7 +173316,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     | [||] -> unit_done ()
                     | [|x|] -> return' x
                     | x -> String.concat ", " x |> sprintf "[%s]" |> return'
-            // An index or a count where JS wants a number.
             let number_index (d : Data) = match kind_of d with TsBigInt _ -> $"Number({tup d})" | _ -> tup d
             let length_as (target : Ty) (x : string) =
                 match target with
@@ -174042,8 +173338,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TsFloat32 -> $"Math.fround(Math.pow({tup a}, {tup b}))"
                 | TsSmallInt(bits, signed) -> tsWrapSmall bits signed $"Math.pow({tup a}, {tup b})"
                 | TsFloat64 | TsNotNumber -> $"Math.pow({tup a}, {tup b})"
-            // Shift counts: JS masks 32-bit counts with 31 (x86's behaviour for C's undefined wide shifts); 64-bit
-            // counts are masked with 63 to match.
             let small_count (b : Data) = match kind_of b with TsBigInt _ -> $"Number({tup b} & 63n)" | _ -> tup b
             let big_count (b : Data) = match kind_of b with TsBigInt _ -> $"({tup b} & 63n)" | _ -> $"BigInt({tup b} & 63)"
             let shift_left (a : Data) (b : Data) =
@@ -174058,7 +173352,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | TsSmallInt(_, false) -> $"{tup a} >>> {small_count b}"
                 | TsBigInt _ -> $"{tup a} >> {big_count b}"
                 | _ -> raise_codegen_error "Compiler error: ShiftRight expects an integer."
-            // `&` on booleans would give a number in JS.
             let bitwise (op' : string) (bool_op : string) (a : Data) (b : Data) =
                 if is_bool a then $"{tup a} {bool_op} {tup b}" else
                 match kind_of a with
@@ -174118,7 +173411,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             | TyIf(cond,tr,fl) ->
                 line s $"if ({tup cond}) {{"
                 block s ret tr
-                // UNVERIFIED: F#'s `else ()` shortcut; kept off inside a self-call loop, where falling through would loop.
                 match fl with
                 | [|TyLocalReturnData(DB,_)|] when not (is_tail && self_loop.IsSome) -> ()
                 | _ -> line s "} else {"; block s ret fl
@@ -174130,7 +173422,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | [||] -> ()
                 | [|L(i,_)|] -> line s $"v{i} = {values.[0]};"
                 | _ ->
-                    // Through temporaries: the new arguments may read the parameters being replaced.
                     line s "{"
                     values |> Array.iteri (fun k v -> line (indent s) $"let t{k} = {v};")
                     parameters |> Array.iteri (fun k (L(i,_)) -> line (indent s) $"v{i} = t{k};")
@@ -174148,7 +173439,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 block s (TsAssign [||]) b
                 line s "}"
                 unit_done ()
-            // As in C: a closure value as the condition would always be truthy in JS.
             | TyWhile _ -> raise_codegen_error "Expected a regular method rather than closure create in the while conditional."
             | TyDo a | TyIndent a ->
                 line s "{"
@@ -174178,7 +173468,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     union_rec.free_vars
                     |> Seq.tryPick (function KeyValue ((tag, name), _) when name = UnionTagIdOps.text k -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
-                // C's rule for several scrutinees: their common tag, or no case (-1) when the tags differ.
                 let head =
                     match is with
                     | [L(i,_)] -> $"v{i}.tag"
@@ -174191,8 +173480,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s $"switch ({head}) {{"
                 on_succs |> Map.iter (fun k (a,b) ->
                     let c = case_tag k
-                    line s' $"case {c}: {{ // {UnionTagIdOps.text k}"
-                    // One scrutinee is narrowed by its `tag`; with several, each is cast to the case's type.
+                    line s' $"case {c}: {{"
                     List.iter2 (fun (L(v,_)) a ->
                         let source = if List.length is = 1 then $"v{v}" else $"(v{v} as {name}_{c})"
                         data_free_vars a |> Array.iteri (fun f (L(i,t)) -> line s'' $"let v{i}: {tyv t} = {source}.f{f};")
@@ -174260,7 +173548,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | [|L(_,t)|] -> return' $"new Array<{tyv t}>({length}).fill({zero t})"
                 | elements ->
                     let zeros = elements |> Array.map (fun (L(_,t)) -> zero t) |> String.concat ", "
-                    // UNVERIFIED: `{{`/`}}` escapes in this interpolated string.
                     return' $"Array.from({{ length: {length} }}, (): {tyvs_ty elements} => [{zeros}])"
             | TyArrayLength(a,b) -> return' (length_as a $"{tup b}.length")
             | TyStringLength(a,b) -> string_helpers (); return' (length_as a $"spiral_string_length({tup b})")
@@ -174287,7 +173574,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | StaticStringConcat, [a;b] -> $"{tup a} + {tup b}"
                 | ArrayIndex, [a;b] -> array_helpers (); $"spiral_array_index({tup a}, {number_index b})"
 
-                // Math
                 | Add, [a;b] -> arith "+" a b
                 | Sub, [a;b] -> arith "-" a b
                 | Mult, [a;b] -> arith "*" a b
@@ -174317,7 +173603,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | Sin, [a] -> float_fun "sin" a
                 | Cos, [a] -> float_fun "cos" a
                 | NanIs, [a] -> $"Number.isNaN({tup a})"
-                // Node and Bun drain stdout before exiting (the entry sets exitCode instead of calling process.exit).
                 | StdoutFlush, [] -> "void 0"
                 | MonotonicDelayMs, [a] -> delay_helper (); $"spiral_delay_ms({number_index a})"
                 | Printf, [DLit (LitString fmt); b] ->
@@ -174344,15 +173629,12 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let fields = x.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
             line s (if fields = "" then $"type Mut{x.tag} = {{}};" else $"type Mut{x.tag} = {{ {fields} }};")
             )
-        // A union is a `type` alias over one object type per case, discriminated by `tag` (the int of the case's key,
-        // as in codegenRust), with a constructor function per case. Types and functions live in separate TS
-        // namespaces, so `UH0_1` names both the case type and its constructor.
         and union_type prefix (s : CodegenEnv) (x : UnionRecFsharp) =
             let name = $"{prefix}{x.tag}"
             let cases = x.free_vars |> Map.toArray
             cases |> Array.iter (fun ((i,k),a) ->
                 let fields = a |> Array.mapi (fun f (L(_,t)) -> $", readonly f{f}: {tyv t}") |> String.concat ""
-                line s $"type {name}_{i} = {{ readonly tag: {i}{fields} }}; // {k}")
+                line s $"type {name}_{i} = {{ readonly tag: {i}{fields} }};")
             match cases |> Array.map (fun ((i,_),_) -> $"{name}_{i}") with
             | [||] -> line s $"type {name} = never;"
             | x -> line s $"""type {name} = {String.concat " | " x};"""
@@ -174398,8 +173680,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     | domain_args, body -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
-                // The captures are this function's parameters, so the arrow sees copies (C copies them into the
-                // closure struct; a JS arrow over the caller's `let`s would see later reassignments).
                 let range = tup_ty x.range
                 let domain = x.domain_args |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat ", "
                 line s $"function closure{x.tag}({param_list x.free_vars}): (({domain}) => {range}) {{"
@@ -174412,7 +173692,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 line s "}"
                 )
 
-        // main's result type, from its last statement's data.
         let main_tys =
             match Array.tryLast x with
             | Some (TyLocalReturnData(d,_)) | Some (TyLocalReturnOp(_,_,d)) ->
@@ -174427,8 +173706,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         binds {text=main; indent=4} TsReturn x
 
         let program = StringBuilder()
-        program.AppendLine("// Generated by the Spiral compiler (TypeScript backend). Run: node --experimental-strip-types main.ts, or bun main.ts.") |> ignore
-        // Globals first: that is where `import` lines must go.
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
         helpers |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         types |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -174438,7 +173715,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             program.ToString()
         else
             program.AppendLine($"export function main(): {main_range} {{").Append(main).AppendLine("}") |> ignore
-            // exitCode rather than process.exit(): pending stdout writes are flushed before the process ends.
             match main_tys with
             | [|YPrim Int32T|] -> program.AppendLine("process.exitCode = main();") |> ignore
             | _ -> program.AppendLine("main();") |> ignore
@@ -180912,6 +180188,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | BuildBackendRust
         | BuildBackendDelphi
         | BuildBackendZig
+        | BuildBackendLean
         | BuildBackendTypeScript
         | BuildBackendC
         | BuildBackendPythonCuda
@@ -180930,6 +180207,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | "Rust" -> BuildBackendRust
         | "Delphi" -> BuildBackendDelphi
         | "Zig" -> BuildBackendZig
+        | "Lean" -> BuildBackendLean
         | "TypeScript" -> BuildBackendTypeScript
         | "C" -> BuildBackendC
         | "Python + Cuda" -> BuildBackendPythonCuda
@@ -182153,6 +181431,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                                         | BuildBackendRust -> build codegenRust "Rust" ".rs"
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
                                         | BuildBackendZig -> build codegenZig "Zig" ".zig"
+                                        | BuildBackendLean -> build codegenLean "Lean" ".lean"
                                         | BuildBackendTypeScript -> build codegenTypeScript "TypeScript" ".ts"
                                         | BuildBackendC -> build CodegenC.codegenC "C" ".c"
                                         | BuildBackendPythonCuda -> build_many (CodegenPython.codegen default_env) "Python"
@@ -184848,6 +184127,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                                     | "Rust" -> build codegenRust "Rust" ".rs"
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
+                                    | "Lean" -> build codegenLean "Lean" ".lean"
                                     | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"
                                     | "C" -> build CodegenC.codegenC "C" ".c"
                                     | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"
@@ -184972,14 +184252,11 @@ fn spiralCreate(comptime T: type, v: T) *T {
 #endif
 #if SPIRAL_CORE_HOPAC
     /// ## new_server
-    // #!import ../../../polyglot/apps/builder/Builder.fs
-    // #!import ../../../polyglot/apps/spiral/Supervisor.fs
     
 
     
     open Hopac
     open Hopac.Infixes
-    // open Common
     
 
     let private serializeServerResult (value: 'T) : string =
@@ -185010,14 +184287,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             )
 
     let private newServerCore () : ServerRuntime =
-        // A queue per reader, not an Event: Async.AwaitEvent subscribes for one event at a time, so a
-        // diagnostic raised between two pulls of the stream was dropped. After a burst of parser errors that
-        // was often the FatalError itself, and the host waited for the build until its budget ran out
-        // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
-        // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
-        // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
-        // result (all of polyglot Supervisor's error-path tests got None). Each enumeration subscribes a
-        // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
         let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
         let publish (x : ClientErrorsRes) =
             for KeyValue (subscriber, ()) in subscribers do
@@ -185068,10 +184337,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let atten = Ch()
     
 
-        // The attention loop serves an editor: it walks every file's type checker stream to push per-file
-        // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
-        // BuildFile instead, so there the walk only type checks files for diagnostics nobody reads. That host
-        // sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile) keep the loop.
         if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
             HopacExtensions.server (Job.forever (Ch.take atten |> Job.Ignore))
         else
@@ -185118,8 +184383,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
 #else
     /// ## new_server
-    // #!import ../../../polyglot/apps/builder/Builder.fs
-    // #!import ../../../polyglot/apps/spiral/Supervisor.fs
 
 #if _LINUX
 #else
@@ -185159,7 +184422,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
     open Hopac
     open Hopac.Infixes
-    // open Common
 
     let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> and 'b : null> ()
         :
@@ -185169,14 +184431,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
             job_val: (IVar<'c> -> 'd) -> Task<string>
             supervisor: Ch<SupervisorReq>
         |} =
-        // A queue per reader, not an Event: Async.AwaitEvent subscribes for one event at a time, so a
-        // diagnostic raised between two pulls of the stream was dropped. After a burst of parser errors that
-        // was often the FatalError itself, and the host waited for the build until its budget ran out
-        // (hopac FRONTIER.md fix 38). And not one shared queue: every build enumerates this stream, and a
-        // reader left over from an earlier build (its error watcher outlives the build until its own timeout)
-        // took the next build's FatalError off a shared queue, so that build waited out its timeout with no
-        // result (all of polyglot Supervisor's error-path tests got None). Each enumeration subscribes a
-        // queue of its own when it starts and unsubscribes when it is disposed, and a read honors cancellation.
         let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
         let publish (x : ClientErrorsRes) =
             for KeyValue (subscriber, ()) in subscribers do
@@ -185199,9 +184453,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
         let error_ch_create msg =
             let x = Ch()
-            // `>>=`, not the memoizing `>>=*`: Job.forever over a promise took one message, then re-read the
-            // fulfilled promise forever: each error channel served its first error only and then spun a core
-            // (later FatalErrors never reached a build; ~4 cores busy after the attention loop's first pass).
             Hopac.server (Job.forever (Ch.take x >>= (
                 msg >> fun (x : ClientErrorsRes) ->
                     Hopac.Job.awaitUnitTask (
@@ -185226,11 +184477,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         let supervisor = Ch()
         let atten = Ch()
 
-        // The attention loop serves an editor: it walks every file's type checker stream to push per-file
-        // diagnostics. A long-lived host without one (polyglot's Supervisor: notebooks, Eval) reads errors from
-        // BuildFile instead, so there the walk only type checks files for diagnostics nobody reads. That host
-        // sets SPIRAL_ATTENTION_SERVER=0 to drain the requests; batch hosts (one process per compile, like
-        // tmp/compiler/host) keep the loop, whose diagnostics they render.
         if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
             Hopac.server (Job.forever (Ch.take atten |> Job.Ignore))
         else
@@ -185329,7 +184575,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 #endif
 #if SPIRAL_CORE_HOPAC
     /// ## SpiralHub
-    // open System
     open System.IO
     open System.Collections.Generic
     
@@ -185340,7 +184585,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
     open Hopac.Stream
     
 
-    // open Common
     open SpiralFileSystem.Operators
     
 
@@ -185418,7 +184662,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
 #else
     /// ## SpiralHub
-    // open System
     open System.IO
     open System.Collections.Generic
 
@@ -185427,7 +184670,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
     open Hopac.Extensions
     open Hopac.Stream
 
-    // open Common
     open SpiralFileSystem.Operators
 
     open Microsoft.AspNetCore.SignalR
@@ -185530,7 +184772,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
         Progress88.tick0 Progress88.ProgressHeartbeatBoot
         BigStack.startTerminalFlowRuntimeInProcess ()
         emitCompilerBootstrapSentinel BootstrapArgumentsParsing
-        // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
     
 
         let env = startupParse args
@@ -185552,7 +184793,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         builder.Services
             .AddCors()
             .AddSignalR(fun x ->
-                x.MaximumReceiveMessageSize <- 1 <<< 20 // 1mb
+                x.MaximumReceiveMessageSize <- 1 <<< 20
                 x.EnableDetailedErrors <- true
                 ) |> ignore
     
@@ -185593,9 +184834,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         app.MapHub<SpiralHub> "" |> ignore
     
 
-        // use _ = Eval.startTokenRangeWatcher ()
         startParentWatcher ()
-        // use _ = Eval.startCommandsWatcher uri_server
     
 
         printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
@@ -185613,14 +184852,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
     let main args =
         try
             let exitCode = mainCore args
-            // Not every host path emits the reducer-owned physical receipt. A
-            // top-level return is nevertheless a real process boundary and must
-            // neutralize the taskbar before the runtime tears down the console.
             CompilerConsoleHud88.completeTerminalPresentationForHostReturn exitCode
             exitCode
         with _ ->
-            // ProcessExit and UnhandledException remain secondary nets, but the
-            // top-level frame owns the earliest reliable reset for ordinary errors.
             CompilerConsoleHud88.completeTerminalPresentationForFailsafe -1
             reraise()
 #else
@@ -185632,7 +184866,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
     let main args =
         SpiralTrace.TraceLevel.US0_1 |> set_trace_level
-        // Scheduler.Global.setCreate { Scheduler.Create.Def with MaxStackSize = 1024 * 8192 |> Some }
 
         let env = startupParse args
 
@@ -185648,7 +184881,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         builder.Services
             .AddCors()
             .AddSignalR(fun x ->
-                x.MaximumReceiveMessageSize <- 1 <<< 20 // 1mb
+                x.MaximumReceiveMessageSize <- 1 <<< 20
                 x.EnableDetailedErrors <- true
                 ) |> ignore
 
@@ -185683,9 +184916,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             ) |> ignore
         app.MapHub<SpiralHub> "" |> ignore
 
-        // use _ = Eval.startTokenRangeWatcher ()
         startParentWatcher ()
-        // use _ = Eval.startCommandsWatcher uri_server
 
         printfn $"Starting the Spiral Server. It is bound to: {uri_server}"
         app.Run()

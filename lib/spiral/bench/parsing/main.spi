@@ -1,6 +1,4 @@
 /// # main
-/// Entry for every backend: pure-Spiral vs runtime.split_args (the CLI's), plus the FParsec reference (same grammar)
-/// where FParsec exists (F#).
 inl main () =
     if is_rust () then
         harness.run_all [

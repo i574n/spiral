@@ -14,7 +14,7 @@ import sys
 
 def main():
     path = os.path.abspath(sys.argv[1])
-    sys.path.insert(0, os.path.dirname(path))  # the module does `from <name>_auto import *`
+    sys.path.insert(0, os.path.dirname(path))
     namespace = runpy.run_path(path, run_name="spiral_native")
     result = namespace["main"]()
     sys.stdout.flush()

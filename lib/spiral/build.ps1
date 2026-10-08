@@ -12,9 +12,6 @@ $ResolvedScriptDir | Set-Location
 
 Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
 
-# The library's notebooks run through Kino (apps/kino/spi/run_notebook.ps1: Spiral cells on the native backends, F#
-# cells on dotnet fsi) and export their .spi (sm' also its _real.spir) from the .livemd. A run writes <nb>.livemd.ipynb
-# and <nb>.livemd.html.
 $livebook = Join-Path $ResolvedScriptDir "../../apps/kino/spi/run_notebook.ps1"
 $notebooks = @(
     "physics", "parsing", "sm'", "rust/rust", "rust/testing", "rust/near", "rust/near_workspaces", "testing", "guid",

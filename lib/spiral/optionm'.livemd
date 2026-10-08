@@ -204,7 +204,7 @@ Spiral.Kino.eval!(
 
 ### option'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl option'_types () : () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/option\"\n    }\nnominal option'_gleam t =\n    `(\n        option'_types ()\n        $'' : $'option.Option(`t)'\n    )\ntype option'_switch t =\n    {\n        Gleam : option'_gleam t\n        Lua : t\n        Fsharp : $\"`t option\"\n        Python : t\n        Rust : $'Option<`t>'\n        TypeScript : t\n    }\nnominal option' t = $'backend_switch `(option'_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl option'_types () : () =\n    backend_switch {\n        Gleam = fun () => global \"import gleam/option\"\n    }\nnominal option'_gleam t =\n    `(\n        option'_types ()\n        $'' : $'option.Option(`t)'\n    )\ntype option'_switch t =\n    {\n        Gleam : option'_gleam t\n        Lua : t\n        Fsharp : $\"`t option\"\n        Python : t\n        Rust : $'Option<`t>'\n        TypeScript : t\n        Zig : $'?`(t)'\n        Lean : $'(Option `t)'\n    }\nnominal option' t = $'backend_switch `(option'_switch t)'","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -226,6 +226,8 @@ Spiral.Kino.eval!(
           Python : t
           Rust : $'Option<`t>'
           TypeScript : t
+          Zig : $'?`(t)'
+          Lean : $'(Option `t)'
       }
   nominal option' t = $'backend_switch `(option'_switch t)'
   """,
@@ -235,7 +237,7 @@ Spiral.Kino.eval!(
 
 ### none'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl none' forall t. () : option' t =\n    backend_switch {\n        Gleam = fun () => $'option.None' : option' t\n        Lua = fun () => $'nil' : option' t\n        Fsharp = fun () => $'None' : option' t\n        Python = fun () => $'None' : option' t\n        Rust = fun () => $'None' : option' t\n        TypeScript = fun () => $'undefined' : option' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl none' forall t. () : option' t =\n    backend_switch {\n        Gleam = fun () => $'option.None' : option' t\n        Lua = fun () => $'nil' : option' t\n        Fsharp = fun () => $'None' : option' t\n        Python = fun () => $'None' : option' t\n        Rust = fun () => $'None' : option' t\n        TypeScript = fun () => $'undefined' : option' t\n        Zig = fun () => $'null' : option' t\n        Lean = fun () => $'none' : option' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -248,6 +250,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'None' : option' t
           Rust = fun () => $'None' : option' t
           TypeScript = fun () => $'undefined' : option' t
+          Zig = fun () => $'null' : option' t
+          Lean = fun () => $'none' : option' t
       }
   """,
   timeout: 300_000
@@ -256,7 +260,7 @@ Spiral.Kino.eval!(
 
 ### some'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl some' forall t. (x : t) : option' t =\n    backend_switch {\n        Gleam = fun () => $'!x |> option.Some' : option' t\n        Lua = fun () => $'!x ' : option' t\n        Fsharp = fun () => $'Some !x ' : option' t\n        Python = fun () => $'!x \\# some\\' ' : option' t\n        Rust = fun () => $'Some(!x.clone())' : option' t\n        TypeScript = fun () => $'!x ' : option' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl some' forall t. (x : t) : option' t =\n    backend_switch {\n        Gleam = fun () => $'!x |> option.Some' : option' t\n        Lua = fun () => $'!x ' : option' t\n        Fsharp = fun () => $'Some !x ' : option' t\n        Python = fun () => $'!x \\# some\\' ' : option' t\n        Rust = fun () => $'Some(!x.clone())' : option' t\n        TypeScript = fun () => $'!x ' : option' t\n        Zig = fun () => $'!x ' : option' t\n        Lean = fun () => $'(some !x)' : option' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -269,6 +273,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'!x \# some\' ' : option' t
           Rust = fun () => $'Some(!x.clone())' : option' t
           TypeScript = fun () => $'!x ' : option' t
+          Zig = fun () => $'!x ' : option' t
+          Lean = fun () => $'(some !x)' : option' t
       }
   """,
   timeout: 300_000
@@ -277,7 +283,7 @@ Spiral.Kino.eval!(
 
 ### default_value'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl default_value' forall t. (value : t) (x : option' t) : t =\n    backend_switch {\n        Gleam = fun () => $'!x |> option.unwrap(!value)' : t\n        Lua = fun () => $'(function() if !x ~= nil then return !x else return !value end end)()' : t\n        Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t\n        Python = fun () => $'(!value if !x is None else !x)' : t\n        Rust = fun () => $'!x.unwrap_or(!value)' : t\n        TypeScript = fun () => $'(!x === undefined ? !value : !x)' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl default_value' forall t. (value : t) (x : option' t) : t =\n    backend_switch {\n        Gleam = fun () => $'!x |> option.unwrap(!value)' : t\n        Lua = fun () => $'(function() if !x ~= nil then return !x else return !value end end)()' : t\n        Fsharp = fun () => $'!x |> Option.defaultValue !value ' : t\n        Python = fun () => $'(!value if !x is None else !x)' : t\n        Rust = fun () => $'!x.unwrap_or(!value)' : t\n        TypeScript = fun () => $'(!x === undefined ? !value : !x)' : t\n        Zig = fun () => $'(!x orelse !value)' : t\n        Lean = fun () => $'((!x).getD !value)' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -290,6 +296,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'(!value if !x is None else !x)' : t
           Rust = fun () => $'!x.unwrap_or(!value)' : t
           TypeScript = fun () => $'(!x === undefined ? !value : !x)' : t
+          Zig = fun () => $'(!x orelse !value)' : t
+          Lean = fun () => $'((!x).getD !value)' : t
       }
   """,
   timeout: 300_000
@@ -298,7 +306,7 @@ Spiral.Kino.eval!(
 
 ### get'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get' forall t. (x : option' t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            option'_types ()\n            $'!x |> option.unwrap (Nil)' : t\n        Lua = fun () => $'!x ' : t\n        Fsharp = fun () => $'!x |> Option.get' : t\n        Python = fun () => $'!x ' : t\n        Rust = fun () => $'!x.unwrap()' : t\n        TypeScript = fun () => $'!x ' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl get' forall t. (x : option' t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            option'_types ()\n            $'!x |> option.unwrap (Nil)' : t\n        Lua = fun () => $'!x ' : t\n        Fsharp = fun () => $'!x |> Option.get' : t\n        Python = fun () => $'!x ' : t\n        Rust = fun () => $'!x.unwrap()' : t\n        TypeScript = fun () => $'!x ' : t\n        Zig = fun () => $'!x.?' : t\n        Lean = fun () => $'(!x).get\\!' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -313,6 +321,8 @@ Spiral.Kino.eval!(
           Python = fun () => $'!x ' : t
           Rust = fun () => $'!x.unwrap()' : t
           TypeScript = fun () => $'!x ' : t
+          Zig = fun () => $'!x.?' : t
+          Lean = fun () => $'(!x).get\!' : t
       }
   """,
   timeout: 300_000
@@ -321,15 +331,12 @@ Spiral.Kino.eval!(
 
 ### box
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t. (x : option t) : option' t =\n    // x\n    // |> optionm.map some'\n    // |> default_with none'\n    match x with\n    | Some x => some' x\n    | None => none' ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl box forall t. (x : option t) : option' t =\n    match x with\n    | Some x => some' x\n    | None => none' ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl box forall t. (x : option t) : option' t =
-      // x
-      // |> optionm.map some'
-      // |> default_with none'
       match x with
       | Some x => some' x
       | None => none' ()
@@ -340,7 +347,7 @@ Spiral.Kino.eval!(
 
 ### map
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (x : option' t) : option' u =\n    backend_switch {\n        Gleam = fun () =>\n            option'_types ()\n            // inl fn = join fn\n            $'!x |> option.map(!fn)' : option' u\n        Lua = fun () =>\n            if x =. none' ()\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n        Fsharp = fun () =>\n            inl fn = join fn\n            $'!x |> Option.map !fn ' : option' u\n        Python = fun () =>\n            if x =. none' ()\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n        Rust = fun () =>\n            // a tuple payload is one Rust value: see rust.one_param_fn\n            inl fn = rust.one_param_fn fn\n            // `map` consumes the option: a join point's argument is the codegen's copy (`.clone()`, or a move for a\n            // type without Clone), so a value used again or captured by an `Fn` closure stays usable.\n            inl x = join x\n            $'!x.map(|x| !fn(x))' : option' u\n        TypeScript = fun () =>\n            if $'!x === undefined' : bool\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl map forall t u. (fn : t -> u) (x : option' t) : option' u =\n    backend_switch {\n        Gleam = fun () =>\n            option'_types ()\n            $'!x |> option.map(!fn)' : option' u\n        Lua = fun () =>\n            if x =. none' ()\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n        Fsharp = fun () =>\n            inl fn = join fn\n            $'!x |> Option.map !fn ' : option' u\n        Python = fun () =>\n            if x =. none' ()\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n        Rust = fun () =>\n            inl fn = rust.one_param_fn fn\n            inl x = join x\n            $'!x.map(|x| !fn(x))' : option' u\n        TypeScript = fun () =>\n            if $'!x === undefined' : bool\n            then none' ()\n            else fn $'!x ' |> fun x => $'!x ' : option' u\n        Zig = fun () =>\n            if $'(!x == null)' : bool\n            then none' ()\n            else x |> get' |> fn |> some'\n        Lean = fun () =>\n            if $'(!x).isNone' : bool\n            then none' ()\n            else x |> get' |> fn |> some'\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -349,7 +356,6 @@ Spiral.Kino.eval!(
       backend_switch {
           Gleam = fun () =>
               option'_types ()
-              // inl fn = join fn
               $'!x |> option.map(!fn)' : option' u
           Lua = fun () =>
               if x =. none' ()
@@ -363,16 +369,21 @@ Spiral.Kino.eval!(
               then none' ()
               else fn $'!x ' |> fun x => $'!x ' : option' u
           Rust = fun () =>
-              // a tuple payload is one Rust value: see rust.one_param_fn
               inl fn = rust.one_param_fn fn
-              // `map` consumes the option: a join point's argument is the codegen's copy (`.clone()`, or a move for a
-              // type without Clone), so a value used again or captured by an `Fn` closure stays usable.
               inl x = join x
               $'!x.map(|x| !fn(x))' : option' u
           TypeScript = fun () =>
               if $'!x === undefined' : bool
               then none' ()
               else fn $'!x ' |> fun x => $'!x ' : option' u
+          Zig = fun () =>
+              if $'(!x == null)' : bool
+              then none' ()
+              else x |> get' |> fn |> some'
+          Lean = fun () =>
+              if $'(!x).isNone' : bool
+              then none' ()
+              else x |> get' |> fn |> some'
       }
   """,
   timeout: 300_000
@@ -395,17 +406,13 @@ Spiral.Kino.eval!(
 
 ### unbox
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t. (x : option' t) : option t =\n    x |> map'' Some |> default_value' None\n    // inl some x : option t = Some x\n    // inl some = join some\n    // inl none : option t = None\n    // $'!x |> Option.map !some |> Option.defaultValue !none '","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl unbox forall t. (x : option' t) : option t =\n    x |> map'' Some |> default_value' None","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl unbox forall t. (x : option' t) : option t =
       x |> map'' Some |> default_value' None
-      // inl some x : option t = Some x
-      // inl some = join some
-      // inl none : option t = None
-      // $'!x |> Option.map !some |> Option.defaultValue !none '
   """,
   timeout: 300_000
 )
@@ -458,16 +465,14 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n////> gleam // Expected type: #(String) Found type: #(Nil)\n///> fsharp\n///> cuda\n////> rust // attempted to zero-initialize type `alloc::sync::Arc<dyn core::any::Any>`, which is invalid\n///> typescript\n///> cuda\n\nnull ()\n|> of_obj\n|> unbox\n|> _assert_eq (None : option string)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> cuda\n///> typescript\n///> cuda\n\nnull ()\n|> of_obj\n|> unbox\n|> _assert_eq (None : option string)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
-  ////> gleam // Expected type: #(String) Found type: #(Nil)
   ///> fsharp
   ///> cuda
-  ////> rust // attempted to zero-initialize type `alloc::sync::Arc<dyn core::any::Any>`, which is invalid
   ///> typescript
   ///> cuda
 

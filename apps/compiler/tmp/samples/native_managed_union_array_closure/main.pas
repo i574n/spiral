@@ -62,10 +62,10 @@ var
   v6: LongInt;
 begin
   case v0.tag of
-      0: begin // Empty
+      0: begin
           Result := 3;
       end;
-      1: begin // Values
+      1: begin
           v1 := v0.c1_0;
           v2 := LongInt(Length(v1));
           v3 := v1[0];
@@ -99,6 +99,8 @@ begin
   v6 := v5 + 28;
   Result := v6;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

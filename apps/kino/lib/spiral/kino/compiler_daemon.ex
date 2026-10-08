@@ -8,7 +8,6 @@ defmodule Spiral.Kino.CompilerDaemon do
   @idle_check_ms 60_000
   @default_idle_min 30
 
-  # SPIRAL_KINO_COMPILER_IDLE_MIN: minutes without a compile before a serving daemon retires (default 30; 0 = never).
   defp idle_ms do
     case Integer.parse(System.get_env("SPIRAL_KINO_COMPILER_IDLE_MIN") || "") do
       {0, ""} -> nil
@@ -102,8 +101,6 @@ defmodule Spiral.Kino.CompilerDaemon do
 
         :ok = :gen_tcp.controlling_process(listen, acceptor)
         send(acceptor, :go)
-        # A serving daemon (one with on_retire) retires after idle_ms without a compile, instead of holding its compiler
-        # (GBs) forever: the next Kino run starts a fresh one. In-process servers (tests) never idle out.
         idle_ms = if opts[:on_retire], do: Keyword.get(opts, :idle_ms, idle_ms()), else: nil
         idle_check_ms = Keyword.get(opts, :idle_check_ms, @idle_check_ms)
         if idle_ms, do: Process.send_after(self(), :idle_check, idle_check_ms)
@@ -132,10 +129,6 @@ defmodule Spiral.Kino.CompilerDaemon do
   @impl true
   def handle_call(:port, _from, state), do: {:reply, state.listen_port, state}
 
-  # The reply is `{:compiled, result, ms}`: `ms` is the time this compile held the compiler, so the client handler can
-  # report `waited - ms` as queue time for every outcome (ok, error, timeout). Error and timeout replies used to carry no
-  # queue time, so a cell whose first compile fails (the unit-result retry of every `_assert_eq` test cell) had its whole
-  # wait behind the other cells charged to its own budget.
   def handle_call({:compile, req}, _from, state) do
     started = System.monotonic_time(:millisecond)
 
@@ -154,8 +147,6 @@ defmodule Spiral.Kino.CompilerDaemon do
           {{:error, message}, safe_stop_compiler(state)}
       end
 
-    # a cold compile (the first on a fresh compiler: it loads every package) is not the cell's own time: all of it is
-    # reported as queue, so the cell's budget isn't spent on it
     ms = if Process.delete(:spiral_kino_cold), do: 0, else: System.monotonic_time(:millisecond) - started
     result = normalize(result)
     log_compile(req, ms, result)
@@ -302,7 +293,6 @@ defmodule Spiral.Kino.CompilerDaemon do
 
               retry_compile(stop_compiler(state), req)
             else
-              # a rejected program still loaded the packages
               {reply, warm(state)}
             end
         end
@@ -432,9 +422,6 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  # The first compile on a fresh compiler loads every package (minutes on a loaded machine): with the cell's budget as its
-  # timeout it timed out, the timeout stopped the compiler, and the next compile was cold again (the 14:2x lib reruns:
-  # every compile 'timeout 30xxxx ms'). A cold compile gets @cold_compile_ms at least.
   @cold_compile_ms 1_200_000
 
   defp session(state, req) do
@@ -677,8 +664,6 @@ defmodule Spiral.Kino.CompilerDaemon do
   defp parse_timeout("-1"), do: :infinity
   defp parse_timeout(text), do: String.to_integer(text)
 
-  # Replies: `ok\t<revision>\t<queue_ms>`, `error\ttimeout\t<queue_ms>`, `error\t<queue_ms>\t<message>`. The queue field
-  # is left out only when the compile never reached the GenServer (the daemon went down).
   defp encode({:ok, revision}, nil), do: "ok\t#{revision}"
   defp encode({:ok, revision}, queue), do: "ok\t#{revision}\t#{queue}"
   defp encode({:error, :timeout}, nil), do: "error\ttimeout"
@@ -700,8 +685,6 @@ defmodule Spiral.Kino.CompilerDaemon do
   defp compiler_log(%{log: ""}), do: ""
   defp compiler_log(%{log: log}), do: "\n" <> String.trim(log)
 
-  # One line per compile, whatever the outcome, with the wall-clock time it finished, so a cell's phases can be matched
-  # with the daemon log (failed compiles, e.g. the unit-result first attempt of a test cell, used to be invisible).
   defp log_compile(req, ms, result) do
     outcome =
       case result do

@@ -20,16 +20,16 @@ impl US0 {
 }
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_0 => { // Cold
+        US0::US0_0 => {
             1i32
         }
-        US0::US0_3 => { // Done
+        US0::US0_3 => {
             4i32
         }
-        US0::US0_2 => { // Hot
+        US0::US0_2 => {
             3i32
         }
-        US0::US0_1 => { // Warm
+        US0::US0_1 => {
             2i32
         }
     }

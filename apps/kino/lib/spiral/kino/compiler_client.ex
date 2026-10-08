@@ -325,9 +325,6 @@ defmodule Spiral.Kino.CompilerClient do
       else: spawn_daemon_unix(elixir, project, log, err, path)
   end
 
-  # On Linux a child of pwsh's Start-Process dies when that pwsh exits (seen in WSL: the daemon never logged a line and
-  # the client gave up with "compiler on port ... did not start"), so Unix starts it in its own session (setsid, or
-  # nohup where there is none) with stdin from /dev/null, and it outlives the `sh` that started it.
   defp spawn_daemon_unix(elixir, project, log, err, path) do
     detach = if System.find_executable("setsid"), do: "setsid", else: "nohup"
 
@@ -359,7 +356,7 @@ defmodule Spiral.Kino.CompilerClient do
       $env:PATH = '#{String.replace(path, "'", "''")}'
       $env:MIX_ENV = '#{mix_env()}'
       $env:SPIRAL_KINO_COMPILER_PORT = '#{port()}'
-      Start-Process -FilePath '#{String.replace(elixir, "'", "''")}' -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -RedirectStandardOutput '#{String.replace(log, "'", "''")}' -RedirectStandardError '#{String.replace(err, "'", "''")}' -ArgumentList '-S','mix','spiral.compiler_daemon'
+      Start-Process -FilePath $env:ComSpec -WorkingDirectory '#{String.replace(project, "'", "''")}' -WindowStyle Hidden -ArgumentList '#{String.replace(daemon_command_line(elixir, log, err), "'", "''")}'
       """
 
     case System.cmd("powershell.exe", ["-NoProfile", "-Command", script], stderr_to_stdout: true) do
@@ -370,6 +367,11 @@ defmodule Spiral.Kino.CompilerClient do
         {:error,
          process_error("could not start the compiler daemon (#{status}): #{String.trim(out)}")}
     end
+  end
+
+  @doc false
+  def daemon_command_line(elixir, log, err) do
+    ~s{/d /c ""#{elixir}" -S mix spiral.compiler_daemon 1>"#{log}" 2>"#{err}""}
   end
 
   defp keep_previous(path) do
@@ -383,8 +385,6 @@ defmodule Spiral.Kino.CompilerClient do
     end
   end
 
-  # Every reply from a current daemon carries the time the request waited behind other compiles; it is credited to the
-  # cell (`:spiral_kino_queue_ms`) whatever the outcome, so only the cell's own compile time uses its budget.
   defp error_timeout(queue) do
     credit_queue(queue)
     {:error, :timeout}
@@ -436,8 +436,6 @@ defmodule Spiral.Kino.CompilerClient do
     scoop = System.get_env("SCOOP") || Path.join(System.user_home!(), "scoop")
     candidate = Path.join(scoop, "apps/elixir/current/bin/elixir.bat")
 
-    # Only Windows runs elixir.bat: Elixir's precompiled zip (setup-beam's, on Linux too) ships both launchers in bin/,
-    # and starting the .bat on Linux fails with "Exec format error".
     cond do
       not windows?() -> System.find_executable("elixir") || "elixir"
       File.regular?(candidate) -> candidate

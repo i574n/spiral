@@ -31,10 +31,10 @@ var
   v7: LongInt;
 begin
   case v0.tag of
-      0: begin // Leaf
+      0: begin
           Result := 0;
       end;
-      1: begin // Node
+      1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
           v3 := v0.c1_2;
@@ -80,6 +80,8 @@ begin
   v6 := v4 + v5;
   Result := v6;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

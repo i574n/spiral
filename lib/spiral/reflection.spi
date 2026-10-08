@@ -29,9 +29,6 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                             (fun () =>
                                                 $'Unchecked.defaultof<_>' : value
                                             ) : () -> value
-                                        // As F#'s Unchecked.defaultof<_>: a value type's zero (0 for an i32 payload),
-                                        // None (null) for everything else. Every arm is evaluated on every backend: the
-                                        // literal is_python keeps the other backends' evaluation (and numbering) as before.
                                         Python =
                                             (fun () =>
                                                 inl is_python =
@@ -59,13 +56,10 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                                     | _ => $'None' : value
                                                 else $'None' : value
                                             ) : () -> value
-                                        // Rust: the payload type's Default (a number's 0 and bool's false, as F#'s
-                                        // zero of a value type); a payload type without Default (a Spiral union) doesn't compile
                                         Rust =
                                             (fun () =>
                                                 $'Default::default()' : value
                                             ) : () -> value
-                                        // TypeScript: as F#'s Unchecked.defaultof<_> (a number's 0, bool's false), undefined otherwise
                                         TypeScript =
                                             (fun () =>
                                                 typecase value with
@@ -89,7 +83,6 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
-// The union the tests below take apart (it was backend.target, deleted with the Fable targets).
 union reflection_test_target = Wasm | Contract
 
 /// ### get_union_fields_untag
@@ -216,7 +209,6 @@ inl union_to_string forall t. (x : t) : string =
                                 | Rust => fun () => join "("
                                 | _ => fun () => join " "
                         Python = fun () => "("
-                        // Native Debug prints a union case as `US0_1(..)`.
                         Rust = fun () => "("
                         TypeScript = fun () => "("
                     }

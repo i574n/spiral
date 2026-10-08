@@ -1,6 +1,4 @@
 /// # fparsec
-/// Copy of parsing.dib's `## fparsec` frontend (its cells are `--test` only, so they are not in parsing.spi) and
-/// its FParsec-backed split_args, used as the reference implementation. F# only (needs the FParsec package).
 open sm'_operators
 
 nominal position_ = $'FParsec.Position'
@@ -10,7 +8,6 @@ nominal reply_ t = $'FParsec.Reply<`t>'
 
 nominal char_stream_ t = $'FParsec.CharStream<`t>'
 
-// nominal parser t u = char_stream u -> reply t
 nominal parser_ t u = $'FParsec.Primitives.Parser<`t, `u>'
 
 inl p_char_ forall t. (x : char) : parser_ char t =

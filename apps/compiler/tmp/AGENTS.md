@@ -123,9 +123,19 @@ commit the outputs the compiler writes next to it. Changes to the single-flight 
 
 The Zig backend (`codegenZig`, `--backend Zig` / `.zig`, 2026-10-06) is being brought up toward the hub role: a sample
 gets a Zig row when `tests/harness.psd1`'s `Zig` list names it (C is its oracle, like Rust's and Delphi's). The native
-tier builds it with `zig build-exe -O Debug -fno-llvm` (~1.5 s; LLVM's ReleaseSafe takes ~30 s per program). Not
+tier builds it with `zig build-exe -O ReleaseFast --stack 1073741824` (~2 s; Zig's self-hosted `-fno-llvm` linker ignores `--stack` and leaves 16 MB, ReleaseSafe takes ~16 s) since the prelude writes through the OS directly and replaces the default panic handler (std.Io.Threaded and the debug-info readers were 302 of 307 LLVM functions; cube: 0.15 s run vs C 1.34 s). Not
 supported yet: value-level `!!!!BackendSwitch` records without a `Zig` key, lib/spiral (no Zig arms), stack mutable
-layouts, C-only macros. Every program runs on a 1 GB thread (deep mutual recursion, as Rust).
+layouts, C-only macros. Every program gets a 1 GB main stack from the linker (`--stack`; deep mutual recursion, as Rust).
+
+The Lean 4 backend (`codegenLean`, `--backend Lean` / `.lean`, 2026-10-07) emits one `mutual` block of `partial def`s
+in `IO` do-notation: every local is a `let mut`, self tail calls become `repeat`/`continue`, `!!!!While` a `repeat` with
+`break`, and `main : IO UInt32` returns the program's i32. A sample gets a Lean row when `tests/harness.psd1`'s `Lean`
+list names it; the native tier runs it with `lean --run` (elaboration ~7 s; the toolchain comes from elan,
+`SPIRAL_LEAN` or `ELAN_HOME`). Arrays are `IO.Ref (Array α)` (aliased like C's), unions `inductive U<tag>`, heap
+layouts `structure H<tag>`, mutable layouts `IO.Ref M<tag>`, closures partially applied `closure<tag>` defs, strings
+indexed and sliced by UTF-8 byte (`String.Pos.Raw`). `lean --run` prints elaboration errors on stdout, so the
+generated file turns the linters off and the harness scores a `.lean:<line>:<col>: error` as a build failure. Not
+supported yet: stack layouts, C-only macros, value-level `!!!!BackendSwitch` records without a `Lean` key.
 
 ## Rules
 

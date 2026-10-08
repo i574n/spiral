@@ -5,7 +5,6 @@ defmodule Spiral.Kino.SmartCellTest do
 
   alias Spiral.Kino.SmartCell
 
-  # Kino.Test's 100 ms default is too tight on a loaded machine; a reply that never comes still fails.
   @wait 5_000
 
   setup :configure_livebook_bridge

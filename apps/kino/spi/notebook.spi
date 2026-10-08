@@ -71,9 +71,6 @@ let rec flags_from (src : string) (i : i32) (acc : flags) : flags =
         inl k = take_token src j
         flags_from src k (Flag (text.slice_len src j (k - j), acc))
 
-// test: 0 a plain cell, 1 `--test` (runs; its definitions stay in the cell), 2 `--test static` (runs and, like a plain
-// cell, its definitions reach the cells after it: the old .dib kernel committed every cell but a non-static test);
-// is_real: 1 for `--real` (real-segment code: the old kernel's <module>_real.spir).
 let rec read_flags (xs : flags) (packages : nb) (test : i32) (is_real : i32) (timeout : string) : nb * i32 * i32 * string =
     match xs with
     | NoFlag => packages, test, is_real, timeout
@@ -159,9 +156,6 @@ inl load_sources (src : string) : sources =
     | LineDone => NoSource
     | LineGot (count, next) => rev_sources (read_sources src next (text.parse_i32 count) NoSource) NoSource
 
-// A `--real` cell is real-segment code: like the old kernel, it runs as the real module (the real cells before it, then
-// itself; a trailing expression becomes `spiral_kino_real`, which the top-down main calls) and the real cells (not
-// tests) reach every later cell as that module (`main_real`, listed before `main`).
 inl real_entry () : string = "spiral_kino_real"
 
 inl real_program (packages : nb) (reals : nb) (body : string) : string * string =
@@ -169,7 +163,6 @@ inl real_program (packages : nb) (reals : nb) (body : string) : string * string 
     if generated = 1i32 then
         inl entry = text.replace wrapped "inl main () : i32 =" ("inl " ++ real_entry () ++ " () =")
         program packages NoNb NoNb ("inl main () : i32 =\n    inl _ = real " ++ real_entry () ++ " ()\n    0i32"), join_nb (snoc reals entry)
-    // definitions only: an empty program (its generated main shows no value, as a plain definition cell)
     else program packages NoNb NoNb "", join_nb (snoc reals body)
 
 let rec walk (xs : sources) (index : i32) (packages : nb) (opens : nb) (defs : nb) (reals : nb) (acc : steps) : steps =
@@ -186,7 +179,6 @@ let rec walk (xs : sources) (index : i32) (packages : nb) (opens : nb) (defs : n
                 else program packages2 opens defs body, join_nb reals
             inl timeout_text = if timeout = "" then "-" else timeout
             inl step = Step (index, timeout_text, code, real_code, acc)
-            // what the later cells see: every cell but a (non-static) test, a skipped cell or an empty one
             inl kept = test <> 1i32 && skip = 0i32 && text.trim body <> ""
             if is_real = 1i32 then
                 walk rest (index + 1i32) packages2 opens defs (if kept then snoc reals body else reals) step
@@ -207,7 +199,6 @@ let rec count_steps (xs : steps) : i32 =
     | NoStep => 0i32
     | Step (_, _, _, _, rest) => 1i32 + count_steps rest
 
-// index, timeout, then the program and the real module, each as `<byte length>\n<text>`
 let rec emit_steps (xs : steps) : string =
     match xs with
     | NoStep => ""

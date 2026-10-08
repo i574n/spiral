@@ -20920,7 +20920,7 @@ and closure66 () () : string =
                 v26
         else
             v17
-    let v31 : string = "polyglot"
+    let v31 : string = "spiral"
     method91(v30, v31)
 and closure71 (v0 : exn) () : exn =
     v0
@@ -21021,7 +21021,7 @@ and method145 (v0 : string) : unit =
                     v130
             else
                 v121
-        let v135 : string = "polyglot"
+        let v135 : string = "spiral"
         let v136 : string = method91(v134, v135)
         let v137 : string = "target/trace"
         let v138 : string = method91(v136, v137)

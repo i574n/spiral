@@ -37,11 +37,11 @@ fn spiral_main() -> i32 {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
     };
     match &*v5 {
-        UH0::UH0_0(v6) => { // A
+        UH0::UH0_0(v6) => {
             let mut v6: Rc<UH1> = v6.clone();
             0i32
         }
-        UH0::UH0_1 => { // StopA
+        UH0::UH0_1 => {
             0i32
         }
     }

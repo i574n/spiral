@@ -35,10 +35,10 @@ fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
     let mut v1: US0 = method0(v0.clone());
     let mut v7: i32 = match &v1 {
-        US0::US0_0 => { // Empty
+        US0::US0_0 => {
             3i32
         }
-        US0::US0_1(v2, v3) => { // Item
+        US0::US0_1(v2, v3) => {
             let mut v2: Rc<str> = v2.clone();
             let mut v3: i32 = *v3;
             let mut v4: i32 = (v2.clone().len() as i32);
@@ -48,10 +48,10 @@ fn spiral_main() -> i32 {
     };
     let mut v8: US0 = method1(v0.clone());
     let mut v14: i32 = match &v8 {
-        US0::US0_0 => { // Empty
+        US0::US0_0 => {
             3i32
         }
-        US0::US0_1(v9, v10) => { // Item
+        US0::US0_1(v9, v10) => {
             let mut v9: Rc<str> = v9.clone();
             let mut v10: i32 = *v10;
             let mut v11: i32 = (v9.clone().len() as i32);

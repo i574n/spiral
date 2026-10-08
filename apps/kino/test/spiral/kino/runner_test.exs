@@ -76,8 +76,6 @@ defmodule Spiral.Kino.RunnerTest do
              Runner.run("definitely-not-a-real-executable-spiral-kino", [])
   end
 
-  # Load-tolerant: every escript boots its own VM, which can take tens of seconds on a loaded machine. The budget must
-  # outlast the parent + grandchild boots, and the pid file gets a minute to appear.
   test "timeout kills the whole process tree (including grandchildren)", %{dir: dir} do
     {args, pidfile} = slow_tree!(dir)
     test_pid = self()

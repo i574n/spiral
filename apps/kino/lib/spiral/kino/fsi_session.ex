@@ -105,15 +105,12 @@ defmodule Spiral.Kino.FsiSession do
     end
   end
 
-  # The NuGet package fsi restores when no dll is given (its dependency Microsoft.AspNetCore.Html.Abstractions comes along).
   @formatting_package "Microsoft.DotNet.Interactive.Formatting, 1.0.0-beta.26120.1"
 
   @doc false
   def prelude(dll) do
     formatter =
       if dll do
-        # .NET Interactive also references the assembly of IHtmlContent: without it, opening the Formatting namespace
-        # makes overload resolution of e.g. `StringBuilder.Append` fail with FS1108 (the package brings it along).
         refs =
           if dll == :nuget do
             ~s|#r "nuget: #{@formatting_package}"|
@@ -123,8 +120,6 @@ defmodule Spiral.Kino.FsiSession do
             html_ref <> ~s|#r @"#{dll}"|
           end
 
-        # What dotnet-repl (the .dib route's runner) sets up for an fsharp/spiral default kernel (KernelBuilder.cs,
-        # Repl.cs): plain text by default, and every object and sequence formatted with `%120A`.
         """
         #{refs}
         open Microsoft.DotNet.Interactive.Formatting
@@ -199,7 +194,6 @@ defmodule Spiral.Kino.FsiSession do
         :stderr_to_stdout,
         :use_stdio,
         :hide,
-        # --langversion:preview like the F# builds (lib.ps1 PublishFsharp) and the targets' `dotnet fsi --exec`
         args: ["fsi", "--nologo", "--quiet", "--utf8output", "--readline-", "--langversion:preview"],
         env: env
       ] ++ if(opts[:cd], do: [cd: opts[:cd]], else: [])
@@ -242,8 +236,6 @@ defmodule Spiral.Kino.FsiSession do
     code = if String.ends_with?(code, "\n"), do: code, else: code <> "\n"
     reset = if state.first, do: "", else: "let it = __kino_none\n;;\n"
 
-    # A line directive numbers the submission from 1 under its label, as .NET Interactive does per cell: positions
-    # (`input.fsx(3,1): error FS0039`) and closure names (`<fun:it@5-13>`) don't depend on earlier submissions.
     directive = ~s|# 1 "#{String.replace(label, ~s("), "'")}"\n|
     value = if state.first, do: "null", else: "(box it)"
 
@@ -367,8 +359,6 @@ defmodule Spiral.Kino.FsiSession do
       Regex.match?(~r/^Stopped due to error\s*$/m, text)
   end
 
-  # Stack traces: `at ... in <fsi cwd>\<label>:line 3` (the line directive names the submission; fsi joins it to its
-  # working directory).
   defp relabel(text, %{label: label}) do
     label = String.replace(label, ~s("), "'")
     Regex.replace(~r/ in [^\n]*?[\\\/]#{Regex.escape(label)}:line /, text, " in #{label}:line ")

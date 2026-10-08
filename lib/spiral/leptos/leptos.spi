@@ -109,8 +109,6 @@ nominal for = $'leptos::prelude::For'
 nominal show = $'leptos::prelude::Show'
 
 /// ### fragment
-// codegenRust moves (doesn't clone) values of the non-Clone leptos::prelude::Fragment, which it recognizes by this
-// spelling.
 nominal fragment = $'leptos::prelude::Fragment'
 
 /// ### text
@@ -150,8 +148,6 @@ nominal url = $'leptos_router::location::Url'
 nominal memo t = $'leptos::prelude::Memo<`t>'
 
 /// ### arc_memo
-// Spiral values are Rc-based (not Send + Sync), and ArcMemo only has a SyncStorage constructor: the memo holds a
-// SendWrapper of the value (wasm is single-threaded), unwrapped by signal_get/signal_get_untracked.
 nominal arc_memo t = $'leptos::prelude::ArcMemo<leptos::__reexports::send_wrapper::SendWrapper<`t>>'
 
 /// ### rw_signal
@@ -215,13 +211,10 @@ prototype signal_update signal t : (t -> t) -> signal t -> ()
 prototype signal_set signal t : t -> signal t -> ()
 
 /// ### prelude
-// The leptos traits (Get/Set/Update, ElementChild, ClassAttribute, ...) that view! and the trait calls below use.
 inl prelude () =
     global "use leptos::prelude::*;"
 
 /// ### send_wrapper
-// leptos 0.8 takes Send closures and values (attributes, children, memos, For, Show, routes, context), and Spiral's
-// are Rc-based: they cross behind a SendWrapper (wasm is single-threaded).
 nominal send_wrapper t = $'leptos::__reexports::send_wrapper::SendWrapper<`t>'
 
 /// ### send_wrapper_new
@@ -332,7 +325,6 @@ inl text_to_fragment (text : string) : fragment =
     |> view_to_fragment
 
 /// ### macro_to_view
-// The view! leaves: `macro` is view! markup (tag_text, tag_raw, tag_closed_raw, route, routes, router).
 inl macro_to_view (macro : string) : view =
     prelude ()
     !\($'"leptos::prelude::IntoAny::into_any(leptos::prelude::view\! { " + !macro + " })"')
@@ -366,7 +358,6 @@ inl provide_meta_context () : () =
     $'leptos_meta::provide_meta_context()'
 
 /// ### provide_context
-// read back by use_context
 inl provide_context forall t. (x : t) : () =
     inl x = x |> send_wrapper_new
     $'leptos::context::provide_context(!x)'
@@ -412,7 +403,6 @@ inl typecheck_signal forall (t : * -> *) u. (signal : t u) : () =
         | _ => error_type `(()) ("invalid signal", ``(t u))
 
 /// ### is_arc_memo
-// An arc_memo holds a SendWrapper of its value (see arc_memo).
 inl is_arc_memo forall (t : * -> *) u. (signal : t u) : bool =
     real
         typecase t with
@@ -496,7 +486,6 @@ instance signal_set write_signal = signal_set'
 instance signal_set arc_write_signal = signal_set'
 
 /// ### untrack
-// `fn ()` without subscribing the running reactive closure to the signals it reads.
 inl untrack forall t. (fn : () -> t) : t =
     !\\(fn, $'"leptos::prelude::untrack(move || $0())"')
 
@@ -506,18 +495,13 @@ inl new_memo forall t. (fn : () -> t) : memo t =
     $'leptos::prelude::Memo::new(move |_| (*!fn)())'
 
 /// ### new_arc_memo
-// The value is wrapped (see arc_memo). Spiral's unions don't all implement PartialEq, so the change check compares
-// values whose type has PartialEq and treats the others as always changed (autoref dispatch on the concrete type at
-// each memo: a generic helper would always take the second impl).
 inl new_arc_memo forall t. (fn : () -> t) : arc_memo t =
     global "pub struct SpiralMemoChanged<'a, T>(pub Option<&'a T>, pub Option<&'a T>);\npub trait SpiralMemoChangedEq { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T: PartialEq> SpiralMemoChangedEq for SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { self.0 != self.1 } }\npub trait SpiralMemoChangedAny { fn spiral_memo_changed(&self) -> bool; }\nimpl<'a, T> SpiralMemoChangedAny for &SpiralMemoChanged<'a, T> { fn spiral_memo_changed(&self) -> bool { true } }"
-    // a closure of its own: its body may return early (`?`) with the plain value
     inl fn = join fn
     inl fn = (fun () => fn () |> send_wrapper_new) |> send_wrapper_new
     $'leptos::prelude::ArcMemo::new_with_compare(move |_| (*!fn)(), |a: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>, b: Option<&leptos::__reexports::send_wrapper::SendWrapper<`t>>| (&SpiralMemoChanged(a.map(|x| &**x), b.map(|x| &**x))).spiral_memo_changed())'
 
 /// ### new_arc_local_resource
-// the fetcher returns a boxed future; local resources need no Send
 inl new_arc_local_resource forall t.
     (fetcher : () -> async.future_pin t)
     : arc_local_resource t
@@ -525,7 +509,6 @@ inl new_arc_local_resource forall t.
     !\\(fetcher, $'"leptos::prelude::ArcLocalResource::new(move || $0())"')
 
 /// ### new_action
-// action inputs and futures are Rc-based (not Send): the local constructor
 inl new_action forall t u. (action_fn : t -> async.future_pin u) : action t u =
     !\\(action_fn, $'"leptos::prelude::Action::new_local(move |value: &`t| $0(value.clone()))"')
 
@@ -550,15 +533,11 @@ inl action_pending forall t u. (action : action (heap t) u) : memo bool =
     !\\(action, $'"leptos::prelude::Action::pending(&$0)"')
 
 /// ### arc_action_pending
-// ArcAction::pending is an ArcMemo of the plain value: read into an arc_memo (see arc_memo)
 inl arc_action_pending forall t u. (action : arc_action (heap t) u) : arc_memo bool =
     inl pending : $'leptos::prelude::ArcMemo<bool>' = !\\(action, $'"leptos::prelude::ArcAction::pending(&$0)"')
     new_arc_memo fun () => $'leptos::prelude::Get::get(&!pending)' : bool
 
 /// ### arc_action_pending_fn
-// A reader of the action's pending state. arc_action_pending makes a new memo, and one made inside a reactive closure
-// is dropped when the closure returns (leptos subscribers hold their sources weakly), so that closure would never
-// re-run: the memo is made once, outside the reader.
 inl arc_action_pending_fn forall t u. (action : arc_action (heap t) u) : () -> bool =
     inl pending = action |> arc_action_pending
     fun () => pending |> signal_get
@@ -572,19 +551,16 @@ inl arc_action_value forall t u. (action : arc_action (heap t) u) : arc_rw_signa
     !\\(action, $'"leptos::prelude::ArcAction::value(&$0)"')
 
 /// ### arc_action_value_get
-// leptos 0.8's ArcAction::value is an ArcMappedSignal, not the ArcRwSignal arc_action_value's type names: read in place.
 inl arc_action_value_get forall t u. (action : arc_action (heap t) u) : optionm'.option' u =
     prelude ()
     $'leptos::prelude::Get::get(&leptos::prelude::ArcAction::value(&!action))'
 
 /// ### new_arc_signal_derive
-// A signal of `fn ()`, which leptos re-runs when a signal it reads changes.
 inl new_arc_signal_derive forall t. (fn : () -> t) : arc_signal t =
     inl fn = fn |> send_wrapper_new
     $'leptos::prelude::ArcSignal::derive(move || (*!fn)())'
 
 /// ### arc_local_resource_loading
-// loading = no value yet
 inl arc_local_resource_loading forall t. (resource : arc_local_resource t) : arc_signal bool =
     new_arc_signal_derive fun () =>
         $'leptos::prelude::ArcLocalResource::get(&!resource).is_none()' : bool
@@ -614,19 +590,15 @@ let window () : wasm.window =
     !\($'"leptos::prelude::window()"')
 
 /// ### attr_fn
-// A reactive attribute, property or class (`name={move || f()}`): leptos re-runs `fn` when a signal it reads changes.
-// Text values must be std::string::String (leptos has no attribute impls for Rc<str>).
 inl attr_fn forall t. (name : string) (fn : () -> t) : string =
     inl fn = fn |> send_wrapper_new
     $'"" + !name + "={ move || (*!fn)() }"'
 
 /// ### class_fn
-// A reactive class attribute: the fixed `classes` and the ones `fn` returns.
 inl class_fn (classes : string) (fn : () -> string) : string =
     attr_fn "class" fun () => classes ++# fn () |> sm'.to_std_string
 
 /// ### on_event
-// An event handler (`on:<name>={move |event| f(event)}`).
 inl on_event forall t. (name : string) (fn : t -> ()) : string =
     inl fn = fn |> send_wrapper_new
     $'"on:" + !name + "={ move |event| (*!fn)(event) }"'
@@ -647,29 +619,22 @@ inl concat_props props =
         $'" " + !x + !acc + ""'
 
 /// ### concat_markup
-// in order (concat_props reverses)
 inl concat_markup (items : list string) : string =
     ("", items)
     ||> listm.fold fun acc (x : string) =>
         $'"" + !acc + !x + ""'
 
 /// ### tag_text
-// view! markup of an element whose children are markup too.
 inl tag_text (tag : string) props (children : string) : string =
     inl props = props |> concat_props
     $'"<" + !tag + " " + !props + ">" + !children + "</" + !tag + ">"'
 
 /// ### tag_raw
-// The children view is built once and is a plain child (a closure would move it out of an FnMut, and isn't Send):
-// children that read signals wrap those parts in reactive_view / reactive_fragment.
 inl tag_raw tag props children : string =
     inl children = children () |> fragment_to_view
     tag_text tag props $'"{ !children }"'
 
 /// ### reactive_view
-// Tag children are built once (see tag_raw), so a signal read at a children's top level doesn't update the view.
-// reactive_view makes `fn` a reactive child: leptos re-runs it when a signal it read changes. Its captures must be
-// Clone (signals, memos, closures, strings), not views.
 inl reactive_view (fn : () -> view) : view =
     inl fn = fn |> send_wrapper_new
     $'leptos::prelude::IntoAny::into_any(move || (*!fn)())'
@@ -701,8 +666,6 @@ inl for props : view =
     |> macro_to_view
 
 /// ### for
-// For's items and closures must be Send (+ Clone): the items cross as SendWrapper<T> (one Rust value, so a tuple `t`
-// is unpacked in Spiral by send_wrapper_get).
 inl for forall t u (signal : * -> *).
     (signal : signal (am'.vec t))
     (key_fn : t -> u)
@@ -710,7 +673,6 @@ inl for forall t u (signal : * -> *).
     : view
     =
     signal |> typecheck_signal
-    // read through signal_get' (an arc_memo unwraps its SendWrapper there)
     inl items = (fun () => signal_get' signal : am'.vec t) |> send_wrapper_new
     inl key = (fun (x : send_wrapper t) => x |> send_wrapper_get |> key_fn) |> send_wrapper_new
     inl child = (fun (x : send_wrapper t) => x |> send_wrapper_get |> children' |> fragment_to_view) |> send_wrapper_new
@@ -759,12 +721,10 @@ inl location_search (location : location) : memo sm'.std_string =
     !\\(location, $'"$0.search"')
 
 /// ### url_try_from
-// leptos_router 0.8 parses through the browser's URL (relative to the page's origin); the error is a JsValue
 inl url_try_from (s : rust.ref sm'.str) : resultm.result' url sm'.std_string =
     !\\(s, $'"<leptos_router::location::BrowserUrl as leptos_router::location::LocationProvider>::parse($0).map_err(|x| x.as_string().unwrap_or_default())"')
 
 /// ### url_pathname
-// leptos_router 0.8's Url keeps the path private: `path()`
 inl url_pathname (url : url) : sm'.std_string =
     !\\(url, $'"$0.path().to_string()"')
 
@@ -778,13 +738,11 @@ inl use_url () =
         inl url_search =
             if url_search = ""
             then ""
-            else "?" +. url_search
-        url_pathname +. url_search
+            else "?" ++# url_search
+        url_pathname ++# url_search
     |> new_arc_memo
 
 /// ### route
-// leptos_router 0.8 types the route tree statically (`path!` of a literal, the routes a tuple of view! children): a
-// route is view! markup, put together with the others by routes and router into one view! call.
 inl route (path : string) (view : () -> view) : string =
     tag_closed_raw "leptos_router::components::Route" [
         $'"path=leptos_router::path\!(\\\"" + !path + "\\\")"'

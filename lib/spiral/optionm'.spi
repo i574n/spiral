@@ -54,6 +54,8 @@ type option'_switch t =
         Python : t
         Rust : $'Option<`t>'
         TypeScript : t
+        Zig : $'?`(t)'
+        Lean : $'(Option `t)'
     }
 nominal option' t = $'backend_switch `(option'_switch t)'
 
@@ -66,6 +68,8 @@ inl none' forall t. () : option' t =
         Python = fun () => $'None' : option' t
         Rust = fun () => $'None' : option' t
         TypeScript = fun () => $'undefined' : option' t
+        Zig = fun () => $'null' : option' t
+        Lean = fun () => $'none' : option' t
     }
 
 /// ### some'
@@ -77,6 +81,8 @@ inl some' forall t. (x : t) : option' t =
         Python = fun () => $'!x \# some\' ' : option' t
         Rust = fun () => $'Some(!x.clone())' : option' t
         TypeScript = fun () => $'!x ' : option' t
+        Zig = fun () => $'!x ' : option' t
+        Lean = fun () => $'(some !x)' : option' t
     }
 
 /// ### default_value'
@@ -88,6 +94,8 @@ inl default_value' forall t. (value : t) (x : option' t) : t =
         Python = fun () => $'(!value if !x is None else !x)' : t
         Rust = fun () => $'!x.unwrap_or(!value)' : t
         TypeScript = fun () => $'(!x === undefined ? !value : !x)' : t
+        Zig = fun () => $'(!x orelse !value)' : t
+        Lean = fun () => $'((!x).getD !value)' : t
     }
 
 /// ### get'
@@ -101,13 +109,12 @@ inl get' forall t. (x : option' t) : t =
         Python = fun () => $'!x ' : t
         Rust = fun () => $'!x.unwrap()' : t
         TypeScript = fun () => $'!x ' : t
+        Zig = fun () => $'!x.?' : t
+        Lean = fun () => $'(!x).get\!' : t
     }
 
 /// ### box
 inl box forall t. (x : option t) : option' t =
-    // x
-    // |> optionm.map some'
-    // |> default_with none'
     match x with
     | Some x => some' x
     | None => none' ()
@@ -117,7 +124,6 @@ inl map forall t u. (fn : t -> u) (x : option' t) : option' u =
     backend_switch {
         Gleam = fun () =>
             option'_types ()
-            // inl fn = join fn
             $'!x |> option.map(!fn)' : option' u
         Lua = fun () =>
             if x =. none' ()
@@ -131,16 +137,21 @@ inl map forall t u. (fn : t -> u) (x : option' t) : option' u =
             then none' ()
             else fn $'!x ' |> fun x => $'!x ' : option' u
         Rust = fun () =>
-            // a tuple payload is one Rust value: see rust.one_param_fn
             inl fn = rust.one_param_fn fn
-            // `map` consumes the option: a join point's argument is the codegen's copy (`.clone()`, or a move for a
-            // type without Clone), so a value used again or captured by an `Fn` closure stays usable.
             inl x = join x
             $'!x.map(|x| !fn(x))' : option' u
         TypeScript = fun () =>
             if $'!x === undefined' : bool
             then none' ()
             else fn $'!x ' |> fun x => $'!x ' : option' u
+        Zig = fun () =>
+            if $'(!x == null)' : bool
+            then none' ()
+            else x |> get' |> fn |> some'
+        Lean = fun () =>
+            if $'(!x).isNone' : bool
+            then none' ()
+            else x |> get' |> fn |> some'
     }
 
 /// ### map''
@@ -150,10 +161,6 @@ inl map'' forall t u. (fn : t -> u) (x : option' t) : option' u =
 /// ### unbox
 inl unbox forall t. (x : option' t) : option t =
     x |> map'' Some |> default_value' None
-    // inl some x : option t = Some x
-    // inl some = join some
-    // inl none : option t = None
-    // $'!x |> Option.map !some |> Option.defaultValue !none '
 
 /// ### of_obj
 inl of_obj forall t. (x : t) : option' t =

@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl counter = mut 0i32
+    inl add (x : i32) : () = if x > 0 then counter <- *counter + x
+    join add 5
+    join add 0
+    join add 7
+    *counter - 12

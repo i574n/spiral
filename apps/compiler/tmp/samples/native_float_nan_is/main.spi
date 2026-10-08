@@ -4,6 +4,7 @@ inl make_nan32 () : f32 =
     !!!!BackendSwitch({
         Fsharp = fun () => $"nanf" : f32
         C = fun () => $"nanf(\"\")" : f32
+        Zig = fun () => $"std.math.nan(f32)" : f32
         Rust = fun () => $"f32::NAN" : f32
         Delphi = fun () => $"NaN" : f32
         })
@@ -11,6 +12,7 @@ inl make_nan64 () : f64 =
     !!!!BackendSwitch({
         Fsharp = fun () => $"nan" : f64
         C = fun () => $"nan(\"\")" : f64
+        Zig = fun () => $"std.math.nan(f64)" : f64
         Rust = fun () => $"f64::NAN" : f64
         Delphi = fun () => $"NaN" : f64
         })

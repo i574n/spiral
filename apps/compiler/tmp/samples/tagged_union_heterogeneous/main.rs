@@ -16,7 +16,7 @@ impl US0 {
 }
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_1(v2) => { // Flag
+        US0::US0_1(v2) => {
             let mut v2: bool = *v2;
             if v2 {
                 9i32
@@ -24,7 +24,7 @@ fn method0(mut v0: US0) -> i32 {
                 4i32
             }
         }
-        US0::US0_0(v1) => { // Hit
+        US0::US0_0(v1) => {
             let mut v1: i32 = *v1;
             v1
         }

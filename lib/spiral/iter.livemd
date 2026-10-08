@@ -31,13 +31,12 @@ Spiral.Kino.eval!(
 
 ### enumerate
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =\n    // a pair is the Rust tuple itself\n    !\\($'\"!iter.enumerate()\"')","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =\n    !\\($'\"!iter.enumerate()\"')","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl enumerate forall t. (iter : into_iterator t) : into_iterator (pair convert.unativeint t) =
-      // a pair is the Rust tuple itself
       !\($'"!iter.enumerate()"')
   """,
   timeout: 300_000

@@ -16,11 +16,11 @@ impl US0 {
 }
 fn method0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_0(v1) => { // Hit
+        US0::US0_0(v1) => {
             let mut v1: i32 = *v1;
             v1
         }
-        US0::US0_1(v2) => { // Miss
+        US0::US0_1(v2) => {
             let mut v2: i32 = *v2;
             let mut v3: i32 = v2.wrapping_neg();
             v3

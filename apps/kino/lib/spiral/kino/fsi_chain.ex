@@ -97,8 +97,6 @@ defmodule Spiral.Kino.FsiChain do
           {:cont, {{:ok, %{acc | stdout: join(acc.stdout, text)}}, state}}
 
         %{label: label, code: code} ->
-          # An imported notebook is many submissions (polyglot's Notebooks.dib: 18 files, ~2 MB of F#): each gets the
-          # budget, like a cell of its own.
           deadline = if cell.kind == :import, do: deadline_for(budget), else: deadline
 
           case FsiSession.submit(state.session, code, timeout: remaining(deadline), label: label) do
@@ -240,14 +238,10 @@ defmodule Spiral.Kino.FsiChain do
     end
   end
 
-  # `#!import x.dib` of a notebook converted to x.livemd (the .dib retired): the .livemd next to it.
   defp resolve_livemd(path, bases) do
     if String.downcase(Path.extname(path)) == ".dib", do: resolve(Path.rootname(path) <> ".livemd", bases)
   end
 
-  # The .dib route's runner (dotnet-repl) ran from its tool store, 7 levels below the user's home, so notebooks reference
-  # NuGet packages as `#r @"../../../../../../../.nuget/packages/<id>/<version>/..."`: the package cache. Point such a
-  # reference at the cache itself (NUGET_PACKAGES, else ~/.nuget/packages) when the file is there.
   defp nuget_refs(code) do
     cache = System.get_env("NUGET_PACKAGES") || Path.join(System.user_home!(), ".nuget/packages")
 
@@ -257,7 +251,6 @@ defmodule Spiral.Kino.FsiChain do
     end)
   end
 
-  # .NET Interactive magic commands that are not F#; `#!import` lines are already their own cells.
   defp strip_magic(source) do
     source
     |> String.split("\n")

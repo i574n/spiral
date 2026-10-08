@@ -63,9 +63,7 @@ inl unzip list =
         x |> listm.rev, y |> listm.rev
 
 /// ### try_index_of
-// inl try_index_of item list =
 inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
-    // inl rec 루프 i = function
     inl rec 루프 forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
@@ -77,9 +75,7 @@ inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
 inl index_of item =
     try_index_of item >> optionm.value
 
-// inl try_index_of_ item list =
 inl try_index_of_ forall b c {number}. (item : b) (list : list b) : option c =
-    // let rec 루프 i = function
     let rec 루프 forall a {number}. (i : a) : list b -> option a = function
         | [] => None
         | x :: xs =>
@@ -291,7 +287,6 @@ inl cons' forall t. (head : t) (tail : list' t) : list' t =
 inl box forall t. (list : list t) : list' t =
     run_target function
         | Rust => fun () =>
-            // One Vec filled front to back (cons' copies the whole Vec per element: quadratic on Rust).
             inl acc : $'Rc<RefCell<Vec<`t>>>' = $'Rc::new(RefCell::new(Vec::new()))'
             inl _ : i32 = (0i32, list) ||> listm.fold fun n (x : t) =>
                 $'!acc.borrow_mut().push(!x)' : ()
@@ -537,7 +532,6 @@ inl to_array' forall t. (items : list' t) : array_base t =
         Fsharp = fun () => items |> $'List.toArray' : array_base t
         Python = fun () =>
             inl len = $'len(!items)' : i32
-            // CuPy arrays hold primitives only; a numpy object array holds any element (strings, tuples).
             inl result : a _ t = a ($'__import__("numpy").empty(!len, dtype=object)' : array_base t)
             let rec 루프 i =
                 if i >= len then

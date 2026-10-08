@@ -1,9 +1,3 @@
-<#
-.SYNOPSIS
-Installs a .NET 11 SDK into <cache>/toolchains/dotnet without touching the system installation.
-On a machine without network access (the browser sandbox), use tools/sandbox/dotnet-installer-v2.cpp
-with an uploaded SDK archive instead, then point SPIRAL_DOTNET at it.
-#>
 param([string]$Channel = '11.0', [string]$Quality = 'preview')
 . $PSScriptRoot/env.ps1
 

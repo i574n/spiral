@@ -70,7 +70,7 @@ var
 begin
   v0 := method0;
   case v0.tag of
-      1: begin // Box
+      1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
           v3 := v1 = 7;
@@ -80,11 +80,13 @@ begin
               Result := 3;
           end;
       end;
-      0: begin // Empty
+      0: begin
           Result := 1;
       end;
   end;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

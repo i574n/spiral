@@ -1,10 +1,6 @@
 inl (~!\\) forall t u. ((args : t), (code : string)) : u =
     $'__spiral_emit_rust !args !code '
 
-// A cell's value that is not an i32 (a tuple, a record, an array: physics' plot data): shown with Rust's Debug on the
-// line the runner reads the value from; a type without Debug (Spiral's unions and records derive only Clone) shows its
-// type name instead (autoref specialization: the Debug impl wins when it exists). The other backends print it to stdout
-// (F#: a string as is, anything else with %A, as the old .NET kernel showed a cell's value).
 inl show_value forall t. (value : t) : () =
     inl rust () : () =
         inl _ : () =
@@ -26,14 +22,9 @@ inl show_value forall t. (value : t) : () =
         Gleam = fun () => gleam ()
         Cpp = fun () => cpp ()
         Zig = fun () => $'{ spiralPrintAny(!value); spiralPrint(&[_]u8{10}); }' : ()
+        Lean = fun () => $'IO.println (toString !value)' : ()
     })
 
-// Any Display value, like the lib's console.write_line (alphabet's hangul writes an i32: `am'.length |> console.write_line`).
-// The cell package's own `console` module shadows the lib's for the cell's code, so every backend prints here, with
-// every key the lib's backend_switch has: it evaluates each backend's arm in every build, so code reached through any
-// of them meets this switch (`///> fsharp`/`typescript` cells printed the Rust emit marker when only Rust was here).
-// Statement-like arms are local closures: inside the BackendSwitch op's arms a macro can't be typed and a forall call
-// can't be applied (`The macro needs an annotation` / `Cannot apply a forall with a term`).
 inl write_line forall t. (text : t) : () =
     inl rust () : () =
         inl _ : () =
@@ -54,4 +45,11 @@ inl write_line forall t. (text : t) : () =
         Gleam = fun () => gleam ()
         Cpp = fun () => cpp ()
         Zig = fun () => $'{ spiralPrintAny(!text); spiralPrint(&[_]u8{10}); }' : ()
+        Lean = fun () => $'IO.println (toString !text)' : ()
     })
+
+inl display (mime : string) (data : string) : () =
+    write_line "SPIRAL_KINO_DISPLAY_BEGIN"
+    write_line mime
+    write_line data
+    write_line "SPIRAL_KINO_DISPLAY_END"

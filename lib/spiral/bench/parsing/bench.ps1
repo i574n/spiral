@@ -1,25 +1,19 @@
-# split_args / lib/spiral/parsing benchmark pipeline. See README.md.
-#   pwsh bench.ps1 -Label before                 # compile + run F# (FParsec vs pure vs runtime) and native Rust
-#   pwsh bench.ps1 -Label after -Compare before  # same, then diff results (behaviour) and timings against `before`
-#   pwsh bench.ps1 -Label x -Cells               # also time the compile of every parsing.livemd test cell (F#)
-#   pwsh bench.ps1 -Label x -Cells -Backends None  # only the per-cell compile times
-# Outputs go to bench/parsing/target/<Label>/ (gitignored): compile times, program output, summary.tsv.
 param(
     [string] $Label = 'run',
     [string] $Compare,
     [ValidateSet('Fsharp', 'Rust', 'None')] [string[]] $Backends = @('Fsharp', 'Rust'),
     [switch] $Cells,
-    [string] $Notebook = (Join-Path $PSScriptRoot '../../parsing.livemd'), # -Cells: notebook whose test cells are compiled
-    [string] $LibDir = (Join-Path $PSScriptRoot '../../..'), # -Cells: packageDir holding the spiral package
-    [switch] $SkipCompile, # reuse the generated sources of this label (only rebuild + run)
+    [string] $Notebook = (Join-Path $PSScriptRoot '../../parsing.livemd'),
+    [string] $LibDir = (Join-Path $PSScriptRoot '../../..'),
+    [switch] $SkipCompile,
     [string] $Agent = 'parsing-bench',
-    [string] $Spc, # optional compile wrapper (pwsh $Spc -Agent -Backend -In -Out); default: the polyglot spiral bundle
-    [string] $Heavy, # optional script defining Invoke-Heavy (a machine-wide memory mutex) for the dotnet/cargo builds
+    [string] $Spc,
+    [string] $Heavy,
     [string] $RustToolchain = 'nightly-2025-11-01',
     [int] $MinFreeMB = 2500,
-    [switch] $MemoryWait, # build without the heavy slot once -MinFreeMB is free (instead of queueing behind long jobs)
-    [string] $TraceLevel = 'Info', # TRACE_LEVEL for the benchmark runs; '' leaves it unset
-    [int] $RunTimeoutMin = 20 # wall-clock limit per benchmark program run
+    [switch] $MemoryWait,
+    [string] $TraceLevel = 'Info',
+    [int] $RunTimeoutMin = 20
 )
 $ErrorActionPreference = 'Stop'
 $here = $PSScriptRoot
@@ -28,7 +22,6 @@ New-Item -ItemType Directory -Force $root | Out-Null
 $heavyAvailable = $Heavy -and (Test-Path $Heavy)
 if ($heavyAvailable) { . $Heavy }
 function Set-TraceLevel { [Environment]::SetEnvironmentVariable('TRACE_LEVEL', $(if ($TraceLevel) { $TraceLevel } else { $null })) }
-# Runs a benchmark program with stdout streamed to $file (a stuck case is visible there) under a wall-clock limit.
 function Invoke-Bench([string] $exe, [string] $file) {
     Set-TraceLevel
     $p = Start-Process -FilePath $exe -NoNewWindow -PassThru -RedirectStandardOutput $file -RedirectStandardError "$file.err"
@@ -40,12 +33,9 @@ function Invoke-Bench([string] $exe, [string] $file) {
     if ($p.ExitCode -ne 0) { Get-Content "$file.err" -Tail 20 | Write-Host; throw "$exe exited with $($p.ExitCode)" }
     Get-Content $file
 }
-# The dotnet/cargo builds take a machine-wide heavy slot (Invoke-Heavy) by default, as RULES.md asks; with -MemoryWait
-# they only wait for -MinFreeMB of free memory, so a long notebook run holding both slots doesn't stall the benchmark.
 function Heavy([scriptblock] $b) {
     $free = [int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1KB)
     if ($heavyAvailable -and !$MemoryWait) { Invoke-Heavy $b; return }
-    # Wait (up to 30 min) for enough free memory instead of queueing behind hour-long jobs in the heavy slots.
     $until = (Get-Date).AddMinutes(30)
     while ($free -lt $MinFreeMB -and (Get-Date) -lt $until) {
         Write-Host "bench.ps1: $free MB free < $MinFreeMB, waiting"
@@ -56,12 +46,11 @@ function Heavy([scriptblock] $b) {
 }
 $compileTimes = [ordered]@{}
 
-# The compiler of the polyglot spiral bundle (as lib.ps1's BuildSpiral), run from the entry's directory.
 function Invoke-BundleCompiler([string] $backend, [string] $in, [string] $out) {
-    . (Join-Path $here '../../../../deps/polyglot/scripts/spiral-bundle.ps1')
-    # The bundle points DOTNET_ROOT at its .NET 11 toolchain; the F# benchmark exe (net9.0) must keep the system one.
+    . (Join-Path $here '../../../../scripts/core.ps1')
+    . (Join-Path $here '../../lib.ps1')
     $dotnetRoot = $env:DOTNET_ROOT
-    try { $spiral = Ensure-SpiralRustCompiler | Select-Object -Last 1 } finally { $env:DOTNET_ROOT = $dotnetRoot }
+    try { $spiral = Ensure-SpiralCompiler | Select-Object -Last 1 } finally { $env:DOTNET_ROOT = $dotnetRoot }
     if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
         $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
     }
@@ -70,8 +59,6 @@ function Invoke-BundleCompiler([string] $backend, [string] $in, [string] $out) {
 }
 
 function Compile-Spiral([string] $backend, [string] $in, [string] $out) {
-    # The compiler host also writes its output next to the entry module (<entry>.fsx / .rs ...): remove those copies so
-    # nothing generated is left in the source tree.
     $srcDir = Split-Path $in
     $existing = @(Get-ChildItem $srcDir -File | Select-Object -ExpandProperty FullName)
     $sw = [Diagnostics.Stopwatch]::StartNew()
@@ -112,7 +99,6 @@ if ('Fsharp' -in $Backends) {
   </ItemGroup>
 </Project>
 '@ | Set-Content (Join-Path $dir 'bench.fsproj')
-    # SDK 9 pinned: the 11.0 rc SDK doesn't copy FSharp.Core 11 next to the exe.
     '{ "sdk": { "version": "9.0.308", "rollForward": "latestFeature" } }' | Set-Content (Join-Path $dir 'global.json')
     Push-Location $dir
     try { Heavy { dotnet build -c Release bench.fsproj -o bin -v q -nologo 2>&1 | Select-Object -Last 15 | Write-Host } } finally { Pop-Location }
@@ -147,16 +133,12 @@ codegen-units = 1
     $outputs['Rust'] = $out
 }
 
-# Backends not run this time: reuse this label's earlier output, so the summary always covers both.
 foreach ($b in 'Fsharp', 'Rust') {
     $prev = Join-Path $root "$($b.ToLower())/output.txt"
     if (!$outputs.ContainsKey($b) -and (Test-Path $prev)) { $outputs[$b] = Get-Content $prev }
 }
 
 if ($Cells) {
-    # Every `///- --test` cell of parsing.livemd that uses the pure-Spiral library (FParsec cells need the #r'd DLLs and
-    # the `--test static` frontend, so they are skipped), compiled to F# as its own program.
-    # a Spiral cell's source is its smart-cell annotation's attrs.source (spiral/apps/kino Document)
     $sources = [regex]::Matches((Get-Content -Raw $Notebook), '<!-- livebook:(\{"chunks".*?"kind":"Elixir\.Spiral\.Kino\.SmartCell".*?\}) -->') | ForEach-Object { 'spiral' + "`n" + ($_.Groups[1].Value | ConvertFrom-Json).attrs.source }
     $cellList = $sources | Where-Object { $_ -match '^spiral' -and $_ -match '///- --test' -and $_ -notmatch '///- --test static' -and $_ -notmatch '_ \(|\$''FParsec|parse_ |#r ' }
     $cdir = Join-Path $root 'cells'
@@ -174,7 +156,6 @@ if ($Cells) {
     }
 }
 
-# Summary: one row per (backend, case) with ns/call per impl and ratios against FParsec; RESULT mismatches across impls.
 $rows = foreach ($b in $outputs.Keys) {
     $times = $outputs[$b] | Where-Object { $_ -like "TIME`t*" } | ForEach-Object { $f = $_ -split "`t"; [pscustomobject]@{ Backend = $b; Impl = $f[1]; Case = $f[2]; Len = [int]$f[3]; Iters = [int]$f[4]; Ns = [long]$f[5] } }
     foreach ($g in $times | Group-Object Case) {

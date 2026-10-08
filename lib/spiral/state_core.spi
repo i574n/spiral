@@ -19,8 +19,6 @@ inl get_core_state_heap_key () =
 
 inl get_data forall t (u : * -> *). (id : string) (rexie : u wasm.rexie) : async.future_pin (resultm.result' (optionm'.option' t) sm'.std_string) =
     leptos.log ("state_core.get_data () / id: " ++# id)
-    // the future owns its inputs (`async move`); a caller's `Fn` closure keeps its own rexie, so the future gets a copy
-    // (a join point's arguments: the codegen's `.clone()`)
     inl rexie = join rexie
     fun () =>
         inl store_name = "store"
@@ -320,7 +318,6 @@ let use_requests forall t u.
         |> leptos.new_arc_memo
 
     inl get_key ({ url body } : networking.request) =
-        // the body quoted (its Debug text), as in the keys of the data already stored
         "url[" ++# url ++# "](" ++# sm'.format_pretty body ++# ")"
 
     inl state_data_resource
@@ -377,8 +374,6 @@ let use_requests forall t u.
         fun () =>
             inl requests = requests |> leptos.signal_get
             inl state_data = state_data_memo |> leptos.signal_get
-            // read untracked: a fetched response is written to the database (below) when it arrives; loading the
-            // database doesn't re-run the fetches
             inl database =
                 database_memo
                 |> leptos.signal_get_untracked
@@ -401,7 +396,6 @@ let use_requests forall t u.
 
                 requests
                 |> am'.vec_mapi fun i ({ url request_type body json auto_refresh } as request) =>
-                    // one future per request; each `async move` gets its own copy of the state data
                     inl state_data = join state_data
                     inl database = join database
                     fun () =>
@@ -457,14 +451,12 @@ let use_requests forall t u.
                             |> resultm.map_error' sm'.format'
                             |> resultm.try'
                             |> fun (text : sm'.std_string) =>
-                                // the one write of this response, under this request's key
                                 match database |> optionm'.unbox with
                                 | Some database =>
                                     leptos.log ("state_core.use_requests (10) / json / set_data / url: " ++# url)
                                     database
                                     |> set_data (get_key request) (text |> heap)
                                     |> async.await
-                                    // the error as text first: a Spiral union over rexie::Error (no Clone) doesn't compile
                                     |> resultm.map_error' sm'.format'
                                     |> resultm.unbox
                                     |> function

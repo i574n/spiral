@@ -1,17 +1,3 @@
-<#
-.SYNOPSIS
-Benchmarks compiling the split core as one F# project against the monolith, phase by phase.
-
-.DESCRIPTION
-Emits the core with spiral-split (unless -SkipEmit), generates single-compilation projects with
-scripts/split_project.py and builds each with `--times`, then prints wall time per compiler phase and the
-summed per-file check CPU. Everything lands in <cache>/split-bench/<core>/. Needs the hopac build (for
-Supervisor.dll) and the splitter binary (scripts/build-splitter.ps1).
-
-.EXAMPLE
-pwsh scripts/bench-split.ps1                               # monolith, one file per part, grouped (cap 12000)
-pwsh scripts/bench-split.ps1 -Variants parts -SkipEmit      # re-time one variant on the last emit
-#>
 param(
     [ValidateSet('single-flight', 'sf', 'hopac', 'hp')][string]$Mode = 'hopac',
     [ValidateSet('monolith', 'parts', 'grouped')][string[]]$Variants = @('monolith', 'parts', 'grouped'),
@@ -19,7 +5,6 @@ param(
     [int]$GroupBudget = 45000,
     [switch]$NoGraph,
     [switch]$SkipEmit,
-    # Re-summarize the last builds' --times output without emitting or building again.
     [switch]$ReportOnly
 )
 . $PSScriptRoot/env.ps1

@@ -1,13 +1,3 @@
-<#
-.SYNOPSIS
-Contracts for Rust library output: `!!!!Export(name, f)` makes the program a library crate with one
-`pub fn name` per export (strings in as `&str`, out as `Rc<str>`).
-
-.DESCRIPTION
-Compiles tests/rust-exports/exports (six signatures) and tests/rust-exports/library (an i32 policy)
-with the compiler, checks every negative case is rejected without publishing output, then builds each
-generated library with rustc and runs a real Rust consumer against it.
-#>
 param([ValidateSet('single-flight', 'hopac')][string]$Mode = 'single-flight')
 $ErrorActionPreference = 'Stop'
 . $PSScriptRoot/env.ps1
@@ -19,7 +9,6 @@ $work = Join-Path (Get-SpiralCacheDir) ('rust-exports/' + [guid]::NewGuid().ToSt
 $fixtures = Join-Path $BundleRoot 'tests/rust-exports'
 
 function New-ExportCase([string]$Text, [string[]]$Expected) {
-    # A bare @(source, @(phrases)) flattens, so the fallback phrase would be a third element.
     $pair = [object[]]::new(2)
     $pair[0] = $Text
     $pair[1] = [string[]]$Expected
@@ -27,8 +16,6 @@ function New-ExportCase([string]$Text, [string[]]$Expected) {
 }
 
 function Invoke-Cases([string]$Fixture, [System.Collections.Specialized.OrderedDictionary]$Cases) {
-    # One compiler process per case. A second BuildFile in the same process can
-    # sit until the batch timeout on Linux, which used to leave the results file short.
     foreach ($case in $Cases.Keys) {
         $directory = Join-Path $work $case
         New-Item -ItemType Directory -Path $directory -Force | Out-Null

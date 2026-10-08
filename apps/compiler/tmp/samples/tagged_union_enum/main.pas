@@ -24,16 +24,16 @@ end;
 function method0(v0: TUS0): LongInt;
 begin
   case v0.tag of
-      0: begin // Cold
+      0: begin
           Result := 1;
       end;
-      3: begin // Done
+      3: begin
           Result := 4;
       end;
-      2: begin // Hot
+      2: begin
           Result := 3;
       end;
-      1: begin // Warm
+      1: begin
           Result := 2;
       end;
   end;
@@ -69,6 +69,8 @@ begin
   v12 := v11 - 4;
   Result := v12;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

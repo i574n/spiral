@@ -1,10 +1,6 @@
 defmodule Mix.Tasks.Compile.SpiralDomain do
   use Mix.Task.Compiler
 
-  # Portable (Windows dev box and Linux CI): every tool comes from an env override, then the spiral-bin cache / scoop
-  # install this machine uses, then PATH.
-  #   SPIRAL_DOTNET, SPIRAL_COMPILER_DLL, SPIRAL_COMPILER_PACKAGE_DIR, SPIRAL_BIN_CACHE_DIR, SPIRAL_GLEAM
-
   @impl Mix.Task.Compiler
   def run(_argv) do
     root = Path.expand("..", __DIR__)
@@ -48,8 +44,6 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     if status != 0, do: Mix.raise(output)
   end
 
-  # The `|core-` package: the fork spiral's scripts/init.ps1 clones (spiral/deps/The-Spiral-Language), else polyglot's
-  # clone of it (as Spiral.Kino.Toolchain.default_package_dir/0, which is not compiled yet when this runs).
   defp core_package_dir(root) do
     candidates =
       Enum.map(["../../deps", "../../../polyglot/deps"], &Path.expand(&1 <> "/The-Spiral-Language/VS Code Plugin", root))
@@ -67,7 +61,6 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
         System.find_executable("gleam") ||
         Mix.raise("spiral_domain: gleam was not found (set SPIRAL_GLEAM)")
 
-    # scoop's OTP first: chocolatey's older OTP on PATH breaks gleam ("corrupt atom table").
     prefix = Enum.filter([erlang, Path.dirname(gleam)], &File.dir?/1)
     sep = if match?({:win32, _}, :os.type()), do: ";", else: ":"
     path = Enum.join(prefix ++ [System.get_env("PATH", "")], sep)
@@ -88,7 +81,6 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
 
   defp bundled?(dotnet), do: String.starts_with?(Path.expand(dotnet), Path.expand(Path.join(cache(), "toolchains")))
 
-  # Same cache as Spiral.Kino.Toolchain: %LOCALAPPDATA%\spiral-bin on Windows, ~/.cache/spiral-bin elsewhere.
   defp cache do
     System.get_env("SPIRAL_BIN_CACHE_DIR") ||
       case System.get_env("LOCALAPPDATA") do

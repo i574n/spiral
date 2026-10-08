@@ -207,13 +207,11 @@ inl from_tgas
     : gas
     =
     backend_switch {
-        // Native literals are typed (`300i32`); from_tgas takes a u64.
         Rust = fun () => !\($'"near_workspaces::types::Gas::from_tgas(!tgas as u64)"') : gas
     }
 
 /// ### as_yoctonear
 inl as_yoctonear (tokens : near_token_workspaces) : rust.u128 =
-    // near.as_yoctonear's native arm is for near.near_token (u128 there); this is a near_workspaces NearToken.
     !\\(tokens, $'"$0.as_yoctonear()"')
 
 /// ### print_usd

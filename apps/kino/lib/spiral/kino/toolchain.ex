@@ -6,8 +6,6 @@ defmodule Spiral.Kino.Toolchain do
     opts[:workspace] || System.get_env("SPIRAL_WORKSPACE_ROOT") || @workspace
   end
 
-  # The `|core-` package: The-Spiral-Language's `VS Code Plugin` in the fork that spiral's scripts/init.ps1 clones
-  # (spiral/deps/The-Spiral-Language), else polyglot's clone of it (the checkout next to spiral).
   @spiral_root Path.expand("../../../../..", __DIR__)
   @core_package "deps/The-Spiral-Language/VS Code Plugin"
 
@@ -87,6 +85,16 @@ defmodule Spiral.Kino.Toolchain do
   def dcc(opts) do
     opts[:dcc] || System.get_env("SPIRAL_DCC") || System.find_executable("dcc32") ||
       System.find_executable("dcc64")
+  end
+
+  @spec plot(keyword()) :: String.t() | nil
+  def plot(opts) do
+    opts[:plot] || System.get_env("SPIRAL_KINO_PLOT") || default_plot()
+  end
+
+  defp default_plot do
+    base = Path.expand("../../../../../workspace/target/release/plot", __DIR__)
+    Enum.find([base <> ".exe", base], &File.regular?/1)
   end
 
   defp default_spiral do

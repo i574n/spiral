@@ -41,68 +41,68 @@ pub fn closure2 (capt : Nil) -> fn(#(Int, Us0)) -> Int {
 pub fn closure3 (capt : Nil) -> fn(Int) -> element.Element(Us0) {
     fn (v0) {
         let v1 = []
-        let v33 = "display"
-        let v34 = "flex"
-        let v35 = [ #(v33, v34)      , ..v1 ]
-        let v63 = attribute.style(v35)
-        let v64 = []
-        let v65 = "flex-direction"
-        let v66 = "column"
-        let v67 = [ #(v65, v66)      , ..v64 ]
-        let v77 = [ #(v33, v34)      , ..v67 ]
-        let v101 = attribute.style(v77)
-        let v102 = Us0i0
-        let v103 = event.on_click(v102)
-        let v104 = "+"
-        let v105 = element.text(v104)
-        let v106 = []
-        let v138 = [ v103, ..v106 ]
-        let v166 = []
-        let v198 = [ v105, ..v166 ]
-        let v226 = button.button(v138, v198)
-        let v227 = []
-        let v228 = "text-align"
-        let v229 = "center"
-        let v230 = [ #(v228, v229)      , ..v227 ]
-        let v257 = attribute.style(v230)
-        let v258 = string.inspect(v0)
-        let v300 = element.text(v258)
-        let v301 = []
-        let v302 = [ v257, ..v301 ]
-        let v303 = []
-        let v304 = [ v300, ..v303 ]
-        let v305 = html.p(v302, v304)
-        let v306 = Us0i1
-        let v307 = event.on_click(v306)
-        let v308 = "-"
-        let v309 = element.text(v308)
-        let v310 = []
-        let v311 = [ v307, ..v310 ]
-        let v312 = []
-        let v313 = [ v309, ..v312 ]
-        let v314 = button.button(v311, v313)
-        let v315 = []
-        let v316 = [ v101, ..v315 ]
-        let v317 = []
-        let v318 = [ v314, ..v317 ]
-        let v319 = [ v305, ..v318 ]
-        let v320 = [ v226, ..v319 ]
-        let v349 = html.div(v316, v320)
-        let v350 = []
-        let v351 = [ v63, ..v350 ]
-        let v352 = []
-        let v353 = [ v349, ..v352 ]
-        let v354 = html.div(v351, v353)
-        v354
+        let v47 = "display"
+        let v48 = "flex"
+        let v49 = [ #(v47, v48)      , ..v1 ]
+        let v81 = attribute.style(v49)
+        let v82 = []
+        let v83 = "flex-direction"
+        let v84 = "column"
+        let v85 = [ #(v83, v84)      , ..v82 ]
+        let v97 = [ #(v47, v48)      , ..v85 ]
+        let v123 = attribute.style(v97)
+        let v124 = Us0i0
+        let v125 = event.on_click(v124)
+        let v126 = "+"
+        let v127 = element.text(v126)
+        let v128 = []
+        let v174 = [ v125, ..v128 ]
+        let v206 = []
+        let v252 = [ v127, ..v206 ]
+        let v284 = button.button(v174, v252)
+        let v285 = []
+        let v286 = "text-align"
+        let v287 = "center"
+        let v288 = [ #(v286, v287)      , ..v285 ]
+        let v319 = attribute.style(v288)
+        let v320 = string.inspect(v0)
+        let v358 = element.text(v320)
+        let v359 = []
+        let v360 = [ v319, ..v359 ]
+        let v361 = []
+        let v362 = [ v358, ..v361 ]
+        let v363 = html.p(v360, v362)
+        let v364 = Us0i1
+        let v365 = event.on_click(v364)
+        let v366 = "-"
+        let v367 = element.text(v366)
+        let v368 = []
+        let v369 = [ v365, ..v368 ]
+        let v370 = []
+        let v371 = [ v367, ..v370 ]
+        let v372 = button.button(v369, v371)
+        let v373 = []
+        let v374 = [ v123, ..v373 ]
+        let v375 = []
+        let v376 = [ v372, ..v375 ]
+        let v377 = [ v363, ..v376 ]
+        let v378 = [ v284, ..v377 ]
+        let v409 = html.div(v374, v378)
+        let v410 = []
+        let v411 = [ v81, ..v410 ]
+        let v412 = []
+        let v413 = [ v409, ..v412 ]
+        let v414 = html.div(v411, v413)
+        v414
     }
 }
 pub fn closure0 (capt : Nil) -> fn(Int) -> Nil        {
     fn (v0) {
         let v1 = closure1(Nil) // args: "" / d: Some (DV (L (1, YFun (YPrim Int32T, YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
-        let v2 = closure2(Nil) // args: "" / d: Some  (DV     (L (2,         YFun           (YPair (YPrim Int32T, YNominal <tag 247>), YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
+        let v2 = closure2(Nil) // args: "" / d: Some  (DV     (L (2,         YFun           (YPair (YPrim Int32T, YNominal <tag 248>), YPrim Int32T, FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
-        let v3 = closure3(Nil) // args: "" / d: Some  (DV     (L (3,         YFun           (YPrim Int32T, YApply (YNominal <tag 244>, YNominal <tag 247>),            FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
+        let v3 = closure3(Nil) // args: "" / d: Some  (DV     (L (3,         YFun           (YPrim Int32T, YApply (YNominal <tag 245>, YNominal <tag 248>),            FT_Vanilla)))) / b': <tag 0> / b: <tag 0>
 
         let v4 = lustre.simple(v1, fn (a, b) { v2(#(a, b)) }, v3)
         let v5 = "#app_"

@@ -69,13 +69,11 @@ Spiral.Kino.eval!(
 
 ### request_builder
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;\n// the other backends keep the F# alias (declared by the global below)\ntype request_builder_switch =\n    {\n        Gleam : $'reqwest_RequestBuilder'\n        Lua : $'reqwest_RequestBuilder'\n        Fsharp : $'reqwest_RequestBuilder'\n        Python : $'reqwest_RequestBuilder'\n        TypeScript : $'reqwest_RequestBuilder'\n        Cpp : $'reqwest_RequestBuilder'\n        CppHost : $'reqwest_RequestBuilder'\n        Delphi : $'reqwest_RequestBuilder'\n        Cuda : $'reqwest_RequestBuilder'\n        C : $'reqwest_RequestBuilder'\n        Rust : $'reqwest_wasm::RequestBuilder'\n    }\nnominal request_builder =\n    `(\n        fsharp_global \"type reqwest_RequestBuilder = class end\"\n        $'' : $'backend_switch `(request_builder_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"type request_builder_switch =\n    {\n        Gleam : $'reqwest_RequestBuilder'\n        Lua : $'reqwest_RequestBuilder'\n        Fsharp : $'reqwest_RequestBuilder'\n        Python : $'reqwest_RequestBuilder'\n        TypeScript : $'reqwest_RequestBuilder'\n        Cpp : $'reqwest_RequestBuilder'\n        CppHost : $'reqwest_RequestBuilder'\n        Delphi : $'reqwest_RequestBuilder'\n        Cuda : $'reqwest_RequestBuilder'\n        C : $'reqwest_RequestBuilder'\n        Rust : $'reqwest_wasm::RequestBuilder'\n    }\nnominal request_builder =\n    `(\n        fsharp_global \"type reqwest_RequestBuilder = class end\"\n        $'' : $'backend_switch `(request_builder_switch)'\n    )","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
-  // the other backends keep the F# alias (declared by the global below)
   type request_builder_switch =
       {
           Gleam : $'reqwest_RequestBuilder'

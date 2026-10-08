@@ -644,14 +644,12 @@ Spiral.Kino.eval!(
 
 ### iterate
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// inl iterate f x0 num_steps =\ninl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =\n    // inl rec 루프 x n =\n    inl rec 루프 forall c {number}. (x : a) (n : c) : a =\n        if n <= 0\n        then x\n        else 루프 (f x) (n - 1)\n    루프 x0 num_steps","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =\n    inl rec 루프 forall c {number}. (x : a) (n : c) : a =\n        if n <= 0\n        then x\n        else 루프 (f x) (n - 1)\n    루프 x0 num_steps","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // inl iterate f x0 num_steps =
   inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-      // inl rec 루프 x n =
       inl rec 루프 forall c {number}. (x : a) (n : c) : a =
           if n <= 0
           then x
@@ -676,14 +674,12 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"// inl iterate_ f x0 num_steps =\ninl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =\n    // let rec 루프 x n =\n    let rec 루프 forall c {number}. (x : a) (n : c) : a =\n        if n <= 0\n        then x\n        else 루프 (f x) (n - 1)\n    루프 x0 num_steps","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =\n    let rec 루프 forall c {number}. (x : a) (n : c) : a =\n        if n <= 0\n        then x\n        else 루프 (f x) (n - 1)\n    루프 x0 num_steps","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
-  // inl iterate_ f x0 num_steps =
   inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
-      // let rec 루프 x n =
       let rec 루프 forall c {number}. (x : a) (n : c) : a =
           if n <= 0
           then x
@@ -1002,7 +998,7 @@ Spiral.Kino.eval!(
 
 ### to_array'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall dim t. (items : seq' t) : a dim t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gary/array\"\n            $'!items |> array.from_list' : a dim t\n        Fsharp = fun () => items |> $'Seq.toArray' : a dim t\n        // A numpy object array (listm'.to_array'): `np` is not bound in Python output and CuPy holds primitives only.\n        Python = fun () =>\n            inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'\n            $'!x ' : a dim t\n        Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t\n        TypeScript = fun () => $'[...!items]' : a dim t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl to_array' forall dim t. (items : seq' t) : a dim t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gary/array\"\n            $'!items |> array.from_list' : a dim t\n        Fsharp = fun () => items |> $'Seq.toArray' : a dim t\n        Python = fun () =>\n            inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'\n            $'!x ' : a dim t\n        Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t\n        TypeScript = fun () => $'[...!items]' : a dim t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1013,7 +1009,6 @@ Spiral.Kino.eval!(
               global "import gary/array"
               $'!items |> array.from_list' : a dim t
           Fsharp = fun () => items |> $'Seq.toArray' : a dim t
-          // A numpy object array (listm'.to_array'): `np` is not bound in Python output and CuPy holds primitives only.
           Python = fun () =>
               inl x = ($'!items ' : listm'.list' t) |> listm'.to_array'
               $'!x ' : a dim t
@@ -1074,7 +1069,7 @@ Spiral.Kino.eval!(
 
 ### cast'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cast' forall t u. (items : u) : seq' t =\n    backend_switch {\n        Gleam = fun () => $'!items ' : seq' t\n        Fsharp = fun () => items |> $'Seq.cast' : seq' t\n        Python = fun () => $'list(!items)' : seq' t\n        // Rust: a seq'/list' (`Rc<Vec<t>>`) or an array as is, else anything `IntoIterator<Item = t>`.\n        Rust = fun () =>\n            inl x : seq' t =\n                real\n                    typecase u with\n                    | seq' ~x => $'(!items).clone()' : seq' t\n                    | listm'.list' ~x => $'(!items).clone()' : seq' t\n                    | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t\n                    | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t\n                    | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t\n            x\n        // TypeScript: an array or any iterable.\n        TypeScript = fun () => $'Array.from(!items)' : seq' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl cast' forall t u. (items : u) : seq' t =\n    backend_switch {\n        Gleam = fun () => $'!items ' : seq' t\n        Fsharp = fun () => items |> $'Seq.cast' : seq' t\n        Python = fun () => $'list(!items)' : seq' t\n        Rust = fun () =>\n            inl x : seq' t =\n                real\n                    typecase u with\n                    | seq' ~x => $'(!items).clone()' : seq' t\n                    | listm'.list' ~x => $'(!items).clone()' : seq' t\n                    | array_base ~x => $'Rc::new(!items.borrow().clone())' : seq' t\n                    | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t\n                    | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t\n            x\n        TypeScript = fun () => $'Array.from(!items)' : seq' t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1084,7 +1079,6 @@ Spiral.Kino.eval!(
           Gleam = fun () => $'!items ' : seq' t
           Fsharp = fun () => items |> $'Seq.cast' : seq' t
           Python = fun () => $'list(!items)' : seq' t
-          // Rust: a seq'/list' (`Rc<Vec<t>>`) or an array as is, else anything `IntoIterator<Item = t>`.
           Rust = fun () =>
               inl x : seq' t =
                   real
@@ -1095,7 +1089,6 @@ Spiral.Kino.eval!(
                       | a ~d ~x => $'Rc::new(!items.borrow().clone())' : seq' t
                       | _ => $'Rc::new(IntoIterator::into_iter(!items).collect::<Vec<`t>>())' : seq' t
               x
-          // TypeScript: an array or any iterable.
           TypeScript = fun () => $'Array.from(!items)' : seq' t
       }
   """,

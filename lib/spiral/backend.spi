@@ -5,9 +5,6 @@ inl backend_switch forall t. x : t =
             real_core.record_type_try_find `(`x) s
                 (forall v'. => (x s) ())
                 (fun () =>
-                    // inl x = ()
-                        // typecase t with
-                        // | ~t => $'"`t"' : string
                     !!!!BackendSwitch ({
                         Gleam = fun () =>
                             $'Nil // backend.backend_switch / record_type_try_find / key: !key ' : t
@@ -19,24 +16,20 @@ inl backend_switch forall t. x : t =
                             $'None ## backend.backend_switch / record_type_try_find / key: !key ' : t
                         Cpp = fun () =>
                             $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
-                        // Rust (codegenRust). Every key of a BackendSwitch is evaluated in every build, so a missing arm
-                        // can't fail partial evaluation (that would break the F# builds too). A unit arm is a visible
-                        // no-op, like the other backends' fallbacks; a value arm is a rustc error, which only fires when
-                        // Rust code actually reaches the call.
                         Rust = fun () =>
                             typecase t with
                             | () => $'() /* backend_switch: no Rust arm (lib/spiral) */' : t
                             | _ => $'compile_error\!("backend_switch: this lib/spiral function has no Rust arm yet")' : t
-                        // C++ host (upstream CodegenCpp names its host backend CppHost).
                         CppHost = fun () =>
                             $'nullptr // backend.backend_switch / record_type_try_find / key: !key ' : t
-                        // Zig (codegenZig): lib/spiral has no Zig arms yet. A value arm is Zig's @compileError, which only fires when
-                        // Zig code actually reaches the call (Zig analyzes lazily).
                         Zig = fun () =>
                             typecase t with
                             | () => $'{}' : t
                             | _ => $'\@compileError("backend_switch: this lib/spiral function has no Zig arm yet")' : t
-                        // TypeScript (CodegenTypescript): lib/spiral arms are being added.
+                        Lean = fun () =>
+                            typecase t with
+                            | () => $'pure ()' : t
+                            | _ => $'backend_switch_has_no_Lean_arm_in_lib_spiral' : t
                         TypeScript = fun () =>
                             typecase t with
                             | () => $'undefined /* backend_switch: no TypeScript arm (lib/spiral) */' : t
@@ -50,13 +43,12 @@ inl backend_switch forall t. x : t =
             Python = fun () => backend "Python"
             Cpp = fun () => backend "Cpp"
             Rust = fun () => backend "Rust"
-            // User records keep their `Cpp` key for the C++ host, like the type-level backend_switch in CodegenCpp.
             CppHost = fun () => backend "Cpp"
             TypeScript = fun () => backend "TypeScript"
             Zig = fun () => backend "Zig"
+            Lean = fun () => backend "Lean"
         })
 
-// The target a run_target arm runs for: the backend of the build (Python builds are `Cuda`, C++ host builds `Cpp`).
 union backend =
     | Gleam
     | Lua
@@ -95,10 +87,6 @@ inl run_target_args' forall t u. (args : u) (fn : backend -> (u -> t)) : t =
     }
 
 /// ### is_rust
-// True only in the Rust backend (codegenRust). Partial evaluation runs every arm of a value-level backend_switch in
-// every build, so a switch whose arms inline the caller's closures evaluates them once per key, and nested switches
-// multiply (8 keys, 8^depth: dice_ui never finished). This switch's arms are literals, so an
-// `if is_rust () then .. else ..` evaluates one branch.
 inl is_rust () : bool =
     backend_switch {
         Gleam = fun () => false
@@ -110,6 +98,8 @@ inl is_rust () : bool =
         CppHost = fun () => false
         Delphi = fun () => false
         Cuda = fun () => false
+        Zig = fun () => false
+        Lean = fun () => false
         Rust = fun () => true
     }
 
@@ -137,13 +127,15 @@ inl indent (body : () -> ()) : () =
         Python = fun () =>
             !!!!Indent (body())
             ()
+        Zig = fun () =>
+            !!!!Indent (body())
+            ()
+        Lean = fun () =>
+            !!!!Indent (body())
+            ()
     }
 
 /// ### rust_type
-// A type that is `rs` on the Rust backend and `fs` on the other backends, through the type-level backend_switch
-// every codegen resolves; `fsharp` declares `fs` in F# builds only (an opaque `type x = class end`, or an alias of a
-// .NET type). Used as `rust_type `(fs) `(rs) "decl"` in a nominal's body (unqualified: backend is opened everywhere,
-// --real cells and modules that open rust.rust_operators included).
 type rust_type_switch fs rs =
     {
         Gleam : fs
@@ -155,11 +147,11 @@ type rust_type_switch fs rs =
         CppHost : fs
         Delphi : fs
         Cuda : fs
+        Zig : fs
+        Lean : fs
         Rust : rs
     }
 
-// A global only F# builds emit. In a nominal's body it runs once (nominal types are memoized), under whichever backend's
-// branch first elaborates the type; the switch runs its Fsharp arm as F# either way, so the text reaches F# builds only.
 inl fsharp_global (text : string) : () =
     backend_switch {
         Fsharp = fun () => global text

@@ -255,14 +255,13 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n////> cuda // v3 = $\"retry: {v0} / ex: %A{v1} / {v2 ()}\"\n///> rust\n///> typescript\n///> cuda\n\ninl retry_fn_test = mut 0i32\nfun () =>\n    if *retry_fn_test >= 2\n    then *retry_fn_test\n    else\n        retry_fn_test <- *retry_fn_test + 1\n        failwith \"test\"\n|> retry_fn 3i32\n|> _assert_eq' (Some 2i32)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n///> rust\n///> typescript\n///> cuda\n\ninl retry_fn_test = mut 0i32\nfun () =>\n    if *retry_fn_test >= 2\n    then *retry_fn_test\n    else\n        retry_fn_test <- *retry_fn_test + 1\n        failwith \"test\"\n|> retry_fn 3i32\n|> _assert_eq' (Some 2i32)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   ///- --test
   ///> fsharp
-  ////> cuda // v3 = $"retry: {v0} / ex: %A{v1} / {v2 ()}"
   ///> rust
   ///> typescript
   ///> cuda
@@ -287,15 +286,13 @@ Spiral.Kino.eval!(
 
 ### random'
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl random' forall t. (min : t) (max : t) : t =\n    run_target function\n        // Native builds don't depend on `rand`: xorshift seeded once per process (std's RandomState is randomly keyed\n        // per process, mixed with the clock), drawing like `gen_range` (min inclusive, max exclusive).\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\((min, max), $'\"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x << 13; x ^= x >> 7; x ^= x << 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span <= 0 { 0 } else { (x as i128) % span }; (($0 as i128) + n) as _ }\"')\n        | Cuda _ => fun () =>\n            global \"import random\"\n            $'random.randrange(!min, !max)' : t\n        | TypeScript => fun () =>\n            $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, b - a)); return (typeof !min === \"bigint\" ? BigInt(r) : r); })()' : t\n        | _ => fun () =>\n            random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl random' forall t. (min : t) (max : t) : t =\n    run_target function\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\((min, max), $'\"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x << 13; x ^= x >> 7; x ^= x << 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span <= 0 { 0 } else { (x as i128) % span }; (($0 as i128) + n) as _ }\"')\n        | Cuda _ => fun () =>\n            global \"import random\"\n            $'random.randrange(!min, !max)' : t\n        | TypeScript => fun () =>\n            $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, b - a)); return (typeof !min === \"bigint\" ? BigInt(r) : r); })()' : t\n        | _ => fun () =>\n            random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl random' forall t. (min : t) (max : t) : t =
       run_target function
-          // Native builds don't depend on `rand`: xorshift seeded once per process (std's RandomState is randomly keyed
-          // per process, mixed with the clock), drawing like `gen_range` (min inclusive, max exclusive).
           | Rust => fun () =>
               open rust.rust_operators
               !\\((min, max), $'"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x << 13; x ^= x >> 7; x ^= x << 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span <= 0 { 0 } else { (x as i128) % span }; (($0 as i128) + n) as _ }"')
@@ -313,7 +310,7 @@ Spiral.Kino.eval!(
 
 ### new_disposable
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_disposable (fn : () -> ()) : disposable _ =\n    run_target function\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\(fn, $'\"$0.clone()\"') : disposable _\n        // TypeScript: the function itself (dispose calls it), as Rust's Rc<dyn Fn()>.\n        | TypeScript => fun () =>\n            inl fn = join fn\n            $'!fn ' : disposable _\n        | Fsharp _ => fun () =>\n            inl fn = join fn\n            $'{ new System.IDisposable with member _.Dispose () = !fn () }'\n        | Cuda _ => fun () =>\n            $'class Disposable:'\n            $'    def __init__(self, fn):'\n            $'        self.fn = fn'\n            $'    def __exit__(self, exc_type, exc_value, traceback):'\n            $'        self.fn()'\n            $'        return False'\n            $'Disposable(!fn)'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl new_disposable (fn : () -> ()) : disposable _ =\n    run_target function\n        | Rust => fun () =>\n            open rust.rust_operators\n            !\\\\(fn, $'\"$0.clone()\"') : disposable _\n        | TypeScript => fun () =>\n            inl fn = join fn\n            $'!fn ' : disposable _\n        | Fsharp _ => fun () =>\n            inl fn = join fn\n            $'{ new System.IDisposable with member _.Dispose () = !fn () }'\n        | Cuda _ => fun () =>\n            $'class Disposable:'\n            $'    def __init__(self, fn):'\n            $'        self.fn = fn'\n            $'    def __exit__(self, exc_type, exc_value, traceback):'\n            $'        self.fn()'\n            $'        return False'\n            $'Disposable(!fn)'\n        | _ => fun () => null ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -323,7 +320,6 @@ Spiral.Kino.eval!(
           | Rust => fun () =>
               open rust.rust_operators
               !\\(fn, $'"$0.clone()"') : disposable _
-          // TypeScript: the function itself (dispose calls it), as Rust's Rc<dyn Fn()>.
           | TypeScript => fun () =>
               inl fn = join fn
               $'!fn ' : disposable _

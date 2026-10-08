@@ -27,7 +27,6 @@ defmodule Spiral.Kino.BuildersTest do
              Builders.commands("///> cuda -e poetry -d numpy")
   end
 
-  # polyglot/lib/math: `pyo3='=0.26.0'` lost its quotes in the tokenizer and reached Cargo.toml as `pyo3==0.26.0`
   test "a quoted rust dep version reaches the CLI as a TOML string" do
     [rust] = Builders.commands("///> rust -d num-complex pyo3='=0.26.0'")
 

@@ -22,8 +22,6 @@ nominal reqwest_error =
     )
 
 /// ### request_builder
-// Rust names the crate type itself: the codegen moves (doesn't `.clone()`) a RequestBuilder, which isn't Clone;
-// the other backends keep the F# alias (declared by the global below)
 type request_builder_switch =
     {
         Gleam : $'reqwest_RequestBuilder'

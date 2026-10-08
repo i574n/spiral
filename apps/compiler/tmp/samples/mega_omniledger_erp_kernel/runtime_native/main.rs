@@ -869,7 +869,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(v548, v583, v619.clone())
     };
     let (mut v640, mut v641, mut v642, mut v643, mut v644, mut v645, mut v646, mut v647, mut v648): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = match &v621 {
-        US0::US0_0(v625, v626, v627, v628, v629, v630) => { // TypedFxHashedStatementChecksumValidationAccepted
+        US0::US0_0(v625, v626, v627, v628, v629, v630) => {
             let mut v625: i64 = *v625;
             let mut v626: i64 = *v626;
             let mut v627: i64 = *v627;
@@ -878,7 +878,7 @@ fn spiral_main() -> i32 {
             let mut v630: Rc<str> = v630.clone();
             (1i64, 0i64, 0i64, 0i64, v625, v626, v627, v628, v629)
         }
-        US0::US0_1(v622, v623, v624) => { // TypedFxHashedStatementChecksumValidationRejected
+        US0::US0_1(v622, v623, v624) => {
             let mut v622: i64 = *v622;
             let mut v623: i64 = *v623;
             let mut v624: Rc<str> = v624.clone();
@@ -1233,7 +1233,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(v831, v866, v902.clone())
     };
     let (mut v923, mut v924, mut v925, mut v926, mut v927, mut v928, mut v929, mut v930, mut v931): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = match &v904 {
-        US0::US0_0(v908, v909, v910, v911, v912, v913) => { // TypedFxHashedStatementChecksumValidationAccepted
+        US0::US0_0(v908, v909, v910, v911, v912, v913) => {
             let mut v908: i64 = *v908;
             let mut v909: i64 = *v909;
             let mut v910: i64 = *v910;
@@ -1242,7 +1242,7 @@ fn spiral_main() -> i32 {
             let mut v913: Rc<str> = v913.clone();
             (1i64, 0i64, 0i64, 0i64, v908, v909, v910, v911, v912)
         }
-        US0::US0_1(v905, v906, v907) => { // TypedFxHashedStatementChecksumValidationRejected
+        US0::US0_1(v905, v906, v907) => {
             let mut v905: i64 = *v905;
             let mut v906: i64 = *v906;
             let mut v907: Rc<str> = v907.clone();
@@ -2680,7 +2680,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(v1899, v1934, v1970.clone())
     };
     let (mut v1991, mut v1992, mut v1993, mut v1994, mut v1995, mut v1996, mut v1997, mut v1998, mut v1999): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = match &v1972 {
-        US0::US0_0(v1976, v1977, v1978, v1979, v1980, v1981) => { // TypedFxHashedStatementChecksumValidationAccepted
+        US0::US0_0(v1976, v1977, v1978, v1979, v1980, v1981) => {
             let mut v1976: i64 = *v1976;
             let mut v1977: i64 = *v1977;
             let mut v1978: i64 = *v1978;
@@ -2689,7 +2689,7 @@ fn spiral_main() -> i32 {
             let mut v1981: Rc<str> = v1981.clone();
             (1i64, 0i64, 0i64, 0i64, v1976, v1977, v1978, v1979, v1980)
         }
-        US0::US0_1(v1973, v1974, v1975) => { // TypedFxHashedStatementChecksumValidationRejected
+        US0::US0_1(v1973, v1974, v1975) => {
             let mut v1973: i64 = *v1973;
             let mut v1974: i64 = *v1974;
             let mut v1975: Rc<str> = v1975.clone();
@@ -3214,7 +3214,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(v2304, v2339, v2375.clone())
     };
     let (mut v2396, mut v2397, mut v2398, mut v2399, mut v2400, mut v2401, mut v2402, mut v2403, mut v2404): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = match &v2377 {
-        US0::US0_0(v2381, v2382, v2383, v2384, v2385, v2386) => { // TypedFxHashedStatementChecksumValidationAccepted
+        US0::US0_0(v2381, v2382, v2383, v2384, v2385, v2386) => {
             let mut v2381: i64 = *v2381;
             let mut v2382: i64 = *v2382;
             let mut v2383: i64 = *v2383;
@@ -3223,7 +3223,7 @@ fn spiral_main() -> i32 {
             let mut v2386: Rc<str> = v2386.clone();
             (1i64, 0i64, 0i64, 0i64, v2381, v2382, v2383, v2384, v2385)
         }
-        US0::US0_1(v2378, v2379, v2380) => { // TypedFxHashedStatementChecksumValidationRejected
+        US0::US0_1(v2378, v2379, v2380) => {
             let mut v2378: i64 = *v2378;
             let mut v2379: i64 = *v2379;
             let mut v2380: Rc<str> = v2380.clone();
@@ -3656,7 +3656,7 @@ fn spiral_main() -> i32 {
         US0::US0_1(v2641, v2676, v2712.clone())
     };
     let (mut v2733, mut v2734, mut v2735, mut v2736, mut v2737, mut v2738, mut v2739, mut v2740, mut v2741): (i64, i64, i64, i64, i64, i64, i64, i64, i64) = match &v2714 {
-        US0::US0_0(v2718, v2719, v2720, v2721, v2722, v2723) => { // TypedFxHashedStatementChecksumValidationAccepted
+        US0::US0_0(v2718, v2719, v2720, v2721, v2722, v2723) => {
             let mut v2718: i64 = *v2718;
             let mut v2719: i64 = *v2719;
             let mut v2720: i64 = *v2720;
@@ -3665,7 +3665,7 @@ fn spiral_main() -> i32 {
             let mut v2723: Rc<str> = v2723.clone();
             (1i64, 0i64, 0i64, 0i64, v2718, v2719, v2720, v2721, v2722)
         }
-        US0::US0_1(v2715, v2716, v2717) => { // TypedFxHashedStatementChecksumValidationRejected
+        US0::US0_1(v2715, v2716, v2717) => {
             let mut v2715: i64 = *v2715;
             let mut v2716: i64 = *v2716;
             let mut v2717: Rc<str> = v2717.clone();

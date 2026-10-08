@@ -173,7 +173,6 @@ nominal file_system_info = $'System.IO.FileSystemInfo'
 /// ### get_source_directory
 inl get_source_directory () =
     run_target function
-        // Rust: the crate's directory, fixed at build time (F# substitutes the source file's directory).
         | Rust => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
         | _ => fun () => $'__SOURCE_DIRECTORY__' : string
 
@@ -305,16 +304,10 @@ nominal async_walkdir_error =
 /// ### new_walk_dir
 inl new_walk_dir (dir : string) : walk_dir =
     !\\(dir, $'"async_walkdir::WalkDir::new(&*$0)"')
-    // inl walk_dir : walk_dir = walk_dir |> rust.to_mut
-    // (!\($'"true; let mut !walk_dir = !walk_dir"') : bool) |> ignore
 
 /// ### walk_dir_filter
 inl walk_dir_filter (fn : dir_entry -> async.future_pin_send filtering) (walk_dir : walk_dir) : walk_dir =
     if is_rust () then
-        // async_walkdir wants a Send filter returning Send futures, and native closures hold `Rc`s. The walk polls the
-        // filter on the thread that drives the stream (block_on), so SpiralAssertSend vouches for both. The entry's
-        // future is made before the `async move` block, which then owns it (nothing captured is moved). The filter
-        // closure binds `f` whole: edition 2021 would otherwise capture only the field `f.0` (the non-Send closure).
         global "struct SpiralAssertSend<T>(T);\nunsafe impl<T> Send for SpiralAssertSend<T> {}\nimpl<T: std::future::Future + Unpin> std::future::Future for SpiralAssertSend<T> {\n    type Output = T::Output;\n    fn poll(mut self: std::pin::Pin<&mut Self>, cx: &mut std::task::Context<'_>) -> std::task::Poll<T::Output> { std::pin::Pin::new(&mut self.0).poll(cx) }\n}"
         inl fn entry =
             inl future = fn entry
@@ -489,7 +482,6 @@ let get_extension (path : string) : string =
 /// ### directory_separator_char
 let directory_separator_char () : char =
     run_target function
-        // The native char is a byte.
         | Rust => fun () => $'(std::path::MAIN_SEPARATOR as u8)' : char
         | TypeScript _ => fun () => '/'
         | _ => fun () => $'System.IO.Path.DirectorySeparatorChar'
@@ -552,7 +544,7 @@ let create_temp_path' (guid : guid.guid) =
     run_target_args' guid function
         | _ => fun guid =>
             get_temp_path ()
-            </> join "!create_temp_path_" // TODO: replace ! (generates invalid links)
+            </> join "!create_temp_path_"
             </> (env.get_entry_assembly_name ())
             </> (guid |> sm'.obj_to_string)
 
@@ -679,7 +671,7 @@ let find_parent file_type name root_dir =
             | Some parent => parent |> 루프
             | None =>
                 sm'.(++#) "file_system.find_parent / No parent for " (if is_file then "file" else "dir")
-                +. $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
+                ++# $'$" \'{!name}\' at \'{!root_dir}\' (until \'{!dir}\')"'
                 |> fun x => x : string
                 |> Error
     root_dir |> 루프
@@ -708,7 +700,7 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
         match parent with
         | _ when n >= 11 =>
             ($'$"file_system.read_link / "' : string)
-            +. $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
+            ++# $'$"path: {!path} / n: {!n} / path\': {!path'} / name: {!name}"'
             |> stream.new_io_error
             |> resultm.err
         | Some parent when path' <>. "" =>
@@ -720,12 +712,12 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                 |> resultm.ok''
             | Error error' =>
                 ($'$"file_system.read_link / "' : string)
-                +. $'$"error\': {!error'} / error: {!error''} / name: {!name}"'
+                ++# $'$"error\': {!error'} / error: {!error''} / name: {!name}"'
                 |> stream.new_io_error
                 |> resultm.err
         | _ =>
             ($'$"file_system.read_link / run / The file or directory is not a reparse point. / "' : string)
-            +. $'$"path: {!path} / error: {!error''} / path\': {!path'} / name: {!name}"'
+            ++# $'$"path: {!path} / error: {!error''} / path\': {!path'} / name: {!name}"'
             |> stream.new_io_error
             |> resultm.err
 
@@ -734,7 +726,6 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
             if path |> directory_exists
             then !\\(path, $'"std::fs::read_link(&*$0)"')
             else
-                // let rec 루프 n path' =
                 let rec 루프 forall t {number}.
                     (n : t)
                     (path' : string)
@@ -751,7 +742,6 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                 path |> 루프 0u8
         | Fsharp _
         | TypeScript _ => fun () =>
-            // let rec 루프 n path' =
             let rec 루프 forall t {number}.
                 (n : t)
                 (path' : string)
@@ -771,8 +761,8 @@ let read_link (path : string) : resultm.result' path_buf stream.io_error =
                 else
                     inl error =
                         ($'$"file_system.read_link / Fsharp / "' : string)
-                        +. $'$"The file or directory is not a reparse point. / "'
-                        +. $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
+                        ++# $'$"The file or directory is not a reparse point. / "'
+                        ++# $'$"path: {!path} / result: {!result} / path\': {!path'} / n: {!n}"'
                         |> stream.new_io_error
                     path' |> run 루프 n error
             path |> 루프 0u8
@@ -801,9 +791,6 @@ let normalize_path (path : string) : string =
 
 /// ### get_workspace_root
 inl get_workspace_root () =
-    // The spiral checkout: SPIRAL_REPO_ROOT when it is set, else the `spiral` directory next to the first directory
-    // found above the current or the program's directory that holds spiral/workspace (from a dependent repo, through
-    // its deps/ links: above the deps directory). Until spiral's split from polyglot this was the polyglot checkout.
     inl repo_root = env.get_environment_variable "SPIRAL_REPO_ROOT"
     if repo_root <> ""
     then repo_root |> normalize_path

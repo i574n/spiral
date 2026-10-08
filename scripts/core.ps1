@@ -5,13 +5,9 @@ function Invoke-Linux {
         [string] $Distro = ""
     )
     if ($IsWindows) {
-        if ($Distro -ne "") {
-            $Distro = " -d $Distro"
-        }
-        else {
-            $Distro = ""
-        }
-        Invoke-Expression "wsl$Distro --shell-type login -- $($ScriptBlock.ToString().Trim())"
+        $distroArguments = $Distro -ne "" ? @("-d", $Distro) : @()
+        $bashCommand = $ExecutionContext.InvokeCommand.ExpandString($ScriptBlock.ToString().Trim())
+        wsl @distroArguments --exec bash -lc $bashCommand
     }
     else {
         & @ScriptBlock
@@ -91,16 +87,12 @@ function Invoke-Block {
             $exitcode = -1
         }
         if ($exitcode -ne 0 -or $Error.Count -gt 0) {
-            # / `$EnvVars: $($EnvironmentVariables | ConvertTo-Json)
             $msg = "`n# Invoke-Block / `$retry: $retry/$Retries / `$Location: $Location / Get-Location: $(Get-Location) / `$OnError: $OnError / `$exitcode: $exitcode / `$Error: '$Error' / `$ScriptBlock:`n'$($ScriptBlock.ToString().Trim())'`n / `$result:`n'$result'`n / `$output:`n'$output'`n"
 
             Write-Host $msg
             if ($OnError -eq "Stop") {
                 if ($retry -eq $Retries) {
                     if ($host.Name -match "Interactive") {
-                        # In a notebook, end the cell: a terminating error (thrown after the cleanup below) fails
-                        # the command. Publishing CommandFailed instead left the script running after a fatal error
-                        # (dep_spiral.ps1 went on past its failed build) and gave the cell two completions.
                         $fatal = $msg
                         break
                     }
@@ -180,14 +172,12 @@ function ResolveLink (
     [string] $Path,
     [string] $End = ''
 ) {
-    # Write-Host "spiral/scripts/core.ps1/ResolveLink #1 / Path: $Path / End: $End"
     if (!$Path) {
         return $End
     }
 
     $parent = $Path | Split-Path
     if (!$parent) {
-        # Write-Host "spiral/scripts/core.ps1/ResolveLink #2 / parent: $parent / Path: $Path / End: $End"
         return Join-Path $Path $End
     }
 
@@ -202,8 +192,6 @@ function ResolveLink (
         if ($Path | Test-Path) {
             $path_target = ($Path | Get-Item -Force).Target
         }
-        # Write-Host ("spiral/scripts/core.ps1/ResolveLink #3 / " + `
-        #     "Path: $Path / parent_target: $parent_target / path_target: $path_target / parent: $parent / End: $End")
 
         if ($parent_target -and ($parent_target | Test-Path)) {
             if ($parent_target.StartsWith(".")) {
@@ -220,9 +208,6 @@ function ResolveLink (
         }
     }
 
-    # Write-Host ("spiral/scripts/core.ps1/ResolveLink #5 / " + `
-    #     "Path: $Path / parent_target: $parent_target / path_target: $path_target / parent: $parent / " + `
-    #     "End: $End")
     return ResolveLink $parent $End
 }
 
@@ -310,9 +295,6 @@ function _exe {
     }
 }
 
-# Runs a notebook through Kino (spiral/apps/kino/spi/run_notebook.ps1: Spiral cells on the native backends, F# cells on
-# dotnet fsi) with the given run_notebook.ps1 arguments (--spi-path, --fs-path, --no-spi, --export-only, ...). A run
-# writes <nb>.livemd.ipynb and <nb>.livemd.html unless --output-path is given.
 function Invoke-Notebook {
     param (
         [Parameter(Mandatory)]
@@ -325,10 +307,6 @@ function Invoke-Notebook {
     { pwsh -NoProfile -File $runNotebook --path $fullPath @Arguments } | Invoke-Block -Retries $Retries
 }
 
-# Runs a notebook whose code cells are all pwsh (e.g. init.livemd) as one plain pwsh script, without a notebook kernel:
-# its cells in order, in one session (they share variables, as in the notebook), from the notebook's directory
-# (nbs_header.ps1 then takes it as $ScriptDir); the first error stops it, like a failing cell. A .livemd's pwsh cells are
-# its `<!-- livebook:{"spiral_code":"pwsh"} -->` fences (spiral/apps/kino Document).
 function Invoke-PwshNotebook {
     param (
         [Parameter(Mandatory)]
@@ -353,15 +331,12 @@ function Invoke-PwshNotebook {
     $temp = Join-Path ([IO.Path]::GetTempPath()) "$name-$([guid]::NewGuid().ToString('N'))"
     $script = "$temp.ps1"
     $log = "$temp.log"
-    # Each cell starts with a marker line, so the run's stdout splits back into per-cell outputs for the notebook file.
     $marker = "spiral/scripts/core.ps1/Invoke-PwshNotebook / $name / cell"
     $body = for ($i = 0; $i -lt $pwshCells.Count; $i++) { "Write-Output '$marker $($i + 1)/$($pwshCells.Count)'`n$($pwshCells[$i])" }
     $body -join "`n`n" | Set-Content $script
     Write-Output "spiral/scripts/core.ps1/Invoke-PwshNotebook / path: $fullPath / cells: $($pwshCells.Count)"
     try {
         { pwsh -NoProfile -NonInteractive -File $script | Tee-Object -FilePath $log } | Invoke-Block -Location (Split-Path $fullPath)
-        # A successful run writes <nb>.livemd.ipynb (the cells with their stdout) and, through jupyter nbconvert when it's
-        # installed, <nb>.livemd.html (README and gh-pages link to them), the names Kino gives a notebook's outputs.
         $outputs = foreach ($i in 0..$pwshCells.Count) { , [Collections.Generic.List[string]]::new() }
         $current = 0
         foreach ($line in [IO.File]::ReadAllLines($log)) {

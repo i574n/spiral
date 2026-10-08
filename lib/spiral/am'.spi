@@ -17,6 +17,8 @@ inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
         Python = fun () => $'!a[!i]' : el
         Rust = fun () => index a i
         TypeScript = fun () => index a i
+        Zig = fun () => index a i
+        Lean = fun () => index a i
     }
 
 /// ### index_base
@@ -152,7 +154,6 @@ nominal vec t =
 inl from_vec forall dim el. (vec : vec el) : a dim el =
     backend_switch {
         Rust = fun () =>
-            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
             inl vec = join vec
             $'Rc::new(RefCell::new(!vec))' : a dim el
     }
@@ -161,7 +162,6 @@ inl from_vec forall dim el. (vec : vec el) : a dim el =
 inl from_vec_base forall el. (vec : vec el) : array_base el =
     backend_switch {
         Rust = fun () =>
-            // the array takes the vec: a join point's argument is the codegen's copy (see optionm'.map)
             inl vec = join vec
             $'Rc::new(RefCell::new(!vec))' : array_base el
     }
@@ -193,7 +193,6 @@ inl vec_push forall el. (el : el) (vec : vec el) : vec el =
     inl el = join el
     inl vec = join vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.push(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
@@ -209,14 +208,12 @@ inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
     inl vec = join vec
     inl fn = join fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.retain(|x| !fn(x.clone()))"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_sort_by_key
 inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
     inl vec = join vec
-    // a tuple element is one Rust value: see rust.one_param_fn
     inl fn = rust.one_param_fn fn
     inl fn = join fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
@@ -228,13 +225,11 @@ inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
     inl el = join el
     inl vec = join vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.extend(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_mapi
 inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
-    // a tuple element is one Rust value: see rust.one_param_fn
     inl fn i = rust.one_param_fn (fn i)
     inl fn = join fn
     inl ar = join ar
@@ -242,14 +237,11 @@ inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
 
 /// ### vec_map
 inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    // as vec_map': a macro bound to a tuple (element or result) would splice its first field only
     inl fn = rust.one_param_fn fn
-    // `iter`: macro variables aren't cloned, so `into_iter` would move a vec that is used again
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map'
 inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    // a tuple element is one Rust value: see rust.one_param_fn
     inl fn = rust.one_param_fn fn
     !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
@@ -283,7 +275,6 @@ inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
 
 /// ### vec_filter
 inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
-    // a tuple element is one Rust value: see rust.one_param_fn
     inl fn = rust.one_param_fn fn
     !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
 
@@ -341,8 +332,6 @@ inl slice_singleton forall dim el. (x : option el) : slice' el dim =
     | Some x => !\($'"[!x]"')
     | None =>
         !\($'"[\\\"\\\".to_string()]"') : slice' el dim
-            // emit_expr `(()) `(slice' el dim) () ($'"[@dim]"' : string) : slice' el 10
-            // !\( : string) : slice' el i32 // !\($'"[]"')
 
 /// ### slice_length
 inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =
@@ -418,8 +407,6 @@ inl average forall el {number}. (a : a _ el) : el =
 inl distinct forall dim el. (a : a dim el) : a dim el =
     if is_rust ()
     then
-        // Rust: order-preserving dedup (as F#'s Array.distinct) by core's structural `=` (codegenRust's unions
-        // derive only `Clone`: no Rust `PartialEq`/`Hash` to dedup by); an int dim, which length/loopw need
         inl a = $'!a ' : a int el
         inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
         loopw.for' {from=0; nearTo=length a} fun i =>
@@ -497,17 +484,28 @@ inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
 /// ### sort_by
 inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
     inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el
+    inl insertion_sort () =
+        inl r = am.map id ($'!a ' : a int el)
+        inl keys = am.map fn ($'!a ' : a int el)
+        loopw.for' {from=1; nearTo=length r} fun i =>
+            inl x = index i r
+            inl k = index i keys
+            inl s = mut {j=i}
+            loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
+                inl j = s.j
+                set r j (index (j - 1) r)
+                set keys j (index (j - 1) keys)
+                s <- {j=j - 1}
+            set r s.j x
+            set keys s.j k
+        $'!r ' : a dim el
     backend_switch {
         Gleam = fun () => fsharp ()
         Lua = fun () => fsharp ()
         Fsharp = fun () => fsharp ()
         Python = fun () =>
-            // Keys computed in Spiral: Python closures take a tuple element's fields as separate arguments.
             inl keys = am.map fn ($'!a ' : a int el)
-            // Union keys order by case first (as in F#); Python's NamedTuple cases compare their fields only.
             $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
-        // TypeScript: an index sort (JS's sort is stable) by a structural compare: arrays (tuples) element-wise,
-        // unions ({ tag, f0.. }) by case first, as F#.
         TypeScript = fun () =>
             inl keys = am.map fn ($'!a ' : a int el)
             global "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
@@ -516,13 +514,10 @@ inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
         CppHost = fun () => fsharp ()
         Delphi = fun () => fsharp ()
         Cuda = fun () => fsharp ()
-        // Rust: a stable insertion sort (F#'s Array.sortBy is stable) by core's structural `comp`, which orders
-        // union keys by case first as F# does (codegenRust's unions derive only `Clone`: no Rust `Ord` to sort by)
+        Zig = insertion_sort
+        Lean = insertion_sort
         Rust = fun () =>
-            // (as the Python arm: an int dim, which length/loopw need; sort_by's dim is unconstrained)
             inl a = $'!a ' : a int el
-            // the copy and the keys through Rust: am.init needs a Default element, and codegenRust's unions have none;
-            // a tuple element is one Rust value (see rust.one_param_fn)
             inl key_fn = join (rust.one_param_fn fn)
             inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el
             inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key
@@ -555,6 +550,9 @@ inl transpose forall el. (a : array_base (array_base el)) : array_base (array_ba
 /// ### try_item
 inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
     inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    inl in_bounds_item () : option el =
+        inl a = $'!a ' : a i32 el
+        if i >= 0 && i < length a then Some (index i a) else None
     backend_switch {
         Gleam = fsharp
         Lua = fsharp
@@ -565,6 +563,8 @@ inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
         CppHost = fsharp
         Delphi = fsharp
         Cuda = fsharp
+        Zig = in_bounds_item
+        Lean = in_bounds_item
         Rust = fun () =>
             inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
             x |> optionm'.unbox

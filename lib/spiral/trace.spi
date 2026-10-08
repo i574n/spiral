@@ -22,7 +22,6 @@ inl severity = function
 /// ### read_state
 inl read_state () =
     run_target function
-        // Native binaries honor TRACE_LEVEL like the F# and Python ones (None meant Verbose: every lib trace printed).
         | Rust => fun () =>
             {
                 trace_level = "TRACE_LEVEL" |> env.get_environment_variable |> reflection.union_try_pick
@@ -163,7 +162,6 @@ inl set_trace_level new_level =
         Lua = id : () -> ()
         Fsharp = id : () -> ()
         Python = id : () -> ()
-        // The native state is one shared mutable cell (spiral_trace_hold): the assignment above is enough.
         Rust = id : () -> ()
         TypeScript = id : () -> ()
     }
@@ -193,11 +191,6 @@ inl trace_raw level fn =
                 open rust
                 open rust.rust_operators
                 run_target_args (fun () => text, console.write_line) function
-                    // In a NEAR contract (wasm32) stdout goes nowhere: the trace goes to the contract's logs instead,
-                    // gathered as in the Contract arm above (a call's lines become one log, in 15000-char chunks, when
-                    // its trailing empty trace runs), since NEAR fails a receipt with more than 100 logs or more than
-                    // 16384 bytes of logs: spiral_trace_near_log's counter (one wasm instance per receipt) caps them at
-                    // 16000 bytes.
                     | Rust => fun text, _ =>
                         global "#[cfg(target_arch = \"wasm32\")]\nfn spiral_trace_near_log(text: &str) {\n    use std::sync::atomic::{AtomicUsize, Ordering};\n    static LOGGED: AtomicUsize = AtomicUsize::new(0);\n    let cs: Vec<char> = text.chars().collect();\n    for c in cs.chunks(15000) {\n        let s: String = c.iter().collect();\n        let used = LOGGED.load(Ordering::Relaxed);\n        let budget = 16000usize.saturating_sub(used);\n        if budget < 13 {\n            break;\n        }\n        let s = if s.len() <= budget {\n            s\n        } else {\n            let mut end = budget - 12;\n            while !s.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{} [truncated]\", &s[..end])\n        };\n        LOGGED.store(used + s.len(), Ordering::Relaxed);\n        near_sdk::env::log_str(&s);\n    }\n}"
                         if $'cfg\!(target_arch = "wasm32")' : bool
@@ -237,13 +230,8 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
             join
                 run_target fun target =>
                     match target with
-                    // A wasm build runs as a NEAR contract (`///> rust -c` / `-w`), where std's clock panics ("time not
-                    // implemented on this platform"): it reads the block timestamp instead.
-                    // Elsewhere local time, as F#'s DateTime.Now, without a dependency: GetLocalTime on Windows,
-                    // localtime_r (libc) on Unix.
                     | Rust => fun () =>
                         open rust.rust_operators
-                        // the clock natively (seconds of the day), its hh:mm:ss text in Spiral
                         inl seconds_of_day : u64 = $'{ \#[cfg(target_arch = "wasm32")] let (h, m, s) = { let secs = near_sdk::env::block_timestamp() / 1_000_000_000; ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; \#[cfg(all(windows, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C)] struct St([u16; 8]); unsafe extern "system" { fn GetLocalTime(t: *mut St); } let mut t = St([0; 8]); unsafe { GetLocalTime(&mut t) }; (t.0[4] as u64, t.0[5] as u64, t.0[6] as u64) }; \#[cfg(all(unix, not(target_arch = "wasm32")))] let (h, m, s) = { \#[repr(C, align(8))] struct Tm([i32; 16]); unsafe extern "C" { fn localtime_r(t: *const std::os::raw::c_long, tm: *mut Tm) -> *mut Tm; } let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) as std::os::raw::c_long; let mut tm = Tm([0; 16]); unsafe { localtime_r(&secs, &mut tm) }; (tm.0[2] as u64, tm.0[1] as u64, tm.0[0] as u64) }; \#[cfg(not(any(windows, unix, target_arch = "wasm32")))] let (h, m, s) = { let secs = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0); ((secs / 3600) % 24, (secs / 60) % 60, secs % 60) }; h * 3600 + m * 60 + s }'
                         inl two_digits (n : u64) : string = (if n < 10u64 then "0" else "") ++# sm'.obj_to_string n
                         two_digits (seconds_of_day / 3600u64) ++# ":" ++# two_digits ((seconds_of_day / 60u64) % 60u64) ++# ":" ++# two_digits (seconds_of_day % 60u64)

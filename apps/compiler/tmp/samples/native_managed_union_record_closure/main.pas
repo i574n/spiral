@@ -67,10 +67,10 @@ begin
   v0 := ClosureCreate0;
   v1 := method0(v0);
   case v1.tag of
-      0: begin // Empty
+      0: begin
           v7 := 3;
       end;
-      1: begin // Item
+      1: begin
           v2 := v1.c1_0;
           v3 := v1.c1_1;
           v4 := LongInt(Length(v2));
@@ -80,10 +80,10 @@ begin
   end;
   v8 := method1(v0);
   case v8.tag of
-      0: begin // Empty
+      0: begin
           v14 := 3;
       end;
-      1: begin // Item
+      1: begin
           v9 := v8.c1_0;
           v10 := v8.c1_1;
           v11 := LongInt(Length(v9));
@@ -94,6 +94,8 @@ begin
   v15 := v7 + v14;
   Result := v15;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

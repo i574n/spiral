@@ -12,12 +12,6 @@ $projectName = "lisp"
 
 $targetDir = GetTargetDir $projectName
 
-# A Lisp surface for Spiral: spl2spi.py reads a .spl file (S-expressions) and writes ordinary Spiral source, which the
-# Spiral compiler's own Rust backend compiles. Each sample is transpiled into its own package under the target dir
-# (main.spi plus a package file; |core- resolves through the compiler's package dir) and compiled there.
-# membership.spl (a GADT: De Bruijn membership in a typed context) and membership_short.spl (the same proof with one
-# top-level form per 280-character message) must compile, build with rustc and exit 0 (their `main` checks the proved
-# slot). membership_wrong.spl differs from membership.spl in one proof only and must be rejected by the compiler.
 function Build-Sample([string] $Sample) {
     $dir = "$targetDir/$Sample"
     Remove-Item $dir -Recurse -Force -ErrorAction Ignore

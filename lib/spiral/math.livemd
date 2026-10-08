@@ -181,7 +181,7 @@ Spiral.Kino.eval!(
 
 ### atan2
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl atan2 (y : f64) (x : f64) : f64 =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_community/maths\"\n            $'maths.atan2(!y, !x)' : float\n        Lua = fun () => $'math.atan2(!y, !x)' : float\n        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float\n        Python = fun () => \n            global \"import math\"\n            $'math.atan2(!y, !x)' : float\n        Rust = fun () => $'(!y).atan2(!x)' : float\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl atan2 (y : f64) (x : f64) : f64 =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_community/maths\"\n            $'maths.atan2(!y, !x)' : float\n        Lua = fun () => $'math.atan2(!y, !x)' : float\n        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float\n        Python = fun () => \n            global \"import math\"\n            $'math.atan2(!y, !x)' : float\n        Rust = fun () => $'(!y).atan2(!x)' : float\n        Zig = fun () => $'std.math.atan2(!y, !x)' : float\n        Lean = fun () => $'Float.atan2 !y !x ' : float\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -197,6 +197,8 @@ Spiral.Kino.eval!(
               global "import math"
               $'math.atan2(!y, !x)' : float
           Rust = fun () => $'(!y).atan2(!x)' : float
+          Zig = fun () => $'std.math.atan2(!y, !x)' : float
+          Lean = fun () => $'Float.atan2 !y !x ' : float
       }
   """,
   timeout: 300_000
@@ -223,7 +225,7 @@ Spiral.Kino.eval!(
 
 ## floor
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl floor forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.floor' : t\n        Lua = fun () => n |> $'math.floor' : t\n        Fsharp = fun () => n |> $'floor' : t\n        Python = fun () => \n            global \"import math\"\n            $'math.floor(!n)' : t\n        Rust = fun () => $'!n.floor()' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl floor forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.floor' : t\n        Lua = fun () => n |> $'math.floor' : t\n        Fsharp = fun () => n |> $'floor' : t\n        Python = fun () => \n            global \"import math\"\n            $'math.floor(!n)' : t\n        Rust = fun () => $'!n.floor()' : t\n        Zig = fun () => $'\\@floor(!n)' : t\n        Lean = fun () => $'(!n).floor' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -239,6 +241,8 @@ Spiral.Kino.eval!(
               global "import math"
               $'math.floor(!n)' : t
           Rust = fun () => $'!n.floor()' : t
+          Zig = fun () => $'\@floor(!n)' : t
+          Lean = fun () => $'(!n).floor' : t
       }
   """,
   timeout: 300_000
@@ -265,7 +269,7 @@ Spiral.Kino.eval!(
 
 ## ceil
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ceil forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.ceiling' : t\n        Lua = fun () => n |> $'math.ceil' : t\n        Fsharp = fun () => n |> $'ceil' : t\n        Python = fun () =>\n            global \"import math\"\n            n |> $'math.ceil' : t\n        Rust = fun () => $'!n.ceil()' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ceil forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.ceiling' : t\n        Lua = fun () => n |> $'math.ceil' : t\n        Fsharp = fun () => n |> $'ceil' : t\n        Python = fun () =>\n            global \"import math\"\n            n |> $'math.ceil' : t\n        Rust = fun () => $'!n.ceil()' : t\n        Zig = fun () => $'\\@ceil(!n)' : t\n        Lean = fun () => $'(!n).ceil' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -281,6 +285,8 @@ Spiral.Kino.eval!(
               global "import math"
               n |> $'math.ceil' : t
           Rust = fun () => $'!n.ceil()' : t
+          Zig = fun () => $'\@ceil(!n)' : t
+          Lean = fun () => $'(!n).ceil' : t
       }
   """,
   timeout: 300_000
@@ -307,12 +313,19 @@ Spiral.Kino.eval!(
 
 ## round
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl round forall t {number; float}. (x : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor |> convert.i32\n                if result % 2 = 0\n                then result\n                else result - 1\n                |> convert.convert\n        Lua = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor\n                if result % 2 = 0\n                then result\n                else result - 1\n        Fsharp = fun () => x |> $'round' : t\n        Python = fun () => x |> $'round' : t\n        // F#'s round (Math.Round) rounds half to even\n        Rust = fun () => $'(!x).round_ties_even()' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl round forall t {number; float}. (x : t) : t =\n    inl round_half_to_even () =\n        inl lower = floor x\n        inl difference = x - lower\n        if difference > 0.5 then lower + 1\n        elif difference < 0.5 then lower\n        elif floor (lower / 2) * 2 = lower then lower\n        else lower + 1\n    backend_switch {\n        Gleam = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor |> convert.i32\n                if result % 2 = 0\n                then result\n                else result - 1\n                |> convert.convert\n        Lua = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor\n                if result % 2 = 0\n                then result\n                else result - 1\n        Fsharp = fun () => x |> $'round' : t\n        Python = fun () => x |> $'round' : t\n        Rust = fun () => $'(!x).round_ties_even()' : t\n        Zig = round_half_to_even\n        Lean = round_half_to_even\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl round forall t {number; float}. (x : t) : t =
+      inl round_half_to_even () =
+          inl lower = floor x
+          inl difference = x - lower
+          if difference > 0.5 then lower + 1
+          elif difference < 0.5 then lower
+          elif floor (lower / 2) * 2 = lower then lower
+          else lower + 1
       backend_switch {
           Gleam = fun () =>
               if x < 1
@@ -333,8 +346,9 @@ Spiral.Kino.eval!(
                   else result - 1
           Fsharp = fun () => x |> $'round' : t
           Python = fun () => x |> $'round' : t
-          // F#'s round (Math.Round) rounds half to even
           Rust = fun () => $'(!x).round_ties_even()' : t
+          Zig = round_half_to_even
+          Lean = round_half_to_even
       }
   """,
   timeout: 300_000
@@ -373,15 +387,22 @@ Spiral.Kino.eval!(
 
 ## log_base
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_base (new_base : f64) (a : f64) : f64 =\n    if is_rust ()\n    then $'(!a).log(!new_base)'\n    else $'System.Math.Log (!a, !new_base)'","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl log_base (new_base : f64) (a : f64) : f64 =\n    backend_switch {\n        Gleam = fun () => log a / log new_base\n        Lua = fun () => log a / log new_base\n        Fsharp = fun () => $'System.Math.Log (!a, !new_base)' : f64\n        Python = fun () => log a / log new_base\n        Rust = fun () => $'(!a).log(!new_base)' : f64\n        TypeScript = fun () => log a / log new_base\n        Zig = fun () => log a / log new_base\n        Lean = fun () => log a / log new_base\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
   ~S"""
   inl log_base (new_base : f64) (a : f64) : f64 =
-      if is_rust ()
-      then $'(!a).log(!new_base)'
-      else $'System.Math.Log (!a, !new_base)'
+      backend_switch {
+          Gleam = fun () => log a / log new_base
+          Lua = fun () => log a / log new_base
+          Fsharp = fun () => $'System.Math.Log (!a, !new_base)' : f64
+          Python = fun () => log a / log new_base
+          Rust = fun () => $'(!a).log(!new_base)' : f64
+          TypeScript = fun () => log a / log new_base
+          Zig = fun () => log a / log new_base
+          Lean = fun () => log a / log new_base
+      }
   """,
   timeout: 300_000
 )

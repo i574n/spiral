@@ -30,7 +30,7 @@ var
   v1: LongInt;
 begin
   case v0.tag of
-      2: begin // Flag
+      2: begin
           v2 := v0.c2_0;
           if v2 then begin
               Result := 11;
@@ -38,11 +38,11 @@ begin
               Result := 5;
           end;
       end;
-      1: begin // Hit
+      1: begin
           v1 := v0.c1_0;
           Result := v1;
       end;
-      0: begin // Idle
+      0: begin
           Result := 3;
       end;
   end;
@@ -89,6 +89,8 @@ begin
   v8 := ClosureCreate0(v7);
   Result := method1(v8);
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

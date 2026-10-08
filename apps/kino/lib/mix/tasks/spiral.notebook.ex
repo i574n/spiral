@@ -24,8 +24,6 @@ defmodule Mix.Tasks.Spiral.Notebook do
 
     path = opts[:path] || Mix.raise("missing --path")
 
-    # A successful run writes <nb>.livemd.ipynb (or --output-path) and its .html through jupyter nbconvert (--no-html
-    # skips it).
     case Spiral.Kino.Notebook.run(path,
            output_path: opts[:output_path],
            spi_path: opts[:spi_path],

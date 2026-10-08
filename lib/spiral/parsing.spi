@@ -37,10 +37,6 @@ inl new_parser_state' text_length =
     new_parser_state 0 1 1 text_length |> parser_state
 
 /// ### parser_error
-// A failure: the position it happened at and a formatter that gets the text and that position back when the message is
-// needed (`error_message`). Formatters take everything else from compile-time values, so they capture nothing at run
-// time: Rust then reuses one closure per thread instead of allocating one for every failed alternative (most are
-// discarded by `<|>`, `many`, ...). `parse` / `run_parser` still return the message as `() -> string`.
 type parser_error =
     {
         format : string * int * parser_state -> string
@@ -60,9 +56,6 @@ inl error_message (t : string) (e : parser_error) : string =
     e.format (t, e.i, e.s)
 
 /// ### trace_entry
-// Verbose entry traces of the looping combinators (kept from the quadratic-behaviour hunt). A compile-time switch:
-// while false they emit no code at all (each trace call otherwise adds ~2.4k lines of F# and ~1 min of compile time to
-// every program using these combinators); set it to true to get them back.
 inl trace_entry_enabled () =
     false
 
@@ -74,10 +67,6 @@ inl trace_entry (name : string) (locals : () -> _) : () =
 
 /// ### slice
 inl slice (start : int) (end : int) (t : string) : string =
-    // An empty range is "" up front: with static arguments (no trace call keeps them opaque any more) sm'.range would
-    // otherwise fold slice i i at compile time into an inclusive slice that is out of bounds when i = ##t.
-    // `dyn t`: sm'.range keeps the end inclusive for a compile-time string with a run-time start (start_var_s_fixed), which
-    // is one past the text at its end (Rust's string_slice aborts there; strict results evaluate such slices).
     inl t = dyn t
     if start >= end then ""
     else
@@ -293,7 +282,6 @@ inl (<|>) forall t. (a : parser t) (b : parser t) : parser t = fun t, i, s =>
     | Error _ => b (t, i, s)
 
 /// ### (|>>)
-// `f` maps a thunk to a thunk (the API of the lazy results this library had): both are inlined and forced here.
 inl (|>>) p f : parser _ =
     p >> resultm.map fun r, i', s' =>
         f (fun () => r) (), i', s'
@@ -330,8 +318,6 @@ inl many1_chars (p : parser char) : parser string = fun t, i, s =>
         s' |> 루프 i'
 
 /// ### many1_satisfy
-// `many1_chars` of a single-char predicate: a plain loop over the text (positions advanced like `update_char`), without
-// a parser call and its result thunk per character (one allocation per character on Rust).
 inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state s' as s) =>
     let rec 루프 (i' : int) (s'' : parser_state) : int * parser_state =
         if i' >= s'.text_length
@@ -348,7 +334,6 @@ inl many1_satisfy (fn : char -> bool) : parser string = fun t, i, (parser_state 
         fail (fun _, i, s => "parsing.many1_satisfy / no matching char / " ++#? { i s }) i s
 
 /// ### many1_none_of
-// `none_of chars |> many1_chars` on `many1_satisfy`.
 inl many1_none_of (chars : list char) : parser string =
     many1_satisfy fun c => chars |> listm'.exists' ((=) c) |> not
 
@@ -455,8 +440,6 @@ inl concat_rev (acc : list string) : string =
     if is_rust () then
         match acc with
         | _ :: _ :: _ :: _ =>
-            // Rust: one buffer of the total length, each piece copied to its place from the end (the list is
-            // last-first): three allocations instead of a string and a list node per pair and pass.
             inl total : i32 = (0i32, acc) ||> listm.fold fun n (x : string) => n + ##x
             inl buf : $'Rc<RefCell<Vec<u8>>>' = $'Rc::new(RefCell::new(vec\![0u8; !total as usize]))'
             inl _ : i32 = (total, acc) ||> listm.fold fun end (x : string) =>
@@ -468,8 +451,6 @@ inl concat_rev (acc : list string) : string =
     else 루프 true acc
 
 /// ### string_of
-// `#?` for the many*_strings element results, except that a string is returned as is (the generic formatter copies it
-// through a string builder: several allocations per element on Rust).
 inl string_of forall t. (x : t) : string =
     real
         match x with
@@ -483,7 +464,6 @@ inl many1_strings (p : parser _) : parser string = fun t, i, s =>
     | Error e => e |> Error
     | Ok (r, i', s') =>
         inl first = string_of r
-        // `acc`: the elements after the first, last first (one element, the common case, builds no list)
         let rec 루프 (acc : list string) (i'' : int) s'' : result (string * int * _) _ =
             match p (t, i'', s'') with
             | Error _ =>
@@ -503,8 +483,6 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
     | Error _ => Ok ("", i, s)
     | Ok (_, i', _) when i' = i => fail (fun _ => "parsing.many_strings / first inner parser consumed no text") i s
     | Ok (r, i', s') when is_rust () =>
-        // Rust: the elements go straight into one growing buffer (no list node per element and no concat_rev
-        // pass); 2-3x faster on bench/parsing's quoted and CLI cases, where an element is often a single char.
         inl buf : $'Rc<RefCell<std::string::String>>' = $'Rc::new(RefCell::new(std::string::String::new()))'
         inl push (x : string) : () = $'!buf.borrow_mut().push_str(&*!x)'
         inl first = string_of r
@@ -523,7 +501,6 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
         let rec 루프 (acc : list string) (i' : int) s' : result (string * int * _) _ =
             match p (t, i', s') with
             | Error _ =>
-                // one element: the string itself (`++# ""` copies it on Rust)
                 inl r = string_of r
                 inl r =
                     match acc with
@@ -535,8 +512,6 @@ inl many_strings (p : parser _) : parser string = fun t, i, s =>
         s' |> 루프 [] i'
 
 /// ### choice
-// A right fold into nested `<|>`: a compile-time list of parsers is unrolled (no runtime list of closures is built per
-// call, which on Rust cost one allocation per element, list node and the empty list on every call).
 inl choice forall t. (ps : list (parser t)) : parser t =
     inl none : parser t = fun _, i, s =>
         fail (fun _ => "parsing.choice / no parsers succeeded") i s
@@ -552,7 +527,6 @@ inl between p_open p_close p_content : parser _ = fun t, i, s =>
             match p_close (t, i'', s'') with
             | Ok (_, i''', s''') => Ok (result, i''', s''')
             | Error e' =>
-                // the only failure that keeps run-time data (the inner error and both positions): allocates
                 fail
                     fun t, _, _ =>
                         inl e = fun () => e' |> error_message t

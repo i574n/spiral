@@ -1,7 +1,3 @@
-//! Stdio language server in front of the single-flight Spiral compiler.
-//!
-//! Zed speaks LSP. SpiralCompiler does not, so this process answers the editor
-//! and shells out to `dotnet SpiralCompiler.dll` for check and build.
 
 use serde_json::{json, Value};
 use std::collections::HashMap;

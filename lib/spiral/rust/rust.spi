@@ -225,10 +225,6 @@ nominal ref_mut t =
     )
 
 /// ### send
-// Rust values are Rc-based and never Send: the bound is dropped (code that must cross threads moves plain data
-// instead, as runtime.execute_with_options's Rust arm does). A nominal (not `type send t = t`): threading passes `send` as a type constructor, and an identity
-// type-level lambda crashes the single-flight compiler's fill (TyInl(t, TyVar t)). The macro interpolates `(t): a bare backtick-t before the closing quote would lex as the type
-// variable t'.
 nominal send t = $'`(t)'
 
 /// ### emit_expr
@@ -305,8 +301,6 @@ inl clone forall t. (x : t) : t =
 
 /// ### clone_rust
 inl clone_rust forall t. (x : t) : t =
-    // Rust only (other backends: `x` itself, no code): a copy for a macro that consumes its argument
-    // (`self` methods, `match`) when the value is used again.
     backend_switch {
         Gleam = fun () => x
         Lua = fun () => x
@@ -364,13 +358,6 @@ inl ref_leak forall t. (x : cell_ref t) : ref t =
 inl to_mut forall t. (x : t) : () =
     (!\($'"true; // 1"') : bool) |> ignore
     !\($'"let mut !x = !x"') : ()
-    // (!\($'"true; !x"') : bool) |> ignore
-    // !\($'"!x"')
-    // inl result = !\($'"!x"') : mut' t
-    // !\($'"!result"')
-    // inl result = !\($'"*/ // a"') : mut' t
-    // inl result = !\($'"!x"') : mut' t
-    // result |> fun x => $'!x |> unbox // b'
 
 /// ### to_ref
 inl to_ref forall t. (x : t) : ref t =
@@ -453,9 +440,6 @@ inl ops_deref forall t. (ref : t) : t =
     !\\(ref, $'"core::ops::Deref::deref(&$0)"')
 
 /// ### one_param_fn
-// Rust: a Spiral closure over a tuple takes its fields as separate Rust parameters, while the closures that
-// Rust iterators and Option call pass one value (`|x| f(x)`). The wrapper takes the value as one Rust parameter (a
-// macro type spelling the Rust type of `t`) and unpacks it in Spiral; other types pass through unchanged.
 nominal one_param t = $'(`t)'
 inl one_param_fn forall t u. (fn : t -> u) : one_param t -> u =
     fun (x : one_param t) =>
@@ -478,10 +462,6 @@ inl break x : () =
 inl fix_closure forall t. (depth : u8 * u8) (x : t) =
     backend_switch {
         Rust = fun () =>
-            // Rust emits the caller's statements flat, in the block that opened the closure
-            // (`attach(|py| { //`, `spawn(|| { //`, `Box::pin(async { /*`): one `}` and one `)` close it, whatever
-            // `depth` says. The text must be a literal (codegenRust inlines literal emits only).
-            // `(!x)` (not a `$0` argument, which is only the first variable of a tuple) returns a tuple whole.
             inl is_unit : bool =
                 real
                     typecase t with
@@ -543,9 +523,6 @@ inl new_partial_eq_wrapper forall t.
     (x : t)
     : partial_eq_wrapper t
     =
-    // Rust: real top-level items (Rust-only globals, kept by codegenRust). `eq_fn` is not called: an `impl`
-    // can't capture Spiral code, so the wrapper compares `Arc`s by pointer, which is what its only caller
-    // (threading.new_partial_eq_wrapper_arc / partial_eq_wrapper_arc_eq) does. Other `t` get no PartialEq.
     global "#[derive(Debug, Clone)]\npub struct PartialEqWrapper<T>(pub T);\nimpl<T: ?Sized> PartialEq for PartialEqWrapper<std::sync::Arc<T>> {\n    fn eq(&self, other: &Self) -> bool { std::sync::Arc::ptr_eq(&self.0, &other.0) }\n}"
     $'PartialEqWrapper(!x.clone())' : partial_eq_wrapper t
 

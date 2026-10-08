@@ -1,9 +1,5 @@
 inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
 
-// Byte-offset primitives. This domain compiles to Gleam on Erlang, where `gleam/string`'s length/slice walk the
-// graphemes from the start (O(n) per call), which made every scan below quadratic or worse. Here every offset is a
-// byte offset into the UTF-8 binary: `byte_size` and `binary:part` are O(1). Scans only stop at ASCII delimiters and
-// the slices between them stay valid UTF-8; the Elixir wire codecs (domain.ex) count bytes as well.
 inl ffi () : () =
     global "@external(erlang, \"erlang\", \"byte_size\")\nfn kino_text_size(text: String) -> Int"
     global "@external(erlang, \"binary\", \"part\")\nfn kino_text_part(text: String, at: Int, len: Int) -> String"
@@ -17,7 +13,6 @@ inl index (text : string) (i : i32) : char =
     ffi ()
     $'kino_text_at(!text, !i, 1)' : char
 
-// The bytes from `from` to `to` inclusive (clamped to the text).
 inl slice (text : string) {from=(from : i32) to=(to : i32)} : string =
     ffi ()
     inl n = to - from + 1i32
@@ -275,7 +270,6 @@ inl next_line (text : string) (i : i32) : line_step =
         elif nl = i then LineGot ("", nl + 1i32)
         else LineGot (slice text {from=i; to=nl - 1i32}, nl + 1i32)
 
-// Tail recursive, appending to the left: Erlang extends `acc` in place, so a replace is linear in the text.
 let rec replace_from (text : string) (pat : string) (repl : string) (i : i32) (acc : string) : string =
     inl at = find_from text pat i
     if at < 0i32 then

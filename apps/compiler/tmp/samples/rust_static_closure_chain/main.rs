@@ -496,7 +496,7 @@ fn closure0() -> Rc<dyn Fn() -> Rc<UH0>> {
 fn method0(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
     loop {
         match &*v0 {
-            UH0::UH0_0(v2, v3) => { // Cons
+            UH0::UH0_0(v2, v3) => {
                 let mut v2: u64 = *v2;
                 let mut v3: Rc<dyn Fn() -> Rc<UH0>> = v3.clone();
                 let mut v4: Rc<UH0> = v3();
@@ -504,7 +504,7 @@ fn method0(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
                 (v0, v1) = (v4.clone(), v5);
                 continue;
             }
-            UH0::UH0_1 => { // Nil
+            UH0::UH0_1 => {
                 return v1;
             }
         }

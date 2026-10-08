@@ -96,8 +96,6 @@ let rec walk (src : string) (i : i32) (xs : cells) (kind : string) (buffer : str
         | NoMark => walk src next xs kind (add_line buffer line)
         | Mark (name, rest) =>
             inl xs2 = push xs kind buffer
-            // A mid-cell `#!import` splits the cell: the lines after it stay in the same kernel (.NET Interactive
-            // runs them as the next submission), e.g. polyglot's Notebooks.dib `#!import common.fsx` / `let ...`.
             if name = "import" then walk src next (Cell ("import", text.trim rest, xs2)) kind ""
             elif name = "meta" then walk src next xs2 "" ""
             elif name = "markdown" then walk src next xs2 name ""
@@ -109,14 +107,6 @@ inl parse_dib (src : string) : string =
     wire (walk (text.replace src "\r\n" "\n") 0i32 NoCell "" "")
 
 
-// to_spi is `spiral export <nb>.cells spi` (apps/spiral/spiral.spi: parse, format_block, format_blocks) byte for byte,
-// so a .spi regenerated from the .livemd equals the one exported from the .dib:
-// - only markdown and Spiral cells count; a Spiral cell with `///- ` and ` --real` belongs to the .spir export;
-// - a markdown cell is kept only when another markdown or Spiral cell follows it;
-// - a Spiral cell is copied verbatim (trimmed, directive lines like `///> _` included) unless it has `///- ` and
-//   ` --test` or ` --ignore`; a markdown line becomes `/// <line>` (after its indentation), an empty one `/// `, and
-//   lines ending in ` (test)` are dropped;
-// - cells are joined by a blank line, except that a markdown cell sits directly on the code cell after it.
 inl spir_cell (source : string) : bool = text.contains source "///- " && text.contains source " --real"
 
 inl test_cell (source : string) : bool =
@@ -126,7 +116,6 @@ union export_kind =
     | SpiExport
     | SpirExport
 
-// the Spiral cells of one export (with the markdown cells): the .spi takes those without ` --real`, the .spir those with it
 inl export_cell (kind : export_kind) (cell_kind : string) (source : string) : bool =
     match kind with
     | SpiExport => cell_kind = "spiral" && spir_cell (text.trim source) = false
@@ -219,5 +208,4 @@ inl export_text (kind : export_kind) (src : string) : string = emit_spi (formatt
 
 inl to_spi (src : string) : string = export_text SpiExport src
 
-// to_spir is `spiral export <nb>.cells spir` (<nb>_real.spir): the same format, over the ///- ... --real cells
 inl to_spir (src : string) : string = export_text SpirExport src

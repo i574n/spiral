@@ -121,20 +121,14 @@ inl result'_types () =
 type result'_switch t u =
     {
         Gleam : $'Result(`t, `u)'
-        // Lua: the union too (see result'_union)
         Lua : result t u
         Fsharp : $'Result<`t, `u>'
-        // Python: result' is the `result t u` union itself (Ok is tag 0, Error tag 1), so Ok and Error stay
-        // apart as in F# (a bare value can't tell `Error e` from `Ok e`)
         Python : result t u
         Rust : $'Result<`t, `u>'
-        // TypeScript: the union too, as Lua and Python
         TypeScript : result t u
     }
 nominal result' t u = $'backend_switch `(result'_switch t u)'
 
-// Lua, Python and TypeScript: result' is the `result t u` union itself (Ok is tag 0, Error tag 1); a bare value can't tell
-// `Error e` from `Ok e`
 inl result'_union () : bool =
     backend_switch {
         Gleam = fun () => false
@@ -165,7 +159,6 @@ inl result'_python () : bool =
 
 /// ### unbox
 inl unbox forall t u. (x : result' t u) : result t u =
-    // Python: result' already is the union (see result'_switch)
     if result'_union ()
     then $'!x ' : result t u
     else
@@ -192,7 +185,6 @@ inl unbox forall t u. (x : result' t u) : result t u =
                     | () => $'match !x with Ok () -> !ok () | Error x -> !error x' : result t u
                     | _ => $'match !x with Ok x -> !ok x | Error x -> !error x' : result t u
                 : result t u
-            // unused (Python takes the branch above); kept so the other backends' output stays unchanged
             Python = fun () =>
                 $'ok = !ok '
                 $'error = !error '
@@ -212,7 +204,6 @@ inl unbox forall t u. (x : result' t u) : result t u =
 
 /// ### box
 inl box forall t u. (x : result t u) : result' t u =
-    // Python: the union value itself (a known case becomes a US constructor call)
     if result'_union ()
     then x |> dyn |> fun x => $'!x ' : result' t u
     else
@@ -222,7 +213,6 @@ inl box forall t u. (x : result t u) : result' t u =
                 Gleam = fun () => $'Ok(!x)' : result' t u
                 Lua = fun () => $'!x ' : result' t u
                 Fsharp = fun () => $'Ok !x ' : result' t u
-                // unused (Python takes the branch above); kept so the other backends' output stays unchanged
                 Python = fun () => $'!x ' : result' t u
                 Rust = fun () => $'Ok::<`t, `u>(!x)' : result' t u
             }
@@ -237,7 +227,6 @@ inl box forall t u. (x : result t u) : result' t u =
 
 /// ### map'''
 inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
-    // every backend maps through the union (unbox/box carry the backend arms)
     x |> unbox |> map fn |> box
 
 /// ## rust
@@ -262,7 +251,6 @@ nominal anyhow_error =
 
 inl anyhow_error error : anyhow_error =
     backend_switch {
-        // Native strings are `Rc<str>` (not Send + Sync): anyhow takes them through a format string.
         Rust = fun () => !\\(error, $'"anyhow::anyhow\!(\\\"{}\\\", $0)"') : anyhow_error
     }
 
@@ -273,7 +261,6 @@ inl try' forall t u. (x : result' t u) : t =
             typecase t with
             | () => true
             | _ => false
-    // Python has no `?`: an Error raises, as unwrap'' does
     if result'_union ()
     then
         match unbox x with

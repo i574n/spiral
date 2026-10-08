@@ -46,9 +46,6 @@ module Program =
         let payload = anonymousRecord payloadType ["uri", box uri; "spiprojText", box text]
         FSharpValue.MakeUnion(case, [|payload|]) :?> SupervisorReq
 
-    /// Experimental (SPIRAL_HOST_OPEN_PROJECT=1): like the editor, open the owning package.spiproj once per
-    /// process before its files, so the core's attention loop may publish TypeErrors. Observed so far: it
-    /// publishes PackageErrors for dependencies but not the file's TypeErrors before BuildFile fails.
     let private openedProjects = HashSet<string>(StringComparer.OrdinalIgnoreCase)
     let private openOwningProject (supervisor : Ch<SupervisorReq>) (inputPath : string) =
         let rec find (directory : DirectoryInfo) =
@@ -100,40 +97,30 @@ module Program =
                 else Some value)
         match candidate with
         | Some value when validIdentifier value && declaredBinding source value -> value
-        // A script may end in an expression (`method0(v0, v1)`, a literal): the binding is only a label for the
-        // manifest and the `entry=` report, so record it as such instead of failing a valid compile.
         | Some _ -> "(expression)"
         | None -> failwith "generated F# has no terminal expression"
 
     let private writeEntryManifest outputPath entryBinding generatedBytes revisionMode backend =
-        // The receipt is an attestation sidecar. App builds do not read it, and the
-        // EOIE cleaners delete it. Write it only when a caller asks.
         if String.Equals(Environment.GetEnvironmentVariable "SPIRAL_WRITE_ENTRY_MANIFEST", "1", StringComparison.Ordinal) then
             let manifestPath = outputPath + ".spiral-entry"
             let text =
                 $"schema=3\nentry_binding={entryBinding}\nbackend={backend}\nserver_pid={Environment.ProcessId}\ngenerated_bytes={generatedBytes}\nrevision_mode={revisionMode}\n"
             File.WriteAllText(manifestPath, text)
 
-    /// SPIRAL_HOST_TRACE_DIAGNOSTICS=1 echoes every diagnostic message the core sends to stderr.
     let private traceDiagnostics =
         String.Equals(Environment.GetEnvironmentVariable "SPIRAL_HOST_TRACE_DIAGNOSTICS", "1", StringComparison.Ordinal)
 
-    /// How long a FatalError waits for the typer's detailed diagnostics before it is reported alone.
     let private fatalGraceMs =
         match Int32.TryParse(Environment.GetEnvironmentVariable "SPIRAL_HOST_FATAL_GRACE_MS") with
         | true, value when value >= 0 -> value
         | _ -> 750
 
-    // Windows file URIs differ in drive-letter case and escaping between the host and the core.
     let private normalizeUri (uri : string) =
         Uri.UnescapeDataString(uri).Replace('\\', '/').TrimEnd('/')
 
     let private sameUri (a : string) (b : string) =
         String.Equals(normalizeUri a, normalizeUri b, StringComparison.OrdinalIgnoreCase)
 
-    /// The kind (tools match on it), the message as written (a rustc-style report starts with `error[CODE]:`),
-    /// then the evaluation trace, innermost first and indented. `%A` printed the anonymous record: quotes,
-    /// escaped newlines, `trace = [...]`.
     let private renderTracedError (message : string) (trace : string list) =
         let message = "TracedError: " + (if isNull message then "" else message.TrimEnd())
         match trace with
@@ -148,11 +135,6 @@ module Program =
     let private diagnosticFor uri = function
         | TypeErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
             Some $"TypeErrors: %A{x.errors}"
-        // ParserErrors do not end a build: a top-level block that fails to parse is left out of the module and
-        // the build goes on, failing only if something uses it (then its FatalError carries these errors as
-        // detail, through diagnosticForOther). Single-flight never publishes parser errors during a batch
-        // build; hopac publishes them asynchronously, so ending the build on them made hopac's result depend
-        // on whether they arrived before BuildFile returned (FRONTIER.md fix 31).
         | TokenizerErrors x when sameUri x.uri uri && not (List.isEmpty x.errors) ->
             Some $"TokenizerErrors: %A{x.errors}"
         | PackageErrors x when not (List.isEmpty x.errors) ->
@@ -160,7 +142,6 @@ module Program =
         | TracedError x -> Some (renderTracedError x.message x.trace)
         | _ -> None
 
-    /// A diagnostic about some other file (e.g. an imported package) that explains a later FatalError.
     let private diagnosticForOther = function
         | TypeErrors x when not (List.isEmpty x.errors) -> Some $"TypeErrors ({x.uri}): %A{x.errors}"
         | ParserErrors x when not (List.isEmpty x.errors) -> Some $"ParserErrors ({x.uri}): %A{x.errors}"
@@ -171,9 +152,6 @@ module Program =
         let gate = obj()
         let mutable active : (string * Threading.Tasks.TaskCompletionSource<string>) option = None
         let mutable related : string option = None
-        // The entry's TypeErrors, held back briefly: the core's FatalError for a type error names the entry's parse
-        // errors and every typer error with its position (the single-flight type-error branch), so it wins when it
-        // follows (lane H's empty `match` was reported as the caller's 'Unbound variable' only).
         let mutable entryTypeErrors : string option = None
 
         member _.Begin(uri) =
@@ -256,9 +234,6 @@ module Program =
         binding : string
         }
 
-    // `reuse = false`: a process that compiles once (the CLI's single compile, --plan-ir) never asks again, so it skips
-    // the cache and the source-graph fingerprint behind it (every .spi under the input's directory and the package
-    // directory read and hashed: ~0.3-0.5 s of each fresh compile).
     type private CompilationCache(reuse : bool) =
         let entries = Dictionary<string,CachedCompilation>(StringComparer.Ordinal)
         let key uri backend = backend + "\u0000" + uri
@@ -326,8 +301,6 @@ module Program =
         drain state.bundler
 
 #if SPIRAL_CORE_HOPAC
-    // The direct-project bypass reaches into single-flight internals (string ids, nominal_add)
-    // that the Hopac core replaced with typed ids; Hopac mode always goes through the supervisor.
     let private directProjectCompileFsharp (_input : string) (_output : string) : Result<int * string * string, string> =
         Error "SPIRAL_DIRECT_PROJECT_BUILD is only available in single-flight mode"
 #else
@@ -422,8 +395,6 @@ module Program =
 #endif
 
 
-    /// The single-flight Rust backend prints the emit marker (`__spiral_emit_rust`) as a call and keeps the
-    /// snippet in a separate string binding. Inline the snippet and drop that binding.
     let private rewriteRustEmitExpr (generated : string) =
         if not (generated.Contains("__spiral_emit_rust", StringComparison.Ordinal)) then generated
         else
@@ -495,17 +466,12 @@ module Program =
                         for argIndex = args.Length - 1 downto 0 do
                             expression <- expression.Replace($"${argIndex}", args.[argIndex])
                         rewritten.[index] <- emitted.Groups.["prefix"].Value + expression + ";"
-                    // The text isn't a literal binding (e.g. a method parameter): leave the call for rustc to
-                    // report. The compiler's own codegenRust inlines emits now (inlineFableEmits); this is a fallback.
                     | _ -> ()
             rewritten
             |> Array.mapi (fun index line -> if drop.Contains index then None else Some line)
             |> Array.choose id
             |> String.concat "\n"
 
-    /// Backends whose BuildFile writes several files next to the input (upstream CodegenCpp/CodegenPython): the
-    /// suffixes the core appends to the extension-less input path. BuildFile returns their concatenation, which is
-    /// no file's content: writing it over `main.cpp`/`main.py` clobbered the real output.
     let private multiFileSuffixes = function
         | "Cpp + Cuda" -> Some [ ".corelib.hpp"; ".hpp"; ".cpp"; ".cu" ]
         | "Python + Cuda" -> Some [ "_auto.py"; ".py" ]
@@ -538,8 +504,6 @@ module Program =
                 | None, SourceUnchanged -> "unchanged"
                 | None, ChangeSource _ -> "change"
             if cached.IsNone then warmModulePipeline code
-            // The core's BuildFile also writes its output next to the input, asynchronously. Wait for that
-            // write instead of racing it (same file, same text): true once `path` holds `text`.
             let awaitCoreWrite (path : string) (text : string) =
                 let deadline = DateTime.UtcNow.AddSeconds 5.0
                 let mutable landed = false
@@ -552,9 +516,6 @@ module Program =
                 with :? IOException when attempt < 250 ->
                     Threading.Thread.Sleep 20
                     writeWithRetry path text (attempt + 1)
-            // An output path elsewhere: the core still writes `<input>.<ext>` next to its source (the sample harness's
-            // layout, one committed copy). Put those files back as they were, so building to another path leaves the
-            // source tree untouched (app builds overwrote tracked `dice.fsx`/`dice.rs` and left `*_native.rs` beside sources).
             let coreOutputs =
                 let coreBase = Path.ChangeExtension(inputPath, null)
                 match multiFile with
@@ -604,9 +565,6 @@ module Program =
                 else
                     let generated = buildTask.GetAwaiter().GetResult()
                     if isNull generated then
-                        // The core fills BuildFile with None before its FatalError reaches the router; wait long
-                        // enough for that diagnostic (plus its grace) so rejections are reported as such. 4 s was not
-                        // enough on a loaded machine (the message arrived, the row said "no diagnostic arrived").
                         if waiter.Task.Wait(TimeSpan.FromMilliseconds(float (fatalGraceMs + 10000))) then Error (waiter.Task.GetAwaiter().GetResult())
                         else Error "BuildFile returned no code and no diagnostic arrived"
                     else
@@ -617,8 +575,6 @@ module Program =
                         let coreFile = Path.ChangeExtension(inputPath, Path.GetExtension outputPath)
                         match multiFile with
                         | Some suffixes ->
-                            // The core writes each file itself: wait for this build's writes, then copy them when the
-                            // requested output is somewhere else. Never write the concatenation.
                             let coreBase = Path.ChangeExtension(inputPath, null)
                             let outBase = Path.Combine(Path.GetDirectoryName outputPath, Path.GetFileNameWithoutExtension outputPath)
                             let deadline = DateTime.UtcNow.AddSeconds 5.0
@@ -633,11 +589,9 @@ module Program =
                                     if File.Exists source then File.Copy(source, outBase + suffix, true)
                         | None ->
                             if coreWrites && String.Equals(Path.GetFullPath coreFile, outputPath, StringComparison.OrdinalIgnoreCase) then
-                                // The output is the core's own file: one writer.
                                 if not (awaitCoreWrite outputPath generated) then writeWithRetry outputPath generated 0
                             else
                                 writeWithRetry outputPath generated 0
-                                // Let the core's own write land before it is undone.
                                 if coreWrites && not coreSnapshots.IsEmpty then awaitCoreWrite coreFile generated |> ignore
                         restoreCoreOutputs ()
                         let binding =
@@ -671,8 +625,6 @@ module Program =
             RegexOptions.CultureInvariant)
         let spiralMain = Regex.Match(code, "(?m)^fn spiral_main\\(\\) -> i32 \\{")
         if not spiralMain.Success then failwith "canonical plan IR lowering could not locate spiral_main"
-        // The emitter writes top-level closing braces at column zero and escapes newlines
-        // in literals. Do not count braces inside a plan's string payload.
         let bodyMatch = Regex.Match(code.Substring(spiralMain.Index), @"(?ms)^fn spiral_main\(\) -> i32 \{\r?\n(?<body>.*?)^\}")
         if not bodyMatch.Success then failwith "canonical plan IR has no complete entry body"
         let spiralBody = bodyMatch.Groups.["body"].Value
@@ -743,8 +695,6 @@ module Program =
                 | ProjFilesTree.Directory(_, _, children) -> List.exists containsInput children
             if not (package.files.files.tree |> List.exists containsInput) then
                 failwith $"Check input is not declared in package: {inputPath}"
-            // Force the entire package result, including dependencies and modules after the input.
-            // No specialization or code generation: package-only modules need no main binding.
             let hasError, _ = Hopac.run package.result
             if hasError then failwith $"Package typecheck rejected: {packageDir}"
             printfn "checked package %s" packageDir
@@ -800,6 +750,7 @@ module Program =
         | ".rs" -> "Rust"
         | ".pas" | ".dpr" -> "Delphi"
         | ".zig" -> "Zig"
+        | ".lean" -> "Lean"
         | ".py" -> "Python + Cuda"
         | ".cpp" -> "Cpp + Cuda"
         | ".lua" -> "Lua"
@@ -807,8 +758,6 @@ module Program =
         | ".ts" | ".mts" -> "TypeScript"
         | other -> failwith $"cannot infer a backend from output extension '{other}'; pass --backend"
 
-    /// Where a timed-out compile stopped. The Hopac core exposes its last BuildFile stage lock-free, so this
-    /// works even when the Hopac scheduler is wedged and the core's own watchdog cannot report.
     let private stallDetail () =
 #if SPIRAL_CORE_HOPAC
         try $"; stalled at stage {buildFileInitializationStageNow ()}" with _ -> ""
@@ -816,10 +765,6 @@ module Program =
         ""
 #endif
 
-    /// Compiles every job of a TSV (id, backend, input.spi, output) in one warm process.
-    /// Each result row is appended and flushed as soon as the job finishes, so a caller can
-    /// resume after a crash from the first job without a row. A job that exceeds the timeout
-    /// is recorded and the process exits, because the supervisor may be wedged behind it.
     let private runBatch (jobsPath : string) (resultsPath : string) (timeoutMs : int) =
         let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
         let router = DiagnosticRouter()
@@ -828,15 +773,10 @@ module Program =
         let jobs =
             File.ReadAllLines jobsPath
             |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace line) && not (line.StartsWith "#"))
-        // A one-job batch (scripts/test.ps1 -FreshProcess, every hopac row) has nothing to reuse.
         let cache = CompilationCache(jobs.Length > 1)
         let budgetFromCaller = not (String.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable "SPIRAL_BUILD_BUDGET_MS"))
         use results = new StreamWriter(resultsPath, true, UTF8Encoding(false))
         results.AutoFlush <- true
-        // SPIRAL_BATCH_RECYCLE_AFTER_ERROR=1: end the batch after a job that returned an error (exit 4), so the caller
-        // starts a fresh process for the rest. The Hopac core leaves the join point work of a build the host
-        // abandons (it returns on the first type error) running into the next build (FRONTIER.md fix 57); after
-        // successful builds a warm process saves re-parsing the core library (~5 s per job).
         let recycleAfterError = String.Equals(Environment.GetEnvironmentVariable "SPIRAL_BATCH_RECYCLE_AFTER_ERROR", "1", StringComparison.Ordinal)
         let mutable exitCode = 0
         let mutable index = 0
@@ -845,12 +785,7 @@ module Program =
         while not timedOut && not recycle && index < jobs.Length do
             let fields = jobs.[index].Split('\t')
             let id, backend, input, output = fields.[0], fields.[1], fields.[2], fields.[3]
-            // Optional fifth column: per-job timeout in milliseconds (fast samples get seconds, mega samples minutes).
             let jobTimeoutMs = if fields.Length >= 5 && not (String.IsNullOrWhiteSpace fields.[4]) then int fields.[4] else timeoutMs
-            // Give the core a build deadline 3 s before the job timeout, so a stalled Hopac evaluation reports
-            // its own diagnostic before the host gives up. It is absolute (TickCount64) because the job clock
-            // also covers opening the file and warming the `core` package, which happen before BuildFile.
-            // The single-flight core ignores it. An explicit SPIRAL_BUILD_BUDGET_MS from the caller wins.
             if not budgetFromCaller then
                 Environment.SetEnvironmentVariable("SPIRAL_BUILD_DEADLINE_MS", string (Environment.TickCount64 + int64 (max 1000 (jobTimeoutMs - 3000))))
             let stopwatch = Diagnostics.Stopwatch.StartNew()
@@ -923,10 +858,6 @@ module Program =
             try File.Delete socketPath with _ -> ()
             try File.Delete pidPath with _ -> ()
 
-    /// Determinism knobs for debugging the Hopac core. SPIRAL_HOPAC_WORKERS sets the Hopac scheduler's worker
-    /// count (default: one per core) and SPIRAL_DOP caps the core's parallel map/iter helpers. With both at 1 a
-    /// stall reproduces run after run, and a build that deadlocks only at 1 worker is blocking a worker thread.
-    /// The scheduler must be configured before anything touches Scheduler.Global, so this runs first in main.
     let private configureHopacFromEnvironment () =
 #if SPIRAL_CORE_HOPAC
         let positive name =
@@ -943,12 +874,6 @@ module Program =
         ()
 #endif
 
-    /// Supervisor's commands (polyglot apps/spiral/Supervisor.fs) and the spiral CLI's `fsharp`, as subcommands of this
-    /// host ("onion commands"), so builds call the compiler directly:
-    ///   build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error]   (Supervisor's `--build-file IN OUT` spelling
-    ///                                                                       too; the backend comes from OUT's extension)
-    ///   fsharp IN.spi [IN.spi ...] [--timeout MS]                         (`--spi-path`/`-s IN` too; writes IN.fsx beside IN)
-    /// Exit code 0 when every file compiled, 5 when one failed (its errors on stderr), 3 on timeout, 2 on bad arguments.
     let private parseBuildFileArgs (argv : string []) =
         let positional = ResizeArray<string>()
         let mutable timeoutMs = 60 * 60 * 1000
@@ -998,7 +923,6 @@ module Program =
         let thread = Threading.Thread(Threading.ThreadStart(fun () -> try work () with error -> eprintfn "%s" error.Message), 64 * 1024 * 1024)
         thread.IsBackground <- true
         thread.Start()
-        // Hard exit either way: a timed-out compile leaves compiler threads running that would keep the process alive.
         if thread.Join timeoutMs then exit result
         else
             eprintfn "build-file timed out after %d ms" timeoutMs
@@ -1007,7 +931,6 @@ module Program =
     [<EntryPoint>]
     let main argv =
         configureHopacFromEnvironment ()
-        // This host never answers hover requests (no language-server mode): the core can skip rendering hover types.
         if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
         if argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
@@ -1027,7 +950,6 @@ module Program =
                 exit (runAttestationBounded timeoutMs (fun () -> runPlanIr argv.[inputIndex] argv.[outputIndex]))
         elif (argv.Length = 3 || argv.Length = 5) && argv.[0] = "--batch" then
             let timeoutMs = if argv.Length = 5 && argv.[3] = "--timeout-ms" then int argv.[4] else 120000
-            // Hard exit: a timed-out job leaves compiler threads running that would keep the process alive.
             exit (runBatch argv.[1] argv.[2] timeoutMs)
         elif argv.Length >= 1 && (argv.[0] = "build-file" || argv.[0] = "--build-file" || argv.[0] = "fsharp") then
             match parseBuildFileArgs argv with
@@ -1039,7 +961,6 @@ module Program =
             let backend, input, output =
                 if argv.Length = 4 then argv.[1], argv.[2], argv.[3]
                 else backendOfOutput argv.[1], argv.[0], argv.[1]
-            // The harness's and Kino's short names for the two upstream multi-file backends.
             let backend = match backend with "Cpp" -> "Cpp + Cuda" | "Python" -> "Python + Cuda" | b -> b
             let server = new_server<Job<unit>, obj, string option, Job<unit>, unit> ()
             let router = DiagnosticRouter()

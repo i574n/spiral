@@ -331,7 +331,7 @@ struct ("b", "b")	| "b"     	| "b"   	| struct (1L, 110L)
 ```
 `
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun (a, _b) =>\n            a\n\n        \"B\",\n        fun (_a, b) =>\n            b\n    ]\n\ninl rec empty_2_tests () =\n    inl test_cases = [\n        (\"a\", \"a\"), \"a\"\n        (\"b\", \"b\"), \"b\"\n    ]\n\n    inl solutions = get_solutions ()\n\n    // inl is_fast () = true\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_2_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_2_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun (a, _b) =>\n            a\n\n        \"B\",\n        fun (_a, b) =>\n            b\n    ]\n\ninl rec empty_2_tests () =\n    inl test_cases = [\n        (\"a\", \"a\"), \"a\"\n        (\"b\", \"b\"), \"b\"\n    ]\n\n    inl solutions = get_solutions ()\n\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_2_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_2_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -358,7 +358,6 @@ Spiral.Kino.eval!(
 
       inl solutions = get_solutions ()
 
-      // inl is_fast () = true
 
       inl count =
           if is_fast ()
@@ -421,7 +420,7 @@ Input	| Expected	| Result	| Best
 01:21:25 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 26; i = 0}
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun n =>\n            n + 1f64\n    ]\n\ninl rec empty_1_tests () =\n    inl test_cases = [\n        0, 1\n        2, 3\n        5, 6\n    ]\n\n    inl solutions = get_solutions ()\n\n    // inl is_fast () = true\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_1_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_1_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> fsharp\n\ninl get_solutions () =\n    [\n        \"A\",\n        fun n =>\n            n + 1f64\n    ]\n\ninl rec empty_1_tests () =\n    inl test_cases = [\n        0, 1\n        2, 3\n        5, 6\n    ]\n\n    inl solutions = get_solutions ()\n\n\n    inl count =\n        if is_fast ()\n        then 1000i32\n        else 2000000i32\n\n    run_all (reflection.nameof { empty_1_tests }) count solutions test_cases\n    |> sort_result_list\n\nempty_1_tests ()","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -445,7 +444,6 @@ Spiral.Kino.eval!(
 
       inl solutions = get_solutions ()
 
-      // inl is_fast () = true
 
       inl count =
           if is_fast ()

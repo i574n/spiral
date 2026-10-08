@@ -345,7 +345,6 @@ nominal cancellation_token_registration = $'backend_switch `(cancellation_token_
 
 /// ### cancellation_source_token
 inl cancellation_source_token (x : cancellation_token_source) : cancellation_token =
-    // Rust: a source and its token share one `Arc<AtomicBool>`.
     if is_rust ()
     then $'!x.clone()'
     else $'!x.Token'

@@ -22,14 +22,14 @@ var
   v4: LongInt;
 begin
   case v0.tag of
-      1: begin // Cons
+      1: begin
           v1 := v0.c1_0;
           v2 := v0.c1_1;
           v3 := method0(v2);
           v4 := v1 + v3;
           Result := v4;
       end;
-      0: begin // Nil
+      0: begin
           Result := 0;
       end;
   end;
@@ -57,6 +57,8 @@ begin
   v8 := v7 - 6;
   Result := v8;
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

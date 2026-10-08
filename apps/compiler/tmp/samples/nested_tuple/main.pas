@@ -51,6 +51,8 @@ begin
   v4 := tmp5.f3;
   Result := method1(v1, v2, v3, v4);
 end;
+var SpiralOutputBuffer: array[0..65535] of Char;
 begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
   Halt(SpiralMain);
 end.

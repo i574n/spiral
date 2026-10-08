@@ -80,10 +80,6 @@ defmodule Spiral.Kino.Targets do
     end
   end
 
-  # `spiral rust` (a `///> rust ...` cell: a cargo project in the CLI's shared packages workspace, which its cells' own
-  # `cargo test` runs share too) one at a time across the machine: the old kernel ran a notebook's cells in order, and
-  # concurrent runs delete each other's sources ("couldn't read packages\Rust\<hash>\spiral.rs", rust/testing). The
-  # wait is not charged to the cell's budget.
   @spiral_rust_wait_ms 3_600_000
 
   defp one_spiral_rust(opts, timeout, deadline, fun) do
@@ -221,8 +217,6 @@ defmodule Spiral.Kino.Targets do
         run_program(
           dotnet,
           "dotnet fsi",
-          # preview: the F# language version the F# builds compile with (lib.ps1 PublishFsharp's LangVersion), e.g.
-          # from-the-end slicing `s.[^10..]` in lib F# arms
           ["fsi", "--nologo", "--langversion:preview", "--exec", in_notebook_dir(path, opts[:root])],
           if(notebook_dir?(opts[:root]), do: Keyword.put(opts, :cwd, opts[:root]), else: opts),
           timeout,
@@ -232,9 +226,6 @@ defmodule Spiral.Kino.Targets do
     end
   end
 
-  # A notebook's F# cell runs as if it were in the notebook's directory (lib/spiral file_system's tests look at both):
-  # that directory is the working directory, and a `# 1 "<dir>/<file>"` line directive makes it __SOURCE_DIRECTORY__
-  # (line numbers stay the file's own).
   defp notebook_dir?(root), do: is_binary(root) and File.dir?(root)
 
   defp in_notebook_dir(path, root) do
