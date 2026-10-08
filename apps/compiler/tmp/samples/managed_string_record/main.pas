@@ -5,7 +5,7 @@ uses SysUtils, Math;
 type
   TTuple0 = record f0: AnsiString; f1: LongInt; end;
 function method0(v0: AnsiString): TTuple0; forward;
-function method1(v0: LongInt; v1: AnsiString): LongInt; forward;
+function score_1(v0: LongInt; v1: AnsiString): LongInt; forward;
 function TupleCreate0(f0: AnsiString; f1: LongInt): TTuple0;
 begin
   Result.f0 := f0; Result.f1 := f1;
@@ -17,7 +17,7 @@ begin
   v1 := LongInt(Length(v0));
   Result := TupleCreate0(v0, v1);
 end;
-function method1(v0: LongInt; v1: AnsiString): LongInt;
+function score_1(v0: LongInt; v1: AnsiString): LongInt;
 var
   v2: LongInt;
   v3: LongInt;
@@ -41,8 +41,8 @@ begin
   tmp3 := method0(v0);
   v1 := tmp3.f0;
   v2 := tmp3.f1;
-  v3 := method1(v2, v1);
-  v4 := method1(v2, v1);
+  v3 := score_1(v2, v1);
+  v4 := score_1(v2, v1);
   v5 := v3 + v4;
   v6 := v5 - 12;
   Result := v6;

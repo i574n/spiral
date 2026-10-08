@@ -24,7 +24,7 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
-partial def method0 (p0 : String) : IO Unit := do
+partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
     let mut v1 : Int32 := default
     v1 := (Int32.ofNat v0.utf8ByteSize)
@@ -32,7 +32,7 @@ partial def method0 (p0 : String) : IO Unit := do
 partial def spiralMain : IO Int32 := do
     let mut v0 : String := default
     v0 := "SPIRAL_ITEM_METADATA_TEST_missing-item"
-    let _ := (← method0 v0)
+    let _ := (← target_global_0 v0)
     return (0 : Int32)
 end
 def main : IO UInt32 := do

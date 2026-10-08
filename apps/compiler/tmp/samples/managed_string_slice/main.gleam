@@ -39,13 +39,13 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
   }
 }
 
-pub fn method0(v0: String) -> String {
+pub fn middle_0(v0: String) -> String {
     let v1 = spiral_string_slice(v0, 1, 3)
     v1
 }
 pub fn main() {
 let v0 = "alpha"
-let v1 = method0(v0)
+let v1 = middle_0(v0)
 let v2 = spiral_string_length(v1)
 let v3 = v2 == 3
 case v3 {

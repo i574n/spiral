@@ -112,7 +112,7 @@ fn method0(p0: []const u8) Tuple0 {
     v1 = @as(i32, @intCast(v0.len));
     return Tuple0{ .f0 = v0, .f1 = v1 };
 }
-fn method1(p0: i32, p1: []const u8) i32 {
+fn score_1(p0: i32, p1: []const u8) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: []const u8 = p1; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
@@ -134,8 +134,8 @@ fn spiralMain() i32 {
     tmp3 = method0(v0);
     v1 = tmp3.f0;
     v2 = tmp3.f1;
-    v3 = method1(v2, v1);
-    v4 = method1(v2, v1);
+    v3 = score_1(v2, v1);
+    v4 = score_1(v2, v1);
     v5 = v3 +% v4;
     v6 = v5 -% @as(i32, 12);
     return v6;

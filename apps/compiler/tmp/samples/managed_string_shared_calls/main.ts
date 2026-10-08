@@ -29,14 +29,14 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: string): number {
+function measure_0(v0: string): number {
     let v1: number = spiral_string_length(v0);
     return v1;
 }
 export function main(): number {
     let v0: string = "qwe";
-    let v1: number = method0(v0);
-    let v2: number = method0(v0);
+    let v1: number = measure_0(v0);
+    let v2: number = measure_0(v0);
     let v3: number = (v1 + v2) | 0;
     let v4: number = (v3 - 6) | 0;
     return v4;

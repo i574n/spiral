@@ -33,6 +33,7 @@ typedef struct {
     UH0 * v0;
 } Mut2;
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -51,7 +52,7 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
     return x;
 }
 static inline void MutDecrefBody0(Mut0 * x){
-    
+    (void)x;
 }
 void MutDecref0(Mut0 * x){
     if (x != NULL && --(x->refc) == 0) { MutDecrefBody0(x); free(x); }
@@ -86,7 +87,7 @@ static inline void AssignMut0(int32_t * a0, int32_t b0){
     *a0 = b0;
 }
 static inline void MutDecrefBody1(Mut1 * x){
-    
+    (void)x;
 }
 void MutDecref1(Mut1 * x){
     if (x != NULL && --(x->refc) == 0) { MutDecrefBody1(x); free(x); }

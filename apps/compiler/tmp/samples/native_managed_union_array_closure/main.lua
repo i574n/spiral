@@ -14,7 +14,7 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local Us0i0, Us0i1, closure0, method0, method1, method2
+local Us0i0, Us0i1, closure0, method0, score_1, method2
 function Us0i0() return { tag = "Us0i0" } end
 function Us0i1(v0) return { tag = "Us0i1",  _1 = v0 } end
 
@@ -37,7 +37,7 @@ function method0(v0)
     return v0(0)
 end
 
-function method1(v0)
+function score_1(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Us0i0" then
         return 3
@@ -58,9 +58,9 @@ end
 
 local v0 = closure0(nil)
 local v1 = method0(v0)
-local v2 = method1(v1)
+local v2 = score_1(v1)
 local v3 = method2(v0)
-local v4 = method1(v3)
+local v4 = score_1(v3)
 local v5 = spiral_wrap_signed((v2 + v4), 32)
 local v6 = spiral_wrap_signed((v5 + 28), 32)
 return v6

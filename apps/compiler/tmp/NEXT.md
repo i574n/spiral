@@ -649,6 +649,12 @@ Details: `lanes/hopac/FRONTIER.md` fix 55.
       after abandoned error builds. Tried and reverted: the host waiting (up to 20 s) for the abandoned build's own
       BuildFile before the next job — 5,130 s and still 94 cutover rows, so the latch comes from work that outlives
       BuildFile itself.
+      2026-10-08: every leak seen so far surfaces as a failure, so the host now defers a failure from a process that
+      already served a build (no result line, exit 4) and the runner's resume runs that job first in the fresh
+      process. `-WarmRecycle` is hopac's default since. Same DLL, `-Suite all`, 3 workers: 782 s vs 1,834 s fresh,
+      2,014/2,014 rows identical (status, residual hash, verdict; `cache-dev/runs/hopac-20261008-114617` vs
+      `-120222`); 605 deferrals, 106 of them succeeded fresh (the 10-02 missing rows' class). The per-build
+      session object is still the way to a fully warm process (~12x), not needed for correctness any more.
       Single-flight oracle after the `>>=` error-channel fix (`runs/single-flight-20261002-141358`): 1088 parity +
       1 new, no REGRESSED, DISAGREE 0, every sample output byte-identical to the committed one (CR aside).
    3. **Race 34's general fix (a per-evaluation replay store).** Its faces fixed today: replay drawing from a

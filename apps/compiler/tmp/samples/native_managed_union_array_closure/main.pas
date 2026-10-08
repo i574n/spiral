@@ -12,7 +12,7 @@ type
   TClosure0 = class(TFun0)  function Invoke(v0: LongInt): TUS0; override; end;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TUS0; forward;
-function method1(v0: TUS0): LongInt; forward;
+function score_1(v0: TUS0): LongInt; forward;
 function method2(v0: TFun0): TUS0; forward;
 function US0_0: TUS0;
 begin
@@ -52,7 +52,7 @@ function method0(v0: TFun0): TUS0;
 begin
   Result := v0.Invoke(0);
 end;
-function method1(v0: TUS0): LongInt;
+function score_1(v0: TUS0): LongInt;
 var
   v1: TArray0;
   v2: LongInt;
@@ -92,9 +92,9 @@ var
 begin
   v0 := ClosureCreate0;
   v1 := method0(v0);
-  v2 := method1(v1);
+  v2 := score_1(v1);
   v3 := method2(v0);
-  v4 := method1(v3);
+  v4 := score_1(v3);
   v5 := v2 + v4;
   v6 := v5 + 28;
   Result := v6;

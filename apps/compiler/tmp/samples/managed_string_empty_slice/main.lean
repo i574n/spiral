@@ -24,17 +24,17 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
-partial def method0 (p0 : String) : IO String := do
+partial def empty_middle_0 (p0 : String) : IO String := do
     let mut v0 : String := p0
     let mut v1 : String := default
     v1 := (← spiralStringSlice v0 (SpiralToInt.toI (2 : Int32)) (SpiralToInt.toI (1 : Int32)))
     return v1
-partial def method1 (p0 : String) : IO String := do
+partial def empty_end_1 (p0 : String) : IO String := do
     let mut v0 : String := p0
     let mut v1 : String := default
     v1 := (← spiralStringSlice v0 (SpiralToInt.toI (5 : Int32)) (SpiralToInt.toI (4 : Int32)))
     return v1
-partial def method2 (p0 : String) : IO String := do
+partial def empty_source_2 (p0 : String) : IO String := do
     let mut v0 : String := p0
     let mut v1 : String := default
     v1 := (← spiralStringSlice v0 (SpiralToInt.toI (0 : Int32)) (SpiralToInt.toI (-1 : Int32)))
@@ -61,10 +61,10 @@ partial def spiralMain : IO Int32 := do
     let mut v18 : Char := default
     let mut v19 : Bool := default
     v0 := "alpha"
-    v1 := (← method0 v0)
-    v2 := (← method1 v0)
+    v1 := (← empty_middle_0 v0)
+    v2 := (← empty_end_1 v0)
     v3 := ""
-    v4 := (← method2 v3)
+    v4 := (← empty_source_2 v3)
     v5 := (v1 ++ v2)
     v6 := (v4 ++ "ok")
     v7 := (v5 ++ v6)

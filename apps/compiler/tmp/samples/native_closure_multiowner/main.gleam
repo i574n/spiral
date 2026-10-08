@@ -67,11 +67,11 @@ pub fn closure0(capt: #(String)) -> fn(Int) -> Int {
         v3
     }
 }
-pub fn method1(v0: fn(Int) -> Int, v1: Int) -> Int {
+pub fn apply_1(v0: fn(Int) -> Int, v1: Int) -> Int {
     v0( v1  )
 }
 pub fn method0(v0: fn(Int) -> Int, v1: Int) -> Int {
-    let v2 = method1(v0, v1)
+    let v2 = apply_1(v0, v1)
     let v3 = spiral_wrap_signed(v2 + 1, 32)
     v3
 }

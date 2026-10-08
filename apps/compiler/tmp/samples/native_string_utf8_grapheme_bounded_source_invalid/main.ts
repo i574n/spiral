@@ -29,11 +29,11 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method1(v0: string, v1: number): number {
+function runtime_byte_1(v0: string, v1: number): number {
     let v2: number = spiral_string_index(v0, v1);
     return v2;
 }
-function method0(v0: string, v1: number): number {
+function utf8_scalar_at_byte_offset_0(v0: string, v1: number): number {
     let v2: number = spiral_string_length(v0);
     let v3: boolean = v1 < 0;
     if (v3) {
@@ -43,7 +43,7 @@ function method0(v0: string, v1: number): number {
         if (v5) {
             throw new Error("UTF-8 byte offset is outside the string.");
         } else {
-            let v7: number = method1(v0, v1);
+            let v7: number = runtime_byte_1(v0, v1);
             let v16: number = v7;
             let v18: boolean = v16 < 128;
             if (v18) {
@@ -60,7 +60,7 @@ function method0(v0: string, v1: number): number {
                         if (v23) {
                             throw new Error("UTF-8 sequence is truncated.");
                         } else {
-                            let v25: number = method1(v0, v22);
+                            let v25: number = runtime_byte_1(v0, v22);
                             let v26: number = v25;
                             let v27: boolean = v26 < 128;
                             let v29: boolean;
@@ -89,9 +89,9 @@ function method0(v0: string, v1: number): number {
                                 throw new Error("UTF-8 sequence is truncated.");
                             } else {
                                 let v41: number = (v1 + 1) | 0;
-                                let v42: number = method1(v0, v41);
+                                let v42: number = runtime_byte_1(v0, v41);
                                 let v43: number = v42;
-                                let v44: number = method1(v0, v38);
+                                let v44: number = runtime_byte_1(v0, v38);
                                 let v45: number = v44;
                                 let v46: boolean = v43 < 128;
                                 let v48: boolean;
@@ -150,12 +150,12 @@ function method0(v0: string, v1: number): number {
                                     throw new Error("UTF-8 sequence is truncated.");
                                 } else {
                                     let v76: number = (v1 + 1) | 0;
-                                    let v77: number = method1(v0, v76);
+                                    let v77: number = runtime_byte_1(v0, v76);
                                     let v78: number = v77;
                                     let v79: number = (v1 + 2) | 0;
-                                    let v80: number = method1(v0, v79);
+                                    let v80: number = runtime_byte_1(v0, v79);
                                     let v81: number = v80;
-                                    let v82: number = method1(v0, v73);
+                                    let v82: number = runtime_byte_1(v0, v73);
                                     let v83: number = v82;
                                     let v84: boolean = v78 < 128;
                                     let v86: boolean;
@@ -225,7 +225,7 @@ function method0(v0: string, v1: number): number {
         }
     }
 }
-function method2(v0: string, v1: number, v2: number, v3: number): number {
+function utf8_grapheme_count_bounded_loop_2(v0: string, v1: number, v2: number, v3: number): number {
     tail: while (true) {
         let v4: boolean = v1 === v3;
         if (v4) {
@@ -235,7 +235,7 @@ function method2(v0: string, v1: number, v2: number, v3: number): number {
             if (v5) {
                 throw new Error("UTF-8 scalar width exceeds the string.");
             } else {
-                let v7: number = method0(v0, v1);
+                let v7: number = utf8_scalar_at_byte_offset_0(v0, v1);
                 let v8: boolean = v7 < 128;
                 let v13: number;
                 if (v8) {
@@ -362,7 +362,7 @@ function method2(v0: string, v1: number, v2: number, v3: number): number {
 export function main(): number {
     let v0: string = "éZ";
     let v1: number = 1;
-    let v2: number = method0(v0, v1);
+    let v2: number = utf8_scalar_at_byte_offset_0(v0, v1);
     let v3: boolean = v2 >= 768;
     let v33: boolean;
     if (v3) {
@@ -447,7 +447,7 @@ export function main(): number {
         let v35: number = 1;
         let v36: number = 0;
         let v37: number = 4;
-        return method2(v0, v35, v36, v37);
+        return utf8_grapheme_count_bounded_loop_2(v0, v35, v36, v37);
     }
 }
 process.exitCode = main();

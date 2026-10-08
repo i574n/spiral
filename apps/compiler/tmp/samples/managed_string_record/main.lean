@@ -29,7 +29,7 @@ partial def method0 (p0 : String) : IO (String × Int32) := do
     let mut v1 : Int32 := default
     v1 := (Int32.ofNat v0.utf8ByteSize)
     return (v0, v1)
-partial def method1 (p0 : Int32) (p1 : String) : IO Int32 := do
+partial def score_1 (p0 : Int32) (p1 : String) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : String := p1
     let mut v2 : Int32 := default
@@ -49,8 +49,8 @@ partial def spiralMain : IO Int32 := do
     let (r1_0, r1_1) := (← method0 v0)
     v1 := r1_0
     v2 := r1_1
-    v3 := (← method1 v2 v1)
-    v4 := (← method1 v2 v1)
+    v3 := (← score_1 v2 v1)
+    v4 := (← score_1 v2 v1)
     v5 := (v3 + v4)
     v6 := (v5 - (12 : Int32))
     return v6

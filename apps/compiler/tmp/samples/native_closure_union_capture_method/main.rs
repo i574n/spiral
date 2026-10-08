@@ -16,7 +16,7 @@ impl US0 {
         }
     }
 }
-fn method0(mut v0: US0) -> i32 {
+fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_2(v2) => {
             let mut v2: bool = *v2;
@@ -37,7 +37,7 @@ fn method0(mut v0: US0) -> i32 {
 }
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
-        let mut v2: i32 = method0(v0.clone());
+        let mut v2: i32 = score_0(v0.clone());
         let mut v3: i32 = v2.wrapping_add(v1);
         v3
     })

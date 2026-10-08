@@ -29,7 +29,7 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: boolean): string {
+function choose_0(v0: boolean): string {
     if (v0) {
         let v1: string = "alpha";
         return v1;
@@ -38,19 +38,19 @@ function method0(v0: boolean): string {
         return v2;
     }
 }
-function method1(v0: string): number {
+function measure_1(v0: string): number {
     let v1: number = spiral_string_length(v0);
     return v1;
 }
 export function main(): number {
     let v0: boolean = true;
-    let v1: string = method0(v0);
+    let v1: string = choose_0(v0);
     let v2: boolean = false;
-    let v3: string = method0(v2);
-    let v4: number = method1(v1);
-    let v5: number = method1(v1);
+    let v3: string = choose_0(v2);
+    let v4: number = measure_1(v1);
+    let v5: number = measure_1(v1);
     let v6: number = (v4 + v5) | 0;
-    let v7: number = method1(v3);
+    let v7: number = measure_1(v3);
     let v8: number = (v6 + v7) | 0;
     let v9: number = (v8 - 14) | 0;
     return v9;

@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8) void {
+fn target_global_0(p0: []const u8) void {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     v1 = @as(i32, @intCast(v0.len));
@@ -113,7 +113,7 @@ fn method0(p0: []const u8) void {
 fn spiralMain() i32 {
     var v0: []const u8 = undefined; _ = &v0;
     v0 = "SPIRAL_ITEM_METADATA_TEST_missing-item";
-    _ = method0(v0);
+    _ = target_global_0(v0);
     return @as(i32, 0);
 }
 pub fn main() void {

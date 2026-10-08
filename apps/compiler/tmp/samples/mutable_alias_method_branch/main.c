@@ -8,7 +8,7 @@ typedef struct {
     int32_t v0;
 } Mut0;
 static inline void MutDecrefBody0(Mut0 * x){
-    
+    (void)x;
 }
 void MutDecref0(Mut0 * x){
     if (x != NULL && --(x->refc) == 0) { MutDecrefBody0(x); free(x); }

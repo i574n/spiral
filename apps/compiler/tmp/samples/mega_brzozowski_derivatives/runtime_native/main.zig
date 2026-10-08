@@ -169,7 +169,7 @@ fn US2_1() US2 {
 fn US2_2() US2 {
     return US2{ .tag = 2 };
 }
-fn method5(p0: *UH2, p1: *UH2) US2 {
+fn regex_compare_5(p0: *UH2, p1: *UH2) US2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH2 = p1; _ = &v1;
     var v53: *UH2 = undefined; _ = &v53;
@@ -204,7 +204,7 @@ fn method5(p0: *UH2, p1: *UH2) US2 {
                     3 => {
                         v55 = v1.c3_0;
                         v56 = v1.c3_1;
-                        v57 = method5(v53, v55);
+                        v57 = regex_compare_5(v53, v55);
                         switch (v57.tag) {
                             1 => {
                                 tmp5 = v54;
@@ -230,7 +230,7 @@ fn method5(p0: *UH2, p1: *UH2) US2 {
                     4 => {
                         v34 = v1.c4_0;
                         v35 = v1.c4_1;
-                        v36 = method5(v28, v34);
+                        v36 = regex_compare_5(v28, v34);
                         switch (v36.tag) {
                             1 => {
                                 tmp12 = v29;
@@ -349,7 +349,7 @@ fn method5(p0: *UH2, p1: *UH2) US2 {
         }
     }
 }
-fn method4(p0: *UH2, p1: *UH2) *UH2 {
+fn alt_insert_sorted_4(p0: *UH2, p1: *UH2) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH2 = p1; _ = &v1;
     var v2: *UH2 = undefined; _ = &v2;
@@ -361,10 +361,10 @@ fn method4(p0: *UH2, p1: *UH2) *UH2 {
         3 => {
             v2 = v1.c3_0;
             v3 = v1.c3_1;
-            v4 = method5(v0, v2);
+            v4 = regex_compare_5(v0, v2);
             switch (v4.tag) {
                 2 => {
-                    v6 = method4(v0, v3);
+                    v6 = alt_insert_sorted_4(v0, v3);
                     return UH2_3(v2, v6);
                 },
                 0 => {
@@ -380,7 +380,7 @@ fn method4(p0: *UH2, p1: *UH2) *UH2 {
             return v0;
         },
         else => {
-            v11 = method5(v0, v1);
+            v11 = regex_compare_5(v0, v1);
             switch (v11.tag) {
                 2 => {
                     return UH2_3(v1, v0);
@@ -396,7 +396,7 @@ fn method4(p0: *UH2, p1: *UH2) *UH2 {
         },
     }
 }
-fn method3(p0: *UH2, p1: *UH2) *UH2 {
+fn make_alt_3(p0: *UH2, p1: *UH2) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH2 = p1; _ = &v1;
     var v2: *UH2 = undefined; _ = &v2;
@@ -409,7 +409,7 @@ fn method3(p0: *UH2, p1: *UH2) *UH2 {
             3 => {
                 v2 = v0.c3_0;
                 v3 = v0.c3_1;
-                v4 = method4(v2, v1);
+                v4 = alt_insert_sorted_4(v2, v1);
                 tmp3 = v3;
                 tmp4 = v4;
                 v0 = tmp3;
@@ -420,12 +420,12 @@ fn method3(p0: *UH2, p1: *UH2) *UH2 {
                 return v1;
             },
             else => {
-                return method4(v0, v1);
+                return alt_insert_sorted_4(v0, v1);
             },
         }
     }
 }
-fn method7(p0: *UH2, p1: *UH2) bool {
+fn regex_equal_7(p0: *UH2, p1: *UH2) bool {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH2 = p1; _ = &v1;
     var v18: *UH2 = undefined; _ = &v18;
@@ -458,7 +458,7 @@ fn method7(p0: *UH2, p1: *UH2) bool {
                     3 => {
                         v20 = v1.c3_0;
                         v21 = v1.c3_1;
-                        v22 = method7(v18, v20);
+                        v22 = regex_equal_7(v18, v20);
                         if (v22) {
                             tmp5 = v19;
                             tmp6 = v21;
@@ -481,7 +481,7 @@ fn method7(p0: *UH2, p1: *UH2) bool {
                     4 => {
                         v28 = v1.c4_0;
                         v29 = v1.c4_1;
-                        v30 = method7(v26, v28);
+                        v30 = regex_equal_7(v26, v28);
                         if (v30) {
                             tmp12 = v27;
                             tmp13 = v29;
@@ -581,7 +581,7 @@ fn method7(p0: *UH2, p1: *UH2) bool {
         }
     }
 }
-fn method6(p0: *UH2, p1: *UH2) *UH2 {
+fn make_cat_6(p0: *UH2, p1: *UH2) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH2 = p1; _ = &v1;
     var v12: *UH2 = undefined; _ = &v12;
@@ -614,7 +614,7 @@ fn method6(p0: *UH2, p1: *UH2) *UH2 {
                                         4 => {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
-                                            v14 = method6(v13, v1);
+                                            v14 = make_cat_6(v13, v1);
                                             return UH2_4(v12, v14);
                                         },
                                         5 => {
@@ -622,7 +622,7 @@ fn method6(p0: *UH2, p1: *UH2) *UH2 {
                                             switch (v1.tag) {
                                                 5 => {
                                                     v5 = v1.c5_0;
-                                                    v6 = method7(v4, v5);
+                                                    v6 = regex_equal_7(v4, v5);
                                                     if (v6) {
                                                         return UH2_5(v4);
                                                     } else {
@@ -647,7 +647,7 @@ fn method6(p0: *UH2, p1: *UH2) *UH2 {
         },
     }
 }
-fn method8(p0: *UH2) *UH2 {
+fn make_star_8(p0: *UH2) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v3: *UH2 = undefined; _ = &v3;
     switch (v0.tag) {
@@ -666,7 +666,7 @@ fn method8(p0: *UH2) *UH2 {
         },
     }
 }
-fn method2(p0: *UH2) *UH2 {
+fn normalize_2(p0: *UH2) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v5: *UH2 = undefined; _ = &v5;
     var v6: *UH2 = undefined; _ = &v6;
@@ -683,16 +683,16 @@ fn method2(p0: *UH2) *UH2 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method2(v5);
-            v8 = method2(v6);
-            return method3(v7, v8);
+            v7 = normalize_2(v5);
+            v8 = normalize_2(v6);
+            return make_alt_3(v7, v8);
         },
         4 => {
             v10 = v0.c4_0;
             v11 = v0.c4_1;
-            v12 = method2(v10);
-            v13 = method2(v11);
-            return method6(v12, v13);
+            v12 = normalize_2(v10);
+            v13 = normalize_2(v11);
+            return make_cat_6(v12, v13);
         },
         2 => {
             v3 = v0.c2_0;
@@ -706,8 +706,8 @@ fn method2(p0: *UH2) *UH2 {
         },
         5 => {
             v15 = v0.c5_0;
-            v16 = method2(v15);
-            return method8(v16);
+            v16 = normalize_2(v15);
+            return make_star_8(v16);
         },
         else => unreachable,
     }
@@ -718,7 +718,7 @@ fn US3_0() US3 {
 fn US3_1() US3 {
     return US3{ .tag = 1 };
 }
-fn method10(p0: *UH2) US3 {
+fn nullable_10(p0: *UH2) US3 {
     var v0: *UH2 = p0; _ = &v0;
     var v5: *UH2 = undefined; _ = &v5;
     var v6: *UH2 = undefined; _ = &v6;
@@ -734,8 +734,8 @@ fn method10(p0: *UH2) US3 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method10(v5);
-            v8 = method10(v6);
+            v7 = nullable_10(v5);
+            v8 = nullable_10(v6);
             switch (v7.tag) {
                 0 => {
                     return US3_0();
@@ -765,8 +765,8 @@ fn method10(p0: *UH2) US3 {
         4 => {
             v16 = v0.c4_0;
             v17 = v0.c4_1;
-            v18 = method10(v16);
-            v19 = method10(v17);
+            v18 = nullable_10(v16);
+            v19 = nullable_10(v17);
             switch (v18.tag) {
                 0 => {
                     switch (v19.tag) {
@@ -800,7 +800,7 @@ fn method10(p0: *UH2) US3 {
         else => unreachable,
     }
 }
-fn method9(p0: *UH2, p1: US0) *UH2 {
+fn derivative_9(p0: *UH2, p1: US0) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: US0 = p1; _ = &v1;
     var v19: *UH2 = undefined; _ = &v19;
@@ -824,24 +824,24 @@ fn method9(p0: *UH2, p1: US0) *UH2 {
         3 => {
             v19 = v0.c3_0;
             v20 = v0.c3_1;
-            v21 = method9(v19, v1);
-            v22 = method9(v20, v1);
-            return method3(v21, v22);
+            v21 = derivative_9(v19, v1);
+            v22 = derivative_9(v20, v1);
+            return make_alt_3(v21, v22);
         },
         4 => {
             v24 = v0.c4_0;
             v25 = v0.c4_1;
-            v26 = method10(v24);
+            v26 = nullable_10(v24);
             switch (v26.tag) {
                 1 => {
-                    v31 = method9(v24, v1);
-                    return method6(v31, v25);
+                    v31 = derivative_9(v24, v1);
+                    return make_cat_6(v31, v25);
                 },
                 0 => {
-                    v27 = method9(v24, v1);
-                    v28 = method6(v27, v25);
-                    v29 = method9(v25, v1);
-                    return method3(v28, v29);
+                    v27 = derivative_9(v24, v1);
+                    v28 = make_cat_6(v27, v25);
+                    v29 = derivative_9(v25, v1);
+                    return make_alt_3(v28, v29);
                 },
                 else => unreachable,
             }
@@ -895,23 +895,23 @@ fn method9(p0: *UH2, p1: US0) *UH2 {
         },
         5 => {
             v35 = v0.c5_0;
-            v36 = method9(v35, v1);
-            v37 = method8(v35);
-            return method6(v36, v37);
+            v36 = derivative_9(v35, v1);
+            v37 = make_star_8(v35);
+            return make_cat_6(v36, v37);
         },
         else => unreachable,
     }
 }
-fn method1(p0: *UH2, p1: US0) *UH2 {
+fn canonical_derivative_1(p0: *UH2, p1: US0) *UH2 {
     var v0: *UH2 = p0; _ = &v0;
     var v1: US0 = p1; _ = &v1;
     var v2: *UH2 = undefined; _ = &v2;
     var v3: *UH2 = undefined; _ = &v3;
-    v2 = method2(v0);
-    v3 = method9(v2, v1);
-    return method2(v3);
+    v2 = normalize_2(v0);
+    v3 = derivative_9(v2, v1);
+    return normalize_2(v3);
 }
-fn method0(p0: *UH2, p1: *UH0) bool {
+fn accepts_0(p0: *UH2, p1: *UH0) bool {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v6: US0 = undefined; _ = &v6;
@@ -926,7 +926,7 @@ fn method0(p0: *UH2, p1: *UH0) bool {
             1 => {
                 v6 = v1.c1_0;
                 v7 = v1.c1_1;
-                v8 = method1(v0, v6);
+                v8 = canonical_derivative_1(v0, v6);
                 tmp3 = v8;
                 tmp4 = v7;
                 v0 = tmp3;
@@ -934,8 +934,8 @@ fn method0(p0: *UH2, p1: *UH0) bool {
                 continue;
             },
             0 => {
-                v2 = method2(v0);
-                v3 = method10(v2);
+                v2 = normalize_2(v0);
+                v3 = nullable_10(v2);
                 switch (v3.tag) {
                     1 => {
                         return false;
@@ -968,7 +968,7 @@ fn UH3_4(a0: *UH3, a1: *UH3) *UH3 {
 fn UH3_5(a0: *UH3) *UH3 {
     return spiralCreate(UH3, UH3{ .tag = 5, .c5_0 = a0 });
 }
-fn method16(p0: *UH3, p1: *UH3) US2 {
+fn regex_compare_16(p0: *UH3, p1: *UH3) US2 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH3 = p1; _ = &v1;
     var v59: *UH3 = undefined; _ = &v59;
@@ -1003,7 +1003,7 @@ fn method16(p0: *UH3, p1: *UH3) US2 {
                     3 => {
                         v61 = v1.c3_0;
                         v62 = v1.c3_1;
-                        v63 = method16(v59, v61);
+                        v63 = regex_compare_16(v59, v61);
                         switch (v63.tag) {
                             1 => {
                                 tmp5 = v60;
@@ -1029,7 +1029,7 @@ fn method16(p0: *UH3, p1: *UH3) US2 {
                     4 => {
                         v40 = v1.c4_0;
                         v41 = v1.c4_1;
-                        v42 = method16(v34, v40);
+                        v42 = regex_compare_16(v34, v40);
                         switch (v42.tag) {
                             1 => {
                                 tmp12 = v35;
@@ -1169,7 +1169,7 @@ fn method16(p0: *UH3, p1: *UH3) US2 {
         }
     }
 }
-fn method15(p0: *UH3, p1: *UH3) *UH3 {
+fn alt_insert_sorted_15(p0: *UH3, p1: *UH3) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH3 = p1; _ = &v1;
     var v2: *UH3 = undefined; _ = &v2;
@@ -1181,10 +1181,10 @@ fn method15(p0: *UH3, p1: *UH3) *UH3 {
         3 => {
             v2 = v1.c3_0;
             v3 = v1.c3_1;
-            v4 = method16(v0, v2);
+            v4 = regex_compare_16(v0, v2);
             switch (v4.tag) {
                 2 => {
-                    v6 = method15(v0, v3);
+                    v6 = alt_insert_sorted_15(v0, v3);
                     return UH3_3(v2, v6);
                 },
                 0 => {
@@ -1200,7 +1200,7 @@ fn method15(p0: *UH3, p1: *UH3) *UH3 {
             return v0;
         },
         else => {
-            v11 = method16(v0, v1);
+            v11 = regex_compare_16(v0, v1);
             switch (v11.tag) {
                 2 => {
                     return UH3_3(v1, v0);
@@ -1216,7 +1216,7 @@ fn method15(p0: *UH3, p1: *UH3) *UH3 {
         },
     }
 }
-fn method14(p0: *UH3, p1: *UH3) *UH3 {
+fn make_alt_14(p0: *UH3, p1: *UH3) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH3 = p1; _ = &v1;
     var v2: *UH3 = undefined; _ = &v2;
@@ -1229,7 +1229,7 @@ fn method14(p0: *UH3, p1: *UH3) *UH3 {
             3 => {
                 v2 = v0.c3_0;
                 v3 = v0.c3_1;
-                v4 = method15(v2, v1);
+                v4 = alt_insert_sorted_15(v2, v1);
                 tmp3 = v3;
                 tmp4 = v4;
                 v0 = tmp3;
@@ -1240,12 +1240,12 @@ fn method14(p0: *UH3, p1: *UH3) *UH3 {
                 return v1;
             },
             else => {
-                return method15(v0, v1);
+                return alt_insert_sorted_15(v0, v1);
             },
         }
     }
 }
-fn method18(p0: *UH3, p1: *UH3) bool {
+fn regex_equal_18(p0: *UH3, p1: *UH3) bool {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH3 = p1; _ = &v1;
     var v24: *UH3 = undefined; _ = &v24;
@@ -1278,7 +1278,7 @@ fn method18(p0: *UH3, p1: *UH3) bool {
                     3 => {
                         v26 = v1.c3_0;
                         v27 = v1.c3_1;
-                        v28 = method18(v24, v26);
+                        v28 = regex_equal_18(v24, v26);
                         if (v28) {
                             tmp5 = v25;
                             tmp6 = v27;
@@ -1301,7 +1301,7 @@ fn method18(p0: *UH3, p1: *UH3) bool {
                     4 => {
                         v34 = v1.c4_0;
                         v35 = v1.c4_1;
-                        v36 = method18(v32, v34);
+                        v36 = regex_equal_18(v32, v34);
                         if (v36) {
                             tmp12 = v33;
                             tmp13 = v35;
@@ -1422,7 +1422,7 @@ fn method18(p0: *UH3, p1: *UH3) bool {
         }
     }
 }
-fn method17(p0: *UH3, p1: *UH3) *UH3 {
+fn make_cat_17(p0: *UH3, p1: *UH3) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH3 = p1; _ = &v1;
     var v12: *UH3 = undefined; _ = &v12;
@@ -1455,7 +1455,7 @@ fn method17(p0: *UH3, p1: *UH3) *UH3 {
                                         4 => {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
-                                            v14 = method17(v13, v1);
+                                            v14 = make_cat_17(v13, v1);
                                             return UH3_4(v12, v14);
                                         },
                                         5 => {
@@ -1463,7 +1463,7 @@ fn method17(p0: *UH3, p1: *UH3) *UH3 {
                                             switch (v1.tag) {
                                                 5 => {
                                                     v5 = v1.c5_0;
-                                                    v6 = method18(v4, v5);
+                                                    v6 = regex_equal_18(v4, v5);
                                                     if (v6) {
                                                         return UH3_5(v4);
                                                     } else {
@@ -1488,7 +1488,7 @@ fn method17(p0: *UH3, p1: *UH3) *UH3 {
         },
     }
 }
-fn method19(p0: *UH3) *UH3 {
+fn make_star_19(p0: *UH3) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v3: *UH3 = undefined; _ = &v3;
     switch (v0.tag) {
@@ -1507,7 +1507,7 @@ fn method19(p0: *UH3) *UH3 {
         },
     }
 }
-fn method13(p0: *UH3) *UH3 {
+fn normalize_13(p0: *UH3) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v5: *UH3 = undefined; _ = &v5;
     var v6: *UH3 = undefined; _ = &v6;
@@ -1524,16 +1524,16 @@ fn method13(p0: *UH3) *UH3 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method13(v5);
-            v8 = method13(v6);
-            return method14(v7, v8);
+            v7 = normalize_13(v5);
+            v8 = normalize_13(v6);
+            return make_alt_14(v7, v8);
         },
         4 => {
             v10 = v0.c4_0;
             v11 = v0.c4_1;
-            v12 = method13(v10);
-            v13 = method13(v11);
-            return method17(v12, v13);
+            v12 = normalize_13(v10);
+            v13 = normalize_13(v11);
+            return make_cat_17(v12, v13);
         },
         2 => {
             v3 = v0.c2_0;
@@ -1547,13 +1547,13 @@ fn method13(p0: *UH3) *UH3 {
         },
         5 => {
             v15 = v0.c5_0;
-            v16 = method13(v15);
-            return method19(v16);
+            v16 = normalize_13(v15);
+            return make_star_19(v16);
         },
         else => unreachable,
     }
 }
-fn method21(p0: *UH3) US3 {
+fn nullable_21(p0: *UH3) US3 {
     var v0: *UH3 = p0; _ = &v0;
     var v5: *UH3 = undefined; _ = &v5;
     var v6: *UH3 = undefined; _ = &v6;
@@ -1569,8 +1569,8 @@ fn method21(p0: *UH3) US3 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method21(v5);
-            v8 = method21(v6);
+            v7 = nullable_21(v5);
+            v8 = nullable_21(v6);
             switch (v7.tag) {
                 0 => {
                     return US3_0();
@@ -1600,8 +1600,8 @@ fn method21(p0: *UH3) US3 {
         4 => {
             v16 = v0.c4_0;
             v17 = v0.c4_1;
-            v18 = method21(v16);
-            v19 = method21(v17);
+            v18 = nullable_21(v16);
+            v19 = nullable_21(v17);
             switch (v18.tag) {
                 0 => {
                     switch (v19.tag) {
@@ -1635,7 +1635,7 @@ fn method21(p0: *UH3) US3 {
         else => unreachable,
     }
 }
-fn method20(p0: *UH3, p1: US1) *UH3 {
+fn derivative_20(p0: *UH3, p1: US1) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: US1 = p1; _ = &v1;
     var v25: *UH3 = undefined; _ = &v25;
@@ -1659,24 +1659,24 @@ fn method20(p0: *UH3, p1: US1) *UH3 {
         3 => {
             v25 = v0.c3_0;
             v26 = v0.c3_1;
-            v27 = method20(v25, v1);
-            v28 = method20(v26, v1);
-            return method14(v27, v28);
+            v27 = derivative_20(v25, v1);
+            v28 = derivative_20(v26, v1);
+            return make_alt_14(v27, v28);
         },
         4 => {
             v30 = v0.c4_0;
             v31 = v0.c4_1;
-            v32 = method21(v30);
+            v32 = nullable_21(v30);
             switch (v32.tag) {
                 1 => {
-                    v37 = method20(v30, v1);
-                    return method17(v37, v31);
+                    v37 = derivative_20(v30, v1);
+                    return make_cat_17(v37, v31);
                 },
                 0 => {
-                    v33 = method20(v30, v1);
-                    v34 = method17(v33, v31);
-                    v35 = method20(v31, v1);
-                    return method14(v34, v35);
+                    v33 = derivative_20(v30, v1);
+                    v34 = make_cat_17(v33, v31);
+                    v35 = derivative_20(v31, v1);
+                    return make_alt_14(v34, v35);
                 },
                 else => unreachable,
             }
@@ -1751,23 +1751,23 @@ fn method20(p0: *UH3, p1: US1) *UH3 {
         },
         5 => {
             v41 = v0.c5_0;
-            v42 = method20(v41, v1);
-            v43 = method19(v41);
-            return method17(v42, v43);
+            v42 = derivative_20(v41, v1);
+            v43 = make_star_19(v41);
+            return make_cat_17(v42, v43);
         },
         else => unreachable,
     }
 }
-fn method12(p0: *UH3, p1: US1) *UH3 {
+fn canonical_derivative_12(p0: *UH3, p1: US1) *UH3 {
     var v0: *UH3 = p0; _ = &v0;
     var v1: US1 = p1; _ = &v1;
     var v2: *UH3 = undefined; _ = &v2;
     var v3: *UH3 = undefined; _ = &v3;
-    v2 = method13(v0);
-    v3 = method20(v2, v1);
-    return method13(v3);
+    v2 = normalize_13(v0);
+    v3 = derivative_20(v2, v1);
+    return normalize_13(v3);
 }
-fn method11(p0: *UH3, p1: *UH1) bool {
+fn accepts_11(p0: *UH3, p1: *UH1) bool {
     var v0: *UH3 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v6: US1 = undefined; _ = &v6;
@@ -1782,7 +1782,7 @@ fn method11(p0: *UH3, p1: *UH1) bool {
             1 => {
                 v6 = v1.c1_0;
                 v7 = v1.c1_1;
-                v8 = method12(v0, v6);
+                v8 = canonical_derivative_12(v0, v6);
                 tmp3 = v8;
                 tmp4 = v7;
                 v0 = tmp3;
@@ -1790,8 +1790,8 @@ fn method11(p0: *UH3, p1: *UH1) bool {
                 continue;
             },
             0 => {
-                v2 = method13(v0);
-                v3 = method21(v2);
+                v2 = normalize_13(v0);
+                v3 = nullable_21(v2);
                 switch (v3.tag) {
                     1 => {
                         return false;
@@ -1812,7 +1812,7 @@ fn US4_0(a0: *UH2, a1: *UH0) US4 {
 fn US5_0(a0: *UH2, a1: *UH0, a2: bool) US5 {
     return US5{ .tag = 0, .c0_0 = a0, .c0_1 = a1, .c0_2 = a2 };
 }
-fn method22(p0: US4) US5 {
+fn decide_bit_match_22(p0: US4) US5 {
     var v0: US4 = p0; _ = &v0;
     var v1: *UH2 = undefined; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
@@ -1821,13 +1821,13 @@ fn method22(p0: US4) US5 {
         0 => {
             v1 = v0.c0_0;
             v2 = v0.c0_1;
-            v3 = method0(v1, v2);
+            v3 = accepts_0(v1, v2);
             return US5_0(v1, v2, v3);
         },
         else => unreachable,
     }
 }
-fn method23(p0: US5) bool {
+fn bit_match_value_23(p0: US5) bool {
     var v0: US5 = p0; _ = &v0;
     var v1: *UH2 = undefined; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
@@ -1960,7 +1960,7 @@ fn spiralMain() i32 {
     v34 = US0_0();
     v35 = UH2_2(v34);
     v36 = UH2_4(v33, v35);
-    v37 = method0(v36, v6);
+    v37 = accepts_0(v36, v6);
     if (v37) {
     } else {
         if (spiral_true) spiralFail("brzozowski-expected-true");
@@ -1974,7 +1974,7 @@ fn spiralMain() i32 {
     v44 = US0_0();
     v45 = UH2_2(v44);
     v46 = UH2_4(v43, v45);
-    v47 = method0(v46, v13);
+    v47 = accepts_0(v46, v13);
     if (v47) {
         if (spiral_true) spiralFail("brzozowski-expected-false");
     } else {
@@ -1982,7 +1982,7 @@ fn spiralMain() i32 {
     v48 = US1_0();
     v49 = UH3_2(v48);
     v50 = UH3_5(v49);
-    v51 = method11(v50, v20);
+    v51 = accepts_11(v50, v20);
     if (v51) {
     } else {
         if (spiral_true) spiralFail("brzozowski-expected-true");
@@ -1990,7 +1990,7 @@ fn spiralMain() i32 {
     v52 = US1_0();
     v53 = UH3_2(v52);
     v54 = UH3_5(v53);
-    v55 = method11(v54, v27);
+    v55 = accepts_11(v54, v27);
     if (v55) {
         if (spiral_true) spiralFail("brzozowski-expected-false");
     } else {
@@ -2005,7 +2005,7 @@ fn spiralMain() i32 {
     v63 = UH2_2(v62);
     v64 = UH2_4(v61, v63);
     v65 = US4_0(v64, v6);
-    v66 = method22(v65);
+    v66 = decide_bit_match_22(v65);
     v67 = US0_0();
     v68 = UH2_2(v67);
     v69 = US0_1();
@@ -2016,13 +2016,13 @@ fn spiralMain() i32 {
     v74 = UH2_2(v73);
     v75 = UH2_4(v72, v74);
     v76 = US4_0(v75, v13);
-    v77 = method22(v76);
-    v78 = method23(v66);
+    v77 = decide_bit_match_22(v76);
+    v78 = bit_match_value_23(v66);
     if (v78) {
     } else {
         if (spiral_true) spiralFail("brzozowski-expected-true");
     }
-    v79 = method23(v77);
+    v79 = bit_match_value_23(v77);
     if (v79) {
         if (spiral_true) spiralFail("brzozowski-expected-false");
     } else {

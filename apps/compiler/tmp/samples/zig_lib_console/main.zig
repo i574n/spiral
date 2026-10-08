@@ -107,23 +107,23 @@ fn spiralCreate(comptime T: type, v: T) *T {
 }
 fn spiralMain() i32 {
     var v0: i32 = undefined; _ = &v0;
-    var v37: []const u8 = undefined; _ = &v37;
-    var v55: []const u8 = undefined; _ = &v55;
-    var v56: bool = undefined; _ = &v56;
-    var v79: []const u8 = undefined; _ = &v79;
-    var v81: i32 = undefined; _ = &v81;
+    var v61: []const u8 = undefined; _ = &v61;
+    var v81: []const u8 = undefined; _ = &v81;
     var v82: bool = undefined; _ = &v82;
+    var v107: []const u8 = undefined; _ = &v107;
+    var v111: i32 = undefined; _ = &v111;
+    var v112: bool = undefined; _ = &v112;
     v0 = @as(i32, 41);
-    v37 = (std.fmt.allocPrint(spiral_gpa, "{d}", .{ v0 }) catch @panic("out of memory"));
-    _ = { spiralPrintAny(v37); spiralPrint(&[_]u8{10}); };
-    v55 = "hi";
-    _ = { spiralPrintAny(v55); spiralPrint(&[_]u8{10}); };
-    v56 = true;
-    v79 = (if (v56) "true" else "false");
-    _ = { spiralPrintAny(v79); spiralPrint(&[_]u8{10}); };
-    v81 = v0 +% @as(i32, 1);
-    v82 = v81 == @as(i32, 42);
-    if (v82) {
+    v61 = (std.fmt.allocPrint(spiral_gpa, "{d}", .{ v0 }) catch @panic("out of memory"));
+    _ = { spiralPrintAny(v61); spiralPrint(&[_]u8{10}); };
+    v81 = "hi";
+    _ = { spiralPrintAny(v81); spiralPrint(&[_]u8{10}); };
+    v82 = true;
+    v107 = (if (v82) "true" else "false");
+    _ = { spiralPrintAny(v107); spiralPrint(&[_]u8{10}); };
+    v111 = v0 +% @as(i32, 1);
+    v112 = v111 == @as(i32, 42);
+    if (v112) {
         return @as(i32, 0);
     } else {
         return @as(i32, 1);

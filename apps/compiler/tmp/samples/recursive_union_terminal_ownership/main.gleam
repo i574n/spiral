@@ -22,23 +22,23 @@ pub type Uh0 {
     Uh0i0
     Uh0i1(Int, Uh0, Uh0)
 }
-pub fn method1(v0: Uh0) -> Int {
+pub fn sum_1(v0: Uh0) -> Int {
     case v0  {
         Uh0i0 -> {
             0
         }
         Uh0i1(v1, v2, v3) -> {
-            let v4 = method1(v2)
-            let v5 = method1(v3)
+            let v4 = sum_1(v2)
+            let v5 = sum_1(v3)
             let v6 = spiral_wrap_signed(v4 + v5, 32)
             let v7 = spiral_wrap_signed(v1 + v6, 32)
             v7
         }
     }
 }
-pub fn method0(v0: Uh0, v1: Uh0) -> Int {
-    let v2 = method1(v0)
-    let v3 = method1(v1)
+pub fn consume_pair_0(v0: Uh0, v1: Uh0) -> Int {
+    let v2 = sum_1(v0)
+    let v3 = sum_1(v1)
     let v4 = spiral_wrap_signed(v2 + v3, 32)
     v4
 }
@@ -53,7 +53,7 @@ let v6 = 2
 let v7 = Uh0i0
 let v8 = Uh0i1(v6, v7, v7)
 let v9 = Uh0i1(v5, v8, v8)
-let v10 = method0(v4, v9)
+let v10 = consume_pair_0(v4, v9)
 let v11 = spiral_wrap_signed(v10 - 10, 32)
 v11
 }

@@ -14,43 +14,43 @@ type
   TUS2 = record tag: LongInt;  end;
   TUH2 = class tag: LongInt; c1_0: TUH0; c1_1: TUH2; end;
   TArray0 = array of LongInt;
-function method1(v0: QWord; v1: LongInt; v2: TUH1): TTuple0; forward;
-function method7(v0: TUH0; v1: TUH0): TUS1; forward;
-function method6(v0: TUH0; v1: TUH0): TUH0; forward;
-function method5(v0: TUH0; v1: TUH0): TUH0; forward;
-function method9(v0: TUH0; v1: TUH0): Boolean; forward;
-function method8(v0: TUH0; v1: TUH0): TUH0; forward;
-function method10(v0: TUH0): TUH0; forward;
-function method4(v0: TUH0): TUH0; forward;
-function method12(v0: TUH0): TUS2; forward;
-function method11(v0: TUH0; v1: TUS0): TUH0; forward;
-function method3(v0: TUH0; v1: TUS0): TUH0; forward;
-function method2(v0: TUH0; v1: TUH1): Boolean; forward;
-function method0(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt; forward;
-function method14(v0: LongInt; v1: TUH1): TUH1; forward;
-function method13(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt; forward;
-function method16(v0: TUH2; v1: TUH1): Boolean; forward;
-function method15(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt; forward;
-function method17(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt; forward;
-function method19(v0: LongInt; v1: TUH1): Boolean; forward;
-function method18(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt; forward;
-function method21(v0: LongInt; v1: TUH1): Boolean; forward;
-function method20(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt; forward;
-function method23(v0: LongInt; v1: TUH1): Boolean; forward;
-function method22(v0: LongInt; v1: LongInt; v2: LongInt): LongInt; forward;
-procedure method24(v0: TArray0; v1: LongInt); forward;
-procedure method25(v0: TArray0; v1: LongInt); forward;
-function method27(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt; forward;
-function method26(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt): LongInt; forward;
-function method30(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
-function method29(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
-function method31(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
-function method28(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: TUH0): LongInt; forward;
-function method35(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
-function method34(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean; forward;
-function method33(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean; forward;
-function method32(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: QWord; v11: LongInt): LongInt; forward;
-function method36(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt; forward;
+function random_bit_input_1(v0: QWord; v1: LongInt; v2: TUH1): TTuple0; forward;
+function regex_compare_7(v0: TUH0; v1: TUH0): TUS1; forward;
+function alt_insert_sorted_6(v0: TUH0; v1: TUH0): TUH0; forward;
+function make_alt_5(v0: TUH0; v1: TUH0): TUH0; forward;
+function regex_equal_9(v0: TUH0; v1: TUH0): Boolean; forward;
+function make_cat_8(v0: TUH0; v1: TUH0): TUH0; forward;
+function make_star_10(v0: TUH0): TUH0; forward;
+function normalize_4(v0: TUH0): TUH0; forward;
+function nullable_12(v0: TUH0): TUS2; forward;
+function derivative_11(v0: TUH0; v1: TUS0): TUH0; forward;
+function canonical_derivative_3(v0: TUH0; v1: TUS0): TUH0; forward;
+function accepts_2(v0: TUH0; v1: TUH1): Boolean; forward;
+function loop_0(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt; forward;
+function zeros_input_14(v0: LongInt; v1: TUH1): TUH1; forward;
+function loop_13(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt; forward;
+function backtrack_stack_16(v0: TUH2; v1: TUH1): Boolean; forward;
+function loop_15(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt; forward;
+function loop_17(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt; forward;
+function run_19(v0: LongInt; v1: TUH1): Boolean; forward;
+function loop_18(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt; forward;
+function run_21(v0: LongInt; v1: TUH1): Boolean; forward;
+function loop_20(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt; forward;
+function run_23(v0: LongInt; v1: TUH1): Boolean; forward;
+function loop_22(v0: LongInt; v1: LongInt; v2: LongInt): LongInt; forward;
+procedure loop_24(v0: TArray0; v1: LongInt); forward;
+procedure loop_25(v0: TArray0; v1: LongInt); forward;
+function probe_27(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt; forward;
+function interned_node_26(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt): LongInt; forward;
+function interned_alt_insert_30(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
+function interned_make_alt_29(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
+function interned_make_cat_31(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
+function interned_of_regex_raw_28(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: TUH0): LongInt; forward;
+function interned_derivative_raw_35(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt; forward;
+function loop_34(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean; forward;
+function interned_accepts_33(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean; forward;
+function loop_32(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: QWord; v11: LongInt): LongInt; forward;
+function loop_36(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt; forward;
 function US0_0: TUS0;
 begin
   Result.tag := 0; 
@@ -95,7 +95,7 @@ function TupleCreate0(f0: TUH1; f1: QWord): TTuple0;
 begin
   Result.f0 := f0; Result.f1 := f1;
 end;
-function method1(v0: QWord; v1: LongInt; v2: TUH1): TTuple0;
+function random_bit_input_1(v0: QWord; v1: LongInt; v2: TUH1): TTuple0;
 var
   v3: Boolean;
   v4: QWord;
@@ -156,7 +156,7 @@ function US1_2: TUS1;
 begin
   Result.tag := 2; 
 end;
-function method7(v0: TUH0; v1: TUH0): TUS1;
+function regex_compare_7(v0: TUH0; v1: TUH0): TUS1;
 var
   v53: TUH0;
   v54: TUH0;
@@ -191,7 +191,7 @@ begin
                   3: begin
                       v55 := v1.c3_0;
                       v56 := v1.c3_1;
-                      v57 := method7(v53, v55);
+                      v57 := regex_compare_7(v53, v55);
                       case v57.tag of
                           1: begin
                               tmp5 := v54;
@@ -219,7 +219,7 @@ begin
                   4: begin
                       v34 := v1.c4_0;
                       v35 := v1.c4_1;
-                      v36 := method7(v28, v34);
+                      v36 := regex_compare_7(v28, v34);
                       case v36.tag of
                           1: begin
                               tmp12 := v29;
@@ -353,7 +353,7 @@ begin
       end;
   end;
 end;
-function method6(v0: TUH0; v1: TUH0): TUH0;
+function alt_insert_sorted_6(v0: TUH0; v1: TUH0): TUH0;
 var
   v2: TUH0;
   v3: TUH0;
@@ -365,10 +365,10 @@ begin
       3: begin
           v2 := v1.c3_0;
           v3 := v1.c3_1;
-          v4 := method7(v0, v2);
+          v4 := regex_compare_7(v0, v2);
           case v4.tag of
               2: begin
-                  v6 := method6(v0, v3);
+                  v6 := alt_insert_sorted_6(v0, v3);
                   Result := UH0_3(v2, v6);
               end;
               0: begin
@@ -383,7 +383,7 @@ begin
           Result := v0;
       end;
       else begin
-          v11 := method7(v0, v1);
+          v11 := regex_compare_7(v0, v1);
           case v11.tag of
               2: begin
                   Result := UH0_3(v1, v0);
@@ -398,7 +398,7 @@ begin
       end;
   end;
 end;
-function method5(v0: TUH0; v1: TUH0): TUH0;
+function make_alt_5(v0: TUH0; v1: TUH0): TUH0;
 var
   v2: TUH0;
   v3: TUH0;
@@ -411,7 +411,7 @@ begin
           3: begin
               v2 := v0.c3_0;
               v3 := v0.c3_1;
-              v4 := method6(v2, v1);
+              v4 := alt_insert_sorted_6(v2, v1);
               tmp3 := v3;
               tmp4 := v4;
               v0 := tmp3;
@@ -423,13 +423,13 @@ begin
               Exit;
           end;
           else begin
-              Result := method6(v0, v1);
+              Result := alt_insert_sorted_6(v0, v1);
               Exit;
           end;
       end;
   end;
 end;
-function method9(v0: TUH0; v1: TUH0): Boolean;
+function regex_equal_9(v0: TUH0; v1: TUH0): Boolean;
 var
   v18: TUH0;
   v19: TUH0;
@@ -462,7 +462,7 @@ begin
                   3: begin
                       v20 := v1.c3_0;
                       v21 := v1.c3_1;
-                      v22 := method9(v18, v20);
+                      v22 := regex_equal_9(v18, v20);
                       if v22 then begin
                           tmp5 := v19;
                           tmp6 := v21;
@@ -487,7 +487,7 @@ begin
                   4: begin
                       v28 := v1.c4_0;
                       v29 := v1.c4_1;
-                      v30 := method9(v26, v28);
+                      v30 := regex_equal_9(v26, v28);
                       if v30 then begin
                           tmp12 := v27;
                           tmp13 := v29;
@@ -593,7 +593,7 @@ begin
       end;
   end;
 end;
-function method8(v0: TUH0; v1: TUH0): TUH0;
+function make_cat_8(v0: TUH0; v1: TUH0): TUH0;
 var
   v12: TUH0;
   v13: TUH0;
@@ -626,7 +626,7 @@ begin
                                       4: begin
                                           v12 := v0.c4_0;
                                           v13 := v0.c4_1;
-                                          v14 := method8(v13, v1);
+                                          v14 := make_cat_8(v13, v1);
                                           Result := UH0_4(v12, v14);
                                       end;
                                       5: begin
@@ -634,7 +634,7 @@ begin
                                           case v1.tag of
                                               5: begin
                                                   v5 := v1.c5_0;
-                                                  v6 := method9(v4, v5);
+                                                  v6 := regex_equal_9(v4, v5);
                                                   if v6 then begin
                                                       Result := UH0_5(v4);
                                                   end else begin
@@ -659,7 +659,7 @@ begin
       end;
   end;
 end;
-function method10(v0: TUH0): TUH0;
+function make_star_10(v0: TUH0): TUH0;
 var
   v3: TUH0;
 begin
@@ -679,7 +679,7 @@ begin
       end;
   end;
 end;
-function method4(v0: TUH0): TUH0;
+function normalize_4(v0: TUH0): TUH0;
 var
   v5: TUH0;
   v6: TUH0;
@@ -697,16 +697,16 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
-          v7 := method4(v5);
-          v8 := method4(v6);
-          Result := method5(v7, v8);
+          v7 := normalize_4(v5);
+          v8 := normalize_4(v6);
+          Result := make_alt_5(v7, v8);
       end;
       4: begin
           v10 := v0.c4_0;
           v11 := v0.c4_1;
-          v12 := method4(v10);
-          v13 := method4(v11);
-          Result := method8(v12, v13);
+          v12 := normalize_4(v10);
+          v13 := normalize_4(v11);
+          Result := make_cat_8(v12, v13);
       end;
       2: begin
           v3 := v0.c2_0;
@@ -720,8 +720,8 @@ begin
       end;
       5: begin
           v15 := v0.c5_0;
-          v16 := method4(v15);
-          Result := method10(v16);
+          v16 := normalize_4(v15);
+          Result := make_star_10(v16);
       end;
   end;
 end;
@@ -733,7 +733,7 @@ function US2_1: TUS2;
 begin
   Result.tag := 1; 
 end;
-function method12(v0: TUH0): TUS2;
+function nullable_12(v0: TUH0): TUS2;
 var
   v5: TUH0;
   v6: TUH0;
@@ -750,8 +750,8 @@ begin
       3: begin
           v5 := v0.c3_0;
           v6 := v0.c3_1;
-          v7 := method12(v5);
-          v8 := method12(v6);
+          v7 := nullable_12(v5);
+          v8 := nullable_12(v6);
           case v7.tag of
               0: begin
                   Result := US2_0;
@@ -779,8 +779,8 @@ begin
       4: begin
           v16 := v0.c4_0;
           v17 := v0.c4_1;
-          v18 := method12(v16);
-          v19 := method12(v17);
+          v18 := nullable_12(v16);
+          v19 := nullable_12(v17);
           case v18.tag of
               0: begin
                   case v19.tag of
@@ -813,7 +813,7 @@ begin
       end;
   end;
 end;
-function method11(v0: TUH0; v1: TUS0): TUH0;
+function derivative_11(v0: TUH0; v1: TUS0): TUH0;
 var
   v19: TUH0;
   v20: TUH0;
@@ -837,24 +837,24 @@ begin
       3: begin
           v19 := v0.c3_0;
           v20 := v0.c3_1;
-          v21 := method11(v19, v1);
-          v22 := method11(v20, v1);
-          Result := method5(v21, v22);
+          v21 := derivative_11(v19, v1);
+          v22 := derivative_11(v20, v1);
+          Result := make_alt_5(v21, v22);
       end;
       4: begin
           v24 := v0.c4_0;
           v25 := v0.c4_1;
-          v26 := method12(v24);
+          v26 := nullable_12(v24);
           case v26.tag of
               1: begin
-                  v31 := method11(v24, v1);
-                  Result := method8(v31, v25);
+                  v31 := derivative_11(v24, v1);
+                  Result := make_cat_8(v31, v25);
               end;
               0: begin
-                  v27 := method11(v24, v1);
-                  v28 := method8(v27, v25);
-                  v29 := method11(v25, v1);
-                  Result := method5(v28, v29);
+                  v27 := derivative_11(v24, v1);
+                  v28 := make_cat_8(v27, v25);
+                  v29 := derivative_11(v25, v1);
+                  Result := make_alt_5(v28, v29);
               end;
           end;
       end;
@@ -904,22 +904,22 @@ begin
       end;
       5: begin
           v35 := v0.c5_0;
-          v36 := method11(v35, v1);
-          v37 := method10(v35);
-          Result := method8(v36, v37);
+          v36 := derivative_11(v35, v1);
+          v37 := make_star_10(v35);
+          Result := make_cat_8(v36, v37);
       end;
   end;
 end;
-function method3(v0: TUH0; v1: TUS0): TUH0;
+function canonical_derivative_3(v0: TUH0; v1: TUS0): TUH0;
 var
   v2: TUH0;
   v3: TUH0;
 begin
-  v2 := method4(v0);
-  v3 := method11(v2, v1);
-  Result := method4(v3);
+  v2 := normalize_4(v0);
+  v3 := derivative_11(v2, v1);
+  Result := normalize_4(v3);
 end;
-function method2(v0: TUH0; v1: TUH1): Boolean;
+function accepts_2(v0: TUH0; v1: TUH1): Boolean;
 var
   v6: TUS0;
   v7: TUH1;
@@ -934,7 +934,7 @@ begin
           1: begin
               v6 := v1.c1_0;
               v7 := v1.c1_1;
-              v8 := method3(v0, v6);
+              v8 := canonical_derivative_3(v0, v6);
               tmp3 := v8;
               tmp4 := v7;
               v0 := tmp3;
@@ -942,8 +942,8 @@ begin
               Continue;
           end;
           0: begin
-              v2 := method4(v0);
-              v3 := method12(v2);
+              v2 := normalize_4(v0);
+              v3 := nullable_12(v2);
               case v3.tag of
                   1: begin
                       Result := False;
@@ -958,7 +958,7 @@ begin
       end;
   end;
 end;
-function method0(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt;
+function loop_0(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt;
 var
   v5: Boolean;
   v6: TUH1;
@@ -979,10 +979,10 @@ begin
       v5 := 0 < v2;
       if v5 then begin
           v6 := UH1_0;
-          tmp4 := method1(v3, v1, v6);
+          tmp4 := random_bit_input_1(v3, v1, v6);
           v7 := tmp4.f0;
           v8 := tmp4.f1;
-          v9 := method2(v0, v7);
+          v9 := accepts_2(v0, v7);
           if v9 then begin
               v10 := v4 + 1;
               v11 := v10;
@@ -1007,7 +1007,7 @@ begin
       end;
   end;
 end;
-function method14(v0: LongInt; v1: TUH1): TUH1;
+function zeros_input_14(v0: LongInt; v1: TUH1): TUH1;
 var
   v2: Boolean;
   v3: LongInt;
@@ -1033,7 +1033,7 @@ begin
       end;
   end;
 end;
-function method13(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt;
+function loop_13(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt;
 var
   v4: Boolean;
   v5: TUH1;
@@ -1061,8 +1061,8 @@ begin
           Exit;
       end else begin
           v5 := UH1_0;
-          v6 := method14(v2, v5);
-          v7 := method2(v0, v6);
+          v6 := zeros_input_14(v2, v5);
+          v7 := accepts_2(v0, v6);
           if v7 then begin
               v8 := v3 + 1;
               v9 := v8;
@@ -1072,8 +1072,8 @@ begin
           v10 := US0_1;
           v11 := UH1_0;
           v12 := UH1_1(v10, v11);
-          v13 := method14(v2, v12);
-          v14 := method2(v0, v13);
+          v13 := zeros_input_14(v2, v12);
+          v14 := accepts_2(v0, v13);
           if v14 then begin
               v15 := v9 + 1;
               v16 := v15;
@@ -1101,7 +1101,7 @@ function UH2_1(a0: TUH0; a1: TUH2): TUH2;
 begin
   Result := TUH2.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
-function method16(v0: TUH2; v1: TUH1): Boolean;
+function backtrack_stack_16(v0: TUH2; v1: TUH1): Boolean;
 var
   v6: TUH0;
   v7: TUH2;
@@ -1145,7 +1145,7 @@ begin
                       v27 := v6.c3_0;
                       v28 := v6.c3_1;
                       v29 := UH2_1(v27, v7);
-                      v30 := method16(v29, v1);
+                      v30 := backtrack_stack_16(v29, v1);
                       if v30 then begin
                           Result := True;
                           Exit;
@@ -1236,7 +1236,7 @@ begin
                   5: begin
                       v39 := v6.c5_0;
                       v40 := UH2_1(v39, v0);
-                      v41 := method16(v40, v1);
+                      v41 := backtrack_stack_16(v40, v1);
                       if v41 then begin
                           Result := True;
                           Exit;
@@ -1267,7 +1267,7 @@ begin
       end;
   end;
 end;
-function method15(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt;
+function loop_15(v0: TUH0; v1: LongInt; v2: LongInt; v3: QWord; v4: LongInt): LongInt;
 var
   v5: Boolean;
   v6: TUH1;
@@ -1290,12 +1290,12 @@ begin
       v5 := 0 < v2;
       if v5 then begin
           v6 := UH1_0;
-          tmp4 := method1(v3, v1, v6);
+          tmp4 := random_bit_input_1(v3, v1, v6);
           v7 := tmp4.f0;
           v8 := tmp4.f1;
           v9 := UH2_0;
           v10 := UH2_1(v0, v9);
-          v11 := method16(v10, v7);
+          v11 := backtrack_stack_16(v10, v7);
           if v11 then begin
               v12 := v4 + 1;
               v13 := v12;
@@ -1320,7 +1320,7 @@ begin
       end;
   end;
 end;
-function method17(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt;
+function loop_17(v0: TUH0; v1: LongInt; v2: LongInt; v3: LongInt): LongInt;
 var
   v4: Boolean;
   v5: TUH1;
@@ -1352,10 +1352,10 @@ begin
           Exit;
       end else begin
           v5 := UH1_0;
-          v6 := method14(v2, v5);
+          v6 := zeros_input_14(v2, v5);
           v7 := UH2_0;
           v8 := UH2_1(v0, v7);
-          v9 := method16(v8, v6);
+          v9 := backtrack_stack_16(v8, v6);
           if v9 then begin
               v10 := v3 + 1;
               v11 := v10;
@@ -1365,10 +1365,10 @@ begin
           v12 := US0_1;
           v13 := UH1_0;
           v14 := UH1_1(v12, v13);
-          v15 := method14(v2, v14);
+          v15 := zeros_input_14(v2, v14);
           v16 := UH2_0;
           v17 := UH2_1(v0, v16);
-          v18 := method16(v17, v15);
+          v18 := backtrack_stack_16(v17, v15);
           if v18 then begin
               v19 := v11 + 1;
               v20 := v19;
@@ -1388,7 +1388,7 @@ begin
       end;
   end;
 end;
-function method19(v0: LongInt; v1: TUH1): Boolean;
+function run_19(v0: LongInt; v1: TUH1): Boolean;
 var
   v3: TUS0;
   v4: TUH1;
@@ -1436,7 +1436,7 @@ begin
       end;
   end;
 end;
-function method18(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt;
+function loop_18(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt;
 var
   v4: Boolean;
   v5: TUH1;
@@ -1457,11 +1457,11 @@ begin
       v4 := 0 < v1;
       if v4 then begin
           v5 := UH1_0;
-          tmp4 := method1(v2, v0, v5);
+          tmp4 := random_bit_input_1(v2, v0, v5);
           v6 := tmp4.f0;
           v7 := tmp4.f1;
           v8 := 0;
-          v9 := method19(v8, v6);
+          v9 := run_19(v8, v6);
           if v9 then begin
               v10 := v3 + 1;
               v11 := v10;
@@ -1484,7 +1484,7 @@ begin
       end;
   end;
 end;
-function method21(v0: LongInt; v1: TUH1): Boolean;
+function run_21(v0: LongInt; v1: TUH1): Boolean;
 var
   v17: TUS0;
   v18: TUH1;
@@ -1757,7 +1757,7 @@ begin
       end;
   end;
 end;
-function method20(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt;
+function loop_20(v0: LongInt; v1: LongInt; v2: QWord; v3: LongInt): LongInt;
 var
   v4: Boolean;
   v5: TUH1;
@@ -1778,11 +1778,11 @@ begin
       v4 := 0 < v1;
       if v4 then begin
           v5 := UH1_0;
-          tmp4 := method1(v2, v0, v5);
+          tmp4 := random_bit_input_1(v2, v0, v5);
           v6 := tmp4.f0;
           v7 := tmp4.f1;
           v8 := 0;
-          v9 := method21(v8, v6);
+          v9 := run_21(v8, v6);
           if v9 then begin
               v10 := v3 + 1;
               v11 := v10;
@@ -1805,7 +1805,7 @@ begin
       end;
   end;
 end;
-function method23(v0: LongInt; v1: TUH1): Boolean;
+function run_23(v0: LongInt; v1: TUH1): Boolean;
 var
   v3: TUS0;
   v4: TUH1;
@@ -1889,7 +1889,7 @@ begin
       end;
   end;
 end;
-function method22(v0: LongInt; v1: LongInt; v2: LongInt): LongInt;
+function loop_22(v0: LongInt; v1: LongInt; v2: LongInt): LongInt;
 var
   v3: Boolean;
   v4: TUH1;
@@ -1918,9 +1918,9 @@ begin
           Exit;
       end else begin
           v4 := UH1_0;
-          v5 := method14(v1, v4);
+          v5 := zeros_input_14(v1, v4);
           v6 := 0;
-          v7 := method23(v6, v5);
+          v7 := run_23(v6, v5);
           if v7 then begin
               v8 := v2 + 1;
               v9 := v8;
@@ -1930,9 +1930,9 @@ begin
           v10 := US0_1;
           v11 := UH1_0;
           v12 := UH1_1(v10, v11);
-          v13 := method14(v1, v12);
+          v13 := zeros_input_14(v1, v12);
           v14 := 0;
-          v15 := method23(v14, v13);
+          v15 := run_23(v14, v13);
           if v15 then begin
               v16 := v9 + 1;
               v17 := v16;
@@ -1950,7 +1950,7 @@ begin
       end;
   end;
 end;
-procedure method24(v0: TArray0; v1: LongInt);
+procedure loop_24(v0: TArray0; v1: LongInt);
 var
   v2: Boolean;
   v3: LongInt;
@@ -1972,7 +1972,7 @@ begin
       end;
   end;
 end;
-procedure method25(v0: TArray0; v1: LongInt);
+procedure loop_25(v0: TArray0; v1: LongInt);
 var
   v2: Boolean;
   v3: LongInt;
@@ -1994,7 +1994,7 @@ begin
       end;
   end;
 end;
-function method27(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt;
+function probe_27(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt;
 var
   v11: LongInt;
   v12: Boolean;
@@ -2150,7 +2150,7 @@ begin
       end;
   end;
 end;
-function method26(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt): LongInt;
+function interned_node_26(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt): LongInt;
 var
   v10: LongInt;
   v11: LongInt;
@@ -2163,9 +2163,9 @@ begin
   v12 := v11 * 4099;
   v13 := v12 + v9;
   v14 := v13 and 8191;
-  Result := method27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v14);
+  Result := probe_27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v14);
 end;
-function method30(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
+function interned_alt_insert_30(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
 var
   v9: Boolean;
   v10: LongInt;
@@ -2193,7 +2193,7 @@ begin
           v13 := v7 < v12;
           if v13 then begin
               v14 := 3;
-              Result := method26(v0, v1, v2, v3, v4, v5, v6, v14, v7, v8);
+              Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v14, v7, v8);
           end else begin
               v16 := v7 = v12;
               if v16 then begin
@@ -2201,28 +2201,28 @@ begin
               end else begin
                   v17 := 3;
                   v18 := v2[v8];
-                  v19 := method30(v0, v1, v2, v3, v4, v5, v6, v7, v18);
-                  Result := method26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19);
+                  v19 := interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v18);
+                  Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19);
               end;
           end;
       end else begin
           v23 := v7 < v8;
           if v23 then begin
               v24 := 3;
-              Result := method26(v0, v1, v2, v3, v4, v5, v6, v24, v7, v8);
+              Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v24, v7, v8);
           end else begin
               v26 := v7 = v8;
               if v26 then begin
                   Result := v8;
               end else begin
                   v27 := 3;
-                  Result := method26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7);
+                  Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7);
               end;
           end;
       end;
   end;
 end;
-function method29(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
+function interned_make_alt_29(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
 var
   v9: Boolean;
   v10: LongInt;
@@ -2251,7 +2251,7 @@ begin
           if v11 then begin
               v12 := v2[v7];
               v13 := v1[v7];
-              v14 := method30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
+              v14 := interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
               tmp6 := v0;
               tmp7 := v1;
               tmp8 := v2;
@@ -2272,13 +2272,13 @@ begin
               v8 := tmp14;
               Continue;
           end else begin
-              Result := method30(v0, v1, v2, v3, v4, v5, v6, v7, v8);
+              Result := interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8);
               Exit;
           end;
       end;
   end;
 end;
-function method31(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
+function interned_make_cat_31(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
 var
   v9: Boolean;
   v10: Boolean;
@@ -2334,7 +2334,7 @@ begin
                           Result := v7;
                       end else begin
                           v21 := 4;
-                          Result := method26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8);
+                          Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8);
                       end;
                   end else begin
                       v24 := v0[v7];
@@ -2343,11 +2343,11 @@ begin
                           v26 := 4;
                           v27 := v1[v7];
                           v28 := v2[v7];
-                          v29 := method31(v0, v1, v2, v3, v4, v5, v6, v28, v8);
-                          Result := method26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29);
+                          v29 := interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v28, v8);
+                          Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29);
                       end else begin
                           v31 := 4;
-                          Result := method26(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8);
+                          Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8);
                       end;
                   end;
               end;
@@ -2355,7 +2355,7 @@ begin
       end;
   end;
 end;
-function method28(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: TUH0): LongInt;
+function interned_of_regex_raw_28(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: TUH0): LongInt;
 var
   v14: TUH0;
   v15: TUH0;
@@ -2381,16 +2381,16 @@ begin
       3: begin
           v14 := v7.c3_0;
           v15 := v7.c3_1;
-          v16 := method28(v0, v1, v2, v3, v4, v5, v6, v14);
-          v17 := method28(v0, v1, v2, v3, v4, v5, v6, v15);
-          Result := method29(v0, v1, v2, v3, v4, v5, v6, v16, v17);
+          v16 := interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v14);
+          v17 := interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v15);
+          Result := interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v16, v17);
       end;
       4: begin
           v19 := v7.c4_0;
           v20 := v7.c4_1;
-          v21 := method28(v0, v1, v2, v3, v4, v5, v6, v19);
-          v22 := method28(v0, v1, v2, v3, v4, v5, v6, v20);
-          Result := method31(v0, v1, v2, v3, v4, v5, v6, v21, v22);
+          v21 := interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v19);
+          v22 := interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v20);
+          Result := interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v21, v22);
       end;
       2: begin
           v8 := v7.c2_0;
@@ -2404,7 +2404,7 @@ begin
               end;
           end;
           v12 := 0;
-          Result := method26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12);
+          Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12);
       end;
       0: begin
           Result := 0;
@@ -2414,7 +2414,7 @@ begin
       end;
       5: begin
           v24 := v7.c5_0;
-          v25 := method28(v0, v1, v2, v3, v4, v5, v6, v24);
+          v25 := interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v24);
           v26 := v0[v25];
           v27 := v26 < 2;
           if v27 then begin
@@ -2426,13 +2426,13 @@ begin
               end else begin
                   v29 := 5;
                   v30 := 0;
-                  Result := method26(v0, v1, v2, v3, v4, v5, v6, v29, v25, v30);
+                  Result := interned_node_26(v0, v1, v2, v3, v4, v5, v6, v29, v25, v30);
               end;
           end;
       end;
   end;
 end;
-function method35(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
+function interned_derivative_raw_35(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt): LongInt;
 var
   v9: LongInt;
   v10: LongInt;
@@ -2485,29 +2485,29 @@ begin
               v19 := v13 = 3;
               if v19 then begin
                   v20 := v1[v7];
-                  v21 := method35(v0, v1, v2, v3, v4, v5, v6, v20, v8);
+                  v21 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v20, v8);
                   v22 := v2[v7];
-                  v23 := method35(v0, v1, v2, v3, v4, v5, v6, v22, v8);
-                  v41 := method29(v0, v1, v2, v3, v4, v5, v6, v21, v23);
+                  v23 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v22, v8);
+                  v41 := interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v21, v23);
               end else begin
                   v25 := v13 = 4;
                   if v25 then begin
                       v26 := v1[v7];
                       v27 := v2[v7];
-                      v28 := method35(v0, v1, v2, v3, v4, v5, v6, v26, v8);
-                      v29 := method31(v0, v1, v2, v3, v4, v5, v6, v28, v27);
+                      v28 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v26, v8);
+                      v29 := interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v28, v27);
                       v30 := v3[v26];
                       v31 := v30 = 1;
                       if v31 then begin
-                          v32 := method35(v0, v1, v2, v3, v4, v5, v6, v27, v8);
-                          v41 := method29(v0, v1, v2, v3, v4, v5, v6, v29, v32);
+                          v32 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v27, v8);
+                          v41 := interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v29, v32);
                       end else begin
                           v41 := v29;
                       end;
                   end else begin
                       v35 := v1[v7];
-                      v36 := method35(v0, v1, v2, v3, v4, v5, v6, v35, v8);
-                      v41 := method31(v0, v1, v2, v3, v4, v5, v6, v36, v7);
+                      v36 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v35, v8);
+                      v41 := interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v36, v7);
                   end;
               end;
           end;
@@ -2520,7 +2520,7 @@ begin
       Result := v43;
   end;
 end;
-function method34(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean;
+function loop_34(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean;
 var
   v9: Boolean;
   v12: TUS0;
@@ -2557,7 +2557,7 @@ begin
                           v15 := 0;
                       end;
                   end;
-                  v16 := method35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
+                  v16 := interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
                   tmp5 := v0;
                   tmp6 := v1;
                   tmp7 := v2;
@@ -2588,11 +2588,11 @@ begin
       end;
   end;
 end;
-function method33(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean;
+function interned_accepts_33(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean;
 begin
-  Result := method34(v0, v1, v2, v3, v4, v5, v6, v7, v8);
+  Result := loop_34(v0, v1, v2, v3, v4, v5, v6, v7, v8);
 end;
-function method32(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: QWord; v11: LongInt): LongInt;
+function loop_32(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: QWord; v11: LongInt): LongInt;
 var
   v12: Boolean;
   v13: TUH1;
@@ -2620,10 +2620,10 @@ begin
       v12 := 0 < v9;
       if v12 then begin
           v13 := UH1_0;
-          tmp4 := method1(v10, v7, v13);
+          tmp4 := random_bit_input_1(v10, v7, v13);
           v14 := tmp4.f0;
           v15 := tmp4.f1;
-          v16 := method33(v0, v1, v2, v3, v4, v5, v6, v8, v14);
+          v16 := interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v14);
           if v16 then begin
               v17 := v11 + 1;
               v18 := v17;
@@ -2662,7 +2662,7 @@ begin
       end;
   end;
 end;
-function method36(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt;
+function loop_36(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt;
 var
   v11: Boolean;
   v12: TUH1;
@@ -2697,8 +2697,8 @@ begin
           Exit;
       end else begin
           v12 := UH1_0;
-          v13 := method14(v9, v12);
-          v14 := method33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
+          v13 := zeros_input_14(v9, v12);
+          v14 := interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
           if v14 then begin
               v15 := v10 + 1;
               v16 := v15;
@@ -2708,8 +2708,8 @@ begin
           v17 := US0_1;
           v18 := UH1_0;
           v19 := UH1_1(v17, v18);
-          v20 := method14(v9, v19);
-          v21 := method33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
+          v20 := zeros_input_14(v9, v19);
+          v21 := interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
           if v21 then begin
               v22 := v16 + 1;
               v23 := v22;
@@ -3063,8 +3063,8 @@ begin
   v37 := UH0_4(v16, v36);
   v38 := 1;
   v39 := 0;
-  v40 := method0(v10, v1, v0, v38, v39);
-  v41 := method0(v37, v1, v0, v38, v39);
+  v40 := loop_0(v10, v1, v0, v38, v39);
+  v41 := loop_0(v37, v1, v0, v38, v39);
   v42 := 16;
   v43 := US0_0;
   v44 := UH0_2(v43);
@@ -3080,7 +3080,7 @@ begin
   v54 := UH0_4(v51, v53);
   v55 := 0;
   v56 := 1;
-  v57 := method13(v54, v42, v56, v55);
+  v57 := loop_13(v54, v42, v56, v55);
   v58 := 200;
   v59 := 32;
   v60 := US0_0;
@@ -3121,8 +3121,8 @@ begin
   v95 := UH0_4(v74, v94);
   v96 := 1;
   v97 := 0;
-  v98 := method15(v68, v59, v58, v96, v97);
-  v99 := method15(v95, v59, v58, v96, v97);
+  v98 := loop_15(v68, v59, v58, v96, v97);
+  v99 := loop_15(v95, v59, v58, v96, v97);
   v100 := 16;
   v101 := US0_0;
   v102 := UH0_2(v101);
@@ -3138,7 +3138,7 @@ begin
   v112 := UH0_4(v109, v111);
   v113 := 0;
   v114 := 1;
-  v115 := method17(v112, v100, v114, v113);
+  v115 := loop_17(v112, v100, v114, v113);
   v116 := v40 = v98;
   if v116 then begin
       v117 := v41 = v99;
@@ -3160,12 +3160,12 @@ begin
   v122 := 32;
   v123 := 1;
   v124 := 0;
-  v125 := method18(v122, v121, v123, v124);
-  v126 := method20(v122, v121, v123, v124);
+  v125 := loop_18(v122, v121, v123, v124);
+  v126 := loop_20(v122, v121, v123, v124);
   v127 := 16;
   v128 := 0;
   v129 := 1;
-  v130 := method22(v127, v129, v128);
+  v130 := loop_22(v127, v129, v128);
   v131 := v40 = v125;
   if v131 then begin
       v132 := v41 = v126;
@@ -3207,19 +3207,19 @@ begin
   SetLength(tmp151, 1);
   v144 := tmp151;
   v145 := 0;
-  method24(v142, v145);
+  loop_24(v142, v145);
   v146 := 0;
-  method24(v143, v146);
+  loop_24(v143, v146);
   v147 := 0;
-  method25(v144, v147);
+  loop_25(v144, v147);
   v148 := 0;
   v149 := 0;
   v150 := 0;
-  v151 := method26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150);
+  v151 := interned_node_26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150);
   v152 := 1;
   v153 := 0;
   v154 := 0;
-  v155 := method26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154);
+  v155 := interned_node_26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154);
   v156 := v151 = 0;
   if v156 then begin
       v157 := v155 = 1;
@@ -3247,10 +3247,10 @@ begin
   v179 := US0_0;
   v180 := UH0_2(v179);
   v181 := UH0_4(v178, v180);
-  v182 := method28(v166, v167, v168, v169, v170, v171, v172, v181);
+  v182 := interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181);
   v183 := 1;
   v184 := 0;
-  v185 := method32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
+  v185 := loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
   v186 := US0_0;
   v187 := UH0_2(v186);
   v188 := US0_1;
@@ -3278,10 +3278,10 @@ begin
   v210 := UH0_4(v198, v209);
   v211 := UH0_4(v193, v210);
   v212 := UH0_4(v191, v211);
-  v213 := method28(v166, v167, v168, v169, v170, v171, v172, v212);
+  v213 := interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212);
   v214 := 1;
   v215 := 0;
-  v216 := method32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
+  v216 := loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
   v217 := 16;
   tmp219 := nil;
   SetLength(tmp219, 4096);
@@ -3305,19 +3305,19 @@ begin
   SetLength(tmp231, 1);
   v224 := tmp231;
   v225 := 0;
-  method24(v222, v225);
+  loop_24(v222, v225);
   v226 := 0;
-  method24(v223, v226);
+  loop_24(v223, v226);
   v227 := 0;
-  method25(v224, v227);
+  loop_25(v224, v227);
   v228 := 0;
   v229 := 0;
   v230 := 0;
-  v231 := method26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230);
+  v231 := interned_node_26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230);
   v232 := 1;
   v233 := 0;
   v234 := 0;
-  v235 := method26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234);
+  v235 := interned_node_26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234);
   v236 := v231 = 0;
   if v236 then begin
       v237 := v235 = 1;
@@ -3348,10 +3348,10 @@ begin
   v262 := US0_1;
   v263 := UH0_2(v262);
   v264 := UH0_4(v261, v263);
-  v265 := method28(v246, v247, v248, v249, v250, v251, v252, v264);
+  v265 := interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264);
   v266 := 1;
   v267 := 0;
-  v268 := method36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
+  v268 := loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
   v269 := v40 = v185;
   if v269 then begin
       v270 := v41 = v216;

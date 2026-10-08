@@ -29,11 +29,11 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: string, v1: number): number {
+function runtime_byte_0(v0: string, v1: number): number {
     let v2: number = spiral_string_index(v0, v1);
     return v2;
 }
-function method1(v0: string, v1: number, v2: number, v3: number, v4: number, v5: number): number {
+function codepoint_length_loop_1(v0: string, v1: number, v2: number, v3: number, v4: number, v5: number): number {
     tail: while (true) {
         let v6: boolean = v3 === v5;
         if (v6) {
@@ -74,7 +74,7 @@ function method1(v0: string, v1: number, v2: number, v3: number, v4: number, v5:
         }
     }
 }
-function method2(v0: string, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number): number {
+function codepoint_byte_offset_loop_2(v0: string, v1: number, v2: number, v3: number, v4: number, v5: number, v6: number): number {
     tail: while (true) {
         let v7: boolean = v4 === v6;
         if (v7) {
@@ -140,94 +140,94 @@ function method2(v0: string, v1: number, v2: number, v3: number, v4: number, v5:
 export function main(): number {
     let v0: string = "À";
     let v1: number = 1;
-    let v2: number = method0(v0, v1);
+    let v2: number = runtime_byte_0(v0, v1);
     let v3: string = "©";
     let v4: number = 0;
-    let v5: number = method0(v3, v4);
+    let v5: number = runtime_byte_0(v3, v4);
     let v6: string = "Aéλ🙂Z";
     let v7: number = 0;
     let v8: number = 0;
     let v9: number = 10;
-    let v10: number = method1(v6, v2, v5, v7, v8, v9);
+    let v10: number = codepoint_length_loop_1(v6, v2, v5, v7, v8, v9);
     let v11: number = 1;
-    let v12: number = method0(v0, v11);
+    let v12: number = runtime_byte_0(v0, v11);
     let v13: number = 0;
-    let v14: number = method0(v3, v13);
+    let v14: number = runtime_byte_0(v3, v13);
     let v15: number = 1;
     let v16: number = 0;
     let v17: number = 0;
     let v18: number = 10;
-    let v19: number = method2(v6, v12, v14, v15, v16, v17, v18);
+    let v19: number = codepoint_byte_offset_loop_2(v6, v12, v14, v15, v16, v17, v18);
     let v20: number = 1;
-    let v21: number = method0(v0, v20);
+    let v21: number = runtime_byte_0(v0, v20);
     let v22: number = 0;
-    let v23: number = method0(v3, v22);
+    let v23: number = runtime_byte_0(v3, v22);
     let v24: number = 2;
     let v25: number = 0;
     let v26: number = 0;
     let v27: number = 10;
-    let v28: number = method2(v6, v21, v23, v24, v25, v26, v27);
+    let v28: number = codepoint_byte_offset_loop_2(v6, v21, v23, v24, v25, v26, v27);
     let v29: number = (v28 - 1) | 0;
     let v30: string = spiral_string_slice("Aéλ🙂Z", v19, v29);
     let v31: number = 1;
-    let v32: number = method0(v0, v31);
+    let v32: number = runtime_byte_0(v0, v31);
     let v33: number = 0;
-    let v34: number = method0(v3, v33);
+    let v34: number = runtime_byte_0(v3, v33);
     let v35: number = 3;
     let v36: number = 0;
     let v37: number = 0;
     let v38: number = 10;
-    let v39: number = method2(v6, v32, v34, v35, v36, v37, v38);
+    let v39: number = codepoint_byte_offset_loop_2(v6, v32, v34, v35, v36, v37, v38);
     let v40: number = 1;
-    let v41: number = method0(v0, v40);
+    let v41: number = runtime_byte_0(v0, v40);
     let v42: number = 0;
-    let v43: number = method0(v3, v42);
+    let v43: number = runtime_byte_0(v3, v42);
     let v44: number = 4;
     let v45: number = 0;
     let v46: number = 0;
     let v47: number = 10;
-    let v48: number = method2(v6, v41, v43, v44, v45, v46, v47);
+    let v48: number = codepoint_byte_offset_loop_2(v6, v41, v43, v44, v45, v46, v47);
     let v49: number = (v48 - 1) | 0;
     let v50: string = spiral_string_slice("Aéλ🙂Z", v39, v49);
     let v51: number = 1;
-    let v52: number = method0(v0, v51);
+    let v52: number = runtime_byte_0(v0, v51);
     let v53: number = 0;
-    let v54: number = method0(v3, v53);
+    let v54: number = runtime_byte_0(v3, v53);
     let v55: number = 1;
     let v56: number = 0;
     let v57: number = 0;
     let v58: number = 10;
-    let v59: number = method2(v6, v52, v54, v55, v56, v57, v58);
+    let v59: number = codepoint_byte_offset_loop_2(v6, v52, v54, v55, v56, v57, v58);
     let v60: number = 1;
-    let v61: number = method0(v0, v60);
+    let v61: number = runtime_byte_0(v0, v60);
     let v62: number = 0;
-    let v63: number = method0(v3, v62);
+    let v63: number = runtime_byte_0(v3, v62);
     let v64: number = 4;
     let v65: number = 0;
     let v66: number = 0;
     let v67: number = 10;
-    let v68: number = method2(v6, v61, v63, v64, v65, v66, v67);
+    let v68: number = codepoint_byte_offset_loop_2(v6, v61, v63, v64, v65, v66, v67);
     let v69: number = (v68 - 1) | 0;
     let v70: string = spiral_string_slice("Aéλ🙂Z", v59, v69);
     let v71: number = 1;
-    let v72: number = method0(v0, v71);
+    let v72: number = runtime_byte_0(v0, v71);
     let v73: number = 0;
-    let v74: number = method0(v3, v73);
+    let v74: number = runtime_byte_0(v3, v73);
     let v75: number = 3;
     let v76: number = 0;
     let v77: number = 0;
     let v78: number = 10;
-    let v79: number = method2(v6, v72, v74, v75, v76, v77, v78);
+    let v79: number = codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78);
     let v80: number = 0;
-    let v81: number = method0(v30, v80);
+    let v81: number = runtime_byte_0(v30, v80);
     let v82: string = "é";
     let v83: number = 0;
-    let v84: number = method0(v82, v83);
+    let v84: number = runtime_byte_0(v82, v83);
     let v85: number = 3;
-    let v86: number = method0(v50, v85);
+    let v86: number = runtime_byte_0(v50, v85);
     let v87: string = "🙂";
     let v88: number = 3;
-    let v89: number = method0(v87, v88);
+    let v89: number = runtime_byte_0(v87, v88);
     let v90: boolean = v10 === 5;
     if (v90) {
         let v91: number = spiral_string_length(v30);

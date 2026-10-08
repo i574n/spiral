@@ -18,7 +18,7 @@ and [<Struct>] US1 =
     | US1_0
     | US1_1
     | US1_2
-let rec method1 (v0 : uint64, v1 : int32, v2 : UH1) : struct (UH1 * uint64) =
+let rec random_bit_input_1 (v0 : uint64, v1 : int32, v2 : UH1) : struct (UH1 * uint64) =
     let v3 : bool = 0 < v1
     if v3 then
         let v4 : uint64 = v0 * 1103515245UL
@@ -36,25 +36,25 @@ let rec method1 (v0 : uint64, v1 : int32, v2 : UH1) : struct (UH1 * uint64) =
                 let v12 : US0 = US0_1
                 v12
         let v14 : UH1 = UH1_1(v13, v2)
-        method1(v6, v7, v14)
+        random_bit_input_1(v6, v7, v14)
     else
         struct (v2, v0)
-and method2 (v0 : UH2, v1 : UH1) : bool =
+and backtrack_stack_2 (v0 : UH2, v1 : UH1) : bool =
     match v0 with
     | UH2_1(v6, v7) -> (* RegexListCons *)
         match v6 with
         | UH0_3(v27, v28) -> (* RegexAlt *)
             let v29 : UH2 = UH2_1(v27, v7)
-            let v30 : bool = method2(v29, v1)
+            let v30 : bool = backtrack_stack_2(v29, v1)
             if v30 then
                 true
             else
                 let v31 : UH2 = UH2_1(v28, v7)
-                method2(v31, v1)
+                backtrack_stack_2(v31, v1)
         | UH0_4(v34, v35) -> (* RegexCat *)
             let v36 : UH2 = UH2_1(v35, v7)
             let v37 : UH2 = UH2_1(v34, v36)
-            method2(v37, v1)
+            backtrack_stack_2(v37, v1)
         | UH0_2(v9) -> (* RegexChar *)
             match v1 with
             | UH1_1(v10, v11) -> (* InputCons *)
@@ -79,7 +79,7 @@ and method2 (v0 : UH2, v1 : UH1) : bool =
                     | _ ->
                         false
                 if v22 then
-                    method2(v7, v11)
+                    backtrack_stack_2(v7, v11)
                 else
                     false
             | UH1_0 -> (* InputEmpty *)
@@ -87,28 +87,28 @@ and method2 (v0 : UH2, v1 : UH1) : bool =
         | UH0_0 -> (* RegexEmpty *)
             false
         | UH0_1 -> (* RegexEpsilon *)
-            method2(v7, v1)
+            backtrack_stack_2(v7, v1)
         | UH0_5(v39) -> (* RegexStar *)
             let v40 : UH2 = UH2_1(v39, v0)
-            let v41 : bool = method2(v40, v1)
+            let v41 : bool = backtrack_stack_2(v40, v1)
             if v41 then
                 true
             else
-                method2(v7, v1)
+                backtrack_stack_2(v7, v1)
     | UH2_0 -> (* RegexListNil *)
         match v1 with
         | UH1_1(v2, v3) -> (* InputCons *)
             false
         | UH1_0 -> (* InputEmpty *)
             true
-and method0 (v0 : UH0, v1 : int32, v2 : int32, v3 : uint64, v4 : int32) : int32 =
+and loop_0 (v0 : UH0, v1 : int32, v2 : int32, v3 : uint64, v4 : int32) : int32 =
     let v5 : bool = 0 < v2
     if v5 then
         let v6 : UH1 = UH1_0
-        let struct (v7 : UH1, v8 : uint64) = method1(v3, v1, v6)
+        let struct (v7 : UH1, v8 : uint64) = random_bit_input_1(v3, v1, v6)
         let v9 : UH2 = UH2_0
         let v10 : UH2 = UH2_1(v0, v9)
-        let v11 : bool = method2(v10, v7)
+        let v11 : bool = backtrack_stack_2(v10, v7)
         let v13 : int32 =
             if v11 then
                 let v12 : int32 = v4 + 1
@@ -116,7 +116,7 @@ and method0 (v0 : UH0, v1 : int32, v2 : int32, v3 : uint64, v4 : int32) : int32 
             else
                 v4
         let v14 : int32 = v2 - 1
-        method0(v0, v1, v14, v8, v13)
+        loop_0(v0, v1, v14, v8, v13)
     else
         v4
 let v0 : int32 = 2000
@@ -159,8 +159,8 @@ let v36 : UH0 = UH0_4(v18, v35)
 let v37 : UH0 = UH0_4(v16, v36)
 let v38 : uint64 = 1UL
 let v39 : int32 = 0
-let v40 : int32 = method0(v10, v1, v0, v38, v39)
-let v41 : int32 = method0(v37, v1, v0, v38, v39)
+let v40 : int32 = loop_0(v10, v1, v0, v38, v39)
+let v41 : int32 = loop_0(v37, v1, v0, v38, v39)
 let v42 : bool = v40 = 997
 if v42 then
     ()

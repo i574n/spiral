@@ -11,8 +11,8 @@ begin
   if ((Ord(value[from + 1]) and $C0) = $80) or ((upto + 1 < len) and ((Ord(value[upto + 2]) and $C0) = $80)) then Halt(3);
   Result := Copy(value, from + 1, upto - from + 1);
 end;
-function method0(v0: AnsiString): AnsiString; forward;
-function method0(v0: AnsiString): AnsiString;
+function middle_0(v0: AnsiString): AnsiString; forward;
+function middle_0(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
@@ -31,7 +31,7 @@ var
   v7: Boolean;
 begin
   v0 := 'alpha';
-  v1 := method0(v0);
+  v1 := middle_0(v0);
   v2 := LongInt(Length(v1));
   v3 := v2 = 3;
   if v3 then begin

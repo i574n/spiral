@@ -112,7 +112,7 @@ fn US0_0() US0 {
 fn US0_1(a0: [][]i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0 };
 }
-fn method0(p0: US0) i32 {
+fn bump_0(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     var v1: [][]i32 = undefined; _ = &v1;
     var v2: []i32 = undefined; _ = &v2;
@@ -133,7 +133,7 @@ fn method0(p0: US0) i32 {
         else => unreachable,
     }
 }
-fn method1(p0: US0) i32 {
+fn score_1(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     var v1: [][]i32 = undefined; _ = &v1;
     var v2: []i32 = undefined; _ = &v2;
@@ -187,9 +187,9 @@ fn spiralMain() i32 {
     v1[spiralIndex(v1.len, @as(i32, 0))] = v2;
     v1[spiralIndex(v1.len, @as(i32, 1))] = v3;
     v4 = US0_1(v1);
-    v5 = method0(v4);
+    v5 = bump_0(v4);
     v6 = US0_1(v1);
-    v7 = method1(v6);
+    v7 = score_1(v6);
     v8 = v7 +% v5;
     v9 = v8 -% @as(i32, 19);
     return v9;

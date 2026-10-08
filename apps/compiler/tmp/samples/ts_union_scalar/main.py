@@ -23,7 +23,7 @@ class US0_1(NamedTuple): # Miss
     v0 : i32
     tag = 1
 US0 = Union[US0_0, US0_1]
-def method0(v0 : US0) -> i32:
+def score_0(v0 : US0) -> i32:
     match v0:
         case US0_0(v1): # Hit
             del v0
@@ -42,7 +42,7 @@ def main():
     else:
         v3 = US0_1(3)
     del v0
-    v4 = method0(v3)
+    v4 = score_0(v3)
     del v3
     v5 = v4 - 7
     del v4

@@ -39,7 +39,7 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
   }
 }
 
-pub fn method0(v0: Bool) -> String {
+pub fn choose_left_0(v0: Bool) -> String {
     case v0 {
         True -> {
             let v1 = "spi"
@@ -51,7 +51,7 @@ pub fn method0(v0: Bool) -> String {
         }
     }
 }
-pub fn method1(v0: Bool) -> String {
+pub fn choose_right_1(v0: Bool) -> String {
     case v0 {
         True -> {
             let v1 = "bad"
@@ -65,9 +65,9 @@ pub fn method1(v0: Bool) -> String {
 }
 pub fn main() {
 let v0 = True
-let v1 = method0(v0)
+let v1 = choose_left_0(v0)
 let v2 = False
-let v3 = method1(v2)
+let v3 = choose_right_1(v2)
 let v4 = { v1 } <> { v3 }
 let v5 = spiral_string_length(v4)
 let v6 = v5 == 6

@@ -9,7 +9,7 @@ type
     function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
   TClosure0 = class(TFun0) v0: TUS0; function Invoke(v1: LongInt): LongInt; override; end;
-function method0(v0: TUS0): LongInt; forward;
+function score_0(v0: TUS0): LongInt; forward;
 function ClosureCreate0(v0: TUS0): TFun0; forward;
 function method1(v0: TFun0): LongInt; forward;
 function US0_0: TUS0;
@@ -24,7 +24,7 @@ function US0_2(a0: Boolean): TUS0;
 begin
   Result.tag := 2; Result.c2_0 := a0;
 end;
-function method0(v0: TUS0): LongInt;
+function score_0(v0: TUS0): LongInt;
 var
   v2: Boolean;
   v1: LongInt;
@@ -52,7 +52,7 @@ var
   v2: LongInt;
   v3: LongInt;
 begin
-  v2 := method0(v0);
+  v2 := score_0(v0);
   v3 := v2 + v1;
   Result := v3;
 end;

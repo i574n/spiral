@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: i32, p1: i32) i32 {
+fn count_down_0(p0: i32, p1: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: bool = undefined; _ = &v2;
@@ -135,7 +135,7 @@ fn spiralMain() i32 {
     var v3: bool = undefined; _ = &v3;
     v0 = @as(i32, 5000);
     v1 = @as(i32, 0);
-    v2 = method0(v0, v1);
+    v2 = count_down_0(v0, v1);
     v3 = v2 == @as(i32, 5000);
     if (v3) {
         return @as(i32, 0);

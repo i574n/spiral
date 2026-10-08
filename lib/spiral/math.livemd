@@ -181,7 +181,7 @@ Spiral.Kino.eval!(
 
 ### atan2
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl atan2 (y : f64) (x : f64) : f64 =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_community/maths\"\n            $'maths.atan2(!y, !x)' : float\n        Lua = fun () => $'math.atan2(!y, !x)' : float\n        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float\n        Python = fun () => \n            global \"import math\"\n            $'math.atan2(!y, !x)' : float\n        Rust = fun () => $'(!y).atan2(!x)' : float\n        Zig = fun () => $'std.math.atan2(!y, !x)' : float\n        Lean = fun () => $'Float.atan2 !y !x ' : float\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl atan2 (y : f64) (x : f64) : f64 =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam_community/maths\"\n            $'maths.atan2(!y, !x)' : float\n        Lua = fun () => $'math.atan2(!y, !x)' : float\n        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float\n        Python = fun () => \n            global \"import math\"\n            $'math.atan2(!y, !x)' : float\n        Rust = fun () => $'(!y).atan2(!x)' : float\n        Zig = fun () => $'std.math.atan2(!y, !x)' : float\n        Lean = fun () => $'Float.atan2 !y !x ' : float\n        C = fun () =>\n            global \"#include <tgmath.h>\"\n            $'atan2(!y, !x)' : float\n        Cpp = fun () =>\n            global \"#include <cmath>\"\n            $'std::atan2(!y, !x)' : float\n        Delphi = fun () => $'ArcTan2(!y, !x)' : float\n        TypeScript = fun () => $'Math.atan2(!y, !x)' : float\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -199,6 +199,14 @@ Spiral.Kino.eval!(
           Rust = fun () => $'(!y).atan2(!x)' : float
           Zig = fun () => $'std.math.atan2(!y, !x)' : float
           Lean = fun () => $'Float.atan2 !y !x ' : float
+          C = fun () =>
+              global "#include <tgmath.h>"
+              $'atan2(!y, !x)' : float
+          Cpp = fun () =>
+              global "#include <cmath>"
+              $'std::atan2(!y, !x)' : float
+          Delphi = fun () => $'ArcTan2(!y, !x)' : float
+          TypeScript = fun () => $'Math.atan2(!y, !x)' : float
       }
   """,
   timeout: 300_000
@@ -225,7 +233,7 @@ Spiral.Kino.eval!(
 
 ## floor
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl floor forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.floor' : t\n        Lua = fun () => n |> $'math.floor' : t\n        Fsharp = fun () => n |> $'floor' : t\n        Python = fun () => \n            global \"import math\"\n            $'math.floor(!n)' : t\n        Rust = fun () => $'!n.floor()' : t\n        Zig = fun () => $'\\@floor(!n)' : t\n        Lean = fun () => $'(!n).floor' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl floor forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.floor' : t\n        Lua = fun () => n |> $'math.floor' : t\n        Fsharp = fun () => n |> $'floor' : t\n        Python = fun () => \n            global \"import math\"\n            $'math.floor(!n)' : t\n        Rust = fun () => $'!n.floor()' : t\n        Zig = fun () => $'\\@floor(!n)' : t\n        Lean = fun () => $'(!n).floor' : t\n        C = fun () =>\n            global \"#include <tgmath.h>\"\n            $'floor(!n)' : t\n        Cpp = fun () =>\n            global \"#include <cmath>\"\n            $'std::floor(!n)' : t\n        Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t\n        TypeScript = fun () => $'Math.floor(!n)' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -243,6 +251,14 @@ Spiral.Kino.eval!(
           Rust = fun () => $'!n.floor()' : t
           Zig = fun () => $'\@floor(!n)' : t
           Lean = fun () => $'(!n).floor' : t
+          C = fun () =>
+              global "#include <tgmath.h>"
+              $'floor(!n)' : t
+          Cpp = fun () =>
+              global "#include <cmath>"
+              $'std::floor(!n)' : t
+          Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+          TypeScript = fun () => $'Math.floor(!n)' : t
       }
   """,
   timeout: 300_000
@@ -269,7 +285,7 @@ Spiral.Kino.eval!(
 
 ## ceil
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ceil forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.ceiling' : t\n        Lua = fun () => n |> $'math.ceil' : t\n        Fsharp = fun () => n |> $'ceil' : t\n        Python = fun () =>\n            global \"import math\"\n            n |> $'math.ceil' : t\n        Rust = fun () => $'!n.ceil()' : t\n        Zig = fun () => $'\\@ceil(!n)' : t\n        Lean = fun () => $'(!n).ceil' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ceil forall t {float}. (n : t) : t =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/float\"\n            n |> $'float.ceiling' : t\n        Lua = fun () => n |> $'math.ceil' : t\n        Fsharp = fun () => n |> $'ceil' : t\n        Python = fun () =>\n            global \"import math\"\n            n |> $'math.ceil' : t\n        Rust = fun () => $'!n.ceil()' : t\n        Zig = fun () => $'\\@ceil(!n)' : t\n        Lean = fun () => $'(!n).ceil' : t\n        C = fun () =>\n            global \"#include <tgmath.h>\"\n            $'ceil(!n)' : t\n        Cpp = fun () =>\n            global \"#include <cmath>\"\n            $'std::ceil(!n)' : t\n        Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t\n        TypeScript = fun () => $'Math.ceil(!n)' : t\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -287,6 +303,14 @@ Spiral.Kino.eval!(
           Rust = fun () => $'!n.ceil()' : t
           Zig = fun () => $'\@ceil(!n)' : t
           Lean = fun () => $'(!n).ceil' : t
+          C = fun () =>
+              global "#include <tgmath.h>"
+              $'ceil(!n)' : t
+          Cpp = fun () =>
+              global "#include <cmath>"
+              $'std::ceil(!n)' : t
+          Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+          TypeScript = fun () => $'Math.ceil(!n)' : t
       }
   """,
   timeout: 300_000
@@ -313,7 +337,7 @@ Spiral.Kino.eval!(
 
 ## round
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl round forall t {number; float}. (x : t) : t =\n    inl round_half_to_even () =\n        inl lower = floor x\n        inl difference = x - lower\n        if difference > 0.5 then lower + 1\n        elif difference < 0.5 then lower\n        elif floor (lower / 2) * 2 = lower then lower\n        else lower + 1\n    backend_switch {\n        Gleam = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor |> convert.i32\n                if result % 2 = 0\n                then result\n                else result - 1\n                |> convert.convert\n        Lua = fun () =>\n            if x < 1\n            then x - 0.5 |> ceil\n            else\n                inl result = x + 1 |> floor\n                if result % 2 = 0\n                then result\n                else result - 1\n        Fsharp = fun () => x |> $'round' : t\n        Python = fun () => x |> $'round' : t\n        Rust = fun () => $'(!x).round_ties_even()' : t\n        Zig = round_half_to_even\n        Lean = round_half_to_even\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl round forall t {number; float}. (x : t) : t =\n    inl round_half_to_even () =\n        inl lower = floor x\n        inl difference = x - lower\n        if difference > 0.5 then lower + 1\n        elif difference < 0.5 then lower\n        elif floor (lower / 2) * 2 = lower then lower\n        else lower + 1\n    backend_switch {\n        Gleam = round_half_to_even\n        Lua = round_half_to_even\n        Fsharp = fun () => x |> $'round' : t\n        Python = fun () => x |> $'round' : t\n        Rust = fun () => $'(!x).round_ties_even()' : t\n        Zig = round_half_to_even\n        Lean = round_half_to_even\n        C = round_half_to_even\n        Cpp = round_half_to_even\n        Delphi = round_half_to_even\n        TypeScript = round_half_to_even\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -327,28 +351,17 @@ Spiral.Kino.eval!(
           elif floor (lower / 2) * 2 = lower then lower
           else lower + 1
       backend_switch {
-          Gleam = fun () =>
-              if x < 1
-              then x - 0.5 |> ceil
-              else
-                  inl result = x + 1 |> floor |> convert.i32
-                  if result % 2 = 0
-                  then result
-                  else result - 1
-                  |> convert.convert
-          Lua = fun () =>
-              if x < 1
-              then x - 0.5 |> ceil
-              else
-                  inl result = x + 1 |> floor
-                  if result % 2 = 0
-                  then result
-                  else result - 1
+          Gleam = round_half_to_even
+          Lua = round_half_to_even
           Fsharp = fun () => x |> $'round' : t
           Python = fun () => x |> $'round' : t
           Rust = fun () => $'(!x).round_ties_even()' : t
           Zig = round_half_to_even
           Lean = round_half_to_even
+          C = round_half_to_even
+          Cpp = round_half_to_even
+          Delphi = round_half_to_even
+          TypeScript = round_half_to_even
       }
   """,
   timeout: 300_000

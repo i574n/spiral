@@ -5,7 +5,7 @@ type US0 = US0_0 | US0_1 | US0_2;
 function US0_0(): US0 { return { tag: 0 }; }
 function US0_1(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function US0_2(f0: boolean): US0 { return { tag: 2, f0: f0 }; }
-function method0(v0: US0): number {
+function score_0(v0: US0): number {
     switch (v0.tag) {
         case 2: {
             let v2: boolean = v0.f0;
@@ -30,7 +30,7 @@ function method0(v0: US0): number {
 }
 function closure0(v0: US0): ((a0: number) => number) {
     return (v1: number): number => {
-        let v2: number = method0(v0);
+        let v2: number = score_0(v0);
         let v3: number = (v2 + v1) | 0;
         return v3;
     };

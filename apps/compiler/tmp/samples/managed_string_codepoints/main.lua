@@ -14,13 +14,13 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local method0, method1, method2
-function method0(v0, v1)
+local runtime_byte_0, codepoint_length_loop_1, codepoint_byte_offset_loop_2
+function runtime_byte_0(v0, v1)
     local v2 = string.sub(v0, (v1)+1, (v1)+1)
     return v2
 end
 
-function method1(v0, v1, v2, v3, v4, v5)
+function codepoint_length_loop_1(v0, v1, v2, v3, v4, v5)
     local v6 = v3 == v5
     if v6 then
         return v4
@@ -46,11 +46,11 @@ function method1(v0, v1, v2, v3, v4, v5)
         end
         local v12 = getv12()
         local v13 = spiral_wrap_signed((v3 + 1), 32)
-        return method1(v0, v1, v2, v13, v12, v5)
+        return codepoint_length_loop_1(v0, v1, v2, v13, v12, v5)
     end
 end
 
-function method2(v0, v1, v2, v3, v4, v5, v6)
+function codepoint_byte_offset_loop_2(v0, v1, v2, v3, v4, v5, v6)
     local v7 = v4 == v6
     if v7 then
         return v6
@@ -68,7 +68,7 @@ function method2(v0, v1, v2, v3, v4, v5, v6)
         local v11 = getv11()
         if v11 then
             local v12 = spiral_wrap_signed((v4 + 1), 32)
-            return method2(v0, v1, v2, v3, v12, v5, v6)
+            return codepoint_byte_offset_loop_2(v0, v1, v2, v3, v12, v5, v6)
         else
             local v14 = v5 == v3
             if v14 then
@@ -76,7 +76,7 @@ function method2(v0, v1, v2, v3, v4, v5, v6)
             else
                 local v15 = spiral_wrap_signed((v4 + 1), 32)
                 local v16 = spiral_wrap_signed((v5 + 1), 32)
-                return method2(v0, v1, v2, v3, v15, v16, v6)
+                return codepoint_byte_offset_loop_2(v0, v1, v2, v3, v15, v16, v6)
             end
         end
     end
@@ -84,94 +84,94 @@ end
 
 local v0 = "À"
 local v1 = 1
-local v2 = method0(v0, v1)
+local v2 = runtime_byte_0(v0, v1)
 local v3 = "©"
 local v4 = 0
-local v5 = method0(v3, v4)
+local v5 = runtime_byte_0(v3, v4)
 local v6 = "Aéλ🙂Z"
 local v7 = 0
 local v8 = 0
 local v9 = 10
-local v10 = method1(v6, v2, v5, v7, v8, v9)
+local v10 = codepoint_length_loop_1(v6, v2, v5, v7, v8, v9)
 local v11 = 1
-local v12 = method0(v0, v11)
+local v12 = runtime_byte_0(v0, v11)
 local v13 = 0
-local v14 = method0(v3, v13)
+local v14 = runtime_byte_0(v3, v13)
 local v15 = 1
 local v16 = 0
 local v17 = 0
 local v18 = 10
-local v19 = method2(v6, v12, v14, v15, v16, v17, v18)
+local v19 = codepoint_byte_offset_loop_2(v6, v12, v14, v15, v16, v17, v18)
 local v20 = 1
-local v21 = method0(v0, v20)
+local v21 = runtime_byte_0(v0, v20)
 local v22 = 0
-local v23 = method0(v3, v22)
+local v23 = runtime_byte_0(v3, v22)
 local v24 = 2
 local v25 = 0
 local v26 = 0
 local v27 = 10
-local v28 = method2(v6, v21, v23, v24, v25, v26, v27)
+local v28 = codepoint_byte_offset_loop_2(v6, v21, v23, v24, v25, v26, v27)
 local v29 = spiral_wrap_signed((v28 - 1), 32)
 local v30 = string.sub("Aéλ🙂Z", (v19)+1, (v29)+1)
 local v31 = 1
-local v32 = method0(v0, v31)
+local v32 = runtime_byte_0(v0, v31)
 local v33 = 0
-local v34 = method0(v3, v33)
+local v34 = runtime_byte_0(v3, v33)
 local v35 = 3
 local v36 = 0
 local v37 = 0
 local v38 = 10
-local v39 = method2(v6, v32, v34, v35, v36, v37, v38)
+local v39 = codepoint_byte_offset_loop_2(v6, v32, v34, v35, v36, v37, v38)
 local v40 = 1
-local v41 = method0(v0, v40)
+local v41 = runtime_byte_0(v0, v40)
 local v42 = 0
-local v43 = method0(v3, v42)
+local v43 = runtime_byte_0(v3, v42)
 local v44 = 4
 local v45 = 0
 local v46 = 0
 local v47 = 10
-local v48 = method2(v6, v41, v43, v44, v45, v46, v47)
+local v48 = codepoint_byte_offset_loop_2(v6, v41, v43, v44, v45, v46, v47)
 local v49 = spiral_wrap_signed((v48 - 1), 32)
 local v50 = string.sub("Aéλ🙂Z", (v39)+1, (v49)+1)
 local v51 = 1
-local v52 = method0(v0, v51)
+local v52 = runtime_byte_0(v0, v51)
 local v53 = 0
-local v54 = method0(v3, v53)
+local v54 = runtime_byte_0(v3, v53)
 local v55 = 1
 local v56 = 0
 local v57 = 0
 local v58 = 10
-local v59 = method2(v6, v52, v54, v55, v56, v57, v58)
+local v59 = codepoint_byte_offset_loop_2(v6, v52, v54, v55, v56, v57, v58)
 local v60 = 1
-local v61 = method0(v0, v60)
+local v61 = runtime_byte_0(v0, v60)
 local v62 = 0
-local v63 = method0(v3, v62)
+local v63 = runtime_byte_0(v3, v62)
 local v64 = 4
 local v65 = 0
 local v66 = 0
 local v67 = 10
-local v68 = method2(v6, v61, v63, v64, v65, v66, v67)
+local v68 = codepoint_byte_offset_loop_2(v6, v61, v63, v64, v65, v66, v67)
 local v69 = spiral_wrap_signed((v68 - 1), 32)
 local v70 = string.sub("Aéλ🙂Z", (v59)+1, (v69)+1)
 local v71 = 1
-local v72 = method0(v0, v71)
+local v72 = runtime_byte_0(v0, v71)
 local v73 = 0
-local v74 = method0(v3, v73)
+local v74 = runtime_byte_0(v3, v73)
 local v75 = 3
 local v76 = 0
 local v77 = 0
 local v78 = 10
-local v79 = method2(v6, v72, v74, v75, v76, v77, v78)
+local v79 = codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78)
 local v80 = 0
-local v81 = method0(v30, v80)
+local v81 = runtime_byte_0(v30, v80)
 local v82 = "é"
 local v83 = 0
-local v84 = method0(v82, v83)
+local v84 = runtime_byte_0(v82, v83)
 local v85 = 3
-local v86 = method0(v50, v85)
+local v86 = runtime_byte_0(v50, v85)
 local v87 = "🙂"
 local v88 = 3
-local v89 = method0(v87, v88)
+local v89 = runtime_byte_0(v87, v88)
 local v90 = v10 == 5
 if v90 then
     local v91 = string.len(v30)

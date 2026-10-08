@@ -77,7 +77,7 @@ pub type Us0 {
     Us0i0
     Us0i1(f1i0 : SpiralArray(Int))
 }
-pub fn method0(v0: Us0) -> Int {
+pub fn bump_0(v0: Us0) -> Int {
     case v0  {
         Us0i0 -> {
             0
@@ -90,7 +90,7 @@ pub fn method0(v0: Us0) -> Int {
         }
     }
 }
-pub fn method1(v0: Us0) -> Int {
+pub fn score_1(v0: Us0) -> Int {
     case v0  {
         Us0i0 -> {
             0
@@ -111,9 +111,9 @@ let v1 = spiral_array_create(v0)
 spiral_array_set(v1, 0, 4)
 spiral_array_set(v1, 1, 5)
 let v2 = Us0i1(v1)
-let v3 = method0(v2)
+let v3 = bump_0(v2)
 let v4 = Us0i1(v1)
-let v5 = method1(v4)
+let v5 = score_1(v4)
 let v6 = spiral_wrap_signed(v5 + v3, 32)
 let v7 = spiral_wrap_signed(v6 - 12, 32)
 v7

@@ -63,7 +63,7 @@ pub type Us0 {
     Us0i0(f0i0 : String)
     Us0i1(f1i0 : Int)
 }
-pub fn method0(v0: Us0) -> Int {
+pub fn score_0(v0: Us0) -> Int {
     case v0  {
         Us0i1(v3) -> {
             v3
@@ -86,8 +86,8 @@ let v4 =
             Us0i0(v2)
         }
     }
-let v5 = method0(v4)
-let v6 = method0(v4)
+let v5 = score_0(v4)
+let v6 = score_0(v4)
 let v7 = spiral_wrap_signed(v5 + v6, 32)
 let v8 = spiral_wrap_signed(v7 - 6, 32)
 v8

@@ -3,7 +3,7 @@ type [<Struct>] US0 =
     | US0_1
     | US0_2
     | US0_3
-let rec method0 (v0 : US0) : int32 =
+let rec score_0 (v0 : US0) : int32 =
     match v0 with
     | US0_0 -> (* Cold *)
         1
@@ -28,6 +28,6 @@ let v10 : US0 =
                 US0_2
             else
                 US0_3
-let v11 : int32 = method0(v10)
+let v11 : int32 = score_0(v10)
 let v12 : int32 = v11 - 4
 v12

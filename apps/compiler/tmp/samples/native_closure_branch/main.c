@@ -22,7 +22,7 @@ struct Closure1 {
     int32_t (*fptr)(Closure1 *, int32_t);
 };
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
+    (void)x;
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
@@ -48,7 +48,7 @@ Fun0 * ClosureCreate0(){
     return (Fun0 *) x;
 }
 static inline void ClosureDecrefBody1(Closure1 * x){
-    
+    (void)x;
 }
 void ClosureDecref1(Closure1 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }

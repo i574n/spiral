@@ -31,6 +31,7 @@ struct Closure0 {
     US0 (*fptr)(Closure0 *, int32_t);
 };
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -84,7 +85,7 @@ US0 US0_1(String * v0, int32_t v1) { // Item
     return x;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
+    (void)x;
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }

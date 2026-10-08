@@ -147,7 +147,7 @@ impl US5 {
         }
     }
 }
-fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
+fn regex_compare_5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
     loop {
         match &*v0 {
             UH2::UH2_3(v53, v54) => {
@@ -157,7 +157,7 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
                     UH2::UH2_3(v55, v56) => {
                         let mut v55: Rc<UH2> = v55.clone();
                         let mut v56: Rc<UH2> = v56.clone();
-                        let mut v57: US2 = method5(v53.clone(), v55.clone());
+                        let mut v57: US2 = regex_compare_5(v53.clone(), v55.clone());
                         match &v57 {
                             US2::US2_1 => {
                                 (v0, v1) = (v54.clone(), v56.clone());
@@ -180,7 +180,7 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
                     UH2::UH2_4(v34, v35) => {
                         let mut v34: Rc<UH2> = v34.clone();
                         let mut v35: Rc<UH2> = v35.clone();
-                        let mut v36: US2 = method5(v28.clone(), v34.clone());
+                        let mut v36: US2 = regex_compare_5(v28.clone(), v34.clone());
                         match &v36 {
                             US2::US2_1 => {
                                 (v0, v1) = (v29.clone(), v35.clone());
@@ -289,15 +289,15 @@ fn method5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {
         }
     }
 }
-fn method4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
+fn alt_insert_sorted_4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     match &*v1 {
         UH2::UH2_3(v2, v3) => {
             let mut v2: Rc<UH2> = v2.clone();
             let mut v3: Rc<UH2> = v3.clone();
-            let mut v4: US2 = method5(v0.clone(), v2.clone());
+            let mut v4: US2 = regex_compare_5(v0.clone(), v2.clone());
             match &v4 {
                 US2::US2_2 => {
-                    let mut v6: Rc<UH2> = method4(v0.clone(), v3.clone());
+                    let mut v6: Rc<UH2> = alt_insert_sorted_4(v0.clone(), v3.clone());
                     Rc::new(UH2::UH2_3(v2.clone(), v6.clone()))
                 }
                 US2::US2_0 => {
@@ -312,7 +312,7 @@ fn method4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
             v0.clone()
         }
         _ => {
-            let mut v11: US2 = method5(v0.clone(), v1.clone());
+            let mut v11: US2 = regex_compare_5(v0.clone(), v1.clone());
             match &v11 {
                 US2::US2_2 => {
                     Rc::new(UH2::UH2_3(v1.clone(), v0.clone()))
@@ -327,13 +327,13 @@ fn method4(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
         }
     }
 }
-fn method3(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
+fn make_alt_3(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     loop {
         match &*v0 {
             UH2::UH2_3(v2, v3) => {
                 let mut v2: Rc<UH2> = v2.clone();
                 let mut v3: Rc<UH2> = v3.clone();
-                let mut v4: Rc<UH2> = method4(v2.clone(), v1.clone());
+                let mut v4: Rc<UH2> = alt_insert_sorted_4(v2.clone(), v1.clone());
                 (v0, v1) = (v3.clone(), v4.clone());
                 continue;
             }
@@ -341,12 +341,12 @@ fn method3(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                 return v1.clone();
             }
             _ => {
-                return method4(v0.clone(), v1.clone());
+                return alt_insert_sorted_4(v0.clone(), v1.clone());
             }
         }
     }
 }
-fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
+fn regex_equal_7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
     loop {
         match &*v0 {
             UH2::UH2_3(v18, v19) => {
@@ -356,7 +356,7 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     UH2::UH2_3(v20, v21) => {
                         let mut v20: Rc<UH2> = v20.clone();
                         let mut v21: Rc<UH2> = v21.clone();
-                        let mut v22: bool = method7(v18.clone(), v20.clone());
+                        let mut v22: bool = regex_equal_7(v18.clone(), v20.clone());
                         if v22 {
                             (v0, v1) = (v19.clone(), v21.clone());
                             continue;
@@ -376,7 +376,7 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
                     UH2::UH2_4(v28, v29) => {
                         let mut v28: Rc<UH2> = v28.clone();
                         let mut v29: Rc<UH2> = v29.clone();
-                        let mut v30: bool = method7(v26.clone(), v28.clone());
+                        let mut v30: bool = regex_equal_7(v26.clone(), v28.clone());
                         if v30 {
                             (v0, v1) = (v27.clone(), v29.clone());
                             continue;
@@ -466,7 +466,7 @@ fn method7(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> bool {
         }
     }
 }
-fn method6(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
+fn make_cat_6(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
         UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_0); } CASE.with(|case| case.clone()) }
@@ -491,7 +491,7 @@ fn method6(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                                         UH2::UH2_4(v12, v13) => {
                                             let mut v12: Rc<UH2> = v12.clone();
                                             let mut v13: Rc<UH2> = v13.clone();
-                                            let mut v14: Rc<UH2> = method6(v13.clone(), v1.clone());
+                                            let mut v14: Rc<UH2> = make_cat_6(v13.clone(), v1.clone());
                                             Rc::new(UH2::UH2_4(v12.clone(), v14.clone()))
                                         }
                                         UH2::UH2_5(v4) => {
@@ -499,7 +499,7 @@ fn method6(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
                                             match &*v1 {
                                                 UH2::UH2_5(v5) => {
                                                     let mut v5: Rc<UH2> = v5.clone();
-                                                    let mut v6: bool = method7(v4.clone(), v5.clone());
+                                                    let mut v6: bool = regex_equal_7(v4.clone(), v5.clone());
                                                     if v6 {
                                                         Rc::new(UH2::UH2_5(v4.clone()))
                                                     } else {
@@ -524,7 +524,7 @@ fn method6(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> Rc<UH2> {
         }
     }
 }
-fn method8(mut v0: Rc<UH2>) -> Rc<UH2> {
+fn make_star_8(mut v0: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
         UH2::UH2_0 => {
             { thread_local!{ static CASE: Rc<UH2> = Rc::new(UH2::UH2_1); } CASE.with(|case| case.clone()) }
@@ -541,21 +541,21 @@ fn method8(mut v0: Rc<UH2>) -> Rc<UH2> {
         }
     }
 }
-fn method2(mut v0: Rc<UH2>) -> Rc<UH2> {
+fn normalize_2(mut v0: Rc<UH2>) -> Rc<UH2> {
     match &*v0 {
         UH2::UH2_3(v5, v6) => {
             let mut v5: Rc<UH2> = v5.clone();
             let mut v6: Rc<UH2> = v6.clone();
-            let mut v7: Rc<UH2> = method2(v5.clone());
-            let mut v8: Rc<UH2> = method2(v6.clone());
-            method3(v7.clone(), v8.clone())
+            let mut v7: Rc<UH2> = normalize_2(v5.clone());
+            let mut v8: Rc<UH2> = normalize_2(v6.clone());
+            make_alt_3(v7.clone(), v8.clone())
         }
         UH2::UH2_4(v10, v11) => {
             let mut v10: Rc<UH2> = v10.clone();
             let mut v11: Rc<UH2> = v11.clone();
-            let mut v12: Rc<UH2> = method2(v10.clone());
-            let mut v13: Rc<UH2> = method2(v11.clone());
-            method6(v12.clone(), v13.clone())
+            let mut v12: Rc<UH2> = normalize_2(v10.clone());
+            let mut v13: Rc<UH2> = normalize_2(v11.clone());
+            make_cat_6(v12.clone(), v13.clone())
         }
         UH2::UH2_2(v3) => {
             let mut v3: US0 = v3.clone();
@@ -569,18 +569,18 @@ fn method2(mut v0: Rc<UH2>) -> Rc<UH2> {
         }
         UH2::UH2_5(v15) => {
             let mut v15: Rc<UH2> = v15.clone();
-            let mut v16: Rc<UH2> = method2(v15.clone());
-            method8(v16.clone())
+            let mut v16: Rc<UH2> = normalize_2(v15.clone());
+            make_star_8(v16.clone())
         }
     }
 }
-fn method10(mut v0: Rc<UH2>) -> US3 {
+fn nullable_10(mut v0: Rc<UH2>) -> US3 {
     match &*v0 {
         UH2::UH2_3(v5, v6) => {
             let mut v5: Rc<UH2> = v5.clone();
             let mut v6: Rc<UH2> = v6.clone();
-            let mut v7: US3 = method10(v5.clone());
-            let mut v8: US3 = method10(v6.clone());
+            let mut v7: US3 = nullable_10(v5.clone());
+            let mut v8: US3 = nullable_10(v6.clone());
             match &v7 {
                 US3::US3_0 => {
                     US3::US3_0
@@ -610,8 +610,8 @@ fn method10(mut v0: Rc<UH2>) -> US3 {
         UH2::UH2_4(v16, v17) => {
             let mut v16: Rc<UH2> = v16.clone();
             let mut v17: Rc<UH2> = v17.clone();
-            let mut v18: US3 = method10(v16.clone());
-            let mut v19: US3 = method10(v17.clone());
+            let mut v18: US3 = nullable_10(v16.clone());
+            let mut v19: US3 = nullable_10(v17.clone());
             match &v18 {
                 US3::US3_0 => {
                     match &v19 {
@@ -644,29 +644,29 @@ fn method10(mut v0: Rc<UH2>) -> US3 {
         }
     }
 }
-fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
+fn derivative_9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
     match &*v0 {
         UH2::UH2_3(v19, v20) => {
             let mut v19: Rc<UH2> = v19.clone();
             let mut v20: Rc<UH2> = v20.clone();
-            let mut v21: Rc<UH2> = method9(v19.clone(), v1.clone());
-            let mut v22: Rc<UH2> = method9(v20.clone(), v1.clone());
-            method3(v21.clone(), v22.clone())
+            let mut v21: Rc<UH2> = derivative_9(v19.clone(), v1.clone());
+            let mut v22: Rc<UH2> = derivative_9(v20.clone(), v1.clone());
+            make_alt_3(v21.clone(), v22.clone())
         }
         UH2::UH2_4(v24, v25) => {
             let mut v24: Rc<UH2> = v24.clone();
             let mut v25: Rc<UH2> = v25.clone();
-            let mut v26: US3 = method10(v24.clone());
+            let mut v26: US3 = nullable_10(v24.clone());
             match &v26 {
                 US3::US3_1 => {
-                    let mut v31: Rc<UH2> = method9(v24.clone(), v1.clone());
-                    method6(v31.clone(), v25.clone())
+                    let mut v31: Rc<UH2> = derivative_9(v24.clone(), v1.clone());
+                    make_cat_6(v31.clone(), v25.clone())
                 }
                 US3::US3_0 => {
-                    let mut v27: Rc<UH2> = method9(v24.clone(), v1.clone());
-                    let mut v28: Rc<UH2> = method6(v27.clone(), v25.clone());
-                    let mut v29: Rc<UH2> = method9(v25.clone(), v1.clone());
-                    method3(v28.clone(), v29.clone())
+                    let mut v27: Rc<UH2> = derivative_9(v24.clone(), v1.clone());
+                    let mut v28: Rc<UH2> = make_cat_6(v27.clone(), v25.clone());
+                    let mut v29: Rc<UH2> = derivative_9(v25.clone(), v1.clone());
+                    make_alt_3(v28.clone(), v29.clone())
                 }
             }
         }
@@ -716,30 +716,30 @@ fn method9(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
         }
         UH2::UH2_5(v35) => {
             let mut v35: Rc<UH2> = v35.clone();
-            let mut v36: Rc<UH2> = method9(v35.clone(), v1.clone());
-            let mut v37: Rc<UH2> = method8(v35.clone());
-            method6(v36.clone(), v37.clone())
+            let mut v36: Rc<UH2> = derivative_9(v35.clone(), v1.clone());
+            let mut v37: Rc<UH2> = make_star_8(v35.clone());
+            make_cat_6(v36.clone(), v37.clone())
         }
     }
 }
-fn method1(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
-    let mut v2: Rc<UH2> = method2(v0.clone());
-    let mut v3: Rc<UH2> = method9(v2.clone(), v1.clone());
-    method2(v3.clone())
+fn canonical_derivative_1(mut v0: Rc<UH2>, mut v1: US0) -> Rc<UH2> {
+    let mut v2: Rc<UH2> = normalize_2(v0.clone());
+    let mut v3: Rc<UH2> = derivative_9(v2.clone(), v1.clone());
+    normalize_2(v3.clone())
 }
-fn method0(mut v0: Rc<UH2>, mut v1: Rc<UH0>) -> bool {
+fn accepts_0(mut v0: Rc<UH2>, mut v1: Rc<UH0>) -> bool {
     loop {
         match &*v1 {
             UH0::UH0_1(v6, v7) => {
                 let mut v6: US0 = v6.clone();
                 let mut v7: Rc<UH0> = v7.clone();
-                let mut v8: Rc<UH2> = method1(v0.clone(), v6.clone());
+                let mut v8: Rc<UH2> = canonical_derivative_1(v0.clone(), v6.clone());
                 (v0, v1) = (v8.clone(), v7.clone());
                 continue;
             }
             UH0::UH0_0 => {
-                let mut v2: Rc<UH2> = method2(v0.clone());
-                let mut v3: US3 = method10(v2.clone());
+                let mut v2: Rc<UH2> = normalize_2(v0.clone());
+                let mut v3: US3 = nullable_10(v2.clone());
                 match &v3 {
                     US3::US3_1 => {
                         return false;
@@ -752,7 +752,7 @@ fn method0(mut v0: Rc<UH2>, mut v1: Rc<UH0>) -> bool {
         }
     }
 }
-fn method16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
+fn regex_compare_16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
     loop {
         match &*v0 {
             UH3::UH3_3(v59, v60) => {
@@ -762,7 +762,7 @@ fn method16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
                     UH3::UH3_3(v61, v62) => {
                         let mut v61: Rc<UH3> = v61.clone();
                         let mut v62: Rc<UH3> = v62.clone();
-                        let mut v63: US2 = method16(v59.clone(), v61.clone());
+                        let mut v63: US2 = regex_compare_16(v59.clone(), v61.clone());
                         match &v63 {
                             US2::US2_1 => {
                                 (v0, v1) = (v60.clone(), v62.clone());
@@ -785,7 +785,7 @@ fn method16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
                     UH3::UH3_4(v40, v41) => {
                         let mut v40: Rc<UH3> = v40.clone();
                         let mut v41: Rc<UH3> = v41.clone();
-                        let mut v42: US2 = method16(v34.clone(), v40.clone());
+                        let mut v42: US2 = regex_compare_16(v34.clone(), v40.clone());
                         match &v42 {
                             US2::US2_1 => {
                                 (v0, v1) = (v35.clone(), v41.clone());
@@ -918,15 +918,15 @@ fn method16(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> US2 {
         }
     }
 }
-fn method15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
+fn alt_insert_sorted_15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
     match &*v1 {
         UH3::UH3_3(v2, v3) => {
             let mut v2: Rc<UH3> = v2.clone();
             let mut v3: Rc<UH3> = v3.clone();
-            let mut v4: US2 = method16(v0.clone(), v2.clone());
+            let mut v4: US2 = regex_compare_16(v0.clone(), v2.clone());
             match &v4 {
                 US2::US2_2 => {
-                    let mut v6: Rc<UH3> = method15(v0.clone(), v3.clone());
+                    let mut v6: Rc<UH3> = alt_insert_sorted_15(v0.clone(), v3.clone());
                     Rc::new(UH3::UH3_3(v2.clone(), v6.clone()))
                 }
                 US2::US2_0 => {
@@ -941,7 +941,7 @@ fn method15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
             v0.clone()
         }
         _ => {
-            let mut v11: US2 = method16(v0.clone(), v1.clone());
+            let mut v11: US2 = regex_compare_16(v0.clone(), v1.clone());
             match &v11 {
                 US2::US2_2 => {
                     Rc::new(UH3::UH3_3(v1.clone(), v0.clone()))
@@ -956,13 +956,13 @@ fn method15(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
         }
     }
 }
-fn method14(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
+fn make_alt_14(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
     loop {
         match &*v0 {
             UH3::UH3_3(v2, v3) => {
                 let mut v2: Rc<UH3> = v2.clone();
                 let mut v3: Rc<UH3> = v3.clone();
-                let mut v4: Rc<UH3> = method15(v2.clone(), v1.clone());
+                let mut v4: Rc<UH3> = alt_insert_sorted_15(v2.clone(), v1.clone());
                 (v0, v1) = (v3.clone(), v4.clone());
                 continue;
             }
@@ -970,12 +970,12 @@ fn method14(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
                 return v1.clone();
             }
             _ => {
-                return method15(v0.clone(), v1.clone());
+                return alt_insert_sorted_15(v0.clone(), v1.clone());
             }
         }
     }
 }
-fn method18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
+fn regex_equal_18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
     loop {
         match &*v0 {
             UH3::UH3_3(v24, v25) => {
@@ -985,7 +985,7 @@ fn method18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
                     UH3::UH3_3(v26, v27) => {
                         let mut v26: Rc<UH3> = v26.clone();
                         let mut v27: Rc<UH3> = v27.clone();
-                        let mut v28: bool = method18(v24.clone(), v26.clone());
+                        let mut v28: bool = regex_equal_18(v24.clone(), v26.clone());
                         if v28 {
                             (v0, v1) = (v25.clone(), v27.clone());
                             continue;
@@ -1005,7 +1005,7 @@ fn method18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
                     UH3::UH3_4(v34, v35) => {
                         let mut v34: Rc<UH3> = v34.clone();
                         let mut v35: Rc<UH3> = v35.clone();
-                        let mut v36: bool = method18(v32.clone(), v34.clone());
+                        let mut v36: bool = regex_equal_18(v32.clone(), v34.clone());
                         if v36 {
                             (v0, v1) = (v33.clone(), v35.clone());
                             continue;
@@ -1119,7 +1119,7 @@ fn method18(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> bool {
         }
     }
 }
-fn method17(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
+fn make_cat_17(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
     match &*v0 {
         UH3::UH3_0 => {
             { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_0); } CASE.with(|case| case.clone()) }
@@ -1144,7 +1144,7 @@ fn method17(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
                                         UH3::UH3_4(v12, v13) => {
                                             let mut v12: Rc<UH3> = v12.clone();
                                             let mut v13: Rc<UH3> = v13.clone();
-                                            let mut v14: Rc<UH3> = method17(v13.clone(), v1.clone());
+                                            let mut v14: Rc<UH3> = make_cat_17(v13.clone(), v1.clone());
                                             Rc::new(UH3::UH3_4(v12.clone(), v14.clone()))
                                         }
                                         UH3::UH3_5(v4) => {
@@ -1152,7 +1152,7 @@ fn method17(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
                                             match &*v1 {
                                                 UH3::UH3_5(v5) => {
                                                     let mut v5: Rc<UH3> = v5.clone();
-                                                    let mut v6: bool = method18(v4.clone(), v5.clone());
+                                                    let mut v6: bool = regex_equal_18(v4.clone(), v5.clone());
                                                     if v6 {
                                                         Rc::new(UH3::UH3_5(v4.clone()))
                                                     } else {
@@ -1177,7 +1177,7 @@ fn method17(mut v0: Rc<UH3>, mut v1: Rc<UH3>) -> Rc<UH3> {
         }
     }
 }
-fn method19(mut v0: Rc<UH3>) -> Rc<UH3> {
+fn make_star_19(mut v0: Rc<UH3>) -> Rc<UH3> {
     match &*v0 {
         UH3::UH3_0 => {
             { thread_local!{ static CASE: Rc<UH3> = Rc::new(UH3::UH3_1); } CASE.with(|case| case.clone()) }
@@ -1194,21 +1194,21 @@ fn method19(mut v0: Rc<UH3>) -> Rc<UH3> {
         }
     }
 }
-fn method13(mut v0: Rc<UH3>) -> Rc<UH3> {
+fn normalize_13(mut v0: Rc<UH3>) -> Rc<UH3> {
     match &*v0 {
         UH3::UH3_3(v5, v6) => {
             let mut v5: Rc<UH3> = v5.clone();
             let mut v6: Rc<UH3> = v6.clone();
-            let mut v7: Rc<UH3> = method13(v5.clone());
-            let mut v8: Rc<UH3> = method13(v6.clone());
-            method14(v7.clone(), v8.clone())
+            let mut v7: Rc<UH3> = normalize_13(v5.clone());
+            let mut v8: Rc<UH3> = normalize_13(v6.clone());
+            make_alt_14(v7.clone(), v8.clone())
         }
         UH3::UH3_4(v10, v11) => {
             let mut v10: Rc<UH3> = v10.clone();
             let mut v11: Rc<UH3> = v11.clone();
-            let mut v12: Rc<UH3> = method13(v10.clone());
-            let mut v13: Rc<UH3> = method13(v11.clone());
-            method17(v12.clone(), v13.clone())
+            let mut v12: Rc<UH3> = normalize_13(v10.clone());
+            let mut v13: Rc<UH3> = normalize_13(v11.clone());
+            make_cat_17(v12.clone(), v13.clone())
         }
         UH3::UH3_2(v3) => {
             let mut v3: US1 = v3.clone();
@@ -1222,18 +1222,18 @@ fn method13(mut v0: Rc<UH3>) -> Rc<UH3> {
         }
         UH3::UH3_5(v15) => {
             let mut v15: Rc<UH3> = v15.clone();
-            let mut v16: Rc<UH3> = method13(v15.clone());
-            method19(v16.clone())
+            let mut v16: Rc<UH3> = normalize_13(v15.clone());
+            make_star_19(v16.clone())
         }
     }
 }
-fn method21(mut v0: Rc<UH3>) -> US3 {
+fn nullable_21(mut v0: Rc<UH3>) -> US3 {
     match &*v0 {
         UH3::UH3_3(v5, v6) => {
             let mut v5: Rc<UH3> = v5.clone();
             let mut v6: Rc<UH3> = v6.clone();
-            let mut v7: US3 = method21(v5.clone());
-            let mut v8: US3 = method21(v6.clone());
+            let mut v7: US3 = nullable_21(v5.clone());
+            let mut v8: US3 = nullable_21(v6.clone());
             match &v7 {
                 US3::US3_0 => {
                     US3::US3_0
@@ -1263,8 +1263,8 @@ fn method21(mut v0: Rc<UH3>) -> US3 {
         UH3::UH3_4(v16, v17) => {
             let mut v16: Rc<UH3> = v16.clone();
             let mut v17: Rc<UH3> = v17.clone();
-            let mut v18: US3 = method21(v16.clone());
-            let mut v19: US3 = method21(v17.clone());
+            let mut v18: US3 = nullable_21(v16.clone());
+            let mut v19: US3 = nullable_21(v17.clone());
             match &v18 {
                 US3::US3_0 => {
                     match &v19 {
@@ -1297,29 +1297,29 @@ fn method21(mut v0: Rc<UH3>) -> US3 {
         }
     }
 }
-fn method20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
+fn derivative_20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
     match &*v0 {
         UH3::UH3_3(v25, v26) => {
             let mut v25: Rc<UH3> = v25.clone();
             let mut v26: Rc<UH3> = v26.clone();
-            let mut v27: Rc<UH3> = method20(v25.clone(), v1.clone());
-            let mut v28: Rc<UH3> = method20(v26.clone(), v1.clone());
-            method14(v27.clone(), v28.clone())
+            let mut v27: Rc<UH3> = derivative_20(v25.clone(), v1.clone());
+            let mut v28: Rc<UH3> = derivative_20(v26.clone(), v1.clone());
+            make_alt_14(v27.clone(), v28.clone())
         }
         UH3::UH3_4(v30, v31) => {
             let mut v30: Rc<UH3> = v30.clone();
             let mut v31: Rc<UH3> = v31.clone();
-            let mut v32: US3 = method21(v30.clone());
+            let mut v32: US3 = nullable_21(v30.clone());
             match &v32 {
                 US3::US3_1 => {
-                    let mut v37: Rc<UH3> = method20(v30.clone(), v1.clone());
-                    method17(v37.clone(), v31.clone())
+                    let mut v37: Rc<UH3> = derivative_20(v30.clone(), v1.clone());
+                    make_cat_17(v37.clone(), v31.clone())
                 }
                 US3::US3_0 => {
-                    let mut v33: Rc<UH3> = method20(v30.clone(), v1.clone());
-                    let mut v34: Rc<UH3> = method17(v33.clone(), v31.clone());
-                    let mut v35: Rc<UH3> = method20(v31.clone(), v1.clone());
-                    method14(v34.clone(), v35.clone())
+                    let mut v33: Rc<UH3> = derivative_20(v30.clone(), v1.clone());
+                    let mut v34: Rc<UH3> = make_cat_17(v33.clone(), v31.clone());
+                    let mut v35: Rc<UH3> = derivative_20(v31.clone(), v1.clone());
+                    make_alt_14(v34.clone(), v35.clone())
                 }
             }
         }
@@ -1393,30 +1393,30 @@ fn method20(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
         }
         UH3::UH3_5(v41) => {
             let mut v41: Rc<UH3> = v41.clone();
-            let mut v42: Rc<UH3> = method20(v41.clone(), v1.clone());
-            let mut v43: Rc<UH3> = method19(v41.clone());
-            method17(v42.clone(), v43.clone())
+            let mut v42: Rc<UH3> = derivative_20(v41.clone(), v1.clone());
+            let mut v43: Rc<UH3> = make_star_19(v41.clone());
+            make_cat_17(v42.clone(), v43.clone())
         }
     }
 }
-fn method12(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
-    let mut v2: Rc<UH3> = method13(v0.clone());
-    let mut v3: Rc<UH3> = method20(v2.clone(), v1.clone());
-    method13(v3.clone())
+fn canonical_derivative_12(mut v0: Rc<UH3>, mut v1: US1) -> Rc<UH3> {
+    let mut v2: Rc<UH3> = normalize_13(v0.clone());
+    let mut v3: Rc<UH3> = derivative_20(v2.clone(), v1.clone());
+    normalize_13(v3.clone())
 }
-fn method11(mut v0: Rc<UH3>, mut v1: Rc<UH1>) -> bool {
+fn accepts_11(mut v0: Rc<UH3>, mut v1: Rc<UH1>) -> bool {
     loop {
         match &*v1 {
             UH1::UH1_1(v6, v7) => {
                 let mut v6: US1 = v6.clone();
                 let mut v7: Rc<UH1> = v7.clone();
-                let mut v8: Rc<UH3> = method12(v0.clone(), v6.clone());
+                let mut v8: Rc<UH3> = canonical_derivative_12(v0.clone(), v6.clone());
                 (v0, v1) = (v8.clone(), v7.clone());
                 continue;
             }
             UH1::UH1_0 => {
-                let mut v2: Rc<UH3> = method13(v0.clone());
-                let mut v3: US3 = method21(v2.clone());
+                let mut v2: Rc<UH3> = normalize_13(v0.clone());
+                let mut v3: US3 = nullable_21(v2.clone());
                 match &v3 {
                     US3::US3_1 => {
                         return false;
@@ -1429,17 +1429,17 @@ fn method11(mut v0: Rc<UH3>, mut v1: Rc<UH1>) -> bool {
         }
     }
 }
-fn method22(mut v0: US4) -> US5 {
+fn decide_bit_match_22(mut v0: US4) -> US5 {
     match &v0 {
         US4::US4_0(v1, v2) => {
             let mut v1: Rc<UH2> = v1.clone();
             let mut v2: Rc<UH0> = v2.clone();
-            let mut v3: bool = method0(v1.clone(), v2.clone());
+            let mut v3: bool = accepts_0(v1.clone(), v2.clone());
             US5::US5_1(v1.clone(), v2.clone(), v3)
         }
     }
 }
-fn method23(mut v0: US5) -> bool {
+fn bit_match_value_23(mut v0: US5) -> bool {
     match &v0 {
         US5::US5_1(v1, v2, v3) => {
             let mut v1: Rc<UH2> = v1.clone();
@@ -1487,7 +1487,7 @@ fn spiral_main() -> i32 {
     let mut v34: US0 = US0::US0_0;
     let mut v35: Rc<UH2> = Rc::new(UH2::UH2_2(v34.clone()));
     let mut v36: Rc<UH2> = Rc::new(UH2::UH2_4(v33.clone(), v35.clone()));
-    let mut v37: bool = method0(v36.clone(), v6.clone());
+    let mut v37: bool = accepts_0(v36.clone(), v6.clone());
     if v37 {
         ()
     } else {
@@ -1502,14 +1502,14 @@ fn spiral_main() -> i32 {
     let mut v44: US0 = US0::US0_0;
     let mut v45: Rc<UH2> = Rc::new(UH2::UH2_2(v44.clone()));
     let mut v46: Rc<UH2> = Rc::new(UH2::UH2_4(v43.clone(), v45.clone()));
-    let mut v47: bool = method0(v46.clone(), v13.clone());
+    let mut v47: bool = accepts_0(v46.clone(), v13.clone());
     if v47 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-expected-false"); } LIT.with(|lit| lit.clone()) }))
     };
     let mut v48: US1 = US1::US1_0;
     let mut v49: Rc<UH3> = Rc::new(UH3::UH3_2(v48.clone()));
     let mut v50: Rc<UH3> = Rc::new(UH3::UH3_5(v49.clone()));
-    let mut v51: bool = method11(v50.clone(), v20.clone());
+    let mut v51: bool = accepts_11(v50.clone(), v20.clone());
     if v51 {
         ()
     } else {
@@ -1518,7 +1518,7 @@ fn spiral_main() -> i32 {
     let mut v52: US1 = US1::US1_0;
     let mut v53: Rc<UH3> = Rc::new(UH3::UH3_2(v52.clone()));
     let mut v54: Rc<UH3> = Rc::new(UH3::UH3_5(v53.clone()));
-    let mut v55: bool = method11(v54.clone(), v27.clone());
+    let mut v55: bool = accepts_11(v54.clone(), v27.clone());
     if v55 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-expected-false"); } LIT.with(|lit| lit.clone()) }))
     };
@@ -1532,7 +1532,7 @@ fn spiral_main() -> i32 {
     let mut v63: Rc<UH2> = Rc::new(UH2::UH2_2(v62.clone()));
     let mut v64: Rc<UH2> = Rc::new(UH2::UH2_4(v61.clone(), v63.clone()));
     let mut v65: US4 = US4::US4_0(v64.clone(), v6.clone());
-    let mut v66: US5 = method22(v65.clone());
+    let mut v66: US5 = decide_bit_match_22(v65.clone());
     let mut v67: US0 = US0::US0_0;
     let mut v68: Rc<UH2> = Rc::new(UH2::UH2_2(v67.clone()));
     let mut v69: US0 = US0::US0_1;
@@ -1543,14 +1543,14 @@ fn spiral_main() -> i32 {
     let mut v74: Rc<UH2> = Rc::new(UH2::UH2_2(v73.clone()));
     let mut v75: Rc<UH2> = Rc::new(UH2::UH2_4(v72.clone(), v74.clone()));
     let mut v76: US4 = US4::US4_0(v75.clone(), v13.clone());
-    let mut v77: US5 = method22(v76.clone());
-    let mut v78: bool = method23(v66.clone());
+    let mut v77: US5 = decide_bit_match_22(v76.clone());
+    let mut v78: bool = bit_match_value_23(v66.clone());
     if v78 {
         ()
     } else {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-expected-true"); } LIT.with(|lit| lit.clone()) }))
     };
-    let mut v79: bool = method23(v77.clone());
+    let mut v79: bool = bit_match_value_23(v77.clone());
     if v79 {
         std::panic::panic_any::<std::string::String>(format!("{}", { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("brzozowski-expected-false"); } LIT.with(|lit| lit.clone()) }))
     };

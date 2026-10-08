@@ -63,7 +63,7 @@ pub fn method0(v0: String) -> #(String, Int) {
     let v1 = spiral_string_length(v0)
     #(v0, v1)
 }
-pub fn method1(v0: Int, v1: String) -> Int {
+pub fn score_1(v0: Int, v1: String) -> Int {
     let v2 = spiral_string_length(v1)
     let v3 = spiral_wrap_signed(v2 + v0, 32)
     v3
@@ -71,8 +71,8 @@ pub fn method1(v0: Int, v1: String) -> Int {
 pub fn main() {
 let v0 = "qwe"
 let #(v1, v2) = method0(v0)
-let v3 = method1(v2, v1)
-let v4 = method1(v2, v1)
+let v3 = score_1(v2, v1)
+let v4 = score_1(v2, v1)
 let v5 = spiral_wrap_signed(v3 + v4, 32)
 let v6 = spiral_wrap_signed(v5 - 12, 32)
 v6

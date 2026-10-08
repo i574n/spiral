@@ -11,24 +11,24 @@ begin
   if ((Ord(value[from + 1]) and $C0) = $80) or ((upto + 1 < len) and ((Ord(value[upto + 2]) and $C0) = $80)) then Halt(3);
   Result := Copy(value, from + 1, upto - from + 1);
 end;
-function method0(v0: AnsiString): AnsiString; forward;
-function method1(v0: AnsiString): AnsiString; forward;
-function method2(v0: AnsiString): AnsiString; forward;
-function method0(v0: AnsiString): AnsiString;
+function empty_middle_0(v0: AnsiString): AnsiString; forward;
+function empty_end_1(v0: AnsiString): AnsiString; forward;
+function empty_source_2(v0: AnsiString): AnsiString; forward;
+function empty_middle_0(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
   v1 := StringSlice(v0, 2, 1);
   Result := v1;
 end;
-function method1(v0: AnsiString): AnsiString;
+function empty_end_1(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
   v1 := StringSlice(v0, 5, 4);
   Result := v1;
 end;
-function method2(v0: AnsiString): AnsiString;
+function empty_source_2(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
@@ -59,10 +59,10 @@ var
   v19: Boolean;
 begin
   v0 := 'alpha';
-  v1 := method0(v0);
-  v2 := method1(v0);
+  v1 := empty_middle_0(v0);
+  v2 := empty_end_1(v0);
   v3 := '';
-  v4 := method2(v3);
+  v4 := empty_source_2(v3);
   v5 := v1 + v2;
   v6 := v4 + 'ok';
   v7 := v5 + v6;

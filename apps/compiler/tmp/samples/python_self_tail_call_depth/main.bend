@@ -147,22 +147,57 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
   spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
 
 @unsafe
-def method0_if1(+c: Bool, +v0: U32, +v1: U32, +v2: Bool) -> IO(U32):
+def spiral_i32_to_f32(+value: U32) -> F32:
+  spiral_i32_to_f32_signed(value, spiral_i32_is_negative(value))
+
+@unsafe
+def spiral_i32_to_f32_signed(+value: U32, negative: Bool) -> F32:
+  match negative:
+    case True{}:
+      F32.neg(U32.to_f32(U32.sub(0, value)))
+    case False{}:
+      U32.to_f32(value)
+
+@unsafe
+def spiral_f32_to_i32(+value: F32) -> U32:
+  spiral_f32_to_i32_signed(value, F32.is_lt(value, 0.0))
+
+@unsafe
+def spiral_f32_to_i32_signed(+value: F32, negative: Bool) -> U32:
+  match negative:
+    case True{}:
+      U32.sub(0, F32.to_u32(F32.neg(value)))
+    case False{}:
+      F32.to_u32(value)
+@unsafe
+def spiral_array_depth_go(+wanted: U32, +size: U32, +depth: U32, done: Bool) -> U32:
+  match done:
+    case True{}:
+      depth
+    case False{}:
+      spiral_array_depth_go(wanted, U32.shl(size), U32.add(depth, 1), U32.is_le(wanted, U32.shl(size)))
+
+@unsafe
+def spiral_array_depth(+wanted: U32) -> U32:
+  spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
+
+@unsafe
+def count_down_0_if1(+c: Bool, +v0: U32, +v1: U32, +v2: Bool) -> IO(U32):
   match c:
     case True{}:
       do IO<U32>:
         +v3 : U32 <- IO.pure(U32, U32.sub(v0, {1 : U32}))
         +v4 : U32 <- IO.pure(U32, U32.add(v1, {1 : U32}))
-        method0(v3, v4)
+        count_down_0(v3, v4)
     case False{}:
       do IO<U32>:
         return v1
 
 @unsafe
-def method0(+v0: U32, +v1: U32) -> IO(U32):
+def count_down_0(+v0: U32, +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : Bool <- IO.pure(Bool, spiral_i32_lt({0 : U32}, v0))
-    method0_if1(v2, v0, v1, v2)
+    count_down_0_if1(v2, v0, v1, v2)
 
 @unsafe
 def spiral_main_if2(+c: Bool, +v0: U32, +v1: U32, +v2: U32, +v3: Bool) -> IO(U32):
@@ -179,7 +214,7 @@ def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : U32 <- IO.pure(U32, {5000 : U32})
     +v1 : U32 <- IO.pure(U32, {0 : U32})
-    +v2 : U32 <- method0(v0, v1)
+    +v2 : U32 <- count_down_0(v0, v1)
     +v3 : Bool <- IO.pure(Bool, U32.is_eq(v2, {5000 : U32}))
     spiral_main_if2(v3, v0, v1, v2, v3)
 

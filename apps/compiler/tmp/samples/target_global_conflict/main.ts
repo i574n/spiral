@@ -29,18 +29,18 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: string): void {
+function target_global_0(v0: string): void {
     let v1: number = spiral_string_length(v0);
 }
 export function main(): number {
     let v0: string = "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q";
-    method0(v0);
+    target_global_0(v0);
     let v1: string = "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C";
-    method0(v1);
+    target_global_0(v1);
     let v2: string = "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q";
-    method0(v2);
+    target_global_0(v2);
     let v3: string = "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C";
-    method0(v3);
+    target_global_0(v3);
     return 0;
 }
 process.exitCode = main();

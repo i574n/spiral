@@ -5,7 +5,7 @@ type US0 = US0_0 | US0_1 | US0_2;
 function US0_0(): US0 { return { tag: 0 }; }
 function US0_1(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function US0_2(f0: boolean): US0 { return { tag: 2, f0: f0 }; }
-function method0(v0: US0): number {
+function score_0(v0: US0): number {
     switch (v0.tag) {
         case 2: {
             let v2: boolean = v0.f0;
@@ -42,7 +42,7 @@ export function main(): number {
             v7 = US0_2(true);
         }
     }
-    let v8: number = method0(v7);
+    let v8: number = score_0(v7);
     let v9: number = (v8 - 11) | 0;
     return v9;
 }

@@ -7,7 +7,7 @@ fn closure0(mut v0: Vec<i32>) -> Rc<dyn Fn() -> i32> {
         v1
     })
 }
-fn method0(mut v0: i32, mut v1: i32, mut v2: Vec<i32>) -> i32 {
+fn count_loop_0(mut v0: i32, mut v1: i32, mut v2: Vec<i32>) -> i32 {
     loop {
         let mut v3: bool = v0 < 3i32;
         if v3 {
@@ -39,7 +39,7 @@ fn spiral_main() -> i32 {
     let mut v14: i32 = v12.wrapping_add(v13);
     let mut v15: i32 = 0i32;
     let mut v16: i32 = 0i32;
-    let mut v17: i32 = method0(v15, v16, v1.clone());
+    let mut v17: i32 = count_loop_0(v15, v16, v1.clone());
     let mut v18: i32 = v2.wrapping_add(v4);
     let mut v19: i32 = v18.wrapping_add(v5);
     let mut v20: i32 = v19.wrapping_add(v6);

@@ -117,7 +117,7 @@ fn US0_1(a0: i32) US0 {
 fn US0_2(a0: bool) US0 {
     return US0{ .tag = 2, .c2_0 = a0 };
 }
-fn method0(p0: US0) i32 {
+fn score_0(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     var v2: bool = undefined; _ = &v2;
     var v1: i32 = undefined; _ = &v1;
@@ -146,7 +146,7 @@ fn closure0(ctx: *anyopaque, p1: i32) i32 {
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
     var v3: i32 = undefined; _ = &v3;
-    v2 = method0(v0);
+    v2 = score_0(v0);
     v3 = v2 +% v1;
     return v3;
 }

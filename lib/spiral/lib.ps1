@@ -79,9 +79,8 @@ function BuildNativeRust {
     BuildSpiral -SpiPath $SpiPath -OutPath $RsPath -Name $Name -Backend $Backend
 }
 
-function GetFsxModulePaths {
-    @("common", "sm", "crypto", "date_time", "async_", "threading", "networking", "platform", "runtime", "file_system", "trace", "lib") `
-        | ForEach-Object { (Resolve-Path (Join-Path $PSScriptRoot "$_.fsx")).Path }
+function GetFsharpRuntimePaths {
+    @((Resolve-Path (Join-Path $PSScriptRoot "spiral_runtime.fs")).Path)
 }
 
 function PublishFsharp {

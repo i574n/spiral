@@ -4,7 +4,7 @@ program SpiralGenerated;
 uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt;  end;
-function method0(v0: TUS0): LongInt; forward;
+function score_0(v0: TUS0): LongInt; forward;
 function US0_0: TUS0;
 begin
   Result.tag := 0; 
@@ -21,7 +21,7 @@ function US0_3: TUS0;
 begin
   Result.tag := 3; 
 end;
-function method0(v0: TUS0): LongInt;
+function score_0(v0: TUS0): LongInt;
 begin
   case v0.tag of
       0: begin
@@ -65,7 +65,7 @@ begin
           end;
       end;
   end;
-  v11 := method0(v10);
+  v11 := score_0(v10);
   v12 := v11 - 4;
   Result := v12;
 end;

@@ -86,10 +86,13 @@ path before partial evaluation stops with `error[EJP0040]`, a rustc-style report
 recursion (span, repeating cycle, entry path, the join-point fix). A quiet build whose output the hopac write
 guard refuses says why in its `FatalError` and keeps the text in `%TEMP%/spiral-rejected/`.
 
-In hopac mode every job runs in its own compiler process (`-FreshProcess`, on by default there). The Hopac
-core can serve many `BuildFile`s from one process, and a whole suite then compiles ~12x faster
-(`-FreshProcess:$false`), but some per-build join point state still leaks into the next build (FRONTIER.md
-fix 57), so warm runs are an experiment until that is keyed per request.
+In hopac mode a worker serves jobs from one warm compiler process and recycles it after a failure
+(`-WarmRecycle`, the default there since 2026-10-08). Some per-build join point state still leaks into the
+next build (FRONTIER.md fix 57), and it only ever shows up as a failure: an error or timeout in a process that
+already served a build is not recorded, the host exits 4 and the job runs again first in a fresh process, whose
+verdict counts. `-Suite all` on one DLL: 782 s vs 1,834 s with a fresh process per job, all 2,014 rows identical
+(status, residual hash, verdict); 106 of the 605 deferred failures succeeded fresh. `-FreshProcess` restores a
+process per job; `-FreshProcess:$false` keeps one process without recycling (~12x faster, ~100 contaminated rows).
 
 ## Advancing the hopac lane
 

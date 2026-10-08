@@ -9,7 +9,7 @@ typedef struct {
     int32_t v1;
 } Heap0;
 static inline void HeapDecrefBody0(Heap0 * x){
-    
+    (void)x;
 }
 void HeapDecref0(Heap0 * x){
     if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }

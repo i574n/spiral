@@ -59,14 +59,14 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 @external(erlang, "math", "pow")
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
-pub fn method0(v0: String) -> Int {
+pub fn measure_0(v0: String) -> Int {
     let v1 = spiral_string_length(v0)
     v1
 }
 pub fn main() {
 let v0 = "qwe"
-let v1 = method0(v0)
-let v2 = method0(v0)
+let v1 = measure_0(v0)
+let v2 = measure_0(v0)
 let v3 = spiral_wrap_signed(v1 + v2, 32)
 let v4 = spiral_wrap_signed(v3 - 6, 32)
 v4

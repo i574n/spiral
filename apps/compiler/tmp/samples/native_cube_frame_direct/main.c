@@ -15,6 +15,7 @@ typedef struct {
 } Array1;
 typedef Array1 String;
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -107,6 +108,7 @@ int32_t method3(Array0 * v0){
     return 3964l;
 }
 static inline void ArrayDecrefBody1(Array1 * x){
+    (void)x;
 }
 void ArrayDecref1(Array1 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody1(x); free(x); }

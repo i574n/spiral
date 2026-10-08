@@ -32,7 +32,7 @@ partial def closure0 (p0 : String) (p1 : Int32) : IO Int32 := do
     v2 := (Int32.ofNat v0.utf8ByteSize)
     v3 := (v2 + v1)
     return v3
-partial def method0 (p0 : (Int32 → IO Int32)) (p1 : Int32) : IO Int32 := do
+partial def apply_0 (p0 : (Int32 → IO Int32)) (p1 : Int32) : IO Int32 := do
     let mut v0 : (Int32 → IO Int32) := p0
     let mut v1 : Int32 := p1
     return (← v0 v1)
@@ -43,7 +43,7 @@ partial def spiralMain : IO Int32 := do
     v0 := "abc"
     v1 := (closure0 v0)
     v2 := (39 : Int32)
-    return (← method0 v1 v2)
+    return (← apply_0 v1 v2)
 end
 def main : IO UInt32 := do
   let code ← spiralMain

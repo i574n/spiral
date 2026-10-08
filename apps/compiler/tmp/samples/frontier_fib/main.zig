@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: i32) i32 {
+fn fib_0(p0: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: bool = undefined; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
@@ -118,9 +118,9 @@ fn method0(p0: i32) i32 {
         return v0;
     } else {
         v2 = v0 -% @as(i32, 1);
-        v3 = method0(v2);
+        v3 = fib_0(v2);
         v4 = v0 -% @as(i32, 2);
-        v5 = method0(v4);
+        v5 = fib_0(v4);
         v6 = v3 +% v5;
         return v6;
     }
@@ -130,7 +130,7 @@ fn spiralMain() i32 {
     var v1: i32 = undefined; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
     v0 = @as(i32, 10);
-    v1 = method0(v0);
+    v1 = fib_0(v0);
     v2 = v1 -% @as(i32, 55);
     return v2;
 }

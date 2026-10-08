@@ -1,4 +1,4 @@
-local Us0i0, Us0i1, Uh0i0, Uh0i1, Uh1i0, Uh1i1, Uh2i0, Uh2i1, Us1i0, Us1i1, Us1i2, Uh3i0, Uh3i1, Uh4i0, Uh4i1, Uh5i0, Uh5i1, Us2i0, Us2i1, Us2i2, Uh6i0, Uh6i1, Uh7i0, Uh7i1, Uh7i2, Uh7i3, Uh7i4, Uh7i5, Us3i0, Us3i1, Us3i2, Us4i0, Us4i1, Us4i2, Us5i0, Us5i1, Uh8i0, Uh8i1, Uh8i2, Uh8i3, Uh8i4, Uh8i5, method0, method2, method3, method1, method4, method6, method7, method5, method9, method15, method14, method13, method17, method16, method18, method12, method20, method19, method11, method10, method8, method22, method28, method27, method26, method30, method29, method31, method25, method33, method32, method24, method23, method21, method34
+local Us0i0, Us0i1, Uh0i0, Uh0i1, Uh1i0, Uh1i1, Uh2i0, Uh2i1, Us1i0, Us1i1, Us1i2, Uh3i0, Uh3i1, Uh4i0, Uh4i1, Uh5i0, Uh5i1, Us2i0, Us2i1, Us2i2, Uh6i0, Uh6i1, Uh7i0, Uh7i1, Uh7i2, Uh7i3, Uh7i4, Uh7i5, Us3i0, Us3i1, Us3i2, Us4i0, Us4i1, Us4i2, Us5i0, Us5i1, Uh8i0, Uh8i1, Uh8i2, Uh8i3, Uh8i4, Uh8i5, input_singletons_from_symbols_0, input_prepend_symbol_to_corpus_2, input_list_append_3, input_prepend_symbols_to_corpus_1, input_singletons_from_symbols_4, input_prepend_symbol_to_corpus_6, input_list_append_7, input_prepend_symbols_to_corpus_5, loop_9, regex_compare_15, alt_insert_sorted_14, make_alt_13, regex_equal_17, make_cat_16, make_star_18, normalize_12, nullable_20, derivative_19, canonical_derivative_11, accepts_10, loop_8, loop_22, regex_compare_28, alt_insert_sorted_27, make_alt_26, regex_equal_30, make_cat_29, make_star_31, normalize_25, nullable_33, derivative_32, canonical_derivative_24, accepts_23, loop_21, loop_34
 function Us0i0() return { tag = "Us0i0" } end
 function Us0i1() return { tag = "Us0i1" } end
 
@@ -56,12 +56,12 @@ function Uh8i3(v0, v1) return { tag = "Uh8i3",  _1 = v0,  _2 = v1 } end
 function Uh8i4(v0, v1) return { tag = "Uh8i4",  _1 = v0,  _2 = v1 } end
 function Uh8i5(v0) return { tag = "Uh8i5",  _1 = v0 } end
 
-function method0(v0)
+function input_singletons_from_symbols_0(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method0(v3)
+        local v4 = input_singletons_from_symbols_0(v3)
         local v5 = Uh1i0()
         local v6 = Uh1i1(v2, v5)
         return Uh2i1(v6, v4)
@@ -70,12 +70,12 @@ function method0(v0)
     end
 end
 
-function method2(v0, v1)
+function input_prepend_symbol_to_corpus_2(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh2i1" then
         local v3 = __v[1]._1
         local v4 = __v[1]._2
-        local v5 = method2(v0, v4)
+        local v5 = input_prepend_symbol_to_corpus_2(v0, v4)
         local v6 = Uh1i1(v0, v3)
         return Uh2i1(v6, v5)
     elseif __v[1] ~= nil and __v[1].tag == "Uh2i0" then
@@ -83,37 +83,37 @@ function method2(v0, v1)
     end
 end
 
-function method3(v0, v1)
+function input_list_append_3(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh2i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method3(v3, v1)
+        local v4 = input_list_append_3(v3, v1)
         return Uh2i1(v2, v4)
     elseif __v[1] ~= nil and __v[1].tag == "Uh2i0" then
         return v1
     end
 end
 
-function method1(v0, v1)
+function input_prepend_symbols_to_corpus_1(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
         local v3 = __v[1]._1
         local v4 = __v[1]._2
-        local v5 = method2(v3, v1)
-        local v6 = method1(v4, v1)
-        return method3(v5, v6)
+        local v5 = input_prepend_symbol_to_corpus_2(v3, v1)
+        local v6 = input_prepend_symbols_to_corpus_1(v4, v1)
+        return input_list_append_3(v5, v6)
     elseif __v[1] ~= nil and __v[1].tag == "Uh0i0" then
         return Uh2i0()
     end
 end
 
-function method4(v0)
+function input_singletons_from_symbols_4(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh3i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method4(v3)
+        local v4 = input_singletons_from_symbols_4(v3)
         local v5 = Uh4i0()
         local v6 = Uh4i1(v2, v5)
         return Uh5i1(v6, v4)
@@ -122,12 +122,12 @@ function method4(v0)
     end
 end
 
-function method6(v0, v1)
+function input_prepend_symbol_to_corpus_6(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh5i1" then
         local v3 = __v[1]._1
         local v4 = __v[1]._2
-        local v5 = method6(v0, v4)
+        local v5 = input_prepend_symbol_to_corpus_6(v0, v4)
         local v6 = Uh4i1(v0, v3)
         return Uh5i1(v6, v5)
     elseif __v[1] ~= nil and __v[1].tag == "Uh5i0" then
@@ -135,32 +135,32 @@ function method6(v0, v1)
     end
 end
 
-function method7(v0, v1)
+function input_list_append_7(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh5i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method7(v3, v1)
+        local v4 = input_list_append_7(v3, v1)
         return Uh5i1(v2, v4)
     elseif __v[1] ~= nil and __v[1].tag == "Uh5i0" then
         return v1
     end
 end
 
-function method5(v0, v1)
+function input_prepend_symbols_to_corpus_5(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh3i1" then
         local v3 = __v[1]._1
         local v4 = __v[1]._2
-        local v5 = method6(v3, v1)
-        local v6 = method5(v4, v1)
-        return method7(v5, v6)
+        local v5 = input_prepend_symbol_to_corpus_6(v3, v1)
+        local v6 = input_prepend_symbols_to_corpus_5(v4, v1)
+        return input_list_append_7(v5, v6)
     elseif __v[1] ~= nil and __v[1].tag == "Uh3i0" then
         return Uh5i0()
     end
 end
 
-function method9(v0, v1)
+function loop_9(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh1i1" then
         local v6 = __v[1]._1
@@ -236,7 +236,7 @@ function method9(v0, v1)
                 end
             end
             local v27 = getv27()
-            return method9(v27, v7)
+            return loop_9(v27, v7)
         end
     elseif __v[1] ~= nil and __v[1].tag == "Uh1i0" then
         local v2 = v0 == 0
@@ -248,7 +248,7 @@ function method9(v0, v1)
     end
 end
 
-function method15(v0, v1)
+function regex_compare_15(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v53 = __v[1]._1
@@ -257,10 +257,10 @@ function method15(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
             local v55 = __v[1]._1
             local v56 = __v[1]._2
-            local v57 = method15(v53, v55)
+            local v57 = regex_compare_15(v53, v55)
             local __v = { v57 }
             if __v[1] ~= nil and __v[1].tag == "Us3i1" then
-                return method15(v54, v56)
+                return regex_compare_15(v54, v56)
             else
                 return v57
             end
@@ -274,10 +274,10 @@ function method15(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh7i4" then
             local v34 = __v[1]._1
             local v35 = __v[1]._2
-            local v36 = method15(v28, v34)
+            local v36 = regex_compare_15(v28, v34)
             local __v = { v36 }
             if __v[1] ~= nil and __v[1].tag == "Us3i1" then
-                return method15(v29, v35)
+                return regex_compare_15(v29, v35)
             else
                 return v36
             end
@@ -344,22 +344,22 @@ function method15(v0, v1)
             return Us3i0()
         elseif __v[1] ~= nil and __v[1].tag == "Uh7i5" then
             local v48 = __v[1]._1
-            return method15(v44, v48)
+            return regex_compare_15(v44, v48)
         else
             return Us3i2()
         end
     end
 end
 
-function method14(v0, v1)
+function alt_insert_sorted_14(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method15(v0, v2)
+        local v4 = regex_compare_15(v0, v2)
         local __v = { v4 }
         if __v[1] ~= nil and __v[1].tag == "Us3i2" then
-            local v6 = method14(v0, v3)
+            local v6 = alt_insert_sorted_14(v0, v3)
             return Uh7i3(v2, v6)
         elseif __v[1] ~= nil and __v[1].tag == "Us3i0" then
             return Uh7i3(v0, v1)
@@ -369,7 +369,7 @@ function method14(v0, v1)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i0" then
         return v0
     else
-        local v11 = method15(v0, v1)
+        local v11 = regex_compare_15(v0, v1)
         local __v = { v11 }
         if __v[1] ~= nil and __v[1].tag == "Us3i2" then
             return Uh7i3(v1, v0)
@@ -381,21 +381,21 @@ function method14(v0, v1)
     end
 end
 
-function method13(v0, v1)
+function make_alt_13(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method14(v2, v1)
-        return method13(v3, v4)
+        local v4 = alt_insert_sorted_14(v2, v1)
+        return make_alt_13(v3, v4)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i0" then
         return v1
     else
-        return method14(v0, v1)
+        return alt_insert_sorted_14(v0, v1)
     end
 end
 
-function method17(v0, v1)
+function regex_equal_17(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v18 = __v[1]._1
@@ -404,9 +404,9 @@ function method17(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
             local v20 = __v[1]._1
             local v21 = __v[1]._2
-            local v22 = method17(v18, v20)
+            local v22 = regex_equal_17(v18, v20)
             if v22 then
-                return method17(v19, v21)
+                return regex_equal_17(v19, v21)
             else
                 return false
             end
@@ -420,9 +420,9 @@ function method17(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh7i4" then
             local v28 = __v[1]._1
             local v29 = __v[1]._2
-            local v30 = method17(v26, v28)
+            local v30 = regex_equal_17(v26, v28)
             if v30 then
-                return method17(v27, v29)
+                return regex_equal_17(v27, v29)
             else
                 return false
             end
@@ -481,14 +481,14 @@ function method17(v0, v1)
         local __v = { v1 }
         if __v[1] ~= nil and __v[1].tag == "Uh7i5" then
             local v35 = __v[1]._1
-            return method17(v34, v35)
+            return regex_equal_17(v34, v35)
         else
             return false
         end
     end
 end
 
-function method16(v0, v1)
+function make_cat_16(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i0" then
         return Uh7i0()
@@ -509,14 +509,14 @@ function method16(v0, v1)
                     if __v[1] ~= nil and __v[1].tag == "Uh7i4" then
                         local v12 = __v[1]._1
                         local v13 = __v[1]._2
-                        local v14 = method16(v13, v1)
+                        local v14 = make_cat_16(v13, v1)
                         return Uh7i4(v12, v14)
                     elseif __v[1] ~= nil and __v[1].tag == "Uh7i5" then
                         local v4 = __v[1]._1
                         local __v = { v1 }
                         if __v[1] ~= nil and __v[1].tag == "Uh7i5" then
                             local v5 = __v[1]._1
-                            local v6 = method17(v4, v5)
+                            local v6 = regex_equal_17(v4, v5)
                             if v6 then
                                 return Uh7i5(v4)
                             else
@@ -534,7 +534,7 @@ function method16(v0, v1)
     end
 end
 
-function method18(v0)
+function make_star_18(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i0" then
         return Uh7i1()
@@ -548,20 +548,20 @@ function method18(v0)
     end
 end
 
-function method12(v0)
+function normalize_12(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v5 = __v[1]._1
         local v6 = __v[1]._2
-        local v7 = method12(v5)
-        local v8 = method12(v6)
-        return method13(v7, v8)
+        local v7 = normalize_12(v5)
+        local v8 = normalize_12(v6)
+        return make_alt_13(v7, v8)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i4" then
         local v10 = __v[1]._1
         local v11 = __v[1]._2
-        local v12 = method12(v10)
-        local v13 = method12(v11)
-        return method16(v12, v13)
+        local v12 = normalize_12(v10)
+        local v13 = normalize_12(v11)
+        return make_cat_16(v12, v13)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i2" then
         local v3 = __v[1]._1
         return Uh7i2(v3)
@@ -571,18 +571,18 @@ function method12(v0)
         return Uh7i1()
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i5" then
         local v15 = __v[1]._1
-        local v16 = method12(v15)
-        return method18(v16)
+        local v16 = normalize_12(v15)
+        return make_star_18(v16)
     end
 end
 
-function method20(v0)
+function nullable_20(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v5 = __v[1]._1
         local v6 = __v[1]._2
-        local v7 = method20(v5)
-        local v8 = method20(v6)
+        local v7 = nullable_20(v5)
+        local v8 = nullable_20(v6)
         local __v = { v7 }
         if __v[1] ~= nil and __v[1].tag == "Us5i0" then
             return Us5i0()
@@ -603,8 +603,8 @@ function method20(v0)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i4" then
         local v16 = __v[1]._1
         local v17 = __v[1]._2
-        local v18 = method20(v16)
-        local v19 = method20(v17)
+        local v18 = nullable_20(v16)
+        local v19 = nullable_20(v17)
         local __v = { v18 }
         if __v[1] ~= nil and __v[1].tag == "Us5i0" then
             local __v = { v19 }
@@ -629,27 +629,27 @@ function method20(v0)
     end
 end
 
-function method19(v0, v1)
+function derivative_19(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh7i3" then
         local v19 = __v[1]._1
         local v20 = __v[1]._2
-        local v21 = method19(v19, v1)
-        local v22 = method19(v20, v1)
-        return method13(v21, v22)
+        local v21 = derivative_19(v19, v1)
+        local v22 = derivative_19(v20, v1)
+        return make_alt_13(v21, v22)
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i4" then
         local v24 = __v[1]._1
         local v25 = __v[1]._2
-        local v26 = method20(v24)
+        local v26 = nullable_20(v24)
         local __v = { v26 }
         if __v[1] ~= nil and __v[1].tag == "Us5i1" then
-            local v31 = method19(v24, v1)
-            return method16(v31, v25)
+            local v31 = derivative_19(v24, v1)
+            return make_cat_16(v31, v25)
         elseif __v[1] ~= nil and __v[1].tag == "Us5i0" then
-            local v27 = method19(v24, v1)
-            local v28 = method16(v27, v25)
-            local v29 = method19(v25, v1)
-            return method13(v28, v29)
+            local v27 = derivative_19(v24, v1)
+            local v28 = make_cat_16(v27, v25)
+            local v29 = derivative_19(v25, v1)
+            return make_alt_13(v28, v29)
         end
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i2" then
         local v4 = __v[1]._1
@@ -692,28 +692,28 @@ function method19(v0, v1)
         return Uh7i0()
     elseif __v[1] ~= nil and __v[1].tag == "Uh7i5" then
         local v35 = __v[1]._1
-        local v36 = method19(v35, v1)
-        local v37 = method18(v35)
-        return method16(v36, v37)
+        local v36 = derivative_19(v35, v1)
+        local v37 = make_star_18(v35)
+        return make_cat_16(v36, v37)
     end
 end
 
-function method11(v0, v1)
-    local v2 = method12(v0)
-    local v3 = method19(v2, v1)
-    return method12(v3)
+function canonical_derivative_11(v0, v1)
+    local v2 = normalize_12(v0)
+    local v3 = derivative_19(v2, v1)
+    return normalize_12(v3)
 end
 
-function method10(v0, v1)
+function accepts_10(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh1i1" then
         local v6 = __v[1]._1
         local v7 = __v[1]._2
-        local v8 = method11(v0, v6)
-        return method10(v8, v7)
+        local v8 = canonical_derivative_11(v0, v6)
+        return accepts_10(v8, v7)
     elseif __v[1] ~= nil and __v[1].tag == "Uh1i0" then
-        local v2 = method12(v0)
-        local v3 = method20(v2)
+        local v2 = normalize_12(v0)
+        local v3 = nullable_20(v2)
         local __v = { v3 }
         if __v[1] ~= nil and __v[1].tag == "Us5i1" then
             return false
@@ -723,28 +723,28 @@ function method10(v0, v1)
     end
 end
 
-function method8(v0, v1)
+function loop_8(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh2i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
         local v4 = 1
-        local v5 = method9(v4, v2)
+        local v5 = loop_9(v4, v2)
         local getv11 = function()
             local __v = { v5 }
             if __v[1] ~= nil and __v[1].tag == "Us4i0" then
-                return method10(v0, v2)
+                return accepts_10(v0, v2)
             elseif __v[1] ~= nil and __v[1].tag == "Us4i2" then
                 return false
             elseif __v[1] ~= nil and __v[1].tag == "Us4i1" then
-                local v7 = method10(v0, v2)
+                local v7 = accepts_10(v0, v2)
                 local v8 = v7 == false
                 return v8
             end
         end
         local v11 = getv11()
         if v11 then
-            return method8(v0, v3)
+            return loop_8(v0, v3)
         else
             return false
         end
@@ -753,7 +753,7 @@ function method8(v0, v1)
     end
 end
 
-function method22(v0, v1)
+function loop_22(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh4i1" then
         local v8 = __v[1]._1
@@ -872,7 +872,7 @@ function method22(v0, v1)
                 end
             end
             local v46 = getv46()
-            return method22(v46, v9)
+            return loop_22(v46, v9)
         end
     elseif __v[1] ~= nil and __v[1].tag == "Uh4i0" then
         local v2 = v0 == 0
@@ -893,7 +893,7 @@ function method22(v0, v1)
     end
 end
 
-function method28(v0, v1)
+function regex_compare_28(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v59 = __v[1]._1
@@ -902,10 +902,10 @@ function method28(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
             local v61 = __v[1]._1
             local v62 = __v[1]._2
-            local v63 = method28(v59, v61)
+            local v63 = regex_compare_28(v59, v61)
             local __v = { v63 }
             if __v[1] ~= nil and __v[1].tag == "Us3i1" then
-                return method28(v60, v62)
+                return regex_compare_28(v60, v62)
             else
                 return v63
             end
@@ -919,10 +919,10 @@ function method28(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh8i4" then
             local v40 = __v[1]._1
             local v41 = __v[1]._2
-            local v42 = method28(v34, v40)
+            local v42 = regex_compare_28(v34, v40)
             local __v = { v42 }
             if __v[1] ~= nil and __v[1].tag == "Us3i1" then
-                return method28(v35, v41)
+                return regex_compare_28(v35, v41)
             else
                 return v42
             end
@@ -1004,22 +1004,22 @@ function method28(v0, v1)
             return Us3i0()
         elseif __v[1] ~= nil and __v[1].tag == "Uh8i5" then
             local v54 = __v[1]._1
-            return method28(v50, v54)
+            return regex_compare_28(v50, v54)
         else
             return Us3i2()
         end
     end
 end
 
-function method27(v0, v1)
+function alt_insert_sorted_27(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method28(v0, v2)
+        local v4 = regex_compare_28(v0, v2)
         local __v = { v4 }
         if __v[1] ~= nil and __v[1].tag == "Us3i2" then
-            local v6 = method27(v0, v3)
+            local v6 = alt_insert_sorted_27(v0, v3)
             return Uh8i3(v2, v6)
         elseif __v[1] ~= nil and __v[1].tag == "Us3i0" then
             return Uh8i3(v0, v1)
@@ -1029,7 +1029,7 @@ function method27(v0, v1)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i0" then
         return v0
     else
-        local v11 = method28(v0, v1)
+        local v11 = regex_compare_28(v0, v1)
         local __v = { v11 }
         if __v[1] ~= nil and __v[1].tag == "Us3i2" then
             return Uh8i3(v1, v0)
@@ -1041,21 +1041,21 @@ function method27(v0, v1)
     end
 end
 
-function method26(v0, v1)
+function make_alt_26(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
-        local v4 = method27(v2, v1)
-        return method26(v3, v4)
+        local v4 = alt_insert_sorted_27(v2, v1)
+        return make_alt_26(v3, v4)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i0" then
         return v1
     else
-        return method27(v0, v1)
+        return alt_insert_sorted_27(v0, v1)
     end
 end
 
-function method30(v0, v1)
+function regex_equal_30(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v24 = __v[1]._1
@@ -1064,9 +1064,9 @@ function method30(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
             local v26 = __v[1]._1
             local v27 = __v[1]._2
-            local v28 = method30(v24, v26)
+            local v28 = regex_equal_30(v24, v26)
             if v28 then
-                return method30(v25, v27)
+                return regex_equal_30(v25, v27)
             else
                 return false
             end
@@ -1080,9 +1080,9 @@ function method30(v0, v1)
         if __v[1] ~= nil and __v[1].tag == "Uh8i4" then
             local v34 = __v[1]._1
             local v35 = __v[1]._2
-            local v36 = method30(v32, v34)
+            local v36 = regex_equal_30(v32, v34)
             if v36 then
-                return method30(v33, v35)
+                return regex_equal_30(v33, v35)
             else
                 return false
             end
@@ -1156,14 +1156,14 @@ function method30(v0, v1)
         local __v = { v1 }
         if __v[1] ~= nil and __v[1].tag == "Uh8i5" then
             local v41 = __v[1]._1
-            return method30(v40, v41)
+            return regex_equal_30(v40, v41)
         else
             return false
         end
     end
 end
 
-function method29(v0, v1)
+function make_cat_29(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i0" then
         return Uh8i0()
@@ -1184,14 +1184,14 @@ function method29(v0, v1)
                     if __v[1] ~= nil and __v[1].tag == "Uh8i4" then
                         local v12 = __v[1]._1
                         local v13 = __v[1]._2
-                        local v14 = method29(v13, v1)
+                        local v14 = make_cat_29(v13, v1)
                         return Uh8i4(v12, v14)
                     elseif __v[1] ~= nil and __v[1].tag == "Uh8i5" then
                         local v4 = __v[1]._1
                         local __v = { v1 }
                         if __v[1] ~= nil and __v[1].tag == "Uh8i5" then
                             local v5 = __v[1]._1
-                            local v6 = method30(v4, v5)
+                            local v6 = regex_equal_30(v4, v5)
                             if v6 then
                                 return Uh8i5(v4)
                             else
@@ -1209,7 +1209,7 @@ function method29(v0, v1)
     end
 end
 
-function method31(v0)
+function make_star_31(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i0" then
         return Uh8i1()
@@ -1223,20 +1223,20 @@ function method31(v0)
     end
 end
 
-function method25(v0)
+function normalize_25(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v5 = __v[1]._1
         local v6 = __v[1]._2
-        local v7 = method25(v5)
-        local v8 = method25(v6)
-        return method26(v7, v8)
+        local v7 = normalize_25(v5)
+        local v8 = normalize_25(v6)
+        return make_alt_26(v7, v8)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i4" then
         local v10 = __v[1]._1
         local v11 = __v[1]._2
-        local v12 = method25(v10)
-        local v13 = method25(v11)
-        return method29(v12, v13)
+        local v12 = normalize_25(v10)
+        local v13 = normalize_25(v11)
+        return make_cat_29(v12, v13)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i2" then
         local v3 = __v[1]._1
         return Uh8i2(v3)
@@ -1246,18 +1246,18 @@ function method25(v0)
         return Uh8i1()
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i5" then
         local v15 = __v[1]._1
-        local v16 = method25(v15)
-        return method31(v16)
+        local v16 = normalize_25(v15)
+        return make_star_31(v16)
     end
 end
 
-function method33(v0)
+function nullable_33(v0)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v5 = __v[1]._1
         local v6 = __v[1]._2
-        local v7 = method33(v5)
-        local v8 = method33(v6)
+        local v7 = nullable_33(v5)
+        local v8 = nullable_33(v6)
         local __v = { v7 }
         if __v[1] ~= nil and __v[1].tag == "Us5i0" then
             return Us5i0()
@@ -1278,8 +1278,8 @@ function method33(v0)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i4" then
         local v16 = __v[1]._1
         local v17 = __v[1]._2
-        local v18 = method33(v16)
-        local v19 = method33(v17)
+        local v18 = nullable_33(v16)
+        local v19 = nullable_33(v17)
         local __v = { v18 }
         if __v[1] ~= nil and __v[1].tag == "Us5i0" then
             local __v = { v19 }
@@ -1304,27 +1304,27 @@ function method33(v0)
     end
 end
 
-function method32(v0, v1)
+function derivative_32(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh8i3" then
         local v25 = __v[1]._1
         local v26 = __v[1]._2
-        local v27 = method32(v25, v1)
-        local v28 = method32(v26, v1)
-        return method26(v27, v28)
+        local v27 = derivative_32(v25, v1)
+        local v28 = derivative_32(v26, v1)
+        return make_alt_26(v27, v28)
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i4" then
         local v30 = __v[1]._1
         local v31 = __v[1]._2
-        local v32 = method33(v30)
+        local v32 = nullable_33(v30)
         local __v = { v32 }
         if __v[1] ~= nil and __v[1].tag == "Us5i1" then
-            local v37 = method32(v30, v1)
-            return method29(v37, v31)
+            local v37 = derivative_32(v30, v1)
+            return make_cat_29(v37, v31)
         elseif __v[1] ~= nil and __v[1].tag == "Us5i0" then
-            local v33 = method32(v30, v1)
-            local v34 = method29(v33, v31)
-            local v35 = method32(v31, v1)
-            return method26(v34, v35)
+            local v33 = derivative_32(v30, v1)
+            local v34 = make_cat_29(v33, v31)
+            local v35 = derivative_32(v31, v1)
+            return make_alt_26(v34, v35)
         end
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i2" then
         local v4 = __v[1]._1
@@ -1382,28 +1382,28 @@ function method32(v0, v1)
         return Uh8i0()
     elseif __v[1] ~= nil and __v[1].tag == "Uh8i5" then
         local v41 = __v[1]._1
-        local v42 = method32(v41, v1)
-        local v43 = method31(v41)
-        return method29(v42, v43)
+        local v42 = derivative_32(v41, v1)
+        local v43 = make_star_31(v41)
+        return make_cat_29(v42, v43)
     end
 end
 
-function method24(v0, v1)
-    local v2 = method25(v0)
-    local v3 = method32(v2, v1)
-    return method25(v3)
+function canonical_derivative_24(v0, v1)
+    local v2 = normalize_25(v0)
+    local v3 = derivative_32(v2, v1)
+    return normalize_25(v3)
 end
 
-function method23(v0, v1)
+function accepts_23(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh4i1" then
         local v6 = __v[1]._1
         local v7 = __v[1]._2
-        local v8 = method24(v0, v6)
-        return method23(v8, v7)
+        local v8 = canonical_derivative_24(v0, v6)
+        return accepts_23(v8, v7)
     elseif __v[1] ~= nil and __v[1].tag == "Uh4i0" then
-        local v2 = method25(v0)
-        local v3 = method33(v2)
+        local v2 = normalize_25(v0)
+        local v3 = nullable_33(v2)
         local __v = { v3 }
         if __v[1] ~= nil and __v[1].tag == "Us5i1" then
             return false
@@ -1413,28 +1413,28 @@ function method23(v0, v1)
     end
 end
 
-function method21(v0, v1)
+function loop_21(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh5i1" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
         local v4 = 2
-        local v5 = method22(v4, v2)
+        local v5 = loop_22(v4, v2)
         local getv11 = function()
             local __v = { v5 }
             if __v[1] ~= nil and __v[1].tag == "Us4i0" then
-                return method23(v0, v2)
+                return accepts_23(v0, v2)
             elseif __v[1] ~= nil and __v[1].tag == "Us4i2" then
                 return false
             elseif __v[1] ~= nil and __v[1].tag == "Us4i1" then
-                local v7 = method23(v0, v2)
+                local v7 = accepts_23(v0, v2)
                 local v8 = v7 == false
                 return v8
             end
         end
         local v11 = getv11()
         if v11 then
-            return method21(v0, v3)
+            return loop_21(v0, v3)
         else
             return false
         end
@@ -1443,7 +1443,7 @@ function method21(v0, v1)
     end
 end
 
-function method34(v0, v1)
+function loop_34(v0, v1)
     local __v = { v1 }
     if __v[1] ~= nil and __v[1].tag == "Uh6i1" then
         local v7 = __v[1]._1
@@ -1517,7 +1517,7 @@ function method34(v0, v1)
                 end
             end
             local v28 = getv28()
-            return method34(v28, v8)
+            return loop_34(v28, v8)
         end
     elseif __v[1] ~= nil and __v[1].tag == "Uh6i0" then
         local v2 = v0 == 0
@@ -1535,7 +1535,7 @@ local v1 = Us0i1()
 local v2 = Uh0i0()
 local v3 = Uh0i1(v1, v2)
 local v4 = Uh0i1(v0, v3)
-local v5 = method0(v4)
+local v5 = input_singletons_from_symbols_0(v4)
 local v6 = Uh1i0()
 local v7 = Uh2i1(v6, v5)
 local v8 = Us0i0()
@@ -1548,9 +1548,9 @@ local v14 = Us0i1()
 local v15 = Uh0i0()
 local v16 = Uh0i1(v14, v15)
 local v17 = Uh0i1(v13, v16)
-local v18 = method0(v17)
-local v19 = method1(v12, v18)
-local v20 = method3(v7, v19)
+local v18 = input_singletons_from_symbols_0(v17)
+local v19 = input_prepend_symbols_to_corpus_1(v12, v18)
+local v20 = input_list_append_3(v7, v19)
 local v21 = Us1i0()
 local v22 = Us1i1()
 local v23 = Us1i2()
@@ -1558,7 +1558,7 @@ local v24 = Uh3i0()
 local v25 = Uh3i1(v23, v24)
 local v26 = Uh3i1(v22, v25)
 local v27 = Uh3i1(v21, v26)
-local v28 = method4(v27)
+local v28 = input_singletons_from_symbols_4(v27)
 local v29 = Uh4i0()
 local v30 = Uh5i1(v29, v28)
 local v31 = Us1i0()
@@ -1575,9 +1575,9 @@ local v41 = Uh3i0()
 local v42 = Uh3i1(v40, v41)
 local v43 = Uh3i1(v39, v42)
 local v44 = Uh3i1(v38, v43)
-local v45 = method4(v44)
-local v46 = method5(v37, v45)
-local v47 = method7(v30, v46)
+local v45 = input_singletons_from_symbols_4(v44)
+local v46 = input_prepend_symbols_to_corpus_5(v37, v45)
+local v47 = input_list_append_7(v30, v46)
 local v48 = Us2i2()
 local v49 = Uh6i0()
 local v50 = Uh6i1(v48, v49)
@@ -1590,7 +1590,7 @@ local v56 = Uh7i5(v55)
 local v57 = Us0i0()
 local v58 = Uh7i2(v57)
 local v59 = Uh7i4(v56, v58)
-local v60 = method8(v59, v20)
+local v60 = loop_8(v59, v20)
 local getv75 = function()
     if v60 then
         local v61 = Us1i0()
@@ -1602,10 +1602,10 @@ local getv75 = function()
         local v67 = Us1i2()
         local v68 = Uh8i2(v67)
         local v69 = Uh8i4(v66, v68)
-        local v70 = method21(v69, v47)
+        local v70 = loop_21(v69, v47)
         if v70 then
             local v71 = 1
-            local v72 = method34(v71, v50)
+            local v72 = loop_34(v71, v50)
             local __v = { v72 }
             if __v[1] ~= nil and __v[1].tag == "Us4i2" then
                 return true

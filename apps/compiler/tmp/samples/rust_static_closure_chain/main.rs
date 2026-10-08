@@ -493,7 +493,7 @@ fn closure0() -> Rc<dyn Fn() -> Rc<UH0>> {
         Rc::new(UH0::UH0_0(79u64, v0.clone()))
     }); } CLOSURE.with(|closure| closure.clone())
 }
-fn method0(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
+fn loop_0(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
     loop {
         match &*v0 {
             UH0::UH0_0(v2, v3) => {
@@ -515,7 +515,7 @@ fn spiral_main() -> i32 {
     let mut v1: Rc<dyn Fn() -> Rc<UH0>> = closure0();
     let mut v2: Rc<UH0> = Rc::new(UH0::UH0_0(v0, v1.clone()));
     let mut v3: u64 = 0u64;
-    let mut v4: u64 = method0(v2.clone(), v3);
+    let mut v4: u64 = loop_0(v2.clone(), v3);
     let mut v5: u64 = v4.wrapping_rem(200u64);
     let mut v6: i32 = (v5 as i32);
     v6

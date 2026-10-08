@@ -2,8 +2,8 @@ program SpiralGenerated;
 {$mode delphi}{$H+}
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
-function method0(v0: AnsiString): LongInt; forward;
-function method0(v0: AnsiString): LongInt;
+function measure_0(v0: AnsiString): LongInt; forward;
+function measure_0(v0: AnsiString): LongInt;
 var
   v1: LongInt;
 begin
@@ -19,8 +19,8 @@ var
   v4: LongInt;
 begin
   v0 := 'qwe';
-  v1 := method0(v0);
-  v2 := method0(v0);
+  v1 := measure_0(v0);
+  v2 := measure_0(v0);
   v3 := v1 + v2;
   v4 := v3 - 6;
   Result := v4;

@@ -105,19 +105,19 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8) []const u8 {
+fn empty_middle_0(p0: []const u8) []const u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     v1 = spiralStringSlice(v0, @as(i64, @as(i32, 2)), @as(i64, @as(i32, 1)));
     return v1;
 }
-fn method1(p0: []const u8) []const u8 {
+fn empty_end_1(p0: []const u8) []const u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     v1 = spiralStringSlice(v0, @as(i64, @as(i32, 5)), @as(i64, @as(i32, 4)));
     return v1;
 }
-fn method2(p0: []const u8) []const u8 {
+fn empty_source_2(p0: []const u8) []const u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     v1 = spiralStringSlice(v0, @as(i64, @as(i32, 0)), @as(i64, @as(i32, -1)));
@@ -145,10 +145,10 @@ fn spiralMain() i32 {
     var v18: u8 = undefined; _ = &v18;
     var v19: bool = undefined; _ = &v19;
     v0 = "alpha";
-    v1 = method0(v0);
-    v2 = method1(v0);
+    v1 = empty_middle_0(v0);
+    v2 = empty_end_1(v0);
     v3 = "";
-    v4 = method2(v3);
+    v4 = empty_source_2(v3);
     v5 = spiralConcat(v1, v2);
     v6 = spiralConcat(v4, "ok");
     v7 = spiralConcat(v5, v6);

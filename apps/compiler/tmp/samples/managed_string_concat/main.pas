@@ -2,9 +2,9 @@ program SpiralGenerated;
 {$mode delphi}{$H+}
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
-function method0(v0: Boolean): AnsiString; forward;
-function method1(v0: Boolean): AnsiString; forward;
-function method0(v0: Boolean): AnsiString;
+function choose_left_0(v0: Boolean): AnsiString; forward;
+function choose_right_1(v0: Boolean): AnsiString; forward;
+function choose_left_0(v0: Boolean): AnsiString;
 var
   v1: AnsiString;
   v2: AnsiString;
@@ -17,7 +17,7 @@ begin
       Result := v2;
   end;
 end;
-function method1(v0: Boolean): AnsiString;
+function choose_right_1(v0: Boolean): AnsiString;
 var
   v1: AnsiString;
   v2: AnsiString;
@@ -45,9 +45,9 @@ var
   v10: Boolean;
 begin
   v0 := True;
-  v1 := method0(v0);
+  v1 := choose_left_0(v0);
   v2 := False;
-  v3 := method1(v2);
+  v3 := choose_right_1(v2);
   v4 := v1 + v3;
   v5 := LongInt(Length(v4));
   v6 := v5 = 6;

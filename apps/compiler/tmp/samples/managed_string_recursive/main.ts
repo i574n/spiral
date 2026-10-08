@@ -34,7 +34,7 @@ type UH0_1 = { readonly tag: 1, readonly f0: string, readonly f1: UH0, readonly 
 type UH0 = UH0_0 | UH0_1;
 function UH0_0(): UH0 { return { tag: 0 }; }
 function UH0_1(f0: string, f1: UH0, f2: UH0): UH0 { return { tag: 1, f0: f0, f1: f1, f2: f2 }; }
-function method0(v0: UH0): number {
+function score_0(v0: UH0): number {
     switch (v0.tag) {
         case 0: {
             return 0;
@@ -45,9 +45,9 @@ function method0(v0: UH0): number {
             let v2: UH0 = v0.f1;
             let v3: UH0 = v0.f2;
             let v4: number = spiral_string_length(v1);
-            let v5: number = method0(v2);
+            let v5: number = score_0(v2);
             let v6: number = (v4 + v5) | 0;
-            let v7: number = method0(v3);
+            let v7: number = score_0(v3);
             let v8: number = (v6 + v7) | 0;
             return v8;
             break;
@@ -61,11 +61,11 @@ export function main(): number {
     let v2: UH0 = UH0_0();
     let v3: UH0 = UH0_1(v1, v2, v2);
     let v4: UH0 = UH0_1(v0, v3, v3);
-    let v5: number = method0(v4);
+    let v5: number = score_0(v4);
     let v6: UH0 = UH0_0();
     let v7: UH0 = UH0_1(v1, v6, v6);
     let v8: UH0 = UH0_1(v0, v7, v7);
-    let v9: number = method0(v8);
+    let v9: number = score_0(v8);
     let v10: number = (v5 + v9) | 0;
     let v11: number = (v10 - 16) | 0;
     return v11;

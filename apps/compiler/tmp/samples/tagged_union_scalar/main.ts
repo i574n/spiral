@@ -3,7 +3,7 @@ type US0_1 = { readonly tag: 1, readonly f0: number };
 type US0 = US0_0 | US0_1;
 function US0_0(f0: number): US0 { return { tag: 0, f0: f0 }; }
 function US0_1(f0: number): US0 { return { tag: 1, f0: f0 }; }
-function method0(v0: US0): number {
+function score_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
             let v1: number = v0.f0;
@@ -27,7 +27,7 @@ export function main(): number {
     } else {
         v3 = US0_1(3);
     }
-    let v4: number = method0(v3);
+    let v4: number = score_0(v3);
     let v5: number = (v4 - 7) | 0;
     return v5;
 }

@@ -39,12 +39,12 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
   }
 }
 
-pub fn method0(v0: String) -> Nil {
+pub fn target_global_0(v0: String) -> Nil {
     let _v1 = spiral_string_length(v0)
     Nil
 }
 pub fn main() {
 let v0 = "SPIRAL_ITEM_METADATA_TEST_missing-item"
-method0(v0)
+target_global_0(v0)
 0
 }

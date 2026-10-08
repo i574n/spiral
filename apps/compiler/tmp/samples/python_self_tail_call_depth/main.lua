@@ -14,13 +14,13 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local method0
-function method0(v0, v1)
+local count_down_0
+function count_down_0(v0, v1)
     local v2 = 0 < v0
     if v2 then
         local v3 = spiral_wrap_signed((v0 - 1), 32)
         local v4 = spiral_wrap_signed((v1 + 1), 32)
-        return method0(v3, v4)
+        return count_down_0(v3, v4)
     else
         return v1
     end
@@ -28,7 +28,7 @@ end
 
 local v0 = 5000
 local v1 = 0
-local v2 = method0(v0, v1)
+local v2 = count_down_0(v0, v1)
 local v3 = v2 == 5000
 if v3 then
     return 0

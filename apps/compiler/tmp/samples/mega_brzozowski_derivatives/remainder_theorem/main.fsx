@@ -61,75 +61,75 @@ and UH9 =
     | UH9_3 of US1 * UH5 * UH9 * UH9
     | UH9_4 of US1 * UH5 * US2 * UH9 * UH9
     | UH9_5 of US1 * UH5 * UH9
-let rec method0 (v0 : UH0) : UH1 =
+let rec input_singletons_from_symbols_0 (v0 : UH0) : UH1 =
     match v0 with
     | UH0_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH1 = method0(v3)
+        let v4 : UH1 = input_singletons_from_symbols_0(v3)
         let v5 : UH2 = UH2_0
         let v6 : UH2 = UH2_1(v2, v5)
         UH1_1(v6, v4)
     | UH0_0 -> (* SymbolListNil *)
         UH1_0
-and method2 (v0 : US0, v1 : UH1) : UH1 =
+and input_prepend_symbol_to_corpus_2 (v0 : US0, v1 : UH1) : UH1 =
     match v1 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH1 = method2(v0, v4)
+        let v5 : UH1 = input_prepend_symbol_to_corpus_2(v0, v4)
         let v6 : UH2 = UH2_1(v0, v3)
         UH1_1(v6, v5)
     | UH1_0 -> (* InputListNil *)
         UH1_0
-and method3 (v0 : UH1, v1 : UH1) : UH1 =
+and input_list_append_3 (v0 : UH1, v1 : UH1) : UH1 =
     match v0 with
     | UH1_1(v2, v3) -> (* InputListCons *)
-        let v4 : UH1 = method3(v3, v1)
+        let v4 : UH1 = input_list_append_3(v3, v1)
         UH1_1(v2, v4)
     | UH1_0 -> (* InputListNil *)
         v1
-and method1 (v0 : UH0, v1 : UH1) : UH1 =
+and input_prepend_symbols_to_corpus_1 (v0 : UH0, v1 : UH1) : UH1 =
     match v0 with
     | UH0_1(v3, v4) -> (* SymbolListCons *)
-        let v5 : UH1 = method2(v3, v1)
-        let v6 : UH1 = method1(v4, v1)
-        method3(v5, v6)
+        let v5 : UH1 = input_prepend_symbol_to_corpus_2(v3, v1)
+        let v6 : UH1 = input_prepend_symbols_to_corpus_1(v4, v1)
+        input_list_append_3(v5, v6)
     | UH0_0 -> (* SymbolListNil *)
         UH1_0
-and method4 (v0 : UH3) : UH4 =
+and input_singletons_from_symbols_4 (v0 : UH3) : UH4 =
     match v0 with
     | UH3_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH4 = method4(v3)
+        let v4 : UH4 = input_singletons_from_symbols_4(v3)
         let v5 : UH5 = UH5_0
         let v6 : UH5 = UH5_1(v2, v5)
         UH4_1(v6, v4)
     | UH3_0 -> (* SymbolListNil *)
         UH4_0
-and method6 (v0 : US1, v1 : UH4) : UH4 =
+and input_prepend_symbol_to_corpus_6 (v0 : US1, v1 : UH4) : UH4 =
     match v1 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH4 = method6(v0, v4)
+        let v5 : UH4 = input_prepend_symbol_to_corpus_6(v0, v4)
         let v6 : UH5 = UH5_1(v0, v3)
         UH4_1(v6, v5)
     | UH4_0 -> (* InputListNil *)
         UH4_0
-and method7 (v0 : UH4, v1 : UH4) : UH4 =
+and input_list_append_7 (v0 : UH4, v1 : UH4) : UH4 =
     match v0 with
     | UH4_1(v2, v3) -> (* InputListCons *)
-        let v4 : UH4 = method7(v3, v1)
+        let v4 : UH4 = input_list_append_7(v3, v1)
         UH4_1(v2, v4)
     | UH4_0 -> (* InputListNil *)
         v1
-and method5 (v0 : UH3, v1 : UH4) : UH4 =
+and input_prepend_symbols_to_corpus_5 (v0 : UH3, v1 : UH4) : UH4 =
     match v0 with
     | UH3_1(v3, v4) -> (* SymbolListCons *)
-        let v5 : UH4 = method6(v3, v1)
-        let v6 : UH4 = method5(v4, v1)
-        method7(v5, v6)
+        let v5 : UH4 = input_prepend_symbol_to_corpus_6(v3, v1)
+        let v6 : UH4 = input_prepend_symbols_to_corpus_5(v4, v1)
+        input_list_append_7(v5, v6)
     | UH3_0 -> (* SymbolListNil *)
         UH4_0
-and method11 (v0 : UH6) : US3 =
+and nullable_11 (v0 : UH6) : US3 =
     match v0 with
     | UH6_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method11(v5)
-        let v8 : US3 = method11(v6)
+        let v7 : US3 = nullable_11(v5)
+        let v8 : US3 = nullable_11(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -144,8 +144,8 @@ and method11 (v0 : UH6) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH6_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method11(v16)
-        let v19 : US3 = method11(v17)
+        let v18 : US3 = nullable_11(v16)
+        let v19 : US3 = nullable_11(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -163,22 +163,22 @@ and method11 (v0 : UH6) : US3 =
         US3_0
     | UH6_5(v25) -> (* RegexStar *)
         US3_0
-and method10 (v0 : UH6, v1 : US0, v2 : UH2) : UH7 =
+and derivative_remainder_proof_make_10 (v0 : UH6, v1 : US0, v2 : UH2) : UH7 =
     match v0 with
     | UH6_3(v7, v8) -> (* RegexAlt *)
-        let v9 : UH7 = method10(v7, v1, v2)
-        let v10 : UH7 = method10(v8, v1, v2)
+        let v9 : UH7 = derivative_remainder_proof_make_10(v7, v1, v2)
+        let v10 : UH7 = derivative_remainder_proof_make_10(v8, v1, v2)
         UH7_3(v1, v2, v9, v10)
     | UH6_4(v12, v13) -> (* RegexCat *)
-        let v14 : US3 = method11(v12)
+        let v14 : US3 = nullable_11(v12)
         let v18 : US2 =
             match v14 with
             | US3_1 -> (* NonNullable *)
                 US2_1
             | US3_0 -> (* Nullable *)
                 US2_0
-        let v19 : UH7 = method10(v12, v1, v2)
-        let v20 : UH7 = method10(v13, v1, v2)
+        let v19 : UH7 = derivative_remainder_proof_make_10(v12, v1, v2)
+        let v20 : UH7 = derivative_remainder_proof_make_10(v13, v1, v2)
         UH7_4(v1, v2, v18, v19, v20)
     | UH6_2(v5) -> (* RegexChar *)
         UH7_2(v5, v1, v2)
@@ -187,17 +187,17 @@ and method10 (v0 : UH6, v1 : US0, v2 : UH2) : UH7 =
     | UH6_1 -> (* RegexEpsilon *)
         UH7_1(v1, v2)
     | UH6_5(v22) -> (* RegexStar *)
-        let v23 : UH7 = method10(v22, v1, v2)
+        let v23 : UH7 = derivative_remainder_proof_make_10(v22, v1, v2)
         UH7_5(v1, v2, v23)
-and method12 (v0 : UH7) : UH6 =
+and derivative_remainder_proof_source_12 (v0 : UH7) : UH6 =
     match v0 with
     | UH7_3(v11, v12, v13, v14) -> (* RemainderProofAlt *)
-        let v15 : UH6 = method12(v13)
-        let v16 : UH6 = method12(v14)
+        let v15 : UH6 = derivative_remainder_proof_source_12(v13)
+        let v16 : UH6 = derivative_remainder_proof_source_12(v14)
         UH6_3(v15, v16)
     | UH7_4(v18, v19, v20, v21, v22) -> (* RemainderProofCat *)
-        let v23 : UH6 = method12(v21)
-        let v24 : UH6 = method12(v22)
+        let v23 : UH6 = derivative_remainder_proof_source_12(v21)
+        let v24 : UH6 = derivative_remainder_proof_source_12(v22)
         UH6_4(v23, v24)
     | UH7_2(v7, v8, v9) -> (* RemainderProofChar *)
         UH6_2(v7)
@@ -206,16 +206,16 @@ and method12 (v0 : UH7) : UH6 =
     | UH7_1(v4, v5) -> (* RemainderProofEpsilon *)
         UH6_1
     | UH7_5(v26, v27, v28) -> (* RemainderProofStar *)
-        let v29 : UH6 = method12(v28)
+        let v29 : UH6 = derivative_remainder_proof_source_12(v28)
         UH6_5(v29)
-and method13 (v0 : UH6, v1 : UH6) : bool =
+and regex_equal_13 (v0 : UH6, v1 : UH6) : bool =
     match v0 with
     | UH6_3(v18, v19) -> (* RegexAlt *)
         match v1 with
         | UH6_3(v20, v21) -> (* RegexAlt *)
-            let v22 : bool = method13(v18, v20)
+            let v22 : bool = regex_equal_13(v18, v20)
             if v22 then
-                method13(v19, v21)
+                regex_equal_13(v19, v21)
             else
                 false
         | _ ->
@@ -223,9 +223,9 @@ and method13 (v0 : UH6, v1 : UH6) : bool =
     | UH6_4(v26, v27) -> (* RegexCat *)
         match v1 with
         | UH6_4(v28, v29) -> (* RegexCat *)
-            let v30 : bool = method13(v26, v28)
+            let v30 : bool = regex_equal_13(v26, v28)
             if v30 then
-                method13(v27, v29)
+                regex_equal_13(v27, v29)
             else
                 false
         | _ ->
@@ -269,10 +269,10 @@ and method13 (v0 : UH6, v1 : UH6) : bool =
     | UH6_5(v34) -> (* RegexStar *)
         match v1 with
         | UH6_5(v35) -> (* RegexStar *)
-            method13(v34, v35)
+            regex_equal_13(v34, v35)
         | _ ->
             false
-and method14 (v0 : UH7) : US0 =
+and derivative_remainder_proof_symbol_14 (v0 : UH7) : US0 =
     match v0 with
     | UH7_3(v8, v9, v10, v11) -> (* RemainderProofAlt *)
         v8
@@ -286,7 +286,7 @@ and method14 (v0 : UH7) : US0 =
         v3
     | UH7_5(v17, v18, v19) -> (* RemainderProofStar *)
         v17
-and method15 (v0 : UH7) : UH2 =
+and derivative_remainder_proof_suffix_15 (v0 : UH7) : UH2 =
     match v0 with
     | UH7_3(v8, v9, v10, v11) -> (* RemainderProofAlt *)
         v9
@@ -300,7 +300,7 @@ and method15 (v0 : UH7) : UH2 =
         v4
     | UH7_5(v17, v18, v19) -> (* RemainderProofStar *)
         v18
-and method16 (v0 : UH2, v1 : UH2) : bool =
+and input_equal_16 (v0 : UH2, v1 : UH2) : bool =
     match v0 with
     | UH2_1(v3, v4) -> (* InputCons *)
         match v1 with
@@ -326,7 +326,7 @@ and method16 (v0 : UH2, v1 : UH2) : bool =
                 | _ ->
                     false
             if v17 then
-                method16(v4, v6)
+                input_equal_16(v4, v6)
             else
                 false
         | _ ->
@@ -337,15 +337,15 @@ and method16 (v0 : UH2, v1 : UH2) : bool =
             true
         | _ ->
             false
-and method21 (v0 : UH6, v1 : UH6) : US4 =
+and regex_compare_21 (v0 : UH6, v1 : UH6) : US4 =
     match v0 with
     | UH6_3(v53, v54) -> (* RegexAlt *)
         match v1 with
         | UH6_3(v55, v56) -> (* RegexAlt *)
-            let v57 : US4 = method21(v53, v55)
+            let v57 : US4 = regex_compare_21(v53, v55)
             match v57 with
             | US4_1 -> (* SymbolSame *)
-                method21(v54, v56)
+                regex_compare_21(v54, v56)
             | _ ->
                 v57
         | _ ->
@@ -353,10 +353,10 @@ and method21 (v0 : UH6, v1 : UH6) : US4 =
     | UH6_4(v28, v29) -> (* RegexCat *)
         match v1 with
         | UH6_4(v34, v35) -> (* RegexCat *)
-            let v36 : US4 = method21(v28, v34)
+            let v36 : US4 = regex_compare_21(v28, v34)
             match v36 with
             | US4_1 -> (* SymbolSame *)
-                method21(v29, v35)
+                regex_compare_21(v29, v35)
             | _ ->
                 v36
         | UH6_2(v32) -> (* RegexChar *)
@@ -408,16 +408,16 @@ and method21 (v0 : UH6, v1 : UH6) : US4 =
         | UH6_3(v45, v46) -> (* RegexAlt *)
             US4_0
         | UH6_5(v48) -> (* RegexStar *)
-            method21(v44, v48)
+            regex_compare_21(v44, v48)
         | _ ->
             US4_2
-and method20 (v0 : UH6, v1 : UH6) : UH6 =
+and alt_insert_sorted_20 (v0 : UH6, v1 : UH6) : UH6 =
     match v1 with
     | UH6_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US4 = method21(v0, v2)
+        let v4 : US4 = regex_compare_21(v0, v2)
         match v4 with
         | US4_2 -> (* SymbolGreater *)
-            let v6 : UH6 = method20(v0, v3)
+            let v6 : UH6 = alt_insert_sorted_20(v0, v3)
             UH6_3(v2, v6)
         | US4_0 -> (* SymbolLess *)
             UH6_3(v0, v1)
@@ -426,7 +426,7 @@ and method20 (v0 : UH6, v1 : UH6) : UH6 =
     | UH6_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US4 = method21(v0, v1)
+        let v11 : US4 = regex_compare_21(v0, v1)
         match v11 with
         | US4_2 -> (* SymbolGreater *)
             UH6_3(v1, v0)
@@ -434,16 +434,16 @@ and method20 (v0 : UH6, v1 : UH6) : UH6 =
             UH6_3(v0, v1)
         | US4_1 -> (* SymbolSame *)
             v1
-and method19 (v0 : UH6, v1 : UH6) : UH6 =
+and make_alt_19 (v0 : UH6, v1 : UH6) : UH6 =
     match v0 with
     | UH6_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH6 = method20(v2, v1)
-        method19(v3, v4)
+        let v4 : UH6 = alt_insert_sorted_20(v2, v1)
+        make_alt_19(v3, v4)
     | UH6_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method20(v0, v1)
-and method22 (v0 : UH6, v1 : UH6) : UH6 =
+        alt_insert_sorted_20(v0, v1)
+and make_cat_22 (v0 : UH6, v1 : UH6) : UH6 =
     match v0 with
     | UH6_0 -> (* RegexEmpty *)
         UH6_0
@@ -462,12 +462,12 @@ and method22 (v0 : UH6, v1 : UH6) : UH6 =
                 | _ ->
                     match v0 with
                     | UH6_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH6 = method22(v13, v1)
+                        let v14 : UH6 = make_cat_22(v13, v1)
                         UH6_4(v12, v14)
                     | UH6_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH6_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method13(v4, v5)
+                            let v6 : bool = regex_equal_13(v4, v5)
                             if v6 then
                                 UH6_5(v4)
                             else
@@ -476,7 +476,7 @@ and method22 (v0 : UH6, v1 : UH6) : UH6 =
                             UH6_4(v0, v1)
                     | _ ->
                         UH6_4(v0, v1)
-and method23 (v0 : UH6) : UH6 =
+and make_star_23 (v0 : UH6) : UH6 =
     match v0 with
     | UH6_0 -> (* RegexEmpty *)
         UH6_1
@@ -486,16 +486,16 @@ and method23 (v0 : UH6) : UH6 =
         UH6_5(v3)
     | _ ->
         UH6_5(v0)
-and method18 (v0 : UH6) : UH6 =
+and normalize_18 (v0 : UH6) : UH6 =
     match v0 with
     | UH6_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH6 = method18(v5)
-        let v8 : UH6 = method18(v6)
-        method19(v7, v8)
+        let v7 : UH6 = normalize_18(v5)
+        let v8 : UH6 = normalize_18(v6)
+        make_alt_19(v7, v8)
     | UH6_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH6 = method18(v10)
-        let v13 : UH6 = method18(v11)
-        method22(v12, v13)
+        let v12 : UH6 = normalize_18(v10)
+        let v13 : UH6 = normalize_18(v11)
+        make_cat_22(v12, v13)
     | UH6_2(v3) -> (* RegexChar *)
         UH6_2(v3)
     | UH6_0 -> (* RegexEmpty *)
@@ -503,25 +503,25 @@ and method18 (v0 : UH6) : UH6 =
     | UH6_1 -> (* RegexEpsilon *)
         UH6_1
     | UH6_5(v15) -> (* RegexStar *)
-        let v16 : UH6 = method18(v15)
-        method23(v16)
-and method24 (v0 : UH6, v1 : US0) : UH6 =
+        let v16 : UH6 = normalize_18(v15)
+        make_star_23(v16)
+and derivative_24 (v0 : UH6, v1 : US0) : UH6 =
     match v0 with
     | UH6_3(v19, v20) -> (* RegexAlt *)
-        let v21 : UH6 = method24(v19, v1)
-        let v22 : UH6 = method24(v20, v1)
-        method19(v21, v22)
+        let v21 : UH6 = derivative_24(v19, v1)
+        let v22 : UH6 = derivative_24(v20, v1)
+        make_alt_19(v21, v22)
     | UH6_4(v24, v25) -> (* RegexCat *)
-        let v26 : US3 = method11(v24)
+        let v26 : US3 = nullable_11(v24)
         match v26 with
         | US3_1 -> (* NonNullable *)
-            let v31 : UH6 = method24(v24, v1)
-            method22(v31, v25)
+            let v31 : UH6 = derivative_24(v24, v1)
+            make_cat_22(v31, v25)
         | US3_0 -> (* Nullable *)
-            let v27 : UH6 = method24(v24, v1)
-            let v28 : UH6 = method22(v27, v25)
-            let v29 : UH6 = method24(v25, v1)
-            method19(v28, v29)
+            let v27 : UH6 = derivative_24(v24, v1)
+            let v28 : UH6 = make_cat_22(v27, v25)
+            let v29 : UH6 = derivative_24(v25, v1)
+            make_alt_19(v28, v29)
     | UH6_2(v4) -> (* RegexChar *)
         let v14 : US4 =
             match v4 with
@@ -552,23 +552,23 @@ and method24 (v0 : UH6, v1 : US0) : UH6 =
     | UH6_1 -> (* RegexEpsilon *)
         UH6_0
     | UH6_5(v35) -> (* RegexStar *)
-        let v36 : UH6 = method24(v35, v1)
-        let v37 : UH6 = method23(v35)
-        method22(v36, v37)
-and method17 (v0 : UH6, v1 : US0) : UH6 =
-    let v2 : UH6 = method18(v0)
-    let v3 : UH6 = method24(v2, v1)
-    method18(v3)
-and method25 (v0 : UH7) : UH6 =
+        let v36 : UH6 = derivative_24(v35, v1)
+        let v37 : UH6 = make_star_23(v35)
+        make_cat_22(v36, v37)
+and canonical_derivative_17 (v0 : UH6, v1 : US0) : UH6 =
+    let v2 : UH6 = normalize_18(v0)
+    let v3 : UH6 = derivative_24(v2, v1)
+    normalize_18(v3)
+and derivative_remainder_proof_candidate_25 (v0 : UH7) : UH6 =
     match v0 with
     | UH7_3(v24, v25, v26, v27) -> (* RemainderProofAlt *)
-        let v28 : UH6 = method25(v26)
-        let v29 : UH6 = method25(v27)
+        let v28 : UH6 = derivative_remainder_proof_candidate_25(v26)
+        let v29 : UH6 = derivative_remainder_proof_candidate_25(v27)
         UH6_3(v28, v29)
     | UH7_4(v31, v32, v33, v34, v35) -> (* RemainderProofCat *)
-        let v36 : UH6 = method25(v34)
-        let v37 : UH6 = method25(v35)
-        let v38 : UH6 = method12(v35)
+        let v36 : UH6 = derivative_remainder_proof_candidate_25(v34)
+        let v37 : UH6 = derivative_remainder_proof_candidate_25(v35)
+        let v38 : UH6 = derivative_remainder_proof_source_12(v35)
         match v33 with
         | US2_1 -> (* RemainderCatNonNullable *)
             UH6_4(v36, v38)
@@ -605,57 +605,57 @@ and method25 (v0 : UH7) : UH6 =
     | UH7_1(v4, v5) -> (* RemainderProofEpsilon *)
         UH6_0
     | UH7_5(v44, v45, v46) -> (* RemainderProofStar *)
-        let v47 : UH6 = method25(v46)
-        let v48 : UH6 = method12(v46)
+        let v47 : UH6 = derivative_remainder_proof_candidate_25(v46)
+        let v48 : UH6 = derivative_remainder_proof_source_12(v46)
         let v49 : UH6 = UH6_5(v48)
         UH6_4(v47, v49)
-and method28 (v0 : UH6, v1 : UH1) : UH1 =
+and consume_right_28 (v0 : UH6, v1 : UH1) : UH1 =
     match v1 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH1 = method27(v0, v3)
-        let v6 : UH1 = method28(v0, v4)
-        method3(v5, v6)
+        let v5 : UH1 = language_remainders_27(v0, v3)
+        let v6 : UH1 = consume_right_28(v0, v4)
+        input_list_append_3(v5, v6)
     | UH1_0 -> (* InputListNil *)
         UH1_0
-and method31 (v0 : UH2, v1 : UH1) : bool =
+and input_list_contains_31 (v0 : UH2, v1 : UH1) : bool =
     match v1 with
     | UH1_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method16(v0, v2)
+        let v4 : bool = input_equal_16(v0, v2)
         if v4 then
             true
         else
-            method31(v0, v3)
+            input_list_contains_31(v0, v3)
     | UH1_0 -> (* InputListNil *)
         false
-and method30 (v0 : UH1, v1 : UH1, v2 : UH1) : struct (UH1 * UH1) =
+and input_list_enqueue_new_30 (v0 : UH1, v1 : UH1, v2 : UH1) : struct (UH1 * UH1) =
     match v0 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method31(v3, v1)
+        let v5 : bool = input_list_contains_31(v3, v1)
         if v5 then
-            method30(v4, v1, v2)
+            input_list_enqueue_new_30(v4, v1, v2)
         else
             let v8 : UH1 = UH1_1(v3, v1)
             let v9 : UH1 = UH1_1(v3, v2)
-            method30(v4, v8, v9)
+            input_list_enqueue_new_30(v4, v8, v9)
     | UH1_0 -> (* InputListNil *)
         struct (v1, v2)
-and method29 (v0 : UH6, v1 : UH1, v2 : UH1) : UH1 =
+and closure_29 (v0 : UH6, v1 : UH1, v2 : UH1) : UH1 =
     match v1 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH1 = method27(v0, v3)
-        let struct (v6 : UH1, v7 : UH1) = method30(v5, v2, v4)
-        method29(v0, v7, v6)
+        let v5 : UH1 = language_remainders_27(v0, v3)
+        let struct (v6 : UH1, v7 : UH1) = input_list_enqueue_new_30(v5, v2, v4)
+        closure_29(v0, v7, v6)
     | UH1_0 -> (* InputListNil *)
         v2
-and method27 (v0 : UH6, v1 : UH2) : UH1 =
+and language_remainders_27 (v0 : UH6, v1 : UH2) : UH1 =
     match v0 with
     | UH6_3(v26, v27) -> (* RegexAlt *)
-        let v28 : UH1 = method27(v26, v1)
-        let v29 : UH1 = method27(v27, v1)
-        method3(v28, v29)
+        let v28 : UH1 = language_remainders_27(v26, v1)
+        let v29 : UH1 = language_remainders_27(v27, v1)
+        input_list_append_3(v28, v29)
     | UH6_4(v31, v32) -> (* RegexCat *)
-        let v33 : UH1 = method27(v31, v1)
-        method28(v32, v33)
+        let v33 : UH1 = language_remainders_27(v31, v1)
+        consume_right_28(v32, v33)
     | UH6_2(v5) -> (* RegexChar *)
         match v1 with
         | UH2_1(v7, v8) -> (* InputCons *)
@@ -696,49 +696,49 @@ and method27 (v0 : UH6, v1 : UH2) : UH1 =
         let v37 : UH1 = UH1_1(v1, v36)
         let v38 : UH1 = UH1_0
         let v39 : UH1 = UH1_1(v1, v38)
-        method29(v35, v37, v39)
-and method32 (v0 : UH2, v1 : UH1) : UH1 =
+        closure_29(v35, v37, v39)
+and input_list_remove_32 (v0 : UH2, v1 : UH1) : UH1 =
     match v1 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method16(v0, v3)
+        let v5 : bool = input_equal_16(v0, v3)
         if v5 then
-            method32(v0, v4)
+            input_list_remove_32(v0, v4)
         else
-            let v7 : UH1 = method32(v0, v4)
+            let v7 : UH1 = input_list_remove_32(v0, v4)
             UH1_1(v3, v7)
     | UH1_0 -> (* InputListNil *)
         UH1_0
-and method33 (v0 : UH1, v1 : UH1) : bool =
+and input_list_subset_33 (v0 : UH1, v1 : UH1) : bool =
     match v0 with
     | UH1_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method31(v2, v1)
+        let v4 : bool = input_list_contains_31(v2, v1)
         if v4 then
-            method33(v3, v1)
+            input_list_subset_33(v3, v1)
         else
             false
     | UH1_0 -> (* InputListNil *)
         true
-and method26 (v0 : UH7) : bool =
-    let v1 : UH6 = method12(v0)
-    let v2 : US0 = method14(v0)
-    let v3 : UH2 = method15(v0)
-    let v4 : UH6 = method25(v0)
+and derivative_remainder_proof_valid_26 (v0 : UH7) : bool =
+    let v1 : UH6 = derivative_remainder_proof_source_12(v0)
+    let v2 : US0 = derivative_remainder_proof_symbol_14(v0)
+    let v3 : UH2 = derivative_remainder_proof_suffix_15(v0)
+    let v4 : UH6 = derivative_remainder_proof_candidate_25(v0)
     let v5 : UH2 = UH2_1(v2, v3)
     let v6 : UH2 = UH2_1(v2, v3)
-    let v7 : UH1 = method27(v1, v6)
-    let v8 : UH1 = method32(v5, v7)
-    let v9 : UH1 = method27(v4, v3)
-    let v10 : bool = method33(v8, v9)
+    let v7 : UH1 = language_remainders_27(v1, v6)
+    let v8 : UH1 = input_list_remove_32(v5, v7)
+    let v9 : UH1 = language_remainders_27(v4, v3)
+    let v10 : bool = input_list_subset_33(v8, v9)
     let v12 : bool =
         if v10 then
-            method33(v9, v8)
+            input_list_subset_33(v9, v8)
         else
             false
     if v12 then
         match v0 with
         | UH7_3(v20, v21, v22, v23) -> (* RemainderProofAlt *)
-            let v24 : US0 = method14(v0)
-            let v25 : US0 = method14(v22)
+            let v24 : US0 = derivative_remainder_proof_symbol_14(v0)
+            let v25 : US0 = derivative_remainder_proof_symbol_14(v22)
             let v35 : US4 =
                 match v24 with
                 | US0_1 -> (* BitOne *)
@@ -761,14 +761,14 @@ and method26 (v0 : UH7) : bool =
                     false
             let v40 : bool =
                 if v36 then
-                    let v37 : UH2 = method15(v0)
-                    let v38 : UH2 = method15(v22)
-                    method16(v37, v38)
+                    let v37 : UH2 = derivative_remainder_proof_suffix_15(v0)
+                    let v38 : UH2 = derivative_remainder_proof_suffix_15(v22)
+                    input_equal_16(v37, v38)
                 else
                     false
             if v40 then
-                let v41 : US0 = method14(v0)
-                let v42 : US0 = method14(v23)
+                let v41 : US0 = derivative_remainder_proof_symbol_14(v0)
+                let v42 : US0 = derivative_remainder_proof_symbol_14(v23)
                 let v52 : US4 =
                     match v41 with
                     | US0_1 -> (* BitOne *)
@@ -791,15 +791,15 @@ and method26 (v0 : UH7) : bool =
                         false
                 let v57 : bool =
                     if v53 then
-                        let v54 : UH2 = method15(v0)
-                        let v55 : UH2 = method15(v23)
-                        method16(v54, v55)
+                        let v54 : UH2 = derivative_remainder_proof_suffix_15(v0)
+                        let v55 : UH2 = derivative_remainder_proof_suffix_15(v23)
+                        input_equal_16(v54, v55)
                     else
                         false
                 if v57 then
-                    let v58 : bool = method26(v22)
+                    let v58 : bool = derivative_remainder_proof_valid_26(v22)
                     if v58 then
-                        method26(v23)
+                        derivative_remainder_proof_valid_26(v23)
                     else
                         false
                 else
@@ -807,8 +807,8 @@ and method26 (v0 : UH7) : bool =
             else
                 false
         | UH7_4(v63, v64, v65, v66, v67) -> (* RemainderProofCat *)
-            let v68 : UH6 = method12(v66)
-            let v69 : US3 = method11(v68)
+            let v68 : UH6 = derivative_remainder_proof_source_12(v66)
+            let v69 : US3 = nullable_11(v68)
             let v73 : US2 =
                 match v69 with
                 | US3_1 -> (* NonNullable *)
@@ -830,8 +830,8 @@ and method26 (v0 : UH7) : bool =
                     | _ ->
                         false
             if v77 then
-                let v78 : US0 = method14(v0)
-                let v79 : US0 = method14(v66)
+                let v78 : US0 = derivative_remainder_proof_symbol_14(v0)
+                let v79 : US0 = derivative_remainder_proof_symbol_14(v66)
                 let v89 : US4 =
                     match v78 with
                     | US0_1 -> (* BitOne *)
@@ -854,14 +854,14 @@ and method26 (v0 : UH7) : bool =
                         false
                 let v94 : bool =
                     if v90 then
-                        let v91 : UH2 = method15(v0)
-                        let v92 : UH2 = method15(v66)
-                        method16(v91, v92)
+                        let v91 : UH2 = derivative_remainder_proof_suffix_15(v0)
+                        let v92 : UH2 = derivative_remainder_proof_suffix_15(v66)
+                        input_equal_16(v91, v92)
                     else
                         false
                 if v94 then
-                    let v95 : US0 = method14(v0)
-                    let v96 : US0 = method14(v67)
+                    let v95 : US0 = derivative_remainder_proof_symbol_14(v0)
+                    let v96 : US0 = derivative_remainder_proof_symbol_14(v67)
                     let v106 : US4 =
                         match v95 with
                         | US0_1 -> (* BitOne *)
@@ -884,15 +884,15 @@ and method26 (v0 : UH7) : bool =
                             false
                     let v111 : bool =
                         if v107 then
-                            let v108 : UH2 = method15(v0)
-                            let v109 : UH2 = method15(v67)
-                            method16(v108, v109)
+                            let v108 : UH2 = derivative_remainder_proof_suffix_15(v0)
+                            let v109 : UH2 = derivative_remainder_proof_suffix_15(v67)
+                            input_equal_16(v108, v109)
                         else
                             false
                     if v111 then
-                        let v112 : bool = method26(v66)
+                        let v112 : bool = derivative_remainder_proof_valid_26(v66)
                         if v112 then
-                            method26(v67)
+                            derivative_remainder_proof_valid_26(v67)
                         else
                             false
                     else
@@ -908,8 +908,8 @@ and method26 (v0 : UH7) : bool =
         | UH7_1(v15, v16) -> (* RemainderProofEpsilon *)
             true
         | UH7_5(v118, v119, v120) -> (* RemainderProofStar *)
-            let v121 : US0 = method14(v0)
-            let v122 : US0 = method14(v120)
+            let v121 : US0 = derivative_remainder_proof_symbol_14(v0)
+            let v122 : US0 = derivative_remainder_proof_symbol_14(v120)
             let v132 : US4 =
                 match v121 with
                 | US0_1 -> (* BitOne *)
@@ -932,26 +932,26 @@ and method26 (v0 : UH7) : bool =
                     false
             let v137 : bool =
                 if v133 then
-                    let v134 : UH2 = method15(v0)
-                    let v135 : UH2 = method15(v120)
-                    method16(v134, v135)
+                    let v134 : UH2 = derivative_remainder_proof_suffix_15(v0)
+                    let v135 : UH2 = derivative_remainder_proof_suffix_15(v120)
+                    input_equal_16(v134, v135)
                 else
                     false
             if v137 then
-                method26(v120)
+                derivative_remainder_proof_valid_26(v120)
             else
                 false
     else
         false
-and method9 (v0 : UH6, v1 : US0, v2 : UH1) : bool =
+and derivative_remainder_theorem_suffixes_9 (v0 : UH6, v1 : US0, v2 : UH1) : bool =
     match v2 with
     | UH1_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH7 = method10(v0, v1, v3)
-        let v6 : UH6 = method12(v5)
-        let v7 : bool = method13(v0, v6)
+        let v5 : UH7 = derivative_remainder_proof_make_10(v0, v1, v3)
+        let v6 : UH6 = derivative_remainder_proof_source_12(v5)
+        let v7 : bool = regex_equal_13(v0, v6)
         let v30 : bool =
             if v7 then
-                let v8 : US0 = method14(v5)
+                let v8 : US0 = derivative_remainder_proof_symbol_14(v5)
                 let v18 : US4 =
                     match v1 with
                     | US0_1 -> (* BitOne *)
@@ -973,15 +973,15 @@ and method9 (v0 : UH6, v1 : US0, v2 : UH1) : bool =
                     | _ ->
                         false
                 if v19 then
-                    let v20 : UH2 = method15(v5)
-                    let v21 : bool = method16(v3, v20)
+                    let v20 : UH2 = derivative_remainder_proof_suffix_15(v5)
+                    let v21 : bool = input_equal_16(v3, v20)
                     if v21 then
-                        let v22 : UH6 = method17(v0, v1)
-                        let v23 : UH6 = method25(v5)
-                        let v24 : UH6 = method18(v23)
-                        let v25 : bool = method13(v22, v24)
+                        let v22 : UH6 = canonical_derivative_17(v0, v1)
+                        let v23 : UH6 = derivative_remainder_proof_candidate_25(v5)
+                        let v24 : UH6 = normalize_18(v23)
+                        let v25 : bool = regex_equal_13(v22, v24)
                         if v25 then
-                            method26(v5)
+                            derivative_remainder_proof_valid_26(v5)
                         else
                             false
                     else
@@ -991,26 +991,26 @@ and method9 (v0 : UH6, v1 : US0, v2 : UH1) : bool =
             else
                 false
         if v30 then
-            method9(v0, v1, v4)
+            derivative_remainder_theorem_suffixes_9(v0, v1, v4)
         else
             false
     | UH1_0 -> (* InputListNil *)
         true
-and method8 (v0 : UH6, v1 : UH0, v2 : UH1) : bool =
+and derivative_remainder_theorem_symbols_8 (v0 : UH6, v1 : UH0, v2 : UH1) : bool =
     match v1 with
     | UH0_1(v3, v4) -> (* SymbolListCons *)
-        let v5 : bool = method9(v0, v3, v2)
+        let v5 : bool = derivative_remainder_theorem_suffixes_9(v0, v3, v2)
         if v5 then
-            method8(v0, v4, v2)
+            derivative_remainder_theorem_symbols_8(v0, v4, v2)
         else
             false
     | UH0_0 -> (* SymbolListNil *)
         true
-and method37 (v0 : UH8) : US3 =
+and nullable_37 (v0 : UH8) : US3 =
     match v0 with
     | UH8_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method37(v5)
-        let v8 : US3 = method37(v6)
+        let v7 : US3 = nullable_37(v5)
+        let v8 : US3 = nullable_37(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -1025,8 +1025,8 @@ and method37 (v0 : UH8) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH8_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method37(v16)
-        let v19 : US3 = method37(v17)
+        let v18 : US3 = nullable_37(v16)
+        let v19 : US3 = nullable_37(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -1044,22 +1044,22 @@ and method37 (v0 : UH8) : US3 =
         US3_0
     | UH8_5(v25) -> (* RegexStar *)
         US3_0
-and method36 (v0 : UH8, v1 : US1, v2 : UH5) : UH9 =
+and derivative_remainder_proof_make_36 (v0 : UH8, v1 : US1, v2 : UH5) : UH9 =
     match v0 with
     | UH8_3(v7, v8) -> (* RegexAlt *)
-        let v9 : UH9 = method36(v7, v1, v2)
-        let v10 : UH9 = method36(v8, v1, v2)
+        let v9 : UH9 = derivative_remainder_proof_make_36(v7, v1, v2)
+        let v10 : UH9 = derivative_remainder_proof_make_36(v8, v1, v2)
         UH9_3(v1, v2, v9, v10)
     | UH8_4(v12, v13) -> (* RegexCat *)
-        let v14 : US3 = method37(v12)
+        let v14 : US3 = nullable_37(v12)
         let v18 : US2 =
             match v14 with
             | US3_1 -> (* NonNullable *)
                 US2_1
             | US3_0 -> (* Nullable *)
                 US2_0
-        let v19 : UH9 = method36(v12, v1, v2)
-        let v20 : UH9 = method36(v13, v1, v2)
+        let v19 : UH9 = derivative_remainder_proof_make_36(v12, v1, v2)
+        let v20 : UH9 = derivative_remainder_proof_make_36(v13, v1, v2)
         UH9_4(v1, v2, v18, v19, v20)
     | UH8_2(v5) -> (* RegexChar *)
         UH9_2(v5, v1, v2)
@@ -1068,17 +1068,17 @@ and method36 (v0 : UH8, v1 : US1, v2 : UH5) : UH9 =
     | UH8_1 -> (* RegexEpsilon *)
         UH9_1(v1, v2)
     | UH8_5(v22) -> (* RegexStar *)
-        let v23 : UH9 = method36(v22, v1, v2)
+        let v23 : UH9 = derivative_remainder_proof_make_36(v22, v1, v2)
         UH9_5(v1, v2, v23)
-and method38 (v0 : UH9) : UH8 =
+and derivative_remainder_proof_source_38 (v0 : UH9) : UH8 =
     match v0 with
     | UH9_3(v11, v12, v13, v14) -> (* RemainderProofAlt *)
-        let v15 : UH8 = method38(v13)
-        let v16 : UH8 = method38(v14)
+        let v15 : UH8 = derivative_remainder_proof_source_38(v13)
+        let v16 : UH8 = derivative_remainder_proof_source_38(v14)
         UH8_3(v15, v16)
     | UH9_4(v18, v19, v20, v21, v22) -> (* RemainderProofCat *)
-        let v23 : UH8 = method38(v21)
-        let v24 : UH8 = method38(v22)
+        let v23 : UH8 = derivative_remainder_proof_source_38(v21)
+        let v24 : UH8 = derivative_remainder_proof_source_38(v22)
         UH8_4(v23, v24)
     | UH9_2(v7, v8, v9) -> (* RemainderProofChar *)
         UH8_2(v7)
@@ -1087,16 +1087,16 @@ and method38 (v0 : UH9) : UH8 =
     | UH9_1(v4, v5) -> (* RemainderProofEpsilon *)
         UH8_1
     | UH9_5(v26, v27, v28) -> (* RemainderProofStar *)
-        let v29 : UH8 = method38(v28)
+        let v29 : UH8 = derivative_remainder_proof_source_38(v28)
         UH8_5(v29)
-and method39 (v0 : UH8, v1 : UH8) : bool =
+and regex_equal_39 (v0 : UH8, v1 : UH8) : bool =
     match v0 with
     | UH8_3(v24, v25) -> (* RegexAlt *)
         match v1 with
         | UH8_3(v26, v27) -> (* RegexAlt *)
-            let v28 : bool = method39(v24, v26)
+            let v28 : bool = regex_equal_39(v24, v26)
             if v28 then
-                method39(v25, v27)
+                regex_equal_39(v25, v27)
             else
                 false
         | _ ->
@@ -1104,9 +1104,9 @@ and method39 (v0 : UH8, v1 : UH8) : bool =
     | UH8_4(v32, v33) -> (* RegexCat *)
         match v1 with
         | UH8_4(v34, v35) -> (* RegexCat *)
-            let v36 : bool = method39(v32, v34)
+            let v36 : bool = regex_equal_39(v32, v34)
             if v36 then
-                method39(v33, v35)
+                regex_equal_39(v33, v35)
             else
                 false
         | _ ->
@@ -1162,10 +1162,10 @@ and method39 (v0 : UH8, v1 : UH8) : bool =
     | UH8_5(v40) -> (* RegexStar *)
         match v1 with
         | UH8_5(v41) -> (* RegexStar *)
-            method39(v40, v41)
+            regex_equal_39(v40, v41)
         | _ ->
             false
-and method40 (v0 : UH9) : US1 =
+and derivative_remainder_proof_symbol_40 (v0 : UH9) : US1 =
     match v0 with
     | UH9_3(v8, v9, v10, v11) -> (* RemainderProofAlt *)
         v8
@@ -1179,7 +1179,7 @@ and method40 (v0 : UH9) : US1 =
         v3
     | UH9_5(v17, v18, v19) -> (* RemainderProofStar *)
         v17
-and method41 (v0 : UH9) : UH5 =
+and derivative_remainder_proof_suffix_41 (v0 : UH9) : UH5 =
     match v0 with
     | UH9_3(v8, v9, v10, v11) -> (* RemainderProofAlt *)
         v9
@@ -1193,7 +1193,7 @@ and method41 (v0 : UH9) : UH5 =
         v4
     | UH9_5(v17, v18, v19) -> (* RemainderProofStar *)
         v18
-and method42 (v0 : UH5, v1 : UH5) : bool =
+and input_equal_42 (v0 : UH5, v1 : UH5) : bool =
     match v0 with
     | UH5_1(v3, v4) -> (* InputCons *)
         match v1 with
@@ -1231,7 +1231,7 @@ and method42 (v0 : UH5, v1 : UH5) : bool =
                 | _ ->
                     false
             if v23 then
-                method42(v4, v6)
+                input_equal_42(v4, v6)
             else
                 false
         | _ ->
@@ -1242,15 +1242,15 @@ and method42 (v0 : UH5, v1 : UH5) : bool =
             true
         | _ ->
             false
-and method47 (v0 : UH8, v1 : UH8) : US4 =
+and regex_compare_47 (v0 : UH8, v1 : UH8) : US4 =
     match v0 with
     | UH8_3(v59, v60) -> (* RegexAlt *)
         match v1 with
         | UH8_3(v61, v62) -> (* RegexAlt *)
-            let v63 : US4 = method47(v59, v61)
+            let v63 : US4 = regex_compare_47(v59, v61)
             match v63 with
             | US4_1 -> (* SymbolSame *)
-                method47(v60, v62)
+                regex_compare_47(v60, v62)
             | _ ->
                 v63
         | _ ->
@@ -1258,10 +1258,10 @@ and method47 (v0 : UH8, v1 : UH8) : US4 =
     | UH8_4(v34, v35) -> (* RegexCat *)
         match v1 with
         | UH8_4(v40, v41) -> (* RegexCat *)
-            let v42 : US4 = method47(v34, v40)
+            let v42 : US4 = regex_compare_47(v34, v40)
             match v42 with
             | US4_1 -> (* SymbolSame *)
-                method47(v35, v41)
+                regex_compare_47(v35, v41)
             | _ ->
                 v42
         | UH8_2(v38) -> (* RegexChar *)
@@ -1325,16 +1325,16 @@ and method47 (v0 : UH8, v1 : UH8) : US4 =
         | UH8_3(v51, v52) -> (* RegexAlt *)
             US4_0
         | UH8_5(v54) -> (* RegexStar *)
-            method47(v50, v54)
+            regex_compare_47(v50, v54)
         | _ ->
             US4_2
-and method46 (v0 : UH8, v1 : UH8) : UH8 =
+and alt_insert_sorted_46 (v0 : UH8, v1 : UH8) : UH8 =
     match v1 with
     | UH8_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US4 = method47(v0, v2)
+        let v4 : US4 = regex_compare_47(v0, v2)
         match v4 with
         | US4_2 -> (* SymbolGreater *)
-            let v6 : UH8 = method46(v0, v3)
+            let v6 : UH8 = alt_insert_sorted_46(v0, v3)
             UH8_3(v2, v6)
         | US4_0 -> (* SymbolLess *)
             UH8_3(v0, v1)
@@ -1343,7 +1343,7 @@ and method46 (v0 : UH8, v1 : UH8) : UH8 =
     | UH8_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US4 = method47(v0, v1)
+        let v11 : US4 = regex_compare_47(v0, v1)
         match v11 with
         | US4_2 -> (* SymbolGreater *)
             UH8_3(v1, v0)
@@ -1351,16 +1351,16 @@ and method46 (v0 : UH8, v1 : UH8) : UH8 =
             UH8_3(v0, v1)
         | US4_1 -> (* SymbolSame *)
             v1
-and method45 (v0 : UH8, v1 : UH8) : UH8 =
+and make_alt_45 (v0 : UH8, v1 : UH8) : UH8 =
     match v0 with
     | UH8_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH8 = method46(v2, v1)
-        method45(v3, v4)
+        let v4 : UH8 = alt_insert_sorted_46(v2, v1)
+        make_alt_45(v3, v4)
     | UH8_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method46(v0, v1)
-and method48 (v0 : UH8, v1 : UH8) : UH8 =
+        alt_insert_sorted_46(v0, v1)
+and make_cat_48 (v0 : UH8, v1 : UH8) : UH8 =
     match v0 with
     | UH8_0 -> (* RegexEmpty *)
         UH8_0
@@ -1379,12 +1379,12 @@ and method48 (v0 : UH8, v1 : UH8) : UH8 =
                 | _ ->
                     match v0 with
                     | UH8_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH8 = method48(v13, v1)
+                        let v14 : UH8 = make_cat_48(v13, v1)
                         UH8_4(v12, v14)
                     | UH8_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH8_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method39(v4, v5)
+                            let v6 : bool = regex_equal_39(v4, v5)
                             if v6 then
                                 UH8_5(v4)
                             else
@@ -1393,7 +1393,7 @@ and method48 (v0 : UH8, v1 : UH8) : UH8 =
                             UH8_4(v0, v1)
                     | _ ->
                         UH8_4(v0, v1)
-and method49 (v0 : UH8) : UH8 =
+and make_star_49 (v0 : UH8) : UH8 =
     match v0 with
     | UH8_0 -> (* RegexEmpty *)
         UH8_1
@@ -1403,16 +1403,16 @@ and method49 (v0 : UH8) : UH8 =
         UH8_5(v3)
     | _ ->
         UH8_5(v0)
-and method44 (v0 : UH8) : UH8 =
+and normalize_44 (v0 : UH8) : UH8 =
     match v0 with
     | UH8_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH8 = method44(v5)
-        let v8 : UH8 = method44(v6)
-        method45(v7, v8)
+        let v7 : UH8 = normalize_44(v5)
+        let v8 : UH8 = normalize_44(v6)
+        make_alt_45(v7, v8)
     | UH8_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH8 = method44(v10)
-        let v13 : UH8 = method44(v11)
-        method48(v12, v13)
+        let v12 : UH8 = normalize_44(v10)
+        let v13 : UH8 = normalize_44(v11)
+        make_cat_48(v12, v13)
     | UH8_2(v3) -> (* RegexChar *)
         UH8_2(v3)
     | UH8_0 -> (* RegexEmpty *)
@@ -1420,25 +1420,25 @@ and method44 (v0 : UH8) : UH8 =
     | UH8_1 -> (* RegexEpsilon *)
         UH8_1
     | UH8_5(v15) -> (* RegexStar *)
-        let v16 : UH8 = method44(v15)
-        method49(v16)
-and method50 (v0 : UH8, v1 : US1) : UH8 =
+        let v16 : UH8 = normalize_44(v15)
+        make_star_49(v16)
+and derivative_50 (v0 : UH8, v1 : US1) : UH8 =
     match v0 with
     | UH8_3(v25, v26) -> (* RegexAlt *)
-        let v27 : UH8 = method50(v25, v1)
-        let v28 : UH8 = method50(v26, v1)
-        method45(v27, v28)
+        let v27 : UH8 = derivative_50(v25, v1)
+        let v28 : UH8 = derivative_50(v26, v1)
+        make_alt_45(v27, v28)
     | UH8_4(v30, v31) -> (* RegexCat *)
-        let v32 : US3 = method37(v30)
+        let v32 : US3 = nullable_37(v30)
         match v32 with
         | US3_1 -> (* NonNullable *)
-            let v37 : UH8 = method50(v30, v1)
-            method48(v37, v31)
+            let v37 : UH8 = derivative_50(v30, v1)
+            make_cat_48(v37, v31)
         | US3_0 -> (* Nullable *)
-            let v33 : UH8 = method50(v30, v1)
-            let v34 : UH8 = method48(v33, v31)
-            let v35 : UH8 = method50(v31, v1)
-            method45(v34, v35)
+            let v33 : UH8 = derivative_50(v30, v1)
+            let v34 : UH8 = make_cat_48(v33, v31)
+            let v35 : UH8 = derivative_50(v31, v1)
+            make_alt_45(v34, v35)
     | UH8_2(v4) -> (* RegexChar *)
         let v20 : US4 =
             match v4 with
@@ -1481,23 +1481,23 @@ and method50 (v0 : UH8, v1 : US1) : UH8 =
     | UH8_1 -> (* RegexEpsilon *)
         UH8_0
     | UH8_5(v41) -> (* RegexStar *)
-        let v42 : UH8 = method50(v41, v1)
-        let v43 : UH8 = method49(v41)
-        method48(v42, v43)
-and method43 (v0 : UH8, v1 : US1) : UH8 =
-    let v2 : UH8 = method44(v0)
-    let v3 : UH8 = method50(v2, v1)
-    method44(v3)
-and method51 (v0 : UH9) : UH8 =
+        let v42 : UH8 = derivative_50(v41, v1)
+        let v43 : UH8 = make_star_49(v41)
+        make_cat_48(v42, v43)
+and canonical_derivative_43 (v0 : UH8, v1 : US1) : UH8 =
+    let v2 : UH8 = normalize_44(v0)
+    let v3 : UH8 = derivative_50(v2, v1)
+    normalize_44(v3)
+and derivative_remainder_proof_candidate_51 (v0 : UH9) : UH8 =
     match v0 with
     | UH9_3(v30, v31, v32, v33) -> (* RemainderProofAlt *)
-        let v34 : UH8 = method51(v32)
-        let v35 : UH8 = method51(v33)
+        let v34 : UH8 = derivative_remainder_proof_candidate_51(v32)
+        let v35 : UH8 = derivative_remainder_proof_candidate_51(v33)
         UH8_3(v34, v35)
     | UH9_4(v37, v38, v39, v40, v41) -> (* RemainderProofCat *)
-        let v42 : UH8 = method51(v40)
-        let v43 : UH8 = method51(v41)
-        let v44 : UH8 = method38(v41)
+        let v42 : UH8 = derivative_remainder_proof_candidate_51(v40)
+        let v43 : UH8 = derivative_remainder_proof_candidate_51(v41)
+        let v44 : UH8 = derivative_remainder_proof_source_38(v41)
         match v39 with
         | US2_1 -> (* RemainderCatNonNullable *)
             UH8_4(v42, v44)
@@ -1546,57 +1546,57 @@ and method51 (v0 : UH9) : UH8 =
     | UH9_1(v4, v5) -> (* RemainderProofEpsilon *)
         UH8_0
     | UH9_5(v50, v51, v52) -> (* RemainderProofStar *)
-        let v53 : UH8 = method51(v52)
-        let v54 : UH8 = method38(v52)
+        let v53 : UH8 = derivative_remainder_proof_candidate_51(v52)
+        let v54 : UH8 = derivative_remainder_proof_source_38(v52)
         let v55 : UH8 = UH8_5(v54)
         UH8_4(v53, v55)
-and method54 (v0 : UH8, v1 : UH4) : UH4 =
+and consume_right_54 (v0 : UH8, v1 : UH4) : UH4 =
     match v1 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH4 = method53(v0, v3)
-        let v6 : UH4 = method54(v0, v4)
-        method7(v5, v6)
+        let v5 : UH4 = language_remainders_53(v0, v3)
+        let v6 : UH4 = consume_right_54(v0, v4)
+        input_list_append_7(v5, v6)
     | UH4_0 -> (* InputListNil *)
         UH4_0
-and method57 (v0 : UH5, v1 : UH4) : bool =
+and input_list_contains_57 (v0 : UH5, v1 : UH4) : bool =
     match v1 with
     | UH4_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method42(v0, v2)
+        let v4 : bool = input_equal_42(v0, v2)
         if v4 then
             true
         else
-            method57(v0, v3)
+            input_list_contains_57(v0, v3)
     | UH4_0 -> (* InputListNil *)
         false
-and method56 (v0 : UH4, v1 : UH4, v2 : UH4) : struct (UH4 * UH4) =
+and input_list_enqueue_new_56 (v0 : UH4, v1 : UH4, v2 : UH4) : struct (UH4 * UH4) =
     match v0 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method57(v3, v1)
+        let v5 : bool = input_list_contains_57(v3, v1)
         if v5 then
-            method56(v4, v1, v2)
+            input_list_enqueue_new_56(v4, v1, v2)
         else
             let v8 : UH4 = UH4_1(v3, v1)
             let v9 : UH4 = UH4_1(v3, v2)
-            method56(v4, v8, v9)
+            input_list_enqueue_new_56(v4, v8, v9)
     | UH4_0 -> (* InputListNil *)
         struct (v1, v2)
-and method55 (v0 : UH8, v1 : UH4, v2 : UH4) : UH4 =
+and closure_55 (v0 : UH8, v1 : UH4, v2 : UH4) : UH4 =
     match v1 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH4 = method53(v0, v3)
-        let struct (v6 : UH4, v7 : UH4) = method56(v5, v2, v4)
-        method55(v0, v7, v6)
+        let v5 : UH4 = language_remainders_53(v0, v3)
+        let struct (v6 : UH4, v7 : UH4) = input_list_enqueue_new_56(v5, v2, v4)
+        closure_55(v0, v7, v6)
     | UH4_0 -> (* InputListNil *)
         v2
-and method53 (v0 : UH8, v1 : UH5) : UH4 =
+and language_remainders_53 (v0 : UH8, v1 : UH5) : UH4 =
     match v0 with
     | UH8_3(v32, v33) -> (* RegexAlt *)
-        let v34 : UH4 = method53(v32, v1)
-        let v35 : UH4 = method53(v33, v1)
-        method7(v34, v35)
+        let v34 : UH4 = language_remainders_53(v32, v1)
+        let v35 : UH4 = language_remainders_53(v33, v1)
+        input_list_append_7(v34, v35)
     | UH8_4(v37, v38) -> (* RegexCat *)
-        let v39 : UH4 = method53(v37, v1)
-        method54(v38, v39)
+        let v39 : UH4 = language_remainders_53(v37, v1)
+        consume_right_54(v38, v39)
     | UH8_2(v5) -> (* RegexChar *)
         match v1 with
         | UH5_1(v7, v8) -> (* InputCons *)
@@ -1649,49 +1649,49 @@ and method53 (v0 : UH8, v1 : UH5) : UH4 =
         let v43 : UH4 = UH4_1(v1, v42)
         let v44 : UH4 = UH4_0
         let v45 : UH4 = UH4_1(v1, v44)
-        method55(v41, v43, v45)
-and method58 (v0 : UH5, v1 : UH4) : UH4 =
+        closure_55(v41, v43, v45)
+and input_list_remove_58 (v0 : UH5, v1 : UH4) : UH4 =
     match v1 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method42(v0, v3)
+        let v5 : bool = input_equal_42(v0, v3)
         if v5 then
-            method58(v0, v4)
+            input_list_remove_58(v0, v4)
         else
-            let v7 : UH4 = method58(v0, v4)
+            let v7 : UH4 = input_list_remove_58(v0, v4)
             UH4_1(v3, v7)
     | UH4_0 -> (* InputListNil *)
         UH4_0
-and method59 (v0 : UH4, v1 : UH4) : bool =
+and input_list_subset_59 (v0 : UH4, v1 : UH4) : bool =
     match v0 with
     | UH4_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method57(v2, v1)
+        let v4 : bool = input_list_contains_57(v2, v1)
         if v4 then
-            method59(v3, v1)
+            input_list_subset_59(v3, v1)
         else
             false
     | UH4_0 -> (* InputListNil *)
         true
-and method52 (v0 : UH9) : bool =
-    let v1 : UH8 = method38(v0)
-    let v2 : US1 = method40(v0)
-    let v3 : UH5 = method41(v0)
-    let v4 : UH8 = method51(v0)
+and derivative_remainder_proof_valid_52 (v0 : UH9) : bool =
+    let v1 : UH8 = derivative_remainder_proof_source_38(v0)
+    let v2 : US1 = derivative_remainder_proof_symbol_40(v0)
+    let v3 : UH5 = derivative_remainder_proof_suffix_41(v0)
+    let v4 : UH8 = derivative_remainder_proof_candidate_51(v0)
     let v5 : UH5 = UH5_1(v2, v3)
     let v6 : UH5 = UH5_1(v2, v3)
-    let v7 : UH4 = method53(v1, v6)
-    let v8 : UH4 = method58(v5, v7)
-    let v9 : UH4 = method53(v4, v3)
-    let v10 : bool = method59(v8, v9)
+    let v7 : UH4 = language_remainders_53(v1, v6)
+    let v8 : UH4 = input_list_remove_58(v5, v7)
+    let v9 : UH4 = language_remainders_53(v4, v3)
+    let v10 : bool = input_list_subset_59(v8, v9)
     let v12 : bool =
         if v10 then
-            method59(v9, v8)
+            input_list_subset_59(v9, v8)
         else
             false
     if v12 then
         match v0 with
         | UH9_3(v20, v21, v22, v23) -> (* RemainderProofAlt *)
-            let v24 : US1 = method40(v0)
-            let v25 : US1 = method40(v22)
+            let v24 : US1 = derivative_remainder_proof_symbol_40(v0)
+            let v25 : US1 = derivative_remainder_proof_symbol_40(v22)
             let v41 : US4 =
                 match v24 with
                 | US1_0 -> (* TriA *)
@@ -1726,14 +1726,14 @@ and method52 (v0 : UH9) : bool =
                     false
             let v46 : bool =
                 if v42 then
-                    let v43 : UH5 = method41(v0)
-                    let v44 : UH5 = method41(v22)
-                    method42(v43, v44)
+                    let v43 : UH5 = derivative_remainder_proof_suffix_41(v0)
+                    let v44 : UH5 = derivative_remainder_proof_suffix_41(v22)
+                    input_equal_42(v43, v44)
                 else
                     false
             if v46 then
-                let v47 : US1 = method40(v0)
-                let v48 : US1 = method40(v23)
+                let v47 : US1 = derivative_remainder_proof_symbol_40(v0)
+                let v48 : US1 = derivative_remainder_proof_symbol_40(v23)
                 let v64 : US4 =
                     match v47 with
                     | US1_0 -> (* TriA *)
@@ -1768,15 +1768,15 @@ and method52 (v0 : UH9) : bool =
                         false
                 let v69 : bool =
                     if v65 then
-                        let v66 : UH5 = method41(v0)
-                        let v67 : UH5 = method41(v23)
-                        method42(v66, v67)
+                        let v66 : UH5 = derivative_remainder_proof_suffix_41(v0)
+                        let v67 : UH5 = derivative_remainder_proof_suffix_41(v23)
+                        input_equal_42(v66, v67)
                     else
                         false
                 if v69 then
-                    let v70 : bool = method52(v22)
+                    let v70 : bool = derivative_remainder_proof_valid_52(v22)
                     if v70 then
-                        method52(v23)
+                        derivative_remainder_proof_valid_52(v23)
                     else
                         false
                 else
@@ -1784,8 +1784,8 @@ and method52 (v0 : UH9) : bool =
             else
                 false
         | UH9_4(v75, v76, v77, v78, v79) -> (* RemainderProofCat *)
-            let v80 : UH8 = method38(v78)
-            let v81 : US3 = method37(v80)
+            let v80 : UH8 = derivative_remainder_proof_source_38(v78)
+            let v81 : US3 = nullable_37(v80)
             let v85 : US2 =
                 match v81 with
                 | US3_1 -> (* NonNullable *)
@@ -1807,8 +1807,8 @@ and method52 (v0 : UH9) : bool =
                     | _ ->
                         false
             if v89 then
-                let v90 : US1 = method40(v0)
-                let v91 : US1 = method40(v78)
+                let v90 : US1 = derivative_remainder_proof_symbol_40(v0)
+                let v91 : US1 = derivative_remainder_proof_symbol_40(v78)
                 let v107 : US4 =
                     match v90 with
                     | US1_0 -> (* TriA *)
@@ -1843,14 +1843,14 @@ and method52 (v0 : UH9) : bool =
                         false
                 let v112 : bool =
                     if v108 then
-                        let v109 : UH5 = method41(v0)
-                        let v110 : UH5 = method41(v78)
-                        method42(v109, v110)
+                        let v109 : UH5 = derivative_remainder_proof_suffix_41(v0)
+                        let v110 : UH5 = derivative_remainder_proof_suffix_41(v78)
+                        input_equal_42(v109, v110)
                     else
                         false
                 if v112 then
-                    let v113 : US1 = method40(v0)
-                    let v114 : US1 = method40(v79)
+                    let v113 : US1 = derivative_remainder_proof_symbol_40(v0)
+                    let v114 : US1 = derivative_remainder_proof_symbol_40(v79)
                     let v130 : US4 =
                         match v113 with
                         | US1_0 -> (* TriA *)
@@ -1885,15 +1885,15 @@ and method52 (v0 : UH9) : bool =
                             false
                     let v135 : bool =
                         if v131 then
-                            let v132 : UH5 = method41(v0)
-                            let v133 : UH5 = method41(v79)
-                            method42(v132, v133)
+                            let v132 : UH5 = derivative_remainder_proof_suffix_41(v0)
+                            let v133 : UH5 = derivative_remainder_proof_suffix_41(v79)
+                            input_equal_42(v132, v133)
                         else
                             false
                     if v135 then
-                        let v136 : bool = method52(v78)
+                        let v136 : bool = derivative_remainder_proof_valid_52(v78)
                         if v136 then
-                            method52(v79)
+                            derivative_remainder_proof_valid_52(v79)
                         else
                             false
                     else
@@ -1909,8 +1909,8 @@ and method52 (v0 : UH9) : bool =
         | UH9_1(v15, v16) -> (* RemainderProofEpsilon *)
             true
         | UH9_5(v142, v143, v144) -> (* RemainderProofStar *)
-            let v145 : US1 = method40(v0)
-            let v146 : US1 = method40(v144)
+            let v145 : US1 = derivative_remainder_proof_symbol_40(v0)
+            let v146 : US1 = derivative_remainder_proof_symbol_40(v144)
             let v162 : US4 =
                 match v145 with
                 | US1_0 -> (* TriA *)
@@ -1945,26 +1945,26 @@ and method52 (v0 : UH9) : bool =
                     false
             let v167 : bool =
                 if v163 then
-                    let v164 : UH5 = method41(v0)
-                    let v165 : UH5 = method41(v144)
-                    method42(v164, v165)
+                    let v164 : UH5 = derivative_remainder_proof_suffix_41(v0)
+                    let v165 : UH5 = derivative_remainder_proof_suffix_41(v144)
+                    input_equal_42(v164, v165)
                 else
                     false
             if v167 then
-                method52(v144)
+                derivative_remainder_proof_valid_52(v144)
             else
                 false
     else
         false
-and method35 (v0 : UH8, v1 : US1, v2 : UH4) : bool =
+and derivative_remainder_theorem_suffixes_35 (v0 : UH8, v1 : US1, v2 : UH4) : bool =
     match v2 with
     | UH4_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH9 = method36(v0, v1, v3)
-        let v6 : UH8 = method38(v5)
-        let v7 : bool = method39(v0, v6)
+        let v5 : UH9 = derivative_remainder_proof_make_36(v0, v1, v3)
+        let v6 : UH8 = derivative_remainder_proof_source_38(v5)
+        let v7 : bool = regex_equal_39(v0, v6)
         let v36 : bool =
             if v7 then
-                let v8 : US1 = method40(v5)
+                let v8 : US1 = derivative_remainder_proof_symbol_40(v5)
                 let v24 : US4 =
                     match v1 with
                     | US1_0 -> (* TriA *)
@@ -1998,15 +1998,15 @@ and method35 (v0 : UH8, v1 : US1, v2 : UH4) : bool =
                     | _ ->
                         false
                 if v25 then
-                    let v26 : UH5 = method41(v5)
-                    let v27 : bool = method42(v3, v26)
+                    let v26 : UH5 = derivative_remainder_proof_suffix_41(v5)
+                    let v27 : bool = input_equal_42(v3, v26)
                     if v27 then
-                        let v28 : UH8 = method43(v0, v1)
-                        let v29 : UH8 = method51(v5)
-                        let v30 : UH8 = method44(v29)
-                        let v31 : bool = method39(v28, v30)
+                        let v28 : UH8 = canonical_derivative_43(v0, v1)
+                        let v29 : UH8 = derivative_remainder_proof_candidate_51(v5)
+                        let v30 : UH8 = normalize_44(v29)
+                        let v31 : bool = regex_equal_39(v28, v30)
                         if v31 then
-                            method52(v5)
+                            derivative_remainder_proof_valid_52(v5)
                         else
                             false
                     else
@@ -2016,17 +2016,17 @@ and method35 (v0 : UH8, v1 : US1, v2 : UH4) : bool =
             else
                 false
         if v36 then
-            method35(v0, v1, v4)
+            derivative_remainder_theorem_suffixes_35(v0, v1, v4)
         else
             false
     | UH4_0 -> (* InputListNil *)
         true
-and method34 (v0 : UH8, v1 : UH3, v2 : UH4) : bool =
+and derivative_remainder_theorem_symbols_34 (v0 : UH8, v1 : UH3, v2 : UH4) : bool =
     match v1 with
     | UH3_1(v3, v4) -> (* SymbolListCons *)
-        let v5 : bool = method35(v0, v3, v2)
+        let v5 : bool = derivative_remainder_theorem_suffixes_35(v0, v3, v2)
         if v5 then
-            method34(v0, v4, v2)
+            derivative_remainder_theorem_symbols_34(v0, v4, v2)
         else
             false
     | UH3_0 -> (* SymbolListNil *)
@@ -2036,7 +2036,7 @@ let v1 : US0 = US0_1
 let v2 : UH0 = UH0_0
 let v3 : UH0 = UH0_1(v1, v2)
 let v4 : UH0 = UH0_1(v0, v3)
-let v5 : UH1 = method0(v4)
+let v5 : UH1 = input_singletons_from_symbols_0(v4)
 let v6 : UH2 = UH2_0
 let v7 : UH1 = UH1_1(v6, v5)
 let v8 : US0 = US0_0
@@ -2049,9 +2049,9 @@ let v14 : US0 = US0_1
 let v15 : UH0 = UH0_0
 let v16 : UH0 = UH0_1(v14, v15)
 let v17 : UH0 = UH0_1(v13, v16)
-let v18 : UH1 = method0(v17)
-let v19 : UH1 = method1(v12, v18)
-let v20 : UH1 = method3(v7, v19)
+let v18 : UH1 = input_singletons_from_symbols_0(v17)
+let v19 : UH1 = input_prepend_symbols_to_corpus_1(v12, v18)
+let v20 : UH1 = input_list_append_3(v7, v19)
 let v21 : US1 = US1_0
 let v22 : US1 = US1_1
 let v23 : US1 = US1_2
@@ -2059,7 +2059,7 @@ let v24 : UH3 = UH3_0
 let v25 : UH3 = UH3_1(v23, v24)
 let v26 : UH3 = UH3_1(v22, v25)
 let v27 : UH3 = UH3_1(v21, v26)
-let v28 : UH4 = method4(v27)
+let v28 : UH4 = input_singletons_from_symbols_4(v27)
 let v29 : UH5 = UH5_0
 let v30 : UH4 = UH4_1(v29, v28)
 let v31 : US1 = US1_0
@@ -2076,9 +2076,9 @@ let v41 : UH3 = UH3_0
 let v42 : UH3 = UH3_1(v40, v41)
 let v43 : UH3 = UH3_1(v39, v42)
 let v44 : UH3 = UH3_1(v38, v43)
-let v45 : UH4 = method4(v44)
-let v46 : UH4 = method5(v37, v45)
-let v47 : UH4 = method7(v30, v46)
+let v45 : UH4 = input_singletons_from_symbols_4(v44)
+let v46 : UH4 = input_prepend_symbols_to_corpus_5(v37, v45)
+let v47 : UH4 = input_list_append_7(v30, v46)
 let v48 : UH6 = UH6_0
 let v49 : UH6 = UH6_1
 let v50 : US0 = US0_0
@@ -2097,7 +2097,7 @@ let v62 : US0 = US0_1
 let v63 : UH0 = UH0_0
 let v64 : UH0 = UH0_1(v62, v63)
 let v65 : UH0 = UH0_1(v61, v64)
-let v66 : bool = method8(v60, v65, v20)
+let v66 : bool = derivative_remainder_theorem_symbols_8(v60, v65, v20)
 if v66 then
     ()
 else
@@ -2118,7 +2118,7 @@ let v79 : UH3 = UH3_0
 let v80 : UH3 = UH3_1(v78, v79)
 let v81 : UH3 = UH3_1(v77, v80)
 let v82 : UH3 = UH3_1(v76, v81)
-let v83 : bool = method34(v75, v82, v47)
+let v83 : bool = derivative_remainder_theorem_symbols_34(v75, v82, v47)
 if v83 then
     ()
 else
@@ -2138,7 +2138,7 @@ let v95 : US0 = US0_0
 let v96 : UH2 = UH2_0
 let v97 : UH2 = UH2_1(v95, v96)
 let v98 : UH2 = UH2_1(v94, v97)
-let v99 : UH7 = method10(v92, v93, v98)
+let v99 : UH7 = derivative_remainder_proof_make_10(v92, v93, v98)
 let v100 : US0 = US0_0
 let v101 : UH6 = UH6_2(v100)
 let v102 : US0 = US0_1
@@ -2148,11 +2148,11 @@ let v105 : UH6 = UH6_5(v104)
 let v106 : US0 = US0_0
 let v107 : UH6 = UH6_2(v106)
 let v108 : UH6 = UH6_4(v105, v107)
-let v109 : UH6 = method12(v99)
-let v110 : bool = method13(v108, v109)
+let v109 : UH6 = derivative_remainder_proof_source_12(v99)
+let v110 : bool = regex_equal_13(v108, v109)
 let v142 : bool =
     if v110 then
-        let v111 : US0 = method14(v99)
+        let v111 : US0 = derivative_remainder_proof_symbol_14(v99)
         let v115 : US4 =
             match v111 with
             | US0_1 -> (* BitOne *)
@@ -2171,8 +2171,8 @@ let v142 : bool =
             let v119 : UH2 = UH2_0
             let v120 : UH2 = UH2_1(v118, v119)
             let v121 : UH2 = UH2_1(v117, v120)
-            let v122 : UH2 = method15(v99)
-            let v123 : bool = method16(v121, v122)
+            let v122 : UH2 = derivative_remainder_proof_suffix_15(v99)
+            let v123 : bool = input_equal_16(v121, v122)
             if v123 then
                 let v124 : US0 = US0_0
                 let v125 : UH6 = UH6_2(v124)
@@ -2184,12 +2184,12 @@ let v142 : bool =
                 let v131 : UH6 = UH6_2(v130)
                 let v132 : UH6 = UH6_4(v129, v131)
                 let v133 : US0 = US0_1
-                let v134 : UH6 = method17(v132, v133)
-                let v135 : UH6 = method25(v99)
-                let v136 : UH6 = method18(v135)
-                let v137 : bool = method13(v134, v136)
+                let v134 : UH6 = canonical_derivative_17(v132, v133)
+                let v135 : UH6 = derivative_remainder_proof_candidate_25(v99)
+                let v136 : UH6 = normalize_18(v135)
+                let v137 : bool = regex_equal_13(v134, v136)
                 if v137 then
-                    method26(v99)
+                    derivative_remainder_proof_valid_26(v99)
                 else
                     false
             else
@@ -2211,15 +2211,15 @@ let v148 : US0 = US0_1
 let v149 : UH2 = UH2_0
 let v150 : UH2 = UH2_1(v148, v149)
 let v151 : UH2 = UH2_1(v147, v150)
-let v152 : UH1 = method27(v146, v151)
-let v153 : bool = method31(v143, v152)
+let v152 : UH1 = language_remainders_27(v146, v151)
+let v153 : bool = input_list_contains_31(v143, v152)
 let v154 : UH2 = UH2_0
 let v155 : UH6 = UH6_0
 let v156 : US0 = US0_1
 let v157 : UH2 = UH2_0
 let v158 : UH2 = UH2_1(v156, v157)
-let v159 : UH1 = method27(v155, v158)
-let v160 : bool = method31(v154, v159)
+let v159 : UH1 = language_remainders_27(v155, v158)
+let v160 : bool = input_list_contains_31(v154, v159)
 let v162 : bool =
     if v153 then
         v160
@@ -2243,17 +2243,17 @@ let v172 : US0 = US0_1
 let v173 : UH2 = UH2_0
 let v174 : UH2 = UH2_1(v172, v173)
 let v175 : UH2 = UH2_1(v171, v174)
-let v176 : UH1 = method27(v170, v175)
-let v177 : UH1 = method32(v167, v176)
+let v176 : UH1 = language_remainders_27(v170, v175)
+let v177 : UH1 = input_list_remove_32(v167, v176)
 let v178 : UH6 = UH6_0
 let v179 : US0 = US0_1
 let v180 : UH2 = UH2_0
 let v181 : UH2 = UH2_1(v179, v180)
-let v182 : UH1 = method27(v178, v181)
-let v183 : bool = method33(v177, v182)
+let v182 : UH1 = language_remainders_27(v178, v181)
+let v183 : bool = input_list_subset_33(v177, v182)
 let v185 : bool =
     if v183 then
-        method33(v182, v177)
+        input_list_subset_33(v182, v177)
     else
         false
 let v186 : bool = v185 = false
@@ -2272,7 +2272,7 @@ let v194 : US0 = US0_1
 let v195 : UH2 = UH2_0
 let v196 : UH7 = UH7_2(v193, v194, v195)
 let v197 : UH7 = UH7_3(v187, v188, v192, v196)
-let v198 : bool = method26(v197)
+let v198 : bool = derivative_remainder_proof_valid_26(v197)
 let v199 : bool = v198 = false
 if v199 then
     ()
@@ -2281,13 +2281,13 @@ else
 let v200 : UH6 = UH6_1
 let v201 : US0 = US0_0
 let v202 : UH2 = UH2_0
-let v203 : UH7 = method10(v200, v201, v202)
+let v203 : UH7 = derivative_remainder_proof_make_10(v200, v201, v202)
 let v204 : UH6 = UH6_0
-let v205 : UH6 = method12(v203)
-let v206 : bool = method13(v204, v205)
+let v205 : UH6 = derivative_remainder_proof_source_12(v203)
+let v206 : bool = regex_equal_13(v204, v205)
 let v226 : bool =
     if v206 then
-        let v207 : US0 = method14(v203)
+        let v207 : US0 = derivative_remainder_proof_symbol_14(v203)
         let v211 : US4 =
             match v207 with
             | US0_1 -> (* BitOne *)
@@ -2302,17 +2302,17 @@ let v226 : bool =
                 false
         if v212 then
             let v213 : UH2 = UH2_0
-            let v214 : UH2 = method15(v203)
-            let v215 : bool = method16(v213, v214)
+            let v214 : UH2 = derivative_remainder_proof_suffix_15(v203)
+            let v215 : bool = input_equal_16(v213, v214)
             if v215 then
                 let v216 : UH6 = UH6_0
                 let v217 : US0 = US0_0
-                let v218 : UH6 = method17(v216, v217)
-                let v219 : UH6 = method25(v203)
-                let v220 : UH6 = method18(v219)
-                let v221 : bool = method13(v218, v220)
+                let v218 : UH6 = canonical_derivative_17(v216, v217)
+                let v219 : UH6 = derivative_remainder_proof_candidate_25(v203)
+                let v220 : UH6 = normalize_18(v219)
+                let v221 : bool = regex_equal_13(v218, v220)
                 if v221 then
-                    method26(v203)
+                    derivative_remainder_proof_valid_26(v203)
                 else
                     false
             else
@@ -2330,14 +2330,14 @@ let v228 : US0 = US0_0
 let v229 : UH6 = UH6_2(v228)
 let v230 : US0 = US0_0
 let v231 : UH2 = UH2_0
-let v232 : UH7 = method10(v229, v230, v231)
+let v232 : UH7 = derivative_remainder_proof_make_10(v229, v230, v231)
 let v233 : US0 = US0_0
 let v234 : UH6 = UH6_2(v233)
-let v235 : UH6 = method12(v232)
-let v236 : bool = method13(v234, v235)
+let v235 : UH6 = derivative_remainder_proof_source_12(v232)
+let v236 : bool = regex_equal_13(v234, v235)
 let v257 : bool =
     if v236 then
-        let v237 : US0 = method14(v232)
+        let v237 : US0 = derivative_remainder_proof_symbol_14(v232)
         let v241 : US4 =
             match v237 with
             | US0_1 -> (* BitOne *)
@@ -2352,18 +2352,18 @@ let v257 : bool =
                 false
         if v242 then
             let v243 : UH2 = UH2_0
-            let v244 : UH2 = method15(v232)
-            let v245 : bool = method16(v243, v244)
+            let v244 : UH2 = derivative_remainder_proof_suffix_15(v232)
+            let v245 : bool = input_equal_16(v243, v244)
             if v245 then
                 let v246 : US0 = US0_0
                 let v247 : UH6 = UH6_2(v246)
                 let v248 : US0 = US0_1
-                let v249 : UH6 = method17(v247, v248)
-                let v250 : UH6 = method25(v232)
-                let v251 : UH6 = method18(v250)
-                let v252 : bool = method13(v249, v251)
+                let v249 : UH6 = canonical_derivative_17(v247, v248)
+                let v250 : UH6 = derivative_remainder_proof_candidate_25(v232)
+                let v251 : UH6 = normalize_18(v250)
+                let v252 : bool = regex_equal_13(v249, v251)
                 if v252 then
-                    method26(v232)
+                    derivative_remainder_proof_valid_26(v232)
                 else
                     false
             else
@@ -2380,17 +2380,17 @@ else
 let v259 : UH6 = UH6_1
 let v260 : US0 = US0_0
 let v261 : UH2 = UH2_0
-let v262 : UH7 = method10(v259, v260, v261)
+let v262 : UH7 = derivative_remainder_proof_make_10(v259, v260, v261)
 let v263 : US0 = US0_0
 let v264 : UH6 = UH6_2(v263)
 let v265 : US0 = US0_0
 let v266 : UH2 = UH2_0
-let v267 : UH7 = method10(v264, v265, v266)
+let v267 : UH7 = derivative_remainder_proof_make_10(v264, v265, v266)
 let v268 : US0 = US0_0
 let v269 : UH2 = UH2_0
 let v270 : US2 = US2_1
 let v271 : UH7 = UH7_4(v268, v269, v270, v262, v267)
-let v272 : bool = method26(v271)
+let v272 : bool = derivative_remainder_proof_valid_26(v271)
 let v273 : bool = v272 = false
 if v273 then
     ()

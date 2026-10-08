@@ -14,7 +14,7 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local closure0, method1, method0
+local closure0, apply_1, method0
 function closure0(capt)
     local v0 = (table.unpack or unpack)(capt)
     return function(v1)
@@ -24,12 +24,12 @@ function closure0(capt)
     end
 end
 
-function method1(v0, v1)
+function apply_1(v0, v1)
     return v0(v1)
 end
 
 function method0(v0, v1)
-    local v2 = method1(v0, v1)
+    local v2 = apply_1(v0, v1)
     local v3 = spiral_wrap_signed((v2 + 1), 32)
     return v3
 end

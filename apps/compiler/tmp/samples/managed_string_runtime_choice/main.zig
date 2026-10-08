@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: bool) []const u8 {
+fn choose_0(p0: bool) []const u8 {
     var v0: bool = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     var v2: []const u8 = undefined; _ = &v2;
@@ -117,7 +117,7 @@ fn method0(p0: bool) []const u8 {
         return v2;
     }
 }
-fn method1(p0: []const u8) i32 {
+fn measure_1(p0: []const u8) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     v1 = @as(i32, @intCast(v0.len));
@@ -135,13 +135,13 @@ fn spiralMain() i32 {
     var v8: i32 = undefined; _ = &v8;
     var v9: i32 = undefined; _ = &v9;
     v0 = true;
-    v1 = method0(v0);
+    v1 = choose_0(v0);
     v2 = false;
-    v3 = method0(v2);
-    v4 = method1(v1);
-    v5 = method1(v1);
+    v3 = choose_0(v2);
+    v4 = measure_1(v1);
+    v5 = measure_1(v1);
     v6 = v4 +% v5;
-    v7 = method1(v3);
+    v7 = measure_1(v3);
     v8 = v6 +% v7;
     v9 = v8 -% @as(i32, 14);
     return v9;

@@ -22,6 +22,7 @@ struct Closure0 {
     Array0 * v0;
 };
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }

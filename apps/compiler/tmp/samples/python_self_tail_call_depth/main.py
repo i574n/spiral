@@ -16,7 +16,7 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-def method0(v0 : i32, v1 : i32) -> i32:
+def count_down_0(v0 : i32, v1 : i32) -> i32:
     while True:
         v2 = 0 < v0
         if v2:
@@ -33,7 +33,7 @@ def method0(v0 : i32, v1 : i32) -> i32:
 def main():
     v0 = 5000
     v1 = 0
-    v2 = method0(v0, v1)
+    v2 = count_down_0(v0, v1)
     del v0, v1
     v3 = v2 == 5000
     del v2

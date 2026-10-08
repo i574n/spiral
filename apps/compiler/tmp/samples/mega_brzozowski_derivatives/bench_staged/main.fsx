@@ -4,7 +4,7 @@ type [<Struct>] US0 =
 and UH0 =
     | UH0_0
     | UH0_1 of US0 * UH0
-let rec method1 (v0 : uint64, v1 : int32, v2 : UH0) : struct (UH0 * uint64) =
+let rec random_bit_input_1 (v0 : uint64, v1 : int32, v2 : UH0) : struct (UH0 * uint64) =
     let v3 : bool = 0 < v1
     if v3 then
         let v4 : uint64 = v0 * 1103515245UL
@@ -22,31 +22,31 @@ let rec method1 (v0 : uint64, v1 : int32, v2 : UH0) : struct (UH0 * uint64) =
                 let v12 : US0 = US0_1
                 v12
         let v14 : UH0 = UH0_1(v13, v2)
-        method1(v6, v7, v14)
+        random_bit_input_1(v6, v7, v14)
     else
         struct (v2, v0)
-and method2 (v0 : int32, v1 : UH0) : bool =
+and run_2 (v0 : int32, v1 : UH0) : bool =
     match v1 with
     | UH0_1(v3, v4) -> (* InputCons *)
         match v3 with
         | US0_1 -> (* BitOne *)
             let v8 : bool = v0 = 0
             let v9 : int32 = 0
-            method2(v9, v4)
+            run_2(v9, v4)
         | US0_0 -> (* BitZero *)
             let v5 : bool = v0 = 0
             let v6 : int32 = 1
-            method2(v6, v4)
+            run_2(v6, v4)
     | UH0_0 -> (* InputEmpty *)
         let v2 : bool = v0 = 1
         v2
-and method0 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
+and loop_0 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
     let v4 : bool = 0 < v1
     if v4 then
         let v5 : UH0 = UH0_0
-        let struct (v6 : UH0, v7 : uint64) = method1(v2, v0, v5)
+        let struct (v6 : UH0, v7 : uint64) = random_bit_input_1(v2, v0, v5)
         let v8 : int32 = 0
-        let v9 : bool = method2(v8, v6)
+        let v9 : bool = run_2(v8, v6)
         let v11 : int32 =
             if v9 then
                 let v10 : int32 = v3 + 1
@@ -54,10 +54,10 @@ and method0 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
             else
                 v3
         let v12 : int32 = v1 - 1
-        method0(v0, v12, v7, v11)
+        loop_0(v0, v12, v7, v11)
     else
         v3
-and method4 (v0 : int32, v1 : UH0) : bool =
+and run_4 (v0 : int32, v1 : UH0) : bool =
     match v1 with
     | UH0_1(v17, v18) -> (* InputCons *)
         match v17 with
@@ -124,7 +124,7 @@ and method4 (v0 : int32, v1 : UH0) : bool =
                                                                             9
                                                                         else
                                                                             15
-            method4(v79, v18)
+            run_4(v79, v18)
         | US0_0 -> (* BitZero *)
             let v19 : bool = v0 = 0
             let v48 : int32 =
@@ -188,7 +188,7 @@ and method4 (v0 : int32, v1 : UH0) : bool =
                                                                             8
                                                                         else
                                                                             14
-            method4(v48, v18)
+            run_4(v48, v18)
     | UH0_0 -> (* InputEmpty *)
         let v2 : bool = v0 = 4
         if v2 then
@@ -220,13 +220,13 @@ and method4 (v0 : int32, v1 : UH0) : bool =
                                 else
                                     let v9 : bool = v0 = 15
                                     v9
-and method3 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
+and loop_3 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
     let v4 : bool = 0 < v1
     if v4 then
         let v5 : UH0 = UH0_0
-        let struct (v6 : UH0, v7 : uint64) = method1(v2, v0, v5)
+        let struct (v6 : UH0, v7 : uint64) = random_bit_input_1(v2, v0, v5)
         let v8 : int32 = 0
-        let v9 : bool = method4(v8, v6)
+        let v9 : bool = run_4(v8, v6)
         let v11 : int32 =
             if v9 then
                 let v10 : int32 = v3 + 1
@@ -234,15 +234,15 @@ and method3 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
             else
                 v3
         let v12 : int32 = v1 - 1
-        method3(v0, v12, v7, v11)
+        loop_3(v0, v12, v7, v11)
     else
         v3
 let v0 : int32 = 2000
 let v1 : int32 = 32
 let v2 : uint64 = 1UL
 let v3 : int32 = 0
-let v4 : int32 = method0(v1, v0, v2, v3)
-let v5 : int32 = method3(v1, v0, v2, v3)
+let v4 : int32 = loop_0(v1, v0, v2, v3)
+let v5 : int32 = loop_3(v1, v0, v2, v3)
 let v6 : bool = v4 = 997
 if v6 then
     ()

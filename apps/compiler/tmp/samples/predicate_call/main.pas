@@ -2,9 +2,9 @@ program SpiralGenerated;
 {$mode delphi}{$H+}
 {$MAXSTACKSIZE $10000000}
 uses SysUtils, Math;
-function method1(v0: LongInt): Boolean; forward;
+function is_answer_1(v0: LongInt): Boolean; forward;
 function method0(v0: LongInt): Boolean; forward;
-function method1(v0: LongInt): Boolean;
+function is_answer_1(v0: LongInt): Boolean;
 var
   v1: Boolean;
 begin
@@ -13,7 +13,7 @@ begin
 end;
 function method0(v0: LongInt): Boolean;
 begin
-  Result := method1(v0);
+  Result := is_answer_1(v0);
 end;
 function SpiralMain: LongInt;
 var

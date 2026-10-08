@@ -112,7 +112,7 @@ fn UH0_0() *UH0 {
 fn UH0_1(a0: i32, a1: *UH0, a2: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1, .c1_2 = a2 });
 }
-fn method0(p0: *UH0) i32 {
+fn sum_0(p0: *UH0) i32 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
@@ -129,8 +129,8 @@ fn method0(p0: *UH0) i32 {
             v1 = v0.c1_0;
             v2 = v0.c1_1;
             v3 = v0.c1_2;
-            v4 = method0(v2);
-            v5 = method0(v3);
+            v4 = sum_0(v2);
+            v5 = sum_0(v3);
             v6 = v4 +% v5;
             v7 = v1 +% v6;
             return v7;
@@ -151,7 +151,7 @@ fn spiralMain() i32 {
     v2 = UH0_0();
     v3 = UH0_1(v1, v2, v2);
     v4 = UH0_1(v0, v3, v3);
-    v5 = method0(v4);
+    v5 = sum_0(v4);
     v6 = v5 -% @as(i32, 5);
     return v6;
 }

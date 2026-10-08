@@ -1,7 +1,7 @@
 type [<Struct>] US0 =
     | US0_0 of f0_0 : int32
     | US0_1 of f1_0 : int32
-let rec method0 (v0 : US0) : int32 =
+let rec score_0 (v0 : US0) : int32 =
     match v0 with
     | US0_0(v1) -> (* Hit *)
         v1
@@ -14,6 +14,6 @@ let v3 : US0 =
         US0_0(7)
     else
         US0_1(3)
-let v4 : int32 = method0(v3)
+let v4 : int32 = score_0(v3)
 let v5 : int32 = v4 - 7
 v5

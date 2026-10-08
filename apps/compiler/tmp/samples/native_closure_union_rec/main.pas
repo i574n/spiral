@@ -11,8 +11,8 @@ type
   TUH0 = class tag: LongInt; c0_0: QWord; c0_1: TFun0; end;
   TClosure0 = class(TFun0) v0: QWord; function Invoke: TUH0; override; end;
 function ClosureCreate0(v0: QWord): TFun0; forward;
-function method0(v0: QWord): TUH0; forward;
-function method1(v0: TUH0; v1: QWord): QWord; forward;
+function build_0(v0: QWord): TUH0; forward;
+function sum_1(v0: TUH0; v1: QWord): QWord; forward;
 function UH0_0(a0: QWord; a1: TFun0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1;
@@ -26,7 +26,7 @@ var
   v1: QWord;
 begin
   v1 := v0 - 1;
-  Result := method0(v1);
+  Result := build_0(v1);
 end;
 function ClosureCreate0(v0: QWord): TFun0;
 var c: TClosure0;
@@ -34,7 +34,7 @@ begin
   c := TClosure0.Create; c.v0 := v0;
   Result := c;
 end;
-function method0(v0: QWord): TUH0;
+function build_0(v0: QWord): TUH0;
 var
   v1: Boolean;
   v3: TFun0;
@@ -47,7 +47,7 @@ begin
       Result := UH0_0(v0, v3);
   end;
 end;
-function method1(v0: TUH0; v1: QWord): QWord;
+function sum_1(v0: TUH0; v1: QWord): QWord;
 var
   v2: QWord;
   v3: TFun0;
@@ -89,9 +89,9 @@ var
   v8: LongInt;
 begin
   v0 := 10;
-  v1 := method0(v0);
+  v1 := build_0(v0);
   v2 := 0;
-  v3 := method1(v1, v2);
+  v3 := sum_1(v1, v2);
   v4 := 5;
   v5 := LongInt(v3);
   v6 := v4 * 2;

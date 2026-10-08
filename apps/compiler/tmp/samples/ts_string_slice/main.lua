@@ -1,11 +1,11 @@
-local method0
-function method0(v0)
+local middle_0
+function middle_0(v0)
     local v1 = string.sub(v0, (1)+1, (3)+1)
     return v1
 end
 
 local v0 = "alpha"
-local v1 = method0(v0)
+local v1 = middle_0(v0)
 local v2 = string.len(v1)
 local v3 = v2 == 3
 if v3 then

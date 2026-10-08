@@ -120,7 +120,7 @@ fn closure0(ctx: *anyopaque, p1: i32) i32 {
 fn closureCreate0(p0: []const u8) Fun0 {
     return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, }), .call = &closure0 };
 }
-fn method0(p0: Fun0, p1: i32) i32 {
+fn apply_0(p0: Fun0, p1: i32) i32 {
     var v0: Fun0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     return v0.call(v0.ctx, v1);
@@ -132,7 +132,7 @@ fn spiralMain() i32 {
     v0 = "abc";
     v1 = closureCreate0(v0);
     v2 = @as(i32, 39);
-    return method0(v1, v2);
+    return apply_0(v1, v2);
 }
 pub fn main() void {
     spiral_gpa = spiral_arena.allocator();

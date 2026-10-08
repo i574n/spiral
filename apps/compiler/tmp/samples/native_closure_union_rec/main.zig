@@ -119,12 +119,12 @@ fn closure0(ctx: *anyopaque) *UH0 {
     var v0: u64 = env.v0; _ = &v0;
     var v1: u64 = undefined; _ = &v1;
     v1 = v0 -% @as(u64, 1);
-    return method0(v1);
+    return build_0(v1);
 }
 fn closureCreate0(p0: u64) Fun0 {
     return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, }), .call = &closure0 };
 }
-fn method0(p0: u64) *UH0 {
+fn build_0(p0: u64) *UH0 {
     var v0: u64 = p0; _ = &v0;
     var v1: bool = undefined; _ = &v1;
     var v3: Fun0 = undefined; _ = &v3;
@@ -136,7 +136,7 @@ fn method0(p0: u64) *UH0 {
         return UH0_0(v0, v3);
     }
 }
-fn method1(p0: *UH0, p1: u64) u64 {
+fn sum_1(p0: *UH0, p1: u64) u64 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: u64 = p1; _ = &v1;
     var v2: u64 = undefined; _ = &v2;
@@ -176,9 +176,9 @@ fn spiralMain() i32 {
     var v7: i32 = undefined; _ = &v7;
     var v8: i32 = undefined; _ = &v8;
     v0 = @as(u64, 10);
-    v1 = method0(v0);
+    v1 = build_0(v0);
     v2 = @as(u64, 0);
-    v3 = method1(v1, v2);
+    v3 = sum_1(v1, v2);
     v4 = @as(i32, 5);
     v5 = spiralConv(i32, v3);
     v6 = v4 *% @as(i32, 2);

@@ -105,7 +105,12 @@ def transfer(old, new, target, reindent):
                 continue
             edits.append((t[mapped[0]][1], t[mapped[-1]][1] + 1, replacement))
         else:
-            if i1 > 0 and (i1 - 1) in to_target:
+            if o and i1 == len(o):
+                at = len(target)
+                while at > 0 and not target[at - 1].strip():
+                    at -= 1
+                replacement = [""] + replacement
+            elif i1 > 0 and (i1 - 1) in to_target:
                 at = t[to_target[i1 - 1]][1] + 1
             elif i1 < len(o) and i1 in to_target:
                 at = t[to_target[i1]][1]

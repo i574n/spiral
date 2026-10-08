@@ -120,7 +120,7 @@ fn closure0(ctx: *anyopaque, p1: i32) i32 {
 fn closureCreate0(p0: []const u8) Fun0 {
     return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, }), .call = &closure0 };
 }
-fn method1(p0: Fun0, p1: i32) i32 {
+fn apply_1(p0: Fun0, p1: i32) i32 {
     var v0: Fun0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     return v0.call(v0.ctx, v1);
@@ -130,7 +130,7 @@ fn method0(p0: Fun0, p1: i32) i32 {
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
     var v3: i32 = undefined; _ = &v3;
-    v2 = method1(v0, v1);
+    v2 = apply_1(v0, v1);
     v3 = v2 +% @as(i32, 1);
     return v3;
 }

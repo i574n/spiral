@@ -139,7 +139,7 @@ fn method0(p0: Fun0) US0 {
     var v0: Fun0 = p0; _ = &v0;
     return v0.call(v0.ctx, @as(i32, 0));
 }
-fn method1(p0: US0) i32 {
+fn score_1(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     var v1: []i32 = undefined; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
@@ -177,9 +177,9 @@ fn spiralMain() i32 {
     var v6: i32 = undefined; _ = &v6;
     v0 = closureCreate0();
     v1 = method0(v0);
-    v2 = method1(v1);
+    v2 = score_1(v1);
     v3 = method2(v0);
-    v4 = method1(v3);
+    v4 = score_1(v3);
     v5 = v2 +% v4;
     v6 = v5 +% @as(i32, 28);
     return v6;

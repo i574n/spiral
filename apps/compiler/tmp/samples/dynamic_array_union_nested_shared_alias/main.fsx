@@ -1,7 +1,7 @@
 type [<Struct>] US0 =
     | US0_0
     | US0_1 of f1_0 : ((int32 []) [])
-let rec method0 (v0 : US0) : int32 =
+let rec bump_0 (v0 : US0) : int32 =
     match v0 with
     | US0_0 -> (* Empty *)
         0
@@ -11,7 +11,7 @@ let rec method0 (v0 : US0) : int32 =
         let v4 : int32 = v3 + 1
         v2.[int 0] <- v4
         0
-and method1 (v0 : US0) : int32 =
+and score_1 (v0 : US0) : int32 =
     match v0 with
     | US0_0 -> (* Empty *)
         0
@@ -37,9 +37,9 @@ v3.[int 1] <- 6
 v1.[int 0] <- v2
 v1.[int 1] <- v3
 let v4 : US0 = US0_1(v1)
-let v5 : int32 = method0(v4)
+let v5 : int32 = bump_0(v4)
 let v6 : US0 = US0_1(v1)
-let v7 : int32 = method1(v6)
+let v7 : int32 = score_1(v6)
 let v8 : int32 = v7 + v5
 let v9 : int32 = v8 - 19
 v9

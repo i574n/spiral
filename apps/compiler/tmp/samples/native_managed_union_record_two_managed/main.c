@@ -36,6 +36,7 @@ struct Closure0 {
     US0 (*fptr)(Closure0 *, int32_t);
 };
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -60,6 +61,7 @@ static inline String * StringLit(uint32_t len, char * ptr){
     return ArrayLit0(len, ptr);
 }
 static inline void ArrayDecrefBody1(Array1 * x){
+    (void)x;
 }
 void ArrayDecref1(Array1 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody1(x); free(x); }
@@ -112,7 +114,7 @@ static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
+    (void)x;
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }

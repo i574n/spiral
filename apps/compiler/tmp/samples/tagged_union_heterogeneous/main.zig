@@ -112,7 +112,7 @@ fn US0_0(a0: i32) US0 {
 fn US0_1(a0: bool) US0 {
     return US0{ .tag = 1, .c1_0 = a0 };
 }
-fn method0(p0: US0) i32 {
+fn score_0(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     var v2: bool = undefined; _ = &v2;
     var v1: i32 = undefined; _ = &v1;
@@ -143,7 +143,7 @@ fn spiralMain() i32 {
     } else {
         v3 = US0_1(true);
     }
-    v4 = method0(v3);
+    v4 = score_0(v3);
     v5 = v4 -% @as(i32, 9);
     return v5;
 }

@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method1(p0: i32) bool {
+fn is_answer_1(p0: i32) bool {
     var v0: i32 = p0; _ = &v0;
     var v1: bool = undefined; _ = &v1;
     v1 = v0 == @as(i32, 42);
@@ -113,7 +113,7 @@ fn method1(p0: i32) bool {
 }
 fn method0(p0: i32) bool {
     var v0: i32 = p0; _ = &v0;
-    return method1(v0);
+    return is_answer_1(v0);
 }
 fn spiralMain() i32 {
     var v0: i32 = undefined; _ = &v0;

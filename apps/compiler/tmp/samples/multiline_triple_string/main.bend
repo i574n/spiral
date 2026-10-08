@@ -147,6 +147,41 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
   spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
 
 @unsafe
+def spiral_i32_to_f32(+value: U32) -> F32:
+  spiral_i32_to_f32_signed(value, spiral_i32_is_negative(value))
+
+@unsafe
+def spiral_i32_to_f32_signed(+value: U32, negative: Bool) -> F32:
+  match negative:
+    case True{}:
+      F32.neg(U32.to_f32(U32.sub(0, value)))
+    case False{}:
+      U32.to_f32(value)
+
+@unsafe
+def spiral_f32_to_i32(+value: F32) -> U32:
+  spiral_f32_to_i32_signed(value, F32.is_lt(value, 0.0))
+
+@unsafe
+def spiral_f32_to_i32_signed(+value: F32, negative: Bool) -> U32:
+  match negative:
+    case True{}:
+      U32.sub(0, F32.to_u32(F32.neg(value)))
+    case False{}:
+      F32.to_u32(value)
+@unsafe
+def spiral_array_depth_go(+wanted: U32, +size: U32, +depth: U32, done: Bool) -> U32:
+  match done:
+    case True{}:
+      depth
+    case False{}:
+      spiral_array_depth_go(wanted, U32.shl(size), U32.add(depth, 1), U32.is_le(wanted, U32.shl(size)))
+
+@unsafe
+def spiral_array_depth(+wanted: U32) -> U32:
+  spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
+
+@unsafe
 def spiral_main_if1_if2_if3_if4_if5_if6_if7_if8_if9_if10_if11_if12_if13_if14_if15(+c: Bool, +v0: String, +v1: String, +v2: String, +v3: String, +v4: String, +v5: U32, +v6: Bool, +v7: Bool, +v8: U32, +v9: Bool, +v10: Bool, +v11: U32, +v12: Bool, +v13: Bool, +v14: U32, +v15: Bool, +v16: Bool, +v17: U32, +v18: Bool, +v19: Bool, +v20: U32, +v21: Bool, +v22: Bool, +v23: U32, +v24: Bool, +v25: Bool, +v26: U32, +v27: Bool, +v28: Bool, +v29: U32, +v30: Bool, +v31: Bool, +v32: U32, +v33: Bool, +v34: Bool, +v35: U32, +v36: Bool, +v37: Bool, +v38: U32, +v39: Bool, +v40: Bool, +v41: U32, +v42: Bool, +v43: Bool, +v44: U32, +v45: Bool, +v46: Bool, +v47: U32, +v48: Bool, +v49: Bool) -> IO(U32):
   match c:
     case True{}:

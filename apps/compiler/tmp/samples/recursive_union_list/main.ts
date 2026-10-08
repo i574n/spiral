@@ -3,12 +3,12 @@ type UH0_1 = { readonly tag: 1, readonly f0: number, readonly f1: UH0 };
 type UH0 = UH0_0 | UH0_1;
 function UH0_0(): UH0 { return { tag: 0 }; }
 function UH0_1(f0: number, f1: UH0): UH0 { return { tag: 1, f0: f0, f1: f1 }; }
-function method0(v0: UH0): number {
+function sum_0(v0: UH0): number {
     switch (v0.tag) {
         case 1: {
             let v1: number = v0.f0;
             let v2: UH0 = v0.f1;
-            let v3: number = method0(v2);
+            let v3: number = sum_0(v2);
             let v4: number = (v1 + v3) | 0;
             return v4;
             break;
@@ -28,7 +28,7 @@ export function main(): number {
     let v4: UH0 = UH0_1(v2, v3);
     let v5: UH0 = UH0_1(v1, v4);
     let v6: UH0 = UH0_1(v0, v5);
-    let v7: number = method0(v6);
+    let v7: number = sum_0(v6);
     let v8: number = (v7 - 6) | 0;
     return v8;
 }

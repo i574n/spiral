@@ -29,13 +29,13 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: string): string {
+function middle_0(v0: string): string {
     let v1: string = spiral_string_slice(v0, 1, 3);
     return v1;
 }
 export function main(): number {
     let v0: string = "alpha";
-    let v1: string = method0(v0);
+    let v1: string = middle_0(v0);
     let v2: number = spiral_string_length(v1);
     let v3: boolean = v2 === 3;
     if (v3) {

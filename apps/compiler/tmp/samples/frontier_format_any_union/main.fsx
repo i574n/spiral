@@ -10,20 +10,20 @@ and method2 (v0 : Mut0, v1 : string) : unit =
     let v3 : string = v2 + v1 
     v0.l0 <- v3
     ()
-and method0 (v0 : US0) : string =
+and format_real_0 (v0 : US0) : string =
     let v1 : string = method1()
-    let v20 : Mut0 = {l0 = v1} : Mut0
-    let v23 : string = $"%A{v0}"
-    method2(v20, v23)
-    let v48 : string = v20.l0
-    v48
+    let v44 : Mut0 = {l0 = v1} : Mut0
+    let v47 : string = $"%A{v0}"
+    method2(v44, v47)
+    let v86 : string = v44.l0
+    v86
 let v0 : int32 = 1
 let v1 : US0 = US0_0(v0)
-let v2 : string = method0(v1)
+let v2 : string = format_real_0(v1)
 let v7 : string = "x: "
 let v8 : string = v7 + v2 
-let v18 : bool = v8 = ""
-if v18 then
+let v20 : bool = v8 = ""
+if v20 then
     1
 else
     0

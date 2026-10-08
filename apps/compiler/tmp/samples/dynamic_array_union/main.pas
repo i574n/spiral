@@ -5,7 +5,7 @@ uses SysUtils, Math;
 type
   TArray0 = array of LongInt;
   TUS0 = record tag: LongInt; c1_0: TArray0; end;
-function method0(v0: TUS0): LongInt; forward;
+function score_0(v0: TUS0): LongInt; forward;
 function US0_0: TUS0;
 begin
   Result.tag := 0; 
@@ -14,7 +14,7 @@ function US0_1(a0: TArray0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
-function method0(v0: TUS0): LongInt;
+function score_0(v0: TUS0): LongInt;
 var
   v1: TArray0;
   v2: LongInt;
@@ -54,7 +54,7 @@ begin
   v1[0] := 4;
   v1[1] := 5;
   v2 := US0_1(v1);
-  v3 := method0(v2);
+  v3 := score_0(v2);
   v4 := v3 - 11;
   Result := v4;
 end;

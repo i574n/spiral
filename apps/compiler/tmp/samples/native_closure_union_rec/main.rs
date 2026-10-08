@@ -17,10 +17,10 @@ impl UH0 {
 fn closure0(mut v0: u64) -> Rc<dyn Fn() -> Rc<UH0>> {
     Rc::new(move || -> Rc<UH0> {
         let mut v1: u64 = v0.wrapping_sub(1u64);
-        method0(v1)
+        build_0(v1)
     })
 }
-fn method0(mut v0: u64) -> Rc<UH0> {
+fn build_0(mut v0: u64) -> Rc<UH0> {
     let mut v1: bool = v0 == 0u64;
     if v1 {
         { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_1); } CASE.with(|case| case.clone()) }
@@ -29,7 +29,7 @@ fn method0(mut v0: u64) -> Rc<UH0> {
         Rc::new(UH0::UH0_0(v0, v3.clone()))
     }
 }
-fn method1(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
+fn sum_1(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
     loop {
         match &*v0 {
             UH0::UH0_0(v2, v3) => {
@@ -48,9 +48,9 @@ fn method1(mut v0: Rc<UH0>, mut v1: u64) -> u64 {
 }
 fn spiral_main() -> i32 {
     let mut v0: u64 = 10u64;
-    let mut v1: Rc<UH0> = method0(v0);
+    let mut v1: Rc<UH0> = build_0(v0);
     let mut v2: u64 = 0u64;
-    let mut v3: u64 = method1(v1.clone(), v2);
+    let mut v3: u64 = sum_1(v1.clone(), v2);
     let mut v4: i32 = 5i32;
     let mut v5: i32 = (v3 as i32);
     let mut v6: i32 = v4.wrapping_mul(2i32);

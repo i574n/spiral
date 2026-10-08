@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8) i32 {
+fn measure_0(p0: []const u8) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     v1 = @as(i32, @intCast(v0.len));
@@ -118,8 +118,8 @@ fn spiralMain() i32 {
     var v3: i32 = undefined; _ = &v3;
     var v4: i32 = undefined; _ = &v4;
     v0 = "qwe";
-    v1 = method0(v0);
-    v2 = method0(v0);
+    v1 = measure_0(v0);
+    v2 = measure_0(v0);
     v3 = v1 +% v2;
     v4 = v3 -% @as(i32, 6);
     return v4;

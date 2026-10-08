@@ -77,11 +77,11 @@ pub type Uh0 {
     Uh0i0
     Uh0i1(SpiralArray(Int), Uh0)
 }
-pub fn method0(v0: Uh0) -> Int {
+pub fn sum_0(v0: Uh0) -> Int {
     case v0  {
         Uh0i1(v1, v2) -> {
             let v3 = v1.size
-            let v4 = method0(v2)
+            let v4 = sum_0(v2)
             let v5 = spiral_wrap_signed(v3 + v4, 32)
             v5
         }
@@ -96,7 +96,7 @@ let v1 = spiral_array_create(v0)
 let v2 = Uh0i0
 let v3 = Uh0i1(v1, v2)
 let v4 = Uh0i1(v1, v3)
-let v5 = method0(v4)
+let v5 = sum_0(v4)
 let v6 = spiral_wrap_signed(v5 - 4, 32)
 v6
 }

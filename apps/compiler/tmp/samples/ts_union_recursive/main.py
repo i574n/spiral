@@ -23,11 +23,11 @@ class UH0_1(NamedTuple): # Cons
     v0 : i32
     v1 : UH0
     tag = 1
-def method0(v0 : UH0) -> i32:
+def sum_0(v0 : UH0) -> i32:
     match v0:
         case UH0_1(v1, v2): # Cons
             del v0
-            v3 = method0(v2)
+            v3 = sum_0(v2)
             del v2
             v4 = v1 + v3
             del v1, v3
@@ -48,7 +48,7 @@ def main():
     del v1, v4
     v6 = UH0_1(v0, v5)
     del v0, v5
-    v7 = method0(v6)
+    v7 = sum_0(v6)
     del v6
     v8 = v7 - 6
     del v7

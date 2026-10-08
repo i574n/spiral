@@ -7,7 +7,7 @@ function US0_0(): US0 { return { tag: 0 }; }
 function US0_1(): US0 { return { tag: 1 }; }
 function US0_2(): US0 { return { tag: 2 }; }
 function US0_3(): US0 { return { tag: 3 }; }
-function method0(v0: US0): number {
+function score_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
             return 1;
@@ -47,7 +47,7 @@ export function main(): number {
             }
         }
     }
-    let v11: number = method0(v10);
+    let v11: number = score_0(v10);
     let v12: number = (v11 - 4) | 0;
     return v12;
 }

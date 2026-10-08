@@ -11,7 +11,7 @@ type US0_1 = { readonly tag: 1, readonly f0: Array<Array<number>> };
 type US0 = US0_0 | US0_1;
 function US0_0(): US0 { return { tag: 0 }; }
 function US0_1(f0: Array<Array<number>>): US0 { return { tag: 1, f0: f0 }; }
-function method0(v0: US0): number {
+function bump_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
             return 0;
@@ -29,7 +29,7 @@ function method0(v0: US0): number {
         default: throw new Error("Compiler error: unreachable union case.");
     }
 }
-function method1(v0: US0): number {
+function score_1(v0: US0): number {
     switch (v0.tag) {
         case 0: {
             return 0;
@@ -64,9 +64,9 @@ export function main(): number {
     spiral_array_set(v1, 0, v2);
     spiral_array_set(v1, 1, v3);
     let v4: US0 = US0_1(v1);
-    let v5: number = method0(v4);
+    let v5: number = bump_0(v4);
     let v6: US0 = US0_1(v1);
-    let v7: number = method1(v6);
+    let v7: number = score_1(v6);
     let v8: number = (v7 + v5) | 0;
     let v9: number = (v8 - 19) | 0;
     return v9;

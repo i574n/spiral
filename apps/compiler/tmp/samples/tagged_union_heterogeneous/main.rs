@@ -14,7 +14,7 @@ impl US0 {
         }
     }
 }
-fn method0(mut v0: US0) -> i32 {
+fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_1(v2) => {
             let mut v2: bool = *v2;
@@ -37,7 +37,7 @@ fn spiral_main() -> i32 {
     } else {
         US0::US0_1(true)
     };
-    let mut v4: i32 = method0(v3.clone());
+    let mut v4: i32 = score_0(v3.clone());
     let mut v5: i32 = v4.wrapping_sub(9i32);
     v5
 }

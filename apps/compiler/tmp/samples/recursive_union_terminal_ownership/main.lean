@@ -33,7 +33,7 @@ def U0.spiralTag : U0 → Int32
   | .c0 .. => 0
   | .c1 .. => 1
 mutual
-partial def method1 (p0 : U0) : IO Int32 := do
+partial def sum_1 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : Int32 := default
     let mut v2 : U0 := default
@@ -49,19 +49,19 @@ partial def method1 (p0 : U0) : IO Int32 := do
         v1 := f1
         v2 := f2
         v3 := f3
-        v4 := (← method1 v2)
-        v5 := (← method1 v3)
+        v4 := (← sum_1 v2)
+        v5 := (← sum_1 v3)
         v6 := (v4 + v5)
         v7 := (v1 + v6)
         return v7
-partial def method0 (p0 : U0) (p1 : U0) : IO Int32 := do
+partial def consume_pair_0 (p0 : U0) (p1 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : U0 := p1
     let mut v2 : Int32 := default
     let mut v3 : Int32 := default
     let mut v4 : Int32 := default
-    v2 := (← method1 v0)
-    v3 := (← method1 v1)
+    v2 := (← sum_1 v0)
+    v3 := (← sum_1 v1)
     v4 := (v2 + v3)
     return v4
 partial def spiralMain : IO Int32 := do
@@ -87,7 +87,7 @@ partial def spiralMain : IO Int32 := do
     v7 := U0.c0
     v8 := (U0.c1 v6 v7 v7)
     v9 := (U0.c1 v5 v8 v8)
-    v10 := (← method0 v4 v9)
+    v10 := (← consume_pair_0 v4 v9)
     v11 := (v10 - (10 : Int32))
     return v11
 end

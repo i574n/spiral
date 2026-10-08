@@ -2879,6 +2879,7 @@ int32_t loop22(int32_t v0, int32_t v1, int32_t v2){
     }
 }
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }

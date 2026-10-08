@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8, p1: i32) i32 {
+fn f_0(p0: []const u8, p1: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = undefined; _ = &v2;
@@ -119,7 +119,7 @@ fn spiralMain() i32 {
     var v1: i32 = undefined; _ = &v1;
     v0 = "abc";
     v1 = @as(i32, 1);
-    return method0(v0, v1);
+    return f_0(v0, v1);
 }
 pub fn main() void {
     spiral_gpa = spiral_arena.allocator();

@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8) []const u8 {
+fn middle_0(p0: []const u8) []const u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: []const u8 = undefined; _ = &v1;
     v1 = spiralStringSlice(v0, @as(i64, @as(i32, 1)), @as(i64, @as(i32, 3)));
@@ -121,7 +121,7 @@ fn spiralMain() i32 {
     var v6: u8 = undefined; _ = &v6;
     var v7: bool = undefined; _ = &v7;
     v0 = "alpha";
-    v1 = method0(v0);
+    v1 = middle_0(v0);
     v2 = @as(i32, @intCast(v1.len));
     v3 = v2 == @as(i32, 3);
     if (v3) {

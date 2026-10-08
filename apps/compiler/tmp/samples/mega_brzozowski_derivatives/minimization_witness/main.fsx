@@ -83,15 +83,15 @@ and [<Struct>] US9 =
 and UH14 =
     | UH14_0
     | UH14_1 of UH12 * UH14
-let rec method3 (v0 : UH0, v1 : UH0) : US1 =
+let rec regex_compare_3 (v0 : UH0, v1 : UH0) : US1 =
     match v0 with
     | UH0_3(v53, v54) -> (* RegexAlt *)
         match v1 with
         | UH0_3(v55, v56) -> (* RegexAlt *)
-            let v57 : US1 = method3(v53, v55)
+            let v57 : US1 = regex_compare_3(v53, v55)
             match v57 with
             | US1_1 -> (* SymbolSame *)
-                method3(v54, v56)
+                regex_compare_3(v54, v56)
             | _ ->
                 v57
         | _ ->
@@ -99,10 +99,10 @@ let rec method3 (v0 : UH0, v1 : UH0) : US1 =
     | UH0_4(v28, v29) -> (* RegexCat *)
         match v1 with
         | UH0_4(v34, v35) -> (* RegexCat *)
-            let v36 : US1 = method3(v28, v34)
+            let v36 : US1 = regex_compare_3(v28, v34)
             match v36 with
             | US1_1 -> (* SymbolSame *)
-                method3(v29, v35)
+                regex_compare_3(v29, v35)
             | _ ->
                 v36
         | UH0_2(v32) -> (* RegexChar *)
@@ -154,16 +154,16 @@ let rec method3 (v0 : UH0, v1 : UH0) : US1 =
         | UH0_3(v45, v46) -> (* RegexAlt *)
             US1_0
         | UH0_5(v48) -> (* RegexStar *)
-            method3(v44, v48)
+            regex_compare_3(v44, v48)
         | _ ->
             US1_2
-and method2 (v0 : UH0, v1 : UH0) : UH0 =
+and alt_insert_sorted_2 (v0 : UH0, v1 : UH0) : UH0 =
     match v1 with
     | UH0_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US1 = method3(v0, v2)
+        let v4 : US1 = regex_compare_3(v0, v2)
         match v4 with
         | US1_2 -> (* SymbolGreater *)
-            let v6 : UH0 = method2(v0, v3)
+            let v6 : UH0 = alt_insert_sorted_2(v0, v3)
             UH0_3(v2, v6)
         | US1_0 -> (* SymbolLess *)
             UH0_3(v0, v1)
@@ -172,7 +172,7 @@ and method2 (v0 : UH0, v1 : UH0) : UH0 =
     | UH0_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US1 = method3(v0, v1)
+        let v11 : US1 = regex_compare_3(v0, v1)
         match v11 with
         | US1_2 -> (* SymbolGreater *)
             UH0_3(v1, v0)
@@ -180,23 +180,23 @@ and method2 (v0 : UH0, v1 : UH0) : UH0 =
             UH0_3(v0, v1)
         | US1_1 -> (* SymbolSame *)
             v1
-and method1 (v0 : UH0, v1 : UH0) : UH0 =
+and make_alt_1 (v0 : UH0, v1 : UH0) : UH0 =
     match v0 with
     | UH0_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH0 = method2(v2, v1)
-        method1(v3, v4)
+        let v4 : UH0 = alt_insert_sorted_2(v2, v1)
+        make_alt_1(v3, v4)
     | UH0_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method2(v0, v1)
-and method5 (v0 : UH0, v1 : UH0) : bool =
+        alt_insert_sorted_2(v0, v1)
+and regex_equal_5 (v0 : UH0, v1 : UH0) : bool =
     match v0 with
     | UH0_3(v18, v19) -> (* RegexAlt *)
         match v1 with
         | UH0_3(v20, v21) -> (* RegexAlt *)
-            let v22 : bool = method5(v18, v20)
+            let v22 : bool = regex_equal_5(v18, v20)
             if v22 then
-                method5(v19, v21)
+                regex_equal_5(v19, v21)
             else
                 false
         | _ ->
@@ -204,9 +204,9 @@ and method5 (v0 : UH0, v1 : UH0) : bool =
     | UH0_4(v26, v27) -> (* RegexCat *)
         match v1 with
         | UH0_4(v28, v29) -> (* RegexCat *)
-            let v30 : bool = method5(v26, v28)
+            let v30 : bool = regex_equal_5(v26, v28)
             if v30 then
-                method5(v27, v29)
+                regex_equal_5(v27, v29)
             else
                 false
         | _ ->
@@ -250,10 +250,10 @@ and method5 (v0 : UH0, v1 : UH0) : bool =
     | UH0_5(v34) -> (* RegexStar *)
         match v1 with
         | UH0_5(v35) -> (* RegexStar *)
-            method5(v34, v35)
+            regex_equal_5(v34, v35)
         | _ ->
             false
-and method4 (v0 : UH0, v1 : UH0) : UH0 =
+and make_cat_4 (v0 : UH0, v1 : UH0) : UH0 =
     match v0 with
     | UH0_0 -> (* RegexEmpty *)
         UH0_0
@@ -272,12 +272,12 @@ and method4 (v0 : UH0, v1 : UH0) : UH0 =
                 | _ ->
                     match v0 with
                     | UH0_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH0 = method4(v13, v1)
+                        let v14 : UH0 = make_cat_4(v13, v1)
                         UH0_4(v12, v14)
                     | UH0_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH0_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method5(v4, v5)
+                            let v6 : bool = regex_equal_5(v4, v5)
                             if v6 then
                                 UH0_5(v4)
                             else
@@ -286,7 +286,7 @@ and method4 (v0 : UH0, v1 : UH0) : UH0 =
                             UH0_4(v0, v1)
                     | _ ->
                         UH0_4(v0, v1)
-and method6 (v0 : UH0) : UH0 =
+and make_star_6 (v0 : UH0) : UH0 =
     match v0 with
     | UH0_0 -> (* RegexEmpty *)
         UH0_1
@@ -296,16 +296,16 @@ and method6 (v0 : UH0) : UH0 =
         UH0_5(v3)
     | _ ->
         UH0_5(v0)
-and method0 (v0 : UH0) : UH0 =
+and normalize_0 (v0 : UH0) : UH0 =
     match v0 with
     | UH0_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH0 = method0(v5)
-        let v8 : UH0 = method0(v6)
-        method1(v7, v8)
+        let v7 : UH0 = normalize_0(v5)
+        let v8 : UH0 = normalize_0(v6)
+        make_alt_1(v7, v8)
     | UH0_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH0 = method0(v10)
-        let v13 : UH0 = method0(v11)
-        method4(v12, v13)
+        let v12 : UH0 = normalize_0(v10)
+        let v13 : UH0 = normalize_0(v11)
+        make_cat_4(v12, v13)
     | UH0_2(v3) -> (* RegexChar *)
         UH0_2(v3)
     | UH0_0 -> (* RegexEmpty *)
@@ -313,25 +313,25 @@ and method0 (v0 : UH0) : UH0 =
     | UH0_1 -> (* RegexEpsilon *)
         UH0_1
     | UH0_5(v15) -> (* RegexStar *)
-        let v16 : UH0 = method0(v15)
-        method6(v16)
-and method8 (v0 : UH1, v1 : UH1) : UH1 =
+        let v16 : UH0 = normalize_0(v15)
+        make_star_6(v16)
+and state_budget_add_8 (v0 : UH1, v1 : UH1) : UH1 =
     match v0 with
     | UH1_1(v2) -> (* StateBudgetSucc *)
-        let v3 : UH1 = method8(v2, v1)
+        let v3 : UH1 = state_budget_add_8(v2, v1)
         UH1_1(v3)
     | UH1_0 -> (* StateBudgetZero *)
         v1
-and method7 (v0 : UH0) : UH1 =
+and regex_position_count_7 (v0 : UH0) : UH1 =
     match v0 with
     | UH0_3(v6, v7) -> (* RegexAlt *)
-        let v8 : UH1 = method7(v6)
-        let v9 : UH1 = method7(v7)
-        method8(v8, v9)
+        let v8 : UH1 = regex_position_count_7(v6)
+        let v9 : UH1 = regex_position_count_7(v7)
+        state_budget_add_8(v8, v9)
     | UH0_4(v11, v12) -> (* RegexCat *)
-        let v13 : UH1 = method7(v11)
-        let v14 : UH1 = method7(v12)
-        method8(v13, v14)
+        let v13 : UH1 = regex_position_count_7(v11)
+        let v14 : UH1 = regex_position_count_7(v12)
+        state_budget_add_8(v13, v14)
     | UH0_2(v3) -> (* RegexChar *)
         let v4 : UH1 = UH1_0
         UH1_1(v4)
@@ -340,27 +340,27 @@ and method7 (v0 : UH0) : UH1 =
     | UH0_1 -> (* RegexEpsilon *)
         UH1_0
     | UH0_5(v16) -> (* RegexStar *)
-        method7(v16)
-and method10 (v0 : UH1) : UH1 =
+        regex_position_count_7(v16)
+and state_budget_add_10 (v0 : UH1) : UH1 =
     match v0 with
     | UH1_1(v1) -> (* StateBudgetSucc *)
-        let v2 : UH1 = method8(v1, v0)
+        let v2 : UH1 = state_budget_add_8(v1, v0)
         UH1_1(v2)
     | UH1_0 -> (* StateBudgetZero *)
         v0
-and method9 (v0 : UH1) : UH1 =
+and state_budget_pow2_9 (v0 : UH1) : UH1 =
     match v0 with
     | UH1_1(v3) -> (* StateBudgetSucc *)
-        let v4 : UH1 = method9(v3)
-        method10(v4)
+        let v4 : UH1 = state_budget_pow2_9(v3)
+        state_budget_add_10(v4)
     | UH1_0 -> (* StateBudgetZero *)
         let v1 : UH1 = UH1_0
         UH1_1(v1)
-and method15 (v0 : UH0) : US3 =
+and nullable_15 (v0 : UH0) : US3 =
     match v0 with
     | UH0_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method15(v5)
-        let v8 : US3 = method15(v6)
+        let v7 : US3 = nullable_15(v5)
+        let v8 : US3 = nullable_15(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -375,8 +375,8 @@ and method15 (v0 : UH0) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH0_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method15(v16)
-        let v19 : US3 = method15(v17)
+        let v18 : US3 = nullable_15(v16)
+        let v19 : US3 = nullable_15(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -394,23 +394,23 @@ and method15 (v0 : UH0) : US3 =
         US3_0
     | UH0_5(v25) -> (* RegexStar *)
         US3_0
-and method14 (v0 : UH0, v1 : US0) : UH0 =
+and derivative_14 (v0 : UH0, v1 : US0) : UH0 =
     match v0 with
     | UH0_3(v19, v20) -> (* RegexAlt *)
-        let v21 : UH0 = method14(v19, v1)
-        let v22 : UH0 = method14(v20, v1)
-        method1(v21, v22)
+        let v21 : UH0 = derivative_14(v19, v1)
+        let v22 : UH0 = derivative_14(v20, v1)
+        make_alt_1(v21, v22)
     | UH0_4(v24, v25) -> (* RegexCat *)
-        let v26 : US3 = method15(v24)
+        let v26 : US3 = nullable_15(v24)
         match v26 with
         | US3_1 -> (* NonNullable *)
-            let v31 : UH0 = method14(v24, v1)
-            method4(v31, v25)
+            let v31 : UH0 = derivative_14(v24, v1)
+            make_cat_4(v31, v25)
         | US3_0 -> (* Nullable *)
-            let v27 : UH0 = method14(v24, v1)
-            let v28 : UH0 = method4(v27, v25)
-            let v29 : UH0 = method14(v25, v1)
-            method1(v28, v29)
+            let v27 : UH0 = derivative_14(v24, v1)
+            let v28 : UH0 = make_cat_4(v27, v25)
+            let v29 : UH0 = derivative_14(v25, v1)
+            make_alt_1(v28, v29)
     | UH0_2(v4) -> (* RegexChar *)
         let v14 : US1 =
             match v4 with
@@ -441,88 +441,88 @@ and method14 (v0 : UH0, v1 : US0) : UH0 =
     | UH0_1 -> (* RegexEpsilon *)
         UH0_0
     | UH0_5(v35) -> (* RegexStar *)
-        let v36 : UH0 = method14(v35, v1)
-        let v37 : UH0 = method6(v35)
-        method4(v36, v37)
-and method13 (v0 : UH0, v1 : US0) : UH0 =
-    let v2 : UH0 = method0(v0)
-    let v3 : UH0 = method14(v2, v1)
-    method0(v3)
-and method16 (v0 : UH0, v1 : UH3) : bool =
+        let v36 : UH0 = derivative_14(v35, v1)
+        let v37 : UH0 = make_star_6(v35)
+        make_cat_4(v36, v37)
+and canonical_derivative_13 (v0 : UH0, v1 : US0) : UH0 =
+    let v2 : UH0 = normalize_0(v0)
+    let v3 : UH0 = derivative_14(v2, v1)
+    normalize_0(v3)
+and regex_list_contains_16 (v0 : UH0, v1 : UH3) : bool =
     match v1 with
     | UH3_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method5(v0, v2)
+        let v4 : bool = regex_equal_5(v0, v2)
         if v4 then
             true
         else
-            method16(v0, v3)
+            regex_list_contains_16(v0, v3)
     | UH3_0 -> (* RegexListNil *)
         false
-and method12 (v0 : UH0, v1 : UH2, v2 : UH3, v3 : UH3) : struct (UH3 * UH3) =
+and dfa_enqueue_symbols_12 (v0 : UH0, v1 : UH2, v2 : UH3, v3 : UH3) : struct (UH3 * UH3) =
     match v1 with
     | UH2_1(v4, v5) -> (* SymbolListCons *)
-        let v6 : UH0 = method13(v0, v4)
-        let v7 : bool = method16(v6, v2)
+        let v6 : UH0 = canonical_derivative_13(v0, v4)
+        let v7 : bool = regex_list_contains_16(v6, v2)
         if v7 then
-            method12(v0, v5, v2, v3)
+            dfa_enqueue_symbols_12(v0, v5, v2, v3)
         else
             let v10 : UH3 = UH3_1(v6, v2)
             let v11 : UH3 = UH3_1(v6, v3)
-            method12(v0, v5, v10, v11)
+            dfa_enqueue_symbols_12(v0, v5, v10, v11)
     | UH2_0 -> (* SymbolListNil *)
         struct (v2, v3)
-and method11 (v0 : UH2, v1 : UH1, v2 : UH3, v3 : UH3) : US2 =
+and dfa_closure_loop_bounded_11 (v0 : UH2, v1 : UH1, v2 : UH3, v3 : UH3) : US2 =
     match v3 with
     | UH3_1(v5, v6) -> (* RegexListCons *)
         match v1 with
         | UH1_1(v8) -> (* StateBudgetSucc *)
-            let struct (v9 : UH3, v10 : UH3) = method12(v5, v0, v2, v6)
-            method11(v0, v8, v9, v10)
+            let struct (v9 : UH3, v10 : UH3) = dfa_enqueue_symbols_12(v5, v0, v2, v6)
+            dfa_closure_loop_bounded_11(v0, v8, v9, v10)
         | UH1_0 -> (* StateBudgetZero *)
             US2_1(v2)
     | UH3_0 -> (* RegexListNil *)
         US2_0(v2)
-and method20 (v0 : UH0, v1 : UH0, v2 : UH4) : bool =
+and dfa_state_pair_list_contains_20 (v0 : UH0, v1 : UH0, v2 : UH4) : bool =
     match v2 with
     | UH4_1(v3, v4, v5) -> (* DfaStatePairCons *)
-        let v6 : bool = method5(v0, v3)
+        let v6 : bool = regex_equal_5(v0, v3)
         let v11 : bool =
             if v6 then
-                method5(v1, v4)
+                regex_equal_5(v1, v4)
             else
-                let v8 : bool = method5(v0, v4)
+                let v8 : bool = regex_equal_5(v0, v4)
                 if v8 then
-                    method5(v1, v3)
+                    regex_equal_5(v1, v3)
                 else
                     false
         if v11 then
             true
         else
-            method20(v0, v1, v5)
+            dfa_state_pair_list_contains_20(v0, v1, v5)
     | UH4_0 -> (* DfaStatePairNil *)
         false
-and method21 (v0 : UH0, v1 : UH0, v2 : UH2, v3 : UH4) : UH4 =
+and dfa_state_pair_enqueue_symbols_21 (v0 : UH0, v1 : UH0, v2 : UH2, v3 : UH4) : UH4 =
     match v2 with
     | UH2_1(v4, v5) -> (* SymbolListCons *)
-        let v6 : UH0 = method13(v0, v4)
-        let v7 : UH0 = method13(v1, v4)
+        let v6 : UH0 = canonical_derivative_13(v0, v4)
+        let v7 : UH0 = canonical_derivative_13(v1, v4)
         let v8 : UH4 = UH4_1(v6, v7, v3)
-        method21(v0, v1, v5, v8)
+        dfa_state_pair_enqueue_symbols_21(v0, v1, v5, v8)
     | UH2_0 -> (* SymbolListNil *)
         v3
-and method19 (v0 : UH2, v1 : UH4, v2 : UH4) : bool =
+and dfa_bisimulation_work_19 (v0 : UH2, v1 : UH4, v2 : UH4) : bool =
     match v1 with
     | UH4_1(v3, v4, v5) -> (* DfaStatePairCons *)
-        let v6 : bool = method5(v3, v4)
+        let v6 : bool = regex_equal_5(v3, v4)
         if v6 then
-            method19(v0, v5, v2)
+            dfa_bisimulation_work_19(v0, v5, v2)
         else
-            let v8 : bool = method20(v3, v4, v2)
+            let v8 : bool = dfa_state_pair_list_contains_20(v3, v4, v2)
             if v8 then
-                method19(v0, v5, v2)
+                dfa_bisimulation_work_19(v0, v5, v2)
             else
-                let v10 : US3 = method15(v3)
-                let v11 : US3 = method15(v4)
+                let v10 : US3 = nullable_15(v3)
+                let v11 : US3 = nullable_15(v4)
                 let v15 : bool =
                     match v10 with
                     | US3_1 -> (* NonNullable *)
@@ -538,71 +538,71 @@ and method19 (v0 : UH2, v1 : UH4, v2 : UH4) : bool =
                         | _ ->
                             false
                 if v15 then
-                    let v16 : UH4 = method21(v3, v4, v0, v5)
+                    let v16 : UH4 = dfa_state_pair_enqueue_symbols_21(v3, v4, v0, v5)
                     let v17 : UH4 = UH4_1(v3, v4, v2)
-                    method19(v0, v16, v17)
+                    dfa_bisimulation_work_19(v0, v16, v17)
                 else
                     false
     | UH4_0 -> (* DfaStatePairNil *)
         true
-and method18 (v0 : UH0, v1 : UH3, v2 : UH2) : US4 =
+and dfa_find_bisimilar_representative_18 (v0 : UH0, v1 : UH3, v2 : UH2) : US4 =
     match v1 with
     | UH3_1(v4, v5) -> (* RegexListCons *)
-        let v6 : UH0 = method0(v0)
-        let v7 : UH0 = method0(v4)
+        let v6 : UH0 = normalize_0(v0)
+        let v7 : UH0 = normalize_0(v4)
         let v8 : UH4 = UH4_0
         let v9 : UH4 = UH4_1(v6, v7, v8)
         let v10 : UH4 = UH4_0
-        let v11 : bool = method19(v2, v9, v10)
+        let v11 : bool = dfa_bisimulation_work_19(v2, v9, v10)
         if v11 then
             US4_0(v4)
         else
-            method18(v0, v5, v2)
+            dfa_find_bisimilar_representative_18(v0, v5, v2)
     | UH3_0 -> (* RegexListNil *)
         US4_1
-and method17 (v0 : UH3, v1 : UH2, v2 : UH3) : UH3 =
+and dfa_minimize_states_loop_17 (v0 : UH3, v1 : UH2, v2 : UH3) : UH3 =
     match v0 with
     | UH3_1(v3, v4) -> (* RegexListCons *)
-        let v5 : US4 = method18(v3, v2, v1)
+        let v5 : US4 = dfa_find_bisimilar_representative_18(v3, v2, v1)
         match v5 with
         | US4_0(v6) -> (* DfaRepresentativeFound *)
-            method17(v4, v1, v2)
+            dfa_minimize_states_loop_17(v4, v1, v2)
         | US4_1 -> (* DfaRepresentativeMissing *)
             let v8 : UH3 = UH3_1(v3, v2)
-            method17(v4, v1, v8)
+            dfa_minimize_states_loop_17(v4, v1, v8)
     | UH3_0 -> (* RegexListNil *)
         v2
-and method26 (v0 : UH5, v1 : US0) : UH5 =
+and dfa_constructive_input_snoc_26 (v0 : UH5, v1 : US0) : UH5 =
     match v0 with
     | UH5_1(v4, v5) -> (* InputCons *)
-        let v6 : UH5 = method26(v5, v1)
+        let v6 : UH5 = dfa_constructive_input_snoc_26(v5, v1)
         UH5_1(v4, v6)
     | UH5_0 -> (* InputEmpty *)
         let v2 : UH5 = UH5_0
         UH5_1(v1, v2)
-and method25 (v0 : UH0, v1 : UH0, v2 : UH5, v3 : UH2, v4 : UH6) : UH6 =
+and dfa_constructive_pair_trace_enqueue_symbols_25 (v0 : UH0, v1 : UH0, v2 : UH5, v3 : UH2, v4 : UH6) : UH6 =
     match v3 with
     | UH2_1(v5, v6) -> (* SymbolListCons *)
-        let v7 : UH0 = method13(v0, v5)
-        let v8 : UH0 = method13(v1, v5)
-        let v9 : UH5 = method26(v2, v5)
+        let v7 : UH0 = canonical_derivative_13(v0, v5)
+        let v8 : UH0 = canonical_derivative_13(v1, v5)
+        let v9 : UH5 = dfa_constructive_input_snoc_26(v2, v5)
         let v10 : UH6 = UH6_1(v7, v8, v9, v4)
-        method25(v0, v1, v2, v6, v10)
+        dfa_constructive_pair_trace_enqueue_symbols_25(v0, v1, v2, v6, v10)
     | UH2_0 -> (* SymbolListNil *)
         v4
-and method24 (v0 : UH2, v1 : UH6, v2 : UH4) : US5 =
+and dfa_constructive_distinguishing_work_24 (v0 : UH2, v1 : UH6, v2 : UH4) : US5 =
     match v1 with
     | UH6_1(v4, v5, v6, v7) -> (* DfaConstructivePairTraceCons *)
-        let v8 : bool = method5(v4, v5)
+        let v8 : bool = regex_equal_5(v4, v5)
         if v8 then
-            method24(v0, v7, v2)
+            dfa_constructive_distinguishing_work_24(v0, v7, v2)
         else
-            let v10 : bool = method20(v4, v5, v2)
+            let v10 : bool = dfa_state_pair_list_contains_20(v4, v5, v2)
             if v10 then
-                method24(v0, v7, v2)
+                dfa_constructive_distinguishing_work_24(v0, v7, v2)
             else
-                let v12 : US3 = method15(v4)
-                let v13 : US3 = method15(v5)
+                let v12 : US3 = nullable_15(v4)
+                let v13 : US3 = nullable_15(v5)
                 let v17 : bool =
                     match v12 with
                     | US3_1 -> (* NonNullable *)
@@ -618,29 +618,29 @@ and method24 (v0 : UH2, v1 : UH6, v2 : UH4) : US5 =
                         | _ ->
                             false
                 if v17 then
-                    let v18 : UH6 = method25(v4, v5, v6, v0, v7)
+                    let v18 : UH6 = dfa_constructive_pair_trace_enqueue_symbols_25(v4, v5, v6, v0, v7)
                     let v19 : UH4 = UH4_1(v4, v5, v2)
-                    method24(v0, v18, v19)
+                    dfa_constructive_distinguishing_work_24(v0, v18, v19)
                 else
                     US5_1(v6)
     | UH6_0 -> (* DfaConstructivePairTraceNil *)
         US5_0
-and method28 (v0 : UH7, v1 : UH7) : UH7 =
+and input_list_append_28 (v0 : UH7, v1 : UH7) : UH7 =
     match v0 with
     | UH7_1(v2, v3) -> (* InputListCons *)
-        let v4 : UH7 = method28(v3, v1)
+        let v4 : UH7 = input_list_append_28(v3, v1)
         UH7_1(v2, v4)
     | UH7_0 -> (* InputListNil *)
         v1
-and method29 (v0 : UH0, v1 : UH7) : UH7 =
+and consume_right_29 (v0 : UH0, v1 : UH7) : UH7 =
     match v1 with
     | UH7_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH7 = method27(v0, v3)
-        let v6 : UH7 = method29(v0, v4)
-        method28(v5, v6)
+        let v5 : UH7 = language_remainders_27(v0, v3)
+        let v6 : UH7 = consume_right_29(v0, v4)
+        input_list_append_28(v5, v6)
     | UH7_0 -> (* InputListNil *)
         UH7_0
-and method33 (v0 : UH5, v1 : UH5) : bool =
+and input_equal_33 (v0 : UH5, v1 : UH5) : bool =
     match v0 with
     | UH5_1(v3, v4) -> (* InputCons *)
         match v1 with
@@ -666,7 +666,7 @@ and method33 (v0 : UH5, v1 : UH5) : bool =
                 | _ ->
                     false
             if v17 then
-                method33(v4, v6)
+                input_equal_33(v4, v6)
             else
                 false
         | _ ->
@@ -677,45 +677,45 @@ and method33 (v0 : UH5, v1 : UH5) : bool =
             true
         | _ ->
             false
-and method32 (v0 : UH5, v1 : UH7) : bool =
+and input_list_contains_32 (v0 : UH5, v1 : UH7) : bool =
     match v1 with
     | UH7_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method33(v0, v2)
+        let v4 : bool = input_equal_33(v0, v2)
         if v4 then
             true
         else
-            method32(v0, v3)
+            input_list_contains_32(v0, v3)
     | UH7_0 -> (* InputListNil *)
         false
-and method31 (v0 : UH7, v1 : UH7, v2 : UH7) : struct (UH7 * UH7) =
+and input_list_enqueue_new_31 (v0 : UH7, v1 : UH7, v2 : UH7) : struct (UH7 * UH7) =
     match v0 with
     | UH7_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method32(v3, v1)
+        let v5 : bool = input_list_contains_32(v3, v1)
         if v5 then
-            method31(v4, v1, v2)
+            input_list_enqueue_new_31(v4, v1, v2)
         else
             let v8 : UH7 = UH7_1(v3, v1)
             let v9 : UH7 = UH7_1(v3, v2)
-            method31(v4, v8, v9)
+            input_list_enqueue_new_31(v4, v8, v9)
     | UH7_0 -> (* InputListNil *)
         struct (v1, v2)
-and method30 (v0 : UH0, v1 : UH7, v2 : UH7) : UH7 =
+and closure_30 (v0 : UH0, v1 : UH7, v2 : UH7) : UH7 =
     match v1 with
     | UH7_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH7 = method27(v0, v3)
-        let struct (v6 : UH7, v7 : UH7) = method31(v5, v2, v4)
-        method30(v0, v7, v6)
+        let v5 : UH7 = language_remainders_27(v0, v3)
+        let struct (v6 : UH7, v7 : UH7) = input_list_enqueue_new_31(v5, v2, v4)
+        closure_30(v0, v7, v6)
     | UH7_0 -> (* InputListNil *)
         v2
-and method27 (v0 : UH0, v1 : UH5) : UH7 =
+and language_remainders_27 (v0 : UH0, v1 : UH5) : UH7 =
     match v0 with
     | UH0_3(v26, v27) -> (* RegexAlt *)
-        let v28 : UH7 = method27(v26, v1)
-        let v29 : UH7 = method27(v27, v1)
-        method28(v28, v29)
+        let v28 : UH7 = language_remainders_27(v26, v1)
+        let v29 : UH7 = language_remainders_27(v27, v1)
+        input_list_append_28(v28, v29)
     | UH0_4(v31, v32) -> (* RegexCat *)
-        let v33 : UH7 = method27(v31, v1)
-        method29(v32, v33)
+        let v33 : UH7 = language_remainders_27(v31, v1)
+        consume_right_29(v32, v33)
     | UH0_2(v5) -> (* RegexChar *)
         match v1 with
         | UH5_1(v7, v8) -> (* InputCons *)
@@ -756,27 +756,27 @@ and method27 (v0 : UH0, v1 : UH5) : UH7 =
         let v37 : UH7 = UH7_1(v1, v36)
         let v38 : UH7 = UH7_0
         let v39 : UH7 = UH7_1(v1, v38)
-        method30(v35, v37, v39)
-and method23 (v0 : UH0, v1 : UH3, v2 : UH2) : bool =
+        closure_30(v35, v37, v39)
+and dfa_state_distinct_with_witness_against_23 (v0 : UH0, v1 : UH3, v2 : UH2) : bool =
     match v1 with
     | UH3_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH0 = method0(v0)
-        let v6 : UH0 = method0(v3)
+        let v5 : UH0 = normalize_0(v0)
+        let v6 : UH0 = normalize_0(v3)
         let v7 : UH5 = UH5_0
         let v8 : UH6 = UH6_0
         let v9 : UH6 = UH6_1(v5, v6, v7, v8)
         let v10 : UH4 = UH4_0
-        let v11 : US5 = method24(v2, v9, v10)
+        let v11 : US5 = dfa_constructive_distinguishing_work_24(v2, v9, v10)
         match v11 with
         | US5_1(v12) -> (* DfaConstructiveDistinguished *)
-            let v13 : UH0 = method0(v0)
+            let v13 : UH0 = normalize_0(v0)
             let v14 : UH5 = UH5_0
-            let v15 : UH7 = method27(v13, v12)
-            let v16 : bool = method32(v14, v15)
-            let v17 : UH0 = method0(v3)
+            let v15 : UH7 = language_remainders_27(v13, v12)
+            let v16 : bool = input_list_contains_32(v14, v15)
+            let v17 : UH0 = normalize_0(v3)
             let v18 : UH5 = UH5_0
-            let v19 : UH7 = method27(v17, v12)
-            let v20 : bool = method32(v18, v19)
+            let v19 : UH7 = language_remainders_27(v17, v12)
+            let v20 : bool = input_list_contains_32(v18, v19)
             let v22 : bool =
                 if v16 then
                     v20
@@ -785,32 +785,32 @@ and method23 (v0 : UH0, v1 : UH3, v2 : UH2) : bool =
                     v21
             let v23 : bool = v22 = false
             if v23 then
-                method23(v0, v4, v2)
+                dfa_state_distinct_with_witness_against_23(v0, v4, v2)
             else
                 false
         | US5_0 -> (* DfaConstructiveEquivalent *)
             false
     | UH3_0 -> (* RegexListNil *)
         true
-and method22 (v0 : UH3, v1 : UH2) : bool =
+and dfa_minimal_with_distinguishing_witnesses_22 (v0 : UH3, v1 : UH2) : bool =
     match v0 with
     | UH3_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method23(v2, v3, v1)
+        let v4 : bool = dfa_state_distinct_with_witness_against_23(v2, v3, v1)
         if v4 then
-            method22(v3, v1)
+            dfa_minimal_with_distinguishing_witnesses_22(v3, v1)
         else
             false
     | UH3_0 -> (* RegexListNil *)
         true
-and method37 (v0 : UH8, v1 : UH8) : US1 =
+and regex_compare_37 (v0 : UH8, v1 : UH8) : US1 =
     match v0 with
     | UH8_3(v59, v60) -> (* RegexAlt *)
         match v1 with
         | UH8_3(v61, v62) -> (* RegexAlt *)
-            let v63 : US1 = method37(v59, v61)
+            let v63 : US1 = regex_compare_37(v59, v61)
             match v63 with
             | US1_1 -> (* SymbolSame *)
-                method37(v60, v62)
+                regex_compare_37(v60, v62)
             | _ ->
                 v63
         | _ ->
@@ -818,10 +818,10 @@ and method37 (v0 : UH8, v1 : UH8) : US1 =
     | UH8_4(v34, v35) -> (* RegexCat *)
         match v1 with
         | UH8_4(v40, v41) -> (* RegexCat *)
-            let v42 : US1 = method37(v34, v40)
+            let v42 : US1 = regex_compare_37(v34, v40)
             match v42 with
             | US1_1 -> (* SymbolSame *)
-                method37(v35, v41)
+                regex_compare_37(v35, v41)
             | _ ->
                 v42
         | UH8_2(v38) -> (* RegexChar *)
@@ -885,16 +885,16 @@ and method37 (v0 : UH8, v1 : UH8) : US1 =
         | UH8_3(v51, v52) -> (* RegexAlt *)
             US1_0
         | UH8_5(v54) -> (* RegexStar *)
-            method37(v50, v54)
+            regex_compare_37(v50, v54)
         | _ ->
             US1_2
-and method36 (v0 : UH8, v1 : UH8) : UH8 =
+and alt_insert_sorted_36 (v0 : UH8, v1 : UH8) : UH8 =
     match v1 with
     | UH8_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US1 = method37(v0, v2)
+        let v4 : US1 = regex_compare_37(v0, v2)
         match v4 with
         | US1_2 -> (* SymbolGreater *)
-            let v6 : UH8 = method36(v0, v3)
+            let v6 : UH8 = alt_insert_sorted_36(v0, v3)
             UH8_3(v2, v6)
         | US1_0 -> (* SymbolLess *)
             UH8_3(v0, v1)
@@ -903,7 +903,7 @@ and method36 (v0 : UH8, v1 : UH8) : UH8 =
     | UH8_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US1 = method37(v0, v1)
+        let v11 : US1 = regex_compare_37(v0, v1)
         match v11 with
         | US1_2 -> (* SymbolGreater *)
             UH8_3(v1, v0)
@@ -911,23 +911,23 @@ and method36 (v0 : UH8, v1 : UH8) : UH8 =
             UH8_3(v0, v1)
         | US1_1 -> (* SymbolSame *)
             v1
-and method35 (v0 : UH8, v1 : UH8) : UH8 =
+and make_alt_35 (v0 : UH8, v1 : UH8) : UH8 =
     match v0 with
     | UH8_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH8 = method36(v2, v1)
-        method35(v3, v4)
+        let v4 : UH8 = alt_insert_sorted_36(v2, v1)
+        make_alt_35(v3, v4)
     | UH8_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method36(v0, v1)
-and method39 (v0 : UH8, v1 : UH8) : bool =
+        alt_insert_sorted_36(v0, v1)
+and regex_equal_39 (v0 : UH8, v1 : UH8) : bool =
     match v0 with
     | UH8_3(v24, v25) -> (* RegexAlt *)
         match v1 with
         | UH8_3(v26, v27) -> (* RegexAlt *)
-            let v28 : bool = method39(v24, v26)
+            let v28 : bool = regex_equal_39(v24, v26)
             if v28 then
-                method39(v25, v27)
+                regex_equal_39(v25, v27)
             else
                 false
         | _ ->
@@ -935,9 +935,9 @@ and method39 (v0 : UH8, v1 : UH8) : bool =
     | UH8_4(v32, v33) -> (* RegexCat *)
         match v1 with
         | UH8_4(v34, v35) -> (* RegexCat *)
-            let v36 : bool = method39(v32, v34)
+            let v36 : bool = regex_equal_39(v32, v34)
             if v36 then
-                method39(v33, v35)
+                regex_equal_39(v33, v35)
             else
                 false
         | _ ->
@@ -993,10 +993,10 @@ and method39 (v0 : UH8, v1 : UH8) : bool =
     | UH8_5(v40) -> (* RegexStar *)
         match v1 with
         | UH8_5(v41) -> (* RegexStar *)
-            method39(v40, v41)
+            regex_equal_39(v40, v41)
         | _ ->
             false
-and method38 (v0 : UH8, v1 : UH8) : UH8 =
+and make_cat_38 (v0 : UH8, v1 : UH8) : UH8 =
     match v0 with
     | UH8_0 -> (* RegexEmpty *)
         UH8_0
@@ -1015,12 +1015,12 @@ and method38 (v0 : UH8, v1 : UH8) : UH8 =
                 | _ ->
                     match v0 with
                     | UH8_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH8 = method38(v13, v1)
+                        let v14 : UH8 = make_cat_38(v13, v1)
                         UH8_4(v12, v14)
                     | UH8_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH8_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method39(v4, v5)
+                            let v6 : bool = regex_equal_39(v4, v5)
                             if v6 then
                                 UH8_5(v4)
                             else
@@ -1029,7 +1029,7 @@ and method38 (v0 : UH8, v1 : UH8) : UH8 =
                             UH8_4(v0, v1)
                     | _ ->
                         UH8_4(v0, v1)
-and method40 (v0 : UH8) : UH8 =
+and make_star_40 (v0 : UH8) : UH8 =
     match v0 with
     | UH8_0 -> (* RegexEmpty *)
         UH8_1
@@ -1039,16 +1039,16 @@ and method40 (v0 : UH8) : UH8 =
         UH8_5(v3)
     | _ ->
         UH8_5(v0)
-and method34 (v0 : UH8) : UH8 =
+and normalize_34 (v0 : UH8) : UH8 =
     match v0 with
     | UH8_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH8 = method34(v5)
-        let v8 : UH8 = method34(v6)
-        method35(v7, v8)
+        let v7 : UH8 = normalize_34(v5)
+        let v8 : UH8 = normalize_34(v6)
+        make_alt_35(v7, v8)
     | UH8_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH8 = method34(v10)
-        let v13 : UH8 = method34(v11)
-        method38(v12, v13)
+        let v12 : UH8 = normalize_34(v10)
+        let v13 : UH8 = normalize_34(v11)
+        make_cat_38(v12, v13)
     | UH8_2(v3) -> (* RegexChar *)
         UH8_2(v3)
     | UH8_0 -> (* RegexEmpty *)
@@ -1056,18 +1056,18 @@ and method34 (v0 : UH8) : UH8 =
     | UH8_1 -> (* RegexEpsilon *)
         UH8_1
     | UH8_5(v15) -> (* RegexStar *)
-        let v16 : UH8 = method34(v15)
-        method40(v16)
-and method41 (v0 : UH8) : UH1 =
+        let v16 : UH8 = normalize_34(v15)
+        make_star_40(v16)
+and regex_position_count_41 (v0 : UH8) : UH1 =
     match v0 with
     | UH8_3(v6, v7) -> (* RegexAlt *)
-        let v8 : UH1 = method41(v6)
-        let v9 : UH1 = method41(v7)
-        method8(v8, v9)
+        let v8 : UH1 = regex_position_count_41(v6)
+        let v9 : UH1 = regex_position_count_41(v7)
+        state_budget_add_8(v8, v9)
     | UH8_4(v11, v12) -> (* RegexCat *)
-        let v13 : UH1 = method41(v11)
-        let v14 : UH1 = method41(v12)
-        method8(v13, v14)
+        let v13 : UH1 = regex_position_count_41(v11)
+        let v14 : UH1 = regex_position_count_41(v12)
+        state_budget_add_8(v13, v14)
     | UH8_2(v3) -> (* RegexChar *)
         let v4 : UH1 = UH1_0
         UH1_1(v4)
@@ -1076,12 +1076,12 @@ and method41 (v0 : UH8) : UH1 =
     | UH8_1 -> (* RegexEpsilon *)
         UH1_0
     | UH8_5(v16) -> (* RegexStar *)
-        method41(v16)
-and method46 (v0 : UH8) : US3 =
+        regex_position_count_41(v16)
+and nullable_46 (v0 : UH8) : US3 =
     match v0 with
     | UH8_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method46(v5)
-        let v8 : US3 = method46(v6)
+        let v7 : US3 = nullable_46(v5)
+        let v8 : US3 = nullable_46(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -1096,8 +1096,8 @@ and method46 (v0 : UH8) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH8_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method46(v16)
-        let v19 : US3 = method46(v17)
+        let v18 : US3 = nullable_46(v16)
+        let v19 : US3 = nullable_46(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -1115,23 +1115,23 @@ and method46 (v0 : UH8) : US3 =
         US3_0
     | UH8_5(v25) -> (* RegexStar *)
         US3_0
-and method45 (v0 : UH8, v1 : US6) : UH8 =
+and derivative_45 (v0 : UH8, v1 : US6) : UH8 =
     match v0 with
     | UH8_3(v25, v26) -> (* RegexAlt *)
-        let v27 : UH8 = method45(v25, v1)
-        let v28 : UH8 = method45(v26, v1)
-        method35(v27, v28)
+        let v27 : UH8 = derivative_45(v25, v1)
+        let v28 : UH8 = derivative_45(v26, v1)
+        make_alt_35(v27, v28)
     | UH8_4(v30, v31) -> (* RegexCat *)
-        let v32 : US3 = method46(v30)
+        let v32 : US3 = nullable_46(v30)
         match v32 with
         | US3_1 -> (* NonNullable *)
-            let v37 : UH8 = method45(v30, v1)
-            method38(v37, v31)
+            let v37 : UH8 = derivative_45(v30, v1)
+            make_cat_38(v37, v31)
         | US3_0 -> (* Nullable *)
-            let v33 : UH8 = method45(v30, v1)
-            let v34 : UH8 = method38(v33, v31)
-            let v35 : UH8 = method45(v31, v1)
-            method35(v34, v35)
+            let v33 : UH8 = derivative_45(v30, v1)
+            let v34 : UH8 = make_cat_38(v33, v31)
+            let v35 : UH8 = derivative_45(v31, v1)
+            make_alt_35(v34, v35)
     | UH8_2(v4) -> (* RegexChar *)
         let v20 : US1 =
             match v4 with
@@ -1174,88 +1174,88 @@ and method45 (v0 : UH8, v1 : US6) : UH8 =
     | UH8_1 -> (* RegexEpsilon *)
         UH8_0
     | UH8_5(v41) -> (* RegexStar *)
-        let v42 : UH8 = method45(v41, v1)
-        let v43 : UH8 = method40(v41)
-        method38(v42, v43)
-and method44 (v0 : UH8, v1 : US6) : UH8 =
-    let v2 : UH8 = method34(v0)
-    let v3 : UH8 = method45(v2, v1)
-    method34(v3)
-and method47 (v0 : UH8, v1 : UH10) : bool =
+        let v42 : UH8 = derivative_45(v41, v1)
+        let v43 : UH8 = make_star_40(v41)
+        make_cat_38(v42, v43)
+and canonical_derivative_44 (v0 : UH8, v1 : US6) : UH8 =
+    let v2 : UH8 = normalize_34(v0)
+    let v3 : UH8 = derivative_45(v2, v1)
+    normalize_34(v3)
+and regex_list_contains_47 (v0 : UH8, v1 : UH10) : bool =
     match v1 with
     | UH10_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method39(v0, v2)
+        let v4 : bool = regex_equal_39(v0, v2)
         if v4 then
             true
         else
-            method47(v0, v3)
+            regex_list_contains_47(v0, v3)
     | UH10_0 -> (* RegexListNil *)
         false
-and method43 (v0 : UH8, v1 : UH9, v2 : UH10, v3 : UH10) : struct (UH10 * UH10) =
+and dfa_enqueue_symbols_43 (v0 : UH8, v1 : UH9, v2 : UH10, v3 : UH10) : struct (UH10 * UH10) =
     match v1 with
     | UH9_1(v4, v5) -> (* SymbolListCons *)
-        let v6 : UH8 = method44(v0, v4)
-        let v7 : bool = method47(v6, v2)
+        let v6 : UH8 = canonical_derivative_44(v0, v4)
+        let v7 : bool = regex_list_contains_47(v6, v2)
         if v7 then
-            method43(v0, v5, v2, v3)
+            dfa_enqueue_symbols_43(v0, v5, v2, v3)
         else
             let v10 : UH10 = UH10_1(v6, v2)
             let v11 : UH10 = UH10_1(v6, v3)
-            method43(v0, v5, v10, v11)
+            dfa_enqueue_symbols_43(v0, v5, v10, v11)
     | UH9_0 -> (* SymbolListNil *)
         struct (v2, v3)
-and method42 (v0 : UH9, v1 : UH1, v2 : UH10, v3 : UH10) : US7 =
+and dfa_closure_loop_bounded_42 (v0 : UH9, v1 : UH1, v2 : UH10, v3 : UH10) : US7 =
     match v3 with
     | UH10_1(v5, v6) -> (* RegexListCons *)
         match v1 with
         | UH1_1(v8) -> (* StateBudgetSucc *)
-            let struct (v9 : UH10, v10 : UH10) = method43(v5, v0, v2, v6)
-            method42(v0, v8, v9, v10)
+            let struct (v9 : UH10, v10 : UH10) = dfa_enqueue_symbols_43(v5, v0, v2, v6)
+            dfa_closure_loop_bounded_42(v0, v8, v9, v10)
         | UH1_0 -> (* StateBudgetZero *)
             US7_1(v2)
     | UH10_0 -> (* RegexListNil *)
         US7_0(v2)
-and method51 (v0 : UH8, v1 : UH8, v2 : UH11) : bool =
+and dfa_state_pair_list_contains_51 (v0 : UH8, v1 : UH8, v2 : UH11) : bool =
     match v2 with
     | UH11_1(v3, v4, v5) -> (* DfaStatePairCons *)
-        let v6 : bool = method39(v0, v3)
+        let v6 : bool = regex_equal_39(v0, v3)
         let v11 : bool =
             if v6 then
-                method39(v1, v4)
+                regex_equal_39(v1, v4)
             else
-                let v8 : bool = method39(v0, v4)
+                let v8 : bool = regex_equal_39(v0, v4)
                 if v8 then
-                    method39(v1, v3)
+                    regex_equal_39(v1, v3)
                 else
                     false
         if v11 then
             true
         else
-            method51(v0, v1, v5)
+            dfa_state_pair_list_contains_51(v0, v1, v5)
     | UH11_0 -> (* DfaStatePairNil *)
         false
-and method52 (v0 : UH8, v1 : UH8, v2 : UH9, v3 : UH11) : UH11 =
+and dfa_state_pair_enqueue_symbols_52 (v0 : UH8, v1 : UH8, v2 : UH9, v3 : UH11) : UH11 =
     match v2 with
     | UH9_1(v4, v5) -> (* SymbolListCons *)
-        let v6 : UH8 = method44(v0, v4)
-        let v7 : UH8 = method44(v1, v4)
+        let v6 : UH8 = canonical_derivative_44(v0, v4)
+        let v7 : UH8 = canonical_derivative_44(v1, v4)
         let v8 : UH11 = UH11_1(v6, v7, v3)
-        method52(v0, v1, v5, v8)
+        dfa_state_pair_enqueue_symbols_52(v0, v1, v5, v8)
     | UH9_0 -> (* SymbolListNil *)
         v3
-and method50 (v0 : UH9, v1 : UH11, v2 : UH11) : bool =
+and dfa_bisimulation_work_50 (v0 : UH9, v1 : UH11, v2 : UH11) : bool =
     match v1 with
     | UH11_1(v3, v4, v5) -> (* DfaStatePairCons *)
-        let v6 : bool = method39(v3, v4)
+        let v6 : bool = regex_equal_39(v3, v4)
         if v6 then
-            method50(v0, v5, v2)
+            dfa_bisimulation_work_50(v0, v5, v2)
         else
-            let v8 : bool = method51(v3, v4, v2)
+            let v8 : bool = dfa_state_pair_list_contains_51(v3, v4, v2)
             if v8 then
-                method50(v0, v5, v2)
+                dfa_bisimulation_work_50(v0, v5, v2)
             else
-                let v10 : US3 = method46(v3)
-                let v11 : US3 = method46(v4)
+                let v10 : US3 = nullable_46(v3)
+                let v11 : US3 = nullable_46(v4)
                 let v15 : bool =
                     match v10 with
                     | US3_1 -> (* NonNullable *)
@@ -1271,71 +1271,71 @@ and method50 (v0 : UH9, v1 : UH11, v2 : UH11) : bool =
                         | _ ->
                             false
                 if v15 then
-                    let v16 : UH11 = method52(v3, v4, v0, v5)
+                    let v16 : UH11 = dfa_state_pair_enqueue_symbols_52(v3, v4, v0, v5)
                     let v17 : UH11 = UH11_1(v3, v4, v2)
-                    method50(v0, v16, v17)
+                    dfa_bisimulation_work_50(v0, v16, v17)
                 else
                     false
     | UH11_0 -> (* DfaStatePairNil *)
         true
-and method49 (v0 : UH8, v1 : UH10, v2 : UH9) : US8 =
+and dfa_find_bisimilar_representative_49 (v0 : UH8, v1 : UH10, v2 : UH9) : US8 =
     match v1 with
     | UH10_1(v4, v5) -> (* RegexListCons *)
-        let v6 : UH8 = method34(v0)
-        let v7 : UH8 = method34(v4)
+        let v6 : UH8 = normalize_34(v0)
+        let v7 : UH8 = normalize_34(v4)
         let v8 : UH11 = UH11_0
         let v9 : UH11 = UH11_1(v6, v7, v8)
         let v10 : UH11 = UH11_0
-        let v11 : bool = method50(v2, v9, v10)
+        let v11 : bool = dfa_bisimulation_work_50(v2, v9, v10)
         if v11 then
             US8_0(v4)
         else
-            method49(v0, v5, v2)
+            dfa_find_bisimilar_representative_49(v0, v5, v2)
     | UH10_0 -> (* RegexListNil *)
         US8_1
-and method48 (v0 : UH10, v1 : UH9, v2 : UH10) : UH10 =
+and dfa_minimize_states_loop_48 (v0 : UH10, v1 : UH9, v2 : UH10) : UH10 =
     match v0 with
     | UH10_1(v3, v4) -> (* RegexListCons *)
-        let v5 : US8 = method49(v3, v2, v1)
+        let v5 : US8 = dfa_find_bisimilar_representative_49(v3, v2, v1)
         match v5 with
         | US8_0(v6) -> (* DfaRepresentativeFound *)
-            method48(v4, v1, v2)
+            dfa_minimize_states_loop_48(v4, v1, v2)
         | US8_1 -> (* DfaRepresentativeMissing *)
             let v8 : UH10 = UH10_1(v3, v2)
-            method48(v4, v1, v8)
+            dfa_minimize_states_loop_48(v4, v1, v8)
     | UH10_0 -> (* RegexListNil *)
         v2
-and method57 (v0 : UH12, v1 : US6) : UH12 =
+and dfa_constructive_input_snoc_57 (v0 : UH12, v1 : US6) : UH12 =
     match v0 with
     | UH12_1(v4, v5) -> (* InputCons *)
-        let v6 : UH12 = method57(v5, v1)
+        let v6 : UH12 = dfa_constructive_input_snoc_57(v5, v1)
         UH12_1(v4, v6)
     | UH12_0 -> (* InputEmpty *)
         let v2 : UH12 = UH12_0
         UH12_1(v1, v2)
-and method56 (v0 : UH8, v1 : UH8, v2 : UH12, v3 : UH9, v4 : UH13) : UH13 =
+and dfa_constructive_pair_trace_enqueue_symbols_56 (v0 : UH8, v1 : UH8, v2 : UH12, v3 : UH9, v4 : UH13) : UH13 =
     match v3 with
     | UH9_1(v5, v6) -> (* SymbolListCons *)
-        let v7 : UH8 = method44(v0, v5)
-        let v8 : UH8 = method44(v1, v5)
-        let v9 : UH12 = method57(v2, v5)
+        let v7 : UH8 = canonical_derivative_44(v0, v5)
+        let v8 : UH8 = canonical_derivative_44(v1, v5)
+        let v9 : UH12 = dfa_constructive_input_snoc_57(v2, v5)
         let v10 : UH13 = UH13_1(v7, v8, v9, v4)
-        method56(v0, v1, v2, v6, v10)
+        dfa_constructive_pair_trace_enqueue_symbols_56(v0, v1, v2, v6, v10)
     | UH9_0 -> (* SymbolListNil *)
         v4
-and method55 (v0 : UH9, v1 : UH13, v2 : UH11) : US9 =
+and dfa_constructive_distinguishing_work_55 (v0 : UH9, v1 : UH13, v2 : UH11) : US9 =
     match v1 with
     | UH13_1(v4, v5, v6, v7) -> (* DfaConstructivePairTraceCons *)
-        let v8 : bool = method39(v4, v5)
+        let v8 : bool = regex_equal_39(v4, v5)
         if v8 then
-            method55(v0, v7, v2)
+            dfa_constructive_distinguishing_work_55(v0, v7, v2)
         else
-            let v10 : bool = method51(v4, v5, v2)
+            let v10 : bool = dfa_state_pair_list_contains_51(v4, v5, v2)
             if v10 then
-                method55(v0, v7, v2)
+                dfa_constructive_distinguishing_work_55(v0, v7, v2)
             else
-                let v12 : US3 = method46(v4)
-                let v13 : US3 = method46(v5)
+                let v12 : US3 = nullable_46(v4)
+                let v13 : US3 = nullable_46(v5)
                 let v17 : bool =
                     match v12 with
                     | US3_1 -> (* NonNullable *)
@@ -1351,29 +1351,29 @@ and method55 (v0 : UH9, v1 : UH13, v2 : UH11) : US9 =
                         | _ ->
                             false
                 if v17 then
-                    let v18 : UH13 = method56(v4, v5, v6, v0, v7)
+                    let v18 : UH13 = dfa_constructive_pair_trace_enqueue_symbols_56(v4, v5, v6, v0, v7)
                     let v19 : UH11 = UH11_1(v4, v5, v2)
-                    method55(v0, v18, v19)
+                    dfa_constructive_distinguishing_work_55(v0, v18, v19)
                 else
                     US9_1(v6)
     | UH13_0 -> (* DfaConstructivePairTraceNil *)
         US9_0
-and method59 (v0 : UH14, v1 : UH14) : UH14 =
+and input_list_append_59 (v0 : UH14, v1 : UH14) : UH14 =
     match v0 with
     | UH14_1(v2, v3) -> (* InputListCons *)
-        let v4 : UH14 = method59(v3, v1)
+        let v4 : UH14 = input_list_append_59(v3, v1)
         UH14_1(v2, v4)
     | UH14_0 -> (* InputListNil *)
         v1
-and method60 (v0 : UH8, v1 : UH14) : UH14 =
+and consume_right_60 (v0 : UH8, v1 : UH14) : UH14 =
     match v1 with
     | UH14_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH14 = method58(v0, v3)
-        let v6 : UH14 = method60(v0, v4)
-        method59(v5, v6)
+        let v5 : UH14 = language_remainders_58(v0, v3)
+        let v6 : UH14 = consume_right_60(v0, v4)
+        input_list_append_59(v5, v6)
     | UH14_0 -> (* InputListNil *)
         UH14_0
-and method64 (v0 : UH12, v1 : UH12) : bool =
+and input_equal_64 (v0 : UH12, v1 : UH12) : bool =
     match v0 with
     | UH12_1(v3, v4) -> (* InputCons *)
         match v1 with
@@ -1411,7 +1411,7 @@ and method64 (v0 : UH12, v1 : UH12) : bool =
                 | _ ->
                     false
             if v23 then
-                method64(v4, v6)
+                input_equal_64(v4, v6)
             else
                 false
         | _ ->
@@ -1422,45 +1422,45 @@ and method64 (v0 : UH12, v1 : UH12) : bool =
             true
         | _ ->
             false
-and method63 (v0 : UH12, v1 : UH14) : bool =
+and input_list_contains_63 (v0 : UH12, v1 : UH14) : bool =
     match v1 with
     | UH14_1(v2, v3) -> (* InputListCons *)
-        let v4 : bool = method64(v0, v2)
+        let v4 : bool = input_equal_64(v0, v2)
         if v4 then
             true
         else
-            method63(v0, v3)
+            input_list_contains_63(v0, v3)
     | UH14_0 -> (* InputListNil *)
         false
-and method62 (v0 : UH14, v1 : UH14, v2 : UH14) : struct (UH14 * UH14) =
+and input_list_enqueue_new_62 (v0 : UH14, v1 : UH14, v2 : UH14) : struct (UH14 * UH14) =
     match v0 with
     | UH14_1(v3, v4) -> (* InputListCons *)
-        let v5 : bool = method63(v3, v1)
+        let v5 : bool = input_list_contains_63(v3, v1)
         if v5 then
-            method62(v4, v1, v2)
+            input_list_enqueue_new_62(v4, v1, v2)
         else
             let v8 : UH14 = UH14_1(v3, v1)
             let v9 : UH14 = UH14_1(v3, v2)
-            method62(v4, v8, v9)
+            input_list_enqueue_new_62(v4, v8, v9)
     | UH14_0 -> (* InputListNil *)
         struct (v1, v2)
-and method61 (v0 : UH8, v1 : UH14, v2 : UH14) : UH14 =
+and closure_61 (v0 : UH8, v1 : UH14, v2 : UH14) : UH14 =
     match v1 with
     | UH14_1(v3, v4) -> (* InputListCons *)
-        let v5 : UH14 = method58(v0, v3)
-        let struct (v6 : UH14, v7 : UH14) = method62(v5, v2, v4)
-        method61(v0, v7, v6)
+        let v5 : UH14 = language_remainders_58(v0, v3)
+        let struct (v6 : UH14, v7 : UH14) = input_list_enqueue_new_62(v5, v2, v4)
+        closure_61(v0, v7, v6)
     | UH14_0 -> (* InputListNil *)
         v2
-and method58 (v0 : UH8, v1 : UH12) : UH14 =
+and language_remainders_58 (v0 : UH8, v1 : UH12) : UH14 =
     match v0 with
     | UH8_3(v32, v33) -> (* RegexAlt *)
-        let v34 : UH14 = method58(v32, v1)
-        let v35 : UH14 = method58(v33, v1)
-        method59(v34, v35)
+        let v34 : UH14 = language_remainders_58(v32, v1)
+        let v35 : UH14 = language_remainders_58(v33, v1)
+        input_list_append_59(v34, v35)
     | UH8_4(v37, v38) -> (* RegexCat *)
-        let v39 : UH14 = method58(v37, v1)
-        method60(v38, v39)
+        let v39 : UH14 = language_remainders_58(v37, v1)
+        consume_right_60(v38, v39)
     | UH8_2(v5) -> (* RegexChar *)
         match v1 with
         | UH12_1(v7, v8) -> (* InputCons *)
@@ -1513,27 +1513,27 @@ and method58 (v0 : UH8, v1 : UH12) : UH14 =
         let v43 : UH14 = UH14_1(v1, v42)
         let v44 : UH14 = UH14_0
         let v45 : UH14 = UH14_1(v1, v44)
-        method61(v41, v43, v45)
-and method54 (v0 : UH8, v1 : UH10, v2 : UH9) : bool =
+        closure_61(v41, v43, v45)
+and dfa_state_distinct_with_witness_against_54 (v0 : UH8, v1 : UH10, v2 : UH9) : bool =
     match v1 with
     | UH10_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH8 = method34(v0)
-        let v6 : UH8 = method34(v3)
+        let v5 : UH8 = normalize_34(v0)
+        let v6 : UH8 = normalize_34(v3)
         let v7 : UH12 = UH12_0
         let v8 : UH13 = UH13_0
         let v9 : UH13 = UH13_1(v5, v6, v7, v8)
         let v10 : UH11 = UH11_0
-        let v11 : US9 = method55(v2, v9, v10)
+        let v11 : US9 = dfa_constructive_distinguishing_work_55(v2, v9, v10)
         match v11 with
         | US9_1(v12) -> (* DfaConstructiveDistinguished *)
-            let v13 : UH8 = method34(v0)
+            let v13 : UH8 = normalize_34(v0)
             let v14 : UH12 = UH12_0
-            let v15 : UH14 = method58(v13, v12)
-            let v16 : bool = method63(v14, v15)
-            let v17 : UH8 = method34(v3)
+            let v15 : UH14 = language_remainders_58(v13, v12)
+            let v16 : bool = input_list_contains_63(v14, v15)
+            let v17 : UH8 = normalize_34(v3)
             let v18 : UH12 = UH12_0
-            let v19 : UH14 = method58(v17, v12)
-            let v20 : bool = method63(v18, v19)
+            let v19 : UH14 = language_remainders_58(v17, v12)
+            let v20 : bool = input_list_contains_63(v18, v19)
             let v22 : bool =
                 if v16 then
                     v20
@@ -1542,29 +1542,29 @@ and method54 (v0 : UH8, v1 : UH10, v2 : UH9) : bool =
                     v21
             let v23 : bool = v22 = false
             if v23 then
-                method54(v0, v4, v2)
+                dfa_state_distinct_with_witness_against_54(v0, v4, v2)
             else
                 false
         | US9_0 -> (* DfaConstructiveEquivalent *)
             false
     | UH10_0 -> (* RegexListNil *)
         true
-and method53 (v0 : UH10, v1 : UH9) : bool =
+and dfa_minimal_with_distinguishing_witnesses_53 (v0 : UH10, v1 : UH9) : bool =
     match v0 with
     | UH10_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method54(v2, v3, v1)
+        let v4 : bool = dfa_state_distinct_with_witness_against_54(v2, v3, v1)
         if v4 then
-            method53(v3, v1)
+            dfa_minimal_with_distinguishing_witnesses_53(v3, v1)
         else
             false
     | UH10_0 -> (* RegexListNil *)
         true
-and method65 (v0 : UH3, v1 : UH1) : bool =
+and regex_list_exact_budget_65 (v0 : UH3, v1 : UH1) : bool =
     match v0 with
     | UH3_1(v3, v4) -> (* RegexListCons *)
         match v1 with
         | UH1_1(v5) -> (* StateBudgetSucc *)
-            method65(v4, v5)
+            regex_list_exact_budget_65(v4, v5)
         | _ ->
             false
     | UH3_0 -> (* RegexListNil *)
@@ -1573,12 +1573,12 @@ and method65 (v0 : UH3, v1 : UH1) : bool =
             true
         | _ ->
             false
-and method66 (v0 : UH10, v1 : UH1) : bool =
+and regex_list_exact_budget_66 (v0 : UH10, v1 : UH1) : bool =
     match v0 with
     | UH10_1(v3, v4) -> (* RegexListCons *)
         match v1 with
         | UH1_1(v5) -> (* StateBudgetSucc *)
-            method66(v4, v5)
+            regex_list_exact_budget_66(v4, v5)
         | _ ->
             false
     | UH10_0 -> (* RegexListNil *)
@@ -1596,12 +1596,12 @@ let v5 : UH0 = UH0_5(v4)
 let v6 : US0 = US0_0
 let v7 : UH0 = UH0_2(v6)
 let v8 : UH0 = UH0_4(v5, v7)
-let v9 : UH0 = method0(v8)
-let v10 : UH0 = method0(v9)
-let v11 : UH1 = method7(v10)
+let v9 : UH0 = normalize_0(v8)
+let v10 : UH0 = normalize_0(v9)
+let v11 : UH1 = regex_position_count_7(v10)
 let v12 : UH1 = UH1_1(v11)
-let v13 : UH1 = method9(v12)
-let v14 : UH0 = method0(v10)
+let v13 : UH1 = state_budget_pow2_9(v12)
+let v14 : UH0 = normalize_0(v10)
 let v15 : US0 = US0_0
 let v16 : US0 = US0_1
 let v17 : UH2 = UH2_0
@@ -1611,7 +1611,7 @@ let v20 : UH3 = UH3_0
 let v21 : UH3 = UH3_1(v14, v20)
 let v22 : UH3 = UH3_0
 let v23 : UH3 = UH3_1(v14, v22)
-let v24 : US2 = method11(v19, v13, v21, v23)
+let v24 : US2 = dfa_closure_loop_bounded_11(v19, v13, v21, v23)
 let v41 : bool =
     match v24 with
     | US2_1(v25) -> (* DfaClosureBudgetExceeded *)
@@ -1623,13 +1623,13 @@ let v41 : bool =
         let v30 : UH2 = UH2_1(v28, v29)
         let v31 : UH2 = UH2_1(v27, v30)
         let v32 : UH3 = UH3_0
-        let v33 : UH3 = method17(v26, v31, v32)
+        let v33 : UH3 = dfa_minimize_states_loop_17(v26, v31, v32)
         let v34 : US0 = US0_0
         let v35 : US0 = US0_1
         let v36 : UH2 = UH2_0
         let v37 : UH2 = UH2_1(v35, v36)
         let v38 : UH2 = UH2_1(v34, v37)
-        method22(v33, v38)
+        dfa_minimal_with_distinguishing_witnesses_22(v33, v38)
 if v41 then
     ()
 else
@@ -1637,12 +1637,12 @@ else
 let v42 : US6 = US6_0
 let v43 : UH8 = UH8_2(v42)
 let v44 : UH8 = UH8_5(v43)
-let v45 : UH8 = method34(v44)
-let v46 : UH8 = method34(v45)
-let v47 : UH1 = method41(v46)
+let v45 : UH8 = normalize_34(v44)
+let v46 : UH8 = normalize_34(v45)
+let v47 : UH1 = regex_position_count_41(v46)
 let v48 : UH1 = UH1_1(v47)
-let v49 : UH1 = method9(v48)
-let v50 : UH8 = method34(v46)
+let v49 : UH1 = state_budget_pow2_9(v48)
+let v50 : UH8 = normalize_34(v46)
 let v51 : US6 = US6_0
 let v52 : US6 = US6_1
 let v53 : US6 = US6_2
@@ -1654,7 +1654,7 @@ let v58 : UH10 = UH10_0
 let v59 : UH10 = UH10_1(v50, v58)
 let v60 : UH10 = UH10_0
 let v61 : UH10 = UH10_1(v50, v60)
-let v62 : US7 = method42(v57, v49, v59, v61)
+let v62 : US7 = dfa_closure_loop_bounded_42(v57, v49, v59, v61)
 let v83 : bool =
     match v62 with
     | US7_1(v63) -> (* DfaClosureBudgetExceeded *)
@@ -1668,7 +1668,7 @@ let v83 : bool =
         let v70 : UH9 = UH9_1(v66, v69)
         let v71 : UH9 = UH9_1(v65, v70)
         let v72 : UH10 = UH10_0
-        let v73 : UH10 = method48(v64, v71, v72)
+        let v73 : UH10 = dfa_minimize_states_loop_48(v64, v71, v72)
         let v74 : US6 = US6_0
         let v75 : US6 = US6_1
         let v76 : US6 = US6_2
@@ -1676,7 +1676,7 @@ let v83 : bool =
         let v78 : UH9 = UH9_1(v76, v77)
         let v79 : UH9 = UH9_1(v75, v78)
         let v80 : UH9 = UH9_1(v74, v79)
-        method53(v73, v80)
+        dfa_minimal_with_distinguishing_witnesses_53(v73, v80)
 if v83 then
     ()
 else
@@ -1701,12 +1701,12 @@ let v100 : UH8 = UH8_4(v99, v97)
 let v101 : UH8 = UH8_3(v97, v100)
 let v102 : UH8 = UH8_4(v91, v101)
 let v103 : UH8 = UH8_3(v89, v102)
-let v104 : UH8 = method34(v103)
-let v105 : UH8 = method34(v104)
-let v106 : UH1 = method41(v105)
+let v104 : UH8 = normalize_34(v103)
+let v105 : UH8 = normalize_34(v104)
+let v106 : UH1 = regex_position_count_41(v105)
 let v107 : UH1 = UH1_1(v106)
-let v108 : UH1 = method9(v107)
-let v109 : UH8 = method34(v105)
+let v108 : UH1 = state_budget_pow2_9(v107)
+let v109 : UH8 = normalize_34(v105)
 let v110 : US6 = US6_0
 let v111 : US6 = US6_1
 let v112 : US6 = US6_2
@@ -1718,7 +1718,7 @@ let v117 : UH10 = UH10_0
 let v118 : UH10 = UH10_1(v109, v117)
 let v119 : UH10 = UH10_0
 let v120 : UH10 = UH10_1(v109, v119)
-let v121 : US7 = method42(v116, v108, v118, v120)
+let v121 : US7 = dfa_closure_loop_bounded_42(v116, v108, v118, v120)
 let v142 : bool =
     match v121 with
     | US7_1(v122) -> (* DfaClosureBudgetExceeded *)
@@ -1732,7 +1732,7 @@ let v142 : bool =
         let v129 : UH9 = UH9_1(v125, v128)
         let v130 : UH9 = UH9_1(v124, v129)
         let v131 : UH10 = UH10_0
-        let v132 : UH10 = method48(v123, v130, v131)
+        let v132 : UH10 = dfa_minimize_states_loop_48(v123, v130, v131)
         let v133 : US6 = US6_0
         let v134 : US6 = US6_1
         let v135 : US6 = US6_2
@@ -1740,7 +1740,7 @@ let v142 : bool =
         let v137 : UH9 = UH9_1(v135, v136)
         let v138 : UH9 = UH9_1(v134, v137)
         let v139 : UH9 = UH9_1(v133, v138)
-        method53(v132, v139)
+        dfa_minimal_with_distinguishing_witnesses_53(v132, v139)
 if v142 then
     ()
 else
@@ -1754,12 +1754,12 @@ let v148 : UH0 = UH0_5(v147)
 let v149 : US0 = US0_0
 let v150 : UH0 = UH0_2(v149)
 let v151 : UH0 = UH0_4(v148, v150)
-let v152 : UH0 = method0(v151)
-let v153 : UH0 = method0(v152)
-let v154 : UH1 = method7(v153)
+let v152 : UH0 = normalize_0(v151)
+let v153 : UH0 = normalize_0(v152)
+let v154 : UH1 = regex_position_count_7(v153)
 let v155 : UH1 = UH1_1(v154)
-let v156 : UH1 = method9(v155)
-let v157 : UH0 = method0(v153)
+let v156 : UH1 = state_budget_pow2_9(v155)
+let v157 : UH0 = normalize_0(v153)
 let v158 : US0 = US0_0
 let v159 : US0 = US0_1
 let v160 : UH2 = UH2_0
@@ -1769,7 +1769,7 @@ let v163 : UH3 = UH3_0
 let v164 : UH3 = UH3_1(v157, v163)
 let v165 : UH3 = UH3_0
 let v166 : UH3 = UH3_1(v157, v165)
-let v167 : US2 = method11(v162, v156, v164, v166)
+let v167 : US2 = dfa_closure_loop_bounded_11(v162, v156, v164, v166)
 let v182 : bool =
     match v167 with
     | US2_1(v168) -> (* DfaClosureBudgetExceeded *)
@@ -1781,11 +1781,11 @@ let v182 : bool =
         let v173 : UH2 = UH2_1(v171, v172)
         let v174 : UH2 = UH2_1(v170, v173)
         let v175 : UH3 = UH3_0
-        let v176 : UH3 = method17(v169, v174, v175)
+        let v176 : UH3 = dfa_minimize_states_loop_17(v169, v174, v175)
         let v177 : UH1 = UH1_0
         let v178 : UH1 = UH1_1(v177)
         let v179 : UH1 = UH1_1(v178)
-        method65(v176, v179)
+        regex_list_exact_budget_65(v176, v179)
 if v182 then
     ()
 else
@@ -1793,12 +1793,12 @@ else
 let v183 : US6 = US6_0
 let v184 : UH8 = UH8_2(v183)
 let v185 : UH8 = UH8_5(v184)
-let v186 : UH8 = method34(v185)
-let v187 : UH8 = method34(v186)
-let v188 : UH1 = method41(v187)
+let v186 : UH8 = normalize_34(v185)
+let v187 : UH8 = normalize_34(v186)
+let v188 : UH1 = regex_position_count_41(v187)
 let v189 : UH1 = UH1_1(v188)
-let v190 : UH1 = method9(v189)
-let v191 : UH8 = method34(v187)
+let v190 : UH1 = state_budget_pow2_9(v189)
+let v191 : UH8 = normalize_34(v187)
 let v192 : US6 = US6_0
 let v193 : US6 = US6_1
 let v194 : US6 = US6_2
@@ -1810,7 +1810,7 @@ let v199 : UH10 = UH10_0
 let v200 : UH10 = UH10_1(v191, v199)
 let v201 : UH10 = UH10_0
 let v202 : UH10 = UH10_1(v191, v201)
-let v203 : US7 = method42(v198, v190, v200, v202)
+let v203 : US7 = dfa_closure_loop_bounded_42(v198, v190, v200, v202)
 let v220 : bool =
     match v203 with
     | US7_1(v204) -> (* DfaClosureBudgetExceeded *)
@@ -1824,11 +1824,11 @@ let v220 : bool =
         let v211 : UH9 = UH9_1(v207, v210)
         let v212 : UH9 = UH9_1(v206, v211)
         let v213 : UH10 = UH10_0
-        let v214 : UH10 = method48(v205, v212, v213)
+        let v214 : UH10 = dfa_minimize_states_loop_48(v205, v212, v213)
         let v215 : UH1 = UH1_0
         let v216 : UH1 = UH1_1(v215)
         let v217 : UH1 = UH1_1(v216)
-        method66(v214, v217)
+        regex_list_exact_budget_66(v214, v217)
 if v220 then
     ()
 else
@@ -1853,12 +1853,12 @@ let v237 : UH8 = UH8_4(v236, v234)
 let v238 : UH8 = UH8_3(v234, v237)
 let v239 : UH8 = UH8_4(v228, v238)
 let v240 : UH8 = UH8_3(v226, v239)
-let v241 : UH8 = method34(v240)
-let v242 : UH8 = method34(v241)
-let v243 : UH1 = method41(v242)
+let v241 : UH8 = normalize_34(v240)
+let v242 : UH8 = normalize_34(v241)
+let v243 : UH1 = regex_position_count_41(v242)
 let v244 : UH1 = UH1_1(v243)
-let v245 : UH1 = method9(v244)
-let v246 : UH8 = method34(v242)
+let v245 : UH1 = state_budget_pow2_9(v244)
+let v246 : UH8 = normalize_34(v242)
 let v247 : US6 = US6_0
 let v248 : US6 = US6_1
 let v249 : US6 = US6_2
@@ -1870,7 +1870,7 @@ let v254 : UH10 = UH10_0
 let v255 : UH10 = UH10_1(v246, v254)
 let v256 : UH10 = UH10_0
 let v257 : UH10 = UH10_1(v246, v256)
-let v258 : US7 = method42(v253, v245, v255, v257)
+let v258 : US7 = dfa_closure_loop_bounded_42(v253, v245, v255, v257)
 let v276 : bool =
     match v258 with
     | US7_1(v259) -> (* DfaClosureBudgetExceeded *)
@@ -1884,20 +1884,20 @@ let v276 : bool =
         let v266 : UH9 = UH9_1(v262, v265)
         let v267 : UH9 = UH9_1(v261, v266)
         let v268 : UH10 = UH10_0
-        let v269 : UH10 = method48(v260, v267, v268)
+        let v269 : UH10 = dfa_minimize_states_loop_48(v260, v267, v268)
         let v270 : UH1 = UH1_0
         let v271 : UH1 = UH1_1(v270)
         let v272 : UH1 = UH1_1(v271)
         let v273 : UH1 = UH1_1(v272)
-        method66(v269, v273)
+        regex_list_exact_budget_66(v269, v273)
 if v276 then
     ()
 else
     failwith<unit> "cyclic minimized DFA should match the independent three-state reference quotient"
 let v277 : UH0 = UH0_1
-let v278 : UH0 = method0(v277)
+let v278 : UH0 = normalize_0(v277)
 let v279 : UH0 = UH0_0
-let v280 : UH0 = method0(v279)
+let v280 : UH0 = normalize_0(v279)
 let v281 : US0 = US0_0
 let v282 : US0 = US0_1
 let v283 : UH2 = UH2_0
@@ -1907,20 +1907,20 @@ let v286 : UH5 = UH5_0
 let v287 : UH6 = UH6_0
 let v288 : UH6 = UH6_1(v278, v280, v286, v287)
 let v289 : UH4 = UH4_0
-let v290 : US5 = method24(v285, v288, v289)
+let v290 : US5 = dfa_constructive_distinguishing_work_24(v285, v288, v289)
 let v319 : bool =
     match v290 with
     | US5_1(v304) -> (* DfaConstructiveDistinguished *)
         let v305 : UH0 = UH0_1
-        let v306 : UH0 = method0(v305)
+        let v306 : UH0 = normalize_0(v305)
         let v307 : UH5 = UH5_0
-        let v308 : UH7 = method27(v306, v304)
-        let v309 : bool = method32(v307, v308)
+        let v308 : UH7 = language_remainders_27(v306, v304)
+        let v309 : bool = input_list_contains_32(v307, v308)
         let v310 : UH0 = UH0_0
-        let v311 : UH0 = method0(v310)
+        let v311 : UH0 = normalize_0(v310)
         let v312 : UH5 = UH5_0
-        let v313 : UH7 = method27(v311, v304)
-        let v314 : bool = method32(v312, v313)
+        let v313 : UH7 = language_remainders_27(v311, v304)
+        let v314 : bool = input_list_contains_32(v312, v313)
         let v316 : bool =
             if v309 then
                 v314
@@ -1931,9 +1931,9 @@ let v319 : bool =
         v317
     | US5_0 -> (* DfaConstructiveEquivalent *)
         let v291 : UH0 = UH0_1
-        let v292 : UH0 = method0(v291)
+        let v292 : UH0 = normalize_0(v291)
         let v293 : UH0 = UH0_0
-        let v294 : UH0 = method0(v293)
+        let v294 : UH0 = normalize_0(v293)
         let v295 : US0 = US0_0
         let v296 : US0 = US0_1
         let v297 : UH2 = UH2_0
@@ -1942,27 +1942,27 @@ let v319 : bool =
         let v300 : UH4 = UH4_0
         let v301 : UH4 = UH4_1(v292, v294, v300)
         let v302 : UH4 = UH4_0
-        method19(v299, v301, v302)
+        dfa_bisimulation_work_19(v299, v301, v302)
 if v319 then
     ()
 else
     failwith<unit> "nullable mismatch should produce a language-valid distinguishing word"
 let v320 : UH0 = UH0_1
-let v321 : UH0 = method0(v320)
+let v321 : UH0 = normalize_0(v320)
 let v322 : UH5 = UH5_0
 let v323 : US0 = US0_0
 let v324 : UH5 = UH5_0
 let v325 : UH5 = UH5_1(v323, v324)
-let v326 : UH7 = method27(v321, v325)
-let v327 : bool = method32(v322, v326)
+let v326 : UH7 = language_remainders_27(v321, v325)
+let v327 : bool = input_list_contains_32(v322, v326)
 let v328 : UH0 = UH0_0
-let v329 : UH0 = method0(v328)
+let v329 : UH0 = normalize_0(v328)
 let v330 : UH5 = UH5_0
 let v331 : US0 = US0_0
 let v332 : UH5 = UH5_0
 let v333 : UH5 = UH5_1(v331, v332)
-let v334 : UH7 = method27(v329, v333)
-let v335 : bool = method32(v330, v334)
+let v334 : UH7 = language_remainders_27(v329, v333)
+let v335 : bool = input_list_contains_32(v330, v334)
 let v337 : bool =
     if v327 then
         v335
@@ -1980,10 +1980,10 @@ let v341 : UH0 = UH0_2(v340)
 let v342 : US0 = US0_0
 let v343 : UH0 = UH0_2(v342)
 let v344 : UH0 = UH0_3(v341, v343)
-let v345 : UH0 = method0(v344)
+let v345 : UH0 = normalize_0(v344)
 let v346 : US0 = US0_0
 let v347 : UH0 = UH0_2(v346)
-let v348 : UH0 = method0(v347)
+let v348 : UH0 = normalize_0(v347)
 let v349 : US0 = US0_0
 let v350 : US0 = US0_1
 let v351 : UH2 = UH2_0
@@ -1993,7 +1993,7 @@ let v354 : UH5 = UH5_0
 let v355 : UH6 = UH6_0
 let v356 : UH6 = UH6_1(v345, v348, v354, v355)
 let v357 : UH4 = UH4_0
-let v358 : US5 = method24(v353, v356, v357)
+let v358 : US5 = dfa_constructive_distinguishing_work_24(v353, v356, v357)
 let v397 : bool =
     match v358 with
     | US5_1(v377) -> (* DfaConstructiveDistinguished *)
@@ -2002,16 +2002,16 @@ let v397 : bool =
         let v380 : US0 = US0_0
         let v381 : UH0 = UH0_2(v380)
         let v382 : UH0 = UH0_3(v379, v381)
-        let v383 : UH0 = method0(v382)
+        let v383 : UH0 = normalize_0(v382)
         let v384 : UH5 = UH5_0
-        let v385 : UH7 = method27(v383, v377)
-        let v386 : bool = method32(v384, v385)
+        let v385 : UH7 = language_remainders_27(v383, v377)
+        let v386 : bool = input_list_contains_32(v384, v385)
         let v387 : US0 = US0_0
         let v388 : UH0 = UH0_2(v387)
-        let v389 : UH0 = method0(v388)
+        let v389 : UH0 = normalize_0(v388)
         let v390 : UH5 = UH5_0
-        let v391 : UH7 = method27(v389, v377)
-        let v392 : bool = method32(v390, v391)
+        let v391 : UH7 = language_remainders_27(v389, v377)
+        let v392 : bool = input_list_contains_32(v390, v391)
         let v394 : bool =
             if v386 then
                 v392
@@ -2026,10 +2026,10 @@ let v397 : bool =
         let v361 : US0 = US0_0
         let v362 : UH0 = UH0_2(v361)
         let v363 : UH0 = UH0_3(v360, v362)
-        let v364 : UH0 = method0(v363)
+        let v364 : UH0 = normalize_0(v363)
         let v365 : US0 = US0_0
         let v366 : UH0 = UH0_2(v365)
-        let v367 : UH0 = method0(v366)
+        let v367 : UH0 = normalize_0(v366)
         let v368 : US0 = US0_0
         let v369 : US0 = US0_1
         let v370 : UH2 = UH2_0
@@ -2038,7 +2038,7 @@ let v397 : bool =
         let v373 : UH4 = UH4_0
         let v374 : UH4 = UH4_1(v364, v367, v373)
         let v375 : UH4 = UH4_0
-        method19(v372, v374, v375)
+        dfa_bisimulation_work_19(v372, v374, v375)
 if v397 then
     ()
 else

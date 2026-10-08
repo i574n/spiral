@@ -482,7 +482,7 @@ function closure0(): (() => UH0) {
         return UH0_0(79n, v0);
     };
 }
-function method0(v0: UH0, v1: bigint): bigint {
+function loop_0(v0: UH0, v1: bigint): bigint {
     tail: while (true) {
         switch (v0.tag) {
             case 0: {
@@ -512,7 +512,7 @@ export function main(): number {
     let v1: (() => UH0) = closure0();
     let v2: UH0 = UH0_0(v0, v1);
     let v3: bigint = 0n;
-    let v4: bigint = method0(v2, v3);
+    let v4: bigint = loop_0(v2, v3);
     let v5: bigint = BigInt.asUintN(64, v4 % 200n);
     let v6: number = Number(BigInt.asIntN(32, v5));
     return v6;

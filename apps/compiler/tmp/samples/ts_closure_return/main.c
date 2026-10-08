@@ -35,6 +35,7 @@ struct Closure0 {
     Fun1 * (*fptr)(Closure0 *, String *);
 };
 static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
 }
 void ArrayDecref0(Array0 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
@@ -89,7 +90,7 @@ Fun1 * ClosureCreate1(String * v0){
     return (Fun1 *) x;
 }
 static inline void ClosureDecrefBody0(Closure0 * x){
-    
+    (void)x;
 }
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }

@@ -39,18 +39,18 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
   }
 }
 
-pub fn method0(v0: String) -> Nil {
+pub fn target_global_0(v0: String) -> Nil {
     let _v1 = spiral_string_length(v0)
     Nil
 }
 pub fn main() {
 let v0 = "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_same_B64:Ly9Q"
-method0(v0)
+target_global_0(v0)
 let v1 = "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_same_B64:Ly9C"
-method0(v1)
+target_global_0(v1)
 let v2 = "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_same_B64:Ly9Q"
-method0(v2)
+target_global_0(v2)
 let v3 = "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_same_B64:Ly9C"
-method0(v3)
+target_global_0(v3)
 0
 }

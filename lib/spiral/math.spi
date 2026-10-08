@@ -26,6 +26,14 @@ inl atan2 (y : f64) (x : f64) : f64 =
         Rust = fun () => $'(!y).atan2(!x)' : float
         Zig = fun () => $'std.math.atan2(!y, !x)' : float
         Lean = fun () => $'Float.atan2 !y !x ' : float
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'atan2(!y, !x)' : float
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::atan2(!y, !x)' : float
+        Delphi = fun () => $'ArcTan2(!y, !x)' : float
+        TypeScript = fun () => $'Math.atan2(!y, !x)' : float
     }
 
 /// ## floor
@@ -42,6 +50,14 @@ inl floor forall t {float}. (n : t) : t =
         Rust = fun () => $'!n.floor()' : t
         Zig = fun () => $'\@floor(!n)' : t
         Lean = fun () => $'(!n).floor' : t
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'floor(!n)' : t
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::floor(!n)' : t
+        Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        TypeScript = fun () => $'Math.floor(!n)' : t
     }
 
 /// ## ceil
@@ -58,6 +74,14 @@ inl ceil forall t {float}. (n : t) : t =
         Rust = fun () => $'!n.ceil()' : t
         Zig = fun () => $'\@ceil(!n)' : t
         Lean = fun () => $'(!n).ceil' : t
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'ceil(!n)' : t
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::ceil(!n)' : t
+        Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        TypeScript = fun () => $'Math.ceil(!n)' : t
     }
 
 /// ## round
@@ -70,28 +94,17 @@ inl round forall t {number; float}. (x : t) : t =
         elif floor (lower / 2) * 2 = lower then lower
         else lower + 1
     backend_switch {
-        Gleam = fun () =>
-            if x < 1
-            then x - 0.5 |> ceil
-            else
-                inl result = x + 1 |> floor |> convert.i32
-                if result % 2 = 0
-                then result
-                else result - 1
-                |> convert.convert
-        Lua = fun () =>
-            if x < 1
-            then x - 0.5 |> ceil
-            else
-                inl result = x + 1 |> floor
-                if result % 2 = 0
-                then result
-                else result - 1
+        Gleam = round_half_to_even
+        Lua = round_half_to_even
         Fsharp = fun () => x |> $'round' : t
         Python = fun () => x |> $'round' : t
         Rust = fun () => $'(!x).round_ties_even()' : t
         Zig = round_half_to_even
         Lean = round_half_to_even
+        C = round_half_to_even
+        Cpp = round_half_to_even
+        Delphi = round_half_to_even
+        TypeScript = round_half_to_even
     }
 
 /// ## log_base

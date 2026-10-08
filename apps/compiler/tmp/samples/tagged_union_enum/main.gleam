@@ -24,7 +24,7 @@ pub type Us0 {
     Us0i2
     Us0i3
 }
-pub fn method0(v0: Us0) -> Int {
+pub fn score_0(v0: Us0) -> Int {
     case v0  {
         Us0i0 -> {
             1
@@ -68,7 +68,7 @@ let v10 =
             }
         }
     }
-let v11 = method0(v10)
+let v11 = score_0(v10)
 let v12 = spiral_wrap_signed(v11 - 4, 32)
 v12
 }

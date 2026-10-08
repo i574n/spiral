@@ -33,7 +33,7 @@ def U0.spiralTag : U0 → Int32
   | .c0 .. => 0
   | .c1 .. => 1
 mutual
-partial def method0 (p0 : U0) : IO Int32 := do
+partial def sum_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v2 : U0 := default
@@ -45,7 +45,7 @@ partial def method0 (p0 : U0) : IO Int32 := do
         v1 := f1
         v2 := f2
         v3 := (Int32.ofNat (← v1.get).size)
-        v4 := (← method0 v2)
+        v4 := (← sum_0 v2)
         v5 := (v3 + v4)
         return v5
     | U0.c0 =>
@@ -63,7 +63,7 @@ partial def spiralMain : IO Int32 := do
     v2 := U0.c0
     v3 := (U0.c1 v1 v2)
     v4 := (U0.c1 v1 v3)
-    v5 := (← method0 v4)
+    v5 := (← sum_0 v4)
     v6 := (v5 - (4 : Int32))
     return v6
 end

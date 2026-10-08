@@ -6,8 +6,8 @@ type
   TArray0 = array of LongInt;
   TArray1 = array of TArray0;
   TUS0 = record tag: LongInt; c1_0: TArray1; end;
-function method0(v0: TUS0): LongInt; forward;
-function method1(v0: TUS0): LongInt; forward;
+function bump_0(v0: TUS0): LongInt; forward;
+function score_1(v0: TUS0): LongInt; forward;
 function US0_0: TUS0;
 begin
   Result.tag := 0; 
@@ -16,7 +16,7 @@ function US0_1(a0: TArray1): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
-function method0(v0: TUS0): LongInt;
+function bump_0(v0: TUS0): LongInt;
 var
   v1: TArray1;
   v2: TArray0;
@@ -37,7 +37,7 @@ begin
       end;
   end;
 end;
-function method1(v0: TUS0): LongInt;
+function score_1(v0: TUS0): LongInt;
 var
   v1: TArray1;
   v2: TArray0;
@@ -102,9 +102,9 @@ begin
   v1[0] := v2;
   v1[1] := v3;
   v4 := US0_1(v1);
-  v5 := method0(v4);
+  v5 := bump_0(v4);
   v6 := US0_1(v1);
-  v7 := method1(v6);
+  v7 := score_1(v6);
   v8 := v7 + v5;
   v9 := v8 - 19;
   Result := v9;

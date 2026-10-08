@@ -9,7 +9,7 @@ type
   end;
   TClosure0 = class(TFun0) v0: AnsiString; function Invoke(v1: LongInt): LongInt; override; end;
 function ClosureCreate0(v0: AnsiString): TFun0; forward;
-function method0(v0: TFun0; v1: LongInt): LongInt; forward;
+function apply_0(v0: TFun0; v1: LongInt): LongInt; forward;
 function TClosure0.Invoke(v1: LongInt): LongInt;
 var
   v2: LongInt;
@@ -25,7 +25,7 @@ begin
   c := TClosure0.Create; c.v0 := v0;
   Result := c;
 end;
-function method0(v0: TFun0; v1: LongInt): LongInt;
+function apply_0(v0: TFun0; v1: LongInt): LongInt;
 begin
   Result := v0.Invoke(v1);
 end;
@@ -38,7 +38,7 @@ begin
   v0 := 'abc';
   v1 := ClosureCreate0(v0);
   v2 := 39;
-  Result := method0(v1, v2);
+  Result := apply_0(v1, v2);
 end;
 var SpiralOutputBuffer: array[0..65535] of Char;
 begin

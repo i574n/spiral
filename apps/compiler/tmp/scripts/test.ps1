@@ -22,8 +22,9 @@ foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contrac
 foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
-$freshProcess = if ($WarmRecycle) { $false } elseif ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
-if ($WarmRecycle) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
+$recycleWarmBatches = $WarmRecycle -or ($mode -eq 'hopac' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
+$freshProcess = if ($recycleWarmBatches) { $false } else { [bool]$FreshProcess }
+if ($recycleWarmBatches) { $env:SPIRAL_BATCH_RECYCLE_AFTER_ERROR = '1' }
 if ($Parallel -le 0) {
     $cpus = [Environment]::ProcessorCount
     $byCpu = if ($mode -eq 'hopac') { [Math]::Ceiling($cpus * 3 / 8) } else { [Math]::Ceiling($cpus / 2) }

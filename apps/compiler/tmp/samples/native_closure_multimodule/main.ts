@@ -36,13 +36,13 @@ function closure0(v0: string): ((a0: number) => number) {
         return v3;
     };
 }
-function method0(v0: ((a0: number) => number), v1: number): number {
+function apply_0(v0: ((a0: number) => number), v1: number): number {
     return v0(v1);
 }
 export function main(): number {
     let v0: string = "abc";
     let v1: ((a0: number) => number) = closure0(v0);
     let v2: number = 39;
-    return method0(v1, v2);
+    return apply_0(v1, v2);
 }
 process.exitCode = main();

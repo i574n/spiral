@@ -687,7 +687,13 @@ module Program =
                   packages_prepass = {ok = Map.empty; error = Map.empty}
                   graph = mirrored_graph_empty; package_ids = Map.empty, Map.empty }
             let _, state = proj_open (startupParse [|"--port"; "0"|]) emptyState (packageDir, None)
-            if not state.packages_infer.error.IsEmpty then failwith $"Package graph rejected: {packageDir}"
+            if not state.packages_infer.error.IsEmpty then
+                let failedPackages =
+                    state.packages_infer.error
+                    |> Map.toList
+                    |> List.map (fun (pid, _) -> snd state.package_ids |> Map.tryFind pid |> Option.map string |> Option.defaultWith (fun () -> string pid))
+                    |> String.concat ", "
+                failwith $"Package graph rejected: {packageDir}; packages that failed to type check: {failedPackages}. A packages: entry that does not resolve (|core- needs SPIRAL_COMPILER_PACKAGE_DIR or a deps/The-Spiral-Language clone) leaves the packages importing it unchecked."
             let pid = (fst state.package_ids).[packageDir]
             let package = state.packages_infer.ok.[pid]
             let rec containsInput = function
@@ -783,10 +789,16 @@ module Program =
         let mutable index = 0
         let mutable timedOut = false
         let mutable recycle = false
+        let mutable failureDeferredToFreshProcess = false
         while not timedOut && not recycle && index < jobs.Length do
             let fields = jobs.[index].Split('\t')
             let id, backend, input, output = fields.[0], fields.[1], fields.[2], fields.[3]
             let jobTimeoutMs = if fields.Length >= 5 && not (String.IsNullOrWhiteSpace fields.[4]) then int fields.[4] else timeoutMs
+            let failureMayComeFromEarlierBuild = recycleAfterError && index > 0
+            let recordFailure (line : string) =
+                recycle <- recycleAfterError
+                if failureMayComeFromEarlierBuild then failureDeferredToFreshProcess <- true
+                else results.WriteLine line
             if not budgetFromCaller then
                 Environment.SetEnvironmentVariable("SPIRAL_BUILD_DEADLINE_MS", string (Environment.TickCount64 + int64 (max 1000 (jobTimeoutMs - 3000))))
             let stopwatch = Diagnostics.Stopwatch.StartNew()
@@ -798,17 +810,17 @@ module Program =
                         results.WriteLine($"{id}\tok\t{stopwatch.ElapsedMilliseconds}\tbytes={bytes} entry={binding} revision={revisionMode}")
                     | Error message ->
                         exitCode <- 1
-                        recycle <- recycleAfterError
-                        results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}")
+                        recordFailure $"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText message}"
+                elif failureMayComeFromEarlierBuild then
+                    recordFailure ""
                 else
                     exitCode <- 3
                     timedOut <- true
                     results.WriteLine($"{id}\ttimeout\t{stopwatch.ElapsedMilliseconds}\tno result within {jobTimeoutMs} ms{stallDetail ()}")
             with error ->
                 exitCode <- 1
-                recycle <- recycleAfterError
-                results.WriteLine($"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText error.Message}")
-            index <- index + 1
+                recordFailure $"{id}\terror\t{stopwatch.ElapsedMilliseconds}\t{cleanProtocolText error.Message}"
+            if not failureDeferredToFreshProcess then index <- index + 1
         if recycle && index < jobs.Length then 4 else exitCode
 
     let private runServer socketPath _initialInput =

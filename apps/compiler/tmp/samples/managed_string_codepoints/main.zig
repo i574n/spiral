@@ -105,14 +105,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8, p1: i32) u8 {
+fn runtime_byte_0(p0: []const u8, p1: i32) u8 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: u8 = undefined; _ = &v2;
     v2 = v0[spiralIndex(v0.len, v1)];
     return v2;
 }
-fn method1(p0: []const u8, p1: u8, p2: u8, p3: i32, p4: i32, p5: i32) i32 {
+fn codepoint_length_loop_1(p0: []const u8, p1: u8, p2: u8, p3: i32, p4: i32, p5: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: u8 = p1; _ = &v1;
     var v2: u8 = p2; _ = &v2;
@@ -169,7 +169,7 @@ fn method1(p0: []const u8, p1: u8, p2: u8, p3: i32, p4: i32, p5: i32) i32 {
         }
     }
 }
-fn method2(p0: []const u8, p1: u8, p2: u8, p3: i32, p4: i32, p5: i32, p6: i32) i32 {
+fn codepoint_byte_offset_loop_2(p0: []const u8, p1: u8, p2: u8, p3: i32, p4: i32, p5: i32, p6: i32) i32 {
     var v0: []const u8 = p0; _ = &v0;
     var v1: u8 = p1; _ = &v1;
     var v2: u8 = p2; _ = &v2;
@@ -360,94 +360,94 @@ fn spiralMain() i32 {
     var v99: bool = undefined; _ = &v99;
     v0 = "\xc3\x80";
     v1 = @as(i32, 1);
-    v2 = method0(v0, v1);
+    v2 = runtime_byte_0(v0, v1);
     v3 = "\xc2\xa9";
     v4 = @as(i32, 0);
-    v5 = method0(v3, v4);
+    v5 = runtime_byte_0(v3, v4);
     v6 = "A\xc3\xa9\xce\xbb\xf0\x9f\x99\x82Z";
     v7 = @as(i32, 0);
     v8 = @as(i32, 0);
     v9 = @as(i32, 10);
-    v10 = method1(v6, v2, v5, v7, v8, v9);
+    v10 = codepoint_length_loop_1(v6, v2, v5, v7, v8, v9);
     v11 = @as(i32, 1);
-    v12 = method0(v0, v11);
+    v12 = runtime_byte_0(v0, v11);
     v13 = @as(i32, 0);
-    v14 = method0(v3, v13);
+    v14 = runtime_byte_0(v3, v13);
     v15 = @as(i32, 1);
     v16 = @as(i32, 0);
     v17 = @as(i32, 0);
     v18 = @as(i32, 10);
-    v19 = method2(v6, v12, v14, v15, v16, v17, v18);
+    v19 = codepoint_byte_offset_loop_2(v6, v12, v14, v15, v16, v17, v18);
     v20 = @as(i32, 1);
-    v21 = method0(v0, v20);
+    v21 = runtime_byte_0(v0, v20);
     v22 = @as(i32, 0);
-    v23 = method0(v3, v22);
+    v23 = runtime_byte_0(v3, v22);
     v24 = @as(i32, 2);
     v25 = @as(i32, 0);
     v26 = @as(i32, 0);
     v27 = @as(i32, 10);
-    v28 = method2(v6, v21, v23, v24, v25, v26, v27);
+    v28 = codepoint_byte_offset_loop_2(v6, v21, v23, v24, v25, v26, v27);
     v29 = v28 -% @as(i32, 1);
     v30 = spiralStringSlice("A\xc3\xa9\xce\xbb\xf0\x9f\x99\x82Z", @as(i64, v19), @as(i64, v29));
     v31 = @as(i32, 1);
-    v32 = method0(v0, v31);
+    v32 = runtime_byte_0(v0, v31);
     v33 = @as(i32, 0);
-    v34 = method0(v3, v33);
+    v34 = runtime_byte_0(v3, v33);
     v35 = @as(i32, 3);
     v36 = @as(i32, 0);
     v37 = @as(i32, 0);
     v38 = @as(i32, 10);
-    v39 = method2(v6, v32, v34, v35, v36, v37, v38);
+    v39 = codepoint_byte_offset_loop_2(v6, v32, v34, v35, v36, v37, v38);
     v40 = @as(i32, 1);
-    v41 = method0(v0, v40);
+    v41 = runtime_byte_0(v0, v40);
     v42 = @as(i32, 0);
-    v43 = method0(v3, v42);
+    v43 = runtime_byte_0(v3, v42);
     v44 = @as(i32, 4);
     v45 = @as(i32, 0);
     v46 = @as(i32, 0);
     v47 = @as(i32, 10);
-    v48 = method2(v6, v41, v43, v44, v45, v46, v47);
+    v48 = codepoint_byte_offset_loop_2(v6, v41, v43, v44, v45, v46, v47);
     v49 = v48 -% @as(i32, 1);
     v50 = spiralStringSlice("A\xc3\xa9\xce\xbb\xf0\x9f\x99\x82Z", @as(i64, v39), @as(i64, v49));
     v51 = @as(i32, 1);
-    v52 = method0(v0, v51);
+    v52 = runtime_byte_0(v0, v51);
     v53 = @as(i32, 0);
-    v54 = method0(v3, v53);
+    v54 = runtime_byte_0(v3, v53);
     v55 = @as(i32, 1);
     v56 = @as(i32, 0);
     v57 = @as(i32, 0);
     v58 = @as(i32, 10);
-    v59 = method2(v6, v52, v54, v55, v56, v57, v58);
+    v59 = codepoint_byte_offset_loop_2(v6, v52, v54, v55, v56, v57, v58);
     v60 = @as(i32, 1);
-    v61 = method0(v0, v60);
+    v61 = runtime_byte_0(v0, v60);
     v62 = @as(i32, 0);
-    v63 = method0(v3, v62);
+    v63 = runtime_byte_0(v3, v62);
     v64 = @as(i32, 4);
     v65 = @as(i32, 0);
     v66 = @as(i32, 0);
     v67 = @as(i32, 10);
-    v68 = method2(v6, v61, v63, v64, v65, v66, v67);
+    v68 = codepoint_byte_offset_loop_2(v6, v61, v63, v64, v65, v66, v67);
     v69 = v68 -% @as(i32, 1);
     v70 = spiralStringSlice("A\xc3\xa9\xce\xbb\xf0\x9f\x99\x82Z", @as(i64, v59), @as(i64, v69));
     v71 = @as(i32, 1);
-    v72 = method0(v0, v71);
+    v72 = runtime_byte_0(v0, v71);
     v73 = @as(i32, 0);
-    v74 = method0(v3, v73);
+    v74 = runtime_byte_0(v3, v73);
     v75 = @as(i32, 3);
     v76 = @as(i32, 0);
     v77 = @as(i32, 0);
     v78 = @as(i32, 10);
-    v79 = method2(v6, v72, v74, v75, v76, v77, v78);
+    v79 = codepoint_byte_offset_loop_2(v6, v72, v74, v75, v76, v77, v78);
     v80 = @as(i32, 0);
-    v81 = method0(v30, v80);
+    v81 = runtime_byte_0(v30, v80);
     v82 = "\xc3\xa9";
     v83 = @as(i32, 0);
-    v84 = method0(v82, v83);
+    v84 = runtime_byte_0(v82, v83);
     v85 = @as(i32, 3);
-    v86 = method0(v50, v85);
+    v86 = runtime_byte_0(v50, v85);
     v87 = "\xf0\x9f\x99\x82";
     v88 = @as(i32, 3);
-    v89 = method0(v87, v88);
+    v89 = runtime_byte_0(v87, v88);
     v90 = v10 == @as(i32, 5);
     if (v90) {
         v91 = @as(i32, @intCast(v30.len));

@@ -14,7 +14,7 @@ impl US0 {
         }
     }
 }
-fn method0(mut v0: US0) -> i32 {
+fn bump_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_0 => {
             0i32
@@ -28,7 +28,7 @@ fn method0(mut v0: US0) -> i32 {
         }
     }
 }
-fn method1(mut v0: US0) -> i32 {
+fn score_1(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_0 => {
             0i32
@@ -50,9 +50,9 @@ fn spiral_main() -> i32 {
     v1.clone().borrow_mut()[0i32 as usize] = 4i32;
     v1.clone().borrow_mut()[1i32 as usize] = 5i32;
     let mut v2: US0 = US0::US0_1(v1.clone());
-    let mut v3: i32 = method0(v2.clone());
+    let mut v3: i32 = bump_0(v2.clone());
     let mut v4: US0 = US0::US0_1(v1.clone());
-    let mut v5: i32 = method1(v4.clone());
+    let mut v5: i32 = score_1(v4.clone());
     let mut v6: i32 = v5.wrapping_add(v3);
     let mut v7: i32 = v6.wrapping_sub(12i32);
     v7

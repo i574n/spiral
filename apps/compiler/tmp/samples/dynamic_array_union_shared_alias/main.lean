@@ -33,7 +33,7 @@ def U0.spiralTag : U0 → Int32
   | .c0 .. => 0
   | .c1 .. => 1
 mutual
-partial def method0 (p0 : U0) : IO Int32 := do
+partial def bump_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v2 : Int32 := default
@@ -47,7 +47,7 @@ partial def method0 (p0 : U0) : IO Int32 := do
         v3 := (v2 + (1 : Int32))
         v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v3)
         return (0 : Int32)
-partial def method1 (p0 : U0) : IO Int32 := do
+partial def score_1 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v2 : Int32 := default
@@ -80,9 +80,9 @@ partial def spiralMain : IO Int32 := do
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) (4 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (5 : Int32))
     v2 := (U0.c1 v1)
-    v3 := (← method0 v2)
+    v3 := (← bump_0 v2)
     v4 := (U0.c1 v1)
-    v5 := (← method1 v4)
+    v5 := (← score_1 v4)
     v6 := (v5 + v3)
     v7 := (v6 - (12 : Int32))
     return v7

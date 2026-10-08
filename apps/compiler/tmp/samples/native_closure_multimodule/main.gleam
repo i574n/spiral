@@ -67,12 +67,12 @@ pub fn closure0(capt: #(String)) -> fn(Int) -> Int {
         v3
     }
 }
-pub fn method0(v0: fn(Int) -> Int, v1: Int) -> Int {
+pub fn apply_0(v0: fn(Int) -> Int, v1: Int) -> Int {
     v0( v1  )
 }
 pub fn main() {
 let v0 = "abc"
 let v1 = closure0(#(v0))
 let v2 = 39
-method0(v1, v2)
+apply_0(v1, v2)
 }

@@ -38,97 +38,97 @@ and [<Struct>] US2 =
 and [<Struct>] US3 =
     | US3_0
     | US3_1
-let rec method0 (v0 : UH0) : UH1 =
+let rec regex_chars_from_symbols_0 (v0 : UH0) : UH1 =
     match v0 with
     | UH0_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH1 = method0(v3)
+        let v4 : UH1 = regex_chars_from_symbols_0(v3)
         let v5 : UH2 = UH2_2(v2)
         UH1_1(v5, v4)
     | UH0_0 -> (* SymbolListNil *)
         UH1_0
-and method1 (v0 : UH1) : UH1 =
+and regex_star_corpus_1 (v0 : UH1) : UH1 =
     match v0 with
     | UH1_1(v2, v3) -> (* RegexListCons *)
-        let v4 : UH1 = method1(v3)
+        let v4 : UH1 = regex_star_corpus_1(v3)
         let v5 : UH2 = UH2_5(v2)
         UH1_1(v5, v4)
     | UH1_0 -> (* RegexListNil *)
         UH1_0
-and method3 (v0 : UH2, v1 : UH1) : UH1 =
+and regex_pairs_with_3 (v0 : UH2, v1 : UH1) : UH1 =
     match v1 with
     | UH1_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH1 = method3(v0, v4)
+        let v5 : UH1 = regex_pairs_with_3(v0, v4)
         let v6 : UH2 = UH2_3(v0, v3)
         let v7 : UH2 = UH2_4(v0, v3)
         let v8 : UH1 = UH1_1(v7, v5)
         UH1_1(v6, v8)
     | UH1_0 -> (* RegexListNil *)
         UH1_0
-and method4 (v0 : UH1, v1 : UH1) : UH1 =
+and regex_list_append_4 (v0 : UH1, v1 : UH1) : UH1 =
     match v0 with
     | UH1_1(v2, v3) -> (* RegexListCons *)
-        let v4 : UH1 = method4(v3, v1)
+        let v4 : UH1 = regex_list_append_4(v3, v1)
         UH1_1(v2, v4)
     | UH1_0 -> (* RegexListNil *)
         v1
-and method2 (v0 : UH1, v1 : UH1) : UH1 =
+and regex_binary_corpus_2 (v0 : UH1, v1 : UH1) : UH1 =
     match v0 with
     | UH1_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH1 = method3(v3, v1)
-        let v6 : UH1 = method2(v4, v1)
-        method4(v5, v6)
+        let v5 : UH1 = regex_pairs_with_3(v3, v1)
+        let v6 : UH1 = regex_binary_corpus_2(v4, v1)
+        regex_list_append_4(v5, v6)
     | UH1_0 -> (* RegexListNil *)
         UH1_0
-and method5 (v0 : UH3) : UH4 =
+and regex_chars_from_symbols_5 (v0 : UH3) : UH4 =
     match v0 with
     | UH3_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH4 = method5(v3)
+        let v4 : UH4 = regex_chars_from_symbols_5(v3)
         let v5 : UH5 = UH5_2(v2)
         UH4_1(v5, v4)
     | UH3_0 -> (* SymbolListNil *)
         UH4_0
-and method6 (v0 : UH4) : UH4 =
+and regex_star_corpus_6 (v0 : UH4) : UH4 =
     match v0 with
     | UH4_1(v2, v3) -> (* RegexListCons *)
-        let v4 : UH4 = method6(v3)
+        let v4 : UH4 = regex_star_corpus_6(v3)
         let v5 : UH5 = UH5_5(v2)
         UH4_1(v5, v4)
     | UH4_0 -> (* RegexListNil *)
         UH4_0
-and method8 (v0 : UH5, v1 : UH4) : UH4 =
+and regex_pairs_with_8 (v0 : UH5, v1 : UH4) : UH4 =
     match v1 with
     | UH4_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH4 = method8(v0, v4)
+        let v5 : UH4 = regex_pairs_with_8(v0, v4)
         let v6 : UH5 = UH5_3(v0, v3)
         let v7 : UH5 = UH5_4(v0, v3)
         let v8 : UH4 = UH4_1(v7, v5)
         UH4_1(v6, v8)
     | UH4_0 -> (* RegexListNil *)
         UH4_0
-and method9 (v0 : UH4, v1 : UH4) : UH4 =
+and regex_list_append_9 (v0 : UH4, v1 : UH4) : UH4 =
     match v0 with
     | UH4_1(v2, v3) -> (* RegexListCons *)
-        let v4 : UH4 = method9(v3, v1)
+        let v4 : UH4 = regex_list_append_9(v3, v1)
         UH4_1(v2, v4)
     | UH4_0 -> (* RegexListNil *)
         v1
-and method7 (v0 : UH4, v1 : UH4) : UH4 =
+and regex_binary_corpus_7 (v0 : UH4, v1 : UH4) : UH4 =
     match v0 with
     | UH4_1(v3, v4) -> (* RegexListCons *)
-        let v5 : UH4 = method8(v3, v1)
-        let v6 : UH4 = method7(v4, v1)
-        method9(v5, v6)
+        let v5 : UH4 = regex_pairs_with_8(v3, v1)
+        let v6 : UH4 = regex_binary_corpus_7(v4, v1)
+        regex_list_append_9(v5, v6)
     | UH4_0 -> (* RegexListNil *)
         UH4_0
-and method14 (v0 : UH2, v1 : UH2) : US2 =
+and regex_compare_14 (v0 : UH2, v1 : UH2) : US2 =
     match v0 with
     | UH2_3(v53, v54) -> (* RegexAlt *)
         match v1 with
         | UH2_3(v55, v56) -> (* RegexAlt *)
-            let v57 : US2 = method14(v53, v55)
+            let v57 : US2 = regex_compare_14(v53, v55)
             match v57 with
             | US2_1 -> (* SymbolSame *)
-                method14(v54, v56)
+                regex_compare_14(v54, v56)
             | _ ->
                 v57
         | _ ->
@@ -136,10 +136,10 @@ and method14 (v0 : UH2, v1 : UH2) : US2 =
     | UH2_4(v28, v29) -> (* RegexCat *)
         match v1 with
         | UH2_4(v34, v35) -> (* RegexCat *)
-            let v36 : US2 = method14(v28, v34)
+            let v36 : US2 = regex_compare_14(v28, v34)
             match v36 with
             | US2_1 -> (* SymbolSame *)
-                method14(v29, v35)
+                regex_compare_14(v29, v35)
             | _ ->
                 v36
         | UH2_2(v32) -> (* RegexChar *)
@@ -191,16 +191,16 @@ and method14 (v0 : UH2, v1 : UH2) : US2 =
         | UH2_3(v45, v46) -> (* RegexAlt *)
             US2_0
         | UH2_5(v48) -> (* RegexStar *)
-            method14(v44, v48)
+            regex_compare_14(v44, v48)
         | _ ->
             US2_2
-and method13 (v0 : UH2, v1 : UH2) : UH2 =
+and alt_insert_sorted_13 (v0 : UH2, v1 : UH2) : UH2 =
     match v1 with
     | UH2_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US2 = method14(v0, v2)
+        let v4 : US2 = regex_compare_14(v0, v2)
         match v4 with
         | US2_2 -> (* SymbolGreater *)
-            let v6 : UH2 = method13(v0, v3)
+            let v6 : UH2 = alt_insert_sorted_13(v0, v3)
             UH2_3(v2, v6)
         | US2_0 -> (* SymbolLess *)
             UH2_3(v0, v1)
@@ -209,7 +209,7 @@ and method13 (v0 : UH2, v1 : UH2) : UH2 =
     | UH2_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US2 = method14(v0, v1)
+        let v11 : US2 = regex_compare_14(v0, v1)
         match v11 with
         | US2_2 -> (* SymbolGreater *)
             UH2_3(v1, v0)
@@ -217,23 +217,23 @@ and method13 (v0 : UH2, v1 : UH2) : UH2 =
             UH2_3(v0, v1)
         | US2_1 -> (* SymbolSame *)
             v1
-and method12 (v0 : UH2, v1 : UH2) : UH2 =
+and make_alt_12 (v0 : UH2, v1 : UH2) : UH2 =
     match v0 with
     | UH2_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH2 = method13(v2, v1)
-        method12(v3, v4)
+        let v4 : UH2 = alt_insert_sorted_13(v2, v1)
+        make_alt_12(v3, v4)
     | UH2_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method13(v0, v1)
-and method16 (v0 : UH2, v1 : UH2) : bool =
+        alt_insert_sorted_13(v0, v1)
+and regex_equal_16 (v0 : UH2, v1 : UH2) : bool =
     match v0 with
     | UH2_3(v18, v19) -> (* RegexAlt *)
         match v1 with
         | UH2_3(v20, v21) -> (* RegexAlt *)
-            let v22 : bool = method16(v18, v20)
+            let v22 : bool = regex_equal_16(v18, v20)
             if v22 then
-                method16(v19, v21)
+                regex_equal_16(v19, v21)
             else
                 false
         | _ ->
@@ -241,9 +241,9 @@ and method16 (v0 : UH2, v1 : UH2) : bool =
     | UH2_4(v26, v27) -> (* RegexCat *)
         match v1 with
         | UH2_4(v28, v29) -> (* RegexCat *)
-            let v30 : bool = method16(v26, v28)
+            let v30 : bool = regex_equal_16(v26, v28)
             if v30 then
-                method16(v27, v29)
+                regex_equal_16(v27, v29)
             else
                 false
         | _ ->
@@ -287,10 +287,10 @@ and method16 (v0 : UH2, v1 : UH2) : bool =
     | UH2_5(v34) -> (* RegexStar *)
         match v1 with
         | UH2_5(v35) -> (* RegexStar *)
-            method16(v34, v35)
+            regex_equal_16(v34, v35)
         | _ ->
             false
-and method15 (v0 : UH2, v1 : UH2) : UH2 =
+and make_cat_15 (v0 : UH2, v1 : UH2) : UH2 =
     match v0 with
     | UH2_0 -> (* RegexEmpty *)
         UH2_0
@@ -309,12 +309,12 @@ and method15 (v0 : UH2, v1 : UH2) : UH2 =
                 | _ ->
                     match v0 with
                     | UH2_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH2 = method15(v13, v1)
+                        let v14 : UH2 = make_cat_15(v13, v1)
                         UH2_4(v12, v14)
                     | UH2_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH2_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method16(v4, v5)
+                            let v6 : bool = regex_equal_16(v4, v5)
                             if v6 then
                                 UH2_5(v4)
                             else
@@ -323,7 +323,7 @@ and method15 (v0 : UH2, v1 : UH2) : UH2 =
                             UH2_4(v0, v1)
                     | _ ->
                         UH2_4(v0, v1)
-and method17 (v0 : UH2) : UH2 =
+and make_star_17 (v0 : UH2) : UH2 =
     match v0 with
     | UH2_0 -> (* RegexEmpty *)
         UH2_1
@@ -333,16 +333,16 @@ and method17 (v0 : UH2) : UH2 =
         UH2_5(v3)
     | _ ->
         UH2_5(v0)
-and method11 (v0 : UH2) : UH2 =
+and normalize_11 (v0 : UH2) : UH2 =
     match v0 with
     | UH2_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH2 = method11(v5)
-        let v8 : UH2 = method11(v6)
-        method12(v7, v8)
+        let v7 : UH2 = normalize_11(v5)
+        let v8 : UH2 = normalize_11(v6)
+        make_alt_12(v7, v8)
     | UH2_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH2 = method11(v10)
-        let v13 : UH2 = method11(v11)
-        method15(v12, v13)
+        let v12 : UH2 = normalize_11(v10)
+        let v13 : UH2 = normalize_11(v11)
+        make_cat_15(v12, v13)
     | UH2_2(v3) -> (* RegexChar *)
         UH2_2(v3)
     | UH2_0 -> (* RegexEmpty *)
@@ -350,27 +350,27 @@ and method11 (v0 : UH2) : UH2 =
     | UH2_1 -> (* RegexEpsilon *)
         UH2_1
     | UH2_5(v15) -> (* RegexStar *)
-        let v16 : UH2 = method11(v15)
-        method17(v16)
-and method19 (v0 : UH2, v1 : UH2) : bool =
+        let v16 : UH2 = normalize_11(v15)
+        make_star_17(v16)
+and canonical_alt_ordered_19 (v0 : UH2, v1 : UH2) : bool =
     match v1 with
     | UH2_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US2 = method14(v0, v2)
+        let v4 : US2 = regex_compare_14(v0, v2)
         match v4 with
         | US2_0 -> (* SymbolLess *)
-            method19(v2, v3)
+            canonical_alt_ordered_19(v2, v3)
         | _ ->
             false
     | UH2_0 -> (* RegexEmpty *)
         false
     | _ ->
-        let v7 : US2 = method14(v0, v1)
+        let v7 : US2 = regex_compare_14(v0, v1)
         match v7 with
         | US2_0 -> (* SymbolLess *)
             true
         | _ ->
             false
-and method18 (v0 : UH2) : bool =
+and canonical_regex_form_18 (v0 : UH2) : bool =
     match v0 with
     | UH2_3(v2, v3) -> (* RegexAlt *)
         let v7 : bool =
@@ -383,16 +383,16 @@ and method18 (v0 : UH2) : bool =
                 true
         let v9 : bool =
             if v7 then
-                method18(v2)
+                canonical_regex_form_18(v2)
             else
                 false
         let v11 : bool =
             if v9 then
-                method18(v3)
+                canonical_regex_form_18(v3)
             else
                 false
         if v11 then
-            method19(v2, v3)
+            canonical_alt_ordered_19(v2, v3)
         else
             false
     | UH2_4(v14, v15) -> (* RegexCat *)
@@ -423,7 +423,7 @@ and method18 (v0 : UH2) : bool =
                 | UH2_5(v24) -> (* RegexStar *)
                     match v15 with
                     | UH2_5(v25) -> (* RegexStar *)
-                        let v26 : bool = method16(v24, v25)
+                        let v26 : bool = regex_equal_16(v24, v25)
                         let v27 : bool = v26 = false
                         v27
                     | _ ->
@@ -434,11 +434,11 @@ and method18 (v0 : UH2) : bool =
                 false
         let v32 : bool =
             if v30 then
-                method18(v14)
+                canonical_regex_form_18(v14)
             else
                 false
         if v32 then
-            method18(v15)
+            canonical_regex_form_18(v15)
         else
             false
     | UH2_2(v1) -> (* RegexChar *)
@@ -459,29 +459,29 @@ and method18 (v0 : UH2) : bool =
             | _ ->
                 true
         if v39 then
-            method18(v35)
+            canonical_regex_form_18(v35)
         else
             false
-and method10 (v0 : UH1) : bool =
+and normalized_corpus_is_canonical_10 (v0 : UH1) : bool =
     match v0 with
     | UH1_1(v1, v2) -> (* RegexListCons *)
-        let v3 : UH2 = method11(v1)
-        let v4 : bool = method18(v3)
+        let v3 : UH2 = normalize_11(v1)
+        let v4 : bool = canonical_regex_form_18(v3)
         if v4 then
-            method10(v2)
+            normalized_corpus_is_canonical_10(v2)
         else
             false
     | UH1_0 -> (* RegexListNil *)
         true
-and method24 (v0 : UH5, v1 : UH5) : US2 =
+and regex_compare_24 (v0 : UH5, v1 : UH5) : US2 =
     match v0 with
     | UH5_3(v59, v60) -> (* RegexAlt *)
         match v1 with
         | UH5_3(v61, v62) -> (* RegexAlt *)
-            let v63 : US2 = method24(v59, v61)
+            let v63 : US2 = regex_compare_24(v59, v61)
             match v63 with
             | US2_1 -> (* SymbolSame *)
-                method24(v60, v62)
+                regex_compare_24(v60, v62)
             | _ ->
                 v63
         | _ ->
@@ -489,10 +489,10 @@ and method24 (v0 : UH5, v1 : UH5) : US2 =
     | UH5_4(v34, v35) -> (* RegexCat *)
         match v1 with
         | UH5_4(v40, v41) -> (* RegexCat *)
-            let v42 : US2 = method24(v34, v40)
+            let v42 : US2 = regex_compare_24(v34, v40)
             match v42 with
             | US2_1 -> (* SymbolSame *)
-                method24(v35, v41)
+                regex_compare_24(v35, v41)
             | _ ->
                 v42
         | UH5_2(v38) -> (* RegexChar *)
@@ -556,16 +556,16 @@ and method24 (v0 : UH5, v1 : UH5) : US2 =
         | UH5_3(v51, v52) -> (* RegexAlt *)
             US2_0
         | UH5_5(v54) -> (* RegexStar *)
-            method24(v50, v54)
+            regex_compare_24(v50, v54)
         | _ ->
             US2_2
-and method23 (v0 : UH5, v1 : UH5) : UH5 =
+and alt_insert_sorted_23 (v0 : UH5, v1 : UH5) : UH5 =
     match v1 with
     | UH5_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US2 = method24(v0, v2)
+        let v4 : US2 = regex_compare_24(v0, v2)
         match v4 with
         | US2_2 -> (* SymbolGreater *)
-            let v6 : UH5 = method23(v0, v3)
+            let v6 : UH5 = alt_insert_sorted_23(v0, v3)
             UH5_3(v2, v6)
         | US2_0 -> (* SymbolLess *)
             UH5_3(v0, v1)
@@ -574,7 +574,7 @@ and method23 (v0 : UH5, v1 : UH5) : UH5 =
     | UH5_0 -> (* RegexEmpty *)
         v0
     | _ ->
-        let v11 : US2 = method24(v0, v1)
+        let v11 : US2 = regex_compare_24(v0, v1)
         match v11 with
         | US2_2 -> (* SymbolGreater *)
             UH5_3(v1, v0)
@@ -582,23 +582,23 @@ and method23 (v0 : UH5, v1 : UH5) : UH5 =
             UH5_3(v0, v1)
         | US2_1 -> (* SymbolSame *)
             v1
-and method22 (v0 : UH5, v1 : UH5) : UH5 =
+and make_alt_22 (v0 : UH5, v1 : UH5) : UH5 =
     match v0 with
     | UH5_3(v2, v3) -> (* RegexAlt *)
-        let v4 : UH5 = method23(v2, v1)
-        method22(v3, v4)
+        let v4 : UH5 = alt_insert_sorted_23(v2, v1)
+        make_alt_22(v3, v4)
     | UH5_0 -> (* RegexEmpty *)
         v1
     | _ ->
-        method23(v0, v1)
-and method26 (v0 : UH5, v1 : UH5) : bool =
+        alt_insert_sorted_23(v0, v1)
+and regex_equal_26 (v0 : UH5, v1 : UH5) : bool =
     match v0 with
     | UH5_3(v24, v25) -> (* RegexAlt *)
         match v1 with
         | UH5_3(v26, v27) -> (* RegexAlt *)
-            let v28 : bool = method26(v24, v26)
+            let v28 : bool = regex_equal_26(v24, v26)
             if v28 then
-                method26(v25, v27)
+                regex_equal_26(v25, v27)
             else
                 false
         | _ ->
@@ -606,9 +606,9 @@ and method26 (v0 : UH5, v1 : UH5) : bool =
     | UH5_4(v32, v33) -> (* RegexCat *)
         match v1 with
         | UH5_4(v34, v35) -> (* RegexCat *)
-            let v36 : bool = method26(v32, v34)
+            let v36 : bool = regex_equal_26(v32, v34)
             if v36 then
-                method26(v33, v35)
+                regex_equal_26(v33, v35)
             else
                 false
         | _ ->
@@ -664,10 +664,10 @@ and method26 (v0 : UH5, v1 : UH5) : bool =
     | UH5_5(v40) -> (* RegexStar *)
         match v1 with
         | UH5_5(v41) -> (* RegexStar *)
-            method26(v40, v41)
+            regex_equal_26(v40, v41)
         | _ ->
             false
-and method25 (v0 : UH5, v1 : UH5) : UH5 =
+and make_cat_25 (v0 : UH5, v1 : UH5) : UH5 =
     match v0 with
     | UH5_0 -> (* RegexEmpty *)
         UH5_0
@@ -686,12 +686,12 @@ and method25 (v0 : UH5, v1 : UH5) : UH5 =
                 | _ ->
                     match v0 with
                     | UH5_4(v12, v13) -> (* RegexCat *)
-                        let v14 : UH5 = method25(v13, v1)
+                        let v14 : UH5 = make_cat_25(v13, v1)
                         UH5_4(v12, v14)
                     | UH5_5(v4) -> (* RegexStar *)
                         match v1 with
                         | UH5_5(v5) -> (* RegexStar *)
-                            let v6 : bool = method26(v4, v5)
+                            let v6 : bool = regex_equal_26(v4, v5)
                             if v6 then
                                 UH5_5(v4)
                             else
@@ -700,7 +700,7 @@ and method25 (v0 : UH5, v1 : UH5) : UH5 =
                             UH5_4(v0, v1)
                     | _ ->
                         UH5_4(v0, v1)
-and method27 (v0 : UH5) : UH5 =
+and make_star_27 (v0 : UH5) : UH5 =
     match v0 with
     | UH5_0 -> (* RegexEmpty *)
         UH5_1
@@ -710,16 +710,16 @@ and method27 (v0 : UH5) : UH5 =
         UH5_5(v3)
     | _ ->
         UH5_5(v0)
-and method21 (v0 : UH5) : UH5 =
+and normalize_21 (v0 : UH5) : UH5 =
     match v0 with
     | UH5_3(v5, v6) -> (* RegexAlt *)
-        let v7 : UH5 = method21(v5)
-        let v8 : UH5 = method21(v6)
-        method22(v7, v8)
+        let v7 : UH5 = normalize_21(v5)
+        let v8 : UH5 = normalize_21(v6)
+        make_alt_22(v7, v8)
     | UH5_4(v10, v11) -> (* RegexCat *)
-        let v12 : UH5 = method21(v10)
-        let v13 : UH5 = method21(v11)
-        method25(v12, v13)
+        let v12 : UH5 = normalize_21(v10)
+        let v13 : UH5 = normalize_21(v11)
+        make_cat_25(v12, v13)
     | UH5_2(v3) -> (* RegexChar *)
         UH5_2(v3)
     | UH5_0 -> (* RegexEmpty *)
@@ -727,27 +727,27 @@ and method21 (v0 : UH5) : UH5 =
     | UH5_1 -> (* RegexEpsilon *)
         UH5_1
     | UH5_5(v15) -> (* RegexStar *)
-        let v16 : UH5 = method21(v15)
-        method27(v16)
-and method29 (v0 : UH5, v1 : UH5) : bool =
+        let v16 : UH5 = normalize_21(v15)
+        make_star_27(v16)
+and canonical_alt_ordered_29 (v0 : UH5, v1 : UH5) : bool =
     match v1 with
     | UH5_3(v2, v3) -> (* RegexAlt *)
-        let v4 : US2 = method24(v0, v2)
+        let v4 : US2 = regex_compare_24(v0, v2)
         match v4 with
         | US2_0 -> (* SymbolLess *)
-            method29(v2, v3)
+            canonical_alt_ordered_29(v2, v3)
         | _ ->
             false
     | UH5_0 -> (* RegexEmpty *)
         false
     | _ ->
-        let v7 : US2 = method24(v0, v1)
+        let v7 : US2 = regex_compare_24(v0, v1)
         match v7 with
         | US2_0 -> (* SymbolLess *)
             true
         | _ ->
             false
-and method28 (v0 : UH5) : bool =
+and canonical_regex_form_28 (v0 : UH5) : bool =
     match v0 with
     | UH5_3(v2, v3) -> (* RegexAlt *)
         let v7 : bool =
@@ -760,16 +760,16 @@ and method28 (v0 : UH5) : bool =
                 true
         let v9 : bool =
             if v7 then
-                method28(v2)
+                canonical_regex_form_28(v2)
             else
                 false
         let v11 : bool =
             if v9 then
-                method28(v3)
+                canonical_regex_form_28(v3)
             else
                 false
         if v11 then
-            method29(v2, v3)
+            canonical_alt_ordered_29(v2, v3)
         else
             false
     | UH5_4(v14, v15) -> (* RegexCat *)
@@ -800,7 +800,7 @@ and method28 (v0 : UH5) : bool =
                 | UH5_5(v24) -> (* RegexStar *)
                     match v15 with
                     | UH5_5(v25) -> (* RegexStar *)
-                        let v26 : bool = method26(v24, v25)
+                        let v26 : bool = regex_equal_26(v24, v25)
                         let v27 : bool = v26 = false
                         v27
                     | _ ->
@@ -811,11 +811,11 @@ and method28 (v0 : UH5) : bool =
                 false
         let v32 : bool =
             if v30 then
-                method28(v14)
+                canonical_regex_form_28(v14)
             else
                 false
         if v32 then
-            method28(v15)
+            canonical_regex_form_28(v15)
         else
             false
     | UH5_2(v1) -> (* RegexChar *)
@@ -836,25 +836,25 @@ and method28 (v0 : UH5) : bool =
             | _ ->
                 true
         if v39 then
-            method28(v35)
+            canonical_regex_form_28(v35)
         else
             false
-and method20 (v0 : UH4) : bool =
+and normalized_corpus_is_canonical_20 (v0 : UH4) : bool =
     match v0 with
     | UH4_1(v1, v2) -> (* RegexListCons *)
-        let v3 : UH5 = method21(v1)
-        let v4 : bool = method28(v3)
+        let v3 : UH5 = normalize_21(v1)
+        let v4 : bool = canonical_regex_form_28(v3)
         if v4 then
-            method20(v2)
+            normalized_corpus_is_canonical_20(v2)
         else
             false
     | UH4_0 -> (* RegexListNil *)
         true
-and method34 (v0 : UH2) : US3 =
+and nullable_34 (v0 : UH2) : US3 =
     match v0 with
     | UH2_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method34(v5)
-        let v8 : US3 = method34(v6)
+        let v7 : US3 = nullable_34(v5)
+        let v8 : US3 = nullable_34(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -869,8 +869,8 @@ and method34 (v0 : UH2) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH2_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method34(v16)
-        let v19 : US3 = method34(v17)
+        let v18 : US3 = nullable_34(v16)
+        let v19 : US3 = nullable_34(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -888,23 +888,23 @@ and method34 (v0 : UH2) : US3 =
         US3_0
     | UH2_5(v25) -> (* RegexStar *)
         US3_0
-and method33 (v0 : UH2, v1 : US0) : UH2 =
+and derivative_33 (v0 : UH2, v1 : US0) : UH2 =
     match v0 with
     | UH2_3(v19, v20) -> (* RegexAlt *)
-        let v21 : UH2 = method33(v19, v1)
-        let v22 : UH2 = method33(v20, v1)
-        method12(v21, v22)
+        let v21 : UH2 = derivative_33(v19, v1)
+        let v22 : UH2 = derivative_33(v20, v1)
+        make_alt_12(v21, v22)
     | UH2_4(v24, v25) -> (* RegexCat *)
-        let v26 : US3 = method34(v24)
+        let v26 : US3 = nullable_34(v24)
         match v26 with
         | US3_1 -> (* NonNullable *)
-            let v31 : UH2 = method33(v24, v1)
-            method15(v31, v25)
+            let v31 : UH2 = derivative_33(v24, v1)
+            make_cat_15(v31, v25)
         | US3_0 -> (* Nullable *)
-            let v27 : UH2 = method33(v24, v1)
-            let v28 : UH2 = method15(v27, v25)
-            let v29 : UH2 = method33(v25, v1)
-            method12(v28, v29)
+            let v27 : UH2 = derivative_33(v24, v1)
+            let v28 : UH2 = make_cat_15(v27, v25)
+            let v29 : UH2 = derivative_33(v25, v1)
+            make_alt_12(v28, v29)
     | UH2_2(v4) -> (* RegexChar *)
         let v14 : US2 =
             match v4 with
@@ -935,39 +935,39 @@ and method33 (v0 : UH2, v1 : US0) : UH2 =
     | UH2_1 -> (* RegexEpsilon *)
         UH2_0
     | UH2_5(v35) -> (* RegexStar *)
-        let v36 : UH2 = method33(v35, v1)
-        let v37 : UH2 = method17(v35)
-        method15(v36, v37)
-and method32 (v0 : UH2, v1 : US0) : UH2 =
-    let v2 : UH2 = method11(v0)
-    let v3 : UH2 = method33(v2, v1)
-    method11(v3)
-and method31 (v0 : UH2, v1 : UH0) : bool =
+        let v36 : UH2 = derivative_33(v35, v1)
+        let v37 : UH2 = make_star_17(v35)
+        make_cat_15(v36, v37)
+and canonical_derivative_32 (v0 : UH2, v1 : US0) : UH2 =
+    let v2 : UH2 = normalize_11(v0)
+    let v3 : UH2 = derivative_33(v2, v1)
+    normalize_11(v3)
+and canonical_derivatives_are_canonical_symbols_31 (v0 : UH2, v1 : UH0) : bool =
     match v1 with
     | UH0_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH2 = method32(v0, v2)
-        let v5 : bool = method18(v4)
+        let v4 : UH2 = canonical_derivative_32(v0, v2)
+        let v5 : bool = canonical_regex_form_18(v4)
         if v5 then
-            method31(v0, v3)
+            canonical_derivatives_are_canonical_symbols_31(v0, v3)
         else
             false
     | UH0_0 -> (* SymbolListNil *)
         true
-and method30 (v0 : UH1, v1 : UH0) : bool =
+and canonical_derivatives_are_canonical_corpus_30 (v0 : UH1, v1 : UH0) : bool =
     match v0 with
     | UH1_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method31(v2, v1)
+        let v4 : bool = canonical_derivatives_are_canonical_symbols_31(v2, v1)
         if v4 then
-            method30(v3, v1)
+            canonical_derivatives_are_canonical_corpus_30(v3, v1)
         else
             false
     | UH1_0 -> (* RegexListNil *)
         true
-and method39 (v0 : UH5) : US3 =
+and nullable_39 (v0 : UH5) : US3 =
     match v0 with
     | UH5_3(v5, v6) -> (* RegexAlt *)
-        let v7 : US3 = method39(v5)
-        let v8 : US3 = method39(v6)
+        let v7 : US3 = nullable_39(v5)
+        let v8 : US3 = nullable_39(v6)
         match v7 with
         | US3_0 -> (* Nullable *)
             US3_0
@@ -982,8 +982,8 @@ and method39 (v0 : UH5) : US3 =
                     | US3_1 -> (* NonNullable *)
                         US3_1
     | UH5_4(v16, v17) -> (* RegexCat *)
-        let v18 : US3 = method39(v16)
-        let v19 : US3 = method39(v17)
+        let v18 : US3 = nullable_39(v16)
+        let v19 : US3 = nullable_39(v17)
         match v18 with
         | US3_0 -> (* Nullable *)
             match v19 with
@@ -1001,23 +1001,23 @@ and method39 (v0 : UH5) : US3 =
         US3_0
     | UH5_5(v25) -> (* RegexStar *)
         US3_0
-and method38 (v0 : UH5, v1 : US1) : UH5 =
+and derivative_38 (v0 : UH5, v1 : US1) : UH5 =
     match v0 with
     | UH5_3(v25, v26) -> (* RegexAlt *)
-        let v27 : UH5 = method38(v25, v1)
-        let v28 : UH5 = method38(v26, v1)
-        method22(v27, v28)
+        let v27 : UH5 = derivative_38(v25, v1)
+        let v28 : UH5 = derivative_38(v26, v1)
+        make_alt_22(v27, v28)
     | UH5_4(v30, v31) -> (* RegexCat *)
-        let v32 : US3 = method39(v30)
+        let v32 : US3 = nullable_39(v30)
         match v32 with
         | US3_1 -> (* NonNullable *)
-            let v37 : UH5 = method38(v30, v1)
-            method25(v37, v31)
+            let v37 : UH5 = derivative_38(v30, v1)
+            make_cat_25(v37, v31)
         | US3_0 -> (* Nullable *)
-            let v33 : UH5 = method38(v30, v1)
-            let v34 : UH5 = method25(v33, v31)
-            let v35 : UH5 = method38(v31, v1)
-            method22(v34, v35)
+            let v33 : UH5 = derivative_38(v30, v1)
+            let v34 : UH5 = make_cat_25(v33, v31)
+            let v35 : UH5 = derivative_38(v31, v1)
+            make_alt_22(v34, v35)
     | UH5_2(v4) -> (* RegexChar *)
         let v20 : US2 =
             match v4 with
@@ -1060,30 +1060,30 @@ and method38 (v0 : UH5, v1 : US1) : UH5 =
     | UH5_1 -> (* RegexEpsilon *)
         UH5_0
     | UH5_5(v41) -> (* RegexStar *)
-        let v42 : UH5 = method38(v41, v1)
-        let v43 : UH5 = method27(v41)
-        method25(v42, v43)
-and method37 (v0 : UH5, v1 : US1) : UH5 =
-    let v2 : UH5 = method21(v0)
-    let v3 : UH5 = method38(v2, v1)
-    method21(v3)
-and method36 (v0 : UH5, v1 : UH3) : bool =
+        let v42 : UH5 = derivative_38(v41, v1)
+        let v43 : UH5 = make_star_27(v41)
+        make_cat_25(v42, v43)
+and canonical_derivative_37 (v0 : UH5, v1 : US1) : UH5 =
+    let v2 : UH5 = normalize_21(v0)
+    let v3 : UH5 = derivative_38(v2, v1)
+    normalize_21(v3)
+and canonical_derivatives_are_canonical_symbols_36 (v0 : UH5, v1 : UH3) : bool =
     match v1 with
     | UH3_1(v2, v3) -> (* SymbolListCons *)
-        let v4 : UH5 = method37(v0, v2)
-        let v5 : bool = method28(v4)
+        let v4 : UH5 = canonical_derivative_37(v0, v2)
+        let v5 : bool = canonical_regex_form_28(v4)
         if v5 then
-            method36(v0, v3)
+            canonical_derivatives_are_canonical_symbols_36(v0, v3)
         else
             false
     | UH3_0 -> (* SymbolListNil *)
         true
-and method35 (v0 : UH4, v1 : UH3) : bool =
+and canonical_derivatives_are_canonical_corpus_35 (v0 : UH4, v1 : UH3) : bool =
     match v0 with
     | UH4_1(v2, v3) -> (* RegexListCons *)
-        let v4 : bool = method36(v2, v1)
+        let v4 : bool = canonical_derivatives_are_canonical_symbols_36(v2, v1)
         if v4 then
-            method35(v3, v1)
+            canonical_derivatives_are_canonical_corpus_35(v3, v1)
         else
             false
     | UH4_0 -> (* RegexListNil *)
@@ -1093,7 +1093,7 @@ let v1 : US0 = US0_1
 let v2 : UH0 = UH0_0
 let v3 : UH0 = UH0_1(v1, v2)
 let v4 : UH0 = UH0_1(v0, v3)
-let v5 : UH1 = method0(v4)
+let v5 : UH1 = regex_chars_from_symbols_0(v4)
 let v6 : UH2 = UH2_0
 let v7 : UH2 = UH2_1
 let v8 : UH1 = UH1_1(v7, v5)
@@ -1102,7 +1102,7 @@ let v10 : UH2 = UH2_0
 let v11 : UH2 = UH2_1
 let v12 : UH1 = UH1_1(v11, v5)
 let v13 : UH1 = UH1_1(v10, v12)
-let v14 : UH1 = method1(v13)
+let v14 : UH1 = regex_star_corpus_1(v13)
 let v15 : UH2 = UH2_0
 let v16 : UH2 = UH2_1
 let v17 : UH1 = UH1_1(v16, v5)
@@ -1111,9 +1111,9 @@ let v19 : UH2 = UH2_0
 let v20 : UH2 = UH2_1
 let v21 : UH1 = UH1_1(v20, v5)
 let v22 : UH1 = UH1_1(v19, v21)
-let v23 : UH1 = method2(v18, v22)
-let v24 : UH1 = method4(v14, v23)
-let v25 : UH1 = method4(v9, v24)
+let v23 : UH1 = regex_binary_corpus_2(v18, v22)
+let v24 : UH1 = regex_list_append_4(v14, v23)
+let v25 : UH1 = regex_list_append_4(v9, v24)
 let v26 : US1 = US1_0
 let v27 : US1 = US1_1
 let v28 : US1 = US1_2
@@ -1121,7 +1121,7 @@ let v29 : UH3 = UH3_0
 let v30 : UH3 = UH3_1(v28, v29)
 let v31 : UH3 = UH3_1(v27, v30)
 let v32 : UH3 = UH3_1(v26, v31)
-let v33 : UH4 = method5(v32)
+let v33 : UH4 = regex_chars_from_symbols_5(v32)
 let v34 : UH5 = UH5_0
 let v35 : UH5 = UH5_1
 let v36 : UH4 = UH4_1(v35, v33)
@@ -1130,7 +1130,7 @@ let v38 : UH5 = UH5_0
 let v39 : UH5 = UH5_1
 let v40 : UH4 = UH4_1(v39, v33)
 let v41 : UH4 = UH4_1(v38, v40)
-let v42 : UH4 = method6(v41)
+let v42 : UH4 = regex_star_corpus_6(v41)
 let v43 : UH5 = UH5_0
 let v44 : UH5 = UH5_1
 let v45 : UH4 = UH4_1(v44, v33)
@@ -1139,15 +1139,15 @@ let v47 : UH5 = UH5_0
 let v48 : UH5 = UH5_1
 let v49 : UH4 = UH4_1(v48, v33)
 let v50 : UH4 = UH4_1(v47, v49)
-let v51 : UH4 = method7(v46, v50)
-let v52 : UH4 = method9(v42, v51)
-let v53 : UH4 = method9(v37, v52)
-let v54 : bool = method10(v25)
+let v51 : UH4 = regex_binary_corpus_7(v46, v50)
+let v52 : UH4 = regex_list_append_9(v42, v51)
+let v53 : UH4 = regex_list_append_9(v37, v52)
+let v54 : bool = normalized_corpus_is_canonical_10(v25)
 if v54 then
     ()
 else
     failwith<unit> "every normalized bit corpus term must satisfy structural canonical form"
-let v55 : bool = method20(v53)
+let v55 : bool = normalized_corpus_is_canonical_20(v53)
 if v55 then
     ()
 else
@@ -1157,7 +1157,7 @@ let v57 : US0 = US0_1
 let v58 : UH0 = UH0_0
 let v59 : UH0 = UH0_1(v57, v58)
 let v60 : UH0 = UH0_1(v56, v59)
-let v61 : bool = method30(v25, v60)
+let v61 : bool = canonical_derivatives_are_canonical_corpus_30(v25, v60)
 if v61 then
     ()
 else
@@ -1169,7 +1169,7 @@ let v65 : UH3 = UH3_0
 let v66 : UH3 = UH3_1(v64, v65)
 let v67 : UH3 = UH3_1(v63, v66)
 let v68 : UH3 = UH3_1(v62, v67)
-let v69 : bool = method35(v53, v68)
+let v69 : bool = canonical_derivatives_are_canonical_corpus_35(v53, v68)
 if v69 then
     ()
 else
@@ -1179,7 +1179,7 @@ let v71 : UH2 = UH2_2(v70)
 let v72 : US0 = US0_0
 let v73 : UH2 = UH2_2(v72)
 let v74 : UH2 = UH2_3(v71, v73)
-let v75 : bool = method18(v74)
+let v75 : bool = canonical_regex_form_18(v74)
 let v76 : bool = v75 = false
 if v76 then
     ()
@@ -1188,7 +1188,7 @@ else
 let v77 : US0 = US0_0
 let v78 : UH2 = UH2_2(v77)
 let v79 : UH2 = UH2_3(v78, v78)
-let v80 : bool = method18(v79)
+let v80 : bool = canonical_regex_form_18(v79)
 let v81 : bool = v80 = false
 if v81 then
     ()
@@ -1201,7 +1201,7 @@ let v85 : UH2 = UH2_2(v84)
 let v86 : UH2 = UH2_3(v83, v85)
 let v87 : UH2 = UH2_1
 let v88 : UH2 = UH2_3(v86, v87)
-let v89 : bool = method18(v88)
+let v89 : bool = canonical_regex_form_18(v88)
 let v90 : bool = v89 = false
 if v90 then
     ()
@@ -1211,7 +1211,7 @@ let v91 : UH2 = UH2_1
 let v92 : US0 = US0_0
 let v93 : UH2 = UH2_2(v92)
 let v94 : UH2 = UH2_4(v91, v93)
-let v95 : bool = method18(v94)
+let v95 : bool = canonical_regex_form_18(v94)
 let v96 : bool = v95 = false
 if v96 then
     ()
@@ -1223,7 +1223,7 @@ let v99 : US0 = US0_1
 let v100 : UH2 = UH2_2(v99)
 let v101 : UH2 = UH2_4(v98, v100)
 let v102 : UH2 = UH2_4(v101, v98)
-let v103 : bool = method18(v102)
+let v103 : bool = canonical_regex_form_18(v102)
 let v104 : bool = v103 = false
 if v104 then
     ()
@@ -1231,7 +1231,7 @@ else
     failwith<unit> "left-associated concatenation must not remain in canonical form"
 let v105 : UH2 = UH2_0
 let v106 : UH2 = UH2_5(v105)
-let v107 : bool = method18(v106)
+let v107 : bool = canonical_regex_form_18(v106)
 let v108 : bool = v107 = false
 if v108 then
     ()
@@ -1241,7 +1241,7 @@ let v109 : US0 = US0_0
 let v110 : UH2 = UH2_2(v109)
 let v111 : UH2 = UH2_5(v110)
 let v112 : UH2 = UH2_5(v111)
-let v113 : bool = method18(v112)
+let v113 : bool = canonical_regex_form_18(v112)
 let v114 : bool = v113 = false
 if v114 then
     ()
@@ -1251,7 +1251,7 @@ let v115 : US0 = US0_0
 let v116 : UH2 = UH2_2(v115)
 let v117 : UH2 = UH2_5(v116)
 let v118 : UH2 = UH2_4(v117, v117)
-let v119 : bool = method18(v118)
+let v119 : bool = canonical_regex_form_18(v118)
 let v120 : bool = v119 = false
 if v120 then
     ()
@@ -1262,8 +1262,8 @@ let v122 : UH2 = UH2_2(v121)
 let v123 : US0 = US0_0
 let v124 : UH2 = UH2_2(v123)
 let v125 : UH2 = UH2_3(v122, v124)
-let v126 : UH2 = method11(v125)
-let v127 : bool = method18(v126)
+let v126 : UH2 = normalize_11(v125)
+let v127 : bool = canonical_regex_form_18(v126)
 if v127 then
     ()
 else
@@ -1271,8 +1271,8 @@ else
 let v128 : US0 = US0_0
 let v129 : UH2 = UH2_2(v128)
 let v130 : UH2 = UH2_3(v129, v129)
-let v131 : UH2 = method11(v130)
-let v132 : bool = method18(v131)
+let v131 : UH2 = normalize_11(v130)
+let v132 : bool = canonical_regex_form_18(v131)
 if v132 then
     ()
 else
@@ -1281,8 +1281,8 @@ let v133 : UH2 = UH2_1
 let v134 : US0 = US0_0
 let v135 : UH2 = UH2_2(v134)
 let v136 : UH2 = UH2_4(v133, v135)
-let v137 : UH2 = method11(v136)
-let v138 : bool = method18(v137)
+let v137 : UH2 = normalize_11(v136)
+let v138 : bool = canonical_regex_form_18(v137)
 if v138 then
     ()
 else
@@ -1291,8 +1291,8 @@ let v139 : US0 = US0_0
 let v140 : UH2 = UH2_2(v139)
 let v141 : UH2 = UH2_5(v140)
 let v142 : UH2 = UH2_5(v141)
-let v143 : UH2 = method11(v142)
-let v144 : bool = method18(v143)
+let v143 : UH2 = normalize_11(v142)
+let v144 : bool = canonical_regex_form_18(v143)
 if v144 then
     ()
 else
@@ -1301,8 +1301,8 @@ let v145 : US0 = US0_0
 let v146 : UH2 = UH2_2(v145)
 let v147 : UH2 = UH2_5(v146)
 let v148 : UH2 = UH2_4(v147, v147)
-let v149 : UH2 = method11(v148)
-let v150 : bool = method18(v149)
+let v149 : UH2 = normalize_11(v148)
+let v150 : bool = canonical_regex_form_18(v149)
 if v150 then
     ()
 else

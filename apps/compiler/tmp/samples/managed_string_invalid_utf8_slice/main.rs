@@ -10,13 +10,13 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let slice = &bytes[from as usize..(to + 1) as usize];
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
-fn method0(mut v0: Rc<str>) -> Rc<str> {
+fn invalid_middle_0(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = string_slice(&v0.clone(), 1i32 as i64, 1i32 as i64);
     v1.clone()
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("é"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<str> = method0(v0.clone());
+    let mut v1: Rc<str> = invalid_middle_0(v0.clone());
     let mut v2: i32 = (v1.clone().len() as i32);
     v2
 }

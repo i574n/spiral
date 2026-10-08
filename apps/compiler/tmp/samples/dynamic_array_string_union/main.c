@@ -23,6 +23,7 @@ typedef struct {
     };
 } US0;
 static inline void ArrayDecrefBody1(Array1 * x){
+    (void)x;
 }
 void ArrayDecref1(Array1 * x){
     if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody1(x); free(x); }

@@ -23,7 +23,7 @@ pub type Us0 {
     Us0i1(f1i0 : Int)
     Us0i2(f2i0 : Bool)
 }
-pub fn method0(v0: Us0) -> Int {
+pub fn score_0(v0: Us0) -> Int {
     case v0  {
         Us0i2(v2) -> {
             case v2 {
@@ -46,7 +46,7 @@ pub fn method0(v0: Us0) -> Int {
 pub fn closure0(capt: #(Us0)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
-        let v2 = method0(v0)
+        let v2 = score_0(v0)
         let v3 = spiral_wrap_signed(v2 + v1, 32)
         v3
     }

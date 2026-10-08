@@ -97,7 +97,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
 pub fn method0(v0: fn(Int) -> Us0) -> Us0 {
     v0( 0  )
 }
-pub fn method1(v0: Us0) -> Int {
+pub fn score_1(v0: Us0) -> Int {
     case v0  {
         Us0i0 -> {
             3
@@ -118,9 +118,9 @@ pub fn method2(v0: fn(Int) -> Us0) -> Us0 {
 pub fn main() {
 let v0 = closure0(Nil)
 let v1 = method0(v0)
-let v2 = method1(v1)
+let v2 = score_1(v1)
 let v3 = method2(v0)
-let v4 = method1(v3)
+let v4 = score_1(v3)
 let v5 = spiral_wrap_signed(v2 + v4, 32)
 let v6 = spiral_wrap_signed(v5 + 28, 32)
 v6

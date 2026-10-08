@@ -20,7 +20,17 @@ inl set_foreground_color (color : console_color) : () =
 /// ## console
 
 /// ### write_line
-inl write_line obj : () =
+inl write_line_c forall t. (obj : t) : () =
+    real
+        typecase t with
+        | string => $'printf("%s\\n", (!obj)->ptr)' : ()
+        | i32 => $'printf("%d\\n", !obj)' : ()
+        | i64 => $'printf("%lld\\n", (long long)(!obj))' : ()
+        | u32 => $'printf("%u\\n", !obj)' : ()
+        | u64 => $'printf("%llu\\n", (unsigned long long)(!obj))' : ()
+        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
+
+inl write_line forall t. (obj : t) : () =
     backend_switch {
         Gleam = fun () =>
             global "import gleam/io"
@@ -31,12 +41,24 @@ inl write_line obj : () =
             |> exec_unit
         Python = fun () => $'print(!obj)' : ()
         Rust = fun () => $'println\!("{}", !obj)' : ()
-        TypeScript = fun () => $'console.log(!obj)' : ()
+        TypeScript = fun () => $'process.stdout.write(String(!obj) + "\\n")' : ()
         Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()
         Lean = fun () => $'IO.println (toString !obj)' : ()
+        C = fun () => write_line_c obj
+        Delphi = fun () => $'Writeln(!obj)' : ()
     }
 
 /// ### write
+inl write_c forall t. (x : t) : () =
+    real
+        typecase t with
+        | string => $'printf("%s", (!x)->ptr)' : ()
+        | i32 => $'printf("%d", !x)' : ()
+        | i64 => $'printf("%lld", (long long)(!x))' : ()
+        | u32 => $'printf("%u", !x)' : ()
+        | u64 => $'printf("%llu", (unsigned long long)(!x))' : ()
+        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
+
 inl write forall t. (x : t) : () =
     backend_switch {
         Gleam = fun () =>
@@ -49,6 +71,8 @@ inl write forall t. (x : t) : () =
         TypeScript = fun () => $'process.stdout.write(String(!x))' : ()
         Zig = fun () => $'spiralPrintAny(!x)' : ()
         Lean = fun () => $'IO.print (toString !x)' : ()
+        C = fun () => write_c x
+        Delphi = fun () => $'Write(!x)' : ()
     }
 
 /// ### write_ln

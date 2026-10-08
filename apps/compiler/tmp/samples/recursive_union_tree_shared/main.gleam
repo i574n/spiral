@@ -22,14 +22,14 @@ pub type Uh0 {
     Uh0i0
     Uh0i1(Int, Uh0, Uh0)
 }
-pub fn method0(v0: Uh0) -> Int {
+pub fn sum_0(v0: Uh0) -> Int {
     case v0  {
         Uh0i0 -> {
             0
         }
         Uh0i1(v1, v2, v3) -> {
-            let v4 = method0(v2)
-            let v5 = method0(v3)
+            let v4 = sum_0(v2)
+            let v5 = sum_0(v3)
             let v6 = spiral_wrap_signed(v4 + v5, 32)
             let v7 = spiral_wrap_signed(v1 + v6, 32)
             v7
@@ -42,7 +42,7 @@ let v1 = 2
 let v2 = Uh0i0
 let v3 = Uh0i1(v1, v2, v2)
 let v4 = Uh0i1(v0, v3, v3)
-let v5 = method0(v4)
+let v5 = sum_0(v4)
 let v6 = spiral_wrap_signed(v5 - 5, 32)
 v6
 }

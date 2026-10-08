@@ -18,7 +18,7 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 @external(erlang, "math", "pow")
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
-pub fn method0(v0: Int) -> Int {
+pub fn fib_0(v0: Int) -> Int {
     let v1 = v0 <= 1
     case v1 {
         True -> {
@@ -26,9 +26,9 @@ pub fn method0(v0: Int) -> Int {
         }
         False -> {
             let v2 = spiral_wrap_signed(v0 - 1, 32)
-            let v3 = method0(v2)
+            let v3 = fib_0(v2)
             let v4 = spiral_wrap_signed(v0 - 2, 32)
-            let v5 = method0(v4)
+            let v5 = fib_0(v4)
             let v6 = spiral_wrap_signed(v3 + v5, 32)
             v6
         }
@@ -36,7 +36,7 @@ pub fn method0(v0: Int) -> Int {
 }
 pub fn main() {
 let v0 = 10
-let v1 = method0(v0)
+let v1 = fib_0(v0)
 let v2 = spiral_wrap_signed(v1 - 55, 32)
 v2
 }

@@ -25,20 +25,18 @@ $targetDir = GetTargetDir $projectName
 if (!(BuildSpiral "$projectName.spi" "$projectName.rs" "apps/wasm")) {
     throw "RUST-FAILED apps/wasm / compile"
 }
-{ cargo +nightly-2025-11-01 build --profile release-unwind --package $projectName --target-dir target/linux } `
-    | Invoke-Block -Location ../../workspace -Linux
-$built = "../../workspace/target/linux/release-unwind/$projectName"
-Push-Location ../../workspace
-$rustOutput = [scriptblock]::Create("./target/linux/release-unwind/$projectName --help") | Invoke-Linux 2>&1 | ForEach-Object { "$_" }
+{ cargo +nightly-2025-11-01 build --profile release-unwind --package $projectName } | Invoke-Block -Location ../../workspace
+$cargoTarget = (cargo metadata --format-version 1 --no-deps --manifest-path ../../workspace/Cargo.toml | ConvertFrom-Json).target_directory
+$built = "$cargoTarget/release-unwind/$projectName$(_exe)"
+$rustOutput = & $built --help 2>&1 | ForEach-Object { "$_" }
 $rustExit = $LASTEXITCODE
-Pop-Location
 $rustOutput | ForEach-Object { Write-Output "spiral/apps/wasm/build.ps1 / run / $_" }
 if ($rustExit -ne 0 -or !($rustOutput -match '--wasm')) {
     throw "RUST-FAILED apps/wasm / run --help exit code $($rustExit): expected exit code 0 and the --wasm argument"
 }
 Write-Output "RUST-OK apps/wasm"
 
-$shipped = "../../workspace/target/release/$projectName"
+$shipped = "../../workspace/target/release/$projectName$(_exe)"
 New-Item -ItemType Directory -Force (Split-Path $shipped) | Out-Null
 Remove-Item $shipped -Force -ErrorAction Ignore
 Copy-Item $built $shipped

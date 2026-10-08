@@ -142,7 +142,7 @@ fn UH1_0() *UH1 {
 fn UH1_1(a0: US0, a1: *UH1) *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn method1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
+fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
     var v0: u64 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: *UH1 = p2; _ = &v2;
@@ -200,7 +200,7 @@ fn US1_1() US1 {
 fn US1_2() US1 {
     return US1{ .tag = 2 };
 }
-fn method7(p0: *UH0, p1: *UH0) US1 {
+fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v53: *UH0 = undefined; _ = &v53;
@@ -235,7 +235,7 @@ fn method7(p0: *UH0, p1: *UH0) US1 {
                     3 => {
                         v55 = v1.c3_0;
                         v56 = v1.c3_1;
-                        v57 = method7(v53, v55);
+                        v57 = regex_compare_7(v53, v55);
                         switch (v57.tag) {
                             1 => {
                                 tmp5 = v54;
@@ -261,7 +261,7 @@ fn method7(p0: *UH0, p1: *UH0) US1 {
                     4 => {
                         v34 = v1.c4_0;
                         v35 = v1.c4_1;
-                        v36 = method7(v28, v34);
+                        v36 = regex_compare_7(v28, v34);
                         switch (v36.tag) {
                             1 => {
                                 tmp12 = v29;
@@ -380,7 +380,7 @@ fn method7(p0: *UH0, p1: *UH0) US1 {
         }
     }
 }
-fn method6(p0: *UH0, p1: *UH0) *UH0 {
+fn alt_insert_sorted_6(p0: *UH0, p1: *UH0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
@@ -392,10 +392,10 @@ fn method6(p0: *UH0, p1: *UH0) *UH0 {
         3 => {
             v2 = v1.c3_0;
             v3 = v1.c3_1;
-            v4 = method7(v0, v2);
+            v4 = regex_compare_7(v0, v2);
             switch (v4.tag) {
                 2 => {
-                    v6 = method6(v0, v3);
+                    v6 = alt_insert_sorted_6(v0, v3);
                     return UH0_3(v2, v6);
                 },
                 0 => {
@@ -411,7 +411,7 @@ fn method6(p0: *UH0, p1: *UH0) *UH0 {
             return v0;
         },
         else => {
-            v11 = method7(v0, v1);
+            v11 = regex_compare_7(v0, v1);
             switch (v11.tag) {
                 2 => {
                     return UH0_3(v1, v0);
@@ -427,7 +427,7 @@ fn method6(p0: *UH0, p1: *UH0) *UH0 {
         },
     }
 }
-fn method5(p0: *UH0, p1: *UH0) *UH0 {
+fn make_alt_5(p0: *UH0, p1: *UH0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
@@ -440,7 +440,7 @@ fn method5(p0: *UH0, p1: *UH0) *UH0 {
             3 => {
                 v2 = v0.c3_0;
                 v3 = v0.c3_1;
-                v4 = method6(v2, v1);
+                v4 = alt_insert_sorted_6(v2, v1);
                 tmp3 = v3;
                 tmp4 = v4;
                 v0 = tmp3;
@@ -451,12 +451,12 @@ fn method5(p0: *UH0, p1: *UH0) *UH0 {
                 return v1;
             },
             else => {
-                return method6(v0, v1);
+                return alt_insert_sorted_6(v0, v1);
             },
         }
     }
 }
-fn method9(p0: *UH0, p1: *UH0) bool {
+fn regex_equal_9(p0: *UH0, p1: *UH0) bool {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v18: *UH0 = undefined; _ = &v18;
@@ -489,7 +489,7 @@ fn method9(p0: *UH0, p1: *UH0) bool {
                     3 => {
                         v20 = v1.c3_0;
                         v21 = v1.c3_1;
-                        v22 = method9(v18, v20);
+                        v22 = regex_equal_9(v18, v20);
                         if (v22) {
                             tmp5 = v19;
                             tmp6 = v21;
@@ -512,7 +512,7 @@ fn method9(p0: *UH0, p1: *UH0) bool {
                     4 => {
                         v28 = v1.c4_0;
                         v29 = v1.c4_1;
-                        v30 = method9(v26, v28);
+                        v30 = regex_equal_9(v26, v28);
                         if (v30) {
                             tmp12 = v27;
                             tmp13 = v29;
@@ -612,7 +612,7 @@ fn method9(p0: *UH0, p1: *UH0) bool {
         }
     }
 }
-fn method8(p0: *UH0, p1: *UH0) *UH0 {
+fn make_cat_8(p0: *UH0, p1: *UH0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH0 = p1; _ = &v1;
     var v12: *UH0 = undefined; _ = &v12;
@@ -645,7 +645,7 @@ fn method8(p0: *UH0, p1: *UH0) *UH0 {
                                         4 => {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
-                                            v14 = method8(v13, v1);
+                                            v14 = make_cat_8(v13, v1);
                                             return UH0_4(v12, v14);
                                         },
                                         5 => {
@@ -653,7 +653,7 @@ fn method8(p0: *UH0, p1: *UH0) *UH0 {
                                             switch (v1.tag) {
                                                 5 => {
                                                     v5 = v1.c5_0;
-                                                    v6 = method9(v4, v5);
+                                                    v6 = regex_equal_9(v4, v5);
                                                     if (v6) {
                                                         return UH0_5(v4);
                                                     } else {
@@ -678,7 +678,7 @@ fn method8(p0: *UH0, p1: *UH0) *UH0 {
         },
     }
 }
-fn method10(p0: *UH0) *UH0 {
+fn make_star_10(p0: *UH0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v3: *UH0 = undefined; _ = &v3;
     switch (v0.tag) {
@@ -697,7 +697,7 @@ fn method10(p0: *UH0) *UH0 {
         },
     }
 }
-fn method4(p0: *UH0) *UH0 {
+fn normalize_4(p0: *UH0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v5: *UH0 = undefined; _ = &v5;
     var v6: *UH0 = undefined; _ = &v6;
@@ -714,16 +714,16 @@ fn method4(p0: *UH0) *UH0 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method4(v5);
-            v8 = method4(v6);
-            return method5(v7, v8);
+            v7 = normalize_4(v5);
+            v8 = normalize_4(v6);
+            return make_alt_5(v7, v8);
         },
         4 => {
             v10 = v0.c4_0;
             v11 = v0.c4_1;
-            v12 = method4(v10);
-            v13 = method4(v11);
-            return method8(v12, v13);
+            v12 = normalize_4(v10);
+            v13 = normalize_4(v11);
+            return make_cat_8(v12, v13);
         },
         2 => {
             v3 = v0.c2_0;
@@ -737,8 +737,8 @@ fn method4(p0: *UH0) *UH0 {
         },
         5 => {
             v15 = v0.c5_0;
-            v16 = method4(v15);
-            return method10(v16);
+            v16 = normalize_4(v15);
+            return make_star_10(v16);
         },
         else => unreachable,
     }
@@ -749,7 +749,7 @@ fn US2_0() US2 {
 fn US2_1() US2 {
     return US2{ .tag = 1 };
 }
-fn method12(p0: *UH0) US2 {
+fn nullable_12(p0: *UH0) US2 {
     var v0: *UH0 = p0; _ = &v0;
     var v5: *UH0 = undefined; _ = &v5;
     var v6: *UH0 = undefined; _ = &v6;
@@ -765,8 +765,8 @@ fn method12(p0: *UH0) US2 {
         3 => {
             v5 = v0.c3_0;
             v6 = v0.c3_1;
-            v7 = method12(v5);
-            v8 = method12(v6);
+            v7 = nullable_12(v5);
+            v8 = nullable_12(v6);
             switch (v7.tag) {
                 0 => {
                     return US2_0();
@@ -796,8 +796,8 @@ fn method12(p0: *UH0) US2 {
         4 => {
             v16 = v0.c4_0;
             v17 = v0.c4_1;
-            v18 = method12(v16);
-            v19 = method12(v17);
+            v18 = nullable_12(v16);
+            v19 = nullable_12(v17);
             switch (v18.tag) {
                 0 => {
                     switch (v19.tag) {
@@ -831,7 +831,7 @@ fn method12(p0: *UH0) US2 {
         else => unreachable,
     }
 }
-fn method11(p0: *UH0, p1: US0) *UH0 {
+fn derivative_11(p0: *UH0, p1: US0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: US0 = p1; _ = &v1;
     var v19: *UH0 = undefined; _ = &v19;
@@ -855,24 +855,24 @@ fn method11(p0: *UH0, p1: US0) *UH0 {
         3 => {
             v19 = v0.c3_0;
             v20 = v0.c3_1;
-            v21 = method11(v19, v1);
-            v22 = method11(v20, v1);
-            return method5(v21, v22);
+            v21 = derivative_11(v19, v1);
+            v22 = derivative_11(v20, v1);
+            return make_alt_5(v21, v22);
         },
         4 => {
             v24 = v0.c4_0;
             v25 = v0.c4_1;
-            v26 = method12(v24);
+            v26 = nullable_12(v24);
             switch (v26.tag) {
                 1 => {
-                    v31 = method11(v24, v1);
-                    return method8(v31, v25);
+                    v31 = derivative_11(v24, v1);
+                    return make_cat_8(v31, v25);
                 },
                 0 => {
-                    v27 = method11(v24, v1);
-                    v28 = method8(v27, v25);
-                    v29 = method11(v25, v1);
-                    return method5(v28, v29);
+                    v27 = derivative_11(v24, v1);
+                    v28 = make_cat_8(v27, v25);
+                    v29 = derivative_11(v25, v1);
+                    return make_alt_5(v28, v29);
                 },
                 else => unreachable,
             }
@@ -926,23 +926,23 @@ fn method11(p0: *UH0, p1: US0) *UH0 {
         },
         5 => {
             v35 = v0.c5_0;
-            v36 = method11(v35, v1);
-            v37 = method10(v35);
-            return method8(v36, v37);
+            v36 = derivative_11(v35, v1);
+            v37 = make_star_10(v35);
+            return make_cat_8(v36, v37);
         },
         else => unreachable,
     }
 }
-fn method3(p0: *UH0, p1: US0) *UH0 {
+fn canonical_derivative_3(p0: *UH0, p1: US0) *UH0 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: US0 = p1; _ = &v1;
     var v2: *UH0 = undefined; _ = &v2;
     var v3: *UH0 = undefined; _ = &v3;
-    v2 = method4(v0);
-    v3 = method11(v2, v1);
-    return method4(v3);
+    v2 = normalize_4(v0);
+    v3 = derivative_11(v2, v1);
+    return normalize_4(v3);
 }
-fn method2(p0: *UH0, p1: *UH1) bool {
+fn accepts_2(p0: *UH0, p1: *UH1) bool {
     var v0: *UH0 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v6: US0 = undefined; _ = &v6;
@@ -957,7 +957,7 @@ fn method2(p0: *UH0, p1: *UH1) bool {
             1 => {
                 v6 = v1.c1_0;
                 v7 = v1.c1_1;
-                v8 = method3(v0, v6);
+                v8 = canonical_derivative_3(v0, v6);
                 tmp3 = v8;
                 tmp4 = v7;
                 v0 = tmp3;
@@ -965,8 +965,8 @@ fn method2(p0: *UH0, p1: *UH1) bool {
                 continue;
             },
             0 => {
-                v2 = method4(v0);
-                v3 = method12(v2);
+                v2 = normalize_4(v0);
+                v3 = nullable_12(v2);
                 switch (v3.tag) {
                     1 => {
                         return false;
@@ -981,7 +981,7 @@ fn method2(p0: *UH0, p1: *UH1) bool {
         }
     }
 }
-fn method0(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
+fn loop_0(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1005,10 +1005,10 @@ fn method0(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
         v5 = @as(i32, 0) < v2;
         if (v5) {
             v6 = UH1_0();
-            tmp4 = method1(v3, v1, v6);
+            tmp4 = random_bit_input_1(v3, v1, v6);
             v7 = tmp4.f0;
             v8 = tmp4.f1;
-            v9 = method2(v0, v7);
+            v9 = accepts_2(v0, v7);
             if (v9) {
                 v10 = v4 +% @as(i32, 1);
                 v11 = v10;
@@ -1032,7 +1032,7 @@ fn method0(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
         }
     }
 }
-fn method14(p0: i32, p1: *UH1) *UH1 {
+fn zeros_input_14(p0: i32, p1: *UH1) *UH1 {
     var v0: i32 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v2: bool = undefined; _ = &v2;
@@ -1057,7 +1057,7 @@ fn method14(p0: i32, p1: *UH1) *UH1 {
         }
     }
 }
-fn method13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
+fn loop_13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1086,8 +1086,8 @@ fn method13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             return v3;
         } else {
             v5 = UH1_0();
-            v6 = method14(v2, v5);
-            v7 = method2(v0, v6);
+            v6 = zeros_input_14(v2, v5);
+            v7 = accepts_2(v0, v6);
             if (v7) {
                 v8 = v3 +% @as(i32, 1);
                 v9 = v8;
@@ -1097,8 +1097,8 @@ fn method13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             v10 = US0_1();
             v11 = UH1_0();
             v12 = UH1_1(v10, v11);
-            v13 = method14(v2, v12);
-            v14 = method2(v0, v13);
+            v13 = zeros_input_14(v2, v12);
+            v14 = accepts_2(v0, v13);
             if (v14) {
                 v15 = v9 +% @as(i32, 1);
                 v16 = v15;
@@ -1124,7 +1124,7 @@ fn UH2_0() *UH2 {
 fn UH2_1(a0: *UH0, a1: *UH2) *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn method16(p0: *UH2, p1: *UH1) bool {
+fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
     var v0: *UH2 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v6: *UH0 = undefined; _ = &v6;
@@ -1168,7 +1168,7 @@ fn method16(p0: *UH2, p1: *UH1) bool {
                         v27 = v6.c3_0;
                         v28 = v6.c3_1;
                         v29 = UH2_1(v27, v7);
-                        v30 = method16(v29, v1);
+                        v30 = backtrack_stack_16(v29, v1);
                         if (v30) {
                             return true;
                         } else {
@@ -1259,7 +1259,7 @@ fn method16(p0: *UH2, p1: *UH1) bool {
                     5 => {
                         v39 = v6.c5_0;
                         v40 = UH2_1(v39, v0);
-                        v41 = method16(v40, v1);
+                        v41 = backtrack_stack_16(v40, v1);
                         if (v41) {
                             return true;
                         } else {
@@ -1290,7 +1290,7 @@ fn method16(p0: *UH2, p1: *UH1) bool {
         }
     }
 }
-fn method15(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
+fn loop_15(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1316,12 +1316,12 @@ fn method15(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
         v5 = @as(i32, 0) < v2;
         if (v5) {
             v6 = UH1_0();
-            tmp4 = method1(v3, v1, v6);
+            tmp4 = random_bit_input_1(v3, v1, v6);
             v7 = tmp4.f0;
             v8 = tmp4.f1;
             v9 = UH2_0();
             v10 = UH2_1(v0, v9);
-            v11 = method16(v10, v7);
+            v11 = backtrack_stack_16(v10, v7);
             if (v11) {
                 v12 = v4 +% @as(i32, 1);
                 v13 = v12;
@@ -1345,7 +1345,7 @@ fn method15(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
         }
     }
 }
-fn method17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
+fn loop_17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
     var v0: *UH0 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1378,10 +1378,10 @@ fn method17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             return v3;
         } else {
             v5 = UH1_0();
-            v6 = method14(v2, v5);
+            v6 = zeros_input_14(v2, v5);
             v7 = UH2_0();
             v8 = UH2_1(v0, v7);
-            v9 = method16(v8, v6);
+            v9 = backtrack_stack_16(v8, v6);
             if (v9) {
                 v10 = v3 +% @as(i32, 1);
                 v11 = v10;
@@ -1391,10 +1391,10 @@ fn method17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             v12 = US0_1();
             v13 = UH1_0();
             v14 = UH1_1(v12, v13);
-            v15 = method14(v2, v14);
+            v15 = zeros_input_14(v2, v14);
             v16 = UH2_0();
             v17 = UH2_1(v0, v16);
-            v18 = method16(v17, v15);
+            v18 = backtrack_stack_16(v17, v15);
             if (v18) {
                 v19 = v11 +% @as(i32, 1);
                 v20 = v19;
@@ -1414,7 +1414,7 @@ fn method17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
         }
     }
 }
-fn method19(p0: i32, p1: *UH1) bool {
+fn run_19(p0: i32, p1: *UH1) bool {
     var v0: i32 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v3: US0 = undefined; _ = &v3;
@@ -1463,7 +1463,7 @@ fn method19(p0: i32, p1: *UH1) bool {
         }
     }
 }
-fn method18(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
+fn loop_18(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: u64 = p2; _ = &v2;
@@ -1486,11 +1486,11 @@ fn method18(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
         v4 = @as(i32, 0) < v1;
         if (v4) {
             v5 = UH1_0();
-            tmp4 = method1(v2, v0, v5);
+            tmp4 = random_bit_input_1(v2, v0, v5);
             v6 = tmp4.f0;
             v7 = tmp4.f1;
             v8 = @as(i32, 0);
-            v9 = method19(v8, v6);
+            v9 = run_19(v8, v6);
             if (v9) {
                 v10 = v3 +% @as(i32, 1);
                 v11 = v10;
@@ -1512,7 +1512,7 @@ fn method18(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
         }
     }
 }
-fn method21(p0: i32, p1: *UH1) bool {
+fn run_21(p0: i32, p1: *UH1) bool {
     var v0: i32 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v17: US0 = undefined; _ = &v17;
@@ -1779,7 +1779,7 @@ fn method21(p0: i32, p1: *UH1) bool {
         }
     }
 }
-fn method20(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
+fn loop_20(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: u64 = p2; _ = &v2;
@@ -1802,11 +1802,11 @@ fn method20(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
         v4 = @as(i32, 0) < v1;
         if (v4) {
             v5 = UH1_0();
-            tmp4 = method1(v2, v0, v5);
+            tmp4 = random_bit_input_1(v2, v0, v5);
             v6 = tmp4.f0;
             v7 = tmp4.f1;
             v8 = @as(i32, 0);
-            v9 = method21(v8, v6);
+            v9 = run_21(v8, v6);
             if (v9) {
                 v10 = v3 +% @as(i32, 1);
                 v11 = v10;
@@ -1828,7 +1828,7 @@ fn method20(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
         }
     }
 }
-fn method23(p0: i32, p1: *UH1) bool {
+fn run_23(p0: i32, p1: *UH1) bool {
     var v0: i32 = p0; _ = &v0;
     var v1: *UH1 = p1; _ = &v1;
     var v3: US0 = undefined; _ = &v3;
@@ -1913,7 +1913,7 @@ fn method23(p0: i32, p1: *UH1) bool {
         }
     }
 }
-fn method22(p0: i32, p1: i32, p2: i32) i32 {
+fn loop_22(p0: i32, p1: i32, p2: i32) i32 {
     var v0: i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: i32 = p2; _ = &v2;
@@ -1942,9 +1942,9 @@ fn method22(p0: i32, p1: i32, p2: i32) i32 {
             return v2;
         } else {
             v4 = UH1_0();
-            v5 = method14(v1, v4);
+            v5 = zeros_input_14(v1, v4);
             v6 = @as(i32, 0);
-            v7 = method23(v6, v5);
+            v7 = run_23(v6, v5);
             if (v7) {
                 v8 = v2 +% @as(i32, 1);
                 v9 = v8;
@@ -1954,9 +1954,9 @@ fn method22(p0: i32, p1: i32, p2: i32) i32 {
             v10 = US0_1();
             v11 = UH1_0();
             v12 = UH1_1(v10, v11);
-            v13 = method14(v1, v12);
+            v13 = zeros_input_14(v1, v12);
             v14 = @as(i32, 0);
-            v15 = method23(v14, v13);
+            v15 = run_23(v14, v13);
             if (v15) {
                 v16 = v9 +% @as(i32, 1);
                 v17 = v16;
@@ -1974,7 +1974,7 @@ fn method22(p0: i32, p1: i32, p2: i32) i32 {
         }
     }
 }
-fn method24(p0: []i32, p1: i32) void {
+fn loop_24(p0: []i32, p1: i32) void {
     var v0: []i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: bool = undefined; _ = &v2;
@@ -1996,7 +1996,7 @@ fn method24(p0: []i32, p1: i32) void {
         }
     }
 }
-fn method25(p0: []i32, p1: i32) void {
+fn loop_25(p0: []i32, p1: i32) void {
     var v0: []i32 = p0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
     var v2: bool = undefined; _ = &v2;
@@ -2018,7 +2018,7 @@ fn method25(p0: []i32, p1: i32) void {
         }
     }
 }
-fn method27(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: i32) i32 {
+fn probe_27(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2181,7 +2181,7 @@ fn method27(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         }
     }
 }
-fn method26(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32) i32 {
+fn interned_node_26(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2202,9 +2202,9 @@ fn method26(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
     v12 = v11 *% @as(i32, 4099);
     v13 = v12 +% v9;
     v14 = v13 & @as(i32, 8191);
-    return method27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v14);
+    return probe_27(v0, v1, v2, v3, v4, v5, v6, v7, v8, v9, v14);
 }
-fn method30(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
+fn interned_alt_insert_30(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2239,7 +2239,7 @@ fn method30(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
             v13 = v7 < v12;
             if (v13) {
                 v14 = @as(i32, 3);
-                return method26(v0, v1, v2, v3, v4, v5, v6, v14, v7, v8);
+                return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v14, v7, v8);
             } else {
                 v16 = v7 == v12;
                 if (v16) {
@@ -2247,28 +2247,28 @@ fn method30(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                 } else {
                     v17 = @as(i32, 3);
                     v18 = v2[spiralIndex(v2.len, v8)];
-                    v19 = method30(v0, v1, v2, v3, v4, v5, v6, v7, v18);
-                    return method26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19);
+                    v19 = interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v18);
+                    return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v17, v12, v19);
                 }
             }
         } else {
             v23 = v7 < v8;
             if (v23) {
                 v24 = @as(i32, 3);
-                return method26(v0, v1, v2, v3, v4, v5, v6, v24, v7, v8);
+                return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v24, v7, v8);
             } else {
                 v26 = v7 == v8;
                 if (v26) {
                     return v8;
                 } else {
                     v27 = @as(i32, 3);
-                    return method26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7);
+                    return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v27, v8, v7);
                 }
             }
         }
     }
 }
-fn method29(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
+fn interned_make_alt_29(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2303,7 +2303,7 @@ fn method29(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
             if (v11) {
                 v12 = v2[spiralIndex(v2.len, v7)];
                 v13 = v1[spiralIndex(v1.len, v7)];
-                v14 = method30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
+                v14 = interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v13, v8);
                 tmp6 = v0;
                 tmp7 = v1;
                 tmp8 = v2;
@@ -2324,12 +2324,12 @@ fn method29(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                 v8 = tmp14;
                 continue;
             } else {
-                return method30(v0, v1, v2, v3, v4, v5, v6, v7, v8);
+                return interned_alt_insert_30(v0, v1, v2, v3, v4, v5, v6, v7, v8);
             }
         }
     }
 }
-fn method31(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
+fn interned_make_cat_31(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2392,7 +2392,7 @@ fn method31(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                             return v7;
                         } else {
                             v21 = @as(i32, 4);
-                            return method26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8);
+                            return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v21, v7, v8);
                         }
                     } else {
                         v24 = v0[spiralIndex(v0.len, v7)];
@@ -2401,11 +2401,11 @@ fn method31(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                             v26 = @as(i32, 4);
                             v27 = v1[spiralIndex(v1.len, v7)];
                             v28 = v2[spiralIndex(v2.len, v7)];
-                            v29 = method31(v0, v1, v2, v3, v4, v5, v6, v28, v8);
-                            return method26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29);
+                            v29 = interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v28, v8);
+                            return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v26, v27, v29);
                         } else {
                             v31 = @as(i32, 4);
-                            return method26(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8);
+                            return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8);
                         }
                     }
                 }
@@ -2413,7 +2413,7 @@ fn method31(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         }
     }
 }
-fn method28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: *UH0) i32 {
+fn interned_of_regex_raw_28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: *UH0) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2445,16 +2445,16 @@ fn method28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         3 => {
             v14 = v7.c3_0;
             v15 = v7.c3_1;
-            v16 = method28(v0, v1, v2, v3, v4, v5, v6, v14);
-            v17 = method28(v0, v1, v2, v3, v4, v5, v6, v15);
-            return method29(v0, v1, v2, v3, v4, v5, v6, v16, v17);
+            v16 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v14);
+            v17 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v15);
+            return interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v16, v17);
         },
         4 => {
             v19 = v7.c4_0;
             v20 = v7.c4_1;
-            v21 = method28(v0, v1, v2, v3, v4, v5, v6, v19);
-            v22 = method28(v0, v1, v2, v3, v4, v5, v6, v20);
-            return method31(v0, v1, v2, v3, v4, v5, v6, v21, v22);
+            v21 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v19);
+            v22 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v20);
+            return interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v21, v22);
         },
         2 => {
             v8 = v7.c2_0;
@@ -2469,7 +2469,7 @@ fn method28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                 else => unreachable,
             }
             v12 = @as(i32, 0);
-            return method26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12);
+            return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12);
         },
         0 => {
             return @as(i32, 0);
@@ -2479,7 +2479,7 @@ fn method28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         },
         5 => {
             v24 = v7.c5_0;
-            v25 = method28(v0, v1, v2, v3, v4, v5, v6, v24);
+            v25 = interned_of_regex_raw_28(v0, v1, v2, v3, v4, v5, v6, v24);
             v26 = v0[spiralIndex(v0.len, v25)];
             v27 = v26 < @as(i32, 2);
             if (v27) {
@@ -2491,14 +2491,14 @@ fn method28(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                 } else {
                     v29 = @as(i32, 5);
                     v30 = @as(i32, 0);
-                    return method26(v0, v1, v2, v3, v4, v5, v6, v29, v25, v30);
+                    return interned_node_26(v0, v1, v2, v3, v4, v5, v6, v29, v25, v30);
                 }
             }
         },
         else => unreachable,
     }
 }
-fn method35(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
+fn interned_derivative_raw_35(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2558,29 +2558,29 @@ fn method35(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                 v19 = v13 == @as(i32, 3);
                 if (v19) {
                     v20 = v1[spiralIndex(v1.len, v7)];
-                    v21 = method35(v0, v1, v2, v3, v4, v5, v6, v20, v8);
+                    v21 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v20, v8);
                     v22 = v2[spiralIndex(v2.len, v7)];
-                    v23 = method35(v0, v1, v2, v3, v4, v5, v6, v22, v8);
-                    v41 = method29(v0, v1, v2, v3, v4, v5, v6, v21, v23);
+                    v23 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v22, v8);
+                    v41 = interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v21, v23);
                 } else {
                     v25 = v13 == @as(i32, 4);
                     if (v25) {
                         v26 = v1[spiralIndex(v1.len, v7)];
                         v27 = v2[spiralIndex(v2.len, v7)];
-                        v28 = method35(v0, v1, v2, v3, v4, v5, v6, v26, v8);
-                        v29 = method31(v0, v1, v2, v3, v4, v5, v6, v28, v27);
+                        v28 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v26, v8);
+                        v29 = interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v28, v27);
                         v30 = v3[spiralIndex(v3.len, v26)];
                         v31 = v30 == @as(i32, 1);
                         if (v31) {
-                            v32 = method35(v0, v1, v2, v3, v4, v5, v6, v27, v8);
-                            v41 = method29(v0, v1, v2, v3, v4, v5, v6, v29, v32);
+                            v32 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v27, v8);
+                            v41 = interned_make_alt_29(v0, v1, v2, v3, v4, v5, v6, v29, v32);
                         } else {
                             v41 = v29;
                         }
                     } else {
                         v35 = v1[spiralIndex(v1.len, v7)];
-                        v36 = method35(v0, v1, v2, v3, v4, v5, v6, v35, v8);
-                        v41 = method31(v0, v1, v2, v3, v4, v5, v6, v36, v7);
+                        v36 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v35, v8);
+                        v41 = interned_make_cat_31(v0, v1, v2, v3, v4, v5, v6, v36, v7);
                     }
                 }
             }
@@ -2593,7 +2593,7 @@ fn method35(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         return v43;
     }
 }
-fn method34(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: *UH1) bool {
+fn loop_34(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: *UH1) bool {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2637,7 +2637,7 @@ fn method34(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
                         },
                         else => unreachable,
                     }
-                    v16 = method35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
+                    v16 = interned_derivative_raw_35(v0, v1, v2, v3, v4, v5, v6, v7, v15);
                     tmp5 = v0;
                     tmp6 = v1;
                     tmp7 = v2;
@@ -2668,7 +2668,7 @@ fn method34(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         }
     }
 }
-fn method33(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: *UH1) bool {
+fn interned_accepts_33(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: *UH1) bool {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2678,9 +2678,9 @@ fn method33(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
     var v6: []i32 = p6; _ = &v6;
     var v7: i32 = p7; _ = &v7;
     var v8: *UH1 = p8; _ = &v8;
-    return method34(v0, v1, v2, v3, v4, v5, v6, v7, v8);
+    return loop_34(v0, v1, v2, v3, v4, v5, v6, v7, v8);
 }
-fn method32(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: u64, p11: i32) i32 {
+fn loop_32(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: u64, p11: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2718,10 +2718,10 @@ fn method32(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         v12 = @as(i32, 0) < v9;
         if (v12) {
             v13 = UH1_0();
-            tmp4 = method1(v10, v7, v13);
+            tmp4 = random_bit_input_1(v10, v7, v13);
             v14 = tmp4.f0;
             v15 = tmp4.f1;
-            v16 = method33(v0, v1, v2, v3, v4, v5, v6, v8, v14);
+            v16 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v14);
             if (v16) {
                 v17 = v11 +% @as(i32, 1);
                 v18 = v17;
@@ -2759,7 +2759,7 @@ fn method32(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
         }
     }
 }
-fn method36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: i32) i32 {
+fn loop_36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6: []i32, p7: i32, p8: i32, p9: i32, p10: i32) i32 {
     var v0: []i32 = p0; _ = &v0;
     var v1: []i32 = p1; _ = &v1;
     var v2: []i32 = p2; _ = &v2;
@@ -2802,8 +2802,8 @@ fn method36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
             return v10;
         } else {
             v12 = UH1_0();
-            v13 = method14(v9, v12);
-            v14 = method33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
+            v13 = zeros_input_14(v9, v12);
+            v14 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
             if (v14) {
                 v15 = v10 +% @as(i32, 1);
                 v16 = v15;
@@ -2813,8 +2813,8 @@ fn method36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6
             v17 = US0_1();
             v18 = UH1_0();
             v19 = UH1_1(v17, v18);
-            v20 = method14(v9, v19);
-            v21 = method33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
+            v20 = zeros_input_14(v9, v19);
+            v21 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
             if (v21) {
                 v22 = v16 +% @as(i32, 1);
                 v23 = v22;
@@ -3152,8 +3152,8 @@ fn spiralMain() i32 {
     v37 = UH0_4(v16, v36);
     v38 = @as(u64, 1);
     v39 = @as(i32, 0);
-    v40 = method0(v10, v1, v0, v38, v39);
-    v41 = method0(v37, v1, v0, v38, v39);
+    v40 = loop_0(v10, v1, v0, v38, v39);
+    v41 = loop_0(v37, v1, v0, v38, v39);
     v42 = @as(i32, 16);
     v43 = US0_0();
     v44 = UH0_2(v43);
@@ -3169,7 +3169,7 @@ fn spiralMain() i32 {
     v54 = UH0_4(v51, v53);
     v55 = @as(i32, 0);
     v56 = @as(i32, 1);
-    v57 = method13(v54, v42, v56, v55);
+    v57 = loop_13(v54, v42, v56, v55);
     v58 = @as(i32, 200);
     v59 = @as(i32, 32);
     v60 = US0_0();
@@ -3210,8 +3210,8 @@ fn spiralMain() i32 {
     v95 = UH0_4(v74, v94);
     v96 = @as(u64, 1);
     v97 = @as(i32, 0);
-    v98 = method15(v68, v59, v58, v96, v97);
-    v99 = method15(v95, v59, v58, v96, v97);
+    v98 = loop_15(v68, v59, v58, v96, v97);
+    v99 = loop_15(v95, v59, v58, v96, v97);
     v100 = @as(i32, 16);
     v101 = US0_0();
     v102 = UH0_2(v101);
@@ -3227,7 +3227,7 @@ fn spiralMain() i32 {
     v112 = UH0_4(v109, v111);
     v113 = @as(i32, 0);
     v114 = @as(i32, 1);
-    v115 = method17(v112, v100, v114, v113);
+    v115 = loop_17(v112, v100, v114, v113);
     v116 = v40 == v98;
     if (v116) {
         v117 = v41 == v99;
@@ -3249,12 +3249,12 @@ fn spiralMain() i32 {
     v122 = @as(i32, 32);
     v123 = @as(u64, 1);
     v124 = @as(i32, 0);
-    v125 = method18(v122, v121, v123, v124);
-    v126 = method20(v122, v121, v123, v124);
+    v125 = loop_18(v122, v121, v123, v124);
+    v126 = loop_20(v122, v121, v123, v124);
     v127 = @as(i32, 16);
     v128 = @as(i32, 0);
     v129 = @as(i32, 1);
-    v130 = method22(v127, v129, v128);
+    v130 = loop_22(v127, v129, v128);
     v131 = v40 == v125;
     if (v131) {
         v132 = v41 == v126;
@@ -3282,19 +3282,19 @@ fn spiralMain() i32 {
     v143 = spiralNewArray(i32, @as(i32, 8192));
     v144 = spiralNewArray(i32, @as(i32, 1));
     v145 = @as(i32, 0);
-    _ = method24(v142, v145);
+    _ = loop_24(v142, v145);
     v146 = @as(i32, 0);
-    _ = method24(v143, v146);
+    _ = loop_24(v143, v146);
     v147 = @as(i32, 0);
-    _ = method25(v144, v147);
+    _ = loop_25(v144, v147);
     v148 = @as(i32, 0);
     v149 = @as(i32, 0);
     v150 = @as(i32, 0);
-    v151 = method26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150);
+    v151 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, v148, v149, v150);
     v152 = @as(i32, 1);
     v153 = @as(i32, 0);
     v154 = @as(i32, 0);
-    v155 = method26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154);
+    v155 = interned_node_26(v138, v139, v140, v141, v142, v143, v144, v152, v153, v154);
     v156 = v151 == @as(i32, 0);
     if (v156) {
         v157 = v155 == @as(i32, 1);
@@ -3322,10 +3322,10 @@ fn spiralMain() i32 {
     v179 = US0_0();
     v180 = UH0_2(v179);
     v181 = UH0_4(v178, v180);
-    v182 = method28(v166, v167, v168, v169, v170, v171, v172, v181);
+    v182 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181);
     v183 = @as(u64, 1);
     v184 = @as(i32, 0);
-    v185 = method32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
+    v185 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
     v186 = US0_0();
     v187 = UH0_2(v186);
     v188 = US0_1();
@@ -3353,10 +3353,10 @@ fn spiralMain() i32 {
     v210 = UH0_4(v198, v209);
     v211 = UH0_4(v193, v210);
     v212 = UH0_4(v191, v211);
-    v213 = method28(v166, v167, v168, v169, v170, v171, v172, v212);
+    v213 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212);
     v214 = @as(u64, 1);
     v215 = @as(i32, 0);
-    v216 = method32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
+    v216 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v213, v136, v214, v215);
     v217 = @as(i32, 16);
     v218 = spiralNewArray(i32, @as(i32, 4096));
     v219 = spiralNewArray(i32, @as(i32, 4096));
@@ -3366,19 +3366,19 @@ fn spiralMain() i32 {
     v223 = spiralNewArray(i32, @as(i32, 8192));
     v224 = spiralNewArray(i32, @as(i32, 1));
     v225 = @as(i32, 0);
-    _ = method24(v222, v225);
+    _ = loop_24(v222, v225);
     v226 = @as(i32, 0);
-    _ = method24(v223, v226);
+    _ = loop_24(v223, v226);
     v227 = @as(i32, 0);
-    _ = method25(v224, v227);
+    _ = loop_25(v224, v227);
     v228 = @as(i32, 0);
     v229 = @as(i32, 0);
     v230 = @as(i32, 0);
-    v231 = method26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230);
+    v231 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, v228, v229, v230);
     v232 = @as(i32, 1);
     v233 = @as(i32, 0);
     v234 = @as(i32, 0);
-    v235 = method26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234);
+    v235 = interned_node_26(v218, v219, v220, v221, v222, v223, v224, v232, v233, v234);
     v236 = v231 == @as(i32, 0);
     if (v236) {
         v237 = v235 == @as(i32, 1);
@@ -3409,10 +3409,10 @@ fn spiralMain() i32 {
     v262 = US0_1();
     v263 = UH0_2(v262);
     v264 = UH0_4(v261, v263);
-    v265 = method28(v246, v247, v248, v249, v250, v251, v252, v264);
+    v265 = interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264);
     v266 = @as(i32, 1);
     v267 = @as(i32, 0);
-    v268 = method36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
+    v268 = loop_36(v246, v247, v248, v249, v250, v251, v252, v217, v265, v266, v267);
     v269 = v40 == v185;
     if (v269) {
         v270 = v41 == v216;

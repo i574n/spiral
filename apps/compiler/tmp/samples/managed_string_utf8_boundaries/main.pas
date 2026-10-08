@@ -11,16 +11,16 @@ begin
   if ((Ord(value[from + 1]) and $C0) = $80) or ((upto + 1 < len) and ((Ord(value[upto + 2]) and $C0) = $80)) then Halt(3);
   Result := Copy(value, from + 1, upto - from + 1);
 end;
-function method0(v0: AnsiString): AnsiString; forward;
-function method1(v0: AnsiString): AnsiString; forward;
-function method0(v0: AnsiString): AnsiString;
+function first_codepoint_0(v0: AnsiString): AnsiString; forward;
+function second_codepoint_1(v0: AnsiString): AnsiString; forward;
+function first_codepoint_0(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
   v1 := StringSlice(v0, 0, 1);
   Result := v1;
 end;
-function method1(v0: AnsiString): AnsiString;
+function second_codepoint_1(v0: AnsiString): AnsiString;
 var
   v1: AnsiString;
 begin
@@ -41,8 +41,8 @@ var
   v9: Boolean;
 begin
   v0 := #195#169#206#187;
-  v1 := method0(v0);
-  v2 := method1(v0);
+  v1 := first_codepoint_0(v0);
+  v2 := second_codepoint_1(v0);
   v3 := v1 + v2;
   v4 := LongInt(Length(v1));
   v5 := v4 = 2;

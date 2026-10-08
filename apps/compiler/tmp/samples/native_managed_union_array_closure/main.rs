@@ -31,7 +31,7 @@ fn closure0() -> Rc<dyn Fn(i32) -> US0> {
 fn method0(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
     v0(0i32)
 }
-fn method1(mut v0: US0) -> i32 {
+fn score_1(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_0 => {
             3i32
@@ -53,9 +53,9 @@ fn method2(mut v0: Rc<dyn Fn(i32) -> US0>) -> US0 {
 fn spiral_main() -> i32 {
     let mut v0: Rc<dyn Fn(i32) -> US0> = closure0();
     let mut v1: US0 = method0(v0.clone());
-    let mut v2: i32 = method1(v1.clone());
+    let mut v2: i32 = score_1(v1.clone());
     let mut v3: US0 = method2(v0.clone());
-    let mut v4: i32 = method1(v3.clone());
+    let mut v4: i32 = score_1(v3.clone());
     let mut v5: i32 = v2.wrapping_add(v4);
     let mut v6: i32 = v5.wrapping_add(28i32);
     v6

@@ -11,7 +11,7 @@ type US0_1 = { readonly tag: 1, readonly f0: Array<Array<number>> };
 type US0 = US0_0 | US0_1;
 function US0_0(): US0 { return { tag: 0 }; }
 function US0_1(f0: Array<Array<number>>): US0 { return { tag: 1, f0: f0 }; }
-function method0(v0: US0): number {
+function score_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
             return 0;
@@ -48,7 +48,7 @@ export function main(): number {
     spiral_array_set(v1, 0, v2);
     spiral_array_set(v1, 1, v3);
     let v4: US0 = US0_1(v1);
-    let v5: number = method0(v4);
+    let v5: number = score_0(v4);
     let v6: number = (v5 - 20) | 0;
     return v6;
 }

@@ -118,7 +118,7 @@ fn US0_2() US0 {
 fn US0_3() US0 {
     return US0{ .tag = 3 };
 }
-fn method0(p0: US0) i32 {
+fn score_0(p0: US0) i32 {
     var v0: US0 = p0; _ = &v0;
     switch (v0.tag) {
         0 => {
@@ -161,7 +161,7 @@ fn spiralMain() i32 {
             }
         }
     }
-    v11 = method0(v10);
+    v11 = score_0(v10);
     v12 = v11 -% @as(i32, 4);
     return v12;
 }

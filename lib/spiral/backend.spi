@@ -34,6 +34,14 @@ inl backend_switch forall t. x : t =
                             typecase t with
                             | () => $'undefined /* backend_switch: no TypeScript arm (lib/spiral) */' : t
                             | _ => $'(() => { throw new Error("backend_switch: this lib/spiral function has no TypeScript arm yet") })()' : t
+                        C = fun () =>
+                            typecase t with
+                            | () => $'((void)0)' : t
+                            | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : t
+                        Delphi = fun () =>
+                            typecase t with
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : t
                     })
                 )
         !!!!BackendSwitch ({
@@ -47,6 +55,8 @@ inl backend_switch forall t. x : t =
             TypeScript = fun () => backend "TypeScript"
             Zig = fun () => backend "Zig"
             Lean = fun () => backend "Lean"
+            C = fun () => backend "C"
+            Delphi = fun () => backend "Delphi"
         })
 
 union backend =

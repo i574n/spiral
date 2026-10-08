@@ -50,7 +50,7 @@ partial def closure0 (p0 : Int32) : IO U0 := do
 partial def method0 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (0 : Int32))
-partial def method1 (p0 : U0) : IO Int32 := do
+partial def score_1 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v1 : (IO.Ref (Array Int32)) ← IO.mkRef #[]
     let mut v2 : Int32 := default
@@ -82,9 +82,9 @@ partial def spiralMain : IO Int32 := do
     let mut v6 : Int32 := default
     v0 := closure0
     v1 := (← method0 v0)
-    v2 := (← method1 v1)
+    v2 := (← score_1 v1)
     v3 := (← method2 v0)
-    v4 := (← method1 v3)
+    v4 := (← score_1 v3)
     v5 := (v2 + v4)
     v6 := (v5 + (28 : Int32))
     return v6

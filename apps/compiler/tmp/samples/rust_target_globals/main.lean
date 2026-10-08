@@ -24,7 +24,7 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
-partial def method0 (p0 : String) : IO Unit := do
+partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
     let mut v1 : Int32 := default
     v1 := (Int32.ofNat v0.utf8ByteSize)
@@ -38,21 +38,21 @@ partial def spiralMain : IO Int32 := do
     let mut v5 : String := default
     let mut v6 : String := default
     v0 := "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q"
-    let _ := (← method0 v0)
-    let _ := (← method0 v0)
+    let _ := (← target_global_0 v0)
+    let _ := (← target_global_0 v0)
     v1 := "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C"
-    let _ := (← method0 v1)
+    let _ := (← target_global_0 v1)
     v2 := "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo="
-    let _ := (← method0 v2)
+    let _ := (← target_global_0 v2)
     v3 := "SPIRAL_ITEM_METADATA_TEST_test-item"
-    let _ := (← method0 v3)
+    let _ := (← target_global_0 v3)
     v4 := "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q"
-    let _ := (← method0 v4)
-    let _ := (← method0 v4)
+    let _ := (← target_global_0 v4)
+    let _ := (← target_global_0 v4)
     v5 := "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C"
-    let _ := (← method0 v5)
+    let _ := (← target_global_0 v5)
     v6 := "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo="
-    let _ := (← method0 v6)
+    let _ := (← target_global_0 v6)
     return (0 : Int32)
 end
 def main : IO UInt32 := do

@@ -8,14 +8,14 @@ fn closure0(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> i32> {
         v3
     })
 }
-fn method0(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
+fn apply_0(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: i32) -> i32 {
     v0(v1)
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
     let mut v1: Rc<dyn Fn(i32) -> i32> = closure0(v0.clone());
     let mut v2: i32 = 39i32;
-    method0(v1.clone(), v2)
+    apply_0(v1.clone(), v2)
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
     let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();

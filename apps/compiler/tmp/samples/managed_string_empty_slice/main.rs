@@ -10,24 +10,24 @@ fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {
     let slice = &bytes[from as usize..(to + 1) as usize];
     match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or("")) }
 }
-fn method0(mut v0: Rc<str>) -> Rc<str> {
+fn empty_middle_0(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = string_slice(&v0.clone(), 2i32 as i64, 1i32 as i64);
     v1.clone()
 }
-fn method1(mut v0: Rc<str>) -> Rc<str> {
+fn empty_end_1(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = string_slice(&v0.clone(), 5i32 as i64, 4i32 as i64);
     v1.clone()
 }
-fn method2(mut v0: Rc<str>) -> Rc<str> {
+fn empty_source_2(mut v0: Rc<str>) -> Rc<str> {
     let mut v1: Rc<str> = string_slice(&v0.clone(), 0i32 as i64, -1i32 as i64);
     v1.clone()
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("alpha"); } LIT.with(|lit| lit.clone()) };
-    let mut v1: Rc<str> = method0(v0.clone());
-    let mut v2: Rc<str> = method1(v0.clone());
+    let mut v1: Rc<str> = empty_middle_0(v0.clone());
+    let mut v2: Rc<str> = empty_end_1(v0.clone());
     let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let mut v4: Rc<str> = method2(v3.clone());
+    let mut v4: Rc<str> = empty_source_2(v3.clone());
     let mut v5: Rc<str> = Rc::<str>::from(format!("{}{}", v1.clone(), v2.clone()));
     let mut v6: Rc<str> = Rc::<str>::from(format!("{}{}", v4.clone(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ok"); } LIT.with(|lit| lit.clone()) }));
     let mut v7: Rc<str> = Rc::<str>::from(format!("{}{}", v5.clone(), v6.clone()));

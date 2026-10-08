@@ -6,10 +6,10 @@ function UH0_1(): UH0 { return { tag: 1 }; }
 function closure0(v0: bigint): (() => UH0) {
     return (): UH0 => {
         let v1: bigint = BigInt.asUintN(64, v0 - 1n);
-        return method0(v1);
+        return build_0(v1);
     };
 }
-function method0(v0: bigint): UH0 {
+function build_0(v0: bigint): UH0 {
     let v1: boolean = v0 === 0n;
     if (v1) {
         return UH0_1();
@@ -18,7 +18,7 @@ function method0(v0: bigint): UH0 {
         return UH0_0(v0, v3);
     }
 }
-function method1(v0: UH0, v1: bigint): bigint {
+function sum_1(v0: UH0, v1: bigint): bigint {
     tail: while (true) {
         switch (v0.tag) {
             case 0: {
@@ -45,9 +45,9 @@ function method1(v0: UH0, v1: bigint): bigint {
 }
 export function main(): number {
     let v0: bigint = 10n;
-    let v1: UH0 = method0(v0);
+    let v1: UH0 = build_0(v0);
     let v2: bigint = 0n;
-    let v3: bigint = method1(v1, v2);
+    let v3: bigint = sum_1(v1, v2);
     let v4: number = 5;
     let v5: number = Number(BigInt.asIntN(32, v3));
     let v6: number = Math.imul(v4, 2);

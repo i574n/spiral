@@ -1,5 +1,5 @@
-local method0
-function method0(v0)
+local f_0
+function f_0(v0)
     local v1 = v0 == 1
     if v1 then
         return 0
@@ -9,4 +9,4 @@ function method0(v0)
 end
 
 local v0 = 1
-return method0(v0)
+return f_0(v0)

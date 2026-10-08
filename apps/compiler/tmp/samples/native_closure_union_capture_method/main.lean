@@ -35,7 +35,7 @@ def U0.spiralTag : U0 → Int32
   | .c1 .. => 1
   | .c2 .. => 2
 mutual
-partial def method0 (p0 : U0) : IO Int32 := do
+partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v2 : Bool := default
     let mut v1 : Int32 := default
@@ -56,7 +56,7 @@ partial def closure0 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := default
     let mut v3 : Int32 := default
-    v2 := (← method0 v0)
+    v2 := (← score_0 v0)
     v3 := (v2 + v1)
     return v3
 partial def method1 (p0 : (Int32 → IO Int32)) : IO Int32 := do

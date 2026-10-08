@@ -29,18 +29,18 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function method0(v0: string): string {
+function first_codepoint_0(v0: string): string {
     let v1: string = spiral_string_slice(v0, 0, 1);
     return v1;
 }
-function method1(v0: string): string {
+function second_codepoint_1(v0: string): string {
     let v1: string = spiral_string_slice(v0, 2, 3);
     return v1;
 }
 export function main(): number {
     let v0: string = "éλ";
-    let v1: string = method0(v0);
-    let v2: string = method1(v0);
+    let v1: string = first_codepoint_0(v0);
+    let v2: string = second_codepoint_1(v0);
     let v3: string = v1 + v2;
     let v4: number = spiral_string_length(v1);
     let v5: boolean = v4 === 2;

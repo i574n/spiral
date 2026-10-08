@@ -1,4 +1,4 @@
-local Uh0i0, Uh0i1, closure79, closure78, closure77, closure76, closure75, closure74, closure73, closure72, closure71, closure70, closure69, closure68, closure67, closure66, closure65, closure64, closure63, closure62, closure61, closure60, closure59, closure58, closure57, closure56, closure55, closure54, closure53, closure52, closure51, closure50, closure49, closure48, closure47, closure46, closure45, closure44, closure43, closure42, closure41, closure40, closure39, closure38, closure37, closure36, closure35, closure34, closure33, closure32, closure31, closure30, closure29, closure28, closure27, closure26, closure25, closure24, closure23, closure22, closure21, closure20, closure19, closure18, closure17, closure16, closure15, closure14, closure13, closure12, closure11, closure10, closure9, closure8, closure7, closure6, closure5, closure4, closure3, closure2, closure1, closure0, method0
+local Uh0i0, Uh0i1, closure79, closure78, closure77, closure76, closure75, closure74, closure73, closure72, closure71, closure70, closure69, closure68, closure67, closure66, closure65, closure64, closure63, closure62, closure61, closure60, closure59, closure58, closure57, closure56, closure55, closure54, closure53, closure52, closure51, closure50, closure49, closure48, closure47, closure46, closure45, closure44, closure43, closure42, closure41, closure40, closure39, closure38, closure37, closure36, closure35, closure34, closure33, closure32, closure31, closure30, closure29, closure28, closure27, closure26, closure25, closure24, closure23, closure22, closure21, closure20, closure19, closure18, closure17, closure16, closure15, closure14, closure13, closure12, closure11, closure10, closure9, closure8, closure7, closure6, closure5, closure4, closure3, closure2, closure1, closure0, loop_0
 function Uh0i0(v0, v1) return { tag = "Uh0i0",  _1 = v0,  _2 = v1 } end
 function Uh0i1() return { tag = "Uh0i1" } end
 
@@ -561,14 +561,14 @@ function closure0(capt)
     end
 end
 
-function method0(v0, v1)
+function loop_0(v0, v1)
     local __v = { v0 }
     if __v[1] ~= nil and __v[1].tag == "Uh0i0" then
         local v2 = __v[1]._1
         local v3 = __v[1]._2
         local v4 = v3(nil)
         local v5 = (v1 + v2)
-        return method0(v4, v5)
+        return loop_0(v4, v5)
     elseif __v[1] ~= nil and __v[1].tag == "Uh0i1" then
         return v1
     end
@@ -578,7 +578,7 @@ local v0 = 80
 local v1 = closure0(nil)
 local v2 = Uh0i0(v0, v1)
 local v3 = 0
-local v4 = method0(v2, v3)
+local v4 = loop_0(v2, v3)
 local v5 = math.fmod(v4, 200)
 local v6 = v5
 return v6

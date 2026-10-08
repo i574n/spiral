@@ -105,7 +105,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     p.* = v;
     return p;
 }
-fn method0(p0: []const u8) void {
+fn target_global_0(p0: []const u8) void {
     var v0: []const u8 = p0; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
     v1 = @as(i32, @intCast(v0.len));
@@ -119,21 +119,21 @@ fn spiralMain() i32 {
     var v5: []const u8 = undefined; _ = &v5;
     var v6: []const u8 = undefined; _ = &v6;
     v0 = "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q";
-    _ = method0(v0);
-    _ = method0(v0);
+    _ = target_global_0(v0);
+    _ = target_global_0(v0);
     v1 = "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C";
-    _ = method0(v1);
+    _ = target_global_0(v1);
     v2 = "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo=";
-    _ = method0(v2);
+    _ = target_global_0(v2);
     v3 = "SPIRAL_ITEM_METADATA_TEST_test-item";
-    _ = method0(v3);
+    _ = target_global_0(v3);
     v4 = "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q";
-    _ = method0(v4);
-    _ = method0(v4);
+    _ = target_global_0(v4);
+    _ = target_global_0(v4);
     v5 = "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C";
-    _ = method0(v5);
+    _ = target_global_0(v5);
     v6 = "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo=";
-    _ = method0(v6);
+    _ = target_global_0(v6);
     return @as(i32, 0);
 }
 pub fn main() void {

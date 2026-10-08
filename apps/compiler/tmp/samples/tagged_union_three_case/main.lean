@@ -35,7 +35,7 @@ def U0.spiralTag : U0 → Int32
   | .c1 .. => 1
   | .c2 .. => 2
 mutual
-partial def method0 (p0 : U0) : IO Int32 := do
+partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
     let mut v2 : Bool := default
     let mut v1 : Int32 := default
@@ -68,7 +68,7 @@ partial def spiralMain : IO Int32 := do
             v7 := (U0.c1 (7 : Int32))
         else
             v7 := (U0.c2 true)
-    v8 := (← method0 v7)
+    v8 := (← score_0 v7)
     v9 := (v8 - (11 : Int32))
     return v9
 end

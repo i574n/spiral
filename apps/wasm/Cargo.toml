@@ -16,6 +16,6 @@ path = "spiral_wasm.rs"
 anyhow = "1.0"
 clap = { workspace = true }
 tokio = { version = "1.40", features = ["full"] }
-near-workspaces = { version = "=0.11.1", features = ["experimental", "unstable"] }
+near-workspaces = { version = "=0.11.1", default-features = false, features = ["experimental", "unstable"] }
 near-sandbox-utils = { version = ">=0.11,<1", features = ["global_install"] }
 near-sdk = "=5.11.0"

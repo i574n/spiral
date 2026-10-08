@@ -14,12 +14,12 @@ impl UH0 {
         }
     }
 }
-fn method0(mut v0: Rc<UH0>) -> i32 {
+fn sum_0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
         UH0::UH0_1(v1, v2) => {
             let mut v1: i32 = *v1;
             let mut v2: Rc<UH0> = v2.clone();
-            let mut v3: i32 = method0(v2.clone());
+            let mut v3: i32 = sum_0(v2.clone());
             let mut v4: i32 = v1.wrapping_add(v3);
             v4
         }
@@ -36,7 +36,7 @@ fn spiral_main() -> i32 {
     let mut v4: Rc<UH0> = Rc::new(UH0::UH0_1(v2, v3.clone()));
     let mut v5: Rc<UH0> = Rc::new(UH0::UH0_1(v1, v4.clone()));
     let mut v6: Rc<UH0> = Rc::new(UH0::UH0_1(v0, v5.clone()));
-    let mut v7: i32 = method0(v6.clone());
+    let mut v7: i32 = sum_0(v6.clone());
     let mut v8: i32 = v7.wrapping_sub(6i32);
     v8
 }

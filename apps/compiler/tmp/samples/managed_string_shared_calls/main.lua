@@ -14,15 +14,15 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local method0
-function method0(v0)
+local measure_0
+function measure_0(v0)
     local v1 = string.len(v0)
     return v1
 end
 
 local v0 = "qwe"
-local v1 = method0(v0)
-local v2 = method0(v0)
+local v1 = measure_0(v0)
+local v2 = measure_0(v0)
 local v3 = spiral_wrap_signed((v1 + v2), 32)
 local v4 = spiral_wrap_signed((v3 - 6), 32)
 return v4

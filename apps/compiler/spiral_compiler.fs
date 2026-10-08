@@ -167223,6 +167223,15 @@ module spiral_compiler =
                 main_defs = ResizeArray()
             }
 
+    /// ### generatedMethodName
+    let generatedMethodName (sourceName : string option) (tag : int) =
+        match sourceName with
+        | Some name when name |> Seq.exists System.Char.IsAsciiLetterOrDigit ->
+            let safe = name |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c || c = '_' then c else '_')
+            let stem = if System.Char.IsAsciiDigit safe.[0] then "_" + safe else safe
+            $"{stem}_{tag}"
+        | _ -> $"method{tag}"
+
 #if SPIRAL_CORE_HOPAC
     /// ## CodegenFsharp
     
@@ -167320,6 +167329,7 @@ module spiral_compiler =
 
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = System.Collections.Concurrent.ConcurrentDictionary<int, string>()
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
@@ -167450,7 +167460,7 @@ module spiral_compiler =
             let jp (a, b) =
                 let args = args b
                 match a with
-                | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+                | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure(a,b) -> sprintf "closure%i(%s)" (closure (a,b)).tag args
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
@@ -167861,15 +167871,15 @@ module spiral_compiler =
                         | true, ivar when not ivar.Full -> CodegenJpOwnerCellPending d.Count
                         | true, ivar ->
                             match Hopac.IVar.Now.get ivar with
-                            | JpMethodBodyCellReadyPayload(a, range, _) -> CodegenJpOwnerMaterializedReady(a, range, d.Count)
+                            | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpOwnerMaterializedReady(a, (range, sourceName), d.Count)
                             | JpMethodBodyCellCancelledPayload _ -> CodegenJpOwnerCellCancelled d.Count
                             | JpMethodBodyCellFailedPayload _ -> CodegenJpOwnerCellFailed d.Count
 
-                let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>) : CodegenJpMethodBodyCellResolution<TypedBind [],Ty> =
+                let resolve_v2_from (jp_dict2: System.Collections.Concurrent.ConcurrentDictionary<ConsedNode<RData [] * Ty [] * Ty>, Hopac.IVar<JpMethodBodyCellPayload>>) : CodegenJpMethodBodyCellResolution<TypedBind [],Ty * string option> =
                     match jp_dict2.TryGetValue key with
                     | true, ivar when ivar.Full ->
                         match Hopac.IVar.Now.get ivar with
-                        | JpMethodBodyCellReadyPayload(a, range, _) -> CodegenJpMethodBodyCellReady(a, range)
+                        | JpMethodBodyCellReadyPayload(a, range, sourceName) -> CodegenJpMethodBodyCellReady(a, (range, sourceName))
                         | JpMethodBodyCellCancelledPayload cancellation -> CodegenJpMethodBodyCellCancelled cancellation
                         | JpMethodBodyCellFailedPayload failure -> CodegenJpMethodBodyCellFailed failure
                     | true, ivar -> CodegenJpMethodBodyCellPending ivar
@@ -168041,9 +168051,11 @@ module spiral_compiler =
                             DiagSidecar.emit msg
                             raise_codegen_error' [] (None, msg)
                     else requireResolvedMethodCell false jp_dict
+                let range, sourceName = range
+                method_names.[i] <- generatedMethodName sourceName i
                 {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
-                line s (FastRuntimeFormat.format "method%i (%s) : %s =" [| box x.tag; box (args_tys x.free_vars); box (tup_ty x.range) |])
+                line s (FastRuntimeFormat.format "%s (%s) : %s =" [| box method_names.[x.tag]; box (args_tys x.free_vars); box (tup_ty x.range) |])
                 binds (indent s) x.body
                 )
         and closure : _ -> ClosureRecFsharp =
@@ -168518,6 +168530,7 @@ module spiral_compiler =
 
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
 
@@ -168621,7 +168634,7 @@ module spiral_compiler =
             let jp (a, b) =
                 let args = args b
                 match a with
-                | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+                | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure(a,b) -> sprintf "closure%i(%s)" (closure (a,b)).tag args
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
@@ -168902,10 +168915,12 @@ module spiral_compiler =
         and method : _ -> MethodRecFsharp =
             jp (fun ((jp_body,key & (C(args,_))),i) ->
                 match (fst env.join_point_method.[jp_body]).[key] with
-                | Some a, Some range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                | Some a, Some range, sourceName ->
+                    method_names.[i] <- generatedMethodName sourceName i
+                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 ) (fun s x ->
-                line s (sprintf "method%i (%s) : %s =" x.tag (args_tys x.free_vars) (tup_ty x.range))
+                line s (sprintf "%s (%s) : %s =" method_names.[x.tag] (args_tys x.free_vars) (tup_ty x.range))
                 binds (indent s) x.body
                 )
         and closure : _ -> ClosureRecFsharp =
@@ -168983,6 +168998,7 @@ module spiral_compiler =
 
     /// ### backend_nameRust
     let backend_nameRust = "Rust"
+
 
     /// ### litRust
     let litRust = function
@@ -169352,6 +169368,7 @@ module spiral_compiler =
 
     /// ### codegenRust
     let codegenRust (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray()
@@ -169564,7 +169581,7 @@ module spiral_compiler =
         and op s d a =
             let jp (a, b) =
                 match a with
-                | JPMethod(a,c) -> sprintf "method%i(%s)" (method (a,c)).tag (args b)
+                | JPMethod(a,c) -> sprintf "%s(%s)" method_names.[(method (a,c)).tag] (args b)
                 | JPClosure(a,c) -> sprintf "closure%i(%s)" (closure (a,c)).tag (args b)
             let annot t = let x = tyv t in if x.StartsWith "impl " || x.StartsWith "Impl<" then "_" else x
             let binding d =
@@ -169860,9 +169877,11 @@ module spiral_compiler =
             jp (fun ((jp_body,key),i) ->
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env "Rust" jp_body key with
-                | a, range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                | a, range, name ->
+                    method_names.[i] <- generatedMethodName name i
+                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
-                line s $"fn method{x.tag}({param_list x.free_vars}) -> {tup_ty x.range} {{"
+                line s $"fn {method_names.[x.tag]}({param_list x.free_vars}) -> {tup_ty x.range} {{"
                 live_binds outer_none x.body |> ignore
                 let saved = self_loop
                 if self_tail x.tag x.body then
@@ -170023,6 +170042,7 @@ module spiral_compiler =
 
     /// ### codegenDelphi
     let codegenDelphi (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let forwards = ResizeArray()
         let types = ResizeArray()
         let headers = ResizeArray()
@@ -170173,7 +170193,7 @@ module spiral_compiler =
             let jp (a, b) =
                 let a' = match b with [||] -> "" | b -> $"({args b})"
                 match a with
-                | JPMethod(a,c) -> $"method{(method (a,c)).tag}{a'}"
+                | JPMethod(a,c) -> $"{method_names.[(method (a,c)).tag]}{a'}"
                 | JPClosure(a,c) -> $"ClosureCreate{(closure (a,c)).tag}{a'}"
             let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
             match a with
@@ -170407,7 +170427,9 @@ module spiral_compiler =
         and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
             let args = codegenMethodKeyArgs key
             match codegenMethodBody env "Delphi" jp_body key with
-            | body, range, _ -> emit_function' (Some tag) $"method{tag}" (rdata_free_vars args) range body true))
+            | body, range, name ->
+                method_names.[tag] <- generatedMethodName name tag
+                emit_function' (Some tag) method_names.[tag] (rdata_free_vars args) range body true))
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
         and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
             match fun_ty with
@@ -170640,6 +170662,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
     /// ### codegenZig
     let codegenZig (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let types = ResizeArray()
         let bodies = ResizeArray()
         let globals = ResizeArray()
@@ -170789,7 +170812,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | ZTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
             let jp (a, b) =
                 match a with
-                | JPMethod(a,c) -> $"method{(method (a,c)).tag}({args b})"
+                | JPMethod(a,c) -> $"{method_names.[(method (a,c)).tag]}({args b})"
                 | JPClosure(a,c) -> $"closureCreate{(closure (a,c)).tag}({args b})"
             let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
             match a with
@@ -171013,7 +171036,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
         and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
             let args = codegenMethodKeyArgs key
             match codegenMethodBody env "Zig" jp_body key with
-            | body, range, _ -> emit_function $"method{tag}" (Some tag) (rdata_free_vars args) "" range body ""))
+            | body, range, name ->
+                method_names.[tag] <- generatedMethodName name tag
+                emit_function method_names.[tag] (Some tag) (rdata_free_vars args) "" range body ""))
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
         and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
             match fun_ty with
@@ -171150,6 +171175,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
 
     /// ### codegenLean
     let codegenLean (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let bodies = ResizeArray()
         let types = ResizeArray()
         let union_names = ResizeArray<string>()
@@ -171316,7 +171342,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 | ZTail range -> if tup_ty range = "Unit" then (line s $"let _ := {x}"; line s "return ()") else line s $"return {x}"
             let jp (a, b) =
                 match a with
-                | JPMethod(a,c) -> call $"method{(method (a,c)).tag}" b
+                | JPMethod(a,c) -> call method_names.[(method (a,c)).tag] b
                 | JPClosure(a,c) ->
                     let tag = (closure (a,c)).tag
                     match b with
@@ -171475,7 +171501,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
         and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
             let args = codegenMethodKeyArgs key
             match codegenMethodBody env "Lean" jp_body key with
-            | body, range, _ -> emit_function $"method{tag}" (Some tag) (rdata_free_vars args) range body))
+            | body, range, name ->
+                method_names.[tag] <- generatedMethodName name tag
+                emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body))
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
         and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
             match fun_ty with
@@ -171683,6 +171711,155 @@ def spiral_string_slice_checked(+valid: Bool, +s: String, +from: U32, +until: U3
 def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
   spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
 
+@unsafe
+def spiral_i32_to_f32(+value: U32) -> F32:
+  spiral_i32_to_f32_signed(value, spiral_i32_is_negative(value))
+
+@unsafe
+def spiral_i32_to_f32_signed(+value: U32, negative: Bool) -> F32:
+  match negative:
+    case True{}:
+      F32.neg(U32.to_f32(U32.sub(0, value)))
+    case False{}:
+      U32.to_f32(value)
+
+@unsafe
+def spiral_f32_to_i32(+value: F32) -> U32:
+  spiral_f32_to_i32_signed(value, F32.is_lt(value, 0.0))
+
+@unsafe
+def spiral_f32_to_i32_signed(+value: F32, negative: Bool) -> U32:
+  match negative:
+    case True{}:
+      U32.sub(0, F32.to_u32(F32.neg(value)))
+    case False{}:
+      F32.to_u32(value)
+@unsafe
+def spiral_array_depth_go(+wanted: U32, +size: U32, +depth: U32, done: Bool) -> U32:
+  match done:
+    case True{}:
+      depth
+    case False{}:
+      spiral_array_depth_go(wanted, U32.shl(size), U32.add(depth, 1), U32.is_le(wanted, U32.shl(size)))
+
+@unsafe
+def spiral_array_depth(+wanted: U32) -> U32:
+  spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
+
+"""
+
+    /// ### bendArrayHelpers
+    let bendArrayHelpers = """@unsafe
+def spiral_array_fill_go__K__(+depth: U32, +v: __T__, leaf: Bool) -> Array<__T__>:
+  match leaf:
+    case True{}:
+      ALeaf{v}
+    case False{}:
+      ANode{spiral_array_fill__K__(U32.sub(depth, 1), v), spiral_array_fill__K__(U32.sub(depth, 1), v)}
+
+@unsafe
+def spiral_array_fill__K__(+depth: U32, +v: __T__) -> Array<__T__>:
+  spiral_array_fill_go__K__(depth, v, U32.is_eq(depth, 0))
+
+@unsafe
+def spiral_array_peek_lo__K__(ys: Array<__T__>, r: Array<__T__> & __T__) -> Array<__T__> & __T__:
+  (nxs, v) = r
+  (ANode{nxs, ys}, v)
+
+@unsafe
+def spiral_array_peek_hi__K__(xs: Array<__T__>, r: Array<__T__> & __T__) -> Array<__T__> & __T__:
+  (nys, v) = r
+  (ANode{xs, nys}, v)
+
+@unsafe
+def spiral_array_peek_go__K__(a: Array<__T__>, +n: U32, +i: U32, z: Bool) -> Array<__T__> & __T__:
+  match a z:
+    case ALeaf{+x} _:
+      (ALeaf{x}, x)
+    case ANode{xs, ys} True{}:
+      +h = U32.shr(n)
+      spiral_array_peek_lo__K__(ys, spiral_array_peek_go__K__(xs, h, i, U32.is_lt(i, U32.shr(h))))
+    case ANode{xs, ys} False{}:
+      +h = U32.shr(n)
+      +j = U32.sub(i, h)
+      spiral_array_peek_hi__K__(xs, spiral_array_peek_go__K__(ys, h, j, U32.is_lt(j, U32.shr(h))))
+
+@unsafe
+def spiral_array_peek_at__K__(+i: U32, an: Array<__T__> & U32) -> Array<__T__> & __T__:
+  (a, +n) = an
+  spiral_array_peek_go__K__(a, n, i, U32.is_lt(i, U32.shr(n)))
+
+@unsafe
+def spiral_array_new__K__(+length: U32, +v: __T__) -> IO(Chan(Array<__T__>) & U32):
+  do IO<Chan(Array<__T__>) & U32>:
+    +c : Chan(Array<__T__>) <- Chan.new(Array<__T__>, 1)
+    _ : Result<&1, &1, Array<__T__>, Unit> <- Chan.send(Array<__T__>, c, spiral_array_fill__K__(spiral_array_depth(length), v))
+    return (c, length)
+
+@unsafe
+def spiral_array_length__K__(+arr: Chan(Array<__T__>) & U32) -> U32:
+  (c, +n) = arr
+  n
+
+@unsafe
+def spiral_array_get_back__K__(+c: Chan(Array<__T__>), r: Array<__T__> & __T__) -> IO(__T__):
+  (a, +v) = r
+  do IO<__T__>:
+    _ : Result<&1, &1, Array<__T__>, Unit> <- Chan.send(Array<__T__>, c, a)
+    return v
+
+@unsafe
+def spiral_array_get_taken__K__(+c: Chan(Array<__T__>), +i: U32, m: Maybe<&1, Array<__T__>>) -> IO(__T__):
+  match m:
+    case None{}:
+      IO.die(__T__, 3, "")
+    case Some{a}:
+      spiral_array_get_back__K__(c, spiral_array_peek_at__K__(i, Array.size(__T__, a)))
+
+@unsafe
+def spiral_array_get_checked__K__(+c: Chan(Array<__T__>), +i: U32, inside: Bool) -> IO(__T__):
+  match inside:
+    case True{}:
+      do IO<__T__>:
+        m : Maybe<&1, Array<__T__>> <- Chan.recv(Array<__T__>, c)
+        spiral_array_get_taken__K__(c, i, m)
+    case False{}:
+      IO.die(__T__, 3, "")
+
+@unsafe
+def spiral_array_get__K__(+arr: Chan(Array<__T__>) & U32, +i: U32) -> IO(__T__):
+  (+c, +n) = arr
+  spiral_array_get_checked__K__(c, i, U32.is_lt(i, n))
+
+@unsafe
+def spiral_array_set_back__K__(+c: Chan(Array<__T__>), r: Array<__T__> & __T__) -> IO(Unit):
+  (a, old) = r
+  do IO<Unit>:
+    _ : Result<&1, &1, Array<__T__>, Unit> <- Chan.send(Array<__T__>, c, a)
+    return Unit{}
+
+@unsafe
+def spiral_array_set_taken__K__(+c: Chan(Array<__T__>), +i: U32, +v: __T__, m: Maybe<&1, Array<__T__>>) -> IO(Unit):
+  match m:
+    case None{}:
+      IO.die(Unit, 3, "")
+    case Some{a}:
+      spiral_array_set_back__K__(c, Array.swap(__T__, a, i, v))
+
+@unsafe
+def spiral_array_set_checked__K__(+c: Chan(Array<__T__>), +i: U32, +v: __T__, inside: Bool) -> IO(Unit):
+  match inside:
+    case True{}:
+      do IO<Unit>:
+        m : Maybe<&1, Array<__T__>> <- Chan.recv(Array<__T__>, c)
+        spiral_array_set_taken__K__(c, i, v, m)
+    case False{}:
+      IO.die(Unit, 3, "")
+
+@unsafe
+def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) -> IO(Unit):
+  (+c, +n) = arr
+  spiral_array_set_checked__K__(c, i, v, U32.is_lt(i, n))
 """
 
     /// ### bendString
@@ -171699,6 +171876,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
         strb.Append('"').ToString()
     /// ### codegenBend
     let codegenBend (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let defs = ResizeArray<string>()
         let types = ResizeArray<string>()
         let unsupported what = raise_codegen_error $"The Bend backend doesn't support {what} yet."
@@ -171706,12 +171884,16 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
             | Int32T | UInt32T | CharT -> "U32"
             | BoolT -> "Bool"
             | StringT -> "String"
+            | Float32T -> "F32"
             | t -> unsupported $"the primitive type %A{t}"
         let fresh = ref 0
         let next_fresh () = fresh.Value <- fresh.Value + 1; fresh.Value
+        let linear_unions = HashSet<int>()
         let rec tyv = function
             | YPrim a -> primBend a
             | YUnion a -> $"U{union_tag a.Item.cases}"
+            | YArray a -> $"(Chan(Array<{tup_ty a}>) & U32)"
+            | YFun(a,b,_) -> $"(({tup_ty a}) -> IO({tup_ty b}))"
             | a -> unsupported $"the type {show_ty a}"
         and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
         and tup_ty x =
@@ -171730,19 +171912,32 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 | _ ->
                     let tag = dict.Count
                     dict.[cases] <- tag
+                    let field_types = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                     let ctors =
-                        cases |> Map.toArray |> Array.mapi (fun c (_, t) ->
-                            let fields = env.ty_to_data t |> data_free_vars |> Array.mapi (fun j (L(_,t)) -> $"f{j}: {tyv t}") |> String.concat ", "
+                        field_types |> Array.mapi (fun c fields ->
+                            let fields = fields |> Array.mapi (fun j t -> $"f{j}: {tyv t}") |> String.concat ", "
                             $"  U{tag}c{c}{{{fields}}}")
-                    types.Add($"""type U{tag} is Data:{"\n"}{String.concat "\n" ctors}{"\n"}""")
+                    let linear = field_types |> Array.exists (Array.exists linear_ty)
+                    if linear then linear_unions.Add tag |> ignore
+                    types.Add($"""type U{tag} is {(if linear then "Type" else "Data")}:{"\n"}{String.concat "\n" ctors}{"\n"}""")
                     tag)
         and union_tag (cases : Map<int * string, Ty>) : int = union_memo.Force() cases
+        and linear_ty = function
+            | YArray _ -> true
+            | YFun _ -> true
+            | YUnion u -> linear_unions.Contains (union_tag u.Item.cases)
+            | _ -> false
         let lit = function
             | LitInt32 x -> $"{{{uint32 x} : U32}}"
             | LitUInt32 x -> $"{{{x} : U32}}"
             | LitBool x -> if x then "True{}" else "False{}"
             | LitString x -> bendString x
             | LitChar x -> $"{{{int x} : U32}}"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> "F32.div(1.0, 0.0)"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> "F32.div(F32.neg(1.0), 0.0)"
+            | LitFloat32 x when Single.IsNaN x -> "F32.div(0.0, 0.0)"
+            | LitFloat32 x when x < 0.0f -> "F32.neg(" + add_dec_point ((-x).ToString("R", Globalization.CultureInfo.InvariantCulture)) + ")"
+            | LitFloat32 x -> add_dec_point (x.ToString("R", Globalization.CultureInfo.InvariantCulture))
             | l -> unsupported $"the literal %A{l}"
         let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
         let tup d =
@@ -171757,6 +171952,43 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
         let param (L(i,t)) = $"+v{i}: {tyv t}"
         let params (vs : TyV seq) = vs |> Seq.map (fun v -> ", " + param v) |> String.concat ""
         let args (vs : TyV seq) = vs |> Seq.map (fun (L(i,_)) -> $", v{i}") |> String.concat ""
+        let array_helper_suffixes = Dictionary<string, int>()
+        let nested_array_creators = HashSet<string>()
+        let array_suffix (element : Ty) =
+            let element_type = tup_ty element
+            match array_helper_suffixes.TryGetValue element_type with
+            | true, k -> $"_a{k}"
+            | _ ->
+                let k = array_helper_suffixes.Count
+                array_helper_suffixes.[element_type] <- k
+                defs.Add(bendArrayHelpers.Replace("__T__", element_type).Replace("__K__", $"_a{k}"))
+                $"_a{k}"
+        let array_element (d : Data) =
+            match data_free_vars d with
+            | [|L(_, YArray element)|] -> element
+            | _ -> raise_codegen_error "Compiler error: Expected an array."
+        let default_depth_limit = 8
+        let rec default_value (depth : int) (t : Ty) : string =
+            if depth > default_depth_limit then unsupported $"default values of the recursive type {show_ty t}"
+            match t with
+            | YPrim (Int32T | UInt32T | CharT) -> "{0 : U32}"
+            | YPrim BoolT -> "False{}"
+            | YPrim StringT -> bendString ""
+            | YPrim Float32T -> "0.0"
+            | YUnion u ->
+                let cases = u.Item.cases
+                let tag = union_tag cases
+                let field_types (_, t) = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> t)
+                let indexed = cases |> Map.toArray |> Array.mapi (fun c case -> c, field_types case)
+                let c, fields = indexed |> Array.minBy (fun (_, fields) -> fields.Length)
+                let values = fields |> Array.map (default_value (depth + 1)) |> String.concat ", "
+                $"U{tag}c{c}{{{values}}}"
+            | _ -> unsupported $"default values of the type {show_ty t}"
+        let default_tuple (element : Ty) =
+            match tyvs element |> Array.map (fun (L(_,t)) -> default_value 0 t) with
+            | [||] -> "Unit{}"
+            | [|x|] -> x
+            | xs -> xs |> String.concat ", " |> sprintf "(%s)"
         let rec emit_def (name : string) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
             let text = StringBuilder()
             binds name "  " (tup_ty range) text (ResizeArray parameters) body
@@ -171841,8 +172073,18 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 $"IO.pure({result}, U{tag}c{i}{{{values}}})"
             | TyJoinPoint(JPMethod(a,c), arguments) ->
                 let arguments = arguments |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
-                $"method{(method (a,c)).tag}({arguments})"
+                $"{method_names.[(method (a,c)).tag]}({arguments})"
+            | TyJoinPoint(JPClosure(a,c), captured) ->
+                let tag = (closure (a,c)).tag
+                let captured_args = captured |> Array.map (fun (L(i,_)) -> $"v{i}, ") |> String.concat ""
+                $"IO.pure({result}, d => closure{tag}({captured_args}d))"
+            | TyApply(L(i,_), b) -> $"v{i}({tup b})"
             | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int32T | UInt32T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
+            | TyConv(YPrim Float32T, b) when prim_of b = Some Float32T -> $"IO.pure({result}, {tup b})"
+            | TyConv(YPrim Float32T, b) when prim_of b = Some Int32T -> $"IO.pure({result}, spiral_i32_to_f32({tup b}))"
+            | TyConv(YPrim Float32T, b) when prim_of b = Some UInt32T -> $"IO.pure({result}, U32.to_f32({tup b}))"
+            | TyConv(YPrim Int32T, b) when prim_of b = Some Float32T -> $"IO.pure({result}, spiral_f32_to_i32({tup b}))"
+            | TyConv(YPrim UInt32T, b) when prim_of b = Some Float32T -> $"IO.pure({result}, F32.to_u32({tup b}))"
             | TyOp(Printf, [DLit (LitString fmt); b]) ->
                 let pieces =
                     printf_pieces fmt (data_term_vars b) |> List.map (function
@@ -171856,6 +172098,20 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 match pieces with
                 | [] -> "IO.pure(Unit, Unit{})"
                 | pieces -> $"""IO.write({String.concat " ++ " pieces})"""
+            | TyArrayCreate(a, b) ->
+                match tyvs a with
+                | [|L(_, YArray inner)|] ->
+                    let outer = array_suffix a
+                    let name = $"spiral_array_new_nested{outer}"
+                    if nested_array_creators.Add name then
+                        let inner_type = tyv (YArray inner)
+                        let outer_type = tyv (YArray a)
+                        defs.Add($"@unsafe\ndef {name}(+length: U32) -> IO({outer_type}):\n  do IO<{outer_type}>:\n    +empty : {inner_type} <- spiral_array_new{array_suffix inner}(0, {default_tuple inner})\n    spiral_array_new{outer}(length, empty)\n")
+                    $"{name}({tup b})"
+                | _ -> $"spiral_array_new{array_suffix a}({tup b}, {default_tuple a})"
+            | TyArrayLength(_, b) -> $"IO.pure({result}, spiral_array_length{array_suffix (array_element b)}({tup b}))"
+            | TyOp(ArrayIndex, [a;b]) -> $"spiral_array_get{array_suffix (array_element a)}({tup a}, {tup b})"
+            | TyOp(ArrayIndexSet, [a;b;c]) -> $"spiral_array_set{array_suffix (array_element a)}({tup a}, {tup b}, {tup c})"
             | TyStringLength(_, b) -> $"IO.pure({result}, spiral_string_bytes({tup b}))"
             | TyOp(StringSlice, [a;b;c]) -> $"spiral_string_slice({tup a}, {tup b}, {tup c})"
             | TyOp(op, l) ->
@@ -171863,9 +172119,22 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 let unary f = match l with [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
                 let is_bool = match l with x :: _ -> prim_of x = Some BoolT | [] -> false
                 let is_string = match l with x :: _ -> prim_of x = Some StringT | [] -> false
+                let is_float = match l with x :: _ -> prim_of x = Some Float32T | [] -> false
                 let expr =
                   match op with
                   | Dyn -> unary id
+                  | Add when is_float -> bin (sprintf "F32.add(%s, %s)")
+                  | Sub when is_float -> bin (sprintf "F32.sub(%s, %s)")
+                  | Mult when is_float -> bin (sprintf "F32.mul(%s, %s)")
+                  | Div when is_float -> bin (sprintf "F32.div(%s, %s)")
+                  | Mod when is_float -> bin (sprintf "F32.mod(%s, %s)")
+                  | LT when is_float -> bin (sprintf "F32.is_lt(%s, %s)")
+                  | LTE when is_float -> bin (sprintf "F32.is_le(%s, %s)")
+                  | GT when is_float -> bin (sprintf "F32.is_gt(%s, %s)")
+                  | GTE when is_float -> bin (sprintf "F32.is_ge(%s, %s)")
+                  | EQ when is_float -> bin (sprintf "F32.is_eq(%s, %s)")
+                  | NEQ when is_float -> bin (sprintf "F32.is_ne(%s, %s)")
+                  | Neg when is_float -> unary (sprintf "F32.neg(%s)")
                   | Add -> bin (sprintf "U32.add(%s, %s)")
                   | Sub -> bin (sprintf "U32.sub(%s, %s)")
                   | Mult -> bin (sprintf "U32.mul(%s, %s)")
@@ -171905,9 +172174,40 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                     dict.[(jp_body,key)] <- tag
                     let args = codegenMethodKeyArgs key
                     match codegenMethodBody env backend_nameBend jp_body key with
-                    | body, range, _ -> emit_def $"method{tag}" (rdata_free_vars args) range body
+                    | body, range, name ->
+                        method_names.[tag] <- generatedMethodName name tag
+                        emit_def method_names.[tag] (rdata_free_vars args) range body
                     tag)
         and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+        and closure_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key & (C(args,_,fun_ty))) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    match fun_ty with
+                    | YFun(domain_ty, range, _) ->
+                        match codegenClosureBody env backend_nameBend jp_body key with
+                        | domain_args, body ->
+                            let captured = rdata_free_vars args
+                            let domain = data_free_vars domain_args
+                            let text = StringBuilder()
+                            match domain with
+                            | [||] -> ()
+                            | [|_|] -> ()
+                            | vs -> text.Append($"""  ({vs |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "}) = d{"\n"}""") |> ignore
+                            binds $"closure{tag}" "  " (tup_ty range) text (ResizeArray(Array.append captured domain)) body
+                            let domain_param =
+                                match domain with
+                                | [|v|] -> param v
+                                | _ -> $"+d: {tup_ty domain_ty}"
+                            let captured_params = captured |> Array.map (fun v -> param v + ", ") |> String.concat ""
+                            defs.Add($"@unsafe\ndef closure{tag}({captured_params}{domain_param}) -> IO({tup_ty range}):\n{text}")
+                    | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
+                    tag)
+        and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
 
         let unitMain =
             match Array.tryLast x with
@@ -172011,6 +172311,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
 
     /// ### codegenGleam
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray<string>()
@@ -172164,7 +172465,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 let b' = b
                 let args = args b
                 match a with
-                | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+                | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure (a, b) ->
                     let tag = (closure (a, b)).tag
                     let fv =
@@ -172593,7 +172894,9 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
             jp (fun ((jp_body,key),i) ->
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env "Gleam" jp_body key with
-                | a, range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                | a, range, name ->
+                    method_names.[i] <- (generatedMethodName name i).ToLowerInvariant()
+                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
                 let range_ty = tup_ty x.range
                 let is_fn = range_ty |> SpiralSm.starts_with "fn(Nil  ) -> "
@@ -172601,7 +172904,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                     if is_fn
                     then $"{range_ty} {{ fn(_)"
                     else range_ty
-                line s $"method{x.tag}({args_tys x.free_vars}) -> {ret} {{"
+                line s $"{method_names.[x.tag]}({args_tys x.free_vars}) -> {ret} {{"
                 binds (indent s) x.body
                 if is_fn
                 then line s "(    Nil  )}}"
@@ -172792,6 +173095,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
 
     /// ### codegenLua
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let luaHelpers = System.Collections.Generic.List<string>()
         let useLuaHelper (text : string) = if not (luaHelpers.Contains text) then luaHelpers.Add text
         let luaWrapHelpers =
@@ -172945,7 +173249,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 let b' = b
                 let args = args b
                 match a with
-                | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+                | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure (a, b) ->
                     let tag = (closure (a, b)).tag
                     let fv =
@@ -173325,9 +173629,11 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
             jp (fun ((jp_body,key),i) ->
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env "Lua" jp_body key with
-                | a, range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                | a, range, name ->
+                    method_names.[i] <- generatedMethodName name i
+                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
-                line s (sprintf "function method%i(%s)" x.tag (args_tys x.free_vars))
+                line s (sprintf "function %s(%s)" method_names.[x.tag] (args_tys x.free_vars))
                 binds (indent s) x.body
                 line s "end"
                 )
@@ -173527,6 +173833,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
 
     /// ### codegenTypeScript
     let codegenTypeScript (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray()
@@ -173699,7 +174006,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
             let block (s : CodegenEnv) ret (x : TypedBind []) = binds (indent s) ret x
             let jp (a, b) =
                 match a with
-                | JPMethod(a,c) -> $"method{(method (a,c)).tag}({args b})"
+                | JPMethod(a,c) -> $"{method_names.[(method (a,c)).tag]}({args b})"
                 | JPClosure(a,c) -> $"closure{(closure (a,c)).tag}({args b})"
             let layout_index (i : int) (fields : TyV []) =
                 match ret with
@@ -174042,9 +174349,11 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
             jp (fun ((jp_body,key),i) ->
                 let args = codegenMethodKeyArgs key
                 match codegenMethodBody env backend_nameTypeScript jp_body key with
-                | a, range, _ -> {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
+                | a, range, name ->
+                    method_names.[i] <- generatedMethodName name i
+                    {tag=i; free_vars=rdata_free_vars args; range=range; body=a}
                 ) (fun s x ->
-                line s $"function method{x.tag}({param_list x.free_vars}): {tup_ty x.range} {{"
+                line s $"function {method_names.[x.tag]}({param_list x.free_vars}): {tup_ty x.range} {{"
                 let saved = self_loop
                 if self_tail x.tag x.body then
                     self_loop <- Some (x.tag, x.free_vars)
@@ -174921,7 +175230,9 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                     line s_fun (sprintf "static inline void ClosureDecrefBody%i(Closure%i * x){" i i)
                     let _ =
                         let s_fun = indent s_fun
-                        x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
+                        match x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 with
+                        | [||] -> line s_fun "(void)x;"
+                        | decrefs -> decrefs |> line' s_fun
                     line s_fun "}"
 
                     print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
@@ -175035,7 +175346,9 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                     line s_fun (sprintf "static inline void %sDecrefBody%i(%s * x){" name i name')
                     let _ =
                         let s_fun = indent s_fun
-                        x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 |> line' s_fun
+                        match x.free_vars |> refc_change (fun i -> $"x->v{i}") -1 with
+                        | [||] -> line s_fun "(void)x;"
+                        | decrefs -> decrefs |> line' s_fun
                     line s_fun "}"
 
                     print_decref s_fun $"{name}Decref{i}" name' $"{name}DecrefBody{i}"
@@ -175172,6 +175485,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                             line s_fun $"{len_t} len = x->len;"
                             line s_fun $"{ptr_t} * ptr = x->ptr;"
                             ) s_fun -1
+                        if Array.isEmpty (x.tyvs |> refc_change (fun _ -> "v") -1) then line s_fun "(void)x;"
                     line s_fun "}"
 
                     print_decref s_fun $"ArrayDecref{i}" $"Array{i}" $"ArrayDecrefBody{i}"
@@ -175258,7 +175572,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
 
                 let program = StringBuilder()
 
-                globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+                Seq.append env.globals globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
                 fwd_dcls |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 types |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 functions |> Seq.iter (fun x -> program.Append(x) |> ignore)
@@ -176474,7 +176788,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
 
         type UnionRec = {tag : int; free_vars : Map<int * string, TyV[]>} // ws: union cases are keyed `tag * name`
         type LayoutRec = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>} // ws: record keys are `int * string`
-        type MethodRec = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]}
+        type MethodRec = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string}
         type ClosureRec = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
 
         type BindsReturn =
@@ -176657,7 +176971,7 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 let jp (a,b) =
                     let args = args b
                     match a with
-                    | JPMethod(a,b) -> sprintf "method%i(%s)" (method (a,b)).tag args
+                    | JPMethod(a,b) -> sprintf "%s(%s)" (method (a,b)).name args
                     | JPClosure(a,b) -> sprintf "Closure%i(%s)" (closure (a,b)).tag args
                 let layout_index i x' =
                     x' |> Array.map (fun (L(i',_)) -> $"v{i}.v{i'}")
@@ -176880,11 +177194,11 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
                 )
             and method : _ -> MethodRec =
                 jp false (fun ((jp_body,key),i) -> // ws: the key's shape differs per core
-                    let a, range, _ = codegenMethodBody part_eval_env backend_name jp_body key // ws: CodegenAdapter (raises on a malformed table)
-                    {tag=i; free_vars=rdata_free_vars (codegenMethodKeyArgs key); range=range; body=a}
+                    let a, range, name = codegenMethodBody part_eval_env backend_name jp_body key // ws: CodegenAdapter (raises on a malformed table)
+                    {tag=i; free_vars=rdata_free_vars (codegenMethodKeyArgs key); range=range; body=a; name=generatedMethodName name i}
                     ) (fun s x ->
                     let method_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"v{i} : {annot t}") |> String.concat ", "
-                    line s $"def method{x.tag}({method_args}) -> {tup_annot x.range}:"
+                    line s $"def {x.name}({method_args}) -> {tup_annot x.range}:"
                     let saved = self_loop.Value
                     if self_tail x.tag x.body then // ws: see self_loop
                         self_loop.Value <- Some (x.tag, x.free_vars)

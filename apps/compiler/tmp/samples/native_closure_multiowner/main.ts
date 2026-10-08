@@ -36,11 +36,11 @@ function closure0(v0: string): ((a0: number) => number) {
         return v3;
     };
 }
-function method1(v0: ((a0: number) => number), v1: number): number {
+function apply_1(v0: ((a0: number) => number), v1: number): number {
     return v0(v1);
 }
 function method0(v0: ((a0: number) => number), v1: number): number {
-    let v2: number = method1(v0, v1);
+    let v2: number = apply_1(v0, v1);
     let v3: number = (v2 + 1) | 0;
     return v3;
 }

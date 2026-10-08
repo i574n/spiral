@@ -25,7 +25,7 @@ class US0_1(NamedTuple): # Values
     v0 : cp.ndarray
     tag = 1
 US0 = Union[US0_0, US0_1]
-def method0(v0 : US0) -> i32:
+def score_0(v0 : US0) -> i32:
     match v0:
         case US0_0(): # Empty
             del v0
@@ -51,7 +51,7 @@ def main():
     v1[1] = 5
     v2 = US0_1(v1)
     del v1
-    v3 = method0(v2)
+    v3 = score_0(v2)
     del v2
     v4 = v3 - 11
     del v3

@@ -1,9 +1,9 @@
-function method1(v0: number): boolean {
+function is_answer_1(v0: number): boolean {
     let v1: boolean = v0 === 42;
     return v1;
 }
 function method0(v0: number): boolean {
-    return method1(v0);
+    return is_answer_1(v0);
 }
 export function main(): number {
     let v0: number = 42;

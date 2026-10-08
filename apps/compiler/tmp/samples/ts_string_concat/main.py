@@ -16,7 +16,7 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-def method0(v0 : bool) -> string:
+def choose_left_0(v0 : bool) -> string:
     if v0:
         del v0
         v1 = "spi"
@@ -25,7 +25,7 @@ def method0(v0 : bool) -> string:
         del v0
         v2 = "bad"
         return v2
-def method1(v0 : bool) -> string:
+def choose_right_1(v0 : bool) -> string:
     if v0:
         del v0
         v1 = "bad"
@@ -36,10 +36,10 @@ def method1(v0 : bool) -> string:
         return v2
 def main():
     v0 = True
-    v1 = method0(v0)
+    v1 = choose_left_0(v0)
     del v0
     v2 = False
-    v3 = method1(v2)
+    v3 = choose_right_1(v2)
     del v2
     v4 = v1 + v3
     del v1, v3

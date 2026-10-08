@@ -147,19 +147,54 @@ def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
   spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
 
 @unsafe
-def method0(+v0: String) -> IO(String):
+def spiral_i32_to_f32(+value: U32) -> F32:
+  spiral_i32_to_f32_signed(value, spiral_i32_is_negative(value))
+
+@unsafe
+def spiral_i32_to_f32_signed(+value: U32, negative: Bool) -> F32:
+  match negative:
+    case True{}:
+      F32.neg(U32.to_f32(U32.sub(0, value)))
+    case False{}:
+      U32.to_f32(value)
+
+@unsafe
+def spiral_f32_to_i32(+value: F32) -> U32:
+  spiral_f32_to_i32_signed(value, F32.is_lt(value, 0.0))
+
+@unsafe
+def spiral_f32_to_i32_signed(+value: F32, negative: Bool) -> U32:
+  match negative:
+    case True{}:
+      U32.sub(0, F32.to_u32(F32.neg(value)))
+    case False{}:
+      F32.to_u32(value)
+@unsafe
+def spiral_array_depth_go(+wanted: U32, +size: U32, +depth: U32, done: Bool) -> U32:
+  match done:
+    case True{}:
+      depth
+    case False{}:
+      spiral_array_depth_go(wanted, U32.shl(size), U32.add(depth, 1), U32.is_le(wanted, U32.shl(size)))
+
+@unsafe
+def spiral_array_depth(+wanted: U32) -> U32:
+  spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
+
+@unsafe
+def empty_middle_0(+v0: String) -> IO(String):
   do IO<String>:
     +v1 : String <- spiral_string_slice(v0, {2 : U32}, {1 : U32})
     return v1
 
 @unsafe
-def method1(+v0: String) -> IO(String):
+def empty_end_1(+v0: String) -> IO(String):
   do IO<String>:
     +v1 : String <- spiral_string_slice(v0, {5 : U32}, {4 : U32})
     return v1
 
 @unsafe
-def method2(+v0: String) -> IO(String):
+def empty_source_2(+v0: String) -> IO(String):
   do IO<String>:
     +v1 : String <- spiral_string_slice(v0, {0 : U32}, {4294967295 : U32})
     return v1
@@ -238,10 +273,10 @@ def spiral_main_if1(+c: Bool, +v0: String, +v1: String, +v2: String, +v3: String
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "alpha")
-    +v1 : String <- method0(v0)
-    +v2 : String <- method1(v0)
+    +v1 : String <- empty_middle_0(v0)
+    +v2 : String <- empty_end_1(v0)
     +v3 : String <- IO.pure(String, "")
-    +v4 : String <- method2(v3)
+    +v4 : String <- empty_source_2(v3)
     +v5 : String <- IO.pure(String, String.append(v1, v2))
     +v6 : String <- IO.pure(String, String.append(v4, "ok"))
     +v7 : String <- IO.pure(String, String.append(v5, v6))
