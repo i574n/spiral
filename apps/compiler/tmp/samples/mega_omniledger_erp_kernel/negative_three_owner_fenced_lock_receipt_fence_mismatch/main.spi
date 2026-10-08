@@ -1,4 +1,3 @@
-// a fence-two history cannot stand for fence three in a multiprocess fenced commit receipt (lane H 2026-10-06 rewrite; retired erp_p2p_three_owner_fenced_lock_receipt -> ErpP2PMultiprocessFencedCommit)
 open main
 
 inl impossible_three_owner_fenced_lock_receipt_fence_mismatch () : erp_p2p_multiprocess_fenced_commit_receipt nat_one nat_three nat_four requisition_drafted goods_partially_received =

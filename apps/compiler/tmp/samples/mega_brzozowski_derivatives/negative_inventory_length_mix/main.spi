@@ -1,7 +1,5 @@
 open inventory_indexed_model
 
-// A three-slot inventory must not inhabit the two-slot length carried by the
-// indexed core. This is a direct GADT length mismatch, not a runtime check.
 inl impossible_vector () : finite_symbol_vector tri_alphabet model_two_length =
     tri_finite_symbol_vector ()
 

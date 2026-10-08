@@ -1,4 +1,3 @@
-// The Application constructor rejects a Unit argument for the Bool-domain Lambda built from a recursive beta derivation's open body (successor of the retired exact_linear_indexed_closed_recursive_beta_open_body).
 open main
 
 inl impossible_recursive_beta_source_argument_mismatch () : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_tensor_type exact_linear_bool_type exact_linear_unit_type) =

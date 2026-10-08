@@ -1,7 +1,5 @@
 open main
 
-// a recorded-primary fact (indexed by the one-entry primary history) cannot be observed against the empty history (RecordedHashPrimary is nullary now: the caller membership argument is retired)
-
 inl impossible_unified_evidence_observation_wrong_history () :
     typed_fx_hashed_statement_closed_decision =
     inl empty_history, _ =

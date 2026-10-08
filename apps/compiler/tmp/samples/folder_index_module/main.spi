@@ -1,6 +1,3 @@
-// `lib` names the folder lib/ here (no `open lib`): `lib.seven` reaches its index module lib/lib's member, in top-down
-// code, in bottom-up code (`real`, nominal bodies) and in types; `lib.extra` is the sibling module; `lib.lib.seven`
-// still works. The exit code is the verdict: 0.
 nominal held = `(lib.make_wrapped `(i32) 7i32)
 inl main () : i32 =
     inl a = lib.seven ()

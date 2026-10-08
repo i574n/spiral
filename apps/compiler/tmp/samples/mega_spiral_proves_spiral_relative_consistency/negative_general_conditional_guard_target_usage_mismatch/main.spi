@@ -1,4 +1,3 @@
-// A Conditional guard congruence step must preserve the exact target usage: an empty target merge cannot inhabit a used target index (ExactLinearIndexedReductionConditionalGuard is retired; its successor is the small step ExactLinearIndexedConditionalGuardStep).
 open main
 
 inl impossible_general_conditional_guard_target_usage_mismatch (guard_step : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_indexed_usage_empty exact_linear_bool_type) (branch : exact_linear_indexed_term exact_linear_free_context_empty exact_linear_indexed_usage_empty exact_linear_unit_type) : exact_linear_indexed_small_step exact_linear_free_context_empty exact_linear_indexed_usage_empty (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_unit_type =

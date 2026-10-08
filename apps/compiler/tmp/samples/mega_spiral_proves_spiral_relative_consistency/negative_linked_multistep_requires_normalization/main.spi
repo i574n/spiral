@@ -1,4 +1,3 @@
-// The linked multistep authority stores only a program-derived normalization: an unlinked public program cannot be repacked as it (the old public multistep trace type is retired; exact_linear_indexed_closed_bool_program is the public successor).
 open main
 
 inl impossible_linked_multistep_requires_normalization (trace : exact_linear_indexed_closed_bool_program exact_linear_closed_bool_false_normal) : exact_linear_indexed_closed_bool_linked_multistep exact_linear_closed_bool_false_normal =

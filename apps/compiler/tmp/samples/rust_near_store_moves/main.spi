@@ -1,7 +1,3 @@
-// NEAR's persistent collections don't implement Clone: lib/spiral's native `near.vector` (`SpiralNearVec`, a plain Vec
-// off wasm32) and `near_sdk::store::*` (here a local stand-in module, so the program builds without near-sdk). A
-// contract's state record holding one is returned from a join point and passed to another by moving it, so a contract's
-// `new` can return its state directly (it was `.clone()` before: rustc E0599).
 nominal vector t = $'SpiralNearVec<`t>'
 nominal lookup_map k v = $'near_sdk::store::LookupMap<`k, `v>'
 

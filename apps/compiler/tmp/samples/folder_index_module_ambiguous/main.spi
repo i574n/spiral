@@ -1,5 +1,5 @@
-// Expected: a compile error naming both `lib/extra` (the sibling module) and `lib.lib.extra` (the index module's
-// member): `lib.extra` is ambiguous, never a silent pick.
 inl main () : i32 =
     inl a = lib.extra.three ()
     a - 3i32
+
+inl expected_error_lib_extra_is_ambiguous () = ()

@@ -1,2 +1,1 @@
-// Defines `extra`, which is also the name of the sibling module lib/extra: `lib.extra` must be an error.
 inl extra () : i32 = 1i32

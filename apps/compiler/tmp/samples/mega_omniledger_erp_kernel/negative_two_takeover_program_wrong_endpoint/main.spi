@@ -1,4 +1,3 @@
-// a two-takeover program from fence one ends at fence three, not four (lane H 2026-10-06 rewrite; retired erp_p2p_two_takeover_program_from_owners -> program constructors)
 open main
 
 inl impossible_two_takeover_program_wrong_endpoint () : erp_p2p_fence_takeover_program nat_one nat_four =

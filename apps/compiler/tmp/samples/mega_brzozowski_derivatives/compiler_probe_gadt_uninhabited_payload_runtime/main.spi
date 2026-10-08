@@ -1,6 +1,3 @@
-// Runtime regression for specialized GADT constructors whose payload becomes
-// structurally uninhabited. The predecessor compiler typechecked this program,
-// but kept the impossible recursive branch and failed during codegen.
 nominal payload_zero = ()
 nominal payload_succ previous = previous
 

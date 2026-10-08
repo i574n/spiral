@@ -1,7 +1,5 @@
 open main
 
-// Constructive distinguishing-word search is shared by the root matcher module.
-
 let rec dfa_state_distinct_with_witness_against forall alphabet {symbol_compare}.
     (head : regex alphabet)
     (tail : regex_list alphabet)

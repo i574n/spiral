@@ -1,6 +1,5 @@
 open main
 
-// tests: an equality block of the root (12 = 12) cannot block the descent from twelve to its proper divisor (the legacy completion refusal wrapper is retired; this targets the surviving recursive_descent_blocked union directly)
 inl impossible_descent_unavailable_divisor_blocked_equal_root () =
     inl root_value = positive_positional_twelve_value ()
     match classify_certified_interval_positive_positional_sealed_factor root_value with

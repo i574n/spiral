@@ -1,8 +1,3 @@
-// lane G's FOR-D (2026-10-06): the Python backend emitted a self tail call as a real recursive call (`return
-// method0(v0, v1)`), so a loop of more than ~1,000 iterations died with RecursionError; the C, C++, Rust, Delphi, F# and
-// TypeScript backends loop (mega_brzozowski_derivatives/runtime_bench: an 8,192-slot array fill, fine everywhere else).
-// Python loops too since lane X's #73 (the method body runs in `while True:`, the self call reassigns its parameters).
-// Expected on every backend: exit 0.
 let rec count_down (n : i32) (acc : i32) : i32 =
     if !!!!LT(0i32, n) then
         inl n' = !!!!Sub(n, 1i32)

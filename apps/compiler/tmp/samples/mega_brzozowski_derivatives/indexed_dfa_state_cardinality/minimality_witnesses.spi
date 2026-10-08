@@ -1,10 +1,6 @@
 open main
 open semantic_witnesses
 
-// Retain one concrete distinguishing word for every unordered representative
-// pair. The nested GADT shape is triangular: a vector with n representatives
-// carries n-1 witnesses for its head, then the complete witness surface for the
-// remaining n-1 representatives.
 nominal indexed_dfa_pair_distinguishing_witness alphabet =
     regex alphabet * regex alphabet * linear_input alphabet
 
@@ -33,8 +29,6 @@ union indexed_dfa_distinguishing_against_validation alphabet tail_count =
         indexed_dfa_distinguishing_against alphabet tail_count ->
         indexed_dfa_distinguishing_against_validation alphabet tail_count
 
-// The distinguishing words come from the bisimulation capability captured at the seal (the representatives here are of
-// the sealed, existential alphabet, which has no symbol_compare instance of its own).
 inl rec indexed_dfa_build_distinguishing_against forall alphabet tail_count.
     (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
     (head : regex alphabet)
@@ -105,10 +99,6 @@ inl indexed_dfa_pairwise_distinguishing_shape forall alphabet representative_cou
     (_ : indexed_dfa_pairwise_distinguishing_witnesses alphabet representative_count)
     : bool = true
 
-// The base minimized seal checks quotient closure and bisimulation minimality.
-// This stronger typestate additionally retains a constructive separating word
-// for every representative pair, so consumers do not have to trust/replay a
-// minimality boolean.
 nominal indexed_dfa_minimality_witness alphabet symbol_count representative_count =
     indexed_dfa_bisimulation_capability alphabet *
     finite_symbol_vector alphabet symbol_count *
@@ -176,9 +166,6 @@ inl seal_indexed_dfa_fully_semantic_minimized_surface forall alphabet {symbol_co
             | IndexedDfaPairwiseDistinguishingRejected =>
                 IndexedDfaFullySemanticMinimizedSurfaceRejected
             | IndexedDfaPairwiseDistinguishingCertified pairwise_witnesses =>
-                // The semantic seal already established quotient closure. This
-                // layer adds constructive minimality evidence and then seals it
-                // as nominal typestate.
                 inl minimality_witness =
                     indexed_dfa_minimality_witness (
                         bisimulation_capability,
@@ -200,8 +187,6 @@ inl indexed_dfa_fully_semantic_surface_contract forall alphabet symbol_count clo
     | indexed_dfa_fully_semantic_minimized_surface (semantic_surface, minimality_witness) =>
         match semantic_surface with
         | indexed_dfa_semantic_minimized_surface (_, _, _, _, _, partition_witness, _) =>
-            // Partition, minimality and quotient closure are now all typestate.
-            // Exact row/state cardinality is carried by the shared indices.
             with_indexed_dfa_semantic_partition_witness partition_witness (fun coverage origins =>
                 inl _ = coverage
                 inl _ = origins
@@ -273,7 +258,6 @@ inl indexed_dfa_fully_semantic_program_passes forall alphabet.
     match run_indexed_dfa_fully_semantic_program program with
     | indexed_dfa_fully_semantic_check result => result
 
-// Run by the indexed_dfa_witness_contracts package (this package's main is listed before this module).
 inl indexed_dfa_minimality_witnesses_contract () : string =
     inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
     inl bit_sealed = seal_indexed_dfa_fully_semantic_minimized_surface bit_capability (ends_with_zero ()) (bit_indexed_finite_alphabet_descriptor ())

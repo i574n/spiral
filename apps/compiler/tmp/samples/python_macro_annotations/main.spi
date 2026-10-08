@@ -1,6 +1,3 @@
-// Macro types whose text is another backend's (`Result<i32, string>`, `System.Threading.CancellationToken`) in the
-// annotations Python evaluates: a method's parameters and a union case's NamedTuple fields. Their text used to be
-// written verbatim: a SyntaxError (or NameError) when Python ran the definition.
 nominal res = $'Result<i32, string>'
 nominal tok = $'System.Threading.CancellationToken'
 

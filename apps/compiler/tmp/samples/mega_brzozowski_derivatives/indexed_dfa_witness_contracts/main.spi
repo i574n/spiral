@@ -2,12 +2,6 @@ open semantic_witnesses
 open minimality_witnesses
 open exact_soundness_witnesses
 
-// The witness modules of indexed_dfa_state_cardinality: the semantic partition witness (quotient coverage and
-// representative origins as typestate), the constructive minimality witness (a distinguishing word for every pair of
-// representatives, found and checked against the direct-language matcher by the compiler) and the exact transition
-// soundness witness, each sealed for the bit and the three-letter alphabet. That package's main is listed before these
-// modules and cannot run them, so this package does. Every check is decided during compilation: the program only
-// returns the last contract's green string.
 inl main () : string =
     inl semantic = indexed_dfa_semantic_witnesses_contract ()
     inl minimality = indexed_dfa_minimality_witnesses_contract ()

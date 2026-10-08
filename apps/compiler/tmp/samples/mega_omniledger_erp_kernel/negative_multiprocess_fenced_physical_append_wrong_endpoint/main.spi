@@ -1,4 +1,3 @@
-// The receipt's fence endpoints come from the takeover program: the three-takeover program cannot be typed with endpoints one -> three (the store/outbox pair argument is now a commit tree).
 open main
 
 inl impossible_multiprocess_fenced_physical_append_wrong_endpoint () :

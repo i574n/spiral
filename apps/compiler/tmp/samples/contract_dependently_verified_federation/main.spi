@@ -578,8 +578,6 @@ inl base_main () : string =
     inl _ = inspected
     multihost_terminal (multihost_plan ())
 
-// v36: a second dependent authority layer that hides backend and quorum membership
-// while preserving tenant, epoch, registry root, revision and capability indices.
 nominal v36_tenant_blue = ()
 nominal v36_epoch_12 = ()
 nominal v36_epoch_13 = ()

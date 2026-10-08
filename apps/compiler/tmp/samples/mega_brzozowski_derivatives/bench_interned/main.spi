@@ -2,6 +2,4 @@ open main
 open runtime_workload
 open runtime_interned
 
-// Timing program: interned regex nodes with memoized derivatives (runtime_interned) alone on 2,000 random 32-bit inputs
-// against (0|1)*0 and against (0|1)*1(0|1)(0|1)(0|1). Exit 0 when the counts are the regex crate's on the same inputs (997, 985).
 inl main () : i32 = expect_random_counts (run_interned_random_workloads 2000i32 32i32) 997i32 985i32

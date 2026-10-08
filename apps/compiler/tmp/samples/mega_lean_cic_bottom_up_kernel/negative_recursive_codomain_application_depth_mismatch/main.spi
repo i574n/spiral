@@ -1,4 +1,3 @@
-// A recursive-codomain application records its program's depth in its index: the double-unary program cannot be typed as a single-unary application.
 open main
 
 inl impossible_corrected_cic_recursive_codomain_application_depth_mismatch () : corrected_cic_recursive_codomain_application (corrected_cic_substituted_codomain (corrected_cic_recursive_codomain_unary corrected_cic_recursive_codomain_identity) corrected_cic_closed_type_code_bool) =

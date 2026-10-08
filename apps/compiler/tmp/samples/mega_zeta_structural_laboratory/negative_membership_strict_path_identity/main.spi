@@ -1,6 +1,5 @@
 open main
 
-// tests: a factor membership projects a strict predecessor path from twelve to its divisor, never from twelve to itself (pattern variable root -> the type of twelve)
 inl impossible_membership_strict_path_identity () =
     inl twelve =
         classify_certified_interval_positive_positional_sealed_factor

@@ -92,7 +92,8 @@ function Get-SpiralNativeTools {
         Gleam = Resolve-SpiralTool 'gleam' @($env:SPIRAL_GLEAM, 'gleam')
         Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')
         Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
-        Node = Resolve-SpiralTool 'node' @($env:SPIRAL_NODE, 'node')
+        Bun = Resolve-SpiralTool 'bun' @($env:SPIRAL_BUN, 'bun')
+        BendMain = @($env:SPIRAL_BEND_MAIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/bend/bend2/main.ts'), $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/bend/bend2/main.ts' })) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
         Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, 'python', 'python3')
     }
 }

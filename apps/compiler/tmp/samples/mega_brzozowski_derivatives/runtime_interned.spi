@@ -1,20 +1,3 @@
-// A fourth run-time engine: derivatives over interned (hash-consed) regex nodes with a memoized derivative table, so a
-// derivative is computed once per (state, symbol) and every later step is two array reads: a lazily built DFA, as in
-// Owens, Reppy and Turon's "Regular-expression derivatives re-examined". The derivative matcher (main.accepts) builds
-// and reference-counts a regex tree per symbol instead.
-// -
-// Representation: one store of i32 arrays. A node is (kind, left, right) with kind 0 Empty, 1 Epsilon, 2 Char (left =
-// symbol index), 3 Alt, 4 Cat, 5 Star (left = body); Empty is node 0 and Epsilon node 1. An open-addressing table maps
-// (kind, left, right) to the node, so structurally equal nodes are one node and node equality is i32 equality. The
-// smart constructors normalize as they build (the same rules as main's make_alt/make_cat/make_star: alternatives
-// flattened, sorted and deduplicated, here sorted by node number, which is canonical because equal nodes have equal
-// numbers), so every node is in normal form and the reachable nodes are finite (Brzozowski).
-// -
-// Typing: the boundary is typed (a `regex bit_alphabet` is interned, a `linear_input bit_alphabet` is matched, the
-// symbol slot comes from a match on the bit_alphabet case), and the matcher handles nodes and symbol slots as the
-// nominals `interned_regex` and `bit_slot`, never as bare numbers; inside the store a node is an untyped i32 whose
-// invariants (kinds 0-5, children numbered below their parent) hold by construction only. runtime_bench checks the engine against
-// the derivative matcher, the backtracking matcher and the staged DFA on every native backend.
 open main
 open runtime_workload
 
@@ -39,13 +22,9 @@ inl i32_array_fill (array : i32_array) (size : i32) (value : i32) : () =
 inl i32_mul (a : i32) (b : i32) : i32 = !!!!Mult(a,b)
 inl i32_and (a : i32) (b : i32) : i32 = !!!!BitwiseAnd(a,b)
 
-// Capacity: 4,096 nodes (the workloads reach a few dozen), a hash table of 8,192 slots (load <= 1/2) and one derivative
-// slot per node and bit symbol. Running out is a failure, not a resize.
 inl interned_node_capacity () : i32 = 4096i32
 inl interned_table_mask () : i32 = 8191i32
 
-// kinds, lefts, rights, nullable (0/1), hash table (node + 1; 0 = empty slot), derivatives (target + 1; 0 = not yet
-// computed), node count (one element).
 nominal interned_store = i32_array * i32_array * i32_array * i32_array * i32_array * i32_array * i32_array
 
 inl interned_kinds (store : interned_store) : i32_array = match store with interned_store (kinds, _, _, _, _, _, _) => kinds
@@ -64,7 +43,6 @@ inl interned_nullable (store : interned_store) (node : i32) : bool = i32_eq (i32
 inl interned_hash (kind : i32) (left : i32) (right : i32) : i32 =
     i32_and (i32_add (i32_mul (i32_add (i32_mul kind 1024i32) left) 4099i32) right) (interned_table_mask ())
 
-// The node (kind, left, right), created if it is new. Children are nodes of the store already.
 let interned_node (store : interned_store) (kind : i32) (left : i32) (right : i32) : i32 =
     let rec probe (slot : i32) : i32 =
         inl entry = i32_array_get (interned_table store) slot
@@ -105,8 +83,6 @@ inl interned_store_create () : interned_store =
             i32_array_create (i32_add (interned_table_mask ()) 1i32),
             i32_array_create (i32_mul capacity 2i32),
             i32_array_create 1i32)
-    // The table, the derivative slots and the count start at 0 (filled explicitly: the backends do not promise zeroed
-    // arrays).
     i32_array_fill (interned_table store) (i32_add (interned_table_mask ()) 1i32) 0i32
     i32_array_fill (interned_derivatives store) (i32_mul capacity 2i32) 0i32
     i32_array_fill (interned_count store) 1i32 0i32
@@ -115,7 +91,6 @@ inl interned_store_create () : interned_store =
     if i32_eq empty (interned_empty ()) && i32_eq epsilon (interned_epsilon ()) then store
     else failwith "brzozowski-interned-store-init"
 
-// main.static_alt_insert_sorted over nodes: insert `term` (not an Alt) into a sorted, duplicate-free Alt chain.
 let rec interned_alt_insert (store : interned_store) (term : i32) (value : i32) : i32 =
     if i32_eq value (interned_empty ()) then term
     elif i32_eq (interned_kind store value) 3i32 then
@@ -158,7 +133,6 @@ inl bit_symbol_index (symbol : bit_alphabet) : i32 =
         | BitZero => 0i32
         | BitOne => 1i32
 
-// A typed regex into the store, normalized on the way (main.normalize's rules).
 let rec interned_of_regex_raw (store : interned_store) (value : regex bit_alphabet) : i32 =
     match value with
     | RegexEmpty => interned_empty ()
@@ -168,9 +142,6 @@ let rec interned_of_regex_raw (store : interned_store) (value : regex bit_alphab
     | RegexCat (left, right) => interned_make_cat store (interned_of_regex_raw store left) (interned_of_regex_raw store right)
     | RegexStar inner => interned_make_star store (interned_of_regex_raw store inner)
 
-// The typed surface the matcher uses: a node handed out by the store is an `interned_regex` (only interned_of_regex and
-// interned_derivative make one), a symbol position is a `bit_slot` (only bit_symbol_slot makes one), so a raw store
-// index, a kind or a symbol number cannot be passed where a node is expected. Nominals over i32: no run-time cost.
 nominal interned_regex = i32
 nominal bit_slot = i32
 
@@ -179,7 +150,6 @@ inl bit_symbol_slot (symbol : bit_alphabet) : bit_slot = bit_slot (bit_symbol_in
 inl interned_of_regex (store : interned_store) (value : regex bit_alphabet) : interned_regex =
     interned_regex (interned_of_regex_raw store value)
 
-// main.static_derivative over nodes, memoized per (node, symbol).
 let rec interned_derivative_raw (store : interned_store) (node : i32) (symbol : i32) : i32 =
     inl slot = i32_add (i32_mul node 2i32) symbol
     inl cached = i32_array_get (interned_derivatives store) slot
@@ -207,7 +177,6 @@ inl interned_derivative (store : interned_store) (node : interned_regex) (symbol
     match node, symbol with
     | interned_regex raw_node, bit_slot raw_symbol => interned_regex (interned_derivative_raw store raw_node raw_symbol)
 
-// Matching: one memoized derivative per symbol, the answer is the last node's nullability. The Empty node rejects early.
 let interned_accepts (store : interned_store) (start : interned_regex) (input : linear_input bit_alphabet) : bool =
     let rec loop (node : interned_regex) (input : linear_input bit_alphabet) : bool =
         match node with
@@ -219,8 +188,6 @@ let interned_accepts (store : interned_store) (start : interned_regex) (input : 
                 | InputCons (symbol, rest) => loop (interned_derivative store node (bit_symbol_slot symbol)) rest
     loop start input
 
-// runtime_workload's workloads with this engine: one store for the whole run, so later inputs reuse the derivatives the
-// earlier ones computed. The regexes are run-time values here too.
 inl interned_count_random (store : interned_store) (value : regex bit_alphabet) (length : i32) (count : i32) : i32 =
     inl ~dynamic = value
     inl start = interned_of_regex store dynamic

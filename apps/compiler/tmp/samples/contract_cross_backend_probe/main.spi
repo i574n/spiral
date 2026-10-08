@@ -578,8 +578,6 @@ inl base_main () : string =
     inl _ = inspected
     multihost_terminal (multihost_plan ())
 
-// v36: a second dependent authority layer that hides backend and quorum membership
-// while preserving tenant, epoch, registry root, revision and capability indices.
 nominal v36_tenant_blue = ()
 nominal v36_epoch_12 = ()
 nominal v36_epoch_13 = ()
@@ -787,7 +785,6 @@ inl federation_main () : string =
     inl terminal = v36_terminal (v36_plan_value ())
     v36_emit base artifact quorum terminal
 
-// v36b: a higher-ranked hot-swap transaction layered over the federation proof.
 nominal v36b_zone_orbit = ()
 nominal v36b_epoch_21 = ()
 nominal v36b_root_green = ()

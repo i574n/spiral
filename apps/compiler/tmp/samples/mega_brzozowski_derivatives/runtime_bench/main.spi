@@ -2,10 +2,6 @@ open main
 open runtime_workload
 open runtime_interned
 
-// The four matchers on the same run-time inputs (200 random 32-bit inputs against (0|1)*0 and (0|1)*1(0|1)(0|1)(0|1),
-// then 0^n and 0^n 1 for n = 1..16 against (0|00)*1): the derivative matcher, the naive backtracking matcher, the
-// staged DFA (derivatives taken by the compiler) and interned nodes with memoized derivatives (runtime_interned). Exit 0
-// when all four return the same counts and those are the counts Rust's regex crate gives on the same inputs (93, 97, 16).
 inl same_counts (left : i32 * i32 * i32) (right : i32 * i32 * i32) : () =
     match left, right with
     | (a, b, c), (x, y, z) =>

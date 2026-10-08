@@ -16,10 +16,6 @@ inl swapped_bit_vector () : finite_symbol_vector bit_alphabet bit_finite_length 
 inl swapped_bit_indexed_descriptor () : indexed_finite_alphabet_descriptor bit_alphabet =
     indexed_finite_alphabet_descriptor (exists (swapped_bit_vector ()))
 
-// The indexed capability used to remember only expected cardinality. For a
-// generic alphabet that is not enough: a different ordered subset with the same
-// number of symbols could self-certify. Keep an authoritative symbol list in the
-// capability and require the indexed descriptor to match it exactly.
 union indexed_authority_probe_symbol =
     | IndexedAuthorityProbeA
     | IndexedAuthorityProbeB

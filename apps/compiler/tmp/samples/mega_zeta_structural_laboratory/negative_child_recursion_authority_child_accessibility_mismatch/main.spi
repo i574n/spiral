@@ -1,4 +1,3 @@
-// The child accessibility of a child recursion authority must be the child's (two), not the parent's (three) (the descent is now derived directly; the RecursiveDescentProven decision wrapper is retired).
 open main
 
 inl impossible_child_recursion_authority_child_accessibility_mismatch () :

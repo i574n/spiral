@@ -1,8 +1,3 @@
-// String literals in macro text, spelled with a path (`std::rc::Rc::<str>::from("..")`, `::std::rc::..`,
-// `crate::Rc::..`) next to the bare `Rc::<str>::from("..")` and a Spiral literal. codegenRust's last pass caches every
-// bare literal in a thread_local; a path-qualified one is cached as a whole (its prefix kept) or, for a path it does
-// not know, left alone. Before, the pass rewrote only the `Rc::<str>::from(..)` suffix and rustc rejected
-// `std::rc::{ thread_local!{..} .. }`.
 inl native (n : i32) : i32 =
     inl a : string = $'std::rc::Rc::<str>::from("abc")'
     inl b : string = $'::std::rc::Rc::<str>::from("de")'

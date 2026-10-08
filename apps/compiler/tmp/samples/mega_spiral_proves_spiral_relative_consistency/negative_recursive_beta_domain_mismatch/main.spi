@@ -1,4 +1,3 @@
-// The recursive beta derivation's domain is its argument's type: a Unit argument cannot form a Bool-domain derivation (successor of the retired ExactLinearIndexedClosedRecursiveBetaRelation).
 open main
 
 inl impossible_recursive_beta_domain_mismatch () : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type =

@@ -126,7 +126,7 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp run_host("javascript", path, opts, timeout, deadline) do
-    run_program(Toolchain.node(opts), "node", [path], opts, timeout, deadline, false)
+    run_program(Toolchain.bun(opts), "bun", [path], opts, timeout, deadline, false)
   end
 
   defp run_host("powershell", path, opts, timeout, deadline) do

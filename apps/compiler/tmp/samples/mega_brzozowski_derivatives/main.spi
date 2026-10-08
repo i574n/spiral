@@ -130,9 +130,6 @@ inl tri_finite_index_two () : finite_symbol_index tri_finite_length = FiniteSymb
 nominal finite_alphabet_descriptor alphabet =
     symbol_list alphabet * alphabet_cardinality
 
-// The alphabet inventory checks below are `inl`: alphabets are finite and known at compile time, so the compiler decides
-// them, and a certificate (or an `exists` package) built under them is built under a compile-time branch.
-
 inl rec symbol_list_lookup forall alphabet.
     (symbols : symbol_list alphabet)
     (rank : alphabet_rank) : alphabet_rank_lookup alphabet =
@@ -875,7 +872,6 @@ let rec regex_list_contains forall alphabet {symbol_compare}.
     | RegexListCons (head, tail) =>
         if regex_equal needle head then true else regex_list_contains needle tail
 
-// Run-time set equality of two state lists (a closure computed at compile time against one computed at run time).
 let rec regex_list_subset forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
     match left with
     | RegexListNil => true
@@ -884,9 +880,6 @@ let rec regex_list_subset forall alphabet {symbol_compare}. (left : regex_list a
 inl regex_list_set_equal forall alphabet {symbol_compare}. (left : regex_list alphabet) (right : regex_list alphabet) : bool =
     if regex_list_subset left right then regex_list_subset right left else false
 
-// Static derivatives: nullable/regex_compare/make_alt/make_cat/normalize/derivative again, as `inl` functions, so the
-// compiler runs them on regexes known at compile time (the `let` versions above are join points: their results are
-// run-time values). The indexed DFA capability below and runtime_workload's staged DFA take their derivatives here.
 inl rec static_nullable forall alphabet. (value : regex alphabet) : bool =
     match value with
     | RegexEmpty => false
@@ -1358,8 +1351,6 @@ let rec dfa_minimal_by_bisimulation forall alphabet {symbol_compare}.
             dfa_minimal_by_bisimulation tail symbols
         else false
 
-// Constructive counterpart to the bisimulation boolean. When two states are
-// not language-equivalent, retain an actual word whose acceptance differs.
 let rec dfa_constructive_input_snoc forall alphabet.
     (input : linear_input alphabet)
     (symbol : alphabet)
@@ -1529,12 +1520,6 @@ let rec dfa_quotient_closed forall alphabet {symbol_compare}.
             dfa_quotient_closed rest symbols representatives
         else false
 
-// Static minimization: bisimulation, representative search, minimization, the minimality and quotient checks and the
-// constructive distinguishing words again, as `inl` functions over the static derivatives, so the compiler minimizes a
-// DFA whose closure it already knows (the `let rec` versions above are join points: their results are run-time values,
-// and an `inl rec` that packs their result into a length-indexed vector never terminates). indexed_dfa_state_cardinality
-// seals its minimized surfaces with these. Unlike dfa_quotient_state_closed, the quotient check compares targets over
-// the whole alphabet, not over the symbols that remain to be visited.
 inl static_nullable_same forall alphabet. (left : regex alphabet) (right : regex alphabet) : bool =
     bool_same (static_nullable left) (static_nullable right)
 
@@ -1704,8 +1689,6 @@ inl static_constructive_distinguishing_result forall alphabet {symbol_compare}.
     inl trace = dfa_constructive_pair_trace (pair, InputEmpty)
     static_constructive_distinguishing_work symbols (DfaConstructivePairTraceCons (trace, DfaConstructivePairTraceNil)) DfaStatePairNil
 
-// The direct-language oracle (language_remainders: the suffixes a regex can leave of an input) as `inl` functions, so a
-// distinguishing word found at compile time is checked at compile time by a matcher that does not use derivatives.
 inl rec static_input_equal forall alphabet {symbol_compare}. (left : linear_input alphabet) (right : linear_input alphabet) : bool =
     match left, right with
     | InputEmpty, InputEmpty => true
@@ -1782,9 +1765,6 @@ inl static_constructive_distinguishing_result_valid forall alphabet {symbol_comp
         inl right_accepts = static_language_accepts (static_normalize right) input
         if bool_same left_accepts right_accepts then false else true
 
-// Static production semantics: the canonical matcher, the unnormalized reference matcher, the raw DFA closure and the
-// depth-two input corpus again as `inl` functions. The inventory-indexed model compares its alphabet-erased core with
-// these at compile time (its `inl rec` checks never terminate on the run-time lists the `let rec` versions return).
 inl rec static_accepts forall alphabet {symbol_compare}. (value : regex alphabet) (input : linear_input alphabet) : bool =
     match input with
     | InputEmpty => static_nullable (static_normalize value)
@@ -2818,8 +2798,6 @@ inl input_abac () : linear_input tri_alphabet =
 inl input_abab () : linear_input tri_alphabet =
     InputCons (tri_a (), InputCons (tri_b (), InputCons (tri_a (), InputCons (tri_b (), InputEmpty))))
 
-// Plain Spiral, not F# text: every backend (F#, C, Rust, ...) emits its own failure for a broken expectation. The sample
-// is core-free, so its failwith is the compiler's FailWith op (core's `failwith` is the same op).
 inl failwith forall t. (msg : string) : t = !!!!FailWith(`t, msg)
 
 inl assert_static (value : bool) (message : string) : () =

@@ -177,15 +177,13 @@ inl publish_file { workspace_root runtime packages modules path } =
 
 /// ### get_workspace_cargo_toml_content
 inl get_workspace_cargo_toml_content { workspace_root contract } : string =
-    // A contract workspace is built with the NEAR toolchain (cargo 1.81, nightly-2024-07-14): resolver 3 locks the
-    // newest crates its rustc can build (MSRV-aware) instead of ones that need edition 2024; cargo 1.81 only accepts
-    // resolver 3 under the edition2024 cargo feature.
+    inl msrv_aware_resolver_for_near_cargo = contract
     inl cargo_features : string =
-        if contract
+        if msrv_aware_resolver_for_near_cargo
         then $'$"cargo-features = [\\\"profile-rustflags\\\", \\\"edition2024\\\"]"'
         else $'$"cargo-features = [\\\"profile-rustflags\\\"]"'
     inl resolver : string =
-        if contract
+        if msrv_aware_resolver_for_near_cargo
         then $'$"resolver = \\\"3\\\""'
         else $'$"resolver = \\\"2\\\""'
     cargo_features
@@ -256,15 +254,11 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
     open runtime
 
     inl extension = "rs"
-    // `rs_path` is the Spiral compiler's native Rust output (`--backend Rust`): it is built as is, with no F#
-    // project, no Fable and no text fix-ups.
     inl code = rs_path |> file_system.read_all_text
 
     inl hash = #?{ extension code runtime } |> crypto.hash_text
 
     inl workspace_name = "spiral"
-    // Contract (wasm) builds get their own workspace and Cargo.lock: crates locked by the default toolchain's builds
-    // (newer, edition 2024) would otherwise be kept by the NEAR toolchain's cargo, which can't parse them.
     inl contract = runtime <> None
     inl workspace_dir_name : string = if contract then "spiral_contract" else workspace_name
 
@@ -296,17 +290,14 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
             if runtime = None
             then deps
             else
-                // TODO: simplify
                 inl has_near_sdk =
                     deps
                     |> am'.vec_filter (sm'.from_std_string >> sm'.contains "near-sdk")
                     |> am'.vec_len
                     |> convert.i32
                     |> fun (n : int) => n > 0
-                // TODO: simplify with ++
                 if has_near_sdk
                 then deps
-                // Pinned like dice's contract: newer near-sdk releases need a newer rustc than the NEAR toolchain's.
                 else deps |> am'.vec_extend (;[ "near-sdk=\"=5.11.0\"" |> sm'.to_std_string ] |> am'.to_vec)
                 |> am'.vec_extend (;[ "indexmap=\"=2.11.4\"" |> sm'.to_std_string ] |> am'.to_vec)
         deps
@@ -330,7 +321,6 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
     cargo_toml_content |> file_system.write_all_text_exists cargo_toml_path
     workspace_cargo_toml_content |> file_system.write_all_text_exists workspace_cargo_toml_path
 
-    // A wasm/contract build is a cdylib: the near-sdk entry calls the native program's `spiral_main`.
     inl main_code : string =
         if runtime = None
         then ""
@@ -428,8 +418,6 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
         }
         |> execute_with_options
 
-    // A failed build or run is the cell's failure (non-zero exit, like process_cuda's): `error` holds its message,
-    // raised after the cleanup below.
     inl result, error =
         if runtime = None then
             inl external_command =
@@ -553,8 +541,6 @@ inl process_rust { rs_path deps trace_level runtime cleanup } =
 
     if error <> "" then
         run_target function
-            // A clean failure (message on stderr, exit code 1): failwith panics natively (exit code 101; 0xC0000409 in a
-            // panic=abort build), and callers expect exit code 1.
             | Rust => fun () => $'{ eprintln\!("{}", !error); std::process::exit(1) }' : ()
             | _ => fun () => failwith error
     result
@@ -938,11 +924,6 @@ inl process_gleam { gleam_path target deps } =
     manifest |> file_system.write_all_text_exists manifest_path
 
     inl exit_code, run_result =
-        // runtime.execution_options fun x => { x with
-        //     command = $'$"gleam check"'
-        //     working_directory = package_dir |> optionm'.some'
-        // }
-        // |> runtime.execute_with_options
         0i32, ""
 
     if exit_code <>. 0 then
@@ -1309,7 +1290,6 @@ inl process_cuda { py_path env deps } =
             |> runtime.execute_with_options
 
     if exit_code <>. 0 then
-        // A failed child must fail the CLI, not return success containing traces plus empty JSON.
         failwith ("spiral.process_cuda / env install error\n" ++# run_result)
     else
         inl command =
@@ -1365,9 +1345,6 @@ inl process_cuda { py_path env deps } =
 /// ## cpp
 
 /// ### process_cpp
-// The `Cpp + Cuda` backend writes main.corelib.hpp, main.hpp, main.cpp and main.cu side by side. main.cpp is the
-// CppHost part and builds with a plain host compiler (SPIRAL_CXX, else g++). A program that enters
-// `join_backend CudaHost` also needs main.cu built with nvcc; that isn't wired here yet.
 inl process_cpp { cpp_path } =
     inl extension = "cpp"
 
@@ -1542,12 +1519,9 @@ let get_command () =
             |> resultm.box
         ###(get_args () .notebook_export |> fst)
         |> runtime.new_command
-        // `dib-export`: its name before the .livemd notebooks, an alias for one release (apps/spiral/build.ps1 runs the
-        // previous CLI with it)
         |> command_alias ###"dib-export"
         |> runtime.command_init_arg ((get_args () .notebook_export |> snd).entries) (
             runtime.arg_required true
-            // >> runtime.arg_value_parser (!\\(parse, $'"clap::value_parser\!(String).into()"'))
             >> runtime.arg_index 1
             >> runtime.arg_value_names ;[ ###"PATH"; ###"EXT" ]
             >> runtime.arg_num_args_range (
@@ -1564,7 +1538,6 @@ let get_command () =
         |> runtime.new_command
         |> runtime.command_init_arg ((get_args () .lua |> snd).lua_path) (
             runtime.arg_required true
-            // >> runtime.arg_value_parser (runtime.value_parser_path_buf ())
         )
     )
     |> runtime.command_subcommand (
@@ -1859,7 +1832,6 @@ inl tests () =
 
 inl run_main (args : array_base string) : i32 =
     inl trace_state = get_trace_state_or_init (Debug |> Some)
-    // Notebook builders opt into one JSON document on stdout, regardless of TRACE_LEVEL.
     inl json_protocol = (env.get_environment_variable "SPIRAL_JSON") = "1"
     inl trace_enabled = trace_state.enabled
     if json_protocol then trace_enabled <- false
@@ -1884,8 +1856,6 @@ inl run_main (args : array_base string) : i32 =
 
     0i32
 
-// One entry for every backend: F# (and Fable from it) gets `tests` and an F# `main args`; the native Rust backend
-// runs `run_main` on the process arguments (codegenRust wraps it in `spiral_main`).
 inl main () =
     if is_rust () then
         inl args =

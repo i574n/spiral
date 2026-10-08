@@ -1,8 +1,5 @@
 open main
 
-// The root on the native backends: its contract and every root program its main does not reach (all_terminals), exit
-// code 0 when all of them hold. The run-time checks are core-free ops (`mega_runtime_fail`), so they run (or are decided
-// by the compiler) on every backend.
 inl main () : i32 =
     inl _ = zeta_root_contract ()
     inl _ = positive_positional_predecessor_unique_terminal ()

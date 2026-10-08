@@ -1,6 +1,3 @@
-// Triple-quoted strings: raw text (no escapes, no interpolation) that may span lines. Every line inside keeps
-// its newline, blank lines included, and nothing in it is a comment, a macro or a block boundary: lines at
-// column 0 inside a string don't start a new top-level statement.
 inl banner () = """
 top
 
@@ -36,6 +33,5 @@ inl fake () = 1
     elif sm.index top 5i32 <> '\n' then 15i32
     else 0i32
 
-// A string that closes on the file's last line.
 inl unused () = """unused
 text"""

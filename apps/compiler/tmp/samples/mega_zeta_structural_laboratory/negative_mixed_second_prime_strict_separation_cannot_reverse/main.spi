@@ -1,6 +1,5 @@
 open main
 
-// tests: the linked Mixed authority keeps the strict separation singleton_factor < second_factor; it cannot be read reversed (replaces the retired mixed_second_prime_* / *_root_authority_make types by the current mixed_linked_prime_power_divisibility)
 inl impossible_mixed_second_prime_strict_separation_cannot_reverse forall root. (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root) : () =
     match authority with
     | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>

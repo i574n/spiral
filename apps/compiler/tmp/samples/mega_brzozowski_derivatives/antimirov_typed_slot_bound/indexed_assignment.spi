@@ -144,8 +144,6 @@ inl antimirov_positioned_indexed_slot_bound_passes forall alphabet {symbol_compa
         | AntimirovIndexedSlotBoundCertified _ => true
 
 
-// The shared support_count index is the proof. A runtime walk that re-counts both
-// vectors would only replay an invariant the GADT already makes unrepresentable.
 inl require_support_assignment_alignment forall alphabet shape support_count.
     (_ : antimirov_support_vector alphabet support_count)
     (_ : antimirov_support_slot_assignment shape support_count)

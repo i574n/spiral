@@ -19,8 +19,12 @@ crate, version, archive hash and patch hash. A matching stamp skips the whole th
 
 - `cargo-outdated` 0.19.0: virtual workspaces whose members live outside the workspace directory
   (`workspace/Cargo.toml` with `members = ["../apps/x"]`, the layout polyglot and spiral use to keep the repo root free
-  of Cargo). Upstream fails with "failed to load manifest for workspace member". Replaces the old i574n fork, whose
-  cargo 0.82 can no longer parse `edition2024` members.
+  of Cargo). Upstream fails with "failed to load manifest for workspace member": it mirrors manifests into a temp
+  project by slicing paths at the workspace root and only collects packages under it. The patch adds
+  `ElaborateWorkspace::tree_root` (the deepest directory holding the workspace root and every member) and mirrors
+  relative to it, so `workspace/` and `apps/x` keep their relative paths. With members inside the root, `tree_root` is the
+  workspace root and behavior is upstream's. Replaces the old i574n fork, whose cargo 0.82 can no longer parse
+  `edition2024` members and whose stub-crate approach reported mostly `Removed` rows.
 
 ## Moving to a new upstream version
 
@@ -34,7 +38,9 @@ cargo build --release
 git -c core.autocrlf=false diff > "../cargo-outdated/$v.patch"
 ```
 
-Then update `crate.psd1`, delete the old patch, and check `cargo outdated -m workspace/Cargo.toml -w` in polyglot and spiral.
+Then update `crate.psd1` and delete the old patch. A patch that builds can still report wrong rows, so check the output
+against stock upstream: copy spiral's manifests (and the source files they name) into a layout with `Cargo.toml` at the
+root, run stock `cargo outdated -w` there and the patched one on `workspace/Cargo.toml`; the reports must be identical.
 
 ## GitHub Actions
 

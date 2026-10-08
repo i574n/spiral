@@ -1,7 +1,5 @@
 open main
 
-// Exact transition soundness over state_count-indexed states/rows. Shape mismatch
-// is not a runtime case: both inputs share the same state_count by construction.
 inl rec indexed_dfa_state_vector_to_list forall alphabet state_count.
     (states : indexed_dfa_state_vector alphabet state_count)
     : regex_list alphabet =
@@ -89,7 +87,6 @@ inl require_exact_soundness_witness forall alphabet symbol_count state_count.
     (_ : indexed_dfa_exact_soundness_witness alphabet symbol_count state_count)
     : bool = true
 
-// Run by the indexed_dfa_witness_contracts package (this package's main is listed before this module).
 inl indexed_dfa_exact_soundness_contract () : string =
     inl bit_capability : indexed_dfa_capability bit_alphabet = make_indexed_dfa_capability ()
     inl bit_equality : indexed_dfa_exact_symbol_equality bit_alphabet = make_indexed_dfa_exact_symbol_equality ()

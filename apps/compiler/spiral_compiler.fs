@@ -169513,7 +169513,7 @@ module spiral_compiler =
             fun x -> if has_added.Add(x) then env.globals.Add x
 
         let string_slice () =
-            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    // A slice that starts or ends inside a code point fails like the C and Delphi backends (abort / Halt(3)).\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
+            global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
         let rec tyv x =
             match x with
@@ -171529,6 +171529,400 @@ fn spiralCreate(comptime T: type, v: T) *T {
         else program.AppendLine("  let code ← spiralMain").AppendLine("  return code.toUInt32") |> ignore
         program.ToString()
 
+    /// ## CodegenBend
+
+    /// ### backend_nameBend
+    let backend_nameBend = "Bend"
+
+    /// ### bendPrelude
+    let bendPrelude = """import Base
+
+def spiral_i32_bias(+x: U32) -> U32:
+  U32.xor(x, 2147483648)
+
+def spiral_i32_lt(+a: U32, +b: U32) -> Bool:
+  U32.is_lt(spiral_i32_bias(a), spiral_i32_bias(b))
+
+def spiral_i32_le(+a: U32, +b: U32) -> Bool:
+  U32.is_le(spiral_i32_bias(a), spiral_i32_bias(b))
+
+def spiral_i32_gt(+a: U32, +b: U32) -> Bool:
+  U32.is_gt(spiral_i32_bias(a), spiral_i32_bias(b))
+
+def spiral_i32_ge(+a: U32, +b: U32) -> Bool:
+  U32.is_ge(spiral_i32_bias(a), spiral_i32_bias(b))
+
+def spiral_i32_is_negative(+x: U32) -> Bool:
+  U32.is_ge(x, 2147483648)
+
+def spiral_i32_negate_if(+c: Bool, +x: U32) -> U32:
+  match c:
+    case True{}:
+      U32.sub(0, x)
+    case False{}:
+      x
+
+def spiral_i32_abs(+x: U32) -> U32:
+  spiral_i32_negate_if(spiral_i32_is_negative(x), x)
+
+def spiral_i32_div(+a: U32, +b: U32) -> U32:
+  spiral_i32_negate_if(Bool.xor(spiral_i32_is_negative(a), spiral_i32_is_negative(b)), U32.div(spiral_i32_abs(a), spiral_i32_abs(b)))
+
+def spiral_i32_mod(+a: U32, +b: U32) -> U32:
+  spiral_i32_negate_if(spiral_i32_is_negative(a), U32.mod(spiral_i32_abs(a), spiral_i32_abs(b)))
+
+def spiral_i32_shift_right_if(+c: Bool, +a: U32, +n: U32) -> U32:
+  match c:
+    case True{}:
+      U32.not(U32.shrn(U32.not(a), U32.to_nat(n)))
+    case False{}:
+      U32.shrn(a, U32.to_nat(n))
+
+def spiral_i32_shift_right(+a: U32, +n: U32) -> U32:
+  spiral_i32_shift_right_if(spiral_i32_is_negative(a), a, n)
+
+def spiral_i32_show_if(+c: Bool, +x: U32) -> String:
+  match c:
+    case True{}:
+      "-" ++ U32.show(U32.sub(0, x))
+    case False{}:
+      U32.show(x)
+
+def spiral_i32_show(+x: U32) -> String:
+  spiral_i32_show_if(spiral_i32_is_negative(x), x)
+def spiral_utf8_width_from(+c: U32, +below_2: Bool, +below_3: Bool, +below_4: Bool) -> U32:
+  match below_2:
+    case True{}:
+      {1 : U32}
+    case False{}:
+      match below_3:
+        case True{}:
+          {2 : U32}
+        case False{}:
+          match below_4:
+            case True{}:
+              {3 : U32}
+            case False{}:
+              {4 : U32}
+
+def spiral_utf8_width(+c: U32) -> U32:
+  spiral_utf8_width_from(c, U32.is_lt(c, 128), U32.is_lt(c, 2048), U32.is_lt(c, 65536))
+
+def spiral_utf8_lead_mask(+single: Bool, +w: U32) -> U32:
+  match single:
+    case True{}:
+      {0 : U32}
+    case False{}:
+      U32.and(U32.shln(255, U32.to_nat(U32.sub(8, w))), 255)
+
+def spiral_utf8_byte_from(+lead: Bool, +c: U32, +w: U32, +k: U32) -> U32:
+  match lead:
+    case True{}:
+      U32.or(spiral_utf8_lead_mask(U32.is_eq(w, 1), w), U32.shrn(c, U32.to_nat(U32.mul(6, U32.sub(w, 1)))))
+    case False{}:
+      U32.or(128, U32.and(U32.shrn(c, U32.to_nat(U32.mul(6, U32.sub(U32.sub(w, 1), k)))), 63))
+
+def spiral_utf8_byte(+c: U32, +w: U32, +k: U32) -> U32:
+  spiral_utf8_byte_from(U32.is_eq(k, 0), c, w, k)
+
+@unsafe
+def spiral_string_bytes(+s: String) -> U32:
+  match s:
+    case SNil{}:
+      {0 : U32}
+    case SCon{+h, +t}:
+      U32.add(spiral_utf8_width(Char.to_u32(h)), spiral_string_bytes(t))
+
+@unsafe
+def spiral_string_byte_at_from(+inside: Bool, +c: U32, +w: U32, +i: U32, +t: String) -> U32:
+  match inside:
+    case True{}:
+      spiral_utf8_byte(c, w, i)
+    case False{}:
+      spiral_string_byte_at(t, U32.sub(i, w))
+
+@unsafe
+def spiral_string_byte_at(+s: String, +i: U32) -> U32:
+  match s:
+    case SNil{}:
+      {0 : U32}
+    case SCon{+h, +t}:
+      spiral_string_byte_at_from(U32.is_lt(i, spiral_utf8_width(Char.to_u32(h))), Char.to_u32(h), spiral_utf8_width(Char.to_u32(h)), i, t)
+
+@unsafe
+def spiral_string_keep(+keep: Bool, +h: Char, +rest: String) -> String:
+  match keep:
+    case True{}:
+      SCon{h, rest}
+    case False{}:
+      rest
+
+@unsafe
+def spiral_string_slice_go(+s: String, +offset: U32, +from: U32, +until: U32) -> String:
+  match s:
+    case SNil{}:
+      SNil{}
+    case SCon{+h, +t}:
+      spiral_string_keep(Bool.and(U32.is_ge(offset, from), U32.is_lt(offset, until)), h, spiral_string_slice_go(t, U32.add(offset, spiral_utf8_width(Char.to_u32(h))), from, until))
+
+@unsafe
+def spiral_string_is_boundary(+s: String, +offset: U32, +x: U32) -> Bool:
+  match s:
+    case SNil{}:
+      U32.is_eq(offset, x)
+    case SCon{+h, +t}:
+      Bool.or(U32.is_eq(offset, x), spiral_string_is_boundary(t, U32.add(offset, spiral_utf8_width(Char.to_u32(h))), x))
+
+def spiral_string_slice_checked(+valid: Bool, +s: String, +from: U32, +until: U32) -> IO(String):
+  match valid:
+    case True{}:
+      IO.pure(String, spiral_string_slice_go(s, {0 : U32}, from, until))
+    case False{}:
+      IO.die(String, 3, "")
+
+def spiral_string_slice(+s: String, +from: U32, +to: U32) -> IO(String):
+  spiral_string_slice_checked(Bool.and(Bool.and(Bool.not(U32.is_ge(from, 2147483648)), U32.is_le(U32.add(to, 1), spiral_string_bytes(s))), Bool.and(Bool.and(U32.is_le(from, U32.add(to, 1)), spiral_string_is_boundary(s, {0 : U32}, from)), spiral_string_is_boundary(s, {0 : U32}, U32.add(to, 1)))), s, from, U32.add(to, 1))
+
+"""
+
+    /// ### bendString
+    let bendString (x : string) =
+        let strb = StringBuilder("\"")
+        for c in x do
+            match c with
+            | '"' -> strb.Append "\\\"" |> ignore
+            | '\\' -> strb.Append "\\\\" |> ignore
+            | '\n' -> strb.Append "\\n" |> ignore
+            | '\r' -> strb.Append "\\r" |> ignore
+            | '\t' -> strb.Append "\\t" |> ignore
+            | c -> strb.Append c |> ignore
+        strb.Append('"').ToString()
+    /// ### codegenBend
+    let codegenBend (env : PartEvalResult) (x : TypedBind []) =
+        let defs = ResizeArray<string>()
+        let types = ResizeArray<string>()
+        let unsupported what = raise_codegen_error $"The Bend backend doesn't support {what} yet."
+        let primBend = function
+            | Int32T | UInt32T | CharT -> "U32"
+            | BoolT -> "Bool"
+            | StringT -> "String"
+            | t -> unsupported $"the primitive type %A{t}"
+        let fresh = ref 0
+        let next_fresh () = fresh.Value <- fresh.Value + 1; fresh.Value
+        let rec tyv = function
+            | YPrim a -> primBend a
+            | YUnion a -> $"U{union_tag a.Item.cases}"
+            | a -> unsupported $"the type {show_ty a}"
+        and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
+        and tup_ty x =
+            match tyvs x |> Array.map (fun (L(_,t)) -> tyv t) with
+            | [||] -> "Unit"
+            | [|x|] -> x
+            | xs -> String.concat " & " xs
+        and union_case_index (cases : Map<int * string, Ty>) k =
+            cases |> Seq.map (fun (KeyValue ((_,k'),_)) -> k') |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+        and union_memo = lazy (
+            let dict = Dictionary<Map<int * string, Ty>, int>(HashIdentity.Reference)
+            fun (cases : Map<int * string, Ty>) ->
+                match dict.TryGetValue cases with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[cases] <- tag
+                    let ctors =
+                        cases |> Map.toArray |> Array.mapi (fun c (_, t) ->
+                            let fields = env.ty_to_data t |> data_free_vars |> Array.mapi (fun j (L(_,t)) -> $"f{j}: {tyv t}") |> String.concat ", "
+                            $"  U{tag}c{c}{{{fields}}}")
+                    types.Add($"""type U{tag} is Data:{"\n"}{String.concat "\n" ctors}{"\n"}""")
+                    tag)
+        and union_tag (cases : Map<int * string, Ty>) : int = union_memo.Force() cases
+        let lit = function
+            | LitInt32 x -> $"{{{uint32 x} : U32}}"
+            | LitUInt32 x -> $"{{{x} : U32}}"
+            | LitBool x -> if x then "True{}" else "False{}"
+            | LitString x -> bendString x
+            | LitChar x -> $"{{{int x} : U32}}"
+            | l -> unsupported $"the literal %A{l}"
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let tup d =
+            match data_term_vars d with
+            | [||] -> "Unit{}"
+            | [|x|] -> show_w x
+            | xs -> xs |> Array.map show_w |> String.concat ", " |> sprintf "(%s)"
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let param (L(i,t)) = $"+v{i}: {tyv t}"
+        let params (vs : TyV seq) = vs |> Seq.map (fun v -> ", " + param v) |> String.concat ""
+        let args (vs : TyV seq) = vs |> Seq.map (fun (L(i,_)) -> $", v{i}") |> String.concat ""
+        let rec emit_def (name : string) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let text = StringBuilder()
+            binds name "  " (tup_ty range) text (ResizeArray parameters) body
+            let ps = parameters |> Array.map param |> String.concat ", "
+            defs.Add($"@unsafe\ndef {name}({ps}) -> IO({tup_ty range}):\n{text}")
+        and binds owner (indentation : string) (range : string) (text : StringBuilder) (scope : ResizeArray<TyV>) (stmts : TypedBind []) =
+            text.Append(indentation).Append($"do IO<{range}>:\n") |> ignore
+            let emit (x : string) = text.Append(indentation).Append("  ").Append(x).Append('\n') |> ignore
+            let rec go i =
+                if i >= stmts.Length then emit "return Unit{}"
+                else
+                    match stmts.[i] with
+                    | TyLet(d, trace, a) ->
+                        try match data_free_vars d with
+                            | [||] -> emit (op owner "Unit" scope a); go (i + 1)
+                            | [|L(j,t) as v|] ->
+                                emit $"+v{j} : {tyv t} <- {op owner (tyv t) scope a}"
+                                scope.Add v
+                                go (i + 1)
+                            | vs ->
+                                let result = vs |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat " & "
+                                let value = op owner result scope a
+                                let name = $"{owner}_k{next_fresh ()}"
+                                let captured = scope.ToArray()
+                                let body = StringBuilder()
+                                let destructure = vs |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
+                                body.Append($"  ({destructure}) = p\n") |> ignore
+                                binds name "  " range body (ResizeArray(Array.append captured vs)) stmts.[i + 1 ..]
+                                defs.Add($"@unsafe\ndef {name}(+p: {result}{params captured}) -> IO({range}):\n{body}")
+                                emit $"+p : {result} <- {value}"
+                                emit $"{name}(p{args captured})"
+                        with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                    | TyLocalReturnOp(trace, a, _) ->
+                        try emit (op owner range scope a)
+                        with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                    | TyLocalReturnData(d, trace) ->
+                        try emit $"return {tup d}"
+                        with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+            go 0
+        and op owner (result : string) (scope : ResizeArray<TyV>) a =
+            let signed l = match l with x :: _ -> prim_of x = Some Int32T | [] -> false
+            match a with
+            | TyIf(cond, tr, fl) ->
+                let name = $"{owner}_if{next_fresh ()}"
+                let captured = scope.ToArray()
+                let branch (stmts : TypedBind []) =
+                    let text = StringBuilder()
+                    binds name "      " result text (ResizeArray captured) stmts
+                    text.ToString()
+                let true_branch = branch tr
+                let false_branch = branch fl
+                defs.Add($"@unsafe\ndef {name}(+c: Bool{params captured}) -> IO({result}):\n  match c:\n    case True{{}}:\n{true_branch}    case False{{}}:\n{false_branch}")
+                $"{name}({tup cond}{args captured})"
+            | TyUnionUnbox([L(u,_)], x, on_succs, on_fail) ->
+                let cases = x.Item.cases
+                let tag = union_tag cases
+                let name = $"{owner}_unbox{next_fresh ()}"
+                let captured = scope.ToArray()
+                let text = StringBuilder()
+                cases |> Map.toArray |> Array.iteri (fun c ((_, k), t) ->
+                    let handled = on_succs |> Map.tryPick (fun k' v -> if UnionTagIdOps.text k' = k then Some v else None)
+                    match handled, on_fail with
+                    | Some (a, b), _ ->
+                        let fields = a |> List.collect (data_free_vars >> List.ofArray) |> Array.ofList
+                        let binders = fields |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
+                        text.Append($"    case U{tag}c{c}{{{binders}}}:\n") |> ignore
+                        binds name "      " result text (ResizeArray(Array.append captured fields)) b
+                    | None, Some b ->
+                        let width = env.ty_to_data t |> data_free_vars |> Array.length
+                        let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
+                        text.Append($"    case U{tag}c{c}{{{ignored}}}:\n") |> ignore
+                        binds name "      " result text (ResizeArray captured) b
+                    | None, None -> raise_codegen_error "Compiler error: A union unbox misses a case and has no fallback.")
+                defs.Add($"@unsafe\ndef {name}(+u: U{tag}{params captured}) -> IO({result}):\n  match u:\n{text}")
+                $"{name}(v{u}{args captured})"
+            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
+            | TyUnionBox(a,b,c) ->
+                let c = c.Item
+                let tag = union_tag c.cases
+                let i = union_case_index c.cases a
+                let values = data_term_vars b |> Array.map show_w |> String.concat ", "
+                $"IO.pure({result}, U{tag}c{i}{{{values}}})"
+            | TyJoinPoint(JPMethod(a,c), arguments) ->
+                let arguments = arguments |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                $"method{(method (a,c)).tag}({arguments})"
+            | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int32T | UInt32T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
+            | TyOp(Printf, [DLit (LitString fmt); b]) ->
+                let pieces =
+                    printf_pieces fmt (data_term_vars b) |> List.map (function
+                        | Choice1Of2 text -> bendString text
+                        | Choice2Of2 (_, w) ->
+                            match w with
+                            | WV(L(_,YPrim Int32T)) | WLit (LitInt32 _) -> $"spiral_i32_show({show_w w})"
+                            | WV(L(_,YPrim UInt32T)) | WLit (LitUInt32 _) -> $"U32.show({show_w w})"
+                            | WV(L(_,YPrim StringT)) | WLit (LitString _) -> show_w w
+                            | _ -> unsupported "printing this value type")
+                match pieces with
+                | [] -> "IO.pure(Unit, Unit{})"
+                | pieces -> $"""IO.write({String.concat " ++ " pieces})"""
+            | TyStringLength(_, b) -> $"IO.pure({result}, spiral_string_bytes({tup b}))"
+            | TyOp(StringSlice, [a;b;c]) -> $"spiral_string_slice({tup a}, {tup b}, {tup c})"
+            | TyOp(op, l) ->
+                let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
+                let unary f = match l with [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
+                let is_bool = match l with x :: _ -> prim_of x = Some BoolT | [] -> false
+                let is_string = match l with x :: _ -> prim_of x = Some StringT | [] -> false
+                let expr =
+                  match op with
+                  | Dyn -> unary id
+                  | Add -> bin (sprintf "U32.add(%s, %s)")
+                  | Sub -> bin (sprintf "U32.sub(%s, %s)")
+                  | Mult -> bin (sprintf "U32.mul(%s, %s)")
+                  | Div -> bin (if signed l then sprintf "spiral_i32_div(%s, %s)" else sprintf "U32.div(%s, %s)")
+                  | Mod -> bin (if signed l then sprintf "spiral_i32_mod(%s, %s)" else sprintf "U32.mod(%s, %s)")
+                  | LT -> bin (if signed l then sprintf "spiral_i32_lt(%s, %s)" else sprintf "U32.is_lt(%s, %s)")
+                  | LTE -> bin (if signed l then sprintf "spiral_i32_le(%s, %s)" else sprintf "U32.is_le(%s, %s)")
+                  | GT -> bin (if signed l then sprintf "spiral_i32_gt(%s, %s)" else sprintf "U32.is_gt(%s, %s)")
+                  | GTE -> bin (if signed l then sprintf "spiral_i32_ge(%s, %s)" else sprintf "U32.is_ge(%s, %s)")
+                  | EQ -> bin (if is_bool then sprintf "Bool.not(Bool.xor(%s, %s))" elif is_string then sprintf "String.eq(%s, %s)" else sprintf "U32.is_eq(%s, %s)")
+                  | NEQ -> bin (if is_bool then sprintf "Bool.xor(%s, %s)" elif is_string then sprintf "Bool.not(String.eq(%s, %s))" else sprintf "U32.is_ne(%s, %s)")
+                  | StringIndex -> bin (sprintf "spiral_string_byte_at(%s, %s)")
+                  | StaticStringConcat -> bin (sprintf "String.append(%s, %s)")
+                  | BoolAnd -> bin (sprintf "Bool.and(%s, %s)")
+                  | BoolOr -> bin (sprintf "Bool.or(%s, %s)")
+                  | BitwiseAnd -> bin (sprintf "U32.and(%s, %s)")
+                  | BitwiseOr -> bin (sprintf "U32.or(%s, %s)")
+                  | BitwiseXor -> bin (sprintf "U32.xor(%s, %s)")
+                  | BitwiseComplement -> unary (sprintf "U32.not(%s)")
+                  | ShiftLeft -> bin (sprintf "U32.shln(%s, U32.to_nat(%s))")
+                  | ShiftRight -> bin (if signed l then sprintf "spiral_i32_shift_right(%s, %s)" else sprintf "U32.shrn(%s, U32.to_nat(%s))")
+                  | Neg -> unary (sprintf "U32.sub(0, %s)")
+                  | _ -> unsupported $"the operation %A{op}"
+                $"IO.pure({result}, {expr})"
+            | TyFailwith(_, b) -> $"IO.die({result}, 1, {tup b})"
+            | TyMacro _ -> unsupported "macros"
+            | a ->
+                let construct = (sprintf "%A" a).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body,key) : _ * _) ->
+                match dict.TryGetValue((jp_body,key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body,key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env backend_nameBend jp_body key with
+                    | body, range, _ -> emit_def $"method{tag}" (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+
+        let unitMain =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Bend backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_def "spiral_main" [||] (if unitMain then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.Append(bendPrelude) |> ignore
+        types |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
+        defs |> Seq.iter (fun x -> program.Append(x).Append('\n') |> ignore)
+        program.Append(if unitMain then "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    spiral_main()\n    return Unit{}\n" else "@unsafe\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    +code : U32 <- spiral_main()\n    IO.die(Unit, code, \"\")\n").ToString()
     /// ## CodegenGleam
 
     /// ### backend_nameGleam
@@ -173206,7 +173600,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
             helper "spiral_array_index" "function spiral_array_index<T>(array: T[], index: number): T {\n    if (!(index >= 0 && index < array.length)) throw new RangeError(\"array index \" + index + \" out of bounds for length \" + array.length);\n    return array[index];\n}"
             helper "spiral_array_set" "function spiral_array_set<T>(array: T[], index: number, value: T): void {\n    if (!(index >= 0 && index < array.length)) throw new RangeError(\"array index \" + index + \" out of bounds for length \" + array.length);\n    array[index] = value;\n}"
         let string_helpers () =
-            helper "spiral_utf8" "const spiral_utf8_encoder = new TextEncoder();\nconst spiral_utf8_decoder = new TextDecoder(\"utf-8\");\nlet spiral_utf8_last = \"\";\nlet spiral_utf8_bytes: Uint8Array = new Uint8Array(0);\nfunction spiral_utf8(value: string): Uint8Array {\n    if (value !== spiral_utf8_last) {\n        spiral_utf8_bytes = spiral_utf8_encoder.encode(value);\n        spiral_utf8_last = value;\n    }\n    return spiral_utf8_bytes;\n}\nfunction spiral_string_length(value: string): number {\n    return spiral_utf8(value).length;\n}\nfunction spiral_string_index(value: string, index: number): number {\n    const bytes = spiral_utf8(value);\n    if (!(index >= 0 && index < bytes.length)) throw new RangeError(\"string index \" + index + \" out of bounds for length \" + bytes.length);\n    return bytes[index];\n}\n// The C backend's StringSlice: inclusive bounds, an empty slice when to = from - 1, and a failure for bounds outside\n// the string or inside a code point: exit code 3, like C's abort() and the Rust/Delphi helpers (in run_main.mjs's\n// worker, process.exit ends the worker with that code).\nfunction spiral_slice_abort(message: string): never {\n    console.error(message);\n    process.exit(3);\n}\nfunction spiral_string_slice(value: string, from: number, to: number): string {\n    const bytes = spiral_utf8(value);\n    const length = bytes.length;\n    if (from < 0 || from > length || to < from - 1 || to >= length) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" out of bounds for length \" + length);\n    if (to < from) return \"\";\n    if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" splits a code point\");\n    return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));\n}"
+            helper "spiral_utf8" "const spiral_utf8_encoder = new TextEncoder();\nconst spiral_utf8_decoder = new TextDecoder(\"utf-8\");\nlet spiral_utf8_last = \"\";\nlet spiral_utf8_bytes: Uint8Array = new Uint8Array(0);\nfunction spiral_utf8(value: string): Uint8Array {\n    if (value !== spiral_utf8_last) {\n        spiral_utf8_bytes = spiral_utf8_encoder.encode(value);\n        spiral_utf8_last = value;\n    }\n    return spiral_utf8_bytes;\n}\nfunction spiral_string_length(value: string): number {\n    return spiral_utf8(value).length;\n}\nfunction spiral_string_index(value: string, index: number): number {\n    const bytes = spiral_utf8(value);\n    if (!(index >= 0 && index < bytes.length)) throw new RangeError(\"string index \" + index + \" out of bounds for length \" + bytes.length);\n    return bytes[index];\n}\nfunction spiral_slice_abort(message: string): never {\n    console.error(message);\n    process.exit(3);\n}\nfunction spiral_string_slice(value: string, from: number, to: number): string {\n    const bytes = spiral_utf8(value);\n    const length = bytes.length;\n    if (from < 0 || from > length || to < from - 1 || to >= length) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" out of bounds for length \" + length);\n    if (to < from) return \"\";\n    if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort(\"string slice \" + from + \"..\" + to + \" splits a code point\");\n    return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));\n}"
         let delay_helper () =
             helper "spiral_delay_ms" "function spiral_delay_ms(ms: number): void {\n    if (ms > 0) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);\n}"
 
@@ -180189,6 +180583,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | BuildBackendDelphi
         | BuildBackendZig
         | BuildBackendLean
+        | BuildBackendBend
         | BuildBackendTypeScript
         | BuildBackendC
         | BuildBackendPythonCuda
@@ -180208,6 +180603,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         | "Delphi" -> BuildBackendDelphi
         | "Zig" -> BuildBackendZig
         | "Lean" -> BuildBackendLean
+        | "Bend" -> BuildBackendBend
         | "TypeScript" -> BuildBackendTypeScript
         | "C" -> BuildBackendC
         | "Python + Cuda" -> BuildBackendPythonCuda
@@ -181432,6 +181828,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
                                         | BuildBackendZig -> build codegenZig "Zig" ".zig"
                                         | BuildBackendLean -> build codegenLean "Lean" ".lean"
+                                        | BuildBackendBend -> build codegenBend "Bend" ".bend"
                                         | BuildBackendTypeScript -> build codegenTypeScript "TypeScript" ".ts"
                                         | BuildBackendC -> build CodegenC.codegenC "C" ".c"
                                         | BuildBackendPythonCuda -> build_many (CodegenPython.codegen default_env) "Python"
@@ -184128,6 +184525,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "Lean" -> build codegenLean "Lean" ".lean"
+                                    | "Bend" -> build codegenBend "Bend" ".bend"
                                     | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"
                                     | "C" -> build CodegenC.codegenC "C" ".c"
                                     | "Python + Cuda" -> build_many (CodegenPython.codegen default_env) "Python"

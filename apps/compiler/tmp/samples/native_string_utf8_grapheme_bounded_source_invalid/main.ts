@@ -17,9 +17,6 @@ function spiral_string_index(value: string, index: number): number {
     if (!(index >= 0 && index < bytes.length)) throw new RangeError("string index " + index + " out of bounds for length " + bytes.length);
     return bytes[index];
 }
-// The C backend's StringSlice: inclusive bounds, an empty slice when to = from - 1, and a failure for bounds outside
-// the string or inside a code point: exit code 3, like C's abort() and the Rust/Delphi helpers (in run_main.mjs's
-// worker, process.exit ends the worker with that code).
 function spiral_slice_abort(message: string): never {
     console.error(message);
     process.exit(3);
@@ -47,94 +44,94 @@ function method0(v0: string, v1: number): number {
             throw new Error("UTF-8 byte offset is outside the string.");
         } else {
             let v7: number = method1(v0, v1);
-            let v8: number = ((uint8_t)v7);
-            let v9: boolean = v8 < 128;
-            if (v9) {
-                return v8;
+            let v16: number = v7;
+            let v18: boolean = v16 < 128;
+            if (v18) {
+                return v16;
             } else {
-                let v10: boolean = v8 < 194;
-                if (v10) {
+                let v19: boolean = v16 < 194;
+                if (v19) {
                     throw new Error("UTF-8 scalar starts with an invalid lead byte.");
                 } else {
-                    let v12: boolean = v8 < 224;
-                    if (v12) {
-                        let v13: number = (v1 + 1) | 0;
-                        let v14: boolean = v13 >= v2;
-                        if (v14) {
+                    let v21: boolean = v16 < 224;
+                    if (v21) {
+                        let v22: number = (v1 + 1) | 0;
+                        let v23: boolean = v22 >= v2;
+                        if (v23) {
                             throw new Error("UTF-8 sequence is truncated.");
                         } else {
-                            let v16: number = method1(v0, v13);
-                            let v17: number = ((uint8_t)v16);
-                            let v18: boolean = v17 < 128;
-                            let v20: boolean;
-                            if (v18) {
-                                v20 = false;
+                            let v25: number = method1(v0, v22);
+                            let v26: number = v25;
+                            let v27: boolean = v26 < 128;
+                            let v29: boolean;
+                            if (v27) {
+                                v29 = false;
                             } else {
-                                let v19: boolean = v17 < 192;
-                                v20 = v19;
+                                let v28: boolean = v26 < 192;
+                                v29 = v28;
                             }
-                            if (v20) {
-                                let v21: number = (v8 - 192) | 0;
-                                let v22: number = Math.imul(v21, 64);
-                                let v23: number = (v17 - 128) | 0;
-                                let v24: number = (v22 + v23) | 0;
-                                return v24;
+                            if (v29) {
+                                let v30: number = (v16 - 192) | 0;
+                                let v31: number = Math.imul(v30, 64);
+                                let v32: number = (v26 - 128) | 0;
+                                let v33: number = (v31 + v32) | 0;
+                                return v33;
                             } else {
                                 throw new Error("UTF-8 sequence has an invalid continuation byte.");
                             }
                         }
                     } else {
-                        let v28: boolean = v8 < 240;
-                        if (v28) {
-                            let v29: number = (v1 + 2) | 0;
-                            let v30: boolean = v29 >= v2;
-                            if (v30) {
+                        let v37: boolean = v16 < 240;
+                        if (v37) {
+                            let v38: number = (v1 + 2) | 0;
+                            let v39: boolean = v38 >= v2;
+                            if (v39) {
                                 throw new Error("UTF-8 sequence is truncated.");
                             } else {
-                                let v32: number = (v1 + 1) | 0;
-                                let v33: number = method1(v0, v32);
-                                let v34: number = ((uint8_t)v33);
-                                let v35: number = method1(v0, v29);
-                                let v36: number = ((uint8_t)v35);
-                                let v37: boolean = v34 < 128;
-                                let v39: boolean;
-                                if (v37) {
-                                    v39 = false;
+                                let v41: number = (v1 + 1) | 0;
+                                let v42: number = method1(v0, v41);
+                                let v43: number = v42;
+                                let v44: number = method1(v0, v38);
+                                let v45: number = v44;
+                                let v46: boolean = v43 < 128;
+                                let v48: boolean;
+                                if (v46) {
+                                    v48 = false;
                                 } else {
-                                    let v38: boolean = v34 < 192;
-                                    v39 = v38;
+                                    let v47: boolean = v43 < 192;
+                                    v48 = v47;
                                 }
-                                if (v39) {
-                                    let v40: boolean = v36 < 128;
-                                    let v42: boolean;
-                                    if (v40) {
-                                        v42 = false;
+                                if (v48) {
+                                    let v49: boolean = v45 < 128;
+                                    let v51: boolean;
+                                    if (v49) {
+                                        v51 = false;
                                     } else {
-                                        let v41: boolean = v36 < 192;
-                                        v42 = v41;
+                                        let v50: boolean = v45 < 192;
+                                        v51 = v50;
                                     }
-                                    if (v42) {
-                                        let v43: number = (v8 - 224) | 0;
-                                        let v44: number = Math.imul(v43, 4096);
-                                        let v45: number = (v34 - 128) | 0;
-                                        let v46: number = Math.imul(v45, 64);
-                                        let v47: number = (v44 + v46) | 0;
-                                        let v48: number = (v36 - 128) | 0;
-                                        let v49: number = (v47 + v48) | 0;
-                                        let v50: boolean = v49 < 2048;
-                                        if (v50) {
+                                    if (v51) {
+                                        let v52: number = (v16 - 224) | 0;
+                                        let v53: number = Math.imul(v52, 4096);
+                                        let v54: number = (v43 - 128) | 0;
+                                        let v55: number = Math.imul(v54, 64);
+                                        let v56: number = (v53 + v55) | 0;
+                                        let v57: number = (v45 - 128) | 0;
+                                        let v58: number = (v56 + v57) | 0;
+                                        let v59: boolean = v58 < 2048;
+                                        if (v59) {
                                             throw new Error("UTF-8 sequence is overlong.");
                                         } else {
-                                            let v52: boolean = v49 >= 55296;
-                                            if (v52) {
-                                                let v53: boolean = v49 <= 57343;
-                                                if (v53) {
+                                            let v61: boolean = v58 >= 55296;
+                                            if (v61) {
+                                                let v62: boolean = v58 <= 57343;
+                                                if (v62) {
                                                     throw new Error("UTF-8 sequence encodes a surrogate.");
                                                 } else {
-                                                    return v49;
+                                                    return v58;
                                                 }
                                             } else {
-                                                return v49;
+                                                return v58;
                                             }
                                         }
                                     } else {
@@ -145,67 +142,67 @@ function method0(v0: string, v1: number): number {
                                 }
                             }
                         } else {
-                            let v63: boolean = v8 < 245;
-                            if (v63) {
-                                let v64: number = (v1 + 3) | 0;
-                                let v65: boolean = v64 >= v2;
-                                if (v65) {
+                            let v72: boolean = v16 < 245;
+                            if (v72) {
+                                let v73: number = (v1 + 3) | 0;
+                                let v74: boolean = v73 >= v2;
+                                if (v74) {
                                     throw new Error("UTF-8 sequence is truncated.");
                                 } else {
-                                    let v67: number = (v1 + 1) | 0;
-                                    let v68: number = method1(v0, v67);
-                                    let v69: number = ((uint8_t)v68);
-                                    let v70: number = (v1 + 2) | 0;
-                                    let v71: number = method1(v0, v70);
-                                    let v72: number = ((uint8_t)v71);
-                                    let v73: number = method1(v0, v64);
-                                    let v74: number = ((uint8_t)v73);
-                                    let v75: boolean = v69 < 128;
-                                    let v77: boolean;
-                                    if (v75) {
-                                        v77 = false;
+                                    let v76: number = (v1 + 1) | 0;
+                                    let v77: number = method1(v0, v76);
+                                    let v78: number = v77;
+                                    let v79: number = (v1 + 2) | 0;
+                                    let v80: number = method1(v0, v79);
+                                    let v81: number = v80;
+                                    let v82: number = method1(v0, v73);
+                                    let v83: number = v82;
+                                    let v84: boolean = v78 < 128;
+                                    let v86: boolean;
+                                    if (v84) {
+                                        v86 = false;
                                     } else {
-                                        let v76: boolean = v69 < 192;
-                                        v77 = v76;
+                                        let v85: boolean = v78 < 192;
+                                        v86 = v85;
                                     }
-                                    if (v77) {
-                                        let v78: boolean = v72 < 128;
-                                        let v80: boolean;
-                                        if (v78) {
-                                            v80 = false;
+                                    if (v86) {
+                                        let v87: boolean = v81 < 128;
+                                        let v89: boolean;
+                                        if (v87) {
+                                            v89 = false;
                                         } else {
-                                            let v79: boolean = v72 < 192;
-                                            v80 = v79;
+                                            let v88: boolean = v81 < 192;
+                                            v89 = v88;
                                         }
-                                        if (v80) {
-                                            let v81: boolean = v74 < 128;
-                                            let v83: boolean;
-                                            if (v81) {
-                                                v83 = false;
+                                        if (v89) {
+                                            let v90: boolean = v83 < 128;
+                                            let v92: boolean;
+                                            if (v90) {
+                                                v92 = false;
                                             } else {
-                                                let v82: boolean = v74 < 192;
-                                                v83 = v82;
+                                                let v91: boolean = v83 < 192;
+                                                v92 = v91;
                                             }
-                                            if (v83) {
-                                                let v84: number = (v8 - 240) | 0;
-                                                let v85: number = Math.imul(v84, 262144);
-                                                let v86: number = (v69 - 128) | 0;
-                                                let v87: number = Math.imul(v86, 4096);
-                                                let v88: number = (v85 + v87) | 0;
-                                                let v89: number = (v72 - 128) | 0;
-                                                let v90: number = Math.imul(v89, 64);
-                                                let v91: number = (v88 + v90) | 0;
-                                                let v92: number = (v74 - 128) | 0;
-                                                let v93: number = (v91 + v92) | 0;
-                                                let v94: boolean = v93 < 65536;
-                                                if (v94) {
+                                            if (v92) {
+                                                let v93: number = (v16 - 240) | 0;
+                                                let v94: number = Math.imul(v93, 262144);
+                                                let v95: number = (v78 - 128) | 0;
+                                                let v96: number = Math.imul(v95, 4096);
+                                                let v97: number = (v94 + v96) | 0;
+                                                let v98: number = (v81 - 128) | 0;
+                                                let v99: number = Math.imul(v98, 64);
+                                                let v100: number = (v97 + v99) | 0;
+                                                let v101: number = (v83 - 128) | 0;
+                                                let v102: number = (v100 + v101) | 0;
+                                                let v103: boolean = v102 < 65536;
+                                                if (v103) {
                                                     throw new Error("UTF-8 sequence is overlong.");
                                                 } else {
-                                                    let v96: boolean = v93 > 1114111;
-                                                    if (v96) {
+                                                    let v105: boolean = v102 > 1114111;
+                                                    if (v105) {
                                                         throw new Error("UTF-8 scalar is above U+10FFFF.");
                                                     } else {
-                                                        return v93;
+                                                        return v102;
                                                     }
                                                 }
                                             } else {

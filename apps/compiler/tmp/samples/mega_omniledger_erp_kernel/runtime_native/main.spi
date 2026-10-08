@@ -1,8 +1,5 @@
 open main
 
-// The ERP root's programs that build without F#: the 24 of its 78 unreached programs (all_terminals) whose C output builds
-// and exits 0 (lane G, 2026-10-06; tmp/lanes/G/erp_native_terms.tsv). The other 54 and the root's own contract still emit F#
-// macros (file I/O, process spawning, string formatting) into every backend. Exit 0 when all of these hold.
 inl main () : i32 =
     inl _ = typed_fx_statement_stream_position_serialization_terminal ()
     inl _ = typed_usd_eur_determined_tie_rounding_terminal ()

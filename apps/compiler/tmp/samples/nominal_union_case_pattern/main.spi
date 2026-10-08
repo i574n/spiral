@@ -1,7 +1,3 @@
-// FOR-D repro (lane F, 2026-10-06): a nominal pattern with a union case inside (`| wrapped Zero =>`) makes the type
-// checker drop the whole definition without a diagnostic; the only error is the caller's "Unbound variable: classify".
-// Expected: exit 0 (or an error at the pattern). Binding the payload first (`| wrapped bit => match bit with`) works.
-// Not blessed: the oracle must not record the current error as the expected result.
 union bit =
     | Zero
     | One

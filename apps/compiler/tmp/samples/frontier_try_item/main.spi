@@ -1,4 +1,3 @@
-// Verbatim definition from lib/spiral/listm'.spi (the site of the Hopac failure in 3006.jsonl).
 inl rec try_item i = function
     | Cons (x, _) when i = 0 => Some x
     | Cons (_, xs) => try_item (i - 1) xs

@@ -1,11 +1,3 @@
-// FOR-D repro (lane G, 2026-10-06): a type application in a parameter annotation continued on the next line, left of
-// the type's head (`box` then `t u` indented below the parameter), does not parse (the offside rule), and the parser
-// then drops the whole definition WITHOUT printing its parse error: the only diagnostic is the caller's "Unbound
-// variable: first". Parse errors of dropped blocks are printed only when they leave `main` undefined. An unused
-// definition therefore disappears silently: 14 root definitions of mega_spiral_proves_spiral_relative_consistency, 1 of
-// mega_omniledger_erp_kernel, and negatives of the shape `inl impossible_* ... = <ill-typed>` + `inl main () = ()`,
-// which compiled "ok". Expected: the parse error at the `t u) :` line is reported (or the continuation is accepted and the
-// program exits 0). Not blessed: the oracle must not record the current error.
 nominal box x y = x * y * string
 
 inl first forall t u.
@@ -16,3 +8,5 @@ inl first forall t u.
     | box (x, _, _) => x
 
 inl main () : i32 = first (box (0i32, 1i32, "box"))
+
+inl oracle_must_not_record_current_error () = ()

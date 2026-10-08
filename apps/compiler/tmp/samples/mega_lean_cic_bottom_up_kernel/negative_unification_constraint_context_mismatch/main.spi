@@ -1,4 +1,3 @@
-// A metavariable assignment is indexed by the slot's context (successor of the retired string unification cells): a slot of the empty context cannot take a term bound under a Bool binder.
 open main
 
 inl impossible_corrected_cic_unification_constraint_context_mismatch () : corrected_cic_meta_assignment_plan empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx bool_sort (corrected_cic_meta_states_open empty_ctx (universe_sort universe_one) (corrected_cic_meta_states_open empty_ctx bool_sort corrected_cic_meta_states_empty))) =

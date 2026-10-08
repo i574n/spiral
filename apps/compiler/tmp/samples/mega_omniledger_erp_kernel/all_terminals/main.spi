@@ -1,8 +1,5 @@
 open main
 
-// Every nullary string-returning program (`inl <name> () : string`) of the root that the root's own main does not reach (found by lane G,
-// 2026-10-06: they were never compiled by the suite). Each is evaluated in turn; the program returns the last string.
-// Not included: erp_p2p_eight_event_recursive_atomic_payload_outbox_terminal (does not compile: see the lane G frontier notes).
 inl main () : string =
     inl _ = typed_fx_determined_rounding_receipt_program_terminal ()
     inl _ = typed_fx_statement_stream_position_serialization_terminal ()
@@ -82,3 +79,5 @@ inl main () : string =
     inl _ = erp_p2p_competing_successor_fence_terminal ()
     inl _ = erp_p2p_four_event_competing_successor_fenced_commit_terminal ()
     "all-terminals-green"
+
+inl excluded_erp_p2p_eight_event_recursive_atomic_payload_outbox_terminal_does_not_compile () = ()

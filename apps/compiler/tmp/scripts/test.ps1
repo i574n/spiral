@@ -12,14 +12,14 @@ param(
     [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
+    [ValidateSet('Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
 )
 . $PSScriptRoot/env.ps1
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $freshProcess = if ($WarmRecycle) { $false } elseif ($PSBoundParameters.ContainsKey('FreshProcess')) { [bool]$FreshProcess } else { $mode -eq 'hopac' }
@@ -57,7 +57,7 @@ if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Lean = 'lean'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
@@ -80,10 +80,10 @@ function Test-ContractSample([string]$relative) { $relative -like 'samples/contr
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 $listedSamples = @{}
-foreach ($listed in 'Zig', 'Lean', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+foreach ($listed in 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
-    foreach ($listed in 'Zig', 'Lean', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
+    foreach ($listed in 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
     if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
     $result
 }
@@ -224,7 +224,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -273,8 +273,8 @@ function Build-And-Run($job) {
     $dir = $binDir
     New-Item -ItemType Directory -Force $binDir | Out-Null
     if ($job.Backend -eq 'TypeScript') {
-        if (-not $tools.Node) { return 'no-toolchain' }
-        $run = Invoke-Native $tools.Node @('--experimental-strip-types', '--no-warnings', (Join-Path $shimDir 'run_main.mjs'), $job.Output) $binDir 30
+        if (-not $tools.Bun) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.Bun @((Join-Path $shimDir 'run_main.mjs'), $job.Output) $binDir 30
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
@@ -286,6 +286,18 @@ function Build-And-Run($job) {
         $run = Invoke-Native $tools.Lean @('--run', $job.Output) $binDir 180
         if ("$($run.Exit)" -ne '0' -and ($run.Out + $run.Err) -match '\.lean:\d+:\d+: error') {
             $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_ -match 'error' } | Select-Object -First 1) -replace '\s+', ' ').Trim()
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Bend') {
+        if (-not $tools.Bun -or -not $tools.BendMain) { return 'no-toolchain' }
+        $env:BEND_NO_TELEMETRY = '1'
+        $run = Invoke-Native $tools.Bun @($tools.BendMain, $job.Output) (Split-Path $tools.BendMain) 120
+        if (($run.Out + "`n" + $run.Err) -match '(?m)^Error:\s*$') {
+            $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
         }
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
@@ -394,7 +406,7 @@ $rows = @($rows)
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =

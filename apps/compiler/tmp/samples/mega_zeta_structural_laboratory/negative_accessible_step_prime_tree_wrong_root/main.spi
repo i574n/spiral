@@ -1,4 +1,3 @@
-// The complete tree of the Step-prime three cannot be typed as a tree for four (the predecessor step payload is now proof + accessibility; less is derived from the proof).
 open main
 
 inl impossible_accessible_step_prime_tree_wrong_root () :

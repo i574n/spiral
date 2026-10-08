@@ -1,4 +1,3 @@
-// The open body of a TensorLeftUnit recursive beta derivation returns Tensor Bool Unit, not Bool (successor of the retired exact_linear_indexed_closed_recursive_beta_open_body).
 open main
 
 inl impossible_recursive_beta_open_body_result_mismatch () : exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type =

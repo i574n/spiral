@@ -1,6 +1,5 @@
 open main
 
-// tests: the singleton prime power of a Mixed obstruction is rooted at the obstruction's root, not at one (replaces the retired mixed_second_prime_* / *_root_authority_make types by the current mixed_linked_prime_power_divisibility)
 inl impossible_mixed_singleton_prime_power_wrong_root forall root. (mixed : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_obstruction root) : exists factor count. certified_arithmetic_prime_power factor count positional_one * string =
     match certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility_make mixed with
     | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>

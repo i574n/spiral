@@ -1,5 +1,3 @@
-// lib/spiral on the Zig backend (#82): console.write_line and sm'.obj_to_string have Zig arms; the C row is the oracle
-// (exit code + stdout).
 inl main () : i32 =
     inl x = dyn 41i32
     console.write_line (sm'.obj_to_string x)

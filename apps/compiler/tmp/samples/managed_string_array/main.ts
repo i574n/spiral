@@ -25,9 +25,6 @@ function spiral_string_index(value: string, index: number): number {
     if (!(index >= 0 && index < bytes.length)) throw new RangeError("string index " + index + " out of bounds for length " + bytes.length);
     return bytes[index];
 }
-// The C backend's StringSlice: inclusive bounds, an empty slice when to = from - 1, and a failure for bounds outside
-// the string or inside a code point: exit code 3, like C's abort() and the Rust/Delphi helpers (in run_main.mjs's
-// worker, process.exit ends the worker with that code).
 function spiral_slice_abort(message: string): never {
     console.error(message);
     process.exit(3);

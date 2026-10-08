@@ -11,7 +11,6 @@ defmodule Spiral.Kino.Notebook do
     :spiral,
     :python,
     :lua,
-    :node,
     :pwsh,
     :cc,
     :dcc,

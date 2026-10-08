@@ -1,6 +1,3 @@
-// A type application continued on the next line starts right of its head (`eq`), as the offside rule requires. Until
-// 2026-10-06 the continuation sat left of `eq`: `g` failed to parse and was dropped without a word (nothing calls it);
-// the entry file's parse errors end the build now (D47).
 inl f (left : i64) (right : i64) : i64 =
     $"!left * !right"
 

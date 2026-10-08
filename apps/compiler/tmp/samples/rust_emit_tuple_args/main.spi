@@ -1,5 +1,3 @@
-// lib/spiral's rust.emit_expr (`!\\(args, $'"... $0 ..."')`) with tuple arguments: each element of the argument
-// tuple is one `$k`, also when the element is itself a tuple (leading, trailing, or the whole argument).
 inl emit forall a t. (args : a) (code : string) : t =
     $'__spiral_emit_rust !args !code '
 

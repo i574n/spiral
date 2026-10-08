@@ -1,5 +1,3 @@
-// Run-time checks are core-free ops (F# macros until 2026-10-06, so only the F# backend could run them); a failed check
-// stops the program with its message on every backend.
 inl mega_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
 
 nominal empty_ctx = string
@@ -9292,7 +9290,6 @@ inl cic_active_corrected_kernel_surface_terminal () : string =
 
 
 
-// The root's contract, run by main (here) and by runtime_native (on C, Rust and Delphi).
 inl cic_root_contract () : string =
     cic_active_corrected_kernel_surface_terminal ()
 

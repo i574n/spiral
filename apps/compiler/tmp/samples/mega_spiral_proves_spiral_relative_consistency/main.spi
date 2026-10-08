@@ -6,8 +6,6 @@ inl reflected_runtime_add_i64 (left : i64) (right : i64) : i64 =
 inl reflected_runtime_mul_i64 (left : i64) (right : i64) : i64 =
     !!!!Mult(left, right)
 
-// The run-time checks below are core-free Spiral ops (they were F# macros until 2026-10-06, so only the F# backend could
-// run them): a failed check stops the program with its message on every backend.
 inl reflected_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
 
 union rec meta_add left right total =
@@ -5551,10 +5549,6 @@ inl exact_linear_indexed_open_unit_conditional_branches_substitution_strengtheni
         exact_linear_indexed_open_unit_composition_unused_left_target_merge (),
         "one-composition-now-substitutes-the-selected-Unit-through-both-Conditional-branches-under-one-closed-Bool-guard"))
 
-// PERF_QUARANTINE: heavyweight ConditionalBranches source/target projection helpers
-// remain outside the active elaboration path; keep the next beta cut on already-proven
-// substitution/strengthening witnesses until a cheaper proof-derived endpoint compiles.
-
 type exact_linear_indexed_beta_outer_context =
     exact_linear_free_context_extend
         exact_linear_free_context_empty exact_linear_unit_type
@@ -10869,7 +10863,6 @@ inl exact_linear_active_indexed_surface_terminal () : string =
 
 
 
-// The root's contract, run by main (here) and by runtime_native (on C, Rust and Delphi).
 inl self_root_contract () : string =
     exact_linear_active_indexed_surface_terminal ()
 

@@ -1,4 +1,3 @@
-// Ready beta keeps the function domain and the argument type aligned: the Unit TensorTail Lambda cannot take a Bool argument (ExactLinearIndexedClosedReadyBetaUnitTensor is retired; its successor is the polymorphic ExactLinearIndexedClosedReadyBetaTensorTail).
 open main
 
 inl impossible_ready_unit_tensor_accepts_bool_argument () =

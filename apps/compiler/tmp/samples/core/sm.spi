@@ -1,13 +1,8 @@
-// Minimal string primitives shared by portable backend fixtures.
-
 inl index forall t{int}. (str : string) (i : t) : char = !!!!StringIndex(str,i)
 inl length forall t{int}. (str : string) : t = !!!!StringLength(`t,str)
 inl slice forall t{int}. (str : string) {from=(a : t) to=(b : t)} = !!!!StringSlice(str,a,b)
 inl concat (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
 
-// UTF-8 scalar helpers layered over the stable byte-indexed primitives.
-// Keeping boundary indexing behind a non-inline function prevents high bytes
-// from becoming non-portable C character literals during partial evaluation.
 let runtime_byte (str : string) (i : i32) : char = index str i
 
 inl is_continuation_byte (lower : char) (upper : char) (value : char) : bool =
@@ -22,9 +17,9 @@ let rec codepoint_length_loop (str : string) (lower : char) (upper : char) (byte
         codepoint_length_loop str lower upper ((+.) byte_index 1i32) count byte_length
 
 inl codepoint_length (str : string) : i32 =
-    inl lower = runtime_byte "À" 1i32 // 0x80
-    inl upper = runtime_byte "©" 0i32 // 0xC2, first valid multibyte lead byte
-    codepoint_length_loop str lower upper 0i32 0i32 (length str : i32)
+    inl continuation_byte_first = runtime_byte "À" 1i32
+    inl multibyte_lead_first = runtime_byte "©" 0i32
+    codepoint_length_loop str continuation_byte_first multibyte_lead_first 0i32 0i32 (length str : i32)
 
 let rec codepoint_byte_offset_loop (str : string) (lower : char) (upper : char) (target : i32) (byte_index : i32) (codepoint_index : i32) (byte_length : i32) : i32 =
     if (=.) byte_index byte_length then byte_length
@@ -53,7 +48,19 @@ inl codepoint_slice (str : string) {from=(from_codepoint : i32) to=(to_codepoint
         inl near_to = codepoint_byte_offset str ((+.) to_codepoint 1i32)
         slice str {from; to=(-.) near_to 1i32}
 
-inl byte_to_i32 (value : char) : i32 = $'((uint8_t)!value)'
+inl byte_to_i32 (value : char) : i32 =
+    !!!!BackendSwitch({
+        C = fun () => $"((uint8_t)!value)" : i32
+        Fsharp = fun () => $"((int !value) &&& 255)" : i32
+        Rust = fun () => $"i32::from(!value)" : i32
+        Zig = fun () => $"\@as(i32, !value)" : i32
+        Lean = fun () => $"(Int32.ofNat (!value).toNat)" : i32
+        Bend = fun () => $"!value" : i32
+        Lua = fun () => $"string.byte(!value)" : i32
+        Gleam = fun () => $"case string.to_utf_codepoints(!value) {{ [spiral_byte_codepoint] -> string.utf_codepoint_to_int(spiral_byte_codepoint) _ -> 0 }}" : i32
+        TypeScript = fun () => $"!value" : i32
+        Delphi = fun () => $"Ord(!value)" : i32
+    })
 
 inl valid_continuation_i32 (value : i32) : bool =
     if value < 128i32 then false
@@ -151,26 +158,38 @@ inl utf8_fold_from_byte_offset forall s. folder (state : s) (str : string) (byte
 inl utf8_fold forall s. folder (state : s) (str : string) : s =
     utf8_fold_from_byte_offset folder state str 0i32
 
-// Bounded grapheme contract derived from mature grapheme-list surfaces.
-// A cluster is a base scalar followed by zero or more explicitly supported
-// extending scalars. ZWJ sequences, regional-indicator pairing and contextual
-// UAX #29 rules remain outside this deliberately narrow portable contract.
+inl combining_diacritical_marks_start () = 768i32
+inl combining_diacritical_marks_extended_start () = 6832i32
+inl combining_diacritical_marks_supplement_start () = 7616i32
+inl combining_diacritical_marks_for_symbols_start () = 8400i32
+inl variation_selectors_start () = 65024i32
+inl combining_half_marks_start () = 65056i32
+inl emoji_modifiers_start () = 127995i32
+inl supplementary_variation_selectors_start () = 917760i32
+inl combining_diacritical_marks_end () = 879i32
+inl combining_diacritical_marks_extended_end () = 6911i32
+inl combining_diacritical_marks_supplement_end () = 7679i32
+inl combining_diacritical_marks_for_symbols_end () = 8447i32
+inl variation_selectors_end () = 65039i32
+inl combining_half_marks_end () = 65071i32
+inl emoji_modifiers_end () = 127999i32
+inl supplementary_variation_selectors_end () = 917999i32
 inl utf8_is_grapheme_extend_bounded (scalar : i32) : bool =
-    if scalar >= 768i32 then
-        if scalar <= 879i32 then true // U+0300..U+036F Combining Diacritical Marks
-        elif scalar >= 6832i32 then
-            if scalar <= 6911i32 then true // U+1AB0..U+1AFF Extended
-            elif scalar >= 7616i32 then
-                if scalar <= 7679i32 then true // U+1DC0..U+1DFF Supplement
-                elif scalar >= 8400i32 then
-                    if scalar <= 8447i32 then true // U+20D0..U+20FF Symbols
-                    elif scalar >= 65024i32 then
-                        if scalar <= 65039i32 then true // U+FE00..U+FE0F variation selectors
-                        elif scalar >= 65056i32 then
-                            if scalar <= 65071i32 then true // U+FE20..U+FE2F Half Marks
-                            elif scalar >= 127995i32 then
-                                if scalar <= 127999i32 then true // emoji modifiers
-                                elif scalar >= 917760i32 then scalar <= 917999i32 // supplementary variation selectors
+    if scalar >= combining_diacritical_marks_start () then
+        if scalar <= combining_diacritical_marks_end () then true
+        elif scalar >= combining_diacritical_marks_extended_start () then
+            if scalar <= combining_diacritical_marks_extended_end () then true
+            elif scalar >= combining_diacritical_marks_supplement_start () then
+                if scalar <= combining_diacritical_marks_supplement_end () then true
+                elif scalar >= combining_diacritical_marks_for_symbols_start () then
+                    if scalar <= combining_diacritical_marks_for_symbols_end () then true
+                    elif scalar >= variation_selectors_start () then
+                        if scalar <= variation_selectors_end () then true
+                        elif scalar >= combining_half_marks_start () then
+                            if scalar <= combining_half_marks_end () then true
+                            elif scalar >= emoji_modifiers_start () then
+                                if scalar <= emoji_modifiers_end () then true
+                                elif scalar >= supplementary_variation_selectors_start () then scalar <= supplementary_variation_selectors_end ()
                                 else false
                             else false
                         else false
@@ -207,52 +226,62 @@ inl utf8_grapheme_count_bounded_from_byte_offset (str : string) (byte_offset : i
 inl utf8_grapheme_count_bounded (str : string) : i32 =
     utf8_grapheme_count_bounded_from_byte_offset str 0i32
 
-// Bounded canonical normalization table derived from mature Unicode string
-// surfaces. Only the pairs declared below are normalized. Unsupported scalars
-// and pairs pass through unchanged so this cannot be confused with full UAX #15.
+inl combining_grave () = 768i32
+inl combining_acute () = 769i32
+inl combining_tilde () = 771i32
+inl combining_diaeresis () = 776i32
+inl combining_cedilla () = 807i32
+inl latin_a_upper () = 65i32
+inl latin_c_upper () = 67i32
+inl latin_e_upper () = 69i32
+inl latin_o_upper () = 79i32
+inl latin_a_lower () = 97i32
+inl latin_c_lower () = 99i32
+inl latin_e_lower () = 101i32
+inl latin_o_lower () = 111i32
 inl utf8_decompose_canonical_bounded (scalar : i32) : i32 * i32 =
-    if (=.) scalar 192i32 then 65i32, 768i32       // À = A + grave
-    elif (=.) scalar 193i32 then 65i32, 769i32    // Á = A + acute
-    elif (=.) scalar 195i32 then 65i32, 771i32    // Ã = A + tilde
-    elif (=.) scalar 196i32 then 65i32, 776i32    // Ä = A + diaeresis
-    elif (=.) scalar 199i32 then 67i32, 807i32    // Ç = C + cedilla
-    elif (=.) scalar 201i32 then 69i32, 769i32    // É = E + acute
-    elif (=.) scalar 211i32 then 79i32, 769i32    // Ó = O + acute
-    elif (=.) scalar 213i32 then 79i32, 771i32    // Õ = O + tilde
-    elif (=.) scalar 224i32 then 97i32, 768i32    // à = a + grave
-    elif (=.) scalar 225i32 then 97i32, 769i32    // á = a + acute
-    elif (=.) scalar 227i32 then 97i32, 771i32    // ã = a + tilde
-    elif (=.) scalar 228i32 then 97i32, 776i32    // ä = a + diaeresis
-    elif (=.) scalar 231i32 then 99i32, 807i32    // ç = c + cedilla
-    elif (=.) scalar 233i32 then 101i32, 769i32   // é = e + acute
-    elif (=.) scalar 243i32 then 111i32, 769i32   // ó = o + acute
-    elif (=.) scalar 245i32 then 111i32, 771i32   // õ = o + tilde
+    if (=.) scalar 192i32 then latin_a_upper (), combining_grave ()
+    elif (=.) scalar 193i32 then latin_a_upper (), combining_acute ()
+    elif (=.) scalar 195i32 then latin_a_upper (), combining_tilde ()
+    elif (=.) scalar 196i32 then latin_a_upper (), combining_diaeresis ()
+    elif (=.) scalar 199i32 then latin_c_upper (), combining_cedilla ()
+    elif (=.) scalar 201i32 then latin_e_upper (), combining_acute ()
+    elif (=.) scalar 211i32 then latin_o_upper (), combining_acute ()
+    elif (=.) scalar 213i32 then latin_o_upper (), combining_tilde ()
+    elif (=.) scalar 224i32 then latin_a_lower (), combining_grave ()
+    elif (=.) scalar 225i32 then latin_a_lower (), combining_acute ()
+    elif (=.) scalar 227i32 then latin_a_lower (), combining_tilde ()
+    elif (=.) scalar 228i32 then latin_a_lower (), combining_diaeresis ()
+    elif (=.) scalar 231i32 then latin_c_lower (), combining_cedilla ()
+    elif (=.) scalar 233i32 then latin_e_lower (), combining_acute ()
+    elif (=.) scalar 243i32 then latin_o_lower (), combining_acute ()
+    elif (=.) scalar 245i32 then latin_o_lower (), combining_tilde ()
     else scalar, -1i32
 
 inl utf8_compose_canonical_bounded (starter : i32) (extend : i32) : i32 =
-    if (=.) starter 65i32 then
-        if (=.) extend 768i32 then 192i32
-        elif (=.) extend 769i32 then 193i32
-        elif (=.) extend 771i32 then 195i32
-        elif (=.) extend 776i32 then 196i32
+    if (=.) starter (latin_a_upper ()) then
+        if (=.) extend (combining_grave ()) then 192i32
+        elif (=.) extend (combining_acute ()) then 193i32
+        elif (=.) extend (combining_tilde ()) then 195i32
+        elif (=.) extend (combining_diaeresis ()) then 196i32
         else -1i32
-    elif (=.) starter 67i32 then if (=.) extend 807i32 then 199i32 else -1i32
-    elif (=.) starter 69i32 then if (=.) extend 769i32 then 201i32 else -1i32
-    elif (=.) starter 79i32 then
-        if (=.) extend 769i32 then 211i32
-        elif (=.) extend 771i32 then 213i32
+    elif (=.) starter (latin_c_upper ()) then if (=.) extend (combining_cedilla ()) then 199i32 else -1i32
+    elif (=.) starter (latin_e_upper ()) then if (=.) extend (combining_acute ()) then 201i32 else -1i32
+    elif (=.) starter (latin_o_upper ()) then
+        if (=.) extend (combining_acute ()) then 211i32
+        elif (=.) extend (combining_tilde ()) then 213i32
         else -1i32
-    elif (=.) starter 97i32 then
-        if (=.) extend 768i32 then 224i32
-        elif (=.) extend 769i32 then 225i32
-        elif (=.) extend 771i32 then 227i32
-        elif (=.) extend 776i32 then 228i32
+    elif (=.) starter (latin_a_lower ()) then
+        if (=.) extend (combining_grave ()) then 224i32
+        elif (=.) extend (combining_acute ()) then 225i32
+        elif (=.) extend (combining_tilde ()) then 227i32
+        elif (=.) extend (combining_diaeresis ()) then 228i32
         else -1i32
-    elif (=.) starter 99i32 then if (=.) extend 807i32 then 231i32 else -1i32
-    elif (=.) starter 101i32 then if (=.) extend 769i32 then 233i32 else -1i32
-    elif (=.) starter 111i32 then
-        if (=.) extend 769i32 then 243i32
-        elif (=.) extend 771i32 then 245i32
+    elif (=.) starter (latin_c_lower ()) then if (=.) extend (combining_cedilla ()) then 231i32 else -1i32
+    elif (=.) starter (latin_e_lower ()) then if (=.) extend (combining_acute ()) then 233i32 else -1i32
+    elif (=.) starter (latin_o_lower ()) then
+        if (=.) extend (combining_acute ()) then 243i32
+        elif (=.) extend (combining_tilde ()) then 245i32
         else -1i32
     else -1i32
 
@@ -263,9 +292,6 @@ inl utf8_normalize_pair_nfc_bounded (starter : i32) (extend : i32) : i32 * i32 =
     inl composed = utf8_compose_canonical_bounded starter extend
     if composed < 0i32 then starter, extend else composed, -1i32
 
-// Allocation-free bounded canonical equivalence. Each side is streamed as a
-// virtual NFD sequence. A precomposed scalar can leave one pending combining
-// mark, so no intermediate string, array or callback is required.
 inl utf8_nfd_next_bounded (str : string) (byte_offset : i32) (pending : i32) (byte_length : i32) : i32 * i32 * i32 =
     if pending >= 0i32 then pending, byte_offset, -1i32
     elif (=.) byte_offset byte_length then -1i32, byte_offset, -1i32

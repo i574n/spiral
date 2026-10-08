@@ -1,4 +1,3 @@
-// let x : Bool = True in x is a Bool term, not a term of the identity's function sort (the legacy term type is retired; this targets its successor corrected_cic_term).
 open main
 
 inl impossible_legacy_let_function_result () : corrected_cic_term empty_ctx identity_sort =

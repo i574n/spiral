@@ -1,6 +1,5 @@
 open main
 
-// tests: a complete split must carry the structural division equation (replaces the retired complete_descent_fold / CompleteDescentFoldSplit by the current complete_factorization_tree CompleteSplit)
 inl impossible_complete_descent_fold_missing_division () : certified_interval_positive_positional_complete_factorization_tree (positional_zero_bit (positional_zero_bit (positional_one_bit positional_one))) =
     inl root_value = positive_positional_twelve_value ()
     match classify_certified_interval_positive_positional_sealed_factor root_value with

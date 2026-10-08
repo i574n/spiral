@@ -1,10 +1,10 @@
 open main
 
-// Type applications on one line: the parser drops a definition whose annotation continues on the next line, without a
-// diagnostic (FOR-D, samples/multiline_type_application_dropped), and this negative then compiled vacuously.
 inl impossible_recursive_beta_false_ready_domain_retag
     (derivation : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_bool_type exact_linear_bool_type)
     : exact_linear_indexed_closed_recursive_beta_derivation exact_linear_unit_type exact_linear_bool_type =
     derivation
 
 inl main () = ()
+
+inl type_applications_stay_on_one_line_or_the_parser_drops_the_definition () = ()

@@ -1,7 +1,6 @@
-// An empty `match x with` (no cases) fails to parse, so its definition is left out; the build reported only the
-// caller's 'Unbound variable: f.' (lane H, FOR-D 17:4x; Self's negative_quantified_no_closed_false_inhabited_empty_match).
-// Expected: an error that names the parse failure at the match.
 inl f (x : i32) : i32 =
     match x with
 
 inl main () : i32 = f 1i32
+
+inl expected_parse_error_at_empty_match () = ()

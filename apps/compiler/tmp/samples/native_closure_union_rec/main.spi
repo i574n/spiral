@@ -1,6 +1,3 @@
-// A recursive union whose case holds a closure that returns the union (stream) or takes it (visitor). The C backend
-// printed the closure's `Fun` struct after the union struct naming it in a field (`unknown type name 'Fun0'`): a Fun
-// struct prints its range/domain types first, and here those name the Fun back. It now forward-declares the Fun.
 union rec stream =
     | Cons : u64 * (() -> stream)
     | Nil

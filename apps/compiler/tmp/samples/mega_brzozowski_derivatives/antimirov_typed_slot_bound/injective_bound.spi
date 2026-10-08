@@ -2,11 +2,6 @@ open main
 open positioned_bound
 open indexed_assignment
 
-// Classical Antimirov gives |support(r)| <= positions(r)+1.  Instead of asking
-// the current compiler to normalize Peano sums or nested HKT type functions,
-// this module proves the same bound constructively: every support state is
-// assigned to a fresh typed slot.  `SupportSlotRoot` is the +1 and every
-// `SupportSlotOrigin` is indexed by one concrete Char-origin path in `shape`.
 union antimirov_injective_assignment_validation shape support_count =
     | AntimirovInjectiveAssignmentRejected :: forall shape support_count.
         antimirov_injective_assignment_validation shape support_count
@@ -14,9 +9,6 @@ union antimirov_injective_assignment_validation shape support_count =
         antimirov_support_slot_assignment shape support_count ->
         antimirov_injective_assignment_validation shape support_count
 
-// Build slot coverage and injectivity in one recursive GADT refinement scope.
-// `seen_values` is the image already consumed in the typed slot universe; a
-// second support state may not consume a slot with the same denotation.
 let rec antimirov_build_injective_support_slot_assignment forall alphabet {symbol_compare} shape support_count.
     (cat_capability : antimirov_slot_cat_capability alphabet)
     (equal_capability : antimirov_slot_equal_capability alphabet)
@@ -68,9 +60,6 @@ let rec antimirov_support_list_same forall alphabet {symbol_compare}.
             false
     | _, _ => false
 
-// Post-validation typestate keeps the exact support_count while the position
-// shape witnesses the finite target universe.  Downstream consumers need not
-// replay coverage or distinct-image checks.
 nominal antimirov_structural_support_bound alphabet shape support_count =
     antimirov_positioned_regex alphabet shape *
     antimirov_support_vector alphabet support_count *

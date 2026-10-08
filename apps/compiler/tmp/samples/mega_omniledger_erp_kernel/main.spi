@@ -1,5 +1,3 @@
-// Run-time checks that are plain comparisons are core-free ops (F# macros until 2026-10-06); the file-system and process
-// checks are still F# macros, so this root runs on the F# backend only.
 inl mega_runtime_fail forall t. (message : string) : t = !!!!FailWith(`t, message)
 
 nominal requisition_drafted = ()
@@ -3194,8 +3192,6 @@ inl typed_fx_statement_indexed_durable_commit_terminal () : string =
         assert_typed_fx_statement_indexed_durable_commit_runtime accepted mismatch
     "restart-authorization-now-requires-a-marker-synced-value-that-structurally-contains-the-data-synced-and-prepared-predecessors-so-the-phase-chain-and-original-schedule-cannot-be-forged-or-swapped-by-a-phantom-state-wrapper-although-real-filesystem-fsync-atomic-rename-CAS-and-process-kill-evidence-remain-open-sealed"
 
-// Retired final result-named request surface; source quarantined.
-
 union typed_fx_hashed_statement_closed_decision =
     | TypedFxHashedStatementClosedApplied ::
         typed_fx_hashed_statement_event_store_decision
@@ -3242,8 +3238,6 @@ union typed_fx_hashed_statement_closed_decision =
             typed_fx_hashed_primary_history ->
         typed_fx_hashed_statement_closed_decision
 
-// Retired final result-named request surface; source quarantined.
-
 inl typed_fx_hashed_statement_closed_decision_runtime
     (decision : typed_fx_hashed_statement_closed_decision)
     : i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 * i64 =
@@ -3256,8 +3250,6 @@ inl typed_fx_hashed_statement_closed_decision_runtime
         typed_fx_hashed_statement_event_store_decision_runtime value
     | TypedFxHashedStatementClosedVersionConflict value =>
         typed_fx_hashed_statement_event_store_decision_runtime value
-
-// Retired inactive result-named handler/program; source quarantined.
 
 union typed_fx_hashed_statement_closed_history history position =
     | TypedFxHashedStatementClosedHistoryEmpty ::
@@ -3274,8 +3266,6 @@ union typed_fx_hashed_statement_closed_history history position =
         typed_fx_hashed_statement_closed_history
             typed_fx_hashed_primary_history
             typed_fx_hashed_primary_position
-
-// Retired inactive history-request corridor; source quarantined.
 
 inl typed_fx_hashed_statement_closed_history_values () :
     typed_fx_hashed_statement_closed_history
@@ -3318,8 +3308,6 @@ inl typed_fx_hashed_statement_closed_history_values () :
     TypedFxHashedStatementClosedHistoryRecorded (
         recorded,
         "the-recorded-history-state-authorizes-retry-collision-or-conflict")
-
-// Retired inactive history-request corridor; source quarantined.
 
 inl typed_fx_hashed_statement_closed_primary_command_from_facts () :
     typed_fx_hashed_statement_command
@@ -3565,10 +3553,6 @@ inl typed_fx_hashed_statement_closed_fact_input_terminal () : string =
     match decide_typed_fx_hashed_statement_closed_fact_input input with
     | TypedFxHashedStatementClosedApplied _ =>
         "one-indexed-fact-input-now-owns-the-history-and-observation-consumed-by-the-decision"
-
-// Retired inactive history-request corridor; source quarantined.
-
-// Retired inactive history-request corridor; source quarantined.
 
 type typed_fx_hashed_secondary_position =
     typed_fx_statement_stream_position_next typed_fx_hashed_primary_position

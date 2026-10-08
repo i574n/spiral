@@ -1,8 +1,5 @@
 open main
 
-// The derivative matcher on the native backends: runtime_smoke's and runtime_bench's checks (bit and three-letter
-// alphabets, accepted and rejected inputs, the decided typestate), with the exit code as the verdict: 0 when every one
-// holds (a broken expectation fails the run).
 inl main () : i32 =
     inl ~bit_accept = input_110 ()
     inl ~bit_reject = input_111 ()

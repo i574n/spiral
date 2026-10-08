@@ -1,9 +1,3 @@
-// FOR-D repro (lane G, 2026-10-06): matching a GADT constructor that quantifies the element type itself
-// (`VecCons :: forall a n. ...`) inside a function constrained on that type (`forall a {eq_like}`) types the payload
-// with the constructor's fresh variable, which lacks the constraint: "Metavariable's constraints must be a subset of
-// the forall var 'ta's. Got: {eq_like} Expected: {}" at the pattern, and "Got: a Expected: 'ta" at the use. The
-// refinement a = 'ta is known from the scrutinee's type. Workaround in mega_brzozowski_derivatives: capture the
-// operation as a function value before the match. Expected: exit 0. Not blessed.
 union rec length_zero = | LengthZero
 nominal length_succ n = n
 
@@ -23,3 +17,5 @@ inl rec contains forall a {eq_like} n. (value : a) (values : vec a n) : bool =
 inl main () : i32 =
     inl values : vec num (length_succ length_zero) = VecCons (num 1i32, VecNil)
     if contains (num 1i32) values then 0i32 else 1i32
+
+inl oracle_must_not_record_current_error () = ()

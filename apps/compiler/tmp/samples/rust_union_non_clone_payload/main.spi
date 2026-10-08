@@ -1,5 +1,3 @@
-// Union cases carrying a Rust value without Clone (Box<dyn Fn>): the enum can't derive Clone, a stack union is
-// matched by value (its field moves out), a heap union's field is borrowed.
 nominal boxed = $'Box<dyn Fn() -> i32>'
 
 union stack_u =

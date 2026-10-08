@@ -1,7 +1,5 @@
 open main
 
-// Capabilities are captured before crossing a length-indexed GADT boundary.
-// The indexed core never asks the compiler to recover symbol_compare again.
 nominal finite_symbol_equality_capability alphabet = alphabet -> alphabet -> bool
 nominal inventory_regex_equality_capability alphabet = regex alphabet -> regex alphabet -> bool
 nominal inventory_reference_acceptance_capability alphabet = regex alphabet -> linear_input alphabet -> bool
@@ -33,10 +31,6 @@ inl inventory_raw_dfa_closure_capability_default forall alphabet {symbol_compare
     : inventory_raw_dfa_closure_capability alphabet =
     inventory_raw_dfa_closure_capability dfa_closure
 
-// The same production capabilities over main's static twins (static_regex_equal, static_reference_accepts, ...): the
-// compile-time contract compares the alphabet-erased core with these, so every replay is decided by the compiler. The
-// `_default` capabilities above wrap the `let rec` join points, whose results are run-time values; an `inl rec` check
-// over such a result (a closure list, a corpus) never terminates during partial evaluation.
 inl inventory_regex_equality_capability_static forall alphabet {symbol_compare}.
     : inventory_regex_equality_capability alphabet =
     inventory_regex_equality_capability (fun left right => static_regex_equal left right)
@@ -84,9 +78,6 @@ inl rec finite_symbol_index_same forall length.
         finite_symbol_index_same left_previous right_previous
     | _ => false
 
-// Alphabet-erased, inventory-indexed regex. Every Char is an inhabitant of the
-// exact vector length selected at the boundary; an out-of-inventory Char has no
-// constructor here.
 union rec inventory_regex length =
     | InventoryRegexEmpty :: forall length. inventory_regex length
     | InventoryRegexEpsilon :: forall length. inventory_regex length
@@ -306,10 +297,6 @@ inl inventory_canonical_derivative forall length.
     (symbol : finite_symbol_index length) : inventory_regex length =
     inventory_normalize (inventory_derivative (inventory_normalize value) symbol)
 
-// Generate the exact finite index domain from the vector shape. Unlike the old
-// list, the second GADT index is the number of entries, so the full domain has
-// type finite_index_vector length length: not only is every element in range,
-// there are exactly as many domain entries as inventory slots.
 union rec finite_index_vector total_length row_count =
     | FiniteIndexVectorNil :: forall total_length.
         finite_index_vector total_length finite_length_zero
@@ -443,11 +430,6 @@ inl inventory_dfa_closure_reifies forall alphabet length.
             inl reified = inventory_regex_list_reify symbols indexed_closure
             raw_regex_list_set_equal_with equal_regex reified (raw_closure value)
 
-// Strong closed-DFA surface for the alphabet-erased inventory model.
-// States are indexed by an exact state_count, every row has exactly symbol_count
-// targets, and every target is a finite index into that same state vector. Once
-// sealed, an out-of-inventory symbol, a short/long row, or a target outside the
-// closure has no representation in the transition matrix.
 union rec inventory_dfa_state_vector symbol_count state_count =
     | InventoryDfaStateVectorNil :: forall symbol_count.
         inventory_dfa_state_vector symbol_count finite_length_zero
@@ -480,9 +462,6 @@ inl rec inventory_dfa_state_lookup forall symbol_count state_count.
     | FiniteSymbolIndexSucc previous, InventoryDfaStateVectorCons (_, rest) =>
         inventory_dfa_state_lookup previous rest
 
-// Exact accepting-state labeling. The vector shares state_count with the state
-// vector and transition matrix, so the executable DFA core does not need to
-// inspect regex structure after sealing.
 union rec inventory_dfa_acceptance_vector state_count =
     | InventoryDfaAcceptanceVectorNil :: inventory_dfa_acceptance_vector finite_length_zero
     | InventoryDfaAcceptanceVectorCons :: forall state_count.
@@ -549,7 +528,6 @@ inl rec inventory_dfa_state_vector_find forall symbol_count state_count.
             | InventoryDfaStateIndexFound index =>
                 InventoryDfaStateIndexFound (FiniteSymbolIndexSucc index)
 
-// The first index is the state domain; the second is the exact row cardinality.
 union rec inventory_dfa_target_vector state_count row_count =
     | InventoryDfaTargetVectorNil :: forall state_count.
         inventory_dfa_target_vector state_count finite_length_zero
@@ -582,8 +560,6 @@ inl rec inventory_dfa_target_row_build forall symbol_count state_count row_count
                 InventoryDfaTargetRowCertified (
                     InventoryDfaTargetVectorCons (target_index, tail))
 
-// total_state_count is the target domain shared by every row; source_count tracks
-// exactly how many source-state rows remain to be constructed.
 union rec inventory_dfa_closed_rows total_state_count symbol_count source_count =
     | InventoryDfaClosedRowsNil :: forall total_state_count symbol_count.
         inventory_dfa_closed_rows total_state_count symbol_count finite_length_zero
@@ -615,9 +591,6 @@ inl rec inventory_dfa_closed_rows_build forall symbol_count total_state_count so
             | InventoryDfaClosedRowsCertified row_rest =>
                 InventoryDfaClosedRowsCertified (InventoryDfaClosedRowsCons (row, row_rest))
 
-// Independent replay against the production derivative: rows themselves contain
-// only state indices, so this check reifies each indexed target and compares it to
-// the production canonical derivative for the corresponding raw symbol.
 inl rec inventory_dfa_target_row_reifies forall alphabet symbol_count state_count row_count.
     (equal_regex : inventory_regex_equality_capability alphabet)
     (production : inventory_canonical_derivative_capability alphabet)
@@ -657,9 +630,6 @@ inl rec inventory_dfa_closed_rows_reify forall alphabet symbol_count state_count
             inventory_dfa_closed_rows_reify equal_regex production symbols all_states state_rest row_rest
         else false
 
-// Alphabet-erased executable core. Once sealed, execution needs only an exact
-// start-state index, one acceptance bit per state, and one exact target row per
-// state/symbol pair. Regex states remain outside this nominal as audit evidence.
 nominal inventory_dfa_compiled_core symbol_count state_count =
     finite_symbol_index state_count *
     inventory_dfa_acceptance_vector state_count *
@@ -716,9 +686,6 @@ inl packed_inventory_dfa_closed_surface_reifies forall alphabet.
             inventory_dfa_acceptance_vector_reifies production_acceptance symbols states acceptance &&
             inventory_dfa_closed_rows_reify equal_regex production_derivative symbols states states rows
 
-// Post-validation typestate: a structurally closed matrix is not yet trusted by
-// consumers. Only independent replay of accepting labels and every transition
-// against the production semantics can produce this nominal witness.
 nominal inventory_dfa_verified_closed_surface alphabet =
     packed_inventory_dfa_closed_surface alphabet
 
@@ -740,9 +707,6 @@ inl verify_inventory_dfa_closed_surface forall alphabet.
 
 
 
-// Seal vector, indexed start state and index-only closure under one hidden
-// length. A consumer cannot recombine a closure with a different alphabet
-// cardinality without first leaving this typestate.
 nominal inventory_dfa_surface alphabet length =
     finite_symbol_vector alphabet length *
     inventory_regex length *
@@ -821,7 +785,6 @@ union inventory_input_validation length =
     | InventoryInputRejected :: forall length. inventory_input_validation length
     | InventoryInputCertified :: forall length. inventory_input length -> inventory_input_validation length
 
-// An `inl` loop: the indexed input is a compile-time value, so the index-only matchers (`inl rec` over it) terminate.
 inl inventory_input_index forall alphabet length.
     (equality : finite_symbol_equality_capability alphabet)
     (input : linear_input alphabet)
@@ -862,10 +825,6 @@ inl rec inventory_canonical_accepts forall length.
     | InventoryInputCons (symbol, rest) =>
         inventory_canonical_accepts (inventory_canonical_derivative value symbol) rest
 
-// Capture the two length-dependent operations before hiding length. This
-// avoids recovering a GADT refinement through a generic helper after an
-// existential unpack: the runner merely connects capabilities that already
-// share the same hidden index.
 nominal inventory_input_index_capability alphabet length =
     linear_input alphabet -> inventory_input_validation length
 
@@ -935,8 +894,6 @@ inl packed_inventory_dfa_run_agrees forall alphabet.
     | inventory_acceptance_capability production_accept, InventoryDfaRejected => bool_same (production_accept source input) false
     | _, InventoryDfaInputOutsideInventory => false
 
-// Matrix lookup is total over both indices: a symbol can only select one of the
-// exact row slots, and a state can only select one of the exact source rows.
 inl rec inventory_dfa_target_lookup forall state_count symbol_count.
     (symbol : finite_symbol_index symbol_count)
     (row : inventory_dfa_target_vector state_count symbol_count)
@@ -955,12 +912,6 @@ inl rec inventory_dfa_closed_row_lookup forall total_state_count symbol_count so
     | FiniteSymbolIndexSucc previous, InventoryDfaClosedRowsCons (_, rest) =>
         inventory_dfa_closed_row_lookup previous rest
 
-// Execute only through finite state/symbol indices. There is no regex transition
-// lookup and no closure-membership branch in the recursive step: an escaped target
-// cannot be constructed by the sealed matrix in the first place. The loop is `inl`: the compiler runs it on a
-// compile-time input. (As a `let rec` join point the state index becomes a run-time GADT value, and partial evaluation
-// stops at its uninhabited `finite_symbol_index finite_length_zero` case: the FOR-D of
-// compiler_probe_gadt_uninhabited_payload_runtime. The run-time runner below dispatches on an i32 state instead.)
 inl inventory_dfa_closed_accepts forall symbol_count state_count.
     (acceptance : inventory_dfa_acceptance_vector state_count)
     (rows : inventory_dfa_closed_rows state_count symbol_count state_count)
@@ -977,10 +928,6 @@ inl inventory_dfa_closed_accepts forall symbol_count state_count.
             loop next rest
     loop current input
 
-// The run-time executor of the compiled core: the same start index, acceptance vector and total transition matrix,
-// with the state as an i32 and the indices of the core turned into constants of if-chains during compilation. A raw
-// symbol is located in the inventory vector at run time; one that is not there makes the input outside the inventory
-// before any transition is taken, as in the compile-time path.
 inl inventory_i32_add (a : i32) (b : i32) : i32 = !!!!Add(a,b)
 inl inventory_i32_eq (a : i32) (b : i32) : bool = !!!!EQ(a,b)
 inl inventory_i32_lt (a : i32) (b : i32) : bool = !!!!LT(a,b)
@@ -1170,9 +1117,6 @@ inl inventory_closed_dfa_program_passes forall alphabet.
     | PackedInventoryDfaClosedRunnerRejected => false
     | PackedInventoryDfaClosedRunnerCertified _ => true
 
-// Higher-ranked program whose result is the semantic post-validation typestate,
-// not merely a structurally closed matrix. The hidden symbol/state counts remain
-// existential while independent production replay is mandatory before success.
 nominal inventory_verified_closed_dfa_program alphabet =
     capability_program regex inventory_dfa_verified_closed_surface_validation alphabet
 
@@ -1204,7 +1148,6 @@ inl inventory_verified_closed_dfa_program_passes forall alphabet.
     | InventoryDfaVerifiedClosedSurfaceCertified _ => true
 
 
-// Existentially bind the exact vector to the alphabet-erased indexed core.
 nominal inventory_indexed_regex alphabet length =
     finite_symbol_vector alphabet length * inventory_regex length
 
@@ -1303,9 +1246,6 @@ inl inventory_indexing_program_passes forall alphabet.
     | PackedInventoryIndexedRegexRejected => false
     | PackedInventoryIndexedRegexCertified _ => true
 
-// Third local alphabet deliberately has a three-value domain and a truncated
-// two-slot vector. It demonstrates that indexing rejects escaping characters
-// even though its equality capability itself knows about the omitted value.
 union model_symbol =
     | ModelA
     | ModelB
@@ -1504,16 +1444,10 @@ inl inventory_indexed_model_contract () : string =
             "inventory-indexed-model-green"
         | _ => "inventory-indexed-rogue-accepted"
 
-// Mandatory integration boundary: the normal proof suite and the inventory-indexed
-// model are validated by one package-owned entrypoint. This avoids relying on
-// transitive module visibility while keeping the model in the release proof gate.
 inl inventory_indexed_full_proof_contract () : string =
     inl _ = run_proof_suite ()
     inventory_indexed_model_contract ()
 
-// Runtime sentinel owned by the refinement site. The raw inputs are dyned only
-// after the exact symbol/state counts, input-index capability and closed DFA
-// runner have been captured together. There is no fallback transition or cast.
 inl packed_inventory_dfa_closed_runtime_run forall alphabet.
     (packed : packed_inventory_dfa_closed_runner alphabet)
     (input : linear_input alphabet) : inventory_dfa_run_result =
@@ -1576,8 +1510,6 @@ inl inventory_indexed_closed_dfa_runtime_probe () : bool =
     | PackedInventoryDfaClosedRunnerCertified bit_runner,
       PackedInventoryDfaClosedRunnerCertified tri_runner,
       PackedInventoryDfaClosedRunnerCertified model_runner =>
-        // The replays (acceptance labels and every transition against the static production semantics) are decided by
-        // the compiler; the corpora, the rogue input and the production matcher (`accepts`) are run-time values.
         inl replay_ok =
             packed_inventory_dfa_closed_runner_replays bit_regex_equal bit_derivative bit_replay_acceptance bit_runner &&
             packed_inventory_dfa_closed_runner_replays tri_regex_equal tri_derivative tri_replay_acceptance tri_runner &&

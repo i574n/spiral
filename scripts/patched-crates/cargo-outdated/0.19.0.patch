@@ -1,176 +1,161 @@
 diff --git a/src/cargo_ops/elaborate_workspace.rs b/src/cargo_ops/elaborate_workspace.rs
-index 1b359aa..51ca2db 100644
+index 1b359aa..c3ac27b 100644
 --- a/src/cargo_ops/elaborate_workspace.rs
 +++ b/src/cargo_ops/elaborate_workspace.rs
-@@ -1,4 +1,5 @@
- use std::{
-+    path::Path,
-     cell::RefCell,
+@@ -3,6 +3,7 @@ use std::{
      cmp::Ordering,
      collections::{BTreeSet, HashMap, HashSet, VecDeque},
-@@ -166,6 +167,10 @@ impl<'ela> ElaborateWorkspace<'ela> {
-                 return Ok(m.package_id());
-             }
-         }
-+        let member_path = member.source_id().to_string();
-+        if Path::new(&member_path).exists() {
-+            return Ok(member);
-+        }
-         Err(anyhow!("Workspace member {} not found", member.name()))
-     }
+     io::{self, Write},
++    path::PathBuf,
+     rc::Rc,
+ };
  
-diff --git a/src/cargo_ops/mod.rs b/src/cargo_ops/mod.rs
-index 0f84445..5205e76 100644
---- a/src/cargo_ops/mod.rs
-+++ b/src/cargo_ops/mod.rs
-@@ -11,7 +11,8 @@ pub use self::{elaborate_workspace::ElaborateWorkspace, temp_project::TempProjec
- struct Manifest {
-     #[serde(rename = "cargo-features", skip_serializing_if = "Option::is_none")]
-     pub cargo_features: Option<Value>,
--    pub package: Table,
-+    #[serde(skip_serializing_if = "Option::is_none")]
-+    pub package: Option<Table>,
-     #[serde(skip_serializing_if = "Option::is_none")]
-     pub dependencies: Option<Table>,
-     #[serde(rename = "dev-dependencies", skip_serializing_if = "Option::is_none")]
-@@ -31,8 +32,8 @@ struct Manifest {
+@@ -66,6 +67,18 @@ impl PartialOrd for Metadata {
+ }
  
- impl Manifest {
-     pub fn name(&self) -> String {
--        match self.package["name"] {
--            Value::String(ref name) => name.clone(),
-+        match self.package.as_ref().map(|package| &package["name"]) {
-+            Some(Value::String(name)) => name.clone(),
-             _ => unreachable!(),
-         }
-     }
-diff --git a/src/cargo_ops/temp_project.rs b/src/cargo_ops/temp_project.rs
-index f594e3f..9ed145e 100644
---- a/src/cargo_ops/temp_project.rs
-+++ b/src/cargo_ops/temp_project.rs
-@@ -81,8 +81,8 @@ impl<'tmp> TempProject<'tmp> {
-                 ::toml::from_str(&buf)?
-             };
- 
--            if om.package.contains_key("default-run") {
--                om.package.remove("default-run");
-+            if om.package.as_ref().is_some_and(|package| package.contains_key("default-run")) {
-+                om.package.as_mut().map(|package| package.remove("default-run"));
-                 let om_serialized = ::toml::to_string(&om).expect("Cannot format as toml file");
-                 let mut cargo_toml = OpenOptions::new()
-                     .read(true)
-@@ -94,8 +94,8 @@ impl<'tmp> TempProject<'tmp> {
- 
-             // if build script is specified in the original Cargo.toml (from links or build)
-             // remove it as we do not need it for checking dependencies
--            if om.package.contains_key("links") {
--                om.package.remove("links");
-+            if om.package.as_ref().is_some_and(|package| package.contains_key("links")) {
-+                om.package.as_mut().map(|package| package.remove("links"));
-                 let om_serialized = ::toml::to_string(&om).expect("Cannot format as toml file");
-                 let mut cargo_toml = OpenOptions::new()
-                     .read(true)
-@@ -105,8 +105,8 @@ impl<'tmp> TempProject<'tmp> {
-                 write!(cargo_toml, "{om_serialized}")?;
-             }
- 
--            if om.package.contains_key("build") {
--                om.package.remove("build");
-+            if om.package.as_ref().is_some_and(|package| package.contains_key("build")) {
-+                om.package.as_mut().map(|package| package.remove("build"));
-                 let om_serialized = ::toml::to_string(&om).expect("Cannot format as toml file");
-                 let mut cargo_toml = OpenOptions::new()
-                     .read(true)
-@@ -124,14 +124,50 @@ impl<'tmp> TempProject<'tmp> {
-             }
-         }
- 
--        // virtual root
-+        let temp_workspace_path = temp_dir.path().join("!workspace");
-+        fs::create_dir_all(&temp_workspace_path)?;
-+        let temp_workspace_manifest = temp_workspace_path.join("Cargo.toml");
-+
-         let mut virtual_root = workspace_root.join("Cargo.toml");
--        if !manifest_paths.contains(&virtual_root) && virtual_root.is_file() {
--            fs::copy(&virtual_root, temp_dir.path().join("Cargo.toml"))?;
-+        let is_virtual = !manifest_paths.contains(&virtual_root) && virtual_root.is_file();
-+        if is_virtual {
-+            fs::copy(&virtual_root, &temp_workspace_manifest)?;
-+            let mut root_manifest: Manifest = read_manifest(&temp_workspace_manifest)?;
-+            if let Some(workspace) = root_manifest.workspace.as_mut() {
-+                if let Some(Value::Table(dependencies)) = workspace.get_mut("dependencies") {
-+                    for (_, dependency) in dependencies.iter_mut() {
-+                        if let Some(Value::String(path)) = dependency.get_mut("path") {
-+                            if Path::new(path.as_str()).is_relative() {
-+                                *path = workspace_root.join(path.as_str()).display().to_string();
-+                            }
-+                        }
-+                    }
-+                }
-+                if let Some(Value::Array(members)) = workspace.get_mut("members") {
-+                    for member in members.iter_mut() {
-+                        if let Value::String(member) = member {
-+                            let member_dir = temp_workspace_path.join(member.as_str());
-+                            fs::create_dir_all(member_dir.join("src"))?;
-+                            let member_manifest_path = member_dir.join("Cargo.toml");
-+                            fs::copy(workspace_root.join(member.as_str()).join("Cargo.toml"), &member_manifest_path)?;
-+                            fs::write(member_dir.join("src").join("lib.rs"), "")?;
-+                            let mut member_manifest: Manifest = read_manifest(&member_manifest_path)?;
-+                            if let Some(Value::String(member_workspace)) = member_manifest.package.as_mut().and_then(|package| package.get_mut("workspace")) {
-+                                if Path::new(member_workspace.as_str()).is_relative() {
-+                                    *member_workspace = temp_workspace_path.display().to_string();
-+                                }
-+                            }
-+                            write_manifest(&member_manifest_path, &member_manifest)?;
-+                            *member = member_dir.display().to_string();
-+                        }
-+                    }
+ impl<'ela> ElaborateWorkspace<'ela> {
++    pub fn tree_root(&self) -> PathBuf {
++        let mut tree_root = self.workspace.root().to_path_buf();
++        for member in self.workspace.members() {
++            while !member.root().starts_with(&tree_root) {
++                if !tree_root.pop() {
++                    break;
 +                }
 +            }
-+            write_manifest(&temp_workspace_manifest, &root_manifest)?;
++        }
++        tree_root
++    }
++
+     /// Elaborate a `Workspace`
+     pub fn from_workspace(
+         workspace: &'ela Workspace<'_>,
+@@ -172,9 +185,9 @@ impl<'ela> ElaborateWorkspace<'ela> {
+     /// Find a contained package, which is a member or dependency inside the
+     /// workspace
+     fn find_contained_package(&self, name: &str) -> CargoResult<PackageId> {
+-        let root_path = self.workspace.root();
++        let root_path = self.tree_root();
+         for (pkg_id, pkg) in &self.pkgs {
+-            if pkg.manifest_path().starts_with(root_path) && pkg.name().as_str() == name {
++            if pkg.manifest_path().starts_with(&root_path) && pkg.name().as_str() == name {
+                 return Ok(*pkg_id);
+             }
+         }
+diff --git a/src/cargo_ops/temp_project.rs b/src/cargo_ops/temp_project.rs
+index f594e3f..8604187 100644
+--- a/src/cargo_ops/temp_project.rs
++++ b/src/cargo_ops/temp_project.rs
+@@ -46,8 +46,11 @@ impl<'tmp> TempProject<'tmp> {
+     ) -> CargoResult<TempProject<'tmp>> {
+         // e.g. /path/to/project
+         let workspace_root = orig_workspace.workspace.root();
+-        let workspace_root_str = workspace_root.to_string_lossy();
++        let tree_root = orig_workspace.tree_root();
+         let temp_dir = Builder::new().prefix("cargo-outdated").tempdir()?;
++        let mirror = |path: &Path| -> CargoResult<PathBuf> {
++            Ok(temp_dir.path().join(path.strip_prefix(&tree_root)?))
++        };
+         let manifest_paths = manifest_paths(orig_workspace)?;
+         let mut tmp_manifest_paths = vec![];
+ 
+@@ -55,16 +58,9 @@ impl<'tmp> TempProject<'tmp> {
+             // e.g. /path/to/project/src/sub
+             let mut from_dir = from.clone();
+             from_dir.pop();
+-            let from_dir_str = from_dir.to_string_lossy();
+ 
+             // e.g. /tmp/cargo.xxx/src/sub
+-            let mut dest = if workspace_root_str.len() < from_dir_str.len() {
+-                temp_dir
+-                    .path()
+-                    .join(&from_dir_str[workspace_root_str.len() + 1..])
+-            } else {
+-                temp_dir.path().to_owned()
+-            };
++            let mut dest = mirror(&from_dir)?;
+ 
+             fs::create_dir_all(&dest)?;
+ 
+@@ -125,13 +121,15 @@ impl<'tmp> TempProject<'tmp> {
+         }
+ 
+         // virtual root
++        let temp_workspace_root = mirror(workspace_root)?;
++        fs::create_dir_all(&temp_workspace_root)?;
+         let mut virtual_root = workspace_root.join("Cargo.toml");
+         if !manifest_paths.contains(&virtual_root) && virtual_root.is_file() {
+-            fs::copy(&virtual_root, temp_dir.path().join("Cargo.toml"))?;
++            fs::copy(&virtual_root, temp_workspace_root.join("Cargo.toml"))?;
              virtual_root.pop();
              virtual_root.push("Cargo.lock");
              if virtual_root.is_file() {
 -                fs::copy(&virtual_root, temp_dir.path().join("Cargo.lock"))?;
-+                fs::copy(&virtual_root, temp_workspace_path.join("Cargo.lock"))?;
++                fs::copy(&virtual_root, temp_workspace_root.join("Cargo.lock"))?;
              }
          }
  
-@@ -156,7 +192,18 @@ impl<'tmp> TempProject<'tmp> {
+@@ -139,24 +137,27 @@ impl<'tmp> TempProject<'tmp> {
+         // this is the preferred way
+         // https://doc.rust-lang.org/cargo/reference/config.html
+         if workspace_root.join(".cargo/config.toml").is_file() {
+-            fs::create_dir_all(temp_dir.path().join(".cargo"))?;
++            fs::create_dir_all(temp_workspace_root.join(".cargo"))?;
+             fs::copy(
+                 workspace_root.join(".cargo/config.toml"),
+-                temp_dir.path().join(".cargo/config.toml"),
++                temp_workspace_root.join(".cargo/config.toml"),
+             )?;
+         }
+ 
+         //.cargo/config
+         // this is legacy support for config files without the `.toml` extension
+         if workspace_root.join(".cargo/config").is_file() {
+-            fs::create_dir_all(temp_dir.path().join(".cargo"))?;
++            fs::create_dir_all(temp_workspace_root.join(".cargo"))?;
+             fs::copy(
+                 workspace_root.join(".cargo/config"),
+-                temp_dir.path().join(".cargo/config"),
++                temp_workspace_root.join(".cargo/config"),
              )?;
          }
  
 -        let relative_manifest = String::from(&orig_manifest[workspace_root_str.len() + 1..]);
-+        let common_path: PathBuf = Path::new(orig_manifest)
-+            .components()
-+            .zip(workspace_root.components())
-+            .take_while(|(manifest_part, root_part)| manifest_part == root_part)
-+            .map(|(manifest_part, _)| manifest_part)
-+            .collect();
-+        let relative_manifest = String::from(&orig_manifest[common_path.display().to_string().len() + 1..]);
-+        let relative_manifest = if is_virtual && orig_manifest.starts_with(workspace_root_str.as_ref()) {
-+            format!("!workspace/{relative_manifest}")
-+        } else {
-+            relative_manifest
-+        };
++        let relative_manifest = Path::new(orig_manifest)
++            .strip_prefix(&tree_root)?
++            .to_string_lossy()
++            .into_owned();
          let context = Self::generate_context(temp_dir.path(), &relative_manifest, options)?;
  
          Ok(TempProject {
-@@ -844,3 +891,16 @@ fn valid_latest_version(mut requirement: &str, version: &Version) -> bool {
-         }
+@@ -799,7 +800,8 @@ fn manifest_paths(elab: &ElaborateWorkspace<'_>) -> CargoResult<Vec<PathBuf>> {
      }
- }
-+
-+fn read_manifest(path: &Path) -> CargoResult<Manifest> {
-+    let mut buf = String::new();
-+    File::open(path)?.read_to_string(&mut buf)?;
-+    Ok(::toml::from_str(&buf)?)
-+}
-+
-+fn write_manifest(path: &Path, manifest: &Manifest) -> CargoResult<()> {
-+    let serialized = ::toml::to_string(manifest)?;
-+    let mut file = OpenOptions::new().write(true).truncate(true).open(path)?;
-+    write!(file, "{serialized}")?;
-+    Ok(())
-+}
-\ No newline at end of file
+ 
+     // executed against a virtual manifest
+-    let workspace_path = elab.workspace.root().to_string_lossy();
++    let tree_root = elab.tree_root();
++    let workspace_path = tree_root.to_string_lossy();
+     // if cargo workspace is not explicitly used, the package itself would be a
+     // member
+     for member in elab.workspace.members() {
+diff --git a/src/main.rs b/src/main.rs
+index 112dacf..22e8bcc 100644
+--- a/src/main.rs
++++ b/src/main.rs
+@@ -123,7 +123,7 @@ pub fn execute(options: Options, context: &mut GlobalContext) -> CargoResult<i32
+     let compat_proj =
+         TempProject::from_workspace(&ela_curr, &curr_manifest.to_string_lossy(), &options)?;
+     compat_proj.write_manifest_semver(
+-        curr_workspace.root(),
++        ela_curr.tree_root().as_path(),
+         compat_proj.temp_dir.path(),
+         &ela_curr,
+         &mut skipped,
+@@ -143,7 +143,7 @@ pub fn execute(options: Options, context: &mut GlobalContext) -> CargoResult<i32
+     let latest_proj =
+         TempProject::from_workspace(&ela_curr, &curr_manifest.to_string_lossy(), &options)?;
+     latest_proj.write_manifest_latest(
+-        curr_workspace.root(),
++        ela_curr.tree_root().as_path(),
+         compat_proj.temp_dir.path(),
+         &ela_curr,
+         &mut skipped,

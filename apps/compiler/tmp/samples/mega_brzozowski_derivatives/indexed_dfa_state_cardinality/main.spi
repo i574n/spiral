@@ -61,8 +61,6 @@ inl rec indexed_dfa_exact_row_lookup forall alphabet symbol_count state_count.
     | FiniteSymbolIndexSucc previous, IndexedDfaExactTransitionRowsCons (_, rest) =>
         indexed_dfa_exact_row_lookup previous rest
 
-// Exact rows and states share the same state_count index. The previous recursive
-// boolean was a redundant recount; the type signature itself is the witness.
 inl indexed_dfa_state_row_shape_aligned forall alphabet symbol_count state_count.
     (_ : indexed_dfa_state_vector alphabet state_count)
     (_ : indexed_dfa_exact_transition_rows alphabet symbol_count state_count)
@@ -143,9 +141,6 @@ inl indexed_dfa_cardinality_program_passes forall alphabet.
     match run_indexed_dfa_cardinality_program program with
     | indexed_dfa_cardinality_check result => result
 
-// Bisimilarity, and its constructive counterpart (a distinguishing word for two inequivalent states, and the check of
-// such a word against the direct-language matcher), captured where symbol_compare is known: a surface sealed under an
-// `exists alphabet` carries this capability instead of the instance.
 nominal indexed_dfa_bisimulation_capability alphabet =
     (regex alphabet -> regex alphabet -> symbol_list alphabet -> bool) *
     (regex alphabet -> regex alphabet -> symbol_list alphabet -> dfa_constructive_distinguishing_result alphabet) *
@@ -347,11 +342,6 @@ inl indexed_dfa_minimized_surface_passes forall alphabet symbol_count closure_co
         indexed_dfa_quotient_coverage_valid bisimulation_capability closure representatives (finite_symbol_vector_to_list symbols) coverage &&
         indexed_dfa_representative_origins_valid bisimulation_capability representatives closure (finite_symbol_vector_to_list symbols) origins
 
-// The alphabet-erased compiled core of the minimized DFA: the start state's representative index, one acceptance bit
-// per representative and a total transition matrix (one target representative index per representative and symbol).
-// Every vector is indexed by the exact representative and symbol counts, so a short row, a missing state or an index
-// past the last representative is a type error. The compiler builds it from the representatives it minimized
-// (static_minimize_states); at run time only the indices remain: an i32 state and if-chains of constants.
 union rec indexed_dfa_acceptance_vector state_count =
     | IndexedDfaAcceptanceVectorNil :: indexed_dfa_acceptance_vector finite_length_zero
     | IndexedDfaAcceptanceVectorCons :: forall state_count.
@@ -392,7 +382,6 @@ union indexed_dfa_target_row_validation symbol_count representative_count =
         indexed_dfa_target_row symbol_count representative_count ->
         indexed_dfa_target_row_validation symbol_count representative_count
 
-// Every target is the derivative's bisimilar representative: the quotient is closed, so a missing one rejects the core.
 inl rec indexed_dfa_target_row_build forall alphabet symbol_count representative_count.
     (capability : indexed_dfa_capability alphabet)
     (bisimulation_capability : indexed_dfa_bisimulation_capability alphabet)
@@ -437,9 +426,6 @@ inl rec indexed_dfa_target_matrix_build forall alphabet symbol_count source_coun
             | IndexedDfaTargetMatrixRejected => IndexedDfaTargetMatrixRejected
             | IndexedDfaTargetMatrixCertified matrix => IndexedDfaTargetMatrixCertified (IndexedDfaTargetMatrixCons (row, matrix))
 
-// The core together with the symbol vector it was compiled against and the symbol equality captured at the seal (the
-// run-time symbols are compared with that vector; the GADT match on the vector does not recover symbol_compare). The
-// alphabet stays visible (the inputs are of that alphabet); the two counts are hidden.
 nominal indexed_dfa_compiled_runner alphabet symbol_count representative_count =
     (alphabet -> alphabet -> bool) * finite_symbol_vector alphabet symbol_count * indexed_dfa_compiled_core symbol_count representative_count
 
@@ -494,9 +480,6 @@ inl rec finite_symbol_index_to_i32 forall count. (index : finite_symbol_index co
     | FiniteSymbolIndexZero => 0i32
     | FiniteSymbolIndexSucc previous => i32_add (finite_symbol_index_to_i32 previous) 1i32
 
-// Run-time dispatch over the compile-time core. The last row and the last symbol are the fallbacks of their if-chains:
-// the matrix is total over the representatives, and the descriptor check proved the symbol vector lists every
-// inhabitant of the alphabet.
 inl rec indexed_dfa_acceptance_at forall state_count.
     (acceptance : indexed_dfa_acceptance_vector state_count) (state : i32) (index : i32) : bool =
     match acceptance with
@@ -611,9 +594,6 @@ inl two_bit_states () : indexed_dfa_state_vector bit_alphabet two_state_count =
 inl second_state_index () : finite_symbol_index two_state_count =
     FiniteSymbolIndexSucc FiniteSymbolIndexZero
 
-// Run time: the minimized compiled core against main's derivative matcher (`accepts`, derivatives at run time) on inputs
-// generated from a seed (runtime_workload's LCG and zero runs), so the compiler knows none of them. Each count is the
-// number of accepted inputs; a disagreement fails the run.
 inl compiled_runner_random_count forall symbol_count representative_count.
     (runner : indexed_dfa_compiled_runner bit_alphabet symbol_count representative_count)
     (value : regex bit_alphabet)
@@ -658,7 +638,6 @@ union compiled_runner_workload =
     | CompiledRandom : i32 * i32
     | CompiledZeroRuns : i32
 
-// Seals the minimized compiled core of `value` (the representative count is checked at compile time) and runs it.
 inl bit_compiled_runner_count
     (capability : indexed_dfa_capability bit_alphabet)
     (value : regex bit_alphabet)
@@ -765,13 +744,11 @@ inl main () : i32 =
     assert_static
         (matcher_batch_forall `$indexed_dfa_cardinality_program_passes cardinality_program_batch)
         "higher-ranked cardinality programs must preserve alphabet-indexed symbol/state counts before existential sealing"
-    // The same counts as runtime_bench (93 and 16: also what Rust's regex crate returns on these inputs), from minimal
-    // DFAs of 2 and 3 states ((0|00)*1 has 5 derivatives: the minimization merges two pairs). runtime_bench's third
-    // regex, (0|1)*1(0|1)(0|1)(0|1), works too (16 states, count 97) but its compile-time minimization alone takes ~43 s
-    // of single-flight compilation (4 s for the rest of this program), so it is not part of the suite's program.
     inl ~count = 200i32
     inl ~length = 32i32
     inl ~max_zero_run = 16i32
     expect_compiled_count (bit_compiled_runner_count bit_capability (ends_with_zero ()) 2i32 (CompiledRandom (count, length))) 93i32 "brzozowski-compiled-ends-with-zero-count"
     expect_compiled_count (bit_compiled_runner_count bit_capability (zero_or_two_zeros_then_one ()) 3i32 (CompiledZeroRuns max_zero_run)) 16i32 "brzozowski-compiled-zero-runs-count"
     if tri_compiled_runner_agrees tri_capability then 0i32 else failwith "brzozowski-compiled-ternary-disagrees"
+
+inl fourth_from_end_one_left_out_its_compile_time_minimization_takes_43_s () = ()

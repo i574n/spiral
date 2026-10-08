@@ -1,6 +1,3 @@
-// Self-checking: returns 0 when every result equals C's, else the number of the first failing check.
-// Only overflow that C defines is used (unsigned wrap-around; narrowing to i8, which gcc defines as modulo;
-// truncating division; arithmetic right shift of a negative, which gcc defines), so the C oracle is not UB.
 inl main () : i32 =
     inl ~c = 250u8
     inl ~d = 10u8

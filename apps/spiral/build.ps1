@@ -111,6 +111,7 @@ try {
             } catch { "<no JSON> $json" }
             Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name): exit $caseExit / $("$output".Trim())"
             if ($caseExit -ne 0 -or !("$output" -match [regex]::Escape($case.expect))) {
+                Get-Content "$checkDir/$($case.name).err" -Tail 40 -ErrorAction Ignore | ForEach-Object { Write-Output "spiral/apps/spiral/build.ps1 / run check / $($case.name) stderr / $_" }
                 $failures += "$($case.name): exit $caseExit, expected '$($case.expect)' in the output: $output"
             }
         }

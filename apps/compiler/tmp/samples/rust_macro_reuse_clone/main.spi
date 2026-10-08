@@ -1,6 +1,3 @@
-// A non-Copy variable that a macro moves (a `self` method, `match`, a call argument, an emitRustExpr argument, a
-// closure capture, a loop) and that is used again afterwards: the splice clones it. A `&mut self` method (`push`)
-// keeps the variable itself, so the mutation is seen by the later `len`.
 nominal vec = $'Vec<i32>'
 nominal opt = $'Option<Vec<i32>>'
 

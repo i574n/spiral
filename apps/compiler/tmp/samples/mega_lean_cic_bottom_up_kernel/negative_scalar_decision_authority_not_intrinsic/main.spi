@@ -1,4 +1,3 @@
-// A structural (scalar-decided) Pi/dependent-application relation is not an intrinsic defeq proof (the separate decision-authority wrapper is retired; the relation itself is the scalar authority now).
 open main
 
 inl impossible_scalar_decision_authority_not_intrinsic () =

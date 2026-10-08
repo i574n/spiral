@@ -1,8 +1,3 @@
 open inventory_indexed_model
 
-// The inventory-indexed model's alphabet-erased compiled core at run time: the closed DFAs of (0|1)*0 over the bit
-// alphabet, tri_ab_star_then_c over the three-letter alphabet and a* over a two-slot inventory of a three-value alphabet
-// are replayed against the static production semantics by the compiler, then run (an i32 state, if-chains of the core's
-// constants) on every input of length <= 2 and compared with main's run-time derivative matcher; a symbol outside the
-// inventory must be reported as such. Exit 0 when all of it holds.
 inl main () : i32 = if inventory_indexed_closed_dfa_runtime_probe () then 0i32 else 1i32

@@ -1,6 +1,5 @@
 open main
 
-// tests: the strict second-prime separation is not the root divisibility decision, even though the linked Mixed authority carries both (replaces the retired mixed_second_prime_* / *_root_authority_make types by the current mixed_linked_prime_power_divisibility)
 inl impossible_mixed_strict_separation_not_divisibility_obligation forall root. (authority : certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility root) : () =
     match authority with
     | certified_arithmetic_rooted_ordered_prime_power_nf_uniqueness_mixed_linked_prime_power_divisibility packed =>

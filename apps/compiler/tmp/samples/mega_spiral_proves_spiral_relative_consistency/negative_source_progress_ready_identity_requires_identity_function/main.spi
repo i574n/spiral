@@ -1,4 +1,3 @@
-// The Ready identity witness is indexed by the canonical identity application: it cannot be indexed as the application of a non-identity (Unit-to-Tensor) Lambda (the function-taking ExactLinearIndexedClosedSourceProgressApplicationReadyIdentity is retired; its successor ExactLinearIndexedClosedReadyBetaIdentity has no function slot, so the misuse moves to the source index).
 open main
 
 inl impossible_source_progress_ready_identity_requires_identity_function () : exact_linear_indexed_closed_ready_beta_or_neutral (exact_linear_indexed_closed_source_application_ready_unit_tensor exact_linear_indexed_closed_source_unit) exact_linear_unit_type =

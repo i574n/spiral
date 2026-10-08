@@ -1,4 +1,3 @@
-// A (* *) comment that never closes takes the rest of the file: an error on the line it opens in.
 inl main () : i32 =
     (* never closed
     0i32

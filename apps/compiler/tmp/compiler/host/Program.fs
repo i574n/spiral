@@ -751,6 +751,7 @@ module Program =
         | ".pas" | ".dpr" -> "Delphi"
         | ".zig" -> "Zig"
         | ".lean" -> "Lean"
+        | ".bend" -> "Bend"
         | ".py" -> "Python + Cuda"
         | ".cpp" -> "Cpp + Cuda"
         | ".lua" -> "Lua"

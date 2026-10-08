@@ -1,6 +1,3 @@
-// The term arguments of an inbuilt value op are type checked (lane W), so a unary deref, an operator or an `if` in them
-// gets its type applications (an operator needs parentheses there: op arguments are applications); `!!!!Printf("%s", *x)` used to fail with "Cannot apply a forall with a term" (`(~*)` and
-// `(=)` are foralls the untyped op arguments never applied). The exit code is the verdict: 0.
 inl main () : i32 =
     inl x = mut "deref"
     inl ~n = 3i32
