@@ -30,11 +30,17 @@ inl write_line_c forall t. (obj : t) : () =
         | u64 => $'printf("%llu\\n", (unsigned long long)(!obj))' : ()
         | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+inl write_line_gleam forall t. (obj : t) : () =
+    global "import gleam/io"
+    if (real typecase t with string => true | _ => false) then $'io.println(!obj)' : ()
+    elif (real typecase t with () => true | _ => false) then $'io.println("")' : ()
+    else
+        global "import gleam/int"
+        $'io.println(int.to_string(!obj))' : ()
+
 inl write_line forall t. (obj : t) : () =
     backend_switch {
-        Gleam = fun () =>
-            global "import gleam/io"
-            $'io.println(!obj)' : ()
+        Gleam = fun () => write_line_gleam obj
         Lua = fun () => $'print(!obj)' : ()
         Fsharp = fun () =>
             fun () => obj |> $'System.Console.WriteLine'
@@ -59,11 +65,16 @@ inl write_c forall t. (x : t) : () =
         | u64 => $'printf("%llu", (unsigned long long)(!x))' : ()
         | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+inl write_gleam forall t. (x : t) : () =
+    global "import gleam/io"
+    if (real typecase t with string => true | _ => false) then $'io.print(!x)' : ()
+    else
+        global "import gleam/int"
+        $'io.print(int.to_string(!x))' : ()
+
 inl write forall t. (x : t) : () =
     backend_switch {
-        Gleam = fun () =>
-            global "import gleam/io"
-            $'io.print(!x)' : ()
+        Gleam = fun () => write_gleam x
         Lua = fun () => $'io.write(!x)' : ()
         Fsharp = fun () => $'!x |> System.Console.Write' : ()
         Python = fun () => $'print(!x, end="")' : ()

@@ -175572,7 +175572,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
 
                 let program = StringBuilder()
 
-                Seq.append env.globals globals |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+                Seq.append globals env.globals |> Seq.distinct |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
                 fwd_dcls |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 types |> Seq.iter (fun x -> program.Append(x) |> ignore)
                 functions |> Seq.iter (fun x -> program.Append(x) |> ignore)

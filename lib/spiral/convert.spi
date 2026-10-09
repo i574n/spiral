@@ -81,9 +81,19 @@ inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
         Python = fun () => $'int (!x, !base)' : i32
         Rust = fun () => $'i32::from_str_radix(&*(!x), (!base) as u32).unwrap()' : i32
         TypeScript = fun () => $'parseInt(!x, !base)' : i32
+        C = fun () => $'(int32_t)strtol((!x)->ptr, NULL, !base)' : i32
+        Delphi = fun () =>
+            if base = 16 then $'StrToInt(##36 + !x)' : i32
+            elif base = 2 then $'StrToInt(##37 + !x)' : i32
+            elif base = 8 then $'StrToInt(##38 + !x)' : i32
+            elif base = 10 then $'StrToInt(!x)' : i32
+            else $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : i32
     }
 
 /// ### convert_i32
+inl is_string_type forall t. (_ : t) : bool = real typecase t with string => true | _ => false
+inl is_float_type forall t. (_ : t) : bool = real typecase t with f64 => true | f32 => true | _ => false
+
 inl convert_i32 forall t. (x : t) : int =
     backend_switch {
         Gleam = fun () => x |> convert_i32_base 10 : int
@@ -96,23 +106,59 @@ inl convert_i32 forall t. (x : t) : int =
             elif (real typecase t with f64 => true | f32 => true | _ => false)
             then $'((!x).round_ties_even() as i32)' : int
             else $'(!x as i32)' : int
+        C = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then
+                global "#include <math.h>"
+                $'(int32_t)nearbyint(!x)' : int
+            else $'(int32_t)(!x)' : int
+        Delphi = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'Round(!x)' : int
+            else $'Int32(!x)' : int
+        TypeScript = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'backend_switch_has_no_TypeScript_float_rounding_in_lib_spiral' : int
+            else $'Number(!x)' : int
     }
 
 /// ### try_convert
+inl integer_fits forall u. (_ : u) (value : i64) : bool =
+    inl bounded : bool = real typecase u with i64 => false | u64 => false | _ => true
+    inl lowest : i64 = real typecase u with i8 => -128i64 | i16 => -32768i64 | i32 => -2147483648i64 | _ => 0i64
+    inl highest : i64 = real typecase u with i8 => 127i64 | i16 => 32767i64 | i32 => 2147483647i64 | u8 => 255i64 | u16 => 65535i64 | u32 => 4294967295i64 | _ => 0i64
+    not bounded || (value >= lowest && value <= highest)
+
+inl parsed_integer forall u. (ok : bool) (value : i64) : option u =
+    inl integral : bool = real typecase u with i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false
+    if integral then
+        inl converted : u = real conv `i64 `u value
+        if ok && integer_fits converted value then Some converted else None
+    else None
+
 inl try_convert forall t u. (x : t) : option u =
     x |> to' fun x =>
         backend_switch {
             Gleam = fun () =>
                 if (real typecase u with int => true | _ => false) then
                     global "import gleam/int"
+                    global "import gleam/string"
                     inl (n : int), (err : int) =
-                        $'case int.parse(!x) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
+                        $'case int.parse(string.trim(!x)) { Ok(n) -> ##(n, 0) Error(Nil) -> ##(0, 1) }'
                     if err = 0
                     then n |> to |> Some
                     else None : _ u
                 else x |> to |> Some
             Lua = fun () =>
-                x |> to |> Some : _ u
+                if is_string_type x
+                then parsed_integer ($'(string.match(!x, "^%s*[+-]?%d+%s*$") ~= nil)' : bool) ($'(tonumber(!x) or 0)' : i64)
+                else x |> to |> Some : _ u
             Fsharp = fun () =>
                 resultm.from_try
                     fun () => $'!x |> `u '
@@ -132,6 +178,26 @@ inl try_convert forall t u. (x : t) : option u =
                 then
                     ($'(!x).trim().parse::<`u>().ok()' : optionm'.option' u) |> optionm'.unbox
                 else Some $'((!x) as `u)'
+            C = fun () =>
+                if is_string_type x
+                then
+                    global "#include <stdbool.h>"
+                    global "#include <stdlib.h>"
+                    global "#include <ctype.h>"
+                    global "#include <errno.h>"
+                    global "static bool spiral_integer_text_ok(const char *s) { char *end; while (isspace((unsigned char)*s)) s++; if (!*s) return false; errno = 0; strtoll(s, &end, 10); if (errno != 0 || end == s) return false; while (isspace((unsigned char)*end)) end++; return *end == 0; }"
+                    parsed_integer ($'spiral_integer_text_ok((!x)->ptr)' : bool) ($'strtoll((!x)->ptr, NULL, 10)' : i64)
+                else x |> to |> Some : _ u
+            Delphi = fun () =>
+                if is_string_type x
+                then parsed_integer ($'(StrToInt64Def(Trim(!x), 0) = StrToInt64Def(Trim(!x), 1))' : bool) ($'StrToInt64Def(Trim(!x), 0)' : i64)
+                else x |> to |> Some : _ u
+            TypeScript = fun () =>
+                if is_string_type x
+                then
+                    inl ok : bool = $'/^\\s*[+-]?\\d+\\s*$/.test(!x)'
+                    parsed_integer ok ($'(!ok ? BigInt(!x) : 0n)' : i64)
+                else x |> to |> Some : _ u
         }
 
 /// ### convert

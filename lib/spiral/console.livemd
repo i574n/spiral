@@ -68,7 +68,7 @@ Spiral.Kino.eval!(
 
 ### write_line
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_line_c forall t. (obj : t) : () =\n    real\n        typecase t with\n        | string => $'printf(\"%s\\\\n\", (!obj)->ptr)' : ()\n        | i32 => $'printf(\"%d\\\\n\", !obj)' : ()\n        | i64 => $'printf(\"%lld\\\\n\", (long long)(!obj))' : ()\n        | u32 => $'printf(\"%u\\\\n\", !obj)' : ()\n        | u64 => $'printf(\"%llu\\\\n\", (unsigned long long)(!obj))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\ninl write_line forall t. (obj : t) : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.println(!obj)' : ()\n        Lua = fun () => $'print(!obj)' : ()\n        Fsharp = fun () =>\n            fun () => obj |> $'System.Console.WriteLine'\n            |> exec_unit\n        Python = fun () => $'print(!obj)' : ()\n        Rust = fun () => $'println\\!(\"{}\", !obj)' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!obj) + \"\\\\n\")' : ()\n        Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()\n        Lean = fun () => $'IO.println (toString !obj)' : ()\n        C = fun () => write_line_c obj\n        Delphi = fun () => $'Writeln(!obj)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_line_c forall t. (obj : t) : () =\n    real\n        typecase t with\n        | string => $'printf(\"%s\\\\n\", (!obj)->ptr)' : ()\n        | i32 => $'printf(\"%d\\\\n\", !obj)' : ()\n        | i64 => $'printf(\"%lld\\\\n\", (long long)(!obj))' : ()\n        | u32 => $'printf(\"%u\\\\n\", !obj)' : ()\n        | u64 => $'printf(\"%llu\\\\n\", (unsigned long long)(!obj))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\ninl write_line_gleam forall t. (obj : t) : () =\n    global \"import gleam/io\"\n    if (real typecase t with string => true | _ => false) then $'io.println(!obj)' : ()\n    elif (real typecase t with () => true | _ => false) then $'io.println(\"\")' : ()\n    else\n        global \"import gleam/int\"\n        $'io.println(int.to_string(!obj))' : ()\n\ninl write_line forall t. (obj : t) : () =\n    backend_switch {\n        Gleam = fun () => write_line_gleam obj\n        Lua = fun () => $'print(!obj)' : ()\n        Fsharp = fun () =>\n            fun () => obj |> $'System.Console.WriteLine'\n            |> exec_unit\n        Python = fun () => $'print(!obj)' : ()\n        Rust = fun () => $'println\\!(\"{}\", !obj)' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!obj) + \"\\\\n\")' : ()\n        Zig = fun () => $'{ spiralPrintAny(!obj); spiralPrint(&[_]u8{10}); }' : ()\n        Lean = fun () => $'IO.println (toString !obj)' : ()\n        C = fun () => write_line_c obj\n        Delphi = fun () => $'Writeln(!obj)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -83,11 +83,17 @@ Spiral.Kino.eval!(
           | u64 => $'printf("%llu\\n", (unsigned long long)(!obj))' : ()
           | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+  inl write_line_gleam forall t. (obj : t) : () =
+      global "import gleam/io"
+      if (real typecase t with string => true | _ => false) then $'io.println(!obj)' : ()
+      elif (real typecase t with () => true | _ => false) then $'io.println("")' : ()
+      else
+          global "import gleam/int"
+          $'io.println(int.to_string(!obj))' : ()
+
   inl write_line forall t. (obj : t) : () =
       backend_switch {
-          Gleam = fun () =>
-              global "import gleam/io"
-              $'io.println(!obj)' : ()
+          Gleam = fun () => write_line_gleam obj
           Lua = fun () => $'print(!obj)' : ()
           Fsharp = fun () =>
               fun () => obj |> $'System.Console.WriteLine'
@@ -107,7 +113,7 @@ Spiral.Kino.eval!(
 
 ### write
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_c forall t. (x : t) : () =\n    real\n        typecase t with\n        | string => $'printf(\"%s\", (!x)->ptr)' : ()\n        | i32 => $'printf(\"%d\", !x)' : ()\n        | i64 => $'printf(\"%lld\", (long long)(!x))' : ()\n        | u32 => $'printf(\"%u\", !x)' : ()\n        | u64 => $'printf(\"%llu\", (unsigned long long)(!x))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\ninl write forall t. (x : t) : () =\n    backend_switch {\n        Gleam = fun () =>\n            global \"import gleam/io\"\n            $'io.print(!x)' : ()\n        Lua = fun () => $'io.write(!x)' : ()\n        Fsharp = fun () => $'!x |> System.Console.Write' : ()\n        Python = fun () => $'print(!x, end=\"\")' : ()\n        Rust = fun () => $'{ use std::io::Write; print\\!(\"{}\", !x); std::io::stdout().flush().unwrap(); }' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!x))' : ()\n        Zig = fun () => $'spiralPrintAny(!x)' : ()\n        Lean = fun () => $'IO.print (toString !x)' : ()\n        C = fun () => write_c x\n        Delphi = fun () => $'Write(!x)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl write_c forall t. (x : t) : () =\n    real\n        typecase t with\n        | string => $'printf(\"%s\", (!x)->ptr)' : ()\n        | i32 => $'printf(\"%d\", !x)' : ()\n        | i64 => $'printf(\"%lld\", (long long)(!x))' : ()\n        | u32 => $'printf(\"%u\", !x)' : ()\n        | u64 => $'printf(\"%llu\", (unsigned long long)(!x))' : ()\n        | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()\n\ninl write_gleam forall t. (x : t) : () =\n    global \"import gleam/io\"\n    if (real typecase t with string => true | _ => false) then $'io.print(!x)' : ()\n    else\n        global \"import gleam/int\"\n        $'io.print(int.to_string(!x))' : ()\n\ninl write forall t. (x : t) : () =\n    backend_switch {\n        Gleam = fun () => write_gleam x\n        Lua = fun () => $'io.write(!x)' : ()\n        Fsharp = fun () => $'!x |> System.Console.Write' : ()\n        Python = fun () => $'print(!x, end=\"\")' : ()\n        Rust = fun () => $'{ use std::io::Write; print\\!(\"{}\", !x); std::io::stdout().flush().unwrap(); }' : ()\n        TypeScript = fun () => $'process.stdout.write(String(!x))' : ()\n        Zig = fun () => $'spiralPrintAny(!x)' : ()\n        Lean = fun () => $'IO.print (toString !x)' : ()\n        C = fun () => write_c x\n        Delphi = fun () => $'Write(!x)' : ()\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -122,11 +128,16 @@ Spiral.Kino.eval!(
           | u64 => $'printf("%llu", (unsigned long long)(!x))' : ()
           | _ => $'backend_switch_has_no_C_arm_in_lib_spiral' : ()
 
+  inl write_gleam forall t. (x : t) : () =
+      global "import gleam/io"
+      if (real typecase t with string => true | _ => false) then $'io.print(!x)' : ()
+      else
+          global "import gleam/int"
+          $'io.print(int.to_string(!x))' : ()
+
   inl write forall t. (x : t) : () =
       backend_switch {
-          Gleam = fun () =>
-              global "import gleam/io"
-              $'io.print(!x)' : ()
+          Gleam = fun () => write_gleam x
           Lua = fun () => $'io.write(!x)' : ()
           Fsharp = fun () => $'!x |> System.Console.Write' : ()
           Python = fun () => $'print(!x, end="")' : ()

@@ -852,6 +852,9 @@ union gleam_target =
     | JavaScript
 
 /// ### process_gleam
+inl package_owns_code (src_dir : string) : bool =
+    (src_dir |> sm'.ends_with "/src") || (src_dir |> sm'.ends_with "\\src")
+
 inl process_gleam { gleam_path target deps } =
     inl extension = "gleam"
 
@@ -874,7 +877,7 @@ inl process_gleam { gleam_path target deps } =
 
     fun () =>
         inl ci = "CI" |> env.get_environment_variable
-        if ci <> "" then
+        if ci <> "" && package_owns_code src_dir then
             package_dir
             |> file_system.directory_delete true
     |> new_disposable
@@ -1201,7 +1204,7 @@ inl process_lua { lua_path } =
 
     fun () =>
         inl ci = "CI" |> env.get_environment_variable
-        if ci <> "" then
+        if ci <> "" && package_owns_code src_dir then
             package_dir
             |> file_system.directory_delete true
     |> new_disposable

@@ -420,12 +420,15 @@
             'samples/portable_math_rounding'
         )
         'Fsharp,C,Rust,Delphi,TypeScript,Python' = @(
+            'samples/portable_convert_parse'
             'samples/portable_console_lines'
             'samples/printf_portable'
             'samples/op_args_deref_if'
         )
     }
     Gleam = @(
+            'samples/portable_console_lines'
+            'samples/portable_convert_parse'
         'samples/arithmetic_branch'
         'samples/backend_smoke'
         'samples/branch_select'
@@ -551,6 +554,7 @@
         'samples/unsigned_mod'
     )
     Lua = @(
+            'samples/portable_convert_parse'
         'samples/portable_console_lines'
         'samples/portable_math_rounding'
         'samples/arithmetic_branch'
