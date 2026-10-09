@@ -33,6 +33,7 @@ inl atan2 (y : f64) (x : f64) : f64 =
             global "#include <cmath>"
             $'std::atan2(!y, !x)' : float
         Delphi = fun () => $'ArcTan2(!y, !x)' : float
+        Wasm = fun () => $'(call $math_atan2 !y !x)' : float
         TypeScript = fun () => $'Math.atan2(!y, !x)' : float
     }
 
@@ -57,7 +58,7 @@ inl floor forall t {float}. (n : t) : t =
             global "#include <cmath>"
             $'std::floor(!n)' : t
         Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
-        Wasm = fun () => $'(f64.floor !n)' : t
+        Wasm = fun () => $'(`t.floor !n)' : t
         TypeScript = fun () => $'Math.floor(!n)' : t
     }
 
@@ -82,7 +83,7 @@ inl ceil forall t {float}. (n : t) : t =
             global "#include <cmath>"
             $'std::ceil(!n)' : t
         Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
-        Wasm = fun () => $'(f64.ceil !n)' : t
+        Wasm = fun () => $'(`t.ceil !n)' : t
         TypeScript = fun () => $'Math.ceil(!n)' : t
     }
 
@@ -107,7 +108,7 @@ inl round forall t {number; float}. (x : t) : t =
         Cpp = round_half_to_even
         Delphi = round_half_to_even
         TypeScript = round_half_to_even
-        Wasm = fun () => $'(f64.nearest !x)' : t
+        Wasm = fun () => $'(`t.nearest !x)' : t
     }
 
 /// ## log_base

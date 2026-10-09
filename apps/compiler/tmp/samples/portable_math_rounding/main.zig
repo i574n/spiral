@@ -114,84 +114,84 @@ fn spiralMain() i32 {
     var v5: f64 = undefined; _ = &v5;
     var v6: f32 = undefined; _ = &v6;
     var v18: f64 = undefined; _ = &v18;
-    var v22: bool = undefined; _ = &v22;
     var v23: bool = undefined; _ = &v23;
-    var v36: f64 = undefined; _ = &v36;
-    var v40: bool = undefined; _ = &v40;
-    var v41: bool = undefined; _ = &v41;
-    var v117: f64 = undefined; _ = &v117;
-    var v118: f64 = undefined; _ = &v118;
-    var v119: bool = undefined; _ = &v119;
-    var v129: f64 = undefined; _ = &v129;
+    var v24: bool = undefined; _ = &v24;
+    var v37: f64 = undefined; _ = &v37;
+    var v42: bool = undefined; _ = &v42;
+    var v43: bool = undefined; _ = &v43;
+    var v119: f64 = undefined; _ = &v119;
     var v120: f64 = undefined; _ = &v120;
     var v121: bool = undefined; _ = &v121;
+    var v131: f64 = undefined; _ = &v131;
     var v122: f64 = undefined; _ = &v122;
-    var v123: f64 = undefined; _ = &v123;
+    var v123: bool = undefined; _ = &v123;
     var v124: f64 = undefined; _ = &v124;
-    var v125: bool = undefined; _ = &v125;
+    var v125: f64 = undefined; _ = &v125;
     var v126: f64 = undefined; _ = &v126;
-    var v169: bool = undefined; _ = &v169;
-    var v170: bool = undefined; _ = &v170;
-    var v171: f64 = undefined; _ = &v171;
-    var v172: f64 = undefined; _ = &v172;
+    var v127: bool = undefined; _ = &v127;
+    var v128: f64 = undefined; _ = &v128;
+    var v172: bool = undefined; _ = &v172;
     var v173: bool = undefined; _ = &v173;
-    var v183: f64 = undefined; _ = &v183;
     var v174: f64 = undefined; _ = &v174;
-    var v175: bool = undefined; _ = &v175;
-    var v176: f64 = undefined; _ = &v176;
-    var v177: f64 = undefined; _ = &v177;
-    var v178: f64 = undefined; _ = &v178;
-    var v179: bool = undefined; _ = &v179;
-    var v180: f64 = undefined; _ = &v180;
-    var v184: bool = undefined; _ = &v184;
-    var v185: bool = undefined; _ = &v185;
+    var v175: f64 = undefined; _ = &v175;
+    var v176: bool = undefined; _ = &v176;
     var v186: f64 = undefined; _ = &v186;
-    var v187: f64 = undefined; _ = &v187;
+    var v177: f64 = undefined; _ = &v177;
+    var v178: bool = undefined; _ = &v178;
+    var v179: f64 = undefined; _ = &v179;
+    var v180: f64 = undefined; _ = &v180;
+    var v181: f64 = undefined; _ = &v181;
+    var v182: bool = undefined; _ = &v182;
+    var v183: f64 = undefined; _ = &v183;
+    var v187: bool = undefined; _ = &v187;
     var v188: bool = undefined; _ = &v188;
-    var v198: f64 = undefined; _ = &v198;
     var v189: f64 = undefined; _ = &v189;
-    var v190: bool = undefined; _ = &v190;
-    var v191: f64 = undefined; _ = &v191;
-    var v192: f64 = undefined; _ = &v192;
-    var v193: f64 = undefined; _ = &v193;
-    var v194: bool = undefined; _ = &v194;
-    var v195: f64 = undefined; _ = &v195;
-    var v199: bool = undefined; _ = &v199;
-    var v200: bool = undefined; _ = &v200;
+    var v190: f64 = undefined; _ = &v190;
+    var v191: bool = undefined; _ = &v191;
     var v201: f64 = undefined; _ = &v201;
-    var v202: f64 = undefined; _ = &v202;
+    var v192: f64 = undefined; _ = &v192;
+    var v193: bool = undefined; _ = &v193;
+    var v194: f64 = undefined; _ = &v194;
+    var v195: f64 = undefined; _ = &v195;
+    var v196: f64 = undefined; _ = &v196;
+    var v197: bool = undefined; _ = &v197;
+    var v198: f64 = undefined; _ = &v198;
+    var v202: bool = undefined; _ = &v202;
     var v203: bool = undefined; _ = &v203;
-    var v213: f64 = undefined; _ = &v213;
     var v204: f64 = undefined; _ = &v204;
-    var v205: bool = undefined; _ = &v205;
-    var v206: f64 = undefined; _ = &v206;
-    var v207: f64 = undefined; _ = &v207;
-    var v208: f64 = undefined; _ = &v208;
-    var v209: bool = undefined; _ = &v209;
-    var v210: f64 = undefined; _ = &v210;
-    var v214: bool = undefined; _ = &v214;
-    var v215: bool = undefined; _ = &v215;
+    var v205: f64 = undefined; _ = &v205;
+    var v206: bool = undefined; _ = &v206;
     var v216: f64 = undefined; _ = &v216;
-    var v217: f64 = undefined; _ = &v217;
+    var v207: f64 = undefined; _ = &v207;
+    var v208: bool = undefined; _ = &v208;
+    var v209: f64 = undefined; _ = &v209;
+    var v210: f64 = undefined; _ = &v210;
+    var v211: f64 = undefined; _ = &v211;
+    var v212: bool = undefined; _ = &v212;
+    var v213: f64 = undefined; _ = &v213;
+    var v217: bool = undefined; _ = &v217;
     var v218: bool = undefined; _ = &v218;
-    var v228: f64 = undefined; _ = &v228;
     var v219: f64 = undefined; _ = &v219;
-    var v220: bool = undefined; _ = &v220;
-    var v221: f64 = undefined; _ = &v221;
+    var v220: f64 = undefined; _ = &v220;
+    var v221: bool = undefined; _ = &v221;
+    var v231: f64 = undefined; _ = &v231;
     var v222: f64 = undefined; _ = &v222;
-    var v223: f64 = undefined; _ = &v223;
-    var v224: bool = undefined; _ = &v224;
+    var v223: bool = undefined; _ = &v223;
+    var v224: f64 = undefined; _ = &v224;
     var v225: f64 = undefined; _ = &v225;
-    var v229: bool = undefined; _ = &v229;
-    var v230: bool = undefined; _ = &v230;
-    var v239: f64 = undefined; _ = &v239;
-    var v243: f64 = undefined; _ = &v243;
-    var v244: f64 = undefined; _ = &v244;
-    var v245: bool = undefined; _ = &v245;
-    var v246: bool = undefined; _ = &v246;
-    var v258: f32 = undefined; _ = &v258;
-    var v262: bool = undefined; _ = &v262;
-    var v263: bool = undefined; _ = &v263;
+    var v226: f64 = undefined; _ = &v226;
+    var v227: bool = undefined; _ = &v227;
+    var v228: f64 = undefined; _ = &v228;
+    var v232: bool = undefined; _ = &v232;
+    var v233: bool = undefined; _ = &v233;
+    var v242: f64 = undefined; _ = &v242;
+    var v247: f64 = undefined; _ = &v247;
+    var v248: f64 = undefined; _ = &v248;
+    var v249: bool = undefined; _ = &v249;
+    var v250: bool = undefined; _ = &v250;
+    var v262: f32 = undefined; _ = &v262;
+    var v267: bool = undefined; _ = &v267;
+    var v268: bool = undefined; _ = &v268;
     v0 = @as(f64, 2.7);
     v1 = @as(f64, 3.2);
     v2 = @as(f64, -2.5);
@@ -200,169 +200,169 @@ fn spiralMain() i32 {
     v5 = @as(f64, 1.0);
     v6 = @as(f32, 2.7);
     v18 = @floor(v0);
-    v22 = v18 == @as(f64, 2.0);
-    v23 = v22 != true;
-    if (v23) {
+    v23 = v18 == @as(f64, 2.0);
+    v24 = v23 != true;
+    if (v24) {
         return @as(i32, 1);
     } else {
-        v36 = @ceil(v0);
-        v40 = v36 == @as(f64, 3.0);
-        v41 = v40 != true;
-        if (v41) {
+        v37 = @ceil(v0);
+        v42 = v37 == @as(f64, 3.0);
+        v43 = v42 != true;
+        if (v43) {
             return @as(i32, 2);
         } else {
-            v117 = @floor(v0);
-            v118 = v0 - v117;
-            v119 = v118 > @as(f64, 0.5);
-            if (v119) {
-                v120 = v117 + @as(f64, 1.0);
-                v129 = v120;
+            v119 = @floor(v0);
+            v120 = v0 - v119;
+            v121 = v120 > @as(f64, 0.5);
+            if (v121) {
+                v122 = v119 + @as(f64, 1.0);
+                v131 = v122;
             } else {
-                v121 = v118 < @as(f64, 0.5);
-                if (v121) {
-                    v129 = v117;
+                v123 = v120 < @as(f64, 0.5);
+                if (v123) {
+                    v131 = v119;
                 } else {
-                    v122 = v117 / @as(f64, 2.0);
-                    v123 = @floor(v122);
-                    v124 = v123 * @as(f64, 2.0);
-                    v125 = v124 == v117;
-                    if (v125) {
-                        v129 = v117;
+                    v124 = v119 / @as(f64, 2.0);
+                    v125 = @floor(v124);
+                    v126 = v125 * @as(f64, 2.0);
+                    v127 = v126 == v119;
+                    if (v127) {
+                        v131 = v119;
                     } else {
-                        v126 = v117 + @as(f64, 1.0);
-                        v129 = v126;
+                        v128 = v119 + @as(f64, 1.0);
+                        v131 = v128;
                     }
                 }
             }
-            v169 = v129 == @as(f64, 3.0);
-            v170 = v169 != true;
-            if (v170) {
+            v172 = v131 == @as(f64, 3.0);
+            v173 = v172 != true;
+            if (v173) {
                 return @as(i32, 3);
             } else {
-                v171 = @floor(v1);
-                v172 = v1 - v171;
-                v173 = v172 > @as(f64, 0.5);
-                if (v173) {
-                    v174 = v171 + @as(f64, 1.0);
-                    v183 = v174;
+                v174 = @floor(v1);
+                v175 = v1 - v174;
+                v176 = v175 > @as(f64, 0.5);
+                if (v176) {
+                    v177 = v174 + @as(f64, 1.0);
+                    v186 = v177;
                 } else {
-                    v175 = v172 < @as(f64, 0.5);
-                    if (v175) {
-                        v183 = v171;
+                    v178 = v175 < @as(f64, 0.5);
+                    if (v178) {
+                        v186 = v174;
                     } else {
-                        v176 = v171 / @as(f64, 2.0);
-                        v177 = @floor(v176);
-                        v178 = v177 * @as(f64, 2.0);
-                        v179 = v178 == v171;
-                        if (v179) {
-                            v183 = v171;
+                        v179 = v174 / @as(f64, 2.0);
+                        v180 = @floor(v179);
+                        v181 = v180 * @as(f64, 2.0);
+                        v182 = v181 == v174;
+                        if (v182) {
+                            v186 = v174;
                         } else {
-                            v180 = v171 + @as(f64, 1.0);
-                            v183 = v180;
+                            v183 = v174 + @as(f64, 1.0);
+                            v186 = v183;
                         }
                     }
                 }
-                v184 = v183 == @as(f64, 3.0);
-                v185 = v184 != true;
-                if (v185) {
+                v187 = v186 == @as(f64, 3.0);
+                v188 = v187 != true;
+                if (v188) {
                     return @as(i32, 4);
                 } else {
-                    v186 = @floor(v2);
-                    v187 = v2 - v186;
-                    v188 = v187 > @as(f64, 0.5);
-                    if (v188) {
-                        v189 = v186 + @as(f64, 1.0);
-                        v198 = v189;
+                    v189 = @floor(v2);
+                    v190 = v2 - v189;
+                    v191 = v190 > @as(f64, 0.5);
+                    if (v191) {
+                        v192 = v189 + @as(f64, 1.0);
+                        v201 = v192;
                     } else {
-                        v190 = v187 < @as(f64, 0.5);
-                        if (v190) {
-                            v198 = v186;
+                        v193 = v190 < @as(f64, 0.5);
+                        if (v193) {
+                            v201 = v189;
                         } else {
-                            v191 = v186 / @as(f64, 2.0);
-                            v192 = @floor(v191);
-                            v193 = v192 * @as(f64, 2.0);
-                            v194 = v193 == v186;
-                            if (v194) {
-                                v198 = v186;
+                            v194 = v189 / @as(f64, 2.0);
+                            v195 = @floor(v194);
+                            v196 = v195 * @as(f64, 2.0);
+                            v197 = v196 == v189;
+                            if (v197) {
+                                v201 = v189;
                             } else {
-                                v195 = v186 + @as(f64, 1.0);
-                                v198 = v195;
+                                v198 = v189 + @as(f64, 1.0);
+                                v201 = v198;
                             }
                         }
                     }
-                    v199 = v198 == @as(f64, -2.0);
-                    v200 = v199 != true;
-                    if (v200) {
+                    v202 = v201 == @as(f64, -2.0);
+                    v203 = v202 != true;
+                    if (v203) {
                         return @as(i32, 5);
                     } else {
-                        v201 = @floor(v3);
-                        v202 = v3 - v201;
-                        v203 = v202 > @as(f64, 0.5);
-                        if (v203) {
-                            v204 = v201 + @as(f64, 1.0);
-                            v213 = v204;
+                        v204 = @floor(v3);
+                        v205 = v3 - v204;
+                        v206 = v205 > @as(f64, 0.5);
+                        if (v206) {
+                            v207 = v204 + @as(f64, 1.0);
+                            v216 = v207;
                         } else {
-                            v205 = v202 < @as(f64, 0.5);
-                            if (v205) {
-                                v213 = v201;
+                            v208 = v205 < @as(f64, 0.5);
+                            if (v208) {
+                                v216 = v204;
                             } else {
-                                v206 = v201 / @as(f64, 2.0);
-                                v207 = @floor(v206);
-                                v208 = v207 * @as(f64, 2.0);
-                                v209 = v208 == v201;
-                                if (v209) {
-                                    v213 = v201;
+                                v209 = v204 / @as(f64, 2.0);
+                                v210 = @floor(v209);
+                                v211 = v210 * @as(f64, 2.0);
+                                v212 = v211 == v204;
+                                if (v212) {
+                                    v216 = v204;
                                 } else {
-                                    v210 = v201 + @as(f64, 1.0);
-                                    v213 = v210;
+                                    v213 = v204 + @as(f64, 1.0);
+                                    v216 = v213;
                                 }
                             }
                         }
-                        v214 = v213 == @as(f64, 4.0);
-                        v215 = v214 != true;
-                        if (v215) {
+                        v217 = v216 == @as(f64, 4.0);
+                        v218 = v217 != true;
+                        if (v218) {
                             return @as(i32, 6);
                         } else {
-                            v216 = @floor(v4);
-                            v217 = v4 - v216;
-                            v218 = v217 > @as(f64, 0.5);
-                            if (v218) {
-                                v219 = v216 + @as(f64, 1.0);
-                                v228 = v219;
+                            v219 = @floor(v4);
+                            v220 = v4 - v219;
+                            v221 = v220 > @as(f64, 0.5);
+                            if (v221) {
+                                v222 = v219 + @as(f64, 1.0);
+                                v231 = v222;
                             } else {
-                                v220 = v217 < @as(f64, 0.5);
-                                if (v220) {
-                                    v228 = v216;
+                                v223 = v220 < @as(f64, 0.5);
+                                if (v223) {
+                                    v231 = v219;
                                 } else {
-                                    v221 = v216 / @as(f64, 2.0);
-                                    v222 = @floor(v221);
-                                    v223 = v222 * @as(f64, 2.0);
-                                    v224 = v223 == v216;
-                                    if (v224) {
-                                        v228 = v216;
+                                    v224 = v219 / @as(f64, 2.0);
+                                    v225 = @floor(v224);
+                                    v226 = v225 * @as(f64, 2.0);
+                                    v227 = v226 == v219;
+                                    if (v227) {
+                                        v231 = v219;
                                     } else {
-                                        v225 = v216 + @as(f64, 1.0);
-                                        v228 = v225;
+                                        v228 = v219 + @as(f64, 1.0);
+                                        v231 = v228;
                                     }
                                 }
                             }
-                            v229 = v228 == @as(f64, 0.0);
-                            v230 = v229 != true;
-                            if (v230) {
+                            v232 = v231 == @as(f64, 0.0);
+                            v233 = v232 != true;
+                            if (v233) {
                                 return @as(i32, 7);
                             } else {
-                                v239 = std.math.atan2(v5, v5);
-                                v243 = v239 * @as(f64, 1000.0);
-                                v244 = @floor(v243);
-                                v245 = v244 == @as(f64, 785.0);
-                                v246 = v245 != true;
-                                if (v246) {
+                                v242 = std.math.atan2(v5, v5);
+                                v247 = v242 * @as(f64, 1000.0);
+                                v248 = @floor(v247);
+                                v249 = v248 == @as(f64, 785.0);
+                                v250 = v249 != true;
+                                if (v250) {
                                     return @as(i32, 8);
                                 } else {
-                                    v258 = @floor(v6);
-                                    v262 = v258 == @as(f32, 2.0);
-                                    v263 = v262 != true;
-                                    if (v263) {
+                                    v262 = @floor(v6);
+                                    v267 = v262 == @as(f32, 2.0);
+                                    v268 = v267 != true;
+                                    if (v268) {
                                         return @as(i32, 9);
                                     } else {
                                         return @as(i32, 0);

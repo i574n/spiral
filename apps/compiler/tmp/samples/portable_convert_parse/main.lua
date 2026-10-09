@@ -5,22 +5,22 @@ function Us0i1() return { tag = "Us0i1" } end
 local v0 = "ff"
 local v11 = tonumber( v0, 16 )
 print(v11)
-local v67 = "1011"
-local v78 = tonumber( v67, 2 )
-print(v78)
-local v91 = "-42"
-local v125 = tonumber( v91, 10 )
-print(v125)
-local v138 = " 123 "
-local v162 = (string.match(v138, "^%s*[+-]?%d+%s*$") ~= nil)
-local v163 = (tonumber(v138) or 0)
-local v164 = v163
-local getv168 = function()
-    if v162 then
-        local v165 = v163 >= -2147483648
-        if v165 then
-            local v166 = v163 <= 2147483647
-            return v166
+local v69 = "1011"
+local v80 = tonumber( v69, 2 )
+print(v80)
+local v94 = "-42"
+local v129 = tonumber( v94, 10 )
+print(v129)
+local v143 = " 123 "
+local v180 = (string.match(v143, "^%s*[+-]?%d+%s*$") ~= nil)
+local v181 = (tonumber(v143) or 0)
+local v182 = v181
+local getv186 = function()
+    if v180 then
+        local v183 = v181 >= -2147483648
+        if v183 then
+            local v184 = v181 <= 2147483647
+            return v184
         else
             return false
         end
@@ -28,33 +28,33 @@ local getv168 = function()
         return false
     end
 end
-local v168 = getv168()
-local getv171 = function()
-    if v168 then
-        return Us0i0(v164)
+local v186 = getv186()
+local getv189 = function()
+    if v186 then
+        return Us0i0(v182)
     else
         return Us0i1()
     end
 end
-local v171 = getv171()
-local __v = { v171 }
+local v189 = getv189()
+local __v = { v189 }
 if __v[1] ~= nil and __v[1].tag == "Us0i1" then
-    local v702 = "none"
-    print(v702)
+    local v797 = "none"
+    print(v797)
 elseif __v[1] ~= nil and __v[1].tag == "Us0i0" then
-    local v700 = __v[1]._1
-    print(v700)
+    local v795 = __v[1]._1
+    print(v795)
 end
-local v706 = "12x"
-local v707 = (string.match(v706, "^%s*[+-]?%d+%s*$") ~= nil)
-local v708 = (tonumber(v706) or 0)
-local v709 = v708
-local getv713 = function()
-    if v707 then
-        local v710 = v708 >= -2147483648
-        if v710 then
-            local v711 = v708 <= 2147483647
-            return v711
+local v801 = "12x"
+local v802 = (string.match(v801, "^%s*[+-]?%d+%s*$") ~= nil)
+local v803 = (tonumber(v801) or 0)
+local v804 = v803
+local getv808 = function()
+    if v802 then
+        local v805 = v803 >= -2147483648
+        if v805 then
+            local v806 = v803 <= 2147483647
+            return v806
         else
             return false
         end
@@ -62,33 +62,33 @@ local getv713 = function()
         return false
     end
 end
-local v713 = getv713()
-local getv716 = function()
-    if v713 then
-        return Us0i0(v709)
+local v808 = getv808()
+local getv811 = function()
+    if v808 then
+        return Us0i0(v804)
     else
         return Us0i1()
     end
 end
-local v716 = getv716()
-local __v = { v716 }
+local v811 = getv811()
+local __v = { v811 }
 if __v[1] ~= nil and __v[1].tag == "Us0i1" then
-    local v718 = "none"
-    print(v718)
+    local v813 = "none"
+    print(v813)
 elseif __v[1] ~= nil and __v[1].tag == "Us0i0" then
-    local v717 = __v[1]._1
-    print(v717)
+    local v812 = __v[1]._1
+    print(v812)
 end
-local v719 = ""
-local v720 = (string.match(v719, "^%s*[+-]?%d+%s*$") ~= nil)
-local v721 = (tonumber(v719) or 0)
-local v722 = v721
-local getv726 = function()
-    if v720 then
-        local v723 = v721 >= -2147483648
-        if v723 then
-            local v724 = v721 <= 2147483647
-            return v724
+local v814 = ""
+local v815 = (string.match(v814, "^%s*[+-]?%d+%s*$") ~= nil)
+local v816 = (tonumber(v814) or 0)
+local v817 = v816
+local getv821 = function()
+    if v815 then
+        local v818 = v816 >= -2147483648
+        if v818 then
+            local v819 = v816 <= 2147483647
+            return v819
         else
             return false
         end
@@ -96,33 +96,33 @@ local getv726 = function()
         return false
     end
 end
-local v726 = getv726()
-local getv729 = function()
-    if v726 then
-        return Us0i0(v722)
+local v821 = getv821()
+local getv824 = function()
+    if v821 then
+        return Us0i0(v817)
     else
         return Us0i1()
     end
 end
-local v729 = getv729()
-local __v = { v729 }
+local v824 = getv824()
+local __v = { v824 }
 if __v[1] ~= nil and __v[1].tag == "Us0i1" then
-    local v731 = "none"
-    print(v731)
+    local v826 = "none"
+    print(v826)
 elseif __v[1] ~= nil and __v[1].tag == "Us0i0" then
-    local v730 = __v[1]._1
-    print(v730)
+    local v825 = __v[1]._1
+    print(v825)
 end
-local v732 = "+7"
-local v733 = (string.match(v732, "^%s*[+-]?%d+%s*$") ~= nil)
-local v734 = (tonumber(v732) or 0)
-local v735 = v734
-local getv739 = function()
-    if v733 then
-        local v736 = v734 >= -2147483648
-        if v736 then
-            local v737 = v734 <= 2147483647
-            return v737
+local v827 = "+7"
+local v828 = (string.match(v827, "^%s*[+-]?%d+%s*$") ~= nil)
+local v829 = (tonumber(v827) or 0)
+local v830 = v829
+local getv834 = function()
+    if v828 then
+        local v831 = v829 >= -2147483648
+        if v831 then
+            local v832 = v829 <= 2147483647
+            return v832
         else
             return false
         end
@@ -130,21 +130,21 @@ local getv739 = function()
         return false
     end
 end
-local v739 = getv739()
-local getv742 = function()
-    if v739 then
-        return Us0i0(v735)
+local v834 = getv834()
+local getv837 = function()
+    if v834 then
+        return Us0i0(v830)
     else
         return Us0i1()
     end
 end
-local v742 = getv742()
-local __v = { v742 }
+local v837 = getv837()
+local __v = { v837 }
 if __v[1] ~= nil and __v[1].tag == "Us0i1" then
-    local v744 = "none"
-    print(v744)
+    local v839 = "none"
+    print(v839)
 elseif __v[1] ~= nil and __v[1].tag == "Us0i0" then
-    local v743 = __v[1]._1
-    print(v743)
+    local v838 = __v[1]._1
+    print(v838)
 end
 return 0

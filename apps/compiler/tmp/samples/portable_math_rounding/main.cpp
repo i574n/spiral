@@ -16,247 +16,247 @@ int main() {
     v6 = 2.7f;
     double v16;
     v16 = std::floor(v0);
-    bool v22;
-    v22 = v16 == 2.0;
     bool v23;
-    v23 = v22 != true;
-    if (v23){
+    v23 = v16 == 2.0;
+    bool v24;
+    v24 = v23 != true;
+    if (v24){
         return 1;
     } else {
-        double v34;
-        v34 = std::ceil(v0);
-        bool v40;
-        v40 = v34 == 3.0;
-        bool v41;
-        v41 = v40 != true;
-        if (v41){
+        double v35;
+        v35 = std::ceil(v0);
+        bool v42;
+        v42 = v35 == 3.0;
+        bool v43;
+        v43 = v42 != true;
+        if (v43){
             return 2;
         } else {
-            double v91;
-            v91 = std::floor(v0);
-            double v92;
-            v92 = v0 - v91;
-            bool v93;
-            v93 = v92 > 0.5;
-            double v103;
-            if (v93){
-                double v94;
-                v94 = v91 + 1.0;
-                v103 = v94;
+            double v93;
+            v93 = std::floor(v0);
+            double v94;
+            v94 = v0 - v93;
+            bool v95;
+            v95 = v94 > 0.5;
+            double v105;
+            if (v95){
+                double v96;
+                v96 = v93 + 1.0;
+                v105 = v96;
             } else {
-                bool v95;
-                v95 = v92 < 0.5;
-                if (v95){
-                    v103 = v91;
+                bool v97;
+                v97 = v94 < 0.5;
+                if (v97){
+                    v105 = v93;
                 } else {
-                    double v96;
-                    v96 = v91 / 2.0;
-                    double v97;
-                    v97 = std::floor(v96);
                     double v98;
-                    v98 = v97 * 2.0;
-                    bool v99;
-                    v99 = v98 == v91;
-                    if (v99){
-                        v103 = v91;
+                    v98 = v93 / 2.0;
+                    double v99;
+                    v99 = std::floor(v98);
+                    double v100;
+                    v100 = v99 * 2.0;
+                    bool v101;
+                    v101 = v100 == v93;
+                    if (v101){
+                        v105 = v93;
                     } else {
-                        double v100;
-                        v100 = v91 + 1.0;
-                        v103 = v100;
+                        double v102;
+                        v102 = v93 + 1.0;
+                        v105 = v102;
                     }
                 }
             }
-            bool v169;
-            v169 = v103 == 3.0;
-            bool v170;
-            v170 = v169 != true;
-            if (v170){
+            bool v172;
+            v172 = v105 == 3.0;
+            bool v173;
+            v173 = v172 != true;
+            if (v173){
                 return 3;
             } else {
-                double v171;
-                v171 = std::floor(v1);
-                double v172;
-                v172 = v1 - v171;
-                bool v173;
-                v173 = v172 > 0.5;
-                double v183;
-                if (v173){
-                    double v174;
-                    v174 = v171 + 1.0;
-                    v183 = v174;
+                double v174;
+                v174 = std::floor(v1);
+                double v175;
+                v175 = v1 - v174;
+                bool v176;
+                v176 = v175 > 0.5;
+                double v186;
+                if (v176){
+                    double v177;
+                    v177 = v174 + 1.0;
+                    v186 = v177;
                 } else {
-                    bool v175;
-                    v175 = v172 < 0.5;
-                    if (v175){
-                        v183 = v171;
+                    bool v178;
+                    v178 = v175 < 0.5;
+                    if (v178){
+                        v186 = v174;
                     } else {
-                        double v176;
-                        v176 = v171 / 2.0;
-                        double v177;
-                        v177 = std::floor(v176);
-                        double v178;
-                        v178 = v177 * 2.0;
-                        bool v179;
-                        v179 = v178 == v171;
-                        if (v179){
-                            v183 = v171;
+                        double v179;
+                        v179 = v174 / 2.0;
+                        double v180;
+                        v180 = std::floor(v179);
+                        double v181;
+                        v181 = v180 * 2.0;
+                        bool v182;
+                        v182 = v181 == v174;
+                        if (v182){
+                            v186 = v174;
                         } else {
-                            double v180;
-                            v180 = v171 + 1.0;
-                            v183 = v180;
+                            double v183;
+                            v183 = v174 + 1.0;
+                            v186 = v183;
                         }
                     }
                 }
-                bool v184;
-                v184 = v183 == 3.0;
-                bool v185;
-                v185 = v184 != true;
-                if (v185){
+                bool v187;
+                v187 = v186 == 3.0;
+                bool v188;
+                v188 = v187 != true;
+                if (v188){
                     return 4;
                 } else {
-                    double v186;
-                    v186 = std::floor(v2);
-                    double v187;
-                    v187 = v2 - v186;
-                    bool v188;
-                    v188 = v187 > 0.5;
-                    double v198;
-                    if (v188){
-                        double v189;
-                        v189 = v186 + 1.0;
-                        v198 = v189;
+                    double v189;
+                    v189 = std::floor(v2);
+                    double v190;
+                    v190 = v2 - v189;
+                    bool v191;
+                    v191 = v190 > 0.5;
+                    double v201;
+                    if (v191){
+                        double v192;
+                        v192 = v189 + 1.0;
+                        v201 = v192;
                     } else {
-                        bool v190;
-                        v190 = v187 < 0.5;
-                        if (v190){
-                            v198 = v186;
+                        bool v193;
+                        v193 = v190 < 0.5;
+                        if (v193){
+                            v201 = v189;
                         } else {
-                            double v191;
-                            v191 = v186 / 2.0;
-                            double v192;
-                            v192 = std::floor(v191);
-                            double v193;
-                            v193 = v192 * 2.0;
-                            bool v194;
-                            v194 = v193 == v186;
-                            if (v194){
-                                v198 = v186;
+                            double v194;
+                            v194 = v189 / 2.0;
+                            double v195;
+                            v195 = std::floor(v194);
+                            double v196;
+                            v196 = v195 * 2.0;
+                            bool v197;
+                            v197 = v196 == v189;
+                            if (v197){
+                                v201 = v189;
                             } else {
-                                double v195;
-                                v195 = v186 + 1.0;
-                                v198 = v195;
+                                double v198;
+                                v198 = v189 + 1.0;
+                                v201 = v198;
                             }
                         }
                     }
-                    bool v199;
-                    v199 = v198 == -2.0;
-                    bool v200;
-                    v200 = v199 != true;
-                    if (v200){
+                    bool v202;
+                    v202 = v201 == -2.0;
+                    bool v203;
+                    v203 = v202 != true;
+                    if (v203){
                         return 5;
                     } else {
-                        double v201;
-                        v201 = std::floor(v3);
-                        double v202;
-                        v202 = v3 - v201;
-                        bool v203;
-                        v203 = v202 > 0.5;
-                        double v213;
-                        if (v203){
-                            double v204;
-                            v204 = v201 + 1.0;
-                            v213 = v204;
+                        double v204;
+                        v204 = std::floor(v3);
+                        double v205;
+                        v205 = v3 - v204;
+                        bool v206;
+                        v206 = v205 > 0.5;
+                        double v216;
+                        if (v206){
+                            double v207;
+                            v207 = v204 + 1.0;
+                            v216 = v207;
                         } else {
-                            bool v205;
-                            v205 = v202 < 0.5;
-                            if (v205){
-                                v213 = v201;
+                            bool v208;
+                            v208 = v205 < 0.5;
+                            if (v208){
+                                v216 = v204;
                             } else {
-                                double v206;
-                                v206 = v201 / 2.0;
-                                double v207;
-                                v207 = std::floor(v206);
-                                double v208;
-                                v208 = v207 * 2.0;
-                                bool v209;
-                                v209 = v208 == v201;
-                                if (v209){
-                                    v213 = v201;
+                                double v209;
+                                v209 = v204 / 2.0;
+                                double v210;
+                                v210 = std::floor(v209);
+                                double v211;
+                                v211 = v210 * 2.0;
+                                bool v212;
+                                v212 = v211 == v204;
+                                if (v212){
+                                    v216 = v204;
                                 } else {
-                                    double v210;
-                                    v210 = v201 + 1.0;
-                                    v213 = v210;
+                                    double v213;
+                                    v213 = v204 + 1.0;
+                                    v216 = v213;
                                 }
                             }
                         }
-                        bool v214;
-                        v214 = v213 == 4.0;
-                        bool v215;
-                        v215 = v214 != true;
-                        if (v215){
+                        bool v217;
+                        v217 = v216 == 4.0;
+                        bool v218;
+                        v218 = v217 != true;
+                        if (v218){
                             return 6;
                         } else {
-                            double v216;
-                            v216 = std::floor(v4);
-                            double v217;
-                            v217 = v4 - v216;
-                            bool v218;
-                            v218 = v217 > 0.5;
-                            double v228;
-                            if (v218){
-                                double v219;
-                                v219 = v216 + 1.0;
-                                v228 = v219;
+                            double v219;
+                            v219 = std::floor(v4);
+                            double v220;
+                            v220 = v4 - v219;
+                            bool v221;
+                            v221 = v220 > 0.5;
+                            double v231;
+                            if (v221){
+                                double v222;
+                                v222 = v219 + 1.0;
+                                v231 = v222;
                             } else {
-                                bool v220;
-                                v220 = v217 < 0.5;
-                                if (v220){
-                                    v228 = v216;
+                                bool v223;
+                                v223 = v220 < 0.5;
+                                if (v223){
+                                    v231 = v219;
                                 } else {
-                                    double v221;
-                                    v221 = v216 / 2.0;
-                                    double v222;
-                                    v222 = std::floor(v221);
-                                    double v223;
-                                    v223 = v222 * 2.0;
-                                    bool v224;
-                                    v224 = v223 == v216;
-                                    if (v224){
-                                        v228 = v216;
+                                    double v224;
+                                    v224 = v219 / 2.0;
+                                    double v225;
+                                    v225 = std::floor(v224);
+                                    double v226;
+                                    v226 = v225 * 2.0;
+                                    bool v227;
+                                    v227 = v226 == v219;
+                                    if (v227){
+                                        v231 = v219;
                                     } else {
-                                        double v225;
-                                        v225 = v216 + 1.0;
-                                        v228 = v225;
+                                        double v228;
+                                        v228 = v219 + 1.0;
+                                        v231 = v228;
                                     }
                                 }
                             }
-                            bool v229;
-                            v229 = v228 == 0.0;
-                            bool v230;
-                            v230 = v229 != true;
-                            if (v230){
+                            bool v232;
+                            v232 = v231 == 0.0;
+                            bool v233;
+                            v233 = v232 != true;
+                            if (v233){
                                 return 7;
                             } else {
-                                double v237;
-                                v237 = std::atan2(v5, v5);
-                                double v243;
-                                v243 = v237 * 1000.0;
-                                double v244;
-                                v244 = std::floor(v243);
-                                bool v245;
-                                v245 = v244 == 785.0;
-                                bool v246;
-                                v246 = v245 != true;
-                                if (v246){
+                                double v240;
+                                v240 = std::atan2(v5, v5);
+                                double v247;
+                                v247 = v240 * 1000.0;
+                                double v248;
+                                v248 = std::floor(v247);
+                                bool v249;
+                                v249 = v248 == 785.0;
+                                bool v250;
+                                v250 = v249 != true;
+                                if (v250){
                                     return 8;
                                 } else {
-                                    float v256;
-                                    v256 = std::floor(v6);
-                                    bool v262;
-                                    v262 = v256 == 2.0f;
-                                    bool v263;
-                                    v263 = v262 != true;
-                                    if (v263){
+                                    float v260;
+                                    v260 = std::floor(v6);
+                                    bool v267;
+                                    v267 = v260 == 2.0f;
+                                    bool v268;
+                                    v268 = v267 != true;
+                                    if (v268){
                                         return 9;
                                     } else {
                                         return 0;

@@ -531,26 +531,26 @@ int32_t main(){
                                 v244 = atan2(v5, v5);
                                 
                                 
-                                double v264;
-                                v264 = v244 * 1000.0;
+                                double v247;
+                                v247 = v244 * 1000.0;
                                 
                                 
                                 
                                 
                                 
-                                double v265;
-                                v265 = floor(v264);
+                                double v248;
+                                v248 = floor(v247);
                                 
                                 
-                                bool v266;
-                                v266 = v265 == 785.0;
+                                bool v249;
+                                v249 = v248 == 785.0;
                                 
                                 
-                                bool v267;
-                                v267 = v266 != true;
+                                bool v250;
+                                v250 = v249 != true;
                                 
                                 
-                                if (v267){
+                                if (v250){
                                     
                                     
                                     return 8l;
@@ -560,19 +560,19 @@ int32_t main(){
                                     
                                     
                                     
-                                    float v281;
-                                    v281 = floor(v6);
+                                    float v264;
+                                    v264 = floor(v6);
                                     
                                     
-                                    bool v284;
-                                    v284 = v281 == 2.0f;
+                                    bool v267;
+                                    v267 = v264 == 2.0f;
                                     
                                     
-                                    bool v285;
-                                    v285 = v284 != true;
+                                    bool v268;
+                                    v268 = v267 != true;
                                     
                                     
-                                    if (v285){
+                                    if (v268){
                                         
                                         
                                         return 9l;

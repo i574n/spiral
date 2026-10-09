@@ -10,7 +10,7 @@ pwsh init.ps1
 
 . ./core.ps1
 
-{ pwsh ../apps/dir-tree-html/build.ps1 -fast 1 } | Invoke-Block
+{ pwsh dir-tree-html.ps1 } | Invoke-Block
 
 { pwsh ../apps/spiral/build.ps1 -fast 1 } | Invoke-Block
 

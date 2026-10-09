@@ -140,6 +140,17 @@ indexed and sliced by UTF-8 byte (`String.Pos.Raw`). `lean --run` prints elabora
 generated file turns the linters off and the harness scores a `.lean:<line>:<col>: error` as a build failure. Not
 supported yet: stack layouts, C-only macros, value-level `!!!!BackendSwitch` records without a `Lean` key.
 
+The WebAssembly backend (`codegenWasm`, `--backend Wasm` / `.wat`, 2026-10-08) emits one WAT text module that the native tier
+runs with `wasmtime run -W max-wasm-stack=1073741824` (WASI `fd_write`/`proc_exit` only). A sample gets a Wasm row when
+`tests/harness.psd1`'s `Wasm` list names it (C is its oracle). Scalars map to the four value types (sub-word ints narrowed
+after arithmetic, unsigned ops `_u`, float to int with `trunc_sat`); join points are funcs, self tail calls `loop`/`br`,
+`!!!!While` `block`/`loop`. Unions, heap and heap mutable layouts, arrays and closures are i32 pointers into linear memory (a
+bump allocator, never freed): a union is `[tag][8-byte slots]`, an array `[len][stride 8 x fields]`, a closure
+`[table index][captures]` called through `call_indirect`. Strings are `[len][utf-8 bytes]`; the prelude has concat, eq,
+slice (exit 3 on bad bounds or a cut UTF-8 sequence), int/bool/char to string, strtol-like parsing, and software
+exp/log/sin/cos/tanh/pow/atan2 (~1 ulp; WASM has no such instructions). Only the prelude functions a program calls are
+emitted (`call $name`, transitively). Not supported yet: stack mutable layouts, ordering strings, C-syntax macros in samples.
+
 ## Rules
 
 - The compiler writes its output next to its source (`samples/<name>/main.c`, ...), replacing the previous

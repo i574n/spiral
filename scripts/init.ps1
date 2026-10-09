@@ -11,15 +11,8 @@ $owner = ($url -split '/' | Select-Object -Last 2 | Select-Object -First 1) -rep
 $domain = ($url -split '/' | Select-Object -Last 3 | Select-Object -First 1) ?? $env:GITHUB_SERVER_URL -replace 'https?://', ''
 Write-Output "init.ps1 / url: $url / owner: $owner / domain: $domain"
 
-$fork = "../deps/The-Spiral-Language"
-if (!(Test-Path "$fork/.git")) {
-    New-Item -ItemType Directory -Force ../deps | Out-Null
-    git clone --recurse-submodules https://$domain/$owner/The-Spiral-Language.git $fork
-    if ($LASTEXITCODE -ne 0) { throw "init.ps1 / git clone The-Spiral-Language failed (exit code $LASTEXITCODE)" }
-} elseif (!$fast) {
-    git -C $fork pull
-    if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / git pull in $fork failed (exit code $LASTEXITCODE), keeping the checkout" }
-}
+pwsh init-app-build.ps1 -fast $($fast ?? '')
+if ($LASTEXITCODE -ne 0) { throw "init.ps1 / init-app-build.ps1 failed (exit code $LASTEXITCODE)" }
 
 function Test-Command([string] $Name) { [bool](Get-Command $Name -ErrorAction Ignore) }
 if (!(Test-Command "rustup")) {

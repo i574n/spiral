@@ -950,6 +950,10 @@
         'samples/while_loop'
     )
     Wasm = @(
+            'samples/portable_math_rounding'
+            'samples/native_float_pow_pi'
+            'samples/native_float_math_family'
+            'samples/portable_convert_parse'
             'samples/arithmetic_branch'
             'samples/backend_smoke'
             'samples/branch_select'

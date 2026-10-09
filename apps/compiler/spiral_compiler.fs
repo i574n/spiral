@@ -173816,6 +173816,65 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     (memory.copy (i32.add (local.get $r) (i32.const 4)) (i32.add (local.get $a) (i32.const 4)) (local.get $la))
     (memory.copy (i32.add (i32.add (local.get $r) (i32.const 4)) (local.get $la)) (i32.add (local.get $b) (i32.const 4)) (local.get $lb))
     (local.get $r))
+  (func $byte_at (param $s i32) (param $i i32) (result i32)
+    (i32.load8_u (i32.add (i32.add (local.get $s) (i32.const 4)) (local.get $i))))
+  (func $is_space (param $c i32) (result i32)
+    (i32.or (i32.eq (local.get $c) (i32.const 32)) (i32.and (i32.ge_u (local.get $c) (i32.const 9)) (i32.le_u (local.get $c) (i32.const 13)))))
+  (func $digit_value (param $c i32) (result i32)
+    (if (result i32) (i32.and (i32.ge_u (local.get $c) (i32.const 48)) (i32.le_u (local.get $c) (i32.const 57)))
+      (then (i32.sub (local.get $c) (i32.const 48)))
+      (else
+        (if (result i32) (i32.and (i32.ge_u (local.get $c) (i32.const 97)) (i32.le_u (local.get $c) (i32.const 122)))
+          (then (i32.sub (local.get $c) (i32.const 87)))
+          (else
+            (if (result i32) (i32.and (i32.ge_u (local.get $c) (i32.const 65)) (i32.le_u (local.get $c) (i32.const 90)))
+              (then (i32.sub (local.get $c) (i32.const 55)))
+              (else (i32.const 99))))))))
+  (func $skip_spaces (param $s i32) (param $i i32) (result i32)
+    (block $done
+      (loop $next
+        (br_if $done (i32.ge_u (local.get $i) (i32.load (local.get $s))))
+        (br_if $done (i32.eqz (call $is_space (call $byte_at (local.get $s) (local.get $i)))))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $next)))
+    (local.get $i))
+  (func $parse_i64 (param $s i32) (param $base i32) (result i64) (local $i i32) (local $n i32) (local $negative i32) (local $d i32) (local $acc i64)
+    (local.set $n (i32.load (local.get $s)))
+    (local.set $i (call $skip_spaces (local.get $s) (i32.const 0)))
+    (if (i32.lt_u (local.get $i) (local.get $n))
+      (then
+        (if (i32.eq (call $byte_at (local.get $s) (local.get $i)) (i32.const 45))
+          (then (local.set $negative (i32.const 1)) (local.set $i (i32.add (local.get $i) (i32.const 1))))
+          (else
+            (if (i32.eq (call $byte_at (local.get $s) (local.get $i)) (i32.const 43))
+              (then (local.set $i (i32.add (local.get $i) (i32.const 1)))))))))
+    (block $done
+      (loop $digit
+        (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+        (local.set $d (call $digit_value (call $byte_at (local.get $s) (local.get $i))))
+        (br_if $done (i32.ge_u (local.get $d) (local.get $base)))
+        (local.set $acc (i64.add (i64.mul (local.get $acc) (i64.extend_i32_u (local.get $base))) (i64.extend_i32_u (local.get $d))))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $digit)))
+    (if (result i64) (local.get $negative)
+      (then (i64.sub (i64.const 0) (local.get $acc)))
+      (else (local.get $acc))))
+  (func $integer_text_ok (param $s i32) (result i32) (local $i i32) (local $n i32) (local $start i32)
+    (local.set $n (i32.load (local.get $s)))
+    (local.set $i (call $skip_spaces (local.get $s) (i32.const 0)))
+    (if (i32.lt_u (local.get $i) (local.get $n))
+      (then
+        (if (i32.or (i32.eq (call $byte_at (local.get $s) (local.get $i)) (i32.const 45)) (i32.eq (call $byte_at (local.get $s) (local.get $i)) (i32.const 43)))
+          (then (local.set $i (i32.add (local.get $i) (i32.const 1)))))))
+    (local.set $start (local.get $i))
+    (block $done
+      (loop $digit
+        (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+        (br_if $done (i32.ge_u (call $digit_value (call $byte_at (local.get $s) (local.get $i))) (i32.const 10)))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $digit)))
+    (if (i32.eq (local.get $i) (local.get $start)) (then (return (i32.const 0))))
+    (i32.eq (call $skip_spaces (local.get $s) (local.get $i)) (local.get $n)))
   (func $is_continuation (param $s i32) (param $at i32) (result i32)
     (i32.eq (i32.and (i32.load8_u (i32.add (i32.add (local.get $s) (i32.const 4)) (local.get $at))) (i32.const 192)) (i32.const 128)))
   (func $str_slice (param $s i32) (param $from i32) (param $upto i32) (result i32) (local $len i32) (local $n i32) (local $r i32)
@@ -173833,6 +173892,135 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     (i32.store (local.get $r) (local.get $n))
     (memory.copy (i32.add (local.get $r) (i32.const 4)) (i32.add (i32.add (local.get $s) (i32.const 4)) (local.get $from)) (local.get $n))
     (local.get $r))
+  (func $math_scale2 (param $x f64) (param $k i32) (result f64)
+    (if (i32.gt_s (local.get $k) (i32.const 1023))
+      (then (return (call $math_scale2 (f64.mul (local.get $x) (f64.const 0x1p1023)) (i32.sub (local.get $k) (i32.const 1023))))))
+    (if (i32.lt_s (local.get $k) (i32.const -1022))
+      (then (return (call $math_scale2 (f64.mul (local.get $x) (f64.const 0x1p-1022)) (i32.add (local.get $k) (i32.const 1022))))))
+    (f64.mul (local.get $x) (f64.reinterpret_i64 (i64.shl (i64.extend_i32_s (i32.add (local.get $k) (i32.const 1023))) (i64.const 52)))))
+  (func $math_exp (param $x f64) (result f64) (local $k f64) (local $r f64) (local $term f64) (local $sum f64) (local $i i32)
+    (if (f64.ne (local.get $x) (local.get $x)) (then (return (local.get $x))))
+    (if (f64.gt (local.get $x) (f64.const 709.8)) (then (return (f64.const inf))))
+    (if (f64.lt (local.get $x) (f64.const -745.2)) (then (return (f64.const 0))))
+    (local.set $k (f64.nearest (f64.div (local.get $x) (f64.const 0x1.62e42fefa39efp-1))))
+    (local.set $r (f64.sub (f64.sub (local.get $x) (f64.mul (local.get $k) (f64.const 0x1.62e42fee00000p-1))) (f64.mul (local.get $k) (f64.const 0x1.a39ef35793c76p-33))))
+    (local.set $term (f64.const 1))
+    (local.set $sum (f64.const 1))
+    (local.set $i (i32.const 1))
+    (loop $series
+      (local.set $term (f64.div (f64.mul (local.get $term) (local.get $r)) (f64.convert_i32_s (local.get $i))))
+      (local.set $sum (f64.add (local.get $sum) (local.get $term)))
+      (local.set $i (i32.add (local.get $i) (i32.const 1)))
+      (br_if $series (i32.le_s (local.get $i) (i32.const 20))))
+    (call $math_scale2 (local.get $sum) (i32.trunc_f64_s (local.get $k))))
+  (func $math_log (param $x f64) (result f64) (local $bits i64) (local $e i32) (local $m f64) (local $s f64) (local $s2 f64) (local $term f64) (local $sum f64) (local $i i32)
+    (if (f64.ne (local.get $x) (local.get $x)) (then (return (local.get $x))))
+    (if (f64.lt (local.get $x) (f64.const 0)) (then (return (f64.const nan))))
+    (if (f64.eq (local.get $x) (f64.const 0)) (then (return (f64.const -inf))))
+    (if (f64.eq (local.get $x) (f64.const inf)) (then (return (local.get $x))))
+    (if (f64.lt (local.get $x) (f64.const 0x1p-1022))
+      (then (return (f64.sub (call $math_log (f64.mul (local.get $x) (f64.const 0x1p54))) (f64.mul (f64.const 54) (f64.const 0x1.62e42fefa39efp-1))))))
+    (local.set $bits (i64.reinterpret_f64 (local.get $x)))
+    (local.set $e (i32.sub (i32.wrap_i64 (i64.shr_u (local.get $bits) (i64.const 52))) (i32.const 1023)))
+    (local.set $m (f64.reinterpret_i64 (i64.or (i64.and (local.get $bits) (i64.const 0x000fffffffffffff)) (i64.const 0x3ff0000000000000))))
+    (if (f64.gt (local.get $m) (f64.const 0x1.6a09e667f3bcdp0))
+      (then (local.set $m (f64.mul (local.get $m) (f64.const 0.5))) (local.set $e (i32.add (local.get $e) (i32.const 1)))))
+    (local.set $s (f64.div (f64.sub (local.get $m) (f64.const 1)) (f64.add (local.get $m) (f64.const 1))))
+    (local.set $s2 (f64.mul (local.get $s) (local.get $s)))
+    (local.set $term (local.get $s))
+    (local.set $sum (local.get $s))
+    (local.set $i (i32.const 3))
+    (loop $series
+      (local.set $term (f64.mul (local.get $term) (local.get $s2)))
+      (local.set $sum (f64.add (local.get $sum) (f64.div (local.get $term) (f64.convert_i32_s (local.get $i)))))
+      (local.set $i (i32.add (local.get $i) (i32.const 2)))
+      (br_if $series (i32.le_s (local.get $i) (i32.const 41))))
+    (f64.add (f64.mul (f64.const 2) (local.get $sum)) (f64.mul (f64.convert_i32_s (local.get $e)) (f64.const 0x1.62e42fefa39efp-1))))
+  (func $math_sin_core (param $r f64) (result f64) (local $r2 f64) (local $term f64) (local $sum f64) (local $i i32)
+    (local.set $r2 (f64.mul (local.get $r) (local.get $r)))
+    (local.set $term (local.get $r))
+    (local.set $sum (local.get $r))
+    (local.set $i (i32.const 2))
+    (loop $series
+      (local.set $term (f64.neg (f64.div (f64.mul (local.get $term) (local.get $r2)) (f64.convert_i32_s (i32.mul (local.get $i) (i32.add (local.get $i) (i32.const 1)))))))
+      (local.set $sum (f64.add (local.get $sum) (local.get $term)))
+      (local.set $i (i32.add (local.get $i) (i32.const 2)))
+      (br_if $series (i32.le_s (local.get $i) (i32.const 26))))
+    (local.get $sum))
+  (func $math_cos_core (param $r f64) (result f64) (local $r2 f64) (local $term f64) (local $sum f64) (local $i i32)
+    (local.set $r2 (f64.mul (local.get $r) (local.get $r)))
+    (local.set $term (f64.const 1))
+    (local.set $sum (f64.const 1))
+    (local.set $i (i32.const 1))
+    (loop $series
+      (local.set $term (f64.neg (f64.div (f64.mul (local.get $term) (local.get $r2)) (f64.convert_i32_s (i32.mul (local.get $i) (i32.add (local.get $i) (i32.const 1)))))))
+      (local.set $sum (f64.add (local.get $sum) (local.get $term)))
+      (local.set $i (i32.add (local.get $i) (i32.const 2)))
+      (br_if $series (i32.le_s (local.get $i) (i32.const 25))))
+    (local.get $sum))
+  (func $math_quadrant (param $x f64) (param $phase i32) (result f64) (local $k f64) (local $r f64) (local $q i32)
+    (if (f64.ne (f64.sub (local.get $x) (local.get $x)) (f64.const 0)) (then (return (f64.const nan))))
+    (local.set $k (f64.nearest (f64.div (local.get $x) (f64.const 0x1.921fb54442d18p0))))
+    (local.set $r (f64.sub (f64.sub (local.get $x) (f64.mul (local.get $k) (f64.const 0x1.921fb54400000p0))) (f64.mul (local.get $k) (f64.const 0x1.0b4611a626331p-34))))
+    (local.set $q (i32.and (i32.add (i32.wrap_i64 (i64.trunc_sat_f64_s (local.get $k))) (local.get $phase)) (i32.const 3)))
+    (if (result f64) (i32.eq (local.get $q) (i32.const 0)) (then (call $math_sin_core (local.get $r)))
+      (else (if (result f64) (i32.eq (local.get $q) (i32.const 1)) (then (call $math_cos_core (local.get $r)))
+        (else (if (result f64) (i32.eq (local.get $q) (i32.const 2)) (then (f64.neg (call $math_sin_core (local.get $r))))
+          (else (f64.neg (call $math_cos_core (local.get $r))))))))))
+  (func $math_sin (param $x f64) (result f64) (call $math_quadrant (local.get $x) (i32.const 0)))
+  (func $math_cos (param $x f64) (result f64) (call $math_quadrant (local.get $x) (i32.const 1)))
+  (func $math_tanh (param $x f64) (result f64) (local $e f64)
+    (if (f64.gt (f64.abs (local.get $x)) (f64.const 22)) (then (return (f64.copysign (f64.const 1) (local.get $x)))))
+    (if (f64.lt (f64.abs (local.get $x)) (f64.const 0x1p-28)) (then (return (local.get $x))))
+    (local.set $e (call $math_exp (f64.mul (f64.const 2) (local.get $x))))
+    (f64.div (f64.sub (local.get $e) (f64.const 1)) (f64.add (local.get $e) (f64.const 1))))
+  (func $math_pow (param $x f64) (param $y f64) (result f64) (local $n i64) (local $base f64) (local $acc f64) (local $negative i32)
+    (if (f64.eq (local.get $y) (f64.const 0)) (then (return (f64.const 1))))
+    (if (i32.and (f64.eq (f64.trunc (local.get $y)) (local.get $y)) (f64.lt (f64.abs (local.get $y)) (f64.const 0x1p53)))
+      (then
+        (local.set $n (i64.trunc_sat_f64_s (local.get $y)))
+        (local.set $negative (i64.lt_s (local.get $n) (i64.const 0)))
+        (if (local.get $negative) (then (local.set $n (i64.sub (i64.const 0) (local.get $n)))))
+        (local.set $base (local.get $x))
+        (local.set $acc (f64.const 1))
+        (block $done
+          (loop $square
+            (br_if $done (i64.eqz (local.get $n)))
+            (if (i64.ne (i64.and (local.get $n) (i64.const 1)) (i64.const 0)) (then (local.set $acc (f64.mul (local.get $acc) (local.get $base)))))
+            (local.set $base (f64.mul (local.get $base) (local.get $base)))
+            (local.set $n (i64.shr_u (local.get $n) (i64.const 1)))
+            (br $square)))
+        (return (if (result f64) (local.get $negative) (then (f64.div (f64.const 1) (local.get $acc))) (else (local.get $acc))))))
+    (if (f64.lt (local.get $x) (f64.const 0)) (then (return (f64.const nan))))
+    (call $math_exp (f64.mul (local.get $y) (call $math_log (local.get $x)))))
+  (func $math_atan (param $x f64) (result f64) (local $a f64) (local $invert i32) (local $halvings i32) (local $s f64) (local $s2 f64) (local $term f64) (local $sum f64) (local $i i32)
+    (local.set $a (f64.abs (local.get $x)))
+    (if (f64.gt (local.get $a) (f64.const 1)) (then (local.set $a (f64.div (f64.const 1) (local.get $a))) (local.set $invert (i32.const 1))))
+    (block $reduced
+      (loop $halve
+        (br_if $reduced (f64.le (local.get $a) (f64.const 0.125)))
+        (local.set $a (f64.div (local.get $a) (f64.add (f64.const 1) (f64.sqrt (f64.add (f64.const 1) (f64.mul (local.get $a) (local.get $a)))))))
+        (local.set $halvings (i32.add (local.get $halvings) (i32.const 1)))
+        (br $halve)))
+    (local.set $s2 (f64.mul (local.get $a) (local.get $a)))
+    (local.set $term (local.get $a))
+    (local.set $sum (local.get $a))
+    (local.set $i (i32.const 3))
+    (loop $series
+      (local.set $term (f64.neg (f64.mul (local.get $term) (local.get $s2))))
+      (local.set $sum (f64.add (local.get $sum) (f64.div (local.get $term) (f64.convert_i32_s (local.get $i)))))
+      (local.set $i (i32.add (local.get $i) (i32.const 2)))
+      (br_if $series (i32.le_s (local.get $i) (i32.const 41))))
+    (local.set $sum (call $math_scale2 (local.get $sum) (local.get $halvings)))
+    (if (local.get $invert) (then (local.set $sum (f64.sub (f64.const 0x1.921fb54442d18p0) (local.get $sum)))))
+    (f64.copysign (local.get $sum) (local.get $x)))
+  (func $math_atan2 (param $y f64) (param $x f64) (result f64)
+    (if (f64.gt (local.get $x) (f64.const 0)) (then (return (call $math_atan (f64.div (local.get $y) (local.get $x))))))
+    (if (f64.lt (local.get $x) (f64.const 0))
+      (then (return (f64.add (call $math_atan (f64.div (local.get $y) (local.get $x))) (f64.copysign (f64.const 0x1.921fb54442d18p1) (local.get $y))))))
+    (if (f64.gt (local.get $y) (f64.const 0)) (then (return (f64.const 0x1.921fb54442d18p0))))
+    (if (f64.lt (local.get $y) (f64.const 0)) (then (return (f64.const -0x1.921fb54442d18p0))))
+    (f64.copysign (f64.const 0) (local.get $y)))
   (func $str_eq (param $a i32) (param $b i32) (result i32) (local $n i32) (local $i i32)
     (local.set $n (i32.load (local.get $a)))
     (if (i32.ne (local.get $n) (i32.load (local.get $b))) (then (return (i32.const 0))))
@@ -174272,6 +174460,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | Neg, [a] when is_float a -> $"({value_type a}.neg {tup a})"
                 | Neg, [a] -> narrow a $"({value_type a}.sub ({value_type a}.const 0) {tup a})"
                 | Sqrt, [a] -> $"({value_type a}.sqrt {tup a})"
+                | (Log | Exp | Sin | Cos | Tanh), [a] ->
+                    let helper = match op with Log -> "math_log" | Exp -> "math_exp" | Sin -> "math_sin" | Cos -> "math_cos" | _ -> "math_tanh"
+                    if value_type a = "f32" then sprintf "(f32.demote_f64 (call $%s (f64.promote_f32 %s)))" helper (tup a)
+                    else sprintf "(call $%s %s)" helper (tup a)
+                | Pow, [a;b] ->
+                    if value_type a = "f32" then sprintf "(f32.demote_f64 (call $math_pow (f64.promote_f32 %s) (f64.promote_f32 %s)))" (tup a) (tup b)
+                    else sprintf "(call $math_pow %s %s)" (tup a) (tup b)
                 | NanIs, [a] -> $"({value_type a}.ne {tup a} {tup a})"
                 | StdoutFlush, [] -> ""
                 | UnionTag, [DV(L(i,_))] ->
@@ -174341,9 +174536,43 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         else emit_function "spiralMain" None [||] [||] "" (YPrim Int32T) x
         let heap_start = (data_end + 7) &&& ~~~7
         let pages = heap_start / 65536 + 2
+        let prelude_fields = ResizeArray<string>()
+        let prelude_helpers = ResizeArray<string * string>()
+        let current_helper : (string * StringBuilder) option ref = ref None
+        let close_helper () =
+            match current_helper.Value with
+            | Some (name, text) -> prelude_helpers.Add((name, text.ToString()))
+            | None -> ()
+            current_helper.Value <- None
+        for prelude_line in wasmPrelude.Split('\n') do
+            if prelude_line.StartsWith "  (func $" then
+                close_helper ()
+                let name = prelude_line.Substring(9).Split([|' '; ')'|]).[0]
+                current_helper.Value <- Some (name, StringBuilder().AppendLine(prelude_line))
+            elif prelude_line.StartsWith "  (" then
+                close_helper ()
+                prelude_fields.Add prelude_line
+            elif prelude_line.Trim() <> "" then
+                match current_helper.Value with
+                | Some (_, text) -> text.AppendLine(prelude_line) |> ignore
+                | None -> prelude_fields.Add prelude_line
+        close_helper ()
+        let called (text : string) =
+            Text.RegularExpressions.Regex.Matches(text, @"call \$([A-Za-z0-9_]+)") |> Seq.map (fun m -> m.Groups.[1].Value)
+        let helper_text = dict prelude_helpers
+        let needed = HashSet<string>()
+        let pending = Stack<string>()
+        let reach (text : string) = for name in called text do if needed.Add name then pending.Push name
+        Seq.concat [seq env.globals; seq globals; seq functions] |> Seq.iter reach
+        reach "call $spiralMain"
+        while pending.Count > 0 do
+            match helper_text.TryGetValue (pending.Pop()) with
+            | true, text -> reach text
+            | _ -> ()
         let program = StringBuilder()
         program.AppendLine("(module") |> ignore
-        program.Append(wasmPrelude) |> ignore
+        prelude_fields |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        prelude_helpers |> Seq.iter (fun (name, text) -> if needed.Contains name then program.Append(text) |> ignore)
         program.AppendLine($"  (memory (export \"memory\") {pages})") |> ignore
         program.AppendLine($"  (global $hp (mut i32) (i32.const {heap_start}))") |> ignore
         env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)

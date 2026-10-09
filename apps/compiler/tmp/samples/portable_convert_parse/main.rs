@@ -25,84 +25,84 @@ fn closure0() -> Rc<dyn Fn((i32)) -> US0> {
 }
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("ff"); } LIT.with(|lit| lit.clone()) };
-    let mut v30: i32 = i32::from_str_radix(&*(v0), (16i32) as u32).unwrap();
-    println!("{}", v30);
-    let mut v67: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("1011"); } LIT.with(|lit| lit.clone()) };
-    let mut v83: i32 = i32::from_str_radix(&*(v67), (2i32) as u32).unwrap();
-    println!("{}", v83);
-    let mut v91: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("-42"); } LIT.with(|lit| lit.clone()) };
-    let mut v130: i32 = i32::from_str_radix(&*(v91), (10i32) as u32).unwrap();
-    println!("{}", v130);
-    let mut v138: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(" 123 "); } LIT.with(|lit| lit.clone()) };
-    let mut v324: Option<i32> = (v138).trim().parse::<i32>().ok();
-    let mut v521: Option<i32> = method0(v324.clone());
-    let mut v522: Rc<dyn Fn((i32)) -> US0> = closure0();
-    let mut v523: Option<US0> = v521.map(|x| v522(x));
-    let mut v612: US0 = US0::US0_1;
-    let mut v613: US0 = v523.unwrap_or(v612);
-    match &v613 {
+    let mut v31: i32 = i32::from_str_radix(&*(v0), (16i32) as u32).unwrap();
+    println!("{}", v31);
+    let mut v69: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("1011"); } LIT.with(|lit| lit.clone()) };
+    let mut v85: i32 = i32::from_str_radix(&*(v69), (2i32) as u32).unwrap();
+    println!("{}", v85);
+    let mut v94: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("-42"); } LIT.with(|lit| lit.clone()) };
+    let mut v134: i32 = i32::from_str_radix(&*(v94), (10i32) as u32).unwrap();
+    println!("{}", v134);
+    let mut v143: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(" 123 "); } LIT.with(|lit| lit.clone()) };
+    let mut v356: Option<i32> = (v143).trim().parse::<i32>().ok();
+    let mut v582: Option<i32> = method0(v356.clone());
+    let mut v583: Rc<dyn Fn((i32)) -> US0> = closure0();
+    let mut v584: Option<US0> = v582.map(|x| v583(x));
+    let mut v686: US0 = US0::US0_1;
+    let mut v687: US0 = v584.unwrap_or(v686);
+    match &v687 {
         US0::US0_1 => {
-            let mut v707: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
-            println!("{}", v707);
+            let mut v802: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
+            println!("{}", v802);
             ()
         }
-        US0::US0_0(v700) => {
-            let mut v700: i32 = *v700;
-            println!("{}", v700);
+        US0::US0_0(v795) => {
+            let mut v795: i32 = *v795;
+            println!("{}", v795);
             ()
         }
     };
-    let mut v709: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("12x"); } LIT.with(|lit| lit.clone()) };
-    let mut v710: Option<i32> = (v709).trim().parse::<i32>().ok();
-    let mut v711: Option<i32> = method0(v710.clone());
-    let mut v712: Option<US0> = v711.map(|x| v522(x));
-    let mut v713: US0 = US0::US0_1;
-    let mut v714: US0 = v712.unwrap_or(v713);
-    match &v714 {
+    let mut v804: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("12x"); } LIT.with(|lit| lit.clone()) };
+    let mut v805: Option<i32> = (v804).trim().parse::<i32>().ok();
+    let mut v806: Option<i32> = method0(v805.clone());
+    let mut v807: Option<US0> = v806.map(|x| v583(x));
+    let mut v808: US0 = US0::US0_1;
+    let mut v809: US0 = v807.unwrap_or(v808);
+    match &v809 {
         US0::US0_1 => {
-            let mut v716: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
-            println!("{}", v716);
+            let mut v811: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
+            println!("{}", v811);
             ()
         }
-        US0::US0_0(v715) => {
-            let mut v715: i32 = *v715;
-            println!("{}", v715);
+        US0::US0_0(v810) => {
+            let mut v810: i32 = *v810;
+            println!("{}", v810);
             ()
         }
     };
-    let mut v717: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let mut v718: Option<i32> = (v717).trim().parse::<i32>().ok();
-    let mut v719: Option<i32> = method0(v718.clone());
-    let mut v720: Option<US0> = v719.map(|x| v522(x));
-    let mut v721: US0 = US0::US0_1;
-    let mut v722: US0 = v720.unwrap_or(v721);
-    match &v722 {
+    let mut v812: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    let mut v813: Option<i32> = (v812).trim().parse::<i32>().ok();
+    let mut v814: Option<i32> = method0(v813.clone());
+    let mut v815: Option<US0> = v814.map(|x| v583(x));
+    let mut v816: US0 = US0::US0_1;
+    let mut v817: US0 = v815.unwrap_or(v816);
+    match &v817 {
         US0::US0_1 => {
-            let mut v724: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
-            println!("{}", v724);
+            let mut v819: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
+            println!("{}", v819);
             ()
         }
-        US0::US0_0(v723) => {
-            let mut v723: i32 = *v723;
-            println!("{}", v723);
+        US0::US0_0(v818) => {
+            let mut v818: i32 = *v818;
+            println!("{}", v818);
             ()
         }
     };
-    let mut v725: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("+7"); } LIT.with(|lit| lit.clone()) };
-    let mut v726: Option<i32> = (v725).trim().parse::<i32>().ok();
-    let mut v727: Option<i32> = method0(v726.clone());
-    let mut v728: Option<US0> = v727.map(|x| v522(x));
-    let mut v729: US0 = US0::US0_1;
-    let mut v730: US0 = v728.unwrap_or(v729);
-    match &v730 {
+    let mut v820: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("+7"); } LIT.with(|lit| lit.clone()) };
+    let mut v821: Option<i32> = (v820).trim().parse::<i32>().ok();
+    let mut v822: Option<i32> = method0(v821.clone());
+    let mut v823: Option<US0> = v822.map(|x| v583(x));
+    let mut v824: US0 = US0::US0_1;
+    let mut v825: US0 = v823.unwrap_or(v824);
+    match &v825 {
         US0::US0_1 => {
-            let mut v732: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
-            println!("{}", v732);
+            let mut v827: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("none"); } LIT.with(|lit| lit.clone()) };
+            println!("{}", v827);
             ()
         }
-        US0::US0_0(v731) => {
-            let mut v731: i32 = *v731;
-            println!("{}", v731);
+        US0::US0_0(v826) => {
+            let mut v826: i32 = *v826;
+            println!("{}", v826);
             ()
         }
     };

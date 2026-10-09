@@ -22,78 +22,78 @@ and method0 (v0 : string) : US0 =
     v5
 let v0 : string = "ff"
 let v12 : int32 = System.Convert.ToInt32 (v0, 16)
-let v60 : (int32 -> unit) = System.Console.WriteLine
-v60 v12
-let v67 : string = "1011"
-let v79 : int32 = System.Convert.ToInt32 (v67, 2)
-let v91 : (int32 -> unit) = System.Console.WriteLine
-v91 v79
-let v92 : string = "-42"
-let v127 : int32 = System.Convert.ToInt32(v92)
-let v139 : (int32 -> unit) = System.Console.WriteLine
-v139 v127
-let v140 : string = " 123 "
-let v192 : US0 = method0(v140)
-let v276 : US1 =
-    match v192 with
-    | US0_1(v273) -> (* Error *)
+let v62 : (int32 -> unit) = System.Console.WriteLine
+v62 v12
+let v69 : string = "1011"
+let v81 : int32 = System.Convert.ToInt32 (v69, 2)
+let v94 : (int32 -> unit) = System.Console.WriteLine
+v94 v81
+let v95 : string = "-42"
+let v131 : int32 = System.Convert.ToInt32(v95)
+let v144 : (int32 -> unit) = System.Console.WriteLine
+v144 v131
+let v145 : string = " 123 "
+let v211 : US0 = method0(v145)
+let v306 : US1 =
+    match v211 with
+    | US0_1(v303) -> (* Error *)
         US1_1
-    | US0_0(v271) -> (* Ok *)
-        US1_0(v271)
-match v276 with
+    | US0_0(v301) -> (* Ok *)
+        US1_0(v301)
+match v306 with
 | US1_1 -> (* None *)
-    let v706 : (string -> unit) = System.Console.WriteLine
-    let v707 : string = "none"
-    v706 v707
-| US1_0(v702) -> (* Some *)
-    let v703 : (int32 -> unit) = System.Console.WriteLine
-    v703 v702
-let v710 : string = "12x"
-let v711 : US0 = method0(v710)
-let v717 : US1 =
-    match v711 with
-    | US0_1(v714) -> (* Error *)
+    let v801 : (string -> unit) = System.Console.WriteLine
+    let v802 : string = "none"
+    v801 v802
+| US1_0(v797) -> (* Some *)
+    let v798 : (int32 -> unit) = System.Console.WriteLine
+    v798 v797
+let v805 : string = "12x"
+let v806 : US0 = method0(v805)
+let v812 : US1 =
+    match v806 with
+    | US0_1(v809) -> (* Error *)
         US1_1
-    | US0_0(v712) -> (* Ok *)
-        US1_0(v712)
-match v717 with
+    | US0_0(v807) -> (* Ok *)
+        US1_0(v807)
+match v812 with
 | US1_1 -> (* None *)
-    let v720 : (string -> unit) = System.Console.WriteLine
-    let v721 : string = "none"
-    v720 v721
-| US1_0(v718) -> (* Some *)
-    let v719 : (int32 -> unit) = System.Console.WriteLine
-    v719 v718
-let v722 : string = ""
-let v723 : US0 = method0(v722)
-let v729 : US1 =
-    match v723 with
-    | US0_1(v726) -> (* Error *)
+    let v815 : (string -> unit) = System.Console.WriteLine
+    let v816 : string = "none"
+    v815 v816
+| US1_0(v813) -> (* Some *)
+    let v814 : (int32 -> unit) = System.Console.WriteLine
+    v814 v813
+let v817 : string = ""
+let v818 : US0 = method0(v817)
+let v824 : US1 =
+    match v818 with
+    | US0_1(v821) -> (* Error *)
         US1_1
-    | US0_0(v724) -> (* Ok *)
-        US1_0(v724)
-match v729 with
+    | US0_0(v819) -> (* Ok *)
+        US1_0(v819)
+match v824 with
 | US1_1 -> (* None *)
-    let v732 : (string -> unit) = System.Console.WriteLine
-    let v733 : string = "none"
-    v732 v733
-| US1_0(v730) -> (* Some *)
-    let v731 : (int32 -> unit) = System.Console.WriteLine
-    v731 v730
-let v734 : string = "+7"
-let v735 : US0 = method0(v734)
-let v741 : US1 =
-    match v735 with
-    | US0_1(v738) -> (* Error *)
+    let v827 : (string -> unit) = System.Console.WriteLine
+    let v828 : string = "none"
+    v827 v828
+| US1_0(v825) -> (* Some *)
+    let v826 : (int32 -> unit) = System.Console.WriteLine
+    v826 v825
+let v829 : string = "+7"
+let v830 : US0 = method0(v829)
+let v836 : US1 =
+    match v830 with
+    | US0_1(v833) -> (* Error *)
         US1_1
-    | US0_0(v736) -> (* Ok *)
-        US1_0(v736)
-match v741 with
+    | US0_0(v831) -> (* Ok *)
+        US1_0(v831)
+match v836 with
 | US1_1 -> (* None *)
-    let v744 : (string -> unit) = System.Console.WriteLine
-    let v745 : string = "none"
-    v744 v745
-| US1_0(v742) -> (* Some *)
-    let v743 : (int32 -> unit) = System.Console.WriteLine
-    v743 v742
+    let v839 : (string -> unit) = System.Console.WriteLine
+    let v840 : string = "none"
+    v839 v840
+| US1_0(v837) -> (* Some *)
+    let v838 : (int32 -> unit) = System.Console.WriteLine
+    v838 v837
 0

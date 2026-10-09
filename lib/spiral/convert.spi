@@ -88,6 +88,7 @@ inl convert_i32_base forall t. (base : i32) (x : t) : i32 =
             elif base = 8 then $'StrToInt(##38 + !x)' : i32
             elif base = 10 then $'StrToInt(!x)' : i32
             else $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : i32
+        Wasm = fun () => $'(i32.wrap_i64 (call $parse_i64 !x !base))' : i32
     }
 
 /// ### convert_i32
@@ -126,6 +127,12 @@ inl convert_i32 forall t. (x : t) : int =
             elif is_float_type x
             then $'backend_switch_has_no_TypeScript_float_rounding_in_lib_spiral' : int
             else $'Number(!x)' : int
+        Wasm = fun () =>
+            if is_string_type x
+            then x |> convert_i32_base 10 : int
+            elif is_float_type x
+            then $'(i32.trunc_sat_f64_s (f64.nearest !x))' : int
+            else x |> numeric_conv : int
     }
 
 /// ### try_convert
@@ -197,6 +204,10 @@ inl try_convert forall t u. (x : t) : option u =
                 then
                     inl ok : bool = $'/^\\s*[+-]?\\d+\\s*$/.test(!x)'
                     parsed_integer ok ($'(!ok ? BigInt(!x) : 0n)' : i64)
+                else x |> to |> Some : _ u
+            Wasm = fun () =>
+                if is_string_type x
+                then parsed_integer ($'(call $integer_text_ok !x)' : bool) ($'(call $parse_i64 !x (i32.const 10))' : i64)
                 else x |> to |> Some : _ u
         }
 
