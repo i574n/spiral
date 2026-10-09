@@ -107,16 +107,16 @@ fn spiralCreate(comptime T: type, v: T) *T {
 }
 const UH1 = struct { tag: i32, c0_0: *UH0 = undefined };
 const UH0 = struct { tag: i32, c0_0: *UH1 = undefined };
-fn UH1_0(a0: *UH0) *UH1 {
+fn UH1_B(a0: *UH0) *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 0, .c0_0 = a0 });
 }
-fn UH1_1() *UH1 {
+fn UH1_StopB() *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 1 });
 }
-fn UH0_0(a0: *UH1) *UH0 {
+fn UH0_A(a0: *UH1) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0, .c0_0 = a0 });
 }
-fn UH0_1() *UH0 {
+fn UH0_StopA() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1 });
 }
 fn spiralMain() i32 {
@@ -127,11 +127,11 @@ fn spiralMain() i32 {
     var v6: *UH1 = undefined; _ = &v6;
     v0 = true;
     if (v0) {
-        v1 = UH0_1();
-        v2 = UH1_0(v1);
-        v5 = UH0_0(v2);
+        v1 = UH0_StopA();
+        v2 = UH1_B(v1);
+        v5 = UH0_A(v2);
     } else {
-        v5 = UH0_1();
+        v5 = UH0_StopA();
     }
     switch (v5.tag) {
         0 => {

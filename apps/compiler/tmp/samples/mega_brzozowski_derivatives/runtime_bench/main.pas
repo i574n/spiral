@@ -51,43 +51,43 @@ function loop_34(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0
 function interned_accepts_33(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: TUH1): Boolean; forward;
 function loop_32(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: QWord; v11: LongInt): LongInt; forward;
 function loop_36(v0: TArray0; v1: TArray0; v2: TArray0; v3: TArray0; v4: TArray0; v5: TArray0; v6: TArray0; v7: LongInt; v8: LongInt; v9: LongInt; v10: LongInt): LongInt; forward;
-function US0_0: TUS0;
+function US0_BitZero: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1: TUS0;
+function US0_BitOne: TUS0;
 begin
   Result.tag := 1; 
 end;
-function UH0_0: TUH0;
+function UH0_RegexEmpty: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1: TUH0;
+function UH0_RegexEpsilon: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; 
 end;
-function UH0_2(a0: TUS0): TUH0;
+function UH0_RegexChar(a0: TUS0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 2; Result.c2_0 := a0;
 end;
-function UH0_3(a0: TUH0; a1: TUH0): TUH0;
+function UH0_RegexAlt(a0: TUH0; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 3; Result.c3_0 := a0; Result.c3_1 := a1;
 end;
-function UH0_4(a0: TUH0; a1: TUH0): TUH0;
+function UH0_RegexCat(a0: TUH0; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 4; Result.c4_0 := a0; Result.c4_1 := a1;
 end;
-function UH0_5(a0: TUH0): TUH0;
+function UH0_RegexStar(a0: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 5; Result.c5_0 := a0;
 end;
-function UH1_0: TUH1;
+function UH1_InputEmpty: TUH1;
 begin
   Result := TUH1.Create; Result.tag := 0; 
 end;
-function UH1_1(a0: TUS0; a1: TUH1): TUH1;
+function UH1_InputCons(a0: TUS0; a1: TUH1): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -124,13 +124,13 @@ begin
           v9 := v8 and 1;
           v10 := v9 = 0;
           if v10 then begin
-              v11 := US0_0;
+              v11 := US0_BitZero;
               v13 := v11;
           end else begin
-              v12 := US0_1;
+              v12 := US0_BitOne;
               v13 := v12;
           end;
-          v14 := UH1_1(v13, v2);
+          v14 := UH1_InputCons(v13, v2);
           tmp12 := v6;
           tmp13 := v7;
           tmp14 := v14;
@@ -144,15 +144,15 @@ begin
       end;
   end;
 end;
-function US1_0: TUS1;
+function US1_SymbolLess: TUS1;
 begin
   Result.tag := 0; 
 end;
-function US1_1: TUS1;
+function US1_SymbolSame: TUS1;
 begin
   Result.tag := 1; 
 end;
-function US1_2: TUS1;
+function US1_SymbolGreater: TUS1;
 begin
   Result.tag := 2; 
 end;
@@ -207,7 +207,7 @@ begin
                       end;
                   end;
                   else begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
               end;
@@ -236,19 +236,19 @@ begin
                   end;
                   2: begin
                       v32 := v1.c2_0;
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   0: begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   1: begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   else begin
-                      Result := US1_0;
+                      Result := US1_SymbolLess;
                       Exit;
                   end;
               end;
@@ -262,11 +262,11 @@ begin
                           1: begin
                               case v13.tag of
                                   1: begin
-                                      Result := US1_1;
+                                      Result := US1_SymbolSame;
                                       Exit;
                                   end;
                                   0: begin
-                                      Result := US1_2;
+                                      Result := US1_SymbolGreater;
                                       Exit;
                                   end;
                               end;
@@ -274,11 +274,11 @@ begin
                           0: begin
                               case v13.tag of
                                   1: begin
-                                      Result := US1_0;
+                                      Result := US1_SymbolLess;
                                       Exit;
                                   end;
                                   0: begin
-                                      Result := US1_1;
+                                      Result := US1_SymbolSame;
                                       Exit;
                                   end;
                               end;
@@ -286,15 +286,15 @@ begin
                       end;
                   end;
                   0: begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   1: begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   else begin
-                      Result := US1_0;
+                      Result := US1_SymbolLess;
                       Exit;
                   end;
               end;
@@ -302,11 +302,11 @@ begin
           0: begin
               case v1.tag of
                   0: begin
-                      Result := US1_1;
+                      Result := US1_SymbolSame;
                       Exit;
                   end;
                   else begin
-                      Result := US1_0;
+                      Result := US1_SymbolLess;
                       Exit;
                   end;
               end;
@@ -314,15 +314,15 @@ begin
           1: begin
               case v1.tag of
                   0: begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
                   1: begin
-                      Result := US1_1;
+                      Result := US1_SymbolSame;
                       Exit;
                   end;
                   else begin
-                      Result := US1_0;
+                      Result := US1_SymbolLess;
                       Exit;
                   end;
               end;
@@ -333,7 +333,7 @@ begin
                   3: begin
                       v45 := v1.c3_0;
                       v46 := v1.c3_1;
-                      Result := US1_0;
+                      Result := US1_SymbolLess;
                       Exit;
                   end;
                   5: begin
@@ -345,7 +345,7 @@ begin
                       Continue;
                   end;
                   else begin
-                      Result := US1_2;
+                      Result := US1_SymbolGreater;
                       Exit;
                   end;
               end;
@@ -369,10 +369,10 @@ begin
           case v4.tag of
               2: begin
                   v6 := alt_insert_sorted_6(v0, v3);
-                  Result := UH0_3(v2, v6);
+                  Result := UH0_RegexAlt(v2, v6);
               end;
               0: begin
-                  Result := UH0_3(v0, v1);
+                  Result := UH0_RegexAlt(v0, v1);
               end;
               1: begin
                   Result := v1;
@@ -386,10 +386,10 @@ begin
           v11 := regex_compare_7(v0, v1);
           case v11.tag of
               2: begin
-                  Result := UH0_3(v1, v0);
+                  Result := UH0_RegexAlt(v1, v0);
               end;
               0: begin
-                  Result := UH0_3(v0, v1);
+                  Result := UH0_RegexAlt(v0, v1);
               end;
               1: begin
                   Result := v1;
@@ -514,20 +514,20 @@ begin
                           1: begin
                               case v5.tag of
                                   1: begin
-                                      v15 := US1_1;
+                                      v15 := US1_SymbolSame;
                                   end;
                                   0: begin
-                                      v15 := US1_2;
+                                      v15 := US1_SymbolGreater;
                                   end;
                               end;
                           end;
                           0: begin
                               case v5.tag of
                                   1: begin
-                                      v15 := US1_0;
+                                      v15 := US1_SymbolLess;
                                   end;
                                   0: begin
-                                      v15 := US1_1;
+                                      v15 := US1_SymbolSame;
                                   end;
                               end;
                           end;
@@ -604,12 +604,12 @@ var
 begin
   case v0.tag of
       0: begin
-          Result := UH0_0;
+          Result := UH0_RegexEmpty;
       end;
       else begin
           case v1.tag of
               0: begin
-                  Result := UH0_0;
+                  Result := UH0_RegexEmpty;
               end;
               else begin
                   case v0.tag of
@@ -627,7 +627,7 @@ begin
                                           v12 := v0.c4_0;
                                           v13 := v0.c4_1;
                                           v14 := make_cat_8(v13, v1);
-                                          Result := UH0_4(v12, v14);
+                                          Result := UH0_RegexCat(v12, v14);
                                       end;
                                       5: begin
                                           v4 := v0.c5_0;
@@ -636,18 +636,18 @@ begin
                                                   v5 := v1.c5_0;
                                                   v6 := regex_equal_9(v4, v5);
                                                   if v6 then begin
-                                                      Result := UH0_5(v4);
+                                                      Result := UH0_RegexStar(v4);
                                                   end else begin
-                                                      Result := UH0_4(v0, v1);
+                                                      Result := UH0_RegexCat(v0, v1);
                                                   end;
                                               end;
                                               else begin
-                                                  Result := UH0_4(v0, v1);
+                                                  Result := UH0_RegexCat(v0, v1);
                                               end;
                                           end;
                                       end;
                                       else begin
-                                          Result := UH0_4(v0, v1);
+                                          Result := UH0_RegexCat(v0, v1);
                                       end;
                                   end;
                               end;
@@ -665,17 +665,17 @@ var
 begin
   case v0.tag of
       0: begin
-          Result := UH0_1;
+          Result := UH0_RegexEpsilon;
       end;
       1: begin
-          Result := UH0_1;
+          Result := UH0_RegexEpsilon;
       end;
       5: begin
           v3 := v0.c5_0;
-          Result := UH0_5(v3);
+          Result := UH0_RegexStar(v3);
       end;
       else begin
-          Result := UH0_5(v0);
+          Result := UH0_RegexStar(v0);
       end;
   end;
 end;
@@ -710,13 +710,13 @@ begin
       end;
       2: begin
           v3 := v0.c2_0;
-          Result := UH0_2(v3);
+          Result := UH0_RegexChar(v3);
       end;
       0: begin
-          Result := UH0_0;
+          Result := UH0_RegexEmpty;
       end;
       1: begin
-          Result := UH0_1;
+          Result := UH0_RegexEpsilon;
       end;
       5: begin
           v15 := v0.c5_0;
@@ -725,11 +725,11 @@ begin
       end;
   end;
 end;
-function US2_0: TUS2;
+function US2_Nullable: TUS2;
 begin
   Result.tag := 0; 
 end;
-function US2_1: TUS2;
+function US2_NonNullable: TUS2;
 begin
   Result.tag := 1; 
 end;
@@ -754,19 +754,19 @@ begin
           v8 := nullable_12(v6);
           case v7.tag of
               0: begin
-                  Result := US2_0;
+                  Result := US2_Nullable;
               end;
               else begin
                   case v8.tag of
                       0: begin
-                          Result := US2_0;
+                          Result := US2_Nullable;
                       end;
                       else begin
                           case v7.tag of
                               1: begin
                                   case v8.tag of
                                       1: begin
-                                          Result := US2_1;
+                                          Result := US2_NonNullable;
                                       end;
                                   end;
                               end;
@@ -785,31 +785,31 @@ begin
               0: begin
                   case v19.tag of
                       0: begin
-                          Result := US2_0;
+                          Result := US2_Nullable;
                       end;
                       else begin
-                          Result := US2_1;
+                          Result := US2_NonNullable;
                       end;
                   end;
               end;
               else begin
-                  Result := US2_1;
+                  Result := US2_NonNullable;
               end;
           end;
       end;
       2: begin
           v3 := v0.c2_0;
-          Result := US2_1;
+          Result := US2_NonNullable;
       end;
       0: begin
-          Result := US2_1;
+          Result := US2_NonNullable;
       end;
       1: begin
-          Result := US2_0;
+          Result := US2_Nullable;
       end;
       5: begin
           v25 := v0.c5_0;
-          Result := US2_0;
+          Result := US2_Nullable;
       end;
   end;
 end;
@@ -864,20 +864,20 @@ begin
               1: begin
                   case v1.tag of
                       1: begin
-                          v14 := US1_1;
+                          v14 := US1_SymbolSame;
                       end;
                       0: begin
-                          v14 := US1_2;
+                          v14 := US1_SymbolGreater;
                       end;
                   end;
               end;
               0: begin
                   case v1.tag of
                       1: begin
-                          v14 := US1_0;
+                          v14 := US1_SymbolLess;
                       end;
                       0: begin
-                          v14 := US1_1;
+                          v14 := US1_SymbolSame;
                       end;
                   end;
               end;
@@ -891,16 +891,16 @@ begin
               end;
           end;
           if v15 then begin
-              Result := UH0_1;
+              Result := UH0_RegexEpsilon;
           end else begin
-              Result := UH0_0;
+              Result := UH0_RegexEmpty;
           end;
       end;
       0: begin
-          Result := UH0_0;
+          Result := UH0_RegexEmpty;
       end;
       1: begin
-          Result := UH0_0;
+          Result := UH0_RegexEmpty;
       end;
       5: begin
           v35 := v0.c5_0;
@@ -978,7 +978,7 @@ begin
   while True do begin
       v5 := 0 < v2;
       if v5 then begin
-          v6 := UH1_0;
+          v6 := UH1_InputEmpty;
           tmp4 := random_bit_input_1(v3, v1, v6);
           v7 := tmp4.f0;
           v8 := tmp4.f1;
@@ -1020,8 +1020,8 @@ begin
       v2 := 0 < v0;
       if v2 then begin
           v3 := v0 - 1;
-          v4 := US0_0;
-          v5 := UH1_1(v4, v1);
+          v4 := US0_BitZero;
+          v5 := UH1_InputCons(v4, v1);
           tmp4 := v3;
           tmp5 := v5;
           v0 := tmp4;
@@ -1060,7 +1060,7 @@ begin
           Result := v3;
           Exit;
       end else begin
-          v5 := UH1_0;
+          v5 := UH1_InputEmpty;
           v6 := zeros_input_14(v2, v5);
           v7 := accepts_2(v0, v6);
           if v7 then begin
@@ -1069,9 +1069,9 @@ begin
           end else begin
               v9 := v3;
           end;
-          v10 := US0_1;
-          v11 := UH1_0;
-          v12 := UH1_1(v10, v11);
+          v10 := US0_BitOne;
+          v11 := UH1_InputEmpty;
+          v12 := UH1_InputCons(v10, v11);
           v13 := zeros_input_14(v2, v12);
           v14 := accepts_2(v0, v13);
           if v14 then begin
@@ -1093,11 +1093,11 @@ begin
       end;
   end;
 end;
-function UH2_0: TUH2;
+function UH2_RegexListNil: TUH2;
 begin
   Result := TUH2.Create; Result.tag := 0; 
 end;
-function UH2_1(a0: TUH0; a1: TUH2): TUH2;
+function UH2_RegexListCons(a0: TUH0; a1: TUH2): TUH2;
 begin
   Result := TUH2.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -1144,13 +1144,13 @@ begin
                   3: begin
                       v27 := v6.c3_0;
                       v28 := v6.c3_1;
-                      v29 := UH2_1(v27, v7);
+                      v29 := UH2_RegexListCons(v27, v7);
                       v30 := backtrack_stack_16(v29, v1);
                       if v30 then begin
                           Result := True;
                           Exit;
                       end else begin
-                          v31 := UH2_1(v28, v7);
+                          v31 := UH2_RegexListCons(v28, v7);
                           tmp7 := v31;
                           tmp8 := v1;
                           v0 := tmp7;
@@ -1161,8 +1161,8 @@ begin
                   4: begin
                       v34 := v6.c4_0;
                       v35 := v6.c4_1;
-                      v36 := UH2_1(v35, v7);
-                      v37 := UH2_1(v34, v36);
+                      v36 := UH2_RegexListCons(v35, v7);
+                      v37 := UH2_RegexListCons(v34, v36);
                       tmp13 := v37;
                       tmp14 := v1;
                       v0 := tmp13;
@@ -1179,20 +1179,20 @@ begin
                                   1: begin
                                       case v10.tag of
                                           1: begin
-                                              v21 := US1_1;
+                                              v21 := US1_SymbolSame;
                                           end;
                                           0: begin
-                                              v21 := US1_2;
+                                              v21 := US1_SymbolGreater;
                                           end;
                                       end;
                                   end;
                                   0: begin
                                       case v10.tag of
                                           1: begin
-                                              v21 := US1_0;
+                                              v21 := US1_SymbolLess;
                                           end;
                                           0: begin
-                                              v21 := US1_1;
+                                              v21 := US1_SymbolSame;
                                           end;
                                       end;
                                   end;
@@ -1235,7 +1235,7 @@ begin
                   end;
                   5: begin
                       v39 := v6.c5_0;
-                      v40 := UH2_1(v39, v0);
+                      v40 := UH2_RegexListCons(v39, v0);
                       v41 := backtrack_stack_16(v40, v1);
                       if v41 then begin
                           Result := True;
@@ -1289,12 +1289,12 @@ begin
   while True do begin
       v5 := 0 < v2;
       if v5 then begin
-          v6 := UH1_0;
+          v6 := UH1_InputEmpty;
           tmp4 := random_bit_input_1(v3, v1, v6);
           v7 := tmp4.f0;
           v8 := tmp4.f1;
-          v9 := UH2_0;
-          v10 := UH2_1(v0, v9);
+          v9 := UH2_RegexListNil;
+          v10 := UH2_RegexListCons(v0, v9);
           v11 := backtrack_stack_16(v10, v7);
           if v11 then begin
               v12 := v4 + 1;
@@ -1351,10 +1351,10 @@ begin
           Result := v3;
           Exit;
       end else begin
-          v5 := UH1_0;
+          v5 := UH1_InputEmpty;
           v6 := zeros_input_14(v2, v5);
-          v7 := UH2_0;
-          v8 := UH2_1(v0, v7);
+          v7 := UH2_RegexListNil;
+          v8 := UH2_RegexListCons(v0, v7);
           v9 := backtrack_stack_16(v8, v6);
           if v9 then begin
               v10 := v3 + 1;
@@ -1362,12 +1362,12 @@ begin
           end else begin
               v11 := v3;
           end;
-          v12 := US0_1;
-          v13 := UH1_0;
-          v14 := UH1_1(v12, v13);
+          v12 := US0_BitOne;
+          v13 := UH1_InputEmpty;
+          v14 := UH1_InputCons(v12, v13);
           v15 := zeros_input_14(v2, v14);
-          v16 := UH2_0;
-          v17 := UH2_1(v0, v16);
+          v16 := UH2_RegexListNil;
+          v17 := UH2_RegexListCons(v0, v16);
           v18 := backtrack_stack_16(v17, v15);
           if v18 then begin
               v19 := v11 + 1;
@@ -1456,7 +1456,7 @@ begin
   while True do begin
       v4 := 0 < v1;
       if v4 then begin
-          v5 := UH1_0;
+          v5 := UH1_InputEmpty;
           tmp4 := random_bit_input_1(v2, v0, v5);
           v6 := tmp4.f0;
           v7 := tmp4.f1;
@@ -1777,7 +1777,7 @@ begin
   while True do begin
       v4 := 0 < v1;
       if v4 then begin
-          v5 := UH1_0;
+          v5 := UH1_InputEmpty;
           tmp4 := random_bit_input_1(v2, v0, v5);
           v6 := tmp4.f0;
           v7 := tmp4.f1;
@@ -1917,7 +1917,7 @@ begin
           Result := v2;
           Exit;
       end else begin
-          v4 := UH1_0;
+          v4 := UH1_InputEmpty;
           v5 := zeros_input_14(v1, v4);
           v6 := 0;
           v7 := run_23(v6, v5);
@@ -1927,9 +1927,9 @@ begin
           end else begin
               v9 := v2;
           end;
-          v10 := US0_1;
-          v11 := UH1_0;
-          v12 := UH1_1(v10, v11);
+          v10 := US0_BitOne;
+          v11 := UH1_InputEmpty;
+          v12 := UH1_InputCons(v10, v11);
           v13 := zeros_input_14(v1, v12);
           v14 := 0;
           v15 := run_23(v14, v13);
@@ -2619,7 +2619,7 @@ begin
   while True do begin
       v12 := 0 < v9;
       if v12 then begin
-          v13 := UH1_0;
+          v13 := UH1_InputEmpty;
           tmp4 := random_bit_input_1(v10, v7, v13);
           v14 := tmp4.f0;
           v15 := tmp4.f1;
@@ -2696,7 +2696,7 @@ begin
           Result := v10;
           Exit;
       end else begin
-          v12 := UH1_0;
+          v12 := UH1_InputEmpty;
           v13 := zeros_input_14(v9, v12);
           v14 := interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
           if v14 then begin
@@ -2705,9 +2705,9 @@ begin
           end else begin
               v16 := v10;
           end;
-          v17 := US0_1;
-          v18 := UH1_0;
-          v19 := UH1_1(v17, v18);
+          v17 := US0_BitOne;
+          v18 := UH1_InputEmpty;
+          v19 := UH1_InputCons(v17, v18);
           v20 := zeros_input_14(v9, v19);
           v21 := interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
           if v21 then begin
@@ -3025,117 +3025,117 @@ var
 begin
   v0 := 200;
   v1 := 32;
-  v2 := US0_0;
-  v3 := UH0_2(v2);
-  v4 := US0_1;
-  v5 := UH0_2(v4);
-  v6 := UH0_3(v3, v5);
-  v7 := UH0_5(v6);
-  v8 := US0_0;
-  v9 := UH0_2(v8);
-  v10 := UH0_4(v7, v9);
-  v11 := US0_0;
-  v12 := UH0_2(v11);
-  v13 := US0_1;
-  v14 := UH0_2(v13);
-  v15 := UH0_3(v12, v14);
-  v16 := UH0_5(v15);
-  v17 := US0_1;
-  v18 := UH0_2(v17);
-  v19 := US0_0;
-  v20 := UH0_2(v19);
-  v21 := US0_1;
-  v22 := UH0_2(v21);
-  v23 := UH0_3(v20, v22);
-  v24 := US0_0;
-  v25 := UH0_2(v24);
-  v26 := US0_1;
-  v27 := UH0_2(v26);
-  v28 := UH0_3(v25, v27);
-  v29 := US0_0;
-  v30 := UH0_2(v29);
-  v31 := US0_1;
-  v32 := UH0_2(v31);
-  v33 := UH0_3(v30, v32);
-  v34 := UH0_4(v28, v33);
-  v35 := UH0_4(v23, v34);
-  v36 := UH0_4(v18, v35);
-  v37 := UH0_4(v16, v36);
+  v2 := US0_BitZero;
+  v3 := UH0_RegexChar(v2);
+  v4 := US0_BitOne;
+  v5 := UH0_RegexChar(v4);
+  v6 := UH0_RegexAlt(v3, v5);
+  v7 := UH0_RegexStar(v6);
+  v8 := US0_BitZero;
+  v9 := UH0_RegexChar(v8);
+  v10 := UH0_RegexCat(v7, v9);
+  v11 := US0_BitZero;
+  v12 := UH0_RegexChar(v11);
+  v13 := US0_BitOne;
+  v14 := UH0_RegexChar(v13);
+  v15 := UH0_RegexAlt(v12, v14);
+  v16 := UH0_RegexStar(v15);
+  v17 := US0_BitOne;
+  v18 := UH0_RegexChar(v17);
+  v19 := US0_BitZero;
+  v20 := UH0_RegexChar(v19);
+  v21 := US0_BitOne;
+  v22 := UH0_RegexChar(v21);
+  v23 := UH0_RegexAlt(v20, v22);
+  v24 := US0_BitZero;
+  v25 := UH0_RegexChar(v24);
+  v26 := US0_BitOne;
+  v27 := UH0_RegexChar(v26);
+  v28 := UH0_RegexAlt(v25, v27);
+  v29 := US0_BitZero;
+  v30 := UH0_RegexChar(v29);
+  v31 := US0_BitOne;
+  v32 := UH0_RegexChar(v31);
+  v33 := UH0_RegexAlt(v30, v32);
+  v34 := UH0_RegexCat(v28, v33);
+  v35 := UH0_RegexCat(v23, v34);
+  v36 := UH0_RegexCat(v18, v35);
+  v37 := UH0_RegexCat(v16, v36);
   v38 := 1;
   v39 := 0;
   v40 := loop_0(v10, v1, v0, v38, v39);
   v41 := loop_0(v37, v1, v0, v38, v39);
   v42 := 16;
-  v43 := US0_0;
-  v44 := UH0_2(v43);
-  v45 := US0_0;
-  v46 := UH0_2(v45);
-  v47 := US0_0;
-  v48 := UH0_2(v47);
-  v49 := UH0_4(v46, v48);
-  v50 := UH0_3(v44, v49);
-  v51 := UH0_5(v50);
-  v52 := US0_1;
-  v53 := UH0_2(v52);
-  v54 := UH0_4(v51, v53);
+  v43 := US0_BitZero;
+  v44 := UH0_RegexChar(v43);
+  v45 := US0_BitZero;
+  v46 := UH0_RegexChar(v45);
+  v47 := US0_BitZero;
+  v48 := UH0_RegexChar(v47);
+  v49 := UH0_RegexCat(v46, v48);
+  v50 := UH0_RegexAlt(v44, v49);
+  v51 := UH0_RegexStar(v50);
+  v52 := US0_BitOne;
+  v53 := UH0_RegexChar(v52);
+  v54 := UH0_RegexCat(v51, v53);
   v55 := 0;
   v56 := 1;
   v57 := loop_13(v54, v42, v56, v55);
   v58 := 200;
   v59 := 32;
-  v60 := US0_0;
-  v61 := UH0_2(v60);
-  v62 := US0_1;
-  v63 := UH0_2(v62);
-  v64 := UH0_3(v61, v63);
-  v65 := UH0_5(v64);
-  v66 := US0_0;
-  v67 := UH0_2(v66);
-  v68 := UH0_4(v65, v67);
-  v69 := US0_0;
-  v70 := UH0_2(v69);
-  v71 := US0_1;
-  v72 := UH0_2(v71);
-  v73 := UH0_3(v70, v72);
-  v74 := UH0_5(v73);
-  v75 := US0_1;
-  v76 := UH0_2(v75);
-  v77 := US0_0;
-  v78 := UH0_2(v77);
-  v79 := US0_1;
-  v80 := UH0_2(v79);
-  v81 := UH0_3(v78, v80);
-  v82 := US0_0;
-  v83 := UH0_2(v82);
-  v84 := US0_1;
-  v85 := UH0_2(v84);
-  v86 := UH0_3(v83, v85);
-  v87 := US0_0;
-  v88 := UH0_2(v87);
-  v89 := US0_1;
-  v90 := UH0_2(v89);
-  v91 := UH0_3(v88, v90);
-  v92 := UH0_4(v86, v91);
-  v93 := UH0_4(v81, v92);
-  v94 := UH0_4(v76, v93);
-  v95 := UH0_4(v74, v94);
+  v60 := US0_BitZero;
+  v61 := UH0_RegexChar(v60);
+  v62 := US0_BitOne;
+  v63 := UH0_RegexChar(v62);
+  v64 := UH0_RegexAlt(v61, v63);
+  v65 := UH0_RegexStar(v64);
+  v66 := US0_BitZero;
+  v67 := UH0_RegexChar(v66);
+  v68 := UH0_RegexCat(v65, v67);
+  v69 := US0_BitZero;
+  v70 := UH0_RegexChar(v69);
+  v71 := US0_BitOne;
+  v72 := UH0_RegexChar(v71);
+  v73 := UH0_RegexAlt(v70, v72);
+  v74 := UH0_RegexStar(v73);
+  v75 := US0_BitOne;
+  v76 := UH0_RegexChar(v75);
+  v77 := US0_BitZero;
+  v78 := UH0_RegexChar(v77);
+  v79 := US0_BitOne;
+  v80 := UH0_RegexChar(v79);
+  v81 := UH0_RegexAlt(v78, v80);
+  v82 := US0_BitZero;
+  v83 := UH0_RegexChar(v82);
+  v84 := US0_BitOne;
+  v85 := UH0_RegexChar(v84);
+  v86 := UH0_RegexAlt(v83, v85);
+  v87 := US0_BitZero;
+  v88 := UH0_RegexChar(v87);
+  v89 := US0_BitOne;
+  v90 := UH0_RegexChar(v89);
+  v91 := UH0_RegexAlt(v88, v90);
+  v92 := UH0_RegexCat(v86, v91);
+  v93 := UH0_RegexCat(v81, v92);
+  v94 := UH0_RegexCat(v76, v93);
+  v95 := UH0_RegexCat(v74, v94);
   v96 := 1;
   v97 := 0;
   v98 := loop_15(v68, v59, v58, v96, v97);
   v99 := loop_15(v95, v59, v58, v96, v97);
   v100 := 16;
-  v101 := US0_0;
-  v102 := UH0_2(v101);
-  v103 := US0_0;
-  v104 := UH0_2(v103);
-  v105 := US0_0;
-  v106 := UH0_2(v105);
-  v107 := UH0_4(v104, v106);
-  v108 := UH0_3(v102, v107);
-  v109 := UH0_5(v108);
-  v110 := US0_1;
-  v111 := UH0_2(v110);
-  v112 := UH0_4(v109, v111);
+  v101 := US0_BitZero;
+  v102 := UH0_RegexChar(v101);
+  v103 := US0_BitZero;
+  v104 := UH0_RegexChar(v103);
+  v105 := US0_BitZero;
+  v106 := UH0_RegexChar(v105);
+  v107 := UH0_RegexCat(v104, v106);
+  v108 := UH0_RegexAlt(v102, v107);
+  v109 := UH0_RegexStar(v108);
+  v110 := US0_BitOne;
+  v111 := UH0_RegexChar(v110);
+  v112 := UH0_RegexCat(v109, v111);
   v113 := 0;
   v114 := 1;
   v115 := loop_17(v112, v100, v114, v113);
@@ -3238,46 +3238,46 @@ begin
   end else begin
       begin WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
   end;
-  v173 := US0_0;
-  v174 := UH0_2(v173);
-  v175 := US0_1;
-  v176 := UH0_2(v175);
-  v177 := UH0_3(v174, v176);
-  v178 := UH0_5(v177);
-  v179 := US0_0;
-  v180 := UH0_2(v179);
-  v181 := UH0_4(v178, v180);
+  v173 := US0_BitZero;
+  v174 := UH0_RegexChar(v173);
+  v175 := US0_BitOne;
+  v176 := UH0_RegexChar(v175);
+  v177 := UH0_RegexAlt(v174, v176);
+  v178 := UH0_RegexStar(v177);
+  v179 := US0_BitZero;
+  v180 := UH0_RegexChar(v179);
+  v181 := UH0_RegexCat(v178, v180);
   v182 := interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181);
   v183 := 1;
   v184 := 0;
   v185 := loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
-  v186 := US0_0;
-  v187 := UH0_2(v186);
-  v188 := US0_1;
-  v189 := UH0_2(v188);
-  v190 := UH0_3(v187, v189);
-  v191 := UH0_5(v190);
-  v192 := US0_1;
-  v193 := UH0_2(v192);
-  v194 := US0_0;
-  v195 := UH0_2(v194);
-  v196 := US0_1;
-  v197 := UH0_2(v196);
-  v198 := UH0_3(v195, v197);
-  v199 := US0_0;
-  v200 := UH0_2(v199);
-  v201 := US0_1;
-  v202 := UH0_2(v201);
-  v203 := UH0_3(v200, v202);
-  v204 := US0_0;
-  v205 := UH0_2(v204);
-  v206 := US0_1;
-  v207 := UH0_2(v206);
-  v208 := UH0_3(v205, v207);
-  v209 := UH0_4(v203, v208);
-  v210 := UH0_4(v198, v209);
-  v211 := UH0_4(v193, v210);
-  v212 := UH0_4(v191, v211);
+  v186 := US0_BitZero;
+  v187 := UH0_RegexChar(v186);
+  v188 := US0_BitOne;
+  v189 := UH0_RegexChar(v188);
+  v190 := UH0_RegexAlt(v187, v189);
+  v191 := UH0_RegexStar(v190);
+  v192 := US0_BitOne;
+  v193 := UH0_RegexChar(v192);
+  v194 := US0_BitZero;
+  v195 := UH0_RegexChar(v194);
+  v196 := US0_BitOne;
+  v197 := UH0_RegexChar(v196);
+  v198 := UH0_RegexAlt(v195, v197);
+  v199 := US0_BitZero;
+  v200 := UH0_RegexChar(v199);
+  v201 := US0_BitOne;
+  v202 := UH0_RegexChar(v201);
+  v203 := UH0_RegexAlt(v200, v202);
+  v204 := US0_BitZero;
+  v205 := UH0_RegexChar(v204);
+  v206 := US0_BitOne;
+  v207 := UH0_RegexChar(v206);
+  v208 := UH0_RegexAlt(v205, v207);
+  v209 := UH0_RegexCat(v203, v208);
+  v210 := UH0_RegexCat(v198, v209);
+  v211 := UH0_RegexCat(v193, v210);
+  v212 := UH0_RegexCat(v191, v211);
   v213 := interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212);
   v214 := 1;
   v215 := 0;
@@ -3336,18 +3336,18 @@ begin
   end else begin
       begin WriteLn(StdErr, 'brzozowski-interned-store-init'); Halt(1); end;
   end;
-  v253 := US0_0;
-  v254 := UH0_2(v253);
-  v255 := US0_0;
-  v256 := UH0_2(v255);
-  v257 := US0_0;
-  v258 := UH0_2(v257);
-  v259 := UH0_4(v256, v258);
-  v260 := UH0_3(v254, v259);
-  v261 := UH0_5(v260);
-  v262 := US0_1;
-  v263 := UH0_2(v262);
-  v264 := UH0_4(v261, v263);
+  v253 := US0_BitZero;
+  v254 := UH0_RegexChar(v253);
+  v255 := US0_BitZero;
+  v256 := UH0_RegexChar(v255);
+  v257 := US0_BitZero;
+  v258 := UH0_RegexChar(v257);
+  v259 := UH0_RegexCat(v256, v258);
+  v260 := UH0_RegexAlt(v254, v259);
+  v261 := UH0_RegexStar(v260);
+  v262 := US0_BitOne;
+  v263 := UH0_RegexChar(v262);
+  v264 := UH0_RegexCat(v261, v263);
   v265 := interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264);
   v266 := 1;
   v267 := 0;

@@ -4,11 +4,11 @@ program SpiralGenerated;
 uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c0_0: Int64; c0_1: Int64; c0_2: Int64; c0_3: Int64; c0_4: Int64; c0_5: AnsiString; c1_0: Int64; c1_1: Int64; c1_2: AnsiString; end;
-function US0_0(a0: Int64; a1: Int64; a2: Int64; a3: Int64; a4: Int64; a5: AnsiString): TUS0;
+function US0_TypedFxHashedStatementChecksumValidationAccepted(a0: Int64; a1: Int64; a2: Int64; a3: Int64; a4: Int64; a5: AnsiString): TUS0;
 begin
   Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1; Result.c0_2 := a2; Result.c0_3 := a3; Result.c0_4 := a4; Result.c0_5 := a5;
 end;
-function US0_1(a0: Int64; a1: Int64; a2: AnsiString): TUS0;
+function US0_TypedFxHashedStatementChecksumValidationRejected(a0: Int64; a1: Int64; a2: AnsiString): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1; Result.c1_2 := a2;
 end;
@@ -4427,10 +4427,10 @@ begin
       v615 := v592 + v612;
       v616 := v594 + v613;
       v617 := 'validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation';
-      v621 := US0_0(1, 3, v614, v615, v616, v617);
+      v621 := US0_TypedFxHashedStatementChecksumValidationAccepted(1, 3, v614, v615, v616, v617);
   end else begin
       v619 := 'checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric';
-      v621 := US0_1(v548, v583, v619);
+      v621 := US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619);
   end;
   case v621.tag of
       0: begin
@@ -4806,10 +4806,10 @@ begin
       v898 := v875 + v895;
       v899 := v877 + v896;
       v900 := 'validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation';
-      v904 := US0_0(1, 3, v897, v898, v899, v900);
+      v904 := US0_TypedFxHashedStatementChecksumValidationAccepted(1, 3, v897, v898, v899, v900);
   end else begin
       v902 := 'checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric';
-      v904 := US0_1(v831, v866, v902);
+      v904 := US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902);
   end;
   case v904.tag of
       0: begin
@@ -6266,10 +6266,10 @@ begin
       v1966 := v1943 + v1963;
       v1967 := v1945 + v1964;
       v1968 := 'validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation';
-      v1972 := US0_0(1, 3, v1965, v1966, v1967, v1968);
+      v1972 := US0_TypedFxHashedStatementChecksumValidationAccepted(1, 3, v1965, v1966, v1967, v1968);
   end else begin
       v1970 := 'checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric';
-      v1972 := US0_1(v1899, v1934, v1970);
+      v1972 := US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970);
   end;
   case v1972.tag of
       0: begin
@@ -6815,10 +6815,10 @@ begin
       v2371 := v2348 + v2368;
       v2372 := v2350 + v2369;
       v2373 := 'validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation';
-      v2377 := US0_0(1, 3, v2370, v2371, v2372, v2373);
+      v2377 := US0_TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2370, v2371, v2372, v2373);
   end else begin
       v2375 := 'checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric';
-      v2377 := US0_1(v2304, v2339, v2375);
+      v2377 := US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375);
   end;
   case v2377.tag of
       0: begin
@@ -7272,10 +7272,10 @@ begin
       v2708 := v2685 + v2705;
       v2709 := v2687 + v2706;
       v2710 := 'validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation';
-      v2714 := US0_0(1, 3, v2707, v2708, v2709, v2710);
+      v2714 := US0_TypedFxHashedStatementChecksumValidationAccepted(1, 3, v2707, v2708, v2709, v2710);
   end else begin
       v2712 := 'checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric';
-      v2714 := US0_1(v2641, v2676, v2712);
+      v2714 := US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712);
   end;
   case v2714.tag of
       0: begin

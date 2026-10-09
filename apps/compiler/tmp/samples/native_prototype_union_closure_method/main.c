@@ -37,18 +37,18 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Idle
+US0 US0_Idle() { // Idle
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(int32_t v0) { // Hit
+US0 US0_Hit(int32_t v0) { // Hit
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
     return x;
 }
-US0 US0_2(bool v0) { // Flag
+US0 US0_Flag(bool v0) { // Flag
     US0 x;
     x.tag = 2;
     x.case2.v0 = v0;
@@ -134,7 +134,7 @@ int32_t main(){
     if (v1){
         
         
-        v7 = US0_0();
+        v7 = US0_Idle();
     } else {
         
         
@@ -145,11 +145,11 @@ int32_t main(){
         if (v3){
             
             
-            v7 = US0_1(7l);
+            v7 = US0_Hit(7l);
         } else {
             
             
-            v7 = US0_2(true);
+            v7 = US0_Flag(true);
         }
     }
     USIncref0(&(v7));

@@ -182,16 +182,16 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Data:
-  U0c0{}
-  U0c1{f0: U32, f1: U0, f2: U0}
+  U0_Leaf{}
+  U0_Node{f0: U32, f1: U0, f2: U0}
 
 @unsafe
 def sum_0_unbox1(+u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Leaf{}:
       do IO<U32>:
         return {0 : U32}
-    case U0c1{+v1, +v2, +v3}:
+    case U0_Node{+v1, +v2, +v3}:
       do IO<U32>:
         +v4 : U32 <- sum_0(v2)
         +v5 : U32 <- sum_0(v3)
@@ -214,9 +214,9 @@ def closure0(+v0: U0, +v1: U32) -> IO(U32):
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U0 <- IO.pure(U0, U0c0{})
+    +v0 : U0 <- IO.pure(U0, U0_Leaf{})
     +v1 : U32 <- IO.pure(U32, {2 : U32})
-    +v2 : U0 <- IO.pure(U0, U0c1{v1, v0, v0})
+    +v2 : U0 <- IO.pure(U0, U0_Node{v1, v0, v0})
     +v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => closure0(v2, d))
     +v4 : U32 <- v3({19 : U32})
     +v5 : U32 <- v3({19 : U32})

@@ -167232,6 +167232,45 @@ module spiral_compiler =
             $"{stem}_{tag}"
         | _ -> $"method{tag}"
 
+    /// ### generatedCaseNames
+    let generatedCaseNames (cases : (int * string) seq) : Map<int, string> =
+        let readable =
+            cases |> Seq.map (fun (index, name) ->
+                let safe = name |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c || c = '_' then c else '_')
+                index, (if safe |> Seq.exists System.Char.IsAsciiLetterOrDigit then safe else ""))
+            |> Seq.toArray
+        let uses = readable |> Array.countBy snd |> dict
+        readable
+        |> Array.map (fun (index, safe) -> index, (if safe = "" then string index elif uses.[safe] > 1 then $"{safe}_{index}" else safe))
+        |> Map.ofArray
+
+    /// ### generatedCaseSuffixes
+    let generatedCaseSuffixes (cases : Map<int * string, 'a>) : string [] =
+        let names = generatedCaseNames (cases |> Map.keys)
+        cases |> Map.toArray |> Array.map (fun ((index, _), _) -> names.[index])
+
+    /// ### generatedCaseName
+    let generatedCaseName (prefix_tag : string) (cases : Map<int * string, 'a>) (position : int) = $"{prefix_tag}_{(generatedCaseSuffixes cases).[position]}"
+
+    /// ### generatedCaseNameOfTag
+    let generatedCaseNameOfTag (prefix_tag : string) (cases : Map<int * string, 'a>) (tag : int) = $"{prefix_tag}_{(generatedCaseNames (cases |> Map.keys)).[tag]}"
+
+    /// ### leanCaseName
+    let leanCaseName (cases : Map<int * string, 'a>) (position : int) =
+        let suffix = (generatedCaseSuffixes cases).[position]
+        if System.Char.IsAsciiLetterUpper suffix.[0] then suffix else $"c{suffix}"
+
+    /// ### gleamCaseName
+    let gleamCaseName (prefix_tag : string) (cases : Map<int * string, 'a>) (position : int) =
+        let upper_camel (suffix : string) =
+            if System.Char.IsAsciiDigit suffix.[0] then None
+            else suffix.Split('_', System.StringSplitOptions.RemoveEmptyEntries) |> Array.map (fun part -> string (System.Char.ToUpperInvariant part.[0]) + part.Substring 1) |> String.concat "" |> Some
+        let shaped = generatedCaseSuffixes cases |> Array.map upper_camel
+        let uses = shaped |> Array.choose id |> Array.countBy id |> dict
+        match shaped.[position] with
+        | Some name when uses.[name] = 1 -> prefix_tag + name
+        | _ -> $"{prefix_tag}i{position}"
+
 #if SPIRAL_CORE_HOPAC
     /// ## CodegenFsharp
     
@@ -167536,9 +167575,6 @@ module spiral_compiler =
             | TyUnionUnbox(is,x,on_succs,on_fail) ->
                 complex <| fun s ->
                 line s (sprintf "match %s with" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
-                // Case numbers come from the emitted union's own case order, not the source union's tag
-                // table: a specialized union can emit fewer cases, which shifted every later case. The
-                // single-success fallback arm was removed for the same reason (ported from single-flight).
                 let union_rec, prefix =
                     let x = x.Item
                     match x.layout with
@@ -167556,7 +167592,7 @@ module spiral_compiler =
                             match data_free_vars a with
                             | [||] -> ""
                             | x -> sprintf "(%s)" (args x)
-                            |> fun tail -> FastRuntimeFormat.format "%s_%i%s" [| box prefix; box i; box tail |]
+                            |> fun tail -> generatedCaseName prefix union_rec.free_vars i + tail
                             )
                         |> String.concat ", "
                     line s (sprintf "| %s -> (* %s *)" cases (UnionTagIdOps.text k))
@@ -167570,8 +167606,8 @@ module spiral_compiler =
                 let c = c.Item
                 let union_rec, prefix =
                     match c.layout with
-                    | UHeap -> let u = uheap c.cases in u, "UH"
-                    | UStack -> let u = ustack c.cases in u, "US"
+                    | UHeap -> let u = uheap c.cases in u, sprintf "UH%i" u.tag
+                    | UStack -> let u = ustack c.cases in u, sprintf "US%i" u.tag
                 let i =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
@@ -167581,7 +167617,7 @@ module spiral_compiler =
                     match data_term_vars b with
                     | [||] -> ""
                     | x -> HopacExtensions.S.map show_w x |> String.concat ", " |> sprintf "(%s)"
-                FastRuntimeFormat.format "%s%i_%i%s" [| box prefix; box union_rec.tag; box i; box vars |]
+                generatedCaseName prefix union_rec.free_vars i + vars
                 |> simple
             | TyToLayout(a,b) ->
                 let a = layout_vars a
@@ -167694,17 +167730,20 @@ module spiral_compiler =
                     | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
-                    let ty =
+                    let union_rec, prefix =
                         match h.layout with
-                        | UHeap -> sprintf "UH%i" (uheap h.cases).tag
-                        | UStack -> sprintf "US%i" (ustack h.cases).tag
-                    let items =
-                        h.cases
-                        |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                            $"{ty}_{i}, {i}"
+                        | UHeap -> let u = uheap h.cases in u, sprintf "UH%i" u.tag
+                        | UStack -> let u = ustack h.cases in u, sprintf "US%i" u.tag
+                    let arms =
+                        union_rec.free_vars
+                        |> Seq.mapi (fun position (KeyValue ((tag, _), fields)) ->
+                            let pattern = generatedCaseName prefix union_rec.free_vars position
+                            match fields with
+                            | [||] -> $"| {pattern} -> {tag}"
+                            | _ -> $"| {pattern} _ -> {tag}"
                         )
-                        |> String.concat "; "
-                    $"[ {items} ] |> Map |> Map.find v{i}"
+                        |> String.concat " "
+                    $"(match v{i} with {arms})"
                 | Printf, [DLit (LitString fmt); b] ->
                     match printf_pieces fmt (data_term_vars b) with
                     | [] -> "()"
@@ -167731,23 +167770,21 @@ module spiral_compiler =
         and uheap : _ -> UnionRecFsharp =
             let emit s (x : UnionRecFsharp) =
                 line s (sprintf "UH%i =" x.tag)
-                let mutable i = 0
-                x.free_vars |> Map.iter (fun _ a ->
+                x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
+                    let case_name = generatedCaseName (sprintf "UH%i" x.tag) x.free_vars position
                     match a with
-                    | [||] -> line (indent s) (sprintf "| UH%i_%i" x.tag i)
-                    | a -> line (indent s) (FastRuntimeFormat.format "| UH%i_%i of %s" [| box x.tag; box i; box (a |> HopacExtensions.S.map (fun (L(_,t)) -> tyv t) |> String.concat " * ") |])
-                    i <- i+1
+                    | [||] -> line (indent s) ("| " + case_name)
+                    | a -> line (indent s) (FastRuntimeFormat.format "| %s of %s" [| box case_name; box (a |> HopacExtensions.S.map (fun (L(_,t)) -> tyv t) |> String.concat " * ") |])
                     )
             union emit
         and ustack : _ -> UnionRecFsharp =
             let emit s (x : UnionRecFsharp) =
                 line s (sprintf "[<Struct>] US%i =" x.tag)
-                let mutable i = 0
-                x.free_vars |> Map.iter (fun _ a ->
+                x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
+                    let case_name = generatedCaseName (sprintf "US%i" x.tag) x.free_vars position
                     match a with
-                    | [||] -> line (indent s) (sprintf "| US%i_%i" x.tag i)
-                    | a -> line (indent s) (FastRuntimeFormat.format "| US%i_%i of %s" [| box x.tag; box i; box (a |> HopacExtensions.S.mapi (fun i' (L(_,t)) -> FastRuntimeFormat.format "f%i_%i : %s" [| box i; box i'; box (tyv t) |]) |> String.concat " * ") |])
-                    i <- i+1
+                    | [||] -> line (indent s) ("| " + case_name)
+                    | a -> line (indent s) (FastRuntimeFormat.format "| %s of %s" [| box case_name; box (a |> HopacExtensions.S.mapi (fun i' (L(_,t)) -> FastRuntimeFormat.format "f%i_%i : %s" [| box position; box i'; box (tyv t) |]) |> String.concat " * ") |])
                     )
             union emit
         and envTrue (v: string) =
@@ -168727,7 +168764,7 @@ module spiral_compiler =
                             match data_free_vars a with
                             | [||] -> ""
                             | x -> sprintf "(%s)" (args x)
-                            |> sprintf "%s_%i%s" prefix i
+                            |> sprintf "%s%s" (generatedCaseName prefix union_rec.free_vars i)
                             )
                         |> String.concat ", "
                     line s (sprintf "| %s -> (* %s *)" cases k)
@@ -168741,8 +168778,8 @@ module spiral_compiler =
                 let c = c.Item
                 let union_rec, prefix =
                     match c.layout with
-                    | UHeap -> let u = uheap c.cases in u, "UH"
-                    | UStack -> let u = ustack c.cases in u, "US"
+                    | UHeap -> let u = uheap c.cases in u, sprintf "UH%i" u.tag
+                    | UStack -> let u = ustack c.cases in u, sprintf "US%i" u.tag
                 let i =
                     union_rec.free_vars
                     |> Seq.map (fun (KeyValue ((_,k),_)) -> k)
@@ -168752,7 +168789,7 @@ module spiral_compiler =
                     match data_term_vars b with
                     | [||] -> ""
                     | x -> Array.map show_w x |> String.concat ", " |> sprintf "(%s)"
-                sprintf "%s%i_%i%s" prefix union_rec.tag i vars |> simple
+                sprintf "%s%s" (generatedCaseName prefix union_rec.free_vars i) vars |> simple
             | TyToLayout(a,b) ->
                 let a = layout_vars a
                 match b with
@@ -168861,17 +168898,20 @@ module spiral_compiler =
                     | _ -> raise_codegen_error "Compiler error: Invalid type in NanIs."
                 | UnionTag, [DV(L(i,YUnion h))] ->
                     let h = h.Item
-                    let ty =
+                    let union_rec, prefix =
                         match h.layout with
-                        | UHeap -> sprintf "UH%i" (uheap h.cases).tag
-                        | UStack -> sprintf "US%i" (ustack h.cases).tag
-                    let items =
-                        h.cases
-                        |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                            $"{ty}_{i}, {i}"
+                        | UHeap -> let u = uheap h.cases in u, sprintf "UH%i" u.tag
+                        | UStack -> let u = ustack h.cases in u, sprintf "US%i" u.tag
+                    let arms =
+                        union_rec.free_vars
+                        |> Seq.mapi (fun position (KeyValue ((tag, _), fields)) ->
+                            let pattern = generatedCaseName prefix union_rec.free_vars position
+                            match fields with
+                            | [||] -> $"| {pattern} -> {tag}"
+                            | _ -> $"| {pattern} _ -> {tag}"
                         )
-                        |> String.concat "; "
-                    $"[ {items} ] |> Map |> Map.find v{i}"
+                        |> String.concat " "
+                    $"(match v{i} with {arms})"
                 | Printf, [DLit (LitString fmt); b] ->
                     match printf_pieces fmt (data_term_vars b) with
                     | [] -> "()"
@@ -168893,23 +168933,22 @@ module spiral_compiler =
             if b = "" then line s (sprintf "Mut%i() = class end" x.tag)
             else line s (sprintf "Mut%i = {%s}" x.tag b)
             )
-        // Cases are numbered by their position among the emitted ones, as the box/unbox sites number them
-        // (`case_index`). The case's index in the whole union differs when a specialization keeps only some cases
-        // (a GADT-refined union): the declaration said `US1_1` while every use said `US1_0`.
         and uheap : _ -> UnionRecFsharp = union (fun s x ->
             line s (sprintf "UH%i =" x.tag)
-            x.free_vars |> Seq.iteri (fun i (KeyValue(_, a)) ->
+            x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
+                let case_name = generatedCaseName (sprintf "UH%i" x.tag) x.free_vars position
                 match a with
-                | [||] -> line (indent s) (sprintf "| UH%i_%i" x.tag i)
-                | a -> line (indent s) (sprintf "| UH%i_%i of %s" x.tag i (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat " * "))
+                | [||] -> line (indent s) (sprintf "| %s" case_name)
+                | a -> line (indent s) (sprintf "| %s of %s" case_name (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat " * "))
                 )
             )
         and ustack : _ -> UnionRecFsharp = union (fun s x ->
             line s (sprintf "[<Struct>] US%i =" x.tag)
-            x.free_vars |> Seq.iteri (fun i (KeyValue(_, a)) ->
+            x.free_vars |> Seq.iteri (fun position (KeyValue(_, a)) ->
+                let case_name = generatedCaseName (sprintf "US%i" x.tag) x.free_vars position
                 match a with
-                | [||] -> line (indent s) (sprintf "| US%i_%i" x.tag i)
-                | a -> line (indent s) (sprintf "| US%i_%i of %s" x.tag i (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%i_%i : %s" i i' (tyv t)) |> String.concat " * "))
+                | [||] -> line (indent s) (sprintf "| %s" case_name)
+                | a -> line (indent s) (sprintf "| %s of %s" case_name (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%i_%i : %s" position i' (tyv t)) |> String.concat " * "))
                 )
             )
         and method : _ -> MethodRecFsharp =
@@ -169367,6 +169406,8 @@ module spiral_compiler =
             "{ thread_local!{ static LIT: " + path + "Rc<str> = " + path + "Rc::<str>::from(\"" + m.Groups.[2].Value + "\"); } LIT.with(|lit| lit.clone()) }"))
 
     /// ### codegenRust
+    let unionCaseSuffix (x : UnionRecFsharp) (index : int) = (generatedCaseNames (x.free_vars |> Map.keys)).[index]
+
     let codegenRust (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
         let types = ResizeArray()
@@ -169615,7 +169656,7 @@ module spiral_compiler =
                 match a with
                 | YPrim (Int8T | Int16T | Int32T | Int64T | UInt8T | UInt16T | UInt32T | UInt64T) -> simple $"({tup b}{len} as {tyv a})"
                 | _ -> raise_codegen_error "Compiler error: Expected an int in length"
-            let union_case_name prefix tag i = $"{prefix}{tag}::{prefix}{tag}_{i}"
+            let union_case_name prefix (union_rec : UnionRecFsharp) i = $"{prefix}{union_rec.tag}::{prefix}{union_rec.tag}_{unionCaseSuffix union_rec i}"
             match a with
             | TyMacro a ->
                 let a = List.toArray a
@@ -169693,8 +169734,8 @@ module spiral_compiler =
                         let patterns =
                             fields |> List.map (fun vars ->
                                 match vars with
-                                | [||] -> union_case_name prefix union_rec.tag i
-                                | vars -> vars |> Array.map (fun (L(v,_)) -> $"v{v}") |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec.tag i))
+                                | [||] -> union_case_name prefix union_rec i
+                                | vars -> vars |> Array.map (fun (L(v,_)) -> $"v{v}") |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec i))
                         let pattern = match patterns with [x] -> x | x -> String.concat ", " x |> sprintf "(%s)"
                         line s'' $"{pattern} => {{"
                         fields |> List.iter (Array.iter (fun x -> line (indent s'') (bind_field x)))
@@ -169717,8 +169758,8 @@ module spiral_compiler =
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
                 let value =
                     match data_term_vars b with
-                    | [||] -> union_case_name prefix union_rec.tag i
-                    | x -> Array.map show_w x |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec.tag i)
+                    | [||] -> union_case_name prefix union_rec i
+                    | x -> Array.map show_w x |> String.concat ", " |> sprintf "%s(%s)" (union_case_name prefix union_rec i)
                 match c.layout with
                 | UHeap when Array.isEmpty (data_term_vars b) ->
                     $"{{ thread_local!{{ static CASE: Rc<{prefix}{union_rec.tag}> = Rc::new({value}); }} CASE.with(|case| case.clone()) }}"
@@ -169856,15 +169897,15 @@ module spiral_compiler =
             line s $"enum {name} {{"
             x.free_vars |> Map.iter (fun (i,_) a ->
                 match a with
-                | [||] -> line (indent s) $"{name}_{i},"
-                | a -> line (indent s) $"""{name}_{i}({a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "}),"""
+                | [||] -> line (indent s) $"{name}_{unionCaseSuffix x i},"
+                | a -> line (indent s) $"""{name}_{unionCaseSuffix x i}({a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "}),"""
                 )
             line s "}"
             line s $"impl {name} {{"
             line (indent s) "fn tag(&self) -> i32 {"
             line (indent (indent s)) "match self {"
             x.free_vars |> Map.iter (fun (i,_) a ->
-                let pattern = match a with [||] -> $"{name}::{name}_{i}" | _ -> $"{name}::{name}_{i}(..)"
+                let pattern = match a with [||] -> $"{name}::{name}_{unionCaseSuffix x i}" | _ -> $"{name}::{name}_{unionCaseSuffix x i}(..)"
                 line (indent (indent (indent s))) $"{pattern} => {i},"
                 )
             line (indent (indent s)) "}"
@@ -170257,7 +170298,7 @@ module spiral_compiler =
                     c.cases |> Seq.map (fun (KeyValue ((_,k),_)) -> k) |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
                 let vars = match args' b with "" -> "" | x -> $"({x})"
-                return' $"{prefix}{tag}_{i}{vars}"
+                return' $"{prefix}{tag}_{(generatedCaseSuffixes c.cases).[i]}{vars}"
             | TyToLayout(a,b) ->
                 let vars = match args' a with "" -> "" | x -> $"({x})"
                 match b with
@@ -170410,6 +170451,7 @@ module spiral_compiler =
         and union_type (heap : bool) = memo_ref (fun (cases : Map<int * string, Ty>) tag ->
             let name = if heap then $"TUH{tag}" else $"TUS{tag}"
             let prefix = if heap then $"UH{tag}" else $"US{tag}"
+            let suffixes = generatedCaseSuffixes cases
             let cases = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars)
             if heap then forwards.Add($"  {name} = class;")
             let fields = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> $"c{c}_{f}: {tyv t};")) |> Array.concat |> String.concat " "
@@ -170419,7 +170461,7 @@ module spiral_compiler =
                 let ps = if ps = "" then "" else $"({ps})"
                 let create = if heap then $"Result := {name}.Create; " else ""
                 let assigns = vars |> Array.mapi (fun f _ -> $"Result.c{c}_{f} := a{f};") |> String.concat " "
-                bodies.Add($"function {prefix}_{c}{ps}: {name};\nbegin\n  {create}Result.tag := {c}; {assigns}\nend;")))
+                bodies.Add($"function {prefix}_{suffixes.[c]}{ps}: {name};\nbegin\n  {create}Result.tag := {c}; {assigns}\nend;")))
         and uheap_memo = lazy (union_type true)
         and ustack_memo = lazy (union_type false)
         and uheap x = uheap_memo.Force() x
@@ -170877,7 +170919,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let i =
                     c.cases |> Seq.map (fun (KeyValue ((_,k),_)) -> k) |> Seq.tryFindIndex (fun k -> UnionTagIdOps.text a = k)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
-                return' $"{prefix}{tag}_{i}({args' b})"
+                return' $"{prefix}{tag}_{(generatedCaseSuffixes c.cases).[i]}({args' b})"
             | TyToLayout(a,b) ->
                 match b with
                 | YLayout(_,Heap) -> $"heapCreate{(heap b).tag}({args' a})"
@@ -171019,6 +171061,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
         and mut x : ZigLayoutRec = layout "Mut" x
         and union_type (heap : bool) = memo_ref (fun (cases : Map<int * string, Ty>) tag ->
             let name = if heap then $"UH{tag}" else $"US{tag}"
+            let suffixes = generatedCaseSuffixes cases
             let cases = cases |> Map.toArray |> Array.map (fun (_, t) -> env.ty_to_data t |> data_free_vars)
             let fields = cases |> Array.mapi (fun c vars -> vars |> Array.mapi (fun f (L(_,t)) -> $"c{c}_{f}: {tyv t} = undefined")) |> Array.concat
             let fields = Array.append [|"tag: i32"|] fields |> String.concat ", "
@@ -171027,8 +171070,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let ps = vars |> Array.mapi (fun f (L(_,t)) -> $"a{f}: {tyv t}") |> String.concat ", "
                 let inits = vars |> Array.mapi (fun f _ -> $", .c{c}_{f} = a{f}") |> String.concat ""
                 let value = $"{name}{{ .tag = {c}{inits} }}"
-                if heap then bodies.Add($"fn {name}_{c}({ps}) *{name} {{\n    return spiralCreate({name}, {value});\n}}\n")
-                else bodies.Add($"fn {name}_{c}({ps}) {name} {{\n    return {value};\n}}\n")))
+                if heap then bodies.Add($"fn {name}_{suffixes.[c]}({ps}) *{name} {{\n    return spiralCreate({name}, {value});\n}}\n")
+                else bodies.Add($"fn {name}_{suffixes.[c]}({ps}) {name} {{\n    return {value};\n}}\n")))
         and uheap_memo = lazy (union_type true)
         and ustack_memo = lazy (union_type false)
         and uheap x = uheap_memo.Force() x
@@ -171256,8 +171299,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
             let ctors =
                 cases |> Map.toArray |> Array.mapi (fun c (_, t) ->
                     let fields = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> $"{tyv t} → ") |> String.concat ""
-                    $"  | c{c} : {fields}U{tag}")
-            let tags = Array.init ctors.Length (fun c -> $"  | .c{c} .. => {c}")
+                    $"  | {leanCaseName cases c} : {fields}U{tag}")
+            let tags = Array.init ctors.Length (fun c -> $"  | .{leanCaseName cases c} .. => {c}")
             types.Add($"""inductive U{tag} where{"\n"}{String.concat "\n" ctors}{"\n"}""")
             union_names.Add($"U{tag}")
             union_tags.Add($"""def U{tag}.spiralTag : U{tag} → Int32{"\n"}{String.concat "\n" tags}{"\n"}""")))
@@ -171446,7 +171489,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     let c = union_case_index x'.cases k
                     let fields = a |> List.map data_free_vars
                     fields |> List.iter (Array.iter (declare locals))
-                    let pats = fields |> List.map (fun fs -> $"U{tag}.c{c}" + (fs |> Array.map (fun (L(i,_)) -> $" f{i}") |> String.concat ""))
+                    let pats = fields |> List.map (fun fs -> $"U{tag}.{leanCaseName x'.cases c}" + (fs |> Array.map (fun (L(i,_)) -> $" f{i}") |> String.concat ""))
                     line s ("| " + String.concat ", " pats + " =>")
                     fields |> List.iter (Array.iter (fun (L(i,_)) -> line (indent s) $"v{i} := f{i}"))
                     binds (indent s) ret b)
@@ -171460,8 +171503,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 let tag = union_tag c.cases
                 let i = union_case_index c.cases a
                 match data_term_vars b |> Array.map show_w with
-                | [||] -> return' $"U{tag}.c{i}"
-                | args -> return' $"""(U{tag}.c{i} {String.concat " " args})"""
+                | [||] -> return' $"U{tag}.{leanCaseName c.cases i}"
+                | args -> return' $"""(U{tag}.{leanCaseName c.cases i} {String.concat " " args})"""
             | TyToLayout(a,b) ->
                 let r = layout b
                 let values = data_term_vars a |> Array.map show_w |> Array.map ((+) " ") |> String.concat ""
@@ -171916,7 +171959,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let ctors =
                         field_types |> Array.mapi (fun c fields ->
                             let fields = fields |> Array.mapi (fun j t -> $"f{j}: {tyv t}") |> String.concat ", "
-                            $"  U{tag}c{c}{{{fields}}}")
+                            let case_name = generatedCaseName (sprintf "U%i" tag) cases c
+                            $"  {case_name}{{{fields}}}")
                     let linear = field_types |> Array.exists (Array.exists linear_ty)
                     if linear then linear_unions.Add tag |> ignore
                     types.Add($"""type U{tag} is {(if linear then "Type" else "Data")}:{"\n"}{String.concat "\n" ctors}{"\n"}""")
@@ -171982,7 +172026,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let indexed = cases |> Map.toArray |> Array.mapi (fun c case -> c, field_types case)
                 let c, fields = indexed |> Array.minBy (fun (_, fields) -> fields.Length)
                 let values = fields |> Array.map (default_value (depth + 1)) |> String.concat ", "
-                $"U{tag}c{c}{{{values}}}"
+                let case_name = generatedCaseName (sprintf "U%i" tag) cases c
+                $"{case_name}{{{values}}}"
             | _ -> unsupported $"default values of the type {show_ty t}"
         let default_tuple (element : Ty) =
             match tyvs element |> Array.map (fun (L(_,t)) -> default_value 0 t) with
@@ -172050,16 +172095,17 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let text = StringBuilder()
                 cases |> Map.toArray |> Array.iteri (fun c ((_, k), t) ->
                     let handled = on_succs |> Map.tryPick (fun k' v -> if UnionTagIdOps.text k' = k then Some v else None)
+                    let case_name = generatedCaseName (sprintf "U%i" tag) cases c
                     match handled, on_fail with
                     | Some (a, b), _ ->
                         let fields = a |> List.collect (data_free_vars >> List.ofArray) |> Array.ofList
                         let binders = fields |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "
-                        text.Append($"    case U{tag}c{c}{{{binders}}}:\n") |> ignore
+                        text.Append($"    case {case_name}{{{binders}}}:\n") |> ignore
                         binds name "      " result text (ResizeArray(Array.append captured fields)) b
                     | None, Some b ->
                         let width = env.ty_to_data t |> data_free_vars |> Array.length
                         let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
-                        text.Append($"    case U{tag}c{c}{{{ignored}}}:\n") |> ignore
+                        text.Append($"    case {case_name}{{{ignored}}}:\n") |> ignore
                         binds name "      " result text (ResizeArray captured) b
                     | None, None -> raise_codegen_error "Compiler error: A union unbox misses a case and has no fallback.")
                 defs.Add($"@unsafe\ndef {name}(+u: U{tag}{params captured}) -> IO({result}):\n  match u:\n{text}")
@@ -172070,7 +172116,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let tag = union_tag c.cases
                 let i = union_case_index c.cases a
                 let values = data_term_vars b |> Array.map show_w |> String.concat ", "
-                $"IO.pure({result}, U{tag}c{i}{{{values}}})"
+                let case_name = generatedCaseName (sprintf "U%i" tag) c.cases i
+                $"IO.pure({result}, {case_name}{{{values}}})"
             | TyJoinPoint(JPMethod(a,c), arguments) ->
                 let arguments = arguments |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
                 $"{method_names.[(method (a,c)).tag]}({arguments})"
@@ -172648,7 +172695,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             match data_free_vars a with
                             | [||] -> ""
                             | x -> sprintf "(%s)" (args x)
-                            |> sprintf "%si%i%s" prefix i
+                            |> sprintf "%s%s" (gleamCaseName prefix x.Item.cases i)
                             )
                         |> String.concat ","
                     line (indent s) (sprintf "%s -> {" cases)
@@ -172675,8 +172722,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | [||] -> ""
                     | x -> Array.map show_w x |> String.concat ", " |> sprintf "(%s)"
                 match c.layout with
-                | UHeap -> sprintf "Uh%ii%i%s" (uheap c.cases).tag i vars
-                | UStack -> sprintf "Us%ii%i%s" (ustack c.cases).tag i vars
+                | UHeap -> sprintf "%s%s" (gleamCaseName (sprintf "Uh%i" (uheap c.cases).tag) c.cases i) vars
+                | UStack -> sprintf "%s%s" (gleamCaseName (sprintf "Us%i" (ustack c.cases).tag) c.cases i) vars
                 |> simple
             | TyToLayout(a,b) ->
                 let a = layout_vars a
@@ -172840,7 +172887,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let items =
                         h.cases
                         |> Seq.map (fun (KeyValue ((i, _), _)) ->
-                            $"#({ty}i{i}, {i})"
+                            $"#({gleamCaseName ty h.cases i}, {i})"
                         )
                         |> String.concat ", "
                     global' "import gleam/dict"
@@ -172873,8 +172920,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let mutable i = 0
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
-                | [||] -> line (indent s) (sprintf "Uh%ii%i" x.tag i)
-                | a -> line (indent s) (sprintf "Uh%ii%i(%s)" x.tag i (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "))
+                | [||] -> line (indent s) (gleamCaseName (sprintf "Uh%i" x.tag) x.free_vars i)
+                | a -> line (indent s) (sprintf "%s(%s)" (gleamCaseName (sprintf "Uh%i" x.tag) x.free_vars i) (a |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "))
                 i <- i+1
                 )
             line s "}"
@@ -172884,8 +172931,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let mutable i = 0
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
-                | [||] -> line (indent s) (sprintf "Us%ii%i" x.tag i)
-                | a -> line (indent s) (sprintf "Us%ii%i(%s)" x.tag i (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%ii%i : %s" i i' (tyv t)) |> String.concat ", "))
+                | [||] -> line (indent s) (gleamCaseName (sprintf "Us%i" x.tag) x.free_vars i)
+                | a -> line (indent s) (sprintf "%s(%s)" (gleamCaseName (sprintf "Us%i" x.tag) x.free_vars i) (a |> Array.mapi (fun i' (L(_,t)) -> sprintf "f%ii%i : %s" i i' (tyv t)) |> String.concat ", "))
                 i <- i+1
                 )
             line s "}"
@@ -173381,7 +173428,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let guard =
                         is
                         |> List.mapi (fun idx _ ->
-                            sprintf "__v[%i] ~= nil and __v[%i].tag == \"%si%i\"" (idx + 1) (idx + 1) prefix i
+                            sprintf "__v[%i] ~= nil and __v[%i].tag == \"%s\"" (idx + 1) (idx + 1) (generatedCaseName prefix x.Item.cases i)
                         )
                         |> String.concat " and "
 
@@ -173423,9 +173470,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     match data_term_vars b with
                     | [||] -> ""
                     | x -> Array.mapi (fun _j v -> show_w v) x |> String.concat ", "
-                match c.layout with
-                | UHeap -> $"Uh{(uheap c.cases).tag}i{i}({vars})"
-                | UStack -> $"Us{(ustack c.cases).tag}i{i}({vars})"
+                let prefix_tag =
+                    match c.layout with
+                    | UHeap -> sprintf "Uh%i" (uheap c.cases).tag
+                    | UStack -> sprintf "Us%i" (ustack c.cases).tag
+                let constructor = generatedCaseName prefix_tag c.cases i
+                $"{constructor}({vars})"
                 |> simple
             | TyToLayout(a,b) ->
                 let a = layout_vars a
@@ -173570,9 +173620,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     code.Append(";(function () local __tag\n") |> ignore
                     h.cases |> Seq.iteri (fun idx (KeyValue ((ci,_), _)) ->
                         if idx = 0 then
-                            code.AppendFormat("if v{0}.tag == \"{1}i{2}\" then __tag = {2}\n", i, ty, ci) |> ignore
+                            code.AppendFormat("if v{0}.tag == \"{1}\" then __tag = {2}\n", i, generatedCaseName ty h.cases idx, ci) |> ignore
                         else
-                            code.AppendFormat("elseif v{0}.tag == \"{1}i{2}\" then __tag = {2}\n", i, ty, ci) |> ignore
+                            code.AppendFormat("elseif v{0}.tag == \"{1}\" then __tag = {2}\n", i, generatedCaseName ty h.cases idx, ci) |> ignore
                     )
                     code.Append("else __tag = 0 end\nreturn __tag end)()") |> ignore
                     code.ToString()
@@ -173604,11 +173654,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let mutable i = 0
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
-                | [||] -> line s (sprintf "function Uh%ii%i() return { tag = \"Uh%ii%i\" } end" tag i tag i)
+                | [||] -> line s (sprintf "function %s() return { tag = \"%s\" } end" (generatedCaseName $"Uh{tag}" x.free_vars i) (generatedCaseName $"Uh{tag}" x.free_vars i))
                 | a ->
                     let params' = a |> Array.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
                     let fields = a |> Array.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
-                    line s (sprintf "function Uh%ii%i(%s) return { tag = \"Uh%ii%i\", %s } end" tag i params' tag i fields)
+                    line s (sprintf "function %s(%s) return { tag = \"%s\", %s } end" (generatedCaseName $"Uh{tag}" x.free_vars i) params' (generatedCaseName $"Uh{tag}" x.free_vars i) fields)
                 i <- i + 1
             )
         )
@@ -173617,11 +173667,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let mutable i = 0
             x.free_vars |> Map.iter (fun _ a ->
                 match a with
-                | [||] -> line s (sprintf "function Us%ii%i() return { tag = \"Us%ii%i\" } end" tag i tag i)
+                | [||] -> line s (sprintf "function %s() return { tag = \"%s\" } end" (generatedCaseName $"Us{tag}" x.free_vars i) (generatedCaseName $"Us{tag}" x.free_vars i))
                 | a ->
                     let params' = a |> Array.mapi (fun j _ -> sprintf "v%i" j) |> String.concat ", "
                     let fields = a |> Array.mapi (fun j _ -> sprintf " _%i = v%i" (j+1) j) |> String.concat ", "
-                    line s (sprintf "function Us%ii%i(%s) return { tag = \"Us%ii%i\", %s } end" tag i params' tag i fields)
+                    line s (sprintf "function %s(%s) return { tag = \"%s\", %s } end" (generatedCaseName $"Us{tag}" x.free_vars i) params' (generatedCaseName $"Us{tag}" x.free_vars i) fields)
                 i <- i + 1
             )
         )
@@ -175042,7 +175092,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let c = case_tag k
                     line s' $"case {c}: {{"
                     List.iter2 (fun (L(v,_)) a ->
-                        let source = if List.length is = 1 then $"v{v}" else $"(v{v} as {name}_{c})"
+                        let source = if List.length is = 1 then $"v{v}" else $"(v{v} as {name}_{unionCaseSuffix union_rec c})"
                         data_free_vars a |> Array.iteri (fun f (L(i,t)) -> line s'' $"let v{i}: {tyv t} = {source}.f{f};")
                         ) is a
                     binds s'' ret b
@@ -175065,7 +175115,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     union_rec.free_vars
                     |> Seq.tryPick (function KeyValue ((tag, name), _) when name = UnionTagIdOps.text a -> Some tag | _ -> None)
                     |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text a}.")
-                return' $"{prefix}{union_rec.tag}_{i}({args' b})"
+                return' $"{prefix}{union_rec.tag}_{unionCaseSuffix union_rec i}({args' b})"
             | TyToLayout(a,b) ->
                 match b with
                 | YLayout(_,Heap) -> heap b |> ignore
@@ -175194,14 +175244,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let cases = x.free_vars |> Map.toArray
             cases |> Array.iter (fun ((i,k),a) ->
                 let fields = a |> Array.mapi (fun f (L(_,t)) -> $", readonly f{f}: {tyv t}") |> String.concat ""
-                line s $"type {name}_{i} = {{ readonly tag: {i}{fields} }};")
-            match cases |> Array.map (fun ((i,_),_) -> $"{name}_{i}") with
+                line s $"type {name}_{unionCaseSuffix x i} = {{ readonly tag: {i}{fields} }};")
+            match cases |> Array.map (fun ((i,_),_) -> $"{name}_{unionCaseSuffix x i}") with
             | [||] -> line s $"type {name} = never;"
             | x -> line s $"""type {name} = {String.concat " | " x};"""
             cases |> Array.iter (fun ((i,_),a) ->
                 let parameters = a |> Array.mapi (fun f (L(_,t)) -> $"f{f}: {tyv t}") |> String.concat ", "
                 let fields = a |> Array.mapi (fun f _ -> $", f{f}: f{f}") |> String.concat ""
-                line s $"function {name}_{i}({parameters}): {name} {{ return {{ tag: {i}{fields} }}; }}")
+                line s $"function {name}_{unionCaseSuffix x i}({parameters}): {name} {{ return {{ tag: {i}{fields} }}; }}")
         and uheap : _ -> UnionRecFsharp = union (union_type "UH")
         and ustack : _ -> UnionRecFsharp = union (union_type "US")
         and method : _ -> MethodRecFsharp =
@@ -175894,8 +175944,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let i = c.tags.[a]
                     let vars = args' b
                     match c.layout with
-                    | UHeap -> sprintf "UH%i_%i(%s)" (uheap c').tag i vars
-                    | UStack -> sprintf "US%i_%i(%s)" (ustack c').tag i vars
+                    | UHeap -> let u = uheap c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "UH%i" u.tag) u.free_vars i) vars
+                    | UStack -> let u = ustack c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "US%i" u.tag) u.free_vars i) vars
                     |> return'
                 | TyToLayout(a,b) ->
                     match b with
@@ -176225,7 +176275,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             and heap : _ -> LayoutRecC = layout_tmpl "Heap"
             and mut : _ -> LayoutRecC = layout_tmpl "Mut"
             and union_tmpl is_stack : Union -> UnionRecC =
-                // a case's tag is its key's (a GADT-indexed union keeps only its inhabited cases, so a position is not a tag)
                 let inline map_iteri f x = Map.iter (fun ((tag : int, _) as k) v -> f tag k v) x
                 union (fun s_fwd s_typ s_fun x ->
                     let i = x.tag
@@ -176290,7 +176339,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     map_iteri (fun tag (_, k) v ->
                         let args = v |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", "
                         if is_stack then
-                            line s_fun (sprintf "US%i US%i_%i(%s) { // %s" i i tag args k)
+                            line s_fun (sprintf "US%i %s(%s) { // %s" i (generatedCaseNameOfTag (sprintf "US%i" i) x.free_vars tag) args k)
                             let _ =
                                 let s_fun = indent s_fun
                                 line s_fun $"US{i} x;"
@@ -176300,7 +176349,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                 line s_fun "return x;"
                             line s_fun "}"
                         else
-                            line s_fun (sprintf "UH%i * UH%i_%i(%s) { // %s" i i tag args k)
+                            line s_fun (sprintf "UH%i * %s(%s) { // %s" i (generatedCaseNameOfTag (sprintf "UH%i" i) x.free_vars tag) args k)
                             let _ =
                                 let s_fun = indent s_fun
                                 line s_fun $"UH{i} * x = {malloc}(sizeof(UH{i}));"
@@ -177874,10 +177923,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let case_tags = x.Item.tags
                     line s (sprintf "match %s:" (is |> List.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "))
                     let s = indent s
-                    let prefix =
+                    let union_rec, prefix =
                         match x.Item.layout with
-                        | UHeap -> sprintf "UH%i" (uheap x).tag
-                        | UStack -> sprintf "US%i" (ustack x).tag
+                        | UHeap -> let u = uheap x in u, sprintf "UH%i" u.tag
+                        | UStack -> let u = ustack x in u, sprintf "US%i" u.tag
                     Map.iter (fun k (a,b) ->
                         let i = case_tags.[k]
                         let cases =
@@ -177886,7 +177935,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                 let g_decr' = Utils.get_default g_decr (Array.head b) (fun () -> Set.empty)
                                 let x,g_decr' = Array.mapFold (fun g_decr (L(i,_) as v) -> if Set.contains v g_decr then "_", Set.remove v g_decr else sprintf "v%i" i, g_decr) g_decr' x
                                 g_decr.[Array.head b] <- g_decr'
-                                sprintf "%s_%i(%s)" prefix i (String.concat ", " x)
+                                sprintf "%s(%s)" (generatedCaseNameOfTag prefix union_rec.free_vars i) (String.concat ", " x)
                                 )
                             |> String.concat ", "
                         line s (sprintf "case %s: # %s" cases (UnionTagIdOps.text k)) // ws: hopac's tags are interned ids
@@ -177901,8 +177950,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let i = c.tags.[a]
                     let vars = tup_data' b
                     match c.layout with
-                    | UHeap -> sprintf "UH%i_%i(%s)" (uheap c').tag i vars
-                    | UStack -> sprintf "US%i_%i(%s)" (ustack c').tag i vars
+                    | UHeap -> let u = uheap c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "UH%i" u.tag) u.free_vars i) vars
+                    | UStack -> let u = ustack c' in sprintf "%s(%s)" (generatedCaseNameOfTag (sprintf "US%i" u.tag) u.free_vars i) vars
                     |> return'
                 | TyToLayout(a,b) ->
                     match b with
@@ -178016,13 +178065,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         | l -> String.concat ", " l |> sprintf "print(%s, sep='', end='')"
                     | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported" op l.Length
                     |> return'
-            // A case is named by its tag (the key's), as constructions and matches name it: a GADT-indexed union keeps only
-            // its inhabited cases, so numbering by position named `US1_0` what `US1_1(..)` constructs (D31, CodegenC).
             and uheap : _ -> UnionRec = union (fun s x ->
-                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> $"\"UH{x.tag}_{i}\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
+                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> "\"" + generatedCaseNameOfTag (sprintf "UH%i" x.tag) x.free_vars i + "\"") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
                 code_env.fwd_dcls_types.Add $"UH{x.tag} = {cases}\n" // ws: the newline; upstream joined the aliases straight into the next line (py_checks: SyntaxError)
                 x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
-                    line s $"class UH{x.tag}_{i}(NamedTuple): # {snd k}" // ws: `snd k` (cases keyed `tag * name`)
+                    let case_name = generatedCaseNameOfTag (sprintf "UH%i" x.tag) x.free_vars i
+                    line s $"class {case_name}(NamedTuple): # {snd k}" // ws: `snd k` (cases keyed `tag * name`)
                     let s = indent s
                     a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
                     line s $"tag = {i}"
@@ -178030,12 +178078,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 )
             and ustack : _ -> UnionRec = union (fun s x ->
                 x.free_vars |> Map.iter (fun ((i : int, _) as k) a ->
-                    line s $"class US{x.tag}_{i}(NamedTuple): # {snd k}" // ws: `snd k`
+                    let case_name = generatedCaseNameOfTag (sprintf "US%i" x.tag) x.free_vars i
+                    line s $"class {case_name}(NamedTuple): # {snd k}" // ws: `snd k`
                     let s = indent s
                     a |> Array.iter (fun (L(i,t)) -> line s $"v{i} : {annot t}")
                     line s $"tag = {i}"
                     )
-                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> $"US{x.tag}_{i}") |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
+                let cases = x.free_vars |> Map.toArray |> Array.map (fun ((i : int, _), _) -> generatedCaseNameOfTag (sprintf "US%i" x.tag) x.free_vars i) |> function [|x|] -> x | x -> x |> String.concat ", " |> sprintf "Union[%s]"
                 line s $"US{x.tag} = {cases}"
                 )
             and heap : _ -> LayoutRec = layout (fun s x ->

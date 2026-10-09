@@ -108,10 +108,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
 const US0 = struct { tag: i32, c1_0: []const u8 = undefined, c1_1: i32 = undefined };
 const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) US0 };
 const ClosureEnv0 = struct { pad: u8 = 0 };
-fn US0_0() US0 {
+fn US0_Empty() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1(a0: []const u8, a1: i32) US0 {
+fn US0_Item(a0: []const u8, a1: i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 };
 }
 fn closure0(ctx: *anyopaque, p0: i32) US0 {
@@ -122,10 +122,10 @@ fn closure0(ctx: *anyopaque, p0: i32) US0 {
     var v3: []const u8 = undefined; _ = &v3;
     v1 = v0 == @as(i32, 0);
     if (v1) {
-        return US0_0();
+        return US0_Empty();
     } else {
         v3 = "managed";
-        return US0_1(v3, @as(i32, 32));
+        return US0_Item(v3, @as(i32, 32));
     }
 }
 fn closureCreate0() Fun0 {

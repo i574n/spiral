@@ -3,20 +3,20 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0(i32),
-    US0_1(bool),
+    US0_Hit(i32),
+    US0_Flag(bool),
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0(..) => 0,
-            US0::US0_1(..) => 1,
+            US0::US0_Hit(..) => 0,
+            US0::US0_Flag(..) => 1,
         }
     }
 }
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_1(v2) => {
+        US0::US0_Flag(v2) => {
             let mut v2: bool = *v2;
             if v2 {
                 9i32
@@ -24,7 +24,7 @@ fn score_0(mut v0: US0) -> i32 {
                 4i32
             }
         }
-        US0::US0_0(v1) => {
+        US0::US0_Hit(v1) => {
             let mut v1: i32 = *v1;
             v1
         }
@@ -33,9 +33,9 @@ fn score_0(mut v0: US0) -> i32 {
 fn spiral_main() -> i32 {
     let mut v0: bool = false;
     let mut v3: US0 = if v0 {
-        US0::US0_0(7i32)
+        US0::US0_Hit(7i32)
     } else {
-        US0::US0_1(true)
+        US0::US0_Flag(true)
     };
     let mut v4: i32 = score_0(v3.clone());
     let mut v5: i32 = v4.wrapping_sub(9i32);

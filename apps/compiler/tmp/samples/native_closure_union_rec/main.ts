@@ -1,8 +1,8 @@
-type UH0_0 = { readonly tag: 0, readonly f0: bigint, readonly f1: (() => UH0) };
-type UH0_1 = { readonly tag: 1 };
-type UH0 = UH0_0 | UH0_1;
-function UH0_0(f0: bigint, f1: (() => UH0)): UH0 { return { tag: 0, f0: f0, f1: f1 }; }
-function UH0_1(): UH0 { return { tag: 1 }; }
+type UH0_Cons = { readonly tag: 0, readonly f0: bigint, readonly f1: (() => UH0) };
+type UH0_Nil = { readonly tag: 1 };
+type UH0 = UH0_Cons | UH0_Nil;
+function UH0_Cons(f0: bigint, f1: (() => UH0)): UH0 { return { tag: 0, f0: f0, f1: f1 }; }
+function UH0_Nil(): UH0 { return { tag: 1 }; }
 function closure0(v0: bigint): (() => UH0) {
     return (): UH0 => {
         let v1: bigint = BigInt.asUintN(64, v0 - 1n);
@@ -12,10 +12,10 @@ function closure0(v0: bigint): (() => UH0) {
 function build_0(v0: bigint): UH0 {
     let v1: boolean = v0 === 0n;
     if (v1) {
-        return UH0_1();
+        return UH0_Nil();
     } else {
         let v3: (() => UH0) = closure0(v0);
-        return UH0_0(v0, v3);
+        return UH0_Cons(v0, v3);
     }
 }
 function sum_1(v0: UH0, v1: bigint): bigint {

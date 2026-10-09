@@ -105,12 +105,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // BitZero
+US0 US0_BitZero() { // BitZero
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1() { // BitOne
+US0 US0_BitOne() { // BitOne
     US0 x;
     x.tag = 1;
     return x;
@@ -138,40 +138,40 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // RegexEmpty
+UH0 * UH0_RegexEmpty() { // RegexEmpty
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1() { // RegexEpsilon
+UH0 * UH0_RegexEpsilon() { // RegexEpsilon
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_2(US0 v0) { // RegexChar
+UH0 * UH0_RegexChar(US0 v0) { // RegexChar
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 2;
     x->refc = 1;
     x->case2.v0 = v0;
     return x;
 }
-UH0 * UH0_3(UH0 * v0, UH0 * v1) { // RegexAlt
+UH0 * UH0_RegexAlt(UH0 * v0, UH0 * v1) { // RegexAlt
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 3;
     x->refc = 1;
     x->case3.v0 = v0; x->case3.v1 = v1;
     return x;
 }
-UH0 * UH0_4(UH0 * v0, UH0 * v1) { // RegexCat
+UH0 * UH0_RegexCat(UH0 * v0, UH0 * v1) { // RegexCat
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 4;
     x->refc = 1;
     x->case4.v0 = v0; x->case4.v1 = v1;
     return x;
 }
-UH0 * UH0_5(UH0 * v0) { // RegexStar
+UH0 * UH0_RegexStar(UH0 * v0) { // RegexStar
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 5;
     x->refc = 1;
@@ -189,13 +189,13 @@ static inline void UHDecrefBody1(UH1 * x){
 void UHDecref1(UH1 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody1(x); free(x); }
 }
-UH1 * UH1_0() { // InputEmpty
+UH1 * UH1_InputEmpty() { // InputEmpty
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH1 * UH1_1(US0 v0, UH1 * v1) { // InputCons
+UH1 * UH1_InputCons(US0 v0, UH1 * v1) { // InputCons
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 1;
     x->refc = 1;
@@ -250,7 +250,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
             
             
             US0 v11;
-            v11 = US0_0();
+            v11 = US0_BitZero();
             
             
             v13 = v11;
@@ -258,7 +258,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
             
             
             US0 v12;
-            v12 = US0_1();
+            v12 = US0_BitOne();
             
             
             v13 = v12;
@@ -266,7 +266,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
         v2->refc++; USIncref0(&(v13));
         
         UH1 * v14;
-        v14 = UH1_1(v13, v2);
+        v14 = UH1_InputCons(v13, v2);
         
         UHDecref1(v2); USDecref0(&(v13));
         return random_bit_input1(v6, v7, v14);
@@ -286,17 +286,17 @@ static inline void USDecrefBody1(US1 * x){
 }
 void USIncref1(US1 * x){ USIncrefBody1(x); }
 void USDecref1(US1 * x){ USDecrefBody1(x); }
-US1 US1_0() { // SymbolLess
+US1 US1_SymbolLess() { // SymbolLess
     US1 x;
     x.tag = 0;
     return x;
 }
-US1 US1_1() { // SymbolSame
+US1 US1_SymbolSame() { // SymbolSame
     US1 x;
     x.tag = 1;
     return x;
 }
-US1 US1_2() { // SymbolGreater
+US1 US1_SymbolGreater() { // SymbolGreater
     US1 x;
     x.tag = 2;
     return x;
@@ -323,14 +323,14 @@ bool run2(int32_t v0, UH1 * v1){
                         
                         
                         
-                        v10 = US1_2();
+                        v10 = US1_SymbolGreater();
                         break;
                     }
                     case 0: { // BitZero
                         
                         
                         
-                        v10 = US1_1();
+                        v10 = US1_SymbolSame();
                         break;
                     }
                 }
@@ -371,14 +371,14 @@ bool run2(int32_t v0, UH1 * v1){
                         
                         
                         
-                        v16 = US1_2();
+                        v16 = US1_SymbolGreater();
                         break;
                     }
                     case 0: { // BitZero
                         
                         
                         
-                        v16 = US1_1();
+                        v16 = US1_SymbolSame();
                         break;
                     }
                 }
@@ -469,7 +469,7 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v53); UHDecref0(v54);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -507,27 +507,27 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 0: { // RegexEmpty
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -551,14 +551,14 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_1();
+                                    return US1_SymbolSame();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_2();
+                                    return US1_SymbolGreater();
                                     break;
                                 }
                             }
@@ -573,14 +573,14 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_0();
+                                    return US1_SymbolLess();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_1();
+                                    return US1_SymbolSame();
                                     break;
                                 }
                             }
@@ -593,20 +593,20 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -620,13 +620,13 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -640,20 +640,20 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -667,7 +667,7 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); UHDecref0(v44);
-                    return US1_0();
+                    return US1_SymbolLess();
                     break;
                 }
                 case 5: { // RegexStar
@@ -680,7 +680,7 @@ US1 regex_compare8(UH0 * v0, UH0 * v1){
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v44);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -708,14 +708,14 @@ UH0 * alt_insert_sorted7(UH0 * v0, UH0 * v1){
                     v6 = alt_insert_sorted7(v0, v3);
                     
                     UHDecref0(v0); UHDecref0(v3);
-                    return UH0_3(v2, v6);
+                    return UH0_RegexAlt(v2, v6);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     UHDecref0(v2); UHDecref0(v3); USDecref1(&(v4));
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -747,14 +747,14 @@ UH0 * alt_insert_sorted7(UH0 * v0, UH0 * v1){
                     
                     
                     USDecref1(&(v11));
-                    return UH0_3(v1, v0);
+                    return UH0_RegexAlt(v1, v0);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     USDecref1(&(v11));
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -885,14 +885,14 @@ bool regex_equal10(UH0 * v0, UH0 * v1){
                                     
                                     
                                     
-                                    v15 = US1_1();
+                                    v15 = US1_SymbolSame();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     
-                                    v15 = US1_2();
+                                    v15 = US1_SymbolGreater();
                                     break;
                                 }
                             }
@@ -907,14 +907,14 @@ bool regex_equal10(UH0 * v0, UH0 * v1){
                                     
                                     
                                     
-                                    v15 = US1_0();
+                                    v15 = US1_SymbolLess();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     
-                                    v15 = US1_1();
+                                    v15 = US1_SymbolSame();
                                     break;
                                 }
                             }
@@ -1017,7 +1017,7 @@ UH0 * make_cat9(UH0 * v0, UH0 * v1){
             
             
             UHDecref0(v0); UHDecref0(v1);
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         default: {
@@ -1028,7 +1028,7 @@ UH0 * make_cat9(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v0); UHDecref0(v1);
-                    return UH0_0();
+                    return UH0_RegexEmpty();
                     break;
                 }
                 default: {
@@ -1065,7 +1065,7 @@ UH0 * make_cat9(UH0 * v0, UH0 * v1){
                                             v14 = make_cat9(v13, v1);
                                             
                                             UHDecref0(v1); UHDecref0(v13);
-                                            return UH0_4(v12, v14);
+                                            return UH0_RegexCat(v12, v14);
                                             break;
                                         }
                                         case 5: { // RegexStar
@@ -1084,18 +1084,18 @@ UH0 * make_cat9(UH0 * v0, UH0 * v1){
                                                     if (v6){
                                                         
                                                         UHDecref0(v0); UHDecref0(v1);
-                                                        return UH0_5(v4);
+                                                        return UH0_RegexStar(v4);
                                                     } else {
                                                         
                                                         UHDecref0(v4);
-                                                        return UH0_4(v0, v1);
+                                                        return UH0_RegexCat(v0, v1);
                                                     }
                                                     break;
                                                 }
                                                 default: {
                                                     
                                                     UHDecref0(v4);
-                                                    return UH0_4(v0, v1);
+                                                    return UH0_RegexCat(v0, v1);
                                                 }
                                             }
                                             break;
@@ -1103,7 +1103,7 @@ UH0 * make_cat9(UH0 * v0, UH0 * v1){
                                         default: {
                                             
                                             
-                                            return UH0_4(v0, v1);
+                                            return UH0_RegexCat(v0, v1);
                                         }
                                     }
                                 }
@@ -1123,27 +1123,27 @@ UH0 * make_star11(UH0 * v0){
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
             UH0 * v3 = v0->case5.v0;
             v3->refc++;
             UHDecref0(v0);
-            return UH0_5(v3);
+            return UH0_RegexStar(v3);
             break;
         }
         default: {
             
             
-            return UH0_5(v0);
+            return UH0_RegexStar(v0);
         }
     }
 }
@@ -1185,21 +1185,21 @@ UH0 * normalize5(UH0 * v0){
             US0 v3 = v0->case2.v0;
             USIncref0(&(v3));
             UHDecref0(v0);
-            return UH0_2(v3);
+            return UH0_RegexChar(v3);
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref0(v0);
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
@@ -1225,12 +1225,12 @@ static inline void USDecrefBody2(US2 * x){
 }
 void USIncref2(US2 * x){ USIncrefBody2(x); }
 void USDecref2(US2 * x){ USDecrefBody2(x); }
-US2 US2_0() { // Nullable
+US2 US2_Nullable() { // Nullable
     US2 x;
     x.tag = 0;
     return x;
 }
-US2 US2_1() { // NonNullable
+US2 US2_NonNullable() { // NonNullable
     US2 x;
     x.tag = 1;
     return x;
@@ -1256,7 +1256,7 @@ US2 nullable13(UH0 * v0){
                     
                     
                     USDecref2(&(v7)); USDecref2(&(v8));
-                    return US2_0();
+                    return US2_Nullable();
                     break;
                 }
                 default: {
@@ -1267,7 +1267,7 @@ US2 nullable13(UH0 * v0){
                             
                             
                             USDecref2(&(v7)); USDecref2(&(v8));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
@@ -1283,7 +1283,7 @@ US2 nullable13(UH0 * v0){
                                             
                                             
                                             USDecref2(&(v8));
-                                            return US2_1();
+                                            return US2_NonNullable();
                                             break;
                                         }
                                     }
@@ -1318,13 +1318,13 @@ US2 nullable13(UH0 * v0){
                             
                             
                             USDecref2(&(v19));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
                             
                             USDecref2(&(v19));
-                            return US2_1();
+                            return US2_NonNullable();
                         }
                     }
                     break;
@@ -1332,7 +1332,7 @@ US2 nullable13(UH0 * v0){
                 default: {
                     
                     USDecref2(&(v18)); USDecref2(&(v19));
-                    return US2_1();
+                    return US2_NonNullable();
                 }
             }
             break;
@@ -1341,28 +1341,28 @@ US2 nullable13(UH0 * v0){
             
             
             UHDecref0(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref0(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
         case 5: { // RegexStar
             
             
             UHDecref0(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
     }
@@ -1443,14 +1443,14 @@ UH0 * derivative12(UH0 * v0, US0 v1){
                             
                             
                             
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v14 = US1_2();
+                            v14 = US1_SymbolGreater();
                             break;
                         }
                     }
@@ -1465,14 +1465,14 @@ UH0 * derivative12(UH0 * v0, US0 v1){
                             
                             
                             
-                            v14 = US1_0();
+                            v14 = US1_SymbolLess();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                             break;
                         }
                     }
@@ -1501,11 +1501,11 @@ UH0 * derivative12(UH0 * v0, US0 v1){
             if (v15){
                 
                 
-                return UH0_1();
+                return UH0_RegexEpsilon();
             } else {
                 
                 
-                return UH0_0();
+                return UH0_RegexEmpty();
             }
             break;
         }
@@ -1513,14 +1513,14 @@ UH0 * derivative12(UH0 * v0, US0 v1){
             
             
             UHDecref0(v0); USDecref0(&(v1));
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0); USDecref0(&(v1));
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 5: { // RegexStar
@@ -1611,7 +1611,7 @@ int32_t loop0(int32_t v0, UH0 * v1, int32_t v2, uint64_t v3, int32_t v4){
         
         
         UH1 * v6;
-        v6 = UH1_0();
+        v6 = UH1_InputEmpty();
         v6->refc++;
         
         UH1 * v7; uint64_t v8;
@@ -1698,11 +1698,11 @@ UH1 * zeros_input15(int32_t v0, UH1 * v1){
         
         
         US0 v4;
-        v4 = US0_0();
+        v4 = US0_BitZero();
         v1->refc++; USIncref0(&(v4));
         
         UH1 * v5;
-        v5 = UH1_1(v4, v1);
+        v5 = UH1_InputCons(v4, v1);
         
         UHDecref1(v1); USDecref0(&(v4));
         return zeros_input15(v3, v5);
@@ -1734,14 +1734,14 @@ bool run16(int32_t v0, UH1 * v1){
                         
                         
                         
-                        v11 = US1_2();
+                        v11 = US1_SymbolGreater();
                         break;
                     }
                     case 0: { // BitZero
                         
                         
                         
-                        v11 = US1_1();
+                        v11 = US1_SymbolSame();
                         break;
                     }
                 }
@@ -1781,14 +1781,14 @@ bool run16(int32_t v0, UH1 * v1){
                             
                             
                             
-                            v17 = US1_2();
+                            v17 = US1_SymbolGreater();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v17 = US1_1();
+                            v17 = US1_SymbolSame();
                             break;
                         }
                     }
@@ -1821,14 +1821,14 @@ bool run16(int32_t v0, UH1 * v1){
                             
                             
                             
-                            v22 = US1_2();
+                            v22 = US1_SymbolGreater();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v22 = US1_1();
+                            v22 = US1_SymbolSame();
                             break;
                         }
                     }
@@ -1907,7 +1907,7 @@ int32_t loop14(int32_t v0, UH0 * v1, int32_t v2, int32_t v3){
         
         
         UH1 * v5;
-        v5 = UH1_0();
+        v5 = UH1_InputEmpty();
         v5->refc++;
         
         UH1 * v6;
@@ -1968,15 +1968,15 @@ int32_t loop14(int32_t v0, UH0 * v1, int32_t v2, int32_t v3){
         
         
         US0 v16;
-        v16 = US0_1();
+        v16 = US0_BitOne();
         
         
         UH1 * v17;
-        v17 = UH1_0();
+        v17 = UH1_InputEmpty();
         USIncref0(&(v16)); v17->refc++;
         
         UH1 * v18;
-        v18 = UH1_1(v16, v17);
+        v18 = UH1_InputCons(v16, v17);
         v18->refc++;
         USDecref0(&(v16)); UHDecref1(v17);
         UH1 * v19;
@@ -2053,17 +2053,17 @@ static inline void USDecrefBody3(US3 * x){
 }
 void USIncref3(US3 * x){ USIncrefBody3(x); }
 void USDecref3(US3 * x){ USDecrefBody3(x); }
-US3 US3_0() { // TriA
+US3 US3_TriA() { // TriA
     US3 x;
     x.tag = 0;
     return x;
 }
-US3 US3_1() { // TriB
+US3 US3_TriB() { // TriB
     US3 x;
     x.tag = 1;
     return x;
 }
-US3 US3_2() { // TriC
+US3 US3_TriC() { // TriC
     US3 x;
     x.tag = 2;
     return x;
@@ -2091,40 +2091,40 @@ static inline void UHDecrefBody2(UH2 * x){
 void UHDecref2(UH2 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody2(x); free(x); }
 }
-UH2 * UH2_0() { // RegexEmpty
+UH2 * UH2_RegexEmpty() { // RegexEmpty
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH2 * UH2_1() { // RegexEpsilon
+UH2 * UH2_RegexEpsilon() { // RegexEpsilon
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 1;
     x->refc = 1;
     return x;
 }
-UH2 * UH2_2(US3 v0) { // RegexChar
+UH2 * UH2_RegexChar(US3 v0) { // RegexChar
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 2;
     x->refc = 1;
     x->case2.v0 = v0;
     return x;
 }
-UH2 * UH2_3(UH2 * v0, UH2 * v1) { // RegexAlt
+UH2 * UH2_RegexAlt(UH2 * v0, UH2 * v1) { // RegexAlt
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 3;
     x->refc = 1;
     x->case3.v0 = v0; x->case3.v1 = v1;
     return x;
 }
-UH2 * UH2_4(UH2 * v0, UH2 * v1) { // RegexCat
+UH2 * UH2_RegexCat(UH2 * v0, UH2 * v1) { // RegexCat
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 4;
     x->refc = 1;
     x->case4.v0 = v0; x->case4.v1 = v1;
     return x;
 }
-UH2 * UH2_5(UH2 * v0) { // RegexStar
+UH2 * UH2_RegexStar(UH2 * v0) { // RegexStar
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 5;
     x->refc = 1;
@@ -2142,13 +2142,13 @@ static inline void UHDecrefBody3(UH3 * x){
 void UHDecref3(UH3 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody3(x); free(x); }
 }
-UH3 * UH3_0() { // InputEmpty
+UH3 * UH3_InputEmpty() { // InputEmpty
     UH3 * x = malloc(sizeof(UH3));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH3 * UH3_1(US3 v0, UH3 * v1) { // InputCons
+UH3 * UH3_InputCons(US3 v0, UH3 * v1) { // InputCons
     UH3 * x = malloc(sizeof(UH3));
     x->tag = 1;
     x->refc = 1;
@@ -2177,13 +2177,13 @@ bool run17(int32_t v0, UH3 * v1){
                         
                         
                         
-                        v10 = US1_1();
+                        v10 = US1_SymbolSame();
                         break;
                     }
                     default: {
                         
                         
-                        v10 = US1_2();
+                        v10 = US1_SymbolGreater();
                     }
                 }
                 
@@ -2218,21 +2218,21 @@ bool run17(int32_t v0, UH3 * v1){
                             
                             
                             
-                            v17 = US1_0();
+                            v17 = US1_SymbolLess();
                             break;
                         }
                         case 1: { // TriB
                             
                             
                             
-                            v17 = US1_1();
+                            v17 = US1_SymbolSame();
                             break;
                         }
                         case 2: { // TriC
                             
                             
                             
-                            v17 = US1_2();
+                            v17 = US1_SymbolGreater();
                             break;
                         }
                     }
@@ -2281,13 +2281,13 @@ bool run17(int32_t v0, UH3 * v1){
                             
                             
                             
-                            v24 = US1_1();
+                            v24 = US1_SymbolSame();
                             break;
                         }
                         default: {
                             
                             
-                            v24 = US1_2();
+                            v24 = US1_SymbolGreater();
                         }
                     }
                     
@@ -2322,21 +2322,21 @@ bool run17(int32_t v0, UH3 * v1){
                                 
                                 
                                 
-                                v31 = US1_0();
+                                v31 = US1_SymbolLess();
                                 break;
                             }
                             case 1: { // TriB
                                 
                                 
                                 
-                                v31 = US1_1();
+                                v31 = US1_SymbolSame();
                                 break;
                             }
                             case 2: { // TriC
                                 
                                 
                                 
-                                v31 = US1_2();
+                                v31 = US1_SymbolGreater();
                                 break;
                             }
                         }
@@ -2370,13 +2370,13 @@ bool run17(int32_t v0, UH3 * v1){
                             
                             
                             
-                            v36 = US1_1();
+                            v36 = US1_SymbolSame();
                             break;
                         }
                         default: {
                             
                             
-                            v36 = US1_2();
+                            v36 = US1_SymbolGreater();
                         }
                     }
                     
@@ -2411,21 +2411,21 @@ bool run17(int32_t v0, UH3 * v1){
                                 
                                 
                                 
-                                v43 = US1_0();
+                                v43 = US1_SymbolLess();
                                 break;
                             }
                             case 1: { // TriB
                                 
                                 
                                 
-                                v43 = US1_1();
+                                v43 = US1_SymbolSame();
                                 break;
                             }
                             case 2: { // TriC
                                 
                                 
                                 
-                                v43 = US1_2();
+                                v43 = US1_SymbolGreater();
                                 break;
                             }
                         }
@@ -2518,7 +2518,7 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                 default: {
                     
                     UHDecref2(v1); UHDecref2(v59); UHDecref2(v60);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -2556,27 +2556,27 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v1); UHDecref2(v34); UHDecref2(v35);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 0: { // RegexEmpty
                     
                     
                     UHDecref2(v1); UHDecref2(v34); UHDecref2(v35);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref2(v1); UHDecref2(v34); UHDecref2(v35);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref2(v1); UHDecref2(v34); UHDecref2(v35);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -2600,13 +2600,13 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                                     
                                     
                                     USDecref3(&(v13));
-                                    return US1_1();
+                                    return US1_SymbolSame();
                                     break;
                                 }
                                 default: {
                                     
                                     USDecref3(&(v13));
-                                    return US1_0();
+                                    return US1_SymbolLess();
                                 }
                             }
                             break;
@@ -2619,7 +2619,7 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                                     
                                     
                                     USDecref3(&(v10)); USDecref3(&(v13));
-                                    return US1_2();
+                                    return US1_SymbolGreater();
                                     break;
                                 }
                                 default: {
@@ -2635,14 +2635,14 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                                                     
                                                     
                                                     USDecref3(&(v13));
-                                                    return US1_1();
+                                                    return US1_SymbolSame();
                                                     break;
                                                 }
                                                 case 2: { // TriC
                                                     
                                                     
                                                     USDecref3(&(v13));
-                                                    return US1_0();
+                                                    return US1_SymbolLess();
                                                     break;
                                                 }
                                             }
@@ -2657,14 +2657,14 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                                                     
                                                     
                                                     USDecref3(&(v13));
-                                                    return US1_2();
+                                                    return US1_SymbolGreater();
                                                     break;
                                                 }
                                                 case 2: { // TriC
                                                     
                                                     
                                                     USDecref3(&(v13));
-                                                    return US1_1();
+                                                    return US1_SymbolSame();
                                                     break;
                                                 }
                                             }
@@ -2681,20 +2681,20 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v1); USDecref3(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref2(v1); USDecref3(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref2(v1); USDecref3(&(v10));
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -2708,13 +2708,13 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref2(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -2728,20 +2728,20 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v1);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref2(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref2(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -2755,7 +2755,7 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v1); UHDecref2(v50);
-                    return US1_0();
+                    return US1_SymbolLess();
                     break;
                 }
                 case 5: { // RegexStar
@@ -2768,7 +2768,7 @@ US1 regex_compare23(UH2 * v0, UH2 * v1){
                 default: {
                     
                     UHDecref2(v1); UHDecref2(v50);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -2796,14 +2796,14 @@ UH2 * alt_insert_sorted22(UH2 * v0, UH2 * v1){
                     v6 = alt_insert_sorted22(v0, v3);
                     
                     UHDecref2(v0); UHDecref2(v3);
-                    return UH2_3(v2, v6);
+                    return UH2_RegexAlt(v2, v6);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     UHDecref2(v2); UHDecref2(v3); USDecref1(&(v4));
-                    return UH2_3(v0, v1);
+                    return UH2_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -2835,14 +2835,14 @@ UH2 * alt_insert_sorted22(UH2 * v0, UH2 * v1){
                     
                     
                     USDecref1(&(v11));
-                    return UH2_3(v1, v0);
+                    return UH2_RegexAlt(v1, v0);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     USDecref1(&(v11));
-                    return UH2_3(v0, v1);
+                    return UH2_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -2973,13 +2973,13 @@ bool regex_equal25(UH2 * v0, UH2 * v1){
                                     
                                     
                                     
-                                    v21 = US1_1();
+                                    v21 = US1_SymbolSame();
                                     break;
                                 }
                                 default: {
                                     
                                     
-                                    v21 = US1_0();
+                                    v21 = US1_SymbolLess();
                                 }
                             }
                             break;
@@ -2992,7 +2992,7 @@ bool regex_equal25(UH2 * v0, UH2 * v1){
                                     
                                     
                                     
-                                    v21 = US1_2();
+                                    v21 = US1_SymbolGreater();
                                     break;
                                 }
                                 default: {
@@ -3008,14 +3008,14 @@ bool regex_equal25(UH2 * v0, UH2 * v1){
                                                     
                                                     
                                                     
-                                                    v21 = US1_1();
+                                                    v21 = US1_SymbolSame();
                                                     break;
                                                 }
                                                 case 2: { // TriC
                                                     
                                                     
                                                     
-                                                    v21 = US1_0();
+                                                    v21 = US1_SymbolLess();
                                                     break;
                                                 }
                                             }
@@ -3030,14 +3030,14 @@ bool regex_equal25(UH2 * v0, UH2 * v1){
                                                     
                                                     
                                                     
-                                                    v21 = US1_2();
+                                                    v21 = US1_SymbolGreater();
                                                     break;
                                                 }
                                                 case 2: { // TriC
                                                     
                                                     
                                                     
-                                                    v21 = US1_1();
+                                                    v21 = US1_SymbolSame();
                                                     break;
                                                 }
                                             }
@@ -3144,7 +3144,7 @@ UH2 * make_cat24(UH2 * v0, UH2 * v1){
             
             
             UHDecref2(v0); UHDecref2(v1);
-            return UH2_0();
+            return UH2_RegexEmpty();
             break;
         }
         default: {
@@ -3155,7 +3155,7 @@ UH2 * make_cat24(UH2 * v0, UH2 * v1){
                     
                     
                     UHDecref2(v0); UHDecref2(v1);
-                    return UH2_0();
+                    return UH2_RegexEmpty();
                     break;
                 }
                 default: {
@@ -3192,7 +3192,7 @@ UH2 * make_cat24(UH2 * v0, UH2 * v1){
                                             v14 = make_cat24(v13, v1);
                                             
                                             UHDecref2(v1); UHDecref2(v13);
-                                            return UH2_4(v12, v14);
+                                            return UH2_RegexCat(v12, v14);
                                             break;
                                         }
                                         case 5: { // RegexStar
@@ -3211,18 +3211,18 @@ UH2 * make_cat24(UH2 * v0, UH2 * v1){
                                                     if (v6){
                                                         
                                                         UHDecref2(v0); UHDecref2(v1);
-                                                        return UH2_5(v4);
+                                                        return UH2_RegexStar(v4);
                                                     } else {
                                                         
                                                         UHDecref2(v4);
-                                                        return UH2_4(v0, v1);
+                                                        return UH2_RegexCat(v0, v1);
                                                     }
                                                     break;
                                                 }
                                                 default: {
                                                     
                                                     UHDecref2(v4);
-                                                    return UH2_4(v0, v1);
+                                                    return UH2_RegexCat(v0, v1);
                                                 }
                                             }
                                             break;
@@ -3230,7 +3230,7 @@ UH2 * make_cat24(UH2 * v0, UH2 * v1){
                                         default: {
                                             
                                             
-                                            return UH2_4(v0, v1);
+                                            return UH2_RegexCat(v0, v1);
                                         }
                                     }
                                 }
@@ -3250,27 +3250,27 @@ UH2 * make_star26(UH2 * v0){
             
             
             UHDecref2(v0);
-            return UH2_1();
+            return UH2_RegexEpsilon();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref2(v0);
-            return UH2_1();
+            return UH2_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
             UH2 * v3 = v0->case5.v0;
             v3->refc++;
             UHDecref2(v0);
-            return UH2_5(v3);
+            return UH2_RegexStar(v3);
             break;
         }
         default: {
             
             
-            return UH2_5(v0);
+            return UH2_RegexStar(v0);
         }
     }
 }
@@ -3312,21 +3312,21 @@ UH2 * normalize20(UH2 * v0){
             US3 v3 = v0->case2.v0;
             USIncref3(&(v3));
             UHDecref2(v0);
-            return UH2_2(v3);
+            return UH2_RegexChar(v3);
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref2(v0);
-            return UH2_0();
+            return UH2_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref2(v0);
-            return UH2_1();
+            return UH2_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
@@ -3363,7 +3363,7 @@ US2 nullable28(UH2 * v0){
                     
                     
                     USDecref2(&(v7)); USDecref2(&(v8));
-                    return US2_0();
+                    return US2_Nullable();
                     break;
                 }
                 default: {
@@ -3374,7 +3374,7 @@ US2 nullable28(UH2 * v0){
                             
                             
                             USDecref2(&(v7)); USDecref2(&(v8));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
@@ -3390,7 +3390,7 @@ US2 nullable28(UH2 * v0){
                                             
                                             
                                             USDecref2(&(v8));
-                                            return US2_1();
+                                            return US2_NonNullable();
                                             break;
                                         }
                                     }
@@ -3425,13 +3425,13 @@ US2 nullable28(UH2 * v0){
                             
                             
                             USDecref2(&(v19));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
                             
                             USDecref2(&(v19));
-                            return US2_1();
+                            return US2_NonNullable();
                         }
                     }
                     break;
@@ -3439,7 +3439,7 @@ US2 nullable28(UH2 * v0){
                 default: {
                     
                     USDecref2(&(v18)); USDecref2(&(v19));
-                    return US2_1();
+                    return US2_NonNullable();
                 }
             }
             break;
@@ -3448,28 +3448,28 @@ US2 nullable28(UH2 * v0){
             
             
             UHDecref2(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref2(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref2(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
         case 5: { // RegexStar
             
             
             UHDecref2(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
     }
@@ -3550,13 +3550,13 @@ UH2 * derivative27(UH2 * v0, US3 v1){
                             
                             
                             
-                            v20 = US1_1();
+                            v20 = US1_SymbolSame();
                             break;
                         }
                         default: {
                             
                             
-                            v20 = US1_0();
+                            v20 = US1_SymbolLess();
                         }
                     }
                     break;
@@ -3569,7 +3569,7 @@ UH2 * derivative27(UH2 * v0, US3 v1){
                             
                             
                             
-                            v20 = US1_2();
+                            v20 = US1_SymbolGreater();
                             break;
                         }
                         default: {
@@ -3585,14 +3585,14 @@ UH2 * derivative27(UH2 * v0, US3 v1){
                                             
                                             
                                             
-                                            v20 = US1_1();
+                                            v20 = US1_SymbolSame();
                                             break;
                                         }
                                         case 2: { // TriC
                                             
                                             
                                             
-                                            v20 = US1_0();
+                                            v20 = US1_SymbolLess();
                                             break;
                                         }
                                     }
@@ -3607,14 +3607,14 @@ UH2 * derivative27(UH2 * v0, US3 v1){
                                             
                                             
                                             
-                                            v20 = US1_2();
+                                            v20 = US1_SymbolGreater();
                                             break;
                                         }
                                         case 2: { // TriC
                                             
                                             
                                             
-                                            v20 = US1_1();
+                                            v20 = US1_SymbolSame();
                                             break;
                                         }
                                     }
@@ -3647,11 +3647,11 @@ UH2 * derivative27(UH2 * v0, US3 v1){
             if (v21){
                 
                 
-                return UH2_1();
+                return UH2_RegexEpsilon();
             } else {
                 
                 
-                return UH2_0();
+                return UH2_RegexEmpty();
             }
             break;
         }
@@ -3659,14 +3659,14 @@ UH2 * derivative27(UH2 * v0, US3 v1){
             
             
             UHDecref2(v0); USDecref3(&(v1));
-            return UH2_0();
+            return UH2_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref2(v0); USDecref3(&(v1));
-            return UH2_0();
+            return UH2_RegexEmpty();
             break;
         }
         case 5: { // RegexStar
@@ -3762,39 +3762,39 @@ int32_t main(){
     
     
     US0 v3;
-    v3 = US0_0();
+    v3 = US0_BitZero();
     USIncref0(&(v3));
     
     UH0 * v4;
-    v4 = UH0_2(v3);
+    v4 = UH0_RegexChar(v3);
     
     USDecref0(&(v3));
     US0 v5;
-    v5 = US0_1();
+    v5 = US0_BitOne();
     USIncref0(&(v5));
     
     UH0 * v6;
-    v6 = UH0_2(v5);
+    v6 = UH0_RegexChar(v5);
     v4->refc++; v6->refc++;
     USDecref0(&(v5));
     UH0 * v7;
-    v7 = UH0_3(v4, v6);
+    v7 = UH0_RegexAlt(v4, v6);
     v7->refc++;
     UHDecref0(v4); UHDecref0(v6);
     UH0 * v8;
-    v8 = UH0_5(v7);
+    v8 = UH0_RegexStar(v7);
     
     UHDecref0(v7);
     US0 v9;
-    v9 = US0_0();
+    v9 = US0_BitZero();
     USIncref0(&(v9));
     
     UH0 * v10;
-    v10 = UH0_2(v9);
+    v10 = UH0_RegexChar(v9);
     v8->refc++; v10->refc++;
     USDecref0(&(v9));
     UH0 * v11;
-    v11 = UH0_4(v8, v10);
+    v11 = UH0_RegexCat(v8, v10);
     
     UHDecref0(v8); UHDecref0(v10);
     uint64_t v12;
@@ -3827,51 +3827,51 @@ int32_t main(){
     
     
     US0 v16;
-    v16 = US0_0();
+    v16 = US0_BitZero();
     USIncref0(&(v16));
     
     UH0 * v17;
-    v17 = UH0_2(v16);
+    v17 = UH0_RegexChar(v16);
     
     USDecref0(&(v16));
     US0 v18;
-    v18 = US0_0();
+    v18 = US0_BitZero();
     USIncref0(&(v18));
     
     UH0 * v19;
-    v19 = UH0_2(v18);
+    v19 = UH0_RegexChar(v18);
     
     USDecref0(&(v18));
     US0 v20;
-    v20 = US0_0();
+    v20 = US0_BitZero();
     USIncref0(&(v20));
     
     UH0 * v21;
-    v21 = UH0_2(v20);
+    v21 = UH0_RegexChar(v20);
     v19->refc++; v21->refc++;
     USDecref0(&(v20));
     UH0 * v22;
-    v22 = UH0_4(v19, v21);
+    v22 = UH0_RegexCat(v19, v21);
     v17->refc++; v22->refc++;
     UHDecref0(v19); UHDecref0(v21);
     UH0 * v23;
-    v23 = UH0_3(v17, v22);
+    v23 = UH0_RegexAlt(v17, v22);
     v23->refc++;
     UHDecref0(v17); UHDecref0(v22);
     UH0 * v24;
-    v24 = UH0_5(v23);
+    v24 = UH0_RegexStar(v23);
     
     UHDecref0(v23);
     US0 v25;
-    v25 = US0_1();
+    v25 = US0_BitOne();
     USIncref0(&(v25));
     
     UH0 * v26;
-    v26 = UH0_2(v25);
+    v26 = UH0_RegexChar(v25);
     v24->refc++; v26->refc++;
     USDecref0(&(v25));
     UH0 * v27;
-    v27 = UH0_4(v24, v26);
+    v27 = UH0_RegexCat(v24, v26);
     
     UHDecref0(v24); UHDecref0(v26);
     int32_t v28;
@@ -3904,111 +3904,111 @@ int32_t main(){
     
     
     US3 v32;
-    v32 = US3_0();
+    v32 = US3_TriA();
     USIncref3(&(v32));
     
     UH2 * v33;
-    v33 = UH2_2(v32);
+    v33 = UH2_RegexChar(v32);
     
     USDecref3(&(v32));
     US3 v34;
-    v34 = US3_1();
+    v34 = US3_TriB();
     USIncref3(&(v34));
     
     UH2 * v35;
-    v35 = UH2_2(v34);
+    v35 = UH2_RegexChar(v34);
     v33->refc++; v35->refc++;
     USDecref3(&(v34));
     UH2 * v36;
-    v36 = UH2_3(v33, v35);
+    v36 = UH2_RegexAlt(v33, v35);
     v36->refc++;
     UHDecref2(v33); UHDecref2(v35);
     UH2 * v37;
-    v37 = UH2_5(v36);
+    v37 = UH2_RegexStar(v36);
     
     UHDecref2(v36);
     US3 v38;
-    v38 = US3_2();
+    v38 = US3_TriC();
     USIncref3(&(v38));
     
     UH2 * v39;
-    v39 = UH2_2(v38);
+    v39 = UH2_RegexChar(v38);
     v37->refc++; v39->refc++;
     USDecref3(&(v38));
     UH2 * v40;
-    v40 = UH2_4(v37, v39);
+    v40 = UH2_RegexCat(v37, v39);
     
     UHDecref2(v37); UHDecref2(v39);
     US3 v41;
-    v41 = US3_0();
+    v41 = US3_TriA();
     
     
     US3 v42;
-    v42 = US3_1();
+    v42 = US3_TriB();
     
     
     US3 v43;
-    v43 = US3_0();
+    v43 = US3_TriA();
     
     
     US3 v44;
-    v44 = US3_2();
+    v44 = US3_TriC();
     
     
     UH3 * v45;
-    v45 = UH3_0();
+    v45 = UH3_InputEmpty();
     USIncref3(&(v44)); v45->refc++;
     
     UH3 * v46;
-    v46 = UH3_1(v44, v45);
+    v46 = UH3_InputCons(v44, v45);
     USIncref3(&(v43)); v46->refc++;
     USDecref3(&(v44)); UHDecref3(v45);
     UH3 * v47;
-    v47 = UH3_1(v43, v46);
+    v47 = UH3_InputCons(v43, v46);
     USIncref3(&(v42)); v47->refc++;
     USDecref3(&(v43)); UHDecref3(v46);
     UH3 * v48;
-    v48 = UH3_1(v42, v47);
+    v48 = UH3_InputCons(v42, v47);
     USIncref3(&(v41)); v48->refc++;
     USDecref3(&(v42)); UHDecref3(v47);
     UH3 * v49;
-    v49 = UH3_1(v41, v48);
+    v49 = UH3_InputCons(v41, v48);
     
     USDecref3(&(v41)); UHDecref3(v48);
     US3 v50;
-    v50 = US3_0();
+    v50 = US3_TriA();
     
     
     US3 v51;
-    v51 = US3_1();
+    v51 = US3_TriB();
     
     
     US3 v52;
-    v52 = US3_0();
+    v52 = US3_TriA();
     
     
     US3 v53;
-    v53 = US3_1();
+    v53 = US3_TriB();
     
     
     UH3 * v54;
-    v54 = UH3_0();
+    v54 = UH3_InputEmpty();
     USIncref3(&(v53)); v54->refc++;
     
     UH3 * v55;
-    v55 = UH3_1(v53, v54);
+    v55 = UH3_InputCons(v53, v54);
     USIncref3(&(v52)); v55->refc++;
     USDecref3(&(v53)); UHDecref3(v54);
     UH3 * v56;
-    v56 = UH3_1(v52, v55);
+    v56 = UH3_InputCons(v52, v55);
     USIncref3(&(v51)); v56->refc++;
     USDecref3(&(v52)); UHDecref3(v55);
     UH3 * v57;
-    v57 = UH3_1(v51, v56);
+    v57 = UH3_InputCons(v51, v56);
     USIncref3(&(v50)); v57->refc++;
     USDecref3(&(v51)); UHDecref3(v56);
     UH3 * v58;
-    v58 = UH3_1(v50, v57);
+    v58 = UH3_InputCons(v50, v57);
     
     USDecref3(&(v50)); UHDecref3(v57);
     int32_t v59;

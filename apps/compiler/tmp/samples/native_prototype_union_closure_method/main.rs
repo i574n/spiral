@@ -3,23 +3,23 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0,
-    US0_1(i32),
-    US0_2(bool),
+    US0_Idle,
+    US0_Hit(i32),
+    US0_Flag(bool),
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0 => 0,
-            US0::US0_1(..) => 1,
-            US0::US0_2(..) => 2,
+            US0::US0_Idle => 0,
+            US0::US0_Hit(..) => 1,
+            US0::US0_Flag(..) => 2,
         }
     }
 }
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v7: i32 = match &v0 {
-            US0::US0_2(v3) => {
+            US0::US0_Flag(v3) => {
                 let mut v3: bool = *v3;
                 if v3 {
                     11i32
@@ -27,11 +27,11 @@ fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
                     5i32
                 }
             }
-            US0::US0_1(v2) => {
+            US0::US0_Hit(v2) => {
                 let mut v2: i32 = *v2;
                 v2
             }
-            US0::US0_0 => {
+            US0::US0_Idle => {
                 3i32
             }
         };
@@ -46,13 +46,13 @@ fn spiral_main() -> i32 {
     let mut v0: i32 = 2i32;
     let mut v1: bool = v0 == 0i32;
     let mut v7: US0 = if v1 {
-        US0::US0_0
+        US0::US0_Idle
     } else {
         let mut v3: bool = v0 == 1i32;
         if v3 {
-            US0::US0_1(7i32)
+            US0::US0_Hit(7i32)
         } else {
-            US0::US0_2(true)
+            US0::US0_Flag(true)
         }
     };
     let mut v8: Rc<dyn Fn(i32) -> i32> = closure0(v7.clone());

@@ -24,3 +24,10 @@ if (!(Test-Path "$fork/.git")) {
 if (Get-Command rustup -ErrorAction Ignore) {
     rustup install nightly-2025-11-01
 }
+
+if ($IsWindows -and !(Get-Command rsync -ErrorAction Ignore)) {
+    if (Get-Command choco -ErrorAction Ignore) {
+        choco install rsync -y
+        if ($LASTEXITCODE -ne 0) { Write-Output "init-app-build.ps1 / choco install rsync failed (exit code $LASTEXITCODE)" }
+    } else { Write-Output "init-app-build.ps1 / no rsync and no choco: scripts/publish-tree.ps1 needs rsync" }
+}

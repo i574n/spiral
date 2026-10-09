@@ -97,12 +97,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Empty
+US0 US0_Empty() { // Empty
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(String * v0, Array1 * v1) { // Item
+US0 US0_Item(String * v0, Array1 * v1) { // Item
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0; x.case1.v1 = v1;
@@ -132,7 +132,7 @@ US0 ClosureMethod0(Closure0 * x, int32_t v0){
     if (v1){
         
         
-        return US0_0();
+        return US0_Empty();
     } else {
         
         
@@ -156,7 +156,7 @@ US0 ClosureMethod0(Closure0 * x, int32_t v0){
         v5 = StringLit(3, "hi");
         
         
-        return US0_1(v5, v3);
+        return US0_Item(v5, v3);
     }
 }
 Fun0 * ClosureCreate0(){

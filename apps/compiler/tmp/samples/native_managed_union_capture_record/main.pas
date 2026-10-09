@@ -22,11 +22,11 @@ function method1(v0: TFun0): TFun1; forward;
 function method4(v0: TFun1): LongInt; forward;
 function method3(v0: TFun1): LongInt; forward;
 function method2(v0: TFun1; v1: TFun1): LongInt; forward;
-function US0_0: TUS0;
+function US0_Empty: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: AnsiString; a1: TArray0): TUS0;
+function US0_Item(a0: AnsiString; a1: TArray0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -87,10 +87,10 @@ begin
   v1[1] := v2;
   v3 := v0 = 0;
   if v3 then begin
-      v7 := US0_0;
+      v7 := US0_Empty;
   end else begin
       v5 := 'hi';
-      v7 := US0_1(v5, v1);
+      v7 := US0_Item(v5, v1);
   end;
   Result := ClosureCreate1(v7);
 end;

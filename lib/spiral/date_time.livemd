@@ -989,7 +989,7 @@ Spiral.Kino.eval!(
 
 ### ticks
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ticks (date_time : date_time) : timestamp =\n    backend_switch {\n        Gleam = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            |> fun x => x : int\n            |> timestamp\n        Lua = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((-) 14400)\n            |> ((*) -10000000)\n            |> convert.convert\n            : timestamp\n        Fsharp = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n        Python = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n        Rust = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl ticks (date_time : date_time) : timestamp =\n    backend_switch {\n        Gleam = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            |> fun x => x : int\n            |> timestamp\n        Lua = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((-) $'(os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0)')\n            |> ((*) -10000000)\n            |> convert.convert\n            : timestamp\n        Fsharp = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n        Python = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n        Rust = fun () =>\n            date_time\n            |> new_time_span (min_value ())\n            |> total_seconds\n            |> ((*) 10000000)\n            |> convert.convert\n            : timestamp\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1008,7 +1008,7 @@ Spiral.Kino.eval!(
               date_time
               |> new_time_span (min_value ())
               |> total_seconds
-              |> ((-) 14400)
+              |> ((-) $'(os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0)')
               |> ((*) -10000000)
               |> convert.convert
               : timestamp

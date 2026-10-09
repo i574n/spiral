@@ -8,11 +8,11 @@ type
 function method2(v0: LongInt): TUH0; forward;
 function method1(v0: LongInt): TUH0; forward;
 function method0: TUH0; forward;
-function UH0_0: TUH0;
+function UH0_Empty: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: LongInt; a1: TUH0): TUH0;
+function UH0_Box(a0: LongInt; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -25,8 +25,8 @@ begin
   v1 := v0 - 1;
   v2 := v1 = 0;
   if v2 then begin
-      v3 := UH0_0;
-      Result := UH0_1(7, v3);
+      v3 := UH0_Empty;
+      Result := UH0_Box(7, v3);
   end else begin
       Result := method1(v1);
   end;
@@ -40,8 +40,8 @@ begin
   v1 := v0 - 1;
   v2 := v1 = 0;
   if v2 then begin
-      v3 := UH0_0;
-      Result := UH0_1(11, v3);
+      v3 := UH0_Empty;
+      Result := UH0_Box(11, v3);
   end else begin
       Result := method2(v1);
   end;
@@ -55,8 +55,8 @@ begin
   v0 := 1000000;
   v1 := v0 = 0;
   if v1 then begin
-      v2 := UH0_0;
-      Result := UH0_1(7, v2);
+      v2 := UH0_Empty;
+      Result := UH0_Box(7, v2);
   end else begin
       Result := method1(v0);
   end;

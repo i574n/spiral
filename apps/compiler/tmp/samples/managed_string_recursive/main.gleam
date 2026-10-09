@@ -60,15 +60,15 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Uh0 {
-    Uh0i0
-    Uh0i1(String, Uh0, Uh0)
+    Uh0Empty
+    Uh0Node(String, Uh0, Uh0)
 }
 pub fn score_0(v0: Uh0) -> Int {
     case v0  {
-        Uh0i0 -> {
+        Uh0Empty -> {
             0
         }
-        Uh0i1(v1, v2, v3) -> {
+        Uh0Node(v1, v2, v3) -> {
             let v4 = spiral_string_length(v1)
             let v5 = score_0(v2)
             let v6 = spiral_wrap_signed(v4 + v5, 32)
@@ -81,13 +81,13 @@ pub fn score_0(v0: Uh0) -> Int {
 pub fn main() {
 let v0 = "ab"
 let v1 = "qwe"
-let v2 = Uh0i0
-let v3 = Uh0i1(v1, v2, v2)
-let v4 = Uh0i1(v0, v3, v3)
+let v2 = Uh0Empty
+let v3 = Uh0Node(v1, v2, v2)
+let v4 = Uh0Node(v0, v3, v3)
 let v5 = score_0(v4)
-let v6 = Uh0i0
-let v7 = Uh0i1(v1, v6, v6)
-let v8 = Uh0i1(v0, v7, v7)
+let v6 = Uh0Empty
+let v7 = Uh0Node(v1, v6, v6)
+let v8 = Uh0Node(v0, v7, v7)
 let v9 = score_0(v8)
 let v10 = spiral_wrap_signed(v5 + v9, 32)
 let v11 = spiral_wrap_signed(v10 - 16, 32)

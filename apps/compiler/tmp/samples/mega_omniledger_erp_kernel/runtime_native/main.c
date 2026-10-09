@@ -78,13 +78,13 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0(int64_t v0, int64_t v1, int64_t v2, int64_t v3, int64_t v4, String * v5) { // TypedFxHashedStatementChecksumValidationAccepted
+US0 US0_TypedFxHashedStatementChecksumValidationAccepted(int64_t v0, int64_t v1, int64_t v2, int64_t v3, int64_t v4, String * v5) { // TypedFxHashedStatementChecksumValidationAccepted
     US0 x;
     x.tag = 0;
     x.case0.v0 = v0; x.case0.v1 = v1; x.case0.v2 = v2; x.case0.v3 = v3; x.case0.v4 = v4; x.case0.v5 = v5;
     return x;
 }
-US0 US0_1(int64_t v0, int64_t v1, String * v2) { // TypedFxHashedStatementChecksumValidationRejected
+US0 US0_TypedFxHashedStatementChecksumValidationRejected(int64_t v0, int64_t v1, String * v2) { // TypedFxHashedStatementChecksumValidationRejected
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0; x.case1.v1 = v1; x.case1.v2 = v2;
@@ -3042,7 +3042,7 @@ int32_t main(){
         v617 = StringLit(112, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation");
         
         
-        v621 = US0_0(1ll, 3ll, v614, v615, v616, v617);
+        v621 = US0_TypedFxHashedStatementChecksumValidationAccepted(1ll, 3ll, v614, v615, v616, v617);
     } else {
         
         
@@ -3050,7 +3050,7 @@ int32_t main(){
         v619 = StringLit(76, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric");
         
         
-        v621 = US0_1(v548, v583, v619);
+        v621 = US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619);
     }
     
     
@@ -4266,7 +4266,7 @@ int32_t main(){
         v900 = StringLit(112, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation");
         
         
-        v904 = US0_0(1ll, 3ll, v897, v898, v899, v900);
+        v904 = US0_TypedFxHashedStatementChecksumValidationAccepted(1ll, 3ll, v897, v898, v899, v900);
     } else {
         
         
@@ -4274,7 +4274,7 @@ int32_t main(){
         v902 = StringLit(76, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric");
         
         
-        v904 = US0_1(v831, v866, v902);
+        v904 = US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902);
     }
     
     
@@ -9232,7 +9232,7 @@ int32_t main(){
         v1968 = StringLit(112, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation");
         
         
-        v1972 = US0_0(1ll, 3ll, v1965, v1966, v1967, v1968);
+        v1972 = US0_TypedFxHashedStatementChecksumValidationAccepted(1ll, 3ll, v1965, v1966, v1967, v1968);
     } else {
         
         
@@ -9240,7 +9240,7 @@ int32_t main(){
         v1970 = StringLit(76, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric");
         
         
-        v1972 = US0_1(v1899, v1934, v1970);
+        v1972 = US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970);
     }
     
     
@@ -11040,7 +11040,7 @@ int32_t main(){
         v2373 = StringLit(112, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation");
         
         
-        v2377 = US0_0(1ll, 3ll, v2370, v2371, v2372, v2373);
+        v2377 = US0_TypedFxHashedStatementChecksumValidationAccepted(1ll, 3ll, v2370, v2371, v2372, v2373);
     } else {
         
         
@@ -11048,7 +11048,7 @@ int32_t main(){
         v2375 = StringLit(76, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric");
         
         
-        v2377 = US0_1(v2304, v2339, v2375);
+        v2377 = US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375);
     }
     
     
@@ -12528,7 +12528,7 @@ int32_t main(){
         v2710 = StringLit(112, "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation");
         
         
-        v2714 = US0_0(1ll, 3ll, v2707, v2708, v2709, v2710);
+        v2714 = US0_TypedFxHashedStatementChecksumValidationAccepted(1ll, 3ll, v2707, v2708, v2709, v2710);
     } else {
         
         
@@ -12536,7 +12536,7 @@ int32_t main(){
         v2712 = StringLit(76, "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric");
         
         
-        v2714 = US0_1(v2641, v2676, v2712);
+        v2714 = US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712);
     }
     
     

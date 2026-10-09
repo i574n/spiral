@@ -50,13 +50,13 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // Nil
+UH0 * UH0_Nil() { // Nil
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1(Array0 * v0, UH0 * v1) { // Cons
+UH0 * UH0_Cons(Array0 * v0, UH0 * v1) { // Cons
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -107,15 +107,15 @@ int32_t main(){
     
     
     UH0 * v2;
-    v2 = UH0_0();
+    v2 = UH0_Nil();
     v1->refc++; v2->refc++;
     
     UH0 * v3;
-    v3 = UH0_1(v1, v2);
+    v3 = UH0_Cons(v1, v2);
     v1->refc++; v3->refc++;
     UHDecref0(v2);
     UH0 * v4;
-    v4 = UH0_1(v1, v3);
+    v4 = UH0_Cons(v1, v3);
     v4->refc++;
     ArrayDecref0(v1); UHDecref0(v3);
     int32_t v5;

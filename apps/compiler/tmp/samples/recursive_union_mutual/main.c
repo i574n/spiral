@@ -36,14 +36,14 @@ static inline void UHDecrefBody1(UH1 * x){
 void UHDecref1(UH1 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody1(x); free(x); }
 }
-UH1 * UH1_0(UH0 * v0) { // B
+UH1 * UH1_B(UH0 * v0) { // B
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 0;
     x->refc = 1;
     x->case0.v0 = v0;
     return x;
 }
-UH1 * UH1_1() { // StopB
+UH1 * UH1_StopB() { // StopB
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 1;
     x->refc = 1;
@@ -60,14 +60,14 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0(UH1 * v0) { // A
+UH0 * UH0_A(UH1 * v0) { // A
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     x->case0.v0 = v0;
     return x;
 }
-UH0 * UH0_1() { // StopA
+UH0 * UH0_StopA() { // StopA
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -85,18 +85,18 @@ int32_t main(){
         
         
         UH0 * v1;
-        v1 = UH0_1();
+        v1 = UH0_StopA();
         v1->refc++;
         
         UH1 * v2;
-        v2 = UH1_0(v1);
+        v2 = UH1_B(v1);
         
         UHDecref0(v1);
-        v5 = UH0_0(v2);
+        v5 = UH0_A(v2);
     } else {
         
         
-        v5 = UH0_1();
+        v5 = UH0_StopA();
     }
     
     

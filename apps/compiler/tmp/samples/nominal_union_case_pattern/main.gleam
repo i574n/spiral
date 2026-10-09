@@ -1,15 +1,15 @@
 pub type Us0 {
-    Us0i0
-    Us0i1
+    Us0Zero
+    Us0One
 }
 pub fn main() {
-let v0 = Us0i0
+let v0 = Us0Zero
 let v2 =
     case v0  {
-        Us0i1 -> {
+        Us0One -> {
             False
         }
-        Us0i0 -> {
+        Us0Zero -> {
             True
         }
     }

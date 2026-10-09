@@ -29,8 +29,8 @@ structure M0 where
 structure M1 where
   l0 : Int32
 inductive U0 where
-  | c0 : U0
-  | c1 : Int32 → U0 → U0
+  | Nil : U0
+  | Cons : Int32 → U0 → U0
 structure M2 where
   l0 : U0
 end
@@ -39,8 +39,8 @@ deriving instance Inhabited for M0
 deriving instance Inhabited for M1
 deriving instance Inhabited for M2
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
+  | .Nil .. => 0
+  | .Cons .. => 1
 mutual
 partial def method0 (p0 : (IO.Ref M0)) : IO Bool := do
     let mut v0 : (IO.Ref M0) := p0
@@ -107,7 +107,7 @@ partial def spiralMain : IO Int32 := do
         v1.modify (fun r => { r with l0 := v5 })
     v6 := (← IO.mkRef (M1.mk (0 : Int32)))
     v7 := (← IO.mkRef (M1.mk (0 : Int32)))
-    v8 := U0.c0
+    v8 := U0.Nil
     v9 := (← IO.mkRef (M2.mk v8))
     repeat
         if !(← method1 v6) then break
@@ -121,29 +121,29 @@ partial def spiralMain : IO Int32 := do
         else
             pure ()
         v16 := (← v9.get).l0
-        v17 := (U0.c1 v11 v16)
+        v17 := (U0.Cons v11 v16)
         v9.modify (fun r => { r with l0 := v17 })
         v18 := (v11 + (1 : Int32))
         v6.modify (fun r => { r with l0 := v18 })
     v19 := (← v9.get).l0
     match v19 with
-    | U0.c1 f20 f21 =>
+    | U0.Cons f20 f21 =>
         v20 := f20
         v21 := f21
         match v21 with
-        | U0.c1 f22 f23 =>
+        | U0.Cons f22 f23 =>
             v22 := f22
             v23 := f23
             match v23 with
-            | U0.c1 f24 f25 =>
+            | U0.Cons f24 f25 =>
                 v24 := f24
                 v25 := f25
                 match v25 with
-                | U0.c1 f26 f27 =>
+                | U0.Cons f26 f27 =>
                     v26 := f26
                     v27 := f27
                     match v27 with
-                    | U0.c0 =>
+                    | U0.Nil =>
                         v28 := (v20 * (64 : Int32))
                         v29 := (v22 * (16 : Int32))
                         v30 := (v28 + v29)

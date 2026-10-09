@@ -106,16 +106,16 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const US0 = struct { tag: i32 };
-fn US0_0() US0 {
+fn US0_Zero() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1() US0 {
+fn US0_One() US0 {
     return US0{ .tag = 1 };
 }
 fn spiralMain() i32 {
     var v0: US0 = undefined; _ = &v0;
     var v2: bool = undefined; _ = &v2;
-    v0 = US0_0();
+    v0 = US0_Zero();
     switch (v0.tag) {
         1 => {
             v2 = false;

@@ -7,19 +7,19 @@ type
   TUH1 = class;
   TUH1 = class tag: LongInt; c0_0: TUH0; end;
   TUH0 = class tag: LongInt; c0_0: TUH1; end;
-function UH1_0(a0: TUH0): TUH1;
+function UH1_B(a0: TUH0): TUH1;
 begin
   Result := TUH1.Create; Result.tag := 0; Result.c0_0 := a0;
 end;
-function UH1_1: TUH1;
+function UH1_StopB: TUH1;
 begin
   Result := TUH1.Create; Result.tag := 1; 
 end;
-function UH0_0(a0: TUH1): TUH0;
+function UH0_A(a0: TUH1): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0;
 end;
-function UH0_1: TUH0;
+function UH0_StopA: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; 
 end;
@@ -33,11 +33,11 @@ var
 begin
   v0 := True;
   if v0 then begin
-      v1 := UH0_1;
-      v2 := UH1_0(v1);
-      v5 := UH0_0(v2);
+      v1 := UH0_StopA;
+      v2 := UH1_B(v1);
+      v5 := UH0_A(v2);
   end else begin
-      v5 := UH0_1;
+      v5 := UH0_StopA;
   end;
   case v5.tag of
       0: begin

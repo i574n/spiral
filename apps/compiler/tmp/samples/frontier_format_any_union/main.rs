@@ -3,25 +3,25 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0(i32),
-    US0_1,
+    US0_Some(i32),
+    US0_None,
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0(..) => 0,
-            US0::US0_1 => 1,
+            US0::US0_Some(..) => 0,
+            US0::US0_None => 1,
         }
     }
 }
 struct Mut0 { l0: Rc<str> }
 fn method1(mut v0: US0) -> Rc<str> {
     match &v0 {
-        US0::US0_1 => {
+        US0::US0_None => {
             let mut v32: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
             v32.clone()
         }
-        US0::US0_0(v1) => {
+        US0::US0_Some(v1) => {
             let mut v1: i32 = *v1;
             let mut v3: Rc<str> = Rc::<str>::from(format!("{:?}", v1));
             let mut v6: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(")"); } LIT.with(|lit| lit.clone()) };
@@ -50,7 +50,7 @@ fn format_real_0(mut v0: US0) -> Rc<str> {
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 1i32;
-    let mut v1: US0 = US0::US0_0(v0);
+    let mut v1: US0 = US0::US0_Some(v0);
     let mut v2: Rc<str> = format_real_0(v1.clone());
     let mut v13: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) };
     let mut v14: Rc<str> = Rc::<str>::from(format!("{}{}", v13, v2));

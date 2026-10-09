@@ -16,13 +16,13 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-class US0_0(NamedTuple): # W
+class US0_W(NamedTuple): # W
     v0 : object
     tag = 0
-class US0_1(NamedTuple): # T
+class US0_T(NamedTuple): # T
     v0 : 'System.Threading.CancellationToken'
     tag = 1
-US0 = Union[US0_0, US0_1]
+US0 = Union[US0_W, US0_T]
 def method0(v0 : object) -> i32:
     v1 = v0 * 2
     del v0
@@ -34,16 +34,16 @@ def main():
     v3 = v0 > 0
     del v0
     if v3:
-        v7 = US0_0(v1)
+        v7 = US0_W(v1)
     else:
         v5 = None
-        v7 = US0_1(v5)
+        v7 = US0_T(v5)
     del v1, v3
     match v7:
-        case US0_1(_): # T
+        case US0_T(_): # T
             del v2, v7
             return 0
-        case US0_0(v8): # W
+        case US0_W(v8): # W
             del v7
             v9 = (v8)
             del v8

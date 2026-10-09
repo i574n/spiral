@@ -1,10 +1,10 @@
 type [<Struct>] US0 =
-    | US0_0 of f0_0 : string
-    | US0_1 of f1_0 : string
+    | US0_ErpNetIntercompanyPayloadDecoded of f0_0 : string
+    | US0_ErpNetIntercompanyPayloadRejected of f1_0 : string
 and [<Struct>] US2 =
-    | US2_0 of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : int64 * f0_5 : string * f0_6 : string
+    | US2_OpposedMirrorPair of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : int64 * f0_5 : string * f0_6 : string
 and [<Struct>] US1 =
-    | US1_0 of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : string * f0_5 : string * f0_6 : string * f0_7 : US2
+    | US1_NetIntercompany of f0_0 : string * f0_1 : string * f0_2 : string * f0_3 : string * f0_4 : string * f0_5 : string * f0_6 : string * f0_7 : US2
 let rec method0 (v0 : string, v1 : string) : unit =
     if v0 <> v1 then failwith "erp-NetIntercompany-typed-decode-roundtrip-mismatch"
     ()
@@ -255,30 +255,30 @@ let v232 : bool = 1L = v231
 let v237 : US0 =
     if v232 then
         let v233 : string = "the-decoder-validates-all-nineteen-canonical-NetIntercompany-fields-and-opposed-mirror-amounts-before-producing-a-typed-acceptance-witness"
-        US0_0(v233)
+        US0_ErpNetIntercompanyPayloadDecoded(v233)
     else
         let v235 : string = "invalid-or-truncated-NetIntercompany-frame-does-not-produce-a-typed-operation"
-        US0_1(v235)
+        US0_ErpNetIntercompanyPayloadRejected(v235)
 let v258 : US1 =
     match v237 with
-    | US0_0(v238) -> (* ErpNetIntercompanyPayloadDecoded *)
+    | US0_ErpNetIntercompanyPayloadDecoded(v238) -> (* ErpNetIntercompanyPayloadDecoded *)
         let struct (v239 : string, v240 : string, v241 : string, v242 : string, v243 : string, v244 : string, v245 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v230 with Some fields when fields.Length = 19 && fields.[0] = "company-a" && fields.[1] = "USD" && fields.[2] = "widget-a" && fields.[3] = "warehouse-north" && fields.[4] = "BR" && fields.[5] = "po-1001" && fields.[6].Length > 0 -> fields.[0],fields.[1],fields.[2],fields.[3],fields.[4],fields.[5],fields.[6] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-invoice-fields")
         let struct (v246 : string, v247 : string, v248 : string, v249 : string, v250 : int64, v251 : string, v252 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v230 with Some fields when fields.Length = 19 && fields.[7] = "company-a" && fields.[8] = "company-b" && fields.[9] = "USD" && fields.[10] = "po-1001" && fields.[12].Length > 0 && fields.[18].Length > 0 -> (match System.Int64.TryParse(fields.[11]) with true,leftAmount when leftAmount = 830L -> fields.[7],fields.[8],fields.[9],fields.[10],leftAmount,fields.[12],fields.[18] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-left-mirror-amount") | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-mirror-authority-fields")
-        let v253 : US2 = US2_0(v246, v247, v248, v249, v250, v251, v252)
-        US1_0(v239, v240, v241, v242, v243, v244, v245, v253)
-    | US0_1(v255) -> (* ErpNetIntercompanyPayloadRejected *)
+        let v253 : US2 = US2_OpposedMirrorPair(v246, v247, v248, v249, v250, v251, v252)
+        US1_NetIntercompany(v239, v240, v241, v242, v243, v244, v245, v253)
+    | US0_ErpNetIntercompanyPayloadRejected(v255) -> (* ErpNetIntercompanyPayloadRejected *)
         let v256 : US1 = failwith ("canonical-NetIntercompany-bytes-could-not-reconstruct-typed-operation:" + v255)
         v256
 let v295 : string =
     match v258 with
-    | US1_0(v259, v260, v261, v262, v263, v264, v265, v266) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v259, v260, v261, v262, v263, v264, v265, v266) -> (* NetIntercompany *)
         let struct (v274 : string, v275 : string, v276 : string, v277 : string, v278 : int64, v279 : string) =
             match v266 with
-            | US2_0(v267, v268, v269, v270, v271, v272, v273) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v267, v268, v269, v270, v271, v272, v273) -> (* OpposedMirrorPair *)
                 struct (v267, v268, v269, v270, v271, v272)
         let struct (v288 : string, v289 : string, v290 : string, v291 : string, v292 : int64, v293 : string) =
             match v266 with
-            | US2_0(v280, v281, v282, v283, v284, v285, v286) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v280, v281, v282, v283, v284, v285, v286) -> (* OpposedMirrorPair *)
                 let v287 : int64 = -1L * v284
                 struct (v281, v280, v282, v283, v287, v286)
         let v294 : string = (let fields = [| v259; v260; v261; v262; v263; v264; v265; v274; v275; v276; v277; string v278; v279; v288; v289; v290; v291; string v292; v293 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
@@ -298,12 +298,12 @@ let v306 : int64 = v305 + 1L
 let v307 : int64 = v306 + 1L
 let v317 : string =
     match v258 with
-    | US1_0(v308, v309, v310, v311, v312, v313, v314, v315) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v308, v309, v310, v311, v312, v313, v314, v315) -> (* NetIntercompany *)
         let v316 : string = "intercompany-netted"
         v316
 let v327 : string =
     match v258 with
-    | US1_0(v318, v319, v320, v321, v322, v323, v324, v325) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v318, v319, v320, v321, v322, v323, v324, v325) -> (* NetIntercompany *)
         let v326 : string = "intercompany-netted"
         v326
 if v301 <> 6L || v307 <> 6L || v317 <> "intercompany-netted" || v327 <> "intercompany-netted" then failwith "erp-p2p-six-event-store-runtime-mismatch"
@@ -314,30 +314,30 @@ let v331 : bool = 1L = v330
 let v336 : US0 =
     if v331 then
         let v332 : string = "the-decoder-validates-all-nineteen-canonical-NetIntercompany-fields-and-opposed-mirror-amounts-before-producing-a-typed-acceptance-witness"
-        US0_0(v332)
+        US0_ErpNetIntercompanyPayloadDecoded(v332)
     else
         let v334 : string = "invalid-or-truncated-NetIntercompany-frame-does-not-produce-a-typed-operation"
-        US0_1(v334)
+        US0_ErpNetIntercompanyPayloadRejected(v334)
 let v357 : US1 =
     match v336 with
-    | US0_0(v337) -> (* ErpNetIntercompanyPayloadDecoded *)
+    | US0_ErpNetIntercompanyPayloadDecoded(v337) -> (* ErpNetIntercompanyPayloadDecoded *)
         let struct (v338 : string, v339 : string, v340 : string, v341 : string, v342 : string, v343 : string, v344 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v329 with Some fields when fields.Length = 19 && fields.[0] = "company-a" && fields.[1] = "USD" && fields.[2] = "widget-a" && fields.[3] = "warehouse-north" && fields.[4] = "BR" && fields.[5] = "po-1001" && fields.[6].Length > 0 -> fields.[0],fields.[1],fields.[2],fields.[3],fields.[4],fields.[5],fields.[6] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-invoice-fields")
         let struct (v345 : string, v346 : string, v347 : string, v348 : string, v349 : int64, v350 : string, v351 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v329 with Some fields when fields.Length = 19 && fields.[7] = "company-a" && fields.[8] = "company-b" && fields.[9] = "USD" && fields.[10] = "po-1001" && fields.[12].Length > 0 && fields.[18].Length > 0 -> (match System.Int64.TryParse(fields.[11]) with true,leftAmount when leftAmount = 830L -> fields.[7],fields.[8],fields.[9],fields.[10],leftAmount,fields.[12],fields.[18] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-left-mirror-amount") | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-mirror-authority-fields")
-        let v352 : US2 = US2_0(v345, v346, v347, v348, v349, v350, v351)
-        US1_0(v338, v339, v340, v341, v342, v343, v344, v352)
-    | US0_1(v354) -> (* ErpNetIntercompanyPayloadRejected *)
+        let v352 : US2 = US2_OpposedMirrorPair(v345, v346, v347, v348, v349, v350, v351)
+        US1_NetIntercompany(v338, v339, v340, v341, v342, v343, v344, v352)
+    | US0_ErpNetIntercompanyPayloadRejected(v354) -> (* ErpNetIntercompanyPayloadRejected *)
         let v355 : US1 = failwith ("canonical-NetIntercompany-bytes-could-not-reconstruct-typed-operation:" + v354)
         v355
 let v394 : string =
     match v357 with
-    | US1_0(v358, v359, v360, v361, v362, v363, v364, v365) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v358, v359, v360, v361, v362, v363, v364, v365) -> (* NetIntercompany *)
         let struct (v373 : string, v374 : string, v375 : string, v376 : string, v377 : int64, v378 : string) =
             match v365 with
-            | US2_0(v366, v367, v368, v369, v370, v371, v372) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v366, v367, v368, v369, v370, v371, v372) -> (* OpposedMirrorPair *)
                 struct (v366, v367, v368, v369, v370, v371)
         let struct (v387 : string, v388 : string, v389 : string, v390 : string, v391 : int64, v392 : string) =
             match v365 with
-            | US2_0(v379, v380, v381, v382, v383, v384, v385) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v379, v380, v381, v382, v383, v384, v385) -> (* OpposedMirrorPair *)
                 let v386 : int64 = -1L * v383
                 struct (v380, v379, v381, v382, v386, v385)
         let v393 : string = (let fields = [| v358; v359; v360; v361; v362; v363; v364; v373; v374; v375; v376; string v377; v378; v387; v388; v389; v390; string v391; v392 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
@@ -347,11 +347,11 @@ method1(v329)
 method0(v329, v394)
 let struct (v403 : string, v404 : string, v405 : string, v406 : string, v407 : string, v408 : string, v409 : string) =
     match v357 with
-    | US1_0(v395, v396, v397, v398, v399, v400, v401, v402) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v395, v396, v397, v398, v399, v400, v401, v402) -> (* NetIntercompany *)
         struct (v395, v396, v397, v398, v399, v400, v401)
 let struct (v418 : string, v419 : string, v420 : string, v421 : string, v422 : string, v423 : string, v424 : string) =
     match v357 with
-    | US1_0(v410, v411, v412, v413, v414, v415, v416, v417) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v410, v411, v412, v413, v414, v415, v416, v417) -> (* NetIntercompany *)
         struct (v410, v411, v412, v413, v414, v415, v416)
 let v425 : int64 = 0L + 1L
 let v426 : int64 = v425 + 1L
@@ -376,30 +376,30 @@ let v443 : bool = 1L = v442
 let v448 : US0 =
     if v443 then
         let v444 : string = "the-decoder-validates-all-nineteen-canonical-NetIntercompany-fields-and-opposed-mirror-amounts-before-producing-a-typed-acceptance-witness"
-        US0_0(v444)
+        US0_ErpNetIntercompanyPayloadDecoded(v444)
     else
         let v446 : string = "invalid-or-truncated-NetIntercompany-frame-does-not-produce-a-typed-operation"
-        US0_1(v446)
+        US0_ErpNetIntercompanyPayloadRejected(v446)
 let v469 : US1 =
     match v448 with
-    | US0_0(v449) -> (* ErpNetIntercompanyPayloadDecoded *)
+    | US0_ErpNetIntercompanyPayloadDecoded(v449) -> (* ErpNetIntercompanyPayloadDecoded *)
         let struct (v450 : string, v451 : string, v452 : string, v453 : string, v454 : string, v455 : string, v456 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v441 with Some fields when fields.Length = 19 && fields.[0] = "company-a" && fields.[1] = "USD" && fields.[2] = "widget-a" && fields.[3] = "warehouse-north" && fields.[4] = "BR" && fields.[5] = "po-1001" && fields.[6].Length > 0 -> fields.[0],fields.[1],fields.[2],fields.[3],fields.[4],fields.[5],fields.[6] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-invoice-fields")
         let struct (v457 : string, v458 : string, v459 : string, v460 : string, v461 : int64, v462 : string, v463 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v441 with Some fields when fields.Length = 19 && fields.[7] = "company-a" && fields.[8] = "company-b" && fields.[9] = "USD" && fields.[10] = "po-1001" && fields.[12].Length > 0 && fields.[18].Length > 0 -> (match System.Int64.TryParse(fields.[11]) with true,leftAmount when leftAmount = 830L -> fields.[7],fields.[8],fields.[9],fields.[10],leftAmount,fields.[12],fields.[18] | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-left-mirror-amount") | _ -> failwith "erp-NetIntercompany-typed-decode-invalid-mirror-authority-fields")
-        let v464 : US2 = US2_0(v457, v458, v459, v460, v461, v462, v463)
-        US1_0(v450, v451, v452, v453, v454, v455, v456, v464)
-    | US0_1(v466) -> (* ErpNetIntercompanyPayloadRejected *)
+        let v464 : US2 = US2_OpposedMirrorPair(v457, v458, v459, v460, v461, v462, v463)
+        US1_NetIntercompany(v450, v451, v452, v453, v454, v455, v456, v464)
+    | US0_ErpNetIntercompanyPayloadRejected(v466) -> (* ErpNetIntercompanyPayloadRejected *)
         let v467 : US1 = failwith ("canonical-NetIntercompany-bytes-could-not-reconstruct-typed-operation:" + v466)
         v467
 let v506 : string =
     match v469 with
-    | US1_0(v470, v471, v472, v473, v474, v475, v476, v477) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v470, v471, v472, v473, v474, v475, v476, v477) -> (* NetIntercompany *)
         let struct (v485 : string, v486 : string, v487 : string, v488 : string, v489 : int64, v490 : string) =
             match v477 with
-            | US2_0(v478, v479, v480, v481, v482, v483, v484) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v478, v479, v480, v481, v482, v483, v484) -> (* OpposedMirrorPair *)
                 struct (v478, v479, v480, v481, v482, v483)
         let struct (v499 : string, v500 : string, v501 : string, v502 : string, v503 : int64, v504 : string) =
             match v477 with
-            | US2_0(v491, v492, v493, v494, v495, v496, v497) -> (* OpposedMirrorPair *)
+            | US2_OpposedMirrorPair(v491, v492, v493, v494, v495, v496, v497) -> (* OpposedMirrorPair *)
                 let v498 : int64 = -1L * v495
                 struct (v492, v491, v493, v494, v498, v497)
         let v505 : string = (let fields = [| v470; v471; v472; v473; v474; v475; v476; v485; v486; v487; v488; string v489; v490; v499; v500; v501; v502; string v503; v504 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
@@ -409,11 +409,11 @@ method1(v441)
 method0(v441, v506)
 let struct (v515 : string, v516 : string, v517 : string, v518 : string, v519 : string, v520 : string, v521 : string) =
     match v469 with
-    | US1_0(v507, v508, v509, v510, v511, v512, v513, v514) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v507, v508, v509, v510, v511, v512, v513, v514) -> (* NetIntercompany *)
         struct (v507, v508, v509, v510, v511, v512, v513)
 let struct (v530 : string, v531 : string, v532 : string, v533 : string, v534 : string, v535 : string, v536 : string) =
     match v469 with
-    | US1_0(v522, v523, v524, v525, v526, v527, v528, v529) -> (* NetIntercompany *)
+    | US1_NetIntercompany(v522, v523, v524, v525, v526, v527, v528, v529) -> (* NetIntercompany *)
         struct (v522, v523, v524, v525, v526, v527, v528)
 let v537 : int64 = 0L + 1L
 let v538 : int64 = v537 + 1L

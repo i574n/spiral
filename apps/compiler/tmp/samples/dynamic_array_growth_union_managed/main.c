@@ -172,12 +172,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Empty
+US0 US0_Empty() { // Empty
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(Array0 * v0) { // Values
+US0 US0_Values(Array0 * v0) { // Values
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
@@ -290,7 +290,7 @@ int32_t main(){
     v0->refc++;
     
     US0 v7;
-    v7 = US0_1(v0);
+    v7 = US0_Values(v0);
     USIncref0(&(v7));
     
     int32_t v8;

@@ -14,11 +14,11 @@ function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TUS0; forward;
 function score_1(v0: TUS0): LongInt; forward;
 function method2(v0: TFun0): TUS0; forward;
-function US0_0: TUS0;
+function US0_Empty: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: TArray0): TUS0;
+function US0_Values(a0: TArray0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
@@ -31,7 +31,7 @@ var
 begin
   v1 := v0 = 0;
   if v1 then begin
-      Result := US0_0;
+      Result := US0_Empty;
   end else begin
       tmp2 := nil;
       SetLength(tmp2, 2);
@@ -39,7 +39,7 @@ begin
       v3[0] := v0;
       v4 := v0 + 1;
       v3[1] := v4;
-      Result := US0_1(v3);
+      Result := US0_Values(v3);
   end;
 end;
 function ClosureCreate0: TFun0;

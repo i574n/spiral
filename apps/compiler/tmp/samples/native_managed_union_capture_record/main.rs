@@ -3,24 +3,24 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0,
-    US0_1(Rc<str>, Rc<RefCell<Vec<i32>>>),
+    US0_Empty,
+    US0_Item(Rc<str>, Rc<RefCell<Vec<i32>>>),
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0 => 0,
-            US0::US0_1(..) => 1,
+            US0::US0_Empty => 0,
+            US0::US0_Item(..) => 1,
         }
     }
 }
 fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v12: i32 = match &v0 {
-            US0::US0_0 => {
+            US0::US0_Empty => {
                 3i32
             }
-            US0::US0_1(v2, v3) => {
+            US0::US0_Item(v2, v3) => {
                 let mut v2: Rc<str> = v2.clone();
                 let mut v3: Rc<RefCell<Vec<i32>>> = v3.clone();
                 let mut v4: i32 = (v2.clone().len() as i32);
@@ -45,10 +45,10 @@ fn closure0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
         v1.clone().borrow_mut()[1i32 as usize] = v2;
         let mut v3: bool = v0 == 0i32;
         let mut v7: US0 = if v3 {
-            US0::US0_0
+            US0::US0_Empty
         } else {
             let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-            US0::US0_1(v5.clone(), v1.clone())
+            US0::US0_Item(v5.clone(), v1.clone())
         };
         closure1(v7.clone())
     }); } CLOSURE.with(|closure| closure.clone())

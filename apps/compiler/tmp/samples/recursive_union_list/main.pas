@@ -6,11 +6,11 @@ type
   TUH0 = class;
   TUH0 = class tag: LongInt; c1_0: LongInt; c1_1: TUH0; end;
 function sum_0(v0: TUH0): LongInt; forward;
-function UH0_0: TUH0;
+function UH0_Nil: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: LongInt; a1: TUH0): TUH0;
+function UH0_Cons(a0: LongInt; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -49,10 +49,10 @@ begin
   v0 := 1;
   v1 := 2;
   v2 := 3;
-  v3 := UH0_0;
-  v4 := UH0_1(v2, v3);
-  v5 := UH0_1(v1, v4);
-  v6 := UH0_1(v0, v5);
+  v3 := UH0_Nil;
+  v4 := UH0_Cons(v2, v3);
+  v5 := UH0_Cons(v1, v4);
+  v6 := UH0_Cons(v0, v5);
   v7 := sum_0(v6);
   v8 := v7 - 6;
   Result := v8;

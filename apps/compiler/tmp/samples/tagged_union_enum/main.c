@@ -18,22 +18,22 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Cold
+US0 US0_Cold() { // Cold
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1() { // Warm
+US0 US0_Warm() { // Warm
     US0 x;
     x.tag = 1;
     return x;
 }
-US0 US0_2() { // Hot
+US0 US0_Hot() { // Hot
     US0 x;
     x.tag = 2;
     return x;
 }
-US0 US0_3() { // Done
+US0 US0_Done() { // Done
     US0 x;
     x.tag = 3;
     return x;
@@ -87,7 +87,7 @@ int32_t main(){
     if (v1){
         
         
-        v10 = US0_0();
+        v10 = US0_Cold();
     } else {
         
         
@@ -98,7 +98,7 @@ int32_t main(){
         if (v3){
             
             
-            v10 = US0_1();
+            v10 = US0_Warm();
         } else {
             
             
@@ -109,11 +109,11 @@ int32_t main(){
             if (v5){
                 
                 
-                v10 = US0_2();
+                v10 = US0_Hot();
             } else {
                 
                 
-                v10 = US0_3();
+                v10 = US0_Done();
             }
         }
     }

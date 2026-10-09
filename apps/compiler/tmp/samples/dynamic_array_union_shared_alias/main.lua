@@ -14,15 +14,15 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local Us0i0, Us0i1, bump_0, score_1
-function Us0i0() return { tag = "Us0i0" } end
-function Us0i1(v0) return { tag = "Us0i1",  _1 = v0 } end
+local Us0_Empty, Us0_Values, bump_0, score_1
+function Us0_Empty() return { tag = "Us0_Empty" } end
+function Us0_Values(v0) return { tag = "Us0_Values",  _1 = v0 } end
 
 function bump_0(v0)
     local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0i0" then
+    if __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0i1" then
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Values" then
         local v1 = __v[1]._1
         local v2 = (v1)[(0)+1]
         local v3 = spiral_wrap_signed((v2 + 1), 32)
@@ -33,9 +33,9 @@ end
 
 function score_1(v0)
     local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Us0i0" then
+    if __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Us0i1" then
+    elseif __v[1] ~= nil and __v[1].tag == "Us0_Values" then
         local v1 = __v[1]._1
         local v2 = #(v1)
         local v3 = (v1)[(0)+1]
@@ -50,9 +50,9 @@ local v0 = 2
 local v1 = (function(n) local t = {} for i = 1, n do t[i] = 0 end return t end)(v0)
 v1[(0)+1] = 4
 v1[(1)+1] = 5
-local v2 = Us0i1(v1)
+local v2 = Us0_Values(v1)
 local v3 = bump_0(v2)
-local v4 = Us0i1(v1)
+local v4 = Us0_Values(v1)
 local v5 = score_1(v4)
 local v6 = spiral_wrap_signed((v5 + v3), 32)
 local v7 = spiral_wrap_signed((v6 - 12), 32)

@@ -1,11 +1,11 @@
 type [<Struct>] US0 =
-    | US0_0
-    | US0_1 of f1_0 : ((int32 []) [])
+    | US0_Empty
+    | US0_Nested of f1_0 : ((int32 []) [])
 let rec score_0 (v0 : US0) : int32 =
     match v0 with
-    | US0_0 -> (* Empty *)
+    | US0_Empty -> (* Empty *)
         0
-    | US0_1(v1) -> (* Nested *)
+    | US0_Nested(v1) -> (* Nested *)
         let v2 : (int32 []) = v1.[int 0]
         let v3 : (int32 []) = v1.[int 1]
         let v4 : int32 = v1.Length
@@ -28,7 +28,7 @@ v3.[int 0] <- 5
 v3.[int 1] <- 6
 v1.[int 0] <- v2
 v1.[int 1] <- v3
-let v4 : US0 = US0_1(v1)
+let v4 : US0 = US0_Nested(v1)
 let v5 : int32 = score_0(v4)
 let v6 : int32 = v5 - 20
 v6

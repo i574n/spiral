@@ -19,17 +19,17 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Uh0 {
-    Uh0i0
-    Uh0i1(Int, Uh0)
+    Uh0Nil
+    Uh0Cons(Int, Uh0)
 }
 pub fn sum_0(v0: Uh0) -> Int {
     case v0  {
-        Uh0i1(v1, v2) -> {
+        Uh0Cons(v1, v2) -> {
             let v3 = sum_0(v2)
             let v4 = spiral_wrap_signed(v1 + v3, 32)
             v4
         }
-        Uh0i0 -> {
+        Uh0Nil -> {
             0
         }
     }
@@ -38,10 +38,10 @@ pub fn main() {
 let v0 = 1
 let v1 = 2
 let v2 = 3
-let v3 = Uh0i0
-let v4 = Uh0i1(v2, v3)
-let v5 = Uh0i1(v1, v4)
-let v6 = Uh0i1(v0, v5)
+let v3 = Uh0Nil
+let v4 = Uh0Cons(v2, v3)
+let v5 = Uh0Cons(v1, v4)
+let v6 = Uh0Cons(v0, v5)
 let v7 = sum_0(v6)
 let v8 = spiral_wrap_signed(v7 - 6, 32)
 v8

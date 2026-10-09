@@ -3,14 +3,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum UH0 {
-    UH0_0,
-    UH0_1(i32, Rc<UH0>),
+    UH0_Empty,
+    UH0_Box(i32, Rc<UH0>),
 }
 impl UH0 {
     fn tag(&self) -> i32 {
         match self {
-            UH0::UH0_0 => 0,
-            UH0::UH0_1(..) => 1,
+            UH0::UH0_Empty => 0,
+            UH0::UH0_Box(..) => 1,
         }
     }
 }
@@ -18,8 +18,8 @@ fn method2(mut v0: i32) -> Rc<UH0> {
     let mut v1: i32 = v0.wrapping_sub(1i32);
     let mut v2: bool = v1 == 0i32;
     if v2 {
-        let mut v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_1(7i32, v3.clone()))
+        let mut v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+        Rc::new(UH0::UH0_Box(7i32, v3.clone()))
     } else {
         method1(v1)
     }
@@ -28,8 +28,8 @@ fn method1(mut v0: i32) -> Rc<UH0> {
     let mut v1: i32 = v0.wrapping_sub(1i32);
     let mut v2: bool = v1 == 0i32;
     if v2 {
-        let mut v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_1(11i32, v3.clone()))
+        let mut v3: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+        Rc::new(UH0::UH0_Box(11i32, v3.clone()))
     } else {
         method2(v1)
     }
@@ -38,8 +38,8 @@ fn method0() -> Rc<UH0> {
     let mut v0: i32 = 1000000i32;
     let mut v1: bool = v0 == 0i32;
     if v1 {
-        let mut v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_0); } CASE.with(|case| case.clone()) };
-        Rc::new(UH0::UH0_1(7i32, v2.clone()))
+        let mut v2: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Empty); } CASE.with(|case| case.clone()) };
+        Rc::new(UH0::UH0_Box(7i32, v2.clone()))
     } else {
         method1(v0)
     }
@@ -47,7 +47,7 @@ fn method0() -> Rc<UH0> {
 fn spiral_main() -> i32 {
     let mut v0: Rc<UH0> = method0();
     match &*v0 {
-        UH0::UH0_1(v1, v2) => {
+        UH0::UH0_Box(v1, v2) => {
             let mut v1: i32 = *v1;
             let mut v2: Rc<UH0> = v2.clone();
             let mut v3: bool = v1 == 7i32;
@@ -57,7 +57,7 @@ fn spiral_main() -> i32 {
                 3i32
             }
         }
-        UH0::UH0_0 => {
+        UH0::UH0_Empty => {
             1i32
         }
     }

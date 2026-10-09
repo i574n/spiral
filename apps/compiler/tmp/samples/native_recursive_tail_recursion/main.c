@@ -26,13 +26,13 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // Empty
+UH0 * UH0_Empty() { // Empty
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1(int32_t v0, UH0 * v1) { // Box
+UH0 * UH0_Box(int32_t v0, UH0 * v1) { // Box
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -55,10 +55,10 @@ UH0 * method2(int32_t v0){
         
         
         UH0 * v3;
-        v3 = UH0_0();
+        v3 = UH0_Empty();
         
         
-        return UH0_1(7l, v3);
+        return UH0_Box(7l, v3);
     } else {
         
         
@@ -80,10 +80,10 @@ UH0 * method1(int32_t v0){
         
         
         UH0 * v3;
-        v3 = UH0_0();
+        v3 = UH0_Empty();
         
         
-        return UH0_1(11l, v3);
+        return UH0_Box(11l, v3);
     } else {
         
         
@@ -105,10 +105,10 @@ UH0 * method0(){
         
         
         UH0 * v2;
-        v2 = UH0_0();
+        v2 = UH0_Empty();
         
         
-        return UH0_1(7l, v2);
+        return UH0_Box(7l, v2);
     } else {
         
         

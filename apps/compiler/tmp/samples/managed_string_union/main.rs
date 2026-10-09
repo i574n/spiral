@@ -3,24 +3,24 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0(Rc<str>),
-    US0_1(i32),
+    US0_Text(Rc<str>),
+    US0_Number(i32),
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0(..) => 0,
-            US0::US0_1(..) => 1,
+            US0::US0_Text(..) => 0,
+            US0::US0_Number(..) => 1,
         }
     }
 }
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_1(v3) => {
+        US0::US0_Number(v3) => {
             let mut v3: i32 = *v3;
             v3
         }
-        US0::US0_0(v1) => {
+        US0::US0_Text(v1) => {
             let mut v1: Rc<str> = v1.clone();
             let mut v2: i32 = (v1.clone().len() as i32);
             v2
@@ -30,10 +30,10 @@ fn score_0(mut v0: US0) -> i32 {
 fn spiral_main() -> i32 {
     let mut v0: bool = false;
     let mut v4: US0 = if v0 {
-        US0::US0_1(7i32)
+        US0::US0_Number(7i32)
     } else {
         let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("qwe"); } LIT.with(|lit| lit.clone()) };
-        US0::US0_0(v2.clone())
+        US0::US0_Text(v2.clone())
     };
     let mut v5: i32 = score_0(v4.clone());
     let mut v6: i32 = score_0(v4.clone());

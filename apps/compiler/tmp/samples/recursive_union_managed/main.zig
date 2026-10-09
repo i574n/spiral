@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const UH0 = struct { tag: i32, c1_0: []i32 = undefined, c1_1: *UH0 = undefined };
-fn UH0_0() *UH0 {
+fn UH0_Nil() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: []i32, a1: *UH0) *UH0 {
+fn UH0_Cons(a0: []i32, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn sum_0(p0: *UH0) i32 {
@@ -144,9 +144,9 @@ fn spiralMain() i32 {
     var v6: i32 = undefined; _ = &v6;
     v0 = @as(i32, 2);
     v1 = spiralNewArray(i32, v0);
-    v2 = UH0_0();
-    v3 = UH0_1(v1, v2);
-    v4 = UH0_1(v1, v3);
+    v2 = UH0_Nil();
+    v3 = UH0_Cons(v1, v2);
+    v4 = UH0_Cons(v1, v3);
     v5 = sum_0(v4);
     v6 = v5 -% @as(i32, 4);
     return v6;

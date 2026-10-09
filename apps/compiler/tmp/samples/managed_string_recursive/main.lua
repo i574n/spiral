@@ -14,15 +14,15 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local Uh0i0, Uh0i1, score_0
-function Uh0i0() return { tag = "Uh0i0" } end
-function Uh0i1(v0, v1, v2) return { tag = "Uh0i1",  _1 = v0,  _2 = v1,  _3 = v2 } end
+local Uh0_Empty, Uh0_Node, score_0
+function Uh0_Empty() return { tag = "Uh0_Empty" } end
+function Uh0_Node(v0, v1, v2) return { tag = "Uh0_Node",  _1 = v0,  _2 = v1,  _3 = v2 } end
 
 function score_0(v0)
     local __v = { v0 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0i0" then
+    if __v[1] ~= nil and __v[1].tag == "Uh0_Empty" then
         return 0
-    elseif __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+    elseif __v[1] ~= nil and __v[1].tag == "Uh0_Node" then
         local v1 = __v[1]._1
         local v2 = __v[1]._2
         local v3 = __v[1]._3
@@ -37,13 +37,13 @@ end
 
 local v0 = "ab"
 local v1 = "qwe"
-local v2 = Uh0i0()
-local v3 = Uh0i1(v1, v2, v2)
-local v4 = Uh0i1(v0, v3, v3)
+local v2 = Uh0_Empty()
+local v3 = Uh0_Node(v1, v2, v2)
+local v4 = Uh0_Node(v0, v3, v3)
 local v5 = score_0(v4)
-local v6 = Uh0i0()
-local v7 = Uh0i1(v1, v6, v6)
-local v8 = Uh0i1(v0, v7, v7)
+local v6 = Uh0_Empty()
+local v7 = Uh0_Node(v1, v6, v6)
+local v8 = Uh0_Node(v0, v7, v7)
 local v9 = score_0(v8)
 local v10 = spiral_wrap_signed((v5 + v9), 32)
 local v11 = spiral_wrap_signed((v10 - 16), 32)

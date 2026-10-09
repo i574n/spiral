@@ -74,15 +74,15 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Us0 {
-    Us0i0
-    Us0i1(f1i0 : SpiralArray(SpiralArray(Int)))
+    Us0Empty
+    Us0Nested(f1i0 : SpiralArray(SpiralArray(Int)))
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0i0 -> {
+        Us0Empty -> {
             0
         }
-        Us0i1(v1) -> {
+        Us0Nested(v1) -> {
             let v2 = spiral_array_get(v1, 0)
             let v3 = spiral_array_get(v1, 1)
             let v4 = v1.size
@@ -109,7 +109,7 @@ spiral_array_set(v3, 0, 5)
 spiral_array_set(v3, 1, 6)
 spiral_array_set(v1, 0, v2)
 spiral_array_set(v1, 1, v3)
-let v4 = Us0i1(v1)
+let v4 = Us0Nested(v1)
 let v5 = score_0(v4)
 let v6 = spiral_wrap_signed(v5 - 20, 32)
 v6

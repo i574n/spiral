@@ -7,11 +7,11 @@ type
   TUS0 = record tag: LongInt; c0_0: LongInt; end;
   TMut0 = class l0: AnsiString; end;
 function format_real_0(v0: TUS0): AnsiString; forward;
-function US0_0(a0: LongInt): TUS0;
+function US0_Some(a0: LongInt): TUS0;
 begin
   Result.tag := 0; Result.c0_0 := a0;
 end;
-function US0_1: TUS0;
+function US0_None: TUS0;
 begin
   Result.tag := 1; 
 end;
@@ -44,7 +44,7 @@ var
   v26: Boolean;
 begin
   v0 := 1;
-  v1 := US0_0(v0);
+  v1 := US0_Some(v0);
   v2 := format_real_0(v1);
   v24 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
   v26 := v24 = '';

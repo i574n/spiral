@@ -60,15 +60,15 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Us0 {
-    Us0i0(f0i0 : String)
-    Us0i1(f1i0 : Int)
+    Us0Text(f0i0 : String)
+    Us0Number(f1i0 : Int)
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0i1(v3) -> {
+        Us0Number(v3) -> {
             v3
         }
-        Us0i0(v1) -> {
+        Us0Text(v1) -> {
             let v2 = spiral_string_length(v1)
             v2
         }
@@ -79,11 +79,11 @@ let v0 = False
 let v4 =
     case v0 {
         True -> {
-            Us0i1(7)
+            Us0Number(7)
         }
         False -> {
             let v2 = "qwe"
-            Us0i0(v2)
+            Us0Text(v2)
         }
     }
 let v5 = score_0(v4)

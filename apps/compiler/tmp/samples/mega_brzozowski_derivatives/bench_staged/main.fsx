@@ -1,9 +1,9 @@
 type [<Struct>] US0 =
-    | US0_0
-    | US0_1
+    | US0_BitZero
+    | US0_BitOne
 and UH0 =
-    | UH0_0
-    | UH0_1 of US0 * UH0
+    | UH0_InputEmpty
+    | UH0_InputCons of US0 * UH0
 let rec random_bit_input_1 (v0 : uint64, v1 : int32, v2 : UH0) : struct (UH0 * uint64) =
     let v3 : bool = 0 < v1
     if v3 then
@@ -16,34 +16,34 @@ let rec random_bit_input_1 (v0 : uint64, v1 : int32, v2 : UH0) : struct (UH0 * u
         let v10 : bool = v9 = 0UL
         let v13 : US0 =
             if v10 then
-                let v11 : US0 = US0_0
+                let v11 : US0 = US0_BitZero
                 v11
             else
-                let v12 : US0 = US0_1
+                let v12 : US0 = US0_BitOne
                 v12
-        let v14 : UH0 = UH0_1(v13, v2)
+        let v14 : UH0 = UH0_InputCons(v13, v2)
         random_bit_input_1(v6, v7, v14)
     else
         struct (v2, v0)
 and run_2 (v0 : int32, v1 : UH0) : bool =
     match v1 with
-    | UH0_1(v3, v4) -> (* InputCons *)
+    | UH0_InputCons(v3, v4) -> (* InputCons *)
         match v3 with
-        | US0_1 -> (* BitOne *)
+        | US0_BitOne -> (* BitOne *)
             let v8 : bool = v0 = 0
             let v9 : int32 = 0
             run_2(v9, v4)
-        | US0_0 -> (* BitZero *)
+        | US0_BitZero -> (* BitZero *)
             let v5 : bool = v0 = 0
             let v6 : int32 = 1
             run_2(v6, v4)
-    | UH0_0 -> (* InputEmpty *)
+    | UH0_InputEmpty -> (* InputEmpty *)
         let v2 : bool = v0 = 1
         v2
 and loop_0 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
     let v4 : bool = 0 < v1
     if v4 then
-        let v5 : UH0 = UH0_0
+        let v5 : UH0 = UH0_InputEmpty
         let struct (v6 : UH0, v7 : uint64) = random_bit_input_1(v2, v0, v5)
         let v8 : int32 = 0
         let v9 : bool = run_2(v8, v6)
@@ -59,9 +59,9 @@ and loop_0 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
         v3
 and run_4 (v0 : int32, v1 : UH0) : bool =
     match v1 with
-    | UH0_1(v17, v18) -> (* InputCons *)
+    | UH0_InputCons(v17, v18) -> (* InputCons *)
         match v17 with
-        | US0_1 -> (* BitOne *)
+        | US0_BitOne -> (* BitOne *)
             let v50 : bool = v0 = 0
             let v79 : int32 =
                 if v50 then
@@ -125,7 +125,7 @@ and run_4 (v0 : int32, v1 : UH0) : bool =
                                                                         else
                                                                             15
             run_4(v79, v18)
-        | US0_0 -> (* BitZero *)
+        | US0_BitZero -> (* BitZero *)
             let v19 : bool = v0 = 0
             let v48 : int32 =
                 if v19 then
@@ -189,7 +189,7 @@ and run_4 (v0 : int32, v1 : UH0) : bool =
                                                                         else
                                                                             14
             run_4(v48, v18)
-    | UH0_0 -> (* InputEmpty *)
+    | UH0_InputEmpty -> (* InputEmpty *)
         let v2 : bool = v0 = 4
         if v2 then
             true
@@ -223,7 +223,7 @@ and run_4 (v0 : int32, v1 : UH0) : bool =
 and loop_3 (v0 : int32, v1 : int32, v2 : uint64, v3 : int32) : int32 =
     let v4 : bool = 0 < v1
     if v4 then
-        let v5 : UH0 = UH0_0
+        let v5 : UH0 = UH0_InputEmpty
         let struct (v6 : UH0, v7 : uint64) = random_bit_input_1(v2, v0, v5)
         let v8 : int32 = 0
         let v9 : bool = run_4(v8, v6)

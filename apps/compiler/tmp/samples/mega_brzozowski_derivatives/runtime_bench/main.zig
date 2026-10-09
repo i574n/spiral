@@ -112,34 +112,34 @@ const Tuple0 = struct { f0: *UH1, f1: u64 };
 const US1 = struct { tag: i32 };
 const US2 = struct { tag: i32 };
 const UH2 = struct { tag: i32, c1_0: *UH0 = undefined, c1_1: *UH2 = undefined };
-fn US0_0() US0 {
+fn US0_BitZero() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1() US0 {
+fn US0_BitOne() US0 {
     return US0{ .tag = 1 };
 }
-fn UH0_0() *UH0 {
+fn UH0_RegexEmpty() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1() *UH0 {
+fn UH0_RegexEpsilon() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1 });
 }
-fn UH0_2(a0: US0) *UH0 {
+fn UH0_RegexChar(a0: US0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 2, .c2_0 = a0 });
 }
-fn UH0_3(a0: *UH0, a1: *UH0) *UH0 {
+fn UH0_RegexAlt(a0: *UH0, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 3, .c3_0 = a0, .c3_1 = a1 });
 }
-fn UH0_4(a0: *UH0, a1: *UH0) *UH0 {
+fn UH0_RegexCat(a0: *UH0, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 4, .c4_0 = a0, .c4_1 = a1 });
 }
-fn UH0_5(a0: *UH0) *UH0 {
+fn UH0_RegexStar(a0: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 5, .c5_0 = a0 });
 }
-fn UH1_0() *UH1 {
+fn UH1_InputEmpty() *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 0 });
 }
-fn UH1_1(a0: US0, a1: *UH1) *UH1 {
+fn UH1_InputCons(a0: US0, a1: *UH1) *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
@@ -172,13 +172,13 @@ fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
             v9 = v8 & @as(u64, 1);
             v10 = v9 == @as(u64, 0);
             if (v10) {
-                v11 = US0_0();
+                v11 = US0_BitZero();
                 v13 = v11;
             } else {
-                v12 = US0_1();
+                v12 = US0_BitOne();
                 v13 = v12;
             }
-            v14 = UH1_1(v13, v2);
+            v14 = UH1_InputCons(v13, v2);
             tmp12 = v6;
             tmp13 = v7;
             tmp14 = v14;
@@ -191,13 +191,13 @@ fn random_bit_input_1(p0: u64, p1: i32, p2: *UH1) Tuple0 {
         }
     }
 }
-fn US1_0() US1 {
+fn US1_SymbolLess() US1 {
     return US1{ .tag = 0 };
 }
-fn US1_1() US1 {
+fn US1_SymbolSame() US1 {
     return US1{ .tag = 1 };
 }
-fn US1_2() US1 {
+fn US1_SymbolGreater() US1 {
     return US1{ .tag = 2 };
 }
 fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
@@ -250,7 +250,7 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                         }
                     },
                     else => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                 }
             },
@@ -277,16 +277,16 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                     },
                     2 => {
                         v32 = v1.c2_0;
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     0 => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     1 => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     else => {
-                        return US1_0();
+                        return US1_SymbolLess();
                     },
                 }
             },
@@ -299,10 +299,10 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                             1 => {
                                 switch (v13.tag) {
                                     1 => {
-                                        return US1_1();
+                                        return US1_SymbolSame();
                                     },
                                     0 => {
-                                        return US1_2();
+                                        return US1_SymbolGreater();
                                     },
                                     else => unreachable,
                                 }
@@ -310,10 +310,10 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                             0 => {
                                 switch (v13.tag) {
                                     1 => {
-                                        return US1_0();
+                                        return US1_SymbolLess();
                                     },
                                     0 => {
-                                        return US1_1();
+                                        return US1_SymbolSame();
                                     },
                                     else => unreachable,
                                 }
@@ -322,36 +322,36 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                         }
                     },
                     0 => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     1 => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     else => {
-                        return US1_0();
+                        return US1_SymbolLess();
                     },
                 }
             },
             0 => {
                 switch (v1.tag) {
                     0 => {
-                        return US1_1();
+                        return US1_SymbolSame();
                     },
                     else => {
-                        return US1_0();
+                        return US1_SymbolLess();
                     },
                 }
             },
             1 => {
                 switch (v1.tag) {
                     0 => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                     1 => {
-                        return US1_1();
+                        return US1_SymbolSame();
                     },
                     else => {
-                        return US1_0();
+                        return US1_SymbolLess();
                     },
                 }
             },
@@ -361,7 +361,7 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                     3 => {
                         v45 = v1.c3_0;
                         v46 = v1.c3_1;
-                        return US1_0();
+                        return US1_SymbolLess();
                     },
                     5 => {
                         v48 = v1.c5_0;
@@ -372,7 +372,7 @@ fn regex_compare_7(p0: *UH0, p1: *UH0) US1 {
                         continue;
                     },
                     else => {
-                        return US1_2();
+                        return US1_SymbolGreater();
                     },
                 }
             },
@@ -396,10 +396,10 @@ fn alt_insert_sorted_6(p0: *UH0, p1: *UH0) *UH0 {
             switch (v4.tag) {
                 2 => {
                     v6 = alt_insert_sorted_6(v0, v3);
-                    return UH0_3(v2, v6);
+                    return UH0_RegexAlt(v2, v6);
                 },
                 0 => {
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -414,10 +414,10 @@ fn alt_insert_sorted_6(p0: *UH0, p1: *UH0) *UH0 {
             v11 = regex_compare_7(v0, v1);
             switch (v11.tag) {
                 2 => {
-                    return UH0_3(v1, v0);
+                    return UH0_RegexAlt(v1, v0);
                 },
                 0 => {
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -537,10 +537,10 @@ fn regex_equal_9(p0: *UH0, p1: *UH0) bool {
                             1 => {
                                 switch (v5.tag) {
                                     1 => {
-                                        v15 = US1_1();
+                                        v15 = US1_SymbolSame();
                                     },
                                     0 => {
-                                        v15 = US1_2();
+                                        v15 = US1_SymbolGreater();
                                     },
                                     else => unreachable,
                                 }
@@ -548,10 +548,10 @@ fn regex_equal_9(p0: *UH0, p1: *UH0) bool {
                             0 => {
                                 switch (v5.tag) {
                                     1 => {
-                                        v15 = US1_0();
+                                        v15 = US1_SymbolLess();
                                     },
                                     0 => {
-                                        v15 = US1_1();
+                                        v15 = US1_SymbolSame();
                                     },
                                     else => unreachable,
                                 }
@@ -623,12 +623,12 @@ fn make_cat_8(p0: *UH0, p1: *UH0) *UH0 {
     var v6: bool = undefined; _ = &v6;
     switch (v0.tag) {
         0 => {
-            return UH0_0();
+            return UH0_RegexEmpty();
         },
         else => {
             switch (v1.tag) {
                 0 => {
-                    return UH0_0();
+                    return UH0_RegexEmpty();
                 },
                 else => {
                     switch (v0.tag) {
@@ -646,7 +646,7 @@ fn make_cat_8(p0: *UH0, p1: *UH0) *UH0 {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
                                             v14 = make_cat_8(v13, v1);
-                                            return UH0_4(v12, v14);
+                                            return UH0_RegexCat(v12, v14);
                                         },
                                         5 => {
                                             v4 = v0.c5_0;
@@ -655,18 +655,18 @@ fn make_cat_8(p0: *UH0, p1: *UH0) *UH0 {
                                                     v5 = v1.c5_0;
                                                     v6 = regex_equal_9(v4, v5);
                                                     if (v6) {
-                                                        return UH0_5(v4);
+                                                        return UH0_RegexStar(v4);
                                                     } else {
-                                                        return UH0_4(v0, v1);
+                                                        return UH0_RegexCat(v0, v1);
                                                     }
                                                 },
                                                 else => {
-                                                    return UH0_4(v0, v1);
+                                                    return UH0_RegexCat(v0, v1);
                                                 },
                                             }
                                         },
                                         else => {
-                                            return UH0_4(v0, v1);
+                                            return UH0_RegexCat(v0, v1);
                                         },
                                     }
                                 },
@@ -683,17 +683,17 @@ fn make_star_10(p0: *UH0) *UH0 {
     var v3: *UH0 = undefined; _ = &v3;
     switch (v0.tag) {
         0 => {
-            return UH0_1();
+            return UH0_RegexEpsilon();
         },
         1 => {
-            return UH0_1();
+            return UH0_RegexEpsilon();
         },
         5 => {
             v3 = v0.c5_0;
-            return UH0_5(v3);
+            return UH0_RegexStar(v3);
         },
         else => {
-            return UH0_5(v0);
+            return UH0_RegexStar(v0);
         },
     }
 }
@@ -727,13 +727,13 @@ fn normalize_4(p0: *UH0) *UH0 {
         },
         2 => {
             v3 = v0.c2_0;
-            return UH0_2(v3);
+            return UH0_RegexChar(v3);
         },
         0 => {
-            return UH0_0();
+            return UH0_RegexEmpty();
         },
         1 => {
-            return UH0_1();
+            return UH0_RegexEpsilon();
         },
         5 => {
             v15 = v0.c5_0;
@@ -743,10 +743,10 @@ fn normalize_4(p0: *UH0) *UH0 {
         else => unreachable,
     }
 }
-fn US2_0() US2 {
+fn US2_Nullable() US2 {
     return US2{ .tag = 0 };
 }
-fn US2_1() US2 {
+fn US2_NonNullable() US2 {
     return US2{ .tag = 1 };
 }
 fn nullable_12(p0: *UH0) US2 {
@@ -769,19 +769,19 @@ fn nullable_12(p0: *UH0) US2 {
             v8 = nullable_12(v6);
             switch (v7.tag) {
                 0 => {
-                    return US2_0();
+                    return US2_Nullable();
                 },
                 else => {
                     switch (v8.tag) {
                         0 => {
-                            return US2_0();
+                            return US2_Nullable();
                         },
                         else => {
                             switch (v7.tag) {
                                 1 => {
                                     switch (v8.tag) {
                                         1 => {
-                                            return US2_1();
+                                            return US2_NonNullable();
                                         },
                                         else => unreachable,
                                     }
@@ -802,31 +802,31 @@ fn nullable_12(p0: *UH0) US2 {
                 0 => {
                     switch (v19.tag) {
                         0 => {
-                            return US2_0();
+                            return US2_Nullable();
                         },
                         else => {
-                            return US2_1();
+                            return US2_NonNullable();
                         },
                     }
                 },
                 else => {
-                    return US2_1();
+                    return US2_NonNullable();
                 },
             }
         },
         2 => {
             v3 = v0.c2_0;
-            return US2_1();
+            return US2_NonNullable();
         },
         0 => {
-            return US2_1();
+            return US2_NonNullable();
         },
         1 => {
-            return US2_0();
+            return US2_Nullable();
         },
         5 => {
             v25 = v0.c5_0;
-            return US2_0();
+            return US2_Nullable();
         },
         else => unreachable,
     }
@@ -883,10 +883,10 @@ fn derivative_11(p0: *UH0, p1: US0) *UH0 {
                 1 => {
                     switch (v1.tag) {
                         1 => {
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                         },
                         0 => {
-                            v14 = US1_2();
+                            v14 = US1_SymbolGreater();
                         },
                         else => unreachable,
                     }
@@ -894,10 +894,10 @@ fn derivative_11(p0: *UH0, p1: US0) *UH0 {
                 0 => {
                     switch (v1.tag) {
                         1 => {
-                            v14 = US1_0();
+                            v14 = US1_SymbolLess();
                         },
                         0 => {
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                         },
                         else => unreachable,
                     }
@@ -913,16 +913,16 @@ fn derivative_11(p0: *UH0, p1: US0) *UH0 {
                 },
             }
             if (v15) {
-                return UH0_1();
+                return UH0_RegexEpsilon();
             } else {
-                return UH0_0();
+                return UH0_RegexEmpty();
             }
         },
         0 => {
-            return UH0_0();
+            return UH0_RegexEmpty();
         },
         1 => {
-            return UH0_0();
+            return UH0_RegexEmpty();
         },
         5 => {
             v35 = v0.c5_0;
@@ -1004,7 +1004,7 @@ fn loop_0(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
     while (true) {
         v5 = @as(i32, 0) < v2;
         if (v5) {
-            v6 = UH1_0();
+            v6 = UH1_InputEmpty();
             tmp4 = random_bit_input_1(v3, v1, v6);
             v7 = tmp4.f0;
             v8 = tmp4.f1;
@@ -1045,8 +1045,8 @@ fn zeros_input_14(p0: i32, p1: *UH1) *UH1 {
         v2 = @as(i32, 0) < v0;
         if (v2) {
             v3 = v0 -% @as(i32, 1);
-            v4 = US0_0();
-            v5 = UH1_1(v4, v1);
+            v4 = US0_BitZero();
+            v5 = UH1_InputCons(v4, v1);
             tmp4 = v3;
             tmp5 = v5;
             v0 = tmp4;
@@ -1085,7 +1085,7 @@ fn loop_13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
         if (v4) {
             return v3;
         } else {
-            v5 = UH1_0();
+            v5 = UH1_InputEmpty();
             v6 = zeros_input_14(v2, v5);
             v7 = accepts_2(v0, v6);
             if (v7) {
@@ -1094,9 +1094,9 @@ fn loop_13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             } else {
                 v9 = v3;
             }
-            v10 = US0_1();
-            v11 = UH1_0();
-            v12 = UH1_1(v10, v11);
+            v10 = US0_BitOne();
+            v11 = UH1_InputEmpty();
+            v12 = UH1_InputCons(v10, v11);
             v13 = zeros_input_14(v2, v12);
             v14 = accepts_2(v0, v13);
             if (v14) {
@@ -1118,10 +1118,10 @@ fn loop_13(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
         }
     }
 }
-fn UH2_0() *UH2 {
+fn UH2_RegexListNil() *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 0 });
 }
-fn UH2_1(a0: *UH0, a1: *UH2) *UH2 {
+fn UH2_RegexListCons(a0: *UH0, a1: *UH2) *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
@@ -1167,12 +1167,12 @@ fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
                     3 => {
                         v27 = v6.c3_0;
                         v28 = v6.c3_1;
-                        v29 = UH2_1(v27, v7);
+                        v29 = UH2_RegexListCons(v27, v7);
                         v30 = backtrack_stack_16(v29, v1);
                         if (v30) {
                             return true;
                         } else {
-                            v31 = UH2_1(v28, v7);
+                            v31 = UH2_RegexListCons(v28, v7);
                             tmp7 = v31;
                             tmp8 = v1;
                             v0 = tmp7;
@@ -1183,8 +1183,8 @@ fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
                     4 => {
                         v34 = v6.c4_0;
                         v35 = v6.c4_1;
-                        v36 = UH2_1(v35, v7);
-                        v37 = UH2_1(v34, v36);
+                        v36 = UH2_RegexListCons(v35, v7);
+                        v37 = UH2_RegexListCons(v34, v36);
                         tmp13 = v37;
                         tmp14 = v1;
                         v0 = tmp13;
@@ -1201,10 +1201,10 @@ fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
                                     1 => {
                                         switch (v10.tag) {
                                             1 => {
-                                                v21 = US1_1();
+                                                v21 = US1_SymbolSame();
                                             },
                                             0 => {
-                                                v21 = US1_2();
+                                                v21 = US1_SymbolGreater();
                                             },
                                             else => unreachable,
                                         }
@@ -1212,10 +1212,10 @@ fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
                                     0 => {
                                         switch (v10.tag) {
                                             1 => {
-                                                v21 = US1_0();
+                                                v21 = US1_SymbolLess();
                                             },
                                             0 => {
-                                                v21 = US1_1();
+                                                v21 = US1_SymbolSame();
                                             },
                                             else => unreachable,
                                         }
@@ -1258,7 +1258,7 @@ fn backtrack_stack_16(p0: *UH2, p1: *UH1) bool {
                     },
                     5 => {
                         v39 = v6.c5_0;
-                        v40 = UH2_1(v39, v0);
+                        v40 = UH2_RegexListCons(v39, v0);
                         v41 = backtrack_stack_16(v40, v1);
                         if (v41) {
                             return true;
@@ -1315,12 +1315,12 @@ fn loop_15(p0: *UH0, p1: i32, p2: i32, p3: u64, p4: i32) i32 {
     while (true) {
         v5 = @as(i32, 0) < v2;
         if (v5) {
-            v6 = UH1_0();
+            v6 = UH1_InputEmpty();
             tmp4 = random_bit_input_1(v3, v1, v6);
             v7 = tmp4.f0;
             v8 = tmp4.f1;
-            v9 = UH2_0();
-            v10 = UH2_1(v0, v9);
+            v9 = UH2_RegexListNil();
+            v10 = UH2_RegexListCons(v0, v9);
             v11 = backtrack_stack_16(v10, v7);
             if (v11) {
                 v12 = v4 +% @as(i32, 1);
@@ -1377,10 +1377,10 @@ fn loop_17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
         if (v4) {
             return v3;
         } else {
-            v5 = UH1_0();
+            v5 = UH1_InputEmpty();
             v6 = zeros_input_14(v2, v5);
-            v7 = UH2_0();
-            v8 = UH2_1(v0, v7);
+            v7 = UH2_RegexListNil();
+            v8 = UH2_RegexListCons(v0, v7);
             v9 = backtrack_stack_16(v8, v6);
             if (v9) {
                 v10 = v3 +% @as(i32, 1);
@@ -1388,12 +1388,12 @@ fn loop_17(p0: *UH0, p1: i32, p2: i32, p3: i32) i32 {
             } else {
                 v11 = v3;
             }
-            v12 = US0_1();
-            v13 = UH1_0();
-            v14 = UH1_1(v12, v13);
+            v12 = US0_BitOne();
+            v13 = UH1_InputEmpty();
+            v14 = UH1_InputCons(v12, v13);
             v15 = zeros_input_14(v2, v14);
-            v16 = UH2_0();
-            v17 = UH2_1(v0, v16);
+            v16 = UH2_RegexListNil();
+            v17 = UH2_RegexListCons(v0, v16);
             v18 = backtrack_stack_16(v17, v15);
             if (v18) {
                 v19 = v11 +% @as(i32, 1);
@@ -1485,7 +1485,7 @@ fn loop_18(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
     while (true) {
         v4 = @as(i32, 0) < v1;
         if (v4) {
-            v5 = UH1_0();
+            v5 = UH1_InputEmpty();
             tmp4 = random_bit_input_1(v2, v0, v5);
             v6 = tmp4.f0;
             v7 = tmp4.f1;
@@ -1801,7 +1801,7 @@ fn loop_20(p0: i32, p1: i32, p2: u64, p3: i32) i32 {
     while (true) {
         v4 = @as(i32, 0) < v1;
         if (v4) {
-            v5 = UH1_0();
+            v5 = UH1_InputEmpty();
             tmp4 = random_bit_input_1(v2, v0, v5);
             v6 = tmp4.f0;
             v7 = tmp4.f1;
@@ -1941,7 +1941,7 @@ fn loop_22(p0: i32, p1: i32, p2: i32) i32 {
         if (v3) {
             return v2;
         } else {
-            v4 = UH1_0();
+            v4 = UH1_InputEmpty();
             v5 = zeros_input_14(v1, v4);
             v6 = @as(i32, 0);
             v7 = run_23(v6, v5);
@@ -1951,9 +1951,9 @@ fn loop_22(p0: i32, p1: i32, p2: i32) i32 {
             } else {
                 v9 = v2;
             }
-            v10 = US0_1();
-            v11 = UH1_0();
-            v12 = UH1_1(v10, v11);
+            v10 = US0_BitOne();
+            v11 = UH1_InputEmpty();
+            v12 = UH1_InputCons(v10, v11);
             v13 = zeros_input_14(v1, v12);
             v14 = @as(i32, 0);
             v15 = run_23(v14, v13);
@@ -2717,7 +2717,7 @@ fn loop_32(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6:
     while (true) {
         v12 = @as(i32, 0) < v9;
         if (v12) {
-            v13 = UH1_0();
+            v13 = UH1_InputEmpty();
             tmp4 = random_bit_input_1(v10, v7, v13);
             v14 = tmp4.f0;
             v15 = tmp4.f1;
@@ -2801,7 +2801,7 @@ fn loop_36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6:
         if (v11) {
             return v10;
         } else {
-            v12 = UH1_0();
+            v12 = UH1_InputEmpty();
             v13 = zeros_input_14(v9, v12);
             v14 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v13);
             if (v14) {
@@ -2810,9 +2810,9 @@ fn loop_36(p0: []i32, p1: []i32, p2: []i32, p3: []i32, p4: []i32, p5: []i32, p6:
             } else {
                 v16 = v10;
             }
-            v17 = US0_1();
-            v18 = UH1_0();
-            v19 = UH1_1(v17, v18);
+            v17 = US0_BitOne();
+            v18 = UH1_InputEmpty();
+            v19 = UH1_InputCons(v17, v18);
             v20 = zeros_input_14(v9, v19);
             v21 = interned_accepts_33(v0, v1, v2, v3, v4, v5, v6, v8, v20);
             if (v21) {
@@ -3114,117 +3114,117 @@ fn spiralMain() i32 {
     var v276: bool = undefined; _ = &v276;
     v0 = @as(i32, 200);
     v1 = @as(i32, 32);
-    v2 = US0_0();
-    v3 = UH0_2(v2);
-    v4 = US0_1();
-    v5 = UH0_2(v4);
-    v6 = UH0_3(v3, v5);
-    v7 = UH0_5(v6);
-    v8 = US0_0();
-    v9 = UH0_2(v8);
-    v10 = UH0_4(v7, v9);
-    v11 = US0_0();
-    v12 = UH0_2(v11);
-    v13 = US0_1();
-    v14 = UH0_2(v13);
-    v15 = UH0_3(v12, v14);
-    v16 = UH0_5(v15);
-    v17 = US0_1();
-    v18 = UH0_2(v17);
-    v19 = US0_0();
-    v20 = UH0_2(v19);
-    v21 = US0_1();
-    v22 = UH0_2(v21);
-    v23 = UH0_3(v20, v22);
-    v24 = US0_0();
-    v25 = UH0_2(v24);
-    v26 = US0_1();
-    v27 = UH0_2(v26);
-    v28 = UH0_3(v25, v27);
-    v29 = US0_0();
-    v30 = UH0_2(v29);
-    v31 = US0_1();
-    v32 = UH0_2(v31);
-    v33 = UH0_3(v30, v32);
-    v34 = UH0_4(v28, v33);
-    v35 = UH0_4(v23, v34);
-    v36 = UH0_4(v18, v35);
-    v37 = UH0_4(v16, v36);
+    v2 = US0_BitZero();
+    v3 = UH0_RegexChar(v2);
+    v4 = US0_BitOne();
+    v5 = UH0_RegexChar(v4);
+    v6 = UH0_RegexAlt(v3, v5);
+    v7 = UH0_RegexStar(v6);
+    v8 = US0_BitZero();
+    v9 = UH0_RegexChar(v8);
+    v10 = UH0_RegexCat(v7, v9);
+    v11 = US0_BitZero();
+    v12 = UH0_RegexChar(v11);
+    v13 = US0_BitOne();
+    v14 = UH0_RegexChar(v13);
+    v15 = UH0_RegexAlt(v12, v14);
+    v16 = UH0_RegexStar(v15);
+    v17 = US0_BitOne();
+    v18 = UH0_RegexChar(v17);
+    v19 = US0_BitZero();
+    v20 = UH0_RegexChar(v19);
+    v21 = US0_BitOne();
+    v22 = UH0_RegexChar(v21);
+    v23 = UH0_RegexAlt(v20, v22);
+    v24 = US0_BitZero();
+    v25 = UH0_RegexChar(v24);
+    v26 = US0_BitOne();
+    v27 = UH0_RegexChar(v26);
+    v28 = UH0_RegexAlt(v25, v27);
+    v29 = US0_BitZero();
+    v30 = UH0_RegexChar(v29);
+    v31 = US0_BitOne();
+    v32 = UH0_RegexChar(v31);
+    v33 = UH0_RegexAlt(v30, v32);
+    v34 = UH0_RegexCat(v28, v33);
+    v35 = UH0_RegexCat(v23, v34);
+    v36 = UH0_RegexCat(v18, v35);
+    v37 = UH0_RegexCat(v16, v36);
     v38 = @as(u64, 1);
     v39 = @as(i32, 0);
     v40 = loop_0(v10, v1, v0, v38, v39);
     v41 = loop_0(v37, v1, v0, v38, v39);
     v42 = @as(i32, 16);
-    v43 = US0_0();
-    v44 = UH0_2(v43);
-    v45 = US0_0();
-    v46 = UH0_2(v45);
-    v47 = US0_0();
-    v48 = UH0_2(v47);
-    v49 = UH0_4(v46, v48);
-    v50 = UH0_3(v44, v49);
-    v51 = UH0_5(v50);
-    v52 = US0_1();
-    v53 = UH0_2(v52);
-    v54 = UH0_4(v51, v53);
+    v43 = US0_BitZero();
+    v44 = UH0_RegexChar(v43);
+    v45 = US0_BitZero();
+    v46 = UH0_RegexChar(v45);
+    v47 = US0_BitZero();
+    v48 = UH0_RegexChar(v47);
+    v49 = UH0_RegexCat(v46, v48);
+    v50 = UH0_RegexAlt(v44, v49);
+    v51 = UH0_RegexStar(v50);
+    v52 = US0_BitOne();
+    v53 = UH0_RegexChar(v52);
+    v54 = UH0_RegexCat(v51, v53);
     v55 = @as(i32, 0);
     v56 = @as(i32, 1);
     v57 = loop_13(v54, v42, v56, v55);
     v58 = @as(i32, 200);
     v59 = @as(i32, 32);
-    v60 = US0_0();
-    v61 = UH0_2(v60);
-    v62 = US0_1();
-    v63 = UH0_2(v62);
-    v64 = UH0_3(v61, v63);
-    v65 = UH0_5(v64);
-    v66 = US0_0();
-    v67 = UH0_2(v66);
-    v68 = UH0_4(v65, v67);
-    v69 = US0_0();
-    v70 = UH0_2(v69);
-    v71 = US0_1();
-    v72 = UH0_2(v71);
-    v73 = UH0_3(v70, v72);
-    v74 = UH0_5(v73);
-    v75 = US0_1();
-    v76 = UH0_2(v75);
-    v77 = US0_0();
-    v78 = UH0_2(v77);
-    v79 = US0_1();
-    v80 = UH0_2(v79);
-    v81 = UH0_3(v78, v80);
-    v82 = US0_0();
-    v83 = UH0_2(v82);
-    v84 = US0_1();
-    v85 = UH0_2(v84);
-    v86 = UH0_3(v83, v85);
-    v87 = US0_0();
-    v88 = UH0_2(v87);
-    v89 = US0_1();
-    v90 = UH0_2(v89);
-    v91 = UH0_3(v88, v90);
-    v92 = UH0_4(v86, v91);
-    v93 = UH0_4(v81, v92);
-    v94 = UH0_4(v76, v93);
-    v95 = UH0_4(v74, v94);
+    v60 = US0_BitZero();
+    v61 = UH0_RegexChar(v60);
+    v62 = US0_BitOne();
+    v63 = UH0_RegexChar(v62);
+    v64 = UH0_RegexAlt(v61, v63);
+    v65 = UH0_RegexStar(v64);
+    v66 = US0_BitZero();
+    v67 = UH0_RegexChar(v66);
+    v68 = UH0_RegexCat(v65, v67);
+    v69 = US0_BitZero();
+    v70 = UH0_RegexChar(v69);
+    v71 = US0_BitOne();
+    v72 = UH0_RegexChar(v71);
+    v73 = UH0_RegexAlt(v70, v72);
+    v74 = UH0_RegexStar(v73);
+    v75 = US0_BitOne();
+    v76 = UH0_RegexChar(v75);
+    v77 = US0_BitZero();
+    v78 = UH0_RegexChar(v77);
+    v79 = US0_BitOne();
+    v80 = UH0_RegexChar(v79);
+    v81 = UH0_RegexAlt(v78, v80);
+    v82 = US0_BitZero();
+    v83 = UH0_RegexChar(v82);
+    v84 = US0_BitOne();
+    v85 = UH0_RegexChar(v84);
+    v86 = UH0_RegexAlt(v83, v85);
+    v87 = US0_BitZero();
+    v88 = UH0_RegexChar(v87);
+    v89 = US0_BitOne();
+    v90 = UH0_RegexChar(v89);
+    v91 = UH0_RegexAlt(v88, v90);
+    v92 = UH0_RegexCat(v86, v91);
+    v93 = UH0_RegexCat(v81, v92);
+    v94 = UH0_RegexCat(v76, v93);
+    v95 = UH0_RegexCat(v74, v94);
     v96 = @as(u64, 1);
     v97 = @as(i32, 0);
     v98 = loop_15(v68, v59, v58, v96, v97);
     v99 = loop_15(v95, v59, v58, v96, v97);
     v100 = @as(i32, 16);
-    v101 = US0_0();
-    v102 = UH0_2(v101);
-    v103 = US0_0();
-    v104 = UH0_2(v103);
-    v105 = US0_0();
-    v106 = UH0_2(v105);
-    v107 = UH0_4(v104, v106);
-    v108 = UH0_3(v102, v107);
-    v109 = UH0_5(v108);
-    v110 = US0_1();
-    v111 = UH0_2(v110);
-    v112 = UH0_4(v109, v111);
+    v101 = US0_BitZero();
+    v102 = UH0_RegexChar(v101);
+    v103 = US0_BitZero();
+    v104 = UH0_RegexChar(v103);
+    v105 = US0_BitZero();
+    v106 = UH0_RegexChar(v105);
+    v107 = UH0_RegexCat(v104, v106);
+    v108 = UH0_RegexAlt(v102, v107);
+    v109 = UH0_RegexStar(v108);
+    v110 = US0_BitOne();
+    v111 = UH0_RegexChar(v110);
+    v112 = UH0_RegexCat(v109, v111);
     v113 = @as(i32, 0);
     v114 = @as(i32, 1);
     v115 = loop_17(v112, v100, v114, v113);
@@ -3313,46 +3313,46 @@ fn spiralMain() i32 {
     } else {
         if (spiral_true) spiralFail("brzozowski-interned-store-init");
     }
-    v173 = US0_0();
-    v174 = UH0_2(v173);
-    v175 = US0_1();
-    v176 = UH0_2(v175);
-    v177 = UH0_3(v174, v176);
-    v178 = UH0_5(v177);
-    v179 = US0_0();
-    v180 = UH0_2(v179);
-    v181 = UH0_4(v178, v180);
+    v173 = US0_BitZero();
+    v174 = UH0_RegexChar(v173);
+    v175 = US0_BitOne();
+    v176 = UH0_RegexChar(v175);
+    v177 = UH0_RegexAlt(v174, v176);
+    v178 = UH0_RegexStar(v177);
+    v179 = US0_BitZero();
+    v180 = UH0_RegexChar(v179);
+    v181 = UH0_RegexCat(v178, v180);
     v182 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v181);
     v183 = @as(u64, 1);
     v184 = @as(i32, 0);
     v185 = loop_32(v166, v167, v168, v169, v170, v171, v172, v137, v182, v136, v183, v184);
-    v186 = US0_0();
-    v187 = UH0_2(v186);
-    v188 = US0_1();
-    v189 = UH0_2(v188);
-    v190 = UH0_3(v187, v189);
-    v191 = UH0_5(v190);
-    v192 = US0_1();
-    v193 = UH0_2(v192);
-    v194 = US0_0();
-    v195 = UH0_2(v194);
-    v196 = US0_1();
-    v197 = UH0_2(v196);
-    v198 = UH0_3(v195, v197);
-    v199 = US0_0();
-    v200 = UH0_2(v199);
-    v201 = US0_1();
-    v202 = UH0_2(v201);
-    v203 = UH0_3(v200, v202);
-    v204 = US0_0();
-    v205 = UH0_2(v204);
-    v206 = US0_1();
-    v207 = UH0_2(v206);
-    v208 = UH0_3(v205, v207);
-    v209 = UH0_4(v203, v208);
-    v210 = UH0_4(v198, v209);
-    v211 = UH0_4(v193, v210);
-    v212 = UH0_4(v191, v211);
+    v186 = US0_BitZero();
+    v187 = UH0_RegexChar(v186);
+    v188 = US0_BitOne();
+    v189 = UH0_RegexChar(v188);
+    v190 = UH0_RegexAlt(v187, v189);
+    v191 = UH0_RegexStar(v190);
+    v192 = US0_BitOne();
+    v193 = UH0_RegexChar(v192);
+    v194 = US0_BitZero();
+    v195 = UH0_RegexChar(v194);
+    v196 = US0_BitOne();
+    v197 = UH0_RegexChar(v196);
+    v198 = UH0_RegexAlt(v195, v197);
+    v199 = US0_BitZero();
+    v200 = UH0_RegexChar(v199);
+    v201 = US0_BitOne();
+    v202 = UH0_RegexChar(v201);
+    v203 = UH0_RegexAlt(v200, v202);
+    v204 = US0_BitZero();
+    v205 = UH0_RegexChar(v204);
+    v206 = US0_BitOne();
+    v207 = UH0_RegexChar(v206);
+    v208 = UH0_RegexAlt(v205, v207);
+    v209 = UH0_RegexCat(v203, v208);
+    v210 = UH0_RegexCat(v198, v209);
+    v211 = UH0_RegexCat(v193, v210);
+    v212 = UH0_RegexCat(v191, v211);
     v213 = interned_of_regex_raw_28(v166, v167, v168, v169, v170, v171, v172, v212);
     v214 = @as(u64, 1);
     v215 = @as(i32, 0);
@@ -3397,18 +3397,18 @@ fn spiralMain() i32 {
     } else {
         if (spiral_true) spiralFail("brzozowski-interned-store-init");
     }
-    v253 = US0_0();
-    v254 = UH0_2(v253);
-    v255 = US0_0();
-    v256 = UH0_2(v255);
-    v257 = US0_0();
-    v258 = UH0_2(v257);
-    v259 = UH0_4(v256, v258);
-    v260 = UH0_3(v254, v259);
-    v261 = UH0_5(v260);
-    v262 = US0_1();
-    v263 = UH0_2(v262);
-    v264 = UH0_4(v261, v263);
+    v253 = US0_BitZero();
+    v254 = UH0_RegexChar(v253);
+    v255 = US0_BitZero();
+    v256 = UH0_RegexChar(v255);
+    v257 = US0_BitZero();
+    v258 = UH0_RegexChar(v257);
+    v259 = UH0_RegexCat(v256, v258);
+    v260 = UH0_RegexAlt(v254, v259);
+    v261 = UH0_RegexStar(v260);
+    v262 = US0_BitOne();
+    v263 = UH0_RegexChar(v262);
+    v264 = UH0_RegexCat(v261, v263);
     v265 = interned_of_regex_raw_28(v246, v247, v248, v249, v250, v251, v252, v264);
     v266 = @as(i32, 1);
     v267 = @as(i32, 0);

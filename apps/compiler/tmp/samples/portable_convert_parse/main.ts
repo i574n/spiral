@@ -1,8 +1,8 @@
-type US0_0 = { readonly tag: 0, readonly f0: number };
-type US0_1 = { readonly tag: 1 };
-type US0 = US0_0 | US0_1;
-function US0_0(f0: number): US0 { return { tag: 0, f0: f0 }; }
-function US0_1(): US0 { return { tag: 1 }; }
+type US0_Some = { readonly tag: 0, readonly f0: number };
+type US0_None = { readonly tag: 1 };
+type US0 = US0_Some | US0_None;
+function US0_Some(f0: number): US0 { return { tag: 0, f0: f0 }; }
+function US0_None(): US0 { return { tag: 1 }; }
 export function main(): number {
     let v0: string = "ff";
     let v36: number = parseInt(v0, 16);
@@ -31,9 +31,9 @@ export function main(): number {
     }
     let v742: US0;
     if (v739) {
-        v742 = US0_0(v735);
+        v742 = US0_Some(v735);
     } else {
-        v742 = US0_1();
+        v742 = US0_None();
     }
     switch (v742.tag) {
         case 1: {
@@ -66,9 +66,9 @@ export function main(): number {
     }
     let v815: US0;
     if (v812) {
-        v815 = US0_0(v808);
+        v815 = US0_Some(v808);
     } else {
-        v815 = US0_1();
+        v815 = US0_None();
     }
     switch (v815.tag) {
         case 1: {
@@ -101,9 +101,9 @@ export function main(): number {
     }
     let v828: US0;
     if (v825) {
-        v828 = US0_0(v821);
+        v828 = US0_Some(v821);
     } else {
-        v828 = US0_1();
+        v828 = US0_None();
     }
     switch (v828.tag) {
         case 1: {
@@ -136,9 +136,9 @@ export function main(): number {
     }
     let v841: US0;
     if (v838) {
-        v841 = US0_0(v834);
+        v841 = US0_Some(v834);
     } else {
-        v841 = US0_1();
+        v841 = US0_None();
     }
     switch (v841.tag) {
         case 1: {

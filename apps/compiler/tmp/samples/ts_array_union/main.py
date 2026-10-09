@@ -19,18 +19,18 @@ def spiral_array_index(array, index):
     value = array[index]
     return value.item() if isinstance(array, cp.ndarray) and array.dtype.kind != 'O' else value
 import sys
-class US0_0(NamedTuple): # Empty
+class US0_Empty(NamedTuple): # Empty
     tag = 0
-class US0_1(NamedTuple): # Values
+class US0_Values(NamedTuple): # Values
     v0 : cp.ndarray
     tag = 1
-US0 = Union[US0_0, US0_1]
+US0 = Union[US0_Empty, US0_Values]
 def score_0(v0 : US0) -> i32:
     match v0:
-        case US0_0(): # Empty
+        case US0_Empty(): # Empty
             del v0
             return 0
-        case US0_1(v1): # Values
+        case US0_Values(v1): # Values
             del v0
             v2 = v1.size
             v3 = spiral_array_index(v1, 0)
@@ -49,7 +49,7 @@ def main():
     del v0
     v1[0] = 4
     v1[1] = 5
-    v2 = US0_1(v1)
+    v2 = US0_Values(v1)
     del v1
     v3 = score_0(v2)
     del v2

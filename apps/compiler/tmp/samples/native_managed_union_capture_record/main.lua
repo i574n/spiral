@@ -14,18 +14,18 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local Us0i0, Us0i1, closure1, closure0, method0, method1, method4, method3, method2
-function Us0i0() return { tag = "Us0i0" } end
-function Us0i1(v0, v1) return { tag = "Us0i1",  _1 = v0,  _2 = v1 } end
+local Us0_Empty, Us0_Item, closure1, closure0, method0, method1, method4, method3, method2
+function Us0_Empty() return { tag = "Us0_Empty" } end
+function Us0_Item(v0, v1) return { tag = "Us0_Item",  _1 = v0,  _2 = v1 } end
 
 function closure1(capt)
     local v0 = (table.unpack or unpack)(capt)
     return function(v1)
         local getv12 = function()
             local __v = { v0 }
-            if __v[1] ~= nil and __v[1].tag == "Us0i0" then
+            if __v[1] ~= nil and __v[1].tag == "Us0_Empty" then
                 return 3
-            elseif __v[1] ~= nil and __v[1].tag == "Us0i1" then
+            elseif __v[1] ~= nil and __v[1].tag == "Us0_Item" then
                 local v2 = __v[1]._1
                 local v3 = __v[1]._2
                 local v4 = string.len(v2)
@@ -53,10 +53,10 @@ function closure0(capt)
         local v3 = v0 == 0
         local getv7 = function()
             if v3 then
-                return Us0i0()
+                return Us0_Empty()
             else
                 local v5 = "hi"
-                return Us0i1(v5, v1)
+                return Us0_Item(v5, v1)
             end
         end
         local v7 = getv7()

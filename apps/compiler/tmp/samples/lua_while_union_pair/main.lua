@@ -14,13 +14,13 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local Mut0, Mut1, Uh0i0, Uh0i1, Mut2, method0, method1
+local Mut0, Mut1, Uh0_Nil, Uh0_Cons, Mut2, method0, method1
 Mut0 = function(l0) return { __tag = "Mut0", l0 = l0 } end
 
 Mut1 = function(l0) return { __tag = "Mut1", l0 = l0 } end
 
-function Uh0i0() return { tag = "Uh0i0" } end
-function Uh0i1(v0, v1) return { tag = "Uh0i1",  _1 = v0,  _2 = v1 } end
+function Uh0_Nil() return { tag = "Uh0_Nil" } end
+function Uh0_Cons(v0, v1) return { tag = "Uh0_Cons",  _1 = v0,  _2 = v1 } end
 
 Mut2 = function(l0) return { __tag = "Mut2", l0 = l0 } end
 
@@ -47,7 +47,7 @@ while method0(v1) do
 end
 local v6 = { __tag = "Mut1", l0 = 0 }
 local v7 = { __tag = "Mut1", l0 = 0 }
-local v8 = Uh0i0()
+local v8 = Uh0_Nil()
 local v9 = { __tag = "Mut2", l0 = v8 }
 while method1(v6) do
     local v11 = v6 ~= nil and v6.l0
@@ -60,7 +60,7 @@ while method1(v6) do
     else
     end
     local v16 = v9 ~= nil and v9.l0
-    local v17 = Uh0i1(v11, v16)
+    local v17 = Uh0_Cons(v11, v16)
     v9.l0 = v17
     local v18 = spiral_wrap_signed((v11 + 1), 32)
     v6.l0 = v18
@@ -68,23 +68,23 @@ end
 local v19 = v9 ~= nil and v9.l0
 local getv38 = function()
     local __v = { v19 }
-    if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+    if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
         local v20 = __v[1]._1
         local v21 = __v[1]._2
         local __v = { v21 }
-        if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+        if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
             local v22 = __v[1]._1
             local v23 = __v[1]._2
             local __v = { v23 }
-            if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+            if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
                 local v24 = __v[1]._1
                 local v25 = __v[1]._2
                 local __v = { v25 }
-                if __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+                if __v[1] ~= nil and __v[1].tag == "Uh0_Cons" then
                     local v26 = __v[1]._1
                     local v27 = __v[1]._2
                     local __v = { v27 }
-                    if __v[1] ~= nil and __v[1].tag == "Uh0i0" then
+                    if __v[1] ~= nil and __v[1].tag == "Uh0_Nil" then
                         local v28 = spiral_wrap_signed(spiral_mul_mod32(v20, 64), 32)
                         local v29 = spiral_wrap_signed(spiral_mul_mod32(v22, 16), 32)
                         local v30 = spiral_wrap_signed((v28 + v29), 32)

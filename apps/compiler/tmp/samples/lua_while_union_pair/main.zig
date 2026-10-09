@@ -123,10 +123,10 @@ fn method0(p0: *Mut0) bool {
 fn mutCreate1(a0: i32) *Mut1 {
     return spiralCreate(Mut1, .{ .l0 = a0 });
 }
-fn UH0_0() *UH0 {
+fn UH0_Nil() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: i32, a1: *UH0) *UH0 {
+fn UH0_Cons(a0: i32, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn mutCreate2(a0: *UH0) *Mut2 {
@@ -191,7 +191,7 @@ fn spiralMain() i32 {
     }
     v6 = mutCreate1(@as(i32, 0));
     v7 = mutCreate1(@as(i32, 0));
-    v8 = UH0_0();
+    v8 = UH0_Nil();
     v9 = mutCreate2(v8);
     while (method1(v6)) {
         v11 = v6.l0;
@@ -204,7 +204,7 @@ fn spiralMain() i32 {
         } else {
         }
         v16 = v9.l0;
-        v17 = UH0_1(v11, v16);
+        v17 = UH0_Cons(v11, v16);
         v9.l0 = v17;
         v18 = v11 +% @as(i32, 1);
         v6.l0 = v18;

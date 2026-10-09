@@ -19,15 +19,15 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Uh0 {
-    Uh0i0
-    Uh0i1(Int, Uh0, Uh0)
+    Uh0Leaf
+    Uh0Node(Int, Uh0, Uh0)
 }
 pub fn sum_0(v0: Uh0) -> Int {
     case v0  {
-        Uh0i0 -> {
+        Uh0Leaf -> {
             0
         }
-        Uh0i1(v1, v2, v3) -> {
+        Uh0Node(v1, v2, v3) -> {
             let v4 = sum_0(v2)
             let v5 = sum_0(v3)
             let v6 = spiral_wrap_signed(v4 + v5, 32)
@@ -45,9 +45,9 @@ pub fn closure0(capt: #(Uh0)) -> fn(Int) -> Int {
     }
 }
 pub fn main() {
-let v0 = Uh0i0
+let v0 = Uh0Leaf
 let v1 = 2
-let v2 = Uh0i1(v1, v0, v0)
+let v2 = Uh0Node(v1, v0, v0)
 let v3 = closure0(#(v2))
 let v4 = v3( 19  )
 let v5 = v3( 19  )

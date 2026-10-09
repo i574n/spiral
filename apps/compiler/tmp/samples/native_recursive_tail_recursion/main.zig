@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const UH0 = struct { tag: i32, c1_0: i32 = undefined, c1_1: *UH0 = undefined };
-fn UH0_0() *UH0 {
+fn UH0_Empty() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: i32, a1: *UH0) *UH0 {
+fn UH0_Box(a0: i32, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn method2(p0: i32) *UH0 {
@@ -120,8 +120,8 @@ fn method2(p0: i32) *UH0 {
     v1 = v0 -% @as(i32, 1);
     v2 = v1 == @as(i32, 0);
     if (v2) {
-        v3 = UH0_0();
-        return UH0_1(@as(i32, 7), v3);
+        v3 = UH0_Empty();
+        return UH0_Box(@as(i32, 7), v3);
     } else {
         return method1(v1);
     }
@@ -134,8 +134,8 @@ fn method1(p0: i32) *UH0 {
     v1 = v0 -% @as(i32, 1);
     v2 = v1 == @as(i32, 0);
     if (v2) {
-        v3 = UH0_0();
-        return UH0_1(@as(i32, 11), v3);
+        v3 = UH0_Empty();
+        return UH0_Box(@as(i32, 11), v3);
     } else {
         return method2(v1);
     }
@@ -147,8 +147,8 @@ fn method0() *UH0 {
     v0 = @as(i32, 1000000);
     v1 = v0 == @as(i32, 0);
     if (v1) {
-        v2 = UH0_0();
-        return UH0_1(@as(i32, 7), v2);
+        v2 = UH0_Empty();
+        return UH0_Box(@as(i32, 7), v2);
     } else {
         return method1(v0);
     }

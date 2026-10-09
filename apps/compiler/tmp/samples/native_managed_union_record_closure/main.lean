@@ -25,13 +25,13 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 inductive U0 where
-  | c0 : U0
-  | c1 : String → Int32 → U0
+  | Empty : U0
+  | Item : String → Int32 → U0
 end
 deriving instance Inhabited for U0
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
+  | .Empty .. => 0
+  | .Item .. => 1
 mutual
 partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v0 : Int32 := p0
@@ -39,10 +39,10 @@ partial def closure0 (p0 : Int32) : IO U0 := do
     let mut v3 : String := default
     v1 := (v0 == (0 : Int32))
     if v1 then
-        return U0.c0
+        return U0.Empty
     else
         v3 := "managed"
-        return (U0.c1 v3 (32 : Int32))
+        return (U0.Item v3 (32 : Int32))
 partial def method0 (p0 : (Int32 → IO U0)) : IO U0 := do
     let mut v0 : (Int32 → IO U0) := p0
     return (← v0 (0 : Int32))
@@ -67,9 +67,9 @@ partial def spiralMain : IO Int32 := do
     v0 := closure0
     v1 := (← method0 v0)
     match v1 with
-    | U0.c0 =>
+    | U0.Empty =>
         v7 := (3 : Int32)
-    | U0.c1 f2 f3 =>
+    | U0.Item f2 f3 =>
         v2 := f2
         v3 := f3
         v4 := (Int32.ofNat v2.utf8ByteSize)
@@ -77,9 +77,9 @@ partial def spiralMain : IO Int32 := do
         v7 := v5
     v8 := (← method1 v0)
     match v8 with
-    | U0.c0 =>
+    | U0.Empty =>
         v14 := (3 : Int32)
-    | U0.c1 f9 f10 =>
+    | U0.Item f9 f10 =>
         v9 := f9
         v10 := f10
         v11 := (Int32.ofNat v9.utf8ByteSize)

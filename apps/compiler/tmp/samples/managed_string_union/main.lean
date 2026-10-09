@@ -25,13 +25,13 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 inductive U0 where
-  | c0 : String → U0
-  | c1 : Int32 → U0
+  | Text : String → U0
+  | Number : Int32 → U0
 end
 deriving instance Inhabited for U0
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
+  | .Text .. => 0
+  | .Number .. => 1
 mutual
 partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -39,10 +39,10 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v1 : String := default
     let mut v2 : Int32 := default
     match v0 with
-    | U0.c1 f3 =>
+    | U0.Number f3 =>
         v3 := f3
         return v3
-    | U0.c0 f1 =>
+    | U0.Text f1 =>
         v1 := f1
         v2 := (Int32.ofNat v1.utf8ByteSize)
         return v2
@@ -56,10 +56,10 @@ partial def spiralMain : IO Int32 := do
     let mut v8 : Int32 := default
     v0 := false
     if v0 then
-        v4 := (U0.c1 (7 : Int32))
+        v4 := (U0.Number (7 : Int32))
     else
         v2 := "qwe"
-        v4 := (U0.c0 v2)
+        v4 := (U0.Text v2)
     v5 := (← score_0 v4)
     v6 := (← score_0 v4)
     v7 := (v5 + v6)

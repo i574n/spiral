@@ -81,13 +81,6 @@ if (Test-Command "cargo") {
     catch { Write-Output "init.ps1 / patched cargo-outdated failed: $($_.Exception.Message)" }
 }
 
-if ($IsWindows -and !(Test-Command "rsync")) {
-    if (Test-Command "choco") {
-        choco install rsync -y
-        if ($LASTEXITCODE -ne 0) { Write-Output "init.ps1 / choco install rsync failed (exit code $LASTEXITCODE)" }
-    } else { Write-Output "init.ps1 / no rsync and no choco: scripts/publish.ps1 needs rsync" }
-}
-
 $bunBin = Join-Path $HOME '.bun/bin'
 if ((Test-Path $bunBin) -and -not (($env:PATH -split [IO.Path]::PathSeparator) -contains $bunBin)) {
     $env:PATH = "$bunBin$([IO.Path]::PathSeparator)$env:PATH"

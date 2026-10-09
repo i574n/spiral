@@ -101,8 +101,8 @@ pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 pub type Mut0 { Mut0(l0 : Int) }
 pub type Mut1 { Mut1(l0 : Int) }
 pub type Uh0 {
-    Uh0i0
-    Uh0i1(Int, Uh0)
+    Uh0Nil
+    Uh0Cons(Int, Uh0)
 }
 pub type Mut2 { Mut2(l0 : Uh0) }
 pub fn method0(v0: SpiralRef(Mut0)) -> Bool {
@@ -146,7 +146,7 @@ pub fn loop1 (v6: SpiralRef(Mut1), v7: SpiralRef(Mut1), v9: SpiralRef(Mut2)) {
                 }
             }
             let v16 = spiral_ref_get(v9).l0
-            let v17 = Uh0i1(v11, v16)
+            let v17 = Uh0Cons(v11, v16)
             spiral_ref_set(v9, Mut2(l0: v17))
             let v18 = spiral_wrap_signed(v11 + 1, 32)
             spiral_ref_set(v6, Mut1(l0: v18))
@@ -161,21 +161,21 @@ let v1 = spiral_ref_new(Mut0(l0: 0))
 let #(v0, v1) = loop0(v0, v1)
 let v6 = spiral_ref_new(Mut1(l0: 0))
 let v7 = spiral_ref_new(Mut1(l0: 0))
-let v8 = Uh0i0
+let v8 = Uh0Nil
 let v9 = spiral_ref_new(Mut2(l0: v8))
 let #(v6, v7, v9) = loop1(v6, v7, v9)
 let v19 = spiral_ref_get(v9).l0
 let v38 =
     case v19  {
-        Uh0i1(v20, v21) -> {
+        Uh0Cons(v20, v21) -> {
             case v21  {
-                Uh0i1(v22, v23) -> {
+                Uh0Cons(v22, v23) -> {
                     case v23  {
-                        Uh0i1(v24, v25) -> {
+                        Uh0Cons(v24, v25) -> {
                             case v25  {
-                                Uh0i1(v26, v27) -> {
+                                Uh0Cons(v26, v27) -> {
                                     case v27  {
-                                        Uh0i0 -> {
+                                        Uh0Nil -> {
                                             let v28 = spiral_wrap_signed(v20 * 64, 32)
                                             let v29 = spiral_wrap_signed(v22 * 16, 32)
                                             let v30 = spiral_wrap_signed(v28 + v29, 32)

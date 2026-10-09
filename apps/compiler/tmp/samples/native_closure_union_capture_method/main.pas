@@ -12,15 +12,15 @@ type
 function score_0(v0: TUS0): LongInt; forward;
 function ClosureCreate0(v0: TUS0): TFun0; forward;
 function method1(v0: TFun0): LongInt; forward;
-function US0_0: TUS0;
+function US0_Idle: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: LongInt): TUS0;
+function US0_Hit(a0: LongInt): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
-function US0_2(a0: Boolean): TUS0;
+function US0_Flag(a0: Boolean): TUS0;
 begin
   Result.tag := 2; Result.c2_0 := a0;
 end;
@@ -77,13 +77,13 @@ begin
   v0 := 2;
   v1 := v0 = 0;
   if v1 then begin
-      v7 := US0_0;
+      v7 := US0_Idle;
   end else begin
       v3 := v0 = 1;
       if v3 then begin
-          v7 := US0_1(7);
+          v7 := US0_Hit(7);
       end else begin
-          v7 := US0_2(True);
+          v7 := US0_Flag(True);
       end;
   end;
   v8 := ClosureCreate0(v7);

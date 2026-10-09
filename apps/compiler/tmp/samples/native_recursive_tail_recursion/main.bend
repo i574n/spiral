@@ -182,16 +182,16 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Data:
-  U0c0{}
-  U0c1{f0: U32, f1: U0}
+  U0_Empty{}
+  U0_Box{f0: U32, f1: U0}
 
 @unsafe
 def method2_if3(+c: Bool, +v0: U32, +v1: U32, +v2: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v3 : U0 <- IO.pure(U0, U0c0{})
-        IO.pure(U0, U0c1{{7 : U32}, v3})
+        +v3 : U0 <- IO.pure(U0, U0_Empty{})
+        IO.pure(U0, U0_Box{{7 : U32}, v3})
     case False{}:
       do IO<U0>:
         method1(v1)
@@ -208,8 +208,8 @@ def method1_if2(+c: Bool, +v0: U32, +v1: U32, +v2: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v3 : U0 <- IO.pure(U0, U0c0{})
-        IO.pure(U0, U0c1{{11 : U32}, v3})
+        +v3 : U0 <- IO.pure(U0, U0_Empty{})
+        IO.pure(U0, U0_Box{{11 : U32}, v3})
     case False{}:
       do IO<U0>:
         method2(v1)
@@ -226,8 +226,8 @@ def method0_if1(+c: Bool, +v0: U32, +v1: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        +v2 : U0 <- IO.pure(U0, U0c0{})
-        IO.pure(U0, U0c1{{7 : U32}, v2})
+        +v2 : U0 <- IO.pure(U0, U0_Empty{})
+        IO.pure(U0, U0_Box{{7 : U32}, v2})
     case False{}:
       do IO<U0>:
         method1(v0)
@@ -252,10 +252,10 @@ def spiral_main_unbox4_if5(+c: Bool, +v0: U0, +v1: U32, +v2: U0, +v3: Bool) -> I
 @unsafe
 def spiral_main_unbox4(+u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Empty{}:
       do IO<U32>:
         return {1 : U32}
-    case U0c1{+v1, +v2}:
+    case U0_Box{+v1, +v2}:
       do IO<U32>:
         +v3 : Bool <- IO.pure(Bool, U32.is_eq(v1, {7 : U32}))
         spiral_main_unbox4_if5(v3, v0, v1, v2, v3)

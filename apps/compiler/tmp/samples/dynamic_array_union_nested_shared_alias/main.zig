@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const US0 = struct { tag: i32, c1_0: [][]i32 = undefined };
-fn US0_0() US0 {
+fn US0_Empty() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1(a0: [][]i32) US0 {
+fn US0_Nested(a0: [][]i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0 };
 }
 fn bump_0(p0: US0) i32 {
@@ -186,9 +186,9 @@ fn spiralMain() i32 {
     v3[spiralIndex(v3.len, @as(i32, 1))] = @as(i32, 6);
     v1[spiralIndex(v1.len, @as(i32, 0))] = v2;
     v1[spiralIndex(v1.len, @as(i32, 1))] = v3;
-    v4 = US0_1(v1);
+    v4 = US0_Nested(v1);
     v5 = bump_0(v4);
-    v6 = US0_1(v1);
+    v6 = US0_Nested(v1);
     v7 = score_1(v6);
     v8 = v7 +% v5;
     v9 = v8 -% @as(i32, 19);

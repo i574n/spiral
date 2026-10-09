@@ -31,13 +31,13 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0(int32_t v0) { // Some
+US0 US0_Some(int32_t v0) { // Some
     US0 x;
     x.tag = 0;
     x.case0.v0 = v0;
     return x;
 }
-US0 US0_1() { // None
+US0 US0_None() { // None
     US0 x;
     x.tag = 1;
     return x;
@@ -116,7 +116,7 @@ int32_t main(){
     
     
     US0 v1;
-    v1 = US0_0(v0);
+    v1 = US0_Some(v0);
     USIncref0(&(v1));
     
     String * v2;

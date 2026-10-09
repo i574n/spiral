@@ -115,15 +115,15 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
 }
 
 pub type Us0 {
-    Us0i0
-    Us0i1(f1i0 : String, f1i1 : SpiralArray(Int))
+    Us0Empty
+    Us0Item(f1i0 : String, f1i1 : SpiralArray(Int))
 }
 pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
     fn (v0) {
         let v1 = v0 == 0
         case v1 {
             True -> {
-                Us0i0
+                Us0Empty
             }
             False -> {
                 let v3 = spiral_array_create(2)
@@ -131,7 +131,7 @@ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
                 let v4 = spiral_wrap_signed(v0 + 1, 32)
                 spiral_array_set(v3, 1, v4)
                 let v5 = "hi"
-                Us0i1(v5, v3)
+                Us0Item(v5, v3)
             }
         }
     }
@@ -147,10 +147,10 @@ let v0 = closure0(Nil)
 let v1 = method0(v0)
 let v12 =
     case v1  {
-        Us0i0 -> {
+        Us0Empty -> {
             3
         }
-        Us0i1(v2, v3) -> {
+        Us0Item(v2, v3) -> {
             let v4 = spiral_string_length(v2)
             let v5 = v3.size
             let v6 = spiral_wrap_signed(v4 + v5, 32)
@@ -164,10 +164,10 @@ let v12 =
 let v13 = method1(v0)
 let v24 =
     case v13  {
-        Us0i0 -> {
+        Us0Empty -> {
             3
         }
-        Us0i1(v14, v15) -> {
+        Us0Item(v14, v15) -> {
             let v16 = spiral_string_length(v14)
             let v17 = v15.size
             let v18 = spiral_wrap_signed(v16 + v17, 32)

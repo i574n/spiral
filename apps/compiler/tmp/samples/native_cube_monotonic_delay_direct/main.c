@@ -78,12 +78,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Hidden
+US0 US0_Hidden() { // Hidden
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(double v0, double v1, double v2) { // Visible
+US0 US0_Visible(double v0, double v1, double v2) { // Visible
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0; x.case1.v1 = v1; x.case1.v2 = v2;
@@ -324,11 +324,11 @@ int32_t method0(Array0 * v0, double v1, double v2, double v3){
     if (v54){
         
         
-        v57 = US0_1(v45, v47, v41);
+        v57 = US0_Visible(v45, v47, v41);
     } else {
         
         
-        v57 = US0_0();
+        v57 = US0_Hidden();
     }
     
     
@@ -646,11 +646,11 @@ int32_t method1(Array0 * v0, double v1, double v2, double v3){
     if (v54){
         
         
-        v57 = US0_1(v45, v47, v41);
+        v57 = US0_Visible(v45, v47, v41);
     } else {
         
         
-        v57 = US0_0();
+        v57 = US0_Hidden();
     }
     
     
@@ -968,11 +968,11 @@ int32_t method2(Array0 * v0, double v1, double v2, double v3){
     if (v54){
         
         
-        v57 = US0_1(v45, v47, v41);
+        v57 = US0_Visible(v45, v47, v41);
     } else {
         
         
-        v57 = US0_0();
+        v57 = US0_Hidden();
     }
     
     

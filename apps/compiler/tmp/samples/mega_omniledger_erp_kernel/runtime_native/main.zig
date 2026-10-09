@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const US0 = struct { tag: i32, c0_0: i64 = undefined, c0_1: i64 = undefined, c0_2: i64 = undefined, c0_3: i64 = undefined, c0_4: i64 = undefined, c0_5: []const u8 = undefined, c1_0: i64 = undefined, c1_1: i64 = undefined, c1_2: []const u8 = undefined };
-fn US0_0(a0: i64, a1: i64, a2: i64, a3: i64, a4: i64, a5: []const u8) US0 {
+fn US0_TypedFxHashedStatementChecksumValidationAccepted(a0: i64, a1: i64, a2: i64, a3: i64, a4: i64, a5: []const u8) US0 {
     return US0{ .tag = 0, .c0_0 = a0, .c0_1 = a1, .c0_2 = a2, .c0_3 = a3, .c0_4 = a4, .c0_5 = a5 };
 }
-fn US0_1(a0: i64, a1: i64, a2: []const u8) US0 {
+fn US0_TypedFxHashedStatementChecksumValidationRejected(a0: i64, a1: i64, a2: []const u8) US0 {
     return US0{ .tag = 1, .c1_0 = a0, .c1_1 = a1, .c1_2 = a2 };
 }
 fn spiralMain() i32 {
@@ -4525,10 +4525,10 @@ fn spiralMain() i32 {
         v615 = v592 +% v612;
         v616 = v594 +% v613;
         v617 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation";
-        v621 = US0_0(@as(i64, 1), @as(i64, 3), v614, v615, v616, v617);
+        v621 = US0_TypedFxHashedStatementChecksumValidationAccepted(@as(i64, 1), @as(i64, 3), v614, v615, v616, v617);
     } else {
         v619 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric";
-        v621 = US0_1(v548, v583, v619);
+        v621 = US0_TypedFxHashedStatementChecksumValidationRejected(v548, v583, v619);
     }
     switch (v621.tag) {
         0 => {
@@ -4905,10 +4905,10 @@ fn spiralMain() i32 {
         v898 = v875 +% v895;
         v899 = v877 +% v896;
         v900 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation";
-        v904 = US0_0(@as(i64, 1), @as(i64, 3), v897, v898, v899, v900);
+        v904 = US0_TypedFxHashedStatementChecksumValidationAccepted(@as(i64, 1), @as(i64, 3), v897, v898, v899, v900);
     } else {
         v902 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric";
-        v904 = US0_1(v831, v866, v902);
+        v904 = US0_TypedFxHashedStatementChecksumValidationRejected(v831, v866, v902);
     }
     switch (v904.tag) {
         0 => {
@@ -6366,10 +6366,10 @@ fn spiralMain() i32 {
         v1966 = v1943 +% v1963;
         v1967 = v1945 +% v1964;
         v1968 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation";
-        v1972 = US0_0(@as(i64, 1), @as(i64, 3), v1965, v1966, v1967, v1968);
+        v1972 = US0_TypedFxHashedStatementChecksumValidationAccepted(@as(i64, 1), @as(i64, 3), v1965, v1966, v1967, v1968);
     } else {
         v1970 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric";
-        v1972 = US0_1(v1899, v1934, v1970);
+        v1972 = US0_TypedFxHashedStatementChecksumValidationRejected(v1899, v1934, v1970);
     }
     switch (v1972.tag) {
         0 => {
@@ -6916,10 +6916,10 @@ fn spiralMain() i32 {
         v2371 = v2348 +% v2368;
         v2372 = v2350 +% v2369;
         v2373 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation";
-        v2377 = US0_0(@as(i64, 1), @as(i64, 3), v2370, v2371, v2372, v2373);
+        v2377 = US0_TypedFxHashedStatementChecksumValidationAccepted(@as(i64, 1), @as(i64, 3), v2370, v2371, v2372, v2373);
     } else {
         v2375 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric";
-        v2377 = US0_1(v2304, v2339, v2375);
+        v2377 = US0_TypedFxHashedStatementChecksumValidationRejected(v2304, v2339, v2375);
     }
     switch (v2377.tag) {
         0 => {
@@ -7374,10 +7374,10 @@ fn spiralMain() i32 {
         v2708 = v2685 +% v2705;
         v2709 = v2687 +% v2706;
         v2710 = "validated-restart-metrics-are-derived-only-after-the-current-frame-and-the-entire-tail-pass-checksum-validation";
-        v2714 = US0_0(@as(i64, 1), @as(i64, 3), v2707, v2708, v2709, v2710);
+        v2714 = US0_TypedFxHashedStatementChecksumValidationAccepted(@as(i64, 1), @as(i64, 3), v2707, v2708, v2709, v2710);
     } else {
         v2712 = "checksum-mismatch-blocks-the-frame-before-it-contributes-any-restart-metric";
-        v2714 = US0_1(v2641, v2676, v2712);
+        v2714 = US0_TypedFxHashedStatementChecksumValidationRejected(v2641, v2676, v2712);
     }
     switch (v2714.tag) {
         0 => {

@@ -182,26 +182,26 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Data:
-  U0c0{}
-  U0c1{f0: U32}
-  U0c2{f0: Bool}
+  U0_Idle{}
+  U0_Hit{f0: U32}
+  U0_Flag{f0: Bool}
 
 @unsafe
 def spiral_main_if1_if2(+c: Bool, +v0: U32, +v1: Bool, +v3: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        IO.pure(U0, U0c1{{7 : U32}})
+        IO.pure(U0, U0_Hit{{7 : U32}})
     case False{}:
       do IO<U0>:
-        IO.pure(U0, U0c2{True{}})
+        IO.pure(U0, U0_Flag{True{}})
 
 @unsafe
 def spiral_main_if1(+c: Bool, +v0: U32, +v1: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        IO.pure(U0, U0c0{})
+        IO.pure(U0, U0_Idle{})
     case False{}:
       do IO<U0>:
         +v3 : Bool <- IO.pure(Bool, U32.is_eq(v0, {1 : U32}))
@@ -220,13 +220,13 @@ def score_0_unbox3_if4(+c: Bool, +v0: U0, +v2: Bool) -> IO(U32):
 @unsafe
 def score_0_unbox3(+u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Idle{}:
       do IO<U32>:
         return {3 : U32}
-    case U0c1{+v1}:
+    case U0_Hit{+v1}:
       do IO<U32>:
         return v1
-    case U0c2{+v2}:
+    case U0_Flag{+v2}:
       do IO<U32>:
         score_0_unbox3_if4(v2, v0, v2)
 

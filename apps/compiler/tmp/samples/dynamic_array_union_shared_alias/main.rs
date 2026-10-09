@@ -3,23 +3,23 @@ use std::cell::RefCell;
 use std::rc::Rc;
 #[derive(Clone)]
 enum US0 {
-    US0_0,
-    US0_1(Rc<RefCell<Vec<i32>>>),
+    US0_Empty,
+    US0_Values(Rc<RefCell<Vec<i32>>>),
 }
 impl US0 {
     fn tag(&self) -> i32 {
         match self {
-            US0::US0_0 => 0,
-            US0::US0_1(..) => 1,
+            US0::US0_Empty => 0,
+            US0::US0_Values(..) => 1,
         }
     }
 }
 fn bump_0(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_0 => {
+        US0::US0_Empty => {
             0i32
         }
-        US0::US0_1(v1) => {
+        US0::US0_Values(v1) => {
             let mut v1: Rc<RefCell<Vec<i32>>> = v1.clone();
             let mut v2: i32 = v1.clone().borrow()[0i32 as usize].clone();
             let mut v3: i32 = v2.wrapping_add(1i32);
@@ -30,10 +30,10 @@ fn bump_0(mut v0: US0) -> i32 {
 }
 fn score_1(mut v0: US0) -> i32 {
     match &v0 {
-        US0::US0_0 => {
+        US0::US0_Empty => {
             0i32
         }
-        US0::US0_1(v1) => {
+        US0::US0_Values(v1) => {
             let mut v1: Rc<RefCell<Vec<i32>>> = v1.clone();
             let mut v2: i32 = (v1.clone().borrow().len() as i32);
             let mut v3: i32 = v1.clone().borrow()[0i32 as usize].clone();
@@ -49,9 +49,9 @@ fn spiral_main() -> i32 {
     let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); v0 as usize]));
     v1.clone().borrow_mut()[0i32 as usize] = 4i32;
     v1.clone().borrow_mut()[1i32 as usize] = 5i32;
-    let mut v2: US0 = US0::US0_1(v1.clone());
+    let mut v2: US0 = US0::US0_Values(v1.clone());
     let mut v3: i32 = bump_0(v2.clone());
-    let mut v4: US0 = US0::US0_1(v1.clone());
+    let mut v4: US0 = US0::US0_Values(v1.clone());
     let mut v5: i32 = score_1(v4.clone());
     let mut v6: i32 = v5.wrapping_add(v3);
     let mut v7: i32 = v6.wrapping_sub(12i32);

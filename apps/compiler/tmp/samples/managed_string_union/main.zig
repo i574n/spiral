@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const US0 = struct { tag: i32, c0_0: []const u8 = undefined, c1_0: i32 = undefined };
-fn US0_0(a0: []const u8) US0 {
+fn US0_Text(a0: []const u8) US0 {
     return US0{ .tag = 0, .c0_0 = a0 };
 }
-fn US0_1(a0: i32) US0 {
+fn US0_Number(a0: i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0 };
 }
 fn score_0(p0: US0) i32 {
@@ -140,10 +140,10 @@ fn spiralMain() i32 {
     var v8: i32 = undefined; _ = &v8;
     v0 = false;
     if (v0) {
-        v4 = US0_1(@as(i32, 7));
+        v4 = US0_Number(@as(i32, 7));
     } else {
         v2 = "qwe";
-        v4 = US0_0(v2);
+        v4 = US0_Text(v2);
     }
     v5 = score_0(v4);
     v6 = score_0(v4);

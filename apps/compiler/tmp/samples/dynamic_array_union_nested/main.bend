@@ -182,8 +182,8 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Type:
-  U0c0{}
-  U0c1{f0: (Chan(Array<(Chan(Array<U32>) & U32)>) & U32)}
+  U0_Empty{}
+  U0_Nested{f0: (Chan(Array<(Chan(Array<U32>) & U32)>) & U32)}
 
 @unsafe
 def spiral_array_fill_go_a0(+depth: U32, +v: (Chan(Array<U32>) & U32), leaf: Bool) -> Array<(Chan(Array<U32>) & U32)>:
@@ -418,10 +418,10 @@ def spiral_array_new_nested_a0(+length: U32) -> IO((Chan(Array<(Chan(Array<U32>)
 @unsafe
 def score_0_unbox1(+u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Empty{}:
       do IO<U32>:
         return {0 : U32}
-    case U0c1{+v1}:
+    case U0_Nested{+v1}:
       do IO<U32>:
         +v2 : (Chan(Array<U32>) & U32) <- spiral_array_get_a0(v1, {0 : U32})
         +v3 : (Chan(Array<U32>) & U32) <- spiral_array_get_a0(v1, {1 : U32})
@@ -454,7 +454,7 @@ def spiral_main() -> IO(U32):
     spiral_array_set_a1(v3, {1 : U32}, {6 : U32})
     spiral_array_set_a0(v1, {0 : U32}, v2)
     spiral_array_set_a0(v1, {1 : U32}, v3)
-    +v4 : U0 <- IO.pure(U0, U0c1{v1})
+    +v4 : U0 <- IO.pure(U0, U0_Nested{v1})
     +v5 : U32 <- score_0(v4)
     +v6 : U32 <- IO.pure(U32, U32.sub(v5, {20 : U32}))
     return v6

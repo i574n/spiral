@@ -25,15 +25,15 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 inductive U0 where
-  | c0 : U0
-  | c1 : Int32 → U0
-  | c2 : Bool → U0
+  | Idle : U0
+  | Hit : Int32 → U0
+  | Flag : Bool → U0
 end
 deriving instance Inhabited for U0
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
-  | .c2 .. => 2
+  | .Idle .. => 0
+  | .Hit .. => 1
+  | .Flag .. => 2
 mutual
 partial def closure0 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -43,16 +43,16 @@ partial def closure0 (p0 : U0) (p1 : Int32) : IO Int32 := do
     let mut v2 : Int32 := default
     let mut v8 : Int32 := default
     match v0 with
-    | U0.c2 f3 =>
+    | U0.Flag f3 =>
         v3 := f3
         if v3 then
             v7 := (11 : Int32)
         else
             v7 := (5 : Int32)
-    | U0.c1 f2 =>
+    | U0.Hit f2 =>
         v2 := f2
         v7 := v2
-    | U0.c0 =>
+    | U0.Idle =>
         v7 := (3 : Int32)
     v8 := (v7 + v1)
     return v8
@@ -68,13 +68,13 @@ partial def spiralMain : IO Int32 := do
     v0 := (2 : Int32)
     v1 := (v0 == (0 : Int32))
     if v1 then
-        v7 := U0.c0
+        v7 := U0.Idle
     else
         v3 := (v0 == (1 : Int32))
         if v3 then
-            v7 := (U0.c1 (7 : Int32))
+            v7 := (U0.Hit (7 : Int32))
         else
-            v7 := (U0.c2 true)
+            v7 := (U0.Flag true)
     v8 := (closure0 v7)
     return (← method0 v8)
 end

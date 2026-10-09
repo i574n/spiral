@@ -6,11 +6,11 @@ type
   TUH0 = class;
   TUH0 = class tag: LongInt; c1_0: LongInt; c1_1: TUH0; c1_2: TUH0; end;
 function sum_0(v0: TUH0): LongInt; forward;
-function UH0_0: TUH0;
+function UH0_Leaf: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
+function UH0_Node(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1; Result.c1_2 := a2;
 end;
@@ -52,9 +52,9 @@ var
 begin
   v0 := 1;
   v1 := 2;
-  v2 := UH0_0;
-  v3 := UH0_1(v1, v2, v2);
-  v4 := UH0_1(v0, v3, v3);
+  v2 := UH0_Leaf;
+  v3 := UH0_Node(v1, v2, v2);
+  v4 := UH0_Node(v0, v3, v3);
   v5 := sum_0(v4);
   v6 := v5 - 5;
   Result := v6;

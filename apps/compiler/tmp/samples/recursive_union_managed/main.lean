@@ -25,13 +25,13 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 inductive U0 where
-  | c0 : U0
-  | c1 : (IO.Ref (Array Int32)) → U0 → U0
+  | Nil : U0
+  | Cons : (IO.Ref (Array Int32)) → U0 → U0
 end
 deriving instance Inhabited for U0
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
+  | .Nil .. => 0
+  | .Cons .. => 1
 mutual
 partial def sum_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -41,14 +41,14 @@ partial def sum_0 (p0 : U0) : IO Int32 := do
     let mut v4 : Int32 := default
     let mut v5 : Int32 := default
     match v0 with
-    | U0.c1 f1 f2 =>
+    | U0.Cons f1 f2 =>
         v1 := f1
         v2 := f2
         v3 := (Int32.ofNat (← v1.get).size)
         v4 := (← sum_0 v2)
         v5 := (v3 + v4)
         return v5
-    | U0.c0 =>
+    | U0.Nil =>
         return (0 : Int32)
 partial def spiralMain : IO Int32 := do
     let mut v0 : Int32 := default
@@ -60,9 +60,9 @@ partial def spiralMain : IO Int32 := do
     let mut v6 : Int32 := default
     v0 := (2 : Int32)
     v1 := (← IO.mkRef (Array.replicate (spiralIdx v0) (default : Int32)))
-    v2 := U0.c0
-    v3 := (U0.c1 v1 v2)
-    v4 := (U0.c1 v1 v3)
+    v2 := U0.Nil
+    v3 := (U0.Cons v1 v2)
+    v4 := (U0.Cons v1 v3)
     v5 := (← sum_0 v4)
     v6 := (v5 - (4 : Int32))
     return v6

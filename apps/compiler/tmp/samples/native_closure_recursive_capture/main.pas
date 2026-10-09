@@ -12,11 +12,11 @@ type
   TClosure0 = class(TFun0) v0: TUH0; function Invoke(v1: LongInt): LongInt; override; end;
 function sum_0(v0: TUH0): LongInt; forward;
 function ClosureCreate0(v0: TUH0): TFun0; forward;
-function UH0_0: TUH0;
+function UH0_Leaf: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
+function UH0_Node(a0: LongInt; a1: TUH0; a2: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1; Result.c1_2 := a2;
 end;
@@ -71,9 +71,9 @@ var
   v5: LongInt;
   v6: LongInt;
 begin
-  v0 := UH0_0;
+  v0 := UH0_Leaf;
   v1 := 2;
-  v2 := UH0_1(v1, v0, v0);
+  v2 := UH0_Node(v1, v0, v0);
   v3 := ClosureCreate0(v2);
   v4 := v3.Invoke(19);
   v5 := v3.Invoke(19);

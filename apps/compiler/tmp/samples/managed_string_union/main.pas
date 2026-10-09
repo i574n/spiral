@@ -5,11 +5,11 @@ uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c0_0: AnsiString; c1_0: LongInt; end;
 function score_0(v0: TUS0): LongInt; forward;
-function US0_0(a0: AnsiString): TUS0;
+function US0_Text(a0: AnsiString): TUS0;
 begin
   Result.tag := 0; Result.c0_0 := a0;
 end;
-function US0_1(a0: LongInt): TUS0;
+function US0_Number(a0: LongInt): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
@@ -43,10 +43,10 @@ var
 begin
   v0 := False;
   if v0 then begin
-      v4 := US0_1(7);
+      v4 := US0_Number(7);
   end else begin
       v2 := 'qwe';
-      v4 := US0_0(v2);
+      v4 := US0_Text(v2);
   end;
   v5 := score_0(v4);
   v6 := score_0(v4);

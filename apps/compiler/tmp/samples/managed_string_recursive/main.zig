@@ -106,10 +106,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const UH0 = struct { tag: i32, c1_0: []const u8 = undefined, c1_1: *UH0 = undefined, c1_2: *UH0 = undefined };
-fn UH0_0() *UH0 {
+fn UH0_Empty() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: []const u8, a1: *UH0, a2: *UH0) *UH0 {
+fn UH0_Node(a0: []const u8, a1: *UH0, a2: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1, .c1_2 = a2 });
 }
 fn score_0(p0: *UH0) i32 {
@@ -155,13 +155,13 @@ fn spiralMain() i32 {
     var v11: i32 = undefined; _ = &v11;
     v0 = "ab";
     v1 = "qwe";
-    v2 = UH0_0();
-    v3 = UH0_1(v1, v2, v2);
-    v4 = UH0_1(v0, v3, v3);
+    v2 = UH0_Empty();
+    v3 = UH0_Node(v1, v2, v2);
+    v4 = UH0_Node(v0, v3, v3);
     v5 = score_0(v4);
-    v6 = UH0_0();
-    v7 = UH0_1(v1, v6, v6);
-    v8 = UH0_1(v0, v7, v7);
+    v6 = UH0_Empty();
+    v7 = UH0_Node(v1, v6, v6);
+    v8 = UH0_Node(v0, v7, v7);
     v9 = score_0(v8);
     v10 = v5 +% v9;
     v11 = v10 -% @as(i32, 16);

@@ -65,12 +65,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Empty
+US0 US0_Empty() { // Empty
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(Array0 * v0) { // Values
+US0 US0_Values(Array0 * v0) { // Values
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
@@ -100,7 +100,7 @@ US0 ClosureMethod0(Closure0 * x, int32_t v0){
     if (v1){
         
         
-        return US0_0();
+        return US0_Empty();
     } else {
         
         
@@ -120,7 +120,7 @@ US0 ClosureMethod0(Closure0 * x, int32_t v0){
         AssignArray0(&(v3->ptr[1l]), v4);
         
         
-        return US0_1(v3);
+        return US0_Values(v3);
     }
 }
 Fun0 * ClosureCreate0(){

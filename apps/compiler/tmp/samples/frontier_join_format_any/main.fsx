@@ -1,6 +1,6 @@
 type [<Struct>] US0 =
-    | US0_0 of f0_0 : int32
-    | US0_1
+    | US0_Some of f0_0 : int32
+    | US0_None
 and Mut0 = {mutable l0 : string}
 let rec method2 () : string =
     let v0 : string = ""
@@ -19,7 +19,7 @@ and format_real_1 (v0 : US0) : string =
     v105
 and method0 () : string =
     let v0 : int32 = 1
-    let v1 : US0 = US0_0(v0)
+    let v1 : US0 = US0_Some(v0)
     let v2 : string = format_real_1(v1)
     let v7 : string = "x: "
     let v8 : string = v7 + v2 

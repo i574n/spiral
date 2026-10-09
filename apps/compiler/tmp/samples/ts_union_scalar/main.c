@@ -24,13 +24,13 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0(int32_t v0) { // Hit
+US0 US0_Hit(int32_t v0) { // Hit
     US0 x;
     x.tag = 0;
     x.case0.v0 = v0;
     return x;
 }
-US0 US0_1(int32_t v0) { // Miss
+US0 US0_Miss(int32_t v0) { // Miss
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
@@ -71,11 +71,11 @@ int32_t main(){
     if (v0){
         
         
-        v3 = US0_0(7l);
+        v3 = US0_Hit(7l);
     } else {
         
         
-        v3 = US0_1(3l);
+        v3 = US0_Miss(3l);
     }
     USIncref0(&(v3));
     

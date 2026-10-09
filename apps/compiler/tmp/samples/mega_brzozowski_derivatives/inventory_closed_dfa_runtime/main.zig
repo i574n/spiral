@@ -120,28 +120,28 @@ const US3 = struct { tag: i32 };
 const US4 = struct { tag: i32 };
 const US5 = struct { tag: i32 };
 const UH8 = struct { tag: i32, c2_0: US1 = undefined, c3_0: *UH8 = undefined, c3_1: *UH8 = undefined, c4_0: *UH8 = undefined, c4_1: *UH8 = undefined, c5_0: *UH8 = undefined };
-fn US0_0() US0 {
+fn US0_BitZero() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1() US0 {
+fn US0_BitOne() US0 {
     return US0{ .tag = 1 };
 }
-fn UH0_0() *UH0 {
+fn UH0_SymbolListNil() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: US0, a1: *UH0) *UH0 {
+fn UH0_SymbolListCons(a0: US0, a1: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn UH2_0() *UH2 {
+fn UH2_InputEmpty() *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 0 });
 }
-fn UH2_1(a0: US0, a1: *UH2) *UH2 {
+fn UH2_InputCons(a0: US0, a1: *UH2) *UH2 {
     return spiralCreate(UH2, UH2{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn UH1_0() *UH1 {
+fn UH1_InputListNil() *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 0 });
 }
-fn UH1_1(a0: *UH2, a1: *UH1) *UH1 {
+fn UH1_InputListCons(a0: *UH2, a1: *UH1) *UH1 {
     return spiralCreate(UH1, UH1{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn input_singletons_from_symbols_0(p0: *UH0) *UH1 {
@@ -156,12 +156,12 @@ fn input_singletons_from_symbols_0(p0: *UH0) *UH1 {
             v2 = v0.c1_0;
             v3 = v0.c1_1;
             v4 = input_singletons_from_symbols_0(v3);
-            v5 = UH2_0();
-            v6 = UH2_1(v2, v5);
-            return UH1_1(v6, v4);
+            v5 = UH2_InputEmpty();
+            v6 = UH2_InputCons(v2, v5);
+            return UH1_InputListCons(v6, v4);
         },
         0 => {
-            return UH1_0();
+            return UH1_InputListNil();
         },
         else => unreachable,
     }
@@ -177,7 +177,7 @@ fn input_list_append_2(p0: *UH1, p1: *UH1) *UH1 {
             v2 = v0.c1_0;
             v3 = v0.c1_1;
             v4 = input_list_append_2(v3, v1);
-            return UH1_1(v2, v4);
+            return UH1_InputListCons(v2, v4);
         },
         0 => {
             return v1;
@@ -197,11 +197,11 @@ fn input_prepend_symbol_to_corpus_3(p0: US0, p1: *UH1) *UH1 {
             v3 = v1.c1_0;
             v4 = v1.c1_1;
             v5 = input_prepend_symbol_to_corpus_3(v0, v4);
-            v6 = UH2_1(v0, v3);
-            return UH1_1(v6, v5);
+            v6 = UH2_InputCons(v0, v3);
+            return UH1_InputListCons(v6, v5);
         },
         0 => {
-            return UH1_0();
+            return UH1_InputListNil();
         },
         else => unreachable,
     }
@@ -222,36 +222,36 @@ fn input_prepend_symbols_to_corpus_1(p0: *UH0, p1: *UH1) *UH1 {
             return input_list_append_2(v5, v6);
         },
         0 => {
-            return UH1_0();
+            return UH1_InputListNil();
         },
         else => unreachable,
     }
 }
-fn US1_0() US1 {
+fn US1_TriA() US1 {
     return US1{ .tag = 0 };
 }
-fn US1_1() US1 {
+fn US1_TriB() US1 {
     return US1{ .tag = 1 };
 }
-fn US1_2() US1 {
+fn US1_TriC() US1 {
     return US1{ .tag = 2 };
 }
-fn UH3_0() *UH3 {
+fn UH3_SymbolListNil() *UH3 {
     return spiralCreate(UH3, UH3{ .tag = 0 });
 }
-fn UH3_1(a0: US1, a1: *UH3) *UH3 {
+fn UH3_SymbolListCons(a0: US1, a1: *UH3) *UH3 {
     return spiralCreate(UH3, UH3{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn UH5_0() *UH5 {
+fn UH5_InputEmpty() *UH5 {
     return spiralCreate(UH5, UH5{ .tag = 0 });
 }
-fn UH5_1(a0: US1, a1: *UH5) *UH5 {
+fn UH5_InputCons(a0: US1, a1: *UH5) *UH5 {
     return spiralCreate(UH5, UH5{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn UH4_0() *UH4 {
+fn UH4_InputListNil() *UH4 {
     return spiralCreate(UH4, UH4{ .tag = 0 });
 }
-fn UH4_1(a0: *UH5, a1: *UH4) *UH4 {
+fn UH4_InputListCons(a0: *UH5, a1: *UH4) *UH4 {
     return spiralCreate(UH4, UH4{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
 fn input_singletons_from_symbols_4(p0: *UH3) *UH4 {
@@ -266,12 +266,12 @@ fn input_singletons_from_symbols_4(p0: *UH3) *UH4 {
             v2 = v0.c1_0;
             v3 = v0.c1_1;
             v4 = input_singletons_from_symbols_4(v3);
-            v5 = UH5_0();
-            v6 = UH5_1(v2, v5);
-            return UH4_1(v6, v4);
+            v5 = UH5_InputEmpty();
+            v6 = UH5_InputCons(v2, v5);
+            return UH4_InputListCons(v6, v4);
         },
         0 => {
-            return UH4_0();
+            return UH4_InputListNil();
         },
         else => unreachable,
     }
@@ -287,7 +287,7 @@ fn input_list_append_6(p0: *UH4, p1: *UH4) *UH4 {
             v2 = v0.c1_0;
             v3 = v0.c1_1;
             v4 = input_list_append_6(v3, v1);
-            return UH4_1(v2, v4);
+            return UH4_InputListCons(v2, v4);
         },
         0 => {
             return v1;
@@ -307,11 +307,11 @@ fn input_prepend_symbol_to_corpus_7(p0: US1, p1: *UH4) *UH4 {
             v3 = v1.c1_0;
             v4 = v1.c1_1;
             v5 = input_prepend_symbol_to_corpus_7(v0, v4);
-            v6 = UH5_1(v0, v3);
-            return UH4_1(v6, v5);
+            v6 = UH5_InputCons(v0, v3);
+            return UH4_InputListCons(v6, v5);
         },
         0 => {
-            return UH4_0();
+            return UH4_InputListNil();
         },
         else => unreachable,
     }
@@ -332,60 +332,60 @@ fn input_prepend_symbols_to_corpus_5(p0: *UH3, p1: *UH4) *UH4 {
             return input_list_append_6(v5, v6);
         },
         0 => {
-            return UH4_0();
+            return UH4_InputListNil();
         },
         else => unreachable,
     }
 }
-fn US2_0() US2 {
+fn US2_ModelA() US2 {
     return US2{ .tag = 0 };
 }
-fn US2_1() US2 {
+fn US2_ModelB() US2 {
     return US2{ .tag = 1 };
 }
-fn US2_2() US2 {
+fn US2_ModelC() US2 {
     return US2{ .tag = 2 };
 }
-fn UH6_0() *UH6 {
+fn UH6_InputEmpty() *UH6 {
     return spiralCreate(UH6, UH6{ .tag = 0 });
 }
-fn UH6_1(a0: US2, a1: *UH6) *UH6 {
+fn UH6_InputCons(a0: US2, a1: *UH6) *UH6 {
     return spiralCreate(UH6, UH6{ .tag = 1, .c1_0 = a0, .c1_1 = a1 });
 }
-fn UH7_0() *UH7 {
+fn UH7_RegexEmpty() *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 0 });
 }
-fn UH7_1() *UH7 {
+fn UH7_RegexEpsilon() *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 1 });
 }
-fn UH7_2(a0: US0) *UH7 {
+fn UH7_RegexChar(a0: US0) *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 2, .c2_0 = a0 });
 }
-fn UH7_3(a0: *UH7, a1: *UH7) *UH7 {
+fn UH7_RegexAlt(a0: *UH7, a1: *UH7) *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 3, .c3_0 = a0, .c3_1 = a1 });
 }
-fn UH7_4(a0: *UH7, a1: *UH7) *UH7 {
+fn UH7_RegexCat(a0: *UH7, a1: *UH7) *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 4, .c4_0 = a0, .c4_1 = a1 });
 }
-fn UH7_5(a0: *UH7) *UH7 {
+fn UH7_RegexStar(a0: *UH7) *UH7 {
     return spiralCreate(UH7, UH7{ .tag = 5, .c5_0 = a0 });
 }
-fn US3_0() US3 {
+fn US3_InventoryDfaAccepted() US3 {
     return US3{ .tag = 0 };
 }
-fn US3_1() US3 {
+fn US3_InventoryDfaRejected() US3 {
     return US3{ .tag = 1 };
 }
-fn US3_2() US3 {
+fn US3_InventoryDfaInputOutsideInventory() US3 {
     return US3{ .tag = 2 };
 }
-fn US4_0() US4 {
+fn US4_SymbolLess() US4 {
     return US4{ .tag = 0 };
 }
-fn US4_1() US4 {
+fn US4_SymbolSame() US4 {
     return US4{ .tag = 1 };
 }
-fn US4_2() US4 {
+fn US4_SymbolGreater() US4 {
     return US4{ .tag = 2 };
 }
 fn loop_9(p0: i32, p1: *UH2) US3 {
@@ -413,10 +413,10 @@ fn loop_9(p0: i32, p1: *UH2) US3 {
                 v7 = v1.c1_1;
                 switch (v6.tag) {
                     1 => {
-                        v11 = US4_2();
+                        v11 = US4_SymbolGreater();
                     },
                     0 => {
-                        v11 = US4_1();
+                        v11 = US4_SymbolSame();
                     },
                     else => unreachable,
                 }
@@ -433,10 +433,10 @@ fn loop_9(p0: i32, p1: *UH2) US3 {
                 } else {
                     switch (v6.tag) {
                         1 => {
-                            v16 = US4_1();
+                            v16 = US4_SymbolSame();
                         },
                         0 => {
-                            v16 = US4_0();
+                            v16 = US4_SymbolLess();
                         },
                         else => unreachable,
                     }
@@ -456,7 +456,7 @@ fn loop_9(p0: i32, p1: *UH2) US3 {
                 }
                 v20 = v19 < @as(i32, 0);
                 if (v20) {
-                    return US3_2();
+                    return US3_InventoryDfaInputOutsideInventory();
                 } else {
                     v22 = v0 == @as(i32, 0);
                     if (v22) {
@@ -484,9 +484,9 @@ fn loop_9(p0: i32, p1: *UH2) US3 {
             0 => {
                 v2 = v0 == @as(i32, 0);
                 if (v2) {
-                    return US3_0();
+                    return US3_InventoryDfaAccepted();
                 } else {
-                    return US3_1();
+                    return US3_InventoryDfaRejected();
                 }
             },
             else => unreachable,
@@ -543,7 +543,7 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                         }
                     },
                     else => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                 }
             },
@@ -570,16 +570,16 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                     },
                     2 => {
                         v32 = v1.c2_0;
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
@@ -592,10 +592,10 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                             1 => {
                                 switch (v13.tag) {
                                     1 => {
-                                        return US4_1();
+                                        return US4_SymbolSame();
                                     },
                                     0 => {
-                                        return US4_2();
+                                        return US4_SymbolGreater();
                                     },
                                     else => unreachable,
                                 }
@@ -603,10 +603,10 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                             0 => {
                                 switch (v13.tag) {
                                     1 => {
-                                        return US4_0();
+                                        return US4_SymbolLess();
                                     },
                                     0 => {
-                                        return US4_1();
+                                        return US4_SymbolSame();
                                     },
                                     else => unreachable,
                                 }
@@ -615,36 +615,36 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                         }
                     },
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
             0 => {
                 switch (v1.tag) {
                     0 => {
-                        return US4_1();
+                        return US4_SymbolSame();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
             1 => {
                 switch (v1.tag) {
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_1();
+                        return US4_SymbolSame();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
@@ -654,7 +654,7 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                     3 => {
                         v45 = v1.c3_0;
                         v46 = v1.c3_1;
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                     5 => {
                         v48 = v1.c5_0;
@@ -665,7 +665,7 @@ fn regex_compare_15(p0: *UH7, p1: *UH7) US4 {
                         continue;
                     },
                     else => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                 }
             },
@@ -689,10 +689,10 @@ fn alt_insert_sorted_14(p0: *UH7, p1: *UH7) *UH7 {
             switch (v4.tag) {
                 2 => {
                     v6 = alt_insert_sorted_14(v0, v3);
-                    return UH7_3(v2, v6);
+                    return UH7_RegexAlt(v2, v6);
                 },
                 0 => {
-                    return UH7_3(v0, v1);
+                    return UH7_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -707,10 +707,10 @@ fn alt_insert_sorted_14(p0: *UH7, p1: *UH7) *UH7 {
             v11 = regex_compare_15(v0, v1);
             switch (v11.tag) {
                 2 => {
-                    return UH7_3(v1, v0);
+                    return UH7_RegexAlt(v1, v0);
                 },
                 0 => {
-                    return UH7_3(v0, v1);
+                    return UH7_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -830,10 +830,10 @@ fn regex_equal_17(p0: *UH7, p1: *UH7) bool {
                             1 => {
                                 switch (v5.tag) {
                                     1 => {
-                                        v15 = US4_1();
+                                        v15 = US4_SymbolSame();
                                     },
                                     0 => {
-                                        v15 = US4_2();
+                                        v15 = US4_SymbolGreater();
                                     },
                                     else => unreachable,
                                 }
@@ -841,10 +841,10 @@ fn regex_equal_17(p0: *UH7, p1: *UH7) bool {
                             0 => {
                                 switch (v5.tag) {
                                     1 => {
-                                        v15 = US4_0();
+                                        v15 = US4_SymbolLess();
                                     },
                                     0 => {
-                                        v15 = US4_1();
+                                        v15 = US4_SymbolSame();
                                     },
                                     else => unreachable,
                                 }
@@ -916,12 +916,12 @@ fn make_cat_16(p0: *UH7, p1: *UH7) *UH7 {
     var v6: bool = undefined; _ = &v6;
     switch (v0.tag) {
         0 => {
-            return UH7_0();
+            return UH7_RegexEmpty();
         },
         else => {
             switch (v1.tag) {
                 0 => {
-                    return UH7_0();
+                    return UH7_RegexEmpty();
                 },
                 else => {
                     switch (v0.tag) {
@@ -939,7 +939,7 @@ fn make_cat_16(p0: *UH7, p1: *UH7) *UH7 {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
                                             v14 = make_cat_16(v13, v1);
-                                            return UH7_4(v12, v14);
+                                            return UH7_RegexCat(v12, v14);
                                         },
                                         5 => {
                                             v4 = v0.c5_0;
@@ -948,18 +948,18 @@ fn make_cat_16(p0: *UH7, p1: *UH7) *UH7 {
                                                     v5 = v1.c5_0;
                                                     v6 = regex_equal_17(v4, v5);
                                                     if (v6) {
-                                                        return UH7_5(v4);
+                                                        return UH7_RegexStar(v4);
                                                     } else {
-                                                        return UH7_4(v0, v1);
+                                                        return UH7_RegexCat(v0, v1);
                                                     }
                                                 },
                                                 else => {
-                                                    return UH7_4(v0, v1);
+                                                    return UH7_RegexCat(v0, v1);
                                                 },
                                             }
                                         },
                                         else => {
-                                            return UH7_4(v0, v1);
+                                            return UH7_RegexCat(v0, v1);
                                         },
                                     }
                                 },
@@ -976,17 +976,17 @@ fn make_star_18(p0: *UH7) *UH7 {
     var v3: *UH7 = undefined; _ = &v3;
     switch (v0.tag) {
         0 => {
-            return UH7_1();
+            return UH7_RegexEpsilon();
         },
         1 => {
-            return UH7_1();
+            return UH7_RegexEpsilon();
         },
         5 => {
             v3 = v0.c5_0;
-            return UH7_5(v3);
+            return UH7_RegexStar(v3);
         },
         else => {
-            return UH7_5(v0);
+            return UH7_RegexStar(v0);
         },
     }
 }
@@ -1020,13 +1020,13 @@ fn normalize_12(p0: *UH7) *UH7 {
         },
         2 => {
             v3 = v0.c2_0;
-            return UH7_2(v3);
+            return UH7_RegexChar(v3);
         },
         0 => {
-            return UH7_0();
+            return UH7_RegexEmpty();
         },
         1 => {
-            return UH7_1();
+            return UH7_RegexEpsilon();
         },
         5 => {
             v15 = v0.c5_0;
@@ -1036,10 +1036,10 @@ fn normalize_12(p0: *UH7) *UH7 {
         else => unreachable,
     }
 }
-fn US5_0() US5 {
+fn US5_Nullable() US5 {
     return US5{ .tag = 0 };
 }
-fn US5_1() US5 {
+fn US5_NonNullable() US5 {
     return US5{ .tag = 1 };
 }
 fn nullable_20(p0: *UH7) US5 {
@@ -1062,19 +1062,19 @@ fn nullable_20(p0: *UH7) US5 {
             v8 = nullable_20(v6);
             switch (v7.tag) {
                 0 => {
-                    return US5_0();
+                    return US5_Nullable();
                 },
                 else => {
                     switch (v8.tag) {
                         0 => {
-                            return US5_0();
+                            return US5_Nullable();
                         },
                         else => {
                             switch (v7.tag) {
                                 1 => {
                                     switch (v8.tag) {
                                         1 => {
-                                            return US5_1();
+                                            return US5_NonNullable();
                                         },
                                         else => unreachable,
                                     }
@@ -1095,31 +1095,31 @@ fn nullable_20(p0: *UH7) US5 {
                 0 => {
                     switch (v19.tag) {
                         0 => {
-                            return US5_0();
+                            return US5_Nullable();
                         },
                         else => {
-                            return US5_1();
+                            return US5_NonNullable();
                         },
                     }
                 },
                 else => {
-                    return US5_1();
+                    return US5_NonNullable();
                 },
             }
         },
         2 => {
             v3 = v0.c2_0;
-            return US5_1();
+            return US5_NonNullable();
         },
         0 => {
-            return US5_1();
+            return US5_NonNullable();
         },
         1 => {
-            return US5_0();
+            return US5_Nullable();
         },
         5 => {
             v25 = v0.c5_0;
-            return US5_0();
+            return US5_Nullable();
         },
         else => unreachable,
     }
@@ -1176,10 +1176,10 @@ fn derivative_19(p0: *UH7, p1: US0) *UH7 {
                 1 => {
                     switch (v1.tag) {
                         1 => {
-                            v14 = US4_1();
+                            v14 = US4_SymbolSame();
                         },
                         0 => {
-                            v14 = US4_2();
+                            v14 = US4_SymbolGreater();
                         },
                         else => unreachable,
                     }
@@ -1187,10 +1187,10 @@ fn derivative_19(p0: *UH7, p1: US0) *UH7 {
                 0 => {
                     switch (v1.tag) {
                         1 => {
-                            v14 = US4_0();
+                            v14 = US4_SymbolLess();
                         },
                         0 => {
-                            v14 = US4_1();
+                            v14 = US4_SymbolSame();
                         },
                         else => unreachable,
                     }
@@ -1206,16 +1206,16 @@ fn derivative_19(p0: *UH7, p1: US0) *UH7 {
                 },
             }
             if (v15) {
-                return UH7_1();
+                return UH7_RegexEpsilon();
             } else {
-                return UH7_0();
+                return UH7_RegexEmpty();
             }
         },
         0 => {
-            return UH7_0();
+            return UH7_RegexEmpty();
         },
         1 => {
-            return UH7_0();
+            return UH7_RegexEmpty();
         },
         5 => {
             v35 = v0.c5_0;
@@ -1324,22 +1324,22 @@ fn loop_8(p0: *UH7, p1: *UH1) bool {
         }
     }
 }
-fn UH8_0() *UH8 {
+fn UH8_RegexEmpty() *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 0 });
 }
-fn UH8_1() *UH8 {
+fn UH8_RegexEpsilon() *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 1 });
 }
-fn UH8_2(a0: US1) *UH8 {
+fn UH8_RegexChar(a0: US1) *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 2, .c2_0 = a0 });
 }
-fn UH8_3(a0: *UH8, a1: *UH8) *UH8 {
+fn UH8_RegexAlt(a0: *UH8, a1: *UH8) *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 3, .c3_0 = a0, .c3_1 = a1 });
 }
-fn UH8_4(a0: *UH8, a1: *UH8) *UH8 {
+fn UH8_RegexCat(a0: *UH8, a1: *UH8) *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 4, .c4_0 = a0, .c4_1 = a1 });
 }
-fn UH8_5(a0: *UH8) *UH8 {
+fn UH8_RegexStar(a0: *UH8) *UH8 {
     return spiralCreate(UH8, UH8{ .tag = 5, .c5_0 = a0 });
 }
 fn loop_22(p0: i32, p1: *UH5) US3 {
@@ -1376,10 +1376,10 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                 v9 = v1.c1_1;
                 switch (v8.tag) {
                     0 => {
-                        v12 = US4_1();
+                        v12 = US4_SymbolSame();
                     },
                     else => {
-                        v12 = US4_2();
+                        v12 = US4_SymbolGreater();
                     },
                 }
                 switch (v12.tag) {
@@ -1395,13 +1395,13 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                 } else {
                     switch (v8.tag) {
                         0 => {
-                            v19 = US4_0();
+                            v19 = US4_SymbolLess();
                         },
                         1 => {
-                            v19 = US4_1();
+                            v19 = US4_SymbolSame();
                         },
                         2 => {
-                            v19 = US4_2();
+                            v19 = US4_SymbolGreater();
                         },
                         else => unreachable,
                     }
@@ -1418,13 +1418,13 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                     } else {
                         switch (v8.tag) {
                             0 => {
-                                v26 = US4_0();
+                                v26 = US4_SymbolLess();
                             },
                             1 => {
-                                v26 = US4_0();
+                                v26 = US4_SymbolLess();
                             },
                             2 => {
-                                v26 = US4_1();
+                                v26 = US4_SymbolSame();
                             },
                             else => unreachable,
                         }
@@ -1445,7 +1445,7 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                 }
                 v31 = v30 < @as(i32, 0);
                 if (v31) {
-                    return US3_2();
+                    return US3_InventoryDfaInputOutsideInventory();
                 } else {
                     v33 = v0 == @as(i32, 0);
                     if (v33) {
@@ -1496,9 +1496,9 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                     v4 = v3;
                 }
                 if (v4) {
-                    return US3_0();
+                    return US3_InventoryDfaAccepted();
                 } else {
-                    return US3_1();
+                    return US3_InventoryDfaRejected();
                 }
             },
             else => unreachable,
@@ -1555,7 +1555,7 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                         }
                     },
                     else => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                 }
             },
@@ -1582,16 +1582,16 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                     },
                     2 => {
                         v38 = v1.c2_0;
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
@@ -1604,27 +1604,27 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                             0 => {
                                 switch (v13.tag) {
                                     0 => {
-                                        return US4_1();
+                                        return US4_SymbolSame();
                                     },
                                     else => {
-                                        return US4_0();
+                                        return US4_SymbolLess();
                                     },
                                 }
                             },
                             else => {
                                 switch (v13.tag) {
                                     0 => {
-                                        return US4_2();
+                                        return US4_SymbolGreater();
                                     },
                                     else => {
                                         switch (v10.tag) {
                                             1 => {
                                                 switch (v13.tag) {
                                                     1 => {
-                                                        return US4_1();
+                                                        return US4_SymbolSame();
                                                     },
                                                     2 => {
-                                                        return US4_0();
+                                                        return US4_SymbolLess();
                                                     },
                                                     else => unreachable,
                                                 }
@@ -1632,10 +1632,10 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                                             2 => {
                                                 switch (v13.tag) {
                                                     1 => {
-                                                        return US4_2();
+                                                        return US4_SymbolGreater();
                                                     },
                                                     2 => {
-                                                        return US4_1();
+                                                        return US4_SymbolSame();
                                                     },
                                                     else => unreachable,
                                                 }
@@ -1648,36 +1648,36 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                         }
                     },
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
             0 => {
                 switch (v1.tag) {
                     0 => {
-                        return US4_1();
+                        return US4_SymbolSame();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
             1 => {
                 switch (v1.tag) {
                     0 => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                     1 => {
-                        return US4_1();
+                        return US4_SymbolSame();
                     },
                     else => {
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                 }
             },
@@ -1687,7 +1687,7 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                     3 => {
                         v51 = v1.c3_0;
                         v52 = v1.c3_1;
-                        return US4_0();
+                        return US4_SymbolLess();
                     },
                     5 => {
                         v54 = v1.c5_0;
@@ -1698,7 +1698,7 @@ fn regex_compare_28(p0: *UH8, p1: *UH8) US4 {
                         continue;
                     },
                     else => {
-                        return US4_2();
+                        return US4_SymbolGreater();
                     },
                 }
             },
@@ -1722,10 +1722,10 @@ fn alt_insert_sorted_27(p0: *UH8, p1: *UH8) *UH8 {
             switch (v4.tag) {
                 2 => {
                     v6 = alt_insert_sorted_27(v0, v3);
-                    return UH8_3(v2, v6);
+                    return UH8_RegexAlt(v2, v6);
                 },
                 0 => {
-                    return UH8_3(v0, v1);
+                    return UH8_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -1740,10 +1740,10 @@ fn alt_insert_sorted_27(p0: *UH8, p1: *UH8) *UH8 {
             v11 = regex_compare_28(v0, v1);
             switch (v11.tag) {
                 2 => {
-                    return UH8_3(v1, v0);
+                    return UH8_RegexAlt(v1, v0);
                 },
                 0 => {
-                    return UH8_3(v0, v1);
+                    return UH8_RegexAlt(v0, v1);
                 },
                 1 => {
                     return v1;
@@ -1863,27 +1863,27 @@ fn regex_equal_30(p0: *UH8, p1: *UH8) bool {
                             0 => {
                                 switch (v5.tag) {
                                     0 => {
-                                        v21 = US4_1();
+                                        v21 = US4_SymbolSame();
                                     },
                                     else => {
-                                        v21 = US4_0();
+                                        v21 = US4_SymbolLess();
                                     },
                                 }
                             },
                             else => {
                                 switch (v5.tag) {
                                     0 => {
-                                        v21 = US4_2();
+                                        v21 = US4_SymbolGreater();
                                     },
                                     else => {
                                         switch (v4.tag) {
                                             1 => {
                                                 switch (v5.tag) {
                                                     1 => {
-                                                        v21 = US4_1();
+                                                        v21 = US4_SymbolSame();
                                                     },
                                                     2 => {
-                                                        v21 = US4_0();
+                                                        v21 = US4_SymbolLess();
                                                     },
                                                     else => unreachable,
                                                 }
@@ -1891,10 +1891,10 @@ fn regex_equal_30(p0: *UH8, p1: *UH8) bool {
                                             2 => {
                                                 switch (v5.tag) {
                                                     1 => {
-                                                        v21 = US4_2();
+                                                        v21 = US4_SymbolGreater();
                                                     },
                                                     2 => {
-                                                        v21 = US4_1();
+                                                        v21 = US4_SymbolSame();
                                                     },
                                                     else => unreachable,
                                                 }
@@ -1970,12 +1970,12 @@ fn make_cat_29(p0: *UH8, p1: *UH8) *UH8 {
     var v6: bool = undefined; _ = &v6;
     switch (v0.tag) {
         0 => {
-            return UH8_0();
+            return UH8_RegexEmpty();
         },
         else => {
             switch (v1.tag) {
                 0 => {
-                    return UH8_0();
+                    return UH8_RegexEmpty();
                 },
                 else => {
                     switch (v0.tag) {
@@ -1993,7 +1993,7 @@ fn make_cat_29(p0: *UH8, p1: *UH8) *UH8 {
                                             v12 = v0.c4_0;
                                             v13 = v0.c4_1;
                                             v14 = make_cat_29(v13, v1);
-                                            return UH8_4(v12, v14);
+                                            return UH8_RegexCat(v12, v14);
                                         },
                                         5 => {
                                             v4 = v0.c5_0;
@@ -2002,18 +2002,18 @@ fn make_cat_29(p0: *UH8, p1: *UH8) *UH8 {
                                                     v5 = v1.c5_0;
                                                     v6 = regex_equal_30(v4, v5);
                                                     if (v6) {
-                                                        return UH8_5(v4);
+                                                        return UH8_RegexStar(v4);
                                                     } else {
-                                                        return UH8_4(v0, v1);
+                                                        return UH8_RegexCat(v0, v1);
                                                     }
                                                 },
                                                 else => {
-                                                    return UH8_4(v0, v1);
+                                                    return UH8_RegexCat(v0, v1);
                                                 },
                                             }
                                         },
                                         else => {
-                                            return UH8_4(v0, v1);
+                                            return UH8_RegexCat(v0, v1);
                                         },
                                     }
                                 },
@@ -2030,17 +2030,17 @@ fn make_star_31(p0: *UH8) *UH8 {
     var v3: *UH8 = undefined; _ = &v3;
     switch (v0.tag) {
         0 => {
-            return UH8_1();
+            return UH8_RegexEpsilon();
         },
         1 => {
-            return UH8_1();
+            return UH8_RegexEpsilon();
         },
         5 => {
             v3 = v0.c5_0;
-            return UH8_5(v3);
+            return UH8_RegexStar(v3);
         },
         else => {
-            return UH8_5(v0);
+            return UH8_RegexStar(v0);
         },
     }
 }
@@ -2074,13 +2074,13 @@ fn normalize_25(p0: *UH8) *UH8 {
         },
         2 => {
             v3 = v0.c2_0;
-            return UH8_2(v3);
+            return UH8_RegexChar(v3);
         },
         0 => {
-            return UH8_0();
+            return UH8_RegexEmpty();
         },
         1 => {
-            return UH8_1();
+            return UH8_RegexEpsilon();
         },
         5 => {
             v15 = v0.c5_0;
@@ -2110,19 +2110,19 @@ fn nullable_33(p0: *UH8) US5 {
             v8 = nullable_33(v6);
             switch (v7.tag) {
                 0 => {
-                    return US5_0();
+                    return US5_Nullable();
                 },
                 else => {
                     switch (v8.tag) {
                         0 => {
-                            return US5_0();
+                            return US5_Nullable();
                         },
                         else => {
                             switch (v7.tag) {
                                 1 => {
                                     switch (v8.tag) {
                                         1 => {
-                                            return US5_1();
+                                            return US5_NonNullable();
                                         },
                                         else => unreachable,
                                     }
@@ -2143,31 +2143,31 @@ fn nullable_33(p0: *UH8) US5 {
                 0 => {
                     switch (v19.tag) {
                         0 => {
-                            return US5_0();
+                            return US5_Nullable();
                         },
                         else => {
-                            return US5_1();
+                            return US5_NonNullable();
                         },
                     }
                 },
                 else => {
-                    return US5_1();
+                    return US5_NonNullable();
                 },
             }
         },
         2 => {
             v3 = v0.c2_0;
-            return US5_1();
+            return US5_NonNullable();
         },
         0 => {
-            return US5_1();
+            return US5_NonNullable();
         },
         1 => {
-            return US5_0();
+            return US5_Nullable();
         },
         5 => {
             v25 = v0.c5_0;
-            return US5_0();
+            return US5_Nullable();
         },
         else => unreachable,
     }
@@ -2224,27 +2224,27 @@ fn derivative_32(p0: *UH8, p1: US1) *UH8 {
                 0 => {
                     switch (v1.tag) {
                         0 => {
-                            v20 = US4_1();
+                            v20 = US4_SymbolSame();
                         },
                         else => {
-                            v20 = US4_0();
+                            v20 = US4_SymbolLess();
                         },
                     }
                 },
                 else => {
                     switch (v1.tag) {
                         0 => {
-                            v20 = US4_2();
+                            v20 = US4_SymbolGreater();
                         },
                         else => {
                             switch (v4.tag) {
                                 1 => {
                                     switch (v1.tag) {
                                         1 => {
-                                            v20 = US4_1();
+                                            v20 = US4_SymbolSame();
                                         },
                                         2 => {
-                                            v20 = US4_0();
+                                            v20 = US4_SymbolLess();
                                         },
                                         else => unreachable,
                                     }
@@ -2252,10 +2252,10 @@ fn derivative_32(p0: *UH8, p1: US1) *UH8 {
                                 2 => {
                                     switch (v1.tag) {
                                         1 => {
-                                            v20 = US4_2();
+                                            v20 = US4_SymbolGreater();
                                         },
                                         2 => {
-                                            v20 = US4_1();
+                                            v20 = US4_SymbolSame();
                                         },
                                         else => unreachable,
                                     }
@@ -2275,16 +2275,16 @@ fn derivative_32(p0: *UH8, p1: US1) *UH8 {
                 },
             }
             if (v21) {
-                return UH8_1();
+                return UH8_RegexEpsilon();
             } else {
-                return UH8_0();
+                return UH8_RegexEmpty();
             }
         },
         0 => {
-            return UH8_0();
+            return UH8_RegexEmpty();
         },
         1 => {
-            return UH8_0();
+            return UH8_RegexEmpty();
         },
         5 => {
             v41 = v0.c5_0;
@@ -2419,10 +2419,10 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                 v8 = v1.c1_1;
                 switch (v7.tag) {
                     0 => {
-                        v11 = US4_1();
+                        v11 = US4_SymbolSame();
                     },
                     else => {
-                        v11 = US4_2();
+                        v11 = US4_SymbolGreater();
                     },
                 }
                 switch (v11.tag) {
@@ -2438,13 +2438,13 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                 } else {
                     switch (v7.tag) {
                         0 => {
-                            v18 = US4_0();
+                            v18 = US4_SymbolLess();
                         },
                         1 => {
-                            v18 = US4_1();
+                            v18 = US4_SymbolSame();
                         },
                         2 => {
-                            v18 = US4_2();
+                            v18 = US4_SymbolGreater();
                         },
                         else => unreachable,
                     }
@@ -2464,7 +2464,7 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                 }
                 v22 = v21 < @as(i32, 0);
                 if (v22) {
-                    return US3_2();
+                    return US3_InventoryDfaInputOutsideInventory();
                 } else {
                     v24 = v0 == @as(i32, 0);
                     if (v24) {
@@ -2489,9 +2489,9 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                 v2 = v0 == @as(i32, 0);
                 v3 = v2 == false;
                 if (v3) {
-                    return US3_0();
+                    return US3_InventoryDfaAccepted();
                 } else {
-                    return US3_1();
+                    return US3_InventoryDfaRejected();
                 }
             },
             else => unreachable,
@@ -2573,77 +2573,77 @@ fn spiralMain() i32 {
     var v70: bool = undefined; _ = &v70;
     var v71: i32 = undefined; _ = &v71;
     var v72: US3 = undefined; _ = &v72;
-    v0 = US0_0();
-    v1 = US0_1();
-    v2 = UH0_0();
-    v3 = UH0_1(v1, v2);
-    v4 = UH0_1(v0, v3);
+    v0 = US0_BitZero();
+    v1 = US0_BitOne();
+    v2 = UH0_SymbolListNil();
+    v3 = UH0_SymbolListCons(v1, v2);
+    v4 = UH0_SymbolListCons(v0, v3);
     v5 = input_singletons_from_symbols_0(v4);
-    v6 = UH2_0();
-    v7 = UH1_1(v6, v5);
-    v8 = US0_0();
-    v9 = US0_1();
-    v10 = UH0_0();
-    v11 = UH0_1(v9, v10);
-    v12 = UH0_1(v8, v11);
-    v13 = US0_0();
-    v14 = US0_1();
-    v15 = UH0_0();
-    v16 = UH0_1(v14, v15);
-    v17 = UH0_1(v13, v16);
+    v6 = UH2_InputEmpty();
+    v7 = UH1_InputListCons(v6, v5);
+    v8 = US0_BitZero();
+    v9 = US0_BitOne();
+    v10 = UH0_SymbolListNil();
+    v11 = UH0_SymbolListCons(v9, v10);
+    v12 = UH0_SymbolListCons(v8, v11);
+    v13 = US0_BitZero();
+    v14 = US0_BitOne();
+    v15 = UH0_SymbolListNil();
+    v16 = UH0_SymbolListCons(v14, v15);
+    v17 = UH0_SymbolListCons(v13, v16);
     v18 = input_singletons_from_symbols_0(v17);
     v19 = input_prepend_symbols_to_corpus_1(v12, v18);
     v20 = input_list_append_2(v7, v19);
-    v21 = US1_0();
-    v22 = US1_1();
-    v23 = US1_2();
-    v24 = UH3_0();
-    v25 = UH3_1(v23, v24);
-    v26 = UH3_1(v22, v25);
-    v27 = UH3_1(v21, v26);
+    v21 = US1_TriA();
+    v22 = US1_TriB();
+    v23 = US1_TriC();
+    v24 = UH3_SymbolListNil();
+    v25 = UH3_SymbolListCons(v23, v24);
+    v26 = UH3_SymbolListCons(v22, v25);
+    v27 = UH3_SymbolListCons(v21, v26);
     v28 = input_singletons_from_symbols_4(v27);
-    v29 = UH5_0();
-    v30 = UH4_1(v29, v28);
-    v31 = US1_0();
-    v32 = US1_1();
-    v33 = US1_2();
-    v34 = UH3_0();
-    v35 = UH3_1(v33, v34);
-    v36 = UH3_1(v32, v35);
-    v37 = UH3_1(v31, v36);
-    v38 = US1_0();
-    v39 = US1_1();
-    v40 = US1_2();
-    v41 = UH3_0();
-    v42 = UH3_1(v40, v41);
-    v43 = UH3_1(v39, v42);
-    v44 = UH3_1(v38, v43);
+    v29 = UH5_InputEmpty();
+    v30 = UH4_InputListCons(v29, v28);
+    v31 = US1_TriA();
+    v32 = US1_TriB();
+    v33 = US1_TriC();
+    v34 = UH3_SymbolListNil();
+    v35 = UH3_SymbolListCons(v33, v34);
+    v36 = UH3_SymbolListCons(v32, v35);
+    v37 = UH3_SymbolListCons(v31, v36);
+    v38 = US1_TriA();
+    v39 = US1_TriB();
+    v40 = US1_TriC();
+    v41 = UH3_SymbolListNil();
+    v42 = UH3_SymbolListCons(v40, v41);
+    v43 = UH3_SymbolListCons(v39, v42);
+    v44 = UH3_SymbolListCons(v38, v43);
     v45 = input_singletons_from_symbols_4(v44);
     v46 = input_prepend_symbols_to_corpus_5(v37, v45);
     v47 = input_list_append_6(v30, v46);
-    v48 = US2_2();
-    v49 = UH6_0();
-    v50 = UH6_1(v48, v49);
-    v51 = US0_0();
-    v52 = UH7_2(v51);
-    v53 = US0_1();
-    v54 = UH7_2(v53);
-    v55 = UH7_3(v52, v54);
-    v56 = UH7_5(v55);
-    v57 = US0_0();
-    v58 = UH7_2(v57);
-    v59 = UH7_4(v56, v58);
+    v48 = US2_ModelC();
+    v49 = UH6_InputEmpty();
+    v50 = UH6_InputCons(v48, v49);
+    v51 = US0_BitZero();
+    v52 = UH7_RegexChar(v51);
+    v53 = US0_BitOne();
+    v54 = UH7_RegexChar(v53);
+    v55 = UH7_RegexAlt(v52, v54);
+    v56 = UH7_RegexStar(v55);
+    v57 = US0_BitZero();
+    v58 = UH7_RegexChar(v57);
+    v59 = UH7_RegexCat(v56, v58);
     v60 = loop_8(v59, v20);
     if (v60) {
-        v61 = US1_0();
-        v62 = UH8_2(v61);
-        v63 = US1_1();
-        v64 = UH8_2(v63);
-        v65 = UH8_3(v62, v64);
-        v66 = UH8_5(v65);
-        v67 = US1_2();
-        v68 = UH8_2(v67);
-        v69 = UH8_4(v66, v68);
+        v61 = US1_TriA();
+        v62 = UH8_RegexChar(v61);
+        v63 = US1_TriB();
+        v64 = UH8_RegexChar(v63);
+        v65 = UH8_RegexAlt(v62, v64);
+        v66 = UH8_RegexStar(v65);
+        v67 = US1_TriC();
+        v68 = UH8_RegexChar(v67);
+        v69 = UH8_RegexCat(v66, v68);
         v70 = loop_21(v69, v47);
         if (v70) {
             v71 = @as(i32, 1);

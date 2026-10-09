@@ -1,8 +1,8 @@
 type Mut0 = {mutable l0 : int32}
 and Mut1 = {mutable l0 : int32}
 and UH0 =
-    | UH0_0
-    | UH0_1 of int32 * UH0
+    | UH0_Nil
+    | UH0_Cons of int32 * UH0
 and Mut2 = {mutable l0 : UH0}
 let rec method0 (v0 : Mut0) : bool =
     let v1 : int32 = v0.l0
@@ -23,7 +23,7 @@ while method0(v1) do
     ()
 let v6 : Mut1 = {l0 = 0} : Mut1
 let v7 : Mut1 = {l0 = 0} : Mut1
-let v8 : UH0 = UH0_0
+let v8 : UH0 = UH0_Nil
 let v9 : Mut2 = {l0 = v8} : Mut2
 while method1(v6) do
     let v11 : int32 = v6.l0
@@ -35,7 +35,7 @@ while method1(v6) do
         v7.l0 <- v15
         ()
     let v16 : UH0 = v9.l0
-    let v17 : UH0 = UH0_1(v11, v16)
+    let v17 : UH0 = UH0_Cons(v11, v16)
     v9.l0 <- v17
     let v18 : int32 = v11 + 1
     v6.l0 <- v18
@@ -43,15 +43,15 @@ while method1(v6) do
 let v19 : UH0 = v9.l0
 let v38 : int32 =
     match v19 with
-    | UH0_1(v20, v21) -> (* Cons *)
+    | UH0_Cons(v20, v21) -> (* Cons *)
         match v21 with
-        | UH0_1(v22, v23) -> (* Cons *)
+        | UH0_Cons(v22, v23) -> (* Cons *)
             match v23 with
-            | UH0_1(v24, v25) -> (* Cons *)
+            | UH0_Cons(v24, v25) -> (* Cons *)
                 match v25 with
-                | UH0_1(v26, v27) -> (* Cons *)
+                | UH0_Cons(v26, v27) -> (* Cons *)
                     match v27 with
-                    | UH0_0 -> (* Nil *)
+                    | UH0_Nil -> (* Nil *)
                         let v28 : int32 = v20 * 64
                         let v29 : int32 = v22 * 16
                         let v30 : int32 = v28 + v29

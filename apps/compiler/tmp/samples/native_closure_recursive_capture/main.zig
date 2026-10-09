@@ -108,10 +108,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
 const UH0 = struct { tag: i32, c1_0: i32 = undefined, c1_1: *UH0 = undefined, c1_2: *UH0 = undefined };
 const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) i32 };
 const ClosureEnv0 = struct { v0: *UH0, pad: u8 = 0 };
-fn UH0_0() *UH0 {
+fn UH0_Leaf() *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 0 });
 }
-fn UH0_1(a0: i32, a1: *UH0, a2: *UH0) *UH0 {
+fn UH0_Node(a0: i32, a1: *UH0, a2: *UH0) *UH0 {
     return spiralCreate(UH0, UH0{ .tag = 1, .c1_0 = a0, .c1_1 = a1, .c1_2 = a2 });
 }
 fn sum_0(p0: *UH0) i32 {
@@ -161,9 +161,9 @@ fn spiralMain() i32 {
     var v4: i32 = undefined; _ = &v4;
     var v5: i32 = undefined; _ = &v5;
     var v6: i32 = undefined; _ = &v6;
-    v0 = UH0_0();
+    v0 = UH0_Leaf();
     v1 = @as(i32, 2);
-    v2 = UH0_1(v1, v0, v0);
+    v2 = UH0_Node(v1, v0, v0);
     v3 = closureCreate0(v2);
     v4 = v3.call(v3.ctx, @as(i32, 19));
     v5 = v3.call(v3.ctx, @as(i32, 19));

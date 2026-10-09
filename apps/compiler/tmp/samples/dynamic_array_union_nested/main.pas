@@ -7,11 +7,11 @@ type
   TArray1 = array of TArray0;
   TUS0 = record tag: LongInt; c1_0: TArray1; end;
 function score_0(v0: TUS0): LongInt; forward;
-function US0_0: TUS0;
+function US0_Empty: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: TArray1): TUS0;
+function US0_Nested(a0: TArray1): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
@@ -80,7 +80,7 @@ begin
   v3[1] := 6;
   v1[0] := v2;
   v1[1] := v3;
-  v4 := US0_1(v1);
+  v4 := US0_Nested(v1);
   v5 := score_0(v4);
   v6 := v5 - 20;
   Result := v6;

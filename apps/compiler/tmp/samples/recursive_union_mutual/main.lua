@@ -1,25 +1,25 @@
-local Uh0i0, Uh0i1, Uh1i0, Uh1i1
-function Uh0i0(v0) return { tag = "Uh0i0",  _1 = v0 } end
-function Uh0i1() return { tag = "Uh0i1" } end
+local Uh0_A, Uh0_StopA, Uh1_B, Uh1_StopB
+function Uh0_A(v0) return { tag = "Uh0_A",  _1 = v0 } end
+function Uh0_StopA() return { tag = "Uh0_StopA" } end
 
-function Uh1i0(v0) return { tag = "Uh1i0",  _1 = v0 } end
-function Uh1i1() return { tag = "Uh1i1" } end
+function Uh1_B(v0) return { tag = "Uh1_B",  _1 = v0 } end
+function Uh1_StopB() return { tag = "Uh1_StopB" } end
 
 local v0 = true
 local getv5 = function()
     if v0 then
-        local v1 = Uh0i1()
-        local v2 = Uh1i0(v1)
-        return Uh0i0(v2)
+        local v1 = Uh0_StopA()
+        local v2 = Uh1_B(v1)
+        return Uh0_A(v2)
     else
-        return Uh0i1()
+        return Uh0_StopA()
     end
 end
 local v5 = getv5()
 local __v = { v5 }
-if __v[1] ~= nil and __v[1].tag == "Uh0i0" then
+if __v[1] ~= nil and __v[1].tag == "Uh0_A" then
     local v6 = __v[1]._1
     return 0
-elseif __v[1] ~= nil and __v[1].tag == "Uh0i1" then
+elseif __v[1] ~= nil and __v[1].tag == "Uh0_StopA" then
     return 0
 end

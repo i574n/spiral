@@ -63,13 +63,13 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0(String * v0) { // Text
+US0 US0_Text(String * v0) { // Text
     US0 x;
     x.tag = 0;
     x.case0.v0 = v0;
     return x;
 }
-US0 US0_1(int32_t v0) { // Number
+US0 US0_Number(int32_t v0) { // Number
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
@@ -110,7 +110,7 @@ int32_t main(){
     if (v0){
         
         
-        v4 = US0_1(7l);
+        v4 = US0_Number(7l);
     } else {
         
         
@@ -118,7 +118,7 @@ int32_t main(){
         v2 = StringLit(4, "qwe");
         
         
-        v4 = US0_0(v2);
+        v4 = US0_Text(v2);
     }
     USIncref0(&(v4));
     

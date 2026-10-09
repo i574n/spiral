@@ -7,11 +7,11 @@ type
   TArray0 = array of LongInt;
   TUH0 = class tag: LongInt; c1_0: TArray0; c1_1: TUH0; end;
 function sum_0(v0: TUH0): LongInt; forward;
-function UH0_0: TUH0;
+function UH0_Nil: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: TArray0; a1: TUH0): TUH0;
+function UH0_Cons(a0: TArray0; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -52,9 +52,9 @@ begin
   tmp2 := nil;
   SetLength(tmp2, v0);
   v1 := tmp2;
-  v2 := UH0_0;
-  v3 := UH0_1(v1, v2);
-  v4 := UH0_1(v1, v3);
+  v2 := UH0_Nil;
+  v3 := UH0_Cons(v1, v2);
+  v4 := UH0_Cons(v1, v3);
   v5 := sum_0(v4);
   v6 := v5 - 4;
   Result := v6;

@@ -96,12 +96,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Empty
+US0 US0_Empty() { // Empty
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1(Array0 * v0) { // Nested
+US0 US0_Nested(Array0 * v0) { // Nested
     US0 x;
     x.tag = 1;
     x.case1.v0 = v0;
@@ -215,7 +215,7 @@ int32_t main(){
     v1->refc++;
     ArrayDecref1(v3);
     US0 v4;
-    v4 = US0_1(v1);
+    v4 = US0_Nested(v1);
     USIncref0(&(v4));
     ArrayDecref0(v1);
     int32_t v5;

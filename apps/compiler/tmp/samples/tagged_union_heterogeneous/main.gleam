@@ -19,12 +19,12 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Us0 {
-    Us0i0(f0i0 : Int)
-    Us0i1(f1i0 : Bool)
+    Us0Hit(f0i0 : Int)
+    Us0Flag(f1i0 : Bool)
 }
 pub fn score_0(v0: Us0) -> Int {
     case v0  {
-        Us0i1(v2) -> {
+        Us0Flag(v2) -> {
             case v2 {
                 True -> {
                     9
@@ -34,7 +34,7 @@ pub fn score_0(v0: Us0) -> Int {
                 }
             }
         }
-        Us0i0(v1) -> {
+        Us0Hit(v1) -> {
             v1
         }
     }
@@ -44,10 +44,10 @@ let v0 = False
 let v3 =
     case v0 {
         True -> {
-            Us0i0(7)
+            Us0Hit(7)
         }
         False -> {
-            Us0i1(True)
+            Us0Flag(True)
         }
     }
 let v4 = score_0(v3)

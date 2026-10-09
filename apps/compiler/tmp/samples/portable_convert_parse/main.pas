@@ -4,11 +4,11 @@ program SpiralGenerated;
 uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt; c0_0: LongInt; end;
-function US0_0(a0: LongInt): TUS0;
+function US0_Some(a0: LongInt): TUS0;
 begin
   Result.tag := 0; Result.c0_0 := a0;
 end;
-function US0_1: TUS0;
+function US0_None: TUS0;
 begin
   Result.tag := 1; 
 end;
@@ -86,9 +86,9 @@ begin
       v781 := False;
   end;
   if v781 then begin
-      v784 := US0_0(v777);
+      v784 := US0_Some(v777);
   end else begin
-      v784 := US0_1;
+      v784 := US0_None;
   end;
   case v784.tag of
       1: begin
@@ -116,9 +116,9 @@ begin
       v816 := False;
   end;
   if v816 then begin
-      v819 := US0_0(v812);
+      v819 := US0_Some(v812);
   end else begin
-      v819 := US0_1;
+      v819 := US0_None;
   end;
   case v819.tag of
       1: begin
@@ -146,9 +146,9 @@ begin
       v829 := False;
   end;
   if v829 then begin
-      v832 := US0_0(v825);
+      v832 := US0_Some(v825);
   end else begin
-      v832 := US0_1;
+      v832 := US0_None;
   end;
   case v832.tag of
       1: begin
@@ -176,9 +176,9 @@ begin
       v842 := False;
   end;
   if v842 then begin
-      v845 := US0_0(v838);
+      v845 := US0_Some(v838);
   end else begin
-      v845 := US0_1;
+      v845 := US0_None;
   end;
   case v845.tag of
       1: begin

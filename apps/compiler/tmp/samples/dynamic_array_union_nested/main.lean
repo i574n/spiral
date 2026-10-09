@@ -25,13 +25,13 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
 inductive U0 where
-  | c0 : U0
-  | c1 : (IO.Ref (Array (IO.Ref (Array Int32)))) → U0
+  | Empty : U0
+  | Nested : (IO.Ref (Array (IO.Ref (Array Int32)))) → U0
 end
 deriving instance Inhabited for U0
 def U0.spiralTag : U0 → Int32
-  | .c0 .. => 0
-  | .c1 .. => 1
+  | .Empty .. => 0
+  | .Nested .. => 1
 mutual
 partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v0 : U0 := p0
@@ -48,9 +48,9 @@ partial def score_0 (p0 : U0) : IO Int32 := do
     let mut v11 : Int32 := default
     let mut v12 : Int32 := default
     match v0 with
-    | U0.c0 =>
+    | U0.Empty =>
         return (0 : Int32)
-    | U0.c1 f1 =>
+    | U0.Nested f1 =>
         v1 := f1
         v2 := (← spiralIndex (← v1.get) (spiralIdx (0 : Int32)))
         v3 := (← spiralIndex (← v1.get) (spiralIdx (1 : Int32)))
@@ -82,7 +82,7 @@ partial def spiralMain : IO Int32 := do
     v3.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) (6 : Int32))
     v1.modify (fun xs => xs.set! (spiralIdx (0 : Int32)) v2)
     v1.modify (fun xs => xs.set! (spiralIdx (1 : Int32)) v3)
-    v4 := (U0.c1 v1)
+    v4 := (U0.Nested v1)
     v5 := (← score_0 v4)
     v6 := (v5 - (20 : Int32))
     return v6

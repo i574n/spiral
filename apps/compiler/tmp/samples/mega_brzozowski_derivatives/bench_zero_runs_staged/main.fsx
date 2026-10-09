@@ -1,23 +1,23 @@
 type [<Struct>] US0 =
-    | US0_0
-    | US0_1
+    | US0_BitZero
+    | US0_BitOne
 and UH0 =
-    | UH0_0
-    | UH0_1 of US0 * UH0
+    | UH0_InputEmpty
+    | UH0_InputCons of US0 * UH0
 let rec zeros_input_1 (v0 : int32, v1 : UH0) : UH0 =
     let v2 : bool = 0 < v0
     if v2 then
         let v3 : int32 = v0 - 1
-        let v4 : US0 = US0_0
-        let v5 : UH0 = UH0_1(v4, v1)
+        let v4 : US0 = US0_BitZero
+        let v5 : UH0 = UH0_InputCons(v4, v1)
         zeros_input_1(v3, v5)
     else
         v1
 and run_2 (v0 : int32, v1 : UH0) : bool =
     match v1 with
-    | UH0_1(v3, v4) -> (* InputCons *)
+    | UH0_InputCons(v3, v4) -> (* InputCons *)
         match v3 with
-        | US0_1 -> (* BitOne *)
+        | US0_BitOne -> (* BitOne *)
             let v13 : bool = v0 = 0
             let v19 : int32 =
                 if v13 then
@@ -34,7 +34,7 @@ and run_2 (v0 : int32, v1 : UH0) : bool =
                             let v16 : bool = v0 = 3
                             4
             run_2(v19, v4)
-        | US0_0 -> (* BitZero *)
+        | US0_BitZero -> (* BitZero *)
             let v5 : bool = v0 = 0
             let v11 : int32 =
                 if v5 then
@@ -51,7 +51,7 @@ and run_2 (v0 : int32, v1 : UH0) : bool =
                             let v8 : bool = v0 = 3
                             4
             run_2(v11, v4)
-    | UH0_0 -> (* InputEmpty *)
+    | UH0_InputEmpty -> (* InputEmpty *)
         let v2 : bool = v0 = 3
         v2
 and loop_0 (v0 : int32, v1 : int32, v2 : int32) : int32 =
@@ -59,7 +59,7 @@ and loop_0 (v0 : int32, v1 : int32, v2 : int32) : int32 =
     if v3 then
         v2
     else
-        let v4 : UH0 = UH0_0
+        let v4 : UH0 = UH0_InputEmpty
         let v5 : UH0 = zeros_input_1(v1, v4)
         let v6 : int32 = 0
         let v7 : bool = run_2(v6, v5)
@@ -69,9 +69,9 @@ and loop_0 (v0 : int32, v1 : int32, v2 : int32) : int32 =
                 v8
             else
                 v2
-        let v10 : US0 = US0_1
-        let v11 : UH0 = UH0_0
-        let v12 : UH0 = UH0_1(v10, v11)
+        let v10 : US0 = US0_BitOne
+        let v11 : UH0 = UH0_InputEmpty
+        let v12 : UH0 = UH0_InputCons(v10, v11)
         let v13 : UH0 = zeros_input_1(v1, v12)
         let v14 : int32 = 0
         let v15 : bool = run_2(v14, v13)

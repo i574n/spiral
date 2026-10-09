@@ -39,14 +39,14 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0(uint64_t v0, Fun0 * v1) { // Cons
+UH0 * UH0_Cons(uint64_t v0, Fun0 * v1) { // Cons
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     x->case0.v0 = v0; x->case0.v1 = v1;
     return x;
 }
-UH0 * UH0_1() { // Nil
+UH0 * UH0_Nil() { // Nil
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -89,7 +89,7 @@ UH0 * build0(uint64_t v0){
     if (v1){
         
         
-        return UH0_1();
+        return UH0_Nil();
     } else {
         
         
@@ -97,7 +97,7 @@ UH0 * build0(uint64_t v0){
         v3 = ClosureCreate0(v0);
         
         
-        return UH0_0(v0, v3);
+        return UH0_Cons(v0, v3);
     }
 }
 uint64_t sum1(UH0 * v0, uint64_t v1){

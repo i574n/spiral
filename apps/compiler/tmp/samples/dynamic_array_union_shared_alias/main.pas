@@ -7,11 +7,11 @@ type
   TUS0 = record tag: LongInt; c1_0: TArray0; end;
 function bump_0(v0: TUS0): LongInt; forward;
 function score_1(v0: TUS0): LongInt; forward;
-function US0_0: TUS0;
+function US0_Empty: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: TArray0): TUS0;
+function US0_Values(a0: TArray0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0;
 end;
@@ -76,9 +76,9 @@ begin
   v1 := tmp2;
   v1[0] := 4;
   v1[1] := 5;
-  v2 := US0_1(v1);
+  v2 := US0_Values(v1);
   v3 := bump_0(v2);
-  v4 := US0_1(v1);
+  v4 := US0_Values(v1);
   v5 := score_1(v4);
   v6 := v5 + v3;
   v7 := v6 - 12;

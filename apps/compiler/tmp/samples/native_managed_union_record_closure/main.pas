@@ -12,11 +12,11 @@ type
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TUS0; forward;
 function method1(v0: TFun0): TUS0; forward;
-function US0_0: TUS0;
+function US0_Empty: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1(a0: AnsiString; a1: LongInt): TUS0;
+function US0_Item(a0: AnsiString; a1: LongInt): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -27,10 +27,10 @@ var
 begin
   v1 := v0 = 0;
   if v1 then begin
-      Result := US0_0;
+      Result := US0_Empty;
   end else begin
       v3 := 'managed';
-      Result := US0_1(v3, 32);
+      Result := US0_Item(v3, 32);
   end;
 end;
 function ClosureCreate0: TFun0;

@@ -110,10 +110,10 @@ const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) Fun1 };
 const ClosureEnv0 = struct { pad: u8 = 0 };
 const US0 = struct { tag: i32, c1_0: []const u8 = undefined, c1_1: []i32 = undefined };
 const ClosureEnv1 = struct { v0: US0, pad: u8 = 0 };
-fn US0_0() US0 {
+fn US0_Empty() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1(a0: []const u8, a1: []i32) US0 {
+fn US0_Item(a0: []const u8, a1: []i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0, .c1_1 = a1 };
 }
 fn closure1(ctx: *anyopaque, p1: i32) i32 {
@@ -170,10 +170,10 @@ fn closure0(ctx: *anyopaque, p0: i32) Fun1 {
     v1[spiralIndex(v1.len, @as(i32, 1))] = v2;
     v3 = v0 == @as(i32, 0);
     if (v3) {
-        v7 = US0_0();
+        v7 = US0_Empty();
     } else {
         v5 = "hi";
-        v7 = US0_1(v5, v1);
+        v7 = US0_Item(v5, v1);
     }
     return closureCreate1(v7);
 }

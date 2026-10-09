@@ -31,11 +31,11 @@ function MutCreate1(a0: LongInt): TMut1;
 begin
   Result := TMut1.Create; Result.l0 := a0;
 end;
-function UH0_0: TUH0;
+function UH0_Nil: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; 
 end;
-function UH0_1(a0: LongInt; a1: TUH0): TUH0;
+function UH0_Cons(a0: LongInt; a1: TUH0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
@@ -108,7 +108,7 @@ begin
   end;
   v6 := MutCreate1(0);
   v7 := MutCreate1(0);
-  v8 := UH0_0;
+  v8 := UH0_Nil;
   v9 := MutCreate2(v8);
   while method1(v6) do begin
       v11 := v6.l0;
@@ -121,7 +121,7 @@ begin
       end else begin
       end;
       v16 := v9.l0;
-      v17 := UH0_1(v11, v16);
+      v17 := UH0_Cons(v11, v16);
       v9.l0 := v17;
       v18 := v11 + 1;
       v6.l0 := v18;

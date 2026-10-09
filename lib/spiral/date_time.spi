@@ -504,7 +504,7 @@ inl ticks (date_time : date_time) : timestamp =
             date_time
             |> new_time_span (min_value ())
             |> total_seconds
-            |> ((-) 14400)
+            |> ((-) $'(os.time{year=1970, month=1, day=1, hour=0, min=0, sec=0} or 0)')
             |> ((*) -10000000)
             |> convert.convert
             : timestamp

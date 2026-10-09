@@ -13,11 +13,11 @@ type
 function ClosureCreate0(v0: QWord): TFun0; forward;
 function build_0(v0: QWord): TUH0; forward;
 function sum_1(v0: TUH0; v1: QWord): QWord; forward;
-function UH0_0(a0: QWord; a1: TFun0): TUH0;
+function UH0_Cons(a0: QWord; a1: TFun0): TUH0;
 begin
   Result := TUH0.Create; Result.tag := 0; Result.c0_0 := a0; Result.c0_1 := a1;
 end;
-function UH0_1: TUH0;
+function UH0_Nil: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; 
 end;
@@ -41,10 +41,10 @@ var
 begin
   v1 := v0 = 0;
   if v1 then begin
-      Result := UH0_1;
+      Result := UH0_Nil;
   end else begin
       v3 := ClosureCreate0(v0);
-      Result := UH0_0(v0, v3);
+      Result := UH0_Cons(v0, v3);
   end;
 end;
 function sum_1(v0: TUH0; v1: QWord): QWord;

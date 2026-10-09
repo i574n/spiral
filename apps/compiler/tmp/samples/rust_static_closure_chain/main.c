@@ -512,14 +512,14 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0(uint64_t v0, Fun0 * v1) { // Cons
+UH0 * UH0_Cons(uint64_t v0, Fun0 * v1) { // Cons
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     x->case0.v0 = v0; x->case0.v1 = v1;
     return x;
 }
-UH0 * UH0_1() { // Nil
+UH0 * UH0_Nil() { // Nil
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -537,7 +537,7 @@ UH0 * ClosureMethod79(Closure79 * x){
     ClosureDecref79(x);
     
     
-    return UH0_1();
+    return UH0_Nil();
 }
 Fun0 * ClosureCreate79(){
     Closure79 * x = malloc(sizeof(Closure79));
@@ -563,7 +563,7 @@ UH0 * ClosureMethod78(Closure78 * x){
     v0 = ClosureCreate79();
     
     
-    return UH0_0(1ull, v0);
+    return UH0_Cons(1ull, v0);
 }
 Fun0 * ClosureCreate78(){
     Closure78 * x = malloc(sizeof(Closure78));
@@ -589,7 +589,7 @@ UH0 * ClosureMethod77(Closure77 * x){
     v0 = ClosureCreate78();
     
     
-    return UH0_0(2ull, v0);
+    return UH0_Cons(2ull, v0);
 }
 Fun0 * ClosureCreate77(){
     Closure77 * x = malloc(sizeof(Closure77));
@@ -615,7 +615,7 @@ UH0 * ClosureMethod76(Closure76 * x){
     v0 = ClosureCreate77();
     
     
-    return UH0_0(3ull, v0);
+    return UH0_Cons(3ull, v0);
 }
 Fun0 * ClosureCreate76(){
     Closure76 * x = malloc(sizeof(Closure76));
@@ -641,7 +641,7 @@ UH0 * ClosureMethod75(Closure75 * x){
     v0 = ClosureCreate76();
     
     
-    return UH0_0(4ull, v0);
+    return UH0_Cons(4ull, v0);
 }
 Fun0 * ClosureCreate75(){
     Closure75 * x = malloc(sizeof(Closure75));
@@ -667,7 +667,7 @@ UH0 * ClosureMethod74(Closure74 * x){
     v0 = ClosureCreate75();
     
     
-    return UH0_0(5ull, v0);
+    return UH0_Cons(5ull, v0);
 }
 Fun0 * ClosureCreate74(){
     Closure74 * x = malloc(sizeof(Closure74));
@@ -693,7 +693,7 @@ UH0 * ClosureMethod73(Closure73 * x){
     v0 = ClosureCreate74();
     
     
-    return UH0_0(6ull, v0);
+    return UH0_Cons(6ull, v0);
 }
 Fun0 * ClosureCreate73(){
     Closure73 * x = malloc(sizeof(Closure73));
@@ -719,7 +719,7 @@ UH0 * ClosureMethod72(Closure72 * x){
     v0 = ClosureCreate73();
     
     
-    return UH0_0(7ull, v0);
+    return UH0_Cons(7ull, v0);
 }
 Fun0 * ClosureCreate72(){
     Closure72 * x = malloc(sizeof(Closure72));
@@ -745,7 +745,7 @@ UH0 * ClosureMethod71(Closure71 * x){
     v0 = ClosureCreate72();
     
     
-    return UH0_0(8ull, v0);
+    return UH0_Cons(8ull, v0);
 }
 Fun0 * ClosureCreate71(){
     Closure71 * x = malloc(sizeof(Closure71));
@@ -771,7 +771,7 @@ UH0 * ClosureMethod70(Closure70 * x){
     v0 = ClosureCreate71();
     
     
-    return UH0_0(9ull, v0);
+    return UH0_Cons(9ull, v0);
 }
 Fun0 * ClosureCreate70(){
     Closure70 * x = malloc(sizeof(Closure70));
@@ -797,7 +797,7 @@ UH0 * ClosureMethod69(Closure69 * x){
     v0 = ClosureCreate70();
     
     
-    return UH0_0(10ull, v0);
+    return UH0_Cons(10ull, v0);
 }
 Fun0 * ClosureCreate69(){
     Closure69 * x = malloc(sizeof(Closure69));
@@ -823,7 +823,7 @@ UH0 * ClosureMethod68(Closure68 * x){
     v0 = ClosureCreate69();
     
     
-    return UH0_0(11ull, v0);
+    return UH0_Cons(11ull, v0);
 }
 Fun0 * ClosureCreate68(){
     Closure68 * x = malloc(sizeof(Closure68));
@@ -849,7 +849,7 @@ UH0 * ClosureMethod67(Closure67 * x){
     v0 = ClosureCreate68();
     
     
-    return UH0_0(12ull, v0);
+    return UH0_Cons(12ull, v0);
 }
 Fun0 * ClosureCreate67(){
     Closure67 * x = malloc(sizeof(Closure67));
@@ -875,7 +875,7 @@ UH0 * ClosureMethod66(Closure66 * x){
     v0 = ClosureCreate67();
     
     
-    return UH0_0(13ull, v0);
+    return UH0_Cons(13ull, v0);
 }
 Fun0 * ClosureCreate66(){
     Closure66 * x = malloc(sizeof(Closure66));
@@ -901,7 +901,7 @@ UH0 * ClosureMethod65(Closure65 * x){
     v0 = ClosureCreate66();
     
     
-    return UH0_0(14ull, v0);
+    return UH0_Cons(14ull, v0);
 }
 Fun0 * ClosureCreate65(){
     Closure65 * x = malloc(sizeof(Closure65));
@@ -927,7 +927,7 @@ UH0 * ClosureMethod64(Closure64 * x){
     v0 = ClosureCreate65();
     
     
-    return UH0_0(15ull, v0);
+    return UH0_Cons(15ull, v0);
 }
 Fun0 * ClosureCreate64(){
     Closure64 * x = malloc(sizeof(Closure64));
@@ -953,7 +953,7 @@ UH0 * ClosureMethod63(Closure63 * x){
     v0 = ClosureCreate64();
     
     
-    return UH0_0(16ull, v0);
+    return UH0_Cons(16ull, v0);
 }
 Fun0 * ClosureCreate63(){
     Closure63 * x = malloc(sizeof(Closure63));
@@ -979,7 +979,7 @@ UH0 * ClosureMethod62(Closure62 * x){
     v0 = ClosureCreate63();
     
     
-    return UH0_0(17ull, v0);
+    return UH0_Cons(17ull, v0);
 }
 Fun0 * ClosureCreate62(){
     Closure62 * x = malloc(sizeof(Closure62));
@@ -1005,7 +1005,7 @@ UH0 * ClosureMethod61(Closure61 * x){
     v0 = ClosureCreate62();
     
     
-    return UH0_0(18ull, v0);
+    return UH0_Cons(18ull, v0);
 }
 Fun0 * ClosureCreate61(){
     Closure61 * x = malloc(sizeof(Closure61));
@@ -1031,7 +1031,7 @@ UH0 * ClosureMethod60(Closure60 * x){
     v0 = ClosureCreate61();
     
     
-    return UH0_0(19ull, v0);
+    return UH0_Cons(19ull, v0);
 }
 Fun0 * ClosureCreate60(){
     Closure60 * x = malloc(sizeof(Closure60));
@@ -1057,7 +1057,7 @@ UH0 * ClosureMethod59(Closure59 * x){
     v0 = ClosureCreate60();
     
     
-    return UH0_0(20ull, v0);
+    return UH0_Cons(20ull, v0);
 }
 Fun0 * ClosureCreate59(){
     Closure59 * x = malloc(sizeof(Closure59));
@@ -1083,7 +1083,7 @@ UH0 * ClosureMethod58(Closure58 * x){
     v0 = ClosureCreate59();
     
     
-    return UH0_0(21ull, v0);
+    return UH0_Cons(21ull, v0);
 }
 Fun0 * ClosureCreate58(){
     Closure58 * x = malloc(sizeof(Closure58));
@@ -1109,7 +1109,7 @@ UH0 * ClosureMethod57(Closure57 * x){
     v0 = ClosureCreate58();
     
     
-    return UH0_0(22ull, v0);
+    return UH0_Cons(22ull, v0);
 }
 Fun0 * ClosureCreate57(){
     Closure57 * x = malloc(sizeof(Closure57));
@@ -1135,7 +1135,7 @@ UH0 * ClosureMethod56(Closure56 * x){
     v0 = ClosureCreate57();
     
     
-    return UH0_0(23ull, v0);
+    return UH0_Cons(23ull, v0);
 }
 Fun0 * ClosureCreate56(){
     Closure56 * x = malloc(sizeof(Closure56));
@@ -1161,7 +1161,7 @@ UH0 * ClosureMethod55(Closure55 * x){
     v0 = ClosureCreate56();
     
     
-    return UH0_0(24ull, v0);
+    return UH0_Cons(24ull, v0);
 }
 Fun0 * ClosureCreate55(){
     Closure55 * x = malloc(sizeof(Closure55));
@@ -1187,7 +1187,7 @@ UH0 * ClosureMethod54(Closure54 * x){
     v0 = ClosureCreate55();
     
     
-    return UH0_0(25ull, v0);
+    return UH0_Cons(25ull, v0);
 }
 Fun0 * ClosureCreate54(){
     Closure54 * x = malloc(sizeof(Closure54));
@@ -1213,7 +1213,7 @@ UH0 * ClosureMethod53(Closure53 * x){
     v0 = ClosureCreate54();
     
     
-    return UH0_0(26ull, v0);
+    return UH0_Cons(26ull, v0);
 }
 Fun0 * ClosureCreate53(){
     Closure53 * x = malloc(sizeof(Closure53));
@@ -1239,7 +1239,7 @@ UH0 * ClosureMethod52(Closure52 * x){
     v0 = ClosureCreate53();
     
     
-    return UH0_0(27ull, v0);
+    return UH0_Cons(27ull, v0);
 }
 Fun0 * ClosureCreate52(){
     Closure52 * x = malloc(sizeof(Closure52));
@@ -1265,7 +1265,7 @@ UH0 * ClosureMethod51(Closure51 * x){
     v0 = ClosureCreate52();
     
     
-    return UH0_0(28ull, v0);
+    return UH0_Cons(28ull, v0);
 }
 Fun0 * ClosureCreate51(){
     Closure51 * x = malloc(sizeof(Closure51));
@@ -1291,7 +1291,7 @@ UH0 * ClosureMethod50(Closure50 * x){
     v0 = ClosureCreate51();
     
     
-    return UH0_0(29ull, v0);
+    return UH0_Cons(29ull, v0);
 }
 Fun0 * ClosureCreate50(){
     Closure50 * x = malloc(sizeof(Closure50));
@@ -1317,7 +1317,7 @@ UH0 * ClosureMethod49(Closure49 * x){
     v0 = ClosureCreate50();
     
     
-    return UH0_0(30ull, v0);
+    return UH0_Cons(30ull, v0);
 }
 Fun0 * ClosureCreate49(){
     Closure49 * x = malloc(sizeof(Closure49));
@@ -1343,7 +1343,7 @@ UH0 * ClosureMethod48(Closure48 * x){
     v0 = ClosureCreate49();
     
     
-    return UH0_0(31ull, v0);
+    return UH0_Cons(31ull, v0);
 }
 Fun0 * ClosureCreate48(){
     Closure48 * x = malloc(sizeof(Closure48));
@@ -1369,7 +1369,7 @@ UH0 * ClosureMethod47(Closure47 * x){
     v0 = ClosureCreate48();
     
     
-    return UH0_0(32ull, v0);
+    return UH0_Cons(32ull, v0);
 }
 Fun0 * ClosureCreate47(){
     Closure47 * x = malloc(sizeof(Closure47));
@@ -1395,7 +1395,7 @@ UH0 * ClosureMethod46(Closure46 * x){
     v0 = ClosureCreate47();
     
     
-    return UH0_0(33ull, v0);
+    return UH0_Cons(33ull, v0);
 }
 Fun0 * ClosureCreate46(){
     Closure46 * x = malloc(sizeof(Closure46));
@@ -1421,7 +1421,7 @@ UH0 * ClosureMethod45(Closure45 * x){
     v0 = ClosureCreate46();
     
     
-    return UH0_0(34ull, v0);
+    return UH0_Cons(34ull, v0);
 }
 Fun0 * ClosureCreate45(){
     Closure45 * x = malloc(sizeof(Closure45));
@@ -1447,7 +1447,7 @@ UH0 * ClosureMethod44(Closure44 * x){
     v0 = ClosureCreate45();
     
     
-    return UH0_0(35ull, v0);
+    return UH0_Cons(35ull, v0);
 }
 Fun0 * ClosureCreate44(){
     Closure44 * x = malloc(sizeof(Closure44));
@@ -1473,7 +1473,7 @@ UH0 * ClosureMethod43(Closure43 * x){
     v0 = ClosureCreate44();
     
     
-    return UH0_0(36ull, v0);
+    return UH0_Cons(36ull, v0);
 }
 Fun0 * ClosureCreate43(){
     Closure43 * x = malloc(sizeof(Closure43));
@@ -1499,7 +1499,7 @@ UH0 * ClosureMethod42(Closure42 * x){
     v0 = ClosureCreate43();
     
     
-    return UH0_0(37ull, v0);
+    return UH0_Cons(37ull, v0);
 }
 Fun0 * ClosureCreate42(){
     Closure42 * x = malloc(sizeof(Closure42));
@@ -1525,7 +1525,7 @@ UH0 * ClosureMethod41(Closure41 * x){
     v0 = ClosureCreate42();
     
     
-    return UH0_0(38ull, v0);
+    return UH0_Cons(38ull, v0);
 }
 Fun0 * ClosureCreate41(){
     Closure41 * x = malloc(sizeof(Closure41));
@@ -1551,7 +1551,7 @@ UH0 * ClosureMethod40(Closure40 * x){
     v0 = ClosureCreate41();
     
     
-    return UH0_0(39ull, v0);
+    return UH0_Cons(39ull, v0);
 }
 Fun0 * ClosureCreate40(){
     Closure40 * x = malloc(sizeof(Closure40));
@@ -1577,7 +1577,7 @@ UH0 * ClosureMethod39(Closure39 * x){
     v0 = ClosureCreate40();
     
     
-    return UH0_0(40ull, v0);
+    return UH0_Cons(40ull, v0);
 }
 Fun0 * ClosureCreate39(){
     Closure39 * x = malloc(sizeof(Closure39));
@@ -1603,7 +1603,7 @@ UH0 * ClosureMethod38(Closure38 * x){
     v0 = ClosureCreate39();
     
     
-    return UH0_0(41ull, v0);
+    return UH0_Cons(41ull, v0);
 }
 Fun0 * ClosureCreate38(){
     Closure38 * x = malloc(sizeof(Closure38));
@@ -1629,7 +1629,7 @@ UH0 * ClosureMethod37(Closure37 * x){
     v0 = ClosureCreate38();
     
     
-    return UH0_0(42ull, v0);
+    return UH0_Cons(42ull, v0);
 }
 Fun0 * ClosureCreate37(){
     Closure37 * x = malloc(sizeof(Closure37));
@@ -1655,7 +1655,7 @@ UH0 * ClosureMethod36(Closure36 * x){
     v0 = ClosureCreate37();
     
     
-    return UH0_0(43ull, v0);
+    return UH0_Cons(43ull, v0);
 }
 Fun0 * ClosureCreate36(){
     Closure36 * x = malloc(sizeof(Closure36));
@@ -1681,7 +1681,7 @@ UH0 * ClosureMethod35(Closure35 * x){
     v0 = ClosureCreate36();
     
     
-    return UH0_0(44ull, v0);
+    return UH0_Cons(44ull, v0);
 }
 Fun0 * ClosureCreate35(){
     Closure35 * x = malloc(sizeof(Closure35));
@@ -1707,7 +1707,7 @@ UH0 * ClosureMethod34(Closure34 * x){
     v0 = ClosureCreate35();
     
     
-    return UH0_0(45ull, v0);
+    return UH0_Cons(45ull, v0);
 }
 Fun0 * ClosureCreate34(){
     Closure34 * x = malloc(sizeof(Closure34));
@@ -1733,7 +1733,7 @@ UH0 * ClosureMethod33(Closure33 * x){
     v0 = ClosureCreate34();
     
     
-    return UH0_0(46ull, v0);
+    return UH0_Cons(46ull, v0);
 }
 Fun0 * ClosureCreate33(){
     Closure33 * x = malloc(sizeof(Closure33));
@@ -1759,7 +1759,7 @@ UH0 * ClosureMethod32(Closure32 * x){
     v0 = ClosureCreate33();
     
     
-    return UH0_0(47ull, v0);
+    return UH0_Cons(47ull, v0);
 }
 Fun0 * ClosureCreate32(){
     Closure32 * x = malloc(sizeof(Closure32));
@@ -1785,7 +1785,7 @@ UH0 * ClosureMethod31(Closure31 * x){
     v0 = ClosureCreate32();
     
     
-    return UH0_0(48ull, v0);
+    return UH0_Cons(48ull, v0);
 }
 Fun0 * ClosureCreate31(){
     Closure31 * x = malloc(sizeof(Closure31));
@@ -1811,7 +1811,7 @@ UH0 * ClosureMethod30(Closure30 * x){
     v0 = ClosureCreate31();
     
     
-    return UH0_0(49ull, v0);
+    return UH0_Cons(49ull, v0);
 }
 Fun0 * ClosureCreate30(){
     Closure30 * x = malloc(sizeof(Closure30));
@@ -1837,7 +1837,7 @@ UH0 * ClosureMethod29(Closure29 * x){
     v0 = ClosureCreate30();
     
     
-    return UH0_0(50ull, v0);
+    return UH0_Cons(50ull, v0);
 }
 Fun0 * ClosureCreate29(){
     Closure29 * x = malloc(sizeof(Closure29));
@@ -1863,7 +1863,7 @@ UH0 * ClosureMethod28(Closure28 * x){
     v0 = ClosureCreate29();
     
     
-    return UH0_0(51ull, v0);
+    return UH0_Cons(51ull, v0);
 }
 Fun0 * ClosureCreate28(){
     Closure28 * x = malloc(sizeof(Closure28));
@@ -1889,7 +1889,7 @@ UH0 * ClosureMethod27(Closure27 * x){
     v0 = ClosureCreate28();
     
     
-    return UH0_0(52ull, v0);
+    return UH0_Cons(52ull, v0);
 }
 Fun0 * ClosureCreate27(){
     Closure27 * x = malloc(sizeof(Closure27));
@@ -1915,7 +1915,7 @@ UH0 * ClosureMethod26(Closure26 * x){
     v0 = ClosureCreate27();
     
     
-    return UH0_0(53ull, v0);
+    return UH0_Cons(53ull, v0);
 }
 Fun0 * ClosureCreate26(){
     Closure26 * x = malloc(sizeof(Closure26));
@@ -1941,7 +1941,7 @@ UH0 * ClosureMethod25(Closure25 * x){
     v0 = ClosureCreate26();
     
     
-    return UH0_0(54ull, v0);
+    return UH0_Cons(54ull, v0);
 }
 Fun0 * ClosureCreate25(){
     Closure25 * x = malloc(sizeof(Closure25));
@@ -1967,7 +1967,7 @@ UH0 * ClosureMethod24(Closure24 * x){
     v0 = ClosureCreate25();
     
     
-    return UH0_0(55ull, v0);
+    return UH0_Cons(55ull, v0);
 }
 Fun0 * ClosureCreate24(){
     Closure24 * x = malloc(sizeof(Closure24));
@@ -1993,7 +1993,7 @@ UH0 * ClosureMethod23(Closure23 * x){
     v0 = ClosureCreate24();
     
     
-    return UH0_0(56ull, v0);
+    return UH0_Cons(56ull, v0);
 }
 Fun0 * ClosureCreate23(){
     Closure23 * x = malloc(sizeof(Closure23));
@@ -2019,7 +2019,7 @@ UH0 * ClosureMethod22(Closure22 * x){
     v0 = ClosureCreate23();
     
     
-    return UH0_0(57ull, v0);
+    return UH0_Cons(57ull, v0);
 }
 Fun0 * ClosureCreate22(){
     Closure22 * x = malloc(sizeof(Closure22));
@@ -2045,7 +2045,7 @@ UH0 * ClosureMethod21(Closure21 * x){
     v0 = ClosureCreate22();
     
     
-    return UH0_0(58ull, v0);
+    return UH0_Cons(58ull, v0);
 }
 Fun0 * ClosureCreate21(){
     Closure21 * x = malloc(sizeof(Closure21));
@@ -2071,7 +2071,7 @@ UH0 * ClosureMethod20(Closure20 * x){
     v0 = ClosureCreate21();
     
     
-    return UH0_0(59ull, v0);
+    return UH0_Cons(59ull, v0);
 }
 Fun0 * ClosureCreate20(){
     Closure20 * x = malloc(sizeof(Closure20));
@@ -2097,7 +2097,7 @@ UH0 * ClosureMethod19(Closure19 * x){
     v0 = ClosureCreate20();
     
     
-    return UH0_0(60ull, v0);
+    return UH0_Cons(60ull, v0);
 }
 Fun0 * ClosureCreate19(){
     Closure19 * x = malloc(sizeof(Closure19));
@@ -2123,7 +2123,7 @@ UH0 * ClosureMethod18(Closure18 * x){
     v0 = ClosureCreate19();
     
     
-    return UH0_0(61ull, v0);
+    return UH0_Cons(61ull, v0);
 }
 Fun0 * ClosureCreate18(){
     Closure18 * x = malloc(sizeof(Closure18));
@@ -2149,7 +2149,7 @@ UH0 * ClosureMethod17(Closure17 * x){
     v0 = ClosureCreate18();
     
     
-    return UH0_0(62ull, v0);
+    return UH0_Cons(62ull, v0);
 }
 Fun0 * ClosureCreate17(){
     Closure17 * x = malloc(sizeof(Closure17));
@@ -2175,7 +2175,7 @@ UH0 * ClosureMethod16(Closure16 * x){
     v0 = ClosureCreate17();
     
     
-    return UH0_0(63ull, v0);
+    return UH0_Cons(63ull, v0);
 }
 Fun0 * ClosureCreate16(){
     Closure16 * x = malloc(sizeof(Closure16));
@@ -2201,7 +2201,7 @@ UH0 * ClosureMethod15(Closure15 * x){
     v0 = ClosureCreate16();
     
     
-    return UH0_0(64ull, v0);
+    return UH0_Cons(64ull, v0);
 }
 Fun0 * ClosureCreate15(){
     Closure15 * x = malloc(sizeof(Closure15));
@@ -2227,7 +2227,7 @@ UH0 * ClosureMethod14(Closure14 * x){
     v0 = ClosureCreate15();
     
     
-    return UH0_0(65ull, v0);
+    return UH0_Cons(65ull, v0);
 }
 Fun0 * ClosureCreate14(){
     Closure14 * x = malloc(sizeof(Closure14));
@@ -2253,7 +2253,7 @@ UH0 * ClosureMethod13(Closure13 * x){
     v0 = ClosureCreate14();
     
     
-    return UH0_0(66ull, v0);
+    return UH0_Cons(66ull, v0);
 }
 Fun0 * ClosureCreate13(){
     Closure13 * x = malloc(sizeof(Closure13));
@@ -2279,7 +2279,7 @@ UH0 * ClosureMethod12(Closure12 * x){
     v0 = ClosureCreate13();
     
     
-    return UH0_0(67ull, v0);
+    return UH0_Cons(67ull, v0);
 }
 Fun0 * ClosureCreate12(){
     Closure12 * x = malloc(sizeof(Closure12));
@@ -2305,7 +2305,7 @@ UH0 * ClosureMethod11(Closure11 * x){
     v0 = ClosureCreate12();
     
     
-    return UH0_0(68ull, v0);
+    return UH0_Cons(68ull, v0);
 }
 Fun0 * ClosureCreate11(){
     Closure11 * x = malloc(sizeof(Closure11));
@@ -2331,7 +2331,7 @@ UH0 * ClosureMethod10(Closure10 * x){
     v0 = ClosureCreate11();
     
     
-    return UH0_0(69ull, v0);
+    return UH0_Cons(69ull, v0);
 }
 Fun0 * ClosureCreate10(){
     Closure10 * x = malloc(sizeof(Closure10));
@@ -2357,7 +2357,7 @@ UH0 * ClosureMethod9(Closure9 * x){
     v0 = ClosureCreate10();
     
     
-    return UH0_0(70ull, v0);
+    return UH0_Cons(70ull, v0);
 }
 Fun0 * ClosureCreate9(){
     Closure9 * x = malloc(sizeof(Closure9));
@@ -2383,7 +2383,7 @@ UH0 * ClosureMethod8(Closure8 * x){
     v0 = ClosureCreate9();
     
     
-    return UH0_0(71ull, v0);
+    return UH0_Cons(71ull, v0);
 }
 Fun0 * ClosureCreate8(){
     Closure8 * x = malloc(sizeof(Closure8));
@@ -2409,7 +2409,7 @@ UH0 * ClosureMethod7(Closure7 * x){
     v0 = ClosureCreate8();
     
     
-    return UH0_0(72ull, v0);
+    return UH0_Cons(72ull, v0);
 }
 Fun0 * ClosureCreate7(){
     Closure7 * x = malloc(sizeof(Closure7));
@@ -2435,7 +2435,7 @@ UH0 * ClosureMethod6(Closure6 * x){
     v0 = ClosureCreate7();
     
     
-    return UH0_0(73ull, v0);
+    return UH0_Cons(73ull, v0);
 }
 Fun0 * ClosureCreate6(){
     Closure6 * x = malloc(sizeof(Closure6));
@@ -2461,7 +2461,7 @@ UH0 * ClosureMethod5(Closure5 * x){
     v0 = ClosureCreate6();
     
     
-    return UH0_0(74ull, v0);
+    return UH0_Cons(74ull, v0);
 }
 Fun0 * ClosureCreate5(){
     Closure5 * x = malloc(sizeof(Closure5));
@@ -2487,7 +2487,7 @@ UH0 * ClosureMethod4(Closure4 * x){
     v0 = ClosureCreate5();
     
     
-    return UH0_0(75ull, v0);
+    return UH0_Cons(75ull, v0);
 }
 Fun0 * ClosureCreate4(){
     Closure4 * x = malloc(sizeof(Closure4));
@@ -2513,7 +2513,7 @@ UH0 * ClosureMethod3(Closure3 * x){
     v0 = ClosureCreate4();
     
     
-    return UH0_0(76ull, v0);
+    return UH0_Cons(76ull, v0);
 }
 Fun0 * ClosureCreate3(){
     Closure3 * x = malloc(sizeof(Closure3));
@@ -2539,7 +2539,7 @@ UH0 * ClosureMethod2(Closure2 * x){
     v0 = ClosureCreate3();
     
     
-    return UH0_0(77ull, v0);
+    return UH0_Cons(77ull, v0);
 }
 Fun0 * ClosureCreate2(){
     Closure2 * x = malloc(sizeof(Closure2));
@@ -2565,7 +2565,7 @@ UH0 * ClosureMethod1(Closure1 * x){
     v0 = ClosureCreate2();
     
     
-    return UH0_0(78ull, v0);
+    return UH0_Cons(78ull, v0);
 }
 Fun0 * ClosureCreate1(){
     Closure1 * x = malloc(sizeof(Closure1));
@@ -2591,7 +2591,7 @@ UH0 * ClosureMethod0(Closure0 * x){
     v0 = ClosureCreate1();
     
     
-    return UH0_0(79ull, v0);
+    return UH0_Cons(79ull, v0);
 }
 Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
@@ -2641,7 +2641,7 @@ int32_t main(){
     v1->refc++;
     
     UH0 * v2;
-    v2 = UH0_0(v0, v1);
+    v2 = UH0_Cons(v0, v1);
     
     v1->decref_fptr(v1);
     uint64_t v3;

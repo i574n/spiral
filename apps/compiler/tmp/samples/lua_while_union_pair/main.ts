@@ -8,11 +8,11 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
 }
 type Mut0 = { l0: number };
 type Mut1 = { l0: number };
-type UH0_0 = { readonly tag: 0 };
-type UH0_1 = { readonly tag: 1, readonly f0: number, readonly f1: UH0 };
-type UH0 = UH0_0 | UH0_1;
-function UH0_0(): UH0 { return { tag: 0 }; }
-function UH0_1(f0: number, f1: UH0): UH0 { return { tag: 1, f0: f0, f1: f1 }; }
+type UH0_Nil = { readonly tag: 0 };
+type UH0_Cons = { readonly tag: 1, readonly f0: number, readonly f1: UH0 };
+type UH0 = UH0_Nil | UH0_Cons;
+function UH0_Nil(): UH0 { return { tag: 0 }; }
+function UH0_Cons(f0: number, f1: UH0): UH0 { return { tag: 1, f0: f0, f1: f1 }; }
 type Mut2 = { l0: UH0 };
 function method0(v0: Mut0): boolean {
     let v1: number = v0.l0;
@@ -36,7 +36,7 @@ export function main(): number {
     }
     let v6: Mut1 = { l0: 0 };
     let v7: Mut1 = { l0: 0 };
-    let v8: UH0 = UH0_0();
+    let v8: UH0 = UH0_Nil();
     let v9: Mut2 = { l0: v8 };
     while (method1(v6)) {
         let v11: number = v6.l0;
@@ -48,7 +48,7 @@ export function main(): number {
             v7.l0 = v15;
         }
         let v16: UH0 = v9.l0;
-        let v17: UH0 = UH0_1(v11, v16);
+        let v17: UH0 = UH0_Cons(v11, v16);
         v9.l0 = v17;
         let v18: number = (v11 + 1) | 0;
         v6.l0 = v18;

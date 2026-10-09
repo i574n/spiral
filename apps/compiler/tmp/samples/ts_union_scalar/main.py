@@ -16,19 +16,19 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-class US0_0(NamedTuple): # Hit
+class US0_Hit(NamedTuple): # Hit
     v0 : i32
     tag = 0
-class US0_1(NamedTuple): # Miss
+class US0_Miss(NamedTuple): # Miss
     v0 : i32
     tag = 1
-US0 = Union[US0_0, US0_1]
+US0 = Union[US0_Hit, US0_Miss]
 def score_0(v0 : US0) -> i32:
     match v0:
-        case US0_0(v1): # Hit
+        case US0_Hit(v1): # Hit
             del v0
             return v1
-        case US0_1(v2): # Miss
+        case US0_Miss(v2): # Miss
             del v0
             v3 = -v2
             del v2
@@ -38,9 +38,9 @@ def score_0(v0 : US0) -> i32:
 def main():
     v0 = True
     if v0:
-        v3 = US0_0(7)
+        v3 = US0_Hit(7)
     else:
-        v3 = US0_1(3)
+        v3 = US0_Miss(3)
     del v0
     v4 = score_0(v3)
     del v3

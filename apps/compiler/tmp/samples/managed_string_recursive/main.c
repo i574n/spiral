@@ -58,13 +58,13 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // Empty
+UH0 * UH0_Empty() { // Empty
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1(String * v0, UH0 * v1, UH0 * v2) { // Node
+UH0 * UH0_Node(String * v0, UH0 * v1, UH0 * v2) { // Node
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -123,15 +123,15 @@ int32_t main(){
     
     
     UH0 * v2;
-    v2 = UH0_0();
+    v2 = UH0_Empty();
     v1->refc++; v2->refc += 2;
     
     UH0 * v3;
-    v3 = UH0_1(v1, v2, v2);
+    v3 = UH0_Node(v1, v2, v2);
     v0->refc++; v3->refc += 2;
     UHDecref0(v2);
     UH0 * v4;
-    v4 = UH0_1(v0, v3, v3);
+    v4 = UH0_Node(v0, v3, v3);
     v4->refc++;
     UHDecref0(v3);
     int32_t v5;
@@ -139,15 +139,15 @@ int32_t main(){
     
     UHDecref0(v4);
     UH0 * v6;
-    v6 = UH0_0();
+    v6 = UH0_Empty();
     v1->refc++; v6->refc += 2;
     
     UH0 * v7;
-    v7 = UH0_1(v1, v6, v6);
+    v7 = UH0_Node(v1, v6, v6);
     v0->refc++; v7->refc += 2;
     StringDecref(v1); UHDecref0(v6);
     UH0 * v8;
-    v8 = UH0_1(v0, v7, v7);
+    v8 = UH0_Node(v0, v7, v7);
     v8->refc++;
     StringDecref(v0); UHDecref0(v7);
     int32_t v9;

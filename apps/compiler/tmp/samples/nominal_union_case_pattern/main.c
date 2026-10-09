@@ -18,12 +18,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // Zero
+US0 US0_Zero() { // Zero
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1() { // One
+US0 US0_One() { // One
     US0 x;
     x.tag = 1;
     return x;
@@ -32,7 +32,7 @@ int32_t main(){
     
     
     US0 v0;
-    v0 = US0_0();
+    v0 = US0_Zero();
     
     
     bool v2;

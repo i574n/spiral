@@ -83,12 +83,12 @@ static inline void USDecrefBody0(US0 * x){
 }
 void USIncref0(US0 * x){ USIncrefBody0(x); }
 void USDecref0(US0 * x){ USDecrefBody0(x); }
-US0 US0_0() { // BitZero
+US0 US0_BitZero() { // BitZero
     US0 x;
     x.tag = 0;
     return x;
 }
-US0 US0_1() { // BitOne
+US0 US0_BitOne() { // BitOne
     US0 x;
     x.tag = 1;
     return x;
@@ -116,40 +116,40 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // RegexEmpty
+UH0 * UH0_RegexEmpty() { // RegexEmpty
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1() { // RegexEpsilon
+UH0 * UH0_RegexEpsilon() { // RegexEpsilon
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_2(US0 v0) { // RegexChar
+UH0 * UH0_RegexChar(US0 v0) { // RegexChar
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 2;
     x->refc = 1;
     x->case2.v0 = v0;
     return x;
 }
-UH0 * UH0_3(UH0 * v0, UH0 * v1) { // RegexAlt
+UH0 * UH0_RegexAlt(UH0 * v0, UH0 * v1) { // RegexAlt
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 3;
     x->refc = 1;
     x->case3.v0 = v0; x->case3.v1 = v1;
     return x;
 }
-UH0 * UH0_4(UH0 * v0, UH0 * v1) { // RegexCat
+UH0 * UH0_RegexCat(UH0 * v0, UH0 * v1) { // RegexCat
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 4;
     x->refc = 1;
     x->case4.v0 = v0; x->case4.v1 = v1;
     return x;
 }
-UH0 * UH0_5(UH0 * v0) { // RegexStar
+UH0 * UH0_RegexStar(UH0 * v0) { // RegexStar
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 5;
     x->refc = 1;
@@ -167,13 +167,13 @@ static inline void UHDecrefBody1(UH1 * x){
 void UHDecref1(UH1 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody1(x); free(x); }
 }
-UH1 * UH1_0() { // InputEmpty
+UH1 * UH1_InputEmpty() { // InputEmpty
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH1 * UH1_1(US0 v0, UH1 * v1) { // InputCons
+UH1 * UH1_InputCons(US0 v0, UH1 * v1) { // InputCons
     UH1 * x = malloc(sizeof(UH1));
     x->tag = 1;
     x->refc = 1;
@@ -228,7 +228,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
             
             
             US0 v11;
-            v11 = US0_0();
+            v11 = US0_BitZero();
             
             
             v13 = v11;
@@ -236,7 +236,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
             
             
             US0 v12;
-            v12 = US0_1();
+            v12 = US0_BitOne();
             
             
             v13 = v12;
@@ -244,7 +244,7 @@ Tuple0 random_bit_input1(uint64_t v0, int32_t v1, UH1 * v2){
         v2->refc++; USIncref0(&(v13));
         
         UH1 * v14;
-        v14 = UH1_1(v13, v2);
+        v14 = UH1_InputCons(v13, v2);
         
         UHDecref1(v2); USDecref0(&(v13));
         return random_bit_input1(v6, v7, v14);
@@ -264,17 +264,17 @@ static inline void USDecrefBody1(US1 * x){
 }
 void USIncref1(US1 * x){ USIncrefBody1(x); }
 void USDecref1(US1 * x){ USDecrefBody1(x); }
-US1 US1_0() { // SymbolLess
+US1 US1_SymbolLess() { // SymbolLess
     US1 x;
     x.tag = 0;
     return x;
 }
-US1 US1_1() { // SymbolSame
+US1 US1_SymbolSame() { // SymbolSame
     US1 x;
     x.tag = 1;
     return x;
 }
-US1 US1_2() { // SymbolGreater
+US1 US1_SymbolGreater() { // SymbolGreater
     US1 x;
     x.tag = 2;
     return x;
@@ -315,7 +315,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v53); UHDecref0(v54);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -353,27 +353,27 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 0: { // RegexEmpty
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v28); UHDecref0(v29);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -397,14 +397,14 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_1();
+                                    return US1_SymbolSame();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_2();
+                                    return US1_SymbolGreater();
                                     break;
                                 }
                             }
@@ -419,14 +419,14 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_0();
+                                    return US1_SymbolLess();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
-                                    return US1_1();
+                                    return US1_SymbolSame();
                                     break;
                                 }
                             }
@@ -439,20 +439,20 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1); USDecref0(&(v10));
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -466,13 +466,13 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -486,20 +486,20 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1);
-                    return US1_2();
+                    return US1_SymbolGreater();
                     break;
                 }
                 case 1: { // RegexEpsilon
                     
                     
                     UHDecref0(v1);
-                    return US1_1();
+                    return US1_SymbolSame();
                     break;
                 }
                 default: {
                     
                     UHDecref0(v1);
-                    return US1_0();
+                    return US1_SymbolLess();
                 }
             }
             break;
@@ -513,7 +513,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v1); UHDecref0(v44);
-                    return US1_0();
+                    return US1_SymbolLess();
                     break;
                 }
                 case 5: { // RegexStar
@@ -526,7 +526,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                 default: {
                     
                     UHDecref0(v1); UHDecref0(v44);
-                    return US1_2();
+                    return US1_SymbolGreater();
                 }
             }
             break;
@@ -554,14 +554,14 @@ UH0 * alt_insert_sorted6(UH0 * v0, UH0 * v1){
                     v6 = alt_insert_sorted6(v0, v3);
                     
                     UHDecref0(v0); UHDecref0(v3);
-                    return UH0_3(v2, v6);
+                    return UH0_RegexAlt(v2, v6);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     UHDecref0(v2); UHDecref0(v3); USDecref1(&(v4));
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -593,14 +593,14 @@ UH0 * alt_insert_sorted6(UH0 * v0, UH0 * v1){
                     
                     
                     USDecref1(&(v11));
-                    return UH0_3(v1, v0);
+                    return UH0_RegexAlt(v1, v0);
                     break;
                 }
                 case 0: { // SymbolLess
                     
                     
                     USDecref1(&(v11));
-                    return UH0_3(v0, v1);
+                    return UH0_RegexAlt(v0, v1);
                     break;
                 }
                 case 1: { // SymbolSame
@@ -731,14 +731,14 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
                                     
                                     
                                     
-                                    v15 = US1_1();
+                                    v15 = US1_SymbolSame();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     
-                                    v15 = US1_2();
+                                    v15 = US1_SymbolGreater();
                                     break;
                                 }
                             }
@@ -753,14 +753,14 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
                                     
                                     
                                     
-                                    v15 = US1_0();
+                                    v15 = US1_SymbolLess();
                                     break;
                                 }
                                 case 0: { // BitZero
                                     
                                     
                                     
-                                    v15 = US1_1();
+                                    v15 = US1_SymbolSame();
                                     break;
                                 }
                             }
@@ -863,7 +863,7 @@ UH0 * make_cat8(UH0 * v0, UH0 * v1){
             
             
             UHDecref0(v0); UHDecref0(v1);
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         default: {
@@ -874,7 +874,7 @@ UH0 * make_cat8(UH0 * v0, UH0 * v1){
                     
                     
                     UHDecref0(v0); UHDecref0(v1);
-                    return UH0_0();
+                    return UH0_RegexEmpty();
                     break;
                 }
                 default: {
@@ -911,7 +911,7 @@ UH0 * make_cat8(UH0 * v0, UH0 * v1){
                                             v14 = make_cat8(v13, v1);
                                             
                                             UHDecref0(v1); UHDecref0(v13);
-                                            return UH0_4(v12, v14);
+                                            return UH0_RegexCat(v12, v14);
                                             break;
                                         }
                                         case 5: { // RegexStar
@@ -930,18 +930,18 @@ UH0 * make_cat8(UH0 * v0, UH0 * v1){
                                                     if (v6){
                                                         
                                                         UHDecref0(v0); UHDecref0(v1);
-                                                        return UH0_5(v4);
+                                                        return UH0_RegexStar(v4);
                                                     } else {
                                                         
                                                         UHDecref0(v4);
-                                                        return UH0_4(v0, v1);
+                                                        return UH0_RegexCat(v0, v1);
                                                     }
                                                     break;
                                                 }
                                                 default: {
                                                     
                                                     UHDecref0(v4);
-                                                    return UH0_4(v0, v1);
+                                                    return UH0_RegexCat(v0, v1);
                                                 }
                                             }
                                             break;
@@ -949,7 +949,7 @@ UH0 * make_cat8(UH0 * v0, UH0 * v1){
                                         default: {
                                             
                                             
-                                            return UH0_4(v0, v1);
+                                            return UH0_RegexCat(v0, v1);
                                         }
                                     }
                                 }
@@ -969,27 +969,27 @@ UH0 * make_star10(UH0 * v0){
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
             UH0 * v3 = v0->case5.v0;
             v3->refc++;
             UHDecref0(v0);
-            return UH0_5(v3);
+            return UH0_RegexStar(v3);
             break;
         }
         default: {
             
             
-            return UH0_5(v0);
+            return UH0_RegexStar(v0);
         }
     }
 }
@@ -1031,21 +1031,21 @@ UH0 * normalize4(UH0 * v0){
             US0 v3 = v0->case2.v0;
             USIncref0(&(v3));
             UHDecref0(v0);
-            return UH0_2(v3);
+            return UH0_RegexChar(v3);
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref0(v0);
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return UH0_1();
+            return UH0_RegexEpsilon();
             break;
         }
         case 5: { // RegexStar
@@ -1071,12 +1071,12 @@ static inline void USDecrefBody2(US2 * x){
 }
 void USIncref2(US2 * x){ USIncrefBody2(x); }
 void USDecref2(US2 * x){ USDecrefBody2(x); }
-US2 US2_0() { // Nullable
+US2 US2_Nullable() { // Nullable
     US2 x;
     x.tag = 0;
     return x;
 }
-US2 US2_1() { // NonNullable
+US2 US2_NonNullable() { // NonNullable
     US2 x;
     x.tag = 1;
     return x;
@@ -1102,7 +1102,7 @@ US2 nullable12(UH0 * v0){
                     
                     
                     USDecref2(&(v7)); USDecref2(&(v8));
-                    return US2_0();
+                    return US2_Nullable();
                     break;
                 }
                 default: {
@@ -1113,7 +1113,7 @@ US2 nullable12(UH0 * v0){
                             
                             
                             USDecref2(&(v7)); USDecref2(&(v8));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
@@ -1129,7 +1129,7 @@ US2 nullable12(UH0 * v0){
                                             
                                             
                                             USDecref2(&(v8));
-                                            return US2_1();
+                                            return US2_NonNullable();
                                             break;
                                         }
                                     }
@@ -1164,13 +1164,13 @@ US2 nullable12(UH0 * v0){
                             
                             
                             USDecref2(&(v19));
-                            return US2_0();
+                            return US2_Nullable();
                             break;
                         }
                         default: {
                             
                             USDecref2(&(v19));
-                            return US2_1();
+                            return US2_NonNullable();
                         }
                     }
                     break;
@@ -1178,7 +1178,7 @@ US2 nullable12(UH0 * v0){
                 default: {
                     
                     USDecref2(&(v18)); USDecref2(&(v19));
-                    return US2_1();
+                    return US2_NonNullable();
                 }
             }
             break;
@@ -1187,28 +1187,28 @@ US2 nullable12(UH0 * v0){
             
             
             UHDecref0(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 0: { // RegexEmpty
             
             
             UHDecref0(v0);
-            return US2_1();
+            return US2_NonNullable();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
         case 5: { // RegexStar
             
             
             UHDecref0(v0);
-            return US2_0();
+            return US2_Nullable();
             break;
         }
     }
@@ -1289,14 +1289,14 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                             
                             
                             
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v14 = US1_2();
+                            v14 = US1_SymbolGreater();
                             break;
                         }
                     }
@@ -1311,14 +1311,14 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                             
                             
                             
-                            v14 = US1_0();
+                            v14 = US1_SymbolLess();
                             break;
                         }
                         case 0: { // BitZero
                             
                             
                             
-                            v14 = US1_1();
+                            v14 = US1_SymbolSame();
                             break;
                         }
                     }
@@ -1347,11 +1347,11 @@ UH0 * derivative11(UH0 * v0, US0 v1){
             if (v15){
                 
                 
-                return UH0_1();
+                return UH0_RegexEpsilon();
             } else {
                 
                 
-                return UH0_0();
+                return UH0_RegexEmpty();
             }
             break;
         }
@@ -1359,14 +1359,14 @@ UH0 * derivative11(UH0 * v0, US0 v1){
             
             
             UHDecref0(v0); USDecref0(&(v1));
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 1: { // RegexEpsilon
             
             
             UHDecref0(v0); USDecref0(&(v1));
-            return UH0_0();
+            return UH0_RegexEmpty();
             break;
         }
         case 5: { // RegexStar
@@ -1457,7 +1457,7 @@ int32_t loop0(UH0 * v0, int32_t v1, int32_t v2, uint64_t v3, int32_t v4){
         
         
         UH1 * v6;
-        v6 = UH1_0();
+        v6 = UH1_InputEmpty();
         v6->refc++;
         
         UH1 * v7; uint64_t v8;
@@ -1511,11 +1511,11 @@ UH1 * zeros_input14(int32_t v0, UH1 * v1){
         
         
         US0 v4;
-        v4 = US0_0();
+        v4 = US0_BitZero();
         v1->refc++; USIncref0(&(v4));
         
         UH1 * v5;
-        v5 = UH1_1(v4, v1);
+        v5 = UH1_InputCons(v4, v1);
         
         UHDecref1(v1); USDecref0(&(v4));
         return zeros_input14(v3, v5);
@@ -1540,7 +1540,7 @@ int32_t loop13(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         
         UH1 * v5;
-        v5 = UH1_0();
+        v5 = UH1_InputEmpty();
         v5->refc++;
         
         UH1 * v6;
@@ -1568,15 +1568,15 @@ int32_t loop13(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         
         US0 v10;
-        v10 = US0_1();
+        v10 = US0_BitOne();
         
         
         UH1 * v11;
-        v11 = UH1_0();
+        v11 = UH1_InputEmpty();
         USIncref0(&(v10)); v11->refc++;
         
         UH1 * v12;
-        v12 = UH1_1(v10, v11);
+        v12 = UH1_InputCons(v10, v11);
         v12->refc++;
         USDecref0(&(v10)); UHDecref1(v11);
         UH1 * v13;
@@ -1621,13 +1621,13 @@ static inline void UHDecrefBody2(UH2 * x){
 void UHDecref2(UH2 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody2(x); free(x); }
 }
-UH2 * UH2_0() { // RegexListNil
+UH2 * UH2_RegexListNil() { // RegexListNil
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH2 * UH2_1(UH0 * v0, UH2 * v1) { // RegexListCons
+UH2 * UH2_RegexListCons(UH0 * v0, UH2 * v1) { // RegexListCons
     UH2 * x = malloc(sizeof(UH2));
     x->tag = 1;
     x->refc = 1;
@@ -1648,7 +1648,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                     v7->refc++; v27->refc += 2; v28->refc++;
                     UHDecref2(v0); UHDecref0(v6);
                     UH2 * v29;
-                    v29 = UH2_1(v27, v7);
+                    v29 = UH2_RegexListCons(v27, v7);
                     v1->refc++; v29->refc++;
                     UHDecref0(v27);
                     bool v30;
@@ -1663,7 +1663,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                         v7->refc++; v28->refc++;
                         
                         UH2 * v31;
-                        v31 = UH2_1(v28, v7);
+                        v31 = UH2_RegexListCons(v28, v7);
                         
                         UHDecref2(v7); UHDecref0(v28);
                         return backtrack_stack16(v31, v1);
@@ -1675,11 +1675,11 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                     v7->refc++; v34->refc++; v35->refc += 2;
                     UHDecref2(v0); UHDecref0(v6);
                     UH2 * v36;
-                    v36 = UH2_1(v35, v7);
+                    v36 = UH2_RegexListCons(v35, v7);
                     v34->refc++; v36->refc++;
                     UHDecref2(v7); UHDecref0(v35);
                     UH2 * v37;
-                    v37 = UH2_1(v34, v36);
+                    v37 = UH2_RegexListCons(v34, v36);
                     
                     UHDecref0(v34); UHDecref2(v36);
                     return backtrack_stack16(v37, v1);
@@ -1705,14 +1705,14 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                                             
                                             
                                             
-                                            v21 = US1_1();
+                                            v21 = US1_SymbolSame();
                                             break;
                                         }
                                         case 0: { // BitZero
                                             
                                             
                                             
-                                            v21 = US1_2();
+                                            v21 = US1_SymbolGreater();
                                             break;
                                         }
                                     }
@@ -1727,14 +1727,14 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                                             
                                             
                                             
-                                            v21 = US1_0();
+                                            v21 = US1_SymbolLess();
                                             break;
                                         }
                                         case 0: { // BitZero
                                             
                                             
                                             
-                                            v21 = US1_1();
+                                            v21 = US1_SymbolSame();
                                             break;
                                         }
                                     }
@@ -1800,7 +1800,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                     v0->refc++; v39->refc += 2;
                     UHDecref0(v6);
                     UH2 * v40;
-                    v40 = UH2_1(v39, v0);
+                    v40 = UH2_RegexListCons(v39, v0);
                     v1->refc++; v40->refc++;
                     UHDecref2(v0); UHDecref0(v39);
                     bool v41;
@@ -1856,7 +1856,7 @@ int32_t loop15(UH0 * v0, int32_t v1, int32_t v2, uint64_t v3, int32_t v4){
         
         
         UH1 * v6;
-        v6 = UH1_0();
+        v6 = UH1_InputEmpty();
         v6->refc++;
         
         UH1 * v7; uint64_t v8;
@@ -1865,11 +1865,11 @@ int32_t loop15(UH0 * v0, int32_t v1, int32_t v2, uint64_t v3, int32_t v4){
         
         UHDecref1(v6);
         UH2 * v9;
-        v9 = UH2_0();
+        v9 = UH2_RegexListNil();
         v0->refc++; v9->refc++;
         
         UH2 * v10;
-        v10 = UH2_1(v0, v9);
+        v10 = UH2_RegexListCons(v0, v9);
         v7->refc++; v10->refc++;
         UHDecref2(v9);
         bool v11;
@@ -1918,7 +1918,7 @@ int32_t loop17(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         
         UH1 * v5;
-        v5 = UH1_0();
+        v5 = UH1_InputEmpty();
         v5->refc++;
         
         UH1 * v6;
@@ -1926,11 +1926,11 @@ int32_t loop17(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         UHDecref1(v5);
         UH2 * v7;
-        v7 = UH2_0();
+        v7 = UH2_RegexListNil();
         v0->refc++; v7->refc++;
         
         UH2 * v8;
-        v8 = UH2_1(v0, v7);
+        v8 = UH2_RegexListCons(v0, v7);
         v6->refc++; v8->refc++;
         UHDecref2(v7);
         bool v9;
@@ -1954,15 +1954,15 @@ int32_t loop17(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         
         US0 v12;
-        v12 = US0_1();
+        v12 = US0_BitOne();
         
         
         UH1 * v13;
-        v13 = UH1_0();
+        v13 = UH1_InputEmpty();
         USIncref0(&(v12)); v13->refc++;
         
         UH1 * v14;
-        v14 = UH1_1(v12, v13);
+        v14 = UH1_InputCons(v12, v13);
         v14->refc++;
         USDecref0(&(v12)); UHDecref1(v13);
         UH1 * v15;
@@ -1970,11 +1970,11 @@ int32_t loop17(UH0 * v0, int32_t v1, int32_t v2, int32_t v3){
         
         UHDecref1(v14);
         UH2 * v16;
-        v16 = UH2_0();
+        v16 = UH2_RegexListNil();
         v0->refc++; v16->refc++;
         
         UH2 * v17;
-        v17 = UH2_1(v0, v16);
+        v17 = UH2_RegexListCons(v0, v16);
         v15->refc++; v17->refc++;
         UHDecref2(v16);
         bool v18;
@@ -2070,7 +2070,7 @@ int32_t loop18(int32_t v0, int32_t v1, uint64_t v2, int32_t v3){
         
         
         UH1 * v5;
-        v5 = UH1_0();
+        v5 = UH1_InputEmpty();
         v5->refc++;
         
         UH1 * v6; uint64_t v7;
@@ -2615,7 +2615,7 @@ int32_t loop20(int32_t v0, int32_t v1, uint64_t v2, int32_t v3){
         
         
         UH1 * v5;
-        v5 = UH1_0();
+        v5 = UH1_InputEmpty();
         v5->refc++;
         
         UH1 * v6; uint64_t v7;
@@ -2800,7 +2800,7 @@ int32_t loop22(int32_t v0, int32_t v1, int32_t v2){
         
         
         UH1 * v4;
-        v4 = UH1_0();
+        v4 = UH1_InputEmpty();
         v4->refc++;
         
         UH1 * v5;
@@ -2832,15 +2832,15 @@ int32_t loop22(int32_t v0, int32_t v1, int32_t v2){
         
         
         US0 v10;
-        v10 = US0_1();
+        v10 = US0_BitOne();
         
         
         UH1 * v11;
-        v11 = UH1_0();
+        v11 = UH1_InputEmpty();
         USIncref0(&(v10)); v11->refc++;
         
         UH1 * v12;
-        v12 = UH1_1(v10, v11);
+        v12 = UH1_InputCons(v10, v11);
         v12->refc++;
         USDecref0(&(v10)); UHDecref1(v11);
         UH1 * v13;
@@ -3909,7 +3909,7 @@ int32_t loop32(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, 
         
         
         UH1 * v13;
-        v13 = UH1_0();
+        v13 = UH1_InputEmpty();
         v13->refc++;
         
         UH1 * v14; uint64_t v15;
@@ -3963,7 +3963,7 @@ int32_t loop36(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, 
         
         
         UH1 * v12;
-        v12 = UH1_0();
+        v12 = UH1_InputEmpty();
         v12->refc++;
         
         UH1 * v13;
@@ -3991,15 +3991,15 @@ int32_t loop36(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, 
         
         
         US0 v17;
-        v17 = US0_1();
+        v17 = US0_BitOne();
         
         
         UH1 * v18;
-        v18 = UH1_0();
+        v18 = UH1_InputEmpty();
         USIncref0(&(v17)); v18->refc++;
         
         UH1 * v19;
-        v19 = UH1_1(v17, v18);
+        v19 = UH1_InputCons(v17, v18);
         v19->refc++;
         USDecref0(&(v17)); UHDecref1(v18);
         UH1 * v20;
@@ -4045,147 +4045,147 @@ int32_t main(){
     
     
     US0 v2;
-    v2 = US0_0();
+    v2 = US0_BitZero();
     USIncref0(&(v2));
     
     UH0 * v3;
-    v3 = UH0_2(v2);
+    v3 = UH0_RegexChar(v2);
     
     USDecref0(&(v2));
     US0 v4;
-    v4 = US0_1();
+    v4 = US0_BitOne();
     USIncref0(&(v4));
     
     UH0 * v5;
-    v5 = UH0_2(v4);
+    v5 = UH0_RegexChar(v4);
     v3->refc++; v5->refc++;
     USDecref0(&(v4));
     UH0 * v6;
-    v6 = UH0_3(v3, v5);
+    v6 = UH0_RegexAlt(v3, v5);
     v6->refc++;
     UHDecref0(v3); UHDecref0(v5);
     UH0 * v7;
-    v7 = UH0_5(v6);
+    v7 = UH0_RegexStar(v6);
     
     UHDecref0(v6);
     US0 v8;
-    v8 = US0_0();
+    v8 = US0_BitZero();
     USIncref0(&(v8));
     
     UH0 * v9;
-    v9 = UH0_2(v8);
+    v9 = UH0_RegexChar(v8);
     v7->refc++; v9->refc++;
     USDecref0(&(v8));
     UH0 * v10;
-    v10 = UH0_4(v7, v9);
+    v10 = UH0_RegexCat(v7, v9);
     
     UHDecref0(v7); UHDecref0(v9);
     US0 v11;
-    v11 = US0_0();
+    v11 = US0_BitZero();
     USIncref0(&(v11));
     
     UH0 * v12;
-    v12 = UH0_2(v11);
+    v12 = UH0_RegexChar(v11);
     
     USDecref0(&(v11));
     US0 v13;
-    v13 = US0_1();
+    v13 = US0_BitOne();
     USIncref0(&(v13));
     
     UH0 * v14;
-    v14 = UH0_2(v13);
+    v14 = UH0_RegexChar(v13);
     v12->refc++; v14->refc++;
     USDecref0(&(v13));
     UH0 * v15;
-    v15 = UH0_3(v12, v14);
+    v15 = UH0_RegexAlt(v12, v14);
     v15->refc++;
     UHDecref0(v12); UHDecref0(v14);
     UH0 * v16;
-    v16 = UH0_5(v15);
+    v16 = UH0_RegexStar(v15);
     
     UHDecref0(v15);
     US0 v17;
-    v17 = US0_1();
+    v17 = US0_BitOne();
     USIncref0(&(v17));
     
     UH0 * v18;
-    v18 = UH0_2(v17);
+    v18 = UH0_RegexChar(v17);
     
     USDecref0(&(v17));
     US0 v19;
-    v19 = US0_0();
+    v19 = US0_BitZero();
     USIncref0(&(v19));
     
     UH0 * v20;
-    v20 = UH0_2(v19);
+    v20 = UH0_RegexChar(v19);
     
     USDecref0(&(v19));
     US0 v21;
-    v21 = US0_1();
+    v21 = US0_BitOne();
     USIncref0(&(v21));
     
     UH0 * v22;
-    v22 = UH0_2(v21);
+    v22 = UH0_RegexChar(v21);
     v20->refc++; v22->refc++;
     USDecref0(&(v21));
     UH0 * v23;
-    v23 = UH0_3(v20, v22);
+    v23 = UH0_RegexAlt(v20, v22);
     
     UHDecref0(v20); UHDecref0(v22);
     US0 v24;
-    v24 = US0_0();
+    v24 = US0_BitZero();
     USIncref0(&(v24));
     
     UH0 * v25;
-    v25 = UH0_2(v24);
+    v25 = UH0_RegexChar(v24);
     
     USDecref0(&(v24));
     US0 v26;
-    v26 = US0_1();
+    v26 = US0_BitOne();
     USIncref0(&(v26));
     
     UH0 * v27;
-    v27 = UH0_2(v26);
+    v27 = UH0_RegexChar(v26);
     v25->refc++; v27->refc++;
     USDecref0(&(v26));
     UH0 * v28;
-    v28 = UH0_3(v25, v27);
+    v28 = UH0_RegexAlt(v25, v27);
     
     UHDecref0(v25); UHDecref0(v27);
     US0 v29;
-    v29 = US0_0();
+    v29 = US0_BitZero();
     USIncref0(&(v29));
     
     UH0 * v30;
-    v30 = UH0_2(v29);
+    v30 = UH0_RegexChar(v29);
     
     USDecref0(&(v29));
     US0 v31;
-    v31 = US0_1();
+    v31 = US0_BitOne();
     USIncref0(&(v31));
     
     UH0 * v32;
-    v32 = UH0_2(v31);
+    v32 = UH0_RegexChar(v31);
     v30->refc++; v32->refc++;
     USDecref0(&(v31));
     UH0 * v33;
-    v33 = UH0_3(v30, v32);
+    v33 = UH0_RegexAlt(v30, v32);
     v28->refc++; v33->refc++;
     UHDecref0(v30); UHDecref0(v32);
     UH0 * v34;
-    v34 = UH0_4(v28, v33);
+    v34 = UH0_RegexCat(v28, v33);
     v23->refc++; v34->refc++;
     UHDecref0(v28); UHDecref0(v33);
     UH0 * v35;
-    v35 = UH0_4(v23, v34);
+    v35 = UH0_RegexCat(v23, v34);
     v18->refc++; v35->refc++;
     UHDecref0(v23); UHDecref0(v34);
     UH0 * v36;
-    v36 = UH0_4(v18, v35);
+    v36 = UH0_RegexCat(v18, v35);
     v16->refc++; v36->refc++;
     UHDecref0(v18); UHDecref0(v35);
     UH0 * v37;
-    v37 = UH0_4(v16, v36);
+    v37 = UH0_RegexCat(v16, v36);
     
     UHDecref0(v16); UHDecref0(v36);
     uint64_t v38;
@@ -4209,51 +4209,51 @@ int32_t main(){
     
     
     US0 v43;
-    v43 = US0_0();
+    v43 = US0_BitZero();
     USIncref0(&(v43));
     
     UH0 * v44;
-    v44 = UH0_2(v43);
+    v44 = UH0_RegexChar(v43);
     
     USDecref0(&(v43));
     US0 v45;
-    v45 = US0_0();
+    v45 = US0_BitZero();
     USIncref0(&(v45));
     
     UH0 * v46;
-    v46 = UH0_2(v45);
+    v46 = UH0_RegexChar(v45);
     
     USDecref0(&(v45));
     US0 v47;
-    v47 = US0_0();
+    v47 = US0_BitZero();
     USIncref0(&(v47));
     
     UH0 * v48;
-    v48 = UH0_2(v47);
+    v48 = UH0_RegexChar(v47);
     v46->refc++; v48->refc++;
     USDecref0(&(v47));
     UH0 * v49;
-    v49 = UH0_4(v46, v48);
+    v49 = UH0_RegexCat(v46, v48);
     v44->refc++; v49->refc++;
     UHDecref0(v46); UHDecref0(v48);
     UH0 * v50;
-    v50 = UH0_3(v44, v49);
+    v50 = UH0_RegexAlt(v44, v49);
     v50->refc++;
     UHDecref0(v44); UHDecref0(v49);
     UH0 * v51;
-    v51 = UH0_5(v50);
+    v51 = UH0_RegexStar(v50);
     
     UHDecref0(v50);
     US0 v52;
-    v52 = US0_1();
+    v52 = US0_BitOne();
     USIncref0(&(v52));
     
     UH0 * v53;
-    v53 = UH0_2(v52);
+    v53 = UH0_RegexChar(v52);
     v51->refc++; v53->refc++;
     USDecref0(&(v52));
     UH0 * v54;
-    v54 = UH0_4(v51, v53);
+    v54 = UH0_RegexCat(v51, v53);
     
     UHDecref0(v51); UHDecref0(v53);
     int32_t v55;
@@ -4277,147 +4277,147 @@ int32_t main(){
     
     
     US0 v60;
-    v60 = US0_0();
+    v60 = US0_BitZero();
     USIncref0(&(v60));
     
     UH0 * v61;
-    v61 = UH0_2(v60);
+    v61 = UH0_RegexChar(v60);
     
     USDecref0(&(v60));
     US0 v62;
-    v62 = US0_1();
+    v62 = US0_BitOne();
     USIncref0(&(v62));
     
     UH0 * v63;
-    v63 = UH0_2(v62);
+    v63 = UH0_RegexChar(v62);
     v61->refc++; v63->refc++;
     USDecref0(&(v62));
     UH0 * v64;
-    v64 = UH0_3(v61, v63);
+    v64 = UH0_RegexAlt(v61, v63);
     v64->refc++;
     UHDecref0(v61); UHDecref0(v63);
     UH0 * v65;
-    v65 = UH0_5(v64);
+    v65 = UH0_RegexStar(v64);
     
     UHDecref0(v64);
     US0 v66;
-    v66 = US0_0();
+    v66 = US0_BitZero();
     USIncref0(&(v66));
     
     UH0 * v67;
-    v67 = UH0_2(v66);
+    v67 = UH0_RegexChar(v66);
     v65->refc++; v67->refc++;
     USDecref0(&(v66));
     UH0 * v68;
-    v68 = UH0_4(v65, v67);
+    v68 = UH0_RegexCat(v65, v67);
     
     UHDecref0(v65); UHDecref0(v67);
     US0 v69;
-    v69 = US0_0();
+    v69 = US0_BitZero();
     USIncref0(&(v69));
     
     UH0 * v70;
-    v70 = UH0_2(v69);
+    v70 = UH0_RegexChar(v69);
     
     USDecref0(&(v69));
     US0 v71;
-    v71 = US0_1();
+    v71 = US0_BitOne();
     USIncref0(&(v71));
     
     UH0 * v72;
-    v72 = UH0_2(v71);
+    v72 = UH0_RegexChar(v71);
     v70->refc++; v72->refc++;
     USDecref0(&(v71));
     UH0 * v73;
-    v73 = UH0_3(v70, v72);
+    v73 = UH0_RegexAlt(v70, v72);
     v73->refc++;
     UHDecref0(v70); UHDecref0(v72);
     UH0 * v74;
-    v74 = UH0_5(v73);
+    v74 = UH0_RegexStar(v73);
     
     UHDecref0(v73);
     US0 v75;
-    v75 = US0_1();
+    v75 = US0_BitOne();
     USIncref0(&(v75));
     
     UH0 * v76;
-    v76 = UH0_2(v75);
+    v76 = UH0_RegexChar(v75);
     
     USDecref0(&(v75));
     US0 v77;
-    v77 = US0_0();
+    v77 = US0_BitZero();
     USIncref0(&(v77));
     
     UH0 * v78;
-    v78 = UH0_2(v77);
+    v78 = UH0_RegexChar(v77);
     
     USDecref0(&(v77));
     US0 v79;
-    v79 = US0_1();
+    v79 = US0_BitOne();
     USIncref0(&(v79));
     
     UH0 * v80;
-    v80 = UH0_2(v79);
+    v80 = UH0_RegexChar(v79);
     v78->refc++; v80->refc++;
     USDecref0(&(v79));
     UH0 * v81;
-    v81 = UH0_3(v78, v80);
+    v81 = UH0_RegexAlt(v78, v80);
     
     UHDecref0(v78); UHDecref0(v80);
     US0 v82;
-    v82 = US0_0();
+    v82 = US0_BitZero();
     USIncref0(&(v82));
     
     UH0 * v83;
-    v83 = UH0_2(v82);
+    v83 = UH0_RegexChar(v82);
     
     USDecref0(&(v82));
     US0 v84;
-    v84 = US0_1();
+    v84 = US0_BitOne();
     USIncref0(&(v84));
     
     UH0 * v85;
-    v85 = UH0_2(v84);
+    v85 = UH0_RegexChar(v84);
     v83->refc++; v85->refc++;
     USDecref0(&(v84));
     UH0 * v86;
-    v86 = UH0_3(v83, v85);
+    v86 = UH0_RegexAlt(v83, v85);
     
     UHDecref0(v83); UHDecref0(v85);
     US0 v87;
-    v87 = US0_0();
+    v87 = US0_BitZero();
     USIncref0(&(v87));
     
     UH0 * v88;
-    v88 = UH0_2(v87);
+    v88 = UH0_RegexChar(v87);
     
     USDecref0(&(v87));
     US0 v89;
-    v89 = US0_1();
+    v89 = US0_BitOne();
     USIncref0(&(v89));
     
     UH0 * v90;
-    v90 = UH0_2(v89);
+    v90 = UH0_RegexChar(v89);
     v88->refc++; v90->refc++;
     USDecref0(&(v89));
     UH0 * v91;
-    v91 = UH0_3(v88, v90);
+    v91 = UH0_RegexAlt(v88, v90);
     v86->refc++; v91->refc++;
     UHDecref0(v88); UHDecref0(v90);
     UH0 * v92;
-    v92 = UH0_4(v86, v91);
+    v92 = UH0_RegexCat(v86, v91);
     v81->refc++; v92->refc++;
     UHDecref0(v86); UHDecref0(v91);
     UH0 * v93;
-    v93 = UH0_4(v81, v92);
+    v93 = UH0_RegexCat(v81, v92);
     v76->refc++; v93->refc++;
     UHDecref0(v81); UHDecref0(v92);
     UH0 * v94;
-    v94 = UH0_4(v76, v93);
+    v94 = UH0_RegexCat(v76, v93);
     v74->refc++; v94->refc++;
     UHDecref0(v76); UHDecref0(v93);
     UH0 * v95;
-    v95 = UH0_4(v74, v94);
+    v95 = UH0_RegexCat(v74, v94);
     
     UHDecref0(v74); UHDecref0(v94);
     uint64_t v96;
@@ -4441,51 +4441,51 @@ int32_t main(){
     
     
     US0 v101;
-    v101 = US0_0();
+    v101 = US0_BitZero();
     USIncref0(&(v101));
     
     UH0 * v102;
-    v102 = UH0_2(v101);
+    v102 = UH0_RegexChar(v101);
     
     USDecref0(&(v101));
     US0 v103;
-    v103 = US0_0();
+    v103 = US0_BitZero();
     USIncref0(&(v103));
     
     UH0 * v104;
-    v104 = UH0_2(v103);
+    v104 = UH0_RegexChar(v103);
     
     USDecref0(&(v103));
     US0 v105;
-    v105 = US0_0();
+    v105 = US0_BitZero();
     USIncref0(&(v105));
     
     UH0 * v106;
-    v106 = UH0_2(v105);
+    v106 = UH0_RegexChar(v105);
     v104->refc++; v106->refc++;
     USDecref0(&(v105));
     UH0 * v107;
-    v107 = UH0_4(v104, v106);
+    v107 = UH0_RegexCat(v104, v106);
     v102->refc++; v107->refc++;
     UHDecref0(v104); UHDecref0(v106);
     UH0 * v108;
-    v108 = UH0_3(v102, v107);
+    v108 = UH0_RegexAlt(v102, v107);
     v108->refc++;
     UHDecref0(v102); UHDecref0(v107);
     UH0 * v109;
-    v109 = UH0_5(v108);
+    v109 = UH0_RegexStar(v108);
     
     UHDecref0(v108);
     US0 v110;
-    v110 = US0_1();
+    v110 = US0_BitOne();
     USIncref0(&(v110));
     
     UH0 * v111;
-    v111 = UH0_2(v110);
+    v111 = UH0_RegexChar(v110);
     v109->refc++; v111->refc++;
     USDecref0(&(v110));
     UH0 * v112;
-    v112 = UH0_4(v109, v111);
+    v112 = UH0_RegexCat(v109, v111);
     
     UHDecref0(v109); UHDecref0(v111);
     int32_t v113;
@@ -4764,39 +4764,39 @@ int32_t main(){
     
     ArrayDecref0(v138); ArrayDecref0(v139); ArrayDecref0(v140); ArrayDecref0(v141); ArrayDecref0(v142); ArrayDecref0(v143); ArrayDecref0(v144);
     US0 v173;
-    v173 = US0_0();
+    v173 = US0_BitZero();
     USIncref0(&(v173));
     
     UH0 * v174;
-    v174 = UH0_2(v173);
+    v174 = UH0_RegexChar(v173);
     
     USDecref0(&(v173));
     US0 v175;
-    v175 = US0_1();
+    v175 = US0_BitOne();
     USIncref0(&(v175));
     
     UH0 * v176;
-    v176 = UH0_2(v175);
+    v176 = UH0_RegexChar(v175);
     v174->refc++; v176->refc++;
     USDecref0(&(v175));
     UH0 * v177;
-    v177 = UH0_3(v174, v176);
+    v177 = UH0_RegexAlt(v174, v176);
     v177->refc++;
     UHDecref0(v174); UHDecref0(v176);
     UH0 * v178;
-    v178 = UH0_5(v177);
+    v178 = UH0_RegexStar(v177);
     
     UHDecref0(v177);
     US0 v179;
-    v179 = US0_0();
+    v179 = US0_BitZero();
     USIncref0(&(v179));
     
     UH0 * v180;
-    v180 = UH0_2(v179);
+    v180 = UH0_RegexChar(v179);
     v178->refc++; v180->refc++;
     USDecref0(&(v179));
     UH0 * v181;
-    v181 = UH0_4(v178, v180);
+    v181 = UH0_RegexCat(v178, v180);
     v166->refc++; v167->refc++; v168->refc++; v169->refc++; v170->refc++; v171->refc++; v172->refc++; v181->refc++;
     UHDecref0(v178); UHDecref0(v180);
     int32_t v182;
@@ -4816,111 +4816,111 @@ int32_t main(){
     
     
     US0 v186;
-    v186 = US0_0();
+    v186 = US0_BitZero();
     USIncref0(&(v186));
     
     UH0 * v187;
-    v187 = UH0_2(v186);
+    v187 = UH0_RegexChar(v186);
     
     USDecref0(&(v186));
     US0 v188;
-    v188 = US0_1();
+    v188 = US0_BitOne();
     USIncref0(&(v188));
     
     UH0 * v189;
-    v189 = UH0_2(v188);
+    v189 = UH0_RegexChar(v188);
     v187->refc++; v189->refc++;
     USDecref0(&(v188));
     UH0 * v190;
-    v190 = UH0_3(v187, v189);
+    v190 = UH0_RegexAlt(v187, v189);
     v190->refc++;
     UHDecref0(v187); UHDecref0(v189);
     UH0 * v191;
-    v191 = UH0_5(v190);
+    v191 = UH0_RegexStar(v190);
     
     UHDecref0(v190);
     US0 v192;
-    v192 = US0_1();
+    v192 = US0_BitOne();
     USIncref0(&(v192));
     
     UH0 * v193;
-    v193 = UH0_2(v192);
+    v193 = UH0_RegexChar(v192);
     
     USDecref0(&(v192));
     US0 v194;
-    v194 = US0_0();
+    v194 = US0_BitZero();
     USIncref0(&(v194));
     
     UH0 * v195;
-    v195 = UH0_2(v194);
+    v195 = UH0_RegexChar(v194);
     
     USDecref0(&(v194));
     US0 v196;
-    v196 = US0_1();
+    v196 = US0_BitOne();
     USIncref0(&(v196));
     
     UH0 * v197;
-    v197 = UH0_2(v196);
+    v197 = UH0_RegexChar(v196);
     v195->refc++; v197->refc++;
     USDecref0(&(v196));
     UH0 * v198;
-    v198 = UH0_3(v195, v197);
+    v198 = UH0_RegexAlt(v195, v197);
     
     UHDecref0(v195); UHDecref0(v197);
     US0 v199;
-    v199 = US0_0();
+    v199 = US0_BitZero();
     USIncref0(&(v199));
     
     UH0 * v200;
-    v200 = UH0_2(v199);
+    v200 = UH0_RegexChar(v199);
     
     USDecref0(&(v199));
     US0 v201;
-    v201 = US0_1();
+    v201 = US0_BitOne();
     USIncref0(&(v201));
     
     UH0 * v202;
-    v202 = UH0_2(v201);
+    v202 = UH0_RegexChar(v201);
     v200->refc++; v202->refc++;
     USDecref0(&(v201));
     UH0 * v203;
-    v203 = UH0_3(v200, v202);
+    v203 = UH0_RegexAlt(v200, v202);
     
     UHDecref0(v200); UHDecref0(v202);
     US0 v204;
-    v204 = US0_0();
+    v204 = US0_BitZero();
     USIncref0(&(v204));
     
     UH0 * v205;
-    v205 = UH0_2(v204);
+    v205 = UH0_RegexChar(v204);
     
     USDecref0(&(v204));
     US0 v206;
-    v206 = US0_1();
+    v206 = US0_BitOne();
     USIncref0(&(v206));
     
     UH0 * v207;
-    v207 = UH0_2(v206);
+    v207 = UH0_RegexChar(v206);
     v205->refc++; v207->refc++;
     USDecref0(&(v206));
     UH0 * v208;
-    v208 = UH0_3(v205, v207);
+    v208 = UH0_RegexAlt(v205, v207);
     v203->refc++; v208->refc++;
     UHDecref0(v205); UHDecref0(v207);
     UH0 * v209;
-    v209 = UH0_4(v203, v208);
+    v209 = UH0_RegexCat(v203, v208);
     v198->refc++; v209->refc++;
     UHDecref0(v203); UHDecref0(v208);
     UH0 * v210;
-    v210 = UH0_4(v198, v209);
+    v210 = UH0_RegexCat(v198, v209);
     v193->refc++; v210->refc++;
     UHDecref0(v198); UHDecref0(v209);
     UH0 * v211;
-    v211 = UH0_4(v193, v210);
+    v211 = UH0_RegexCat(v193, v210);
     v191->refc++; v211->refc++;
     UHDecref0(v193); UHDecref0(v210);
     UH0 * v212;
-    v212 = UH0_4(v191, v211);
+    v212 = UH0_RegexCat(v191, v211);
     v166->refc++; v167->refc++; v168->refc++; v169->refc++; v170->refc++; v171->refc++; v172->refc++; v212->refc++;
     UHDecref0(v191); UHDecref0(v211);
     int32_t v213;
@@ -5061,51 +5061,51 @@ int32_t main(){
     
     ArrayDecref0(v218); ArrayDecref0(v219); ArrayDecref0(v220); ArrayDecref0(v221); ArrayDecref0(v222); ArrayDecref0(v223); ArrayDecref0(v224);
     US0 v253;
-    v253 = US0_0();
+    v253 = US0_BitZero();
     USIncref0(&(v253));
     
     UH0 * v254;
-    v254 = UH0_2(v253);
+    v254 = UH0_RegexChar(v253);
     
     USDecref0(&(v253));
     US0 v255;
-    v255 = US0_0();
+    v255 = US0_BitZero();
     USIncref0(&(v255));
     
     UH0 * v256;
-    v256 = UH0_2(v255);
+    v256 = UH0_RegexChar(v255);
     
     USDecref0(&(v255));
     US0 v257;
-    v257 = US0_0();
+    v257 = US0_BitZero();
     USIncref0(&(v257));
     
     UH0 * v258;
-    v258 = UH0_2(v257);
+    v258 = UH0_RegexChar(v257);
     v256->refc++; v258->refc++;
     USDecref0(&(v257));
     UH0 * v259;
-    v259 = UH0_4(v256, v258);
+    v259 = UH0_RegexCat(v256, v258);
     v254->refc++; v259->refc++;
     UHDecref0(v256); UHDecref0(v258);
     UH0 * v260;
-    v260 = UH0_3(v254, v259);
+    v260 = UH0_RegexAlt(v254, v259);
     v260->refc++;
     UHDecref0(v254); UHDecref0(v259);
     UH0 * v261;
-    v261 = UH0_5(v260);
+    v261 = UH0_RegexStar(v260);
     
     UHDecref0(v260);
     US0 v262;
-    v262 = US0_1();
+    v262 = US0_BitOne();
     USIncref0(&(v262));
     
     UH0 * v263;
-    v263 = UH0_2(v262);
+    v263 = UH0_RegexChar(v262);
     v261->refc++; v263->refc++;
     USDecref0(&(v262));
     UH0 * v264;
-    v264 = UH0_4(v261, v263);
+    v264 = UH0_RegexCat(v261, v263);
     v246->refc++; v247->refc++; v248->refc++; v249->refc++; v250->refc++; v251->refc++; v252->refc++; v264->refc++;
     UHDecref0(v261); UHDecref0(v263);
     int32_t v265;

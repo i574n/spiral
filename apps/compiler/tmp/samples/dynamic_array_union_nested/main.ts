@@ -6,11 +6,11 @@ function spiral_array_set<T>(array: T[], index: number, value: T): void {
     if (!(index >= 0 && index < array.length)) throw new RangeError("array index " + index + " out of bounds for length " + array.length);
     array[index] = value;
 }
-type US0_0 = { readonly tag: 0 };
-type US0_1 = { readonly tag: 1, readonly f0: Array<Array<number>> };
-type US0 = US0_0 | US0_1;
-function US0_0(): US0 { return { tag: 0 }; }
-function US0_1(f0: Array<Array<number>>): US0 { return { tag: 1, f0: f0 }; }
+type US0_Empty = { readonly tag: 0 };
+type US0_Nested = { readonly tag: 1, readonly f0: Array<Array<number>> };
+type US0 = US0_Empty | US0_Nested;
+function US0_Empty(): US0 { return { tag: 0 }; }
+function US0_Nested(f0: Array<Array<number>>): US0 { return { tag: 1, f0: f0 }; }
 function score_0(v0: US0): number {
     switch (v0.tag) {
         case 0: {
@@ -47,7 +47,7 @@ export function main(): number {
     spiral_array_set(v3, 1, 6);
     spiral_array_set(v1, 0, v2);
     spiral_array_set(v1, 1, v3);
-    let v4: US0 = US0_1(v1);
+    let v4: US0 = US0_Nested(v1);
     let v5: number = score_0(v4);
     let v6: number = (v5 - 20) | 0;
     return v6;

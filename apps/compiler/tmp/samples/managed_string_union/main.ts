@@ -29,11 +29,11 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-type US0_0 = { readonly tag: 0, readonly f0: string };
-type US0_1 = { readonly tag: 1, readonly f0: number };
-type US0 = US0_0 | US0_1;
-function US0_0(f0: string): US0 { return { tag: 0, f0: f0 }; }
-function US0_1(f0: number): US0 { return { tag: 1, f0: f0 }; }
+type US0_Text = { readonly tag: 0, readonly f0: string };
+type US0_Number = { readonly tag: 1, readonly f0: number };
+type US0 = US0_Text | US0_Number;
+function US0_Text(f0: string): US0 { return { tag: 0, f0: f0 }; }
+function US0_Number(f0: number): US0 { return { tag: 1, f0: f0 }; }
 function score_0(v0: US0): number {
     switch (v0.tag) {
         case 1: {
@@ -54,10 +54,10 @@ export function main(): number {
     let v0: boolean = false;
     let v4: US0;
     if (v0) {
-        v4 = US0_1(7);
+        v4 = US0_Number(7);
     } else {
         let v2: string = "qwe";
-        v4 = US0_0(v2);
+        v4 = US0_Text(v2);
     }
     let v5: number = score_0(v4);
     let v6: number = score_0(v4);

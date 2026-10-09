@@ -182,8 +182,8 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Type:
-  U0c0{}
-  U0c1{f0: String, f1: (Chan(Array<U32>) & U32)}
+  U0_Empty{}
+  U0_Item{f0: String, f1: (Chan(Array<U32>) & U32)}
 
 @unsafe
 def spiral_array_fill_go_a0(+depth: U32, +v: U32, leaf: Bool) -> Array<U32>:
@@ -302,7 +302,7 @@ def closure0_if1(+c: Bool, +v0: U32, +v1: Bool) -> IO(U0):
   match c:
     case True{}:
       do IO<U0>:
-        IO.pure(U0, U0c0{})
+        IO.pure(U0, U0_Empty{})
     case False{}:
       do IO<U0>:
         +v3 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0({2 : U32}, {0 : U32})
@@ -310,7 +310,7 @@ def closure0_if1(+c: Bool, +v0: U32, +v1: Bool) -> IO(U0):
         +v4 : U32 <- IO.pure(U32, U32.add(v0, {1 : U32}))
         spiral_array_set_a0(v3, {1 : U32}, v4)
         +v5 : String <- IO.pure(String, "hi")
-        IO.pure(U0, U0c1{v5, v3})
+        IO.pure(U0, U0_Item{v5, v3})
 
 @unsafe
 def closure0(+v0: U32) -> IO(U0):
@@ -326,10 +326,10 @@ def method0(+v0: ((U32) -> IO(U0))) -> IO(U0):
 @unsafe
 def spiral_main_unbox2(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Empty{}:
       do IO<U32>:
         return {3 : U32}
-    case U0c1{+v2, +v3}:
+    case U0_Item{+v2, +v3}:
       do IO<U32>:
         +v4 : U32 <- IO.pure(U32, spiral_string_bytes(v2))
         +v5 : U32 <- IO.pure(U32, spiral_array_length_a0(v3))
@@ -348,10 +348,10 @@ def method1(+v0: ((U32) -> IO(U0))) -> IO(U0):
 @unsafe
 def spiral_main_unbox3(+u: U0, +v0: ((U32) -> IO(U0)), +v1: U0, +v12: U32, +v13: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Empty{}:
       do IO<U32>:
         return {3 : U32}
-    case U0c1{+v14, +v15}:
+    case U0_Item{+v14, +v15}:
       do IO<U32>:
         +v16 : U32 <- IO.pure(U32, spiral_string_bytes(v14))
         +v17 : U32 <- IO.pure(U32, spiral_array_length_a0(v15))

@@ -40,13 +40,13 @@ static inline void UHDecrefBody0(UH0 * x){
 void UHDecref0(UH0 * x){
     if (x != NULL && --(x->refc) == 0) { UHDecrefBody0(x); free(x); }
 }
-UH0 * UH0_0() { // Leaf
+UH0 * UH0_Leaf() { // Leaf
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 0;
     x->refc = 1;
     return x;
 }
-UH0 * UH0_1(int32_t v0, UH0 * v1, UH0 * v2) { // Node
+UH0 * UH0_Node(int32_t v0, UH0 * v1, UH0 * v2) { // Node
     UH0 * x = malloc(sizeof(UH0));
     x->tag = 1;
     x->refc = 1;
@@ -123,7 +123,7 @@ int32_t main(){
     
     
     UH0 * v0;
-    v0 = UH0_0();
+    v0 = UH0_Leaf();
     
     
     int32_t v1;
@@ -131,7 +131,7 @@ int32_t main(){
     v0->refc += 2;
     
     UH0 * v2;
-    v2 = UH0_1(v1, v0, v0);
+    v2 = UH0_Node(v1, v0, v0);
     v2->refc++;
     UHDecref0(v0);
     Fun0 * v3;

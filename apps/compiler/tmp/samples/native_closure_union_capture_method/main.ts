@@ -1,10 +1,10 @@
-type US0_0 = { readonly tag: 0 };
-type US0_1 = { readonly tag: 1, readonly f0: number };
-type US0_2 = { readonly tag: 2, readonly f0: boolean };
-type US0 = US0_0 | US0_1 | US0_2;
-function US0_0(): US0 { return { tag: 0 }; }
-function US0_1(f0: number): US0 { return { tag: 1, f0: f0 }; }
-function US0_2(f0: boolean): US0 { return { tag: 2, f0: f0 }; }
+type US0_Idle = { readonly tag: 0 };
+type US0_Hit = { readonly tag: 1, readonly f0: number };
+type US0_Flag = { readonly tag: 2, readonly f0: boolean };
+type US0 = US0_Idle | US0_Hit | US0_Flag;
+function US0_Idle(): US0 { return { tag: 0 }; }
+function US0_Hit(f0: number): US0 { return { tag: 1, f0: f0 }; }
+function US0_Flag(f0: boolean): US0 { return { tag: 2, f0: f0 }; }
 function score_0(v0: US0): number {
     switch (v0.tag) {
         case 2: {
@@ -43,13 +43,13 @@ export function main(): number {
     let v1: boolean = v0 === 0;
     let v7: US0;
     if (v1) {
-        v7 = US0_0();
+        v7 = US0_Idle();
     } else {
         let v3: boolean = v0 === 1;
         if (v3) {
-            v7 = US0_1(7);
+            v7 = US0_Hit(7);
         } else {
-            v7 = US0_2(true);
+            v7 = US0_Flag(true);
         }
     }
     let v8: ((a0: number) => number) = closure0(v7);

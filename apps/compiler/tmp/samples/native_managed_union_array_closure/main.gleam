@@ -74,22 +74,22 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
 pub type Us0 {
-    Us0i0
-    Us0i1(f1i0 : SpiralArray(Int))
+    Us0Empty
+    Us0Values(f1i0 : SpiralArray(Int))
 }
 pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
     fn (v0) {
         let v1 = v0 == 0
         case v1 {
             True -> {
-                Us0i0
+                Us0Empty
             }
             False -> {
                 let v3 = spiral_array_create(2)
                 spiral_array_set(v3, 0, v0)
                 let v4 = spiral_wrap_signed(v0 + 1, 32)
                 spiral_array_set(v3, 1, v4)
-                Us0i1(v3)
+                Us0Values(v3)
             }
         }
     }
@@ -99,10 +99,10 @@ pub fn method0(v0: fn(Int) -> Us0) -> Us0 {
 }
 pub fn score_1(v0: Us0) -> Int {
     case v0  {
-        Us0i0 -> {
+        Us0Empty -> {
             3
         }
-        Us0i1(v1) -> {
+        Us0Values(v1) -> {
             let v2 = v1.size
             let v3 = spiral_array_get(v1, 0)
             let v4 = spiral_wrap_signed(v2 + v3, 32)

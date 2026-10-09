@@ -182,16 +182,16 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 type U0 is Data:
-  U0c0{}
-  U0c1{f0: String, f1: U0, f2: U0}
+  U0_Empty{}
+  U0_Node{f0: String, f1: U0, f2: U0}
 
 @unsafe
 def score_0_unbox1(+u: U0, +v0: U0) -> IO(U32):
   match u:
-    case U0c0{}:
+    case U0_Empty{}:
       do IO<U32>:
         return {0 : U32}
-    case U0c1{+v1, +v2, +v3}:
+    case U0_Node{+v1, +v2, +v3}:
       do IO<U32>:
         +v4 : U32 <- IO.pure(U32, spiral_string_bytes(v1))
         +v5 : U32 <- score_0(v2)
@@ -210,13 +210,13 @@ def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "ab")
     +v1 : String <- IO.pure(String, "qwe")
-    +v2 : U0 <- IO.pure(U0, U0c0{})
-    +v3 : U0 <- IO.pure(U0, U0c1{v1, v2, v2})
-    +v4 : U0 <- IO.pure(U0, U0c1{v0, v3, v3})
+    +v2 : U0 <- IO.pure(U0, U0_Empty{})
+    +v3 : U0 <- IO.pure(U0, U0_Node{v1, v2, v2})
+    +v4 : U0 <- IO.pure(U0, U0_Node{v0, v3, v3})
     +v5 : U32 <- score_0(v4)
-    +v6 : U0 <- IO.pure(U0, U0c0{})
-    +v7 : U0 <- IO.pure(U0, U0c1{v1, v6, v6})
-    +v8 : U0 <- IO.pure(U0, U0c1{v0, v7, v7})
+    +v6 : U0 <- IO.pure(U0, U0_Empty{})
+    +v7 : U0 <- IO.pure(U0, U0_Node{v1, v6, v6})
+    +v8 : U0 <- IO.pure(U0, U0_Node{v0, v7, v7})
     +v9 : U32 <- score_0(v8)
     +v10 : U32 <- IO.pure(U32, U32.add(v5, v9))
     +v11 : U32 <- IO.pure(U32, U32.sub(v10, {16 : U32}))

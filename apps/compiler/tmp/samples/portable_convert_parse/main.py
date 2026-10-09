@@ -24,31 +24,31 @@ def Closure0(env_v0 : string):
         del v0
         return v1
     return inner
-class US0_0(NamedTuple): # Ok
+class US0_Ok(NamedTuple): # Ok
     v0 : i32
     tag = 0
-class US0_1(NamedTuple): # Error
+class US0_Error(NamedTuple): # Error
     v0 : 'BaseException'
     tag = 1
-US0 = Union[US0_0, US0_1]
+US0 = Union[US0_Ok, US0_Error]
 def Closure1():
     def inner(v0 : i32) -> US0:
-        return US0_0(v0)
+        return US0_Ok(v0)
     return inner
 def Closure2():
     def inner(v0 : 'BaseException') -> US0:
-        return US0_1(v0)
+        return US0_Error(v0)
     return inner
 def Closure3():
     def inner(v0 : Callable[[], 'BaseException']) -> 'BaseException':
         return v0()
     return inner
-class US1_0(NamedTuple): # Some
+class US1_Some(NamedTuple): # Some
     v0 : i32
     tag = 0
-class US1_1(NamedTuple): # None
+class US1_None(NamedTuple): # None
     tag = 1
-US1 = Union[US1_0, US1_1]
+US1 = Union[US1_Some, US1_None]
 def main():
     v0 = "ff"
     v13 = int (v0, 16)
@@ -80,19 +80,19 @@ def main():
     except Exception as ex: x = error(ex_fn(lambda: ex))
     v317 = x
     match v317:
-        case US0_1(_): # Error
-            v338 = US1_1()
-        case US0_0(v333): # Ok
-            v338 = US1_0(v333)
+        case US0_Error(_): # Error
+            v338 = US1_None()
+        case US0_Ok(v333): # Ok
+            v338 = US1_Some(v333)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v317
     match v338:
-        case US1_1(): # None
+        case US1_None(): # None
             v800 = "none"
             print(v800)
             del v800
-        case US1_0(v795): # Some
+        case US1_Some(v795): # Some
             print(v795)
             del v795
         case t:
@@ -110,19 +110,19 @@ def main():
     except Exception as ex: x = error(ex_fn(lambda: ex))
     v805 = x
     match v805:
-        case US0_1(_): # Error
-            v811 = US1_1()
-        case US0_0(v806): # Ok
-            v811 = US1_0(v806)
+        case US0_Error(_): # Error
+            v811 = US1_None()
+        case US0_Ok(v806): # Ok
+            v811 = US1_Some(v806)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v805
     match v811:
-        case US1_1(): # None
+        case US1_None(): # None
             v813 = "none"
             print(v813)
             del v813
-        case US1_0(v812): # Some
+        case US1_Some(v812): # Some
             print(v812)
             del v812
         case t:
@@ -140,19 +140,19 @@ def main():
     except Exception as ex: x = error(ex_fn(lambda: ex))
     v816 = x
     match v816:
-        case US0_1(_): # Error
-            v822 = US1_1()
-        case US0_0(v817): # Ok
-            v822 = US1_0(v817)
+        case US0_Error(_): # Error
+            v822 = US1_None()
+        case US0_Ok(v817): # Ok
+            v822 = US1_Some(v817)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v816
     match v822:
-        case US1_1(): # None
+        case US1_None(): # None
             v824 = "none"
             print(v824)
             del v824
-        case US1_0(v823): # Some
+        case US1_Some(v823): # Some
             print(v823)
             del v823
         case t:
@@ -173,19 +173,19 @@ def main():
     except Exception as ex: x = error(ex_fn(lambda: ex))
     v827 = x
     match v827:
-        case US0_1(_): # Error
-            v833 = US1_1()
-        case US0_0(v828): # Ok
-            v833 = US1_0(v828)
+        case US0_Error(_): # Error
+            v833 = US1_None()
+        case US0_Ok(v828): # Ok
+            v833 = US1_Some(v828)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v827
     match v833:
-        case US1_1(): # None
+        case US1_None(): # None
             v835 = "none"
             print(v835)
             del v835
-        case US1_0(v834): # Some
+        case US1_Some(v834): # Some
             print(v834)
             del v834
         case t:

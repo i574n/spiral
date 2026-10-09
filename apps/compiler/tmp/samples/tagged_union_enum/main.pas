@@ -5,19 +5,19 @@ uses SysUtils, Math;
 type
   TUS0 = record tag: LongInt;  end;
 function score_0(v0: TUS0): LongInt; forward;
-function US0_0: TUS0;
+function US0_Cold: TUS0;
 begin
   Result.tag := 0; 
 end;
-function US0_1: TUS0;
+function US0_Warm: TUS0;
 begin
   Result.tag := 1; 
 end;
-function US0_2: TUS0;
+function US0_Hot: TUS0;
 begin
   Result.tag := 2; 
 end;
-function US0_3: TUS0;
+function US0_Done: TUS0;
 begin
   Result.tag := 3; 
 end;
@@ -51,17 +51,17 @@ begin
   v0 := 3;
   v1 := v0 = 0;
   if v1 then begin
-      v10 := US0_0;
+      v10 := US0_Cold;
   end else begin
       v3 := v0 = 1;
       if v3 then begin
-          v10 := US0_1;
+          v10 := US0_Warm;
       end else begin
           v5 := v0 = 2;
           if v5 then begin
-              v10 := US0_2;
+              v10 := US0_Hot;
           end else begin
-              v10 := US0_3;
+              v10 := US0_Done;
           end;
       end;
   end;

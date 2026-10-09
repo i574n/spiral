@@ -108,13 +108,13 @@ fn spiralCreate(comptime T: type, v: T) *T {
 const US0 = struct { tag: i32, c1_0: i32 = undefined, c2_0: bool = undefined };
 const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) i32 };
 const ClosureEnv0 = struct { v0: US0, pad: u8 = 0 };
-fn US0_0() US0 {
+fn US0_Idle() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1(a0: i32) US0 {
+fn US0_Hit(a0: i32) US0 {
     return US0{ .tag = 1, .c1_0 = a0 };
 }
-fn US0_2(a0: bool) US0 {
+fn US0_Flag(a0: bool) US0 {
     return US0{ .tag = 2, .c2_0 = a0 };
 }
 fn closure0(ctx: *anyopaque, p1: i32) i32 {
@@ -162,13 +162,13 @@ fn spiralMain() i32 {
     v0 = @as(i32, 2);
     v1 = v0 == @as(i32, 0);
     if (v1) {
-        v7 = US0_0();
+        v7 = US0_Idle();
     } else {
         v3 = v0 == @as(i32, 1);
         if (v3) {
-            v7 = US0_1(@as(i32, 7));
+            v7 = US0_Hit(@as(i32, 7));
         } else {
-            v7 = US0_2(true);
+            v7 = US0_Flag(true);
         }
     }
     v8 = closureCreate0(v7);

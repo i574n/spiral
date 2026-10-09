@@ -1,16 +1,16 @@
 type [<Struct>] US0 =
-    | US0_0
-    | US0_1
+    | US0_BitZero
+    | US0_BitOne
 and UH0 =
-    | UH0_0
-    | UH0_1
-    | UH0_2 of US0
-    | UH0_3 of UH0 * UH0
-    | UH0_4 of UH0 * UH0
-    | UH0_5 of UH0
+    | UH0_RegexEmpty
+    | UH0_RegexEpsilon
+    | UH0_RegexChar of US0
+    | UH0_RegexAlt of UH0 * UH0
+    | UH0_RegexCat of UH0 * UH0
+    | UH0_RegexStar of UH0
 and UH1 =
-    | UH1_0
-    | UH1_1 of US0 * UH1
+    | UH1_InputEmpty
+    | UH1_InputCons of US0 * UH1
 let rec loop_0 (v0 : (int32 []), v1 : int32) : unit =
     let v2 : bool = v1 < 8192
     if v2 then
@@ -205,29 +205,29 @@ and interned_make_cat_7 (v0 : (int32 []), v1 : (int32 []), v2 : (int32 []), v3 :
                             interned_node_2(v0, v1, v2, v3, v4, v5, v6, v31, v7, v8)
 and interned_of_regex_raw_4 (v0 : (int32 []), v1 : (int32 []), v2 : (int32 []), v3 : (int32 []), v4 : (int32 []), v5 : (int32 []), v6 : (int32 []), v7 : UH0) : int32 =
     match v7 with
-    | UH0_3(v14, v15) -> (* RegexAlt *)
+    | UH0_RegexAlt(v14, v15) -> (* RegexAlt *)
         let v16 : int32 = interned_of_regex_raw_4(v0, v1, v2, v3, v4, v5, v6, v14)
         let v17 : int32 = interned_of_regex_raw_4(v0, v1, v2, v3, v4, v5, v6, v15)
         interned_make_alt_5(v0, v1, v2, v3, v4, v5, v6, v16, v17)
-    | UH0_4(v19, v20) -> (* RegexCat *)
+    | UH0_RegexCat(v19, v20) -> (* RegexCat *)
         let v21 : int32 = interned_of_regex_raw_4(v0, v1, v2, v3, v4, v5, v6, v19)
         let v22 : int32 = interned_of_regex_raw_4(v0, v1, v2, v3, v4, v5, v6, v20)
         interned_make_cat_7(v0, v1, v2, v3, v4, v5, v6, v21, v22)
-    | UH0_2(v8) -> (* RegexChar *)
+    | UH0_RegexChar(v8) -> (* RegexChar *)
         let v9 : int32 = 2
         let v11 : int32 =
             match v8 with
-            | US0_1 -> (* BitOne *)
+            | US0_BitOne -> (* BitOne *)
                 1
-            | US0_0 -> (* BitZero *)
+            | US0_BitZero -> (* BitZero *)
                 0
         let v12 : int32 = 0
         interned_node_2(v0, v1, v2, v3, v4, v5, v6, v9, v11, v12)
-    | UH0_0 -> (* RegexEmpty *)
+    | UH0_RegexEmpty -> (* RegexEmpty *)
         0
-    | UH0_1 -> (* RegexEpsilon *)
+    | UH0_RegexEpsilon -> (* RegexEpsilon *)
         1
-    | UH0_5(v24) -> (* RegexStar *)
+    | UH0_RegexStar(v24) -> (* RegexStar *)
         let v25 : int32 = interned_of_regex_raw_4(v0, v1, v2, v3, v4, v5, v6, v24)
         let v26 : int32 = v0.[int v25]
         let v27 : bool = v26 < 2
@@ -253,12 +253,12 @@ and random_bit_input_9 (v0 : uint64, v1 : int32, v2 : UH1) : struct (UH1 * uint6
         let v10 : bool = v9 = 0UL
         let v13 : US0 =
             if v10 then
-                let v11 : US0 = US0_0
+                let v11 : US0 = US0_BitZero
                 v11
             else
-                let v12 : US0 = US0_1
+                let v12 : US0 = US0_BitOne
                 v12
-        let v14 : UH1 = UH1_1(v13, v2)
+        let v14 : UH1 = UH1_InputCons(v13, v2)
         random_bit_input_9(v6, v7, v14)
     else
         struct (v2, v0)
@@ -320,16 +320,16 @@ and loop_11 (v0 : (int32 []), v1 : (int32 []), v2 : (int32 []), v3 : (int32 []),
         false
     else
         match v8 with
-        | UH1_1(v12, v13) -> (* InputCons *)
+        | UH1_InputCons(v12, v13) -> (* InputCons *)
             let v15 : int32 =
                 match v12 with
-                | US0_1 -> (* BitOne *)
+                | US0_BitOne -> (* BitOne *)
                     1
-                | US0_0 -> (* BitZero *)
+                | US0_BitZero -> (* BitZero *)
                     0
             let v16 : int32 = interned_derivative_raw_12(v0, v1, v2, v3, v4, v5, v6, v7, v15)
             loop_11(v0, v1, v2, v3, v4, v5, v6, v16, v13)
-        | UH1_0 -> (* InputEmpty *)
+        | UH1_InputEmpty -> (* InputEmpty *)
             let v10 : int32 = v3.[int v7]
             let v11 : bool = v10 = 1
             v11
@@ -338,7 +338,7 @@ and interned_accepts_10 (v0 : (int32 []), v1 : (int32 []), v2 : (int32 []), v3 :
 and loop_8 (v0 : (int32 []), v1 : (int32 []), v2 : (int32 []), v3 : (int32 []), v4 : (int32 []), v5 : (int32 []), v6 : (int32 []), v7 : int32, v8 : int32, v9 : int32, v10 : uint64, v11 : int32) : int32 =
     let v12 : bool = 0 < v9
     if v12 then
-        let v13 : UH1 = UH1_0
+        let v13 : UH1 = UH1_InputEmpty
         let struct (v14 : UH1, v15 : uint64) = random_bit_input_9(v10, v7, v13)
         let v16 : bool = interned_accepts_10(v0, v1, v2, v3, v4, v5, v6, v8, v14)
         let v18 : int32 =
@@ -386,46 +386,46 @@ let struct (v30 : (int32 []), v31 : (int32 []), v32 : (int32 []), v33 : (int32 [
         struct (v2, v3, v4, v5, v6, v7, v8)
     else
         failwith<struct ((int32 []) * (int32 []) * (int32 []) * (int32 []) * (int32 []) * (int32 []) * (int32 []))> "brzozowski-interned-store-init"
-let v37 : US0 = US0_0
-let v38 : UH0 = UH0_2(v37)
-let v39 : US0 = US0_1
-let v40 : UH0 = UH0_2(v39)
-let v41 : UH0 = UH0_3(v38, v40)
-let v42 : UH0 = UH0_5(v41)
-let v43 : US0 = US0_0
-let v44 : UH0 = UH0_2(v43)
-let v45 : UH0 = UH0_4(v42, v44)
+let v37 : US0 = US0_BitZero
+let v38 : UH0 = UH0_RegexChar(v37)
+let v39 : US0 = US0_BitOne
+let v40 : UH0 = UH0_RegexChar(v39)
+let v41 : UH0 = UH0_RegexAlt(v38, v40)
+let v42 : UH0 = UH0_RegexStar(v41)
+let v43 : US0 = US0_BitZero
+let v44 : UH0 = UH0_RegexChar(v43)
+let v45 : UH0 = UH0_RegexCat(v42, v44)
 let v46 : int32 = interned_of_regex_raw_4(v30, v31, v32, v33, v34, v35, v36, v45)
 let v47 : uint64 = 1UL
 let v48 : int32 = 0
 let v49 : int32 = loop_8(v30, v31, v32, v33, v34, v35, v36, v1, v46, v0, v47, v48)
-let v50 : US0 = US0_0
-let v51 : UH0 = UH0_2(v50)
-let v52 : US0 = US0_1
-let v53 : UH0 = UH0_2(v52)
-let v54 : UH0 = UH0_3(v51, v53)
-let v55 : UH0 = UH0_5(v54)
-let v56 : US0 = US0_1
-let v57 : UH0 = UH0_2(v56)
-let v58 : US0 = US0_0
-let v59 : UH0 = UH0_2(v58)
-let v60 : US0 = US0_1
-let v61 : UH0 = UH0_2(v60)
-let v62 : UH0 = UH0_3(v59, v61)
-let v63 : US0 = US0_0
-let v64 : UH0 = UH0_2(v63)
-let v65 : US0 = US0_1
-let v66 : UH0 = UH0_2(v65)
-let v67 : UH0 = UH0_3(v64, v66)
-let v68 : US0 = US0_0
-let v69 : UH0 = UH0_2(v68)
-let v70 : US0 = US0_1
-let v71 : UH0 = UH0_2(v70)
-let v72 : UH0 = UH0_3(v69, v71)
-let v73 : UH0 = UH0_4(v67, v72)
-let v74 : UH0 = UH0_4(v62, v73)
-let v75 : UH0 = UH0_4(v57, v74)
-let v76 : UH0 = UH0_4(v55, v75)
+let v50 : US0 = US0_BitZero
+let v51 : UH0 = UH0_RegexChar(v50)
+let v52 : US0 = US0_BitOne
+let v53 : UH0 = UH0_RegexChar(v52)
+let v54 : UH0 = UH0_RegexAlt(v51, v53)
+let v55 : UH0 = UH0_RegexStar(v54)
+let v56 : US0 = US0_BitOne
+let v57 : UH0 = UH0_RegexChar(v56)
+let v58 : US0 = US0_BitZero
+let v59 : UH0 = UH0_RegexChar(v58)
+let v60 : US0 = US0_BitOne
+let v61 : UH0 = UH0_RegexChar(v60)
+let v62 : UH0 = UH0_RegexAlt(v59, v61)
+let v63 : US0 = US0_BitZero
+let v64 : UH0 = UH0_RegexChar(v63)
+let v65 : US0 = US0_BitOne
+let v66 : UH0 = UH0_RegexChar(v65)
+let v67 : UH0 = UH0_RegexAlt(v64, v66)
+let v68 : US0 = US0_BitZero
+let v69 : UH0 = UH0_RegexChar(v68)
+let v70 : US0 = US0_BitOne
+let v71 : UH0 = UH0_RegexChar(v70)
+let v72 : UH0 = UH0_RegexAlt(v69, v71)
+let v73 : UH0 = UH0_RegexCat(v67, v72)
+let v74 : UH0 = UH0_RegexCat(v62, v73)
+let v75 : UH0 = UH0_RegexCat(v57, v74)
+let v76 : UH0 = UH0_RegexCat(v55, v75)
 let v77 : int32 = interned_of_regex_raw_4(v30, v31, v32, v33, v34, v35, v36, v76)
 let v78 : uint64 = 1UL
 let v79 : int32 = 0

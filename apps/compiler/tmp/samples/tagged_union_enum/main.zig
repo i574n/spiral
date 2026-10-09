@@ -106,16 +106,16 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 const US0 = struct { tag: i32 };
-fn US0_0() US0 {
+fn US0_Cold() US0 {
     return US0{ .tag = 0 };
 }
-fn US0_1() US0 {
+fn US0_Warm() US0 {
     return US0{ .tag = 1 };
 }
-fn US0_2() US0 {
+fn US0_Hot() US0 {
     return US0{ .tag = 2 };
 }
-fn US0_3() US0 {
+fn US0_Done() US0 {
     return US0{ .tag = 3 };
 }
 fn score_0(p0: US0) i32 {
@@ -147,17 +147,17 @@ fn spiralMain() i32 {
     v0 = @as(i32, 3);
     v1 = v0 == @as(i32, 0);
     if (v1) {
-        v10 = US0_0();
+        v10 = US0_Cold();
     } else {
         v3 = v0 == @as(i32, 1);
         if (v3) {
-            v10 = US0_1();
+            v10 = US0_Warm();
         } else {
             v5 = v0 == @as(i32, 2);
             if (v5) {
-                v10 = US0_2();
+                v10 = US0_Hot();
             } else {
-                v10 = US0_3();
+                v10 = US0_Done();
             }
         }
     }
