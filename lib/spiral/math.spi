@@ -57,6 +57,7 @@ inl floor forall t {float}. (n : t) : t =
             global "#include <cmath>"
             $'std::floor(!n)' : t
         Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        Wasm = fun () => $'(f64.floor !n)' : t
         TypeScript = fun () => $'Math.floor(!n)' : t
     }
 
@@ -81,6 +82,7 @@ inl ceil forall t {float}. (n : t) : t =
             global "#include <cmath>"
             $'std::ceil(!n)' : t
         Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        Wasm = fun () => $'(f64.ceil !n)' : t
         TypeScript = fun () => $'Math.ceil(!n)' : t
     }
 
@@ -105,6 +107,7 @@ inl round forall t {number; float}. (x : t) : t =
         Cpp = round_half_to_even
         Delphi = round_half_to_even
         TypeScript = round_half_to_even
+        Wasm = fun () => $'(f64.nearest !x)' : t
     }
 
 /// ## log_base

@@ -12,14 +12,14 @@ param(
     [switch]$WarmRecycle,
     [ValidateSet('Release', 'Debug')][string]$Configuration = 'Release',
     [string]$WorkspaceRoot,
-    [ValidateSet('Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
+    [ValidateSet('Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Python', 'Rust', 'Delphi', 'Cpp')][string]$Probe
 )
 . $PSScriptRoot/env.ps1
 $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1')
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $recycleWarmBatches = $WarmRecycle -or ($mode -eq 'hopac' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
@@ -58,7 +58,7 @@ if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Wasm = 'wat'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
@@ -81,10 +81,10 @@ function Test-ContractSample([string]$relative) { $relative -like 'samples/contr
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 $listedSamples = @{}
-foreach ($listed in 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+foreach ($listed in 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
-    foreach ($listed in 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
+    foreach ($listed in 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
     if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
     $result
 }
@@ -225,7 +225,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -280,6 +280,17 @@ function Build-And-Run($job) {
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
     }
+    if ($job.Backend -eq 'Wasm') {
+        if (-not $tools.Wasmtime) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.Wasmtime @('run', '-W', 'max-wasm-stack=1073741824', $job.Output) $binDir 60
+        if ("$($run.Exit)" -ne '0' -and $run.Err -match '\.wat:\d+:\d+|Invalid input WebAssembly|failed to compile: wasm') {
+            $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
     if ($job.Backend -eq 'Lean') {
         if (-not $tools.Lean) { return 'no-toolchain' }
         $elanBin = Split-Path $tools.Lean
@@ -317,7 +328,7 @@ function Build-And-Run($job) {
         if (-not $tools.Gleam -or -not $tools.Erl) { return 'no-toolchain' }
         $erlBin = Split-Path $tools.Erl
         if (-not (($env:PATH -split [IO.Path]::PathSeparator) -contains $erlBin)) { $env:PATH = "$erlBin$([IO.Path]::PathSeparator)$env:PATH" }
-        $project = Join-Path $scratch 'gleam-native'
+        $project = Join-Path $scratch "gleam-native-$nativeLane"
         if (-not (Test-Path (Join-Path $project 'gleam.toml'))) { Copy-Item (Join-Path $shimDir 'gleam') $project -Recurse -Force }
         $programFile = Join-Path $project 'src/main.gleam'
         Copy-Item $job.Output $programFile -Force
@@ -373,15 +384,31 @@ $nativeResults = @{}
 if ($Native) {
     $sw.Restart()
     $nativeJobs = @($jobs | Where-Object { $_.Backend -ne 'Fsharp' -and $compiled[$_.Key] -and $compiled[$_.Key].Status -in 'ok', 'emitted' })
-    $done = 0
-    foreach ($job in $nativeJobs) {
-        $jobWatch = [Diagnostics.Stopwatch]::StartNew()
-        $r = Build-And-Run $job
-        if ($r -is [string]) { $r = [pscustomobject]@{ Status = $r; Exit = ''; Stdout = ''; Detail = '' } }
-        $nativeResults[$job.Key] = $r
-        $done++
-        Write-Host ("native {0}/{1} {2} {3}: {4} exit {5} ({6:N1}s)" -f $done, $nativeJobs.Count, $job.Id, $job.Backend, $r.Status, $r.Exit, $jobWatch.Elapsed.TotalSeconds)
+    $laneCount = if ($env:SPIRAL_NATIVE_PARALLEL) { [int]$env:SPIRAL_NATIVE_PARALLEL } else { [Math]::Max(1, [Math]::Min(6, [Environment]::ProcessorCount - 2)) }
+    $lanes = [Collections.Generic.List[object]]::new()
+    for ($i = 0; $i -lt $laneCount; $i++) {
+        $chunk = @(for ($k = $i; $k -lt $nativeJobs.Count; $k += $laneCount) { $nativeJobs[$k] })
+        if ($chunk.Count) { $lanes.Add([pscustomobject]@{ Lane = $i; Jobs = $chunk }) }
     }
+    $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
+    $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
+        foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
+        $nativeLane = $_.Lane
+        $tools = $using:tools; $zigExe = $using:zigExe; $zigCacheGen = 0; $zigCache = "$($using:zigCache)-lane$nativeLane"
+        $scratch = $using:scratch; $shimDir = $using:shimDir; $cFlagRules = $using:cFlagRules; $stamp = $using:stamp
+        $laneResult = @{}
+        foreach ($job in $_.Jobs) {
+            $jobWatch = [Diagnostics.Stopwatch]::StartNew()
+            $r = Build-And-Run $job
+            if ($r -is [string]) { $r = [pscustomobject]@{ Status = $r; Exit = ''; Stdout = ''; Detail = '' } }
+            $r | Add-Member -NotePropertyName Ms -NotePropertyValue ([int]$jobWatch.Elapsed.TotalMilliseconds) -Force
+            $laneResult[$job.Key] = $r
+            Write-Host ("native {0} {1}: {2} exit {3} ({4:N1}s)" -f $job.Id, $job.Backend, $r.Status, $r.Exit, $jobWatch.Elapsed.TotalSeconds)
+        }
+        $laneResult
+    }
+    foreach ($laneResult in $laneResults) { foreach ($k in $laneResult.Keys) { $nativeResults[$k] = $laneResult[$k] } }
+    Write-Host ("== native lanes: {0}, each with its own gleam project and zig cache" -f $lanes.Count)
     Get-ChildItem $scratch -Directory -Filter "zig-cache-$stamp-*" -ErrorAction SilentlyContinue | ForEach-Object { try { [IO.Directory]::Delete($_.FullName, $true) } catch { } }
     Write-Host ("== native tier in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 }
@@ -398,7 +425,7 @@ $rows = foreach ($job in $jobs) {
     [pscustomobject]@{
         id = $job.Id; backend = $job.Backend; suite = $job.Suite; compile = $c.Status; compile_ms = $c.Ms
         residual = if ($residual) { $residual.Substring(0, 16) } else { '' }
-        native = if ($n) { $n.Status } else { '' }; exit = if ($n) { $n.Exit } else { '' }; stdout = if ($n) { $n.Stdout } else { '' }
+        native = if ($n) { $n.Status } else { '' }; native_ms = if ($n) { $n.Ms } else { '' }; exit = if ($n) { $n.Exit } else { '' }; stdout = if ($n) { $n.Stdout } else { '' }
         oracle = ''; baseline = ''; detail = (($c.Detail + ' ' + $(if ($n) { $n.Detail } else { '' })) -replace '\s+', ' ').Trim()
     }
 }
@@ -407,7 +434,7 @@ $rows = @($rows)
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =

@@ -756,6 +756,7 @@ module Program =
         | ".rs" -> "Rust"
         | ".pas" | ".dpr" -> "Delphi"
         | ".zig" -> "Zig"
+        | ".wat" -> "Wasm"
         | ".lean" -> "Lean"
         | ".bend" -> "Bend"
         | ".py" -> "Python + Cuda"

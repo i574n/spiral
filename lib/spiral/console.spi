@@ -38,6 +38,17 @@ inl write_line_gleam forall t. (obj : t) : () =
         global "import gleam/int"
         $'io.println(int.to_string(!obj))' : ()
 
+inl write_wasm forall t. (obj : t) : () =
+    real
+        typecase t with
+        | string => $'(call $print_str !obj)' : ()
+        | i32 => $'(call $print_i64 (i64.extend_i32_s !obj))' : ()
+        | i64 => $'(call $print_i64 !obj)' : ()
+        | u32 => $'(call $print_u64 (i64.extend_i32_u !obj))' : ()
+        | u64 => $'(call $print_u64 !obj)' : ()
+        | () => $'' : ()
+        | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : ()
+
 inl write_line forall t. (obj : t) : () =
     backend_switch {
         Gleam = fun () => write_line_gleam obj
@@ -52,6 +63,9 @@ inl write_line forall t. (obj : t) : () =
         Lean = fun () => $'IO.println (toString !obj)' : ()
         C = fun () => write_line_c obj
         Delphi = fun () => $'Writeln(!obj)' : ()
+        Wasm = fun () =>
+            write_wasm obj
+            $'(call $print_newline)' : ()
     }
 
 /// ### write
@@ -84,6 +98,7 @@ inl write forall t. (x : t) : () =
         Lean = fun () => $'IO.print (toString !x)' : ()
         C = fun () => write_c x
         Delphi = fun () => $'Write(!x)' : ()
+        Wasm = fun () => write_wasm x
     }
 
 /// ### write_ln

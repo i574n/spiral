@@ -42,6 +42,10 @@ inl backend_switch forall t. x : t =
                             typecase t with
                             | () => $'' : t
                             | _ => $'backend_switch_has_no_Delphi_arm_in_lib_spiral' : t
+                        Wasm = fun () =>
+                            typecase t with
+                            | () => $'' : t
+                            | _ => $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : t
                     })
                 )
         !!!!BackendSwitch ({
@@ -57,6 +61,7 @@ inl backend_switch forall t. x : t =
             Lean = fun () => backend "Lean"
             C = fun () => backend "C"
             Delphi = fun () => backend "Delphi"
+            Wasm = fun () => backend "Wasm"
         })
 
 union backend =

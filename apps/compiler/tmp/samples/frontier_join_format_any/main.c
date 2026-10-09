@@ -82,31 +82,31 @@ Mut0 * MutCreate0(String * v0){
 String * format_real1(US0 v0){
     
     USDecref0(&(v0));
-    String * v32;
-    v32 = backend_switch_has_no_C_arm_in_lib_spiral;
-    v32->refc++;
+    String * v33;
+    v33 = backend_switch_has_no_C_arm_in_lib_spiral;
+    v33->refc++;
     
-    Mut0 * v44;
-    v44 = MutCreate0(v32);
+    Mut0 * v56;
+    v56 = MutCreate0(v33);
     
-    StringDecref(v32);
-    String * v57;
-    v57 = backend_switch_has_no_C_arm_in_lib_spiral;
+    StringDecref(v33);
+    String * v69;
+    v69 = backend_switch_has_no_C_arm_in_lib_spiral;
     
-    StringDecref(v57);
-    String * v63;
-    v63 = backend_switch_has_no_C_arm_in_lib_spiral;
+    StringDecref(v69);
+    String * v76;
+    v76 = backend_switch_has_no_C_arm_in_lib_spiral;
     
-    StringDecref(v63);
+    StringDecref(v76);
     
     ((void)0);
     
     
-    String * v86;
-    v86 = v44->v0;
-    v86->refc++;
-    MutDecref0(v44);
-    return v86;
+    String * v105;
+    v105 = v56->v0;
+    v105->refc++;
+    MutDecref0(v56);
+    return v105;
 }
 String * method0(){
     

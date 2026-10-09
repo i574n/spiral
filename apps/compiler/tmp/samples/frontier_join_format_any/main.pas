@@ -22,19 +22,19 @@ begin
 end;
 function format_real_1(v0: TUS0): AnsiString;
 var
-  v43: AnsiString;
-  v44: TMut0;
-  v58: AnsiString;
-  v64: AnsiString;
-  v86: AnsiString;
+  v44: AnsiString;
+  v56: TMut0;
+  v70: AnsiString;
+  v77: AnsiString;
+  v105: AnsiString;
 begin
-  v43 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v44 := MutCreate0(v43);
-  v58 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v64 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v44 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v56 := MutCreate0(v44);
+  v70 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v77 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
   ;
-  v86 := v44.l0;
-  Result := v86;
+  v105 := v56.l0;
+  Result := v105;
 end;
 function method0: AnsiString;
 var

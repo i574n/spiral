@@ -118,6 +118,15 @@ inl obj_to_string_typescript forall t. (x : t) : string =
     if (real typecase t with char => true | _ => false)
     then $'String.fromCharCode(!x)' : string
     else $'String(!x)' : string
+inl obj_to_string_wasm forall t. (x : t) : string =
+    if (real typecase t with string => true | _ => false) then $'!x ' : string
+    elif (real typecase t with bool => true | _ => false) then $'(call $bool_to_str !x)' : string
+    elif (real typecase t with char => true | _ => false) then $'(call $char_to_str !x)' : string
+    elif (real typecase t with i64 => true | _ => false) then $'(call $i64_to_str !x)' : string
+    elif (real typecase t with u64 => true | _ => false) then $'(call $u64_to_str !x)' : string
+    elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str (i64.extend_i32_s !x))' : string
+    elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str (i64.extend_i32_u !x))' : string
+    else $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
 inl obj_to_string_zig forall t. (x : t) : string =
     if (real typecase t with string => true | _ => false) then $'!x ' : string
     elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
@@ -152,6 +161,7 @@ inl obj_to_string x : string =
         TypeScript = fun () => obj_to_string_typescript x
         Zig = fun () => obj_to_string_zig x
         Lean = fun () => $'toString !x ' : string
+        Wasm = fun () => obj_to_string_wasm x
     }
 
 /// ### (~#?**)

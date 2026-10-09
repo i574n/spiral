@@ -43,7 +43,10 @@ if (!$fast) {
     }
     $runs | Sort-Object Notebook | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($_.Notebook) / exit $($_.ExitCode)" }
     $failed = @($runs | Where-Object ExitCode -ne 0)
-    foreach ($run in $failed) { $run.Log | Select-Object -Last 30 | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / $_" } }
+    foreach ($run in $failed) {
+        $run.Log | Select-String -Pattern "panicked at|^\*\* \(|error(\[E\d+\])?:|Exception" -Context 0, 1 | Select-Object -First 10 | ForEach-Object { @($_.Line) + @($_.Context.PostContext) } | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / cause / $_" }
+        $run.Log | Select-Object -Last 30 | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / $_" }
+    }
     if ($failed) { throw "spiral/lib/spiral/build.ps1 / notebooks failed: $(($failed | ForEach-Object Notebook) -join ', ')" }
 }
 

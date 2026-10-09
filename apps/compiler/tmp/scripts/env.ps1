@@ -88,6 +88,7 @@ function Get-SpiralNativeTools {
         Rustc = Resolve-SpiralTool 'rustc' @($env:SPIRAL_RUSTC, 'rustc')
         Fpc = Resolve-SpiralTool 'fpc' @($env:SPIRAL_FPC, 'fpc')
         Zig = Resolve-SpiralTool 'zig' @($env:SPIRAL_ZIG, 'zig')
+        Wasmtime = Resolve-SpiralTool 'wasmtime' @($env:SPIRAL_WASMTIME, 'wasmtime', $(if ($env:ProgramFiles) { Join-Path $env:ProgramFiles 'Wasmtime/bin/wasmtime.exe' }), (Join-Path $HOME '.wasmtime/bin/wasmtime'))
         Lean = Resolve-SpiralTool 'lean' @($env:SPIRAL_LEAN, 'lean', $(if ($env:ELAN_HOME) { Join-Path $env:ELAN_HOME 'bin/lean' }), (Join-Path $HOME '.elan/bin/lean'), (Join-Path $HOME 'scoop/persist/elan/.elan/bin/lean'))
         Gleam = Resolve-SpiralTool 'gleam' @($env:SPIRAL_GLEAM, 'gleam')
         Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')

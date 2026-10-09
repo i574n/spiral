@@ -21,19 +21,19 @@ begin
 end;
 function format_real_0(v0: TUS0): AnsiString;
 var
-  v43: AnsiString;
-  v44: TMut0;
-  v58: AnsiString;
-  v64: AnsiString;
-  v86: AnsiString;
+  v44: AnsiString;
+  v56: TMut0;
+  v70: AnsiString;
+  v77: AnsiString;
+  v105: AnsiString;
 begin
-  v43 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v44 := MutCreate0(v43);
-  v58 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v64 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v44 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v56 := MutCreate0(v44);
+  v70 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v77 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
   ;
-  v86 := v44.l0;
-  Result := v86;
+  v105 := v56.l0;
+  Result := v105;
 end;
 function SpiralMain: LongInt;
 var
@@ -41,14 +41,14 @@ var
   v1: TUS0;
   v2: AnsiString;
   v24: AnsiString;
-  v25: Boolean;
+  v26: Boolean;
 begin
   v0 := 1;
   v1 := US0_0(v0);
   v2 := format_real_0(v1);
   v24 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v25 := v24 = '';
-  if v25 then begin
+  v26 := v24 = '';
+  if v26 then begin
       Result := 1;
   end else begin
       Result := 0;

@@ -173727,6 +173727,636 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 System.Text.RegularExpressions.Regex.Replace(rewritten.ToString(), @"(?m)^local\s+(spilled\.)", "$1")
         program.Append(spillChunkLocals (main.ToString())).ToString()
 
+    /// ## CodegenWasm
+
+    /// ### backend_nameWasm
+    let backend_nameWasm = "Wasm"
+
+    /// ### wasmPrimValType
+    let wasmPrimValType = function
+        | Int64T | UInt64T -> "i64"
+        | Float32T -> "f32"
+        | Float64T -> "f64"
+        | Int8T | Int16T | Int32T | UInt8T | UInt16T | UInt32T | BoolT | CharT | StringT -> "i32"
+
+    /// ### wasmScratchEnd
+    let wasmScratchEnd = 72
+
+    /// ### wasmPrelude
+    let wasmPrelude = """  (import "wasi_snapshot_preview1" "fd_write" (func $fd_write (param i32 i32 i32 i32) (result i32)))
+  (import "wasi_snapshot_preview1" "proc_exit" (func $proc_exit (param i32)))
+  (func $write (param $fd i32) (param $ptr i32) (param $len i32)
+    (i32.store (i32.const 0) (local.get $ptr))
+    (i32.store (i32.const 4) (local.get $len))
+    (drop (call $fd_write (local.get $fd) (i32.const 0) (i32.const 1) (i32.const 8))))
+  (func $print_str (param $s i32)
+    (call $write (i32.const 1) (i32.add (local.get $s) (i32.const 4)) (i32.load (local.get $s))))
+  (func $eprint_line (param $s i32)
+    (call $write (i32.const 2) (i32.add (local.get $s) (i32.const 4)) (i32.load (local.get $s)))
+    (i32.store8 (i32.const 12) (i32.const 10))
+    (call $write (i32.const 2) (i32.const 12) (i32.const 1)))
+  (data (i32.const 48) "\04\00\00\00true")
+  (data (i32.const 56) "\05\00\00\00false")
+  (data (i32.const 64) "\01\00\00\00-")
+  (func $print_newline
+    (i32.store8 (i32.const 12) (i32.const 10))
+    (call $write (i32.const 1) (i32.const 12) (i32.const 1)))
+  (func $bool_to_str (param $b i32) (result i32)
+    (select (i32.const 48) (i32.const 56) (local.get $b)))
+  (func $char_to_str (param $c i32) (result i32) (local $r i32)
+    (local.set $r (call $alloc (i32.const 5)))
+    (i32.store (local.get $r) (i32.const 1))
+    (i32.store8 offset=4 (local.get $r) (local.get $c))
+    (local.get $r))
+  (func $u64_to_str (param $x i64) (result i32) (local $p i32) (local $n i32) (local $r i32)
+    (local.set $p (i32.const 48))
+    (loop $digit
+      (local.set $p (i32.sub (local.get $p) (i32.const 1)))
+      (i32.store8 (local.get $p) (i32.add (i32.const 48) (i32.wrap_i64 (i64.rem_u (local.get $x) (i64.const 10)))))
+      (local.set $x (i64.div_u (local.get $x) (i64.const 10)))
+      (br_if $digit (i64.ne (local.get $x) (i64.const 0))))
+    (local.set $n (i32.sub (i32.const 48) (local.get $p)))
+    (local.set $r (call $alloc (i32.add (local.get $n) (i32.const 4))))
+    (i32.store (local.get $r) (local.get $n))
+    (memory.copy (i32.add (local.get $r) (i32.const 4)) (local.get $p) (local.get $n))
+    (local.get $r))
+  (func $i64_to_str (param $x i64) (result i32)
+    (if (result i32) (i64.lt_s (local.get $x) (i64.const 0))
+      (then (call $str_concat (i32.const 64) (call $u64_to_str (i64.sub (i64.const 0) (local.get $x)))))
+      (else (call $u64_to_str (local.get $x)))))
+  (func $print_u64 (param $x i64) (local $p i32)
+    (local.set $p (i32.const 48))
+    (loop $digit
+      (local.set $p (i32.sub (local.get $p) (i32.const 1)))
+      (i32.store8 (local.get $p) (i32.add (i32.const 48) (i32.wrap_i64 (i64.rem_u (local.get $x) (i64.const 10)))))
+      (local.set $x (i64.div_u (local.get $x) (i64.const 10)))
+      (br_if $digit (i64.ne (local.get $x) (i64.const 0))))
+    (call $write (i32.const 1) (local.get $p) (i32.sub (i32.const 48) (local.get $p))))
+  (func $print_i64 (param $x i64)
+    (if (i64.lt_s (local.get $x) (i64.const 0))
+      (then
+        (i32.store8 (i32.const 12) (i32.const 45))
+        (call $write (i32.const 1) (i32.const 12) (i32.const 1))
+        (call $print_u64 (i64.sub (i64.const 0) (local.get $x))))
+      (else (call $print_u64 (local.get $x)))))
+  (func $alloc (param $n i32) (result i32) (local $p i32) (local $limit i32)
+    (local.set $p (global.get $hp))
+    (global.set $hp (i32.and (i32.add (i32.add (local.get $p) (local.get $n)) (i32.const 7)) (i32.const -8)))
+    (local.set $limit (i32.mul (memory.size) (i32.const 65536)))
+    (if (i32.gt_u (global.get $hp) (local.get $limit))
+      (then
+        (if (i32.eq (memory.grow (i32.add (i32.shr_u (i32.sub (global.get $hp) (local.get $limit)) (i32.const 16)) (i32.const 1))) (i32.const -1))
+          (then (unreachable)))))
+    (local.get $p))
+  (func $str_concat (param $a i32) (param $b i32) (result i32) (local $la i32) (local $lb i32) (local $r i32)
+    (local.set $la (i32.load (local.get $a)))
+    (local.set $lb (i32.load (local.get $b)))
+    (local.set $r (call $alloc (i32.add (i32.add (local.get $la) (local.get $lb)) (i32.const 4))))
+    (i32.store (local.get $r) (i32.add (local.get $la) (local.get $lb)))
+    (memory.copy (i32.add (local.get $r) (i32.const 4)) (i32.add (local.get $a) (i32.const 4)) (local.get $la))
+    (memory.copy (i32.add (i32.add (local.get $r) (i32.const 4)) (local.get $la)) (i32.add (local.get $b) (i32.const 4)) (local.get $lb))
+    (local.get $r))
+  (func $is_continuation (param $s i32) (param $at i32) (result i32)
+    (i32.eq (i32.and (i32.load8_u (i32.add (i32.add (local.get $s) (i32.const 4)) (local.get $at))) (i32.const 192)) (i32.const 128)))
+  (func $str_slice (param $s i32) (param $from i32) (param $upto i32) (result i32) (local $len i32) (local $n i32) (local $r i32)
+    (local.set $len (i32.load (local.get $s)))
+    (if (i32.or (i32.or (i32.lt_s (local.get $from) (i32.const 0)) (i32.gt_s (local.get $from) (local.get $len)))
+                (i32.or (i32.lt_s (local.get $upto) (i32.sub (local.get $from) (i32.const 1))) (i32.ge_s (local.get $upto) (local.get $len))))
+      (then (call $proc_exit (i32.const 3)) (unreachable)))
+    (local.set $n (i32.add (i32.sub (local.get $upto) (local.get $from)) (i32.const 1)))
+    (if (i32.gt_s (local.get $n) (i32.const 0))
+      (then
+        (if (call $is_continuation (local.get $s) (local.get $from)) (then (call $proc_exit (i32.const 3)) (unreachable)))
+        (if (i32.lt_s (i32.add (local.get $upto) (i32.const 1)) (local.get $len))
+          (then (if (call $is_continuation (local.get $s) (i32.add (local.get $upto) (i32.const 1))) (then (call $proc_exit (i32.const 3)) (unreachable)))))))
+    (local.set $r (call $alloc (i32.add (local.get $n) (i32.const 4))))
+    (i32.store (local.get $r) (local.get $n))
+    (memory.copy (i32.add (local.get $r) (i32.const 4)) (i32.add (i32.add (local.get $s) (i32.const 4)) (local.get $from)) (local.get $n))
+    (local.get $r))
+  (func $str_eq (param $a i32) (param $b i32) (result i32) (local $n i32) (local $i i32)
+    (local.set $n (i32.load (local.get $a)))
+    (if (i32.ne (local.get $n) (i32.load (local.get $b))) (then (return (i32.const 0))))
+    (block $done
+      (loop $next
+        (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+        (if (i32.ne (i32.load8_u (i32.add (i32.add (local.get $a) (i32.const 4)) (local.get $i)))
+                    (i32.load8_u (i32.add (i32.add (local.get $b) (i32.const 4)) (local.get $i))))
+          (then (return (i32.const 0))))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $next)))
+    (i32.const 1))
+"""
+
+    /// ### BindsReturnWasm
+    type BindsReturnWasm = WasmLocal of TyV [] | WasmTail of Ty
+
+    /// ### codegenWasm
+    let codegenWasm (env : PartEvalResult) (x : TypedBind []) =
+        let method_names = Dictionary<int, string>()
+        let functions = ResizeArray<string>()
+        let globals = ResizeArray<string>()
+        let data = ResizeArray<string>()
+        let interned = Dictionary<string, int>()
+        let mutable data_end = wasmScratchEnd
+        let mutable labels = 0
+        let next_label () = labels <- labels + 1; labels
+
+        let intern (text : string) =
+            match interned.TryGetValue text with
+            | true, at -> at
+            | _ ->
+                let bytes = Text.Encoding.UTF8.GetBytes text
+                let length = [| byte (bytes.Length &&& 0xff); byte ((bytes.Length >>> 8) &&& 0xff); byte ((bytes.Length >>> 16) &&& 0xff); byte ((bytes.Length >>> 24) &&& 0xff) |]
+                let escaped =
+                    Array.append length bytes
+                    |> Array.map (fun b -> if b >= 32uy && b < 127uy && b <> byte '"' && b <> byte '\\' then string (char b) else sprintf "\\%02x" b)
+                    |> String.concat ""
+                let at = data_end
+                data.Add $"  (data (i32.const {at}) \"{escaped}\")"
+                data_end <- (at + 4 + bytes.Length + 7) &&& ~~~7
+                interned.[text] <- at
+                at
+
+        let memo (f : 'k -> int -> unit) =
+            let dict = Dictionary<'k, int>(HashIdentity.Structural)
+            fun (k : 'k) ->
+                match dict.TryGetValue k with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[k] <- tag
+                    f k tag
+                    tag
+
+        let lit = function
+            | LitInt8 x -> $"(i32.const {x})"
+            | LitInt16 x -> $"(i32.const {x})"
+            | LitInt32 x -> $"(i32.const {x})"
+            | LitInt64 x -> $"(i64.const {x})"
+            | LitUInt8 x -> $"(i32.const {x})"
+            | LitUInt16 x -> $"(i32.const {x})"
+            | LitUInt32 x -> $"(i32.const {x})"
+            | LitUInt64 x -> $"(i64.const {x})"
+            | LitFloat32 x ->
+                if x = infinityf then "(f32.const inf)"
+                elif x = -infinityf then "(f32.const -inf)"
+                elif Single.IsNaN x then "(f32.const nan)"
+                else let r = x.ToString "R" in $"(f32.const {r})"
+            | LitFloat64 x ->
+                if x = infinity then "(f64.const inf)"
+                elif x = -infinity then "(f64.const -inf)"
+                elif Double.IsNaN x then "(f64.const nan)"
+                else let r = x.ToString "R" in $"(f64.const {r})"
+            | LitString x -> $"(i32.const {intern x})"
+            | LitChar x -> $"(i32.const {int x})"
+            | LitBool x -> if x then "(i32.const 1)" else "(i32.const 0)"
+
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let value_type d = match prim_of d with Some p -> wasmPrimValType p | None -> "i32"
+        let is_unsigned d = match prim_of d with Some (UInt8T | UInt16T | UInt32T | UInt64T | BoolT | CharT) -> true | _ -> false
+        let is_float d = match prim_of d with Some (Float32T | Float64T) -> true | _ -> false
+        let is_string d = match prim_of d with Some StringT -> true | _ -> false
+        let narrow d (x : string) =
+            match prim_of d with
+            | Some Int8T -> $"(i32.extend8_s {x})"
+            | Some Int16T -> $"(i32.extend16_s {x})"
+            | Some UInt8T -> $"(i32.and {x} (i32.const 255))"
+            | Some UInt16T -> $"(i32.and {x} (i32.const 65535))"
+            | _ -> x
+        let show_w = function WV (L(i,_)) -> $"(local.get $v{i})" | WLit a -> lit a
+        let args (x : TyV []) = x |> Array.map (fun (L(i,_)) -> $"(local.get $v{i})") |> String.concat " "
+        let args' x = data_term_vars x |> Array.map show_w |> String.concat " "
+
+        let slot_offset (slot : int) = 8 + 8 * slot
+        let slot_load (value_type : string) (pointer : string) (slot : int) = $"({value_type}.load offset={slot_offset slot} {pointer})"
+        let slot_store (value_type : string) (pointer : string) (slot : int) (value : string) = $"({value_type}.store offset={slot_offset slot} {pointer} {value})"
+        let local_get (i : int) = $"(local.get $v{i})"
+        let env_pointer = "(local.get $env)"
+        let types = ResizeArray<string>()
+        let closure_names = ResizeArray<string>()
+        let array_element (array : string) (index : string) (width : int) = $"(i32.add {array} (i32.mul {index} (i32.const {8 * max 1 width})))"
+        let layout_cache = Dictionary<Ty, ZigLayoutRec>(HashIdentity.Structural)
+        let case_index (cases : Map<int * string, Ty>) k =
+            cases |> Seq.map (fun (KeyValue ((_,k'),_)) -> k') |> Seq.tryFindIndex (fun k' -> UnionTagIdOps.text k = k')
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec term_type = function
+            | WV(L(_,t)) -> tyv t
+            | WLit l -> wasmPrimValType (lit_to_primitive_type l)
+        and tyv x =
+            match x with
+            | YPrim a -> wasmPrimValType a
+            | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+                match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameWasm then Some v else None) with
+                | Some x -> tup_tys x |> String.concat " "
+                | None -> raise_codegen_error $"In the backend_switch, expected a record with the '{backend_nameWasm}' field."
+            | YMacro a -> a |> List.map (function Text a -> a | Type a -> tup_tys a |> String.concat " " | TypeLit _ -> raise_codegen_error "The Wasm backend has no type literals.") |> String.concat ""
+            | YLayout(_,(StackMutable | StackRefs | HeapRefs)) -> raise_codegen_error "The Wasm backend supports only the heap and heap mutable layout types."
+            | YUnion _ | YLayout _ | YArray _ | YFun _ -> "i32"
+            | YExists -> raise_codegen_error "Existentials are not supported at runtime. They are a compile time feature only."
+            | YForall -> raise_codegen_error "Foralls are not supported at runtime. They are a compile time feature only."
+            | a -> raise_codegen_error $"Type not supported in the codegen.\nGot: %A{a}"
+        and tyvs (x : Ty) = env.ty_to_data x |> data_free_vars
+        and tup_tys x = tyvs x |> Array.map (fun (L(_,t)) -> tyv t)
+        and tup d = data_term_vars d |> Array.map show_w |> String.concat " "
+        and index32_data d = match prim_of d with Some (Int64T | UInt64T) -> $"(i32.wrap_i64 {tup d})" | _ -> tup d
+        and layout (x : Ty) : ZigLayoutRec =
+            match layout_cache.TryGetValue x with
+            | true, r -> r
+            | _ ->
+                let r =
+                    match x with
+                    | YLayout(x,_) ->
+                        let x = env.ty_to_data x
+                        let a, b =
+                            match x with
+                            | DRecord a -> let a = Map.map (fun _ -> data_free_vars) a in a |> Map.toArray |> Array.collect snd, a
+                            | _ -> data_free_vars x, Map.empty
+                        ({data=x; free_vars=a; free_vars_by_key=b; tag=layout_cache.Count} : ZigLayoutRec)
+                    | _ -> raise_codegen_error $"Compiler error: Expected a layout type.\nGot: %s{show_ty x}"
+                layout_cache.[x] <- r
+                r
+        and layout_slot (r : ZigLayoutRec) (field : int) = r.free_vars |> Array.findIndex (fun (L(j,_)) -> j = field)
+        and emit_function (name : string) (self_tag : int option) (parameters : TyV []) (captured : TyV []) (export : string) (range : Ty) (body : TypedBind []) =
+            let locals = HashSet(parameters |> Array.map (fun (L(i,_)) -> i)), ResizeArray<string>()
+            let s = {text=StringBuilder(); indent=4}
+            captured |> Array.iteri (fun k (L(i,t) as field) ->
+                declare locals field
+                line s $"(local.set $v{i} {slot_load (tyv t) env_pointer k})")
+            let saved = self_loop.Value
+            match self_tag with
+            | Some tag when self_tail tag body ->
+                self_loop.Value <- Some (tag, parameters)
+                line s "(loop $self"
+                binds locals (indent s) (WasmTail range) body
+                line s ")"
+            | _ ->
+                self_loop.Value <- None
+                binds locals s (WasmTail range) body
+            self_loop.Value <- saved
+            let results = tup_tys range
+            if results.Length > 0 then line s "(unreachable)"
+            let ps = parameters |> Array.map (fun (L(i,t)) -> $" (param $v{i} {tyv t})") |> String.concat ""
+            let ps = if closure_names.Contains ("$" + name) then " (param $env i32)" + ps else ps
+            let rs = if results.Length = 0 then "" else " (result " + String.concat " " results + ")"
+            let decls = snd locals |> Seq.map (sprintf "    %s\n") |> String.concat ""
+            functions.Add($"  (func ${name}{export}{ps}{rs}\n{decls}{s.text.ToString()}  )")
+        and declare (names : HashSet<int>, decls : ResizeArray<string>) (L(i,t)) =
+            if names.Add i then decls.Add($"(local $v{i} {tyv t})")
+        and temp (_ : HashSet<int>, decls : ResizeArray<string>) (ty : string) =
+            let name = $"t{decls.Count}"
+            decls.Add($"(local ${name} {ty})")
+            name
+        and binds locals (s : CodegenEnv) (ret : BindsReturnWasm) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try let d = data_free_vars d
+                        d |> Array.iter (declare locals)
+                        op locals s (WasmLocal d) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) -> try op locals s ret a with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try match ret with
+                        | WasmLocal l -> Array.iter2 (fun (L(i,_)) b -> line s $"(local.set $v{i} {show_w b})") l (data_term_vars d)
+                        | WasmTail _ ->
+                            match tup d with
+                            | "" -> if self_loop.Value.IsSome then line s "(return)"
+                            | x -> line s $"(return {x})"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op locals (s : CodegenEnv) (ret : BindsReturnWasm) a =
+            let binds = binds locals
+            let return' (x : string) =
+                match ret with
+                | WasmLocal [||] -> if x <> "" then line s x
+                | WasmLocal [|L(i,_)|] -> line s $"(local.set $v{i} {x})"
+                | WasmLocal l ->
+                    line s x
+                    l |> Array.rev |> Array.iter (fun (L(i,_)) -> line s $"(local.set $v{i})")
+                | WasmTail range ->
+                    if (tup_tys range).Length = 0 then
+                        if x <> "" then line s x
+                        if self_loop.Value.IsSome then line s "(return)"
+                    else line s $"(return {x})"
+            let jp (a, b) =
+                match a with
+                | JPMethod(a,c) -> $"(call ${method_names.[(method (a,c)).tag]} {args b})"
+                | JPClosure(a,c) ->
+                    let tag = (closure (a,c)).tag
+                    let p = temp locals "i32"
+                    line s $"(local.set ${p} (call $alloc (i32.const {8 + 8 * b.Length})))"
+                    line s $"(i32.store (local.get ${p}) (i32.const {tag}))"
+                    b |> Array.iteri (fun k (L(i,t)) -> line s (slot_store (tyv t) $"(local.get ${p})" k (local_get i)))
+                    $"(local.get ${p})"
+            let unary f = function [x] -> f (tup x) | _ -> raise_codegen_error "Compiler error: Expected one argument."
+            match a with
+            | TyMacro a -> a |> List.map (function CMText x -> x | CMTerm (x,inl) -> (if inl then args' x else tup x) | CMType x -> tup_tys x |> String.concat " " | CMTypeLit _ -> raise_codegen_error "The Wasm backend has no type literals.") |> String.concat "" |> return'
+            | TyIf(cond,tr,fl) ->
+                line s $"(if {tup cond}"
+                line (indent s) "(then"
+                binds (indent (indent s)) ret tr
+                line (indent s) ")"
+                line (indent s) "(else"
+                binds (indent (indent s)) ret fl
+                line (indent s) "))"
+            | TyJoinPoint(JPMethod(a,c),b) when (match ret, self_loop.Value with WasmTail _, Some (tag, _) -> (method (a,c)).tag = tag | _ -> false) ->
+                let parameters = snd self_loop.Value.Value
+                let temps = parameters |> Array.map (fun (L(_,t)) -> temp locals (tyv t))
+                Array.iter2 (fun tmp (L(i,_)) -> line s $"(local.set ${tmp} (local.get $v{i}))") temps b
+                Array.iter2 (fun (L(i,_)) tmp -> line s $"(local.set $v{i} (local.get ${tmp}))") parameters temps
+                line s "(br $self)"
+            | TyJoinPoint(a,args) -> return' (jp (a, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Wasm backend does not support nesting other backends."
+            | TyWhile(a,b) ->
+                let n = next_label ()
+                line s $"(block $while_exit{n}"
+                line (indent s) $"(loop $while_next{n}"
+                line (indent (indent s)) $"(br_if $while_exit{n} (i32.eqz {jp a}))"
+                binds (indent (indent s)) (WasmLocal [||]) b
+                line (indent (indent s)) $"(br $while_next{n})))"
+            | TyDo a | TyIndent a -> binds s ret a
+            | TyIntSwitch(L(i,t),on_succ,on_fail) ->
+                let rec cases k =
+                    if k >= on_succ.Length then binds (indent s) ret on_fail
+                    else
+                        line s $"(if ({tyv t}.eq (local.get $v{i}) ({tyv t}.const {k}))"
+                        line (indent s) "(then"
+                        binds (indent (indent s)) ret on_succ.[k]
+                        line (indent s) ")"
+                        line (indent s) "(else"
+                        cases (k + 1)
+                        line (indent s) "))"
+                cases 0
+            | TyFailwith(_,b) ->
+                line s $"(call $eprint_line {tup b})"
+                line s "(call $proc_exit (i32.const 1))"
+                line s "(unreachable)"
+            | TyConv(a,b) ->
+                let target = match a with YPrim p -> p | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
+                let source = match prim_of b with Some p -> p | None -> raise_codegen_error "Compiler error: Conv expects a primitive."
+                let value = tup b
+                let unsigned_source = match source with UInt8T | UInt16T | UInt32T | UInt64T | BoolT | CharT -> true | _ -> false
+                let unsigned_target = match target with UInt8T | UInt16T | UInt32T | UInt64T | BoolT | CharT -> true | _ -> false
+                let su = if unsigned_source then "u" else "s"
+                let tu = if unsigned_target then "u" else "s"
+                let narrow_target (x : string) =
+                    match target with
+                    | Int8T -> $"(i32.extend8_s {x})"
+                    | Int16T -> $"(i32.extend16_s {x})"
+                    | UInt8T -> $"(i32.and {x} (i32.const 255))"
+                    | UInt16T -> $"(i32.and {x} (i32.const 65535))"
+                    | _ -> x
+                match wasmPrimValType source, wasmPrimValType target with
+                | "i32", "i32" -> narrow_target value
+                | "i32", "i64" -> $"(i64.extend_i32_{su} {value})"
+                | "i64", "i32" -> narrow_target $"(i32.wrap_i64 {value})"
+                | "i64", "i64" -> value
+                | (("i32" | "i64") as f), (("f32" | "f64") as t) -> $"({t}.convert_{f}_{su} {value})"
+                | (("f32" | "f64") as f), "i32" -> narrow_target $"(i32.trunc_sat_{f}_{tu} {value})"
+                | (("f32" | "f64") as f), "i64" -> $"(i64.trunc_sat_{f}_{tu} {value})"
+                | "f32", "f64" -> $"(f64.promote_f32 {value})"
+                | "f64", "f32" -> $"(f32.demote_f64 {value})"
+                | _ -> value
+                |> return'
+            | TyUnionBox(a,b,c) ->
+                let c = c.Item
+                let k = case_index c.cases a
+                let fields = data_term_vars b
+                let p = temp locals "i32"
+                line s $"(local.set ${p} (call $alloc (i32.const {8 + 8 * fields.Length})))"
+                line s $"(i32.store (local.get ${p}) (i32.const {k}))"
+                fields |> Array.iteri (fun f w -> line s (slot_store (term_type w) $"(local.get ${p})" f (show_w w)))
+                return' $"(local.get ${p})"
+            | TyUnionUnbox(is,x,on_succs,on_fail) ->
+                let x' = x.Item
+                let tag = temp locals "i32"
+                match is with
+                | L(first,_) :: rest ->
+                    line s $"(local.set ${tag} (i32.load (local.get $v{first})))"
+                    rest |> List.iter (fun (L(other,_)) -> line s $"(if (i32.ne (local.get ${tag}) (i32.load (local.get $v{other}))) (then (local.set ${tag} (i32.const -1))))")
+                | [] -> raise_codegen_error "Compiler error: Union unbox without a scrutinee."
+                let cases = on_succs |> Map.toList
+                let rec chain = function
+                    | [] ->
+                        match on_fail with
+                        | Some b -> binds s ret b
+                        | None -> line s "(unreachable)"
+                    | (k, (a, b)) :: rest ->
+                        let c = case_index x'.cases k
+                        line s $"(if (i32.eq (local.get ${tag}) (i32.const {c}))"
+                        line (indent s) "(then"
+                        let inner = indent (indent s)
+                        List.iter2 (fun (L(v,_)) a ->
+                            let scrutinee = sprintf "(local.get $v%i)" v
+                            data_free_vars a |> Array.iteri (fun f (L(i,t) as field) ->
+                                declare locals field
+                                let value = slot_load (tyv t) scrutinee f
+                                line inner $"(local.set $v{i} {value})")) is a
+                        binds inner ret b
+                        line (indent s) ")"
+                        line (indent s) "(else"
+                        chain rest
+                        line (indent s) "))"
+                chain cases
+            | TyToLayout(a,b) ->
+                let fields = (layout b).free_vars
+                let values = data_term_vars a
+                let p = temp locals "i32"
+                line s $"(local.set ${p} (call $alloc (i32.const {8 + 8 * fields.Length})))"
+                Array.iteri2 (fun k (L(_,t)) w -> line s (slot_store (tyv t) $"(local.get ${p})" k (show_w w))) fields values
+                return' $"(local.get ${p})"
+            | TyLayoutIndexAll(L(i,(YLayout _ as a))) ->
+                match ret with
+                | WasmLocal l ->
+                    l |> Array.iteri (fun k (L(target,t)) -> line s $"(local.set $v{target} {slot_load (tyv t) (local_get i) k})")
+                | WasmTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
+            | TyLayoutIndexByKey(L(i,(YLayout _ as a)),key) ->
+                let r = layout a
+                match r.free_vars_by_key |> Map.tryPick (fun (_, k) v -> if LayoutFieldNameIdOps.matchesText key k then Some v else None), ret with
+                | Some vars, WasmLocal l ->
+                    Array.iter2 (fun (L(target,t)) (L(field,_)) -> line s $"(local.set $v{target} {slot_load (tyv t) (local_get i) (layout_slot r field)})") l vars
+                | Some _, WasmTail _ -> raise_codegen_error "Compiler error: Layout index should never come in end position."
+                | None, _ -> ()
+            | TyLayoutIndexAll _ | TyLayoutIndexByKey _ -> raise_codegen_error "Compiler error: Expected the TyV in layout index to be a layout type."
+            | TyLayoutMutableSet(L(i,t),b,c) ->
+                let r = layout t
+                let a = List.fold (fun s k ->
+                    match s with
+                    | DRecord l -> l |> Map.pick (fun (_,k') v -> if LayoutFieldNameIdOps.matchesText k k' then Some v else None)
+                    | _ -> raise_codegen_error "Compiler error: Expected a record.") r.data b
+                Array.iter2 (fun (L(field,ft)) w -> line s (slot_store (tyv ft) (local_get i) (layout_slot r field) (show_w w))) (data_free_vars a) (data_term_vars c)
+            | TyArrayCreate(a,b) ->
+                let width = (tup_tys a).Length
+                let n = temp locals "i32"
+                let p = temp locals "i32"
+                line s $"(local.set ${n} {index32_data b})"
+                line s $"(local.set ${p} (call $alloc (i32.add (i32.const 8) (i32.mul (local.get ${n}) (i32.const {8 * max 1 width})))))"
+                line s $"(i32.store (local.get ${p}) (local.get ${n}))"
+                return' $"(local.get ${p})"
+            | TyArrayLiteral(a,b) ->
+                let element = tup_tys a
+                let width = element.Length
+                let p = temp locals "i32"
+                line s $"(local.set ${p} (call $alloc (i32.const {8 + b.Length * 8 * max 1 width})))"
+                line s $"(i32.store (local.get ${p}) (i32.const {b.Length}))"
+                b |> List.iteri (fun index x ->
+                    let address = array_element $"(local.get ${p})" $"(i32.const {index})" width
+                    data_term_vars x |> Array.iteri (fun k w -> line s (slot_store element.[k] address k (show_w w))))
+                return' $"(local.get ${p})"
+            | TyArrayLength(a,b) ->
+                let length = $"(i32.load {tup b})"
+                return' (if tyv a = "i64" then $"(i64.extend_i32_u {length})" else length)
+            | TyApply(L(i,t),b) ->
+                match t with
+                | YFun(domain,range,_) ->
+                    let signature = fun_type (domain, range)
+                    let arguments = match args' b with "" -> "" | x -> " " + x
+                    return' $"(call_indirect (type $fun{signature}) (local.get $v{i}){arguments} (i32.load (local.get $v{i})))"
+                | _ -> raise_codegen_error "Compiler error: Expected a function type in the application."
+            | TyStringLength(a,b) ->
+                let length = $"(i32.load {tup b})"
+                return' (if tyv a = "i64" then $"(i64.extend_i32_u {length})" else length)
+            | TySizeOf _ -> raise_codegen_error "The Wasm backend doesn't support sizeof yet."
+            | TyOp(Global, [DLit (LitString x)]) -> if not (globals.Contains x) then globals.Add x
+            | TyOp(op,l) ->
+                let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
+                let typed (name : string) = match l with a :: _ -> $"{value_type a}.{name}" | [] -> raise_codegen_error "Compiler error: Expected arguments."
+                let arith name = match l with a :: _ -> bin (fun x y -> narrow a $"({typed name} {x} {y})") | [] -> raise_codegen_error "Compiler error: Expected arguments."
+                let signed_op name = match l with a :: _ -> (if is_float a then typed name else typed (name + (if is_unsigned a then "_u" else "_s"))) | [] -> raise_codegen_error "Compiler error: Expected arguments."
+                let compare name = match l with a :: _ when is_string a -> raise_codegen_error "The Wasm backend doesn't support ordering strings yet." | _ -> bin (fun x y -> $"({signed_op name} {x} {y})")
+                let instruction name = bin (fun x y -> sprintf "(%s %s %s)" (typed name) x y)
+                let narrowed name = match l with a :: _ -> bin (fun x y -> narrow a (sprintf "(%s %s %s)" name x y)) | [] -> raise_codegen_error "Compiler error: Expected arguments."
+                let index32 b = if value_type b = "i64" then sprintf "(i32.wrap_i64 %s)" (tup b) else tup b
+                match op, l with
+                | Dyn,[a] -> tup a
+                | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                | StaticStringConcat, _ -> bin (sprintf "(call $str_concat %s %s)")
+                | StringIndex, [a;b] -> sprintf "(i32.load8_u (i32.add (i32.add %s (i32.const 4)) %s))" (tup a) (index32 b)
+                | StringSlice, [a;b;c] -> sprintf "(call $str_slice %s %s %s)" (tup a) (index32 b) (index32 c)
+                | ArrayIndexSet, [a;b;c] ->
+                    let element = match a with DV(L(_,YArray el)) -> tup_tys el | _ -> raise_codegen_error "Compiler error: Expected an array."
+                    let address = array_element (tup a) (index32 b) element.Length
+                    data_term_vars c |> Array.mapi (fun k w -> slot_store element.[k] address k (show_w w)) |> String.concat " "
+                | Add, _ -> arith "add"
+                | Sub, _ -> arith "sub"
+                | Mult, _ -> arith "mul"
+                | Div, _ -> narrowed (signed_op "div")
+                | Mod, [a;_] when not (is_float a) -> narrowed (signed_op "rem")
+                | LT, _ -> compare "lt"
+                | LTE, _ -> compare "le"
+                | GT, _ -> compare "gt"
+                | GTE, _ -> compare "ge"
+                | EQ, [a;_] when is_string a -> bin (sprintf "(call $str_eq %s %s)")
+                | NEQ, [a;_] when is_string a -> bin (sprintf "(i32.eqz (call $str_eq %s %s))")
+                | EQ, _ -> instruction "eq"
+                | NEQ, _ -> instruction "ne"
+                | BoolAnd, _ -> bin (sprintf "(i32.and %s %s)")
+                | BoolOr, _ -> bin (sprintf "(i32.or %s %s)")
+                | BitwiseAnd, _ -> instruction "and"
+                | BitwiseOr, _ -> instruction "or"
+                | BitwiseXor, _ -> instruction "xor"
+                | BitwiseComplement, [a] -> narrow a (sprintf "(%s.xor %s (%s.const -1))" (value_type a) (tup a) (value_type a))
+                | (ShiftLeft | ShiftRight), [a;b] ->
+                    let count =
+                        match value_type a, value_type b with
+                        | "i64", "i32" -> sprintf "(i64.extend_i32_u %s)" (tup b)
+                        | "i32", "i64" -> sprintf "(i32.wrap_i64 %s)" (tup b)
+                        | _ -> tup b
+                    match op with
+                    | ShiftLeft -> narrow a (sprintf "(%s %s %s)" (typed "shl") (tup a) count)
+                    | _ -> sprintf "(%s %s %s)" (signed_op "shr") (tup a) count
+                | Neg, [a] when is_float a -> $"({value_type a}.neg {tup a})"
+                | Neg, [a] -> narrow a $"({value_type a}.sub ({value_type a}.const 0) {tup a})"
+                | Sqrt, [a] -> $"({value_type a}.sqrt {tup a})"
+                | NanIs, [a] -> $"({value_type a}.ne {tup a} {tup a})"
+                | StdoutFlush, [] -> ""
+                | UnionTag, [DV(L(i,_))] ->
+                    let tag = $"(i32.load (local.get $v{i}))"
+                    match ret with
+                    | WasmLocal [|L(_,t)|] when tyv t = "i64" -> $"(i64.extend_i32_s {tag})"
+                    | _ -> tag
+                | ArrayIndex, [a;b] ->
+                    let element = match a with DV(L(_,YArray el)) -> tup_tys el | _ -> raise_codegen_error "Compiler error: Expected an array."
+                    let address = array_element (tup a) (index32 b) element.Length
+                    element |> Array.mapi (fun k t -> slot_load t address k) |> String.concat " "
+                | Printf, [DLit (LitString fmt); b] ->
+                    printf_pieces fmt (data_term_vars b) |> List.map (function
+                        | Choice1Of2 t -> $"(call $print_str (i32.const {intern t}))"
+                        | Choice2Of2 ('s', a) -> $"(call $print_str {show_w a})"
+                        | Choice2Of2 (_, a) ->
+                            let p = match a with WV(L(_,YPrim p)) -> Some p | WLit l -> Some (lit_to_primitive_type l) | _ -> None
+                            match p with
+                            | Some Int64T -> $"(call $print_i64 {show_w a})"
+                            | Some UInt64T -> $"(call $print_u64 {show_w a})"
+                            | Some (UInt8T | UInt16T | UInt32T) -> $"(call $print_u64 (i64.extend_i32_u {show_w a}))"
+                            | _ -> $"(call $print_i64 (i64.extend_i32_s {show_w a}))")
+                    |> String.concat " "
+                | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Wasm backend" op l.Length
+                |> return'
+        and method_memo = lazy (memo (fun ((jp_body,key) : _ * _) tag ->
+            let args = codegenMethodKeyArgs key
+            match codegenMethodBody env "Wasm" jp_body key with
+            | body, range, name ->
+                method_names.[tag] <- generatedMethodName name tag
+                emit_function method_names.[tag] (Some tag) (rdata_free_vars args) [||] "" range body))
+        and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+        and fun_type : Ty * Ty -> int = memo (fun (domain, range) tag ->
+            let ps = tup_tys domain |> Array.map (sprintf " %s") |> String.concat ""
+            let rs = match tup_tys range with [||] -> "" | r -> " (result " + String.concat " " r + ")"
+            types.Add($"  (type $fun{tag} (func (param i32{ps}){rs}))"))
+        and closure_memo = lazy (memo (fun ((jp_body,key & (C(args,_,fun_ty))) : _ * _) tag ->
+            match fun_ty with
+            | YFun(domain,range,_) ->
+                match codegenClosureBody env "Wasm" jp_body key with
+                | domain_args, body ->
+                    closure_names.Add $"$closure{tag}"
+                    fun_type (domain, range) |> ignore
+                    emit_function $"closure{tag}" None (data_free_vars domain_args) (rdata_free_vars args) "" range body
+            | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
+        and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+
+        let unitMain =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Wasm backend should be a 32-bit int (or unit)."
+            | _ -> true
+        if unitMain then
+            emit_function "spiralMainUnit" None [||] [||] "" YB x
+            functions.Add("  (func $spiralMain (result i32)\n    (call $spiralMainUnit)\n    (i32.const 0))")
+        else emit_function "spiralMain" None [||] [||] "" (YPrim Int32T) x
+        let heap_start = (data_end + 7) &&& ~~~7
+        let pages = heap_start / 65536 + 2
+        let program = StringBuilder()
+        program.AppendLine("(module") |> ignore
+        program.Append(wasmPrelude) |> ignore
+        program.AppendLine($"  (memory (export \"memory\") {pages})") |> ignore
+        program.AppendLine($"  (global $hp (mut i32) (i32.const {heap_start}))") |> ignore
+        env.globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        globals |> Seq.iter (fun (x : string) -> program.AppendLine(x) |> ignore)
+        types |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        if closure_names.Count > 0 then
+            program.AppendLine($"  (table $closures {closure_names.Count} funcref)") |> ignore
+            program.AppendLine("  (elem (table $closures) (i32.const 0) func " + String.concat " " closure_names + ")") |> ignore
+        functions |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        data |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
+        program.AppendLine("  (func $_start (export \"_start\")\n    (call $proc_exit (call $spiralMain)))") |> ignore
+        program.AppendLine(")").ToString()
+
     /// ## CodegenTypescript
 
     /// ### backend_nameTypeScript
@@ -180896,6 +181526,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         | BuildBackendRust
         | BuildBackendDelphi
         | BuildBackendZig
+        | BuildBackendWasm
         | BuildBackendLean
         | BuildBackendBend
         | BuildBackendTypeScript
@@ -180916,6 +181547,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         | "Rust" -> BuildBackendRust
         | "Delphi" -> BuildBackendDelphi
         | "Zig" -> BuildBackendZig
+        | "Wasm" -> BuildBackendWasm
         | "Lean" -> BuildBackendLean
         | "Bend" -> BuildBackendBend
         | "TypeScript" -> BuildBackendTypeScript
@@ -182141,6 +182773,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         | BuildBackendRust -> build codegenRust "Rust" ".rs"
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
                                         | BuildBackendZig -> build codegenZig "Zig" ".zig"
+                                        | BuildBackendWasm -> build codegenWasm "Wasm" ".wat"
                                         | BuildBackendLean -> build codegenLean "Lean" ".lean"
                                         | BuildBackendBend -> build codegenBend "Bend" ".bend"
                                         | BuildBackendTypeScript -> build codegenTypeScript "TypeScript" ".ts"
@@ -184838,6 +185471,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                     | "Rust" -> build codegenRust "Rust" ".rs"
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
+                                    | "Wasm" -> build codegenWasm "Wasm" ".wat"
                                     | "Lean" -> build codegenLean "Lean" ".lean"
                                     | "Bend" -> build codegenBend "Bend" ".bend"
                                     | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"

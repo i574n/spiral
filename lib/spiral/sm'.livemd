@@ -811,7 +811,7 @@ Spiral.Kino.eval!(
 
 ### format_debug
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug forall t. (x : t) : string =\n    real format_debug_real `t x\n\ninl obj_to_string_rust forall t. (x : t) : string =\n    real obj_to_string_rust_real `t x\ninl obj_to_string_typescript forall t. (x : t) : string =\n    if (real typecase t with char => true | _ => false)\n    then $'String.fromCharCode(!x)' : string\n    else $'String(!x)' : string\ninl obj_to_string_zig forall t. (x : t) : string =\n    if (real typecase t with string => true | _ => false) then $'!x ' : string\n    elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, \"{c}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    elif (real typecase t with bool => true | _ => false) then $'(if (!x) \"true\" else \"false\")' : string\n    elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)\n    then $'(std.fmt.allocPrint(spiral_gpa, \"{d}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    else $'(std.fmt.allocPrint(spiral_gpa, \"{any}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl format_debug forall t. (x : t) : string =\n    real format_debug_real `t x\n\ninl obj_to_string_rust forall t. (x : t) : string =\n    real obj_to_string_rust_real `t x\ninl obj_to_string_typescript forall t. (x : t) : string =\n    if (real typecase t with char => true | _ => false)\n    then $'String.fromCharCode(!x)' : string\n    else $'String(!x)' : string\ninl obj_to_string_wasm forall t. (x : t) : string =\n    if (real typecase t with string => true | _ => false) then $'!x ' : string\n    elif (real typecase t with bool => true | _ => false) then $'(call $bool_to_str !x)' : string\n    elif (real typecase t with char => true | _ => false) then $'(call $char_to_str !x)' : string\n    elif (real typecase t with i64 => true | _ => false) then $'(call $i64_to_str !x)' : string\n    elif (real typecase t with u64 => true | _ => false) then $'(call $u64_to_str !x)' : string\n    elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str (i64.extend_i32_s !x))' : string\n    elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str (i64.extend_i32_u !x))' : string\n    else $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string\ninl obj_to_string_zig forall t. (x : t) : string =\n    if (real typecase t with string => true | _ => false) then $'!x ' : string\n    elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, \"{c}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    elif (real typecase t with bool => true | _ => false) then $'(if (!x) \"true\" else \"false\")' : string\n    elif (real typecase t with f32 => true | f64 => true | i8 => true | i16 => true | i32 => true | i64 => true | u8 => true | u16 => true | u32 => true | u64 => true | _ => false)\n    then $'(std.fmt.allocPrint(spiral_gpa, \"{d}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string\n    else $'(std.fmt.allocPrint(spiral_gpa, \"{any}\", .{ !x }) catch \\@panic(\"out of memory\"))' : string","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -825,6 +825,15 @@ Spiral.Kino.eval!(
       if (real typecase t with char => true | _ => false)
       then $'String.fromCharCode(!x)' : string
       else $'String(!x)' : string
+  inl obj_to_string_wasm forall t. (x : t) : string =
+      if (real typecase t with string => true | _ => false) then $'!x ' : string
+      elif (real typecase t with bool => true | _ => false) then $'(call $bool_to_str !x)' : string
+      elif (real typecase t with char => true | _ => false) then $'(call $char_to_str !x)' : string
+      elif (real typecase t with i64 => true | _ => false) then $'(call $i64_to_str !x)' : string
+      elif (real typecase t with u64 => true | _ => false) then $'(call $u64_to_str !x)' : string
+      elif (real typecase t with i8 => true | i16 => true | i32 => true | _ => false) then $'(call $i64_to_str (i64.extend_i32_s !x))' : string
+      elif (real typecase t with u8 => true | u16 => true | u32 => true | _ => false) then $'(call $u64_to_str (i64.extend_i32_u !x))' : string
+      else $'backend_switch_has_no_Wasm_arm_in_lib_spiral' : string
   inl obj_to_string_zig forall t. (x : t) : string =
       if (real typecase t with string => true | _ => false) then $'!x ' : string
       elif (real typecase t with char => true | _ => false) then $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !x }) catch \@panic("out of memory"))' : string
@@ -924,7 +933,7 @@ Spiral.Kino.eval!(
 
 ### obj_to_string
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl obj_to_string x : string =\n    backend_switch {\n        Gleam = fun () => #?*x : string\n        Lua = fun () => #?*x : string\n        Fsharp = fun () => $'!x |> _.ToString()' : string\n        Python = fun () => $'str(!x)' : string\n        Rust = fun () => obj_to_string_rust x\n        TypeScript = fun () => obj_to_string_typescript x\n        Zig = fun () => obj_to_string_zig x\n        Lean = fun () => $'toString !x ' : string\n    }","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"inl obj_to_string x : string =\n    backend_switch {\n        Gleam = fun () => #?*x : string\n        Lua = fun () => #?*x : string\n        Fsharp = fun () => $'!x |> _.ToString()' : string\n        Python = fun () => $'str(!x)' : string\n        Rust = fun () => obj_to_string_rust x\n        TypeScript = fun () => obj_to_string_typescript x\n        Zig = fun () => obj_to_string_zig x\n        Lean = fun () => $'toString !x ' : string\n        Wasm = fun () => obj_to_string_wasm x\n    }","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -939,6 +948,7 @@ Spiral.Kino.eval!(
           TypeScript = fun () => obj_to_string_typescript x
           Zig = fun () => obj_to_string_zig x
           Lean = fun () => $'toString !x ' : string
+          Wasm = fun () => obj_to_string_wasm x
       }
   """,
   timeout: 300_000

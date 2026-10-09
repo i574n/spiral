@@ -18,8 +18,8 @@ struct Mut0 { l0: Rc<str> }
 fn method1(mut v0: US0) -> Rc<str> {
     match &v0 {
         US0::US0_1 => {
-            let mut v31: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
-            v31.clone()
+            let mut v32: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("None"); } LIT.with(|lit| lit.clone()) };
+            v32.clone()
         }
         US0::US0_0(v1) => {
             let mut v1: i32 = *v1;
@@ -41,12 +41,12 @@ fn method2(mut v0: Rc<RefCell<Mut0>>, mut v1: Rc<str>) -> () {
     ()
 }
 fn format_real_0(mut v0: US0) -> Rc<str> {
-    let mut v44: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    let mut v45: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v44.clone() }));
-    let mut v52: Rc<str> = method1(v0.clone());
-    method2(v45.clone(), v52.clone());
-    let mut v87: Rc<str> = v45.borrow().l0.clone();
-    v87.clone()
+    let mut v56: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    let mut v57: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v56.clone() }));
+    let mut v64: Rc<str> = method1(v0.clone());
+    method2(v57.clone(), v64.clone());
+    let mut v106: Rc<str> = v57.borrow().l0.clone();
+    v106.clone()
 }
 fn spiral_main() -> i32 {
     let mut v0: i32 = 1i32;
@@ -54,8 +54,8 @@ fn spiral_main() -> i32 {
     let mut v2: Rc<str> = format_real_0(v1.clone());
     let mut v13: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("x: "); } LIT.with(|lit| lit.clone()) };
     let mut v14: Rc<str> = Rc::<str>::from(format!("{}{}", v13, v2));
-    let mut v22: bool = v14.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    if v22 {
+    let mut v23: bool = v14.clone() == { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    if v23 {
         1i32
     } else {
         0i32
