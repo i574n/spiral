@@ -1,0 +1,15 @@
+nominal i8_array = array_base i8
+
+inl create (n : i32) : i8_array = i8_array !!!!ArrayCreate(`i8, n)
+inl get (values : i8_array) (i : i32) : i8 =
+    match values with
+    | i8_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : i8_array) (i : i32) (value : i8) : () =
+    match values with
+    | i8_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+inl main () : i32 =
+    inl values = create 1i32
+    inl ~n = 100i8
+    set values 0i32 n
+    if get values 0i32 =. 100i8 then 0i32 else 1i32

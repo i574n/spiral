@@ -31,7 +31,7 @@ struct Closure0 {
 static inline void UHDecrefBody0(UH0 * x){
     switch (x->tag) {
         case 0: {
-            x->case0.v1->decref_fptr(x->case0.v1);
+            (x->case0.v1)->decref_fptr(x->case0.v1);
             break;
         }
     }
@@ -59,7 +59,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-UH0 * ClosureMethod0(Closure0 * x){
+UH0 * closure0(Closure0 * x){
     uint64_t v0 = x->v0;
     
     ClosureDecref0(x);
@@ -75,7 +75,7 @@ Fun0 * ClosureCreate0(uint64_t v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = closure0;
     x->v0 = v0;
     return (Fun0 *) x;
 }
@@ -106,12 +106,12 @@ uint64_t sum1(UH0 * v0, uint64_t v1){
     switch (v0->tag) {
         case 0: { // Cons
             uint64_t v2 = v0->case0.v0; Fun0 * v3 = v0->case0.v1;
-            v3->refc += 2;
+            (v3)->refc += 2;
             UHDecref0(v0);
             UH0 * v4;
             v4 = v3->fptr(v3);
             
-            v3->decref_fptr(v3);
+            (v3)->decref_fptr(v3);
             uint64_t v5;
             v5 = v1 + v2;
             
@@ -141,7 +141,7 @@ int32_t main(){
     
     uint64_t v2;
     v2 = 0ull;
-    v1->refc++;
+    (v1)->refc++;
     
     uint64_t v3;
     v3 = sum1(v1, v2);

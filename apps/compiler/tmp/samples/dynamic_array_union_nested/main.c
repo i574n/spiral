@@ -64,7 +64,7 @@ Array0 * ArrayLit0(uint32_t len, Array1 * * ptr){
     memcpy(x->ptr, ptr, sizeof(Array1 *) * len);
         for (uint32_t i=0; i < len; i++){
             Array1 * v = ptr[i];
-            v->refc++;
+            (v)->refc++;
         }
     return x;
 }
@@ -74,14 +74,14 @@ static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
 static inline void AssignArray1(Array1 * * a, Array1 * b){
-    b->refc++;
+    (b)->refc++;
     ArrayDecref1(*a);
     *a = b;
 }
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -120,15 +120,15 @@ int32_t score0(US0 v0){
         }
         case 1: { // Nested
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             Array1 * v2;
             v2 = v1->ptr[0l];
-            v2->refc++;
+            (v2)->refc++;
             
             Array1 * v3;
             v3 = v1->ptr[1l];
-            v3->refc++;
+            (v3)->refc++;
             
             int32_t v4;
             v4 = v1->len;
@@ -212,7 +212,7 @@ int32_t main(){
     ArrayDecref1(v2);
     
     AssignArray1(&(v1->ptr[1l]), v3);
-    v1->refc++;
+    (v1)->refc++;
     ArrayDecref1(v3);
     US0 v4;
     v4 = US0_Nested(v1);

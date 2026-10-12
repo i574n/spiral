@@ -88,14 +88,24 @@ function Get-SpiralNativeTools {
         Rustc = Resolve-SpiralTool 'rustc' @($env:SPIRAL_RUSTC, 'rustc')
         Fpc = Resolve-SpiralTool 'fpc' @($env:SPIRAL_FPC, 'fpc')
         Zig = Resolve-SpiralTool 'zig' @($env:SPIRAL_ZIG, 'zig')
-        Wasmtime = Resolve-SpiralTool 'wasmtime' @($env:SPIRAL_WASMTIME, 'wasmtime', $(if ($env:ProgramFiles) { Join-Path $env:ProgramFiles 'Wasmtime/bin/wasmtime.exe' }), (Join-Path $HOME '.wasmtime/bin/wasmtime'))
+        Wasmtime = Resolve-SpiralTool 'wasmtime' @($env:SPIRAL_WASMTIME, (Join-Path $HOME 'scoop/apps/wasmtime/current/wasmtime.exe'), 'wasmtime', $(if ($env:ProgramFiles) { Join-Path $env:ProgramFiles 'Wasmtime/bin/wasmtime.exe' }), (Join-Path $HOME '.wasmtime/bin/wasmtime'))
+        WgslRun = @($env:SPIRAL_WGSL_RUN, (Join-Path (Get-SpiralCacheDir) 'toolchains/wgsl-run/release/spiral-wgsl.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/wgsl-run/release/spiral-wgsl')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        Cider = @($env:SPIRAL_CIDER, (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/cider.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/cider')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        Auxin = @($env:SPIRAL_AUXIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/auxin.exe'), (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src/target/release/auxin')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        CalyxRoot = @($env:SPIRAL_CALYX_ROOT, (Join-Path (Get-SpiralCacheDir) 'toolchains/calyx-src')) | Where-Object { $_ -and (Test-Path (Join-Path $_ 'primitives/core.futil')) } | Select-Object -First 1
+        Kotlinc = @($env:SPIRAL_KOTLINC, (Join-Path $HOME 'scoop/apps/kotlin/current/bin/kotlinc.bat'), (Join-Path (Get-SpiralCacheDir) 'toolchains/kotlinc/bin/kotlinc.bat'), (Join-Path (Get-SpiralCacheDir) 'toolchains/kotlinc/bin/kotlinc')) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
+        Java = Resolve-SpiralTool 'java' @($env:SPIRAL_JAVA, (Join-Path $HOME 'scoop/apps/temurin25-jdk/current/bin/java.exe'), (Join-Path $HOME 'scoop/apps/temurin-jdk/current/bin/java.exe'), 'java')
+        Swiftc = Resolve-SpiralTool 'swiftc' @($env:SPIRAL_SWIFTC, 'swiftc', (Join-Path $env:LOCALAPPDATA 'Programs/Swift/Toolchains/6.4.0+Asserts/usr/bin/swiftc.exe'))
+        SwiftSdk = @($env:SPIRAL_SWIFT_SDK, (Join-Path $env:LOCALAPPDATA 'Programs/Swift/Platforms/6.4.0/Windows.platform/Developer/SDKs/Windows.sdk')) | Where-Object { $_ -and (Test-Path (Join-Path $_ 'usr/lib/swift/windows/x86_64/swiftCore.lib')) } | Select-Object -First 1
+        SwiftRuntime = @($env:SPIRAL_SWIFT_RUNTIME, (Join-Path $env:LOCALAPPDATA 'Programs/Swift/Runtimes/6.4.0/usr/bin')) | Where-Object { $_ -and (Test-Path (Join-Path $_ 'swiftCore.dll')) } | Select-Object -First 1
         Lean = Resolve-SpiralTool 'lean' @($env:SPIRAL_LEAN, 'lean', $(if ($env:ELAN_HOME) { Join-Path $env:ELAN_HOME 'bin/lean' }), (Join-Path $HOME '.elan/bin/lean'), (Join-Path $HOME 'scoop/persist/elan/.elan/bin/lean'))
         Gleam = Resolve-SpiralTool 'gleam' @($env:SPIRAL_GLEAM, 'gleam')
         Erl = Resolve-SpiralTool 'erl' @($env:SPIRAL_ERL, (Join-Path $HOME 'scoop/apps/erlang/current/bin/erl'), 'erl')
+        # `lua` is Scoop lua51 5.1.5 for WoW. lua54 is a side command and must not take this slot.
         Lua = Resolve-SpiralTool 'lua' @($env:SPIRAL_LUA, 'lua', 'luajit')
         Bun = Resolve-SpiralTool 'bun' @($env:SPIRAL_BUN, 'bun')
         BendMain = @($env:SPIRAL_BEND_MAIN, (Join-Path (Get-SpiralCacheDir) 'toolchains/bend/bend2/main.ts'), $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA 'spiral-bin/toolchains/bend/bend2/main.ts' })) | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-        Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, 'python', 'python3')
+        Python = Resolve-SpiralTool 'python' @($env:SPIRAL_PYTHON, (Join-Path $HOME 'scoop/apps/python/current/python.exe'), 'python', 'python3')
     }
 }
 

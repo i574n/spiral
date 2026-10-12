@@ -64,7 +64,7 @@ static inline Tuple0 TupleCreate0(Array0 * v0, Array0 * v1){
     return x;
 }
 Tuple0 method2(Array0 * v0){
-    v0->refc++;
+    (v0)->refc++;
     
     return TupleCreate0(v0, v0);
 }
@@ -98,7 +98,7 @@ int32_t method4(Array0 * v0, Array0 * v1){
     
     int32_t v2;
     v2 = DynamicArrayCapacity0(v1);
-    v0->refc++; v1->refc++;
+    (v0)->refc++; (v1)->refc++;
     
     int32_t v3;
     v3 = method5(v0, v1);
@@ -137,24 +137,24 @@ int32_t main(){
     
     
     AssignArray0(&(v1->ptr[0l]), 7l);
-    v1->refc++;
+    (v1)->refc++;
     
     
     method0(v1);
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v2;
     v2 = method1(v1);
-    v1->refc++;
+    (v1)->refc++;
     
     Array0 * v3; Array0 * v4;
     Tuple0 tmp0 = method2(v1);
     v3 = tmp0.v0; v4 = tmp0.v1;
-    v3->refc++; v4->refc++;
+    (v3)->refc++; (v4)->refc++;
     
     int32_t v5;
     v5 = method3(v3, v4);
-    v1->refc++;
+    (v1)->refc++;
     ArrayDecref0(v3); ArrayDecref0(v4);
     int32_t v6;
     v6 = method6(v1);

@@ -1,0 +1,16 @@
+union slot =
+    | None
+    | Both : f64 * i32
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Both (value, n) =>
+        if !!!!EQ(value, 1.5f64) && n =. 7i32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~x = 1.5f64
+    inl ~n = 7i32
+    inl ~flag = true
+    inl held = if flag then Both (x, n) else None
+    score held

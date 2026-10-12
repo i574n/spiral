@@ -1,0 +1,11 @@
+inl main () : i32 =
+    inl ~word = "hi"
+    inl f (n : i32) : string * string =
+        if n =. 0i32 then
+            "no", "no"
+        else
+            word, "yo"
+    inl ~g = f
+    inl pair = g 1i32
+    inl ~(left, right) = pair
+    if !!!!EQ(left, "hi") && !!!!EQ(right, "yo") then 0i32 else 1i32

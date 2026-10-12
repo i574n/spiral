@@ -59,7 +59,7 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 @external(erlang, "math", "pow")
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
-pub fn closure0(capt: #(String)) -> fn(Int) -> Int {
+pub fn left_c0(capt: #(String)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = spiral_string_length(v0)
@@ -67,7 +67,7 @@ pub fn closure0(capt: #(String)) -> fn(Int) -> Int {
         v3
     }
 }
-pub fn closure1(capt: #(String)) -> fn(Int) -> Int {
+pub fn right_c1(capt: #(String)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = spiral_string_length(v0)
@@ -86,10 +86,10 @@ let v2 = True
 let v5 =
     case v2 {
         True -> {
-            closure0(#(v0))
+            left_c0(#(v0))
         }
         False -> {
-            closure1(#(v1))
+            right_c1(#(v1))
         }
     }
 method0(v5)

@@ -1,0 +1,13 @@
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl ~flag = true
+    inl f (z : i32) : i32 * string * bool =
+        if z =. 0i32 then
+            0i32, "no", false
+        else
+            n, word, flag
+    inl ~g = f
+    inl trip = g 1i32
+    inl ~(left, mid, right) = trip
+    if left =. 7i32 && !!!!EQ(mid, "hi") && right then 0i32 else 1i32

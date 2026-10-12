@@ -1,0 +1,11 @@
+inl pick (cell : heap {value : i32}) (extra : i32) : heap {value : i32} * i32 =
+    cell, extra
+
+inl main () : i32 =
+    inl ~a = 3i32
+    inl ~b = 4i32
+    inl cell = !!!!LayoutToHeap({value = a})
+    inl pair = join pick cell b
+    inl ~(left, right) = pair
+    inl obj = !!!!LayoutIndex(left)
+    if obj.value +. right =. 7i32 then 0i32 else 1i32

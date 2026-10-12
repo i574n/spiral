@@ -96,11 +96,11 @@ int32_t main(){
     
     
     AssignArray0(&(v1->ptr[3l]), 4l);
-    v1->refc++;
+    (v1)->refc++;
     
     
     method0(v1);
-    v1->refc++;
+    (v1)->refc++;
     
     
     method1(v1);
@@ -120,7 +120,7 @@ int32_t main(){
     
     int32_t v4;
     v4 = v2 + v3;
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v5;
     v5 = method2(v1);

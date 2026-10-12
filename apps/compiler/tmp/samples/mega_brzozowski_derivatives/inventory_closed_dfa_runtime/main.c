@@ -259,7 +259,7 @@ UH1 * input_singletons_from_symbols0(UH0 * v0){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US0 v2 = v0->case1.v0; UH0 * v3 = v0->case1.v1;
-            USIncref0(&(v2)); v3->refc += 2;
+            USIncref0(&(v2)); (v3)->refc += 2;
             UHDecref0(v0);
             UH1 * v4;
             v4 = input_singletons_from_symbols0(v3);
@@ -267,7 +267,7 @@ UH1 * input_singletons_from_symbols0(UH0 * v0){
             UHDecref0(v3);
             UH2 * v5;
             v5 = UH2_InputEmpty();
-            USIncref0(&(v2)); v5->refc++;
+            USIncref0(&(v2)); (v5)->refc++;
             
             UH2 * v6;
             v6 = UH2_InputCons(v2, v5);
@@ -291,11 +291,11 @@ UH1 * input_prepend_symbol_to_corpus2(US0 v0, UH1 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH2 * v3 = v1->case1.v0; UH1 * v4 = v1->case1.v1;
-            USIncref0(&(v0)); v3->refc++; v4->refc += 2;
+            USIncref0(&(v0)); (v3)->refc++; (v4)->refc += 2;
             UHDecref1(v1);
             UH1 * v5;
             v5 = input_prepend_symbol_to_corpus2(v0, v4);
-            USIncref0(&(v0)); v3->refc++;
+            USIncref0(&(v0)); (v3)->refc++;
             UHDecref1(v4);
             UH2 * v6;
             v6 = UH2_InputCons(v0, v3);
@@ -319,7 +319,7 @@ UH1 * input_list_append3(UH1 * v0, UH1 * v1){
     switch (v0->tag) {
         case 1: { // InputListCons
             UH2 * v2 = v0->case1.v0; UH1 * v3 = v0->case1.v1;
-            v1->refc++; v2->refc++; v3->refc += 2;
+            (v1)->refc++; (v2)->refc++; (v3)->refc += 2;
             UHDecref1(v0);
             UH1 * v4;
             v4 = input_list_append3(v3, v1);
@@ -343,11 +343,11 @@ UH1 * input_prepend_symbols_to_corpus1(UH0 * v0, UH1 * v1){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US0 v3 = v0->case1.v0; UH0 * v4 = v0->case1.v1;
-            v1->refc++; USIncref0(&(v3));USIncref0(&(v3)); v4->refc++;
+            (v1)->refc++; USIncref0(&(v3));USIncref0(&(v3)); (v4)->refc++;
             UHDecref0(v0);
             UH1 * v5;
             v5 = input_prepend_symbol_to_corpus2(v3, v1);
-            v1->refc++; v4->refc++;
+            (v1)->refc++; (v4)->refc++;
             USDecref0(&(v3));
             UH1 * v6;
             v6 = input_prepend_symbols_to_corpus1(v4, v1);
@@ -468,7 +468,7 @@ UH4 * input_singletons_from_symbols4(UH3 * v0){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US1 v2 = v0->case1.v0; UH3 * v3 = v0->case1.v1;
-            USIncref1(&(v2)); v3->refc += 2;
+            USIncref1(&(v2)); (v3)->refc += 2;
             UHDecref3(v0);
             UH4 * v4;
             v4 = input_singletons_from_symbols4(v3);
@@ -476,7 +476,7 @@ UH4 * input_singletons_from_symbols4(UH3 * v0){
             UHDecref3(v3);
             UH5 * v5;
             v5 = UH5_InputEmpty();
-            USIncref1(&(v2)); v5->refc++;
+            USIncref1(&(v2)); (v5)->refc++;
             
             UH5 * v6;
             v6 = UH5_InputCons(v2, v5);
@@ -500,11 +500,11 @@ UH4 * input_prepend_symbol_to_corpus6(US1 v0, UH4 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH5 * v3 = v1->case1.v0; UH4 * v4 = v1->case1.v1;
-            USIncref1(&(v0)); v3->refc++; v4->refc += 2;
+            USIncref1(&(v0)); (v3)->refc++; (v4)->refc += 2;
             UHDecref4(v1);
             UH4 * v5;
             v5 = input_prepend_symbol_to_corpus6(v0, v4);
-            USIncref1(&(v0)); v3->refc++;
+            USIncref1(&(v0)); (v3)->refc++;
             UHDecref4(v4);
             UH5 * v6;
             v6 = UH5_InputCons(v0, v3);
@@ -528,7 +528,7 @@ UH4 * input_list_append7(UH4 * v0, UH4 * v1){
     switch (v0->tag) {
         case 1: { // InputListCons
             UH5 * v2 = v0->case1.v0; UH4 * v3 = v0->case1.v1;
-            v1->refc++; v2->refc++; v3->refc += 2;
+            (v1)->refc++; (v2)->refc++; (v3)->refc += 2;
             UHDecref4(v0);
             UH4 * v4;
             v4 = input_list_append7(v3, v1);
@@ -552,11 +552,11 @@ UH4 * input_prepend_symbols_to_corpus5(UH3 * v0, UH4 * v1){
     switch (v0->tag) {
         case 1: { // SymbolListCons
             US1 v3 = v0->case1.v0; UH3 * v4 = v0->case1.v1;
-            v1->refc++; USIncref1(&(v3));USIncref1(&(v3)); v4->refc++;
+            (v1)->refc++; USIncref1(&(v3));USIncref1(&(v3)); (v4)->refc++;
             UHDecref3(v0);
             UH4 * v5;
             v5 = input_prepend_symbol_to_corpus6(v3, v1);
-            v1->refc++; v4->refc++;
+            (v1)->refc++; (v4)->refc++;
             USDecref1(&(v3));
             UH4 * v6;
             v6 = input_prepend_symbols_to_corpus5(v4, v1);
@@ -742,7 +742,7 @@ US3 loop9(int32_t v0, UH2 * v1){
     switch (v1->tag) {
         case 1: { // InputCons
             US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
-            USIncref0(&(v6)); v7->refc++;
+            USIncref0(&(v6)); (v7)->refc++;
             UHDecref2(v1);
             US4 v11;
             switch (v6.tag) {
@@ -918,12 +918,12 @@ US4 regex_compare15(UH7 * v0, UH7 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v53 = v0->case3.v0; UH7 * v54 = v0->case3.v1;
-            v53->refc++; v54->refc++;
+            (v53)->refc++; (v54)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
                     UH7 * v55 = v1->case3.v0; UH7 * v56 = v1->case3.v1;
-                    v53->refc++; v55->refc += 2; v56->refc++;
+                    (v53)->refc++; (v55)->refc += 2; (v56)->refc++;
                     UHDecref7(v1);
                     US4 v57;
                     v57 = regex_compare15(v53, v55);
@@ -955,12 +955,12 @@ US4 regex_compare15(UH7 * v0, UH7 * v1){
         }
         case 4: { // RegexCat
             UH7 * v28 = v0->case4.v0; UH7 * v29 = v0->case4.v1;
-            v28->refc++; v29->refc++;
+            (v28)->refc++; (v29)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 4: { // RegexCat
                     UH7 * v34 = v1->case4.v0; UH7 * v35 = v1->case4.v1;
-                    v28->refc++; v34->refc += 2; v35->refc++;
+                    (v28)->refc++; (v34)->refc += 2; (v35)->refc++;
                     UHDecref7(v1);
                     US4 v36;
                     v36 = regex_compare15(v28, v34);
@@ -1139,7 +1139,7 @@ US4 regex_compare15(UH7 * v0, UH7 * v1){
         }
         case 5: { // RegexStar
             UH7 * v44 = v0->case5.v0;
-            v44->refc++;
+            (v44)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
@@ -1151,7 +1151,7 @@ US4 regex_compare15(UH7 * v0, UH7 * v1){
                 }
                 case 5: { // RegexStar
                     UH7 * v48 = v1->case5.v0;
-                    v48->refc++;
+                    (v48)->refc++;
                     UHDecref7(v1);
                     return regex_compare15(v44, v48);
                     break;
@@ -1172,7 +1172,7 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
     switch (v1->tag) {
         case 3: { // RegexAlt
             UH7 * v2 = v1->case3.v0; UH7 * v3 = v1->case3.v1;
-            v0->refc++; v2->refc += 2; v3->refc++;
+            (v0)->refc++; (v2)->refc += 2; (v3)->refc++;
             
             US4 v4;
             v4 = regex_compare15(v0, v2);
@@ -1181,7 +1181,7 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
             switch (v4.tag) {
                 case 2: { // SymbolGreater
                     
-                    v0->refc++; v3->refc++;
+                    (v0)->refc++; (v3)->refc++;
                     UHDecref7(v1); USDecref4(&(v4));
                     UH7 * v6;
                     v6 = alt_insert_sorted14(v0, v3);
@@ -1215,7 +1215,7 @@ UH7 * alt_insert_sorted14(UH7 * v0, UH7 * v1){
             break;
         }
         default: {
-            v0->refc++; v1->refc++;
+            (v0)->refc++; (v1)->refc++;
             
             US4 v11;
             v11 = regex_compare15(v0, v1);
@@ -1253,7 +1253,7 @@ UH7 * make_alt13(UH7 * v0, UH7 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v2 = v0->case3.v0; UH7 * v3 = v0->case3.v1;
-            v1->refc++; v2->refc += 2; v3->refc++;
+            (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
             UHDecref7(v0);
             UH7 * v4;
             v4 = alt_insert_sorted14(v2, v1);
@@ -1282,12 +1282,12 @@ bool regex_equal17(UH7 * v0, UH7 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v18 = v0->case3.v0; UH7 * v19 = v0->case3.v1;
-            v18->refc++; v19->refc++;
+            (v18)->refc++; (v19)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
                     UH7 * v20 = v1->case3.v0; UH7 * v21 = v1->case3.v1;
-                    v18->refc++; v20->refc += 2; v21->refc++;
+                    (v18)->refc++; (v20)->refc += 2; (v21)->refc++;
                     UHDecref7(v1);
                     bool v22;
                     v22 = regex_equal17(v18, v20);
@@ -1314,12 +1314,12 @@ bool regex_equal17(UH7 * v0, UH7 * v1){
         }
         case 4: { // RegexCat
             UH7 * v26 = v0->case4.v0; UH7 * v27 = v0->case4.v1;
-            v26->refc++; v27->refc++;
+            (v26)->refc++; (v27)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 4: { // RegexCat
                     UH7 * v28 = v1->case4.v0; UH7 * v29 = v1->case4.v1;
-                    v26->refc++; v28->refc += 2; v29->refc++;
+                    (v26)->refc++; (v28)->refc += 2; (v29)->refc++;
                     UHDecref7(v1);
                     bool v30;
                     v30 = regex_equal17(v26, v28);
@@ -1468,12 +1468,12 @@ bool regex_equal17(UH7 * v0, UH7 * v1){
         }
         case 5: { // RegexStar
             UH7 * v34 = v0->case5.v0;
-            v34->refc++;
+            (v34)->refc++;
             UHDecref7(v0);
             switch (v1->tag) {
                 case 5: { // RegexStar
                     UH7 * v35 = v1->case5.v0;
-                    v35->refc++;
+                    (v35)->refc++;
                     UHDecref7(v1);
                     return regex_equal17(v34, v35);
                     break;
@@ -1538,7 +1538,7 @@ UH7 * make_cat16(UH7 * v0, UH7 * v1){
                                     switch (v0->tag) {
                                         case 4: { // RegexCat
                                             UH7 * v12 = v0->case4.v0; UH7 * v13 = v0->case4.v1;
-                                            v1->refc++; v12->refc++; v13->refc += 2;
+                                            (v1)->refc++; (v12)->refc++; (v13)->refc += 2;
                                             UHDecref7(v0);
                                             UH7 * v14;
                                             v14 = make_cat16(v13, v1);
@@ -1549,12 +1549,12 @@ UH7 * make_cat16(UH7 * v0, UH7 * v1){
                                         }
                                         case 5: { // RegexStar
                                             UH7 * v4 = v0->case5.v0;
-                                            v4->refc++;
+                                            (v4)->refc++;
                                             
                                             switch (v1->tag) {
                                                 case 5: { // RegexStar
                                                     UH7 * v5 = v1->case5.v0;
-                                                    v4->refc++; v5->refc += 2;
+                                                    (v4)->refc++; (v5)->refc += 2;
                                                     
                                                     bool v6;
                                                     v6 = regex_equal17(v4, v5);
@@ -1614,7 +1614,7 @@ UH7 * make_star18(UH7 * v0){
         }
         case 5: { // RegexStar
             UH7 * v3 = v0->case5.v0;
-            v3->refc++;
+            (v3)->refc++;
             UHDecref7(v0);
             return UH7_RegexStar(v3);
             break;
@@ -1632,11 +1632,11 @@ UH7 * normalize12(UH7 * v0){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v5 = v0->case3.v0; UH7 * v6 = v0->case3.v1;
-            v5->refc += 2; v6->refc++;
+            (v5)->refc += 2; (v6)->refc++;
             UHDecref7(v0);
             UH7 * v7;
             v7 = normalize12(v5);
-            v6->refc++;
+            (v6)->refc++;
             UHDecref7(v5);
             UH7 * v8;
             v8 = normalize12(v6);
@@ -1647,11 +1647,11 @@ UH7 * normalize12(UH7 * v0){
         }
         case 4: { // RegexCat
             UH7 * v10 = v0->case4.v0; UH7 * v11 = v0->case4.v1;
-            v10->refc += 2; v11->refc++;
+            (v10)->refc += 2; (v11)->refc++;
             UHDecref7(v0);
             UH7 * v12;
             v12 = normalize12(v10);
-            v11->refc++;
+            (v11)->refc++;
             UHDecref7(v10);
             UH7 * v13;
             v13 = normalize12(v11);
@@ -1683,7 +1683,7 @@ UH7 * normalize12(UH7 * v0){
         }
         case 5: { // RegexStar
             UH7 * v15 = v0->case5.v0;
-            v15->refc += 2;
+            (v15)->refc += 2;
             UHDecref7(v0);
             UH7 * v16;
             v16 = normalize12(v15);
@@ -1720,11 +1720,11 @@ US5 nullable20(UH7 * v0){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v5 = v0->case3.v0; UH7 * v6 = v0->case3.v1;
-            v5->refc += 2; v6->refc++;
+            (v5)->refc += 2; (v6)->refc++;
             UHDecref7(v0);
             US5 v7;
             v7 = nullable20(v5);
-            v6->refc++;
+            (v6)->refc++;
             UHDecref7(v5);
             US5 v8;
             v8 = nullable20(v6);
@@ -1777,11 +1777,11 @@ US5 nullable20(UH7 * v0){
         }
         case 4: { // RegexCat
             UH7 * v16 = v0->case4.v0; UH7 * v17 = v0->case4.v1;
-            v16->refc += 2; v17->refc++;
+            (v16)->refc += 2; (v17)->refc++;
             UHDecref7(v0);
             US5 v18;
             v18 = nullable20(v16);
-            v17->refc++;
+            (v17)->refc++;
             UHDecref7(v16);
             US5 v19;
             v19 = nullable20(v17);
@@ -1852,11 +1852,11 @@ UH7 * derivative19(UH7 * v0, US0 v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH7 * v19 = v0->case3.v0; UH7 * v20 = v0->case3.v1;
-            USIncref0(&(v1)); v19->refc += 2; v20->refc++;
+            USIncref0(&(v1)); (v19)->refc += 2; (v20)->refc++;
             UHDecref7(v0);
             UH7 * v21;
             v21 = derivative19(v19, v1);
-            USIncref0(&(v1)); v20->refc++;
+            USIncref0(&(v1)); (v20)->refc++;
             UHDecref7(v19);
             UH7 * v22;
             v22 = derivative19(v20, v1);
@@ -1867,7 +1867,7 @@ UH7 * derivative19(UH7 * v0, US0 v1){
         }
         case 4: { // RegexCat
             UH7 * v24 = v0->case4.v0; UH7 * v25 = v0->case4.v1;
-            v24->refc += 2; v25->refc++;
+            (v24)->refc += 2; (v25)->refc++;
             UHDecref7(v0);
             US5 v26;
             v26 = nullable20(v24);
@@ -1876,7 +1876,7 @@ UH7 * derivative19(UH7 * v0, US0 v1){
             switch (v26.tag) {
                 case 1: { // NonNullable
                     
-                    USIncref0(&(v1)); v24->refc++;
+                    USIncref0(&(v1)); (v24)->refc++;
                     USDecref5(&(v26));
                     UH7 * v31;
                     v31 = derivative19(v24, v1);
@@ -1887,15 +1887,15 @@ UH7 * derivative19(UH7 * v0, US0 v1){
                 }
                 case 0: { // Nullable
                     
-                    USIncref0(&(v1)); v24->refc++;
+                    USIncref0(&(v1)); (v24)->refc++;
                     USDecref5(&(v26));
                     UH7 * v27;
                     v27 = derivative19(v24, v1);
-                    v25->refc++; v27->refc++;
+                    (v25)->refc++; (v27)->refc++;
                     UHDecref7(v24);
                     UH7 * v28;
                     v28 = make_cat16(v27, v25);
-                    USIncref0(&(v1)); v25->refc++;
+                    USIncref0(&(v1)); (v25)->refc++;
                     UHDecref7(v27);
                     UH7 * v29;
                     v29 = derivative19(v25, v1);
@@ -2004,11 +2004,11 @@ UH7 * derivative19(UH7 * v0, US0 v1){
         }
         case 5: { // RegexStar
             UH7 * v35 = v0->case5.v0;
-            USIncref0(&(v1)); v35->refc += 2;
+            USIncref0(&(v1)); (v35)->refc += 2;
             UHDecref7(v0);
             UH7 * v36;
             v36 = derivative19(v35, v1);
-            v35->refc++;
+            (v35)->refc++;
             USDecref0(&(v1));
             UH7 * v37;
             v37 = make_star18(v35);
@@ -2020,11 +2020,11 @@ UH7 * derivative19(UH7 * v0, US0 v1){
     }
 }
 UH7 * canonical_derivative11(UH7 * v0, US0 v1){
-    v0->refc++;
+    (v0)->refc++;
     
     UH7 * v2;
     v2 = normalize12(v0);
-    USIncref0(&(v1)); v2->refc++;
+    USIncref0(&(v1)); (v2)->refc++;
     UHDecref7(v0);
     UH7 * v3;
     v3 = derivative19(v2, v1);
@@ -2038,7 +2038,7 @@ bool accepts10(UH7 * v0, UH2 * v1){
     switch (v1->tag) {
         case 1: { // InputCons
             US0 v6 = v1->case1.v0; UH2 * v7 = v1->case1.v1;
-            v0->refc++; USIncref0(&(v6));USIncref0(&(v6)); v7->refc++;
+            (v0)->refc++; USIncref0(&(v6));USIncref0(&(v6)); (v7)->refc++;
             UHDecref2(v1);
             UH7 * v8;
             v8 = canonical_derivative11(v0, v6);
@@ -2049,11 +2049,11 @@ bool accepts10(UH7 * v0, UH2 * v1){
         }
         case 0: { // InputEmpty
             
-            v0->refc++;
+            (v0)->refc++;
             UHDecref2(v1);
             UH7 * v2;
             v2 = normalize12(v0);
-            v2->refc++;
+            (v2)->refc++;
             UHDecref7(v0);
             US5 v3;
             v3 = nullable20(v2);
@@ -2085,11 +2085,11 @@ bool loop8(UH7 * v0, UH1 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH2 * v2 = v1->case1.v0; UH1 * v3 = v1->case1.v1;
-            v2->refc++; v3->refc++;
+            (v2)->refc++; (v3)->refc++;
             UHDecref1(v1);
             int32_t v4;
             v4 = 1l;
-            v2->refc++;
+            (v2)->refc++;
             
             US3 v5;
             v5 = loop9(v4, v2);
@@ -2099,7 +2099,7 @@ bool loop8(UH7 * v0, UH1 * v1){
             switch (v5.tag) {
                 case 0: { // InventoryDfaAccepted
                     
-                    v0->refc++; v2->refc++;
+                    (v0)->refc++; (v2)->refc++;
                     
                     v11 = accepts10(v0, v2);
                     break;
@@ -2113,7 +2113,7 @@ bool loop8(UH7 * v0, UH1 * v1){
                 }
                 case 1: { // InventoryDfaRejected
                     
-                    v0->refc++; v2->refc++;
+                    (v0)->refc++; (v2)->refc++;
                     
                     bool v7;
                     v7 = accepts10(v0, v2);
@@ -2218,7 +2218,7 @@ US3 loop22(int32_t v0, UH5 * v1){
     switch (v1->tag) {
         case 1: { // InputCons
             US1 v8 = v1->case1.v0; UH5 * v9 = v1->case1.v1;
-            USIncref1(&(v8)); v9->refc++;
+            USIncref1(&(v8)); (v9)->refc++;
             UHDecref5(v1);
             US4 v12;
             switch (v8.tag) {
@@ -2510,12 +2510,12 @@ US4 regex_compare28(UH8 * v0, UH8 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v59 = v0->case3.v0; UH8 * v60 = v0->case3.v1;
-            v59->refc++; v60->refc++;
+            (v59)->refc++; (v60)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
                     UH8 * v61 = v1->case3.v0; UH8 * v62 = v1->case3.v1;
-                    v59->refc++; v61->refc += 2; v62->refc++;
+                    (v59)->refc++; (v61)->refc += 2; (v62)->refc++;
                     UHDecref8(v1);
                     US4 v63;
                     v63 = regex_compare28(v59, v61);
@@ -2547,12 +2547,12 @@ US4 regex_compare28(UH8 * v0, UH8 * v1){
         }
         case 4: { // RegexCat
             UH8 * v34 = v0->case4.v0; UH8 * v35 = v0->case4.v1;
-            v34->refc++; v35->refc++;
+            (v34)->refc++; (v35)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 4: { // RegexCat
                     UH8 * v40 = v1->case4.v0; UH8 * v41 = v1->case4.v1;
-                    v34->refc++; v40->refc += 2; v41->refc++;
+                    (v34)->refc++; (v40)->refc += 2; (v41)->refc++;
                     UHDecref8(v1);
                     US4 v42;
                     v42 = regex_compare28(v34, v40);
@@ -2770,7 +2770,7 @@ US4 regex_compare28(UH8 * v0, UH8 * v1){
         }
         case 5: { // RegexStar
             UH8 * v50 = v0->case5.v0;
-            v50->refc++;
+            (v50)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
@@ -2782,7 +2782,7 @@ US4 regex_compare28(UH8 * v0, UH8 * v1){
                 }
                 case 5: { // RegexStar
                     UH8 * v54 = v1->case5.v0;
-                    v54->refc++;
+                    (v54)->refc++;
                     UHDecref8(v1);
                     return regex_compare28(v50, v54);
                     break;
@@ -2803,7 +2803,7 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
     switch (v1->tag) {
         case 3: { // RegexAlt
             UH8 * v2 = v1->case3.v0; UH8 * v3 = v1->case3.v1;
-            v0->refc++; v2->refc += 2; v3->refc++;
+            (v0)->refc++; (v2)->refc += 2; (v3)->refc++;
             
             US4 v4;
             v4 = regex_compare28(v0, v2);
@@ -2812,7 +2812,7 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
             switch (v4.tag) {
                 case 2: { // SymbolGreater
                     
-                    v0->refc++; v3->refc++;
+                    (v0)->refc++; (v3)->refc++;
                     UHDecref8(v1); USDecref4(&(v4));
                     UH8 * v6;
                     v6 = alt_insert_sorted27(v0, v3);
@@ -2846,7 +2846,7 @@ UH8 * alt_insert_sorted27(UH8 * v0, UH8 * v1){
             break;
         }
         default: {
-            v0->refc++; v1->refc++;
+            (v0)->refc++; (v1)->refc++;
             
             US4 v11;
             v11 = regex_compare28(v0, v1);
@@ -2884,7 +2884,7 @@ UH8 * make_alt26(UH8 * v0, UH8 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v2 = v0->case3.v0; UH8 * v3 = v0->case3.v1;
-            v1->refc++; v2->refc += 2; v3->refc++;
+            (v1)->refc++; (v2)->refc += 2; (v3)->refc++;
             UHDecref8(v0);
             UH8 * v4;
             v4 = alt_insert_sorted27(v2, v1);
@@ -2913,12 +2913,12 @@ bool regex_equal30(UH8 * v0, UH8 * v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v24 = v0->case3.v0; UH8 * v25 = v0->case3.v1;
-            v24->refc++; v25->refc++;
+            (v24)->refc++; (v25)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 3: { // RegexAlt
                     UH8 * v26 = v1->case3.v0; UH8 * v27 = v1->case3.v1;
-                    v24->refc++; v26->refc += 2; v27->refc++;
+                    (v24)->refc++; (v26)->refc += 2; (v27)->refc++;
                     UHDecref8(v1);
                     bool v28;
                     v28 = regex_equal30(v24, v26);
@@ -2945,12 +2945,12 @@ bool regex_equal30(UH8 * v0, UH8 * v1){
         }
         case 4: { // RegexCat
             UH8 * v32 = v0->case4.v0; UH8 * v33 = v0->case4.v1;
-            v32->refc++; v33->refc++;
+            (v32)->refc++; (v33)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 4: { // RegexCat
                     UH8 * v34 = v1->case4.v0; UH8 * v35 = v1->case4.v1;
-                    v32->refc++; v34->refc += 2; v35->refc++;
+                    (v32)->refc++; (v34)->refc += 2; (v35)->refc++;
                     UHDecref8(v1);
                     bool v36;
                     v36 = regex_equal30(v32, v34);
@@ -3138,12 +3138,12 @@ bool regex_equal30(UH8 * v0, UH8 * v1){
         }
         case 5: { // RegexStar
             UH8 * v40 = v0->case5.v0;
-            v40->refc++;
+            (v40)->refc++;
             UHDecref8(v0);
             switch (v1->tag) {
                 case 5: { // RegexStar
                     UH8 * v41 = v1->case5.v0;
-                    v41->refc++;
+                    (v41)->refc++;
                     UHDecref8(v1);
                     return regex_equal30(v40, v41);
                     break;
@@ -3208,7 +3208,7 @@ UH8 * make_cat29(UH8 * v0, UH8 * v1){
                                     switch (v0->tag) {
                                         case 4: { // RegexCat
                                             UH8 * v12 = v0->case4.v0; UH8 * v13 = v0->case4.v1;
-                                            v1->refc++; v12->refc++; v13->refc += 2;
+                                            (v1)->refc++; (v12)->refc++; (v13)->refc += 2;
                                             UHDecref8(v0);
                                             UH8 * v14;
                                             v14 = make_cat29(v13, v1);
@@ -3219,12 +3219,12 @@ UH8 * make_cat29(UH8 * v0, UH8 * v1){
                                         }
                                         case 5: { // RegexStar
                                             UH8 * v4 = v0->case5.v0;
-                                            v4->refc++;
+                                            (v4)->refc++;
                                             
                                             switch (v1->tag) {
                                                 case 5: { // RegexStar
                                                     UH8 * v5 = v1->case5.v0;
-                                                    v4->refc++; v5->refc += 2;
+                                                    (v4)->refc++; (v5)->refc += 2;
                                                     
                                                     bool v6;
                                                     v6 = regex_equal30(v4, v5);
@@ -3284,7 +3284,7 @@ UH8 * make_star31(UH8 * v0){
         }
         case 5: { // RegexStar
             UH8 * v3 = v0->case5.v0;
-            v3->refc++;
+            (v3)->refc++;
             UHDecref8(v0);
             return UH8_RegexStar(v3);
             break;
@@ -3302,11 +3302,11 @@ UH8 * normalize25(UH8 * v0){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v5 = v0->case3.v0; UH8 * v6 = v0->case3.v1;
-            v5->refc += 2; v6->refc++;
+            (v5)->refc += 2; (v6)->refc++;
             UHDecref8(v0);
             UH8 * v7;
             v7 = normalize25(v5);
-            v6->refc++;
+            (v6)->refc++;
             UHDecref8(v5);
             UH8 * v8;
             v8 = normalize25(v6);
@@ -3317,11 +3317,11 @@ UH8 * normalize25(UH8 * v0){
         }
         case 4: { // RegexCat
             UH8 * v10 = v0->case4.v0; UH8 * v11 = v0->case4.v1;
-            v10->refc += 2; v11->refc++;
+            (v10)->refc += 2; (v11)->refc++;
             UHDecref8(v0);
             UH8 * v12;
             v12 = normalize25(v10);
-            v11->refc++;
+            (v11)->refc++;
             UHDecref8(v10);
             UH8 * v13;
             v13 = normalize25(v11);
@@ -3353,7 +3353,7 @@ UH8 * normalize25(UH8 * v0){
         }
         case 5: { // RegexStar
             UH8 * v15 = v0->case5.v0;
-            v15->refc += 2;
+            (v15)->refc += 2;
             UHDecref8(v0);
             UH8 * v16;
             v16 = normalize25(v15);
@@ -3370,11 +3370,11 @@ US5 nullable33(UH8 * v0){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v5 = v0->case3.v0; UH8 * v6 = v0->case3.v1;
-            v5->refc += 2; v6->refc++;
+            (v5)->refc += 2; (v6)->refc++;
             UHDecref8(v0);
             US5 v7;
             v7 = nullable33(v5);
-            v6->refc++;
+            (v6)->refc++;
             UHDecref8(v5);
             US5 v8;
             v8 = nullable33(v6);
@@ -3427,11 +3427,11 @@ US5 nullable33(UH8 * v0){
         }
         case 4: { // RegexCat
             UH8 * v16 = v0->case4.v0; UH8 * v17 = v0->case4.v1;
-            v16->refc += 2; v17->refc++;
+            (v16)->refc += 2; (v17)->refc++;
             UHDecref8(v0);
             US5 v18;
             v18 = nullable33(v16);
-            v17->refc++;
+            (v17)->refc++;
             UHDecref8(v16);
             US5 v19;
             v19 = nullable33(v17);
@@ -3502,11 +3502,11 @@ UH8 * derivative32(UH8 * v0, US1 v1){
     switch (v0->tag) {
         case 3: { // RegexAlt
             UH8 * v25 = v0->case3.v0; UH8 * v26 = v0->case3.v1;
-            USIncref1(&(v1)); v25->refc += 2; v26->refc++;
+            USIncref1(&(v1)); (v25)->refc += 2; (v26)->refc++;
             UHDecref8(v0);
             UH8 * v27;
             v27 = derivative32(v25, v1);
-            USIncref1(&(v1)); v26->refc++;
+            USIncref1(&(v1)); (v26)->refc++;
             UHDecref8(v25);
             UH8 * v28;
             v28 = derivative32(v26, v1);
@@ -3517,7 +3517,7 @@ UH8 * derivative32(UH8 * v0, US1 v1){
         }
         case 4: { // RegexCat
             UH8 * v30 = v0->case4.v0; UH8 * v31 = v0->case4.v1;
-            v30->refc += 2; v31->refc++;
+            (v30)->refc += 2; (v31)->refc++;
             UHDecref8(v0);
             US5 v32;
             v32 = nullable33(v30);
@@ -3526,7 +3526,7 @@ UH8 * derivative32(UH8 * v0, US1 v1){
             switch (v32.tag) {
                 case 1: { // NonNullable
                     
-                    USIncref1(&(v1)); v30->refc++;
+                    USIncref1(&(v1)); (v30)->refc++;
                     USDecref5(&(v32));
                     UH8 * v37;
                     v37 = derivative32(v30, v1);
@@ -3537,15 +3537,15 @@ UH8 * derivative32(UH8 * v0, US1 v1){
                 }
                 case 0: { // Nullable
                     
-                    USIncref1(&(v1)); v30->refc++;
+                    USIncref1(&(v1)); (v30)->refc++;
                     USDecref5(&(v32));
                     UH8 * v33;
                     v33 = derivative32(v30, v1);
-                    v31->refc++; v33->refc++;
+                    (v31)->refc++; (v33)->refc++;
                     UHDecref8(v30);
                     UH8 * v34;
                     v34 = make_cat29(v33, v31);
-                    USIncref1(&(v1)); v31->refc++;
+                    USIncref1(&(v1)); (v31)->refc++;
                     UHDecref8(v33);
                     UH8 * v35;
                     v35 = derivative32(v31, v1);
@@ -3693,11 +3693,11 @@ UH8 * derivative32(UH8 * v0, US1 v1){
         }
         case 5: { // RegexStar
             UH8 * v41 = v0->case5.v0;
-            USIncref1(&(v1)); v41->refc += 2;
+            USIncref1(&(v1)); (v41)->refc += 2;
             UHDecref8(v0);
             UH8 * v42;
             v42 = derivative32(v41, v1);
-            v41->refc++;
+            (v41)->refc++;
             USDecref1(&(v1));
             UH8 * v43;
             v43 = make_star31(v41);
@@ -3709,11 +3709,11 @@ UH8 * derivative32(UH8 * v0, US1 v1){
     }
 }
 UH8 * canonical_derivative24(UH8 * v0, US1 v1){
-    v0->refc++;
+    (v0)->refc++;
     
     UH8 * v2;
     v2 = normalize25(v0);
-    USIncref1(&(v1)); v2->refc++;
+    USIncref1(&(v1)); (v2)->refc++;
     UHDecref8(v0);
     UH8 * v3;
     v3 = derivative32(v2, v1);
@@ -3727,7 +3727,7 @@ bool accepts23(UH8 * v0, UH5 * v1){
     switch (v1->tag) {
         case 1: { // InputCons
             US1 v6 = v1->case1.v0; UH5 * v7 = v1->case1.v1;
-            v0->refc++; USIncref1(&(v6));USIncref1(&(v6)); v7->refc++;
+            (v0)->refc++; USIncref1(&(v6));USIncref1(&(v6)); (v7)->refc++;
             UHDecref5(v1);
             UH8 * v8;
             v8 = canonical_derivative24(v0, v6);
@@ -3738,11 +3738,11 @@ bool accepts23(UH8 * v0, UH5 * v1){
         }
         case 0: { // InputEmpty
             
-            v0->refc++;
+            (v0)->refc++;
             UHDecref5(v1);
             UH8 * v2;
             v2 = normalize25(v0);
-            v2->refc++;
+            (v2)->refc++;
             UHDecref8(v0);
             US5 v3;
             v3 = nullable33(v2);
@@ -3774,11 +3774,11 @@ bool loop21(UH8 * v0, UH4 * v1){
     switch (v1->tag) {
         case 1: { // InputListCons
             UH5 * v2 = v1->case1.v0; UH4 * v3 = v1->case1.v1;
-            v2->refc++; v3->refc++;
+            (v2)->refc++; (v3)->refc++;
             UHDecref4(v1);
             int32_t v4;
             v4 = 2l;
-            v2->refc++;
+            (v2)->refc++;
             
             US3 v5;
             v5 = loop22(v4, v2);
@@ -3788,7 +3788,7 @@ bool loop21(UH8 * v0, UH4 * v1){
             switch (v5.tag) {
                 case 0: { // InventoryDfaAccepted
                     
-                    v0->refc++; v2->refc++;
+                    (v0)->refc++; (v2)->refc++;
                     
                     v11 = accepts23(v0, v2);
                     break;
@@ -3802,7 +3802,7 @@ bool loop21(UH8 * v0, UH4 * v1){
                 }
                 case 1: { // InventoryDfaRejected
                     
-                    v0->refc++; v2->refc++;
+                    (v0)->refc++; (v2)->refc++;
                     
                     bool v7;
                     v7 = accepts23(v0, v2);
@@ -3844,7 +3844,7 @@ US3 loop34(int32_t v0, UH6 * v1){
     switch (v1->tag) {
         case 1: { // InputCons
             US2 v7 = v1->case1.v0; UH6 * v8 = v1->case1.v1;
-            USIncref2(&(v7)); v8->refc++;
+            USIncref2(&(v7)); (v8)->refc++;
             UHDecref6(v1);
             US4 v11;
             switch (v7.tag) {
@@ -4028,15 +4028,15 @@ int32_t main(){
     
     UH0 * v2;
     v2 = UH0_SymbolListNil();
-    USIncref0(&(v1)); v2->refc++;
+    USIncref0(&(v1)); (v2)->refc++;
     
     UH0 * v3;
     v3 = UH0_SymbolListCons(v1, v2);
-    USIncref0(&(v0)); v3->refc++;
+    USIncref0(&(v0)); (v3)->refc++;
     USDecref0(&(v1)); UHDecref0(v2);
     UH0 * v4;
     v4 = UH0_SymbolListCons(v0, v3);
-    v4->refc++;
+    (v4)->refc++;
     USDecref0(&(v0)); UHDecref0(v3);
     UH1 * v5;
     v5 = input_singletons_from_symbols0(v4);
@@ -4044,7 +4044,7 @@ int32_t main(){
     UHDecref0(v4);
     UH2 * v6;
     v6 = UH2_InputEmpty();
-    v5->refc++; v6->refc++;
+    (v5)->refc++; (v6)->refc++;
     
     UH1 * v7;
     v7 = UH1_InputListCons(v6, v5);
@@ -4060,11 +4060,11 @@ int32_t main(){
     
     UH0 * v10;
     v10 = UH0_SymbolListNil();
-    USIncref0(&(v9)); v10->refc++;
+    USIncref0(&(v9)); (v10)->refc++;
     
     UH0 * v11;
     v11 = UH0_SymbolListCons(v9, v10);
-    USIncref0(&(v8)); v11->refc++;
+    USIncref0(&(v8)); (v11)->refc++;
     USDecref0(&(v9)); UHDecref0(v10);
     UH0 * v12;
     v12 = UH0_SymbolListCons(v8, v11);
@@ -4080,23 +4080,23 @@ int32_t main(){
     
     UH0 * v15;
     v15 = UH0_SymbolListNil();
-    USIncref0(&(v14)); v15->refc++;
+    USIncref0(&(v14)); (v15)->refc++;
     
     UH0 * v16;
     v16 = UH0_SymbolListCons(v14, v15);
-    USIncref0(&(v13)); v16->refc++;
+    USIncref0(&(v13)); (v16)->refc++;
     USDecref0(&(v14)); UHDecref0(v15);
     UH0 * v17;
     v17 = UH0_SymbolListCons(v13, v16);
-    v17->refc++;
+    (v17)->refc++;
     USDecref0(&(v13)); UHDecref0(v16);
     UH1 * v18;
     v18 = input_singletons_from_symbols0(v17);
-    v12->refc++; v18->refc++;
+    (v12)->refc++; (v18)->refc++;
     UHDecref0(v17);
     UH1 * v19;
     v19 = input_prepend_symbols_to_corpus1(v12, v18);
-    v7->refc++; v19->refc++;
+    (v7)->refc++; (v19)->refc++;
     UHDecref0(v12); UHDecref1(v18);
     UH1 * v20;
     v20 = input_list_append3(v7, v19);
@@ -4116,19 +4116,19 @@ int32_t main(){
     
     UH3 * v24;
     v24 = UH3_SymbolListNil();
-    USIncref1(&(v23)); v24->refc++;
+    USIncref1(&(v23)); (v24)->refc++;
     
     UH3 * v25;
     v25 = UH3_SymbolListCons(v23, v24);
-    USIncref1(&(v22)); v25->refc++;
+    USIncref1(&(v22)); (v25)->refc++;
     USDecref1(&(v23)); UHDecref3(v24);
     UH3 * v26;
     v26 = UH3_SymbolListCons(v22, v25);
-    USIncref1(&(v21)); v26->refc++;
+    USIncref1(&(v21)); (v26)->refc++;
     USDecref1(&(v22)); UHDecref3(v25);
     UH3 * v27;
     v27 = UH3_SymbolListCons(v21, v26);
-    v27->refc++;
+    (v27)->refc++;
     USDecref1(&(v21)); UHDecref3(v26);
     UH4 * v28;
     v28 = input_singletons_from_symbols4(v27);
@@ -4136,7 +4136,7 @@ int32_t main(){
     UHDecref3(v27);
     UH5 * v29;
     v29 = UH5_InputEmpty();
-    v28->refc++; v29->refc++;
+    (v28)->refc++; (v29)->refc++;
     
     UH4 * v30;
     v30 = UH4_InputListCons(v29, v28);
@@ -4156,15 +4156,15 @@ int32_t main(){
     
     UH3 * v34;
     v34 = UH3_SymbolListNil();
-    USIncref1(&(v33)); v34->refc++;
+    USIncref1(&(v33)); (v34)->refc++;
     
     UH3 * v35;
     v35 = UH3_SymbolListCons(v33, v34);
-    USIncref1(&(v32)); v35->refc++;
+    USIncref1(&(v32)); (v35)->refc++;
     USDecref1(&(v33)); UHDecref3(v34);
     UH3 * v36;
     v36 = UH3_SymbolListCons(v32, v35);
-    USIncref1(&(v31)); v36->refc++;
+    USIncref1(&(v31)); (v36)->refc++;
     USDecref1(&(v32)); UHDecref3(v35);
     UH3 * v37;
     v37 = UH3_SymbolListCons(v31, v36);
@@ -4184,27 +4184,27 @@ int32_t main(){
     
     UH3 * v41;
     v41 = UH3_SymbolListNil();
-    USIncref1(&(v40)); v41->refc++;
+    USIncref1(&(v40)); (v41)->refc++;
     
     UH3 * v42;
     v42 = UH3_SymbolListCons(v40, v41);
-    USIncref1(&(v39)); v42->refc++;
+    USIncref1(&(v39)); (v42)->refc++;
     USDecref1(&(v40)); UHDecref3(v41);
     UH3 * v43;
     v43 = UH3_SymbolListCons(v39, v42);
-    USIncref1(&(v38)); v43->refc++;
+    USIncref1(&(v38)); (v43)->refc++;
     USDecref1(&(v39)); UHDecref3(v42);
     UH3 * v44;
     v44 = UH3_SymbolListCons(v38, v43);
-    v44->refc++;
+    (v44)->refc++;
     USDecref1(&(v38)); UHDecref3(v43);
     UH4 * v45;
     v45 = input_singletons_from_symbols4(v44);
-    v37->refc++; v45->refc++;
+    (v37)->refc++; (v45)->refc++;
     UHDecref3(v44);
     UH4 * v46;
     v46 = input_prepend_symbols_to_corpus5(v37, v45);
-    v30->refc++; v46->refc++;
+    (v30)->refc++; (v46)->refc++;
     UHDecref3(v37); UHDecref4(v45);
     UH4 * v47;
     v47 = input_list_append7(v30, v46);
@@ -4216,7 +4216,7 @@ int32_t main(){
     
     UH6 * v49;
     v49 = UH6_InputEmpty();
-    USIncref2(&(v48)); v49->refc++;
+    USIncref2(&(v48)); (v49)->refc++;
     
     UH6 * v50;
     v50 = UH6_InputCons(v48, v49);
@@ -4236,11 +4236,11 @@ int32_t main(){
     
     UH7 * v54;
     v54 = UH7_RegexChar(v53);
-    v52->refc++; v54->refc++;
+    (v52)->refc++; (v54)->refc++;
     USDecref0(&(v53));
     UH7 * v55;
     v55 = UH7_RegexAlt(v52, v54);
-    v55->refc++;
+    (v55)->refc++;
     UHDecref7(v52); UHDecref7(v54);
     UH7 * v56;
     v56 = UH7_RegexStar(v55);
@@ -4252,11 +4252,11 @@ int32_t main(){
     
     UH7 * v58;
     v58 = UH7_RegexChar(v57);
-    v56->refc++; v58->refc++;
+    (v56)->refc++; (v58)->refc++;
     USDecref0(&(v57));
     UH7 * v59;
     v59 = UH7_RegexCat(v56, v58);
-    v20->refc++; v59->refc++;
+    (v20)->refc++; (v59)->refc++;
     UHDecref7(v56); UHDecref7(v58);
     bool v60;
     v60 = loop8(v59, v20);
@@ -4280,11 +4280,11 @@ int32_t main(){
         
         UH8 * v64;
         v64 = UH8_RegexChar(v63);
-        v62->refc++; v64->refc++;
+        (v62)->refc++; (v64)->refc++;
         USDecref1(&(v63));
         UH8 * v65;
         v65 = UH8_RegexAlt(v62, v64);
-        v65->refc++;
+        (v65)->refc++;
         UHDecref8(v62); UHDecref8(v64);
         UH8 * v66;
         v66 = UH8_RegexStar(v65);
@@ -4296,11 +4296,11 @@ int32_t main(){
         
         UH8 * v68;
         v68 = UH8_RegexChar(v67);
-        v66->refc++; v68->refc++;
+        (v66)->refc++; (v68)->refc++;
         USDecref1(&(v67));
         UH8 * v69;
         v69 = UH8_RegexCat(v66, v68);
-        v47->refc++; v69->refc++;
+        (v47)->refc++; (v69)->refc++;
         UHDecref8(v66); UHDecref8(v68);
         bool v70;
         v70 = loop21(v69, v47);
@@ -4311,7 +4311,7 @@ int32_t main(){
             
             int32_t v71;
             v71 = 1l;
-            v50->refc++;
+            (v50)->refc++;
             
             US3 v72;
             v72 = loop34(v71, v50);

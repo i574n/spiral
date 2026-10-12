@@ -1,0 +1,17 @@
+union slot =
+    | None
+    | All : u32 * string * bool
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | All (n, word, on) =>
+        if n =. 4000000000u32 && !!!!EQ(word, "hi") && on then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~n = 4000000000u32
+    inl ~word = "hi"
+    inl ~on = true
+    inl ~flag = true
+    inl held = if flag then All (n, word, on) else None
+    score held

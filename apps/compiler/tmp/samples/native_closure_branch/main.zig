@@ -108,7 +108,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
 const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) i32 };
 const ClosureEnv0 = struct { pad: u8 = 0 };
 const ClosureEnv1 = struct { pad: u8 = 0 };
-fn closure0(ctx: *anyopaque, p0: i32) i32 {
+fn a_c0(ctx: *anyopaque, p0: i32) i32 {
     const env: *ClosureEnv0 = @ptrCast(@alignCast(ctx)); _ = &env;
 
     var v0: i32 = p0; _ = &v0;
@@ -117,9 +117,9 @@ fn closure0(ctx: *anyopaque, p0: i32) i32 {
     return v1;
 }
 fn closureCreate0() Fun0 {
-    return .{ .ctx = spiralCreate(ClosureEnv0, .{ }), .call = &closure0 };
+    return .{ .ctx = spiralCreate(ClosureEnv0, .{ }), .call = &a_c0 };
 }
-fn closure1(ctx: *anyopaque, p0: i32) i32 {
+fn b_c1(ctx: *anyopaque, p0: i32) i32 {
     const env: *ClosureEnv1 = @ptrCast(@alignCast(ctx)); _ = &env;
 
     var v0: i32 = p0; _ = &v0;
@@ -128,7 +128,7 @@ fn closure1(ctx: *anyopaque, p0: i32) i32 {
     return v1;
 }
 fn closureCreate1() Fun0 {
-    return .{ .ctx = spiralCreate(ClosureEnv1, .{ }), .call = &closure1 };
+    return .{ .ctx = spiralCreate(ClosureEnv1, .{ }), .call = &b_c1 };
 }
 fn method0(p0: Fun0) i32 {
     var v0: Fun0 = p0; _ = &v0;

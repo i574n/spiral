@@ -1,0 +1,59 @@
+#include <stdint.h>
+#include <stdbool.h>
+#define SPIRAL_MAP_CAP 64
+#define SPIRAL_LOOP_CAP 16777216
+static int32_t spiral_map_key[SPIRAL_MAP_CAP];
+static int32_t spiral_map_val[SPIRAL_MAP_CAP];
+static int32_t spiral_map_used[SPIRAL_MAP_CAP];
+static int32_t spiral_map_lookup(int32_t key) {
+    int32_t i;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) return spiral_map_val[i];
+    }
+    return 0;
+}
+static int32_t spiral_map_update(int32_t key, int32_t val) {
+    int32_t i;
+    int32_t free_slot = -1;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) { spiral_map_val[i] = val; return 0; }
+        if (!spiral_map_used[i] && free_slot < 0) free_slot = i;
+    }
+    if (free_slot < 0) return 1;
+    spiral_map_used[free_slot] = 1;
+    spiral_map_key[free_slot] = key;
+    spiral_map_val[free_slot] = val;
+    return 0;
+}
+static int32_t spiral_main(void) {
+    float v0 = 0.0f;
+    v0 = (-1.5f);
+    float v1 = 0.0f;
+    v1 = 2.0f;
+    float v2 = 0.0f;
+    v2 = (v0 / v1);
+    float v3 = 0.0f;
+    v3 = (-0.75f);
+    float v4 = 0.0f;
+    v4 = (v0 * v1);
+    float v5 = 0.0f;
+    v5 = (v4 + 0.5f);
+    float v6 = 0.0f;
+    v6 = (-2.5f);
+    bool v7 = false;
+    v7 = (v2 == v3);
+    if (v7) {
+        bool v8 = false;
+        v8 = (v5 == v6);
+        if (v8) {
+            return 0;
+        } else {
+            return 2;
+        }
+    } else {
+        return 1;
+    }
+}
+int main(void) {
+    return spiral_main();
+}

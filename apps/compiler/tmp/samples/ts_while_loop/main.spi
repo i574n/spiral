@@ -2,7 +2,7 @@ inl while' (cond : () -> bool) (body : () -> ()) : () =
     !!!!While((join cond()),(body()))
 
 inl set' forall t. (a : t) ~(b : t) : () =
-    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : (); TypeScript = fun () => $"!a = !b" : (); CppHost = fun () => $"!a = !b" : (); Python = fun () => $"!a = !b" : () })
+    !!!!BackendSwitch({ Fsharp = fun () => $"!a <- !b" : (); C = fun () => $"!a = !b" : (); Rust = fun () => $"!a = !b" : (); Delphi = fun () => $"!a := !b" : (); TypeScript = fun () => $"!a = !b" : (); CppHost = fun () => $"!a = !b" : (); Python = fun () => $"!a = !b" : (); Wgsl = fun () => $"!a = !b" : (); Kotlin = fun () => $"!a = !b" : (); Swift = fun () => $"!a = !b" : (); OpenQasm = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : () })
 
 inl main () : i32 =
     inl ~i = 0i32

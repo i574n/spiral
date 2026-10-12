@@ -43,7 +43,7 @@ static inline void AssignArray0(int32_t * a, int32_t b){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -82,7 +82,7 @@ int32_t bump0(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->ptr[0l];
@@ -114,7 +114,7 @@ int32_t score1(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len;
@@ -158,7 +158,7 @@ int32_t main(){
     
     
     AssignArray0(&(v1->ptr[1l]), 5l);
-    v1->refc++;
+    (v1)->refc++;
     
     US0 v2;
     v2 = US0_Values(v1);
@@ -166,7 +166,7 @@ int32_t main(){
     
     int32_t v3;
     v3 = bump0(v2);
-    v1->refc++;
+    (v1)->refc++;
     USDecref0(&(v2));
     US0 v4;
     v4 = US0_Values(v1);

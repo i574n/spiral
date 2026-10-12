@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Empty
+    }
+}
 fn closure0() -> Rc<dyn Fn(i32) -> US0> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> US0> = Rc::new(move |mut v0: i32| -> US0 {
         let mut v1: bool = v0 == 0i32;

@@ -53,11 +53,11 @@ int32_t sum1(UH0 * v0){
         }
         case 1: { // Node
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
-            v2->refc += 2; v3->refc++;
+            (v2)->refc += 2; (v3)->refc++;
             UHDecref0(v0);
             int32_t v4;
             v4 = sum1(v2);
-            v3->refc++;
+            (v3)->refc++;
             UHDecref0(v2);
             int32_t v5;
             v5 = sum1(v3);
@@ -77,11 +77,11 @@ int32_t sum1(UH0 * v0){
     }
 }
 int32_t consume_pair0(UH0 * v0, UH0 * v1){
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = sum1(v0);
-    v1->refc++;
+    (v1)->refc++;
     UHDecref0(v0);
     int32_t v3;
     v3 = sum1(v1);
@@ -106,11 +106,11 @@ int32_t main(){
     
     UH0 * v2;
     v2 = UH0_Leaf();
-    v2->refc += 2;
+    (v2)->refc += 2;
     
     UH0 * v3;
     v3 = UH0_Node(v1, v2, v2);
-    v3->refc += 2;
+    (v3)->refc += 2;
     UHDecref0(v2);
     UH0 * v4;
     v4 = UH0_Node(v0, v3, v3);
@@ -126,15 +126,15 @@ int32_t main(){
     
     UH0 * v7;
     v7 = UH0_Leaf();
-    v7->refc += 2;
+    (v7)->refc += 2;
     
     UH0 * v8;
     v8 = UH0_Node(v6, v7, v7);
-    v8->refc += 2;
+    (v8)->refc += 2;
     UHDecref0(v7);
     UH0 * v9;
     v9 = UH0_Node(v5, v8, v8);
-    v4->refc++; v9->refc++;
+    (v4)->refc++; (v9)->refc++;
     UHDecref0(v8);
     int32_t v10;
     v10 = consume_pair0(v4, v9);

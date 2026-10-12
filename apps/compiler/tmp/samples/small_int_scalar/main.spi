@@ -1,0 +1,19 @@
+inl main () : i32 =
+    inl ~a = 100i8
+    inl s8 = a +. a
+    inl ~b = 200u8
+    inl ~c = 100u8
+    inl u8s = b +. c
+    inl ~n8 = 0i8 -. 8i8
+    inl sh8 = !!!!ShiftRight(n8, 1i32)
+    inl ush = !!!!ShiftRight(b, 1i32)
+    inl ~p = 20000i16
+    inl s16 = p +. p
+    inl ~q = 40000u16
+    inl u16s = q +. q
+    inl ~n = 7i32
+    inl from8 = !!!!Conv(`i8, n)
+    inl ~z = 9i8
+    inl as_i = !!!!Conv(`i32, z)
+    if s8 =. (0i8 -. 56i8) && u8s =. 44u8 && sh8 =. (0i8 -. 4i8) && ush =. 100u8 && s16 =. (0i16 -. 25536i16) && u16s =. 14464u16 && from8 =. 7i8 && as_i =. 9i32 then 0i32
+    else 1i32

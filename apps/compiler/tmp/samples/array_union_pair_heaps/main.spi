@@ -1,0 +1,39 @@
+union slot =
+    | None
+    | Held : (heap {value : i32 * string} * heap {value : i32 * string})
+
+nominal slot_array = array_base slot
+
+inl create (n : i32) : slot_array = slot_array !!!!ArrayCreate(`slot, n)
+inl get (values : slot_array) (i : i32) : slot =
+    match values with
+    | slot_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : slot_array) (i : i32) (value : slot) : () =
+    match values with
+    | slot_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Held (left, right) =>
+        inl left_opened = !!!!LayoutIndex(left)
+        inl ~(a, b) = left_opened.value
+        inl right_opened = !!!!LayoutIndex(right)
+        inl ~(c, d) = right_opened.value
+        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl left_pair = n, word
+    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl ~m = 4i32
+    inl ~other = "yo"
+    inl right_pair = m, other
+    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl values = create 1i32
+    inl ~flag = true
+    inl held = if flag then Held (left_heap, right_heap) else None
+    set values 0i32 held
+    inl loaded = get values 0i32
+    score loaded

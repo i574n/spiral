@@ -8,14 +8,14 @@ type
   TFun0 = class
     function Invoke(a0: LongInt; a1: LongInt): TTuple0; virtual; abstract;
   end;
-  TClosure0 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt; v2: LongInt): TTuple0; override; end;
+  Tclosure0 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt; v2: LongInt): TTuple0; override; end;
 function ClosureCreate0(v0: LongInt): TFun0; forward;
 function method0(v0: TFun0): TTuple0; forward;
 function TupleCreate0(f0: LongInt; f1: LongInt): TTuple0;
 begin
   Result.f0 := f0; Result.f1 := f1;
 end;
-function TClosure0.Invoke(v1: LongInt; v2: LongInt): TTuple0;
+function Tclosure0.Invoke(v1: LongInt; v2: LongInt): TTuple0;
 var
   v3: LongInt;
   v4: LongInt;
@@ -27,9 +27,9 @@ begin
   Result := TupleCreate0(v4, v5);
 end;
 function ClosureCreate0(v0: LongInt): TFun0;
-var c: TClosure0;
+var c: Tclosure0;
 begin
-  c := TClosure0.Create; c.v0 := v0;
+  c := Tclosure0.Create; c.v0 := v0;
   Result := c;
 end;
 function method0(v0: TFun0): TTuple0;

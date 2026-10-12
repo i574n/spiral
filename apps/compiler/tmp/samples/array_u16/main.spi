@@ -1,0 +1,15 @@
+nominal u16_array = array_base u16
+
+inl create (n : i32) : u16_array = u16_array !!!!ArrayCreate(`u16, n)
+inl get (values : u16_array) (i : i32) : u16 =
+    match values with
+    | u16_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : u16_array) (i : i32) (value : u16) : () =
+    match values with
+    | u16_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+inl main () : i32 =
+    inl values = create 1i32
+    inl ~n = 40000u16
+    set values 0i32 n
+    if get values 0i32 =. 40000u16 then 0i32 else 1i32

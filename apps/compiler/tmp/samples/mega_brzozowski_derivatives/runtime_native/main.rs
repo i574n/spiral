@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_BitZero
+    }
+}
 #[derive(Clone)]
 enum UH0 {
     UH0_InputEmpty,
@@ -25,6 +30,11 @@ impl UH0 {
             UH0::UH0_InputEmpty => 0,
             UH0::UH0_InputCons(..) => 1,
         }
+    }
+}
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_InputEmpty
     }
 }
 #[derive(Clone)]
@@ -42,6 +52,11 @@ impl US1 {
         }
     }
 }
+impl Default for US1 {
+    fn default() -> Self {
+        US1::US1_TriA
+    }
+}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputEmpty,
@@ -53,6 +68,11 @@ impl UH1 {
             UH1::UH1_InputEmpty => 0,
             UH1::UH1_InputCons(..) => 1,
         }
+    }
+}
+impl Default for UH1 {
+    fn default() -> Self {
+        UH1::UH1_InputEmpty
     }
 }
 #[derive(Clone)]
@@ -76,6 +96,11 @@ impl UH2 {
         }
     }
 }
+impl Default for UH2 {
+    fn default() -> Self {
+        UH2::UH2_RegexEmpty
+    }
+}
 #[derive(Clone)]
 enum US2 {
     US2_SymbolLess,
@@ -91,6 +116,11 @@ impl US2 {
         }
     }
 }
+impl Default for US2 {
+    fn default() -> Self {
+        US2::US2_SymbolLess
+    }
+}
 #[derive(Clone)]
 enum US3 {
     US3_Nullable,
@@ -102,6 +132,11 @@ impl US3 {
             US3::US3_Nullable => 0,
             US3::US3_NonNullable => 1,
         }
+    }
+}
+impl Default for US3 {
+    fn default() -> Self {
+        US3::US3_Nullable
     }
 }
 #[derive(Clone)]
@@ -125,6 +160,11 @@ impl UH3 {
         }
     }
 }
+impl Default for UH3 {
+    fn default() -> Self {
+        UH3::UH3_RegexEmpty
+    }
+}
 #[derive(Clone)]
 enum US4 {
     US4_BitMatcherRaw(Rc<UH2>, Rc<UH0>),
@@ -136,6 +176,11 @@ impl US4 {
         }
     }
 }
+impl Default for US4 {
+    fn default() -> Self {
+        US4::US4_BitMatcherRaw(<Rc<UH2>>::default(), <Rc<UH0>>::default())
+    }
+}
 #[derive(Clone)]
 enum US5 {
     US5_BitMatcherDecided(Rc<UH2>, Rc<UH0>, bool),
@@ -145,6 +190,11 @@ impl US5 {
         match self {
             US5::US5_BitMatcherDecided(..) => 1,
         }
+    }
+}
+impl Default for US5 {
+    fn default() -> Self {
+        US5::US5_BitMatcherDecided(<Rc<UH2>>::default(), <Rc<UH0>>::default(), <bool>::default())
     }
 }
 fn regex_compare_5(mut v0: Rc<UH2>, mut v1: Rc<UH2>) -> US2 {

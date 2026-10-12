@@ -1,0 +1,15 @@
+union slot =
+    | None
+    | Some : i32
+
+inl main () : i32 =
+    inl ~n = 3i32
+    inl ~m = 4i32
+    inl held = Some n
+    inl pair = held, m
+    inl box = !!!!LayoutToHeap({value = pair})
+    inl opened = !!!!LayoutIndex(box)
+    inl ~(left, right) = opened.value
+    match left with
+    | Some value => if value +. right =. 7i32 then 0i32 else 1i32
+    | None => 1i32

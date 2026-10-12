@@ -55,11 +55,11 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 0: {
-            x->case0.v5->refc++;
+            (x->case0.v5)->refc++;
             break;
         }
         case 1: {
-            x->case1.v2->refc++;
+            (x->case1.v2)->refc++;
             break;
         }
     }

@@ -75,11 +75,11 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(5, "éλ");
-    v0->refc++;
+    (v0)->refc++;
     
     String * v1;
     v1 = first_codepoint0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     String * v2;
     v2 = second_codepoint1(v0);

@@ -81,11 +81,11 @@ int32_t main(){
     
     String * v3;
     v3 = choose0(v2);
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v4;
     v4 = measure1(v1);
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v5;
     v5 = measure1(v1);
@@ -93,7 +93,7 @@ int32_t main(){
     StringDecref(v1);
     int32_t v6;
     v6 = v4 + v5;
-    v3->refc++;
+    (v3)->refc++;
     
     int32_t v7;
     v7 = measure1(v3);

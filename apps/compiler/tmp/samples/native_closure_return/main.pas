@@ -11,12 +11,12 @@ type
   TFun0 = class
     function Invoke(a0: AnsiString): TFun1; virtual; abstract;
   end;
-  TClosure0 = class(TFun0)  function Invoke(v0: AnsiString): TFun1; override; end;
-  TClosure1 = class(TFun1) v0: AnsiString; function Invoke(v1: LongInt): LongInt; override; end;
+  Tmake_c0 = class(TFun0)  function Invoke(v0: AnsiString): TFun1; override; end;
+  Tclosure1 = class(TFun1) v0: AnsiString; function Invoke(v1: LongInt): LongInt; override; end;
 function ClosureCreate1(v0: AnsiString): TFun1; forward;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun1): LongInt; forward;
-function TClosure1.Invoke(v1: LongInt): LongInt;
+function Tclosure1.Invoke(v1: LongInt): LongInt;
 var
   v2: LongInt;
   v3: LongInt;
@@ -26,19 +26,19 @@ begin
   Result := v3;
 end;
 function ClosureCreate1(v0: AnsiString): TFun1;
-var c: TClosure1;
+var c: Tclosure1;
 begin
-  c := TClosure1.Create; c.v0 := v0;
+  c := Tclosure1.Create; c.v0 := v0;
   Result := c;
 end;
-function TClosure0.Invoke(v0: AnsiString): TFun1;
+function Tmake_c0.Invoke(v0: AnsiString): TFun1;
 begin
   Result := ClosureCreate1(v0);
 end;
 function ClosureCreate0: TFun0;
-var c: TClosure0;
+var c: Tmake_c0;
 begin
-  c := TClosure0.Create; 
+  c := Tmake_c0.Create; 
   Result := c;
 end;
 function method0(v0: TFun1): LongInt;

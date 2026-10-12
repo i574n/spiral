@@ -84,11 +84,11 @@ int32_t score0(UH0 * v0){
         }
         case 1: { // Node
             String * v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
-            v1->refc++; v2->refc++; v3->refc++;
+            (v1)->refc++; (v2)->refc++; (v3)->refc++;
             UHDecref0(v0);
             int32_t v4;
             v4 = v1->len-1;
-            v2->refc++;
+            (v2)->refc++;
             StringDecref(v1);
             int32_t v5;
             v5 = score0(v2);
@@ -96,7 +96,7 @@ int32_t score0(UH0 * v0){
             UHDecref0(v2);
             int32_t v6;
             v6 = v4 + v5;
-            v3->refc++;
+            (v3)->refc++;
             
             int32_t v7;
             v7 = score0(v3);
@@ -124,15 +124,15 @@ int32_t main(){
     
     UH0 * v2;
     v2 = UH0_Empty();
-    v1->refc++; v2->refc += 2;
+    (v1)->refc++; (v2)->refc += 2;
     
     UH0 * v3;
     v3 = UH0_Node(v1, v2, v2);
-    v0->refc++; v3->refc += 2;
+    (v0)->refc++; (v3)->refc += 2;
     UHDecref0(v2);
     UH0 * v4;
     v4 = UH0_Node(v0, v3, v3);
-    v4->refc++;
+    (v4)->refc++;
     UHDecref0(v3);
     int32_t v5;
     v5 = score0(v4);
@@ -140,15 +140,15 @@ int32_t main(){
     UHDecref0(v4);
     UH0 * v6;
     v6 = UH0_Empty();
-    v1->refc++; v6->refc += 2;
+    (v1)->refc++; (v6)->refc += 2;
     
     UH0 * v7;
     v7 = UH0_Node(v1, v6, v6);
-    v0->refc++; v7->refc += 2;
+    (v0)->refc++; (v7)->refc += 2;
     StringDecref(v1); UHDecref0(v6);
     UH0 * v8;
     v8 = UH0_Node(v0, v7, v7);
-    v8->refc++;
+    (v8)->refc++;
     StringDecref(v0); UHDecref0(v7);
     int32_t v9;
     v9 = score0(v8);

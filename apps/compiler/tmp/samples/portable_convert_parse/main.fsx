@@ -7,17 +7,17 @@ and [<Struct>] US1 =
 let rec closure0 (v0 : string) () : int32 =
     let v1 : int32 = v0 |> int32 
     v1
-and closure1 () (v0 : int32) : US0 =
+and ok_c1 () (v0 : int32) : US0 =
     US0_Ok(v0)
 and closure2 () (v0 : (unit -> exn)) : exn =
     v0 ()
-and closure3 () (v0 : exn) : US0 =
+and error_c3 () (v0 : exn) : US0 =
     US0_Error(v0)
 and method0 (v0 : string) : US0 =
     let v1 : (unit -> int32) = closure0(v0)
-    let v2 : (int32 -> US0) = closure1()
+    let v2 : (int32 -> US0) = ok_c1()
     let v3 : ((unit -> exn) -> exn) = closure2()
-    let v4 : (exn -> US0) = closure3()
+    let v4 : (exn -> US0) = error_c3()
     let v5 : US0 = try v1 () |> v2 with ex -> (fun () -> ex) |> v3 |> v4 
     v5
 let v0 : string = "ff"

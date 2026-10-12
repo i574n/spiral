@@ -95,7 +95,7 @@ int32_t main(){
     
     
     AssignArray0(&(v2->ptr[0l]), 11l);
-    v1->refc++; v2->refc++;
+    (v1)->refc++; (v2)->refc++;
     
     Array0 * v3;
     v3 = method0(v1, v2);

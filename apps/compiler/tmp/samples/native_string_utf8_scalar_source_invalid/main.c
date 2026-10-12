@@ -72,7 +72,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
             fprintf(stderr, "%s\n", "UTF-8 byte offset is outside the string.");
             exit(EXIT_FAILURE);
         } else {
-            v0->refc++;
+            (v0)->refc++;
             
             char v7;
             v7 = runtime_byte1(v0, v1);
@@ -126,7 +126,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                             fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                             exit(EXIT_FAILURE);
                         } else {
-                            v0->refc++;
+                            (v0)->refc++;
                             
                             char v25;
                             v25 = runtime_byte1(v0, v22);
@@ -211,7 +211,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                                 
                                 int32_t v41;
                                 v41 = v1 + 1l;
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v42;
                                 v42 = runtime_byte1(v0, v41);
@@ -219,7 +219,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                                 
                                 int32_t v43;
                                 v43 = ((uint8_t)v42);
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v44;
                                 v44 = runtime_byte1(v0, v38);
@@ -383,7 +383,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                                     
                                     int32_t v76;
                                     v76 = v1 + 1l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v77;
                                     v77 = runtime_byte1(v0, v76);
@@ -395,7 +395,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                                     
                                     int32_t v79;
                                     v79 = v1 + 2l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v80;
                                     v80 = runtime_byte1(v0, v79);
@@ -403,7 +403,7 @@ int32_t utf8_scalar_at_byte_offset0(String * v0, int32_t v1){
                                     
                                     int32_t v81;
                                     v81 = ((uint8_t)v80);
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v82;
                                     v82 = runtime_byte1(v0, v73);

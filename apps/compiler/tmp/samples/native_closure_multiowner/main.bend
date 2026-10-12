@@ -182,7 +182,7 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 @unsafe
-def closure0(+v0: String, +v1: U32) -> IO(U32):
+def f_c0(+v0: String, +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
@@ -204,7 +204,7 @@ def method0(+v0: ((U32) -> IO(U32)), +v1: U32) -> IO(U32):
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : String <- IO.pure(String, "abc")
-    +v1 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => closure0(v0, d))
+    +v1 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v0, d))
     +v2 : U32 <- IO.pure(U32, {38 : U32})
     method0(v1, v2)
 

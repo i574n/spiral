@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_TypedFxHashedStatementChecksumValidationAccepted(<i64>::default(), <i64>::default(), <i64>::default(), <i64>::default(), <i64>::default(), { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
+    }
+}
 fn spiral_main() -> i32 {
     let mut v0: i64 = 0i64 + 1i64;
     let mut v1: i64 = v0 + 1i64;

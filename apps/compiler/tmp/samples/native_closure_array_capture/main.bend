@@ -294,7 +294,7 @@ def spiral_array_set_a0(+arr: Chan(Array<U32>) & U32, +i: U32, +v: U32) -> IO(Un
   spiral_array_set_checked_a0(c, i, v, U32.is_lt(i, n))
 
 @unsafe
-def closure0(+v0: (Chan(Array<U32>) & U32), +v1: U32) -> IO(U32):
+def f_c0(+v0: (Chan(Array<U32>) & U32), +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : U32 <- IO.pure(U32, spiral_array_length_a0(v0))
     +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
@@ -304,7 +304,7 @@ def closure0(+v0: (Chan(Array<U32>) & U32), +v1: U32) -> IO(U32):
 def spiral_main() -> IO(U32):
   do IO<U32>:
     +v0 : (Chan(Array<U32>) & U32) <- spiral_array_new_a0({2 : U32}, {0 : U32})
-    +v1 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => closure0(v0, d))
+    +v1 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v0, d))
     v1({40 : U32})
 
 @unsafe

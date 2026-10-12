@@ -14,7 +14,17 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Some(<i32>::default())
+    }
+}
 struct Mut0 { l0: Rc<str> }
+impl Default for Mut0 {
+    fn default() -> Self {
+        Mut0 { l0: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
+    }
+}
 fn method2(mut v0: US0) -> Rc<str> {
     match &v0 {
         US0::US0_None => {

@@ -1,0 +1,4 @@
+inl main () : i32 =
+    inl f (z : i32) (w : i32) : i32 = z *. 10i32 +. w
+    inl ~g = f
+    if g 3i32 4i32 =. 34i32 then 0i32 else 1i32

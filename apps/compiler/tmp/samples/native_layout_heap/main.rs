@@ -2,6 +2,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Heap0 { l0: i32, l1: i32 }
+impl Default for Heap0 {
+    fn default() -> Self {
+        Heap0 { l0: <i32>::default(), l1: <i32>::default() }
+    }
+}
 fn spiral_main() -> i32 {
     let mut v0: Rc<Heap0> = Rc::new(Heap0 { l0: 9i32, l1: 10i32 });
     let mut v1: i32 = v0.l0.clone();

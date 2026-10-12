@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Some(<i32>::default())
+    }
+}
 fn method0(mut v0: Option<i32>) -> Option<i32> {
     v0.clone()
 }

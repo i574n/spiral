@@ -63,7 +63,7 @@ Array0 * ArrayLit0(uint32_t len, String * * ptr){
     memcpy(x->ptr, ptr, sizeof(String *) * len);
         for (uint32_t i=0; i < len; i++){
             String * v = ptr[i];
-            v->refc++;
+            (v)->refc++;
         }
     return x;
 }
@@ -81,7 +81,7 @@ void method0(Array0 * v0){
     return ;
 }
 static inline void AssignArray0(String * * a, String * b){
-    b->refc++;
+    (b)->refc++;
     StringDecref(*a);
     *a = b;
 }
@@ -147,7 +147,7 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(4l, true);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
@@ -159,11 +159,11 @@ int32_t main(){
     
     
     AssignArray0(&(v0->ptr[0l]), v1);
-    v0->refc++;
+    (v0)->refc++;
     StringDecref(v1);
     
     method1(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method2(v0);
@@ -187,23 +187,23 @@ int32_t main(){
     StringDecref(v3);
     String * v4;
     v4 = v0->ptr[0l];
-    v4->refc++;
+    (v4)->refc++;
     
     String * v5;
     v5 = v0->ptr[1l];
-    v5->refc++;
+    (v5)->refc++;
     
     String * v6;
     v6 = v0->ptr[2l];
-    v0->refc++; v6->refc++;
+    (v0)->refc++; (v6)->refc++;
     
     int32_t v7;
     v7 = method3(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v8;
     v8 = method4(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method5(v0);

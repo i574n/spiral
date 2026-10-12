@@ -1,10 +1,10 @@
-function closure0(v0: number): ((a0: number) => number) {
+function a_c0(v0: number): ((a0: number) => number) {
     return (v1: number): number => {
         let v2: number = (v1 + v0) | 0;
         return v2;
     };
 }
-function closure1(v0: number): ((a0: number) => number) {
+function b_c1(v0: number): ((a0: number) => number) {
     return (v1: number): number => {
         let v2: number = (v1 + v0) | 0;
         return v2;
@@ -19,9 +19,9 @@ export function main(): number {
     let v2: boolean = true;
     let v5: ((a0: number) => number);
     if (v2) {
-        v5 = closure0(v0);
+        v5 = a_c0(v0);
     } else {
-        v5 = closure1(v1);
+        v5 = b_c1(v1);
     }
     return method0(v5);
 }

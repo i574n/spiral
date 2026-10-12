@@ -205,7 +205,7 @@ def sum_0(+v0: U0) -> IO(U32):
     sum_0_unbox1(v0, v0)
 
 @unsafe
-def closure0(+v0: U0, +v1: U32) -> IO(U32):
+def f_c0(+v0: U0, +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : U32 <- sum_0(v0)
     +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
@@ -217,7 +217,7 @@ def spiral_main() -> IO(U32):
     +v0 : U0 <- IO.pure(U0, U0_Leaf{})
     +v1 : U32 <- IO.pure(U32, {2 : U32})
     +v2 : U0 <- IO.pure(U0, U0_Node{v1, v0, v0})
-    +v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => closure0(v2, d))
+    +v3 : ((U32) -> IO(U32)) <- IO.pure(((U32) -> IO(U32)), d => f_c0(v2, d))
     +v4 : U32 <- v3({19 : U32})
     +v5 : U32 <- v3({19 : U32})
     +v6 : U32 <- IO.pure(U32, U32.add(v4, v5))

@@ -16,6 +16,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Idle
+    }
+}
 fn closure0(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v7: i32 = match &v0 {

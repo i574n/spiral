@@ -44,7 +44,7 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(7, "spiral");
-    v0->refc++;
+    (v0)->refc++;
     
     bool v1;
     v1 = method0(v0);

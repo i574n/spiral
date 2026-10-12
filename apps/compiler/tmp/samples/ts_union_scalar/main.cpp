@@ -24,9 +24,9 @@ int main() {
     v0 = true;
     Union0 v3;
     if (v0){
-        v3 = Union0{Union0_0{7}};
+        v3 = Union0{Union0_Hit{7}};
     } else {
-        v3 = Union0{Union0_1{3}};
+        v3 = Union0{Union0_Miss{3}};
     }
     int v4;
     v4 = score_0(v3);

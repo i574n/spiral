@@ -1,0 +1,17 @@
+inl while' (cond : () -> bool) (body : () -> ()) : () =
+    !!!!While((join cond()),(body()))
+
+inl set' forall t. (a : t) ~(b : t) : () =
+    !!!!BackendSwitch({ C = fun () => $"!a = !b" : (); Ebpf = fun () => $"!a = !b" : () })
+
+inl rec walk ~n ~acc =
+    if n =. 0i32 then acc else
+        inl ~k = 0i32
+        inl ~extra = 0i32
+        while' (fun () => k < 3i32) fun () =>
+            set' extra (extra +. 1i32)
+            set' k (k +. 1i32)
+        join walk (n -. 1i32) (acc +. extra)
+
+inl main () : i32 =
+    join walk 5i32 0i32 -. 15i32

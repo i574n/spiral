@@ -1,0 +1,9 @@
+[package]
+name = "spiral-wgsl"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+pollster = "0.4"
+wgpu = "24"

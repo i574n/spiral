@@ -1,0 +1,28 @@
+nominal i32_array = array_base i32
+
+inl create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+inl get (array : i32_array) (i : i32) : i32 =
+    match array with
+    | i32_array values => !!!!ArrayIndex(values, i)
+inl set (array : i32_array) (i : i32) (value : i32) : () =
+    match array with
+    | i32_array values => !!!!ArrayIndexSet(values, i, value)
+
+union slot =
+    | None
+    | Held : i32_array * i32
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Held (array, n) =>
+        if get array 0i32 +. n =. 7i32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~a = 3i32
+    inl ~b = 4i32
+    inl values = create 1i32
+    set values 0i32 a
+    inl ~flag = true
+    inl held = if flag then Held (values, b) else None
+    score held

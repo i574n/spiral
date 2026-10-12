@@ -66,11 +66,11 @@ int32_t sum0(UH0 * v0){
         }
         case 1: { // Node
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
-            v2->refc += 2; v3->refc++;
+            (v2)->refc += 2; (v3)->refc++;
             UHDecref0(v0);
             int32_t v4;
             v4 = sum0(v2);
-            v3->refc++;
+            (v3)->refc++;
             UHDecref0(v2);
             int32_t v5;
             v5 = sum0(v3);
@@ -95,11 +95,11 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t ClosureMethod0(Closure0 * x, int32_t v1){
+int32_t f_c0(Closure0 * x, int32_t v1){
     UH0 * v0 = x->v0;
-    v0->refc++;
+    (v0)->refc++;
     ClosureDecref0(x);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = sum0(v0);
@@ -115,7 +115,7 @@ Fun0 * ClosureCreate0(UH0 * v0){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = f_c0;
     x->v0 = v0;
     return (Fun0 *) x;
 }
@@ -128,24 +128,24 @@ int32_t main(){
     
     int32_t v1;
     v1 = 2l;
-    v0->refc += 2;
+    (v0)->refc += 2;
     
     UH0 * v2;
     v2 = UH0_Node(v1, v0, v0);
-    v2->refc++;
+    (v2)->refc++;
     UHDecref0(v0);
     Fun0 * v3;
     v3 = ClosureCreate0(v2);
-    v3->refc++;
+    (v3)->refc++;
     UHDecref0(v2);
     int32_t v4;
     v4 = v3->fptr(v3, 19l);
-    v3->refc++;
+    (v3)->refc++;
     
     int32_t v5;
     v5 = v3->fptr(v3, 19l);
     
-    v3->decref_fptr(v3);
+    (v3)->decref_fptr(v3);
     int32_t v6;
     v6 = v4 + v5;
     

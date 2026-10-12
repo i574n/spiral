@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~c = 'A'
+    inl ~d = 'B'
+    if c = 'A' then
+        if d = 'B' then
+            if c = d then 2i32 else 0i32
+        else 3i32
+    else 1i32

@@ -140,7 +140,7 @@ fn sum_0(p0: *UH0) i32 {
         else => unreachable,
     }
 }
-fn closure0(ctx: *anyopaque, p1: i32) i32 {
+fn f_c0(ctx: *anyopaque, p1: i32) i32 {
     const env: *ClosureEnv0 = @ptrCast(@alignCast(ctx)); _ = &env;
     var v0: *UH0 = env.v0; _ = &v0;
     var v1: i32 = p1; _ = &v1;
@@ -151,7 +151,7 @@ fn closure0(ctx: *anyopaque, p1: i32) i32 {
     return v3;
 }
 fn closureCreate0(p0: *UH0) Fun0 {
-    return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, }), .call = &closure0 };
+    return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, }), .call = &f_c0 };
 }
 fn spiralMain() i32 {
     var v0: *UH0 = undefined; _ = &v0;

@@ -157,7 +157,7 @@ int32_t method10(Array0 * v0){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -197,7 +197,7 @@ int32_t method12(Array0 * v0){
     
     int32_t v1;
     v1 = DynamicArrayCapacity0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = method13(v0);
@@ -222,7 +222,7 @@ int32_t observe11(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             return method12(v1);
             break;
@@ -243,51 +243,51 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(0l, false);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v1;
     v1 = method1(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method2(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = method3(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method4(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v3;
     v3 = method5(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method6(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v4;
     v4 = method7(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method8(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v5;
     v5 = method9(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v6;
     v6 = method10(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     US0 v7;
     v7 = US0_Values(v0);
@@ -295,7 +295,7 @@ int32_t main(){
     
     int32_t v8;
     v8 = observe11(v7);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v7));
     int32_t v9;
     v9 = method14(v0);

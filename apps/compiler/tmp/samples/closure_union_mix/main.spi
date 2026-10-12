@@ -1,0 +1,17 @@
+union pair =
+    | One : i32
+    | Both : i32 * string
+
+inl main () : i32 =
+    inl ~n = 3i32
+    inl ~word = "hi"
+    inl f (z : i32) : pair =
+        if z =. 0i32 then
+            One 0i32
+        else
+            Both (n, word)
+    inl ~g = f
+    inl held = g 1i32
+    match held with
+    | One value => 1i32
+    | Both (left, right) => if left =. 3i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

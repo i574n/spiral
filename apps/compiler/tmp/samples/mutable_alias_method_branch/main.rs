@@ -2,6 +2,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32 }
+impl Default for Mut0 {
+    fn default() -> Self {
+        Mut0 { l0: <i32>::default() }
+    }
+}
 fn method0(mut v0: Rc<RefCell<Mut0>>) -> () {
     let mut v1: i32 = v0.borrow().l0.clone();
     let mut v2: i32 = v1.wrapping_add(5i32);

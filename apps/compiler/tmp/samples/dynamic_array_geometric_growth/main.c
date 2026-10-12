@@ -54,11 +54,11 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(0l, false);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v1;
     v1 = method1(v0);

@@ -216,7 +216,7 @@ int32_t method6(int32_t v0){
     
     String * v1;
     v1 = StringLit(7, "spiral");
-    v1->refc++;
+    (v1)->refc++;
     
     bool v2;
     v2 = method7(v1);

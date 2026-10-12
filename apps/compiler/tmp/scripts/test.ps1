@@ -19,7 +19,7 @@ $harness = Import-PowerShellDataFile (Join-Path $BundleRoot 'tests/harness.psd1'
 $Suite = @($Suite | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $Backend = @($Backend | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 foreach ($s in $Suite) { if ($s -notin 'frontier', 'smoke', 'examples', 'contracts', 'mega', 'all') { throw "unknown suite '$s'" } }
-foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
+foreach ($b in $Backend) { if ($b -notin 'Fsharp', 'C', 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { throw "unknown backend '$b'" } }
 $mode = ConvertTo-SpiralMode $Mode
 $suiteTimeoutSec = @{ frontier = 20; smoke = 20; examples = 20; contracts = 30; mega = 180 }
 $recycleWarmBatches = $WarmRecycle -or ($mode -eq 'hopac' -and -not $PSBoundParameters.ContainsKey('FreshProcess'))
@@ -58,7 +58,7 @@ if (-not $env:SPIRAL_DIAG_QUIET) { $env:SPIRAL_DIAG_QUIET = '1' }
 if (-not $env:DOTNET_GCgen0size) { $env:DOTNET_GCgen0size = '0x10000000' }
 $runStart = [DateTime]::UtcNow
 
-$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Wasm = 'wat'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
+$extension = @{ Fsharp = 'fsx'; C = 'c'; Rust = 'rs'; Delphi = 'pas'; Zig = 'zig'; Wasm = 'wat'; Wgsl = 'wgsl'; Calyx = 'futil'; Kotlin = 'kt'; Swift = 'swift'; OpenQasm = 'qasm'; Ebpf = 'ebpf'; Lean = 'lean'; Bend = 'bend'; Gleam = 'gleam'; Lua = 'lua'; TypeScript = 'ts'; Cpp = 'cpp'; Python = 'py' }
 $coreBackend = @{ Cpp = 'Cpp + Cuda'; Python = 'Python + Cuda' }
 function Get-Rel([string]$path) { [IO.Path]::GetRelativePath($BundleRoot, $path).Replace('\', '/') }
 
@@ -81,10 +81,10 @@ function Test-ContractSample([string]$relative) { $relative -like 'samples/contr
 $sampleBackends = @{}
 foreach ($set in $harness.Backends.Keys) { foreach ($sample in $harness.Backends[$set]) { $sampleBackends[$sample] = @($set -split ',') } }
 $listedSamples = @{}
-foreach ($listed in 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
+foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua') { $listedSamples[$listed] = @{}; foreach ($sample in @($harness[$listed])) { if ($sample) { $listedSamples[$listed][$sample] = $true } } }
 function Add-ListedBackends([string]$relative, [string[]]$backends) {
     $result = @($backends)
-    foreach ($listed in 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
+    foreach ($listed in 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua') { if ($listedSamples[$listed].ContainsKey($relative) -and $result -notcontains $listed) { $result += $listed } }
     if ($Probe -and $result -contains 'C' -and $result -notcontains $Probe) { $result += $Probe }
     $result
 }
@@ -225,7 +225,7 @@ Write-Host ("== compiled in {0:N1}s" -f $sw.Elapsed.TotalSeconds)
 
 foreach ($job in $jobs) {
     $c = $compiled[$job.Key]
-    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
+    if (-not $c -or $c.Status -notin 'timeout', 'crash' -or $job.Backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python') { continue }
     $core = Get-Item -LiteralPath $job.Output -ErrorAction SilentlyContinue
     if (-not $core -or $core.LastWriteTimeUtc -lt $runStart) { continue }
     $c.Status = 'emitted'
@@ -251,7 +251,7 @@ function Get-CFlags($job) {
     if (Test-Path $own) { $flags += @('-include', $own) }
     $flags
 }
-function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec) {
+function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [int]$timeoutSec, [string]$PathPrefix) {
     $info = [Diagnostics.ProcessStartInfo]::new($exe)
     foreach ($a in $arguments) { $info.ArgumentList.Add($a) }
     $info.WorkingDirectory = $workDir
@@ -259,13 +259,22 @@ function Invoke-Native([string]$exe, [string[]]$arguments, [string]$workDir, [in
     $info.RedirectStandardOutput = $true
     $info.RedirectStandardError = $true
     $info.UseShellExecute = $false
+    if ($PathPrefix) {
+        $pathKey = @($info.Environment.Keys) | Where-Object { $_ -eq 'Path' -or $_ -eq 'PATH' } | Select-Object -First 1
+        if (-not $pathKey) { $pathKey = 'PATH' }
+        $info.Environment[$pathKey] = $PathPrefix + [IO.Path]::PathSeparator + $info.Environment[$pathKey]
+    }
     $p = [Diagnostics.Process]::Start($info)
     $p.StandardInput.Close()
     $out = $p.StandardOutput.ReadToEndAsync()
     $err = $p.StandardError.ReadToEndAsync()
     if (-not $p.WaitForExit($timeoutSec * 1000)) { try { $p.Kill($true) } catch { }; return [pscustomobject]@{ Exit = 'timeout'; Out = ''; Err = '' } }
+    $p.WaitForExit() | Out-Null
+    $code = $p.ExitCode
     if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($out, $err), 15000)) {
-        return [pscustomobject]@{ Exit = 'hung-output'; Out = ''; Err = 'stdout/stderr still open 15 s after exit (a child process holds them)' }
+        # The process has exited. A child can keep the redirected pipes open (mingw gcc does this).
+        # The exit code is still the result; dropping it turned a finished compile into build-fail.
+        return [pscustomobject]@{ Exit = [string]$code; Out = ''; Err = 'stdout/stderr still open 15 s after exit (a child process holds them)' }
     }
     [pscustomobject]@{ Exit = $p.ExitCode; Out = $out.Result; Err = $err.Result }
 }
@@ -276,6 +285,124 @@ function Build-And-Run($job) {
     if ($job.Backend -eq 'TypeScript') {
         if (-not $tools.Bun) { return 'no-toolchain' }
         $run = Invoke-Native $tools.Bun @((Join-Path $shimDir 'run_main.mjs'), $job.Output) $binDir 30
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Calyx') {
+        if (-not $tools.Cider -or -not $tools.Auxin -or -not $tools.CalyxRoot) { return 'no-toolchain' }
+        $dump = Join-Path $binDir 'spiral-calyx.dat'
+        $json = Join-Path $binDir 'spiral-calyx.json'
+        Remove-Item -LiteralPath $dump, $json -ErrorAction SilentlyContinue
+        # cider's interpret path serializes the memory dump to stdout and ignores -o.
+        $info = [Diagnostics.ProcessStartInfo]::new($tools.Cider)
+        foreach ($a in @('-l', $tools.CalyxRoot, '-q', $job.Output)) { $info.ArgumentList.Add($a) }
+        $info.WorkingDirectory = $binDir
+        $info.RedirectStandardOutput = $true
+        $info.RedirectStandardError = $true
+        $info.UseShellExecute = $false
+        $proc = [Diagnostics.Process]::Start($info)
+        $dumpStream = [IO.File]::Create($dump)
+        $copyTask = $proc.StandardOutput.BaseStream.CopyToAsync($dumpStream)
+        $errTask = $proc.StandardError.ReadToEndAsync()
+        if (-not $proc.WaitForExit(120000)) {
+            try { $proc.Kill($true) } catch { }
+            $dumpStream.Dispose()
+            return [pscustomobject]@{ Status = 'timeout'; Exit = 'timeout'; Stdout = ''; Detail = 'cider timed out' }
+        }
+        if (-not [Threading.Tasks.Task]::WaitAll([Threading.Tasks.Task[]]@($copyTask, $errTask), 15000)) {
+            $dumpStream.Dispose()
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = 'cider stdout still open after exit' }
+        }
+        $dumpStream.Dispose()
+        $cerr = $errTask.Result
+        if ("$($proc.ExitCode)" -ne '0') {
+            $msg = (($cerr -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
+            if (-not $msg) { $msg = "cider exit $($proc.ExitCode)" }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $conv = Invoke-Native $tools.Auxin @('-f', 'cider', '-t', 'json', '-o', $json, $dump) $binDir 30
+        if ("$($conv.Exit)" -ne '0' -or -not (Test-Path -LiteralPath $json)) {
+            $msg = ((($conv.Err + "`n" + $conv.Out) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
+            if (-not $msg) { $msg = "auxin exit $($conv.Exit)" }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $text = [IO.File]::ReadAllText($json)
+        $found = [regex]::Match($text, '"spiral_io"[\s\S]{0,800}?"data"\s*:\s*\[(?:\s*\[)*\s*(-?\d+)')
+        if (-not $found.Success) {
+            $snippet = if ($text.Length -gt 180) { $text.Substring(0, 180) } else { $text }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = ("no spiral_io in cider dump: " + ($snippet -replace '\s+', ' ')) }
+        }
+        $raw = [int64]$found.Groups[1].Value
+        if ($raw -gt 2147483647L) { $raw -= 4294967296L }
+        $stdout = ''
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]([int]$raw); Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Kotlin') {
+        if (-not $tools.Kotlinc -or -not $tools.Java) { return 'no-toolchain' }
+        $kotlinHome = Split-Path (Split-Path $tools.Kotlinc)
+        $preloader = Join-Path $kotlinHome 'lib/kotlin-preloader.jar'
+        $compilerJar = Join-Path $kotlinHome 'lib/kotlin-compiler.jar'
+        if (-not (Test-Path -LiteralPath $preloader) -or -not (Test-Path -LiteralPath $compilerJar)) { return 'no-toolchain' }
+        $jar = Join-Path $binDir 'spiral-kotlin.jar'
+        Remove-Item -LiteralPath $jar -ErrorAction SilentlyContinue
+        # kotlinc.bat cannot be a ProcessStartInfo target. JDK 25 rejects -noverify; 2.4.21 does not need it.
+        $build = Invoke-Native $tools.Java @(
+            '-Xmx512M', '-Xms128M',
+            '--add-opens', 'java.base/java.util=ALL-UNNAMED',
+            '-cp', $preloader,
+            'org.jetbrains.kotlin.preloading.Preloader',
+            '-cp', $compilerJar,
+            'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler',
+            $job.Output, '-include-runtime', '-d', $jar
+        ) $binDir 180
+        if ("$($build.Exit)" -ne '0' -or -not (Test-Path -LiteralPath $jar)) {
+            $msg = ((($build.Err + "`n" + $build.Out) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
+            if (-not $msg) { $msg = "kotlinc exit $($build.Exit)" }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $run = Invoke-Native $tools.Java @('-jar', $jar) $binDir 60
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Swift') {
+        if (-not $tools.Swiftc -or -not $tools.SwiftSdk -or -not $tools.SwiftRuntime) { return 'no-toolchain' }
+        $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
+        Remove-Item -LiteralPath $exe -ErrorAction SilentlyContinue
+        $build = Invoke-Native $tools.Swiftc @('-O', '-sdk', $tools.SwiftSdk, '-o', $exe, $job.Output) $binDir 180
+        if ("$($build.Exit)" -ne '0' -or -not (Test-Path -LiteralPath $exe)) {
+            $msg = ((($build.Err + "`n" + $build.Out) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
+            if (-not $msg) { $msg = "swiftc exit $($build.Exit)" }
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $run = Invoke-Native $exe @() $binDir 60 $tools.SwiftRuntime
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'OpenQasm') {
+        if (-not $tools.Python) { return 'no-toolchain' }
+        $shim = Join-Path $shimDir 'openqasm-run/run.py'
+        if (-not (Test-Path -LiteralPath $shim)) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.Python @($shim, $job.Output) $binDir 60
+        if ($run.Err -match 'qasm error:') {
+            $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
+        $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
+        $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
+        return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
+    }
+    if ($job.Backend -eq 'Wgsl') {
+        if (-not $tools.WgslRun) { return 'no-toolchain' }
+        $run = Invoke-Native $tools.WgslRun @($job.Output) $binDir 60
+        if ("$($run.Exit)" -eq '3') { return 'no-toolchain' }
+        if ($run.Err -match 'wgsl error:') {
+            $msg = (($run.Err -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 3) -join ' / ') -replace '\s+', ' '
+            return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
+        }
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
@@ -295,7 +422,7 @@ function Build-And-Run($job) {
         if (-not $tools.Lean) { return 'no-toolchain' }
         $elanBin = Split-Path $tools.Lean
         if (-not $env:ELAN_HOME -and (Split-Path $elanBin -Leaf) -eq 'bin' -and (Test-Path (Join-Path $elanBin 'elan*'))) { $env:ELAN_HOME = Split-Path $elanBin }
-        $run = Invoke-Native $tools.Lean @('--run', $job.Output) $binDir 180
+        $run = Invoke-Native $tools.Lean @('+leanprover/lean4:v4.35.0-rc4', '--run', $job.Output) $binDir 180
         if ("$($run.Exit)" -ne '0' -and ($run.Out + $run.Err) -match '\.lean:\d+:\d+: error') {
             $msg = ((($run.Out + "`n" + $run.Err) -split "`n" | Where-Object { $_ -match 'error' } | Select-Object -First 1) -replace '\s+', ' ').Trim()
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
@@ -355,7 +482,8 @@ function Build-And-Run($job) {
     $exe = Join-Path $binDir ($(if ($IsWindows) { 'main.exe' } else { 'main' }))
     $build = switch ($job.Backend) {
         'C' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w') + (Get-CFlags $job) + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
-        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
+        'Ebpf' { if (-not $tools.CC) { return 'no-toolchain' }; Invoke-Native $tools.CC (@('-std=c11', '-O2', '-w', '-x', 'c') + @('-o', $exe, $job.Output, '-lm')) $dir 120 }
+        'Rust' { if (-not $tools.Rustc) { return 'no-toolchain' }; Invoke-Native $tools.Rustc @('+1.99.0', '-C', 'opt-level=2', '-A', 'warnings', '--edition', '2024', '-o', $exe, $job.Output) $dir 180 }
         'Delphi' { if (-not $tools.Fpc) { return 'no-toolchain' }; Invoke-Native $tools.Fpc @('-O2', '-Mdelphi', "-FE$binDir", "-FU$binDir", "-o$exe", $job.Output) $dir 180 }
         'Zig' {
             if (-not $zigExe) { return 'no-toolchain' }
@@ -365,6 +493,10 @@ function Build-And-Run($job) {
         }
         'Cpp' {
             if (-not $tools.Python) { return 'no-toolchain' }
+            if (-not $env:SPIRAL_CXX) {
+                $mingwxx = Join-Path $HOME 'scoop/apps/mingw/current/bin/g++.exe'
+                if (Test-Path $mingwxx) { $env:SPIRAL_CXX = $mingwxx }
+            }
             $b = Invoke-Native $tools.Python @((Join-Path $shimDir 'cpp_native.py'), $job.Output, $exe) $dir 180
             if ("$($b.Exit)" -eq '3') { return 'no-toolchain' }
             $b
@@ -391,6 +523,14 @@ if ($Native) {
         if ($chunk.Count) { $lanes.Add([pscustomobject]@{ Lane = $i; Jobs = $chunk }) }
     }
     $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
+    if (-not ('Spiral.NativeErrorMode' -as [type])) {
+        Add-Type -Namespace Spiral -Name NativeErrorMode -MemberDefinition @'
+[System.Runtime.InteropServices.DllImport("kernel32.dll")]
+public static extern uint SetErrorMode(uint mode);
+'@
+    }
+    # abort() otherwise waits on WerFault. A 30s native timeout then looks like a missed exit 3.
+    [Spiral.NativeErrorMode]::SetErrorMode(0x8003) | Out-Null
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
         foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
         $nativeLane = $_.Lane
@@ -434,7 +574,7 @@ $rows = @($rows)
 $byId = $rows | Group-Object id -AsHashTable
 $known = @{}
 $harness.Known | ForEach-Object { $known["$($_.Id)|$($_.Backend)"] = $_.Reason }
-foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
+foreach ($row in $rows | Where-Object { $_.backend -in 'Rust', 'Delphi', 'Zig', 'Wasm', 'Wgsl', 'Calyx', 'Kotlin', 'Swift', 'OpenQasm', 'Ebpf', 'Lean', 'Bend', 'Gleam', 'Lua', 'TypeScript', 'Cpp', 'Python' -and $_.native -eq 'ran' }) {
     $c = $byId[$row.id] | Where-Object { $_.backend -eq 'C' -and $_.native -eq 'ran' } | Select-Object -First 1
     $bothFailed = $c -and $c.exit -ne '0' -and $row.exit -ne '0' -and $c.exit -ne 'timeout' -and $row.exit -ne 'timeout'
     $row.oracle =

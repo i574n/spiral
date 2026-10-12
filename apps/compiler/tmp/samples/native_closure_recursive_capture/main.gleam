@@ -36,7 +36,7 @@ pub fn sum_0(v0: Uh0) -> Int {
         }
     }
 }
-pub fn closure0(capt: #(Uh0)) -> fn(Int) -> Int {
+pub fn f_c0(capt: #(Uh0)) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = sum_0(v0)
@@ -48,7 +48,7 @@ pub fn main() {
 let v0 = Uh0Leaf
 let v1 = 2
 let v2 = Uh0Node(v1, v0, v0)
-let v3 = closure0(#(v2))
+let v3 = f_c0(#(v2))
 let v4 = v3( 19  )
 let v5 = v3( 19  )
 let v6 = spiral_wrap_signed(v4 + v5, 32)

@@ -14,6 +14,11 @@ impl UH0 {
         }
     }
 }
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_Nil
+    }
+}
 fn sum_0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
         UH0::UH0_Cons(v1, v2) => {

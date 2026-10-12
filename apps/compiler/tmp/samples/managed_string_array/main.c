@@ -63,12 +63,12 @@ Array0 * ArrayLit0(uint32_t len, String * * ptr){
     memcpy(x->ptr, ptr, sizeof(String *) * len);
         for (uint32_t i=0; i < len; i++){
             String * v = ptr[i];
-            v->refc++;
+            (v)->refc++;
         }
     return x;
 }
 static inline void AssignArray0(String * * a, String * b){
-    b->refc++;
+    (b)->refc++;
     StringDecref(*a);
     *a = b;
 }
@@ -97,11 +97,11 @@ int32_t main(){
     StringDecref(v2);
     String * v3;
     v3 = v0->ptr[0l];
-    v3->refc++;
+    (v3)->refc++;
     
     String * v4;
     v4 = v0->ptr[1l];
-    v4->refc++;
+    (v4)->refc++;
     ArrayDecref0(v0);
     int32_t v5;
     v5 = v3->len-1;

@@ -14,6 +14,11 @@ impl UH0 {
         }
     }
 }
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_Empty
+    }
+}
 fn method2(mut v0: i32) -> Rc<UH0> {
     let mut v1: i32 = v0.wrapping_sub(1i32);
     let mut v2: bool = v1 == 0i32;

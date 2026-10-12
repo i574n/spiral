@@ -1,0 +1,107 @@
+#include <stdint.h>
+#include <stdbool.h>
+#define SPIRAL_MAP_CAP 64
+#define SPIRAL_LOOP_CAP 16777216
+static int32_t spiral_map_key[SPIRAL_MAP_CAP];
+static int32_t spiral_map_val[SPIRAL_MAP_CAP];
+static int32_t spiral_map_used[SPIRAL_MAP_CAP];
+static int32_t spiral_map_lookup(int32_t key) {
+    int32_t i;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) return spiral_map_val[i];
+    }
+    return 0;
+}
+static int32_t spiral_map_update(int32_t key, int32_t val) {
+    int32_t i;
+    int32_t free_slot = -1;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) { spiral_map_val[i] = val; return 0; }
+        if (!spiral_map_used[i] && free_slot < 0) free_slot = i;
+    }
+    if (free_slot < 0) return 1;
+    spiral_map_used[free_slot] = 1;
+    spiral_map_key[free_slot] = key;
+    spiral_map_val[free_slot] = val;
+    return 0;
+}
+static bool sp_method1(int32_t p0) {
+    int32_t v0 = p0;
+    bool v1 = false;
+    v1 = (v0 < 3);
+    return v1;
+}
+static int32_t sp_method2(int32_t p0, int32_t p1, int32_t p2) {
+    int32_t v0 = p0;
+    int32_t v1 = p1;
+    int32_t v2 = p2;
+    for (int32_t spiral_trip = 0; spiral_trip < SPIRAL_LOOP_CAP; spiral_trip++) {
+        int32_t v3 = 0;
+        v3 = (v0 - 1);
+        int32_t v4 = 0;
+        v4 = (v1 + v2);
+        bool v5 = false;
+        v5 = (v3 == 0);
+        if (v5) {
+            return v4;
+        } else {
+            int32_t v6 = 0;
+            v6 = 0;
+            int32_t v7 = 0;
+            v7 = 0;
+            for (int32_t spiral_trip = 0; spiral_trip < SPIRAL_LOOP_CAP; spiral_trip++) {
+                if (!(sp_method1(v6))) break;
+                int32_t v9 = 0;
+                v9 = (v7 + 1);
+                v7 = v9;
+                int32_t v10 = 0;
+                v10 = (v6 + 1);
+                v6 = v10;
+            }
+            int32_t t863_3 = v3;
+            int32_t t897_4 = v4;
+            int32_t t931_7 = v7;
+            v0 = t863_3;
+            v1 = t897_4;
+            v2 = t931_7;
+            continue;
+        }
+    }
+    return 0;
+}
+static int32_t sp_method0(void) {
+    int32_t v0 = 0;
+    v0 = 5;
+    int32_t v1 = 0;
+    v1 = 0;
+    bool v2 = false;
+    v2 = (v0 == 0);
+    int32_t v9 = 0;
+    if (v2) {
+        v9 = v1;
+    } else {
+        int32_t v3 = 0;
+        v3 = 0;
+        int32_t v4 = 0;
+        v4 = 0;
+        for (int32_t spiral_trip = 0; spiral_trip < SPIRAL_LOOP_CAP; spiral_trip++) {
+            if (!(sp_method1(v3))) break;
+            int32_t v6 = 0;
+            v6 = (v4 + 1);
+            v4 = v6;
+            int32_t v7 = 0;
+            v7 = (v3 + 1);
+            v3 = v7;
+        }
+        v9 = sp_method2(v0, v1, v4);
+    }
+    int32_t v10 = 0;
+    v10 = (v9 - 15);
+    return v10;
+}
+static int32_t spiral_main(void) {
+    return sp_method0();
+}
+int main(void) {
+    return spiral_main();
+}

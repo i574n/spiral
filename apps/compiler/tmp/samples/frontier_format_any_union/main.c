@@ -84,7 +84,7 @@ String * format_real0(US0 v0){
     USDecref0(&(v0));
     String * v33;
     v33 = backend_switch_has_no_C_arm_in_lib_spiral;
-    v33->refc++;
+    (v33)->refc++;
     
     Mut0 * v56;
     v56 = MutCreate0(v33);
@@ -104,7 +104,7 @@ String * format_real0(US0 v0){
     
     String * v105;
     v105 = v56->v0;
-    v105->refc++;
+    (v105)->refc++;
     MutDecref0(v56);
     return v105;
 }
@@ -128,7 +128,7 @@ int32_t main(){
     
     
     bool v26;
-    v26 = strcmp(v23->ptr->ptr, ""->ptr) == 0;
+    v26 = strcmp(v23->ptr, "") == 0;
     
     StringDecref(v23);
     if (v26){

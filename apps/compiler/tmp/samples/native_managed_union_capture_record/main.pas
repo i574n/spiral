@@ -11,10 +11,10 @@ type
   TFun0 = class
     function Invoke(a0: LongInt): TFun1; virtual; abstract;
   end;
-  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): TFun1; override; end;
+  Tclosure0 = class(TFun0)  function Invoke(v0: LongInt): TFun1; override; end;
   TArray0 = array of LongInt;
   TUS0 = record tag: LongInt; c1_0: AnsiString; c1_1: TArray0; end;
-  TClosure1 = class(TFun1) v0: TUS0; function Invoke(v1: LongInt): LongInt; override; end;
+  Tclosure1 = class(TFun1) v0: TUS0; function Invoke(v1: LongInt): LongInt; override; end;
 function ClosureCreate1(v0: TUS0): TFun1; forward;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TFun1; forward;
@@ -30,7 +30,7 @@ function US0_Item(a0: AnsiString; a1: TArray0): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
-function TClosure1.Invoke(v1: LongInt): LongInt;
+function Tclosure1.Invoke(v1: LongInt): LongInt;
 var
   v12: LongInt;
   v2: AnsiString;
@@ -65,12 +65,12 @@ begin
   Result := v13;
 end;
 function ClosureCreate1(v0: TUS0): TFun1;
-var c: TClosure1;
+var c: Tclosure1;
 begin
-  c := TClosure1.Create; c.v0 := v0;
+  c := Tclosure1.Create; c.v0 := v0;
   Result := c;
 end;
-function TClosure0.Invoke(v0: LongInt): TFun1;
+function Tclosure0.Invoke(v0: LongInt): TFun1;
 var
   v1: TArray0;
   tmp1: TArray0;
@@ -95,9 +95,9 @@ begin
   Result := ClosureCreate1(v7);
 end;
 function ClosureCreate0: TFun0;
-var c: TClosure0;
+var c: Tclosure0;
 begin
-  c := TClosure0.Create; 
+  c := Tclosure0.Create; 
   Result := c;
 end;
 function method0(v0: TFun0): TFun1;

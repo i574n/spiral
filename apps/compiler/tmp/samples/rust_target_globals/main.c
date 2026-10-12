@@ -48,11 +48,11 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(49, "SPIRAL_TARGET_GLOBAL_RUST_PRELUDE_pos-p_B64:Ly9Q");
-    v0->refc++;
+    (v0)->refc++;
     
     
     target_global0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     target_global0(v0);
@@ -60,7 +60,7 @@ int32_t main(){
     StringDecref(v0);
     String * v1;
     v1 = StringLit(53, "SPIRAL_TARGET_GLOBAL_RUST_BEFORE_MAIN_pos-b_B64:Ly9C");
-    v1->refc++;
+    (v1)->refc++;
     
     
     target_global0(v1);
@@ -68,7 +68,7 @@ int32_t main(){
     StringDecref(v1);
     String * v2;
     v2 = StringLit(132, "SPIRAL_TARGET_GLOBAL_RUST_AFTER_MAIN_test-item_B64:Zm4gc3BpcmFsX2F0dHJpYnV0ZV9zbW9rZSgpIHsKICAgIGFzc2VydF9lcSEoNiAqIDcsIDQyKTsKfQo=");
-    v2->refc++;
+    (v2)->refc++;
     
     
     target_global0(v2);
@@ -76,7 +76,7 @@ int32_t main(){
     StringDecref(v2);
     String * v3;
     v3 = StringLit(36, "SPIRAL_ITEM_METADATA_TEST_test-item");
-    v3->refc++;
+    (v3)->refc++;
     
     
     target_global0(v3);
@@ -84,11 +84,11 @@ int32_t main(){
     StringDecref(v3);
     String * v4;
     v4 = StringLit(51, "SPIRAL_TARGET_GLOBAL_DELPHI_PRELUDE_pos-p_B64:Ly9Q");
-    v4->refc++;
+    (v4)->refc++;
     
     
     target_global0(v4);
-    v4->refc++;
+    (v4)->refc++;
     
     
     target_global0(v4);
@@ -96,7 +96,7 @@ int32_t main(){
     StringDecref(v4);
     String * v5;
     v5 = StringLit(55, "SPIRAL_TARGET_GLOBAL_DELPHI_BEFORE_MAIN_pos-b_B64:Ly9C");
-    v5->refc++;
+    (v5)->refc++;
     
     
     target_global0(v5);
@@ -104,7 +104,7 @@ int32_t main(){
     StringDecref(v5);
     String * v6;
     v6 = StringLit(158, "SPIRAL_TARGET_GLOBAL_DELPHI_AFTER_MAIN_test-item_B64:cHJvY2VkdXJlIFNwaXJhbFRhcmdldEdsb2JhbFNtb2tlOwpiZWdpbgogIGlmIDYgKiA3IDw+IDQyIHRoZW4gSGFsdCgxKTsKZW5kOwo=");
-    v6->refc++;
+    (v6)->refc++;
     
     
     target_global0(v6);

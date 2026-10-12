@@ -84,11 +84,11 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(6, "alpha");
-    v0->refc++;
+    (v0)->refc++;
     
     String * v1;
     v1 = empty_middle0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     String * v2;
     v2 = empty_end1(v0);
@@ -96,7 +96,7 @@ int32_t main(){
     StringDecref(v0);
     String * v3;
     v3 = StringLit(1, "");
-    v3->refc++;
+    (v3)->refc++;
     
     String * v4;
     v4 = empty_source2(v3);

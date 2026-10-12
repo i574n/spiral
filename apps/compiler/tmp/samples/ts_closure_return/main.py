@@ -16,7 +16,7 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-def Closure1(env_v0 : string):
+def closure1(env_v0 : string):
     def inner(v1 : i32) -> i32:
         nonlocal env_v0
         v0 = env_v0
@@ -26,14 +26,14 @@ def Closure1(env_v0 : string):
         del v2
         return v3
     return inner
-def Closure0():
+def make_c0():
     def inner(v0 : string) -> Callable[[i32], i32]:
-        return Closure1(v0)
+        return closure1(v0)
     return inner
 def method0(v0 : Callable[[i32], i32]) -> i32:
     return v0(39)
 def main():
-    v0 = Closure0()
+    v0 = make_c0()
     v1 = "abc"
     v2 = v0(v1)
     del v0, v1

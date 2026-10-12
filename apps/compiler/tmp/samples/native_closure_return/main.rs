@@ -8,7 +8,7 @@ fn closure1(mut v0: Rc<str>) -> Rc<dyn Fn(i32) -> i32> {
         v3
     })
 }
-fn closure0() -> Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> {
+fn make_c0() -> Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> = Rc::new(move |mut v0: Rc<str>| -> Rc<dyn Fn(i32) -> i32> {
         closure1(v0.clone())
     }); } CLOSURE.with(|closure| closure.clone())
@@ -17,7 +17,7 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
     v0(39i32)
 }
 fn spiral_main() -> i32 {
-    let mut v0: Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> = closure0();
+    let mut v0: Rc<dyn Fn(Rc<str>) -> Rc<dyn Fn(i32) -> i32>> = make_c0();
     let mut v1: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("abc"); } LIT.with(|lit| lit.clone()) };
     let mut v2: Rc<dyn Fn(i32) -> i32> = v0(v1.clone());
     method0(v2.clone())

@@ -72,7 +72,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
             fprintf(stderr, "%s\n", "UTF-8 byte offset is outside the string.");
             exit(EXIT_FAILURE);
         } else {
-            v0->refc++;
+            (v0)->refc++;
             
             char v7;
             v7 = runtime_byte2(v0, v1);
@@ -126,7 +126,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                             fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                             exit(EXIT_FAILURE);
                         } else {
-                            v0->refc++;
+                            (v0)->refc++;
                             
                             char v25;
                             v25 = runtime_byte2(v0, v22);
@@ -211,7 +211,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                                 
                                 int32_t v41;
                                 v41 = v1 + 1l;
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v42;
                                 v42 = runtime_byte2(v0, v41);
@@ -219,7 +219,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                                 
                                 int32_t v43;
                                 v43 = ((uint8_t)v42);
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v44;
                                 v44 = runtime_byte2(v0, v38);
@@ -383,7 +383,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                                     
                                     int32_t v76;
                                     v76 = v1 + 1l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v77;
                                     v77 = runtime_byte2(v0, v76);
@@ -395,7 +395,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                                     
                                     int32_t v79;
                                     v79 = v1 + 2l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v80;
                                     v80 = runtime_byte2(v0, v79);
@@ -403,7 +403,7 @@ int32_t utf8_scalar_at_byte_offset1(String * v0, int32_t v1){
                                     
                                     int32_t v81;
                                     v81 = ((uint8_t)v80);
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v82;
                                     v82 = runtime_byte2(v0, v73);
@@ -617,7 +617,7 @@ bool utf8_canonical_equal_bounded_loop0(String * v0, int32_t v1, int32_t v2, int
                 fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
                 exit(EXIT_FAILURE);
             } else {
-                v0->refc++;
+                (v0)->refc++;
                 
                 int32_t v13;
                 v13 = utf8_scalar_at_byte_offset1(v0, v1);
@@ -902,7 +902,7 @@ bool utf8_canonical_equal_bounded_loop0(String * v0, int32_t v1, int32_t v2, int
                 fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
                 exit(EXIT_FAILURE);
             } else {
-                v0->refc++;
+                (v0)->refc++;
                 
                 int32_t v84;
                 v84 = utf8_scalar_at_byte_offset1(v0, v2);
@@ -1232,7 +1232,7 @@ bool utf8_canonical_equal_bounded_loop3(String * v0, String * v1, int32_t v2, in
                 fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
                 exit(EXIT_FAILURE);
             } else {
-                v0->refc++;
+                (v0)->refc++;
                 
                 int32_t v14;
                 v14 = utf8_scalar_at_byte_offset1(v0, v2);
@@ -1517,7 +1517,7 @@ bool utf8_canonical_equal_bounded_loop3(String * v0, String * v1, int32_t v2, in
                 fprintf(stderr, "%s\n", "UTF-8 canonical stream offset exceeds the string.");
                 exit(EXIT_FAILURE);
             } else {
-                v1->refc++;
+                (v1)->refc++;
                 
                 int32_t v85;
                 v85 = utf8_scalar_at_byte_offset1(v1, v3);
@@ -1840,7 +1840,7 @@ int32_t main(){
     
     int32_t v6;
     v6 = 5l;
-    v0->refc++;
+    (v0)->refc++;
     
     bool v7;
     v7 = utf8_canonical_equal_bounded_loop0(v0, v1, v2, v3, v4, v5, v6);
@@ -1872,7 +1872,7 @@ int32_t main(){
     
     int32_t v14;
     v14 = 0l;
-    v8->refc++;
+    (v8)->refc++;
     
     bool v15;
     v15 = utf8_canonical_equal_bounded_loop0(v8, v9, v10, v11, v12, v13, v14);
@@ -1908,7 +1908,7 @@ int32_t main(){
     
     int32_t v23;
     v23 = 9l;
-    v16->refc++; v17->refc++;
+    (v16)->refc++; (v17)->refc++;
     
     bool v24;
     v24 = utf8_canonical_equal_bounded_loop3(v16, v17, v18, v19, v20, v21, v22, v23);
@@ -1944,7 +1944,7 @@ int32_t main(){
     
     int32_t v32;
     v32 = 5l;
-    v25->refc++; v26->refc++;
+    (v25)->refc++; (v26)->refc++;
     
     bool v33;
     v33 = utf8_canonical_equal_bounded_loop3(v25, v26, v27, v28, v29, v30, v31, v32);
@@ -1980,7 +1980,7 @@ int32_t main(){
     
     int32_t v41;
     v41 = 3l;
-    v34->refc++; v35->refc++;
+    (v34)->refc++; (v35)->refc++;
     
     bool v42;
     v42 = utf8_canonical_equal_bounded_loop3(v34, v35, v36, v37, v38, v39, v40, v41);
@@ -2012,7 +2012,7 @@ int32_t main(){
     
     int32_t v49;
     v49 = 2l;
-    v43->refc++;
+    (v43)->refc++;
     
     bool v50;
     v50 = utf8_canonical_equal_bounded_loop0(v43, v44, v45, v46, v47, v48, v49);
@@ -2044,7 +2044,7 @@ int32_t main(){
     
     int32_t v57;
     v57 = 5l;
-    v26->refc++; v51->refc++;
+    (v26)->refc++; (v51)->refc++;
     
     bool v58;
     v58 = utf8_canonical_equal_bounded_loop3(v26, v51, v52, v53, v54, v55, v56, v57);
@@ -2080,7 +2080,7 @@ int32_t main(){
     
     int32_t v66;
     v66 = 2l;
-    v59->refc++; v60->refc++;
+    (v59)->refc++; (v60)->refc++;
     
     bool v67;
     v67 = utf8_canonical_equal_bounded_loop3(v59, v60, v61, v62, v63, v64, v65, v66);
@@ -2112,7 +2112,7 @@ int32_t main(){
     
     int32_t v74;
     v74 = 2l;
-    v43->refc++; v68->refc++;
+    (v43)->refc++; (v68)->refc++;
     
     bool v75;
     v75 = utf8_canonical_equal_bounded_loop3(v43, v68, v69, v70, v71, v72, v73, v74);
@@ -2144,7 +2144,7 @@ int32_t main(){
     
     int32_t v82;
     v82 = 1l;
-    v59->refc++; v76->refc++;
+    (v59)->refc++; (v76)->refc++;
     
     bool v83;
     v83 = utf8_canonical_equal_bounded_loop3(v59, v76, v77, v78, v79, v80, v81, v82);

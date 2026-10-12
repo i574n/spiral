@@ -107,7 +107,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
 }
 const Fun0 = struct { ctx: *anyopaque, call: *const fn (*anyopaque, i32) i32 };
 const ClosureEnv0 = struct { v0: i32, v1: i32, pad: u8 = 0 };
-fn closure0(ctx: *anyopaque, p2: i32) i32 {
+fn f_c0(ctx: *anyopaque, p2: i32) i32 {
     const env: *ClosureEnv0 = @ptrCast(@alignCast(ctx)); _ = &env;
     var v0: i32 = env.v0; _ = &v0;
     var v1: i32 = env.v1; _ = &v1;
@@ -119,7 +119,7 @@ fn closure0(ctx: *anyopaque, p2: i32) i32 {
     return v4;
 }
 fn closureCreate0(p0: i32, p1: i32) Fun0 {
-    return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, .v1 = p1, }), .call = &closure0 };
+    return .{ .ctx = spiralCreate(ClosureEnv0, .{ .v0 = p0, .v1 = p1, }), .call = &f_c0 };
 }
 fn spiralMain() i32 {
     var v0: i32 = undefined; _ = &v0;

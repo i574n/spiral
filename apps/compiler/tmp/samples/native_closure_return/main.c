@@ -65,9 +65,9 @@ static inline void ClosureDecrefBody1(Closure1 * x){
 void ClosureDecref1(Closure1 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-int32_t ClosureMethod1(Closure1 * x, int32_t v1){
+int32_t closure1(Closure1 * x, int32_t v1){
     String * v0 = x->v0;
-    v0->refc++;
+    (v0)->refc++;
     ClosureDecref1(x);
     
     
@@ -85,7 +85,7 @@ Fun1 * ClosureCreate1(String * v0){
     Closure1 * x = malloc(sizeof(Closure1));
     x->refc = 1;
     x->decref_fptr = ClosureDecref1;
-    x->fptr = ClosureMethod1;
+    x->fptr = closure1;
     x->v0 = v0;
     return (Fun1 *) x;
 }
@@ -95,7 +95,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-Fun1 * ClosureMethod0(Closure0 * x, String * v0){
+Fun1 * make_c0(Closure0 * x, String * v0){
     
     
     ClosureDecref0(x);
@@ -107,7 +107,7 @@ Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = make_c0;
     
     return (Fun0 *) x;
 }
@@ -125,11 +125,11 @@ int32_t main(){
     
     String * v1;
     v1 = StringLit(4, "abc");
-    v0->refc++; v1->refc++;
+    (v0)->refc++; (v1)->refc++;
     
     Fun1 * v2;
     v2 = v0->fptr(v0, v1);
     
-    v0->decref_fptr(v0); StringDecref(v1);
+    (v0)->decref_fptr(v0); StringDecref(v1);
     return method0(v2);
 }

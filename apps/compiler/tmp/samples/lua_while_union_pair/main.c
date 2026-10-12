@@ -148,7 +148,7 @@ bool method_while1(Mut1 * v0){
     return v2;
 }
 static inline void AssignMut1(UH0 * * a0, UH0 * b0){
-    b0->refc++;
+    (b0)->refc++;
     UHDecref0(*a0);
     *a0 = b0;
 }
@@ -209,7 +209,7 @@ int32_t main(){
     
     UH0 * v8;
     v8 = UH0_Nil();
-    v8->refc++;
+    (v8)->refc++;
     
     Mut2 * v9;
     v9 = MutCreate2(v8);
@@ -257,7 +257,7 @@ int32_t main(){
         
         UH0 * v16;
         v16 = v9->v0;
-        v16->refc += 2;
+        (v16)->refc += 2;
         
         UH0 * v17;
         v17 = UH0_Cons(v11, v16);
@@ -281,28 +281,28 @@ int32_t main(){
     MutDecref1(v6);
     UH0 * v19;
     v19 = v9->v0;
-    v19->refc++;
+    (v19)->refc++;
     MutDecref2(v9);
     int32_t v38;
     switch (v19->tag) {
         case 1: { // Cons
             int32_t v20 = v19->case1.v0; UH0 * v21 = v19->case1.v1;
-            v21->refc++;
+            (v21)->refc++;
             
             switch (v21->tag) {
                 case 1: { // Cons
                     int32_t v22 = v21->case1.v0; UH0 * v23 = v21->case1.v1;
-                    v23->refc++;
+                    (v23)->refc++;
                     UHDecref0(v21);
                     switch (v23->tag) {
                         case 1: { // Cons
                             int32_t v24 = v23->case1.v0; UH0 * v25 = v23->case1.v1;
-                            v25->refc++;
+                            (v25)->refc++;
                             UHDecref0(v23);
                             switch (v25->tag) {
                                 case 1: { // Cons
                                     int32_t v26 = v25->case1.v0; UH0 * v27 = v25->case1.v1;
-                                    v27->refc++;
+                                    (v27)->refc++;
                                     UHDecref0(v25);
                                     switch (v27->tag) {
                                         case 0: { // Nil

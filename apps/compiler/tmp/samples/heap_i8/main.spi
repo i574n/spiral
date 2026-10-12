@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl ~x = 100i8
+    inl box = !!!!LayoutToHeap({value = x})
+    inl opened = !!!!LayoutIndex(box)
+    if opened.value =. 100i8 then 0i32 else 1i32

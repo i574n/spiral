@@ -98,7 +98,7 @@ int32_t method0(int32_t v0, String * v1){
         
         v5 = v3;
     } else {
-        v1->refc++;
+        (v1)->refc++;
         
         v5 = method1(v0, v1);
     }

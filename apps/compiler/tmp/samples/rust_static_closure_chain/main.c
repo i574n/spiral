@@ -504,7 +504,7 @@ struct Closure0 {
 static inline void UHDecrefBody0(UH0 * x){
     switch (x->tag) {
         case 0: {
-            x->case0.v1->decref_fptr(x->case0.v1);
+            (x->case0.v1)->decref_fptr(x->case0.v1);
             break;
         }
     }
@@ -531,7 +531,7 @@ static inline void ClosureDecrefBody79(Closure79 * x){
 void ClosureDecref79(Closure79 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody79(x); free(x); }
 }
-UH0 * ClosureMethod79(Closure79 * x){
+UH0 * closure79(Closure79 * x){
     
     
     ClosureDecref79(x);
@@ -543,7 +543,7 @@ Fun0 * ClosureCreate79(){
     Closure79 * x = malloc(sizeof(Closure79));
     x->refc = 1;
     x->decref_fptr = ClosureDecref79;
-    x->fptr = ClosureMethod79;
+    x->fptr = closure79;
     
     return (Fun0 *) x;
 }
@@ -553,7 +553,7 @@ static inline void ClosureDecrefBody78(Closure78 * x){
 void ClosureDecref78(Closure78 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody78(x); free(x); }
 }
-UH0 * ClosureMethod78(Closure78 * x){
+UH0 * closure78(Closure78 * x){
     
     
     ClosureDecref78(x);
@@ -569,7 +569,7 @@ Fun0 * ClosureCreate78(){
     Closure78 * x = malloc(sizeof(Closure78));
     x->refc = 1;
     x->decref_fptr = ClosureDecref78;
-    x->fptr = ClosureMethod78;
+    x->fptr = closure78;
     
     return (Fun0 *) x;
 }
@@ -579,7 +579,7 @@ static inline void ClosureDecrefBody77(Closure77 * x){
 void ClosureDecref77(Closure77 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody77(x); free(x); }
 }
-UH0 * ClosureMethod77(Closure77 * x){
+UH0 * closure77(Closure77 * x){
     
     
     ClosureDecref77(x);
@@ -595,7 +595,7 @@ Fun0 * ClosureCreate77(){
     Closure77 * x = malloc(sizeof(Closure77));
     x->refc = 1;
     x->decref_fptr = ClosureDecref77;
-    x->fptr = ClosureMethod77;
+    x->fptr = closure77;
     
     return (Fun0 *) x;
 }
@@ -605,7 +605,7 @@ static inline void ClosureDecrefBody76(Closure76 * x){
 void ClosureDecref76(Closure76 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody76(x); free(x); }
 }
-UH0 * ClosureMethod76(Closure76 * x){
+UH0 * closure76(Closure76 * x){
     
     
     ClosureDecref76(x);
@@ -621,7 +621,7 @@ Fun0 * ClosureCreate76(){
     Closure76 * x = malloc(sizeof(Closure76));
     x->refc = 1;
     x->decref_fptr = ClosureDecref76;
-    x->fptr = ClosureMethod76;
+    x->fptr = closure76;
     
     return (Fun0 *) x;
 }
@@ -631,7 +631,7 @@ static inline void ClosureDecrefBody75(Closure75 * x){
 void ClosureDecref75(Closure75 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody75(x); free(x); }
 }
-UH0 * ClosureMethod75(Closure75 * x){
+UH0 * closure75(Closure75 * x){
     
     
     ClosureDecref75(x);
@@ -647,7 +647,7 @@ Fun0 * ClosureCreate75(){
     Closure75 * x = malloc(sizeof(Closure75));
     x->refc = 1;
     x->decref_fptr = ClosureDecref75;
-    x->fptr = ClosureMethod75;
+    x->fptr = closure75;
     
     return (Fun0 *) x;
 }
@@ -657,7 +657,7 @@ static inline void ClosureDecrefBody74(Closure74 * x){
 void ClosureDecref74(Closure74 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody74(x); free(x); }
 }
-UH0 * ClosureMethod74(Closure74 * x){
+UH0 * closure74(Closure74 * x){
     
     
     ClosureDecref74(x);
@@ -673,7 +673,7 @@ Fun0 * ClosureCreate74(){
     Closure74 * x = malloc(sizeof(Closure74));
     x->refc = 1;
     x->decref_fptr = ClosureDecref74;
-    x->fptr = ClosureMethod74;
+    x->fptr = closure74;
     
     return (Fun0 *) x;
 }
@@ -683,7 +683,7 @@ static inline void ClosureDecrefBody73(Closure73 * x){
 void ClosureDecref73(Closure73 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody73(x); free(x); }
 }
-UH0 * ClosureMethod73(Closure73 * x){
+UH0 * closure73(Closure73 * x){
     
     
     ClosureDecref73(x);
@@ -699,7 +699,7 @@ Fun0 * ClosureCreate73(){
     Closure73 * x = malloc(sizeof(Closure73));
     x->refc = 1;
     x->decref_fptr = ClosureDecref73;
-    x->fptr = ClosureMethod73;
+    x->fptr = closure73;
     
     return (Fun0 *) x;
 }
@@ -709,7 +709,7 @@ static inline void ClosureDecrefBody72(Closure72 * x){
 void ClosureDecref72(Closure72 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody72(x); free(x); }
 }
-UH0 * ClosureMethod72(Closure72 * x){
+UH0 * closure72(Closure72 * x){
     
     
     ClosureDecref72(x);
@@ -725,7 +725,7 @@ Fun0 * ClosureCreate72(){
     Closure72 * x = malloc(sizeof(Closure72));
     x->refc = 1;
     x->decref_fptr = ClosureDecref72;
-    x->fptr = ClosureMethod72;
+    x->fptr = closure72;
     
     return (Fun0 *) x;
 }
@@ -735,7 +735,7 @@ static inline void ClosureDecrefBody71(Closure71 * x){
 void ClosureDecref71(Closure71 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody71(x); free(x); }
 }
-UH0 * ClosureMethod71(Closure71 * x){
+UH0 * closure71(Closure71 * x){
     
     
     ClosureDecref71(x);
@@ -751,7 +751,7 @@ Fun0 * ClosureCreate71(){
     Closure71 * x = malloc(sizeof(Closure71));
     x->refc = 1;
     x->decref_fptr = ClosureDecref71;
-    x->fptr = ClosureMethod71;
+    x->fptr = closure71;
     
     return (Fun0 *) x;
 }
@@ -761,7 +761,7 @@ static inline void ClosureDecrefBody70(Closure70 * x){
 void ClosureDecref70(Closure70 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody70(x); free(x); }
 }
-UH0 * ClosureMethod70(Closure70 * x){
+UH0 * closure70(Closure70 * x){
     
     
     ClosureDecref70(x);
@@ -777,7 +777,7 @@ Fun0 * ClosureCreate70(){
     Closure70 * x = malloc(sizeof(Closure70));
     x->refc = 1;
     x->decref_fptr = ClosureDecref70;
-    x->fptr = ClosureMethod70;
+    x->fptr = closure70;
     
     return (Fun0 *) x;
 }
@@ -787,7 +787,7 @@ static inline void ClosureDecrefBody69(Closure69 * x){
 void ClosureDecref69(Closure69 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody69(x); free(x); }
 }
-UH0 * ClosureMethod69(Closure69 * x){
+UH0 * closure69(Closure69 * x){
     
     
     ClosureDecref69(x);
@@ -803,7 +803,7 @@ Fun0 * ClosureCreate69(){
     Closure69 * x = malloc(sizeof(Closure69));
     x->refc = 1;
     x->decref_fptr = ClosureDecref69;
-    x->fptr = ClosureMethod69;
+    x->fptr = closure69;
     
     return (Fun0 *) x;
 }
@@ -813,7 +813,7 @@ static inline void ClosureDecrefBody68(Closure68 * x){
 void ClosureDecref68(Closure68 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody68(x); free(x); }
 }
-UH0 * ClosureMethod68(Closure68 * x){
+UH0 * closure68(Closure68 * x){
     
     
     ClosureDecref68(x);
@@ -829,7 +829,7 @@ Fun0 * ClosureCreate68(){
     Closure68 * x = malloc(sizeof(Closure68));
     x->refc = 1;
     x->decref_fptr = ClosureDecref68;
-    x->fptr = ClosureMethod68;
+    x->fptr = closure68;
     
     return (Fun0 *) x;
 }
@@ -839,7 +839,7 @@ static inline void ClosureDecrefBody67(Closure67 * x){
 void ClosureDecref67(Closure67 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody67(x); free(x); }
 }
-UH0 * ClosureMethod67(Closure67 * x){
+UH0 * closure67(Closure67 * x){
     
     
     ClosureDecref67(x);
@@ -855,7 +855,7 @@ Fun0 * ClosureCreate67(){
     Closure67 * x = malloc(sizeof(Closure67));
     x->refc = 1;
     x->decref_fptr = ClosureDecref67;
-    x->fptr = ClosureMethod67;
+    x->fptr = closure67;
     
     return (Fun0 *) x;
 }
@@ -865,7 +865,7 @@ static inline void ClosureDecrefBody66(Closure66 * x){
 void ClosureDecref66(Closure66 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody66(x); free(x); }
 }
-UH0 * ClosureMethod66(Closure66 * x){
+UH0 * closure66(Closure66 * x){
     
     
     ClosureDecref66(x);
@@ -881,7 +881,7 @@ Fun0 * ClosureCreate66(){
     Closure66 * x = malloc(sizeof(Closure66));
     x->refc = 1;
     x->decref_fptr = ClosureDecref66;
-    x->fptr = ClosureMethod66;
+    x->fptr = closure66;
     
     return (Fun0 *) x;
 }
@@ -891,7 +891,7 @@ static inline void ClosureDecrefBody65(Closure65 * x){
 void ClosureDecref65(Closure65 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody65(x); free(x); }
 }
-UH0 * ClosureMethod65(Closure65 * x){
+UH0 * closure65(Closure65 * x){
     
     
     ClosureDecref65(x);
@@ -907,7 +907,7 @@ Fun0 * ClosureCreate65(){
     Closure65 * x = malloc(sizeof(Closure65));
     x->refc = 1;
     x->decref_fptr = ClosureDecref65;
-    x->fptr = ClosureMethod65;
+    x->fptr = closure65;
     
     return (Fun0 *) x;
 }
@@ -917,7 +917,7 @@ static inline void ClosureDecrefBody64(Closure64 * x){
 void ClosureDecref64(Closure64 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody64(x); free(x); }
 }
-UH0 * ClosureMethod64(Closure64 * x){
+UH0 * closure64(Closure64 * x){
     
     
     ClosureDecref64(x);
@@ -933,7 +933,7 @@ Fun0 * ClosureCreate64(){
     Closure64 * x = malloc(sizeof(Closure64));
     x->refc = 1;
     x->decref_fptr = ClosureDecref64;
-    x->fptr = ClosureMethod64;
+    x->fptr = closure64;
     
     return (Fun0 *) x;
 }
@@ -943,7 +943,7 @@ static inline void ClosureDecrefBody63(Closure63 * x){
 void ClosureDecref63(Closure63 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody63(x); free(x); }
 }
-UH0 * ClosureMethod63(Closure63 * x){
+UH0 * closure63(Closure63 * x){
     
     
     ClosureDecref63(x);
@@ -959,7 +959,7 @@ Fun0 * ClosureCreate63(){
     Closure63 * x = malloc(sizeof(Closure63));
     x->refc = 1;
     x->decref_fptr = ClosureDecref63;
-    x->fptr = ClosureMethod63;
+    x->fptr = closure63;
     
     return (Fun0 *) x;
 }
@@ -969,7 +969,7 @@ static inline void ClosureDecrefBody62(Closure62 * x){
 void ClosureDecref62(Closure62 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody62(x); free(x); }
 }
-UH0 * ClosureMethod62(Closure62 * x){
+UH0 * closure62(Closure62 * x){
     
     
     ClosureDecref62(x);
@@ -985,7 +985,7 @@ Fun0 * ClosureCreate62(){
     Closure62 * x = malloc(sizeof(Closure62));
     x->refc = 1;
     x->decref_fptr = ClosureDecref62;
-    x->fptr = ClosureMethod62;
+    x->fptr = closure62;
     
     return (Fun0 *) x;
 }
@@ -995,7 +995,7 @@ static inline void ClosureDecrefBody61(Closure61 * x){
 void ClosureDecref61(Closure61 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody61(x); free(x); }
 }
-UH0 * ClosureMethod61(Closure61 * x){
+UH0 * closure61(Closure61 * x){
     
     
     ClosureDecref61(x);
@@ -1011,7 +1011,7 @@ Fun0 * ClosureCreate61(){
     Closure61 * x = malloc(sizeof(Closure61));
     x->refc = 1;
     x->decref_fptr = ClosureDecref61;
-    x->fptr = ClosureMethod61;
+    x->fptr = closure61;
     
     return (Fun0 *) x;
 }
@@ -1021,7 +1021,7 @@ static inline void ClosureDecrefBody60(Closure60 * x){
 void ClosureDecref60(Closure60 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody60(x); free(x); }
 }
-UH0 * ClosureMethod60(Closure60 * x){
+UH0 * closure60(Closure60 * x){
     
     
     ClosureDecref60(x);
@@ -1037,7 +1037,7 @@ Fun0 * ClosureCreate60(){
     Closure60 * x = malloc(sizeof(Closure60));
     x->refc = 1;
     x->decref_fptr = ClosureDecref60;
-    x->fptr = ClosureMethod60;
+    x->fptr = closure60;
     
     return (Fun0 *) x;
 }
@@ -1047,7 +1047,7 @@ static inline void ClosureDecrefBody59(Closure59 * x){
 void ClosureDecref59(Closure59 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody59(x); free(x); }
 }
-UH0 * ClosureMethod59(Closure59 * x){
+UH0 * closure59(Closure59 * x){
     
     
     ClosureDecref59(x);
@@ -1063,7 +1063,7 @@ Fun0 * ClosureCreate59(){
     Closure59 * x = malloc(sizeof(Closure59));
     x->refc = 1;
     x->decref_fptr = ClosureDecref59;
-    x->fptr = ClosureMethod59;
+    x->fptr = closure59;
     
     return (Fun0 *) x;
 }
@@ -1073,7 +1073,7 @@ static inline void ClosureDecrefBody58(Closure58 * x){
 void ClosureDecref58(Closure58 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody58(x); free(x); }
 }
-UH0 * ClosureMethod58(Closure58 * x){
+UH0 * closure58(Closure58 * x){
     
     
     ClosureDecref58(x);
@@ -1089,7 +1089,7 @@ Fun0 * ClosureCreate58(){
     Closure58 * x = malloc(sizeof(Closure58));
     x->refc = 1;
     x->decref_fptr = ClosureDecref58;
-    x->fptr = ClosureMethod58;
+    x->fptr = closure58;
     
     return (Fun0 *) x;
 }
@@ -1099,7 +1099,7 @@ static inline void ClosureDecrefBody57(Closure57 * x){
 void ClosureDecref57(Closure57 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody57(x); free(x); }
 }
-UH0 * ClosureMethod57(Closure57 * x){
+UH0 * closure57(Closure57 * x){
     
     
     ClosureDecref57(x);
@@ -1115,7 +1115,7 @@ Fun0 * ClosureCreate57(){
     Closure57 * x = malloc(sizeof(Closure57));
     x->refc = 1;
     x->decref_fptr = ClosureDecref57;
-    x->fptr = ClosureMethod57;
+    x->fptr = closure57;
     
     return (Fun0 *) x;
 }
@@ -1125,7 +1125,7 @@ static inline void ClosureDecrefBody56(Closure56 * x){
 void ClosureDecref56(Closure56 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody56(x); free(x); }
 }
-UH0 * ClosureMethod56(Closure56 * x){
+UH0 * closure56(Closure56 * x){
     
     
     ClosureDecref56(x);
@@ -1141,7 +1141,7 @@ Fun0 * ClosureCreate56(){
     Closure56 * x = malloc(sizeof(Closure56));
     x->refc = 1;
     x->decref_fptr = ClosureDecref56;
-    x->fptr = ClosureMethod56;
+    x->fptr = closure56;
     
     return (Fun0 *) x;
 }
@@ -1151,7 +1151,7 @@ static inline void ClosureDecrefBody55(Closure55 * x){
 void ClosureDecref55(Closure55 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody55(x); free(x); }
 }
-UH0 * ClosureMethod55(Closure55 * x){
+UH0 * closure55(Closure55 * x){
     
     
     ClosureDecref55(x);
@@ -1167,7 +1167,7 @@ Fun0 * ClosureCreate55(){
     Closure55 * x = malloc(sizeof(Closure55));
     x->refc = 1;
     x->decref_fptr = ClosureDecref55;
-    x->fptr = ClosureMethod55;
+    x->fptr = closure55;
     
     return (Fun0 *) x;
 }
@@ -1177,7 +1177,7 @@ static inline void ClosureDecrefBody54(Closure54 * x){
 void ClosureDecref54(Closure54 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody54(x); free(x); }
 }
-UH0 * ClosureMethod54(Closure54 * x){
+UH0 * closure54(Closure54 * x){
     
     
     ClosureDecref54(x);
@@ -1193,7 +1193,7 @@ Fun0 * ClosureCreate54(){
     Closure54 * x = malloc(sizeof(Closure54));
     x->refc = 1;
     x->decref_fptr = ClosureDecref54;
-    x->fptr = ClosureMethod54;
+    x->fptr = closure54;
     
     return (Fun0 *) x;
 }
@@ -1203,7 +1203,7 @@ static inline void ClosureDecrefBody53(Closure53 * x){
 void ClosureDecref53(Closure53 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody53(x); free(x); }
 }
-UH0 * ClosureMethod53(Closure53 * x){
+UH0 * closure53(Closure53 * x){
     
     
     ClosureDecref53(x);
@@ -1219,7 +1219,7 @@ Fun0 * ClosureCreate53(){
     Closure53 * x = malloc(sizeof(Closure53));
     x->refc = 1;
     x->decref_fptr = ClosureDecref53;
-    x->fptr = ClosureMethod53;
+    x->fptr = closure53;
     
     return (Fun0 *) x;
 }
@@ -1229,7 +1229,7 @@ static inline void ClosureDecrefBody52(Closure52 * x){
 void ClosureDecref52(Closure52 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody52(x); free(x); }
 }
-UH0 * ClosureMethod52(Closure52 * x){
+UH0 * closure52(Closure52 * x){
     
     
     ClosureDecref52(x);
@@ -1245,7 +1245,7 @@ Fun0 * ClosureCreate52(){
     Closure52 * x = malloc(sizeof(Closure52));
     x->refc = 1;
     x->decref_fptr = ClosureDecref52;
-    x->fptr = ClosureMethod52;
+    x->fptr = closure52;
     
     return (Fun0 *) x;
 }
@@ -1255,7 +1255,7 @@ static inline void ClosureDecrefBody51(Closure51 * x){
 void ClosureDecref51(Closure51 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody51(x); free(x); }
 }
-UH0 * ClosureMethod51(Closure51 * x){
+UH0 * closure51(Closure51 * x){
     
     
     ClosureDecref51(x);
@@ -1271,7 +1271,7 @@ Fun0 * ClosureCreate51(){
     Closure51 * x = malloc(sizeof(Closure51));
     x->refc = 1;
     x->decref_fptr = ClosureDecref51;
-    x->fptr = ClosureMethod51;
+    x->fptr = closure51;
     
     return (Fun0 *) x;
 }
@@ -1281,7 +1281,7 @@ static inline void ClosureDecrefBody50(Closure50 * x){
 void ClosureDecref50(Closure50 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody50(x); free(x); }
 }
-UH0 * ClosureMethod50(Closure50 * x){
+UH0 * closure50(Closure50 * x){
     
     
     ClosureDecref50(x);
@@ -1297,7 +1297,7 @@ Fun0 * ClosureCreate50(){
     Closure50 * x = malloc(sizeof(Closure50));
     x->refc = 1;
     x->decref_fptr = ClosureDecref50;
-    x->fptr = ClosureMethod50;
+    x->fptr = closure50;
     
     return (Fun0 *) x;
 }
@@ -1307,7 +1307,7 @@ static inline void ClosureDecrefBody49(Closure49 * x){
 void ClosureDecref49(Closure49 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody49(x); free(x); }
 }
-UH0 * ClosureMethod49(Closure49 * x){
+UH0 * closure49(Closure49 * x){
     
     
     ClosureDecref49(x);
@@ -1323,7 +1323,7 @@ Fun0 * ClosureCreate49(){
     Closure49 * x = malloc(sizeof(Closure49));
     x->refc = 1;
     x->decref_fptr = ClosureDecref49;
-    x->fptr = ClosureMethod49;
+    x->fptr = closure49;
     
     return (Fun0 *) x;
 }
@@ -1333,7 +1333,7 @@ static inline void ClosureDecrefBody48(Closure48 * x){
 void ClosureDecref48(Closure48 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody48(x); free(x); }
 }
-UH0 * ClosureMethod48(Closure48 * x){
+UH0 * closure48(Closure48 * x){
     
     
     ClosureDecref48(x);
@@ -1349,7 +1349,7 @@ Fun0 * ClosureCreate48(){
     Closure48 * x = malloc(sizeof(Closure48));
     x->refc = 1;
     x->decref_fptr = ClosureDecref48;
-    x->fptr = ClosureMethod48;
+    x->fptr = closure48;
     
     return (Fun0 *) x;
 }
@@ -1359,7 +1359,7 @@ static inline void ClosureDecrefBody47(Closure47 * x){
 void ClosureDecref47(Closure47 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody47(x); free(x); }
 }
-UH0 * ClosureMethod47(Closure47 * x){
+UH0 * closure47(Closure47 * x){
     
     
     ClosureDecref47(x);
@@ -1375,7 +1375,7 @@ Fun0 * ClosureCreate47(){
     Closure47 * x = malloc(sizeof(Closure47));
     x->refc = 1;
     x->decref_fptr = ClosureDecref47;
-    x->fptr = ClosureMethod47;
+    x->fptr = closure47;
     
     return (Fun0 *) x;
 }
@@ -1385,7 +1385,7 @@ static inline void ClosureDecrefBody46(Closure46 * x){
 void ClosureDecref46(Closure46 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody46(x); free(x); }
 }
-UH0 * ClosureMethod46(Closure46 * x){
+UH0 * closure46(Closure46 * x){
     
     
     ClosureDecref46(x);
@@ -1401,7 +1401,7 @@ Fun0 * ClosureCreate46(){
     Closure46 * x = malloc(sizeof(Closure46));
     x->refc = 1;
     x->decref_fptr = ClosureDecref46;
-    x->fptr = ClosureMethod46;
+    x->fptr = closure46;
     
     return (Fun0 *) x;
 }
@@ -1411,7 +1411,7 @@ static inline void ClosureDecrefBody45(Closure45 * x){
 void ClosureDecref45(Closure45 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody45(x); free(x); }
 }
-UH0 * ClosureMethod45(Closure45 * x){
+UH0 * closure45(Closure45 * x){
     
     
     ClosureDecref45(x);
@@ -1427,7 +1427,7 @@ Fun0 * ClosureCreate45(){
     Closure45 * x = malloc(sizeof(Closure45));
     x->refc = 1;
     x->decref_fptr = ClosureDecref45;
-    x->fptr = ClosureMethod45;
+    x->fptr = closure45;
     
     return (Fun0 *) x;
 }
@@ -1437,7 +1437,7 @@ static inline void ClosureDecrefBody44(Closure44 * x){
 void ClosureDecref44(Closure44 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody44(x); free(x); }
 }
-UH0 * ClosureMethod44(Closure44 * x){
+UH0 * closure44(Closure44 * x){
     
     
     ClosureDecref44(x);
@@ -1453,7 +1453,7 @@ Fun0 * ClosureCreate44(){
     Closure44 * x = malloc(sizeof(Closure44));
     x->refc = 1;
     x->decref_fptr = ClosureDecref44;
-    x->fptr = ClosureMethod44;
+    x->fptr = closure44;
     
     return (Fun0 *) x;
 }
@@ -1463,7 +1463,7 @@ static inline void ClosureDecrefBody43(Closure43 * x){
 void ClosureDecref43(Closure43 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody43(x); free(x); }
 }
-UH0 * ClosureMethod43(Closure43 * x){
+UH0 * closure43(Closure43 * x){
     
     
     ClosureDecref43(x);
@@ -1479,7 +1479,7 @@ Fun0 * ClosureCreate43(){
     Closure43 * x = malloc(sizeof(Closure43));
     x->refc = 1;
     x->decref_fptr = ClosureDecref43;
-    x->fptr = ClosureMethod43;
+    x->fptr = closure43;
     
     return (Fun0 *) x;
 }
@@ -1489,7 +1489,7 @@ static inline void ClosureDecrefBody42(Closure42 * x){
 void ClosureDecref42(Closure42 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody42(x); free(x); }
 }
-UH0 * ClosureMethod42(Closure42 * x){
+UH0 * closure42(Closure42 * x){
     
     
     ClosureDecref42(x);
@@ -1505,7 +1505,7 @@ Fun0 * ClosureCreate42(){
     Closure42 * x = malloc(sizeof(Closure42));
     x->refc = 1;
     x->decref_fptr = ClosureDecref42;
-    x->fptr = ClosureMethod42;
+    x->fptr = closure42;
     
     return (Fun0 *) x;
 }
@@ -1515,7 +1515,7 @@ static inline void ClosureDecrefBody41(Closure41 * x){
 void ClosureDecref41(Closure41 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody41(x); free(x); }
 }
-UH0 * ClosureMethod41(Closure41 * x){
+UH0 * closure41(Closure41 * x){
     
     
     ClosureDecref41(x);
@@ -1531,7 +1531,7 @@ Fun0 * ClosureCreate41(){
     Closure41 * x = malloc(sizeof(Closure41));
     x->refc = 1;
     x->decref_fptr = ClosureDecref41;
-    x->fptr = ClosureMethod41;
+    x->fptr = closure41;
     
     return (Fun0 *) x;
 }
@@ -1541,7 +1541,7 @@ static inline void ClosureDecrefBody40(Closure40 * x){
 void ClosureDecref40(Closure40 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody40(x); free(x); }
 }
-UH0 * ClosureMethod40(Closure40 * x){
+UH0 * closure40(Closure40 * x){
     
     
     ClosureDecref40(x);
@@ -1557,7 +1557,7 @@ Fun0 * ClosureCreate40(){
     Closure40 * x = malloc(sizeof(Closure40));
     x->refc = 1;
     x->decref_fptr = ClosureDecref40;
-    x->fptr = ClosureMethod40;
+    x->fptr = closure40;
     
     return (Fun0 *) x;
 }
@@ -1567,7 +1567,7 @@ static inline void ClosureDecrefBody39(Closure39 * x){
 void ClosureDecref39(Closure39 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody39(x); free(x); }
 }
-UH0 * ClosureMethod39(Closure39 * x){
+UH0 * closure39(Closure39 * x){
     
     
     ClosureDecref39(x);
@@ -1583,7 +1583,7 @@ Fun0 * ClosureCreate39(){
     Closure39 * x = malloc(sizeof(Closure39));
     x->refc = 1;
     x->decref_fptr = ClosureDecref39;
-    x->fptr = ClosureMethod39;
+    x->fptr = closure39;
     
     return (Fun0 *) x;
 }
@@ -1593,7 +1593,7 @@ static inline void ClosureDecrefBody38(Closure38 * x){
 void ClosureDecref38(Closure38 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody38(x); free(x); }
 }
-UH0 * ClosureMethod38(Closure38 * x){
+UH0 * closure38(Closure38 * x){
     
     
     ClosureDecref38(x);
@@ -1609,7 +1609,7 @@ Fun0 * ClosureCreate38(){
     Closure38 * x = malloc(sizeof(Closure38));
     x->refc = 1;
     x->decref_fptr = ClosureDecref38;
-    x->fptr = ClosureMethod38;
+    x->fptr = closure38;
     
     return (Fun0 *) x;
 }
@@ -1619,7 +1619,7 @@ static inline void ClosureDecrefBody37(Closure37 * x){
 void ClosureDecref37(Closure37 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody37(x); free(x); }
 }
-UH0 * ClosureMethod37(Closure37 * x){
+UH0 * closure37(Closure37 * x){
     
     
     ClosureDecref37(x);
@@ -1635,7 +1635,7 @@ Fun0 * ClosureCreate37(){
     Closure37 * x = malloc(sizeof(Closure37));
     x->refc = 1;
     x->decref_fptr = ClosureDecref37;
-    x->fptr = ClosureMethod37;
+    x->fptr = closure37;
     
     return (Fun0 *) x;
 }
@@ -1645,7 +1645,7 @@ static inline void ClosureDecrefBody36(Closure36 * x){
 void ClosureDecref36(Closure36 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody36(x); free(x); }
 }
-UH0 * ClosureMethod36(Closure36 * x){
+UH0 * closure36(Closure36 * x){
     
     
     ClosureDecref36(x);
@@ -1661,7 +1661,7 @@ Fun0 * ClosureCreate36(){
     Closure36 * x = malloc(sizeof(Closure36));
     x->refc = 1;
     x->decref_fptr = ClosureDecref36;
-    x->fptr = ClosureMethod36;
+    x->fptr = closure36;
     
     return (Fun0 *) x;
 }
@@ -1671,7 +1671,7 @@ static inline void ClosureDecrefBody35(Closure35 * x){
 void ClosureDecref35(Closure35 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody35(x); free(x); }
 }
-UH0 * ClosureMethod35(Closure35 * x){
+UH0 * closure35(Closure35 * x){
     
     
     ClosureDecref35(x);
@@ -1687,7 +1687,7 @@ Fun0 * ClosureCreate35(){
     Closure35 * x = malloc(sizeof(Closure35));
     x->refc = 1;
     x->decref_fptr = ClosureDecref35;
-    x->fptr = ClosureMethod35;
+    x->fptr = closure35;
     
     return (Fun0 *) x;
 }
@@ -1697,7 +1697,7 @@ static inline void ClosureDecrefBody34(Closure34 * x){
 void ClosureDecref34(Closure34 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody34(x); free(x); }
 }
-UH0 * ClosureMethod34(Closure34 * x){
+UH0 * closure34(Closure34 * x){
     
     
     ClosureDecref34(x);
@@ -1713,7 +1713,7 @@ Fun0 * ClosureCreate34(){
     Closure34 * x = malloc(sizeof(Closure34));
     x->refc = 1;
     x->decref_fptr = ClosureDecref34;
-    x->fptr = ClosureMethod34;
+    x->fptr = closure34;
     
     return (Fun0 *) x;
 }
@@ -1723,7 +1723,7 @@ static inline void ClosureDecrefBody33(Closure33 * x){
 void ClosureDecref33(Closure33 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody33(x); free(x); }
 }
-UH0 * ClosureMethod33(Closure33 * x){
+UH0 * closure33(Closure33 * x){
     
     
     ClosureDecref33(x);
@@ -1739,7 +1739,7 @@ Fun0 * ClosureCreate33(){
     Closure33 * x = malloc(sizeof(Closure33));
     x->refc = 1;
     x->decref_fptr = ClosureDecref33;
-    x->fptr = ClosureMethod33;
+    x->fptr = closure33;
     
     return (Fun0 *) x;
 }
@@ -1749,7 +1749,7 @@ static inline void ClosureDecrefBody32(Closure32 * x){
 void ClosureDecref32(Closure32 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody32(x); free(x); }
 }
-UH0 * ClosureMethod32(Closure32 * x){
+UH0 * closure32(Closure32 * x){
     
     
     ClosureDecref32(x);
@@ -1765,7 +1765,7 @@ Fun0 * ClosureCreate32(){
     Closure32 * x = malloc(sizeof(Closure32));
     x->refc = 1;
     x->decref_fptr = ClosureDecref32;
-    x->fptr = ClosureMethod32;
+    x->fptr = closure32;
     
     return (Fun0 *) x;
 }
@@ -1775,7 +1775,7 @@ static inline void ClosureDecrefBody31(Closure31 * x){
 void ClosureDecref31(Closure31 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody31(x); free(x); }
 }
-UH0 * ClosureMethod31(Closure31 * x){
+UH0 * closure31(Closure31 * x){
     
     
     ClosureDecref31(x);
@@ -1791,7 +1791,7 @@ Fun0 * ClosureCreate31(){
     Closure31 * x = malloc(sizeof(Closure31));
     x->refc = 1;
     x->decref_fptr = ClosureDecref31;
-    x->fptr = ClosureMethod31;
+    x->fptr = closure31;
     
     return (Fun0 *) x;
 }
@@ -1801,7 +1801,7 @@ static inline void ClosureDecrefBody30(Closure30 * x){
 void ClosureDecref30(Closure30 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody30(x); free(x); }
 }
-UH0 * ClosureMethod30(Closure30 * x){
+UH0 * closure30(Closure30 * x){
     
     
     ClosureDecref30(x);
@@ -1817,7 +1817,7 @@ Fun0 * ClosureCreate30(){
     Closure30 * x = malloc(sizeof(Closure30));
     x->refc = 1;
     x->decref_fptr = ClosureDecref30;
-    x->fptr = ClosureMethod30;
+    x->fptr = closure30;
     
     return (Fun0 *) x;
 }
@@ -1827,7 +1827,7 @@ static inline void ClosureDecrefBody29(Closure29 * x){
 void ClosureDecref29(Closure29 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody29(x); free(x); }
 }
-UH0 * ClosureMethod29(Closure29 * x){
+UH0 * closure29(Closure29 * x){
     
     
     ClosureDecref29(x);
@@ -1843,7 +1843,7 @@ Fun0 * ClosureCreate29(){
     Closure29 * x = malloc(sizeof(Closure29));
     x->refc = 1;
     x->decref_fptr = ClosureDecref29;
-    x->fptr = ClosureMethod29;
+    x->fptr = closure29;
     
     return (Fun0 *) x;
 }
@@ -1853,7 +1853,7 @@ static inline void ClosureDecrefBody28(Closure28 * x){
 void ClosureDecref28(Closure28 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody28(x); free(x); }
 }
-UH0 * ClosureMethod28(Closure28 * x){
+UH0 * closure28(Closure28 * x){
     
     
     ClosureDecref28(x);
@@ -1869,7 +1869,7 @@ Fun0 * ClosureCreate28(){
     Closure28 * x = malloc(sizeof(Closure28));
     x->refc = 1;
     x->decref_fptr = ClosureDecref28;
-    x->fptr = ClosureMethod28;
+    x->fptr = closure28;
     
     return (Fun0 *) x;
 }
@@ -1879,7 +1879,7 @@ static inline void ClosureDecrefBody27(Closure27 * x){
 void ClosureDecref27(Closure27 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody27(x); free(x); }
 }
-UH0 * ClosureMethod27(Closure27 * x){
+UH0 * closure27(Closure27 * x){
     
     
     ClosureDecref27(x);
@@ -1895,7 +1895,7 @@ Fun0 * ClosureCreate27(){
     Closure27 * x = malloc(sizeof(Closure27));
     x->refc = 1;
     x->decref_fptr = ClosureDecref27;
-    x->fptr = ClosureMethod27;
+    x->fptr = closure27;
     
     return (Fun0 *) x;
 }
@@ -1905,7 +1905,7 @@ static inline void ClosureDecrefBody26(Closure26 * x){
 void ClosureDecref26(Closure26 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody26(x); free(x); }
 }
-UH0 * ClosureMethod26(Closure26 * x){
+UH0 * closure26(Closure26 * x){
     
     
     ClosureDecref26(x);
@@ -1921,7 +1921,7 @@ Fun0 * ClosureCreate26(){
     Closure26 * x = malloc(sizeof(Closure26));
     x->refc = 1;
     x->decref_fptr = ClosureDecref26;
-    x->fptr = ClosureMethod26;
+    x->fptr = closure26;
     
     return (Fun0 *) x;
 }
@@ -1931,7 +1931,7 @@ static inline void ClosureDecrefBody25(Closure25 * x){
 void ClosureDecref25(Closure25 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody25(x); free(x); }
 }
-UH0 * ClosureMethod25(Closure25 * x){
+UH0 * closure25(Closure25 * x){
     
     
     ClosureDecref25(x);
@@ -1947,7 +1947,7 @@ Fun0 * ClosureCreate25(){
     Closure25 * x = malloc(sizeof(Closure25));
     x->refc = 1;
     x->decref_fptr = ClosureDecref25;
-    x->fptr = ClosureMethod25;
+    x->fptr = closure25;
     
     return (Fun0 *) x;
 }
@@ -1957,7 +1957,7 @@ static inline void ClosureDecrefBody24(Closure24 * x){
 void ClosureDecref24(Closure24 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody24(x); free(x); }
 }
-UH0 * ClosureMethod24(Closure24 * x){
+UH0 * closure24(Closure24 * x){
     
     
     ClosureDecref24(x);
@@ -1973,7 +1973,7 @@ Fun0 * ClosureCreate24(){
     Closure24 * x = malloc(sizeof(Closure24));
     x->refc = 1;
     x->decref_fptr = ClosureDecref24;
-    x->fptr = ClosureMethod24;
+    x->fptr = closure24;
     
     return (Fun0 *) x;
 }
@@ -1983,7 +1983,7 @@ static inline void ClosureDecrefBody23(Closure23 * x){
 void ClosureDecref23(Closure23 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody23(x); free(x); }
 }
-UH0 * ClosureMethod23(Closure23 * x){
+UH0 * closure23(Closure23 * x){
     
     
     ClosureDecref23(x);
@@ -1999,7 +1999,7 @@ Fun0 * ClosureCreate23(){
     Closure23 * x = malloc(sizeof(Closure23));
     x->refc = 1;
     x->decref_fptr = ClosureDecref23;
-    x->fptr = ClosureMethod23;
+    x->fptr = closure23;
     
     return (Fun0 *) x;
 }
@@ -2009,7 +2009,7 @@ static inline void ClosureDecrefBody22(Closure22 * x){
 void ClosureDecref22(Closure22 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody22(x); free(x); }
 }
-UH0 * ClosureMethod22(Closure22 * x){
+UH0 * closure22(Closure22 * x){
     
     
     ClosureDecref22(x);
@@ -2025,7 +2025,7 @@ Fun0 * ClosureCreate22(){
     Closure22 * x = malloc(sizeof(Closure22));
     x->refc = 1;
     x->decref_fptr = ClosureDecref22;
-    x->fptr = ClosureMethod22;
+    x->fptr = closure22;
     
     return (Fun0 *) x;
 }
@@ -2035,7 +2035,7 @@ static inline void ClosureDecrefBody21(Closure21 * x){
 void ClosureDecref21(Closure21 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody21(x); free(x); }
 }
-UH0 * ClosureMethod21(Closure21 * x){
+UH0 * closure21(Closure21 * x){
     
     
     ClosureDecref21(x);
@@ -2051,7 +2051,7 @@ Fun0 * ClosureCreate21(){
     Closure21 * x = malloc(sizeof(Closure21));
     x->refc = 1;
     x->decref_fptr = ClosureDecref21;
-    x->fptr = ClosureMethod21;
+    x->fptr = closure21;
     
     return (Fun0 *) x;
 }
@@ -2061,7 +2061,7 @@ static inline void ClosureDecrefBody20(Closure20 * x){
 void ClosureDecref20(Closure20 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody20(x); free(x); }
 }
-UH0 * ClosureMethod20(Closure20 * x){
+UH0 * closure20(Closure20 * x){
     
     
     ClosureDecref20(x);
@@ -2077,7 +2077,7 @@ Fun0 * ClosureCreate20(){
     Closure20 * x = malloc(sizeof(Closure20));
     x->refc = 1;
     x->decref_fptr = ClosureDecref20;
-    x->fptr = ClosureMethod20;
+    x->fptr = closure20;
     
     return (Fun0 *) x;
 }
@@ -2087,7 +2087,7 @@ static inline void ClosureDecrefBody19(Closure19 * x){
 void ClosureDecref19(Closure19 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody19(x); free(x); }
 }
-UH0 * ClosureMethod19(Closure19 * x){
+UH0 * closure19(Closure19 * x){
     
     
     ClosureDecref19(x);
@@ -2103,7 +2103,7 @@ Fun0 * ClosureCreate19(){
     Closure19 * x = malloc(sizeof(Closure19));
     x->refc = 1;
     x->decref_fptr = ClosureDecref19;
-    x->fptr = ClosureMethod19;
+    x->fptr = closure19;
     
     return (Fun0 *) x;
 }
@@ -2113,7 +2113,7 @@ static inline void ClosureDecrefBody18(Closure18 * x){
 void ClosureDecref18(Closure18 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody18(x); free(x); }
 }
-UH0 * ClosureMethod18(Closure18 * x){
+UH0 * closure18(Closure18 * x){
     
     
     ClosureDecref18(x);
@@ -2129,7 +2129,7 @@ Fun0 * ClosureCreate18(){
     Closure18 * x = malloc(sizeof(Closure18));
     x->refc = 1;
     x->decref_fptr = ClosureDecref18;
-    x->fptr = ClosureMethod18;
+    x->fptr = closure18;
     
     return (Fun0 *) x;
 }
@@ -2139,7 +2139,7 @@ static inline void ClosureDecrefBody17(Closure17 * x){
 void ClosureDecref17(Closure17 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody17(x); free(x); }
 }
-UH0 * ClosureMethod17(Closure17 * x){
+UH0 * closure17(Closure17 * x){
     
     
     ClosureDecref17(x);
@@ -2155,7 +2155,7 @@ Fun0 * ClosureCreate17(){
     Closure17 * x = malloc(sizeof(Closure17));
     x->refc = 1;
     x->decref_fptr = ClosureDecref17;
-    x->fptr = ClosureMethod17;
+    x->fptr = closure17;
     
     return (Fun0 *) x;
 }
@@ -2165,7 +2165,7 @@ static inline void ClosureDecrefBody16(Closure16 * x){
 void ClosureDecref16(Closure16 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody16(x); free(x); }
 }
-UH0 * ClosureMethod16(Closure16 * x){
+UH0 * closure16(Closure16 * x){
     
     
     ClosureDecref16(x);
@@ -2181,7 +2181,7 @@ Fun0 * ClosureCreate16(){
     Closure16 * x = malloc(sizeof(Closure16));
     x->refc = 1;
     x->decref_fptr = ClosureDecref16;
-    x->fptr = ClosureMethod16;
+    x->fptr = closure16;
     
     return (Fun0 *) x;
 }
@@ -2191,7 +2191,7 @@ static inline void ClosureDecrefBody15(Closure15 * x){
 void ClosureDecref15(Closure15 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody15(x); free(x); }
 }
-UH0 * ClosureMethod15(Closure15 * x){
+UH0 * closure15(Closure15 * x){
     
     
     ClosureDecref15(x);
@@ -2207,7 +2207,7 @@ Fun0 * ClosureCreate15(){
     Closure15 * x = malloc(sizeof(Closure15));
     x->refc = 1;
     x->decref_fptr = ClosureDecref15;
-    x->fptr = ClosureMethod15;
+    x->fptr = closure15;
     
     return (Fun0 *) x;
 }
@@ -2217,7 +2217,7 @@ static inline void ClosureDecrefBody14(Closure14 * x){
 void ClosureDecref14(Closure14 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody14(x); free(x); }
 }
-UH0 * ClosureMethod14(Closure14 * x){
+UH0 * closure14(Closure14 * x){
     
     
     ClosureDecref14(x);
@@ -2233,7 +2233,7 @@ Fun0 * ClosureCreate14(){
     Closure14 * x = malloc(sizeof(Closure14));
     x->refc = 1;
     x->decref_fptr = ClosureDecref14;
-    x->fptr = ClosureMethod14;
+    x->fptr = closure14;
     
     return (Fun0 *) x;
 }
@@ -2243,7 +2243,7 @@ static inline void ClosureDecrefBody13(Closure13 * x){
 void ClosureDecref13(Closure13 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody13(x); free(x); }
 }
-UH0 * ClosureMethod13(Closure13 * x){
+UH0 * closure13(Closure13 * x){
     
     
     ClosureDecref13(x);
@@ -2259,7 +2259,7 @@ Fun0 * ClosureCreate13(){
     Closure13 * x = malloc(sizeof(Closure13));
     x->refc = 1;
     x->decref_fptr = ClosureDecref13;
-    x->fptr = ClosureMethod13;
+    x->fptr = closure13;
     
     return (Fun0 *) x;
 }
@@ -2269,7 +2269,7 @@ static inline void ClosureDecrefBody12(Closure12 * x){
 void ClosureDecref12(Closure12 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody12(x); free(x); }
 }
-UH0 * ClosureMethod12(Closure12 * x){
+UH0 * closure12(Closure12 * x){
     
     
     ClosureDecref12(x);
@@ -2285,7 +2285,7 @@ Fun0 * ClosureCreate12(){
     Closure12 * x = malloc(sizeof(Closure12));
     x->refc = 1;
     x->decref_fptr = ClosureDecref12;
-    x->fptr = ClosureMethod12;
+    x->fptr = closure12;
     
     return (Fun0 *) x;
 }
@@ -2295,7 +2295,7 @@ static inline void ClosureDecrefBody11(Closure11 * x){
 void ClosureDecref11(Closure11 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody11(x); free(x); }
 }
-UH0 * ClosureMethod11(Closure11 * x){
+UH0 * closure11(Closure11 * x){
     
     
     ClosureDecref11(x);
@@ -2311,7 +2311,7 @@ Fun0 * ClosureCreate11(){
     Closure11 * x = malloc(sizeof(Closure11));
     x->refc = 1;
     x->decref_fptr = ClosureDecref11;
-    x->fptr = ClosureMethod11;
+    x->fptr = closure11;
     
     return (Fun0 *) x;
 }
@@ -2321,7 +2321,7 @@ static inline void ClosureDecrefBody10(Closure10 * x){
 void ClosureDecref10(Closure10 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody10(x); free(x); }
 }
-UH0 * ClosureMethod10(Closure10 * x){
+UH0 * closure10(Closure10 * x){
     
     
     ClosureDecref10(x);
@@ -2337,7 +2337,7 @@ Fun0 * ClosureCreate10(){
     Closure10 * x = malloc(sizeof(Closure10));
     x->refc = 1;
     x->decref_fptr = ClosureDecref10;
-    x->fptr = ClosureMethod10;
+    x->fptr = closure10;
     
     return (Fun0 *) x;
 }
@@ -2347,7 +2347,7 @@ static inline void ClosureDecrefBody9(Closure9 * x){
 void ClosureDecref9(Closure9 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody9(x); free(x); }
 }
-UH0 * ClosureMethod9(Closure9 * x){
+UH0 * closure9(Closure9 * x){
     
     
     ClosureDecref9(x);
@@ -2363,7 +2363,7 @@ Fun0 * ClosureCreate9(){
     Closure9 * x = malloc(sizeof(Closure9));
     x->refc = 1;
     x->decref_fptr = ClosureDecref9;
-    x->fptr = ClosureMethod9;
+    x->fptr = closure9;
     
     return (Fun0 *) x;
 }
@@ -2373,7 +2373,7 @@ static inline void ClosureDecrefBody8(Closure8 * x){
 void ClosureDecref8(Closure8 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody8(x); free(x); }
 }
-UH0 * ClosureMethod8(Closure8 * x){
+UH0 * closure8(Closure8 * x){
     
     
     ClosureDecref8(x);
@@ -2389,7 +2389,7 @@ Fun0 * ClosureCreate8(){
     Closure8 * x = malloc(sizeof(Closure8));
     x->refc = 1;
     x->decref_fptr = ClosureDecref8;
-    x->fptr = ClosureMethod8;
+    x->fptr = closure8;
     
     return (Fun0 *) x;
 }
@@ -2399,7 +2399,7 @@ static inline void ClosureDecrefBody7(Closure7 * x){
 void ClosureDecref7(Closure7 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody7(x); free(x); }
 }
-UH0 * ClosureMethod7(Closure7 * x){
+UH0 * closure7(Closure7 * x){
     
     
     ClosureDecref7(x);
@@ -2415,7 +2415,7 @@ Fun0 * ClosureCreate7(){
     Closure7 * x = malloc(sizeof(Closure7));
     x->refc = 1;
     x->decref_fptr = ClosureDecref7;
-    x->fptr = ClosureMethod7;
+    x->fptr = closure7;
     
     return (Fun0 *) x;
 }
@@ -2425,7 +2425,7 @@ static inline void ClosureDecrefBody6(Closure6 * x){
 void ClosureDecref6(Closure6 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody6(x); free(x); }
 }
-UH0 * ClosureMethod6(Closure6 * x){
+UH0 * closure6(Closure6 * x){
     
     
     ClosureDecref6(x);
@@ -2441,7 +2441,7 @@ Fun0 * ClosureCreate6(){
     Closure6 * x = malloc(sizeof(Closure6));
     x->refc = 1;
     x->decref_fptr = ClosureDecref6;
-    x->fptr = ClosureMethod6;
+    x->fptr = closure6;
     
     return (Fun0 *) x;
 }
@@ -2451,7 +2451,7 @@ static inline void ClosureDecrefBody5(Closure5 * x){
 void ClosureDecref5(Closure5 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody5(x); free(x); }
 }
-UH0 * ClosureMethod5(Closure5 * x){
+UH0 * closure5(Closure5 * x){
     
     
     ClosureDecref5(x);
@@ -2467,7 +2467,7 @@ Fun0 * ClosureCreate5(){
     Closure5 * x = malloc(sizeof(Closure5));
     x->refc = 1;
     x->decref_fptr = ClosureDecref5;
-    x->fptr = ClosureMethod5;
+    x->fptr = closure5;
     
     return (Fun0 *) x;
 }
@@ -2477,7 +2477,7 @@ static inline void ClosureDecrefBody4(Closure4 * x){
 void ClosureDecref4(Closure4 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody4(x); free(x); }
 }
-UH0 * ClosureMethod4(Closure4 * x){
+UH0 * closure4(Closure4 * x){
     
     
     ClosureDecref4(x);
@@ -2493,7 +2493,7 @@ Fun0 * ClosureCreate4(){
     Closure4 * x = malloc(sizeof(Closure4));
     x->refc = 1;
     x->decref_fptr = ClosureDecref4;
-    x->fptr = ClosureMethod4;
+    x->fptr = closure4;
     
     return (Fun0 *) x;
 }
@@ -2503,7 +2503,7 @@ static inline void ClosureDecrefBody3(Closure3 * x){
 void ClosureDecref3(Closure3 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody3(x); free(x); }
 }
-UH0 * ClosureMethod3(Closure3 * x){
+UH0 * closure3(Closure3 * x){
     
     
     ClosureDecref3(x);
@@ -2519,7 +2519,7 @@ Fun0 * ClosureCreate3(){
     Closure3 * x = malloc(sizeof(Closure3));
     x->refc = 1;
     x->decref_fptr = ClosureDecref3;
-    x->fptr = ClosureMethod3;
+    x->fptr = closure3;
     
     return (Fun0 *) x;
 }
@@ -2529,7 +2529,7 @@ static inline void ClosureDecrefBody2(Closure2 * x){
 void ClosureDecref2(Closure2 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody2(x); free(x); }
 }
-UH0 * ClosureMethod2(Closure2 * x){
+UH0 * closure2(Closure2 * x){
     
     
     ClosureDecref2(x);
@@ -2545,7 +2545,7 @@ Fun0 * ClosureCreate2(){
     Closure2 * x = malloc(sizeof(Closure2));
     x->refc = 1;
     x->decref_fptr = ClosureDecref2;
-    x->fptr = ClosureMethod2;
+    x->fptr = closure2;
     
     return (Fun0 *) x;
 }
@@ -2555,7 +2555,7 @@ static inline void ClosureDecrefBody1(Closure1 * x){
 void ClosureDecref1(Closure1 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody1(x); free(x); }
 }
-UH0 * ClosureMethod1(Closure1 * x){
+UH0 * closure1(Closure1 * x){
     
     
     ClosureDecref1(x);
@@ -2571,7 +2571,7 @@ Fun0 * ClosureCreate1(){
     Closure1 * x = malloc(sizeof(Closure1));
     x->refc = 1;
     x->decref_fptr = ClosureDecref1;
-    x->fptr = ClosureMethod1;
+    x->fptr = closure1;
     
     return (Fun0 *) x;
 }
@@ -2581,7 +2581,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-UH0 * ClosureMethod0(Closure0 * x){
+UH0 * closure0(Closure0 * x){
     
     
     ClosureDecref0(x);
@@ -2597,7 +2597,7 @@ Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = closure0;
     
     return (Fun0 *) x;
 }
@@ -2607,12 +2607,12 @@ uint64_t loop0(UH0 * v0, uint64_t v1){
     switch (v0->tag) {
         case 0: { // Cons
             uint64_t v2 = v0->case0.v0; Fun0 * v3 = v0->case0.v1;
-            v3->refc += 2;
+            (v3)->refc += 2;
             UHDecref0(v0);
             UH0 * v4;
             v4 = v3->fptr(v3);
             
-            v3->decref_fptr(v3);
+            (v3)->decref_fptr(v3);
             uint64_t v5;
             v5 = v1 + v2;
             
@@ -2638,15 +2638,15 @@ int32_t main(){
     
     Fun0 * v1;
     v1 = ClosureCreate0();
-    v1->refc++;
+    (v1)->refc++;
     
     UH0 * v2;
     v2 = UH0_Cons(v0, v1);
     
-    v1->decref_fptr(v1);
+    (v1)->decref_fptr(v1);
     uint64_t v3;
     v3 = 0ull;
-    v2->refc++;
+    (v2)->refc++;
     
     uint64_t v4;
     v4 = loop0(v2, v3);

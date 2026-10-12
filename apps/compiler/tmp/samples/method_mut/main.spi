@@ -1,0 +1,8 @@
+inl pick (cell : mut {q : i32}) : mut {q : i32} = cell
+
+inl main () : i32 =
+    inl box = !!!!LayoutToHeapMutable({q = 1i32})
+    inl held = join pick box
+    held <- {q = 7i32}
+    inl opened = !!!!LayoutIndex(held)
+    if opened.q =. 7i32 then 0i32 else 1i32

@@ -18,7 +18,7 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 @external(erlang, "math", "pow")
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
-pub fn closure0(capt: #(Int, Int)) -> fn(Int) -> Int {
+pub fn f_c0(capt: #(Int, Int)) -> fn(Int) -> Int {
     fn (v2) {
         let #(v0, v1) = capt
         let v3 = spiral_wrap_signed(v0 + v1, 32)
@@ -29,6 +29,6 @@ pub fn closure0(capt: #(Int, Int)) -> fn(Int) -> Int {
 pub fn main() {
 let v0 = 1
 let v1 = 2
-let v2 = closure0(#(v0, v1))
+let v2 = f_c0(#(v0, v1))
 v2( 39  )
 }

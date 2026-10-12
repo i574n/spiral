@@ -14,6 +14,11 @@ impl UH0 {
         }
     }
 }
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_Leaf
+    }
+}
 fn sum_0(mut v0: Rc<UH0>) -> i32 {
     match &*v0 {
         UH0::UH0_Leaf => {
@@ -31,7 +36,7 @@ fn sum_0(mut v0: Rc<UH0>) -> i32 {
         }
     }
 }
-fn closure0(mut v0: Rc<UH0>) -> Rc<dyn Fn(i32) -> i32> {
+fn f_c0(mut v0: Rc<UH0>) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v1: i32| -> i32 {
         let mut v2: i32 = sum_0(v0.clone());
         let mut v3: i32 = v2.wrapping_add(v1);
@@ -42,7 +47,7 @@ fn spiral_main() -> i32 {
     let mut v0: Rc<UH0> = { thread_local!{ static CASE: Rc<UH0> = Rc::new(UH0::UH0_Leaf); } CASE.with(|case| case.clone()) };
     let mut v1: i32 = 2i32;
     let mut v2: Rc<UH0> = Rc::new(UH0::UH0_Node(v1, v0.clone(), v0.clone()));
-    let mut v3: Rc<dyn Fn(i32) -> i32> = closure0(v2.clone());
+    let mut v3: Rc<dyn Fn(i32) -> i32> = f_c0(v2.clone());
     let mut v4: i32 = v3(19i32);
     let mut v5: i32 = v3(19i32);
     let mut v6: i32 = v4.wrapping_add(v5);

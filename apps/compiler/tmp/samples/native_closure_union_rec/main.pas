@@ -9,7 +9,7 @@ type
     function Invoke: TUH0; virtual; abstract;
   end;
   TUH0 = class tag: LongInt; c0_0: QWord; c0_1: TFun0; end;
-  TClosure0 = class(TFun0) v0: QWord; function Invoke: TUH0; override; end;
+  Tclosure0 = class(TFun0) v0: QWord; function Invoke: TUH0; override; end;
 function ClosureCreate0(v0: QWord): TFun0; forward;
 function build_0(v0: QWord): TUH0; forward;
 function sum_1(v0: TUH0; v1: QWord): QWord; forward;
@@ -21,7 +21,7 @@ function UH0_Nil: TUH0;
 begin
   Result := TUH0.Create; Result.tag := 1; 
 end;
-function TClosure0.Invoke: TUH0;
+function Tclosure0.Invoke: TUH0;
 var
   v1: QWord;
 begin
@@ -29,9 +29,9 @@ begin
   Result := build_0(v1);
 end;
 function ClosureCreate0(v0: QWord): TFun0;
-var c: TClosure0;
+var c: Tclosure0;
 begin
-  c := TClosure0.Create; c.v0 := v0;
+  c := Tclosure0.Create; c.v0 := v0;
   Result := c;
 end;
 function build_0(v0: QWord): TUH0;

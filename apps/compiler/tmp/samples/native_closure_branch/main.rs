@@ -1,13 +1,13 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-fn closure0() -> Rc<dyn Fn(i32) -> i32> {
+fn a_c0() -> Rc<dyn Fn(i32) -> i32> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
         let mut v1: i32 = v0.wrapping_add(2i32);
         v1
     }); } CLOSURE.with(|closure| closure.clone())
 }
-fn closure1() -> Rc<dyn Fn(i32) -> i32> {
+fn b_c1() -> Rc<dyn Fn(i32) -> i32> {
     thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> i32> = Rc::new(move |mut v0: i32| -> i32 {
         let mut v1: i32 = v0.wrapping_add(3i32);
         v1
@@ -19,9 +19,9 @@ fn method0(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
 fn spiral_main() -> i32 {
     let mut v0: bool = true;
     let mut v3: Rc<dyn Fn(i32) -> i32> = if v0 {
-        closure0()
+        a_c0()
     } else {
-        closure1()
+        b_c1()
     };
     method0(v3.clone())
 }

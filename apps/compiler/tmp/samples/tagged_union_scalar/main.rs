@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Hit(<i32>::default())
+    }
+}
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Hit(v1) => {

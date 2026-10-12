@@ -1,0 +1,15 @@
+nominal i64_array = array_base i64
+
+inl create (n : i32) : i64_array = i64_array !!!!ArrayCreate(`i64, n)
+inl get (values : i64_array) (i : i32) : i64 =
+    match values with
+    | i64_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : i64_array) (i : i32) (value : i64) : () =
+    match values with
+    | i64_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+inl main () : i32 =
+    inl values = create 2i32
+    inl ~n = 5000000000i64
+    set values 1i32 n
+    if get values 1i32 =. 5000000000i64 then 0i32 else 1i32

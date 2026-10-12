@@ -11,5 +11,5 @@ inl main () : i32 =
     inl ~value = Succ (Succ Zero)
     depth value 0i32
 
-inl expected_error_ejp0040 () = ()
+inl expected_error_ejp0011_reentry_limit () = ()
 inl oracle_must_not_record_current_error () = ()

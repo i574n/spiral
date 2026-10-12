@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl ~z = 3i32
+    inl f (n : i32) : i32 * i32 = n, n +. 1i32
+    inl ~g = f
+    inl pair = g z
+    inl ~(left, right) = pair
+    if left =. 3i32 && right =. 4i32 then 0i32 else 1i32

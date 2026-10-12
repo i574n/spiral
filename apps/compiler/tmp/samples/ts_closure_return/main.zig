@@ -122,14 +122,14 @@ fn closure1(ctx: *anyopaque, p1: i32) i32 {
 fn closureCreate1(p0: []const u8) Fun1 {
     return .{ .ctx = spiralCreate(ClosureEnv1, .{ .v0 = p0, }), .call = &closure1 };
 }
-fn closure0(ctx: *anyopaque, p0: []const u8) Fun1 {
+fn make_c0(ctx: *anyopaque, p0: []const u8) Fun1 {
     const env: *ClosureEnv0 = @ptrCast(@alignCast(ctx)); _ = &env;
 
     var v0: []const u8 = p0; _ = &v0;
     return closureCreate1(v0);
 }
 fn closureCreate0() Fun0 {
-    return .{ .ctx = spiralCreate(ClosureEnv0, .{ }), .call = &closure0 };
+    return .{ .ctx = spiralCreate(ClosureEnv0, .{ }), .call = &make_c0 };
 }
 fn method0(p0: Fun1) i32 {
     var v0: Fun1 = p0; _ = &v0;

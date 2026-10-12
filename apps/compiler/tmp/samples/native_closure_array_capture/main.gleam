@@ -73,7 +73,7 @@ pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
 @external(erlang, "math", "pow")
 pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
 
-pub fn closure0(capt: #(SpiralArray(Int))) -> fn(Int) -> Int {
+pub fn f_c0(capt: #(SpiralArray(Int))) -> fn(Int) -> Int {
     fn (v1) {
         let #(v0) = capt
         let v2 = v0.size
@@ -83,6 +83,6 @@ pub fn closure0(capt: #(SpiralArray(Int))) -> fn(Int) -> Int {
 }
 pub fn main() {
 let v0 = spiral_array_create(2)
-let v1 = closure0(#(v0))
+let v1 = f_c0(#(v0))
 v1( 40  )
 }

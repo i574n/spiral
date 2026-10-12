@@ -7,12 +7,12 @@ type
   TFun0 = class
     function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-  TClosure0 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt): LongInt; override; end;
-  TClosure1 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt): LongInt; override; end;
+  Ta_c0 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt): LongInt; override; end;
+  Tb_c1 = class(TFun0) v0: LongInt; function Invoke(v1: LongInt): LongInt; override; end;
 function ClosureCreate0(v0: LongInt): TFun0; forward;
 function ClosureCreate1(v0: LongInt): TFun0; forward;
 function method0(v0: TFun0): LongInt; forward;
-function TClosure0.Invoke(v1: LongInt): LongInt;
+function Ta_c0.Invoke(v1: LongInt): LongInt;
 var
   v2: LongInt;
 begin
@@ -20,12 +20,12 @@ begin
   Result := v2;
 end;
 function ClosureCreate0(v0: LongInt): TFun0;
-var c: TClosure0;
+var c: Ta_c0;
 begin
-  c := TClosure0.Create; c.v0 := v0;
+  c := Ta_c0.Create; c.v0 := v0;
   Result := c;
 end;
-function TClosure1.Invoke(v1: LongInt): LongInt;
+function Tb_c1.Invoke(v1: LongInt): LongInt;
 var
   v2: LongInt;
 begin
@@ -33,9 +33,9 @@ begin
   Result := v2;
 end;
 function ClosureCreate1(v0: LongInt): TFun0;
-var c: TClosure1;
+var c: Tb_c1;
 begin
-  c := TClosure1.Create; c.v0 := v0;
+  c := Tb_c1.Create; c.v0 := v0;
   Result := c;
 end;
 function method0(v0: TFun0): LongInt;

@@ -182,14 +182,14 @@ def spiral_array_depth(+wanted: U32) -> U32:
   spiral_array_depth_go(wanted, 1, 0, U32.is_le(wanted, 1))
 
 @unsafe
-def closure0(+v0: String, +v1: U32) -> IO(U32):
+def left_c0(+v0: String, +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
     return v3
 
 @unsafe
-def closure1(+v0: String, +v1: U32) -> IO(U32):
+def right_c1(+v0: String, +v1: U32) -> IO(U32):
   do IO<U32>:
     +v2 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     +v3 : U32 <- IO.pure(U32, U32.add(v2, v1))
@@ -201,10 +201,10 @@ def spiral_main_if1(+c: Bool, +v0: String, +v1: String, +v2: Bool) -> IO(((U32) 
   match c:
     case True{}:
       do IO<((U32) -> IO(U32))>:
-        IO.pure(((U32) -> IO(U32)), d => closure0(v0, d))
+        IO.pure(((U32) -> IO(U32)), d => left_c0(v0, d))
     case False{}:
       do IO<((U32) -> IO(U32))>:
-        IO.pure(((U32) -> IO(U32)), d => closure1(v1, d))
+        IO.pure(((U32) -> IO(U32)), d => right_c1(v1, d))
 
 @unsafe
 def method0(+v0: ((U32) -> IO(U32))) -> IO(U32):

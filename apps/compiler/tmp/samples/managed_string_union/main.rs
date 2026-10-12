@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Text({ thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) })
+    }
+}
 fn score_0(mut v0: US0) -> i32 {
     match &v0 {
         US0::US0_Number(v3) => {

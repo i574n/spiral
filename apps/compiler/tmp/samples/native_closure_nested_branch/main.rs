@@ -1,7 +1,7 @@
 #![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
 use std::cell::RefCell;
 use std::rc::Rc;
-fn closure0(mut v0: Rc<str>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
+fn left_c0(mut v0: Rc<str>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v2: i32| -> i32 {
         let mut v3: bool = v2 > 0i32;
         if v3 {
@@ -14,7 +14,7 @@ fn closure0(mut v0: Rc<str>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
         }
     })
 }
-fn closure1(mut v0: Rc<str>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
+fn right_c1(mut v0: Rc<str>, mut v1: i32) -> Rc<dyn Fn(i32) -> i32> {
     Rc::new(move |mut v2: i32| -> i32 {
         let mut v3: bool = v2 > 0i32;
         if v3 {
@@ -38,9 +38,9 @@ fn spiral_main() -> i32 {
     let mut v3: i32 = 2i32;
     let mut v4: bool = true;
     let mut v7: Rc<dyn Fn(i32) -> i32> = if v4 {
-        closure0(v0.clone(), v2)
+        left_c0(v0.clone(), v2)
     } else {
-        closure1(v1.clone(), v3)
+        right_c1(v1.clone(), v3)
     };
     method0(v7.clone())
 }

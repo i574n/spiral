@@ -130,11 +130,11 @@ int32_t main(){
     
     
     AssignArray0(&(v1->ptr[0l]), 7l);
-    v1->refc++;
+    (v1)->refc++;
     
     
     method0(v1);
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v2;
     v2 = method1(v1);

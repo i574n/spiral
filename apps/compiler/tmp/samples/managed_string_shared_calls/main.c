@@ -48,11 +48,11 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(4, "qwe");
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v1;
     v1 = measure0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = measure0(v0);

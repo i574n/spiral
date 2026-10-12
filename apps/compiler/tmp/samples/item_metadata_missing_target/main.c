@@ -48,7 +48,7 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(39, "SPIRAL_ITEM_METADATA_TEST_missing-item");
-    v0->refc++;
+    (v0)->refc++;
     
     
     target_global0(v0);

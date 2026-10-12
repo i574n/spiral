@@ -1,0 +1,3 @@
+inl main () : i32 =
+    inl ~n = 1i32
+    if n =. 1i32 then !!!!FailWith(`i32, "bo$om") else 0i32

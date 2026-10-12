@@ -28,13 +28,13 @@ int main() {
     int v2;
     v2 = 3;
     sptr<Union0> v3;
-    v3 = sptr<Union0>{new Union0{Union0_0{}}};
+    v3 = sptr<Union0>{new Union0{Union0_Nil{}}};
     sptr<Union0> v4;
-    v4 = sptr<Union0>{new Union0{Union0_1{v2, v3}}};
+    v4 = sptr<Union0>{new Union0{Union0_Cons{v2, v3}}};
     sptr<Union0> v5;
-    v5 = sptr<Union0>{new Union0{Union0_1{v1, v4}}};
+    v5 = sptr<Union0>{new Union0{Union0_Cons{v1, v4}}};
     sptr<Union0> v6;
-    v6 = sptr<Union0>{new Union0{Union0_1{v0, v5}}};
+    v6 = sptr<Union0>{new Union0{Union0_Cons{v0, v5}}};
     int v7;
     v7 = sum_0(v6);
     int v8;

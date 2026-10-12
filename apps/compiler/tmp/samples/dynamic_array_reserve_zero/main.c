@@ -120,11 +120,11 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(0l, false);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v1;
     v1 = method1(v0);
@@ -139,11 +139,11 @@ int32_t main(){
         ArrayDecref0(v0);
         return 10l;
     } else {
-        v0->refc++;
+        (v0)->refc++;
         
         
         method2(v0);
-        v0->refc++;
+        (v0)->refc++;
         
         int32_t v3;
         v3 = method3(v0);
@@ -154,7 +154,7 @@ int32_t main(){
         
         
         if (v4){
-            v0->refc++;
+            (v0)->refc++;
             
             
             method4(v0);
@@ -170,11 +170,11 @@ int32_t main(){
             
             
             AssignArray0(&(v0->ptr[2l]), 6l);
-            v0->refc++;
+            (v0)->refc++;
             
             
             method5(v0);
-            v0->refc++;
+            (v0)->refc++;
             
             
             method6(v0);

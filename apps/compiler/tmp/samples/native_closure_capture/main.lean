@@ -24,7 +24,7 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
   else if b >= a && (spiralIsContinuation (bytes.get! a.toNat) || (b + 1 < length && spiralIsContinuation (bytes.get! (b + 1).toNat))) then spiralAbort
   else pure (String.Pos.Raw.extract s ⟨a.toNat⟩ ⟨(b + 1).toNat⟩)
 mutual
-partial def closure0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
+partial def f_c0 (p0 : Int32) (p1 : Int32) (p2 : Int32) : IO Int32 := do
     let mut v0 : Int32 := p0
     let mut v1 : Int32 := p1
     let mut v2 : Int32 := p2
@@ -39,7 +39,7 @@ partial def spiralMain : IO Int32 := do
     let mut v2 : (Int32 → IO Int32) := default
     v0 := (1 : Int32)
     v1 := (2 : Int32)
-    v2 := (closure0 v0 v1)
+    v2 := (f_c0 v0 v1)
     return (← v2 (39 : Int32))
 end
 def main : IO UInt32 := do

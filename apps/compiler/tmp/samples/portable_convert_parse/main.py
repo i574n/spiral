@@ -16,7 +16,7 @@ from typing import NamedTuple, Union, Callable, Tuple
 i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 = int; f32 = float; f64 = float; char = str; string = str
 
 import sys
-def Closure0(env_v0 : string):
+def closure0(env_v0 : string):
     def inner() -> i32:
         nonlocal env_v0
         v0 = env_v0
@@ -31,15 +31,15 @@ class US0_Error(NamedTuple): # Error
     v0 : 'BaseException'
     tag = 1
 US0 = Union[US0_Ok, US0_Error]
-def Closure1():
+def ok_c1():
     def inner(v0 : i32) -> US0:
         return US0_Ok(v0)
     return inner
-def Closure2():
+def error_c2():
     def inner(v0 : 'BaseException') -> US0:
         return US0_Error(v0)
     return inner
-def Closure3():
+def closure3():
     def inner(v0 : Callable[[], 'BaseException']) -> 'BaseException':
         return v0()
     return inner
@@ -66,15 +66,15 @@ def main():
     print(v131)
     del v131
     v143 = " 123 "
-    v313 = Closure0(v143)
+    v313 = closure0(v143)
     del v143
     fn = v313 
     del v313
-    v314 = Closure1()
+    v314 = ok_c1()
     ok = v314 
-    v315 = Closure2()
+    v315 = error_c2()
     error = v315 
-    v316 = Closure3()
+    v316 = closure3()
     ex_fn = v316 
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
@@ -99,7 +99,7 @@ def main():
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v338
     v803 = "12x"
-    v804 = Closure0(v803)
+    v804 = closure0(v803)
     del v803
     fn = v804 
     del v804
@@ -129,7 +129,7 @@ def main():
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v811
     v814 = ""
-    v815 = Closure0(v814)
+    v815 = closure0(v814)
     del v814
     fn = v815 
     del v815
@@ -159,7 +159,7 @@ def main():
             raise Exception(f'Pattern matching miss. Got: {t}')
     del v822
     v825 = "+7"
-    v826 = Closure0(v825)
+    v826 = closure0(v825)
     del v825
     fn = v826 
     del v826

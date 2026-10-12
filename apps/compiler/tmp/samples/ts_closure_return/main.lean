@@ -32,7 +32,7 @@ partial def closure1 (p0 : String) (p1 : Int32) : IO Int32 := do
     v2 := (Int32.ofNat v0.utf8ByteSize)
     v3 := (v2 + v1)
     return v3
-partial def closure0 (p0 : String) : IO (Int32 → IO Int32) := do
+partial def make_c0 (p0 : String) : IO (Int32 → IO Int32) := do
     let mut v0 : String := p0
     return (closure1 v0)
 partial def method0 (p0 : (Int32 → IO Int32)) : IO Int32 := do
@@ -42,7 +42,7 @@ partial def spiralMain : IO Int32 := do
     let mut v0 : (String → IO (Int32 → IO Int32)) := default
     let mut v1 : String := default
     let mut v2 : (Int32 → IO Int32) := default
-    v0 := closure0
+    v0 := make_c0
     v1 := "abc"
     v2 := (← v0 v1)
     return (← method0 v2)

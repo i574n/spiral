@@ -1428,7 +1428,7 @@ Spiral.Kino.eval!(
 )
 ```
 
-<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(\"1\", \"2\", [\"3\"; \"4\"], { b = \"5\"; c = \"6\"; a = fun () => \"7\" }, ;[ 8i32 ])\n|> format\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"1, 2, Uh0i1(\\\"3\\\", Uh0i1(\\\"4\\\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Lua = fun () => \"1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Fsharp = fun () =>\n            run_target function\n                | _ => fun () => join \"1, 2, UH0_1 (\\\"3\\\", UH0_1 (\\\"4\\\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]\"\n            : string\n        Python = fun () => \"1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Rust = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        TypeScript = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
+<!-- livebook:{"chunks":null,"kind":"Elixir.Spiral.Kino.SmartCell","attrs":{"timeout":300,"source":"///- --test\n///> gleam\n///> lua\n///> fsharp\n///> cuda\n///> rust\n///> typescript\n\n(\"1\", \"2\", [\"3\"; \"4\"], { b = \"5\"; c = \"6\"; a = fun () => \"7\" }, ;[ 8i32 ])\n|> format\n|> _assert_eq (\n    backend_switch {\n        Gleam = fun () => \"1, 2, Uh0Cons(\\\"3\\\", Uh0Cons(\\\"4\\\", Uh0Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Lua = fun () => \"1, 2, Uh0_Cons(3, Uh0_Cons(4, Uh0_Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Fsharp = fun () =>\n            run_target function\n                | _ => fun () => join \"1, 2, UH0_Cons (\\\"3\\\", UH0_Cons (\\\"4\\\", UH0_Nil)), { b = 5; c = 6; a = 7 }, [|8|]\"\n            : string\n        Python = fun () => \"1, 2, UH0_Cons(v0='3', v1=UH0_Cons(v0='4', v1=UH0_Nil())), { b = 5; c = 6; a = 7 }, [8]\" : string\n        Rust = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n        TypeScript = fun () => \"1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]\" : string\n    }\n)","print_code":false},"livebook_object":"smart_cell"} -->
 
 ```elixir
 Spiral.Kino.eval!(
@@ -1445,13 +1445,13 @@ Spiral.Kino.eval!(
   |> format
   |> _assert_eq (
       backend_switch {
-          Gleam = fun () => "1, 2, Uh0i1(\"3\", Uh0i1(\"4\", Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
-          Lua = fun () => "1, 2, Uh0i1(3, Uh0i1(4, Uh0i0)), { b = 5; c = 6; a = 7 }, [8]" : string
+          Gleam = fun () => "1, 2, Uh0Cons(\"3\", Uh0Cons(\"4\", Uh0Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+          Lua = fun () => "1, 2, Uh0_Cons(3, Uh0_Cons(4, Uh0_Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
           Fsharp = fun () =>
               run_target function
-                  | _ => fun () => join "1, 2, UH0_1 (\"3\", UH0_1 (\"4\", UH0_0)), { b = 5; c = 6; a = 7 }, [|8|]"
+                  | _ => fun () => join "1, 2, UH0_Cons (\"3\", UH0_Cons (\"4\", UH0_Nil)), { b = 5; c = 6; a = 7 }, [|8|]"
               : string
-          Python = fun () => "1, 2, UH0_1(v0='3', v1=UH0_1(v0='4', v1=UH0_0())), { b = 5; c = 6; a = 7 }, [8]" : string
+          Python = fun () => "1, 2, UH0_Cons(v0='3', v1=UH0_Cons(v0='4', v1=UH0_Nil())), { b = 5; c = 6; a = 7 }, [8]" : string
           Rust = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
           TypeScript = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
       }

@@ -29,7 +29,7 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function closure0(v0: string, v1: number): ((a0: number) => number) {
+function left_c0(v0: string, v1: number): ((a0: number) => number) {
     return (v2: number): number => {
         let v3: boolean = v2 > 0;
         if (v3) {
@@ -42,7 +42,7 @@ function closure0(v0: string, v1: number): ((a0: number) => number) {
         }
     };
 }
-function closure1(v0: string, v1: number): ((a0: number) => number) {
+function right_c1(v0: string, v1: number): ((a0: number) => number) {
     return (v2: number): number => {
         let v3: boolean = v2 > 0;
         if (v3) {
@@ -67,9 +67,9 @@ export function main(): number {
     let v4: boolean = true;
     let v7: ((a0: number) => number);
     if (v4) {
-        v7 = closure0(v0, v2);
+        v7 = left_c0(v0, v2);
     } else {
-        v7 = closure1(v1, v3);
+        v7 = right_c1(v1, v3);
     }
     return method0(v7);
 }

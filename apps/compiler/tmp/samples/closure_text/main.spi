@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl ~word = "hi"
+    inl f (z : i32) : string =
+        if z =. 0i32 then "no" else word
+    inl ~g = f
+    if !!!!EQ(g 1i32, "hi") then 0i32 else 1i32

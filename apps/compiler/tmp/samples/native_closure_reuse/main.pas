@@ -7,9 +7,9 @@ type
   TFun0 = class
     function Invoke(a0: LongInt): LongInt; virtual; abstract;
   end;
-  TClosure0 = class(TFun0) v0: LongInt; v1: LongInt; function Invoke(v2: LongInt): LongInt; override; end;
+  Tf_c0 = class(TFun0) v0: LongInt; v1: LongInt; function Invoke(v2: LongInt): LongInt; override; end;
 function ClosureCreate0(v0: LongInt; v1: LongInt): TFun0; forward;
-function TClosure0.Invoke(v2: LongInt): LongInt;
+function Tf_c0.Invoke(v2: LongInt): LongInt;
 var
   v3: LongInt;
   v4: LongInt;
@@ -19,9 +19,9 @@ begin
   Result := v4;
 end;
 function ClosureCreate0(v0: LongInt; v1: LongInt): TFun0;
-var c: TClosure0;
+var c: Tf_c0;
 begin
-  c := TClosure0.Create; c.v0 := v0; c.v1 := v1;
+  c := Tf_c0.Create; c.v0 := v0; c.v1 := v1;
   Result := c;
 end;
 function SpiralMain: LongInt;

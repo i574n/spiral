@@ -1,0 +1,9 @@
+inl rec grow ~n ~acc =
+    if n =. 0i32 then acc else
+        join grow (n -. 1i32) (acc +. 3000000000u32)
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~acc = 0u32
+    inl s = join grow n acc
+    if s =. 1705032704u32 then 0i32 else 1i32

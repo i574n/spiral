@@ -2,6 +2,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: Rc<str> }
+impl Default for Mut0 {
+    fn default() -> Self {
+        Mut0 { l0: { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) } }
+    }
+}
 fn spiral_main() -> i32 {
     let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("deref"); } LIT.with(|lit| lit.clone()) };
     let mut v1: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: v0.clone() }));

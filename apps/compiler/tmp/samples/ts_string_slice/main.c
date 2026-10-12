@@ -58,7 +58,7 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(6, "alpha");
-    v0->refc++;
+    (v0)->refc++;
     
     String * v1;
     v1 = middle0(v0);

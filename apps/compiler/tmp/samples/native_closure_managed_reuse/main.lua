@@ -14,8 +14,8 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local closure0
-function closure0(capt)
+local f_c0
+function f_c0(capt)
     local v0 = (table.unpack or unpack)(capt)
     return function(v1)
         local v2 = string.len(v0)
@@ -25,7 +25,7 @@ function closure0(capt)
 end
 
 local v0 = "abc"
-local v1 = closure0({ v0 })
+local v1 = f_c0({ v0 })
 local v2 = v1(10)
 local v3 = v1(20)
 local v4 = v1(3)

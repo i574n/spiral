@@ -1,0 +1,20 @@
+nominal i32_array = array_base i32
+
+inl create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+inl get (values : i32_array) (i : i32) : i32 =
+    match values with
+    | i32_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : i32_array) (i : i32) (value : i32) : () =
+    match values with
+    | i32_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+inl main () : i32 =
+    inl ~n = 3i32
+    inl ~m = 4i32
+    inl values = create 1i32
+    set values 0i32 n
+    inl pair = values, m
+    inl box = !!!!LayoutToHeap({value = pair})
+    inl opened = !!!!LayoutIndex(box)
+    inl ~(held, extra) = opened.value
+    if get held 0i32 +. extra =. 7i32 then 0i32 else 1i32

@@ -69,11 +69,11 @@ int32_t sum0(UH0 * v0){
     switch (v0->tag) {
         case 1: { // Cons
             Array0 * v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1;
-            v1->refc++; v2->refc++;
+            (v1)->refc++; (v2)->refc++;
             UHDecref0(v0);
             int32_t v3;
             v3 = v1->len;
-            v2->refc++;
+            (v2)->refc++;
             ArrayDecref0(v1);
             int32_t v4;
             v4 = sum0(v2);
@@ -108,15 +108,15 @@ int32_t main(){
     
     UH0 * v2;
     v2 = UH0_Nil();
-    v1->refc++; v2->refc++;
+    (v1)->refc++; (v2)->refc++;
     
     UH0 * v3;
     v3 = UH0_Cons(v1, v2);
-    v1->refc++; v3->refc++;
+    (v1)->refc++; (v3)->refc++;
     UHDecref0(v2);
     UH0 * v4;
     v4 = UH0_Cons(v1, v3);
-    v4->refc++;
+    (v4)->refc++;
     ArrayDecref0(v1); UHDecref0(v3);
     int32_t v5;
     v5 = sum0(v4);

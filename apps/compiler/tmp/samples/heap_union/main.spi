@@ -1,0 +1,13 @@
+union slot =
+    | None
+    | Some : i32
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~flag = true
+    inl payload = if flag then Some n else None
+    inl box = !!!!LayoutToHeap({slot = payload})
+    inl opened = !!!!LayoutIndex(box)
+    match opened.slot with
+    | Some value => if value =. 7i32 then 0i32 else 1i32
+    | None => 1i32

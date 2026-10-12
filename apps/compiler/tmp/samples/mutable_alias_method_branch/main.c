@@ -68,15 +68,15 @@ int32_t main(){
     
     Mut0 * v0;
     v0 = MutCreate0(0l);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method1(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method2(v0);

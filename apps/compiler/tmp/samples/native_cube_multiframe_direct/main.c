@@ -1283,7 +1283,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
             fprintf(stderr, "%s\n", "UTF-8 byte offset is outside the string.");
             exit(EXIT_FAILURE);
         } else {
-            v0->refc++;
+            (v0)->refc++;
             
             char v7;
             v7 = runtime_byte7(v0, v1);
@@ -1337,7 +1337,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                             fprintf(stderr, "%s\n", "UTF-8 sequence is truncated.");
                             exit(EXIT_FAILURE);
                         } else {
-                            v0->refc++;
+                            (v0)->refc++;
                             
                             char v25;
                             v25 = runtime_byte7(v0, v22);
@@ -1422,7 +1422,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                                 
                                 int32_t v41;
                                 v41 = v1 + 1l;
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v42;
                                 v42 = runtime_byte7(v0, v41);
@@ -1430,7 +1430,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                                 
                                 int32_t v43;
                                 v43 = ((uint8_t)v42);
-                                v0->refc++;
+                                (v0)->refc++;
                                 
                                 char v44;
                                 v44 = runtime_byte7(v0, v38);
@@ -1594,7 +1594,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                                     
                                     int32_t v76;
                                     v76 = v1 + 1l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v77;
                                     v77 = runtime_byte7(v0, v76);
@@ -1606,7 +1606,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                                     
                                     int32_t v79;
                                     v79 = v1 + 2l;
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v80;
                                     v80 = runtime_byte7(v0, v79);
@@ -1614,7 +1614,7 @@ int32_t utf8_scalar_at_byte_offset6(String * v0, int32_t v1){
                                     
                                     int32_t v81;
                                     v81 = ((uint8_t)v80);
-                                    v0->refc++;
+                                    (v0)->refc++;
                                     
                                     char v82;
                                     v82 = runtime_byte7(v0, v73);
@@ -1816,7 +1816,7 @@ int32_t loop5(String * v0, int32_t v1, int32_t v2, int32_t v3){
             fprintf(stderr, "%s\n", "UTF-8 scalar width exceeds the string.");
             exit(EXIT_FAILURE);
         } else {
-            v0->refc++;
+            (v0)->refc++;
             
             int32_t v7;
             v7 = utf8_scalar_at_byte_offset6(v0, v2);
@@ -1919,15 +1919,15 @@ int32_t main(){
         
         Array0 * v11;
         v11 = method0();
-        v11->refc++;
+        (v11)->refc++;
         
         int32_t v12;
         v12 = method1(v8, v9, v10, v11);
-        v11->refc++;
+        (v11)->refc++;
         
         int32_t v13;
         v13 = method2(v8, v9, v10, v11);
-        v11->refc++;
+        (v11)->refc++;
         
         int32_t v14;
         v14 = method3(v8, v9, v10, v11);
@@ -1947,7 +1947,7 @@ int32_t main(){
         
         String * v18;
         v18 = StringLit(1, "");
-        v11->refc++; v18->refc++;
+        (v11)->refc++; (v18)->refc++;
         
         String * v19;
         v19 = frame_text_loop4(v11, v15, v16, v17, v18);
@@ -1963,7 +1963,7 @@ int32_t main(){
         
         int32_t v22;
         v22 = 0l;
-        v19->refc++;
+        (v19)->refc++;
         
         int32_t v23;
         v23 = loop5(v19, v20, v21, v22);

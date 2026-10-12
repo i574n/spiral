@@ -36,7 +36,7 @@ function closure1(v0: string): ((a0: number) => number) {
         return v3;
     };
 }
-function closure0(): ((a0: string) => ((a0: number) => number)) {
+function make_c0(): ((a0: string) => ((a0: number) => number)) {
     return (v0: string): ((a0: number) => number) => {
         return closure1(v0);
     };
@@ -45,7 +45,7 @@ function method0(v0: ((a0: number) => number)): number {
     return v0(39);
 }
 export function main(): number {
-    let v0: ((a0: string) => ((a0: number) => number)) = closure0();
+    let v0: ((a0: string) => ((a0: number) => number)) = make_c0();
     let v1: string = "abc";
     let v2: ((a0: number) => number) = v0(v1);
     return method0(v2);

@@ -1,0 +1,16 @@
+union slot =
+    | None
+    | Both : f32 * string
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Both (left, word) =>
+        if left =. 1.5f32 && !!!!EQ(word, "hi") then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~value = 1.5f32
+    inl ~word = "hi"
+    inl ~flag = true
+    inl held = if flag then Both (value, word) else None
+    score held

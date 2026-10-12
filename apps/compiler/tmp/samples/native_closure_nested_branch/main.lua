@@ -14,8 +14,8 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local closure0, closure1, method0
-function closure0(capt)
+local left_c0, right_c1, method0
+function left_c0(capt)
     local v0, v1 = (table.unpack or unpack)(capt)
     return function(v2)
         local v3 = v2 > 0
@@ -30,7 +30,7 @@ function closure0(capt)
     end
 end
 
-function closure1(capt)
+function right_c1(capt)
     local v0, v1 = (table.unpack or unpack)(capt)
     return function(v2)
         local v3 = v2 > 0
@@ -57,9 +57,9 @@ local v3 = 2
 local v4 = true
 local getv7 = function()
     if v4 then
-        return closure0({ v0, v2 })
+        return left_c0({ v0, v2 })
     else
-        return closure1({ v1, v3 })
+        return right_c1({ v1, v3 })
     end
 end
 local v7 = getv7()

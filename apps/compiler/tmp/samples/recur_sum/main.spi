@@ -1,0 +1,5 @@
+let rec sum (n : i32) : i32 =
+    if n < 1i32 then 0i32 else n +. sum (n -. 1i32)
+
+inl main () : i32 =
+    if sum 4i32 =. 10i32 then 0i32 else 1i32

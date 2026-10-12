@@ -29,7 +29,7 @@ function spiral_string_slice(value: string, from: number, to: number): string {
     if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
     return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
 }
-function closure0(v0: string): ((a0: number) => number) {
+function f_c0(v0: string): ((a0: number) => number) {
     return (v1: number): number => {
         let v2: number = spiral_string_length(v0);
         let v3: number = (v2 + v1) | 0;
@@ -41,7 +41,7 @@ function apply_0(v0: ((a0: number) => number), v1: number): number {
 }
 export function main(): number {
     let v0: string = "abc";
-    let v1: ((a0: number) => number) = closure0(v0);
+    let v1: ((a0: number) => number) = f_c0(v0);
     let v2: number = 39;
     return apply_0(v1, v2);
 }

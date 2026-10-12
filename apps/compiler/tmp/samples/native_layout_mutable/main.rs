@@ -2,6 +2,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 struct Mut0 { l0: i32, l1: i32 }
+impl Default for Mut0 {
+    fn default() -> Self {
+        Mut0 { l0: <i32>::default(), l1: <i32>::default() }
+    }
+}
 fn spiral_main() -> i32 {
     let mut v0: Rc<RefCell<Mut0>> = Rc::new(RefCell::new(Mut0 { l0: 1i32, l1: 2i32 }));
     v0.borrow_mut().l0 = 3i32;

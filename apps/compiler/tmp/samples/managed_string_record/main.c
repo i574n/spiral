@@ -70,16 +70,16 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(4, "qwe");
-    v0->refc++;
+    (v0)->refc++;
     
     String * v1; int32_t v2;
     Tuple0 tmp0 = method0(v0);
     v1 = tmp0.v0; v2 = tmp0.v1;
-    v1->refc++;
+    (v1)->refc++;
     StringDecref(v0);
     int32_t v3;
     v3 = score1(v2, v1);
-    v1->refc++;
+    (v1)->refc++;
     
     int32_t v4;
     v4 = score1(v2, v1);

@@ -57226,6 +57226,18 @@ module spiral_compiler =
     type LowerEnvRec = Map<int,LowerEnv -> E>
     
 
+    // Source names for `inl f = <function>`, keyed by the function node and then by the
+    // lowered body that closure conversion stores. Filled during prepass, read at codegen.
+    let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+    let noteClosureName (node : E) (name : string) =
+        match closureBindingNames.TryGetValue node with
+        | true, _ -> ()
+        | _ -> closureBindingNames.Add(node, name)
+    let copyClosureName (source : E) (dest : E) =
+        match closureBindingNames.TryGetValue source with
+        | true, name -> noteClosureName dest name
+        | _ -> ()
+
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = System.Collections.Concurrent.ConcurrentDictionary<_,_>(HashIdentity.Reference)
@@ -57277,7 +57289,9 @@ module spiral_compiler =
                 let scope, env = scope env x
                 let pat, env = adj_term env pat
                 assert (scope.term.free_vars.Length = pat)
-                EFun'(r,scope,pat,term env_rec env body,Option.map (g env) t)
+                let inner = term env_rec env body
+                copyClosureName x inner
+                EFun'(r,scope,pat,inner,Option.map (g env) t)
             | EForall(r,pat,body) ->
                 let scope, env = scope env x
                 let pat, env = adj_ty env pat
@@ -57337,7 +57351,9 @@ module spiral_compiler =
                     )
                 ERecordWith(r,a,b,c)
             | EOp(r,a,b) -> EOp(r,a,List.map f b)
-            | EAnnot(r,a,b) -> EAnnot(r,f a,g env b)
+            | EAnnot(r,a,b) ->
+                copyClosureName x a
+                EAnnot(r,f a,g env b)
             | EIfThenElse(r,a,b,c) -> EIfThenElse(r,f a,f b,f c)
             | EIfThen(r,a,b) -> EIfThen(r,f a,f b)
             | EArray(r,a,b) -> EArray(r,List.map f a, g env b)
@@ -57680,6 +57696,12 @@ module spiral_compiler =
             match clauses with
             | [PatVar(_,x), on_succ] ->
                 let id,env = add_term_var env x
+                let rec namesFunction e =
+                    match e with
+                    | EFun _ | EFun' _ | EForall _ | EForall' _ -> true
+                    | EAnnot(_, e, _) | EJoinPoint(_, e, _, _, _) | EJoinPoint'(_, _, e, _, _, _) -> namesFunction e
+                    | _ -> false
+                if namesFunction body then noteClosureName body x
                 ELet(r,id,body,term env on_succ)
             | _ ->
                 let id,env = fresh_term_var env
@@ -58635,6 +58657,18 @@ module spiral_compiler =
     /// ### LowerEnvRec
     type LowerEnvRec = Map<int,LowerEnv -> E>
 
+    // Source names for `inl f = <function>`, keyed by the function node and then by the
+    // lowered body that closure conversion stores. Filled during prepass, read at codegen.
+    let closureBindingNames = System.Runtime.CompilerServices.ConditionalWeakTable<E, string>()
+    let noteClosureName (node : E) (name : string) =
+        match closureBindingNames.TryGetValue node with
+        | true, _ -> ()
+        | _ -> closureBindingNames.Add(node, name)
+    let copyClosureName (source : E) (dest : E) =
+        match closureBindingNames.TryGetValue source with
+        | true, name -> noteClosureName dest name
+        | _ -> ()
+
     /// ### lower
     let lower (scope : Dictionary<obj,PropagatedVars>) x =
         let dict = Dictionary(HashIdentity.Reference)
@@ -58673,7 +58707,9 @@ module spiral_compiler =
                 let scope, env = scope env x
                 let pat, env = adj_term env pat
                 assert (scope.term.free_vars.Length = pat)
-                EFun'(r,scope,pat,term env_rec env body,Option.map (g env) t)
+                let inner = term env_rec env body
+                copyClosureName x inner
+                EFun'(r,scope,pat,inner,Option.map (g env) t)
             | EForall(r,pat,body) ->
                 let scope, env = scope env x
                 let pat, env = adj_ty env pat
@@ -58733,7 +58769,9 @@ module spiral_compiler =
                     )
                 ERecordWith(r,a,b,c)
             | EOp(r,a,b) -> EOp(r,a,List.map f b)
-            | EAnnot(r,a,b) -> EAnnot(r,f a,g env b)
+            | EAnnot(r,a,b) ->
+                copyClosureName x a
+                EAnnot(r,f a,g env b)
             | EIfThenElse(r,a,b,c) -> EIfThenElse(r,f a,f b,f c)
             | EIfThen(r,a,b) -> EIfThen(r,f a,f b)
             | EArray(r,a,b) -> EArray(r,List.map f a, g env b)
@@ -59048,6 +59086,12 @@ module spiral_compiler =
             match clauses with
             | [PatVar(_,x), on_succ] ->
                 let id,env = add_term_var env x
+                let rec namesFunction e =
+                    match e with
+                    | EFun _ | EFun' _ | EForall _ | EForall' _ -> true
+                    | EAnnot(_, e, _) | EJoinPoint(_, e, _, _, _) | EJoinPoint'(_, _, e, _, _, _) -> namesFunction e
+                    | _ -> false
+                if namesFunction body then noteClosureName body x
                 ELet(r,id,body,term env on_succ)
             | _ ->
                 let id,env = fresh_term_var env
@@ -143065,13 +143109,8 @@ module spiral_compiler =
         let jp_orphan_recompute = System.Collections.Concurrent.ConcurrentDictionary<obj, unit -> unit>(HashIdentity.Reference)
         let backend_strings = StripedHashConsTable(32)  // MIGRATION: striped for parallel access
         let backend_strings_lock = obj()
-        // Only the current backend's branch is evaluated. Single-flight evaluates and type checks every branch (its
-        // comment: one branch only makes type inference unsound with compile-time hashmaps), which also uses up
-        // variable numbers, so evaluating all of them here made `native_float_nan_is` and the format_any samples
-        // byte-identical to single-flight (2026-10-02). But each other-backend branch spawns asynchronous join
-        // point specializations, and formatting-heavy code got ~4 s slower and timed out under suite load. Turn
-        // this on once those type-check-only join points are evaluated inline.
-        let backend_switch_validate_all = ref false
+        let backend_switch_validate_all = ref true
+        let backend_switch_validation_tags () = ref (1 <<< 30)
         let backend_switch_lock = obj()
         // JP: Track JP dict clear callbacks - multiple subsystems (peval, compiler) may register.
         let jp_dict_clear_lock = obj()
@@ -143080,6 +143119,15 @@ module spiral_compiler =
             lock jp_dict_clear_lock (fun () ->
                 jp_dict_clear_callbacks <- f :: jp_dict_clear_callbacks
             )
+        let backend_switch_validated = System.Collections.Concurrent.ConcurrentDictionary<string * RData [], Ty>(HashIdentity.Structural)
+        let backend_switch_validated_hc = HashConsTable()
+        let backend_switch_validated_reset = register_jp_dict_clear_callback (fun () -> backend_switch_validated.Clear())
+        let backend_switch_validation_key (s : LangEnv) (backend : string) (arm : Data) =
+            try Some (backend, snd (data_to_rdata s backend_switch_validated_hc [|arm|])) with :? PartEvalTypeError -> None
+        let backend_switch_validated_type key =
+            key |> Option.bind (fun key -> match backend_switch_validated.TryGetValue key with | true, t -> Some t | _ -> None)
+        let backend_switch_validated_remember key t =
+            key |> Option.iter (fun key -> backend_switch_validated.[key] <- t)
         let run_jp_dict_clear_callbacks (reasonId: CacheGeneration.GenerationChangeReasonId) =
             let cbs =
                 lock jp_dict_clear_lock (fun () -> jp_dict_clear_callbacks |> List.rev)
@@ -158749,12 +158797,18 @@ module spiral_compiler =
                                             let stackDecision = evalStackProbeDecision ()
                                             let gen0 = CacheGeneration.current ()
                                             let doValidation () =
-                                                let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend)}
-                                                let d' = apply s (b, DB)
-                                                if CacheGeneration.isStale gen0 then
-                                                    DiagSidecar.emit (sprintf "BACKEND_SWITCH_REPLAY: Generation changed during backend_switch replay validation for '%s' - skipping type check" backend)
-                                                else
-                                                    validate_type (data_to_ty s d')
+                                                let key = backend_switch_validation_key s backend b
+                                                match backend_switch_validated_type key with
+                                                | Some t' -> validate_type t'
+                                                | None ->
+                                                    let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags ()}
+                                                    let d' = apply s (b, DB)
+                                                    if CacheGeneration.isStale gen0 then
+                                                        DiagSidecar.emit (sprintf "BACKEND_SWITCH_REPLAY: Generation changed during backend_switch replay validation for '%s' - skipping type check" backend)
+                                                    else
+                                                        let t' = data_to_ty s d'
+                                                        backend_switch_validated_remember key t'
+                                                        validate_type t'
                                             if CacheGeneration.isStale gen0 then
                                                 DiagSidecar.emit (sprintf "BACKEND_SWITCH_REPLAY: Skipping backend_switch replay validation for '%s' (generation stale)" backend)
                                             else
@@ -160553,13 +160607,18 @@ module spiral_compiler =
                                 
 
                                         let doValidation () =
-                                            let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend)}
-                                            let d' = apply s (b, DB)
-                                            // MIGRATION: Check generation after apply
-                                            if CacheGeneration.isStale gen0 then
-                                                DiagSidecar.emit (sprintf "BACKEND_SWITCH_VALIDATION: Generation changed during backend_switch validation for '%s' - skipping type check" backend)
-                                            else
-                                                validate_type (data_to_ty s d')
+                                            let key = backend_switch_validation_key s backend b
+                                            match backend_switch_validated_type key with
+                                            | Some t' -> validate_type t'
+                                            | None ->
+                                                let s = {s with seq=ResizeArray(); cse=System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural) :: s.cse; backend=lock backend_strings_lock (fun () -> backend_strings.Add backend); i=backend_switch_validation_tags ()}
+                                                let d' = apply s (b, DB)
+                                                if CacheGeneration.isStale gen0 then
+                                                    DiagSidecar.emit (sprintf "BACKEND_SWITCH_VALIDATION: Generation changed during backend_switch validation for '%s' - skipping type check" backend)
+                                                else
+                                                    let t' = data_to_ty s d'
+                                                    backend_switch_validated_remember key t'
+                                                    validate_type t'
                                 
                                         // MIGRATION: Skip validation if generation is already stale
 
@@ -164825,6 +164884,7 @@ module spiral_compiler =
         // BackendSwitch: the type of each non-current arm already validated, by (backend, arm closure as a join point key).
         let backend_switch_validated = Dictionary<string * RData [], Ty>(HashIdentity.Structural)
         let backend_switch_validated_hc = HashConsTable()
+        let backend_switch_validation_tags () = ref (1 <<< 30)
 
         let rec ty_to_data s x =
             let f = ty_to_data s
@@ -165892,7 +165952,7 @@ module spiral_compiler =
                             match key with
                             | Some key when backend_switch_validated.ContainsKey key -> validate_type backend_switch_validated.[key]
                             | _ ->
-                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend}
+                                let s = {s with seq=ResizeArray(); cse=Dictionary HashIdentity.Structural :: s.cse; backend=backend_strings.Add backend; i=backend_switch_validation_tags ()}
                                 RustGapTrace.validating.Value <- RustGapTrace.validating.Value + 1
                                 try
                                     let t' = data_to_ty s (apply s (b, DB))
@@ -167232,6 +167292,29 @@ module spiral_compiler =
             $"{stem}_{tag}"
         | _ -> $"method{tag}"
 
+    /// ### generatedClosureName
+    // The `_c` keeps a closure off the method name `{stem}_{tag}` even when both are tag 0.
+    let generatedClosureName (sourceName : string option) (tag : int) =
+        match sourceName with
+        | Some name when name |> Seq.exists System.Char.IsAsciiLetterOrDigit ->
+            let safe = name |> String.map (fun c -> if System.Char.IsAsciiLetterOrDigit c || c = '_' then c else '_')
+            let stem = if System.Char.IsAsciiDigit safe.[0] then "_" + safe else safe
+            $"{stem}_c{tag}"
+        | _ -> $"closure{tag}"
+
+    /// A named `inl f (x) = ...` used as a value is a closure whose body is the join point named `f`.
+    /// Curried functions nest `EFun'` outside that join point. Anonymous functions stay `closure{tag}`.
+    let rec closureSourceName (body : E) =
+        match closureBindingNames.TryGetValue body with
+        | true, name -> Some name
+        | _ ->
+            match body with
+            | EJoinPoint'(_, _, _, _, _, name) -> name
+            | EJoinPoint(_, _, _, _, name) -> name
+            | EFun'(_, _, _, inner, _) -> closureSourceName inner
+            | EAnnot(_, inner, _) -> closureSourceName inner
+            | _ -> None
+
     /// ### generatedCaseNames
     let generatedCaseNames (cases : (int * string) seq) : Map<int, string> =
         let readable =
@@ -167369,6 +167452,7 @@ module spiral_compiler =
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
         let method_names = System.Collections.Concurrent.ConcurrentDictionary<int, string>()
+        let closure_names = System.Collections.Concurrent.ConcurrentDictionary<int, string>()
         let types = System.Collections.Concurrent.ConcurrentQueue<string>()
         let functions = System.Collections.Concurrent.ConcurrentQueue<string>()
     
@@ -167500,7 +167584,7 @@ module spiral_compiler =
                 let args = args b
                 match a with
                 | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
-                | JPClosure(a,b) -> sprintf "closure%i(%s)" (closure (a,b)).tag args
+                | JPClosure(a,b) -> sprintf "%s(%s)" closure_names.[(closure (a,b)).tag] args
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -167687,6 +167771,7 @@ module spiral_compiler =
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | StringSlice, [a;b;c] -> FastRuntimeFormat.format "%s.[int %s..int %s]" [| box (tup a); box (tup b); box (tup c) |]
+                | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> FastRuntimeFormat.format "%s.[int %s] <- %s" [| box (tup a); box (tup b); box (tup c) |]
     
@@ -168388,6 +168473,7 @@ module spiral_compiler =
                                 DiagSidecar.emit msg
                                 raise_codegen_error' [] (None, msg)
                         else requireResolvedClosureCell false jp_dict
+                    closure_names.[i] <- generatedClosureName (closureSourceName (JpBodyOwnerIdentity.body jp_body)) i
                     {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error """error[EJPX004]: internal compiler error
@@ -168401,7 +168487,7 @@ module spiral_compiler =
                     | [||] -> "()"
                     | [|x|] -> sprintf "(%s)" x
                     | x -> String.concat ", " x |> sprintf "struct (%s)"
-                line s (FastRuntimeFormat.format "closure%i (%s) %s : %s =" [| box x.tag; box (args_tys x.free_vars); box domain; box (tup_ty x.range) |])
+                line s (FastRuntimeFormat.format "%s (%s) %s : %s =" [| box closure_names.[x.tag]; box (args_tys x.free_vars); box domain; box (tup_ty x.range) |])
                 binds (indent s) x.body
                 )
     
@@ -168568,6 +168654,7 @@ module spiral_compiler =
     /// ### codegenFsharp
     let codegenFsharp (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
 
@@ -168672,7 +168759,7 @@ module spiral_compiler =
                 let args = args b
                 match a with
                 | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
-                | JPClosure(a,b) -> sprintf "closure%i(%s)" (closure (a,b)).tag args
+                | JPClosure(a,b) -> sprintf "%s(%s)" closure_names.[(closure (a,b)).tag] args
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i : %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -168858,6 +168945,7 @@ module spiral_compiler =
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StringIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | StringSlice, [a;b;c] -> sprintf "%s.[int %s..int %s]" (tup a) (tup b) (tup c)
+                | StaticStringConcat, [a;b] -> sprintf "(%s + %s)" (tup a) (tup b)
                 | ArrayIndex, [a;b] -> sprintf "%s.[int %s]" (tup a) (tup b)
                 | ArrayIndexSet, [a;b;c] -> sprintf "%s.[int %s] <- %s" (tup a) (tup b) (tup c)
 
@@ -168967,7 +169055,9 @@ module spiral_compiler =
                 match fun_ty with
                 | YFun(domain,range,FT_Vanilla) ->
                     match (fst env.join_point_closure.[jp_body]).[key] with
-                    | Some(domain_args, body) -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
+                    | Some(domain_args, body) ->
+                        closure_names.[i] <- generatedClosureName (closureSourceName (snd jp_body)) i
+                        {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                     | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
                 | YFun(_,_,_) -> raise_codegen_error "Non-standard functions are not supported in the F# backend."
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
@@ -168977,7 +169067,7 @@ module spiral_compiler =
                     | [||] -> "()"
                     | [|x|] -> sprintf "(%s)" x
                     | x -> String.concat ", " x |> sprintf "struct (%s)"
-                line s (sprintf "closure%i (%s) %s : %s =" x.tag (args_tys x.free_vars) domain (tup_ty x.range))
+                line s (sprintf "%s (%s) %s : %s =" closure_names.[x.tag] (args_tys x.free_vars) domain (tup_ty x.range))
                 binds (indent s) x.body
                 )
 
@@ -169008,7 +169098,8 @@ module spiral_compiler =
         jpBodyCellAwait jp_dict.[key] |> jpMethodBodyCellReadyForBackend backend
     let codegenClosureBody (env : PartEvalResult) backend jp_body key =
         let jp_dict, _, _ = env.join_point_closure.[jp_body]
-        jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
+        let domain, body = jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
+        domain, body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
     let codegenOwnerBackendName (jp_body : JpBodyOwnerIdentity) = JpBodyOwnerIdentity.backendText jp_body
 
 #else
@@ -169028,7 +169119,7 @@ module spiral_compiler =
         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
     let codegenClosureBody (env : PartEvalResult) (_ : string) jp_body key =
         match (fst env.join_point_closure.[jp_body]).[key] with
-        | Some(domain_args, body) -> domain_args, body
+        | Some(domain_args, body) -> domain_args, body, closureSourceName (snd jp_body)
         | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
     let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
 
@@ -169410,6 +169501,7 @@ module spiral_compiler =
 
     let codegenRust (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray()
@@ -169573,6 +169665,8 @@ module spiral_compiler =
         let string_slice () =
             global' "fn string_slice(value: &str, from: i64, to: i64) -> Rc<str> {\n    let bytes = value.as_bytes();\n    let length = bytes.len() as i64;\n    if from < 0 || from > length || to < from - 1 || to >= length { std::process::abort(); }\n    if to < from { return Rc::<str>::from(\"\"); }\n    if (bytes[from as usize] & 0xC0) == 0x80 || (to + 1 < length && (bytes[(to + 1) as usize] & 0xC0) == 0x80) { std::process::exit(3); }\n    let slice = &bytes[from as usize..(to + 1) as usize];\n    match std::str::from_utf8(slice) { Ok(text) => Rc::<str>::from(text), Err(error) => Rc::<str>::from(std::str::from_utf8(&slice[..error.valid_up_to()]).unwrap_or(\"\")) }\n}"
 
+        let layout_default_ready = Dictionary<string, bool>()
+        let union_default_ready = Dictionary<string, bool>()
         let rec tyv x =
             match x with
             | YUnion a ->
@@ -169623,7 +169717,7 @@ module spiral_compiler =
             let jp (a, b) =
                 match a with
                 | JPMethod(a,c) -> sprintf "%s(%s)" method_names.[(method (a,c)).tag] (args b)
-                | JPClosure(a,c) -> sprintf "closure%i(%s)" (closure (a,c)).tag (args b)
+                | JPClosure(a,c) -> sprintf "%s(%s)" closure_names.[(closure (a,c)).tag] (args b)
             let annot t = let x = tyv t in if x.StartsWith "impl " || x.StartsWith "Impl<" then "_" else x
             let binding d =
                 match data_free_vars d with
@@ -169800,7 +169894,22 @@ module spiral_compiler =
                 Array.iter2 (fun (L(i',_)) b -> line s $"v{i}.borrow_mut().l{i'} = {show_w b};") (data_free_vars a) (data_term_vars c)
                 if d.IsNone then line s "()"
             | TyArrayLiteral(a,b) -> simple $"""Rc::new(RefCell::new(vec![{List.map tup b |> String.concat ", "}]))"""
-            | TyArrayCreate(a,b) -> simple $"Rc::new(RefCell::new(vec![<{tup_ty a}>::default(); {tup b} as usize]))"
+            | TyArrayCreate(a,b) ->
+                let elem =
+                    let funTy =
+                        match a with
+                        | YFun _ -> Some a
+                        | _ ->
+                            match env.ty_to_data a |> data_free_vars with
+                            | [|L(_, (YFun _ as f))|] -> Some f
+                            | _ -> None
+                    match funTy with
+                    | Some f ->
+                        match rust_default_expr f with
+                        | Some value -> value
+                        | None -> $"<{tup_ty a}>::default()"
+                    | None -> $"<{tup_ty a}>::default()"
+                simple $"Rc::new(RefCell::new(vec![{elem}; {tup b} as usize]))"
             | TyArrayLength(a,b) -> length (a,b) ".borrow().len()"
             | TyStringLength(a,b) -> length (a,b) ".len()"
             | TyFailwith(a,b) -> simple $"std::panic::panic_any::<std::string::String>(format!(\"{{}}\", {tup b}))"
@@ -169819,7 +169928,7 @@ module spiral_compiler =
                 let parameters = env.ty_to_data domain |> data_free_vars
                 let decl = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"v{k}: &str" | t -> $"v{k}: {tyv t}") |> String.concat ", "
                 let call = parameters |> Array.map (fun (L(k,t)) -> match t with YPrim StringT -> $"Rc::<str>::from(v{k})" | _ -> $"v{k}") |> String.concat ", "
-                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    closure{tag}()({call})\n}}\n")
+                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n    {closure_names.[tag]}()({call})\n}}\n")
                 if d.IsNone then line s "()"
             | TyOp(op,l) ->
                 let unary f = match l with [x] -> f $"({tup x})" | _ -> raise_codegen_error $"Compiler error: {op} expects one argument."
@@ -169883,13 +169992,111 @@ module spiral_compiler =
                     $"(v{i}.tag() as {ty})"
                 | _ -> raise_codegen_error <| sprintf "Compiler error: %A with %i args not supported in the Rust backend" op l.Length
                 |> simple
+        and rust_emit_default (s : CodegenEnv) (name : string) (body : string) =
+            line s $"impl Default for {name} {{"
+            line (indent s) "fn default() -> Self {"
+            line (indent (indent s)) body
+            line (indent s) "}"
+            line s "}"
+        // Rc<str> has no Default, and dyn Fn cannot. A derive on every heap would reject samples that never call default().
+        and rust_layout_default (kind : string) (x : LayoutRecFsharp) =
+            let key = $"{kind}{x.tag}"
+            let mutable ready = true
+            let parts = ResizeArray<string>()
+            for L(i, t) in x.free_vars do
+                match rust_default_expr t with
+                | Some value -> parts.Add($"l{i}: {value}")
+                | None -> ready <- false
+            layout_default_ready.[key] <- ready
+            let joined = String.concat ", " parts
+            if ready then Some $"{key} {{ {joined} }}" else None
+        and rust_union_default (prefix : string) (x : UnionRecFsharp) =
+            let key = $"{prefix}{x.tag}"
+            if Map.isEmpty x.free_vars then
+                union_default_ready.[key] <- false
+                None
+            else
+                let ((i0, _), fields0) = x.free_vars |> Map.toSeq |> Seq.head
+                let case = $"{key}::{key}_{unionCaseSuffix x i0}"
+                let mutable ready = true
+                let parts = ResizeArray<string>()
+                for L(_, t) in fields0 do
+                    match rust_default_expr t with
+                    | Some value -> parts.Add(value)
+                    | None -> ready <- false
+                union_default_ready.[key] <- ready
+                if not ready then None
+                elif fields0.Length = 0 then Some case
+                else Some (case + "(" + (parts |> String.concat ", ") + ")")
+        and rust_default_expr (t : Ty) : string option =
+            let rec go depth (t : Ty) =
+                if depth > 64 then None else
+                match t with
+                | YPrim StringT -> Some "Rc::<str>::from(\"\")"
+                | YPrim p -> Some $"<{primRust p}>::default()"
+                | YArray _ -> Some $"<{tyv t}>::default()"
+                | YLayout(_, Heap) ->
+                    let rec_layout = heap t
+                    match layout_default_ready.TryGetValue($"Heap{rec_layout.tag}") with
+                    | true, true -> Some $"<{tyv t}>::default()"
+                    | _ -> None
+                | YLayout(_, HeapMutable) ->
+                    let rec_layout = mut t
+                    match layout_default_ready.TryGetValue($"Mut{rec_layout.tag}") with
+                    | true, true -> Some $"<{tyv t}>::default()"
+                    | _ -> None
+                | YLayout _ -> None
+                | YUnion u ->
+                    let prefix, rec_u =
+                        match u.Item.layout with
+                        | UHeap -> "UH", uheap u.Item.cases
+                        | UStack -> "US", ustack u.Item.cases
+                    match union_default_ready.TryGetValue($"{prefix}{rec_u.tag}") with
+                    | true, true -> Some $"<{tyv t}>::default()"
+                    | _ -> None
+                | YFun(domain, range, _) ->
+                    match go_ty (depth + 1) range with
+                    | None -> None
+                    | Some ret ->
+                        let args = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(i, pt)) -> $"mut v{i}: {tyv pt}") |> String.concat ", "
+                        Some $"{{ let f: {tyv t} = Rc::new(|{args}| -> {tup_ty range} {{ {ret} }}); f }}"
+                | YMacro [Text "backend_switch "; Type (YRecord r)] ->
+                    match r |> Map.tryPick (fun (_, k) v -> if k = backend_nameRust then Some v else None) with
+                    | Some arm -> go_ty (depth + 1) arm
+                    | None -> None
+                | YPair(a, b) ->
+                    match go (depth + 1) a, go (depth + 1) b with
+                    | Some a, Some b -> Some $"({a}, {b})"
+                    | _ -> None
+                | _ -> None
+            and go_ty depth (t : Ty) =
+                match env.ty_to_data t |> data_free_vars with
+                | [||] -> Some "()"
+                | [|L(_, t)|] -> go depth t
+                | vars ->
+                    let rec loop acc = function
+                        | [] ->
+                            let joined = List.rev acc |> String.concat ", "
+                            Some $"({joined})"
+                        | L(_, t) :: rest ->
+                            match go depth t with
+                            | Some value -> loop (value :: acc) rest
+                            | None -> None
+                    loop [] (Array.toList vars)
+            go 0 t
         and heap : _ -> LayoutRecFsharp = layout (fun s x ->
             let fields = x.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
             line s $"struct Heap{x.tag} {{ {fields} }}"
+            match rust_layout_default "Heap" x with
+            | Some body -> rust_emit_default s $"Heap{x.tag}" body
+            | None -> ()
             )
         and mut : _ -> LayoutRecFsharp = layout (fun s x ->
             let fields = x.free_vars |> Array.map (fun (L(i,t)) -> $"l{i}: {tyv t}") |> String.concat ", "
             line s $"struct Mut{x.tag} {{ {fields} }}"
+            match rust_layout_default "Mut" x with
+            | Some body -> rust_emit_default s $"Mut{x.tag}" body
+            | None -> ()
             )
         and union_type prefix (s : CodegenEnv) (x : UnionRecFsharp) =
             let name = $"{prefix}{x.tag}"
@@ -169911,6 +170118,9 @@ module spiral_compiler =
             line (indent (indent s)) "}"
             line (indent s) "}"
             line s "}"
+            match rust_union_default prefix x with
+            | Some body -> rust_emit_default s name body
+            | None -> ()
         and union_has_moving_field (x : UnionRecFsharp) = x.free_vars |> Map.exists (fun _ a -> a |> Array.exists (fun (L(_,t)) -> moves t))
         and uheap : _ -> UnionRecFsharp = union (union_type "UH")
         and ustack : _ -> UnionRecFsharp = union (union_type "US")
@@ -169951,12 +170161,14 @@ module spiral_compiler =
                 match fun_ty with
                 | YFun(domain,range,_) ->
                     match codegenClosureBody env "Rust" jp_body key with
-                    | domain_args, body -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
+                    | domain_args, body, sourceName ->
+                        closure_names.[i] <- generatedClosureName sourceName i
+                        {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
                 let domain_tys = x.domain_args |> Array.map (fun (L(_,t)) -> tyv t) |> String.concat ", "
                 let range = tup_ty x.range
-                line s $"fn closure{x.tag}({param_list x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
+                line s $"fn {closure_names.[x.tag]}({param_list x.free_vars}) -> Rc<dyn Fn({domain_tys}) -> {range}> {{"
                 let captured = tags_of_vars x.free_vars
                 live_binds (fun i -> captured.Contains i) x.body |> ignore
                 if Array.isEmpty x.free_vars then
@@ -170084,6 +170296,7 @@ module spiral_compiler =
     /// ### codegenDelphi
     let codegenDelphi (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let forwards = ResizeArray()
         let types = ResizeArray()
         let headers = ResizeArray()
@@ -170477,18 +170690,19 @@ module spiral_compiler =
             match fun_ty with
             | YFun(domain,range,_) ->
                 match codegenClosureBody env "Delphi" jp_body key with
-                | domain_args, body ->
+                | domain_args, body, sourceName ->
+                    closure_names.[tag] <- generatedClosureName sourceName tag
                     let free_vars = rdata_free_vars args
                     let domain_args = data_free_vars domain_args
                     let parent = fun_type (domain, range)
                     let fields = free_vars |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t};") |> String.concat " "
                     let invoke = header "Invoke" domain_args (tup_ty range)
-                    types.Add($"  TClosure{tag} = class(TFun{parent}) {fields} {invoke}; override; end;")
+                    types.Add($"  T{closure_names.[tag]} = class(TFun{parent}) {fields} {invoke}; override; end;")
                     let saved = bodies.Count
-                    emit_function $"TClosure{tag}.Invoke" domain_args range body false
+                    emit_function $"T{closure_names.[tag]}.Invoke" domain_args range body false
                     let assigns = free_vars |> Array.map (fun (L(i,_)) -> $"c.v{i} := v{i};") |> String.concat " "
                     let ps = match param_list free_vars with "" -> "" | ps -> $"({ps})"
-                    bodies.Add($"function ClosureCreate{tag}{ps}: TFun{parent};\nvar c: TClosure{tag};\nbegin\n  c := TClosure{tag}.Create; {assigns}\n  Result := c;\nend;")
+                    bodies.Add($"function ClosureCreate{tag}{ps}: TFun{parent};\nvar c: T{closure_names.[tag]};\nbegin\n  c := T{closure_names.[tag]}.Create; {assigns}\n  Result := c;\nend;")
                     headers.Add($"function ClosureCreate{tag}{ps}: TFun{parent}; forward;")
             | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
         and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
@@ -170705,6 +170919,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     /// ### codegenZig
     let codegenZig (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let bodies = ResizeArray()
         let globals = ResizeArray()
@@ -171087,7 +171302,8 @@ fn spiralCreate(comptime T: type, v: T) *T {
             match fun_ty with
             | YFun(domain,range,_) ->
                 match codegenClosureBody env "Zig" jp_body key with
-                | domain_args, body ->
+                | domain_args, body, sourceName ->
+                    closure_names.[tag] <- generatedClosureName sourceName tag
                     let free_vars = rdata_free_vars args
                     let domain_args = data_free_vars domain_args
                     let parent = fun_type (domain, range)
@@ -171095,14 +171311,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
                     types.Add($"const ClosureEnv{tag} = struct {{ {fields}pad: u8 = 0 }};")
                     let loads = free_vars |> Array.map (fun (L(i,t)) -> $"    var v{i}: {tyv t} = env.v{i}; _ = &v{i};") |> String.concat "\n"
                     let prologue = $"    const env: *ClosureEnv{tag} = @ptrCast(@alignCast(ctx)); _ = &env;\n{loads}"
-                    emit_function $"closure{tag}" None domain_args "ctx: *anyopaque" range body ""
-                    let head = $"fn closure{tag}("
+                    emit_function closure_names.[tag] None domain_args "ctx: *anyopaque" range body ""
+                    let head = $"fn {closure_names.[tag]}("
                     let saved = bodies.FindLastIndex(fun (b : string) -> b.StartsWith head)
                     let f : string = bodies.[saved]
                     let at = f.IndexOf('\n') + 1
                     bodies.[saved] <- f.Substring(0, at) + prologue + (if loads = "" then "\n" else "\n") + f.Substring(at)
                     let inits = free_vars |> Array.map (fun (L(i,_)) -> $".v{i} = p{i}, ") |> String.concat ""
-                    bodies.Add($"fn closureCreate{tag}({param_list free_vars}) Fun{parent} {{\n    return .{{ .ctx = spiralCreate(ClosureEnv{tag}, .{{ {inits}}}), .call = &closure{tag} }};\n}}\n")
+                    bodies.Add($"fn closureCreate{tag}({param_list free_vars}) Fun{parent} {{\n    return .{{ .ctx = spiralCreate(ClosureEnv{tag}, .{{ {inits}}}), .call = &{closure_names.[tag]} }};\n}}\n")
             | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
         and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
         and self_tail tag (body : TypedBind []) =
@@ -171219,6 +171435,7 @@ fn spiralCreate(comptime T: type, v: T) *T {
     /// ### codegenLean
     let codegenLean (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let bodies = ResizeArray()
         let types = ResizeArray()
         let union_names = ResizeArray<string>()
@@ -171387,10 +171604,10 @@ fn spiralCreate(comptime T: type, v: T) *T {
                 match a with
                 | JPMethod(a,c) -> call method_names.[(method (a,c)).tag] b
                 | JPClosure(a,c) ->
-                    let tag = (closure (a,c)).tag
+                    let name = closure_names.[(closure (a,c)).tag]
                     match b with
-                    | [||] -> $"closure{tag}"
-                    | b -> b |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat " " |> fun a -> $"(closure{tag} {a})"
+                    | [||] -> name
+                    | b -> b |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat " " |> fun a -> $"({name} {a})"
             let layout_index (i : int) (fields : TyV []) (mutable' : bool) =
                 let source = if mutable' then $"(← v{i}.get)" else $"v{i}"
                 match ret with
@@ -171552,13 +171769,14 @@ fn spiralCreate(comptime T: type, v: T) *T {
             match fun_ty with
             | YFun(_,range,_) ->
                 match codegenClosureBody env "Lean" jp_body key with
-                | domain_args, body ->
+                | domain_args, body, sourceName ->
+                    closure_names.[tag] <- generatedClosureName sourceName tag
                     let captured = rdata_free_vars args
                     let domain = data_free_vars domain_args
-                    emit_function $"closure{tag}" None (Array.append captured domain) range body
+                    emit_function closure_names.[tag] None (Array.append captured domain) range body
                     if domain.Length = 0 then
                         let at = bodies.Count - 1
-                        let head = $"partial def closure{tag}"
+                        let head = $"partial def {closure_names.[tag]}"
                         let f : string = bodies.[at]
                         if f.StartsWith head then
                             let colon = f.IndexOf(" : IO ")
@@ -171920,6 +172138,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### codegenBend
     let codegenBend (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let defs = ResizeArray<string>()
         let types = ResizeArray<string>()
         let unsupported what = raise_codegen_error $"The Bend backend doesn't support {what} yet."
@@ -172122,9 +172341,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let arguments = arguments |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
                 $"{method_names.[(method (a,c)).tag]}({arguments})"
             | TyJoinPoint(JPClosure(a,c), captured) ->
-                let tag = (closure (a,c)).tag
+                let name = closure_names.[(closure (a,c)).tag]
                 let captured_args = captured |> Array.map (fun (L(i,_)) -> $"v{i}, ") |> String.concat ""
-                $"IO.pure({result}, d => closure{tag}({captured_args}d))"
+                $"IO.pure({result}, d => {name}({captured_args}d))"
             | TyApply(L(i,_), b) -> $"v{i}({tup b})"
             | TyConv(YPrim (Int32T | UInt32T), b) when (match prim_of b with Some (Int32T | UInt32T) -> true | _ -> false) -> $"IO.pure({result}, {tup b})"
             | TyConv(YPrim Float32T, b) when prim_of b = Some Float32T -> $"IO.pure({result}, {tup b})"
@@ -172237,7 +172456,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     match fun_ty with
                     | YFun(domain_ty, range, _) ->
                         match codegenClosureBody env backend_nameBend jp_body key with
-                        | domain_args, body ->
+                        | domain_args, body, sourceName ->
+                            closure_names.[tag] <- generatedClosureName sourceName tag
                             let captured = rdata_free_vars args
                             let domain = data_free_vars domain_args
                             let text = StringBuilder()
@@ -172245,13 +172465,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             | [||] -> ()
                             | [|_|] -> ()
                             | vs -> text.Append($"""  ({vs |> Array.map (fun (L(j,_)) -> $"+v{j}") |> String.concat ", "}) = d{"\n"}""") |> ignore
-                            binds $"closure{tag}" "  " (tup_ty range) text (ResizeArray(Array.append captured domain)) body
+                            binds closure_names.[tag] "  " (tup_ty range) text (ResizeArray(Array.append captured domain)) body
                             let domain_param =
                                 match domain with
                                 | [|v|] -> param v
                                 | _ -> $"+d: {tup_ty domain_ty}"
                             let captured_params = captured |> Array.map (fun v -> param v + ", ") |> String.concat ""
-                            defs.Add($"@unsafe\ndef closure{tag}({captured_params}{domain_param}) -> IO({tup_ty range}):\n{text}")
+                            defs.Add($"@unsafe\ndef {closure_names.[tag]}({captured_params}{domain_param}) -> IO({tup_ty range}):\n{text}")
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     tag)
         and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
@@ -172359,6 +172579,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### codegenGleam
     let codegenGleam (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray<string>()
@@ -172514,13 +172735,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match a with
                 | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure (a, b) ->
-                    let tag = (closure (a, b)).tag
+                    let name = closure_names.[(closure (a, b)).tag]
                     let fv =
                         match args with
                         | "" -> "Nil"
                         | xs -> sprintf "#(%s)" xs
-                    let code = sprintf "closure%i(%s)" tag fv
-                    code
+                    sprintf "%s(%s)" name fv
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i: %s" i (tyv t) else sprintf "v%i" i
                 match data_free_vars x with
@@ -172776,16 +172996,30 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | TyConv(a,b) ->
                 let t = tyv a |> SpiralSm.to_lower
                 let d = tup b
-                if t = "int" then
-                    global' $"import gleam/float"
-                    $"float.truncate({d})"
-                elif t = "float" then
-                    global' $"import gleam/int"
-                    $"int.to_float({d})"
-                elif t = "bool" then
-                    $"{d} > 0"
-                else
-                    $"{d} // spiral_compiler.TyConv / t: {t}"
+                let source =
+                    match b with
+                    | DV(L(_,YPrim p)) -> tyv (YPrim p) |> SpiralSm.to_lower
+                    | DLit l -> tyv (YPrim (lit_to_primitive_type l)) |> SpiralSm.to_lower
+                    | _ -> ""
+                (match t, source with
+                 | "int", "int" -> wrapInteger (DV(L(0, a))) d
+                 | "int", "float" ->
+                     global' $"import gleam/float"
+                     $"float.truncate({d})"
+                 | "int", "bool" -> $"case {d} {{ True -> 1 False -> 0 }}"
+                 | "float", "float" -> d
+                 | "float", "int" ->
+                     global' $"import gleam/int"
+                     $"int.to_float({d})"
+                 | "float", "bool" -> $"case {d} {{ True -> 1.0 False -> 0.0 }}"
+                 | "bool", _ -> $"{d} > 0"
+                 | "int", _ ->
+                     global' $"import gleam/float"
+                     $"float.truncate({d})"
+                 | "float", _ ->
+                     global' $"import gleam/int"
+                     $"int.to_float({d})"
+                 | _ -> $"{d} // spiral_compiler.TyConv / t: {t}")
                 |> simple
             | TyApply (L(i, t), b) ->
                 let arg_code = tup b
@@ -172818,7 +173052,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | [||] -> "Nil"
                     | [|L(k,_)|] -> sprintf "v%i" k
                     | ps -> ps |> Array.map (fun (L(k,_)) -> sprintf "v%i" k) |> String.concat ", " |> sprintf "#(%s)"
-                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n  closure{tag}(Nil)({call})\n}}\n")
+                exports.Add($"pub fn {name}({decl}) -> {tup_ty range} {{\n  {closure_names.[tag]}(Nil)({call})\n}}\n")
                 match d with
                 | None -> line s "let _ = Nil"
                 | Some bound ->
@@ -172963,7 +173197,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match fun_ty with
                 | YFun (domain, range, _) ->
                     match codegenClosureBody env "Gleam" jp_body key with
-                    | domain_args, body ->
+                    | domain_args, body, sourceName ->
+                        closure_names.[i] <- (generatedClosureName sourceName i).ToLowerInvariant()
                         {   tag = i
                             free_vars = rdata_free_vars args
                             domain_args = data_free_vars domain_args
@@ -173008,7 +173243,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | [| L(i, _) |] -> sprintf "v%i" i
                     | _ -> "dom"
 
-                line s (sprintf "closure%i(capt: %s) -> fn(%s) -> %s {" x.tag capt_ty dom_ty (tup_ty x.range))
+                line s (sprintf "%s(capt: %s) -> fn(%s) -> %s {" closure_names.[x.tag] capt_ty dom_ty (tup_ty x.range))
                 line (indent s) (sprintf "fn (%s) {" dom_name)
 
                 match x.domain_args with
@@ -173143,6 +173378,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### codegenLua
     let codegenLua (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let luaHelpers = System.Collections.Generic.List<string>()
         let useLuaHelper (text : string) = if not (luaHelpers.Contains text) then luaHelpers.Add text
         let luaWrapHelpers =
@@ -173298,12 +173534,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match a with
                 | JPMethod(a,b) -> sprintf "%s(%s)" method_names.[(method (a,b)).tag] args
                 | JPClosure (a, b) ->
-                    let tag = (closure (a, b)).tag
+                    let name = closure_names.[(closure (a, b)).tag]
                     let fv =
                         match args with
                         | "" -> "nil"
                         | xs -> sprintf "{ %s }" xs
-                    sprintf "closure%i(%s)" tag fv
+                    sprintf "%s(%s)" name fv
             let free_vars do_annot x =
                 let f (L(i,t)) = if do_annot then sprintf "v%i" i else sprintf "v%i" i
                 match data_free_vars x with
@@ -173693,7 +173929,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match fun_ty with
                 | YFun (domain, range, FT_Vanilla) ->
                     match codegenClosureBody env "Lua" jp_body key with
-                    | domain_args, body ->
+                    | domain_args, body, sourceName ->
+                        closure_names.[i] <- generatedClosureName sourceName i
                         {   tag = i
                             free_vars = rdata_free_vars args
                             domain_args = data_free_vars domain_args
@@ -173710,7 +173947,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | arr ->
                         let names = arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "
                         sprintf "local %s = capt[1], %s" (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) (names |> SpiralSm.replace (arr |> Array.mapi (fun _ (L(i,_)) -> sprintf "v%i" i) |> Array.head) "" |> SpiralSm.trim)
-                line s (sprintf "function closure%i(capt)" x.tag)
+                line s (sprintf "function %s(capt)" closure_names.[x.tag])
                 if x.free_vars.Length > 0 then line (indent s) (sprintf "local %s = (table.unpack or unpack)(capt)" (x.free_vars |> Array.map (fun (L(i,_)) -> sprintf "v%i" i) |> String.concat ", "))
                 match x.domain_args with
                 | [||] ->
@@ -174557,10 +174794,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             match fun_ty with
             | YFun(domain,range,_) ->
                 match codegenClosureBody env "Wasm" jp_body key with
-                | domain_args, body ->
-                    closure_names.Add $"$closure{tag}"
+                | domain_args, body, sourceName ->
+                    let closure_name = generatedClosureName sourceName tag
+                    closure_names.Add $"${closure_name}"
                     fun_type (domain, range) |> ignore
-                    emit_function $"closure{tag}" None (data_free_vars domain_args) (rdata_free_vars args) "" range body
+                    emit_function closure_name None (data_free_vars domain_args) (rdata_free_vars args) "" range body
             | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."))
         and closure (a, b) : {| tag : int |} = {| tag = closure_memo.Force() (a, b) |}
         and self_tail tag (body : TypedBind []) =
@@ -174635,6 +174873,2831 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         data |> Seq.iter (fun x -> program.AppendLine(x) |> ignore)
         program.AppendLine("  (func $_start (export \"_start\")\n    (call $proc_exit (call $spiralMain)))") |> ignore
         program.AppendLine(")").ToString()
+
+    /// ## CodegenWgsl
+    // WGSL has no recursion and no function pointers. Self-tail calls become loops.
+    // Everything else that would need a call stack or a closure is rejected.
+    // The compute entry writes main's i32 into a storage buffer; spiral-wgsl reads it back.
+
+    /// ### WgslRet
+    type WgslRet =
+        | WgslLocal of TyV []
+        | WgslTail of Ty
+
+    /// ### codegenWgsl
+    let codegenWgsl (env : PartEvalResult) (x : TypedBind []) =
+        let functions = ResizeArray<string>()
+        let tuple_bodies = ResizeArray<string>()
+        let tuple_names = Dictionary<string, string>()
+        let method_names = Dictionary<int, string>()
+        let unsupported what = raise_codegen_error $"The WGSL backend doesn't support {what} yet."
+        let next_id = ref 0
+        let fresh_id () = next_id.Value <- next_id.Value + 1; next_id.Value
+        let is_unit_ty = function YB -> true | _ -> false
+        let tyv = function
+            | YPrim Int32T | YPrim CharT -> "i32"
+            | YPrim UInt32T -> "u32"
+            | YPrim BoolT -> "bool"
+            | YPrim Float32T -> "f32"
+            | YPrim Float64T -> unsupported "f64 (WGSL has no 64-bit float)"
+            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers (WGSL has no i64)"
+            | YPrim t -> unsupported $"the primitive {t}"
+            | t -> unsupported $"the type {show_ty t}"
+        let zero = function
+            | "i32" -> "0i"
+            | "u32" -> "0u"
+            | "bool" -> "false"
+            | "f32" -> "0.0f"
+            | other -> unsupported $"a zero value of {other}"
+        let lit = function
+            | LitInt32 x when x = Int32.MinValue -> "bitcast<i32>(0x80000000u)"
+            | LitInt32 x -> $"{x}i"
+            | LitUInt32 x -> $"{x}u"
+            | LitBool x -> if x then "true" else "false"
+            | LitChar x -> $"{int x}i"
+            | LitFloat32 x when Single.IsNaN x -> "(0.0f / 0.0f)"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> "(1.0f / 0.0f)"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> "(-1.0f / 0.0f)"
+            | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                let text = if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+                text + "f"
+            | l -> unsupported $"the literal %A{l}"
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let wgsl_of d =
+            match prim_of d with
+            | Some t -> tyv (YPrim t)
+            | None -> unsupported "an operation on a non-primitive"
+        let tup d =
+            match data_term_vars d with
+            | [|w|] -> show_w w
+            | [||] -> ""
+            | _ -> unsupported "tuple values"
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let tuple_name (tys : string []) =
+            let key = String.concat "," tys
+            match tuple_names.TryGetValue key with
+            | true, name -> name
+            | _ ->
+                let name = $"SpiralTuple{tuple_names.Count}"
+                tuple_names.[key] <- name
+                let fields = tys |> Array.mapi (fun i t -> $"  v{i}: {t},") |> String.concat "\n"
+                tuple_bodies.Add($"struct {name} {{\n{fields}\n}}\n")
+                name
+        let ret_ty range =
+            match flatten_ty range |> Array.map tyv with
+            | [||] -> ""
+            | [|t|] -> t
+            | tys -> tuple_name tys
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            let tail = match tag with Some t when self_tail t body -> true | _ -> false
+            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            try
+                let text = StringBuilder()
+                let formals = parameters |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
+                let result = ret_ty range
+                let returns = if result = "" then "" else $" -> {result}"
+                text.AppendLine($"fn {name}({formals}){returns} {{") |> ignore
+                let s0 = { text = text; indent = 4 }
+                parameters |> Array.iter (fun (L(i,t)) -> line s0 $"var v{i}: {tyv t} = p{i};")
+                if tail then
+                    line s0 "loop {"
+                    binds (indent s0) (WgslTail range) body
+                    line s0 "}"
+                    // The validator treats fallthrough after a loop that never breaks
+                    // as a valueless return, so a value-returning function needs a dead return.
+                    if result <> "" then
+                        let dead =
+                            match flatten_ty range |> Array.map tyv with
+                            | [|t|] -> zero t
+                            | tys ->
+                                let zeros = tys |> Array.map zero |> String.concat ", "
+                                $"{result}({zeros})"
+                        line s0 $"return {dead};"
+                else binds s0 (WgslTail range) body
+                text.AppendLine("}") |> ignore
+                functions.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+        and binds (s : CodegenEnv) (ret : WgslRet) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try
+                        let vs = data_free_vars d
+                        vs |> Array.iter (fun (L(i,t)) -> line s $"var v{i}: {tyv t} = {zero (tyv t)};")
+                        op s (WgslLocal vs) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s ret a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try
+                        match ret with
+                        | WgslLocal targets ->
+                            let values = data_term_vars d
+                            if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                            Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w};") targets values
+                        | WgslTail range ->
+                            match data_term_vars d with
+                            | [||] -> ()
+                            | [|w|] -> line s $"return {show_w w};"
+                            | many ->
+                                let args = many |> Array.map show_w |> String.concat ", "
+                                line s $"return {ret_ty range}({args});"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op (s : CodegenEnv) (ret : WgslRet) a =
+            let return' (x : string) =
+                match ret with
+                | WgslLocal [||] -> if x <> "" then line s $"{x};"
+                | WgslLocal [|L(i,_)|] -> line s $"v{i} = {x};"
+                | WgslLocal targets ->
+                    let name = $"spiral_tuple{fresh_id ()}"
+                    line s $"let {name} = {x};"
+                    targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.v{k};")
+                | WgslTail range when is_unit_ty range -> if x <> "" then line s $"{x};"
+                | WgslTail _ -> line s $"return {x};"
+            let jp_text (jp, args) =
+                match jp with
+                | JPMethod(a,c) ->
+                    let name = method_names.[(method (a,c)).tag]
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{name}({arguments})"
+                | JPClosure _ -> unsupported "closures (WGSL has no function pointers)"
+            let is_self (a, c) =
+                match ret, self_loop.Value with
+                | WgslTail _, Some (tag, _) -> (method (a,c)).tag = tag
+                | _ -> false
+            match a with
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
+                let _, parameters = self_loop.Value.Value
+                if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                let temps =
+                    arguments |> Array.map (fun (L(i,t)) ->
+                        let name = $"spiral_t{fresh_id ()}"
+                        line s $"let {name}: {tyv t} = v{i};"
+                        name)
+                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp};") parameters temps
+                line s "continue;"
+            | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The WGSL backend does not support nesting other backends."
+            | TyWhile(cond, body) ->
+                match ret with
+                | WgslLocal [||] -> ()
+                | WgslTail range when is_unit_ty range -> ()
+                | _ -> unsupported "a while loop in value position"
+                line s "loop {"
+                line (indent s) $"if (!({jp_text cond})) {{ break; }}"
+                binds (indent s) (WgslLocal [||]) body
+                line s "}"
+            | TyDo body | TyIndent body -> binds s ret body
+            | TyConv(YPrim target, b) ->
+                let source = prim_of b
+                let text = tup b
+                let same =
+                    match source with
+                    | Some s when s = target -> true
+                    | Some CharT when target = Int32T -> true
+                    | Some Int32T when target = CharT -> true
+                    | _ -> false
+                let converted =
+                    if same then text
+                    else
+                        match source, target with
+                        | Some (Int32T | CharT), UInt32T | Some UInt32T, (Int32T | CharT) -> $"bitcast<{tyv (YPrim target)}>({text})"
+                        | Some (Int32T | UInt32T | CharT), Float32T -> $"f32({text})"
+                        | Some Float32T, (Int32T | CharT) -> $"i32({text})"
+                        | Some Float32T, UInt32T -> $"u32({text})"
+                        | Some BoolT, (Int32T | CharT) -> $"select(0i, 1i, {text})"
+                        | Some (Int32T | CharT), BoolT -> $"({text} != 0i)"
+                        | _ -> unsupported "this conversion"
+                return' converted
+            | TyFailwith _ -> unsupported "failwith"
+            | TyMacro parts ->
+                let piece = function
+                    | CMText x -> x
+                    | CMTerm (x, true) -> data_term_vars x |> Array.map show_w |> String.concat ", "
+                    | CMTerm (x, false) -> tup x
+                    | CMType x -> tyv x
+                    | CMTypeLit _ -> unsupported "a macro type literal"
+                return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(operation, l) ->
+                let binary symbol a b = $"({tup a} {symbol} {tup b})"
+                // WGSL shifts take a u32 count. Signed `>>` stays arithmetic.
+                let shift symbol a b =
+                    let count = if wgsl_of b = "u32" then tup b else $"bitcast<u32>({tup b})"
+                    $"({tup a} {symbol} {count})"
+                let expr =
+                    match operation, l with
+                    | Dyn, [a] -> tup a
+                    | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                    | Add, [a;b] -> binary "+" a b
+                    | Sub, [a;b] -> binary "-" a b
+                    | Mult, [a;b] -> binary "*" a b
+                    | Div, [a;b] -> binary "/" a b
+                    | Mod, [a;b] -> binary "%" a b
+                    | LT, [a;b] -> binary "<" a b
+                    | LTE, [a;b] -> binary "<=" a b
+                    | GT, [a;b] -> binary ">" a b
+                    | GTE, [a;b] -> binary ">=" a b
+                    | EQ, [a;b] -> binary "==" a b
+                    | NEQ, [a;b] -> binary "!=" a b
+                    | BoolAnd, [a;b] -> binary "&&" a b
+                    | BoolOr, [a;b] -> binary "||" a b
+                    | BitwiseAnd, [a;b] -> binary "&" a b
+                    | BitwiseOr, [a;b] -> binary "|" a b
+                    | BitwiseXor, [a;b] -> binary "^" a b
+                    | BitwiseComplement, [a] -> $"(~{tup a})"
+                    | ShiftLeft, [a;b] -> shift "<<" a b
+                    | ShiftRight, [a;b] -> shift ">>" a b
+                    | Neg, [a] -> $"(-{tup a})"
+                    | NanIs, [a] -> $"({tup a} != {tup a})"
+                    | StdoutFlush, [] -> ""
+                    | _ -> unsupported $"the operation %A{operation}"
+                return' expr
+            | other ->
+                let construct = (sprintf "%A" other).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "Wgsl" jp_body key with
+                    | body, range, name ->
+                        method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : {| tag : int |} = {| tag = method_memo.Force() (a, b) |}
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the WGSL backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.AppendLine("struct SpiralIo {") |> ignore
+        program.AppendLine("  code: i32,") |> ignore
+        program.AppendLine("  pad0: u32,") |> ignore
+        program.AppendLine("  pad1: u32,") |> ignore
+        program.AppendLine("  pad2: u32,") |> ignore
+        program.AppendLine("}") |> ignore
+        program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
+        tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        if unit_main then
+            program.AppendLine("@compute @workgroup_size(1)") |> ignore
+            program.AppendLine("fn main() {") |> ignore
+            program.AppendLine("  spiral_main();") |> ignore
+            program.AppendLine("  spiral_io.code = 0i;") |> ignore
+            program.AppendLine("}") |> ignore
+        else
+            program.AppendLine("@compute @workgroup_size(1)") |> ignore
+            program.AppendLine("fn main() {") |> ignore
+            program.AppendLine("  spiral_io.code = spiral_main();") |> ignore
+            program.AppendLine("}") |> ignore
+        program.ToString()
+
+    // Calyx has no recursion. Self-tail calls become a while on a go register.
+    // The integer subset lowers to one register per local and one group per assignment.
+    // component main writes the i32 into the external memory spiral_io; cider dumps it.
+
+    /// ### CalyxRet
+    type CalyxRet =
+        | CalyxLocal of TyV []
+        | CalyxTail of Ty
+
+    /// ### CalyxPart
+    type CalyxPart = {
+        tag : int option
+        cells : ResizeArray<string>
+        wires : ResizeArray<string>
+        declared : HashSet<int>
+        calls : Dictionary<int, string>
+        serial : int ref
+    }
+
+    /// ### codegenCalyx
+    let codegenCalyx (env : PartEvalResult) (x : TypedBind []) =
+        let components = ResizeArray<string>()
+        let method_info = Dictionary<int, string * int option * TyV []>()
+        let unsupported what = raise_codegen_error $"The Calyx backend doesn't support {what} yet."
+        let is_unit_ty = function YB -> true | _ -> false
+        let width = function
+            | YPrim (Int32T | UInt32T | CharT) -> 32
+            | YPrim BoolT -> 1
+            | YPrim Float32T -> unsupported "f32"
+            | YPrim Float64T -> unsupported "f64 (Calyx integer subset)"
+            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim t -> unsupported $"the primitive {t}"
+            | t -> unsupported $"the type {show_ty t}"
+        let ret_width = function
+            | YB -> None
+            | t -> Some (width t)
+        let lit = function
+            | LitInt32 x -> sprintf "32'd%u" (uint32 x)
+            | LitUInt32 x -> sprintf "32'd%u" x
+            | LitBool true -> "1'd1"
+            | LitBool false -> "1'd0"
+            | LitChar x -> sprintf "32'd%d" (int x)
+            | l -> unsupported $"the literal {l}"
+        let show_port = function WV (L(i,_)) -> sprintf "v%d.out" i | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let width_of d =
+            match prim_of d with
+            | Some t -> width (YPrim t)
+            | None -> unsupported "an operation on a non-primitive"
+        let signed_of d =
+            match prim_of d with
+            | Some (Int32T | CharT) -> true
+            | _ -> false
+        let one_port d =
+            match data_term_vars d with
+            | [|w|] -> show_port w
+            | [||] -> unsupported "a unit value where a scalar is required"
+            | _ -> unsupported "tuple values"
+        let fresh (part : CalyxPart) =
+            part.serial.Value <- part.serial.Value + 1
+            part.serial.Value
+        let add_cell (part : CalyxPart) text = part.cells.Add("    " + text)
+        let ensure (part : CalyxPart) i w =
+            if part.declared.Add i then add_cell part (sprintf "v%d = std_reg(%d);" i w)
+        let add_group (part : CalyxPart) name (lines : string seq) =
+            part.wires.Add(sprintf "    group %s {" name)
+            for line in lines do part.wires.Add("      " + line)
+            part.wires.Add "    }"
+        // One register write per group, so the next group observes .out.
+        let write_group (part : CalyxPart) (control : ResizeArray<string>) (extras : string list) (assigns : (string * string) list) (write_en : string) =
+            if not assigns.IsEmpty then
+                let g = sprintf "g%d" (fresh part)
+                let lines = ResizeArray<string>()
+                for extra in extras do lines.Add extra
+                for dest, port in assigns do
+                    lines.Add(sprintf "%s.in = %s;" dest port)
+                    lines.Add(sprintf "%s.write_en = %s;" dest write_en)
+                let done_expr =
+                    match assigns |> List.map fst with
+                    | [one] -> sprintf "%s.done" one
+                    | many -> (many |> List.map (sprintf "%s.done") |> String.concat " & ") + " ? 1'd1"
+                lines.Add(sprintf "%s[done] = %s;" g done_expr)
+                add_group part g lines
+                control.Add(g + ";")
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            try
+                self_loop.Value <- None
+                let part =
+                    { tag = tag
+                      cells = ResizeArray<string>()
+                      wires = ResizeArray<string>()
+                      declared = HashSet<int>()
+                      calls = Dictionary<int, string>()
+                      serial = ref 0 }
+                add_cell part "spiral_tick = std_reg(1);"
+                match ret_width range with
+                | Some w -> add_cell part (sprintf "spiral_ret = std_reg(%d);" w)
+                | None -> ()
+                for L(i,t) in parameters do ensure part i (width t)
+                let rec binds (control : ResizeArray<string>) (ret : CalyxRet) (stmts : TypedBind []) =
+                    Array.iter (function
+                        | TyLet(d,trace,a) ->
+                            try
+                                let vs = data_free_vars d
+                                vs |> Array.iter (fun (L(i,t)) -> ensure part i (width t))
+                                op control (CalyxLocal vs) a
+                            with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        | TyLocalReturnOp(trace,a,_) ->
+                            try op control ret a
+                            with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        | TyLocalReturnData(d,trace) ->
+                            try
+                                match ret with
+                                | CalyxLocal targets ->
+                                    let values = data_term_vars d
+                                    if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                                    if targets.Length > 1 then unsupported "tuple values"
+                                    if targets.Length = 1 then
+                                        let (L(i,t)) = targets.[0]
+                                        ensure part i (width t)
+                                        let dest = sprintf "v%d" i
+                                        let port = show_port values.[0]
+                                        if port <> dest + ".out" then write_group part control [] [(dest, port)] "1'd1"
+                                | CalyxTail _ ->
+                                    match data_term_vars d with
+                                    | [||] -> clear_go control
+                                    | [|w|] ->
+                                        write_group part control [] [("spiral_ret", show_port w)] "1'd1"
+                                        clear_go control
+                                    | _ -> unsupported "tuple values"
+                            with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                        ) stmts
+                and clear_go (control : ResizeArray<string>) =
+                    match self_loop.Value with
+                    | Some _ -> write_group part control [] [("spiral_go", "1'd0")] "1'd1"
+                    | None -> ()
+                and place (control : ResizeArray<string>) (ret : CalyxRet) (produce : string -> unit) =
+                    match ret with
+                    | CalyxLocal [||] -> ()
+                    | CalyxLocal [|L(i,t)|] ->
+                        ensure part i (width t)
+                        produce (sprintf "v%d" i)
+                    | CalyxLocal _ -> unsupported "tuple values"
+                    | CalyxTail range when is_unit_ty range -> ()
+                    | CalyxTail _ ->
+                        produce "spiral_ret"
+                        clear_go control
+                and op (control : ResizeArray<string>) (ret : CalyxRet) a =
+                    let comb dest prim w left right =
+                        let cell = sprintf "op%d" (fresh part)
+                        add_cell part (sprintf "%s = %s(%d);" cell prim w)
+                        write_group part control [sprintf "%s.left = %s;" cell left; sprintf "%s.right = %s;" cell right] [(dest, cell + ".out")] "1'd1"
+                    let pipe dest prim w left right out_port =
+                        let cell = sprintf "op%d" (fresh part)
+                        add_cell part (sprintf "%s = %s(%d);" cell prim w)
+                        write_group part control [
+                            sprintf "%s.left = %s;" cell left
+                            sprintf "%s.right = %s;" cell right
+                            sprintf "%s.go = !%s.done ? 1'd1;" cell cell
+                        ] [(dest, sprintf "%s.%s" cell out_port)] (cell + ".done")
+                    let unary dest prim w input =
+                        let cell = sprintf "op%d" (fresh part)
+                        add_cell part (sprintf "%s = %s(%d);" cell prim w)
+                        write_group part control [sprintf "%s.in = %s;" cell input] [(dest, cell + ".out")] "1'd1"
+                    let pair_width a b =
+                        let wa, wb = width_of a, width_of b
+                        if wa <> wb then unsupported "operands of different widths"
+                        wa
+                    let latch_call (dest : string) cell =
+                        write_group part control [] [(dest, cell + ".out")] "1'd1"
+                    let invoke (a, c) (args : TyV []) =
+                        let mname, mwidth, mparams, mtag = method (a, c)
+                        if part.tag = Some mtag then unsupported "recursion that is not a self-tail call"
+                        let cell =
+                            match part.calls.TryGetValue mtag with
+                            | true, found -> found
+                            | _ ->
+                                let found = sprintf "c%d" (fresh part)
+                                part.calls.[mtag] <- found
+                                add_cell part (sprintf "%s = %s();" found mname)
+                                found
+                        if args.Length <> mparams.Length then raise_codegen_error "Compiler error: A call has the wrong number of arguments."
+                        let ports =
+                            Array.map2 (fun (L(pi,_)) (L(ai,at)) ->
+                                ensure part ai (width at)
+                                sprintf "in%d = v%d.out" pi ai) mparams args
+                            |> String.concat ", "
+                        control.Add(sprintf "invoke %s(%s)();" cell ports)
+                        cell, mwidth
+                    let fill_seq (src : ResizeArray<string>) =
+                        if src.Count > 0 then src else
+                        let tmp = ResizeArray<string>()
+                        write_group part tmp [] [("spiral_tick", "1'd0")] "1'd1"
+                        tmp
+                    match a with
+                    | TyIf(cond,tr,fl) ->
+                        let guard = sprintf "b%d" (fresh part)
+                        add_cell part (guard + " = std_reg(1);")
+                        match prim_of cond with
+                        | Some BoolT -> write_group part control [] [(guard, one_port cond)] "1'd1"
+                        | Some (Int32T | UInt32T | CharT) ->
+                            let cell = sprintf "op%d" (fresh part)
+                            add_cell part (cell + " = std_neq(32);")
+                            write_group part control [sprintf "%s.left = %s;" cell (one_port cond); sprintf "%s.right = 32'd0;" cell] [(guard, cell + ".out")] "1'd1"
+                        | _ -> unsupported "a condition that is not a bool or an int"
+                        let tr_c, fl_c = ResizeArray<string>(), ResizeArray<string>()
+                        binds tr_c ret tr
+                        binds fl_c ret fl
+                        control.Add(sprintf "if %s.out {" guard)
+                        control.Add "  seq {"
+                        for line in fill_seq tr_c do control.Add("    " + line)
+                        control.Add "  }"
+                        control.Add "} else {"
+                        control.Add "  seq {"
+                        for line in fill_seq fl_c do control.Add("    " + line)
+                        control.Add "  }"
+                        control.Add "};"
+                    | TyJoinPoint(JPMethod(a,c), arguments) ->
+                        let _, _, _, mtag = method (a, c)
+                        let is_self =
+                            match ret, self_loop.Value with
+                            | CalyxTail _, Some (tag, _) -> mtag = tag
+                            | _ -> false
+                        if is_self then
+                            let _, parameters = self_loop.Value.Value
+                            if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                            let temps =
+                                arguments |> Array.map (fun (L(i,t)) ->
+                                    let temp = sprintf "t%d" (fresh part)
+                                    let w = width t
+                                    ensure part i w
+                                    add_cell part (sprintf "%s = std_reg(%d);" temp w)
+                                    write_group part control [] [(temp, sprintf "v%d.out" i)] "1'd1"
+                                    temp)
+                            Array.iter2 (fun (L(i,_)) temp ->
+                                write_group part control [] [(sprintf "v%d" i, temp + ".out")] "1'd1") parameters temps
+                        else
+                            let cell, out_width = invoke (a, c) arguments
+                            match ret, out_width with
+                            | CalyxLocal [||], _ -> ()
+                            | CalyxTail range, _ when is_unit_ty range -> ()
+                            | _, None -> unsupported "a unit method in value position"
+                            | CalyxLocal [|L(i,t)|], Some _ ->
+                                ensure part i (width t)
+                                latch_call (sprintf "v%d" i) cell
+                            | CalyxTail _, Some _ ->
+                                latch_call "spiral_ret" cell
+                                clear_go control
+                            | _ -> unsupported "tuple values"
+                    | TyJoinPoint(JPClosure _, _) -> unsupported "closures"
+                    | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Calyx backend does not support nesting other backends."
+                    | TyWhile(cond, body) ->
+                        match ret with
+                        | CalyxLocal [||] -> ()
+                        | CalyxTail range when is_unit_ty range -> ()
+                        | _ -> unsupported "a while loop in value position"
+                        let guard = sprintf "b%d" (fresh part)
+                        add_cell part (guard + " = std_reg(1);")
+                        let refresh (buf : ResizeArray<string>) =
+                            let jp, args = cond
+                            match jp with
+                            | JPMethod(a,c) ->
+                                let cell, out_width = invoke (a, c) args
+                                match out_width with
+                                | Some 1 -> write_group part buf [] [(guard, cell + ".out")] "1'd1"
+                                | Some _ ->
+                                    let cell_ne = sprintf "op%d" (fresh part)
+                                    add_cell part (cell_ne + " = std_neq(32);")
+                                    write_group part buf [sprintf "%s.left = %s.out;" cell_ne cell; sprintf "%s.right = 32'd0;" cell_ne] [(guard, cell_ne + ".out")] "1'd1"
+                                | None -> unsupported "a unit while condition"
+                            | JPClosure _ -> unsupported "closures"
+                        refresh control
+                        let loop_body = ResizeArray<string>()
+                        binds loop_body (CalyxLocal [||]) body
+                        refresh loop_body
+                        control.Add(sprintf "while %s.out {" guard)
+                        control.Add "  seq {"
+                        for line in loop_body do control.Add("    " + line)
+                        control.Add "  }"
+                        control.Add "};"
+                    | TyDo body | TyIndent body -> binds control ret body
+                    | TyConv(YPrim target, b) ->
+                        let source = prim_of b
+                        let text = one_port b
+                        let same =
+                            match source with
+                            | Some s when s = target -> true
+                            | Some CharT when target = Int32T -> true
+                            | Some Int32T when target = CharT -> true
+                            | Some (Int32T | CharT) when target = UInt32T -> true
+                            | Some UInt32T when (target = Int32T || target = CharT) -> true
+                            | _ -> false
+                        if same then place control ret (fun dest -> if text <> dest + ".out" then write_group part control [] [(dest, text)] "1'd1")
+                        else
+                            match source, target with
+                            | Some BoolT, (Int32T | CharT | UInt32T) ->
+                                place control ret (fun dest ->
+                                    let cell = sprintf "op%d" (fresh part)
+                                    add_cell part (cell + " = std_pad(1, 32);")
+                                    write_group part control [sprintf "%s.in = %s;" cell text] [(dest, cell + ".out")] "1'd1")
+                            | Some (Int32T | UInt32T | CharT), BoolT ->
+                                place control ret (fun dest ->
+                                    let cell = sprintf "op%d" (fresh part)
+                                    add_cell part (cell + " = std_neq(32);")
+                                    write_group part control [sprintf "%s.left = %s;" cell text; sprintf "%s.right = 32'd0;" cell] [(dest, cell + ".out")] "1'd1")
+                            | _ -> unsupported "this conversion"
+                    | TyFailwith _ -> unsupported "failwith"
+                    | TyMacro _ -> unsupported "macros"
+                    | TyOp(Global, _) -> unsupported "globals"
+                    | TyOp(operation, l) ->
+                        let binary symbol a b dest =
+                            // symbol selects the primitive. Add and subtract are two's complement.
+                            let w = pair_width a b
+                            let left, right = one_port a, one_port b
+                            match symbol with
+                            | "add" -> comb dest "std_add" w left right
+                            | "sub" -> comb dest "std_sub" w left right
+                            | "mul" -> pipe dest "std_mult_pipe" w left right "out"
+                            | "div" -> pipe dest (if signed_of a then "std_sdiv_pipe" else "std_div_pipe") w left right "out_quotient"
+                            | "mod" -> pipe dest (if signed_of a then "std_sdiv_pipe" else "std_div_pipe") w left right "out_remainder"
+                            | "lt" -> comb dest (if signed_of a then "std_slt" else "std_lt") w left right
+                            | "le" -> comb dest (if signed_of a then "std_sle" else "std_le") w left right
+                            | "gt" -> comb dest (if signed_of a then "std_sgt" else "std_gt") w left right
+                            | "ge" -> comb dest (if signed_of a then "std_sge" else "std_ge") w left right
+                            | "eq" -> comb dest "std_eq" w left right
+                            | "neq" -> comb dest "std_neq" w left right
+                            | "and" -> comb dest "std_and" w left right
+                            | "or" -> comb dest "std_or" w left right
+                            | "xor" -> comb dest "std_xor" w left right
+                            | "lsh" -> comb dest "std_lsh" w left right
+                            | "rsh" -> comb dest (if signed_of a then "std_srsh" else "std_rsh") w left right
+                            | other -> unsupported other
+                        match operation, l with
+                        | Dyn, [a] -> place control ret (fun dest -> if one_port a <> dest + ".out" then write_group part control [] [(dest, one_port a)] "1'd1")
+                        | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                        | Add, [a;b] -> place control ret (fun dest -> binary "add" a b dest)
+                        | Sub, [a;b] -> place control ret (fun dest -> binary "sub" a b dest)
+                        | Mult, [a;b] -> place control ret (fun dest -> binary "mul" a b dest)
+                        | Div, [a;b] -> place control ret (fun dest -> binary "div" a b dest)
+                        | Mod, [a;b] -> place control ret (fun dest -> binary "mod" a b dest)
+                        | LT, [a;b] -> place control ret (fun dest -> binary "lt" a b dest)
+                        | LTE, [a;b] -> place control ret (fun dest -> binary "le" a b dest)
+                        | GT, [a;b] -> place control ret (fun dest -> binary "gt" a b dest)
+                        | GTE, [a;b] -> place control ret (fun dest -> binary "ge" a b dest)
+                        | EQ, [a;b] -> place control ret (fun dest -> binary "eq" a b dest)
+                        | NEQ, [a;b] -> place control ret (fun dest -> binary "neq" a b dest)
+                        | BoolAnd, [a;b] -> place control ret (fun dest -> binary "and" a b dest)
+                        | BoolOr, [a;b] -> place control ret (fun dest -> binary "or" a b dest)
+                        | BitwiseAnd, [a;b] -> place control ret (fun dest -> binary "and" a b dest)
+                        | BitwiseOr, [a;b] -> place control ret (fun dest -> binary "or" a b dest)
+                        | BitwiseXor, [a;b] -> place control ret (fun dest -> binary "xor" a b dest)
+                        | BitwiseComplement, [a] -> place control ret (fun dest -> unary dest "std_not" (width_of a) (one_port a))
+                        | ShiftLeft, [a;b] -> place control ret (fun dest -> binary "lsh" a b dest)
+                        | ShiftRight, [a;b] -> place control ret (fun dest -> binary "rsh" a b dest)
+                        | Neg, [a] ->
+                            place control ret (fun dest ->
+                                let w = width_of a
+                                comb dest "std_sub" w (sprintf "%d'd0" w) (one_port a))
+                        | StdoutFlush, [] -> ()
+                        | _ -> unsupported $"the operation {operation}"
+                    | other ->
+                        let construct = (sprintf "%A" other).Split('(').[0]
+                        unsupported construct
+                and is_tail tag (body : TypedBind []) =
+                    body.Length > 0 &&
+                    match Array.last body with
+                    | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) ->
+                        let _, _, _, mtag = method (a, c)
+                        mtag = tag
+                    | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> is_tail tag tr || is_tail tag fl
+                    | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (is_tail tag) on_succ || is_tail tag on_fail
+                    | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> is_tail tag b
+                    | _ -> false
+                let tail = match tag with Some t when is_tail t body -> true | _ -> false
+                if tail then
+                    self_loop.Value <- Some (tag.Value, parameters)
+                    add_cell part "spiral_go = std_reg(1);"
+                let prefix = ResizeArray<string>()
+                if parameters.Length > 0 then
+                    let assigns = parameters |> Array.map (fun (L(i,_)) -> sprintf "v%d" i, sprintf "in%d" i) |> Array.toList
+                    write_group part prefix [] assigns "1'd1"
+                if tail then write_group part prefix [] [("spiral_go", "1'd1")] "1'd1"
+                let body_control = ResizeArray<string>()
+                binds body_control (CalyxTail range) body
+                let control = ResizeArray<string>()
+                for line in prefix do control.Add line
+                if tail then
+                    control.Add "while spiral_go.out {"
+                    control.Add "  seq {"
+                    if body_control.Count = 0 then write_group part body_control [] [("spiral_tick", "1'd0")] "1'd1"
+                    for line in body_control do control.Add("    " + line)
+                    control.Add "  }"
+                    control.Add "};"
+                else
+                    for line in body_control do control.Add line
+                if control.Count = 0 then write_group part control [] [("spiral_tick", "1'd0")] "1'd1"
+                let text = StringBuilder()
+                let formals = parameters |> Array.map (fun (L(i,t)) -> sprintf "in%d: %d" i (width t)) |> String.concat ", "
+                let outs = match ret_width range with None -> "()" | Some w -> sprintf "(out: %d)" w
+                text.AppendLine(sprintf "component %s(%s) -> %s {" name formals outs) |> ignore
+                text.AppendLine "  cells {" |> ignore
+                for cell in part.cells do text.AppendLine cell |> ignore
+                text.AppendLine "  }" |> ignore
+                text.AppendLine "  wires {" |> ignore
+                for wire in part.wires do text.AppendLine wire |> ignore
+                match ret_width range with
+                | Some _ -> text.AppendLine "    out = spiral_ret.out;" |> ignore
+                | None -> ()
+                text.AppendLine "  }" |> ignore
+                text.AppendLine "  control {" |> ignore
+                text.AppendLine "    seq {" |> ignore
+                for line in control do text.AppendLine("      " + line) |> ignore
+                text.AppendLine "    }" |> ignore
+                text.AppendLine "  }" |> ignore
+                text.AppendLine "}" |> ignore
+                components.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "Calyx" jp_body key with
+                    | body, range, name ->
+                        let mname = "sp_" + generatedMethodName name tag
+                        let parameters = rdata_free_vars args
+                        method_info.[tag] <- (mname, ret_width range, parameters)
+                        emit_function mname (Some tag) parameters range body
+                    tag)
+        and method (a, b) : string * int option * TyV [] * int =
+            let tag = method_memo.Force() (a, b)
+            let name, out_width, parameters = method_info.[tag]
+            name, out_width, parameters, tag
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Calyx backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.AppendLine "import \"primitives/core.futil\";" |> ignore
+        program.AppendLine "import \"primitives/binary_operators.futil\";" |> ignore
+        program.AppendLine "import \"primitives/memories/comb.futil\";" |> ignore
+        components |> Seq.iter (fun text -> program.Append text |> ignore)
+        let stored = if unit_main then "32'd0" else "entry.out"
+        program.AppendLine "component main() -> () {" |> ignore
+        program.AppendLine "  cells {" |> ignore
+        program.AppendLine "    @external spiral_io = comb_mem_d1(32, 1, 1);" |> ignore
+        program.AppendLine "    entry = spiral_main();" |> ignore
+        program.AppendLine "  }" |> ignore
+        program.AppendLine "  wires {" |> ignore
+        program.AppendLine "    group spiral_store {" |> ignore
+        program.AppendLine "      spiral_io.addr0 = 1'd0;" |> ignore
+        program.AppendLine "      spiral_io.write_en = 1'd1;" |> ignore
+        program.AppendLine(sprintf "      spiral_io.write_data = %s;" stored) |> ignore
+        program.AppendLine "      spiral_store[done] = spiral_io.done;" |> ignore
+        program.AppendLine "    }" |> ignore
+        program.AppendLine "  }" |> ignore
+        program.AppendLine "  control {" |> ignore
+        program.AppendLine "    seq {" |> ignore
+        program.AppendLine "      invoke entry()();" |> ignore
+        program.AppendLine "      spiral_store;" |> ignore
+        program.AppendLine "    }" |> ignore
+        program.AppendLine "  }" |> ignore
+        program.AppendLine "}" |> ignore
+        program.ToString()
+
+    // Kotlin has general recursion, but this backend rejects it. Self-tail calls
+    // become while/continue. The process exits with main's i32 and prints nothing.
+
+    /// ### KotlinRet
+    type KotlinRet =
+        | KotlinLocal of TyV []
+        | KotlinTail of Ty
+
+    /// ### codegenKotlin
+    let codegenKotlin (env : PartEvalResult) (x : TypedBind []) =
+        let functions = ResizeArray<string>()
+        let tuple_bodies = ResizeArray<string>()
+        let tuple_names = Dictionary<string, string>()
+        let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
+        let helpers = ResizeArray<string>()
+        let strings_ready = ref false
+        let string_helpers () =
+            if not strings_ready.Value then
+                strings_ready.Value <- true
+                // Index returns a sign-extended byte: C's char is signed, so 0xC3 is -61, not 195.
+                let q = "\""
+                let line text = text + "\n"
+                helpers.Add(
+                    line "fun spiralUtf8(value: String): ByteArray = value.toByteArray(Charsets.UTF_8)" +
+                    line "fun spiralStringLength(value: String): Int = spiralUtf8(value).size" +
+                    line "fun spiralStringIndex(value: String, index: Int): Int {" +
+                    line "    val bytes = spiralUtf8(value)" +
+                    line "    if (!(index >= 0 && index < bytes.size)) {" +
+                    line ("        System.err.println(" + q + "string index out of bounds" + q + ")") +
+                    line "        System.exit(1)" +
+                    line "        throw RuntimeException()" +
+                    line "    }" +
+                    line "    return bytes[index].toInt()" +
+                    line "}" +
+                    line "fun spiralStringSlice(value: String, from: Int, to: Int): String {" +
+                    line "    val bytes = spiralUtf8(value)" +
+                    line "    val length = bytes.size" +
+                    line "    if (from < 0 || from > length || to < from - 1 || to >= length) {" +
+                    line ("        System.err.println(" + q + "string slice out of bounds" + q + ")") +
+                    line "        System.exit(3)" +
+                    line "        throw RuntimeException()" +
+                    line "    }" +
+                    line ("    if (to < from) return " + q + q) +
+                    line "    val start = bytes[from].toInt()" +
+                    line "    val follows = to + 1 < length && ((bytes[to + 1].toInt() and 192) == 128)" +
+                    line "    if ((start and 192) == 128 || follows) {" +
+                    line ("        System.err.println(" + q + "string slice splits a code point" + q + ")") +
+                    line "        System.exit(3)" +
+                    line "        throw RuntimeException()" +
+                    line "    }" +
+                    line "    return bytes.copyOfRange(from, to + 1).toString(Charsets.UTF_8)" +
+                    line "}")
+        let unsupported what = raise_codegen_error $"The Kotlin backend doesn't support {what} yet."
+        let is_unit_ty = function YB -> true | _ -> false
+        // Locals are always initialized. A union's zero is its first case built from zeros.
+        let union_types = ResizeArray<string>()
+        let union_zeros = Dictionary<string, string>()
+        let union_seen = Dictionary(HashIdentity.Reference)
+        let union_recs = Dictionary(HashIdentity.Reference)
+        let fun_zeros = Dictionary<string, string>()
+        // Heap and heap-mutable layouts. The id is assigned before nested fields are walked.
+        let layout_types = ResizeArray<string>()
+        let layout_zeros = Dictionary<string, string>()
+        let layout_seen = Dictionary<string, int * Data * TyV[]>()
+        let rec tyv = function
+            | YPrim Int32T | YPrim CharT -> "Int"
+            | YPrim UInt32T -> "UInt"
+            | YPrim BoolT -> "Boolean"
+            | YPrim Float32T -> "Float"
+            | YPrim Float64T -> "Double"
+            | YPrim Int64T -> "Long"
+            | YPrim UInt64T -> "ULong"
+            | YPrim Int8T -> "Byte"
+            | YPrim Int16T -> "Short"
+            | YPrim UInt8T -> "UByte"
+            | YPrim UInt16T -> "UShort"
+            | YPrim StringT -> "String"
+            | YArray a ->
+                match env.ty_to_data a |> data_free_vars with
+                | [|L(_, t)|] -> $"Array<{tyv t}>"
+                | _ -> unsupported "an array whose element is not one value"
+            | YFun(domain, range, FT_Vanilla) ->
+                let dom = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t)
+                let ret =
+                    match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [||] -> "Unit"
+                    | [|t|] -> t
+                    | rets ->
+                        let key = String.concat "," rets
+                        match tuple_names.TryGetValue key with
+                        | true, name -> name
+                        | _ ->
+                            let name = $"SpiralTuple{tuple_names.Count}"
+                            tuple_names.[key] <- name
+                            let fields = rets |> Array.mapi (fun i t -> $"val v{i}: {t}") |> String.concat ", "
+                            tuple_bodies.Add($"class {name}({fields})\n")
+                            name
+                let dom_text = dom |> String.concat ", "
+                let text = if dom.Length = 0 then $"() -> {ret}" else $"({dom_text}) -> {ret}"
+                if not (fun_zeros.ContainsKey text) then
+                    let dummy =
+                        if dom.Length = 0 then "{ throw RuntimeException() }"
+                        else
+                            let formals = dom |> Array.map (fun t -> $"_: {t}") |> String.concat ", "
+                            $"{{ {formals} -> throw RuntimeException() }}"
+                    fun_zeros.[text] <- dummy
+                text
+            | YFun _ -> unsupported "this function type"
+            | YUnion h -> ensure_union h
+            | YLayout _ as t -> ensure_layout t
+            | t -> unsupported $"the type {show_ty t}"
+        // A class, not a struct: a method receives the cell and writes the caller's fields.
+        and ensure_layout (t : Ty) : string =
+            match t with
+            | YLayout(inner, lay) ->
+                match lay with
+                | StackMutable -> unsupported "a stack mutable layout"
+                | StackRefs | HeapRefs -> unsupported "a ref layout"
+                | Heap | HeapMutable ->
+                    let key = show_ty t
+                    let prefix = if lay = Heap then "Heap" else "Mut"
+                    match layout_seen.TryGetValue key with
+                    | true, (id, _, _) -> $"{prefix}{id}"
+                    | _ ->
+                        let id = layout_seen.Count
+                        let name = $"{prefix}{id}"
+                        let data = env.ty_to_data inner
+                        let free_vars =
+                            match data with
+                            | DRecord fields -> fields |> Map.toArray |> Array.collect (fun (_, field) -> data_free_vars field)
+                            | _ -> data_free_vars data
+                        // Register before walking fields so a direct cycle is a name match, not a loop.
+                        layout_seen.[key] <- (id, data, free_vars)
+                        free_vars |> Array.iter (fun (L(_, ft)) ->
+                            if tyv ft = name then unsupported "a recursive layout")
+                        let text = StringBuilder()
+                        let kw = if lay = Heap then "val" else "var"
+                        if free_vars.Length = 0 then
+                            text.AppendLine($"class {name}()") |> ignore
+                            layout_zeros.[name] <- $"{name}()"
+                        else
+                            let formals = free_vars |> Array.map (fun (L(i, ft)) -> $"{kw} l{i}: {tyv ft}") |> String.concat ", "
+                            text.AppendLine($"class {name}({formals})") |> ignore
+                            let args = free_vars |> Array.map (fun (L(_, ft)) -> zero (tyv ft)) |> String.concat ", "
+                            layout_zeros.[name] <- $"{name}({args})"
+                        layout_types.Add(text.ToString())
+                        name
+            | _ -> raise_codegen_error "Compiler error: Expected a layout type."
+        and ensure_union (h : Union) : string =
+            let key = h.Item
+            match union_seen.TryGetValue key with
+            | true, name -> name
+            | _ ->
+                let tag = union_seen.Count
+                let prefix = match key.layout with UHeap -> "UH" | UStack -> "US"
+                let name = $"{prefix}{tag}"
+                union_seen.[key] <- name
+                let rec_f : UnionRecFsharp = { tag = tag; free_vars = key.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars) }
+                union_recs.[key] <- rec_f
+                let cases = rec_f.free_vars |> Map.toArray
+                if cases.Length = 0 then unsupported "an empty union"
+                cases |> Array.iter (fun (_, fields) ->
+                    fields |> Array.iter (fun (L(_, t)) ->
+                        let ft = tyv t
+                        if ft = name && not (union_zeros.ContainsKey name) then unsupported "a recursive union"))
+                let text = StringBuilder()
+                text.AppendLine($"sealed interface {name} {{ val tag: Int }}") |> ignore
+                cases |> Array.iter (fun ((i, _), fields) ->
+                    let case_name = $"{name}_{unionCaseSuffix rec_f i}"
+                    match fields with
+                    | [||] -> text.AppendLine($"class {case_name} : {name} {{ override val tag: Int = {i} }}") |> ignore
+                    | _ ->
+                        let formals = fields |> Array.mapi (fun f (L(_, t)) -> $"val f{f}: {tyv t}") |> String.concat ", "
+                        text.AppendLine($"data class {case_name}({formals}) : {name} {{ override val tag: Int = {i} }}") |> ignore)
+                let (i0, _), fields0 = cases.[0]
+                let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
+                let first =
+                    match fields0 with
+                    | [||] -> $"{case0}()"
+                    | _ ->
+                        let args = fields0 |> Array.map (fun (L(_, t)) -> zero (tyv t)) |> String.concat ", "
+                        $"{case0}({args})"
+                union_zeros.[name] <- first
+                union_types.Add(text.ToString())
+                name
+        and zero = function
+            | "Int" -> "0"
+            | "UInt" -> "0u"
+            | "Long" -> "0L"
+            | "ULong" -> "0uL"
+            | "Byte" -> "(0).toByte()"
+            | "Short" -> "(0).toShort()"
+            | "UByte" -> "(0).toUByte()"
+            | "UShort" -> "(0).toUShort()"
+            | "Boolean" -> "false"
+            | "Float" -> "0.0f"
+            | "Double" -> "0.0"
+            | "String" -> "\"\""
+            | name when union_zeros.ContainsKey name -> union_zeros.[name]
+            | name when layout_zeros.ContainsKey name -> layout_zeros.[name]
+            | name when fun_zeros.ContainsKey name -> fun_zeros.[name]
+            | array when array.StartsWith("Array<") ->
+                let inner = array.Substring(6, array.Length - 7)
+                $"emptyArray<{inner}>()"
+            | other -> unsupported $"a zero value of {other}"
+        let union_ref (h : Union) : string * UnionRecFsharp =
+            let name = ensure_union h
+            name, union_recs.[h.Item]
+        let union_case_tag (rec_f : UnionRecFsharp) k =
+            rec_f.free_vars
+            |> Seq.tryPick (function KeyValue ((tag, case_name), _) when case_name = UnionTagIdOps.text k -> Some tag | _ -> None)
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+        // Kotlin strings interpolate `$`. Escape it so a message cannot become code.
+        let quote_text (text : string) =
+            let sb = StringBuilder(text.Length + 2)
+            sb.Append('"') |> ignore
+            String.iter (function
+                | '"' -> sb.Append("\\\"") |> ignore
+                | '\\' -> sb.Append("\\\\") |> ignore
+                | '\n' -> sb.Append("\\n") |> ignore
+                | '\r' -> sb.Append("\\r") |> ignore
+                | '\t' -> sb.Append("\\t") |> ignore
+                | '$' -> sb.Append("\\$") |> ignore
+                | ch -> sb.Append(ch) |> ignore
+                ) text
+            sb.Append('"') |> ignore
+            sb.ToString()
+        let lit = function
+            | LitInt32 x when x = Int32.MinValue -> "Int.MIN_VALUE"
+            | LitInt32 x -> string x
+            | LitUInt32 x -> $"{x}u"
+            | LitBool x -> if x then "true" else "false"
+            | LitChar x -> string (int x)
+            | LitFloat32 x when Single.IsNaN x -> "Float.NaN"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> "Float.POSITIVE_INFINITY"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> "Float.NEGATIVE_INFINITY"
+            | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                let text = if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+                text + "f"
+            | LitFloat64 x when Double.IsNaN x -> "Double.NaN"
+            | LitFloat64 x when Double.IsPositiveInfinity x -> "Double.POSITIVE_INFINITY"
+            | LitFloat64 x when Double.IsNegativeInfinity x -> "Double.NEGATIVE_INFINITY"
+            | LitFloat64 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+            | LitInt64 x when x = Int64.MinValue -> "Long.MIN_VALUE"
+            | LitInt64 x -> x.ToString(Globalization.CultureInfo.InvariantCulture) + "L"
+            | LitUInt64 x -> x.ToString(Globalization.CultureInfo.InvariantCulture) + "uL"
+            | LitInt8 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)}).toByte()"
+            | LitInt16 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)}).toShort()"
+            | LitUInt8 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)}).toUByte()"
+            | LitUInt16 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)}).toUShort()"
+            | LitString x -> quote_text x
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let kotlin_of d =
+            match prim_of d with
+            | Some t -> tyv (YPrim t)
+            | None -> unsupported "an operation on a non-primitive"
+        let tup d =
+            match data_term_vars d with
+            | [|w|] -> show_w w
+            | [||] -> ""
+            | _ -> unsupported "tuple values"
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let tuple_name (tys : string []) =
+            let key = String.concat "," tys
+            match tuple_names.TryGetValue key with
+            | true, name -> name
+            | _ ->
+                let name = $"SpiralTuple{tuple_names.Count}"
+                tuple_names.[key] <- name
+                let fields = tys |> Array.mapi (fun i t -> $"val v{i}: {t}") |> String.concat ", "
+                tuple_bodies.Add($"class {name}({fields})\n")
+                name
+        let ret_ty range =
+            // A nominal's name is not a Kotlin type. Unwrap each value, including a pair element.
+            let rec value_tys t =
+                match t with
+                | YB -> [||]
+                | YPair(a, b) -> Array.append (value_tys a) (value_tys b)
+                | YNominal _ -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> tyv inner)
+                | other -> [|tyv other|]
+            match value_tys range with
+            | [||] -> ""
+            | [|t|] -> t
+            | many -> tuple_name many
+        // Positional constructor. Argument order is the layout field order.
+        let layout_new (name : string) (free_vars : TyV []) (payload : Data) =
+            let terms = data_term_vars payload
+            if terms.Length <> free_vars.Length then raise_codegen_error "Compiler error: A layout is built from the wrong number of values."
+            let args = terms |> Array.map show_w |> String.concat ", "
+            $"{name}({args})"
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            let tail = match tag with Some t when self_tail t body -> true | _ -> false
+            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            try
+                let text = StringBuilder()
+                let formals = parameters |> Array.map (fun (L(i,t)) -> $"p{i}: {tyv t}") |> String.concat ", "
+                let result = ret_ty range
+                let returns = if result = "" then "" else $": {result}"
+                text.AppendLine($"fun {name}({formals}){returns} {{") |> ignore
+                let s0 = { text = text; indent = 4 }
+                parameters |> Array.iter (fun (L(i,t)) -> line s0 $"var v{i}: {tyv t} = p{i}")
+                if tail then
+                    line s0 "while (true) {"
+                    binds (indent s0) (KotlinTail range) body
+                    line s0 "}"
+                    if result <> "" then
+                        let dead =
+                            match flatten_ty range |> Array.map tyv with
+                            | [|t|] -> zero t
+                            | tys ->
+                                let zeros = tys |> Array.map zero |> String.concat ", "
+                                $"{result}({zeros})"
+                        line s0 $"return {dead}"
+                else binds s0 (KotlinTail range) body
+                text.AppendLine("}") |> ignore
+                functions.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> method (a,c) = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+        and binds (s : CodegenEnv) (ret : KotlinRet) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try
+                        let vs = data_free_vars d
+                        vs |> Array.iter (fun (L(i,t)) -> line s $"var v{i}: {tyv t} = {zero (tyv t)}")
+                        op s (KotlinLocal vs) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s ret a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try
+                        match ret with
+                        | KotlinLocal targets ->
+                            let values = data_term_vars d
+                            if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                            Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w}") targets values
+                        | KotlinTail range ->
+                            match data_term_vars d with
+                            | [||] -> ()
+                            | [|w|] -> line s $"return {show_w w}"
+                            | many ->
+                                let args = many |> Array.map show_w |> String.concat ", "
+                                line s $"return {ret_ty range}({args})"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op (s : CodegenEnv) (ret : KotlinRet) a =
+            let return' (x : string) =
+                match ret with
+                | KotlinLocal [||] -> if x <> "" then line s x
+                | KotlinLocal [|L(i,_)|] -> line s $"v{i} = {x}"
+                | KotlinLocal targets ->
+                    let name = $"spiral_tuple{s.text.Length}"
+                    line s $"val {name} = {x}"
+                    targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.v{k}")
+                | KotlinTail range when is_unit_ty range -> if x <> "" then line s x
+                | KotlinTail _ -> line s $"return {x}"
+            let jp_text (jp, args) =
+                match jp with
+                | JPMethod(a,c) ->
+                    let name = method_names.[method (a,c)]
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{name}({arguments})"
+                | JPClosure(a,c) ->
+                    let tag = closure (a, c)
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{closure_names.[tag]}({arguments})"
+            let is_self (a, c) =
+                match ret, self_loop.Value with
+                | KotlinTail _, Some (tag, _) -> method (a,c) = tag
+                | _ -> false
+            let assign_reads (source : int) (fields : TyV []) =
+                match ret with
+                | KotlinLocal targets when targets.Length = fields.Length ->
+                    Array.iter2 (fun (L(di,_)) (L(fi,_)) -> line s $"v{di} = v{source}.l{fi}") targets fields
+                | KotlinTail range when fields.Length = 1 && not (is_unit_ty range) ->
+                    let (L(fi,_)) = fields.[0]
+                    line s $"return v{source}.l{fi}"
+                | KotlinLocal _ | KotlinTail _ -> unsupported "a layout index with the wrong number of values"
+            match a with
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
+                let _, parameters = self_loop.Value.Value
+                if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                let temps =
+                    arguments |> Array.map (fun (L(i,t)) ->
+                        let temp = $"t{s.text.Length}_{i}"
+                        line s $"val {temp}: {tyv t} = v{i}"
+                        temp)
+                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp}") parameters temps
+                line s "continue"
+            | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Kotlin backend does not support nesting other backends."
+            | TyWhile(cond, body) ->
+                match ret with
+                | KotlinLocal [||] -> ()
+                | KotlinTail range when is_unit_ty range -> ()
+                | _ -> unsupported "a while loop in value position"
+                line s "while (true) {"
+                line (indent s) $"if (!({jp_text cond})) break"
+                binds (indent s) (KotlinLocal [||]) body
+                line s "}"
+            | TyDo body | TyIndent body -> binds s ret body
+            | TyConv(YPrim target, b) ->
+                let source = prim_of b
+                let text = tup b
+                let same =
+                    match source with
+                    | Some s when s = target -> true
+                    | Some CharT when target = Int32T -> true
+                    | Some Int32T when target = CharT -> true
+                    | _ -> false
+                let converted =
+                    if same then text
+                    else
+                        match source, target with
+                        | Some (Int32T | CharT), UInt32T -> $"({text}).toUInt()"
+                        | Some UInt32T, (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some (Int32T | UInt32T | CharT), Float32T -> $"({text}).toFloat()"
+                        | Some (Int32T | UInt32T | CharT | Float32T), Float64T -> $"({text}).toDouble()"
+                        | Some Float32T, (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some Float32T, UInt32T -> $"({text}).toUInt()"
+                        | Some Float64T, Float32T -> $"({text}).toFloat()"
+                        | Some Float64T, (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some Float64T, UInt32T -> $"({text}).toUInt()"
+                        | Some (Int32T | CharT | UInt32T), Int64T -> $"({text}).toLong()"
+                        | Some (Int32T | CharT | UInt32T), UInt64T -> $"({text}).toULong()"
+                        | Some Int64T, (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some Int64T, UInt32T -> $"({text}).toUInt()"
+                        | Some Int64T, UInt64T -> $"({text}).toULong()"
+                        | Some UInt64T, (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some UInt64T, UInt32T -> $"({text}).toUInt()"
+                        | Some UInt64T, Int64T -> $"({text}).toLong()"
+                        | Some (Int32T | CharT), Int8T -> $"({text}).toByte()"
+                        | Some (Int32T | CharT), Int16T -> $"({text}).toShort()"
+                        | Some (Int32T | CharT), UInt8T -> $"({text}).toUByte()"
+                        | Some (Int32T | CharT), UInt16T -> $"({text}).toUShort()"
+                        | Some (Int8T | Int16T | UInt8T | UInt16T), (Int32T | CharT) -> $"({text}).toInt()"
+                        | Some BoolT, (Int32T | CharT) -> $"(if ({text}) 1 else 0)"
+                        | Some BoolT, UInt32T -> $"(if ({text}) 1u else 0u)"
+                        | Some (Int32T | CharT | UInt32T), BoolT ->
+                            let zero_lit = if kotlin_of b = "UInt" then "0u" else "0"
+                            $"({text} != {zero_lit})"
+                        | _ -> unsupported "this conversion"
+                return' converted
+            // C exits with EXIT_FAILURE (1) after printing the message to stderr. Throw so every Kotlin path terminates.
+            | TyFailwith(_, b) ->
+                line s $"System.err.println({tup b})"
+                line s "System.exit(1)"
+                line s "throw RuntimeException()"
+            | TyMacro parts ->
+                let piece = function
+                    | CMText x -> x
+                    | CMTerm (x, true) -> data_term_vars x |> Array.map show_w |> String.concat ", "
+                    | CMTerm (x, false) -> tup x
+                    | CMType x -> tyv x
+                    | CMTypeLit _ -> unsupported "a macro type literal"
+                return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(operation, l) ->
+                let binary symbol a b = $"({tup a} {symbol} {tup b})"
+                // Byte and Short arithmetic returns Int. Put the result back in the operand type.
+                let narrow ty expr =
+                    match ty with
+                    | "Byte" -> $"({expr}).toByte()"
+                    | "Short" -> $"({expr}).toShort()"
+                    | "UByte" -> $"({expr}).toUByte()"
+                    | "UShort" -> $"({expr}).toUShort()"
+                    | _ -> expr
+                let arith symbol a b = narrow (kotlin_of a) (binary symbol a b)
+                // Kotlin shift counts are Int. UInt.shr is logical; Int.shr is arithmetic.
+                // A Byte shift is the sign-extended Int shift, then narrowed, matching C's promotion.
+                let shift symbol a b =
+                    let count =
+                        match kotlin_of b with
+                        | "UInt" | "Long" | "ULong" | "Byte" | "Short" | "UByte" | "UShort" -> $"({tup b}).toInt()"
+                        | _ -> tup b
+                    match kotlin_of a with
+                    | "Byte" | "Short" | "UByte" | "UShort" as ty ->
+                        narrow ty $"(({tup a}).toInt() {symbol} {count})"
+                    | _ -> $"({tup a} {symbol} {count})"
+                let expr =
+                    match operation, l with
+                    | Dyn, [a] -> tup a
+                    | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                    | Add, [a;b] -> arith "+" a b
+                    | Sub, [a;b] -> arith "-" a b
+                    | Mult, [a;b] -> arith "*" a b
+                    | Div, [a;b] -> arith "/" a b
+                    | Mod, [a;b] -> arith "%" a b
+                    | LT, [a;b] -> binary "<" a b
+                    | LTE, [a;b] -> binary "<=" a b
+                    | GT, [a;b] -> binary ">" a b
+                    | GTE, [a;b] -> binary ">=" a b
+                    | EQ, [a;b] -> binary "==" a b
+                    | NEQ, [a;b] -> binary "!=" a b
+                    | BoolAnd, [a;b] -> binary "&&" a b
+                    | BoolOr, [a;b] -> binary "||" a b
+                    | BitwiseAnd, [a;b] -> binary "and" a b
+                    | BitwiseOr, [a;b] -> binary "or" a b
+                    | BitwiseXor, [a;b] -> binary "xor" a b
+                    | BitwiseComplement, [a] -> $"({tup a}.inv())"
+                    | ShiftLeft, [a;b] -> shift "shl" a b
+                    | ShiftRight, [a;b] -> shift "shr" a b
+                    | Neg, [a] -> narrow (kotlin_of a) $"(-({tup a}))"
+                    | NanIs, [a] -> $"({tup a} != {tup a})"
+                    | StdoutFlush, [] -> ""
+                    | StringIndex, [a;b] ->
+                        string_helpers ()
+                        let index = match kotlin_of b with "Int" -> tup b | _ -> unsupported "a string index that is not an i32"
+                        $"spiralStringIndex({tup a}, {index})"
+                    | StringSlice, [a;b;c] ->
+                        string_helpers ()
+                        let index d = match kotlin_of d with "Int" -> tup d | _ -> unsupported "a string index that is not an i32"
+                        $"spiralStringSlice({tup a}, {index b}, {index c})"
+                    | StaticStringConcat, [a;b] -> $"({tup a} + {tup b})"
+                    | ArrayIndex, [a;b] ->
+                        let index = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array index that is not an i32"
+                        $"{tup a}[{index}]"
+                    | ArrayIndexSet, [a;b;c] ->
+                        let index = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array index that is not an i32"
+                        $"{tup a}[{index}] = {tup c}"
+                    | _ -> unsupported $"the operation {operation}"
+                return' expr
+            | TyArrayCreate(a, b) ->
+                let element =
+                    match env.ty_to_data a |> data_free_vars with
+                    | [|L(_, t)|] -> t
+                    | _ -> unsupported "an array whose element is not one value"
+                let n = match kotlin_of b with "Int" -> tup b | _ -> unsupported "an array length that is not an i32"
+                return' $"Array({n}) {{ {zero (tyv element)} }}"
+            | TyArrayLength(t, b) ->
+                match t with
+                | YPrim (Int32T | CharT) -> return' $"{tup b}.size"
+                | _ -> unsupported "array length of this width"
+            | TyStringLength(t, b) ->
+                string_helpers ()
+                match t with
+                | YPrim (Int32T | CharT) -> return' $"spiralStringLength({tup b})"
+                | _ -> unsupported "string length of this width"
+            | TyUnionBox(tag_id, payload, union_h) ->
+                let name, rec_f = union_ref union_h
+                let i = union_case_tag rec_f tag_id
+                let case_name = $"{name}_{unionCaseSuffix rec_f i}"
+                let args = data_term_vars payload |> Array.map show_w |> String.concat ", "
+                return' $"{case_name}({args})"
+            | TyUnionUnbox([L(i,_)], union_h, on_succs, on_fail) ->
+                let name, rec_f = union_ref union_h
+                let s' = indent s
+                let s'' = indent s'
+                line s $"when (v{i}.tag) {{"
+                on_succs |> Map.iter (fun k (payloads, body) ->
+                    let c = union_case_tag rec_f k
+                    let case_name = $"{name}_{unionCaseSuffix rec_f c}"
+                    line s' $"{c} -> {{"
+                    match payloads with
+                    | [a] ->
+                        data_free_vars a |> Array.iteri (fun f (L(vi, t)) ->
+                            let ft = tyv t
+                            line s'' $"var v{vi}: {ft} = (v{i} as {case_name}).f{f}")
+                    | _ -> unsupported "union unboxes over several values"
+                    binds s'' ret body
+                    line s' "}")
+                match on_fail with
+                | Some b ->
+                    line s' "else -> {"
+                    binds s'' ret b
+                    line s' "}"
+                | None -> line s' "else -> throw RuntimeException()"
+                line s "}"
+            | TyApply(L(i,_), b) ->
+                let arguments = data_term_vars b |> Array.map show_w |> String.concat ", "
+                return' $"v{i}({arguments})"
+            | TyToLayout(payload, layout_ty) ->
+                let name = ensure_layout layout_ty
+                let _, _, free_vars = layout_seen.[show_ty layout_ty]
+                return' (layout_new name free_vars payload)
+            | TyLayoutIndexAll(L(i, layout_ty)) ->
+                ensure_layout layout_ty |> ignore
+                let _, _, free_vars = layout_seen.[show_ty layout_ty]
+                assign_reads i free_vars
+            | TyLayoutIndexByKey(L(i, layout_ty), key) ->
+                ensure_layout layout_ty |> ignore
+                let _, data, _ = layout_seen.[show_ty layout_ty]
+                match data with
+                | DRecord fields ->
+                    match fields |> Map.tryPick (fun (_, k) field -> if LayoutFieldNameIdOps.matchesText key k then Some (data_free_vars field) else None) with
+                    | Some found -> assign_reads i found
+                    | None -> raise_codegen_error "Compiler error: A layout has no such field."
+                | _ -> raise_codegen_error "Compiler error: Expected a record layout."
+            | TyLayoutMutableSet(L(i, layout_ty), keys, value) ->
+                match layout_ty with
+                | YLayout(_, HeapMutable) -> ()
+                | YLayout(_, Heap) -> unsupported "setting an immutable layout"
+                | YLayout(_, StackMutable) -> unsupported "a stack mutable layout"
+                | YLayout _ -> unsupported "a ref layout"
+                | _ -> raise_codegen_error "Compiler error: Expected a layout type."
+                ensure_layout layout_ty |> ignore
+                let _, data, _ = layout_seen.[show_ty layout_ty]
+                let target =
+                    List.fold (fun current key ->
+                        match current with
+                        | DRecord fields -> fields |> Map.pick (fun (_, k) field -> if LayoutFieldNameIdOps.matchesText key k then Some field else None)
+                        | _ -> raise_codegen_error "Compiler error: Expected a record layout.") data keys
+                let fields = data_free_vars target
+                let terms = data_term_vars value
+                if fields.Length <> terms.Length then raise_codegen_error "Compiler error: A layout set has the wrong number of values."
+                Array.iter2 (fun (L(fi,_)) term -> line s $"v{i}.l{fi} = {show_w term}") fields terms
+            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
+            | other ->
+                let construct = (sprintf "%A" other).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "Kotlin" jp_body key with
+                    | body, range, name ->
+                        method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : int = method_memo.Force() (a, b)
+        and closure_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key & (C(args,_,fun_ty))) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    match fun_ty with
+                    | YFun(_, range, FT_Vanilla) ->
+                        match codegenClosureBody env "Kotlin" jp_body key with
+                        | domain_args, body, sourceName ->
+                            closure_names.[tag] <- generatedClosureName sourceName tag
+                            let captured = rdata_free_vars args
+                            let domain_vs = data_free_vars domain_args
+                            let text = StringBuilder()
+                            let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", "
+                            text.AppendLine($"fun {closure_names.[tag]}({cap_formals}): {tyv fun_ty} {{") |> ignore
+                            let s0 = { text = text; indent = 4 }
+                            let dom_formals = domain_vs |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", "
+                            // A nominal union's name is not a Kotlin type. The value's type is the union.
+                            let result =
+                                match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                                | [||] -> ""
+                                | [|t|] -> t
+                                | tys -> tuple_name tys
+                            let returns = if result = "" then "" else $": {result}"
+                            let saved = self_loop.Value
+                            self_loop.Value <- None
+                            try
+                                line s0 $"fun body({dom_formals}){returns} {{"
+                                binds (indent s0) (KotlinTail range) body
+                                line s0 "}"
+                            finally
+                                self_loop.Value <- saved
+                            let forward =
+                                match domain_vs with
+                                | [||] -> "{ body() }"
+                                | vs ->
+                                    let formals = vs |> Array.mapi (fun k (L(_, t)) -> $"p{k}: {tyv t}") |> String.concat ", "
+                                    let call = vs |> Array.mapi (fun k _ -> $"p{k}") |> String.concat ", "
+                                    $"{{ {formals} -> body({call}) }}"
+                            line s0 $"return {forward}"
+                            text.AppendLine("}") |> ignore
+                            functions.Add(text.ToString())
+                    | _ -> unsupported "this function type"
+                    tag)
+        and closure (a, b) : int = closure_memo.Force() (a, b)
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Kotlin backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        program.AppendLine("fun main() {") |> ignore
+        if unit_main then program.AppendLine("    System.exit(0)") |> ignore
+        else program.AppendLine("    System.exit(spiral_main())") |> ignore
+        program.AppendLine("}") |> ignore
+        program.ToString()
+
+    // Swift traps on overflowing Int arithmetic, so add, subtract, and multiply
+    // of integers use the wrapping operators. The process exits with main's i32
+    // and prints nothing. Self-tail calls become while/continue.
+
+    /// ### SwiftRet
+    type SwiftRet =
+        | SwiftLocal of TyV []
+        | SwiftTail of Ty
+
+    /// ### codegenSwift
+    let codegenSwift (env : PartEvalResult) (x : TypedBind []) =
+        let functions = ResizeArray<string>()
+        let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
+        let helpers = ResizeArray<string>()
+        let strings_ready = ref false
+        let string_helpers () =
+            if not strings_ready.Value then
+                strings_ready.Value <- true
+                // Int8(bitPattern:) sign-extends, matching C's signed char.
+                let q = "\""
+                let line text = text + "\n"
+                helpers.Add(
+                    line "func spiralStringLength(_ value: String) -> Int32 { Int32(value.utf8.count) }" +
+                    line "func spiralStringIndex(_ value: String, _ index: Int32) -> Int32 {" +
+                    line "    let bytes = Array(value.utf8)" +
+                    line "    let i = Int(index)" +
+                    line "    if !(i >= 0 && i < bytes.count) {" +
+                    line ("        _ = fputs(" + q + "string index out of bounds\\n" + q + ", stderr)") +
+                    line "        exit(1)" +
+                    line "    }" +
+                    line "    return Int32(Int8(bitPattern: bytes[i]))" +
+                    line "}" +
+                    line "func spiralStringSlice(_ value: String, _ from: Int32, _ to: Int32) -> String {" +
+                    line "    let bytes = Array(value.utf8)" +
+                    line "    let length = bytes.count" +
+                    line "    let f = Int(from)" +
+                    line "    let t = Int(to)" +
+                    line "    if f < 0 || f > length || t < f - 1 || t >= length {" +
+                    line ("        _ = fputs(" + q + "string slice out of bounds\\n" + q + ", stderr)") +
+                    line "        exit(3)" +
+                    line "    }" +
+                    line ("    if t < f { return " + q + q + " }") +
+                    line "    let start = Int(bytes[f])" +
+                    line "    let follows = t + 1 < length && (Int(bytes[t + 1]) & 192) == 128" +
+                    line "    if (start & 192) == 128 || follows {" +
+                    line ("        _ = fputs(" + q + "string slice splits a code point\\n" + q + ", stderr)") +
+                    line "        exit(3)" +
+                    line "    }" +
+                    line "    return String(decoding: bytes[f...t], as: UTF8.self)" +
+                    line "}")
+        let unsupported what = raise_codegen_error $"The Swift backend doesn't support {what} yet."
+        let is_unit_ty = function YB -> true | _ -> false
+        // Locals are always initialized. A union's zero is its first case built from zeros.
+        let union_types = ResizeArray<string>()
+        let union_zeros = Dictionary<string, string>()
+        let union_seen = Dictionary(HashIdentity.Reference)
+        let union_recs = Dictionary(HashIdentity.Reference)
+        let fun_zeros = Dictionary<string, string>()
+        // Heap and heap-mutable layouts. The id is assigned before nested fields are walked.
+        let layout_types = ResizeArray<string>()
+        let layout_zeros = Dictionary<string, string>()
+        let layout_seen = Dictionary<string, int * Data * TyV[]>()
+        let rec tyv = function
+            | YPrim Int32T | YPrim CharT -> "Int32"
+            | YPrim UInt32T -> "UInt32"
+            | YPrim BoolT -> "Bool"
+            | YPrim Float32T -> "Float"
+            | YPrim Float64T -> "Double"
+            | YPrim Int64T -> "Int64"
+            | YPrim UInt64T -> "UInt64"
+            | YPrim Int8T -> "Int8"
+            | YPrim Int16T -> "Int16"
+            | YPrim UInt8T -> "UInt8"
+            | YPrim UInt16T -> "UInt16"
+            | YPrim StringT -> "String"
+            | YArray a ->
+                match env.ty_to_data a |> data_free_vars with
+                | [|L(_, t)|] -> $"Array<{tyv t}>"
+                | _ -> unsupported "an array whose element is not one value"
+            | YFun(domain, range, FT_Vanilla) ->
+                let dom = env.ty_to_data domain |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t)
+                let ret =
+                    match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                    | [||] -> "Void"
+                    | [|t|] -> t
+                    | rets -> "(" + String.concat ", " rets + ")"
+                let dom_text = dom |> String.concat ", "
+                let text = if dom.Length = 0 then $"() -> {ret}" else $"({dom_text}) -> {ret}"
+                if not (fun_zeros.ContainsKey text) then
+                    let dummy =
+                        if dom.Length = 0 then "{ () -> " + ret + " in fatalError(\"unreachable closure\") }"
+                        else
+                            let formals = dom |> Array.map (fun t -> $"_: {t}") |> String.concat ", "
+                            "{ (" + formals + ") -> " + ret + " in fatalError(\"unreachable closure\") }"
+                    fun_zeros.[text] <- dummy
+                text
+            | YFun _ -> unsupported "this function type"
+            | YUnion h -> ensure_union h
+            | YLayout _ as t -> ensure_layout t
+            | t -> unsupported $"the type {show_ty t}"
+        // A class, not a struct: a method receives the cell and writes the caller's fields.
+        and ensure_layout (t : Ty) : string =
+            match t with
+            | YLayout(inner, lay) ->
+                match lay with
+                | StackMutable -> unsupported "a stack mutable layout"
+                | StackRefs | HeapRefs -> unsupported "a ref layout"
+                | Heap | HeapMutable ->
+                    let key = show_ty t
+                    let prefix = if lay = Heap then "Heap" else "Mut"
+                    match layout_seen.TryGetValue key with
+                    | true, (id, _, _) -> $"{prefix}{id}"
+                    | _ ->
+                        let id = layout_seen.Count
+                        let name = $"{prefix}{id}"
+                        let data = env.ty_to_data inner
+                        let free_vars =
+                            match data with
+                            | DRecord fields -> fields |> Map.toArray |> Array.collect (fun (_, field) -> data_free_vars field)
+                            | _ -> data_free_vars data
+                        // Register before walking fields so a direct cycle is a name match, not a loop.
+                        layout_seen.[key] <- (id, data, free_vars)
+                        free_vars |> Array.iter (fun (L(_, ft)) ->
+                            if tyv ft = name then unsupported "a recursive layout")
+                        let text = StringBuilder()
+                        let kw = if lay = Heap then "let" else "var"
+                        text.AppendLine("class " + name + " {") |> ignore
+                        if free_vars.Length = 0 then
+                            text.AppendLine("    init() {}") |> ignore
+                            layout_zeros.[name] <- name + "()"
+                        else
+                            free_vars |> Array.iter (fun (L(i, ft)) ->
+                                text.AppendLine("    " + kw + " l" + string i + ": " + tyv ft) |> ignore)
+                            let formals = free_vars |> Array.map (fun (L(i, ft)) ->
+                                let ty = tyv ft
+                                // Stored closures are escaping. Other field types reject @escaping.
+                                let escaping = if ty.Contains("->") then "@escaping " else ""
+                                "l" + string i + ": " + escaping + ty) |> String.concat ", "
+                            text.AppendLine("    init(" + formals + ") {") |> ignore
+                            free_vars |> Array.iter (fun (L(i, _)) ->
+                                text.AppendLine("        self.l" + string i + " = l" + string i) |> ignore)
+                            text.AppendLine("    }") |> ignore
+                            let args = free_vars |> Array.map (fun (L(i, ft)) -> "l" + string i + ": " + zero (tyv ft)) |> String.concat ", "
+                            layout_zeros.[name] <- name + "(" + args + ")"
+                        text.AppendLine("}") |> ignore
+                        layout_types.Add(text.ToString())
+                        name
+            | _ -> raise_codegen_error "Compiler error: Expected a layout type."
+        and ensure_union (h : Union) : string =
+            let key = h.Item
+            match union_seen.TryGetValue key with
+            | true, name -> name
+            | _ ->
+                let tag = union_seen.Count
+                let prefix = match key.layout with UHeap -> "UH" | UStack -> "US"
+                let name = $"{prefix}{tag}"
+                union_seen.[key] <- name
+                let rec_f : UnionRecFsharp = { tag = tag; free_vars = key.cases |> Map.map (fun _ -> env.ty_to_data >> data_free_vars) }
+                union_recs.[key] <- rec_f
+                let cases = rec_f.free_vars |> Map.toArray
+                if cases.Length = 0 then unsupported "an empty union"
+                cases |> Array.iter (fun (_, fields) ->
+                    fields |> Array.iter (fun (L(_, t)) ->
+                        let ft = tyv t
+                        if ft = name && not (union_zeros.ContainsKey name) then unsupported "a recursive union"))
+                let text = StringBuilder()
+                text.AppendLine($"protocol {name} {{ var tag: Int32 {{ get }} }}") |> ignore
+                cases |> Array.iter (fun ((i, _), fields) ->
+                    let case_name = $"{name}_{unionCaseSuffix rec_f i}"
+                    match fields with
+                    | [||] -> text.AppendLine($"struct {case_name}: {name} {{ var tag: Int32 {{ {i} }} }}") |> ignore
+                    | _ ->
+                        let stored = fields |> Array.mapi (fun f (L(_, t)) -> $"var f{f}: {tyv t}") |> String.concat "; "
+                        text.AppendLine($"struct {case_name}: {name} {{ {stored}; var tag: Int32 {{ {i} }} }}") |> ignore)
+                let (i0, _), fields0 = cases.[0]
+                let case0 = $"{name}_{unionCaseSuffix rec_f i0}"
+                let first =
+                    match fields0 with
+                    | [||] -> $"{case0}()"
+                    | _ ->
+                        let args = fields0 |> Array.mapi (fun f (L(_, t)) -> $"f{f}: {zero (tyv t)}") |> String.concat ", "
+                        $"{case0}({args})"
+                union_zeros.[name] <- first
+                union_types.Add(text.ToString())
+                name
+        and zero = function
+            | "Int32" -> "0"
+            | "UInt32" -> "UInt32(0)"
+            | "Int64" -> "(0 as Int64)"
+            | "UInt64" -> "(0 as UInt64)"
+            | "Int8" -> "Int8(0)"
+            | "Int16" -> "Int16(0)"
+            | "UInt8" -> "UInt8(0)"
+            | "UInt16" -> "UInt16(0)"
+            | "Bool" -> "false"
+            | "Float" -> "(0.0 as Float)"
+            | "Double" -> "(0.0 as Double)"
+            | "String" -> "\"\""
+            | name when union_zeros.ContainsKey name -> union_zeros.[name]
+            | name when layout_zeros.ContainsKey name -> layout_zeros.[name]
+            | name when fun_zeros.ContainsKey name -> fun_zeros.[name]
+            | array when array.StartsWith("Array<") -> $"{array}()"
+            | other -> unsupported $"a zero value of {other}"
+        let union_ref (h : Union) : string * UnionRecFsharp =
+            let name = ensure_union h
+            name, union_recs.[h.Item]
+        let union_case_tag (rec_f : UnionRecFsharp) k =
+            rec_f.free_vars
+            |> Seq.tryPick (function KeyValue ((tag, case_name), _) when case_name = UnionTagIdOps.text k -> Some tag | _ -> None)
+            |> Option.defaultWith (fun () -> raise_codegen_error $"Compiler error: Emitted union type has no case named {UnionTagIdOps.text k}.")
+        let quote_text (text : string) =
+            let sb = StringBuilder(text.Length + 2)
+            sb.Append('"') |> ignore
+            String.iter (function
+                | '"' -> sb.Append("\\\"") |> ignore
+                | '\\' -> sb.Append("\\\\") |> ignore
+                | '\n' -> sb.Append("\\n") |> ignore
+                | '\r' -> sb.Append("\\r") |> ignore
+                | '\t' -> sb.Append("\\t") |> ignore
+                | ch -> sb.Append(ch) |> ignore
+                ) text
+            sb.Append('"') |> ignore
+            sb.ToString()
+        let lit = function
+            | LitInt32 x when x = Int32.MinValue -> "Int32.min"
+            | LitInt32 x -> string x
+            | LitUInt32 x -> $"UInt32({x})"
+            | LitBool x -> if x then "true" else "false"
+            | LitChar x -> string (int x)
+            | LitFloat32 x when Single.IsNaN x -> "Float.nan"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> "Float.infinity"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> "(-Float.infinity)"
+            | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                let text = if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+                $"({text} as Float)"
+            | LitFloat64 x when Double.IsNaN x -> "Double.nan"
+            | LitFloat64 x when Double.IsPositiveInfinity x -> "Double.infinity"
+            | LitFloat64 x when Double.IsNegativeInfinity x -> "(-Double.infinity)"
+            | LitFloat64 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                let text = if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+                $"({text} as Double)"
+            | LitInt64 x when x = Int64.MinValue -> "Int64.min"
+            | LitInt64 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)} as Int64)"
+            | LitUInt64 x -> $"({x.ToString(Globalization.CultureInfo.InvariantCulture)} as UInt64)"
+            | LitInt8 x when x = SByte.MinValue -> "Int8.min"
+            | LitInt8 x -> $"Int8({x.ToString(Globalization.CultureInfo.InvariantCulture)})"
+            | LitInt16 x when x = Int16.MinValue -> "Int16.min"
+            | LitInt16 x -> $"Int16({x.ToString(Globalization.CultureInfo.InvariantCulture)})"
+            | LitUInt8 x -> $"UInt8({x.ToString(Globalization.CultureInfo.InvariantCulture)})"
+            | LitUInt16 x -> $"UInt16({x.ToString(Globalization.CultureInfo.InvariantCulture)})"
+            | LitString x -> quote_text x
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let swift_of d =
+            match prim_of d with
+            | Some t -> tyv (YPrim t)
+            | None -> unsupported "an operation on a non-primitive"
+        let floated a b =
+            match prim_of a, prim_of b with
+            | Some Float32T, _ | _, Some Float32T -> true
+            | Some Float64T, _ | _, Some Float64T -> true
+            | _ -> false
+        let tup d =
+            match data_term_vars d with
+            | [|w|] -> show_w w
+            | [||] -> ""
+            | _ -> unsupported "tuple values"
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let ret_ty range =
+            // A nominal's name is not a Swift type. Unwrap each value, including a pair element.
+            let rec value_tys t =
+                match t with
+                | YB -> [||]
+                | YPair(a, b) -> Array.append (value_tys a) (value_tys b)
+                | YNominal _ -> env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_, inner)) -> tyv inner)
+                | other -> [|tyv other|]
+            match value_tys range with
+            | [||] -> ""
+            | [|t|] -> t
+            | many -> "(" + String.concat ", " many + ")"
+        // Labeled constructor. Argument order is the layout field order.
+        let layout_new (name : string) (free_vars : TyV []) (payload : Data) =
+            let terms = data_term_vars payload
+            if terms.Length <> free_vars.Length then raise_codegen_error "Compiler error: A layout is built from the wrong number of values."
+            let args =
+                Array.map2 (fun (L(i,_)) w -> "l" + string i + ": " + show_w w) free_vars terms
+                |> String.concat ", "
+            name + "(" + args + ")"
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            let tail = match tag with Some t when self_tail t body -> true | _ -> false
+            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            try
+                let text = StringBuilder()
+                let formals = parameters |> Array.map (fun (L(i,t)) -> $"_ p{i}: {tyv t}") |> String.concat ", "
+                let result = ret_ty range
+                let signature = if result = "" then $"func {name}({formals}) {{" else $"func {name}({formals}) -> {result} {{"
+                text.AppendLine(signature) |> ignore
+                let s0 = { text = text; indent = 4 }
+                parameters |> Array.iter (fun (L(i,t)) -> line s0 $"var v{i}: {tyv t} = p{i}")
+                if tail then
+                    line s0 "while true {"
+                    binds (indent s0) (SwiftTail range) body
+                    line s0 "}"
+                    if result <> "" then
+                        let dead =
+                            match flatten_ty range |> Array.map tyv with
+                            | [|t|] -> zero t
+                            | tys -> "(" + (tys |> Array.map zero |> String.concat ", ") + ")"
+                        line s0 $"return {dead}"
+                else binds s0 (SwiftTail range) body
+                text.AppendLine("}") |> ignore
+                functions.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> method (a,c) = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+        and binds (s : CodegenEnv) (ret : SwiftRet) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try
+                        let vs = data_free_vars d
+                        vs |> Array.iter (fun (L(i,t)) -> line s $"var v{i}: {tyv t} = {zero (tyv t)}")
+                        op s (SwiftLocal vs) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s ret a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try
+                        match ret with
+                        | SwiftLocal targets ->
+                            let values = data_term_vars d
+                            if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                            Array.iter2 (fun (L(i,_)) w -> line s $"v{i} = {show_w w}") targets values
+                        | SwiftTail range ->
+                            match data_term_vars d with
+                            | [||] -> ()
+                            | [|w|] -> line s $"return {show_w w}"
+                            | many ->
+                                let args = many |> Array.map show_w |> String.concat ", "
+                                line s $"return ({args})"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op (s : CodegenEnv) (ret : SwiftRet) a =
+            let return' (x : string) =
+                match ret with
+                | SwiftLocal [||] -> if x <> "" then line s x
+                | SwiftLocal [|L(i,_)|] -> line s $"v{i} = {x}"
+                | SwiftLocal targets ->
+                    let name = $"spiral_tuple{s.text.Length}"
+                    line s $"let {name} = {x}"
+                    targets |> Array.iteri (fun k (L(i,_)) -> line s $"v{i} = {name}.{k}")
+                | SwiftTail range when is_unit_ty range -> if x <> "" then line s x
+                | SwiftTail _ -> line s $"return {x}"
+            let jp_text (jp, args) =
+                match jp with
+                | JPMethod(a,c) ->
+                    let name = method_names.[method (a,c)]
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{name}({arguments})"
+                | JPClosure(a,c) ->
+                    let tag = closure (a, c)
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{closure_names.[tag]}({arguments})"
+            let is_self (a, c) =
+                match ret, self_loop.Value with
+                | SwiftTail _, Some (tag, _) -> method (a,c) = tag
+                | _ -> false
+            let assign_reads (source : int) (fields : TyV []) =
+                match ret with
+                | SwiftLocal targets when targets.Length = fields.Length ->
+                    Array.iter2 (fun (L(di,_)) (L(fi,_)) -> line s $"v{di} = v{source}.l{fi}") targets fields
+                | SwiftTail range when fields.Length = 1 && not (is_unit_ty range) ->
+                    let (L(fi,_)) = fields.[0]
+                    line s $"return v{source}.l{fi}"
+                | SwiftLocal _ | SwiftTail _ -> unsupported "a layout index with the wrong number of values"
+            match a with
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
+                let _, parameters = self_loop.Value.Value
+                if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                let temps =
+                    arguments |> Array.map (fun (L(i,t)) ->
+                        let temp = $"t{s.text.Length}_{i}"
+                        line s $"let {temp}: {tyv t} = v{i}"
+                        temp)
+                Array.iter2 (fun (L(i,_)) temp -> line s $"v{i} = {temp}") parameters temps
+                line s "continue"
+            | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The Swift backend does not support nesting other backends."
+            | TyWhile(cond, body) ->
+                match ret with
+                | SwiftLocal [||] -> ()
+                | SwiftTail range when is_unit_ty range -> ()
+                | _ -> unsupported "a while loop in value position"
+                line s "while true {"
+                line (indent s) $"if !({jp_text cond}) {{ break }}"
+                binds (indent s) (SwiftLocal [||]) body
+                line s "}"
+            | TyDo body | TyIndent body -> binds s ret body
+            | TyConv(YPrim target, b) ->
+                let source = prim_of b
+                let text = tup b
+                let same =
+                    match source with
+                    | Some s when s = target -> true
+                    | Some CharT when target = Int32T -> true
+                    | Some Int32T when target = CharT -> true
+                    | _ -> false
+                let converted =
+                    if same then text
+                    else
+                        match source, target with
+                        | Some (Int32T | CharT), UInt32T -> $"UInt32(bitPattern: {text})"
+                        | Some UInt32T, (Int32T | CharT) -> $"Int32(bitPattern: {text})"
+                        | Some (Int32T | UInt32T | CharT), Float32T -> $"Float({text})"
+                        | Some (Int32T | UInt32T | CharT | Float32T), Float64T -> $"Double({text})"
+                        | Some Float32T, (Int32T | CharT) -> $"Int32({text})"
+                        | Some Float32T, UInt32T -> $"UInt32({text})"
+                        | Some Float64T, Float32T -> $"Float({text})"
+                        | Some Float64T, (Int32T | CharT) -> $"Int32({text})"
+                        | Some Float64T, UInt32T -> $"UInt32({text})"
+                        | Some (Int32T | CharT | UInt32T), Int64T -> $"Int64({text})"
+                        | Some (Int32T | CharT | UInt32T), UInt64T -> $"UInt64({text})"
+                        | Some Int64T, (Int32T | CharT) -> $"Int32({text})"
+                        | Some Int64T, UInt32T -> $"UInt32({text})"
+                        | Some Int64T, UInt64T -> $"UInt64({text})"
+                        | Some UInt64T, (Int32T | CharT) -> $"Int32({text})"
+                        | Some UInt64T, UInt32T -> $"UInt32({text})"
+                        | Some UInt64T, Int64T -> $"Int64({text})"
+                        | Some (Int32T | CharT), Int8T -> $"Int8({text})"
+                        | Some (Int32T | CharT), Int16T -> $"Int16({text})"
+                        | Some (Int32T | CharT), UInt8T -> $"UInt8({text})"
+                        | Some (Int32T | CharT), UInt16T -> $"UInt16({text})"
+                        | Some (Int8T | Int16T | UInt8T | UInt16T), (Int32T | CharT) -> $"Int32({text})"
+                        | Some BoolT, (Int32T | CharT) -> $"(if {text} {{ 1 }} else {{ 0 }})"
+                        | Some BoolT, UInt32T -> $"UInt32(if {text} {{ 1 }} else {{ 0 }})"
+                        | Some (Int32T | CharT | UInt32T), BoolT ->
+                            let zero_lit = if swift_of b = "UInt32" then "UInt32(0)" else "0"
+                            $"({text} != {zero_lit})"
+                        | _ -> unsupported "this conversion"
+                return' converted
+            // exit(1) matches C's EXIT_FAILURE. withCString keeps the message a C string for fputs.
+            | TyFailwith(_, b) ->
+                line s $"{tup b}.withCString {{ ptr in _ = fputs(ptr, stderr) }}"
+                line s "fputs(\"\\n\", stderr)"
+                line s "exit(1)"
+            | TyMacro parts ->
+                let piece = function
+                    | CMText x -> x
+                    | CMTerm (x, true) -> data_term_vars x |> Array.map show_w |> String.concat ", "
+                    | CMTerm (x, false) -> tup x
+                    | CMType x -> tyv x
+                    | CMTypeLit _ -> unsupported "a macro type literal"
+                return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(operation, l) ->
+                let binary symbol a b = $"({tup a} {symbol} {tup b})"
+                let arith plain wrap a b =
+                    let op = if floated a b then plain else wrap
+                    $"({tup a} {op} {tup b})"
+                let expr =
+                    match operation, l with
+                    | Dyn, [a] -> tup a
+                    | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                    | Add, [a;b] -> arith "+" "&+" a b
+                    | Sub, [a;b] -> arith "-" "&-" a b
+                    | Mult, [a;b] -> arith "*" "&*" a b
+                    | Div, [a;b] -> binary "/" a b
+                    | Mod, [a;b] ->
+                        if floated a b then unsupported "float remainder" else binary "%" a b
+                    | LT, [a;b] -> binary "<" a b
+                    | LTE, [a;b] -> binary "<=" a b
+                    | GT, [a;b] -> binary ">" a b
+                    | GTE, [a;b] -> binary ">=" a b
+                    | EQ, [a;b] -> binary "==" a b
+                    | NEQ, [a;b] -> binary "!=" a b
+                    | BoolAnd, [a;b] -> binary "&&" a b
+                    | BoolOr, [a;b] -> binary "||" a b
+                    | BitwiseAnd, [a;b] -> binary "&" a b
+                    | BitwiseOr, [a;b] -> binary "|" a b
+                    | BitwiseXor, [a;b] -> binary "^" a b
+                    | BitwiseComplement, [a] -> $"(~({tup a}))"
+                    | ShiftLeft, [a;b] -> binary "<<" a b
+                    | ShiftRight, [a;b] -> binary ">>" a b
+                    | Neg, [a] -> $"(-({tup a}))"
+                    | NanIs, [a] -> $"({tup a}.isNaN)"
+                    | StdoutFlush, [] -> ""
+                    | StringIndex, [a;b] ->
+                        string_helpers ()
+                        let index = match swift_of b with "Int32" -> tup b | _ -> unsupported "a string index that is not an i32"
+                        $"spiralStringIndex({tup a}, {index})"
+                    | StringSlice, [a;b;c] ->
+                        string_helpers ()
+                        let index d = match swift_of d with "Int32" -> tup d | _ -> unsupported "a string index that is not an i32"
+                        $"spiralStringSlice({tup a}, {index b}, {index c})"
+                    | StaticStringConcat, [a;b] -> $"({tup a} + {tup b})"
+                    | ArrayIndex, [a;b] ->
+                        let index = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array index that is not an i32"
+                        $"{tup a}[Int({index})]"
+                    | ArrayIndexSet, [a;b;c] ->
+                        let index = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array index that is not an i32"
+                        $"{tup a}[Int({index})] = {tup c}"
+                    | _ -> unsupported $"the operation {operation}"
+                return' expr
+            | TyArrayCreate(a, b) ->
+                let element =
+                    match env.ty_to_data a |> data_free_vars with
+                    | [|L(_, t)|] -> t
+                    | _ -> unsupported "an array whose element is not one value"
+                let n = match swift_of b with "Int32" -> tup b | _ -> unsupported "an array length that is not an i32"
+                return' $"Array<{tyv element}>(repeating: {zero (tyv element)}, count: Int({n}))"
+            | TyArrayLength(t, b) ->
+                match t with
+                | YPrim (Int32T | CharT) -> return' $"Int32({tup b}.count)"
+                | _ -> unsupported "array length of this width"
+            | TyStringLength(t, b) ->
+                string_helpers ()
+                match t with
+                | YPrim (Int32T | CharT) -> return' $"spiralStringLength({tup b})"
+                | _ -> unsupported "string length of this width"
+            | TyUnionBox(tag_id, payload, union_h) ->
+                let name, rec_f = union_ref union_h
+                let i = union_case_tag rec_f tag_id
+                let case_name = $"{name}_{unionCaseSuffix rec_f i}"
+                let args = data_term_vars payload |> Array.mapi (fun f w -> $"f{f}: {show_w w}") |> String.concat ", "
+                return' $"{case_name}({args})"
+            | TyUnionUnbox([L(i,_)], union_h, on_succs, on_fail) ->
+                let name, rec_f = union_ref union_h
+                let s' = indent s
+                let s'' = indent s'
+                line s $"switch v{i}.tag {{"
+                on_succs |> Map.iter (fun k (payloads, body) ->
+                    let c = union_case_tag rec_f k
+                    let case_name = $"{name}_{unionCaseSuffix rec_f c}"
+                    line s' $"case {c}:"
+                    match payloads with
+                    | [a] ->
+                        data_free_vars a |> Array.iteri (fun f (L(vi, t)) ->
+                            let ft = tyv t
+                            line s'' $"var v{vi}: {ft} = (v{i} as! {case_name}).f{f}")
+                    | _ -> unsupported "union unboxes over several values"
+                    binds s'' ret body)
+                line s' "default:"
+                match on_fail with
+                | Some b -> binds s'' ret b
+                | None -> line s'' "fatalError(\"unreachable union case\")"
+                line s "}"
+            | TyApply(L(i,_), b) ->
+                let arguments = data_term_vars b |> Array.map show_w |> String.concat ", "
+                return' $"v{i}({arguments})"
+            | TyToLayout(payload, layout_ty) ->
+                let name = ensure_layout layout_ty
+                let _, _, free_vars = layout_seen.[show_ty layout_ty]
+                return' (layout_new name free_vars payload)
+            | TyLayoutIndexAll(L(i, layout_ty)) ->
+                ensure_layout layout_ty |> ignore
+                let _, _, free_vars = layout_seen.[show_ty layout_ty]
+                assign_reads i free_vars
+            | TyLayoutIndexByKey(L(i, layout_ty), key) ->
+                ensure_layout layout_ty |> ignore
+                let _, data, _ = layout_seen.[show_ty layout_ty]
+                match data with
+                | DRecord fields ->
+                    match fields |> Map.tryPick (fun (_, k) field -> if LayoutFieldNameIdOps.matchesText key k then Some (data_free_vars field) else None) with
+                    | Some found -> assign_reads i found
+                    | None -> raise_codegen_error "Compiler error: A layout has no such field."
+                | _ -> raise_codegen_error "Compiler error: Expected a record layout."
+            | TyLayoutMutableSet(L(i, layout_ty), keys, value) ->
+                match layout_ty with
+                | YLayout(_, HeapMutable) -> ()
+                | YLayout(_, Heap) -> unsupported "setting an immutable layout"
+                | YLayout(_, StackMutable) -> unsupported "a stack mutable layout"
+                | YLayout _ -> unsupported "a ref layout"
+                | _ -> raise_codegen_error "Compiler error: Expected a layout type."
+                ensure_layout layout_ty |> ignore
+                let _, data, _ = layout_seen.[show_ty layout_ty]
+                let target =
+                    List.fold (fun current key ->
+                        match current with
+                        | DRecord fields -> fields |> Map.pick (fun (_, k) field -> if LayoutFieldNameIdOps.matchesText key k then Some field else None)
+                        | _ -> raise_codegen_error "Compiler error: Expected a record layout.") data keys
+                let fields = data_free_vars target
+                let terms = data_term_vars value
+                if fields.Length <> terms.Length then raise_codegen_error "Compiler error: A layout set has the wrong number of values."
+                Array.iter2 (fun (L(fi,_)) term -> line s $"v{i}.l{fi} = {show_w term}") fields terms
+            | TyUnionUnbox _ -> unsupported "union unboxes over several values"
+            | other ->
+                let construct = (sprintf "%A" other).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "Swift" jp_body key with
+                    | body, range, name ->
+                        method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : int = method_memo.Force() (a, b)
+        and closure_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key & (C(args,_,fun_ty))) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    match fun_ty with
+                    | YFun(_, range, FT_Vanilla) ->
+                        match codegenClosureBody env "Swift" jp_body key with
+                        | domain_args, body, sourceName ->
+                            closure_names.[tag] <- generatedClosureName sourceName tag
+                            let captured = rdata_free_vars args
+                            let domain_vs = data_free_vars domain_args
+                            let text = StringBuilder()
+                            let cap_formals = captured |> Array.map (fun (L(i,t)) -> $"_ v{i}: {tyv t}") |> String.concat ", "
+                            text.AppendLine($"func {closure_names.[tag]}({cap_formals}) -> {tyv fun_ty} {{") |> ignore
+                            let s0 = { text = text; indent = 4 }
+                            let dom =
+                                match domain_vs with
+                                | [||] -> "()"
+                                | vs -> vs |> Array.map (fun (L(i,t)) -> $"v{i}: {tyv t}") |> String.concat ", " |> sprintf "(%s)"
+                            let result =
+                                match env.ty_to_data range |> data_free_vars |> Array.map (fun (L(_, t)) -> tyv t) with
+                                | [||] -> "Void"
+                                | [|t|] -> t
+                                | rets -> "(" + String.concat ", " rets + ")"
+                            let saved = self_loop.Value
+                            self_loop.Value <- None
+                            try
+                                line s0 $"return {{ {dom} -> {result} in"
+                                binds (indent s0) (SwiftTail range) body
+                                line s0 "}"
+                            finally
+                                self_loop.Value <- saved
+                            text.AppendLine("}") |> ignore
+                            functions.Add(text.ToString())
+                    | _ -> unsupported "this function type"
+                    tag)
+        and closure (a, b) : int = closure_memo.Force() (a, b)
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the Swift backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        // Windows swiftc resolves exit through the CRT module.
+        program.AppendLine("import CRT") |> ignore
+        layout_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        union_types |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        helpers |> Seq.iter (fun text -> program.Append(text) |> ignore)
+        functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        if unit_main then program.AppendLine("exit(0)") |> ignore
+        else program.AppendLine("exit(spiral_main())") |> ignore
+        program.ToString()
+
+    // OpenQASM 3 classical subset. Fixed-width arithmetic wraps in the simulator.
+    // There is no tuple return, and self-tail calls become while/continue.
+    // output int[32] spiral_io is main's result. The program prints nothing.
+
+    /// ### OpenQasmRet
+    type OpenQasmRet =
+        | OpenQasmLocal of TyV []
+        | OpenQasmTail of Ty
+
+    /// ### codegenOpenQasm
+    let codegenOpenQasm (env : PartEvalResult) (x : TypedBind []) =
+        let functions = ResizeArray<string>()
+        let method_names = Dictionary<int, string>()
+        let unsupported what = raise_codegen_error $"The OpenQASM backend doesn't support {what} yet."
+        let is_unit_ty = function YB -> true | _ -> false
+        let tyv = function
+            | YPrim Int32T | YPrim CharT -> "int[32]"
+            | YPrim UInt32T -> "uint[32]"
+            | YPrim BoolT -> "bool"
+            | YPrim Float32T -> "float[32]"
+            | YPrim Float64T -> unsupported "f64"
+            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim t -> unsupported $"the primitive {t}"
+            | t -> unsupported $"the type {show_ty t}"
+        let zero = function
+            | "int[32]" -> "0"
+            | "uint[32]" -> "0"
+            | "bool" -> "false"
+            | "float[32]" -> "0.0"
+            | other -> unsupported $"a zero value of {other}"
+        let lit = function
+            | LitInt32 x when x = Int32.MinValue -> "(-2147483648)"
+            | LitInt32 x -> string x
+            | LitUInt32 x -> string x
+            | LitBool x -> if x then "true" else "false"
+            | LitChar x -> string (int x)
+            | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> unsupported "infinity"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> unsupported "infinity"
+            | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+            | l -> unsupported $"the literal {l}"
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let qasm_of d =
+            match prim_of d with
+            | Some t -> tyv (YPrim t)
+            | None -> unsupported "an operation on a non-primitive"
+        let tup d =
+            match data_term_vars d with
+            | [|w|] -> show_w w
+            | [||] -> ""
+            | ws -> ws |> Array.map show_w |> String.concat ", "
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let ret_tys range = flatten_ty range |> Array.map tyv
+        let ret_ty range =
+            match ret_tys range with
+            | [||] -> ""
+            | [|t|] -> t
+            | ts -> "(" + String.concat ", " ts + ")"
+        let statement (s : CodegenEnv) (text : string) =
+            let trimmed = text.Trim()
+            if trimmed <> "" then
+                let with_semi = if trimmed.EndsWith(";") then trimmed else trimmed + ";"
+                line s with_semi
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            let tail = match tag with Some t when self_tail t body -> true | _ -> false
+            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            try
+                let text = StringBuilder()
+                let formals = parameters |> Array.map (fun (L(i,t)) -> $"{tyv t} p{i}") |> String.concat ", "
+                let result = ret_ty range
+                let signature = if result = "" then $"def {name}({formals}) {{" else $"def {name}({formals}) -> {result} {{"
+                text.AppendLine(signature) |> ignore
+                let s0 = { text = text; indent = 4 }
+                parameters |> Array.iter (fun (L(i,t)) -> statement s0 $"{tyv t} v{i} = p{i}")
+                if tail then
+                    line s0 "while (true) {"
+                    binds (indent s0) (OpenQasmTail range) body
+                    line s0 "}"
+                    if result <> "" then
+                        let dead = ret_tys range |> Array.map zero |> String.concat ", "
+                        statement s0 $"return {dead}"
+                else binds s0 (OpenQasmTail range) body
+                text.AppendLine("}") |> ignore
+                functions.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> method (a,c) = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+        and binds (s : CodegenEnv) (ret : OpenQasmRet) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try
+                        let vs = data_free_vars d
+                        vs |> Array.iter (fun (L(i,t)) -> statement s $"{tyv t} v{i} = {zero (tyv t)}")
+                        op s (OpenQasmLocal vs) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s ret a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try
+                        match ret with
+                        | OpenQasmLocal targets ->
+                            let values = data_term_vars d
+                            if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                            Array.iter2 (fun (L(i,_)) w -> statement s $"v{i} = {show_w w}") targets values
+                        | OpenQasmTail _ ->
+                            match data_term_vars d with
+                            | [||] -> ()
+                            | [|w|] -> statement s $"return {show_w w}"
+                            | ws ->
+                                let values = ws |> Array.map show_w |> String.concat ", "
+                                statement s $"return {values}"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op (s : CodegenEnv) (ret : OpenQasmRet) a =
+            let return' (x : string) =
+                match ret with
+                | OpenQasmLocal [||] -> statement s x
+                | OpenQasmLocal [|L(i,_)|] -> statement s $"v{i} = {x}"
+                | OpenQasmLocal targets ->
+                    let names = targets |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    statement s $"{names} = {x}"
+                | OpenQasmTail range when is_unit_ty range -> statement s x
+                | OpenQasmTail _ -> statement s $"return {x}"
+            let jp_text (jp, args) =
+                match jp with
+                | JPMethod(a,c) ->
+                    let name = method_names.[method (a,c)]
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{name}({arguments})"
+                | JPClosure _ -> unsupported "closures"
+            let is_self (a, c) =
+                match ret, self_loop.Value with
+                | OpenQasmTail _, Some (tag, _) -> method (a,c) = tag
+                | _ -> false
+            match a with
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
+                let _, parameters = self_loop.Value.Value
+                if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                let temps =
+                    arguments |> Array.map (fun (L(i,t)) ->
+                        let temp = $"t{s.text.Length}_{i}"
+                        statement s $"{tyv t} {temp} = v{i}"
+                        temp)
+                Array.iter2 (fun (L(i,_)) temp -> statement s $"v{i} = {temp}") parameters temps
+                statement s "continue"
+            | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The OpenQASM backend does not support nesting other backends."
+            | TyWhile(cond, body) ->
+                match ret with
+                | OpenQasmLocal [||] -> ()
+                | OpenQasmTail range when is_unit_ty range -> ()
+                | _ -> unsupported "a while loop in value position"
+                line s "while (true) {"
+                line (indent s) $"if (!({jp_text cond})) {{"
+                statement (indent (indent s)) "break"
+                line (indent s) "}"
+                binds (indent s) (OpenQasmLocal [||]) body
+                line s "}"
+            | TyDo body | TyIndent body -> binds s ret body
+            | TyConv(YPrim target, b) ->
+                let source = prim_of b
+                let text = tup b
+                let same =
+                    match source with
+                    | Some s when s = target -> true
+                    | Some CharT when target = Int32T -> true
+                    | Some Int32T when target = CharT -> true
+                    | _ -> false
+                let converted =
+                    if same then text
+                    else
+                        match source, target with
+                        | Some (Int32T | CharT), UInt32T -> text
+                        | Some UInt32T, (Int32T | CharT) -> text
+                        | Some (Int32T | UInt32T | CharT), Float32T -> $"float[32]({text})"
+                        | Some Float32T, (Int32T | CharT) -> $"int[32]({text})"
+                        | Some Float32T, UInt32T -> $"uint[32]({text})"
+                        | Some BoolT, (Int32T | CharT | UInt32T) -> $"(if {text} {{ 1 }} else {{ 0 }})"
+                        | Some (Int32T | CharT), BoolT -> $"({text} != 0)"
+                        | Some UInt32T, BoolT -> $"({text} != 0)"
+                        | _ -> unsupported "this conversion"
+                return' converted
+            | TyFailwith _ -> unsupported "failwith"
+            | TyMacro parts ->
+                let piece = function
+                    | CMText x -> x
+                    | CMTerm (x, true) -> data_term_vars x |> Array.map show_w |> String.concat ", "
+                    | CMTerm (x, false) -> tup x
+                    | CMType x -> tyv x
+                    | CMTypeLit _ -> unsupported "a macro type literal"
+                return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(operation, l) ->
+                let binary symbol a b = $"({tup a} {symbol} {tup b})"
+                let expr =
+                    match operation, l with
+                    | Dyn, [a] -> tup a
+                    | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                    | Add, [a;b] -> binary "+" a b
+                    | Sub, [a;b] -> binary "-" a b
+                    | Mult, [a;b] -> binary "*" a b
+                    | Div, [a;b] -> binary "/" a b
+                    | Mod, [a;b] -> binary "%" a b
+                    | LT, [a;b] -> binary "<" a b
+                    | LTE, [a;b] -> binary "<=" a b
+                    | GT, [a;b] -> binary ">" a b
+                    | GTE, [a;b] -> binary ">=" a b
+                    | EQ, [a;b] -> binary "==" a b
+                    | NEQ, [a;b] -> binary "!=" a b
+                    | BoolAnd, [a;b] -> binary "&&" a b
+                    | BoolOr, [a;b] -> binary "||" a b
+                    | BitwiseAnd, [a;b] -> binary "&" a b
+                    | BitwiseOr, [a;b] -> binary "|" a b
+                    | BitwiseXor, [a;b] -> binary "^" a b
+                    | BitwiseComplement, [a] -> $"(~({tup a}))"
+                    | ShiftLeft, [a;b] -> binary "<<" a b
+                    | ShiftRight, [a;b] -> binary ">>" a b
+                    | Neg, [a] -> $"(-({tup a}))"
+                    | NanIs, [a] -> unsupported "NaN"
+                    | StdoutFlush, [] -> ""
+                    | _ -> unsupported $"the operation {operation}"
+                return' expr
+            | other ->
+                let construct = (sprintf "%A" other).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "OpenQasm" jp_body key with
+                    | body, range, name ->
+                        method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : int = method_memo.Force() (a, b)
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the OpenQASM backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.AppendLine("OPENQASM 3.0;") |> ignore
+        functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        program.AppendLine("output int[32] spiral_io;") |> ignore
+        if unit_main then program.AppendLine("spiral_io = 0;") |> ignore
+        else program.AppendLine("spiral_io = spiral_main();") |> ignore
+        program.ToString()
+
+    // eBPF as a C profile. Loops carry a constant trip cap, recursion is rejected,
+    // and maps are a fixed array. The host C compiler runs it. Nothing is printed.
+
+    /// ### EbpfRet
+    type EbpfRet =
+        | EbpfLocal of TyV []
+        | EbpfTail of Ty
+
+    /// ### codegenEbpf
+    let codegenEbpf (env : PartEvalResult) (x : TypedBind []) =
+        let functions = ResizeArray<string>()
+        let method_names = Dictionary<int, string>()
+        let tuple_structs = ResizeArray<string>()
+        let tuple_names = Dictionary<string, string>()
+        let unsupported what = raise_codegen_error $"The eBPF backend doesn't support {what} yet."
+        let is_unit_ty = function YB -> true | _ -> false
+        let tyv = function
+            | YPrim Int32T | YPrim CharT -> "int32_t"
+            | YPrim UInt32T -> "uint32_t"
+            | YPrim BoolT -> "bool"
+            | YPrim Float32T -> "float"
+            | YPrim Float64T -> unsupported "f64"
+            | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers"
+            | YPrim t -> unsupported $"the primitive {t}"
+            | t -> unsupported $"the type {show_ty t}"
+        let zero = function
+            | "int32_t" -> "0"
+            | "uint32_t" -> "0u"
+            | "bool" -> "false"
+            | "float" -> "0.0f"
+            | other -> unsupported $"a zero value of {other}"
+        let lit = function
+            | LitInt32 x when x = Int32.MinValue -> "INT32_MIN"
+            | LitInt32 x -> string x
+            | LitUInt32 x -> $"{x}u"
+            | LitBool x -> if x then "true" else "false"
+            | LitChar x -> string (int x)
+            | LitFloat32 x when Single.IsNaN x -> unsupported "NaN"
+            | LitFloat32 x when Single.IsPositiveInfinity x -> unsupported "infinity"
+            | LitFloat32 x when Single.IsNegativeInfinity x -> unsupported "infinity"
+            | LitFloat32 x ->
+                let text = x.ToString("R", Globalization.CultureInfo.InvariantCulture)
+                let text = if text.Contains('.') || text.Contains('e') || text.Contains('E') then text else text + ".0"
+                if text.StartsWith("-") then "(" + text + "f)" else text + "f"
+            | l -> unsupported $"the literal {l}"
+        let show_w = function WV (L(i,_)) -> $"v{i}" | WLit a -> lit a
+        let prim_of = function
+            | DV(L(_,YPrim t)) -> Some t
+            | DLit l -> Some (lit_to_primitive_type l)
+            | _ -> None
+        let floated a b =
+            match prim_of a, prim_of b with
+            | Some Float32T, _ | _, Some Float32T -> true
+            | _ -> false
+        let tup d =
+            match data_term_vars d with
+            | [|w|] -> show_w w
+            | [||] -> ""
+            | _ -> unsupported "tuple values"
+        let rec flatten_ty t =
+            match t with
+            | YB -> [||]
+            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
+            | _ -> [|t|]
+        let tuple_name (tys : string []) =
+            let key = String.concat "," tys
+            match tuple_names.TryGetValue(key) with
+            | true, name -> name
+            | _ ->
+                let name = $"SpiralTuple{tuple_names.Count}"
+                tuple_names.[key] <- name
+                let fields = tys |> Array.mapi (fun i t -> $"{t} v{i};") |> String.concat " "
+                tuple_structs.Add($"typedef struct {{ {fields} }} {name};") |> ignore
+                name
+        let ret_ty range =
+            match flatten_ty range |> Array.map tyv with
+            | [||] -> ""
+            | [|t|] -> t
+            | tys -> tuple_name tys
+        let statement (s : CodegenEnv) (text : string) =
+            let trimmed = text.Trim()
+            if trimmed <> "" then
+                let with_semi = if trimmed.EndsWith(";") then trimmed else trimmed + ";"
+                line s with_semi
+        let self_loop : (int * TyV []) option ref = ref None
+        let rec emit_function (name : string) (tag : int option) (parameters : TyV []) (range : Ty) (body : TypedBind []) =
+            let saved = self_loop.Value
+            let tail = match tag with Some t when self_tail t body -> true | _ -> false
+            if tail then self_loop.Value <- Some (tag.Value, parameters)
+            try
+                let text = StringBuilder()
+                let formals =
+                    let parts = parameters |> Array.map (fun (L(i,t)) -> $"{tyv t} p{i}")
+                    if parts.Length = 0 then "void" else String.concat ", " parts
+                let result = ret_ty range
+                let signature = if result = "" then $"static void {name}({formals}) {{" else $"static {result} {name}({formals}) {{"
+                text.AppendLine(signature) |> ignore
+                let s0 = { text = text; indent = 4 }
+                parameters |> Array.iter (fun (L(i,t)) -> statement s0 $"{tyv t} v{i} = p{i}")
+                if tail then
+                    line s0 "for (int32_t spiral_trip = 0; spiral_trip < SPIRAL_LOOP_CAP; spiral_trip++) {"
+                    binds (indent s0) (EbpfTail range) body
+                    line s0 "}"
+                    if result <> "" then
+                        let dead =
+                            match result with
+                            | "int32_t" | "uint32_t" | "bool" | "float" -> zero result
+                            | other -> $"({other}){{0}}"
+                        statement s0 $"return {dead}"
+                else binds s0 (EbpfTail range) body
+                text.AppendLine("}") |> ignore
+                functions.Add(text.ToString())
+            finally
+                self_loop.Value <- saved
+        and self_tail tag (body : TypedBind []) =
+            body.Length > 0 &&
+            match Array.last body with
+            | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> method (a,c) = tag
+            | TyLocalReturnOp(_, TyIf(_,tr,fl), _) -> self_tail tag tr || self_tail tag fl
+            | TyLocalReturnOp(_, TyIntSwitch(_,on_succ,on_fail), _) -> Array.exists (self_tail tag) on_succ || self_tail tag on_fail
+            | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
+            | _ -> false
+        and binds (s : CodegenEnv) (ret : EbpfRet) (stmts : TypedBind []) =
+            Array.iter (function
+                | TyLet(d,trace,a) ->
+                    try
+                        let vs = data_free_vars d
+                        vs |> Array.iter (fun (L(i,t)) -> statement s $"{tyv t} v{i} = {zero (tyv t)}")
+                        op s (EbpfLocal vs) a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnOp(trace,a,_) ->
+                    try op s ret a
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                | TyLocalReturnData(d,trace) ->
+                    try
+                        match ret with
+                        | EbpfLocal targets ->
+                            let values = data_term_vars d
+                            if targets.Length <> values.Length then raise_codegen_error "Compiler error: A binding has the wrong number of values."
+                            Array.iter2 (fun (L(i,_)) w -> statement s $"v{i} = {show_w w}") targets values
+                        | EbpfTail range ->
+                            match data_term_vars d with
+                            | [||] -> ()
+                            | [|w|] -> statement s $"return {show_w w}"
+                            | many ->
+                                let args = many |> Array.map show_w |> String.concat ", "
+                                statement s $"return ({ret_ty range}){{{args}}}"
+                    with :? CodegenError as e -> raise_codegen_error' trace (e.Data0,e.Data1)
+                ) stmts
+        and op (s : CodegenEnv) (ret : EbpfRet) a =
+            let return' (x : string) =
+                match ret with
+                | EbpfLocal [||] -> statement s x
+                | EbpfLocal [|L(i,_)|] -> statement s $"v{i} = {x}"
+                | EbpfLocal targets ->
+                    let tys = targets |> Array.map (fun (L(_,t)) -> tyv t)
+                    let tmp = $"spiral_tuple{s.text.Length}"
+                    statement s $"{tuple_name tys} {tmp} = {x}"
+                    targets |> Array.iteri (fun k (L(i,_)) -> statement s $"v{i} = {tmp}.v{k}")
+                | EbpfTail range when is_unit_ty range -> statement s x
+                | EbpfTail _ -> statement s $"return {x}"
+            let jp_text (jp, args) =
+                match jp with
+                | JPMethod(a,c) ->
+                    let name = method_names.[method (a,c)]
+                    let arguments = args |> Array.map (fun (L(i,_)) -> $"v{i}") |> String.concat ", "
+                    $"{name}({arguments})"
+                | JPClosure _ -> unsupported "closures"
+            let is_self (a, c) =
+                match ret, self_loop.Value with
+                | EbpfTail _, Some (tag, _) -> method (a,c) = tag
+                | _ -> false
+            match a with
+            | TyIf(cond,tr,fl) ->
+                line s $"if ({tup cond}) {{"
+                binds (indent s) ret tr
+                line s "} else {"
+                binds (indent s) ret fl
+                line s "}"
+            | TyJoinPoint(JPMethod(a,c), arguments) when is_self (a, c) ->
+                let _, parameters = self_loop.Value.Value
+                if arguments.Length <> parameters.Length then raise_codegen_error "Compiler error: A tail call has the wrong number of arguments."
+                let temps =
+                    arguments |> Array.map (fun (L(i,t)) ->
+                        let temp = $"t{s.text.Length}_{i}"
+                        statement s $"{tyv t} {temp} = v{i}"
+                        temp)
+                Array.iter2 (fun (L(i,_)) temp -> statement s $"v{i} = {temp}") parameters temps
+                statement s "continue"
+            | TyJoinPoint(jp, args) -> return' (jp_text (jp, args))
+            | TyBackend(_,_,r) -> raise_codegen_error_backend r "The eBPF backend does not support nesting other backends."
+            | TyWhile(cond, body) ->
+                match ret with
+                | EbpfLocal [||] -> ()
+                | EbpfTail range when is_unit_ty range -> ()
+                | _ -> unsupported "a while loop in value position"
+                line s "for (int32_t spiral_trip = 0; spiral_trip < SPIRAL_LOOP_CAP; spiral_trip++) {"
+                statement (indent s) $"if (!({jp_text cond})) break"
+                binds (indent s) (EbpfLocal [||]) body
+                line s "}"
+            | TyDo body | TyIndent body -> binds s ret body
+            | TyConv(YPrim target, b) ->
+                let source = prim_of b
+                let text = tup b
+                let same =
+                    match source with
+                    | Some s when s = target -> true
+                    | Some CharT when target = Int32T -> true
+                    | Some Int32T when target = CharT -> true
+                    | _ -> false
+                let converted =
+                    if same then text
+                    else
+                        match source, target with
+                        | Some (Int32T | CharT), UInt32T -> $"(uint32_t)({text})"
+                        | Some UInt32T, (Int32T | CharT) -> $"(int32_t)({text})"
+                        | Some (Int32T | UInt32T | CharT), Float32T -> $"(float)({text})"
+                        | Some Float32T, (Int32T | CharT) -> $"(int32_t)({text})"
+                        | Some Float32T, UInt32T -> $"(uint32_t)({text})"
+                        | Some BoolT, (Int32T | CharT | UInt32T) -> $"({text} ? 1 : 0)"
+                        | Some (Int32T | CharT | UInt32T), BoolT -> $"({text} != 0)"
+                        | _ -> unsupported "this conversion"
+                return' converted
+            | TyFailwith _ -> unsupported "failwith"
+            | TyMacro parts ->
+                let piece = function
+                    | CMText x -> x
+                    | CMTerm (x, true) -> data_term_vars x |> Array.map show_w |> String.concat ", "
+                    | CMTerm (x, false) -> tup x
+                    | CMType x -> tyv x
+                    | CMTypeLit _ -> unsupported "a macro type literal"
+                return' (parts |> List.map piece |> String.concat "")
+            | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(operation, l) ->
+                let binary symbol a b = $"({tup a} {symbol} {tup b})"
+                let expr =
+                    match operation, l with
+                    | Dyn, [a] -> tup a
+                    | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
+                    | Add, [a;b] -> binary "+" a b
+                    | Sub, [a;b] -> binary "-" a b
+                    | Mult, [a;b] -> binary "*" a b
+                    | Div, [a;b] -> binary "/" a b
+                    | Mod, [a;b] ->
+                        if floated a b then unsupported "float remainder" else binary "%" a b
+                    | LT, [a;b] -> binary "<" a b
+                    | LTE, [a;b] -> binary "<=" a b
+                    | GT, [a;b] -> binary ">" a b
+                    | GTE, [a;b] -> binary ">=" a b
+                    | EQ, [a;b] -> binary "==" a b
+                    | NEQ, [a;b] -> binary "!=" a b
+                    | BoolAnd, [a;b] -> binary "&&" a b
+                    | BoolOr, [a;b] -> binary "||" a b
+                    | BitwiseAnd, [a;b] -> binary "&" a b
+                    | BitwiseOr, [a;b] -> binary "|" a b
+                    | BitwiseXor, [a;b] -> binary "^" a b
+                    | BitwiseComplement, [a] -> $"(~({tup a}))"
+                    | ShiftLeft, [a;b] -> binary "<<" a b
+                    | ShiftRight, [a;b] -> binary ">>" a b
+                    | Neg, [a] -> $"(-({tup a}))"
+                    | NanIs, [a] -> unsupported "NaN"
+                    | StdoutFlush, [] -> ""
+                    | _ -> unsupported $"the operation {operation}"
+                return' expr
+            | other ->
+                let construct = (sprintf "%A" other).Split('(').[0]
+                unsupported construct
+        and method_memo = lazy (
+            let dict = Dictionary(HashIdentity.Structural)
+            fun ((jp_body, key) : _ * _) ->
+                match dict.TryGetValue((jp_body, key)) with
+                | true, tag -> tag
+                | _ ->
+                    let tag = dict.Count
+                    dict.[(jp_body, key)] <- tag
+                    let args = codegenMethodKeyArgs key
+                    match codegenMethodBody env "Ebpf" jp_body key with
+                    | body, range, name ->
+                        method_names.[tag] <- "sp_" + generatedMethodName name tag
+                        emit_function method_names.[tag] (Some tag) (rdata_free_vars args) range body
+                    tag)
+        and method (a, b) : int = method_memo.Force() (a, b)
+
+        let unit_main =
+            match Array.tryLast x with
+            | Some (TyLocalReturnOp(_,_,d)) | Some (TyLocalReturnData(d,_)) ->
+                match data_term_vars d |> Array.map (function WV(L(_,t)) -> t | WLit l -> YPrim (lit_to_primitive_type l)) with
+                | [||] -> true
+                | [|YPrim Int32T|] -> false
+                | _ -> raise_codegen_error "The return type of main in the eBPF backend should be a 32-bit int (or unit)."
+            | _ -> true
+        emit_function "spiral_main" None [||] (if unit_main then YB else YPrim Int32T) x
+        let program = StringBuilder()
+        program.AppendLine("#include <stdint.h>") |> ignore
+        program.AppendLine("#include <stdbool.h>") |> ignore
+        program.AppendLine("#define SPIRAL_MAP_CAP 64") |> ignore
+        program.AppendLine("#define SPIRAL_LOOP_CAP 16777216") |> ignore
+        program.AppendLine("static int32_t spiral_map_key[SPIRAL_MAP_CAP];") |> ignore
+        program.AppendLine("static int32_t spiral_map_val[SPIRAL_MAP_CAP];") |> ignore
+        program.AppendLine("static int32_t spiral_map_used[SPIRAL_MAP_CAP];") |> ignore
+        program.AppendLine("static int32_t spiral_map_lookup(int32_t key) {") |> ignore
+        program.AppendLine("    int32_t i;") |> ignore
+        program.AppendLine("    for (i = 0; i < SPIRAL_MAP_CAP; i++) {") |> ignore
+        program.AppendLine("        if (spiral_map_used[i] && spiral_map_key[i] == key) return spiral_map_val[i];") |> ignore
+        program.AppendLine("    }") |> ignore
+        program.AppendLine("    return 0;") |> ignore
+        program.AppendLine("}") |> ignore
+        program.AppendLine("static int32_t spiral_map_update(int32_t key, int32_t val) {") |> ignore
+        program.AppendLine("    int32_t i;") |> ignore
+        program.AppendLine("    int32_t free_slot = -1;") |> ignore
+        program.AppendLine("    for (i = 0; i < SPIRAL_MAP_CAP; i++) {") |> ignore
+        program.AppendLine("        if (spiral_map_used[i] && spiral_map_key[i] == key) { spiral_map_val[i] = val; return 0; }") |> ignore
+        program.AppendLine("        if (!spiral_map_used[i] && free_slot < 0) free_slot = i;") |> ignore
+        program.AppendLine("    }") |> ignore
+        program.AppendLine("    if (free_slot < 0) return 1;") |> ignore
+        program.AppendLine("    spiral_map_used[free_slot] = 1;") |> ignore
+        program.AppendLine("    spiral_map_key[free_slot] = key;") |> ignore
+        program.AppendLine("    spiral_map_val[free_slot] = val;") |> ignore
+        program.AppendLine("    return 0;") |> ignore
+        program.AppendLine("}") |> ignore
+        tuple_structs |> Seq.iter (fun row -> program.AppendLine(row) |> ignore)
+        functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
+        program.AppendLine("int main(void) {") |> ignore
+        if unit_main then
+            program.AppendLine("    spiral_main();") |> ignore
+            program.AppendLine("    return 0;") |> ignore
+        else program.AppendLine("    return spiral_main();") |> ignore
+        program.AppendLine("}") |> ignore
+        program.ToString()
 
     /// ## CodegenTypescript
 
@@ -174743,6 +177806,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### codegenTypeScript
     let codegenTypeScript (env : PartEvalResult) (x : TypedBind []) =
         let method_names = Dictionary<int, string>()
+        let closure_names = Dictionary<int, string>()
         let types = ResizeArray()
         let functions = ResizeArray()
         let exports = ResizeArray()
@@ -174916,7 +177980,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let jp (a, b) =
                 match a with
                 | JPMethod(a,c) -> $"{method_names.[(method (a,c)).tag]}({args b})"
-                | JPClosure(a,c) -> $"closure{(closure (a,c)).tag}({args b})"
+                | JPClosure(a,c) -> $"{closure_names.[(closure (a,c)).tag]}({args b})"
             let layout_index (i : int) (fields : TyV []) =
                 match ret with
                 | TsDeclare l -> Array.iter2 (fun (L(t,ty)) (L(f,_)) -> line s $"let v{t}: {tyv ty} = v{i}.l{f};") l fields
@@ -175172,7 +178236,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | true, tag -> tag
                     | _ -> raise_codegen_error $"Compiler error: the exported function {name} is not a closure without captures."
                 let parameters = tyvs domain
-                exports.Add($"export function {name}({param_list parameters}): {tup_ty range} {{\n    return closure{tag}()({args parameters});\n}}\n")
+                exports.Add($"export function {name}({param_list parameters}): {tup_ty range} {{\n    return {closure_names.[tag]}()({args parameters});\n}}\n")
                 unit_done ()
             | TyOp(ArrayIndexSet, [a;b;c]) -> array_helpers (); return' $"spiral_array_set({tup a}, {number_index b}, {tup c})"
             | TyOp(op,l) ->
@@ -175289,12 +178353,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 match fun_ty with
                 | YFun(domain,range,_) ->
                     match codegenClosureBody env backend_nameTypeScript jp_body key with
-                    | domain_args, body -> {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
+                    | domain_args, body, sourceName ->
+                        closure_names.[i] <- generatedClosureName sourceName i
+                        {tag=i; free_vars=rdata_free_vars args; domain_args=data_free_vars domain_args; range=range; body=body}
                 | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                 ) (fun s x ->
                 let range = tup_ty x.range
                 let domain = x.domain_args |> Array.mapi (fun k (L(_,t)) -> $"a{k}: {tyv t}") |> String.concat ", "
-                line s $"function closure{x.tag}({param_list x.free_vars}): (({domain}) => {range}) {{"
+                line s $"function {closure_names.[x.tag]}({param_list x.free_vars}): (({domain}) => {range}) {{"
                 line (indent s) $"return ({param_list x.domain_args}): {range} => {{"
                 let saved = self_loop
                 self_loop <- None
@@ -175506,7 +178572,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         type UnionRecC = {tag : int; free_vars : Map<int * string, TyV[]>}
         type LayoutRecC = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>}
         type MethodRecC = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string option}
-        type ClosureRecC = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
+        type ClosureRecC = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]; name : string option}
         type TupleRecC = {tag : int; tys : Ty []}
         type ArrayRecC = {tag : int; ty : Ty; tyvs : TyV[]}
         type CFunRecC = {tag : int; domain_args_ty : Ty[]; range : Ty}
@@ -175734,8 +178800,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let v = i,t'
                 let inline g decref =
                     if count = -1 then Some (decref())
-                    elif count = 1 then Some $"{f v}->refc++;"
-                    elif 1 < count then Some $"{f v}->refc += {count};"
+                    elif count = 1 then Some $"({f v})->refc++;"
+                    elif 1 < count then Some $"({f v})->refc += {count};"
                     else raise_codegen_error $"Compiler error: Invalid count in refc_change''. Got: {count}"
                 match t' with
                 | YUnion t ->
@@ -175746,7 +178812,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         else raise_codegen_error $"Compiler error: Invalid count in refc_change''. UStack case. Got: {count}"
                     | UHeap -> g (fun () -> $"UHDecref{(uheap t).tag}({f v});")
                 | YArray t -> g (fun () -> $"ArrayDecref{(carray t).tag}({f v});")
-                | YFun(a,b,FT_Vanilla) -> g (fun () ->  $"{f v}->decref_fptr({f v});")
+                | YFun(a,b,FT_Vanilla) -> g (fun () ->  $"({f v})->decref_fptr({f v});")
                 | YPrim StringT -> g (fun () ->  $"StringDecref({f v});" )
                 | YLayout(_,Heap) as a -> g (fun () ->  $"HeapDecref{(heap a).tag}({f v});")
                 | YLayout(_,HeapMutable) as a -> g (fun () ->  $"MutDecref{(mut a).tag}({f v});")
@@ -176029,12 +179095,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | Div, [a;b] -> sprintf "%s / %s" (tup_data a) (tup_data b)
                     | Mod, [a;b] -> sprintf "%s %% %s" (tup_data a) (tup_data b)
                     | Pow, [a;b] -> import "math.h"; sprintf "pow%s(%s,%s)" (float_suffix a) (tup_data a) (tup_data b)
+                    | LT, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) < 0" (string_in_op a) (string_in_op b)
+                    | LTE, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) <= 0" (string_in_op a) (string_in_op b)
                     | LT, [a;b] -> sprintf "%s < %s" (tup_data a) (tup_data b)
                     | LTE, [a;b] -> sprintf "%s <= %s" (tup_data a) (tup_data b)
-                    | EQ, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s->ptr, %s->ptr) == 0" (string_in_op a) (string_in_op b) // TODO: Optimize string structural comparison in the real_core
-                    | NEQ, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s->ptr, %s->ptr) != 0" (string_in_op a) (string_in_op b)
-                    | GT, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s->ptr, %s->ptr) > 0" (string_in_op a) (string_in_op b)
-                    | GTE, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s->ptr, %s->ptr) >= 0" (string_in_op a) (string_in_op b)
+                    // string_in_op already yields the char pointer (a C string literal, or value->ptr).
+                    | EQ, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) == 0" (string_in_op a) (string_in_op b)
+                    | NEQ, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) != 0" (string_in_op a) (string_in_op b)
+                    | GT, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) > 0" (string_in_op a) (string_in_op b)
+                    | GTE, [a;b] when is_stringC a -> import "string.h"; sprintf "strcmp(%s, %s) >= 0" (string_in_op a) (string_in_op b)
                     | EQ, [a;b] -> sprintf "%s == %s" (tup_data a) (tup_data b)
                     | NEQ, [a;b] -> sprintf "%s != %s" (tup_data a) (tup_data b)
                     | GT, [a;b] -> sprintf "%s > %s" (tup_data a) (tup_data b)
@@ -176117,11 +179186,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
                         match codegenClosureBody env "C" jp_body key with
-                        | domain_args, body -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
+                        | domain_args, body, name -> {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body; name=name}
                     | YFun(_,_,_)-> raise_codegen_error "Non-standard functions are not supported in the C backend."
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun _ s_typ s_fun x ->
-                    let i, range = x.tag, tup_ty x.range
+                    let i, range, cname = x.tag, tup_ty x.range, generatedClosureName x.name x.tag
                     fns_printing.Add $"ClosureCreate{i}"
                     line s_typ (sprintf "typedef struct Closure%i Closure%i;" i i)
                     line s_typ (sprintf "struct Closure%i {" i)
@@ -176147,8 +179216,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     print_decref s_fun $"ClosureDecref{i}" $"Closure{i}" $"ClosureDecrefBody{i}"
 
                     match x.domain_args |> Array.map (fun (L(i,t)) -> $"{tyv t} v{i}") |> String.concat ", " with
-                    | "" -> sprintf "%s ClosureMethod%i(Closure%i * x){" range i i
-                    | domain_args -> sprintf "%s ClosureMethod%i(Closure%i * x, %s){" range i i domain_args
+                    | "" -> sprintf "%s %s(Closure%i * x){" range cname i
+                    | domain_args -> sprintf "%s %s(Closure%i * x, %s){" range cname i domain_args
                     |> line s_fun
                     let _ =
                         let s_fun = indent s_fun
@@ -176159,6 +179228,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         // its last reference read the freed array (native_closure_array_capture: 40, not 42).
                         x.free_vars |> refc_change (fun i -> $"v{i}") 1 |> line' s_fun
                         line s_fun $"ClosureDecref{i}(x);"
+                        // -Wunused-parameter: a domain argument the body never reads still has to be in the
+                        // signature, so void-cast exactly those arguments
+                        let used = refc_used_vars x.body |> Seq.map (fun kv -> kv.Value) |> Set.unionMany |> Set.map (fun (L(tag,_)) -> tag)
+                        x.domain_args |> Array.iter (fun (L(tag,_)) -> if not (used.Contains tag) then line s_fun $"(void)v{tag};")
                         binds_start (Array.append x.free_vars x.domain_args) s_fun x.body
                     line s_fun "}"
 
@@ -176169,7 +179242,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         line s_fun $"Closure{i} * x = {malloc}(sizeof(Closure{i}));"
                         line s_fun "x->refc = 1;"
                         line s_fun $"x->decref_fptr = ClosureDecref{i};"
-                        line s_fun $"x->fptr = ClosureMethod{i};"
+                        line s_fun $"x->fptr = {cname};"
                         x.free_vars |> Array.map (fun (L(i,_)) -> $"x->v{i} = v{i};")  |> line' s_fun
                         line s_fun $"return (Fun{fun_tag} *) x;"
                     line s_fun "}"
@@ -176230,6 +179303,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let s_fun = indent s_fun
                         match tyvs with
                         | [||] -> raise_codegen_error "Compiler error: Void types not allowed in assign."
+                        | [|L(_, YFun _)|] ->
+                            refc_change (fun i -> "b") 1 tyvs |> line' s_fun
+                            // ArrayCreate zero-fills the slot. A null closure has no decref.
+                            line s_fun "if (*a) { (*a)->decref_fptr(*a); }"
+                            line s_fun "*a = b;"
                         | [|t|] ->
                             refc_change (fun i -> "b") 1 tyvs |> line' s_fun
                             refc_change (fun i -> "*a") -1 tyvs |> line' s_fun
@@ -177021,10 +180099,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let c = c'.Item
                     let i = c.tags.[a]
                     let vars = args' b
-                    let tag = (unions c').tag
+                    let u = unions c'
+                    let tag = u.tag
+                    let case_ty = generatedCaseNameOfTag $"Union{tag}" u.free_vars i
                     match c.layout with
-                    | UHeap -> $"sptr<Union{tag}>{{new Union{tag}{{Union{tag}_{i}{{{vars}}}}}}}"
-                    | UStack -> $"Union{tag}{{Union{tag}_{i}{{{vars}}}}}"
+                    | UHeap -> $"sptr<Union{tag}>{{new Union{tag}{{{case_ty}{{{vars}}}}}}}"
+                    | UStack -> $"Union{tag}{{{case_ty}{{{vars}}}}}"
                     |> return'
                 | TyToLayout(a,b) ->
                     match b with
@@ -177195,7 +180275,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 jp_closure (fun (((jp_body,key & (C(args,_,fun_ty))),backend : backend_cpp),i) ->
                     match fun_ty with
                     | YFun(domain,range,t) ->
-                        let _, body = codegenClosureBody part_eval_env backend.Name jp_body key // ws: CodegenAdapter (raises on a malformed table)
+                        let _, body, _ = codegenClosureBody part_eval_env backend.Name jp_body key // ws: CodegenAdapter (raises on a malformed table)
                         {tag=i; domain=domain; range=range; body=body; free_vars=rdata_free_vars args; funtype=t; backend=backend}
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun s (x : ClosureRec) ->
@@ -177300,9 +180380,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let inline map_iteri f x = Map.iter (fun ((tag : int, _) as k) v -> f tag k v) x
                 union (fun s x ->
                     let i = x.tag
+                    let case_ty (tag : int) = generatedCaseNameOfTag $"Union{i}" x.free_vars tag
                     line s.fwd_types $"struct Union{i};" // Forward declaration for the union.
                     map_iteri (fun tag k v -> // The individual union cases.
-                        line s.types $"struct Union{i}_{tag} {{ // {snd k}"
+                        line s.types $"struct {case_ty tag} {{ // {snd k}"
                         // The free vars in the env.
                         print_ordered_args (indent s.types) v
                         let () = // constructors
@@ -177311,8 +180392,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             let args = v |> Array.map (fun (L(i,x)) -> $"{tyv x} t{i}")
                             let con_init = v |> Array.map (fun (L(i,x)) -> $"v{i}(t{i})")
                             if v.Length <> 0 then
-                                line s_typ $"__host__ __device__ Union{i}_{tag}({concat args}) : {concat con_init} {{}}"
-                                line s_typ $"__host__ __device__ Union{i}_{tag}() = delete;"
+                                line s_typ $"__host__ __device__ {case_ty tag}({concat args}) : {concat con_init} {{}}"
+                                line s_typ $"__host__ __device__ {case_ty tag}() = delete;"
                         line s.types "};"
                         ) x.free_vars
 
@@ -177322,7 +180403,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         line s_typ $"union {{"
                         let _ =
                             let s_typ = indent s_typ
-                            map_iteri (fun tag k v -> line s_typ $"Union{i}_{tag} case{tag}; // {snd k}") x.free_vars
+                            map_iteri (fun tag k v -> line s_typ $"{case_ty tag} case{tag}; // {snd k}") x.free_vars
                         line s_typ "};"
 
                         if x.is_heap then line s_typ "int refc{0};"
@@ -177331,7 +180412,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         line s_typ $"__host__ __device__ Union{i}() {{}}" // default constructor, the refc and tag have def value so we don't have to do anything here.
 
                         map_iteri (fun tag k v -> // The constructors for all the union cases.
-                            line s_typ $"__host__ __device__ Union{i}(Union{i}_{tag} t) : tag({tag}), case{tag}(t) {{}} // {snd k}"
+                            line s_typ $"__host__ __device__ Union{i}({case_ty tag} t) : tag({tag}), case{tag}(t) {{}} // {snd k}"
                             ) x.free_vars
 
                         line s_typ $"__host__ __device__ Union{i}(const Union{i} & x) : tag(x.tag) {{" // copy constructor
@@ -177341,7 +180422,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             let () = // copy constructor cases
                                 let s_typ = indent s_typ
                                 map_iteri (fun tag k v ->
-                                    line s_typ $"case {tag}: new (&this->case{tag}) Union{i}_{tag}(x.case{tag}); break; // {snd k}"
+                                    line s_typ $"case {tag}: new (&this->case{tag}) {case_ty tag}(x.case{tag}); break; // {snd k}"
                                     ) x.free_vars
                             line s_typ "}"
                         line s_typ "}"
@@ -177352,7 +180433,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             let () = // move constructor cases
                                 let s_typ = indent s_typ
                                 map_iteri (fun tag k v ->
-                                    line s_typ $"case {tag}: new (&this->case{tag}) Union{i}_{tag}(std::move(x.case{tag})); break; // {snd k}"
+                                    line s_typ $"case {tag}: new (&this->case{tag}) {case_ty tag}(std::move(x.case{tag})); break; // {snd k}"
                                     ) x.free_vars
                             line s_typ "}"
                         line s_typ "}"
@@ -177405,7 +180486,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                             let () = // destructor cases
                                 let s_typ = indent s_typ
                                 map_iteri (fun tag k v ->
-                                    line s_typ $"case {tag}: this->case{tag}.~Union{i}_{tag}(); break; // {snd k}"
+                                    line s_typ $"case {tag}: this->case{tag}.~{case_ty tag}(); break; // {snd k}"
                                     ) x.free_vars
                             line s_typ "}"
                             line s_typ $"this->tag = {max_tag};"
@@ -177697,7 +180778,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         type UnionRec = {tag : int; free_vars : Map<int * string, TyV[]>} // ws: union cases are keyed `tag * name`
         type LayoutRec = {tag : int; data : Data; free_vars : TyV[]; free_vars_by_key : Map<int * string, TyV[]>} // ws: record keys are `int * string`
         type MethodRec = {tag : int; free_vars : L<Tag,Ty>[]; range : Ty; body : TypedBind[]; name : string}
-        type ClosureRec = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]}
+        type ClosureRec = {tag : int; free_vars : L<Tag,Ty>[]; domain : Ty; domain_args : TyV[]; range : Ty; body : TypedBind[]; name : string}
 
         type BindsReturn =
             | BindsTailEnd
@@ -177880,7 +180961,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     let args = args b
                     match a with
                     | JPMethod(a,b) -> sprintf "%s(%s)" (method (a,b)).name args
-                    | JPClosure(a,b) -> sprintf "Closure%i(%s)" (closure (a,b)).tag args
+                    | JPClosure(a,b) -> sprintf "%s(%s)" (closure (a,b)).name args
                 let layout_index i x' =
                     x' |> Array.map (fun (L(i',_)) -> $"v{i}.v{i'}")
                     |> String.concat ", "
@@ -178130,13 +181211,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 jp true (fun ((jp_body,key & (C(args,_,fun_ty))),i) ->
                     match fun_ty with
                     | YFun(domain,range,FT_Vanilla) ->
-                        let domain_args, body = codegenClosureBody part_eval_env backend_name jp_body key // ws: CodegenAdapter (raises on a malformed table)
-                        {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body}
+                        let domain_args, body, source_name = codegenClosureBody part_eval_env backend_name jp_body key // ws: CodegenAdapter (raises on a malformed table)
+                        {tag=i; free_vars=rdata_free_vars args; domain=domain; domain_args=data_free_vars domain_args; range=range; body=body; name=generatedClosureName source_name i}
                     | YFun _ -> raise_codegen_error "Non-standard functions are not supported in the Python backend."
                     | _ -> raise_codegen_error "Compiler error: Unexpected type in the closure join point."
                     ) (fun s x ->
                     let env_args = x.free_vars |> Array.map (fun (L(i,t)) -> $"env_v{i} : {annot t}") |> String.concat ", "
-                    line s $"def Closure{x.tag}({env_args}):"
+                    line s $"def {x.name}({env_args}):"
                     let s = indent s
                     let inner_args = x.domain_args |> Array.map (fun (L(i,t)) -> $"v{i} : {annot t}") |> String.concat ", "
                     line s $"def inner({inner_args}) -> {tup_annot x.range}:"
@@ -181805,6 +184886,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         | BuildBackendDelphi
         | BuildBackendZig
         | BuildBackendWasm
+        | BuildBackendWgsl
+        | BuildBackendCalyx
+        | BuildBackendKotlin
+        | BuildBackendSwift
+        | BuildBackendOpenQasm
+        | BuildBackendEbpf
         | BuildBackendLean
         | BuildBackendBend
         | BuildBackendTypeScript
@@ -181826,6 +184913,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         | "Delphi" -> BuildBackendDelphi
         | "Zig" -> BuildBackendZig
         | "Wasm" -> BuildBackendWasm
+        | "Wgsl" -> BuildBackendWgsl
+        | "Calyx" -> BuildBackendCalyx
+        | "Kotlin" -> BuildBackendKotlin
+        | "Swift" -> BuildBackendSwift
+        | "OpenQasm" -> BuildBackendOpenQasm
+        | "Ebpf" -> BuildBackendEbpf
         | "Lean" -> BuildBackendLean
         | "Bend" -> BuildBackendBend
         | "TypeScript" -> BuildBackendTypeScript
@@ -183052,6 +186145,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         | BuildBackendDelphi -> build codegenDelphi "Delphi" ".pas"
                                         | BuildBackendZig -> build codegenZig "Zig" ".zig"
                                         | BuildBackendWasm -> build codegenWasm "Wasm" ".wat"
+                                        | BuildBackendWgsl -> build codegenWgsl "Wgsl" ".wgsl"
+                                        | BuildBackendCalyx -> build codegenCalyx "Calyx" ".futil"
+                                        | BuildBackendKotlin -> build codegenKotlin "Kotlin" ".kt"
+                                        | BuildBackendSwift -> build codegenSwift "Swift" ".swift"
+                                        | BuildBackendOpenQasm -> build codegenOpenQasm "OpenQasm" ".qasm"
+                                        | BuildBackendEbpf -> build codegenEbpf "Ebpf" ".ebpf"
                                         | BuildBackendLean -> build codegenLean "Lean" ".lean"
                                         | BuildBackendBend -> build codegenBend "Bend" ".bend"
                                         | BuildBackendTypeScript -> build codegenTypeScript "TypeScript" ".ts"
@@ -185750,6 +188849,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                     | "Delphi" -> build codegenDelphi "Delphi" ".pas"
                                     | "Zig" -> build codegenZig "Zig" ".zig"
                                     | "Wasm" -> build codegenWasm "Wasm" ".wat"
+                                    | "Wgsl" -> build codegenWgsl "Wgsl" ".wgsl"
+                                    | "Calyx" -> build codegenCalyx "Calyx" ".futil"
+                                    | "Kotlin" -> build codegenKotlin "Kotlin" ".kt"
+                                    | "Swift" -> build codegenSwift "Swift" ".swift"
+                                    | "OpenQasm" -> build codegenOpenQasm "OpenQasm" ".qasm"
+                                    | "Ebpf" -> build codegenEbpf "Ebpf" ".ebpf"
                                     | "Lean" -> build codegenLean "Lean" ".lean"
                                     | "Bend" -> build codegenBend "Bend" ".bend"
                                     | "TypeScript" -> build codegenTypeScript "TypeScript" ".ts"

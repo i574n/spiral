@@ -82,7 +82,7 @@ Array1 * ArrayLit1(uint32_t len, int32_t * ptr){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++; x->case1.v1->refc++;
+            (x->case1.v0)->refc++; (x->case1.v1)->refc++;
             break;
         }
     }
@@ -119,7 +119,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-US0 ClosureMethod0(Closure0 * x, int32_t v0){
+US0 closure0(Closure0 * x, int32_t v0){
     
     
     ClosureDecref0(x);
@@ -163,7 +163,7 @@ Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = closure0;
     
     return (Fun0 *) x;
 }
@@ -182,7 +182,7 @@ int32_t main(){
     
     Fun0 * v0;
     v0 = ClosureCreate0();
-    v0->refc++;
+    (v0)->refc++;
     
     US0 v1;
     v1 = method0(v0);
@@ -199,7 +199,7 @@ int32_t main(){
         }
         case 1: { // Item
             String * v2 = v1.case1.v0; Array1 * v3 = v1.case1.v1;
-            v2->refc++; v3->refc++;
+            (v2)->refc++; (v3)->refc++;
             
             int32_t v4;
             v4 = v2->len-1;
@@ -233,12 +233,12 @@ int32_t main(){
             break;
         }
     }
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v1));
     US0 v13;
     v13 = method1(v0);
     
-    v0->decref_fptr(v0);
+    (v0)->decref_fptr(v0);
     int32_t v24;
     switch (v13.tag) {
         case 0: { // Empty
@@ -250,7 +250,7 @@ int32_t main(){
         }
         case 1: { // Item
             String * v14 = v13.case1.v0; Array1 * v15 = v13.case1.v1;
-            v14->refc++; v15->refc++;
+            (v14)->refc++; (v15)->refc++;
             
             int32_t v16;
             v16 = v14->len-1;

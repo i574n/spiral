@@ -71,7 +71,7 @@ Array0 * ArrayLit0(uint32_t len, String * * ptr){
     memcpy(x->ptr, ptr, sizeof(String *) * len);
         for (uint32_t i=0; i < len; i++){
             String * v = ptr[i];
-            v->refc++;
+            (v)->refc++;
         }
     return x;
 }
@@ -89,14 +89,14 @@ void method0(Array0 * v0){
     return ;
 }
 static inline void AssignArray0(String * * a, String * b){
-    b->refc++;
+    (b)->refc++;
     StringDecref(*a);
     *a = b;
 }
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -183,11 +183,11 @@ int32_t mutate1(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc += 2;
+            (v1)->refc += 2;
             USDecref0(&(v0));
             
             method2(v1);
-            v1->refc++;
+            (v1)->refc++;
             
             
             method3(v1);
@@ -207,7 +207,7 @@ int32_t mutate1(US0 v0){
             
             
             AssignArray0(&(v1->ptr[2l]), v3);
-            v1->refc++;
+            (v1)->refc++;
             StringDecref(v3);
             
             method4(v1);
@@ -231,7 +231,7 @@ int32_t observe6(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len;
@@ -239,7 +239,7 @@ int32_t observe6(US0 v0){
             
             String * v3;
             v3 = v1->ptr[0l];
-            v3->refc++;
+            (v3)->refc++;
             
             int32_t v4;
             v4 = v3->len-1;
@@ -251,7 +251,7 @@ int32_t observe6(US0 v0){
             
             String * v6;
             v6 = v1->ptr[1l];
-            v6->refc++;
+            (v6)->refc++;
             ArrayDecref0(v1);
             int32_t v7;
             v7 = v6->len-1;
@@ -297,7 +297,7 @@ int32_t main(){
     
     Array0 * v0;
     v0 = ArrayCreate0(4l, true);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method0(v0);
@@ -309,7 +309,7 @@ int32_t main(){
     
     
     AssignArray0(&(v0->ptr[0l]), v1);
-    v0->refc++;
+    (v0)->refc++;
     StringDecref(v1);
     US0 v2;
     v2 = US0_Values(v0);
@@ -317,7 +317,7 @@ int32_t main(){
     
     int32_t v3;
     v3 = mutate1(v2);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v2));
     US0 v4;
     v4 = US0_Values(v0);
@@ -325,11 +325,11 @@ int32_t main(){
     
     int32_t v5;
     v5 = observe6(v4);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v4));
     
     method7(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method8(v0);

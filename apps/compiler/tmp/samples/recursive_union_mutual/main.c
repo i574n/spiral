@@ -86,7 +86,7 @@ int32_t main(){
         
         UH0 * v1;
         v1 = UH0_StopA();
-        v1->refc++;
+        (v1)->refc++;
         
         UH1 * v2;
         v2 = UH1_B(v1);

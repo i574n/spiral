@@ -58,7 +58,7 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(3, "é");
-    v0->refc++;
+    (v0)->refc++;
     
     String * v1;
     v1 = invalid_middle0(v0);

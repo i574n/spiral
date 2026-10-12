@@ -196,7 +196,7 @@ int32_t main(){
     
     int32_t v1;
     v1 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v2;
     v2 = runtime_byte0(v0, v1);
@@ -208,7 +208,7 @@ int32_t main(){
     
     int32_t v4;
     v4 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v5;
     v5 = runtime_byte0(v3, v4);
@@ -228,7 +228,7 @@ int32_t main(){
     
     int32_t v9;
     v9 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v10;
     v10 = codepoint_length_loop1(v6, v2, v5, v7, v8, v9);
@@ -236,7 +236,7 @@ int32_t main(){
     
     int32_t v11;
     v11 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v12;
     v12 = runtime_byte0(v0, v11);
@@ -244,7 +244,7 @@ int32_t main(){
     
     int32_t v13;
     v13 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v14;
     v14 = runtime_byte0(v3, v13);
@@ -264,7 +264,7 @@ int32_t main(){
     
     int32_t v18;
     v18 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v19;
     v19 = codepoint_byte_offset_loop2(v6, v12, v14, v15, v16, v17, v18);
@@ -272,7 +272,7 @@ int32_t main(){
     
     int32_t v20;
     v20 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v21;
     v21 = runtime_byte0(v0, v20);
@@ -280,7 +280,7 @@ int32_t main(){
     
     int32_t v22;
     v22 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v23;
     v23 = runtime_byte0(v3, v22);
@@ -300,7 +300,7 @@ int32_t main(){
     
     int32_t v27;
     v27 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v28;
     v28 = codepoint_byte_offset_loop2(v6, v21, v23, v24, v25, v26, v27);
@@ -316,7 +316,7 @@ int32_t main(){
     
     int32_t v31;
     v31 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v32;
     v32 = runtime_byte0(v0, v31);
@@ -324,7 +324,7 @@ int32_t main(){
     
     int32_t v33;
     v33 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v34;
     v34 = runtime_byte0(v3, v33);
@@ -344,7 +344,7 @@ int32_t main(){
     
     int32_t v38;
     v38 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v39;
     v39 = codepoint_byte_offset_loop2(v6, v32, v34, v35, v36, v37, v38);
@@ -352,7 +352,7 @@ int32_t main(){
     
     int32_t v40;
     v40 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v41;
     v41 = runtime_byte0(v0, v40);
@@ -360,7 +360,7 @@ int32_t main(){
     
     int32_t v42;
     v42 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v43;
     v43 = runtime_byte0(v3, v42);
@@ -380,7 +380,7 @@ int32_t main(){
     
     int32_t v47;
     v47 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v48;
     v48 = codepoint_byte_offset_loop2(v6, v41, v43, v44, v45, v46, v47);
@@ -396,7 +396,7 @@ int32_t main(){
     
     int32_t v51;
     v51 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v52;
     v52 = runtime_byte0(v0, v51);
@@ -404,7 +404,7 @@ int32_t main(){
     
     int32_t v53;
     v53 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v54;
     v54 = runtime_byte0(v3, v53);
@@ -424,7 +424,7 @@ int32_t main(){
     
     int32_t v58;
     v58 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v59;
     v59 = codepoint_byte_offset_loop2(v6, v52, v54, v55, v56, v57, v58);
@@ -432,7 +432,7 @@ int32_t main(){
     
     int32_t v60;
     v60 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v61;
     v61 = runtime_byte0(v0, v60);
@@ -440,7 +440,7 @@ int32_t main(){
     
     int32_t v62;
     v62 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v63;
     v63 = runtime_byte0(v3, v62);
@@ -460,7 +460,7 @@ int32_t main(){
     
     int32_t v67;
     v67 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v68;
     v68 = codepoint_byte_offset_loop2(v6, v61, v63, v64, v65, v66, v67);
@@ -476,7 +476,7 @@ int32_t main(){
     
     int32_t v71;
     v71 = 1l;
-    v0->refc++;
+    (v0)->refc++;
     
     char v72;
     v72 = runtime_byte0(v0, v71);
@@ -484,7 +484,7 @@ int32_t main(){
     StringDecref(v0);
     int32_t v73;
     v73 = 0l;
-    v3->refc++;
+    (v3)->refc++;
     
     char v74;
     v74 = runtime_byte0(v3, v73);
@@ -504,7 +504,7 @@ int32_t main(){
     
     int32_t v78;
     v78 = 10l;
-    v6->refc++;
+    (v6)->refc++;
     
     int32_t v79;
     v79 = codepoint_byte_offset_loop2(v6, v72, v74, v75, v76, v77, v78);
@@ -512,7 +512,7 @@ int32_t main(){
     StringDecref(v6);
     int32_t v80;
     v80 = 0l;
-    v30->refc++;
+    (v30)->refc++;
     
     char v81;
     v81 = runtime_byte0(v30, v80);
@@ -524,7 +524,7 @@ int32_t main(){
     
     int32_t v83;
     v83 = 0l;
-    v82->refc++;
+    (v82)->refc++;
     
     char v84;
     v84 = runtime_byte0(v82, v83);
@@ -532,7 +532,7 @@ int32_t main(){
     StringDecref(v82);
     int32_t v85;
     v85 = 3l;
-    v50->refc++;
+    (v50)->refc++;
     
     char v86;
     v86 = runtime_byte0(v50, v85);
@@ -544,7 +544,7 @@ int32_t main(){
     
     int32_t v88;
     v88 = 3l;
-    v87->refc++;
+    (v87)->refc++;
     
     char v89;
     v89 = runtime_byte0(v87, v88);

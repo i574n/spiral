@@ -51,7 +51,7 @@ Mut0 * MutCreate0(String * v0){
     return x;
 }
 static inline void AssignMut0(String * * a0, String * b0){
-    b0->refc++;
+    (b0)->refc++;
     StringDecref(*a0);
     *a0 = b0;
 }
@@ -60,7 +60,7 @@ int32_t main(){
     
     String * v0;
     v0 = StringLit(6, "deref");
-    v0->refc++;
+    (v0)->refc++;
     
     Mut0 * v1;
     v1 = MutCreate0(v0);
@@ -80,7 +80,7 @@ int32_t main(){
     StringDecref(v3);
     String * v4;
     v4 = v1->v0;
-    v4->refc++;
+    (v4)->refc++;
     MutDecref0(v1);
     bool v5;
     v5 = v2 == 3l;

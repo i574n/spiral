@@ -1,0 +1,179 @@
+#include <stdint.h>
+#include <stdbool.h>
+#define SPIRAL_MAP_CAP 64
+#define SPIRAL_LOOP_CAP 16777216
+static int32_t spiral_map_key[SPIRAL_MAP_CAP];
+static int32_t spiral_map_val[SPIRAL_MAP_CAP];
+static int32_t spiral_map_used[SPIRAL_MAP_CAP];
+static int32_t spiral_map_lookup(int32_t key) {
+    int32_t i;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) return spiral_map_val[i];
+    }
+    return 0;
+}
+static int32_t spiral_map_update(int32_t key, int32_t val) {
+    int32_t i;
+    int32_t free_slot = -1;
+    for (i = 0; i < SPIRAL_MAP_CAP; i++) {
+        if (spiral_map_used[i] && spiral_map_key[i] == key) { spiral_map_val[i] = val; return 0; }
+        if (!spiral_map_used[i] && free_slot < 0) free_slot = i;
+    }
+    if (free_slot < 0) return 1;
+    spiral_map_used[free_slot] = 1;
+    spiral_map_key[free_slot] = key;
+    spiral_map_val[free_slot] = val;
+    return 0;
+}
+static int32_t spiral_main(void) {
+    int32_t v0 = 0;
+    v0 = INT32_MIN;
+    uint32_t v1 = 0u;
+    v1 = 4294967295u;
+    int32_t v2 = 0;
+    v2 = -1;
+    float v3 = 0.0f;
+    v3 = 0.0f;
+    float v4 = 0.0f;
+    v4 = 1.9f;
+    float v5 = 0.0f;
+    v5 = 2.9f;
+    uint32_t v6 = 0u;
+    v6 = 4294967294u;
+    uint32_t v7 = 0u;
+    v7 = 5u;
+    uint32_t v8 = 0u;
+    v8 = 0u;
+    float v9 = 0.0f;
+    v9 = (v3 - v4);
+    uint32_t v10 = 0u;
+    v10 = (uint32_t)(v0);
+    int32_t v11 = 0;
+    v11 = (int32_t)(v10);
+    int32_t v12 = 0;
+    v12 = (int32_t)(v1);
+    uint32_t v13 = 0u;
+    v13 = (uint32_t)(v2);
+    int32_t v14 = 0;
+    v14 = (int32_t)(v9);
+    int32_t v15 = 0;
+    v15 = (int32_t)(v5);
+    uint32_t v16 = 0u;
+    v16 = (v10 / 2u);
+    uint32_t v17 = 0u;
+    v17 = (v6 / 2u);
+    uint32_t v18 = 0u;
+    v18 = (v7 % 3u);
+    uint32_t v19 = 0u;
+    v19 = (~(v8));
+    uint32_t v20 = 0u;
+    v20 = (v1 >> 31);
+    bool v21 = false;
+    v21 = (v0 < -1);
+    bool v23 = false;
+    if (v21) {
+        bool v22 = false;
+        v22 = (v0 <= v0);
+        v23 = v22;
+    } else {
+        v23 = false;
+    }
+    bool v26 = false;
+    if (v23) {
+        bool v24 = false;
+        v24 = (v0 > 0);
+        bool v25 = false;
+        v25 = (v24 == false);
+        v26 = v25;
+    } else {
+        v26 = false;
+    }
+    if (v26) {
+        bool v27 = false;
+        v27 = (v10 > 1u);
+        bool v29 = false;
+        if (v27) {
+            bool v28 = false;
+            v28 = (v11 == v0);
+            v29 = v28;
+        } else {
+            v29 = false;
+        }
+        bool v31 = false;
+        if (v29) {
+            bool v30 = false;
+            v30 = (v12 == v2);
+            v31 = v30;
+        } else {
+            v31 = false;
+        }
+        bool v33 = false;
+        if (v31) {
+            bool v32 = false;
+            v32 = (v13 == v1);
+            v33 = v32;
+        } else {
+            v33 = false;
+        }
+        if (v33) {
+            bool v34 = false;
+            v34 = (v14 == v2);
+            bool v36 = false;
+            if (v34) {
+                bool v35 = false;
+                v35 = (v15 == 2);
+                v36 = v35;
+            } else {
+                v36 = false;
+            }
+            if (v36) {
+                bool v37 = false;
+                v37 = (v16 == 1073741824u);
+                bool v39 = false;
+                if (v37) {
+                    bool v38 = false;
+                    v38 = (v17 == 2147483647u);
+                    v39 = v38;
+                } else {
+                    v39 = false;
+                }
+                bool v41 = false;
+                if (v39) {
+                    bool v40 = false;
+                    v40 = (v18 == 2u);
+                    v41 = v40;
+                } else {
+                    v41 = false;
+                }
+                if (v41) {
+                    bool v42 = false;
+                    v42 = (v19 == v1);
+                    bool v44 = false;
+                    if (v42) {
+                        bool v43 = false;
+                        v43 = (v20 == 1u);
+                        v44 = v43;
+                    } else {
+                        v44 = false;
+                    }
+                    if (v44) {
+                        return 0;
+                    } else {
+                        return 5;
+                    }
+                } else {
+                    return 4;
+                }
+            } else {
+                return 3;
+            }
+        } else {
+            return 2;
+        }
+    } else {
+        return 1;
+    }
+}
+int main(void) {
+    return spiral_main();
+}

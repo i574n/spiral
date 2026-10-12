@@ -50,7 +50,7 @@ Array0 * ArrayLit0(uint32_t len, int32_t * ptr){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -87,7 +87,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-US0 ClosureMethod0(Closure0 * x, int32_t v0){
+US0 closure0(Closure0 * x, int32_t v0){
     
     
     ClosureDecref0(x);
@@ -127,7 +127,7 @@ Fun0 * ClosureCreate0(){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = closure0;
     
     return (Fun0 *) x;
 }
@@ -149,7 +149,7 @@ int32_t score1(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len;
@@ -186,7 +186,7 @@ int32_t main(){
     
     Fun0 * v0;
     v0 = ClosureCreate0();
-    v0->refc++;
+    (v0)->refc++;
     
     US0 v1;
     v1 = method0(v0);
@@ -194,12 +194,12 @@ int32_t main(){
     
     int32_t v2;
     v2 = score1(v1);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v1));
     US0 v3;
     v3 = method2(v0);
     USIncref0(&(v3));
-    v0->decref_fptr(v0);
+    (v0)->decref_fptr(v0);
     int32_t v4;
     v4 = score1(v3);
     

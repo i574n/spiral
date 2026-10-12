@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_BitZero
+    }
+}
 #[derive(Clone)]
 enum UH0 {
     UH0_SymbolListNil,
@@ -25,6 +30,11 @@ impl UH0 {
             UH0::UH0_SymbolListNil => 0,
             UH0::UH0_SymbolListCons(..) => 1,
         }
+    }
+}
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_SymbolListNil
     }
 }
 #[derive(Clone)]
@@ -40,6 +50,11 @@ impl UH2 {
         }
     }
 }
+impl Default for UH2 {
+    fn default() -> Self {
+        UH2::UH2_InputEmpty
+    }
+}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputListNil,
@@ -51,6 +66,11 @@ impl UH1 {
             UH1::UH1_InputListNil => 0,
             UH1::UH1_InputListCons(..) => 1,
         }
+    }
+}
+impl Default for UH1 {
+    fn default() -> Self {
+        UH1::UH1_InputListNil
     }
 }
 #[derive(Clone)]
@@ -68,6 +88,11 @@ impl US1 {
         }
     }
 }
+impl Default for US1 {
+    fn default() -> Self {
+        US1::US1_TriA
+    }
+}
 #[derive(Clone)]
 enum UH3 {
     UH3_SymbolListNil,
@@ -79,6 +104,11 @@ impl UH3 {
             UH3::UH3_SymbolListNil => 0,
             UH3::UH3_SymbolListCons(..) => 1,
         }
+    }
+}
+impl Default for UH3 {
+    fn default() -> Self {
+        UH3::UH3_SymbolListNil
     }
 }
 #[derive(Clone)]
@@ -94,6 +124,11 @@ impl UH5 {
         }
     }
 }
+impl Default for UH5 {
+    fn default() -> Self {
+        UH5::UH5_InputEmpty
+    }
+}
 #[derive(Clone)]
 enum UH4 {
     UH4_InputListNil,
@@ -105,6 +140,11 @@ impl UH4 {
             UH4::UH4_InputListNil => 0,
             UH4::UH4_InputListCons(..) => 1,
         }
+    }
+}
+impl Default for UH4 {
+    fn default() -> Self {
+        UH4::UH4_InputListNil
     }
 }
 #[derive(Clone)]
@@ -122,6 +162,11 @@ impl US2 {
         }
     }
 }
+impl Default for US2 {
+    fn default() -> Self {
+        US2::US2_ModelA
+    }
+}
 #[derive(Clone)]
 enum UH6 {
     UH6_InputEmpty,
@@ -133,6 +178,11 @@ impl UH6 {
             UH6::UH6_InputEmpty => 0,
             UH6::UH6_InputCons(..) => 1,
         }
+    }
+}
+impl Default for UH6 {
+    fn default() -> Self {
+        UH6::UH6_InputEmpty
     }
 }
 #[derive(Clone)]
@@ -156,6 +206,11 @@ impl UH7 {
         }
     }
 }
+impl Default for UH7 {
+    fn default() -> Self {
+        UH7::UH7_RegexEmpty
+    }
+}
 #[derive(Clone)]
 enum US3 {
     US3_InventoryDfaAccepted,
@@ -169,6 +224,11 @@ impl US3 {
             US3::US3_InventoryDfaRejected => 1,
             US3::US3_InventoryDfaInputOutsideInventory => 2,
         }
+    }
+}
+impl Default for US3 {
+    fn default() -> Self {
+        US3::US3_InventoryDfaAccepted
     }
 }
 #[derive(Clone)]
@@ -186,6 +246,11 @@ impl US4 {
         }
     }
 }
+impl Default for US4 {
+    fn default() -> Self {
+        US4::US4_SymbolLess
+    }
+}
 #[derive(Clone)]
 enum US5 {
     US5_Nullable,
@@ -197,6 +262,11 @@ impl US5 {
             US5::US5_Nullable => 0,
             US5::US5_NonNullable => 1,
         }
+    }
+}
+impl Default for US5 {
+    fn default() -> Self {
+        US5::US5_Nullable
     }
 }
 #[derive(Clone)]
@@ -218,6 +288,11 @@ impl UH8 {
             UH8::UH8_RegexCat(..) => 4,
             UH8::UH8_RegexStar(..) => 5,
         }
+    }
+}
+impl Default for UH8 {
+    fn default() -> Self {
+        UH8::UH8_RegexEmpty
     }
 }
 fn input_singletons_from_symbols_0(mut v0: Rc<UH0>) -> Rc<UH1> {

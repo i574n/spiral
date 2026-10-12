@@ -1,0 +1,116 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct {
+    int refc;
+    uint32_t len;
+    char ptr[];
+} Array0;
+typedef Array0 String;
+typedef struct {
+    String * v0;
+    String * v1;
+} Tuple0;
+static inline void ArrayDecrefBody0(Array0 * x){
+    (void)x;
+}
+void ArrayDecref0(Array0 * x){
+    if (x != NULL && --(x->refc) == 0) { ArrayDecrefBody0(x); free(x); }
+}
+Array0 * ArrayCreate0(uint32_t len, bool init_at_zero){
+    uint32_t size = sizeof(Array0) + sizeof(char) * len;
+    Array0 * x = malloc(size);
+    if (init_at_zero) { memset(x,0,size); }
+    x->refc = 1;
+    x->len = len;
+    return x;
+}
+Array0 * ArrayLit0(uint32_t len, char * ptr){
+    Array0 * x = ArrayCreate0(len, false);
+    memcpy(x->ptr, ptr, sizeof(char) * len);
+    return x;
+}
+static inline void StringDecref(String * x){
+    return ArrayDecref0(x);
+}
+static inline String * StringLit(uint32_t len, char * ptr){
+    return ArrayLit0(len, ptr);
+}
+static inline Tuple0 TupleCreate0(String * v0, String * v1){
+    Tuple0 x;
+    x.v0 = v0; x.v1 = v1;
+    return x;
+}
+Tuple0 method0(String * v0, String * v1){
+    
+    
+    bool v2;
+    v2 = strcmp(v0->ptr, "") == 0;
+    
+    
+    if (v2){
+        
+        StringDecref(v0); StringDecref(v1);
+        String * v3;
+        v3 = StringLit(3, "no");
+        
+        
+        String * v4;
+        v4 = StringLit(4, "nay");
+        
+        
+        return TupleCreate0(v3, v4);
+    } else {
+        
+        
+        return TupleCreate0(v0, v1);
+    }
+}
+int32_t main(){
+    
+    
+    String * v0;
+    v0 = StringLit(3, "hi");
+    
+    
+    String * v1;
+    v1 = StringLit(3, "yo");
+    (v0)->refc++; (v1)->refc++;
+    
+    String * v2; String * v3;
+    Tuple0 tmp0 = method0(v0, v1);
+    v2 = tmp0.v0; v3 = tmp0.v1;
+    
+    StringDecref(v0); StringDecref(v1);
+    bool v4;
+    v4 = strcmp(v2->ptr, "hi") == 0;
+    
+    StringDecref(v2);
+    bool v6;
+    if (v4){
+        
+        
+        bool v5;
+        v5 = strcmp(v3->ptr, "yo") == 0;
+        
+        
+        v6 = v5;
+    } else {
+        
+        
+        v6 = false;
+    }
+    
+    StringDecref(v3);
+    if (v6){
+        
+        
+        return 0l;
+    } else {
+        
+        
+        return 1l;
+    }
+}

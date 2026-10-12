@@ -1,0 +1,26 @@
+nominal cell_array = array_base (heap {value : (heap {value : i32 * string}) * i32})
+
+inl create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(heap {value : (heap {value : i32 * string}) * i32}), n)
+inl get (array : cell_array) (i : i32) : heap {value : (heap {value : i32 * string}) * i32} =
+    match array with
+    | cell_array values => !!!!ArrayIndex(values, i)
+inl set (array : cell_array) (i : i32) (value : heap {value : (heap {value : i32 * string}) * i32}) : () =
+    match array with
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl inner_pair = n, word
+    inl inner = !!!!LayoutToHeap({value = inner_pair})
+    inl ~extra = 1i32
+    inl outer_pair = inner, extra
+    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl a = create 1i32
+    set a 0i32 outer
+    inl held = get a 0i32
+    inl opened = !!!!LayoutIndex(held)
+    inl ~(cell, count) = opened.value
+    inl inner_opened = !!!!LayoutIndex(cell)
+    inl ~(left, right) = inner_opened.value
+    if left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 then 0i32 else 1i32

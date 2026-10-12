@@ -8,7 +8,7 @@ type
   TFun0 = class
     function Invoke(a0: LongInt): TUS0; virtual; abstract;
   end;
-  TClosure0 = class(TFun0)  function Invoke(v0: LongInt): TUS0; override; end;
+  Tclosure0 = class(TFun0)  function Invoke(v0: LongInt): TUS0; override; end;
 function ClosureCreate0: TFun0; forward;
 function method0(v0: TFun0): TUS0; forward;
 function method1(v0: TFun0): TUS0; forward;
@@ -20,7 +20,7 @@ function US0_Item(a0: AnsiString; a1: LongInt): TUS0;
 begin
   Result.tag := 1; Result.c1_0 := a0; Result.c1_1 := a1;
 end;
-function TClosure0.Invoke(v0: LongInt): TUS0;
+function Tclosure0.Invoke(v0: LongInt): TUS0;
 var
   v1: Boolean;
   v3: AnsiString;
@@ -34,9 +34,9 @@ begin
   end;
 end;
 function ClosureCreate0: TFun0;
-var c: TClosure0;
+var c: Tclosure0;
 begin
-  c := TClosure0.Create; 
+  c := Tclosure0.Create; 
   Result := c;
 end;
 function method0(v0: TFun0): TUS0;

@@ -48,7 +48,7 @@ static inline String * StringLit(uint32_t len, char * ptr){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 0: {
-            x->case0.v0->refc++;
+            (x->case0.v0)->refc++;
             break;
         }
     }
@@ -88,7 +88,7 @@ int32_t score0(US0 v0){
         }
         case 0: { // Text
             String * v1 = v0.case0.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len-1;

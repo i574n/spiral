@@ -189,7 +189,7 @@ def closure1(+v0: String, +v1: U32) -> IO(U32):
     return v3
 
 @unsafe
-def closure0(+v0: String) -> IO(((U32) -> IO(U32))):
+def make_c0(+v0: String) -> IO(((U32) -> IO(U32))):
   do IO<((U32) -> IO(U32))>:
     IO.pure(((U32) -> IO(U32)), d => closure1(v0, d))
 
@@ -201,7 +201,7 @@ def method0(+v0: ((U32) -> IO(U32))) -> IO(U32):
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : ((String) -> IO(((U32) -> IO(U32)))) <- IO.pure(((String) -> IO(((U32) -> IO(U32)))), d => closure0(d))
+    +v0 : ((String) -> IO(((U32) -> IO(U32)))) <- IO.pure(((String) -> IO(((U32) -> IO(U32)))), d => make_c0(d))
     +v1 : String <- IO.pure(String, "abc")
     +v2 : ((U32) -> IO(U32)) <- v0(v1)
     method0(v2)

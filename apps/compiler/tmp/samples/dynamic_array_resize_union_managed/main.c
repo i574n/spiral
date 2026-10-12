@@ -43,7 +43,7 @@ static inline void AssignArray0(int32_t * a, int32_t b){
 static inline void USIncrefBody0(US0 * x){
     switch (x->tag) {
         case 1: {
-            x->case1.v0->refc++;
+            (x->case1.v0)->refc++;
             break;
         }
     }
@@ -130,11 +130,11 @@ int32_t mutate0(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc += 2;
+            (v1)->refc += 2;
             USDecref0(&(v0));
             
             method1(v1);
-            v1->refc++;
+            (v1)->refc++;
             
             
             method2(v1);
@@ -142,7 +142,7 @@ int32_t mutate0(US0 v0){
             
             
             AssignArray0(&(v1->ptr[1l]), 11l);
-            v1->refc++;
+            (v1)->refc++;
             
             
             method3(v1);
@@ -166,7 +166,7 @@ int32_t observe5(US0 v0){
         }
         case 1: { // Values
             Array0 * v1 = v0.case1.v0;
-            v1->refc++;
+            (v1)->refc++;
             USDecref0(&(v0));
             int32_t v2;
             v2 = v1->len;
@@ -232,7 +232,7 @@ int32_t main(){
     
     
     AssignArray0(&(v0->ptr[1l]), 3l);
-    v0->refc++;
+    (v0)->refc++;
     
     US0 v1;
     v1 = US0_Values(v0);
@@ -240,7 +240,7 @@ int32_t main(){
     
     int32_t v2;
     v2 = mutate0(v1);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v1));
     US0 v3;
     v3 = US0_Values(v0);
@@ -248,11 +248,11 @@ int32_t main(){
     
     int32_t v4;
     v4 = observe5(v3);
-    v0->refc++;
+    (v0)->refc++;
     USDecref0(&(v3));
     
     method6(v0);
-    v0->refc++;
+    (v0)->refc++;
     
     
     method7(v0);

@@ -23,7 +23,7 @@ static inline void ClosureDecrefBody0(Closure0 * x){
 void ClosureDecref0(Closure0 * x){
     if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
 }
-int32_t ClosureMethod0(Closure0 * x, int32_t v2){
+int32_t f_c0(Closure0 * x, int32_t v2){
     int32_t v0 = x->v0; int32_t v1 = x->v1;
     
     ClosureDecref0(x);
@@ -43,7 +43,7 @@ Fun0 * ClosureCreate0(int32_t v0, int32_t v1){
     Closure0 * x = malloc(sizeof(Closure0));
     x->refc = 1;
     x->decref_fptr = ClosureDecref0;
-    x->fptr = ClosureMethod0;
+    x->fptr = f_c0;
     x->v0 = v0; x->v1 = v1;
     return (Fun0 *) x;
 }
@@ -60,20 +60,20 @@ int32_t main(){
     
     Fun0 * v2;
     v2 = ClosureCreate0(v0, v1);
-    v2->refc++;
+    (v2)->refc++;
     
     int32_t v3;
     v3 = v2->fptr(v2, 10l);
-    v2->refc++;
+    (v2)->refc++;
     
     int32_t v4;
     v4 = v2->fptr(v2, 20l);
-    v2->refc++;
+    (v2)->refc++;
     
     int32_t v5;
     v5 = v2->fptr(v2, 3l);
     
-    v2->decref_fptr(v2);
+    (v2)->decref_fptr(v2);
     int32_t v6;
     v6 = v3 + v4;
     

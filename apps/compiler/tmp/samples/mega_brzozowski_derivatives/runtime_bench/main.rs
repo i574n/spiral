@@ -14,6 +14,11 @@ impl US0 {
         }
     }
 }
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_BitZero
+    }
+}
 #[derive(Clone)]
 enum UH0 {
     UH0_RegexEmpty,
@@ -35,6 +40,11 @@ impl UH0 {
         }
     }
 }
+impl Default for UH0 {
+    fn default() -> Self {
+        UH0::UH0_RegexEmpty
+    }
+}
 #[derive(Clone)]
 enum UH1 {
     UH1_InputEmpty,
@@ -46,6 +56,11 @@ impl UH1 {
             UH1::UH1_InputEmpty => 0,
             UH1::UH1_InputCons(..) => 1,
         }
+    }
+}
+impl Default for UH1 {
+    fn default() -> Self {
+        UH1::UH1_InputEmpty
     }
 }
 #[derive(Clone)]
@@ -63,6 +78,11 @@ impl US1 {
         }
     }
 }
+impl Default for US1 {
+    fn default() -> Self {
+        US1::US1_SymbolLess
+    }
+}
 #[derive(Clone)]
 enum US2 {
     US2_Nullable,
@@ -76,6 +96,11 @@ impl US2 {
         }
     }
 }
+impl Default for US2 {
+    fn default() -> Self {
+        US2::US2_Nullable
+    }
+}
 #[derive(Clone)]
 enum UH2 {
     UH2_RegexListNil,
@@ -87,6 +112,11 @@ impl UH2 {
             UH2::UH2_RegexListNil => 0,
             UH2::UH2_RegexListCons(..) => 1,
         }
+    }
+}
+impl Default for UH2 {
+    fn default() -> Self {
+        UH2::UH2_RegexListNil
     }
 }
 fn random_bit_input_1(mut v0: u64, mut v1: i32, mut v2: Rc<UH1>) -> (Rc<UH1>, u64) {

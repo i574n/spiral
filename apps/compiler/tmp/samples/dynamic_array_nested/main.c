@@ -56,7 +56,7 @@ Array0 * ArrayLit0(uint32_t len, Array1 * * ptr){
     memcpy(x->ptr, ptr, sizeof(Array1 *) * len);
         for (uint32_t i=0; i < len; i++){
             Array1 * v = ptr[i];
-            v->refc++;
+            (v)->refc++;
         }
     return x;
 }
@@ -66,7 +66,7 @@ static inline void AssignArray0(int32_t * a, int32_t b){
     *a = b;
 }
 static inline void AssignArray1(Array1 * * a, Array1 * b){
-    b->refc++;
+    (b)->refc++;
     ArrayDecref1(*a);
     *a = b;
 }
@@ -115,11 +115,11 @@ int32_t main(){
     ArrayDecref1(v3);
     Array1 * v4;
     v4 = v1->ptr[0l];
-    v4->refc++;
+    (v4)->refc++;
     
     Array1 * v5;
     v5 = v1->ptr[1l];
-    v5->refc++;
+    (v5)->refc++;
     ArrayDecref0(v1);
     int32_t v6;
     v6 = v4->ptr[0l];

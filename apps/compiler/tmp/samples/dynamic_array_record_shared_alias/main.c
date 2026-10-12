@@ -106,11 +106,11 @@ int32_t main(){
     Array0 * v0; int32_t v1;
     Tuple0 tmp0 = method0();
     v0 = tmp0.v0; v1 = tmp0.v1;
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v2;
     v2 = method1(v0, v1);
-    v0->refc++;
+    (v0)->refc++;
     
     int32_t v3;
     v3 = method2(v0, v1);
