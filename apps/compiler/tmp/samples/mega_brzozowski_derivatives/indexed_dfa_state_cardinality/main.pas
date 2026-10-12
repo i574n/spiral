@@ -1130,15 +1130,11 @@ var
   v6: TUH1;
   v7: Boolean;
   v26: LongInt;
-  v11: TUS1;
-  v12: Boolean;
   v13: Boolean;
-  v17: TUS1;
-  v18: Boolean;
   v22: TUS1;
   v23: Boolean;
-  tmp11: LongInt;
-  tmp12: TUH1;
+  tmp7: LongInt;
+  tmp8: TUH1;
   v2: Boolean;
 begin
   while True do begin
@@ -1148,42 +1144,10 @@ begin
               v6 := v1.c1_1;
               v7 := v0 = 0;
               if v7 then begin
-                  case v5.tag of
-                      1: begin
-                          v11 := US1_SymbolGreater;
-                      end;
-                      0: begin
-                          v11 := US1_SymbolSame;
-                      end;
-                  end;
-                  case v11.tag of
-                      1: begin
-                          v12 := True;
-                      end;
-                      else begin
-                          v12 := False;
-                      end;
-                  end;
                   v26 := 1;
               end else begin
                   v13 := v0 = 1;
                   if v13 then begin
-                      case v5.tag of
-                          1: begin
-                              v17 := US1_SymbolGreater;
-                          end;
-                          0: begin
-                              v17 := US1_SymbolSame;
-                          end;
-                      end;
-                      case v17.tag of
-                          1: begin
-                              v18 := True;
-                          end;
-                          else begin
-                              v18 := False;
-                          end;
-                      end;
                       v26 := 1;
                   end else begin
                       case v5.tag of
@@ -1209,10 +1173,10 @@ begin
                       end;
                   end;
               end;
-              tmp11 := v26;
-              tmp12 := v6;
-              v0 := tmp11;
-              v1 := tmp12;
+              tmp7 := v26;
+              tmp8 := v6;
+              v0 := tmp7;
+              v1 := tmp8;
               Continue;
           end;
           0: begin
@@ -1377,14 +1341,10 @@ var
   v21: Boolean;
   v24: TUS1;
   v25: Boolean;
-  v31: TUS1;
-  v32: Boolean;
   v36: TUS1;
   v37: Boolean;
-  v43: TUS1;
-  v44: Boolean;
-  tmp17: LongInt;
-  tmp18: TUH3;
+  tmp13: LongInt;
+  tmp14: TUH3;
   v2: Boolean;
   v3: Boolean;
 begin
@@ -1461,25 +1421,6 @@ begin
                       if v25 then begin
                           v47 := 2;
                       end else begin
-                          case v5.tag of
-                              0: begin
-                                  v31 := US1_SymbolLess;
-                              end;
-                              1: begin
-                                  v31 := US1_SymbolSame;
-                              end;
-                              2: begin
-                                  v31 := US1_SymbolGreater;
-                              end;
-                          end;
-                          case v31.tag of
-                              1: begin
-                                  v32 := True;
-                              end;
-                              else begin
-                                  v32 := False;
-                              end;
-                          end;
                           v47 := 2;
                       end;
                   end else begin
@@ -1502,33 +1443,14 @@ begin
                       if v37 then begin
                           v47 := 2;
                       end else begin
-                          case v5.tag of
-                              0: begin
-                                  v43 := US1_SymbolLess;
-                              end;
-                              1: begin
-                                  v43 := US1_SymbolSame;
-                              end;
-                              2: begin
-                                  v43 := US1_SymbolGreater;
-                              end;
-                          end;
-                          case v43.tag of
-                              1: begin
-                                  v44 := True;
-                              end;
-                              else begin
-                                  v44 := False;
-                              end;
-                          end;
                           v47 := 2;
                       end;
                   end;
               end;
-              tmp17 := v47;
-              tmp18 := v6;
-              v0 := tmp17;
-              v1 := tmp18;
+              tmp13 := v47;
+              tmp14 := v6;
+              v0 := tmp13;
+              v1 := tmp14;
               Continue;
           end;
           0: begin

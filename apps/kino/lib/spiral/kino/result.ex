@@ -8,7 +8,8 @@ defmodule Spiral.Kino.Result do
             exit_status: nil,
             duration_ms: nil,
             phases: %{},
-            log: ""
+            log: "",
+            unavailable: []
 
   @type t :: %__MODULE__{
           value: String.t() | nil,
@@ -20,7 +21,8 @@ defmodule Spiral.Kino.Result do
           exit_status: integer() | nil,
           duration_ms: non_neg_integer() | nil,
           phases: %{optional(atom()) => non_neg_integer()},
-          log: String.t()
+          log: String.t(),
+          unavailable: [String.t()]
         }
 
   def from_outputs(outputs, fields) do
@@ -70,5 +72,5 @@ defmodule Spiral.Kino.TimeoutError do
 end
 
 defmodule Spiral.Kino.ProcessError do
-  defexception [:message, :exit_status, :output]
+  defexception [:message, :exit_status, :output, :reason]
 end

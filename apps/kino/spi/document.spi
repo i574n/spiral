@@ -219,12 +219,49 @@ inl lower_one (src : string) (i : i32) : string =
     inl k = text.find_char (upper_set ()) 0i32 (text.index src i)
     if k >= 0i32 then text.one (lower_set ()) k else text.one src i
 
+inl in_range (cp : i32) (low : i32) (high : i32) : bool = cp >= low && cp <= high
+
+inl latin_letter (cp : i32) : bool = in_range cp 192i32 591i32 && cp <> 215i32 && cp <> 247i32
+
+inl greek_letter (cp : i32) : bool = in_range cp 902i32 1013i32 && cp <> 903i32
+
+inl cyrillic_letter (cp : i32) : bool = in_range cp 1024i32 1153i32 || in_range cp 1162i32 1327i32
+
+inl armenian_letter (cp : i32) : bool = in_range cp 1329i32 1366i32 || in_range cp 1377i32 1415i32
+
+inl hebrew_arabic_letter (cp : i32) : bool = in_range cp 1488i32 1514i32 || in_range cp 1568i32 1610i32
+
+inl hangul_letter (cp : i32) : bool = in_range cp 4352i32 4607i32 || in_range cp 12593i32 12686i32 || in_range cp 44032i32 55203i32
+
+inl kana_han_letter (cp : i32) : bool = in_range cp 12353i32 12438i32 || in_range cp 12449i32 12538i32 || in_range cp 19968i32 40959i32
+
+inl unicode_letter (cp : i32) : bool =
+    latin_letter cp || greek_letter cp || cyrillic_letter cp || armenian_letter cp || hebrew_arabic_letter cp || hangul_letter cp || kana_han_letter cp
+
+inl name_piece (pending : bool) (acc : string) (piece : string) : string =
+    inl sep = if pending && acc <> "" then "_" else ""
+    acc ++ sep ++ piece
+
 let rec test_name_go (src : string) (i : i32) (pending : bool) (acc : string) : string =
     if i >= text.length src then acc
+    elif text.byte_at src i >= 128i32 then
+        inl width = text.utf8_width (text.byte_at src i)
+        if unicode_letter (text.code_point src i) then test_name_go src (i + width) false (name_piece pending acc (text.lowercase (text.slice_len src i width)))
+        else test_name_go src (i + width) true acc
     elif text.has_char (test_name_set ()) 0i32 (text.index src i) then
-        inl sep = if pending && acc <> "" then "_" else ""
-        test_name_go src (i + 1i32) false (acc ++ sep ++ lower_one src i)
+        test_name_go src (i + 1i32) false (name_piece pending acc (lower_one src i))
     else test_name_go src (i + 1i32) true acc
+
+let rec symbol_go (name : string) (i : i32) (acc : string) : string =
+    if i >= text.length name then acc
+    elif text.byte_at name i < 128i32 && text.has_char (test_name_set ()) 0i32 (text.index name i) then symbol_go name (i + 1i32) (acc ++ text.one name i)
+    else
+        inl width = text.utf8_width (text.byte_at name i)
+        symbol_go name (i + width) (acc ++ "u" ++ text.show_hex (text.code_point name i) ++ "_")
+
+inl test_symbol (name : string) : string =
+    inl escaped = symbol_go name 0i32 ""
+    if escaped = name then name else "test_" ++ escaped
 
 let rec underscore_start (src : string) (i : i32) : i32 =
     if i < text.length src && text.index src i = '_' then underscore_start src (i + 1i32) else i
@@ -299,6 +336,47 @@ let rec name_tests (xs : cells) (last : string) (used : rows) (acc : cells) : ce
             name_tests rest last (Row (base, used)) (Cell ("test", test_block (text.trim source) name, acc))
         else name_tests rest last used (Cell (kind, source, acc))
 
+inl first_line (source : string) : string =
+    match text.next_line source 0i32 with
+    | LineDone => ""
+    | LineGot (line, _) => line
+
+inl test_mode_of (source : string) : string =
+    inl head = " " ++ first_line source ++ " "
+    if text.contains head " --ignore " then "ignore"
+    elif text.contains head " --test static " then "static"
+    else "test"
+
+let rec heading_marks_end (line : string) (i : i32) : i32 =
+    if i < text.length line && text.index line i = '#' then heading_marks_end line (i + 1i32) else i
+
+inl heading_title (source : string) : string =
+    inl line = text.trim (last_heading_line (text.trim source) 0i32 "")
+    text.trim (text.replace (text.drop line (heading_marks_end line 0i32)) " (test)" "")
+
+let rec index_tests (real_wanted : bool) (xs : cells) (i : i32) (last : string) (title : string) (used : rows) (acc : rows) : rows =
+    match xs with
+    | NoCell => acc
+    | Cell (kind, source, rest) =>
+        inl t = text.trim source
+        if kind = "markdown" then
+            inl heading = heading_test_name source
+            if heading = "" then index_tests real_wanted rest (i + 1i32) last title used acc
+            else index_tests real_wanted rest (i + 1i32) heading (heading_title source) used acc
+        elif kind = "spiral" && test_cell t && spir_cell t = real_wanted then
+            inl base = if last = "" then "cell" else last
+            inl n = count_row used base
+            inl name = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
+            inl realm = if real_wanted then "real" else "spi"
+            inl shown = if title = "" then name else title
+            inl row = text.show_i32 i ++ "\t" ++ name ++ "\t" ++ test_mode_of t ++ "\t" ++ realm ++ "\t" ++ test_symbol name ++ "\t" ++ shown
+            index_tests real_wanted rest (i + 1i32) last title (Row (base, used)) (Row (row, acc))
+        else index_tests real_wanted rest (i + 1i32) last title used acc
+
+inl test_index (src : string) : string =
+    inl xs = load src
+    join_rows (rev_rows (index_tests true xs 0i32 "" "" NoRow (index_tests false xs 0i32 "" "" NoRow NoRow)) NoRow)
+
 inl policy_blocks (policy : test_policy) (xs : cells) : cells =
     match policy with
     | DropTests => xs
@@ -328,7 +406,7 @@ union test_header =
 
 inl header_of (line : string) : test_header =
     if text.starts_with line "test " then
-        inl n = text.take_ident line 5i32
+        inl n = text.take_unicode_ident line 5i32
         inl rest = text.take (text.drop line n) (text.trim_end (text.drop line n) (text.length (text.drop line n)))
         inl m = text.length rest
         if n > 5i32 && m >= 2i32 && text.starts_at rest (m - 2i32) " =" && modes_valid (text.take rest (m - 2i32))
@@ -382,11 +460,11 @@ inl code_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
 
 inl doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
     inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
-    if real_mode || source = "" then acc else Cell ("markdown", source, acc)
+    if source = "" then acc else Cell ("markdown", source, acc)
 
 inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (real_mode : bool) (acc : cells) : cells =
     inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (rev_rows (drop_blank_rows body) NoRow)
-    if real_mode then Cell ("spiral", source, acc) else Cell ("test:" ++ name, source, acc)
+    if real_mode then Cell ("real_test:" ++ name, source, acc) else Cell ("test:" ++ name, source, acc)
 
 inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
     match mode with
@@ -430,27 +508,73 @@ let rec spi_walk (src : string) (i : i32) (mode : spi_mode) (targets : rows) (re
             inl mode2, targets2, acc2 = open_step line NoRow targets real_mode acc
             spi_walk src next mode2 targets2 real_mode acc2
 
-let rec name_tested (xs : cells) (last : string) (used : rows) (acc : cells) : cells =
+union test_realm =
+    | SpiRealm
+    | RealRealm
+
+inl realm_of (kind : string) : test_realm = if text.starts_with kind "real_test:" then RealRealm else SpiRealm
+
+inl realm_rows (realm : test_realm) (spi_used : rows) (real_used : rows) : rows =
+    match realm with
+    | SpiRealm => spi_used
+    | RealRealm => real_used
+
+inl spi_row (realm : test_realm) (name : string) (xs : rows) : rows =
+    match realm with
+    | SpiRealm => Row (name, xs)
+    | RealRealm => xs
+
+inl real_row (realm : test_realm) (name : string) (xs : rows) : rows =
+    match realm with
+    | SpiRealm => xs
+    | RealRealm => Row (name, xs)
+
+inl test_named_kind (kind : string) : bool = text.starts_with kind "test:" || text.starts_with kind "real_test:"
+
+inl kind_test_name (kind : string) : string = text.drop kind (text.find_char kind 0i32 ':' + 1i32)
+
+let rec name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : rows) (acc : cells) : cells =
     match xs with
     | NoCell => acc
     | Cell (kind, source, rest) =>
         if kind = "markdown" then
             inl heading = heading_test_name source
-            name_tested rest (if heading = "" then last else heading) used (Cell (kind, source, acc))
-        elif text.starts_with kind "test:" then
-            inl name = text.drop kind 5i32
+            name_tested rest (if heading = "" then last else heading) spi_used real_used (Cell (kind, source, acc))
+        elif test_named_kind kind then
+            inl realm = realm_of kind
+            inl used = realm_rows realm spi_used real_used
+            inl name = kind_test_name kind
             inl base = if last = "" then "cell" else last
             inl n = count_row used base
             inl derived = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
-            if derived = name then name_tested rest last (Row (base, used)) (Cell ("spiral", source, acc))
+            inl spi_more = spi_row realm base spi_used
+            inl real_more = real_row realm base real_used
+            if derived = name then name_tested rest last spi_more real_more (Cell ("spiral", source, acc))
             else
                 inl heading_source = "#### " ++ name ++ " (test)"
                 inl heading = heading_test_name heading_source
-                name_tested rest heading (Row (heading, used)) (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
-        else name_tested rest last used (Cell (kind, source, acc))
+                inl spi_named = spi_row realm heading spi_used
+                inl real_named = real_row realm heading real_used
+                name_tested rest heading spi_named real_named (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
+        else name_tested rest last spi_used real_used (Cell (kind, source, acc))
 
 inl spi_cells (src : string) (real_mode : bool) (acc : cells) : cells =
     spi_walk (text.replace src "\r\n" "\n") 0i32 Between NoRow real_mode acc
 
+let rec interleave (spi : cells) (real_cells : cells) (acc : cells) : cells =
+    match real_cells with
+    | NoCell => rev_cells acc spi
+    | Cell (real_kind, real_source, real_rest) =>
+        if real_kind <> "markdown" then interleave spi real_rest (Cell (real_kind, real_source, acc))
+        else
+            match spi with
+            | NoCell => rev_cells acc real_cells
+            | Cell (kind, source, rest) =>
+                if kind <> "markdown" then interleave rest real_cells (Cell (kind, source, acc))
+                elif source = real_source then interleave rest real_rest (Cell (kind, source, acc))
+                else interleave rest real_cells (Cell (kind, source, acc))
+
 inl from_spi (spi : string) (spir : string) : string =
-    wire (name_tested (rev_cells (spi_cells spi false (spi_cells spir true NoCell)) NoCell) "" NoRow NoCell)
+    inl spi_doc = rev_cells (spi_cells spi false NoCell) NoCell
+    inl real_doc = rev_cells (spi_cells spir true NoCell) NoCell
+    wire (name_tested (interleave spi_doc real_doc NoCell) "" NoRow NoRow NoCell)

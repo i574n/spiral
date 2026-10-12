@@ -135,21 +135,25 @@ defmodule Spiral.Kino do
 
   defp run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started) do
     builders
-    |> Enum.reduce_while({:ok, []}, fn builder, {:ok, acc} ->
+    |> Enum.reduce_while({:ok, [], []}, fn builder, {:ok, acc, missing} ->
       case run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
         {:ok, %{exit_status: status} = chunk} when status not in [nil, 0] ->
-          {:halt, {:done, acc ++ [chunk]}}
+          {:halt, {:done, acc ++ [chunk], missing}}
 
         {:ok, chunk} ->
-          {:cont, {:ok, acc ++ [chunk]}}
+          {:cont, {:ok, acc ++ [chunk], missing}}
+
+        {:error, %ProcessError{reason: :tool_missing} = error} ->
+          {:cont, {:ok, acc, missing ++ [{builder, error}]}}
 
         {:error, error} ->
           {:halt, {:error, error}}
       end
     end)
     |> case do
-      {:ok, chunks} -> {:ok, assemble(chunks, spi, started)}
-      {:done, chunks} -> {:ok, assemble(chunks, spi, started)}
+      {_, [], [{_builder, error} | _]} -> {:error, error}
+      {:ok, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
+      {:done, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
       {:error, error} -> {:error, error}
     end
   end
@@ -274,6 +278,25 @@ defmodule Spiral.Kino do
     else
       stdout
     end
+  end
+
+  defp assemble(chunks, missing, spi, started) do
+    result = assemble(chunks, spi, started)
+    unavailable = Enum.map(missing, fn {builder, _error} -> builder.raw end)
+
+    notes =
+      Enum.map_join(missing, "\n", fn {builder, error} ->
+        "#{builder.raw}: unavailable on this machine (#{error.message})"
+      end)
+
+    stdout =
+      cond do
+        notes == "" -> result.stdout
+        result.stdout == "" -> notes
+        true -> result.stdout <> "\n" <> notes
+      end
+
+    %{result | stdout: stdout, unavailable: unavailable}
   end
 
   defp assemble(chunks, spi, started) do
@@ -723,12 +746,16 @@ defmodule Spiral.Kino do
   end
 
   defp clean(output, dir) do
-    prefix = String.trim_trailing(Path.expand(dir), "/\\")
+    prefix =
+      dir
+      |> Path.expand()
+      |> String.replace("\\", "/")
+      |> String.trim_trailing("/")
+      |> String.split("/")
+      |> Enum.map_join("[\\\\/]", &Regex.escape/1)
 
     output
-    |> String.replace(prefix <> "/", "")
-    |> String.replace(prefix <> "\\", "")
-    |> String.replace(String.replace(prefix, "\\", "/"), "")
+    |> String.replace(Regex.compile!("(?:file:///)?" <> prefix <> "[\\\\/]?", "i"), "")
     |> String.trim()
   end
 

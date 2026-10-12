@@ -10,22 +10,12 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
   int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
 }
 
-pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
-  case exponent <= 0 {
-    True -> 1
-    False -> base * spiral_int_power(base, exponent - 1)
-  }
-}
-
-@external(erlang, "math", "pow")
-pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
-
-@external(erlang, "erlang", "halt")
-pub fn spiral_halt(code: Int) -> a
-
 pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
+
+@external(erlang, "erlang", "halt")
+pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {

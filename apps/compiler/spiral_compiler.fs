@@ -167366,7 +167366,8 @@ module spiral_compiler =
             match op with
             | Op.Add | Op.Sub | Op.Mult | Op.Pow | Op.LTE | Op.LT | Op.EQ | Op.NEQ | Op.GT | Op.GTE | Op.BoolAnd | Op.BoolOr
             | Op.BitwiseAnd | Op.BitwiseOr | Op.BitwiseXor | Op.BitwiseComplement | Op.ShiftLeft | Op.ShiftRight
-            | Op.Neg | Op.Tanh | Op.Log | Op.Exp | Op.Sin | Op.Cos | Op.Sqrt | Op.NanIs | Op.UnionTag | Op.StringLength | Op.ArrayLength | Op.StaticStringConcat -> true
+            | Op.Neg | Op.Tanh | Op.Log | Op.Exp | Op.Sin | Op.Cos | Op.Sqrt | Op.NanIs | Op.UnionTag | Op.StringLength | Op.ArrayLength | Op.StaticStringConcat
+            | Op.Dyn -> true
             | _ -> false
         let pureTypedOp op =
             match op with
@@ -167374,6 +167375,16 @@ module spiral_compiler =
             | TyUnionBox _ | TyToLayout _ | TyLayoutIndexAll _ | TyLayoutIndexByKey _ | TyArrayLength _ | TyStringLength _
             | TySizeOf _ | TyConv _ | TyArrayLiteral _ -> true
             | _ -> false
+        let rec pureBlock (block : TypedBind []) =
+            block |> Array.forall (function
+                | TyLet(_, _, op) | TyLocalReturnOp(_, op, _) -> pureBranchingOp op
+                | TyLocalReturnData _ -> true)
+        and pureBranchingOp op =
+            match op with
+            | TyIf(_, tr, fl) -> pureBlock tr && pureBlock fl
+            | TyUnionUnbox(_, _, on_succs, on_fail) -> Map.forall (fun _ (_, block) -> pureBlock block) on_succs && Option.forall pureBlock on_fail
+            | TyIntSwitch(_, cases, on_fail) -> Array.forall pureBlock cases && pureBlock on_fail
+            | _ -> pureTypedOp op
         let tagOf (L(tag, _) : TyV) = tag
         let markData (live : HashSet<int>) d = for v in data_free_vars d do live.Add (tagOf v) |> ignore
         let markVar (live : HashSet<int>) (v : TyV) = live.Add (tagOf v) |> ignore
@@ -167405,7 +167416,7 @@ module spiral_compiler =
             | TySizeOf _ | TyBackend _ -> ()
         let isDead (live : HashSet<int>) x =
             match x with
-            | TyLet(d, _, op) -> pureTypedOp op && data_free_vars d |> Seq.forall (fun v -> live.Contains (tagOf v) |> not)
+            | TyLet(d, _, op) -> pureBranchingOp op && data_free_vars d |> Seq.forall (fun v -> live.Contains (tagOf v) |> not)
             | _ -> false
         let sameItems (a : 'a []) (b : 'a []) = a.Length = b.Length && Array.forall2 (fun x y -> obj.ReferenceEquals(x, y)) a b
         let rec elide (block : TypedBind []) : TypedBind [] =
@@ -172419,7 +172430,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
                         text.Append($"    case {case_name}{{{ignored}}}:\n") |> ignore
                         binds name "      " result text (ResizeArray captured) b
-                    | None, None -> raise_codegen_error "Compiler error: A union unbox misses a case and has no fallback.")
+                    | None, None ->
+                        let width = env.ty_to_data t |> data_free_vars |> Array.length
+                        let ignored = Array.init width (fun j -> $"unused{j}") |> String.concat ", "
+                        text.Append($"    case {case_name}{{{ignored}}}:\n      do IO<{result}>:\n        IO.die({result}, 3, \"\")\n") |> ignore)
                 defs.Add($"@unsafe\ndef {name}(+u: U{tag}{params captured}) -> IO({result}):\n  match u:\n{text}")
                 $"{name}(v{u}{args captured})"
             | TyUnionUnbox _ -> unsupported "union unboxes over several values"
@@ -172764,7 +172778,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | _ -> None
         let spiralIntegers () =
             global' "import gleam/int"
-            let decl = "pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {\n  let half = int.bitwise_shift_left(1, bits - 1)\n  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half\n}\n\npub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {\n  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)\n}\n\npub fn spiral_int_power(base: Int, exponent: Int) -> Int {\n  case exponent <= 0 {\n    True -> 1\n    False -> base * spiral_int_power(base, exponent - 1)\n  }\n}\n\n@external(erlang, \"math\", \"pow\")\npub fn spiral_math_pow(base: Float, exponent: Float) -> Float"
+            let decl = "pub fn spiral_wrap_signed(value: Int, bits: Int) -> Int {\n  let half = int.bitwise_shift_left(1, bits - 1)\n  int.bitwise_and(value + half, int.bitwise_shift_left(1, bits) - 1) - half\n}\n\npub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {\n  int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)\n}"
+            if not (externals.Contains decl) then externals.Add decl
+        let spiralIntPower () =
+            let decl = "pub fn spiral_int_power(base: Int, exponent: Int) -> Int {\n  case exponent <= 0 {\n    True -> 1\n    False -> base * spiral_int_power(base, exponent - 1)\n  }\n}"
+            if not (externals.Contains decl) then externals.Add decl
+        let spiralFloatPower () =
+            global' "import gleam/float"
+            let decl = "pub fn spiral_math_pow(base: Float, exponent: Float) -> Float {\n  case float.power(base, exponent) {\n    Ok(power) -> power\n    Error(_) -> panic as \"spiral math: pow outside the real domain\"\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let wrapInteger (d : Data) (text : string) =
             match integerWidth d with
@@ -172774,7 +172795,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let spiralStrings () =
             global' "import gleam/bit_array"
             global' "import gleam/string"
-            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_length(text: String) -> Int {\n  bit_array.byte_size(bit_array.from_string(text))\n}\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> spiral_halt(3)\n      }\n    _ -> spiral_halt(3)\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> spiral_halt(3)\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> spiral_halt(3)\n              }\n            Error(_) -> spiral_halt(3)\n          }\n      }\n  }\n}"
+            let decl = "pub fn spiral_string_length(text: String) -> Int {\n  bit_array.byte_size(bit_array.from_string(text))\n}"
+            if not (externals.Contains decl) then externals.Add decl
+        let spiralStringSlicing () =
+            spiralStrings ()
+            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> spiral_halt(3)\n      }\n    _ -> spiral_halt(3)\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> spiral_halt(3)\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> spiral_halt(3)\n              }\n            Error(_) -> spiral_halt(3)\n          }\n      }\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let rec tyv x =
             match x with
@@ -173015,17 +173040,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     binds (indent (indent s)) b
                     line (indent s) "}"
                     ) on_succs
+                let covers_every_case = is.Length = 1 && Map.count on_succs = Map.count x.Item.cases
                 match on_fail with
-                | Some on_fail -> on_fail |> Some
-                | None ->
-                    if on_succs |> Map.count = 1
-                    then on_succs |> Map.values |> Seq.tryHead |> Option.map snd
-                    else None
-                |> Option.iter (fun b ->
+                | Some on_fail ->
                     line (indent s) "_ -> {"
-                    binds (indent (indent s)) b
+                    binds (indent (indent s)) on_fail
                     line (indent s) "}"
-                )
+                | None when covers_every_case -> ()
+                | None -> line (indent s) "_ -> panic as \"spiral: union case ruled out by partial evaluation\""
                 line s "}"
             | TyUnionBox(a,b,c) ->
                 let c = c.Item
@@ -173163,10 +173185,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | TypeToVar, _ -> raise_codegen_error "The use of `` should never appear in generated code."
                 | StaticStringConcat, [a;b] -> sprintf "{ %s } <> { %s }" (tup a) (tup b)
                 | StringIndex, [a;b] ->
-                    spiralStrings ()
+                    spiralStringSlicing ()
                     sprintf "spiral_string_index(%s, %s)" (tup a) (tup b)
                 | StringSlice, [a;b;c] ->
-                    spiralStrings ()
+                    spiralStringSlicing ()
                     sprintf "spiral_string_slice(%s, %s, %s)" (tup a) (tup b) (tup c)
                 | ArrayIndex, [a;b] ->
                     spiralArrays ()
@@ -173180,7 +173202,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | Mult, [a;b] -> wrapInteger a $"{a |> tup} *{a |> dot} {b |> tup}"
                 | Div, [a;b] -> $"{a |> tup} /{a |> dot} {b |> tup}"
                 | Mod, [a;b] -> $"{a |> tup} %%{a |> dot} {b |> tup}"
-                | Pow, [a;b] -> if dot a = "." then (spiralIntegers (); $"spiral_math_pow({tup a}, {tup b})") else (spiralIntegers (); wrapInteger a $"spiral_int_power({tup a}, {tup b})")
+                | Pow, [a;b] -> if dot a = "." then (spiralFloatPower (); $"spiral_math_pow({tup a}, {tup b})") else (spiralIntPower (); wrapInteger a $"spiral_int_power({tup a}, {tup b})")
                 | LT, [a;b] -> $"{a |> tup} <{a |> dot} {b |> tup}"
                 | LTE, [a;b] -> $"{a |> tup} <={a |> dot} {b |> tup}"
                 | EQ, [a;b] -> sprintf "%s == %s" (tup a) (tup b)

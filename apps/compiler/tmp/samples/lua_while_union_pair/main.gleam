@@ -88,16 +88,6 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
   int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
 }
 
-pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
-  case exponent <= 0 {
-    True -> 1
-    False -> base * spiral_int_power(base, exponent - 1)
-  }
-}
-
-@external(erlang, "math", "pow")
-pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
-
 pub type Mut0 { Mut0(l0 : Int) }
 pub type Mut1 { Mut1(l0 : Int) }
 pub type Uh0 {

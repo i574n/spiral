@@ -1165,15 +1165,11 @@ fn run_16(p0: i32, p1: *UH1) bool {
     var v6: *UH1 = undefined; _ = &v6;
     var v7: bool = undefined; _ = &v7;
     var v26: i32 = undefined; _ = &v26;
-    var v11: US1 = undefined; _ = &v11;
-    var v12: bool = undefined; _ = &v12;
     var v13: bool = undefined; _ = &v13;
-    var v17: US1 = undefined; _ = &v17;
-    var v18: bool = undefined; _ = &v18;
     var v22: US1 = undefined; _ = &v22;
     var v23: bool = undefined; _ = &v23;
-    var tmp11: i32 = undefined; _ = &tmp11;
-    var tmp12: *UH1 = undefined; _ = &tmp12;
+    var tmp7: i32 = undefined; _ = &tmp7;
+    var tmp8: *UH1 = undefined; _ = &tmp8;
     var v2: bool = undefined; _ = &v2;
     while (true) {
         switch (v1.tag) {
@@ -1182,44 +1178,10 @@ fn run_16(p0: i32, p1: *UH1) bool {
                 v6 = v1.c1_1;
                 v7 = v0 == @as(i32, 0);
                 if (v7) {
-                    switch (v5.tag) {
-                        1 => {
-                            v11 = US1_SymbolGreater();
-                        },
-                        0 => {
-                            v11 = US1_SymbolSame();
-                        },
-                        else => unreachable,
-                    }
-                    switch (v11.tag) {
-                        1 => {
-                            v12 = true;
-                        },
-                        else => {
-                            v12 = false;
-                        },
-                    }
                     v26 = @as(i32, 1);
                 } else {
                     v13 = v0 == @as(i32, 1);
                     if (v13) {
-                        switch (v5.tag) {
-                            1 => {
-                                v17 = US1_SymbolGreater();
-                            },
-                            0 => {
-                                v17 = US1_SymbolSame();
-                            },
-                            else => unreachable,
-                        }
-                        switch (v17.tag) {
-                            1 => {
-                                v18 = true;
-                            },
-                            else => {
-                                v18 = false;
-                            },
-                        }
                         v26 = @as(i32, 1);
                     } else {
                         switch (v5.tag) {
@@ -1246,10 +1208,10 @@ fn run_16(p0: i32, p1: *UH1) bool {
                         }
                     }
                 }
-                tmp11 = v26;
-                tmp12 = v6;
-                v0 = tmp11;
-                v1 = tmp12;
+                tmp7 = v26;
+                tmp8 = v6;
+                v0 = tmp7;
+                v1 = tmp8;
                 continue;
             },
             0 => {
@@ -1404,14 +1366,10 @@ fn run_17(p0: i32, p1: *UH3) bool {
     var v21: bool = undefined; _ = &v21;
     var v24: US1 = undefined; _ = &v24;
     var v25: bool = undefined; _ = &v25;
-    var v31: US1 = undefined; _ = &v31;
-    var v32: bool = undefined; _ = &v32;
     var v36: US1 = undefined; _ = &v36;
     var v37: bool = undefined; _ = &v37;
-    var v43: US1 = undefined; _ = &v43;
-    var v44: bool = undefined; _ = &v44;
-    var tmp17: i32 = undefined; _ = &tmp17;
-    var tmp18: *UH3 = undefined; _ = &tmp18;
+    var tmp13: i32 = undefined; _ = &tmp13;
+    var tmp14: *UH3 = undefined; _ = &tmp14;
     var v2: bool = undefined; _ = &v2;
     var v3: bool = undefined; _ = &v3;
     while (true) {
@@ -1488,26 +1446,6 @@ fn run_17(p0: i32, p1: *UH3) bool {
                         if (v25) {
                             v47 = @as(i32, 2);
                         } else {
-                            switch (v5.tag) {
-                                0 => {
-                                    v31 = US1_SymbolLess();
-                                },
-                                1 => {
-                                    v31 = US1_SymbolSame();
-                                },
-                                2 => {
-                                    v31 = US1_SymbolGreater();
-                                },
-                                else => unreachable,
-                            }
-                            switch (v31.tag) {
-                                1 => {
-                                    v32 = true;
-                                },
-                                else => {
-                                    v32 = false;
-                                },
-                            }
                             v47 = @as(i32, 2);
                         }
                     } else {
@@ -1530,34 +1468,14 @@ fn run_17(p0: i32, p1: *UH3) bool {
                         if (v37) {
                             v47 = @as(i32, 2);
                         } else {
-                            switch (v5.tag) {
-                                0 => {
-                                    v43 = US1_SymbolLess();
-                                },
-                                1 => {
-                                    v43 = US1_SymbolSame();
-                                },
-                                2 => {
-                                    v43 = US1_SymbolGreater();
-                                },
-                                else => unreachable,
-                            }
-                            switch (v43.tag) {
-                                1 => {
-                                    v44 = true;
-                                },
-                                else => {
-                                    v44 = false;
-                                },
-                            }
                             v47 = @as(i32, 2);
                         }
                     }
                 }
-                tmp17 = v47;
-                tmp18 = v6;
-                v0 = tmp17;
-                v1 = tmp18;
+                tmp13 = v47;
+                tmp14 = v6;
+                v0 = tmp13;
+                v1 = tmp14;
                 continue;
             },
             0 => {

@@ -14,8 +14,6 @@ local function spiral_mul_mod32(a, b)
     local a_high = (a - a_low) / 65536
     return (a_low * b + ((a_high * b) % 65536) * 65536) % 4294967296
 end
-local v0 = 40
 local v1 = 42
-local v2 = 44
 local v3 = spiral_wrap_signed((v1 - 42), 32)
 return v3

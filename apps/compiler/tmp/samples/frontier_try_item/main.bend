@@ -184,9 +184,7 @@ def spiral_array_depth(+wanted: U32) -> U32:
 @unsafe
 def spiral_main() -> IO(U32):
   do IO<U32>:
-    +v0 : U32 <- IO.pure(U32, {40 : U32})
     +v1 : U32 <- IO.pure(U32, {42 : U32})
-    +v2 : U32 <- IO.pure(U32, {44 : U32})
     +v3 : U32 <- IO.pure(U32, U32.sub(v1, {42 : U32}))
     return v3
 

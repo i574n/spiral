@@ -202,6 +202,14 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     end
   end
 
+  test "the code stamp is the loaded code's md5, so every build of the same code shares one daemon" do
+    <<head::binary-size(6), _::binary>> = CompilerDaemon.module_info(:md5)
+    assert CompilerDaemon.code_stamp() == :binary.decode_unsigned(head)
+    beam = :code.which(CompilerDaemon)
+    {:ok, {CompilerDaemon, md5}} = :beam_lib.md5(beam)
+    assert md5 == CompilerDaemon.module_info(:md5)
+  end
+
   test "an exit signal from a linked process does not stop the daemon" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("daemon-exit")
 

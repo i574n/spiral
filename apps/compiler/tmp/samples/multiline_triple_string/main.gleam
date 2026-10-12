@@ -1,11 +1,11 @@
 import gleam/bit_array
 import gleam/string
-@external(erlang, "erlang", "halt")
-pub fn spiral_halt(code: Int) -> a
-
 pub fn spiral_string_length(text: String) -> Int {
   bit_array.byte_size(bit_array.from_string(text))
 }
+
+@external(erlang, "erlang", "halt")
+pub fn spiral_halt(code: Int) -> a
 
 pub fn spiral_string_index(text: String, index: Int) -> String {
   case bit_array.slice(bit_array.from_string(text), index, 1) {

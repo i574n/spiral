@@ -70,16 +70,7 @@ defmodule Spiral.Kino.CompilerDaemon do
   end
 
   defp read_stamp do
-    case :code.which(__MODULE__) do
-      path when is_list(path) ->
-        case File.stat(List.to_string(path), time: :posix) do
-          {:ok, %{mtime: mtime}} -> mtime
-          _ -> 0
-        end
-
-      _ ->
-        0
-    end
+    __MODULE__.module_info(:md5) |> binary_part(0, 6) |> :binary.decode_unsigned()
   end
 
   @impl true

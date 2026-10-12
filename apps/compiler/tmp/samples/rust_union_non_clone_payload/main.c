@@ -6,13 +6,5 @@
 int32_t main(){
     
     
-    int32_t v0;
-    v0 = 7l;
-    
-    
-    bool v1;
-    v1 = true;
-    
-    
     return 49l;
 }

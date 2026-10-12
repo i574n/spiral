@@ -106,13 +106,9 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 fn spiralMain() i32 {
-    var v0: i32 = undefined; _ = &v0;
     var v1: i32 = undefined; _ = &v1;
-    var v2: i32 = undefined; _ = &v2;
     var v3: i32 = undefined; _ = &v3;
-    v0 = @as(i32, 40);
     v1 = @as(i32, 42);
-    v2 = @as(i32, 44);
     v3 = v1 -% @as(i32, 42);
     return v3;
 }

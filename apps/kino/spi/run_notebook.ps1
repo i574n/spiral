@@ -8,7 +8,8 @@ if (Test-Path $elixir) { $env:PATH = "$elixir$sep$env:PATH" }
 $cwd = (Get-Location).Path
 $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null
-foreach ($arg in $args) {
+foreach ($item in $args) {
+    $arg = if ($item -is [array]) { $item -join "," } else { "$item" }
     if ($arg -in @("--path", "--output-path", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
         $key = $arg
         $fixed.Add($arg)

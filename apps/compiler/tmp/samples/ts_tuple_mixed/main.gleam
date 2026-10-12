@@ -8,16 +8,6 @@ pub fn spiral_wrap_unsigned(value: Int, bits: Int) -> Int {
   int.bitwise_and(value, int.bitwise_shift_left(1, bits) - 1)
 }
 
-pub fn spiral_int_power(base: Int, exponent: Int) -> Int {
-  case exponent <= 0 {
-    True -> 1
-    False -> base * spiral_int_power(base, exponent - 1)
-  }
-}
-
-@external(erlang, "math", "pow")
-pub fn spiral_math_pow(base: Float, exponent: Float) -> Float
-
 pub fn method0(v0: Float) -> #(Bool, Float, Int) {
     let v1 = v0 >=. 3.5
     #(v1, v0, 7)

@@ -6276,10 +6276,6 @@ let v4757 : string =
 method1(v4692, v4757)
 method2(v4692)
 method1(v4692, v4757)
-let struct (v4766 : string, v4767 : string, v4768 : string, v4769 : string, v4770 : string, v4771 : string, v4772 : string) =
-    match v4720 with
-    | US2_NetIntercompany(v4758, v4759, v4760, v4761, v4762, v4763, v4764, v4765) -> (* NetIntercompany *)
-        struct (v4758, v4759, v4760, v4761, v4762, v4763, v4764)
 let v4773 : string = "payment-settled-through-composed-typed-fx-route"
 if 6L <> 6L || 1L <> 1L || v4773 <> "payment-settled-through-composed-typed-fx-route" then failwith "erp-p2p-settle-payment-from-decoded-runtime-mismatch"
 let v4774 : string = "budget-reserved"
@@ -6425,11 +6421,6 @@ let v4955 : string =
 method1(v4864, v4955)
 method2(v4864)
 method1(v4864, v4955)
-let v4965 : string =
-    match v4918 with
-    | US2_NetIntercompany(v4956, v4957, v4958, v4959, v4960, v4961, v4962, v4963) -> (* NetIntercompany *)
-        let v4964 : string = "NetIntercompany-now-reconstructs-its-result-indexed-operation-from-the-disk-reopened-payload-under-one-sealed-bytes-operation-reencode-authority"
-        v4964
 let v4966 : string = (let fields = [| v4526; v4527; v4528; v4821; v4526; v4527; string 1000L; v4822 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
 let struct (v4967 : string, v4968 : string, v4969 : string, v4970 : string, v4971 : string, v4972 : string, v4973 : int64, v4974 : string) = (let tryDecode (text : string) = try let bytes = System.Convert.FromBase64String(text) in let mutable offset = 0 in let fields = System.Collections.Generic.List<string>() in let mutable valid = true in while valid && offset < bytes.Length do if offset + 4 > bytes.Length then valid <- false else let raw = System.BitConverter.ToInt32(bytes, offset) |> System.Net.IPAddress.NetworkToHostOrder in offset <- offset + 4; if raw < 0 || offset + raw > bytes.Length then valid <- false else fields.Add(System.Text.Encoding.UTF8.GetString(bytes, offset, raw)); offset <- offset + raw done; if valid && offset = bytes.Length then Some(fields.ToArray()) else None with _ -> None in match tryDecode v4966 with Some fields when fields.Length = 8 && fields.[0] = "company-a" && fields.[1] = "USD" && fields.[2] = "widget-a" && fields.[4] = fields.[0] && fields.[5] = fields.[1] && fields.[3].Length > 0 && fields.[7].Length > 0 && fields.[3] <> fields.[7] -> (match System.Int64.TryParse(fields.[6]) with true,amount when amount > 0L -> fields.[0],fields.[1],fields.[2],fields.[3],fields.[4],fields.[5],amount,fields.[7] | _ -> failwith "erp-ReserveBudget-typed-decode-invalid-amount") | _ -> failwith "erp-ReserveBudget-typed-decode-invalid-frame")
 let v4975 : string = (let fields = [| v4967; v4968; v4969; v4970; v4971; v4972; string v4973; v4974 |] in let bytes = fields |> Array.collect (fun value -> let payload = System.Text.Encoding.UTF8.GetBytes(value) in let length = System.BitConverter.GetBytes(System.Net.IPAddress.HostToNetworkOrder(payload.Length)) in Array.append length payload) in System.Convert.ToBase64String(bytes))
@@ -7240,10 +7231,6 @@ let v5840 : string =
 method1(v5775, v5840)
 method2(v5775)
 method1(v5775, v5840)
-let struct (v5849 : string, v5850 : string, v5851 : string, v5852 : string, v5853 : string, v5854 : string, v5855 : string) =
-    match v5803 with
-    | US2_NetIntercompany(v5841, v5842, v5843, v5844, v5845, v5846, v5847, v5848) -> (* NetIntercompany *)
-        struct (v5841, v5842, v5843, v5844, v5845, v5846, v5847)
 let struct (v5864 : string, v5865 : string, v5866 : string, v5867 : string, v5868 : string, v5869 : string, v5870 : string) =
     match v5803 with
     | US2_NetIntercompany(v5856, v5857, v5858, v5859, v5860, v5861, v5862, v5863) -> (* NetIntercompany *)

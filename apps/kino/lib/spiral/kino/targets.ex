@@ -148,7 +148,7 @@ defmodule Spiral.Kino.Targets do
     if is_binary(exe) and File.regular?(exe) do
       run_program(exe, shown, args, opts, timeout, deadline, true)
     else
-      {:error, %ProcessError{message: "`#{shown}` was not found"}}
+      {:error, %ProcessError{message: "`#{shown}` was not found", reason: :tool_missing}}
     end
   end
 
@@ -211,7 +211,7 @@ defmodule Spiral.Kino.Targets do
 
     cond do
       not (is_binary(dotnet) and File.regular?(dotnet)) ->
-        {:error, %ProcessError{message: "`dotnet fsi` was not found"}}
+        {:error, %ProcessError{message: "`dotnet fsi` was not found", reason: :tool_missing}}
 
       true ->
         run_program(
@@ -250,7 +250,7 @@ defmodule Spiral.Kino.Targets do
         {:ok, cell_exit(compiled, ran)}
       end
     else
-      {:error, %ProcessError{message: "`gcc` was not found"}}
+      {:error, %ProcessError{message: "`gcc` was not found", reason: :tool_missing}}
     end
   end
 
@@ -271,12 +271,15 @@ defmodule Spiral.Kino.Targets do
         end
       end
     else
-      {:error, %ProcessError{message: "`dcc32` was not found"}}
+      {:error, %ProcessError{message: "`dcc32` was not found", reason: :tool_missing}}
     end
   end
 
   defp run_program(exe, shown, args, opts, timeout, deadline, spiral?) do
     case run_status(exe, shown, args, opts, timeout, deadline, spiral?) do
+      {:error, %ProcessError{reason: :not_found} = error} ->
+        {:error, %ProcessError{error | reason: :tool_missing}}
+
       {:ok, %{exit_status: 0, output: output}} ->
         {:ok, %{exit_status: 0, output: output}}
 
@@ -296,10 +299,10 @@ defmodule Spiral.Kino.Targets do
   defp run_status(exe, shown, args, opts, timeout, deadline, spiral?) do
     cond do
       not is_binary(exe) ->
-        {:error, %ProcessError{message: "`#{shown}` was not found"}}
+        {:error, %ProcessError{message: "`#{shown}` was not found", reason: :not_found}}
 
       not File.regular?(exe) and is_nil(System.find_executable(exe)) ->
-        {:error, %ProcessError{message: "`#{shown}` was not found at #{exe}"}}
+        {:error, %ProcessError{message: "`#{shown}` was not found at #{exe}", reason: :not_found}}
 
       true ->
         case Runner.run(exe, args,

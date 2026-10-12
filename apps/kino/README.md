@@ -133,7 +133,9 @@ drops `--test` cells. `parse_livemd/1` reads the smart cells `to_livemd/1` write
 `to_spi_tested/1` keeps each `--test` cell as a `test <name> [static] [print_code] [ignore] =` block
 (its `///>` targets above it, its body indented), named after the nearest heading; the compiler skips
 these blocks. `parse_spi/2` reads a `.spi` and its `_real.spir` back into cells, one test cell per block,
-so `run_notebook.ps1 --path x.spi` runs a source file as a notebook without writing over it.
+so `run_notebook.ps1 --path x.spi` runs a source file as a notebook without writing over it. The `_real.spir` cells
+go in after the same heading of the `.spi` (headings match by text; real cells come first within a section), so
+`to_spi_tested/1` and `to_spir_tested/1` give both files back.
 `///` doc runs come back as markdown cells, and a `#### name (test)` heading is added only where a test's
 name would not follow from the heading above it, so `--path x.spi --livemd-path x.livemd --export-only`
 writes a Livebook view of the file and `--path x.livemd --export-only --with-tests --spi-path x.spi`
@@ -157,7 +159,7 @@ The runner tests use real process trees.
 
 ## Running a notebook from the command line
 
-`pwsh spi/run_notebook.ps1 --path <nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi]`
+`pwsh spi/run_notebook.ps1 --path <nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi] [--test <name>[,<name>]]`
 (`mix spiral.notebook` behind it) runs every cell. It writes `<nb>.livemd.ipynb` (or `--output-path`); on success it also writes
 the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ipynb stem>.html` through
 `jupyter nbconvert --to html --HTMLExporter.theme=dark` with LF endings and cell ids renumbered 1..n (`<nb>.livemd.html`).
@@ -168,6 +170,44 @@ On a fresh machine the script first provides what the route needs, each step onl
 `SpiralCompiler.dll` (`scripts/build.ps1 -Mode single-flight`), then `mix local.hex`/`local.rebar --if-missing` and
 `mix deps.get` when `deps/kino` is absent. It passes the resolved `SPIRAL_DOTNET`, `SPIRAL_COMPILER_DLL` and
 `SPIRAL_COMPILER_PACKAGE_DIR` on to mix.
+
+### Test report
+
+Every run reports the notebook's test cells (`--test`, `--test static`, `--ignore`; in a `.spi`, its `test` blocks).
+`Document.tests/1` names them the way `to_spi_tested/1` does, so a report names a `.spi` test by its `test <name>` header.
+A test has three names. Its identity (`name`) is the `test <name>` header, derived from the nearest heading: ASCII
+letters and digits lowercased, letters of the Latin, Greek, Cyrillic, Armenian, Hebrew, Arabic, Hangul, kana and CJK
+blocks kept (lowercased by Unicode rules), everything else a `_` separator, so `### Сложение` gives `test сложение`
+and headings in other scripts no longer collapse to one name. Its `title` is the heading text itself. Its `symbol` is
+safe for any backend or shell: the identity when that is ASCII, otherwise `test_` and each non-ASCII code point as
+`u<hex>_` (`test_u52a0_u6cd5_` for `加法`). Pure-ASCII headings name tests exactly as before.
+A test's verdict is its cell's own evaluation result: it passed when every target it ran succeeded (compile, build, exit 0),
+failed on a compile error, a non-zero exit or a timeout, and is unsupported when none of its `///>` targets has its tool on
+this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
+A target whose tool is missing is skipped and listed in the test's `unavailable` while the others still run.
+`--ignore` cells are skipped: not compiled, and not a definition of later cells.
+
+stdout gets one `spiral-tests file {json}` line per source file (a `.spi` run covers `x.spi` and, for `--real` tests,
+`x_real.spir`) and one `spiral-tests total {json}` line, each with `discovered`, `executed` (passed + failed), `passed`,
+`failed`, `skipped`, `unsupported`, `filtered` (not selected by `--test`) and `not_run` (stopped before it ran); the file
+lines also list `failed_tests`. The ipynb metadata holds the same counts and every test (`spiral_tests`), and each test
+cell's metadata its own entry (`spiral_test`). A failed test fails the run (non-zero exit, no exports written); the plain
+compile of the same `.spi` is unaffected because the compiler skips test blocks. `--path` may be repeated.
+
+A `.spi` run plans one compile per test block plus one for the whole file (all definitions and real cells, its
+output on the last definition cell), not one per definition cell: a `.spi` top level holds only definitions, so the
+per-cell compiles showed nothing and cost a compile of the growing prefix each. `evaluate/2` takes `plan: :tests` for
+that and defaults to `plan: :cells` (one compile per cell, each cell's output shown).
+
+`--test <name>` (repeatable, or a comma list; a name or a symbol) runs only those test cells. Each cell's program already holds the
+definitions of the cells above it (packages, opens, definitions, static tests, real cells), so one compile per test
+suffices; host-language cells don't run. An unknown name fails with the list of the notebook's tests. Filtered runs
+write no exports.
+
+`Spiral.Kino.Notebook.evaluate(doc, opts)` is the same evaluation in memory: no notebook file is read or written. It
+returns `%{status, outputs, durations, verdicts, unavailable, report}` by cell index (`report` as in the ipynb metadata);
+`opts` takes the run options plus `root:`, `path:` or `spiral_lib:` (the lib package to mount) and `tests:`.
+`run_report/2` is `run/2` that also returns the report.
 
 A cell's `///- --timeout <ms>` directive is its budget. It wins over the smart cell's `timeout` field (a smart cell
 always passes one) and over the 300 s default.

@@ -1728,42 +1728,6 @@ bool run16(int32_t v0, UH1 * v1){
             if (v7){
                 
                 
-                US1 v11;
-                switch (v5.tag) {
-                    case 1: { // BitOne
-                        
-                        
-                        
-                        v11 = US1_SymbolGreater();
-                        break;
-                    }
-                    default: { // BitZero
-                        
-                        
-                        
-                        v11 = US1_SymbolSame();
-                        break;
-                    }
-                }
-                
-                
-                bool v12;
-                switch (v11.tag) {
-                    case 1: { // SymbolSame
-                        
-                        
-                        
-                        v12 = true;
-                        break;
-                    }
-                    default: {
-                        
-                        
-                        v12 = false;
-                    }
-                }
-                
-                USDecref1(&(v11));
                 v26 = 1l;
             } else {
                 
@@ -1775,42 +1739,6 @@ bool run16(int32_t v0, UH1 * v1){
                 if (v13){
                     
                     
-                    US1 v17;
-                    switch (v5.tag) {
-                        case 1: { // BitOne
-                            
-                            
-                            
-                            v17 = US1_SymbolGreater();
-                            break;
-                        }
-                        default: { // BitZero
-                            
-                            
-                            
-                            v17 = US1_SymbolSame();
-                            break;
-                        }
-                    }
-                    
-                    
-                    bool v18;
-                    switch (v17.tag) {
-                        case 1: { // SymbolSame
-                            
-                            
-                            
-                            v18 = true;
-                            break;
-                        }
-                        default: {
-                            
-                            
-                            v18 = false;
-                        }
-                    }
-                    
-                    USDecref1(&(v17));
                     v26 = 1l;
                 } else {
                     
@@ -2312,49 +2240,6 @@ bool run17(int32_t v0, UH3 * v1){
                     } else {
                         
                         
-                        US1 v31;
-                        switch (v5.tag) {
-                            case 0: { // TriA
-                                
-                                
-                                
-                                v31 = US1_SymbolLess();
-                                break;
-                            }
-                            case 1: { // TriB
-                                
-                                
-                                
-                                v31 = US1_SymbolSame();
-                                break;
-                            }
-                            default: { // TriC
-                                
-                                
-                                
-                                v31 = US1_SymbolGreater();
-                                break;
-                            }
-                        }
-                        
-                        
-                        bool v32;
-                        switch (v31.tag) {
-                            case 1: { // SymbolSame
-                                
-                                
-                                
-                                v32 = true;
-                                break;
-                            }
-                            default: {
-                                
-                                
-                                v32 = false;
-                            }
-                        }
-                        
-                        USDecref1(&(v31));
                         v47 = 2l;
                     }
                 } else {
@@ -2401,49 +2286,6 @@ bool run17(int32_t v0, UH3 * v1){
                     } else {
                         
                         
-                        US1 v43;
-                        switch (v5.tag) {
-                            case 0: { // TriA
-                                
-                                
-                                
-                                v43 = US1_SymbolLess();
-                                break;
-                            }
-                            case 1: { // TriB
-                                
-                                
-                                
-                                v43 = US1_SymbolSame();
-                                break;
-                            }
-                            default: { // TriC
-                                
-                                
-                                
-                                v43 = US1_SymbolGreater();
-                                break;
-                            }
-                        }
-                        
-                        
-                        bool v44;
-                        switch (v43.tag) {
-                            case 1: { // SymbolSame
-                                
-                                
-                                
-                                v44 = true;
-                                break;
-                            }
-                            default: {
-                                
-                                
-                                v44 = false;
-                            }
-                        }
-                        
-                        USDecref1(&(v43));
                         v47 = 2l;
                     }
                 }

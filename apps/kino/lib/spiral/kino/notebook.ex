@@ -1,5 +1,5 @@
 defmodule Spiral.Kino.Notebook do
-  alias Spiral.Kino.{Builders, Document, Result, Targets}
+  alias Spiral.Kino.{Builders, Document, ProcessError, Result, Targets}
 
   @default_timeout 300_000
   @run_keys [
@@ -34,11 +34,29 @@ defmodule Spiral.Kino.Notebook do
     "polyglot/deps/spiral/lib/spiral"
   ]
 
-  @spec run(String.t(), keyword()) :: :ok | {:error, String.t()}
+  @type status :: :ok | {:error, String.t()}
+  @type verdict :: :passed | {:failed, String.t()} | {:unsupported, String.t()}
+  @type evaluation :: %{
+          status: status(),
+          outputs: %{non_neg_integer() => [map()]},
+          durations: %{non_neg_integer() => {non_neg_integer(), map()}},
+          verdicts: %{non_neg_integer() => verdict()},
+          unavailable: %{non_neg_integer() => [String.t()]},
+          report: map()
+        }
+
+  @spec run(String.t(), keyword()) :: status()
   def run(path, opts \\ []) when is_binary(path) do
+    {status, _report} = run_report(path, opts)
+    status
+  end
+
+  @spec run_report(String.t(), keyword()) :: {status(), map() | nil}
+  def run_report(path, opts \\ []) when is_binary(path) do
     path = Path.expand(path)
     opts = Keyword.put(opts, :path, path)
     opts = if Path.extname(path) == ".spi" and !opts[:spi_path], do: Keyword.put(opts, :spi, false), else: opts
+    opts = if Path.extname(path) == ".spi", do: Keyword.put_new(opts, :plan, :tests), else: opts
     text = File.read!(path)
     parsed = parse(path, text)
     if opts[:livemd_path], do: File.write!(opts[:livemd_path], Document.to_livemd(parsed))
@@ -46,11 +64,158 @@ defmodule Spiral.Kino.Notebook do
 
     if opts[:export_only] do
       write_exports(path, doc, opts)
-      :ok
+      {:ok, nil}
     else
       run_cells(path, doc, opts)
     end
   end
+
+  @spec evaluate(%{cells: [map()]}, keyword()) :: evaluation()
+  def evaluate(%{cells: cells} = doc, opts \\ []) do
+    root = opts[:root] || if(opts[:path], do: Path.dirname(opts[:path]), else: File.cwd!())
+    tests = Document.tests(doc)
+
+    {status, outputs, durations, verdicts, unavailable} =
+      case select_tests(tests, opts[:tests]) do
+        {:error, message} ->
+          {{:error, message}, %{}, %{}, %{}, %{}}
+
+        {:ok, selected} ->
+          if Enum.any?(cells, &runnable?/1) do
+            try do
+              execute(doc, opts, root, selected)
+            rescue
+              error -> {{:error, Exception.message(error)}, %{}, %{}, %{}, %{}}
+            end
+          else
+            {{:error, empty_message(opts[:path] || "the notebook")}, %{}, %{}, %{}, %{}}
+          end
+      end
+
+    selected = selected_indices(tests, opts[:tests])
+
+    %{
+      status: status,
+      outputs: outputs,
+      durations: durations,
+      verdicts: verdicts,
+      unavailable: unavailable,
+      report: report(tests, selected, verdicts, unavailable)
+    }
+  end
+
+  defp select_tests(_tests, nil), do: {:ok, nil}
+  defp select_tests(_tests, []), do: {:ok, nil}
+
+  defp select_tests(tests, names) do
+    known = tests |> Enum.map(& &1.name) |> Enum.uniq()
+
+    symbols = Enum.map(tests, & &1.symbol)
+
+    case Enum.reject(names, &(&1 in known or &1 in symbols)) do
+      [] ->
+        {:ok, selected_indices(tests, names)}
+
+      unknown ->
+        {:error,
+         "unknown test #{Enum.join(unknown, ", ")}; the notebook has: " <>
+           if(known == [], do: "no tests", else: Enum.join(known, ", "))}
+    end
+  end
+
+  defp selected_indices(_tests, names) when names in [nil, []], do: nil
+
+  defp selected_indices(tests, names) do
+    tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
+  end
+
+  @report_counts ~w(discovered executed passed failed skipped unsupported filtered not_run)
+
+  defp report(tests, selected, verdicts, unavailable) do
+    rows =
+      Enum.map(tests, fn test ->
+        {state, message} = test_state(test, selected, Map.get(verdicts, test.index))
+
+        %{
+          "index" => test.index,
+          "name" => test.name,
+          "symbol" => test.symbol,
+          "title" => test.title,
+          "mode" => test.mode,
+          "realm" => test.realm,
+          "status" => state,
+          "unavailable" => Map.get(unavailable, test.index, [])
+        }
+        |> then(&if(message, do: Map.put(&1, "message", message), else: &1))
+      end)
+
+    counts(rows) |> Map.put("tests", rows)
+  end
+
+  @doc false
+  def counts(rows) do
+    by = Enum.frequencies_by(rows, & &1["status"])
+    count = &Map.get(by, &1, 0)
+
+    %{
+      "discovered" => length(rows),
+      "executed" => count.("passed") + count.("failed"),
+      "passed" => count.("passed"),
+      "failed" => count.("failed"),
+      "skipped" => count.("skipped"),
+      "unsupported" => count.("unsupported"),
+      "filtered" => count.("filtered"),
+      "not_run" => count.("not_run")
+    }
+  end
+
+  defp test_state(%{mode: "ignore"}, _selected, _verdict), do: {"skipped", nil}
+
+  defp test_state(test, selected, verdict) do
+    cond do
+      selected != nil and not MapSet.member?(selected, test.index) -> {"filtered", nil}
+      verdict == :passed -> {"passed", nil}
+      match?({:failed, _}, verdict) -> {"failed", first_line(elem(verdict, 1))}
+      match?({:unsupported, _}, verdict) -> {"unsupported", first_line(elem(verdict, 1))}
+      true -> {"not_run", nil}
+    end
+  end
+
+  defp first_line(text), do: text |> String.split("\n", parts: 2) |> hd()
+
+  @spec summary_lines([{String.t(), map()}]) :: [String.t()]
+  def summary_lines(reports) do
+    files =
+      Enum.flat_map(reports, fn {path, report} ->
+        report["tests"]
+        |> Enum.group_by(&source_file(path, &1["realm"]))
+        |> Enum.sort()
+        |> Enum.map(fn {file, rows} ->
+          counts(rows)
+          |> Map.put("file", file)
+          |> Map.put("failed_tests", for(row <- rows, row["status"] == "failed", do: row["name"]))
+        end)
+        |> case do
+          [] -> [counts([]) |> Map.put("file", path) |> Map.put("failed_tests", [])]
+          lines -> lines
+        end
+      end)
+
+    total =
+      Enum.reduce(files, Map.new(@report_counts, &{&1, 0}), fn file, acc ->
+        Map.new(acc, fn {key, n} -> {key, n + file[key]} end)
+      end)
+      |> Map.put("files", length(files))
+
+    Enum.map(files, &("spiral-tests file " <> JSON.encode!(&1))) ++
+      ["spiral-tests total " <> JSON.encode!(total)]
+  end
+
+  defp source_file(path, "real") do
+    if Path.extname(path) == ".spi", do: Path.rootname(path) <> "_real.spir", else: path
+  end
+
+  defp source_file(path, _realm), do: path
 
   defp write_exports(path, doc, opts) do
     {to_spi, to_spir} =
@@ -103,17 +268,8 @@ defmodule Spiral.Kino.Notebook do
   defp run_cells(path, doc, opts) do
     output_path = opts[:output_path] || path <> ".ipynb"
     root = opts[:root] || Path.dirname(path)
-
-    {status, outputs, durations} =
-      if Enum.any?(doc.cells, &runnable?/1) do
-        try do
-          execute(doc, opts, root)
-        rescue
-          error -> {{:error, Exception.message(error)}, %{}, %{}}
-        end
-      else
-        {{:error, empty_message(path)}, %{}, %{}}
-      end
+    evaluation = evaluate(doc, Keyword.put(opts, :root, root))
+    %{status: status, outputs: outputs, durations: durations, report: report} = evaluation
 
     outputs =
       case status do
@@ -125,17 +281,20 @@ defmodule Spiral.Kino.Notebook do
           outputs
       end
 
-    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations)))
+    File.write!(output_path, JSON.encode!(ipynb(doc, outputs, durations, report)))
 
-    case status do
-      :ok ->
-        write_exports(path, doc, opts)
+    result =
+      case status do
+        :ok ->
+          if opts[:tests] in [nil, []], do: write_exports(path, doc, opts)
 
-        if opts[:html], do: write_html(output_path), else: :ok
+          if opts[:html], do: write_html(output_path), else: :ok
 
-      {:error, message} ->
-        {:error, message}
-    end
+        {:error, message} ->
+          {:error, message}
+      end
+
+    {result, report}
   end
 
   @spec write_html(String.t()) :: :ok | {:error, String.t()}
@@ -192,37 +351,48 @@ defmodule Spiral.Kino.Notebook do
     "livebook did not run #{path}: no spiral cells"
   end
 
-  defp execute(doc, opts, root) do
+  defp execute(doc, opts, root, selected) do
     workspace = Spiral.Kino.workspace_root(opts)
     cells = Enum.map(doc.cells, &canon_cell(&1, root, workspace))
-    lib = find_spiral_lib(opts[:path]) || "-"
+    lib = opts[:spiral_lib] || (opts[:path] && find_spiral_lib(opts[:path])) || "-"
 
     spiral =
       cells
       |> Spiral.Kino.Domain.encode_cells()
       |> then(&(lib <> "\n" <> &1))
-      |> Spiral.Kino.Domain.plan()
+      |> plan(opts[:plan])
       |> Spiral.Kino.Domain.decode_plan()
       |> Enum.map(&attach_source(&1, cells))
+      |> only_selected(selected)
 
     fsi? = fsi_session?(opts)
-    steps = Enum.sort_by(spiral ++ host_steps(cells, fsi?) ++ fsi_steps(cells, fsi?), & &1.index)
+
+    hosts =
+      if selected == nil, do: host_steps(cells, fsi?) ++ fsi_steps(cells, fsi?), else: []
+
+    steps = Enum.sort_by(spiral ++ hosts, & &1.index)
 
     case if(spiral == [], do: :ok, else: ensure_compiler(opts)) do
       :ok ->
-        {outputs, durations, status} =
+        ran =
           if System.get_env("SPIRAL_KINO_CELLS") == "serial" do
             run_serial(steps, opts, root)
           else
             run_parallel(steps, opts, root)
           end
 
-        {status, outputs, durations}
+        {ran.status, ran.outputs, ran.durations, ran.verdicts, ran.unavailable}
 
       {:error, message} ->
-        {{:error, message}, %{}, %{}}
+        {{:error, message}, %{}, %{}, %{}, %{}}
     end
   end
+
+  defp plan(wire, :tests), do: Spiral.Kino.Domain.plan_tests(wire)
+  defp plan(wire, _cells), do: Spiral.Kino.Domain.plan(wire)
+
+  defp only_selected(steps, nil), do: steps
+  defp only_selected(steps, selected), do: Enum.filter(steps, &MapSet.member?(selected, &1.index))
 
   defp ensure_compiler(opts) do
     if shared_boot?(opts) do
@@ -241,10 +411,12 @@ defmodule Spiral.Kino.Notebook do
       opts[:workspace] == nil and opts[:env] == nil
   end
 
+  defp no_runs, do: %{outputs: %{}, durations: %{}, status: :ok, verdicts: %{}, unavailable: %{}}
+
   defp run_serial(steps, opts, root) do
-    Enum.reduce_while(steps, {%{}, %{}, :ok}, fn step, {outputs, durations, :ok} ->
-      case collect(run_step(step, opts, root), {outputs, durations, :ok}) do
-        {_, _, :ok} = acc -> {:cont, acc}
+    Enum.reduce_while(steps, no_runs(), fn step, acc ->
+      case collect(run_step(step, opts, root), acc) do
+        %{status: :ok} = acc -> {:cont, acc}
         acc -> {:halt, acc}
       end
     end)
@@ -258,13 +430,13 @@ defmodule Spiral.Kino.Notebook do
       timeout: :infinity
     )
     |> Enum.zip(steps)
-    |> Enum.reduce({%{}, %{}, :ok}, fn
+    |> Enum.reduce(no_runs(), fn
       {{:ok, entries}, _step}, acc ->
         collect(entries, acc)
 
-      {{:exit, reason}, step}, {acc, durations, status} ->
+      {{:exit, reason}, step}, acc ->
         text = Exception.format_exit(reason)
-        {Map.put(acc, step.index, error_output(text)), durations, keep_error(status, text)}
+        collect([{step.index, {:error, error_output(text), text}, nil}], acc)
     end)
   end
 
@@ -276,12 +448,35 @@ defmodule Spiral.Kino.Notebook do
   end
 
   defp collect(entries, acc) do
-    Enum.reduce(entries, acc, fn
-      {index, {:ok, outputs}, ms}, {acc, durations, status} ->
-        {Map.put(acc, index, outputs), Map.put(durations, index, ms), status}
+    Enum.reduce(entries, acc, fn {index, result, ms}, acc ->
+      acc = if ms, do: put_in(acc, [:durations, index], ms), else: acc
 
-      {index, {:error, outputs, message}, ms}, {acc, durations, status} ->
-        {Map.put(acc, index, outputs), Map.put(durations, index, ms), keep_error(status, message)}
+      case result do
+        {:ok, outputs} ->
+          acc |> put_in([:outputs, index], outputs) |> put_in([:verdicts, index], :passed)
+
+        {:ok, outputs, []} ->
+          acc |> put_in([:outputs, index], outputs) |> put_in([:verdicts, index], :passed)
+
+        {:ok, outputs, unavailable} ->
+          acc
+          |> put_in([:outputs, index], outputs)
+          |> put_in([:verdicts, index], :passed)
+          |> put_in([:unavailable, index], unavailable)
+
+        {:unsupported, outputs, message} ->
+          acc
+          |> put_in([:outputs, index], outputs)
+          |> put_in([:verdicts, index], {:unsupported, message})
+
+        {:error, outputs, message} ->
+          %{
+            acc
+            | outputs: Map.put(acc.outputs, index, outputs),
+              verdicts: Map.put(acc.verdicts, index, {:failed, message}),
+              status: keep_error(acc.status, message)
+          }
+      end
     end)
   end
 
@@ -367,6 +562,9 @@ defmodule Spiral.Kino.Notebook do
         {:ok, %{stdout: stdout}} ->
           {:ok, success_output(%Result{stdout: stdout, exit_status: 0})}
 
+        {:error, %ProcessError{reason: :tool_missing} = error} ->
+          unsupported(error)
+
         {:error, error} ->
           text = error_text(error)
           {:error, error_output(text), text}
@@ -390,7 +588,10 @@ defmodule Spiral.Kino.Notebook do
 
       case Spiral.Kino.run(step.program, opts) do
         {:ok, %Result{exit_status: status} = result} when status in [nil, 0] ->
-          {:ok, success_output(result)}
+          {:ok, success_output(result), result.unavailable}
+
+        {:error, %ProcessError{reason: :tool_missing} = error} ->
+          unsupported(error)
 
         {:ok, %Result{} = result} ->
           text = "cell exited #{result.exit_status}\n#{result.stdout}"
@@ -405,6 +606,11 @@ defmodule Spiral.Kino.Notebook do
         text = Exception.message(error)
         {:error, error_output(text), text}
     end
+  end
+
+  defp unsupported(error) do
+    text = "unsupported on this machine: " <> error_text(error)
+    {:unsupported, [stream("stderr", text)], text}
   end
 
   defp run_opts(opts, root, timeout) do
@@ -563,7 +769,9 @@ defmodule Spiral.Kino.Notebook do
     if is_exception(error), do: Exception.message(error), else: inspect(error)
   end
 
-  defp ipynb(doc, outputs, durations) do
+  defp ipynb(doc, outputs, durations, report) do
+    tests = Map.new(report["tests"], &{&1["index"], &1})
+
     {cells, _} =
       doc.cells
       |> Enum.with_index()
@@ -577,6 +785,7 @@ defmodule Spiral.Kino.Notebook do
             if(ran, do: n, else: nil),
             Map.get(durations, index)
           )
+          |> test_metadata(Map.get(tests, index))
 
         {json, if(ran, do: n + 1, else: n)}
       end)
@@ -589,10 +798,17 @@ defmodule Spiral.Kino.Notebook do
           "display_name" => "Spiral",
           "language" => "spiral",
           "name" => "spiral"
-        }
+        },
+        "spiral_tests" => report
       },
       "cells" => cells
     }
+  end
+
+  defp test_metadata(json, nil), do: json
+
+  defp test_metadata(json, test) do
+    put_in(json, ["metadata", "spiral_test"], Map.take(test, ["name", "symbol", "title", "status", "mode", "realm"]))
   end
 
   defp cell_json(%{kind: :markdown, source: source}, _outputs, _count, _duration) do

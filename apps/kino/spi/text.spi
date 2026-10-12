@@ -4,6 +4,8 @@ inl ffi () : () =
     global "@external(erlang, \"erlang\", \"byte_size\")\nfn kino_text_size(text: String) -> Int"
     global "@external(erlang, \"binary\", \"part\")\nfn kino_text_part(text: String, at: Int, len: Int) -> String"
     global "fn kino_text_at(text: String, at: Int, len: Int) -> String {\n  let size = kino_text_size(text)\n  case at >= 0 && len > 0 && at < size {\n    True -> case at + len > size {\n      True -> kino_text_part(text, at, size - at)\n      False -> kino_text_part(text, at, len)\n    }\n    False -> \"\"\n  }\n}"
+    global "@external(erlang, \"binary\", \"at\")\nfn kino_text_byte(text: String, at: Int) -> Int"
+    global "@external(erlang, \"string\", \"lowercase\")\nfn kino_text_lower(text: String) -> String"
 
 inl length (text : string) : i32 =
     ffi ()
@@ -184,6 +186,42 @@ let rec take_name (text : string) (i : i32) : i32 =
 
 let rec take_ident (text : string) (i : i32) : i32 =
     if i < length text && ident_char (index text i) then take_ident text (i + 1i32) else i
+
+inl byte_at (text : string) (i : i32) : i32 =
+    ffi ()
+    $'kino_text_byte(!text, !i)' : i32
+
+inl lowercase (text : string) : string =
+    ffi ()
+    $'kino_text_lower(!text)' : string
+
+inl utf8_width (lead : i32) : i32 =
+    if lead < 128i32 then 1i32
+    elif lead < 224i32 then 2i32
+    elif lead < 240i32 then 3i32
+    else 4i32
+
+inl continuation (text : string) (i : i32) : i32 = if i < length text then byte_at text i - 128i32 else 0i32
+
+inl code_point (text : string) (i : i32) : i32 =
+    inl lead = byte_at text i
+    inl width = utf8_width lead
+    if width = 1i32 then lead
+    elif width = 2i32 then (lead - 192i32) * 64i32 + continuation text (i + 1i32)
+    elif width = 3i32 then (lead - 224i32) * 4096i32 + continuation text (i + 1i32) * 64i32 + continuation text (i + 2i32)
+    else (lead - 240i32) * 262144i32 + continuation text (i + 1i32) * 4096i32 + continuation text (i + 2i32) * 64i32 + continuation text (i + 3i32)
+
+let rec take_unicode_ident (text : string) (i : i32) : i32 =
+    if i >= length text then i
+    elif byte_at text i >= 128i32 then take_unicode_ident text (i + 1i32)
+    elif ident_char (index text i) then take_unicode_ident text (i + 1i32)
+    else i
+
+inl hex_digit (n : i32) : string = one "0123456789abcdef" n
+
+let rec show_hex (n : i32) : string =
+    if n < 16i32 then hex_digit n
+    else show_hex (n / 16i32) ++ hex_digit (n % 16i32)
 
 let rec take_spaces_or_brace (text : string) (i : i32) : i32 =
     if i >= length text then i

@@ -345,14 +345,6 @@ let v394 : string =
 method0(v329, v394)
 method1(v329)
 method0(v329, v394)
-let struct (v403 : string, v404 : string, v405 : string, v406 : string, v407 : string, v408 : string, v409 : string) =
-    match v357 with
-    | US1_NetIntercompany(v395, v396, v397, v398, v399, v400, v401, v402) -> (* NetIntercompany *)
-        struct (v395, v396, v397, v398, v399, v400, v401)
-let struct (v418 : string, v419 : string, v420 : string, v421 : string, v422 : string, v423 : string, v424 : string) =
-    match v357 with
-    | US1_NetIntercompany(v410, v411, v412, v413, v414, v415, v416, v417) -> (* NetIntercompany *)
-        struct (v410, v411, v412, v413, v414, v415, v416)
 let v425 : int64 = 0L + 1L
 let v426 : int64 = v425 + 1L
 let v427 : int64 = v426 + 1L
@@ -407,14 +399,6 @@ let v506 : string =
 method0(v441, v506)
 method1(v441)
 method0(v441, v506)
-let struct (v515 : string, v516 : string, v517 : string, v518 : string, v519 : string, v520 : string, v521 : string) =
-    match v469 with
-    | US1_NetIntercompany(v507, v508, v509, v510, v511, v512, v513, v514) -> (* NetIntercompany *)
-        struct (v507, v508, v509, v510, v511, v512, v513)
-let struct (v530 : string, v531 : string, v532 : string, v533 : string, v534 : string, v535 : string, v536 : string) =
-    match v469 with
-    | US1_NetIntercompany(v522, v523, v524, v525, v526, v527, v528, v529) -> (* NetIntercompany *)
-        struct (v522, v523, v524, v525, v526, v527, v528)
 let v537 : int64 = 0L + 1L
 let v538 : int64 = v537 + 1L
 let v539 : int64 = v538 + 1L

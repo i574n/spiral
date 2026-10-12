@@ -1,0 +1,12 @@
+union step = Step : i32 * i32 * i32
+
+inl open_step (x : i32) : step =
+    if x > 2 then Step (x, x + 1, x + 2) else Step (0, 1, 2)
+
+let walk (x : i32) : i32 =
+    match open_step x with
+    | Step (a, b, c) => a + b * c
+
+inl main () : i32 =
+    inl ~n = 5i32
+    walk n + walk (n - 4)

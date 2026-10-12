@@ -69,6 +69,16 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.from_spi(spi, spir)
   end
 
+  def test_index(wire) do
+    ensure!()
+    :spiral_kino@domain.test_index(wire)
+  end
+
+  def plan_tests(wire) do
+    ensure!()
+    :spiral_kino@domain.plan_tests(wire)
+  end
+
   def plan(wire) do
     ensure!()
     :spiral_kino@domain.plan(wire)

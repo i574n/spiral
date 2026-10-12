@@ -126,9 +126,37 @@ defmodule Spiral.Kino.CompilerClient do
 
       {:occupied, detail} ->
         if handshake_pending?(detail) do
-          wait_up(port, System.monotonic_time(:millisecond) + 180_000)
+          settle(port, System.monotonic_time(:millisecond) + 30_000)
         else
           {:error, process_error("port #{port} is already used by another program (#{detail})")}
+        end
+    end
+  end
+
+  defp settle(port, deadline) do
+    case ping(port) do
+      {:ok, stamp, pid} ->
+        if stamp == CompilerDaemon.code_stamp() do
+          :ok
+        else
+          retire(port, pid)
+          launch(port)
+        end
+
+      :down ->
+        launch(port)
+
+      {:occupied, detail} ->
+        cond do
+          not handshake_pending?(detail) ->
+            {:error, process_error("port #{port} is already used by another program (#{detail})")}
+
+          System.monotonic_time(:millisecond) > deadline ->
+            {:error, process_error("port #{port} accepts connections but never answers the handshake (#{detail})")}
+
+          true ->
+            Process.sleep(100)
+            settle(port, deadline)
         end
     end
   end

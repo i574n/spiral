@@ -465,6 +465,8 @@
         'samples/frontier_static_list_eq'
         'samples/frontier_try_item'
         'samples/function_call'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/item_metadata_missing_target'
         'samples/lua_while_union_pair'
         'samples/managed_string_array'
@@ -564,6 +566,8 @@
     )
     Lua = @(
             'samples/portable_convert_parse'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/portable_console_lines'
         'samples/portable_math_rounding'
         'samples/arithmetic_branch'
@@ -727,6 +731,8 @@
         'samples/frontier_static_list_eq'
         'samples/frontier_try_item'
         'samples/function_call'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/item_metadata_missing_target'
         'samples/managed_string_array'
         'samples/managed_string_builder'
@@ -822,6 +828,8 @@
         'samples/unsigned_mod'
     )
     Lean = @(
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/portable_console_lines'
         'samples/portable_math_rounding'
         'samples/arithmetic_branch'
@@ -1107,6 +1115,8 @@
             'samples/tuple_pair'
             'samples/unsigned_mod'
             'samples/zig_lib_console'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
     )
     Wgsl = @(
         'samples/backend_smoke'
@@ -1146,6 +1156,8 @@
         'samples/arithmetic_branch'
         'samples/branch_select'
         'samples/function_call'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/predicate_call'
         'samples/native_bitwise_scalar'
         'samples/tail_loop'
@@ -1394,6 +1406,8 @@
         'samples/arithmetic_branch'
         'samples/branch_select'
         'samples/function_call'
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/predicate_call'
         'samples/native_bitwise_scalar'
         'samples/tail_loop'
@@ -1714,6 +1728,8 @@
         'samples/ebpf_snot'
     )
     Zig = @(
+        'samples/gleam_match_narrowed'
+        'samples/gleam_match_single_case'
         'samples/portable_console_lines'
         'samples/portable_math_rounding'
         'samples/zig_lib_console'

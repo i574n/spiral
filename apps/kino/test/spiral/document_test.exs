@@ -385,6 +385,78 @@ defmodule Spiral.Kino.DocumentTest do
     assert doc |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == custom
   end
 
+  test "non-ASCII headings name tests apart: identity, localized title, ASCII symbol" do
+    doc = %{
+      cells: [
+        %{kind: :markdown, source: "## Сложение"},
+        %{kind: :spiral, source: "inl add a b = a + b"},
+        %{kind: :spiral, source: "///- --test\n\nadd 1 2 |> _assert_eq 3"},
+        %{kind: :markdown, source: "### 加法 (test)"},
+        %{kind: :spiral, source: "///- --test\n\nadd 2 2 |> _assert_eq 4"},
+        %{kind: :markdown, source: "### Ünïcode — mix 2 (test)"},
+        %{kind: :spiral, source: "///- --test\n\nadd 0 0 |> _assert_eq 0"},
+        %{kind: :markdown, source: "### plain add (test)"},
+        %{kind: :spiral, source: "///- --test\n\nadd 0 1 |> _assert_eq 1"}
+      ]
+    }
+
+    spi = Document.to_spi_tested(doc)
+    assert spi =~ "\ntest сложение =\n"
+    assert spi =~ "\ntest 加法 =\n"
+    assert spi =~ "\ntest ünïcode_mix_2 =\n"
+    assert spi =~ "\ntest plain_add =\n"
+
+    tests = Document.tests(doc)
+
+    assert Enum.map(tests, &{&1.name, &1.title}) == [
+             {"сложение", "Сложение"},
+             {"加法", "加法"},
+             {"ünïcode_mix_2", "Ünïcode — mix 2"},
+             {"plain_add", "plain add"}
+           ]
+
+    assert Enum.map(tests, & &1.symbol) == [
+             "test_u441_u43b_u43e_u436_u435_u43d_u438_u435_",
+             "test_u52a0_u6cd5_",
+             "test_ufc_nuef_code_mix_2",
+             "plain_add"
+           ]
+
+    again = Document.parse_spi(spi, "")
+    assert Document.to_spi_tested(again) == spi
+    assert Enum.map(Document.tests(again), & &1.name) == Enum.map(tests, & &1.name)
+  end
+
+  test "a _real.spir interleaves with its .spi by heading and both round-trip through livemd" do
+    spi = "/// # demo\n\n/// ## twice_real\n\n/// ## twice\ninl twice (x : i32) : i32 = real twice_real x\n"
+    spir = "/// # demo\n\n/// ## twice_real\n///- --real\n\ninl twice_real (x : i32) : i32 = x + x\n"
+    doc = Document.parse_spi(spi, spir)
+
+    assert Enum.map(doc.cells, &{&1.kind, &1.source}) == [
+             markdown: "# demo",
+             markdown: "## twice_real",
+             spiral: "///- --real\n\ninl twice_real (x : i32) : i32 = x + x",
+             markdown: "## twice",
+             spiral: "inl twice (x : i32) : i32 = real twice_real x"
+           ]
+
+    back = doc |> Document.to_livemd() |> Document.parse_livemd()
+    assert Document.to_spi_tested(back) == spi
+    assert Document.to_spir_tested(back) == spir
+
+    lib = Path.expand("../../../../lib/spiral", __DIR__)
+    pairs = Path.wildcard(Path.join(lib, "*_real.spir"))
+    assert pairs != []
+
+    for spir_path <- pairs do
+      spi_path = String.replace_suffix(spir_path, "_real.spir", ".spi")
+      {spi, spir} = {File.read!(spi_path), File.read!(spir_path)}
+      back = spi |> Document.parse_spi(spir) |> Document.to_livemd() |> Document.parse_livemd()
+      assert Document.to_spi_tested(back) == spi, spi_path
+      assert Document.to_spir_tested(back) == spir, spir_path
+    end
+  end
+
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
     lib = Path.expand("../../../../lib/spiral", __DIR__)
     sources = Enum.reject(Path.wildcard(Path.join(lib, "**/*.spi")), &String.contains?(&1, "/target/"))

@@ -79,6 +79,21 @@ defmodule Spiral.Kino.Document do
     Spiral.Kino.Domain.to_spir_tested(Spiral.Kino.Domain.encode_cells(cells))
   end
 
+  @spec tests(%{cells: [map()]}) :: [
+          %{index: non_neg_integer(), name: String.t(), mode: String.t(), realm: String.t(), symbol: String.t(), title: String.t()}
+        ]
+  def tests(%{cells: cells}) do
+    cells
+    |> Spiral.Kino.Domain.encode_cells()
+    |> Spiral.Kino.Domain.test_index()
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row ->
+      [index, name, mode, realm, symbol, title] = String.split(row, "\t", parts: 6)
+      %{index: String.to_integer(index), name: name, mode: mode, realm: realm, symbol: symbol, title: title}
+    end)
+    |> Enum.sort_by(& &1.index)
+  end
+
   defp livemd_part(part) do
     cond do
       match?([_, _], Regex.run(~r/\A<!-- livebook:\{"spiral_code":"([^"]+)"\} -->/, part)) ->

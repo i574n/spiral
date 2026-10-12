@@ -6,9 +6,5 @@
 int32_t main(){
     
     
-    uint32_t v0;
-    v0 = 7ul;
-    
-    
     return 14l;
 }

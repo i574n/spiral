@@ -914,42 +914,10 @@ fn run_16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 let mut v6: Rc<UH1> = v6.clone();
                 let mut v7: bool = v0 == 0i32;
                 let mut v26: i32 = if v7 {
-                    let mut v11: US1 = match &v5 {
-                        US0::US0_BitOne => {
-                            US1::US1_SymbolGreater
-                        }
-                        US0::US0_BitZero => {
-                            US1::US1_SymbolSame
-                        }
-                    };
-                    let mut v12: bool = match &v11 {
-                        US1::US1_SymbolSame => {
-                            true
-                        }
-                        _ => {
-                            false
-                        }
-                    };
                     1i32
                 } else {
                     let mut v13: bool = v0 == 1i32;
                     if v13 {
-                        let mut v17: US1 = match &v5 {
-                            US0::US0_BitOne => {
-                                US1::US1_SymbolGreater
-                            }
-                            US0::US0_BitZero => {
-                                US1::US1_SymbolSame
-                            }
-                        };
-                        let mut v18: bool = match &v17 {
-                            US1::US1_SymbolSame => {
-                                true
-                            }
-                            _ => {
-                                false
-                            }
-                        };
                         1i32
                     } else {
                         let mut v22: US1 = match &v5 {
@@ -1119,25 +1087,6 @@ fn run_17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                         if v25 {
                             2i32
                         } else {
-                            let mut v31: US1 = match &v5 {
-                                US3::US3_TriA => {
-                                    US1::US1_SymbolLess
-                                }
-                                US3::US3_TriB => {
-                                    US1::US1_SymbolSame
-                                }
-                                US3::US3_TriC => {
-                                    US1::US1_SymbolGreater
-                                }
-                            };
-                            let mut v32: bool = match &v31 {
-                                US1::US1_SymbolSame => {
-                                    true
-                                }
-                                _ => {
-                                    false
-                                }
-                            };
                             2i32
                         }
                     } else {
@@ -1160,25 +1109,6 @@ fn run_17(mut v0: i32, mut v1: Rc<UH3>) -> bool {
                         if v37 {
                             2i32
                         } else {
-                            let mut v43: US1 = match &v5 {
-                                US3::US3_TriA => {
-                                    US1::US1_SymbolLess
-                                }
-                                US3::US3_TriB => {
-                                    US1::US1_SymbolSame
-                                }
-                                US3::US3_TriC => {
-                                    US1::US1_SymbolGreater
-                                }
-                            };
-                            let mut v44: bool = match &v43 {
-                                US1::US1_SymbolSame => {
-                                    true
-                                }
-                                _ => {
-                                    false
-                                }
-                            };
                             2i32
                         }
                     }
