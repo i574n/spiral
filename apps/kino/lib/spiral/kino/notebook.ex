@@ -38,9 +38,11 @@ defmodule Spiral.Kino.Notebook do
   def run(path, opts \\ []) when is_binary(path) do
     path = Path.expand(path)
     opts = Keyword.put(opts, :path, path)
-    opts = if Path.extname(path) == ".spi", do: Keyword.put(opts, :spi, false), else: opts
+    opts = if Path.extname(path) == ".spi" and !opts[:spi_path], do: Keyword.put(opts, :spi, false), else: opts
     text = File.read!(path)
-    doc = path |> parse(text) |> expand_lisp(opts)
+    parsed = parse(path, text)
+    if opts[:livemd_path], do: File.write!(opts[:livemd_path], Document.to_livemd(parsed))
+    doc = expand_lisp(parsed, opts)
 
     if opts[:export_only] do
       write_exports(path, doc, opts)
@@ -51,8 +53,13 @@ defmodule Spiral.Kino.Notebook do
   end
 
   defp write_exports(path, doc, opts) do
-    if opts[:spi] != false, do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", Document.to_spi(doc))
-    if opts[:spir_path], do: File.write!(opts[:spir_path], Document.to_spir(doc))
+    {to_spi, to_spir} =
+      if opts[:with_tests],
+        do: {&Document.to_spi_tested/1, &Document.to_spir_tested/1},
+        else: {&Document.to_spi/1, &Document.to_spir/1}
+
+    if opts[:spi] != false, do: File.write!(opts[:spi_path] || Path.rootname(path) <> ".spi", to_spi.(doc))
+    if opts[:spir_path], do: File.write!(opts[:spir_path], to_spir.(doc))
     if opts[:fs_path], do: write_fs(doc, opts)
   end
 

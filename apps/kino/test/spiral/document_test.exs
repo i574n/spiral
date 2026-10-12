@@ -366,10 +366,23 @@ defmodule Spiral.Kino.DocumentTest do
     assert Document.to_spi(doc) == "/// ## add\ninl add a b = a + b\n"
 
     assert Enum.map(Document.parse_spi(spi, "").cells, &{&1.kind, &1.source}) == [
-             spiral: "/// ## add\ninl add a b = a + b",
+             markdown: "## add",
+             spiral: "inl add a b = a + b",
              spiral: "///- --test\n///> c\n\nadd 1 2 |> _assert_eq 3",
              spiral: "///- --test static --print-code\n\nadd 2 2 |> _assert_eq 4"
            ]
+
+    custom = "/// ## add\ninl add a b = a + b\n\ntest one_plus_one =\n    add 1 1 |> _assert_eq 2\n"
+    doc = Document.parse_spi(custom, "")
+
+    assert Enum.map(doc.cells, &{&1.kind, &1.source}) == [
+             markdown: "## add",
+             spiral: "inl add a b = a + b",
+             markdown: "#### one_plus_one (test)",
+             spiral: "///- --test\n\nadd 1 1 |> _assert_eq 2"
+           ]
+
+    assert doc |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested() == custom
   end
 
   test "the spiral library .spi files load as notebooks, one test cell per test block" do
@@ -388,6 +401,10 @@ defmodule Spiral.Kino.DocumentTest do
           expected = length(Regex.scan(~r/^test \w+/m, spi_text <> spir_text))
           found = Enum.count(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- (--real )?--(test|ignore)/))
           assert found == expected, path
+          through_livemd = &(&1 |> Document.parse_spi("") |> Document.to_livemd() |> Document.parse_livemd() |> Document.to_spi_tested())
+          once = through_livemd.(spi_text)
+          assert through_livemd.(once) == once, path
+          if expected > 0, do: assert(once == spi_text, path)
           total + expected
       end
 

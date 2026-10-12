@@ -315,32 +315,6 @@ inl to_spi_tested (src : string) : string = export_text SpiExport KeepTests src
 
 inl to_spir_tested (src : string) : string = export_text SpirExport KeepTests src
 
-union rec blocks =
-    | NoBlock
-    | Block : rows * blocks
-
-let rec rev_blocks (xs : blocks) (acc : blocks) : blocks =
-    match xs with
-    | NoBlock => acc
-    | Block (b, rest) => rev_blocks rest (Block (b, acc))
-
-inl starts_statement (line : string) : bool =
-    if line = "" then false else text.is_space (text.index line 0i32) = false
-
-inl close_block (current : rows) (acc : blocks) : blocks =
-    match current with
-    | NoRow => acc
-    | _ => Block (rev_rows current NoRow, acc)
-
-let rec walk_blocks (src : string) (i : i32) (current : rows) (seen : bool) (acc : blocks) : blocks =
-    match text.next_line src i with
-    | LineDone => rev_blocks (close_block current acc) NoBlock
-    | LineGot (line, next) =>
-        inl starts = starts_statement line
-        inl statement = starts && text.starts_with line "//" = false
-        if starts && seen then walk_blocks src next (Row (line, NoRow)) statement (close_block current acc)
-        else walk_blocks src next (Row (line, current)) (seen || statement) acc
-
 let rec modes_valid (s : string) : bool =
     if s = "" then true
     elif text.starts_with s " static" then modes_valid (text.drop s 7i32)
@@ -362,42 +336,8 @@ inl header_of (line : string) : test_header =
         else NoHeader
     else NoHeader
 
-union test_split =
-    | NotTest
-    | TestSplit : string * string * rows * rows * rows
-
-let rec only_targets (xs : rows) (keep : bool) : rows =
-    match xs with
-    | NoRow => NoRow
-    | Row (s, rest) =>
-        if text.starts_with s "///>" = keep then Row (s, only_targets rest keep) else only_targets rest keep
-
-let rec unindent_rows (xs : rows) : rows =
-    match xs with
-    | NoRow => NoRow
-    | Row (s, rest) => Row ((if text.starts_with s "    " then text.drop s 4i32 else s), unindent_rows rest)
-
-let rec split_test_go (xs : rows) (before : rows) : test_split =
-    match xs with
-    | NoRow => NotTest
-    | Row (line, rest) =>
-        match header_of line with
-        | Header (name, modes) =>
-            inl head = rev_rows before NoRow
-            inl body = rev_rows (drop_blank_rows (rev_rows (unindent_rows rest) NoRow)) NoRow
-            TestSplit (name, modes, only_targets head true, only_targets head false, body)
-        | NoHeader => split_test_go rest (Row (line, before))
-
-let rec has_code (xs : rows) : bool =
-    match xs with
-    | NoRow => false
-    | Row (s, rest) => if text.blank s = false && text.starts_with s "///" = false then true else has_code rest
-
 inl real_marker (real_mode : bool) (src : string) : string =
     if real_mode && text.starts_with src "///- --real" = false then "///- --real\n\n" ++ src else src
-
-inl flush_pending (pending : rows) (real_mode : bool) (acc : cells) : cells =
-    if has_code pending then Cell ("spiral", real_marker real_mode (text.trim_newlines (join_rows pending)), acc) else acc
 
 inl test_options (real_mode : bool) (modes : string) : string =
     inl padded = modes ++ " "
@@ -410,18 +350,107 @@ inl test_options (real_mode : bool) (modes : string) : string =
 inl test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
     join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))
 
-let rec cells_of_blocks (xs : blocks) (real_mode : bool) (pending : rows) (acc : cells) : cells =
-    match xs with
-    | NoBlock => flush_pending pending real_mode acc
-    | Block (b, rest) =>
-        match split_test_go b NoRow with
-        | NotTest => cells_of_blocks rest real_mode (append_rows pending b) acc
-        | TestSplit (_, modes, targets, docs, body) =>
-            inl flushed = flush_pending (append_rows pending docs) real_mode acc
-            cells_of_blocks rest real_mode NoRow (Cell ("spiral", test_cell_source real_mode modes targets body, flushed))
+union spi_mode =
+    | Between
+    | InDoc : rows
+    | InCode : rows
+    | InTest : string * string * rows * rows
 
-inl source_cells (src : string) (real_mode : bool) (acc : cells) : cells =
-    cells_of_blocks (walk_blocks (text.replace src "\r\n" "\n") 0i32 NoRow false NoBlock) real_mode NoRow acc
+inl doc_start (line : string) : bool = text.starts_with line "/// " || line = "///"
+
+inl doc_more (line : string) : bool =
+    inl i = lead_ws line 0i32
+    text.starts_at line i "/// " || text.drop line i = "///"
+
+inl undoc (line : string) : string =
+    inl i = lead_ws line 0i32
+    if text.starts_at line i "/// " then text.take line i ++ text.drop line (i + 4i32)
+    else text.take line i
+
+inl no_rows (xs : rows) : bool =
+    match xs with
+    | NoRow => true
+    | _ => false
+
+inl unindent (line : string) : string = if text.starts_with line "    " then text.drop line 4i32 else line
+
+inl indented (line : string) : bool = if line = "" then true else text.is_space (text.index line 0i32)
+
+inl code_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
+    if text.blank source then acc else Cell ("spiral", real_marker real_mode source, acc)
+
+inl doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
+    if real_mode || source = "" then acc else Cell ("markdown", source, acc)
+
+inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (rev_rows (drop_blank_rows body) NoRow)
+    if real_mode then Cell ("spiral", source, acc) else Cell ("test:" ++ name, source, acc)
+
+inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    match mode with
+    | Between => code_cell targets real_mode acc
+    | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
+    | InCode lines => code_cell (append_rows targets lines) real_mode acc
+    | InTest (name, modes, test_targets, body) => code_cell targets real_mode (test_cell_of name modes test_targets body real_mode acc)
+
+inl close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    if no_rows code then code_cell targets real_mode acc else code_cell (append_rows targets code) real_mode acc
+
+let open_step (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : spi_mode * rows * cells =
+    if text.starts_with line "///>" then
+        if no_rows code then Between, Row (line, targets), acc else InCode code, Row (line, targets), acc
+    else
+        match header_of line with
+        | Header (name, modes) => InTest (name, modes, targets, NoRow), NoRow, close_open code NoRow real_mode acc
+        | NoHeader =>
+            if doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
+            elif no_rows code then
+                if line = "" && no_rows targets then Between, NoRow, acc
+                else InCode (Row (line, targets)), NoRow, acc
+            else InCode (Row (line, append_rows targets code)), NoRow, acc
+
+let rec spi_walk (src : string) (i : i32) (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    match text.next_line src i with
+    | LineDone => close_mode mode targets real_mode acc
+    | LineGot (line, next) =>
+        match mode with
+        | InTest (name, modes, test_targets, body) =>
+            if indented line then spi_walk src next (InTest (name, modes, test_targets, Row (unindent line, body))) targets real_mode acc
+            else spi_walk src i Between NoRow real_mode (test_cell_of name modes test_targets body real_mode acc)
+        | InDoc lines =>
+            if doc_more line then spi_walk src next (InDoc (Row (undoc line, lines))) targets real_mode acc
+            elif line = "" then spi_walk src next Between targets real_mode (doc_cell lines real_mode acc)
+            else spi_walk src i Between targets real_mode (doc_cell lines real_mode acc)
+        | InCode lines =>
+            inl mode2, targets2, acc2 = open_step line lines targets real_mode acc
+            spi_walk src next mode2 targets2 real_mode acc2
+        | Between =>
+            inl mode2, targets2, acc2 = open_step line NoRow targets real_mode acc
+            spi_walk src next mode2 targets2 real_mode acc2
+
+let rec name_tested (xs : cells) (last : string) (used : rows) (acc : cells) : cells =
+    match xs with
+    | NoCell => acc
+    | Cell (kind, source, rest) =>
+        if kind = "markdown" then
+            inl heading = heading_test_name source
+            name_tested rest (if heading = "" then last else heading) used (Cell (kind, source, acc))
+        elif text.starts_with kind "test:" then
+            inl name = text.drop kind 5i32
+            inl base = if last = "" then "cell" else last
+            inl n = count_row used base
+            inl derived = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
+            if derived = name then name_tested rest last (Row (base, used)) (Cell ("spiral", source, acc))
+            else
+                inl heading_source = "#### " ++ name ++ " (test)"
+                inl heading = heading_test_name heading_source
+                name_tested rest heading (Row (heading, used)) (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
+        else name_tested rest last used (Cell (kind, source, acc))
+
+inl spi_cells (src : string) (real_mode : bool) (acc : cells) : cells =
+    spi_walk (text.replace src "\r\n" "\n") 0i32 Between NoRow real_mode acc
 
 inl from_spi (spi : string) (spir : string) : string =
-    wire (source_cells spi false (source_cells spir true NoCell))
+    wire (name_tested (rev_cells (spi_cells spi false (spi_cells spir true NoCell)) NoCell) "" NoRow NoCell)

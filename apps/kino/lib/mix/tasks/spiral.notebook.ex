@@ -1,7 +1,7 @@
 defmodule Mix.Tasks.Spiral.Notebook do
   use Mix.Task
 
-  @shortdoc "Run a Spiral .livemd notebook through Livebook"
+  @shortdoc "Run a Spiral notebook (.livemd, or a .spi with its _real.spir) through Livebook"
 
   @impl Mix.Task
   def run(args) do
@@ -16,7 +16,9 @@ defmodule Mix.Tasks.Spiral.Notebook do
           spi_path: :string,
           spir_path: :string,
           fs_path: :string,
+          livemd_path: :string,
           export_only: :boolean,
+          with_tests: :boolean,
           html: :boolean,
           spi: :boolean
         ]
@@ -29,7 +31,9 @@ defmodule Mix.Tasks.Spiral.Notebook do
            spi_path: opts[:spi_path],
            spir_path: opts[:spir_path],
            fs_path: opts[:fs_path],
+           livemd_path: opts[:livemd_path],
            export_only: opts[:export_only] == true,
+           with_tests: opts[:with_tests] == true,
            html: opts[:html] != false,
            spi: opts[:spi] != false
          ) do
