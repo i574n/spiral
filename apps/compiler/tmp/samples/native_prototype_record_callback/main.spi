@@ -1,0 +1,40 @@
+nominal state =
+    {
+        position : i32
+        velocity : i32
+    }
+
+nominal delta =
+    {
+        position : i32
+        velocity : i32
+    }
+
+prototype shift s : forall ds. ds -> s -> s
+
+instance shift state = fun ds (state s) =>
+    inl dposition, dvelocity =
+        real
+            match ds with
+            | delta d => d.position, d.velocity
+            | state d => d.position, d.velocity
+    state {
+        position = s.position +. dposition
+        velocity = s.velocity +. dvelocity
+    }
+
+inl advance forall s {shift} ds. (derive : s -> ds) (current : s) : s =
+    shift (join derive current) current
+
+inl main () : i32 =
+    inl initial = state { position = 10i32; velocity = 20i32 }
+    inl ~bias = 1i32
+    inl ~derive =
+        (fun (state s) =>
+            delta {
+                position = s.position -. 8i32 +. bias
+                velocity = s.velocity -. 18i32
+            }
+        ) : state -> delta
+    inl (state next) = advance derive initial
+    next.position +. next.velocity +. 7i32

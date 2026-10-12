@@ -1,0 +1,29 @@
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+nominal cancelled = ()
+
+nominal nfe_draft = { id : string; emit : string; dest : string }
+nominal nfe_signed = { xml : string; digest : string }
+nominal nfe_authorized = { xml : string; protocol : string }
+nominal nfe_cancelled = { xml : string; reason : string }
+
+union document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+inl sign (document : document draft) : document signed =
+    match document with
+    | Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+
+inl authorize (document : document signed) : document authorized =
+    match document with
+    | Signed payload => Authorized (nfe_authorized { xml = payload.xml; protocol = "135240000000001" })
+
+inl main () : string =
+    inl draft = Draft (nfe_draft { id = "1"; emit = "A"; dest = "B" })
+    inl authorized = authorize (sign draft)
+    match authorized with
+    | Authorized payload => payload.protocol

@@ -1,0 +1,25 @@
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl inner_pair = n, word
+    inl inner = !!!!LayoutToHeap({value = inner_pair})
+    inl ~extra = 1i32
+    inl mid_pair = inner, extra
+    inl mid = !!!!LayoutToHeap({value = mid_pair})
+    inl ~mark = 2i32
+    inl outer_pair = mid, mark
+    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl f (z : i32) : heap {value : (heap {value : (heap {value : i32 * string}) * i32}) * i32} =
+        if z =. 0i32 then
+            outer
+        else
+            outer
+    inl ~g = f
+    inl held = g 1i32
+    inl opened = !!!!LayoutIndex(held)
+    inl ~(mid_held, flag) = opened.value
+    inl mid_opened = !!!!LayoutIndex(mid_held)
+    inl ~(inner_held, count) = mid_opened.value
+    inl inner_opened = !!!!LayoutIndex(inner_held)
+    inl ~(left, right) = inner_opened.value
+    if left =. 7i32 && !!!!EQ(right, "hi") && count =. 1i32 && flag =. 2i32 then 0i32 else 1i32

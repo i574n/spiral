@@ -1,0 +1,16 @@
+nominal signer_a = ()
+nominal signer_b = ()
+nominal key_a = ()
+nominal key_b = ()
+nominal root_digest = ()
+nominal epoch0 = ()
+nominal epoch1 = ()
+nominal verified = ()
+union root_vote signer key root epoch state = | RootVote :: forall signer key root epoch state. string -> root_vote signer key root epoch state
+union distinct left right = | SignerAB :: distinct signer_a signer_b
+union root_quorum root epoch left right = | RootQuorum :: forall root epoch left right. string -> root_quorum root epoch left right
+inl form forall left right key_left key_right root epoch. (first : root_vote left key_left root epoch verified) (second : root_vote right key_right root epoch verified) (proof : distinct left right) : root_quorum root epoch left right = RootQuorum "quorum"
+inl main () =
+    inl first : root_vote signer_a key_a root_digest epoch1 verified = RootVote "a"
+    inl stale : root_vote signer_b key_b root_digest epoch0 verified = RootVote "b"
+    form first stale SignerAB

@@ -1,0 +1,2 @@
+inl main () : i32 = real
+    $"spiral_abi_libm_cabs_pack(3,4)" : i32

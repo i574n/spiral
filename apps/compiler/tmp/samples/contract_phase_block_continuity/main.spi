@@ -1,0 +1,17 @@
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal pos0 = ()
+nominal pos1 = ()
+nominal pos2 = ()
+nominal phase_set_a = ()
+
+union phase_block sample build contig start finish phase_set = | PhaseBlock :: forall sample build contig start finish phase_set. string -> phase_block sample build contig start finish phase_set
+
+inl append forall sample build contig start middle finish phase_set. (left : phase_block sample build contig start middle phase_set) (right : phase_block sample build contig middle finish phase_set) : phase_block sample build contig start finish phase_set =
+    match left, right with | PhaseBlock _, PhaseBlock _ => PhaseBlock "phase-block-contiguous"
+
+inl main () : string =
+    inl left : phase_block sample_a hg38 chr1 pos0 pos1 phase_set_a = PhaseBlock "left"
+    inl right : phase_block sample_a hg38 chr1 pos1 pos2 phase_set_a = PhaseBlock "right"
+    match append left right with | PhaseBlock label => label

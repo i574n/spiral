@@ -3,9 +3,8 @@ open leptos
 open rust
 
 inl render (class : () -> string) text =
-    inl class = class |> rust.emit
     pre [
-        $'"class=move || \\\"[padding:1px] [font-size:12px] [line-height:12px] [text-wrap:pretty] \\\".to_owned() + &!class(())"'
+        class_fn "[padding:1px] [font-size:12px] [line-height:12px] [text-wrap:pretty] " class
     ] fun () =>
         text
         |> text_fragment

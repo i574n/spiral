@@ -1,0 +1,12 @@
+inl main () : i32 =
+    inl ~frames = 60i32
+    inl ~big = -9000000000i64
+    inl ~byte = 200u8
+    inl ~name = "cube"
+    !!!!Printf("%s: %d frames, checksum %d\n", name, frames, 970392i32)
+    !!!!Printf("big %d, small %d, byte %d\n", big, -5i32, byte)
+    !!!!Printf("100%% {braces} \"quoted\" \\ tab\tend\n")
+    !!!!Printf("%s\n", "literal")
+    !!!!Printf("%s", name)
+    !!!!Printf("\n")
+    0i32

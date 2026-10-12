@@ -1,0 +1,37 @@
+inl main () : i32 =
+    inl ~n = 1i32
+    inl ~word = "no"
+    inl left_pair = n, word
+    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl ~m = 2i32
+    inl ~other = "zz"
+    inl mid_pair = m, other
+    inl mid_heap = !!!!LayoutToHeap({value = mid_pair})
+    inl ~k = 3i32
+    inl ~tail = "aa"
+    inl right_pair = k, tail
+    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl slot : mut {value : heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string}} = !!!!LayoutToHeapMutable({value = left_heap, mid_heap, right_heap})
+    inl ~a0 = 7i32
+    inl ~b0 = "hi"
+    inl next_left_pair = a0, b0
+    inl next_left = !!!!LayoutToHeap({value = next_left_pair})
+    inl ~c0 = 4i32
+    inl ~d0 = "yo"
+    inl next_mid_pair = c0, d0
+    inl next_mid = !!!!LayoutToHeap({value = next_mid_pair})
+    inl ~e0 = 9i32
+    inl ~h0 = "ok"
+    inl next_right_pair = e0, h0
+    inl next_right = !!!!LayoutToHeap({value = next_right_pair})
+    inl replaced = next_left, next_mid, next_right
+    slot <- {value = replaced}
+    inl opened = !!!!LayoutIndex(slot)
+    inl ~(left, mid, right) = opened.value
+    inl left_opened = !!!!LayoutIndex(left)
+    inl ~(a, b) = left_opened.value
+    inl mid_opened = !!!!LayoutIndex(mid)
+    inl ~(c, d) = mid_opened.value
+    inl right_opened = !!!!LayoutIndex(right)
+    inl ~(e, h) = right_opened.value
+    if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && e =. 9i32 && !!!!EQ(h, "ok") then 0i32 else 1i32

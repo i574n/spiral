@@ -1,0 +1,5 @@
+packageDir: ..
+packages:
+    antimirov_typed_slot_bound-
+modules:
+    main

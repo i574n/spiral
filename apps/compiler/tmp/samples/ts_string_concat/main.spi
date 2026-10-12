@@ -1,0 +1,15 @@
+let choose_left (flag : bool) : string =
+    if flag then "spi" else "bad"
+
+let choose_right (flag : bool) : string =
+    if flag then "bad" else "ral"
+
+inl main () =
+    inl left = choose_left true
+    inl right = choose_right false
+    inl value = sm.concat left right
+    if (=.) (sm.length value : i32) 6i32 then
+        if (=.) (sm.index value 0i32) 's' then
+            if (=.) (sm.index value 5i32) 'l' then 0i32 else 1i32
+        else 2i32
+    else 3i32

@@ -1,0 +1,14 @@
+union rec managed_list =
+    | Nil
+    | Cons : array i32 * managed_list
+
+let rec sum xs : i32 =
+    match xs with
+    | Nil => 0i32
+    | Cons (values, tail) => length values +. sum tail
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~shared : array i32 = create n
+    inl xs = Cons (shared, Cons (shared, Nil))
+    sum xs -. 4i32

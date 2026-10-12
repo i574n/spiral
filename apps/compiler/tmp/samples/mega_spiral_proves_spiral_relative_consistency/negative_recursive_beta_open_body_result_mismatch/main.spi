@@ -1,0 +1,11 @@
+open main
+
+inl impossible_recursive_beta_open_body_result_mismatch () : exact_linear_indexed_term (exact_linear_free_context_extend exact_linear_free_context_empty exact_linear_bool_type) (exact_linear_indexed_usage_used exact_linear_indexed_usage_empty) exact_linear_bool_type =
+    exact_linear_indexed_closed_recursive_beta_derivation_open_body
+        (ExactLinearIndexedClosedRecursiveBetaDerivationTensorLeftUnit (
+            ExactLinearIndexedClosedRecursiveBetaDerivationBound (
+                ExactLinearIndexedBoolTrue (ExactLinearIndexedAllUnusedEmpty "the-negative-argument-is-closed", "the-negative-open-body-binds-Bool"),
+                "the-negative-open-body-binds-Bool"),
+            "the-negative-open-body-really-returns-Tensor-Bool-Unit"))
+
+inl main () = impossible_recursive_beta_open_body_result_mismatch ()

@@ -1,4 +1,6 @@
 /// # util
+test util static =
+    open testing
 
 /// ### ski
 union rec ski =
@@ -15,3 +17,69 @@ inl rec eval ski =
     | App (K, x) => App (K, eval x)
     | App (f, x) => App (eval f, x) |> eval
     | _ => ski
+
+test ski =
+    eval I
+    |> _assert_eq I
+
+    App (I, I)
+    |> eval
+    |> _assert_eq I
+
+    App (I, App (I, I))
+    |> eval
+    |> _assert_eq I
+
+    App (App (I, I), I)
+    |> eval
+    |> _assert_eq I
+
+    App (App (App (I, I), I), I)
+    |> eval
+    |> _assert_eq I
+
+    eval K
+    |> _assert_eq K
+
+    App (K, I)
+    |> eval
+    |> _assert_eq (App (K, I))
+
+    App (K, K)
+    |> eval
+    |> _assert_eq (App (K, K))
+
+    App (App (K, I), K)
+    |> eval
+    |> _assert_eq I
+
+    App (App (K, K), I)
+    |> eval
+    |> _assert_eq K
+
+    App (App (App (App (K, K), I), S), K)
+    |> eval
+    |> _assert_eq S
+
+    eval S
+    |> _assert_eq S
+
+    App (App (App (S, I), I), I)
+    |> eval
+    |> _assert_eq I
+
+    App (App (App (S, K), K), I)
+    |> eval
+    |> _assert_eq I
+
+    App (App (App (S, K), I), (App (App (K, I), S)))
+    |> eval
+    |> _assert_eq I
+
+    App (App (K, S), App (I, App (App (App (S, K), S), I)))
+    |> eval
+    |> _assert_eq S
+
+    App (App (App (S, K), I), K)
+    |> eval
+    |> _assert_eq K

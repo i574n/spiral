@@ -1,0 +1,11 @@
+inl reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+inl capacity ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+inl main () : i32 =
+    inl ~xs : array i32 = create 0i32
+    join reserve xs 3i32
+    inl ~reserved = join capacity xs
+    reserved -. 4i32

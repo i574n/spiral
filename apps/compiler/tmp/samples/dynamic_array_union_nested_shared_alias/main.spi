@@ -1,0 +1,36 @@
+union payload =
+    | Empty
+    | Nested : array (array i32)
+
+let bump x : i32 =
+    match x with
+    | Empty => 0i32
+    | Nested outer =>
+        inl ~inner = index outer 0i32
+        inl ~value = index inner 0i32
+        set inner 0i32 (value +. 1i32)
+        0i32
+
+let score x : i32 =
+    match x with
+    | Empty => 0i32
+    | Nested outer =>
+        inl ~a = index outer 0i32
+        inl ~b = index outer 1i32
+        index a 0i32 +. index a 1i32 +. index b 0i32 +. index b 1i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~outer : array (array i32) = create n
+    inl ~left : array i32 = create n
+    inl ~right : array i32 = create n
+    set left 0i32 3i32
+    set left 1i32 4i32
+    set right 0i32 5i32
+    set right 1i32 6i32
+    set outer 0i32 left
+    set outer 1i32 right
+    inl first = Nested outer
+    inl bump_result = bump first
+    inl second = Nested outer
+    score second +. bump_result -. 19i32

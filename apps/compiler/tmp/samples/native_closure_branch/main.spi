@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl a = (fun z => z +. 2i32) : i32 -> i32
+    inl b = (fun z => z +. 3i32) : i32 -> i32
+    inl ~flag = true
+    inl ~g = if flag then a else b
+    join g 40i32

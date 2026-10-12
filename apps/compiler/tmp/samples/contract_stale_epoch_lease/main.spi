@@ -1,0 +1,30 @@
+nominal epoch_one = ()
+nominal epoch_two = ()
+nominal unbound = ()
+nominal bound = ()
+
+union authority epoch =
+    | AuthorityOne :: authority epoch_one
+    | AuthorityTwo :: authority epoch_two
+
+union lease epoch state =
+    | LeaseOneFresh :: lease epoch_one unbound
+    | LeaseTwoFresh :: lease epoch_two unbound
+    | LeaseOneBound :: lease epoch_one bound
+    | LeaseTwoBound :: lease epoch_two bound
+
+inl bind forall epoch.
+    (lease : lease epoch unbound)
+    (authority : authority epoch)
+    : lease epoch bound =
+    match lease with
+    | LeaseOneFresh =>
+        match authority with
+        | AuthorityOne => LeaseOneBound
+    | LeaseTwoFresh =>
+        match authority with
+        | AuthorityTwo => LeaseTwoBound
+
+inl main () : string =
+    inl _ = bind LeaseOneFresh AuthorityTwo
+    "unreachable"

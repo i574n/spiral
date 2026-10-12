@@ -1,0 +1,76 @@
+program SpiralGenerated;
+{$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
+type
+  TUS0 = record tag: LongInt;  end;
+function score_0(v0: TUS0): LongInt; forward;
+function US0_Cold: TUS0;
+begin
+  Result.tag := 0; 
+end;
+function US0_Warm: TUS0;
+begin
+  Result.tag := 1; 
+end;
+function US0_Hot: TUS0;
+begin
+  Result.tag := 2; 
+end;
+function US0_Done: TUS0;
+begin
+  Result.tag := 3; 
+end;
+function score_0(v0: TUS0): LongInt;
+begin
+  case v0.tag of
+      0: begin
+          Result := 1;
+      end;
+      3: begin
+          Result := 4;
+      end;
+      2: begin
+          Result := 3;
+      end;
+      1: begin
+          Result := 2;
+      end;
+  end;
+end;
+function SpiralMain: LongInt;
+var
+  v0: LongInt;
+  v1: Boolean;
+  v10: TUS0;
+  v3: Boolean;
+  v5: Boolean;
+  v11: LongInt;
+  v12: LongInt;
+begin
+  v0 := 3;
+  v1 := v0 = 0;
+  if v1 then begin
+      v10 := US0_Cold;
+  end else begin
+      v3 := v0 = 1;
+      if v3 then begin
+          v10 := US0_Warm;
+      end else begin
+          v5 := v0 = 2;
+          if v5 then begin
+              v10 := US0_Hot;
+          end else begin
+              v10 := US0_Done;
+          end;
+      end;
+  end;
+  v11 := score_0(v10);
+  v12 := v11 - 4;
+  Result := v12;
+end;
+var SpiralOutputBuffer: array[0..65535] of Char;
+begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  Halt(SpiralMain);
+end.

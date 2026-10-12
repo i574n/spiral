@@ -1,0 +1,61 @@
+nominal row = string
+nominal tenant_count = i32
+
+union rec query result =
+    | LookupUser :: string -> query row
+    | CountTenants :: string -> query tenant_count
+    | PairQuery :: forall left right. query left * query right -> query (left * right)
+    | MapQuery :: forall result. (exists input. query input * (input -> result)) -> query result
+
+inl rec describe forall result. (value : query result) : string =
+    match value with
+    | LookupUser _ => "lookup-user"
+    | CountTenants _ => "count-tenants"
+    | PairQuery (left, right) =>
+        inl _ = describe left
+        inl _ = describe right
+        "pair-query"
+    | MapQuery payload =>
+        inl exists input. inner, _ = payload
+        inl _ = describe inner
+        "map-query"
+
+nominal sql result = query result
+nominal cache result = query result
+nominal remote result = query result
+
+prototype run_query interpreter result : interpreter result -> string
+instance run_query sql = fun (sql value) => describe value
+instance run_query cache = fun (cache value) => describe value
+
+union packed_query =
+    | PackedSql :: (exists result. sql result * result) -> packed_query
+    | PackedCache :: (exists result. cache result * result) -> packed_query
+
+inl consume forall result. (_ : query result) (_ : result) : string = "result-hidden"
+
+inl with_packed forall output.
+    (visit : forall result. query result -> result -> output)
+    (value : packed_query) : output =
+    match value with
+    | PackedSql payload =>
+        inl exists result. wrapped, result_value = payload
+        match wrapped with sql query => visit query result_value
+    | PackedCache payload =>
+        inl exists result. wrapped, result_value = payload
+        match wrapped with cache query => visit query result_value
+
+inl query_value () : query (row * tenant_count) =
+    PairQuery (LookupUser "user-7", CountTenants "tenant-orbit")
+
+inl mapped_value () : query string =
+    MapQuery (exists (CountTenants "tenant-orbit", fun (_ : tenant_count) => "counted"))
+
+inl packed_value () : packed_query =
+    PackedSql (exists (sql (LookupUser "user-7"), row "row-7"))
+
+inl emit (_ : string) (_ : string) (_ : string) : string =
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n1\tplan\tlookup\tLookupUser\trequest\trow\t\tidempotent\tquery\t2\t\t\n1\tplan\tcount\tCountTenants\trequest\tcount\t\tidempotent\tquery\t2\t\t\n1\tplan\tpair\tPairQuery\trow-count\tpaired\tlookup,count\tidempotent\tcompose\t1\t\t\n1\tplan\tmap\tMapQuery\tcount\tmapped\tcount\tidempotent\tmap\t1\t\t\n1\treceipt\tlookup\tLookupUser\trequest\trow\t\t\t\t\tcommitted\t1\n1\treceipt\tcount\tCountTenants\trequest\tcount\t\t\t\t\tcommitted\t3\n1\treceipt\tpair\tPairQuery\trow-count\tpaired\t\t\t\t\tcommitted\t5\n1\treceipt\tmap\tMapQuery\tcount\tmapped\t\t\t\t\tcommitted\t7\n1\tevent\tlookup\tLookupUser\trequest\trow\t\t\t\t\tsuccess\t2\n1\tevent\tcount\tCountTenants\trequest\tcount\t\t\t\t\tsuccess\t4\n1\tevent\tpair\tPairQuery\trow-count\tpaired\t\t\t\t\tsuccess\t6\n1\tevent\tmap\tMapQuery\tcount\tmapped\t\t\t\t\tsuccess\t8\n"
+
+inl main () : string =
+    run_query (remote (LookupUser "user-7"))

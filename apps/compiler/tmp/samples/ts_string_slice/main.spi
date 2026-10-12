@@ -1,0 +1,11 @@
+let middle (x : string) : string =
+    inl bounds = { from = 1i32; to = 3i32 }
+    sm.slice x bounds
+
+inl main () =
+    inl result = middle "alpha"
+    if (=.) (sm.length result : i32) 3i32 then
+        if (=.) (sm.index result 0i32) 'l' then
+            if (=.) (sm.index result 2i32) 'h' then 0i32 else 1i32
+        else 2i32
+    else 3i32

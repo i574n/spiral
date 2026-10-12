@@ -1,0 +1,10 @@
+inl make ~x = {text = x; size = sm.length x}
+
+let score ~{text size} : i32 = sm.length text +. size
+
+inl main () =
+    inl ~x = "qwe"
+    inl state = join make x
+    inl a = score state
+    inl b = score state
+    (-.) ((+.) a b) 12i32

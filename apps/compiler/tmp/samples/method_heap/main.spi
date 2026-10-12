@@ -1,0 +1,8 @@
+inl pick (cell : heap {value : i32}) : heap {value : i32} = cell
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl box = !!!!LayoutToHeap({value = n})
+    inl held = join pick box
+    inl opened = !!!!LayoutIndex(held)
+    if opened.value =. 7i32 then 0i32 else 1i32

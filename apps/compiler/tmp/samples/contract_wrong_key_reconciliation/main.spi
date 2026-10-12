@@ -1,0 +1,22 @@
+nominal ui_scope = ()
+nominal item_key = ()
+nominal foreign_key = ()
+
+union keyed_child key value =
+    | KeyedChild :: forall key value. value -> keyed_child key value
+
+union mounted_list scope key =
+    | MountedList :: forall scope key. string -> mounted_list scope key
+
+inl reconcile forall scope key value.
+    (mounted : mounted_list scope key)
+    (child : keyed_child key value)
+    : mounted_list scope key =
+    match mounted, child with
+    | MountedList _, KeyedChild _ => MountedList "keyed-reconciled"
+
+inl main () : string =
+    inl mounted : mounted_list ui_scope item_key = MountedList "mounted"
+    inl child : keyed_child foreign_key i32 = KeyedChild 7
+    inl _ : mounted_list ui_scope item_key = reconcile mounted child
+    "unreachable"

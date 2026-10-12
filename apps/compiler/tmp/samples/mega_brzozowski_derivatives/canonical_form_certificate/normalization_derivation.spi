@@ -1,0 +1,229 @@
+open main
+
+nominal normalization_shape_empty = ()
+nominal normalization_shape_epsilon = ()
+nominal normalization_shape_char = ()
+nominal normalization_shape_alt left right = ()
+nominal normalization_shape_cat left right = ()
+nominal normalization_shape_star inner = ()
+
+union rec normalization_derivation alphabet shape =
+    | NormalizationDerivationEmpty :: forall alphabet. normalization_derivation alphabet normalization_shape_empty
+    | NormalizationDerivationEpsilon :: forall alphabet. normalization_derivation alphabet normalization_shape_epsilon
+    | NormalizationDerivationChar :: forall alphabet. alphabet -> normalization_derivation alphabet normalization_shape_char
+    | NormalizationDerivationAlt :: forall alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_alt left right)
+    | NormalizationDerivationCat :: forall alphabet left right. normalization_derivation alphabet left * normalization_derivation alphabet right -> normalization_derivation alphabet (normalization_shape_cat left right)
+    | NormalizationDerivationStar :: forall alphabet inner. normalization_derivation alphabet inner -> normalization_derivation alphabet (normalization_shape_star inner)
+
+union packed_normalization_derivation alphabet =
+    | PackedNormalizationDerivation : (exists shape. normalization_derivation alphabet shape)
+
+inl rec normalization_derivation_pack forall alphabet. (value : regex alphabet) : packed_normalization_derivation alphabet =
+    match value with
+    | RegexEmpty => PackedNormalizationDerivation (exists NormalizationDerivationEmpty)
+    | RegexEpsilon => PackedNormalizationDerivation (exists NormalizationDerivationEpsilon)
+    | RegexChar symbol => PackedNormalizationDerivation (exists (NormalizationDerivationChar symbol))
+    | RegexAlt (left, right) =>
+        match normalization_derivation_pack left, normalization_derivation_pack right with
+        | PackedNormalizationDerivation left_packed, PackedNormalizationDerivation right_packed =>
+            inl exists left_shape. left_derivation = left_packed
+            inl exists right_shape. right_derivation = right_packed
+            PackedNormalizationDerivation (exists (NormalizationDerivationAlt (left_derivation, right_derivation)))
+    | RegexCat (left, right) =>
+        match normalization_derivation_pack left, normalization_derivation_pack right with
+        | PackedNormalizationDerivation left_packed, PackedNormalizationDerivation right_packed =>
+            inl exists left_shape. left_derivation = left_packed
+            inl exists right_shape. right_derivation = right_packed
+            PackedNormalizationDerivation (exists (NormalizationDerivationCat (left_derivation, right_derivation)))
+    | RegexStar inner =>
+        match normalization_derivation_pack inner with
+        | PackedNormalizationDerivation packed =>
+            inl exists inner_shape. inner_derivation = packed
+            PackedNormalizationDerivation (exists (NormalizationDerivationStar inner_derivation))
+
+inl rec normalization_derivation_source forall alphabet shape. (derivation : normalization_derivation alphabet shape) : regex alphabet =
+    match derivation with
+    | NormalizationDerivationEmpty => RegexEmpty
+    | NormalizationDerivationEpsilon => RegexEpsilon
+    | NormalizationDerivationChar symbol => RegexChar symbol
+    | NormalizationDerivationAlt (left, right) => RegexAlt (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationCat (left, right) => RegexCat (normalization_derivation_source left, normalization_derivation_source right)
+    | NormalizationDerivationStar inner => RegexStar (normalization_derivation_source inner)
+
+let rec normalization_referee_alt_insert forall alphabet {symbol_compare}. (term : regex alphabet) (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => term
+    | RegexAlt (head, tail) =>
+        match regex_compare term head with
+        | SymbolLess => RegexAlt (term, value)
+        | SymbolSame => value
+        | SymbolGreater => RegexAlt (head, normalization_referee_alt_insert term tail)
+    | atom =>
+        match regex_compare term atom with
+        | SymbolLess => RegexAlt (term, atom)
+        | SymbolSame => atom
+        | SymbolGreater => RegexAlt (atom, term)
+
+let rec normalization_referee_alt forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    match left with
+    | RegexEmpty => right
+    | RegexAlt (head, tail) => normalization_referee_alt tail (normalization_referee_alt_insert head right)
+    | atom => normalization_referee_alt_insert atom right
+
+let rec normalization_referee_cat forall alphabet {symbol_compare}. (left : regex alphabet) (right : regex alphabet) : regex alphabet =
+    match right with
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => left
+    | _ =>
+        match left with
+        | RegexEmpty => RegexEmpty
+        | RegexEpsilon => right
+        | RegexStar left_inner =>
+            match right with
+            | RegexStar right_inner =>
+                if regex_equal left_inner right_inner then RegexStar left_inner else RegexCat (left, right)
+            | _ => RegexCat (left, right)
+        | RegexCat (head, tail) => RegexCat (head, normalization_referee_cat tail right)
+        | _ => RegexCat (left, right)
+
+inl normalization_referee_star forall alphabet. (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEpsilon
+    | RegexEpsilon => RegexEpsilon
+    | RegexStar inner => RegexStar inner
+    | atom => RegexStar atom
+
+let rec normalization_referee forall alphabet {symbol_compare}. (value : regex alphabet) : regex alphabet =
+    match value with
+    | RegexEmpty => RegexEmpty
+    | RegexEpsilon => RegexEpsilon
+    | RegexChar symbol => RegexChar symbol
+    | RegexAlt (left, right) => normalization_referee_alt (normalization_referee left) (normalization_referee right)
+    | RegexCat (left, right) => normalization_referee_cat (normalization_referee left) (normalization_referee right)
+    | RegexStar inner => normalization_referee_star (normalization_referee inner)
+
+inl normalization_referee_language_law forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (input : linear_input alphabet)
+    : bool =
+    input_list_set_equal
+        (language_remainders value input)
+        (language_remainders (normalization_referee value) input)
+
+let rec normalization_referee_language_law_suffixes forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    match suffixes with
+    | InputListNil => true
+    | InputListCons (suffix, rest) =>
+        if normalization_referee_language_law value suffix then
+            normalization_referee_language_law_suffixes value rest
+        else false
+
+let rec normalization_referee_language_law_corpus forall alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (suffixes : input_list alphabet)
+    : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        if normalization_referee_language_law_suffixes value suffixes then
+            normalization_referee_language_law_corpus rest suffixes
+        else false
+
+nominal normalization_structural_certificate alphabet =
+    packed_normalization_derivation alphabet * regex alphabet * regex alphabet
+
+nominal normalization_equal_capability alphabet = regex alphabet -> regex alphabet -> bool
+
+inl normalization_equal_capability_default forall alphabet {symbol_compare}. : normalization_equal_capability alphabet =
+    normalization_equal_capability regex_equal
+
+inl normalization_structural_certificate_make forall alphabet {symbol_compare}.
+    (value : regex alphabet) : normalization_structural_certificate alphabet =
+    normalization_structural_certificate (
+        normalization_derivation_pack value,
+        normalization_referee value,
+        normalize value)
+
+inl normalization_structural_certificate_valid forall alphabet {symbol_compare}.
+    (claimed_source : regex alphabet)
+    (certificate : normalization_structural_certificate alphabet) : bool =
+    inl expected_referee = normalization_referee claimed_source
+    inl expected_production = normalize claimed_source
+    inl equal_capability : normalization_equal_capability alphabet = normalization_equal_capability_default
+    match certificate with
+    | normalization_structural_certificate (packed, referee, production) =>
+        inl value_agreement =
+            regex_equal referee expected_referee &&
+            regex_equal production expected_production &&
+            regex_equal referee production
+        match equal_capability, packed with
+        | normalization_equal_capability equal, PackedNormalizationDerivation hidden =>
+            inl exists shape. derivation = hidden
+            value_agreement && equal claimed_source (normalization_derivation_source derivation)
+
+let rec normalization_structural_certificate_corpus forall alphabet {symbol_compare}.
+    (values : regex_list alphabet) : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        inl certificate = normalization_structural_certificate_make value
+        if normalization_structural_certificate_valid value certificate then
+            normalization_structural_certificate_corpus rest
+        else false
+
+inl main () : string =
+    inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    inl tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
+    inl bit_symbols = finite_alphabet_symbols bit_descriptor
+    inl tri_symbols = finite_alphabet_symbols tri_descriptor
+    inl bit_corpus = regex_corpus_depth_one bit_symbols
+    inl tri_corpus = regex_corpus_depth_one tri_symbols
+    inl bit_suffix_corpus = input_corpus_depth_two bit_symbols
+    inl tri_suffix_corpus = input_corpus_depth_two tri_symbols
+    assert_static
+        (normalization_referee_language_law_corpus bit_corpus bit_suffix_corpus)
+        "independent referee must preserve bit-language remainders over the structural corpus"
+    assert_static
+        (normalization_referee_language_law_corpus tri_corpus tri_suffix_corpus)
+        "independent referee must preserve ternary-language remainders over the structural corpus"
+    assert_static
+        (normalization_structural_certificate_corpus bit_corpus)
+        "every bit structural regex must bind a shape derivation and agree with the independent normalizer"
+    assert_static
+        (normalization_structural_certificate_corpus tri_corpus)
+        "every ternary structural regex must bind a shape derivation and agree with the independent normalizer"
+
+    inl source = RegexAlt (RegexChar (one ()), RegexChar (zero ()))
+    inl certificate = normalization_structural_certificate_make source
+    assert_static
+        (normalization_structural_certificate_valid source certificate)
+        "structural certificate must bind source, independent referee and production normalization"
+
+    inl epsilon_certificate : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate_make RegexEpsilon
+    assert_static
+        (bool_same (normalization_structural_certificate_valid RegexEmpty epsilon_certificate) false)
+        "certificate from another source must not validate"
+
+    inl forged_result : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate (
+            normalization_derivation_pack source,
+            normalization_referee source,
+            RegexEmpty)
+    assert_static
+        (bool_same (normalization_structural_certificate_valid source forged_result) false)
+        "forged production result must not validate"
+
+    inl forged_shape : normalization_structural_certificate bit_alphabet =
+        normalization_structural_certificate (
+            normalization_derivation_pack RegexEpsilon,
+            normalization_referee source,
+            normalize source)
+    assert_static
+        (bool_same (normalization_structural_certificate_valid source forged_shape) false)
+        "certificate with a derivation from another source must not validate"
+
+    "brzozowski-normalization-structural-derivation-green"

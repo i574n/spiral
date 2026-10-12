@@ -1,0 +1,4 @@
+inl bottom forall a. () : a =
+    $"Unchecked.defaultof<_>"
+
+inl main () = "forall-a-a-via-host-splice-defined"

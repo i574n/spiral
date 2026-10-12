@@ -1,0 +1,6 @@
+inl main () : i32 =
+    inl mixed_count = sm.utf8_validate "Aéλ🙂Z"
+    inl empty_count = sm.utf8_validate ""
+    if (=.) mixed_count 5i32 then
+        if (=.) empty_count 0i32 then 0i32 else 2i32
+    else 1i32

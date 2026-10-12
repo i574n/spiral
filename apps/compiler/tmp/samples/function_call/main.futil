@@ -1,0 +1,107 @@
+import "primitives/core.futil";
+import "primitives/binary_operators.futil";
+import "primitives/memories/comb.futil";
+component sp_method0(in0: 32, in1: 32) -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    v2 = std_reg(32);
+    op2 = std_add(32);
+    v3 = std_reg(32);
+    op4 = std_sub(32);
+  }
+  wires {
+    group g1 {
+      v0.in = in0;
+      v0.write_en = 1'd1;
+      v1.in = in1;
+      v1.write_en = 1'd1;
+      g1[done] = v0.done & v1.done ? 1'd1;
+    }
+    group g3 {
+      op2.left = v0.out;
+      op2.right = v1.out;
+      v2.in = op2.out;
+      v2.write_en = 1'd1;
+      g3[done] = v2.done;
+    }
+    group g5 {
+      op4.left = v2.out;
+      op4.right = 32'd42;
+      v3.in = op4.out;
+      v3.write_en = 1'd1;
+      g5[done] = v3.done;
+    }
+    group g6 {
+      spiral_ret.in = v3.out;
+      spiral_ret.write_en = 1'd1;
+      g6[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g3;
+      g5;
+      g6;
+    }
+  }
+}
+component spiral_main() -> (out: 32) {
+  cells {
+    spiral_tick = std_reg(1);
+    spiral_ret = std_reg(32);
+    v0 = std_reg(32);
+    v1 = std_reg(32);
+    c3 = sp_method0();
+  }
+  wires {
+    group g1 {
+      v0.in = 32'd20;
+      v0.write_en = 1'd1;
+      g1[done] = v0.done;
+    }
+    group g2 {
+      v1.in = 32'd22;
+      v1.write_en = 1'd1;
+      g2[done] = v1.done;
+    }
+    group g4 {
+      spiral_ret.in = c3.out;
+      spiral_ret.write_en = 1'd1;
+      g4[done] = spiral_ret.done;
+    }
+    out = spiral_ret.out;
+  }
+  control {
+    seq {
+      g1;
+      g2;
+      invoke c3(in0 = v0.out, in1 = v1.out)();
+      g4;
+    }
+  }
+}
+component main() -> () {
+  cells {
+    @external spiral_io = comb_mem_d1(32, 1, 1);
+    entry = spiral_main();
+  }
+  wires {
+    group spiral_store {
+      spiral_io.addr0 = 1'd0;
+      spiral_io.write_en = 1'd1;
+      spiral_io.write_data = entry.out;
+      spiral_store[done] = spiral_io.done;
+    }
+  }
+  control {
+    seq {
+      invoke entry()();
+      spiral_store;
+    }
+  }
+}

@@ -1,0 +1,15 @@
+nominal stripe_a = ()
+nominal shard_a = ()
+nominal shard_b = ()
+nominal available = ()
+nominal distinct = ()
+nominal recovered = ()
+union shard stripe identity state = | Shard :: forall stripe identity state. string -> shard stripe identity state
+union distinct_witness left right state = | Distinct :: forall left right state. string -> distinct_witness left right state
+union stripe stripe_id state = | Stripe :: forall stripe_id state. string -> stripe stripe_id state
+inl recover forall stripe_id left right. (left : shard stripe_id left available) (right : shard stripe_id right available) (proof : distinct_witness left right distinct) : stripe stripe_id recovered = Stripe "ok"
+inl main () =
+    inl left : shard stripe_a shard_a available = Shard "a"
+    inl duplicate : shard stripe_a shard_a available = Shard "a-again"
+    inl proof : distinct_witness shard_a shard_b distinct = Distinct "a-ne-b"
+    recover left duplicate proof

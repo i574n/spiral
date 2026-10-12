@@ -1,0 +1,3 @@
+inl rec bottom forall a. () : a = bottom ()
+
+inl main () = "forall-a-a-via-divergence-defined"

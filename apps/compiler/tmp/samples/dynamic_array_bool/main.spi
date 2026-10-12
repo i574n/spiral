@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~xs : array bool = create n
+    set xs 0i32 true
+    set xs 1i32 false
+    inl ~i = 0i32
+    if index xs i then 0i32 else 1i32

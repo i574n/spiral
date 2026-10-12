@@ -1,0 +1,4 @@
+union outcome_t =
+    | Idle
+    | Text : string
+    | Note : string

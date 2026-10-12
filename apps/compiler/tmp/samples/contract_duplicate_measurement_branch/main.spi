@@ -1,0 +1,18 @@
+nominal lineage_a = ()
+nominal zero = ()
+nominal one = ()
+
+union branch_result lineage bit =
+    | ZeroResult :: string -> branch_result lineage_a zero
+    | OneResult :: string -> branch_result lineage_a one
+
+inl merge_branches forall lineage.
+    (zero_result : branch_result lineage zero)
+    (one_result : branch_result lineage one)
+    : string =
+    match zero_result, one_result with
+    | ZeroResult _, OneResult _ => "joined"
+
+inl main () =
+    inl zero_result : branch_result lineage_a zero = ZeroResult "zero"
+    merge_branches zero_result zero_result

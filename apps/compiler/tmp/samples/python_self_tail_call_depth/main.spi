@@ -1,0 +1,11 @@
+let rec count_down (n : i32) (acc : i32) : i32 =
+    if !!!!LT(0i32, n) then
+        inl n' = !!!!Sub(n, 1i32)
+        inl acc' = !!!!Add(acc, 1i32)
+        count_down n' acc'
+    else acc
+
+inl main () : i32 =
+    inl ~n = 5000i32
+    inl total = count_down n 0i32
+    if !!!!EQ(total, 5000i32) then 0i32 else 1i32

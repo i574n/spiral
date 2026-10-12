@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl ~a = 6i32
+    inl ~b = 7i32
+    inl product = a *. b
+    if product =. 42i32 then 0i32 else 1i32

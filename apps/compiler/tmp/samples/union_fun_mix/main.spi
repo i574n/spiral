@@ -1,0 +1,18 @@
+union slot =
+    | None
+    | Call : (i32 -> i32) * i32
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Call (f, n) =>
+        inl ~g = f
+        if g 0i32 +. n =. 7i32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~k = 3i32
+    inl ~n = 4i32
+    inl add (x : i32) : i32 = x +. k
+    inl ~flag = true
+    inl held = if flag then Call (add, n) else None
+    score held

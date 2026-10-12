@@ -1,4 +1,6 @@
 /// # common
+test common static =
+    open testing
 
 /// ## common
 
@@ -14,7 +16,9 @@ inl retry_fn' retries fn =
         else
             trace Debug
                 fun () => "common.retry_fn\' / 루프"
-                fun () => { is_error retry = $'$"{!retry}/{!retries}"' : string; result }
+                fun () =>
+                    open sm'_operators
+                    { is_error retry = sm'.obj_to_string retry ++# "/" ++# sm'.obj_to_string retries; result }
             루프 (retry + 1)
     루프 1
 
@@ -44,14 +48,20 @@ type disposable_switch t =
         Gleam : $'Nil'
         Fsharp : $'System.IDisposable'
         Python : $'object'
+        Rust : $'Rc<dyn Fn()>'
+        TypeScript : $'() => void'
     }
 nominal disposable t = $'backend_switch `(disposable_switch t)'
 
 /// ### dispose
 inl dispose (disposable : disposable _) : () =
     backend_switch {
+        Gleam = fun () => $'// common.dispose' : ()
+        Lua = fun () => $'-- common.dispose' : ()
         Fsharp = fun () => disposable |> $'_.Dispose()' : ()
         Python = fun () => $'!disposable.__exit__(None, None, None)' : ()
+        Rust = fun () => $'(!disposable)()' : ()
+        TypeScript = fun () => $'(!disposable)()' : ()
     }
 
 /// ### yield
@@ -65,6 +75,10 @@ inl return forall t. (x : t) : () =
 /// ### return'
 inl return' forall t. (x : t) : t =
     $'return !x '
+
+/// ### return_in
+inl return_in forall t. (x : t) : t =
+    $'!x in return !x '
 
 /// ### retry_fn
 inl retry_fn forall t. retries (fn : () -> t) : option t =
@@ -84,27 +98,59 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
             | None => 루프 (retry + 1)
     루프 0
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test retry_fn =
+    inl retry_fn_test = mut 0i32
+    fun () =>
+        retry_fn_test <- *retry_fn_test + 1
+        *retry_fn_test
+    |> retry_fn 3i32
+    |> _assert_eq' (Some 1i32)
+
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test retry_fn_2 =
+    inl retry_fn_test = mut 0i32
+    fun () =>
+        if *retry_fn_test >= 2
+        then *retry_fn_test
+        else
+            retry_fn_test <- *retry_fn_test + 1
+            failwith "test"
+    |> retry_fn 3i32
+    |> _assert_eq' (Some 2i32)
+
 /// ## common
 
 /// ### random'
 inl random' forall t. (min : t) (max : t) : t =
     run_target function
-        | Rust (Contract) => fun () =>
-            failwith "common.random' / target=Rust(Contract)"
-        | Rust _ => fun () =>
+        | Rust => fun () =>
             open rust.rust_operators
-            !\\((min, max), $'"rand::Rng::gen_range(&mut rand::thread_rng(), $0..$1)"')
+            !\\((min, max), $'"{ use std::sync::atomic::{AtomicU64, Ordering}; use std::hash::{BuildHasher, Hasher}; static SPIRAL_NATIVE_RNG: AtomicU64 = AtomicU64::new(0); let mut x = SPIRAL_NATIVE_RNG.load(Ordering::Relaxed); if x == 0 { let mut h = std::collections::hash_map::RandomState::new().build_hasher(); h.write_u128(std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)); x = h.finish() | 1; } x ^= x << 13; x ^= x >> 7; x ^= x << 17; SPIRAL_NATIVE_RNG.store(x, Ordering::Relaxed); let span = ($1 as i128) - ($0 as i128); let n = if span <= 0 { 0 } else { (x as i128) % span }; (($0 as i128) + n) as _ }"')
+        | Cuda _ => fun () =>
+            global "import random"
+            $'random.randrange(!min, !max)' : t
+        | TypeScript => fun () =>
+            $'(() => { const a = Number(!min), b = Number(!max); const r = a + Math.floor(Math.random() * Math.max(0, b - a)); return (typeof !min === "bigint" ? BigInt(r) : r); })()' : t
         | _ => fun () =>
-            random () |> random_next (i32 min) (i32 max) |> convert
+            random () |> random_next (convert.i32 min) (convert.i32 max) |> convert.convert
 
 /// ### new_disposable
 inl new_disposable (fn : () -> ()) : disposable _ =
     run_target function
-        | Rust _ => fun () =>
-            global "type Disposable (f : unit -> unit) = interface System.IDisposable with member _.Dispose () = f ()"
+        | Rust => fun () =>
+            open rust.rust_operators
+            !\\(fn, $'"$0.clone()"') : disposable _
+        | TypeScript => fun () =>
             inl fn = join fn
-            $'new Disposable (fun () -> Fable.Core.RustInterop.emitRustExpr !fn "$0()" )'
-        | Fsharp _ | TypeScript _ | Python _ => fun () =>
+            $'!fn ' : disposable _
+        | Fsharp _ => fun () =>
             inl fn = join fn
             $'{ new System.IDisposable with member _.Dispose () = !fn () }'
         | Cuda _ => fun () =>
@@ -117,7 +163,47 @@ inl new_disposable (fn : () -> ()) : disposable _ =
             $'Disposable(!fn)'
         | _ => fun () => null ()
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test new_disposable =
+    inl new_disposable_test = mut 0i32
+    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+    |> fun x => x : disposable ()
+    |> dispose
+    *new_disposable_test |> _assert_eq 1
+
+///> fsharp
+test new_disposable_2 =
+    inl new_disposable_test = mut 0i32
+    fun () =>
+        new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+        |> fun x => x : disposable ()
+        |> use
+        |> ignore
+        |> return
+    |> async.new_task
+    |> async.await_task
+    |> async.run_synchronously
+    *new_disposable_test |> _assert_eq 1
+
+///> fsharp
+test new_disposable_3 =
+    inl new_disposable_test = mut 0i32
+    fun () =>
+        new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+        |> fun x => x : disposable ()
+        |> ignore
+        |> return
+    |> async.new_task
+    |> async.await_task
+    |> async.run_synchronously
+    *new_disposable_test |> _assert_eq 0
+
 /// ## main
+///> fsharp
+
 inl main () =
     init_trace_state None
     inl new_disposable x : _ () = new_disposable x

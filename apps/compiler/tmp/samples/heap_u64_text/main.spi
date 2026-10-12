@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~n = 4294967297u64
+    inl ~word = "hi"
+    inl pair = n, word
+    inl box = !!!!LayoutToHeap({value = pair})
+    inl opened = !!!!LayoutIndex(box)
+    inl ~(left, right) = opened.value
+    if left =. 4294967297u64 && !!!!EQ(right, "hi") then 0i32 else 1i32

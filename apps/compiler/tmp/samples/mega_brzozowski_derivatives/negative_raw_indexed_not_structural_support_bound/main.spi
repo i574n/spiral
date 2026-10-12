@@ -1,0 +1,7 @@
+open main
+open indexed_assignment
+open injective_bound
+
+inl main () : bool =
+    require_antimirov_structural_support_bound
+        (two_bit_support_vector_for_certificate ())

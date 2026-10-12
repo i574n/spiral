@@ -1,0 +1,13 @@
+nominal signer_a = ()
+nominal signer_b = ()
+nominal key_a = ()
+nominal key_b = ()
+nominal digest_a = ()
+nominal verified = ()
+union public_signature signer key digest state = | Signature :: forall signer key digest state. string -> public_signature signer key digest state
+union distinct left right = | SignerAB :: distinct signer_a signer_b
+union quorum digest left right = | Quorum :: forall digest left right. string -> quorum digest left right
+inl authorize forall left right key_left key_right digest. (first : public_signature left key_left digest verified) (second : public_signature right key_right digest verified) (proof : distinct left right) : quorum digest left right = Quorum "quorum"
+inl main () =
+    inl first : public_signature signer_a key_a digest_a verified = Signature "a"
+    authorize first first SignerAB

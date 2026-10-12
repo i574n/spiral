@@ -1,0 +1,16 @@
+open main
+open positioned_bound
+open indexed_assignment
+open injective_bound
+
+inl main () : bool =
+    inl positioned :
+        antimirov_positioned_regex bit_alphabet bit_ends_with_zero_shape =
+        antimirov_positioned_regex_from_tree (bit_ends_with_zero_position_tree ())
+    inl forged :
+        antimirov_structural_support_bound bit_alphabet bit_ends_with_zero_shape one_support_count =
+        antimirov_structural_support_bound (
+            positioned,
+            one_bit_support_vector_for_control (),
+            one_bit_slot_assignment_for_control ())
+    require_antimirov_structural_support_bound forged

@@ -1,0 +1,3 @@
+open main
+inl main () : bool =
+    require_exact_quotient_coverage_count (two_bit_states ()) (one_coverage_for_two_representatives ())

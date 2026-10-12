@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-union-forward-identity"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/union_forward_identity.rs"

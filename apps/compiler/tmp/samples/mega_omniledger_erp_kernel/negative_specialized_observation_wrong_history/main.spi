@@ -1,0 +1,14 @@
+open main
+
+inl impossible_specialized_observation_wrong_history () =
+    inl empty_history, recorded_history = typed_fx_hashed_statement_closed_history_values ()
+    decide_typed_fx_hashed_statement_closed_fact_observation
+        recorded_history
+        (TypedFxHashedStatementClosedFactPosition
+            (TypedFxHashedStatementClosedPositionFactEmptyAtZero (
+                TypedFxStatementExpectedStreamPosition (
+                    TypedFxStatementStreamPositionZeroValue,
+                    "the-empty-at-zero-observation-cannot-decide-the-recorded-history"))))
+
+inl main () =
+    impossible_specialized_observation_wrong_history ()

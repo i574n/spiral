@@ -1,0 +1,18 @@
+nominal cell_array = array_base (mut {q : i32})
+
+inl create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(mut {q : i32}), n)
+inl get (array : cell_array) (i : i32) : mut {q : i32} =
+    match array with
+    | cell_array values => !!!!ArrayIndex(values, i)
+inl set (array : cell_array) (i : i32) (value : mut {q : i32}) : () =
+    match array with
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+inl main () : i32 =
+    inl a = create 1i32
+    inl cell = !!!!LayoutToHeapMutable({q = 1i32})
+    set a 0i32 cell
+    inl held = get a 0i32
+    held <- {q = 7i32}
+    inl opened = !!!!LayoutIndex(held)
+    if opened.q =. 7i32 then 0i32 else 1i32

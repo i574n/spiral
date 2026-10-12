@@ -1,0 +1,16 @@
+nominal scope_a = ()
+nominal epoch0 = ()
+nominal epoch1 = ()
+nominal host_a = ()
+nominal staged = ()
+nominal committed = ()
+nominal current = ()
+union dom_tree scope epoch state = | DomTree :: forall scope epoch state. string -> dom_tree scope epoch state
+union mutation_batch scope epoch host state = | Mutations :: forall scope epoch host state. string -> mutation_batch scope epoch host state
+union commit_ticket scope epoch host state = | Ticket :: forall scope epoch host state. string -> commit_ticket scope epoch host state
+inl commit forall scope epoch host. (tree : dom_tree scope epoch staged) (batch : mutation_batch scope epoch host staged) (ticket : commit_ticket scope epoch host current) : dom_tree scope epoch committed = DomTree "committed"
+inl main () =
+    inl tree : dom_tree scope_a epoch1 staged = DomTree "tree"
+    inl batch : mutation_batch scope_a epoch1 host_a staged = Mutations "batch"
+    inl stale : commit_ticket scope_a epoch0 host_a current = Ticket "stale"
+    commit tree batch stale

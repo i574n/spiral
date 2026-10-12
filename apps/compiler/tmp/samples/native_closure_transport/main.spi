@@ -1,0 +1,7 @@
+inl apply ~g ~x = join g x
+
+inl main () : i32 =
+    inl ~name = "abc"
+    inl f (z : i32) : i32 = sm.length name +. z
+    inl ~g = f
+    apply g 39i32

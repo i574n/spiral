@@ -1,0 +1,23 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal zero = ()
+nominal succ n = n
+
+union rec lt a b =
+    | LtZero :: forall n. lt zero (succ n)
+    | LtSucc :: forall a b. lt a b -> lt (succ a) (succ b)
+
+union interval build contig start finish =
+    | Interval :: forall build contig start finish. string * lt start finish -> interval build contig start finish
+
+inl create_interval forall build contig start finish.
+    (label : string)
+    (proof : lt start finish)
+    : interval build contig start finish =
+    Interval (label, proof)
+
+inl main () : string =
+    inl proof : lt zero (succ zero) = LtZero
+    inl interval : interval hg38 chr1 zero (succ zero) = create_interval "bounded-genome-interval" proof
+    match interval with
+    | Interval (label, _) => label

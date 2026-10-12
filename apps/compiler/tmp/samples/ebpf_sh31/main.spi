@@ -1,0 +1,9 @@
+inl main () : i32 =
+    inl ~u = 1u32
+    inl ~z = 0i32
+    inl ~s = 31i32
+    inl hi = !!!!ShiftLeft(u, s)
+    inl back = !!!!ShiftRight(hi, s)
+    inl same = !!!!ShiftLeft(u, z)
+    if hi =. 2147483648u32 && back =. 1u32 && same =. 1u32 then 0i32
+    else 1i32

@@ -1,0 +1,109 @@
+nominal universe_u = ()
+nominal type_a = ()
+nominal type_b = ()
+nominal type_c = ()
+nominal equiv_ab = ()
+nominal equiv_bc = ()
+nominal equiv_ac = ()
+nominal ua_ab = ()
+nominal ua_bc = ()
+nominal ua_ac = ()
+nominal family_p = ()
+nominal fiber_a = ()
+nominal fiber_b = ()
+nominal fiber_c = ()
+nominal transport_ab = ()
+nominal transport_bc = ()
+nominal transport_ac = ()
+nominal ua_triangle = ()
+nominal transport_triangle = ()
+
+union equivalence universe left right witness =
+    | Equivalence :: forall universe left right witness. string -> equivalence universe left right witness
+
+union inverse_law universe left right witness left_homotopy right_homotopy =
+    | InverseLaw :: forall universe left right witness left_homotopy right_homotopy.
+        equivalence universe left right witness * string -> inverse_law universe left right witness left_homotopy right_homotopy
+
+union universe_path universe left right equivalence_witness path_witness =
+    | UniversePath :: forall universe left right equivalence_witness path_witness.
+        equivalence universe left right equivalence_witness * string -> universe_path universe left right equivalence_witness path_witness
+
+union equivalence_composition universe left middle right ab bc ac =
+    | EquivalenceComposition :: forall universe left middle right ab bc ac.
+        equivalence universe left middle ab *
+        equivalence universe middle right bc *
+        equivalence universe left right ac *
+        string -> equivalence_composition universe left middle right ab bc ac
+
+union ua_composition_2cell universe left middle right ab bc ac path_ab path_bc path_ac filler =
+    | UaComposition2Cell :: forall universe left middle right ab bc ac path_ab path_bc path_ac filler.
+        equivalence_composition universe left middle right ab bc ac *
+        universe_path universe left middle ab path_ab *
+        universe_path universe middle right bc path_bc *
+        universe_path universe left right ac path_ac *
+        string -> ua_composition_2cell universe left middle right ab bc ac path_ab path_bc path_ac filler
+
+union family_fiber family type_id fiber_id =
+    | FamilyFiber :: forall family type_id fiber_id. string -> family_fiber family type_id fiber_id
+
+union ua_transport family universe left right equivalence_witness path_witness source target transport_witness =
+    | UaTransport :: forall family universe left right equivalence_witness path_witness source target transport_witness.
+        universe_path universe left right equivalence_witness path_witness *
+        family_fiber family left source *
+        family_fiber family right target *
+        string -> ua_transport family universe left right equivalence_witness path_witness source target transport_witness
+
+union transport_composition_2cell family universe left middle right ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler =
+    | TransportComposition2Cell :: forall family universe left middle right ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler.
+        ua_transport family universe left middle ab path_ab source middle_fiber transport_ab_w *
+        ua_transport family universe middle right bc path_bc middle_fiber target transport_bc_w *
+        ua_transport family universe left right ac path_ac source target transport_ac_w *
+        ua_composition_2cell universe left middle right ab bc ac path_ab path_bc path_ac ua_filler *
+        string -> transport_composition_2cell family universe left middle right ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler
+
+union packed_univalence_coherence family universe left middle right =
+    | PackedUnivalenceCoherence :: forall family universe left middle right.
+        (exists ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler.
+            transport_composition_2cell family universe left middle right ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler)
+        -> packed_univalence_coherence family universe left middle right
+
+inl with_univalence_coherence forall family universe left middle right result.
+    (visit : forall ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler.
+        transport_composition_2cell family universe left middle right ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler -> result)
+    (packed : packed_univalence_coherence family universe left middle right) : result =
+    match packed with
+    | PackedUnivalenceCoherence payload =>
+        inl exists ab bc ac path_ab path_bc path_ac source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler. proof = payload
+        visit proof
+
+inl eq_ab () : equivalence universe_u type_a type_b equiv_ab = Equivalence "A-equivalent-B"
+inl eq_bc () : equivalence universe_u type_b type_c equiv_bc = Equivalence "B-equivalent-C"
+inl eq_ac () : equivalence universe_u type_a type_c equiv_ac = Equivalence "A-equivalent-C"
+
+inl path_ab () : universe_path universe_u type_a type_b equiv_ab ua_ab = UniversePath (eq_ab (), "ua-ab")
+inl path_bc () : universe_path universe_u type_b type_c equiv_bc ua_bc = UniversePath (eq_bc (), "ua-bc")
+inl path_ac () : universe_path universe_u type_a type_c equiv_ac ua_ac = UniversePath (eq_ac (), "ua-ac")
+
+inl ua_coherence () : ua_composition_2cell universe_u type_a type_b type_c equiv_ab equiv_bc equiv_ac ua_ab ua_bc ua_ac ua_triangle =
+    UaComposition2Cell (EquivalenceComposition (eq_ab (), eq_bc (), eq_ac (), "compose-equivalences"), path_ab (), path_bc (), path_ac (), "ua-preserves-composition")
+
+inl transport_ab_proof () : ua_transport family_p universe_u type_a type_b equiv_ab ua_ab fiber_a fiber_b transport_ab =
+    UaTransport (path_ab (), FamilyFiber "fiber-a", FamilyFiber "fiber-b", "transport-ab")
+
+inl transport_bc_proof () : ua_transport family_p universe_u type_b type_c equiv_bc ua_bc fiber_b fiber_c transport_bc =
+    UaTransport (path_bc (), FamilyFiber "fiber-b", FamilyFiber "fiber-c", "transport-bc")
+
+inl transport_ac_proof () : ua_transport family_p universe_u type_a type_c equiv_ac ua_ac fiber_a fiber_c transport_ac =
+    UaTransport (path_ac (), FamilyFiber "fiber-a", FamilyFiber "fiber-c", "transport-ac")
+
+inl coherent_transport_triangle () : transport_composition_2cell family_p universe_u type_a type_b type_c equiv_ab equiv_bc equiv_ac ua_ab ua_bc ua_ac fiber_a fiber_b fiber_c transport_ab transport_bc transport_ac ua_triangle transport_triangle =
+    TransportComposition2Cell (transport_ab_proof (), transport_bc_proof (), transport_ac_proof (), ua_coherence (), "dependent-transport-composition")
+
+inl coherence_label forall ab bc ac path_ab' path_bc' path_ac' source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler.
+    (_ : transport_composition_2cell family_p universe_u type_a type_b type_c ab bc ac path_ab' path_bc' path_ac' source middle_fiber target transport_ab_w transport_bc_w transport_ac_w ua_filler transport_filler) : string =
+    "hott-univalence-transport-coherent"
+
+inl main () : string =
+    inl packed : packed_univalence_coherence family_p universe_u type_a type_b type_c = PackedUnivalenceCoherence (exists (coherent_transport_triangle ()))
+    with_univalence_coherence `$coherence_label packed

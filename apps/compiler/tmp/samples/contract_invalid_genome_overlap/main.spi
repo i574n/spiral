@@ -1,0 +1,31 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal start = ()
+nominal overlap_a = ()
+nominal overlap_b = ()
+nominal overlap_c = ()
+nominal finish = ()
+
+union kmer build contig left right =
+    | Kmer :: forall build contig left right. string -> kmer build contig left right
+
+union assembly_path build contig left right =
+    | AssemblyPath :: forall build contig left right. string -> assembly_path build contig left right
+
+inl singleton forall build contig left right.
+    (kmer : kmer build contig left right)
+    : assembly_path build contig left right =
+    match kmer with
+    | Kmer label => AssemblyPath label
+
+inl append forall build contig left middle right.
+    (path : assembly_path build contig left middle)
+    (next : kmer build contig middle right)
+    : assembly_path build contig left right =
+    match path, next with
+    | AssemblyPath _, Kmer label => AssemblyPath label
+
+inl main () : assembly_path hg38 chr1 start finish =
+    inl k1 : kmer hg38 chr1 start overlap_a = Kmer "ACGT"
+    inl k2 : kmer hg38 chr1 overlap_c finish = Kmer "TTAA"
+    append (singleton k1) k2

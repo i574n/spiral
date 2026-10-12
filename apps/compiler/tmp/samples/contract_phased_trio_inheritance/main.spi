@@ -1,0 +1,44 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal mother = ()
+nominal father = ()
+nominal child = ()
+nominal maternal_phase = ()
+nominal paternal_phase = ()
+nominal phased = ()
+
+union haplotype sample build contig phase =
+    | Haplotype :: forall sample build contig phase. string -> haplotype sample build contig phase
+
+union genotype sample build contig state =
+    | Genotype :: forall sample build contig state. string -> genotype sample build contig state
+
+union trio mother father child build contig =
+    | Trio :: forall mother father child build contig. string -> trio mother father child build contig
+
+inl establish_trio forall mother father child build contig.
+    (maternal : haplotype mother build contig maternal_phase)
+    (paternal : haplotype father build contig paternal_phase)
+    : trio mother father child build contig =
+    match maternal, paternal with
+    | Haplotype _, Haplotype _ => Trio "trio-established"
+
+inl inherit forall mother father child build contig.
+    (trio : trio mother father child build contig)
+    (maternal : haplotype mother build contig maternal_phase)
+    (paternal : haplotype father build contig paternal_phase)
+    : genotype child build contig phased =
+    match trio, maternal, paternal with
+    | Trio _, Haplotype _, Haplotype _ => Genotype "child-phased-inheritance"
+
+inl label forall sample build contig state.
+    (genotype : genotype sample build contig state)
+    : string =
+    match genotype with
+    | Genotype value => value
+
+inl main () : string =
+    inl maternal : haplotype mother hg38 chr1 maternal_phase = Haplotype "A"
+    inl paternal : haplotype father hg38 chr1 paternal_phase = Haplotype "G"
+    inl family : trio mother father child hg38 chr1 = establish_trio maternal paternal
+    label (inherit family maternal paternal)

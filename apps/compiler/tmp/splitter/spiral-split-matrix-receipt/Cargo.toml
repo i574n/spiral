@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-matrix-receipt"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/matrix_receipt.rs"

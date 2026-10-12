@@ -1,0 +1,30 @@
+nominal app_scope = ()
+nominal keys_before = ()
+nominal keys_after = ()
+nominal removed_b = ()
+nominal removed_c = ()
+nominal live = ()
+nominal disposed = ()
+
+union mounted scope keys state =
+    | Mounted :: forall scope keys state. string -> mounted scope keys state
+
+union diff old_keys new_keys removed =
+    | Diff :: forall old_keys new_keys removed. string -> diff old_keys new_keys removed
+
+union disposal scope removed state =
+    | Disposal :: forall scope removed state. string -> disposal scope removed state
+
+inl apply_patch forall scope removed.
+    (mounted : mounted scope keys_before live)
+    (diff : diff keys_before keys_after removed)
+    (proof : disposal scope removed disposed)
+    : mounted scope keys_after live =
+    match mounted, diff, proof with
+    | Mounted _, Diff _, Disposal _ => Mounted "patched"
+
+inl main () =
+    inl mounted : mounted app_scope keys_before live = Mounted "a,b"
+    inl diff : diff keys_before keys_after removed_b = Diff "remove-b"
+    inl wrong : disposal app_scope removed_c disposed = Disposal "c-disposed"
+    apply_patch mounted diff wrong

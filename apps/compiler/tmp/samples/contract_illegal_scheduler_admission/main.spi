@@ -1,0 +1,26 @@
+nominal pending = ()
+nominal ready = ()
+nominal committed = ()
+nominal q1 = ()
+nominal q2 = ()
+
+union validation_evidence status =
+    | ReadyValidation :: validation_evidence ready
+
+union receipt status =
+    | PendingReceipt :: receipt pending
+    | CommittedReceipt :: receipt committed
+
+union quorum state =
+    | OneApproval :: quorum q1
+    | TwoApprovals :: quorum q2
+
+inl publish
+    (evidence : validation_evidence ready)
+    (receipt : receipt committed)
+    (quorum : quorum q2)
+    : string =
+    "ok"
+
+inl main () : string =
+    publish ReadyValidation PendingReceipt OneApproval

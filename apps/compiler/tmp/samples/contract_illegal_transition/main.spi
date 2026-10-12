@@ -1,0 +1,20 @@
+nominal draft = ()
+nominal authorized = ()
+nominal cancelled = ()
+
+nominal nfe_draft = { id : string }
+nominal nfe_authorized = { xml : string; protocol : string }
+nominal nfe_cancelled = { xml : string; reason : string }
+
+union document state =
+    | Draft :: nfe_draft -> document draft
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+inl cancel (document : document authorized) : document cancelled =
+    match document with
+    | Authorized payload => Cancelled (nfe_cancelled { xml = payload.xml; reason = "requested" })
+
+inl main () =
+    inl draft = Draft (nfe_draft { id = "illegal" })
+    cancel draft

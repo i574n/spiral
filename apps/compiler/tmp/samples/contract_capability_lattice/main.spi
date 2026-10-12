@@ -1,0 +1,23 @@
+nominal missing = ()
+nominal present = ()
+
+union rec session cert endpoint quota =
+    | Empty :: session missing missing missing
+    | AddCert :: forall endpoint quota.
+        session missing endpoint quota
+        -> session present endpoint quota
+    | AddEndpoint :: forall cert quota.
+        session cert missing quota
+        -> session cert present quota
+    | AddQuota :: forall cert endpoint.
+        session cert endpoint missing
+        -> session cert endpoint present
+
+inl authorize (_ : session present present present) : string =
+    "capability-lattice"
+
+inl main () : string =
+    inl with_cert = AddCert Empty
+    inl with_endpoint = AddEndpoint with_cert
+    inl complete = AddQuota with_endpoint
+    authorize complete

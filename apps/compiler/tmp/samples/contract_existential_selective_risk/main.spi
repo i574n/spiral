@@ -1,0 +1,41 @@
+nominal low = ()
+nominal high = ()
+
+union risk level =
+    | LowRisk :: risk low
+    | HighRisk :: risk high
+
+union review level result =
+    | AutoApprove :: review low string
+    | ManualApprove :: string -> review high string
+
+union route result =
+    | Route :: forall result.
+        (exists level. risk level * review level result)
+        -> route result
+
+inl run_review forall level result.
+    (review : review level result)
+    : result =
+    match review with
+    | AutoApprove => "auto"
+    | ManualApprove _ => "manual"
+
+inl run_route forall result. (route : route result) : result =
+    match route with
+    | Route packed =>
+        inl exists level. risk_value, review_value = packed
+        run_review review_value
+
+inl describe (route : route string) : string =
+    match route with
+    | Route packed =>
+        inl exists level. risk_value, review_value = packed
+        inl _ = run_review review_value
+        "selective-risk-route"
+
+inl main () : string =
+    inl route : route string =
+        Route (exists (HighRisk, ManualApprove "auditor"))
+    inl _ = run_route route
+    describe route

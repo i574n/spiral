@@ -1,0 +1,23 @@
+nominal text_array = array_base string
+
+inl create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+inl get (array : text_array) (i : i32) : string =
+    match array with
+    | text_array values => !!!!ArrayIndex(values, i)
+inl set (array : text_array) (i : i32) (value : string) : () =
+    match array with
+    | text_array values => !!!!ArrayIndexSet(values, i, value)
+
+union slot =
+    | Missing
+    | Held : text_array
+
+inl main () : i32 =
+    inl a = create 1i32
+    inl ~word = "hi"
+    set a 0i32 word
+    inl ~flag = true
+    inl box = if flag then Held a else Missing
+    match box with
+    | Held values => if !!!!EQ(get values 0i32, "hi") then 0i32 else 1i32
+    | Missing => 1i32

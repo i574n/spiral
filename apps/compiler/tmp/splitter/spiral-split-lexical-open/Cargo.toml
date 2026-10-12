@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-lexical-open"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/lexical_open.rs"
+
+[dependencies]
+spiral-split-union-context.workspace = true

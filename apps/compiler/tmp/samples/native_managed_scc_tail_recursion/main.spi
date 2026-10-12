@@ -1,0 +1,18 @@
+union rec phase =
+    | Empty
+    | Step : i32 * phase
+
+inl rec keep ~n left right (value : string) : i32 =
+    if n =. 0i32 then
+        match left with
+        | Step (x, _) => if x =. 7i32 then (sm.length value : i32) else 99i32
+        | Empty => 98i32
+    else join keep (n -. 1i32) right left value
+
+inl main () : i32 =
+    inl empty = Empty
+    inl left = Step (7i32, empty)
+    inl right = Step (11i32, empty)
+    inl ~depth = 1000000i32
+    inl seed = if depth %. 2i32 =. 0i32 then "ok" else "go"
+    join keep depth left right seed -. 2i32

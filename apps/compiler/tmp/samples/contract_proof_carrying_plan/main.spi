@@ -1,0 +1,163 @@
+nominal production = ()
+nominal schema_v4 = ()
+nominal schema_v5 = ()
+nominal normal = ()
+nominal contingency = ()
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+nominal phase env schema state mode = env * schema * state * mode
+
+nominal nfe_draft = { id : string }
+nominal nfe_signed = { xml : string }
+nominal nfe_authorized = { protocol : string; schema_tag : string; reconciled : bool }
+
+union document index =
+    | DraftDocument :: forall env schema mode.
+        nfe_draft -> document (phase env schema draft mode)
+    | SignedDocument :: forall env schema mode.
+        nfe_signed -> document (phase env schema signed mode)
+    | AuthorizedDocument :: forall env schema mode.
+        nfe_authorized -> document (phase env schema authorized mode)
+
+union fiscal_op from to =
+    | Sign :: forall env schema mode.
+        fiscal_op
+            (phase env schema draft mode)
+            (phase env schema signed mode)
+    | EnterContingency :: forall env schema.
+        fiscal_op
+            (phase env schema signed normal)
+            (phase env schema signed contingency)
+    | AuthorizeContingency :: forall env schema.
+        fiscal_op
+            (phase env schema signed contingency)
+            (phase env schema authorized contingency)
+    | Reconcile :: forall env schema.
+        fiscal_op
+            (phase env schema authorized contingency)
+            (phase env schema authorized normal)
+    | MigrateV4V5 :: forall env state mode.
+        fiscal_op
+            (phase env schema_v4 state mode)
+            (phase env schema_v5 state mode)
+
+inl execute forall from to.
+    (operation : fiscal_op from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Sign, DraftDocument payload =>
+        SignedDocument (nfe_signed { xml = payload.id })
+    | EnterContingency, SignedDocument payload =>
+        SignedDocument payload
+    | AuthorizeContingency, SignedDocument _ =>
+        AuthorizedDocument (nfe_authorized {
+            protocol = "contingency"
+            schema_tag = "v4"
+            reconciled = false
+        })
+    | Reconcile, AuthorizedDocument payload =>
+        AuthorizedDocument (nfe_authorized {
+            protocol = payload.protocol
+            schema_tag = payload.schema_tag
+            reconciled = true
+        })
+    | MigrateV4V5, DraftDocument payload =>
+        DraftDocument payload
+    | MigrateV4V5, SignedDocument payload =>
+        SignedDocument payload
+    | MigrateV4V5, AuthorizedDocument payload =>
+        AuthorizedDocument (nfe_authorized {
+            protocol = payload.protocol
+            schema_tag = "v5"
+            reconciled = payload.reconciled
+        })
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl rec fold_chain
+    forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl rec map_chain
+    forall (left : * -> * -> *) (right : * -> * -> *) from to.
+    (transform : forall a b. left a b -> right a b)
+    (program : chain left from to)
+    : chain right from to =
+    match program with
+    | ChainStep atom => ChainStep (transform atom)
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        ChainCompose (exists (
+            map_chain `$transform first,
+            map_chain `$transform second
+        ))
+
+union audited_step from to =
+    | AuditedStep :: forall from to.
+        fiscal_op from to * string -> audited_step from to
+
+inl annotate forall from to.
+    (operation : fiscal_op from to)
+    : audited_step from to =
+    AuditedStep (operation, "typed-audit")
+
+inl execute_audited forall from to.
+    (step : audited_step from to)
+    (document : document from)
+    : document to =
+    match step with
+    | AuditedStep (operation, _) => execute operation document
+
+union trace index =
+    | Trace :: forall index. string -> trace index
+
+inl trace_audited forall from to.
+    (step : audited_step from to)
+    (trace : trace from)
+    : trace to =
+    match step, trace with
+    | AuditedStep _, Trace _ => Trace "proof-carrying-trace"
+
+inl plan () :
+    chain fiscal_op
+        (phase production schema_v4 draft normal)
+        (phase production schema_v5 authorized normal) =
+    ChainCompose (exists (
+        ChainStep Sign,
+        ChainCompose (exists (
+            ChainStep EnterContingency,
+            ChainCompose (exists (
+                ChainStep AuthorizeContingency,
+                ChainCompose (exists (
+                    ChainStep Reconcile,
+                    ChainStep MigrateV4V5
+                ))
+            ))
+        ))
+    ))
+
+inl main () : string =
+    inl raw : document (phase production schema_v4 draft normal) =
+        DraftDocument (nfe_draft { id = "NFE-13" })
+    inl audited_program = map_chain `$annotate (plan ())
+    inl final_document = fold_chain `$execute_audited audited_program raw
+    inl final_trace = fold_chain `$trace_audited audited_program (Trace "start")
+    match final_document, final_trace with
+    | AuthorizedDocument payload, Trace _ =>
+        if payload.reconciled then "proof-carrying-plan" else "invalid"

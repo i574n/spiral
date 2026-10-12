@@ -1,0 +1,42 @@
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal digest_a = ()
+nominal app_scope = ()
+nominal epoch1 = ()
+nominal sealed = ()
+nominal live = ()
+nominal hydrated = ()
+
+union chain_authority digest state =
+    | ChainAuthority :: forall digest state. string -> chain_authority digest state
+
+union genome_batch sample build contig digest =
+    | GenomeBatch :: forall sample build contig digest. string -> genome_batch sample build contig digest
+
+union resource scope epoch sample build contig digest state =
+    | Resource :: forall scope epoch sample build contig digest state. string -> resource scope epoch sample build contig digest state
+
+union view scope epoch digest state =
+    | View :: forall scope epoch digest state. string -> view scope epoch digest state
+
+inl publish forall scope epoch sample build contig digest.
+    (authority : chain_authority digest sealed)
+    (batch : genome_batch sample build contig digest)
+    : resource scope epoch sample build contig digest live =
+    match authority, batch with
+    | ChainAuthority _, GenomeBatch label => Resource label
+
+inl mount forall scope epoch sample build contig digest.
+    (resource : resource scope epoch sample build contig digest live)
+    (view : view scope epoch digest hydrated)
+    : string =
+    match resource, view with
+    | Resource _, View label => label
+
+inl main () : string =
+    inl authority : chain_authority digest_a sealed = ChainAuthority "chain-ok"
+    inl batch : genome_batch sample_a hg38 chr1 digest_a = GenomeBatch "variants"
+    inl view : view app_scope epoch1 digest_a hydrated = View "chain-sealed-genome-stream"
+    inl resource : resource app_scope epoch1 sample_a hg38 chr1 digest_a live = publish authority batch
+    mount resource view

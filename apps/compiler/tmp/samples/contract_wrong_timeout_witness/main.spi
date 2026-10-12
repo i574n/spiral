@@ -1,0 +1,26 @@
+nominal job_a = ()
+nominal job_b = ()
+nominal running = ()
+nominal escalated = ()
+
+union job id state =
+    | RunningA :: job job_a running
+    | RunningB :: job job_b running
+    | EscalatedA :: job job_a escalated
+    | EscalatedB :: job job_b escalated
+
+union timeout_witness id =
+    | TimeoutA :: timeout_witness job_a
+    | TimeoutB :: timeout_witness job_b
+
+inl escalate forall id.
+    (job : job id running)
+    (witness : timeout_witness id)
+    : job id escalated =
+    match job, witness with
+    | RunningA, TimeoutA => EscalatedA
+    | RunningB, TimeoutB => EscalatedB
+
+inl main () : string =
+    inl _ = escalate RunningA TimeoutB
+    "unreachable"

@@ -1,0 +1,106 @@
+#include <stdbool.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+typedef struct Fun0 Fun0;
+struct Fun0{
+    int refc;
+    void (*decref_fptr)(Fun0 *);
+    int32_t (*fptr)(Fun0 *, int32_t);
+};
+typedef struct Closure0 Closure0;
+struct Closure0 {
+    int refc;
+    void (*decref_fptr)(Closure0 *);
+    int32_t (*fptr)(Closure0 *, int32_t);
+    int32_t v0;
+};
+typedef struct {
+    int refc;
+    Fun0 * v0;
+    int32_t v1;
+} Heap0;
+static inline void ClosureDecrefBody0(Closure0 * x){
+    (void)x;
+}
+void ClosureDecref0(Closure0 * x){
+    if (x != NULL && --(x->refc) == 0) { ClosureDecrefBody0(x); free(x); }
+}
+int32_t add_c0(Closure0 * x, int32_t v1){
+    int32_t v0 = x->v0;
+    
+    ClosureDecref0(x);
+    
+    
+    int32_t v2;
+    v2 = v1 + v0;
+    
+    
+    return v2;
+}
+Fun0 * ClosureCreate0(int32_t v0){
+    Closure0 * x = malloc(sizeof(Closure0));
+    x->refc = 1;
+    x->decref_fptr = ClosureDecref0;
+    x->fptr = add_c0;
+    x->v0 = v0;
+    return (Fun0 *) x;
+}
+static inline void HeapDecrefBody0(Heap0 * x){
+    (x->v0)->decref_fptr(x->v0);
+}
+void HeapDecref0(Heap0 * x){
+    if (x != NULL && --(x->refc) == 0) { HeapDecrefBody0(x); free(x); }
+}
+Heap0 * HeapCreate0(Fun0 * v0, int32_t v1){
+    Heap0 * x = malloc(sizeof(Heap0));
+    x->refc = 1;
+    x->v0 = v0; x->v1 = v1;
+    return x;
+}
+int32_t main(){
+    
+    
+    int32_t v0;
+    v0 = 3l;
+    
+    
+    int32_t v1;
+    v1 = 4l;
+    
+    
+    Fun0 * v2;
+    v2 = ClosureCreate0(v0);
+    (v2)->refc++;
+    
+    Heap0 * v3;
+    v3 = HeapCreate0(v2, v1);
+    
+    (v2)->decref_fptr(v2);
+    Fun0 * v4; int32_t v5;
+    v4 = v3->v0; v5 = v3->v1;
+    (v4)->refc += 2;
+    HeapDecref0(v3);
+    int32_t v6;
+    v6 = v4->fptr(v4, 0l);
+    
+    (v4)->decref_fptr(v4);
+    int32_t v7;
+    v7 = v6 + v5;
+    
+    
+    bool v8;
+    v8 = v7 == 7l;
+    
+    
+    if (v8){
+        
+        
+        return 0l;
+    } else {
+        
+        
+        return 1l;
+    }
+}

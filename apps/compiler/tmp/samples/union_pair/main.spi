@@ -1,0 +1,14 @@
+union pair =
+    | One : i32
+    | Both : i32 * i32
+
+let sum x : i32 =
+    match x with
+    | One value => value
+    | Both (left, right) => left *. 10i32 +. right
+
+inl main () : i32 =
+    inl ~flag = true
+    inl both = if flag then Both (3i32, 4i32) else One 1i32
+    inl one = if flag then One 5i32 else Both (1i32, 1i32)
+    if sum both =. 34i32 && sum one =. 5i32 then 0i32 else 1i32

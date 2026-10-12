@@ -1,0 +1,8 @@
+inl main () : i32 =
+    console.write_line "hello"
+    console.write_line (dyn 42i32)
+    console.write "a"
+    console.write "b"
+    console.write_line ""
+    console.write_line (dyn (0i64 - 7i64))
+    0i32

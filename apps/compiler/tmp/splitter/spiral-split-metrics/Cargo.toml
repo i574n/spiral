@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-metrics"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/split_metrics.rs"
+
+[dependencies]
+spiral-split-model.workspace = true

@@ -1,0 +1,25 @@
+[package]
+name = "spiral-split-gears"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/gear_graph.rs"
+
+[dependencies]
+rayon.workspace = true
+spiral-split-model.workspace = true
+spiral-split-assembly-refs.workspace = true
+spiral-split-emit.workspace = true
+spiral-split-gear-bridge.workspace = true
+spiral-split-bridge-receipt.workspace = true
+spiral-split-generated-dependency.workspace = true
+spiral-split-gear-order.workspace = true
+spiral-split-anonymous-boundary.workspace = true
+spiral-split-contextual-constructor.workspace = true
+spiral-split-union-forward-identity.workspace = true
+spiral-split-gear-identity.workspace = true
+spiral-split-gear-scc.workspace = true
+spiral-split-gear-objective.workspace = true

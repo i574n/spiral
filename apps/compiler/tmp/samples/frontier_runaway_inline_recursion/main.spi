@@ -1,0 +1,6 @@
+/// An `inl` recursion whose bound is only known at run time never stops unrolling. Both cores must reject it with
+/// a source-located report (the cycle, the entry path, the fix) instead of running out of stack or time.
+inl rec loop (n : i32) (i : i32) : i32 =
+    if i >= n then i else loop n (i + 1)
+
+inl main () : i32 = loop (dyn 10i32) 0i32

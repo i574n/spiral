@@ -1,0 +1,11 @@
+id = "spiral"
+name = "Spiral"
+version = "0.1.0"
+schema_version = 1
+authors = ["Marko Grdinić", "i574n"]
+description = "Spiral language support for Zed: syntax highlighting, brackets, indents, and language server integration."
+repository = "https://github.com/i574n/The-Spiral-Language"
+
+[language_servers.spiral-lsp]
+name = "Spiral Language Server"
+languages = ["Spiral"]

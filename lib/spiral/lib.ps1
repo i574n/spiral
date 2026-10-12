@@ -1,243 +1,147 @@
-function FixRust {
-    param (
-        [Parameter(Mandatory, ValueFromPipeline)]
-        $text
-    )
-            # -replace "_self.", "self." `
-            # -replace "_self_.", "self." `
-            # -replace "use fable_library_rust::System::Collections::Generic::", "use fable_library_rust::Interfaces_::System::Collections::Generic::" `
-            # -replace "use fable_library_rust::System::IDisposable;", "use fable_library_rust::Interfaces_::System::IDisposable;" `
-            #
-            # -replace [regex]::Escape("),);"), "));" `
-            # -replace "__self__.", "self." `
-            # -replace "null::<\(\)>\(\)", "null()" `
-            # -replace "unbox::<bool>\(null\(\)\)", "false" `
-            # -replace "unbox::<string>\(null\(\)\)", "fable_library_rust::Native_::getZero()" `
-            # -replace "unbox::<i32>\(null\(\)\)", "0" `
-            # -replace "null\(\)", "fable_library_rust::Native_::getZero()" `
-            # -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
-            # -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `
-            # -replace "use fable_library_rust::System::Threading::Tasks::TaskCanceledException;", "type TaskCanceledException = ();" `
-            # -replace "use fable_library_rust::System::TimeZoneInfo;", "type TimeZoneInfo = i64;"
-    process {
-        $text `
-            -replace [regex]::Escape("),);"), "));" `
-            -replace [regex]::Escape("},);"), "});" `
-            -replace "get_or_insert_with", "get_or_init" `
-            -replace "([^=]\s)defaultOf\(\);", "`$1`defaultOf::<()>();" `
-            -replace "([^=]\s)getZero\(\);", "`$1`getZero::<()>();" `
-            -replace "getNull::", "&getNull::" `
-            -replace "&getNull::<\(\)>\(\)", "fable_library_rust::Native_::getZero()" `
-            -replace "\(null::<\(\)>\(\)", "(null()" `
-            -replace " null::<\(\)>\(\)", " null()" `
-            -replace "unbox::<bool>\(null\(\)\)", "false" `
-            -replace "unbox::<string>\(null\(\)\)", "fable_library_rust::Native_::getZero()" `
-            -replace "unbox::<i32>\(null\(\)\)", "0" `
-            -replace "null\(\)", "fable_library_rust::Native_::getZero()" `
-            -replace "([^=]\s)fable_library_rust::Native_::getZero\(\);", "`$1fable_library_rust::Native_::getZero::<()>();" `
-            -replace "__self__.", "self." `
-            -replace "use fable_library_rust::System::Collections::Concurrent::ConcurrentStack_1;", "type ConcurrentStack_1<T> = T;" `
-            -replace "use fable_library_rust::System::Threading::Tasks::TaskCanceledException;", "type TaskCanceledException = ();" `
-            -replace "use fable_library_rust::System::TimeZoneInfo;", "type TimeZoneInfo = i64;"
-    }
-}
-
-function GetFableVersion {
-    $versions = Get-ChildItem -Path "$HOME/.nuget/packages/fable" -Directory
-    $latest = $versions | Sort-Object LastWriteTime -Descending | Select-Object -First 1
-    $latest.Name
-}
-
-function FixTypeScript {
-    param (
-        [Parameter(Mandatory, ValueFromPipeline)]
-        $text
-    )
-    process {
-        $text `
-            -replace "\./lib/typescript/fable", "." `
-            -replace "defaultOf\(\) \| 0", "0" `
-            -replace "/fable_modules/fable-library-ts\.[\-\d\w\.]+/", "/deps/Fable/src/fable-library-ts/" `
-            -replace "from `"\./deps/", "from `"../../polyglot/deps/" `
-            -replace "from `"\.\./\.\./\.\./deps/", "from `"deps/polyglot/deps/"
-    }
-}
-
-function FixTypeScriptExternal {
-    param (
-        [Parameter(Mandatory, ValueFromPipeline)]
-        $text
-    )
-    process {
-        $text `
-            -replace "from `"../../../../deps/Fable", "from `"../../deps/polyglot/deps/Fable"
-    }
-}
-
-function CopyTarget {
-    param (
-        $TargetDir,
-        $root,
-        [Parameter(Mandatory)]
-        [string] $Language,
-        [string] $Runtime
-    )
-    $_runtime = $Runtime -ne "" ? "_$Runtime" : ""
-    $LanguageDir = "$TargetDir/target/$Language"
-
-    function CopyItem {
-        param (
-            $lib,
-            $name
-        )
-        $name = $Language -eq "py" -and @("threading", "platform") -contains $name ? "$($name)_" : $name
-        $name = $Language -eq "py" ? $name.ToLower() : $name
-        $from = "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
-        if (!(Test-Path $from)) {
-            $from = ResolveLink "$LanguageDir/deps/spiral/lib/$lib/$name.$Language"
-        }
-        if (!(Test-Path $from)) {
-            $from = "$LanguageDir/lib/$lib/$name.$Language"
-        }
-        if (!(Test-Path $from)) {
-            $from = ResolveLink "$LanguageDir/polyglot/lib/$lib/$name.$Language"
-        }
-        if ($lib -eq "spiral") {
-            $to = ResolveLink "$root/deps/spiral/lib/$lib/$name$_runtime.$Language"
-        } else {
-            $to = ResolveLink "$root/lib/$lib/$name$_runtime.$Language"
-        }
-        # Write-Output "spiral/lib/spiral/lib.ps1/CopyItem / from: $from / to: $to"
-        Copy-Item $from $to -Force
-
-        $text = Get-Content $to
-        $text = $text `
-            -replace "`r`n", "`n"
-
-        if ($Language -eq "rs") {
-            $text = $text `
-                | FixRust
-
-            if ($Runtime -eq "contract" -and $name -in @("async_", "file_system", "networking", "runtime")) {
-                $text = $text `
-                    -replace "use fable_library_rust::Async_::Async;", "type Async<T> = T;"
-            }
-            if ($name -in @("threading")) {
-                $text = $text `
-                    -replace "use fable_library_rust::System::Threading::CancellationTokenSource;", "type CancellationTokenSource = ();"
-            }
-            if ($name -in @("common") -and !$Runtime) {
-                $text = $text `
-                    -replace "defaultOf\(\)", "defaultOf::<std::sync::Arc<dyn IDisposable>>()"
-            }
-            if ($Runtime -eq "contract") {
-                $text = $text `
-                    -replace "use fable_library_rust::DateTime_::DateTime;", "type DateTime = ();"
-            }
-            if ($name -in @("file_system") -and $Runtime -ne "contract") {
-                $text = $text `
-                    -replace "defaultOf\(\),", "defaultOf::<std::sync::Arc<dyn IDisposable>>()," `
-                    -replace "getZero\(\),", "getZero::<std::sync::Arc<dyn IDisposable>>(),"
-            }
-            if ($name -in @("common") -and $Runtime -in @("wasm", "contract")) {
-                $text = $text `
-                    -replace "defaultOf\(\),", "defaultOf::<std::rc::Rc<dyn IDisposable>>(),"
-            }
-            if ($name -eq "file_system" -and $Runtime -in @("contract")) {
-                $text = $text `
-                    -replace "chrono::Utc", "()" `
-                    -replace "chrono::Local", "()" `
-                    -replace "chrono::DateTime", "Option" `
-                    -replace "defaultOf\(\),", "defaultOf::<std::sync::Arc<dyn IDisposable>>()," `
-                    -replace "getZero\(\),", "getZero::<std::sync::Arc<dyn IDisposable>>()," `
-                    -replace "use fable_library_rust::Guid_::Guid;", "type Guid = ();"
-            }
-        }
-        if ($Language -eq "ts") {
-            $text = $text `
-                -replace "this\$.tag", "(this$ as any)['tag']" `
-                -replace "../../../../../../../../", "../../" `
-                -replace "from `"../../../../../../../lib", "from `"../../../../../polyglot/lib" `
-                | FixTypeScript `
-                | FixTypeScriptExternal
-
-            if ($name -in @("file_system")) {
-                $text = $text `
-                    -replace ", awaitTask, ", ", awaitPromise as awaitTask, " `
-            }
-        }
-        if ($Language -eq "py") {
-            $text = $text `
-                -replace "from .....lib", "from ........polyglot.lib" `
-                -replace "from .....lib", "from ........polyglot.lib"
-        }
-
-        $text | Set-Content $to
-    }
-
-    CopyItem "fsharp" "Common"
-    CopyItem "spiral" "common"
-    CopyItem "spiral" "date_time"
-    CopyItem "spiral" "async_"
-    CopyItem "spiral" "platform"
-    CopyItem "spiral" "runtime"
-    CopyItem "spiral" "threading"
-    CopyItem "spiral" "networking"
-    CopyItem "spiral" "file_system"
-    CopyItem "spiral" "sm"
-    CopyItem "spiral" "crypto"
-    CopyItem "spiral" "trace"
-    CopyItem "spiral" "lib"
-
-    if ($Language -eq "rs") {
-        { cargo fix --allow-dirty } | Invoke-Block -location $PSScriptRoot
-        if (!($name -eq "runtime")) {
-            { cargo fmt } | Invoke-Block -location $PSScriptRoot
-        }
-
-        if ($Runtime -eq "contract") {
-            Set-Content "$root/deps/spiral/lib/spiral/date_time_contract.rs" ""
-        }
-    }
-
-    if ($Language -eq "ts") {
-        Remove-Item "$LanguageDir/fable_modules" -Recurse -Force -ErrorAction Ignore
-    }
-}
-
 function GetTargetDir {
     param (
         [Parameter(Mandatory)]
         [string] $ProjectName
     )
-    $root = "$PSScriptRoot/../../deps/polyglot"
-    $result = ResolveLink "$root/target/Builder/$ProjectName"
+    $result = ResolveLink ([IO.Path]::GetFullPath("$PSScriptRoot/../../target/build/$ProjectName"))
     Write-Host "spiral/lib/spiral/lib.ps1/GetTargetDir / targetDir: $result"
     $result
 }
 
-function BuildFable {
-    param (
-        [Parameter(Mandatory)]
-        [string] $TargetDir,
-        [Parameter(Mandatory)]
-        [string] $ProjectName,
-        [Parameter(Mandatory)]
-        [string] $Language,
-        [string] $Runtime
-    )
-    $root = ResolveLink "$PSScriptRoot/../../deps/polyglot"
-
-    Write-Host ("spiral/lib/spiral/lib.ps1/BuildFable / " + `
-        "TargetDir: $TargetDir / ProjectName: $ProjectName / Language: $Language / Runtime: $Runtime / " + `
-        "root: $root")
-
-    { dotnet fable "$TargetDir/$ProjectName.fsproj" --optimize --noCache --lang $Language --extension ".$Language" --outDir $TargetDir/target/$Language --define $($IsWindows ? "_WINDOWS" : "_LINUX") $($Runtime ? @("--define", $Runtime) : @()) } | Invoke-Block -Location $root
-
-    CopyTarget $TargetDir $root $Language $Runtime.ToLower()
+function Ensure-SpiralCompiler {
+    $bundle = ResolveLink "$PSScriptRoot/../../apps/compiler/tmp"
+    if (!(Test-Path -LiteralPath (Join-Path $bundle "scripts/env.ps1"))) { throw "Spiral compiler bundle not found at $bundle" }
+    . (Join-Path $bundle "scripts/env.ps1")
+    $env:SPIRAL_WORKSPACE_ROOT = $bundle
+    $env:CARGO_TERM_COLOR = "never"
+    $ready = try { $null = Resolve-SpiralDotnet; $true } catch { $false }
+    if (!$ready) {
+        & (Join-Path $bundle "scripts/install-dotnet.ps1")
+        if ($LASTEXITCODE -ne 0) { throw "dotnet 11 install failed" }
+    }
+    $compiler = Get-SpiralCompilerDll "single-flight"
+    if (!(Test-Path -LiteralPath $compiler)) {
+        & (Join-Path $bundle "scripts/build.ps1") -Mode single-flight
+        if ($LASTEXITCODE -ne 0) { throw "SpiralCompiler build failed" }
+        $compiler = Get-SpiralCompilerDll "single-flight"
+    }
+    if (!(Test-Path -LiteralPath $compiler)) { throw "SpiralCompiler dll missing at $compiler" }
+    [pscustomobject]@{ Bundle = $bundle; Dotnet = (Resolve-SpiralDotnet); Compiler = $compiler }
 }
 
+function BuildSpiral {
+    param (
+        [Parameter(Mandatory)]
+        [string] $SpiPath,
+        [Parameter(Mandatory)]
+        [string] $OutPath,
+        [Parameter(Mandatory)]
+        [string] $Name,
+        [string] $Backend = "Rust"
+    )
+    $RsPath = $OutPath
+    $tag = ($Backend -split ' ')[0].ToUpperInvariant()
+    try {
+        $spiral = Ensure-SpiralCompiler | Select-Object -Last 1
+        if (!$env:SPIRAL_COMPILER_PACKAGE_DIR) {
+            $env:SPIRAL_COMPILER_PACKAGE_DIR = & { . (Join-Path $spiral.Bundle 'scripts/env.ps1'); Get-SpiralPackageDir }
+        }
+        $start = Get-Date
+        Write-Host "spiral/lib/spiral/lib.ps1/BuildSpiral / $Name / $($spiral.Compiler) --backend $Backend $SpiPath $RsPath"
+        $timeoutSec = [int]($env:SPIRAL_COMPILE_TIMEOUT_SEC ?? $env:SPIRAL_NATIVE_RUST_TIMEOUT_SEC ?? 1800)
+        $arguments = @($spiral.Compiler, "--backend", $Backend, $SpiPath, $RsPath) | ForEach-Object { "`"$_`"" }
+        $process = Start-Process -FilePath $spiral.Dotnet -ArgumentList $arguments -NoNewWindow -PassThru
+        $null = $process.Handle
+        if (!$process.WaitForExit($timeoutSec * 1000)) {
+            try { $process.Kill($true) } catch { }
+            throw "timeout after $timeoutSec s (SPIRAL_COMPILE_TIMEOUT_SEC)"
+        }
+        if ($process.ExitCode -ne 0) { throw "compiler exit code $($process.ExitCode)" }
+        if (!(Test-Path $RsPath) -or (Get-Item $RsPath).LastWriteTime -lt $start) { throw "the compiler wrote no $RsPath" }
+        Write-Host "$tag-COMPILED $Name / $RsPath / $([int]((Get-Date) - $start).TotalSeconds) s"
+        $true
+    } catch {
+        Write-Host "$tag-FAILED $Name / compile / $_"
+        $false
+    }
+}
 
-function GetFsxModules {
-    @("deps/spiral/lib/spiral/common.fsx", "deps/spiral/lib/spiral/sm.fsx", "deps/spiral/lib/spiral/crypto.fsx", "deps/spiral/lib/spiral/date_time.fsx", "deps/spiral/lib/spiral/async_.fsx", "deps/spiral/lib/spiral/threading.fsx", "deps/spiral/lib/spiral/networking.fsx", "deps/spiral/lib/spiral/platform.fsx", "deps/spiral/lib/spiral/runtime.fsx", "deps/spiral/lib/spiral/file_system.fsx", "deps/spiral/lib/spiral/trace.fsx", "deps/spiral/lib/spiral/lib.fsx")
+function BuildNativeRust {
+    param (
+        [Parameter(Mandatory)]
+        [string] $SpiPath,
+        [Parameter(Mandatory)]
+        [string] $RsPath,
+        [Parameter(Mandatory)]
+        [string] $Name,
+        [string] $Backend = "Rust"
+    )
+    BuildSpiral -SpiPath $SpiPath -OutPath $RsPath -Name $Name -Backend $Backend
+}
+
+function GetFsharpRuntimePaths {
+    @((Resolve-Path (Join-Path $PSScriptRoot "spiral_runtime.fs")).Path)
+}
+
+function PublishFsharp {
+    param (
+        [Parameter(Mandatory)]
+        [string] $SourcePath,
+        [string[]] $Modules = @(),
+        [string[]] $Packages = @(),
+        [string] $Runtime,
+        [string] $Name
+    )
+    $source = (Resolve-Path $SourcePath).Path
+    $Name = $Name ? $Name : [IO.Path]::GetFileNameWithoutExtension($source)
+    $outDir = Join-Path (Split-Path $source) "dist"
+    $projectDir = Join-Path (GetTargetDir $Name) "fsproj"
+    New-Item -ItemType Directory -Force $projectDir | Out-Null
+
+    $text = [IO.File]::ReadAllText($source).Replace("`r`n", "`n")
+    $mainFunctionNotValue = '(?m)^([ \t]*)let main(?=\(|[ \t]+[^=\s])'
+    $entry = [regex]::Match($text, $mainFunctionNotValue)
+    if ($entry.Success) { $text = $text.Insert($entry.Index, "$($entry.Groups[1].Value)[<EntryPoint>]`n") }
+    $text = [regex]::Replace($text, '\n\(\)\s*$', '')
+    [IO.File]::WriteAllText((Join-Path $projectDir "$Name.fs"), $text)
+
+    $compile = @($Modules | ForEach-Object { "        <Compile Include=`"$((Resolve-Path $_).Path)`" />" }) + "        <Compile Include=`"$Name.fs`" />"
+    $references = @("FSharp.Core=9.0.303") + $Packages | ForEach-Object {
+        $id, $version = $_ -split '=', 2
+        "        <PackageReference Include=`"$id`" Version=`"$version`" />"
+    }
+    $fsproj = @"
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <LangVersion>preview</LangVersion>
+        <RollForward>Major</RollForward>
+        <ServerGarbageCollection>true</ServerGarbageCollection>
+        <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+        <PublishSingleFile>true</PublishSingleFile>
+        <SelfContained>true</SelfContained>
+        <OutputType>Exe</OutputType>
+        <DisableImplicitFSharpCoreReference>true</DisableImplicitFSharpCoreReference>
+        <DefineConstants Condition="`$([MSBuild]::IsOSPlatform('Linux'))">_LINUX</DefineConstants>
+        <DefineConstants Condition="`$([MSBuild]::IsOSPlatform('Windows'))">_WINDOWS</DefineConstants>
+    </PropertyGroup>
+    <ItemGroup>
+$($compile -join "`n")
+    </ItemGroup>
+    <ItemGroup>
+$($references -join "`n")
+    </ItemGroup>
+    <ItemGroup>
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+</Project>
+"@
+    $fsprojPath = Join-Path $projectDir "$Name.fsproj"
+    [IO.File]::WriteAllText($fsprojPath, $fsproj.Replace("`r`n", "`n"))
+    $ok = $true
+    foreach ($rid in ($Runtime ? @($Runtime) : @("linux-x64", "win-x64"))) {
+        dotnet publish $fsprojPath --configuration Release --output $outDir --runtime $rid | Out-Host
+        if ($LASTEXITCODE -ne 0) { $ok = $false }
+    }
+    $ok
 }

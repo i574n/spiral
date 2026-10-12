@@ -1,0 +1,11 @@
+inl make ~n ~u ~f =
+    n, (u, f)
+
+inl take ~(n, (u, f)) : i32 =
+    if n =. 2i32 && u =. 3u32 && f =. 1.5f32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~u = 3u32
+    inl ~f = 1.5f32
+    join take (join make n u f)

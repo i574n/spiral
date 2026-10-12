@@ -1,0 +1,7 @@
+inl scale ~x ~y = x *. y +. 0.5f32
+
+inl main () : i32 =
+    inl ~x = 1.5f32
+    inl ~y = 2.0f32
+    inl result = join scale x y
+    if result >= 3.5f32 then 0i32 else 1i32

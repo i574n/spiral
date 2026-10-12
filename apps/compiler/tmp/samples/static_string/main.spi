@@ -1,0 +1,5 @@
+inl same ~x ~y = x =. y
+
+inl main () : i32 =
+    inl ~text = "spiral"
+    if join same text text then 0i32 else 1i32

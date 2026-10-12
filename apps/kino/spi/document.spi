@@ -1,0 +1,580 @@
+inl (++) (left : string) (right : string) : string = !!!!StaticStringConcat(left,right)
+
+union rec rows =
+    | NoRow
+    | Row : string * rows
+
+union rec cells =
+    | NoCell
+    | Cell : string * string * cells
+
+union mark =
+    | NoMark
+    | Mark : string * string
+
+union rec tokens =
+    | NoWord
+    | Word : string * tokens
+
+let rec rev_rows (xs : rows) (acc : rows) : rows =
+    match xs with
+    | NoRow => acc
+    | Row (s, rest) => rev_rows rest (Row (s, acc))
+
+let rec snoc (xs : rows) (item : string) : rows =
+    match xs with
+    | NoRow => Row (item, NoRow)
+    | Row (s, rest) => Row (s, snoc rest item)
+
+let rec has_row (xs : rows) (item : string) : bool =
+    match xs with
+    | NoRow => false
+    | Row (s, rest) => if s = item then true else has_row rest item
+
+inl add_row (xs : rows) (item : string) : rows =
+    if has_row xs item then xs else snoc xs item
+
+let rec join_rows (xs : rows) : string =
+    match xs with
+    | NoRow => ""
+    | Row (s, NoRow) => s
+    | Row (s, rest) => s ++ "\n" ++ join_rows rest
+
+let rec join_rev (xs : rows) (acc : string) (started : i32) : string =
+    match xs with
+    | NoRow => acc
+    | Row (s, rest) =>
+        if started = 0i32 then join_rev rest s 1i32
+        else join_rev rest (s ++ "\n" ++ acc) 1i32
+
+let rec count_cells (xs : cells) : i32 =
+    match xs with
+    | NoCell => 0i32
+    | Cell (_, _, rest) => 1i32 + count_cells rest
+
+let rec rev_cells (xs : cells) (acc : cells) : cells =
+    match xs with
+    | NoCell => acc
+    | Cell (k, s, rest) => rev_cells rest (Cell (k, s, acc))
+
+let rec emit_cells (xs : cells) : string =
+    match xs with
+    | NoCell => ""
+    | Cell (k, s, rest) =>
+        k ++ "\n" ++ text.show_i32 (text.length s) ++ "\n" ++ s ++ emit_cells rest
+
+inl wire (xs : cells) : string =
+    inl ordered = rev_cells xs NoCell
+    text.show_i32 (count_cells ordered) ++ "\n" ++ emit_cells ordered
+
+let rec letter_end (line : string) (i : i32) : i32 =
+    if i >= text.length line then i
+    elif text.is_letter (text.index line i) then letter_end line (i + 1i32)
+    else i
+
+inl marker (line : string) : mark =
+    if text.starts_with line "#!" then
+        inl n = letter_end line 2i32
+        if n = 2i32 then NoMark
+        else Mark (text.slice_len line 2i32 (n - 2i32), text.drop line n)
+    else NoMark
+
+inl add_line (buffer : string) (line : string) : string =
+    if buffer = "" then line else buffer ++ "\n" ++ line
+
+inl push (xs : cells) (kind : string) (buffer : string) : cells =
+    if kind = "" then xs
+    else
+        inl source = text.trim buffer
+        if source = "" then xs else Cell (kind, source, xs)
+
+let rec walk (src : string) (i : i32) (xs : cells) (kind : string) (buffer : string) : cells =
+    match text.next_line src i with
+    | LineDone => push xs kind buffer
+    | LineGot (line, next) =>
+        match marker line with
+        | NoMark => walk src next xs kind (add_line buffer line)
+        | Mark (name, rest) =>
+            inl xs2 = push xs kind buffer
+            if name = "import" then walk src next (Cell ("import", text.trim rest, xs2)) kind ""
+            elif name = "meta" then walk src next xs2 "" ""
+            elif name = "markdown" then walk src next xs2 name ""
+            elif name = "spiral" then walk src next xs2 name ""
+            elif name = "fsharp" then walk src next xs2 name ""
+            else walk src next xs2 ("code/" ++ name) ""
+
+inl parse_dib (src : string) : string =
+    wire (walk (text.replace src "\r\n" "\n") 0i32 NoCell "" "")
+
+
+inl spir_cell (source : string) : bool = text.contains source "///- " && text.contains source " --real"
+
+inl test_cell (source : string) : bool =
+    text.contains source "///- " && (text.contains source " --test" || text.contains source " --ignore")
+
+union export_kind =
+    | SpiExport
+    | SpirExport
+
+inl export_cell (kind : export_kind) (cell_kind : string) (source : string) : bool =
+    match kind with
+    | SpiExport => cell_kind = "spiral" && spir_cell (text.trim source) = false
+    | SpirExport => cell_kind = "spiral" && spir_cell (text.trim source)
+
+let rec export_blocks (kind : export_kind) (xs : cells) (acc : cells) : cells =
+    match xs with
+    | NoCell => rev_cells acc NoCell
+    | Cell (cell_kind, source, rest) =>
+        if cell_kind = "markdown" || export_cell kind cell_kind source
+        then export_blocks kind rest (Cell (cell_kind, source, acc))
+        else export_blocks kind rest acc
+
+let rec keep_docs (xs : cells) : cells =
+    match xs with
+    | NoCell => NoCell
+    | Cell (kind, source, rest) =>
+        match rest with
+        | NoCell => if kind = "markdown" then NoCell else Cell (kind, source, NoCell)
+        | _ => Cell (kind, source, keep_docs rest)
+
+let rec lead_ws (line : string) (i : i32) : i32 =
+    if i >= text.length line then i
+    else
+        inl ch = text.index line i
+        if ch = ' ' then lead_ws line (i + 1i32)
+        elif ch = '\t' then lead_ws line (i + 1i32)
+        else i
+
+inl doc_line (line : string) : string =
+    if line = "" then "/// "
+    else
+        inl i = lead_ws line 0i32
+        if i >= text.length line then line
+        else text.take line i ++ "/// " ++ text.drop line i
+
+inl test_heading (line : string) : bool =
+    inl n = text.length line
+    inl m = text.length " (test)"
+    if n >= m then text.starts_at line (n - m) " (test)" else false
+
+let rec md_go (src : string) (i : i32) (acc : rows) : rows =
+    match text.next_line src i with
+    | LineDone => rev_rows acc NoRow
+    | LineGot (line, next) =>
+        inl t = text.take line (text.trim_end line (text.length line))
+        if test_heading t then md_go src next acc else md_go src next (Row (doc_line t, acc))
+
+inl format_cell (kind : string) (source : string) : string =
+    inl t = text.trim source
+    if kind = "markdown" then join_rows (md_go t 0i32 NoRow)
+    elif kind = "test" then t
+    elif test_cell t then ""
+    else t
+
+let rec formatted (xs : cells) (acc : cells) : cells =
+    match xs with
+    | NoCell => rev_cells acc NoCell
+    | Cell (kind, source, rest) =>
+        inl s = format_cell kind source
+        if s = "" then formatted rest acc else formatted rest (Cell (kind, s, acc))
+
+let rec emit_spi (xs : cells) : string =
+    match xs with
+    | NoCell => ""
+    | Cell (kind, s, rest) =>
+        match rest with
+        | NoCell => s ++ "\n"
+        | Cell (next, _, _) =>
+            inl brk = if kind = "markdown" && next <> "markdown" then "" else "\n"
+            s ++ brk ++ "\n" ++ emit_spi rest
+
+let rec read_cells (src : string) (i : i32) (n : i32) (acc : cells) : cells =
+    if n <= 0i32 then rev_cells acc NoCell
+    else
+        match text.next_line src i with
+        | LineDone => rev_cells acc NoCell
+        | LineGot (kind, j) =>
+            match text.next_line src j with
+            | LineDone => rev_cells acc NoCell
+            | LineGot (len_text, k) =>
+                inl nlen = text.parse_i32 len_text
+                read_cells src (k + nlen) (n - 1i32) (Cell (kind, text.slice_len src k nlen, acc))
+
+inl load (src : string) : cells =
+    match text.next_line src 0i32 with
+    | LineDone => NoCell
+    | LineGot (count, next) => read_cells src next (text.parse_i32 count) NoCell
+
+union test_policy =
+    | DropTests
+    | KeepTests
+
+inl upper_set () : string = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+inl lower_set () : string = "abcdefghijklmnopqrstuvwxyz"
+
+inl test_name_set () : string = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_"
+
+inl lower_one (src : string) (i : i32) : string =
+    inl k = text.find_char (upper_set ()) 0i32 (text.index src i)
+    if k >= 0i32 then text.one (lower_set ()) k else text.one src i
+
+inl in_range (cp : i32) (low : i32) (high : i32) : bool = cp >= low && cp <= high
+
+inl latin_letter (cp : i32) : bool = in_range cp 192i32 591i32 && cp <> 215i32 && cp <> 247i32
+
+inl greek_letter (cp : i32) : bool = in_range cp 902i32 1013i32 && cp <> 903i32
+
+inl cyrillic_letter (cp : i32) : bool = in_range cp 1024i32 1153i32 || in_range cp 1162i32 1327i32
+
+inl armenian_letter (cp : i32) : bool = in_range cp 1329i32 1366i32 || in_range cp 1377i32 1415i32
+
+inl hebrew_arabic_letter (cp : i32) : bool = in_range cp 1488i32 1514i32 || in_range cp 1568i32 1610i32
+
+inl hangul_letter (cp : i32) : bool = in_range cp 4352i32 4607i32 || in_range cp 12593i32 12686i32 || in_range cp 44032i32 55203i32
+
+inl kana_han_letter (cp : i32) : bool = in_range cp 12353i32 12438i32 || in_range cp 12449i32 12538i32 || in_range cp 19968i32 40959i32
+
+inl unicode_letter (cp : i32) : bool =
+    latin_letter cp || greek_letter cp || cyrillic_letter cp || armenian_letter cp || hebrew_arabic_letter cp || hangul_letter cp || kana_han_letter cp
+
+inl name_piece (pending : bool) (acc : string) (piece : string) : string =
+    inl sep = if pending && acc <> "" then "_" else ""
+    acc ++ sep ++ piece
+
+let rec test_name_go (src : string) (i : i32) (pending : bool) (acc : string) : string =
+    if i >= text.length src then acc
+    elif text.byte_at src i >= 128i32 then
+        inl width = text.utf8_width (text.byte_at src i)
+        if unicode_letter (text.code_point src i) then test_name_go src (i + width) false (name_piece pending acc (text.lowercase (text.slice_len src i width)))
+        else test_name_go src (i + width) true acc
+    elif text.has_char (test_name_set ()) 0i32 (text.index src i) then
+        test_name_go src (i + 1i32) false (name_piece pending acc (lower_one src i))
+    else test_name_go src (i + 1i32) true acc
+
+let rec symbol_go (name : string) (i : i32) (acc : string) : string =
+    if i >= text.length name then acc
+    elif text.byte_at name i < 128i32 && text.has_char (test_name_set ()) 0i32 (text.index name i) then symbol_go name (i + 1i32) (acc ++ text.one name i)
+    else
+        inl width = text.utf8_width (text.byte_at name i)
+        symbol_go name (i + width) (acc ++ "u" ++ text.show_hex (text.code_point name i) ++ "_")
+
+inl test_symbol (name : string) : string =
+    inl escaped = symbol_go name 0i32 ""
+    if escaped = name then name else "test_" ++ escaped
+
+let rec underscore_start (src : string) (i : i32) : i32 =
+    if i < text.length src && text.index src i = '_' then underscore_start src (i + 1i32) else i
+
+let rec underscore_end (src : string) (i : i32) : i32 =
+    if i > 0i32 && text.index src (i - 1i32) = '_' then underscore_end src (i - 1i32) else i
+
+inl strip_underscores (src : string) : string =
+    inl a = underscore_start src 0i32
+    inl b = underscore_end src (text.length src)
+    if b <= a then "" else text.slice_len src a (b - a)
+
+let rec last_heading_line (src : string) (i : i32) (found : string) : string =
+    match text.next_line src i with
+    | LineDone => found
+    | LineGot (line, next) =>
+        if text.starts_with (text.trim line) "#" then last_heading_line src next line
+        else last_heading_line src next found
+
+inl heading_test_name (source : string) : string =
+    inl line = last_heading_line (text.trim source) 0i32 ""
+    if line = "" then "" else strip_underscores (test_name_go (text.replace line " (test)" "") 0i32 false "")
+
+let rec count_row (xs : rows) (item : string) : i32 =
+    match xs with
+    | NoRow => 0i32
+    | Row (s, rest) => if s = item then 1i32 + count_row rest item else count_row rest item
+
+let rec append_rows (xs : rows) (ys : rows) : rows =
+    match xs with
+    | NoRow => ys
+    | Row (s, rest) => Row (s, append_rows rest ys)
+
+let rec drop_blank_rows (xs : rows) : rows =
+    match xs with
+    | NoRow => NoRow
+    | Row (s, rest) => if text.blank s then drop_blank_rows rest else xs
+
+inl body_row (line : string) : string = if text.blank line then "" else "    " ++ line
+
+inl test_mode (options : string) (word : string) (shown : string) : string =
+    if text.contains (" " ++ options ++ " ") (" " ++ word ++ " ") then " " ++ shown else ""
+
+let rec test_block_go (src : string) (i : i32) (targets : rows) (options : string) (body : rows) (name : string) : string =
+    match text.next_line src i with
+    | LineDone =>
+        inl header = "test " ++ name ++ test_mode options "static" "static" ++ test_mode options "--print-code" "print_code" ++ test_mode options "--ignore" "ignore" ++ " ="
+        inl lines = rev_rows (drop_blank_rows body) NoRow
+        join_rows (append_rows (rev_rows targets NoRow) (Row (header, lines)))
+    | LineGot (line, next) =>
+        if text.starts_with line "///-" then test_block_go src next targets (options ++ " " ++ text.trim (text.drop line 4i32)) body name
+        elif text.starts_with line "///>" then test_block_go src next (Row (line, targets)) options body name
+        else
+            match body with
+            | NoRow => if text.blank line then test_block_go src next targets options NoRow name else test_block_go src next targets options (Row (body_row line, NoRow)) name
+            | _ => test_block_go src next targets options (Row (body_row line, body)) name
+
+inl test_block (source : string) (name : string) : string = test_block_go source 0i32 NoRow "" NoRow name
+
+let rec name_tests (xs : cells) (last : string) (used : rows) (acc : cells) : cells =
+    match xs with
+    | NoCell => rev_cells acc NoCell
+    | Cell (kind, source, rest) =>
+        if kind = "markdown" then
+            inl heading = heading_test_name source
+            inl last2 = if heading = "" then last else heading
+            name_tests rest last2 used (Cell (kind, source, acc))
+        elif test_cell (text.trim source) then
+            inl base = if last = "" then "cell" else last
+            inl n = count_row used base
+            inl name = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
+            name_tests rest last (Row (base, used)) (Cell ("test", test_block (text.trim source) name, acc))
+        else name_tests rest last used (Cell (kind, source, acc))
+
+inl first_line (source : string) : string =
+    match text.next_line source 0i32 with
+    | LineDone => ""
+    | LineGot (line, _) => line
+
+inl test_mode_of (source : string) : string =
+    inl head = " " ++ first_line source ++ " "
+    if text.contains head " --ignore " then "ignore"
+    elif text.contains head " --test static " then "static"
+    else "test"
+
+let rec heading_marks_end (line : string) (i : i32) : i32 =
+    if i < text.length line && text.index line i = '#' then heading_marks_end line (i + 1i32) else i
+
+inl heading_title (source : string) : string =
+    inl line = text.trim (last_heading_line (text.trim source) 0i32 "")
+    text.trim (text.replace (text.drop line (heading_marks_end line 0i32)) " (test)" "")
+
+let rec index_tests (real_wanted : bool) (xs : cells) (i : i32) (last : string) (title : string) (used : rows) (acc : rows) : rows =
+    match xs with
+    | NoCell => acc
+    | Cell (kind, source, rest) =>
+        inl t = text.trim source
+        if kind = "markdown" then
+            inl heading = heading_test_name source
+            if heading = "" then index_tests real_wanted rest (i + 1i32) last title used acc
+            else index_tests real_wanted rest (i + 1i32) heading (heading_title source) used acc
+        elif kind = "spiral" && test_cell t && spir_cell t = real_wanted then
+            inl base = if last = "" then "cell" else last
+            inl n = count_row used base
+            inl name = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
+            inl realm = if real_wanted then "real" else "spi"
+            inl shown = if title = "" then name else title
+            inl row = text.show_i32 i ++ "\t" ++ name ++ "\t" ++ test_mode_of t ++ "\t" ++ realm ++ "\t" ++ test_symbol name ++ "\t" ++ shown
+            index_tests real_wanted rest (i + 1i32) last title (Row (base, used)) (Row (row, acc))
+        else index_tests real_wanted rest (i + 1i32) last title used acc
+
+inl test_index (src : string) : string =
+    inl xs = load src
+    join_rows (rev_rows (index_tests true xs 0i32 "" "" NoRow (index_tests false xs 0i32 "" "" NoRow NoRow)) NoRow)
+
+inl policy_blocks (policy : test_policy) (xs : cells) : cells =
+    match policy with
+    | DropTests => xs
+    | KeepTests => name_tests xs "" NoRow NoCell
+
+inl export_text (kind : export_kind) (policy : test_policy) (src : string) : string =
+    emit_spi (formatted (keep_docs (policy_blocks policy (export_blocks kind (load src) NoCell))) NoCell)
+
+inl to_spi (src : string) : string = export_text SpiExport DropTests src
+
+inl to_spir (src : string) : string = export_text SpirExport DropTests src
+
+inl to_spi_tested (src : string) : string = export_text SpiExport KeepTests src
+
+inl to_spir_tested (src : string) : string = export_text SpirExport KeepTests src
+
+let rec modes_valid (s : string) : bool =
+    if s = "" then true
+    elif text.starts_with s " static" then modes_valid (text.drop s 7i32)
+    elif text.starts_with s " print_code" then modes_valid (text.drop s 11i32)
+    elif text.starts_with s " ignore" then modes_valid (text.drop s 7i32)
+    else false
+
+union test_header =
+    | NoHeader
+    | Header : string * string
+
+inl header_of (line : string) : test_header =
+    if text.starts_with line "test " then
+        inl n = text.take_unicode_ident line 5i32
+        inl rest = text.take (text.drop line n) (text.trim_end (text.drop line n) (text.length (text.drop line n)))
+        inl m = text.length rest
+        if n > 5i32 && m >= 2i32 && text.starts_at rest (m - 2i32) " =" && modes_valid (text.take rest (m - 2i32))
+        then Header (text.slice_len line 5i32 (n - 5i32), text.take rest (m - 2i32))
+        else NoHeader
+    else NoHeader
+
+inl real_marker (real_mode : bool) (src : string) : string =
+    if real_mode && text.starts_with src "///- --real" = false then "///- --real\n\n" ++ src else src
+
+inl test_options (real_mode : bool) (modes : string) : string =
+    inl padded = modes ++ " "
+    inl run = if text.contains padded " ignore " then "--ignore" else "--test"
+    inl base = if real_mode then "--real " ++ run else run
+    inl stat = if text.contains padded " static " then " static" else ""
+    inl show = if text.contains padded " print_code " then " --print-code" else ""
+    base ++ stat ++ show
+
+inl test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
+    join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))
+
+union spi_mode =
+    | Between
+    | InDoc : rows
+    | InCode : rows
+    | InTest : string * string * rows * rows
+
+inl doc_start (line : string) : bool = text.starts_with line "/// " || line = "///"
+
+inl doc_more (line : string) : bool =
+    inl i = lead_ws line 0i32
+    text.starts_at line i "/// " || text.drop line i = "///"
+
+inl undoc (line : string) : string =
+    inl i = lead_ws line 0i32
+    if text.starts_at line i "/// " then text.take line i ++ text.drop line (i + 4i32)
+    else text.take line i
+
+inl no_rows (xs : rows) : bool =
+    match xs with
+    | NoRow => true
+    | _ => false
+
+inl unindent (line : string) : string = if text.starts_with line "    " then text.drop line 4i32 else line
+
+inl indented (line : string) : bool = if line = "" then true else text.is_space (text.index line 0i32)
+
+inl code_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
+    if text.blank source then acc else Cell ("spiral", real_marker real_mode source, acc)
+
+inl doc_cell (lines : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = text.trim_newlines (join_rows (rev_rows lines NoRow))
+    if source = "" then acc else Cell ("markdown", source, acc)
+
+inl test_cell_of (name : string) (modes : string) (targets : rows) (body : rows) (real_mode : bool) (acc : cells) : cells =
+    inl source = test_cell_source real_mode modes (rev_rows targets NoRow) (rev_rows (drop_blank_rows body) NoRow)
+    if real_mode then Cell ("real_test:" ++ name, source, acc) else Cell ("test:" ++ name, source, acc)
+
+inl close_mode (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    match mode with
+    | Between => code_cell targets real_mode acc
+    | InDoc lines => code_cell targets real_mode (doc_cell lines real_mode acc)
+    | InCode lines => code_cell (append_rows targets lines) real_mode acc
+    | InTest (name, modes, test_targets, body) => code_cell targets real_mode (test_cell_of name modes test_targets body real_mode acc)
+
+inl close_open (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    if no_rows code then code_cell targets real_mode acc else code_cell (append_rows targets code) real_mode acc
+
+let open_step (line : string) (code : rows) (targets : rows) (real_mode : bool) (acc : cells) : spi_mode * rows * cells =
+    if text.starts_with line "///>" then
+        if no_rows code then Between, Row (line, targets), acc else InCode code, Row (line, targets), acc
+    else
+        match header_of line with
+        | Header (name, modes) => InTest (name, modes, targets, NoRow), NoRow, close_open code NoRow real_mode acc
+        | NoHeader =>
+            if doc_start line then InDoc (Row (undoc line, NoRow)), NoRow, close_open code targets real_mode acc
+            elif no_rows code then
+                if line = "" && no_rows targets then Between, NoRow, acc
+                else InCode (Row (line, targets)), NoRow, acc
+            else InCode (Row (line, append_rows targets code)), NoRow, acc
+
+let rec spi_walk (src : string) (i : i32) (mode : spi_mode) (targets : rows) (real_mode : bool) (acc : cells) : cells =
+    match text.next_line src i with
+    | LineDone => close_mode mode targets real_mode acc
+    | LineGot (line, next) =>
+        match mode with
+        | InTest (name, modes, test_targets, body) =>
+            if indented line then spi_walk src next (InTest (name, modes, test_targets, Row (unindent line, body))) targets real_mode acc
+            else spi_walk src i Between NoRow real_mode (test_cell_of name modes test_targets body real_mode acc)
+        | InDoc lines =>
+            if doc_more line then spi_walk src next (InDoc (Row (undoc line, lines))) targets real_mode acc
+            elif line = "" then spi_walk src next Between targets real_mode (doc_cell lines real_mode acc)
+            else spi_walk src i Between targets real_mode (doc_cell lines real_mode acc)
+        | InCode lines =>
+            inl mode2, targets2, acc2 = open_step line lines targets real_mode acc
+            spi_walk src next mode2 targets2 real_mode acc2
+        | Between =>
+            inl mode2, targets2, acc2 = open_step line NoRow targets real_mode acc
+            spi_walk src next mode2 targets2 real_mode acc2
+
+union test_realm =
+    | SpiRealm
+    | RealRealm
+
+inl realm_of (kind : string) : test_realm = if text.starts_with kind "real_test:" then RealRealm else SpiRealm
+
+inl realm_rows (realm : test_realm) (spi_used : rows) (real_used : rows) : rows =
+    match realm with
+    | SpiRealm => spi_used
+    | RealRealm => real_used
+
+inl spi_row (realm : test_realm) (name : string) (xs : rows) : rows =
+    match realm with
+    | SpiRealm => Row (name, xs)
+    | RealRealm => xs
+
+inl real_row (realm : test_realm) (name : string) (xs : rows) : rows =
+    match realm with
+    | SpiRealm => xs
+    | RealRealm => Row (name, xs)
+
+inl test_named_kind (kind : string) : bool = text.starts_with kind "test:" || text.starts_with kind "real_test:"
+
+inl kind_test_name (kind : string) : string = text.drop kind (text.find_char kind 0i32 ':' + 1i32)
+
+let rec name_tested (xs : cells) (last : string) (spi_used : rows) (real_used : rows) (acc : cells) : cells =
+    match xs with
+    | NoCell => acc
+    | Cell (kind, source, rest) =>
+        if kind = "markdown" then
+            inl heading = heading_test_name source
+            name_tested rest (if heading = "" then last else heading) spi_used real_used (Cell (kind, source, acc))
+        elif test_named_kind kind then
+            inl realm = realm_of kind
+            inl used = realm_rows realm spi_used real_used
+            inl name = kind_test_name kind
+            inl base = if last = "" then "cell" else last
+            inl n = count_row used base
+            inl derived = if n = 0i32 then base else base ++ "_" ++ text.show_i32 (n + 1i32)
+            inl spi_more = spi_row realm base spi_used
+            inl real_more = real_row realm base real_used
+            if derived = name then name_tested rest last spi_more real_more (Cell ("spiral", source, acc))
+            else
+                inl heading_source = "#### " ++ name ++ " (test)"
+                inl heading = heading_test_name heading_source
+                inl spi_named = spi_row realm heading spi_used
+                inl real_named = real_row realm heading real_used
+                name_tested rest heading spi_named real_named (Cell ("spiral", source, Cell ("markdown", heading_source, acc)))
+        else name_tested rest last spi_used real_used (Cell (kind, source, acc))
+
+inl spi_cells (src : string) (real_mode : bool) (acc : cells) : cells =
+    spi_walk (text.replace src "\r\n" "\n") 0i32 Between NoRow real_mode acc
+
+let rec interleave (spi : cells) (real_cells : cells) (acc : cells) : cells =
+    match real_cells with
+    | NoCell => rev_cells acc spi
+    | Cell (real_kind, real_source, real_rest) =>
+        if real_kind <> "markdown" then interleave spi real_rest (Cell (real_kind, real_source, acc))
+        else
+            match spi with
+            | NoCell => rev_cells acc real_cells
+            | Cell (kind, source, rest) =>
+                if kind <> "markdown" then interleave rest real_cells (Cell (kind, source, acc))
+                elif source = real_source then interleave rest real_rest (Cell (kind, source, acc))
+                else interleave rest real_cells (Cell (kind, source, acc))
+
+inl from_spi (spi : string) (spir : string) : string =
+    inl spi_doc = rev_cells (spi_cells spi false NoCell) NoCell
+    inl real_doc = rev_cells (spi_cells spir true NoCell) NoCell
+    wire (name_tested (interleave spi_doc real_doc NoCell) "" NoRow NoRow NoCell)

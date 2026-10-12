@@ -1,0 +1,17 @@
+nominal browser = ()
+nominal click = ()
+nominal submit = ()
+
+union event_capability target event =
+    | BrowserClick :: event_capability browser click
+    | BrowserSubmit :: event_capability browser submit
+
+union event_handler target event =
+    | EventHandler :: forall target event. event_capability target event * string -> event_handler target event
+
+inl install_click (handler : event_handler browser click) : string =
+    match handler with
+    | EventHandler _ => "increment:browser-click"
+
+inl main () : string =
+    install_click (EventHandler (BrowserClick, "increment"))

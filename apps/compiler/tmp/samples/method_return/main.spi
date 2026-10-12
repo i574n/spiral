@@ -1,0 +1,10 @@
+inl make (n : i32) : i32 -> i32 =
+    inl g (x : i32) : i32 =
+        if n =. 0i32 then 0i32 else x +. n
+    g
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl inner = join make n
+    inl ~k = inner
+    if k 0i32 =. 7i32 then 0i32 else 1i32

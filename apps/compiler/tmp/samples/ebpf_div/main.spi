@@ -1,0 +1,14 @@
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~d = 0i32 -. 2i32
+    inl ~m = 0i32 -. 7i32
+    inl ~u = 100u32
+    inl ~k = 7u32
+    inl q = n /. d
+    inl r = n %. d
+    inl q2 = m /. d
+    inl r2 = m %. d
+    inl uq = u /. k
+    inl ur = u %. k
+    if q =. (0i32 -. 3i32) && r =. 1i32 && q2 =. 3i32 && r2 =. (0i32 -. 1i32) && uq =. 14u32 && ur =. 2u32 then 0i32
+    else 1i32

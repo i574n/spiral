@@ -1,0 +1,93 @@
+#![allow(unused_mut, unused_variables, unused_imports, unused_parens, unused_braces, unused_assignments, dead_code, non_snake_case, non_camel_case_types, unreachable_code, while_true)]
+use std::cell::RefCell;
+use std::rc::Rc;
+#[derive(Clone)]
+enum US0 {
+    US0_Empty,
+    US0_Item(Rc<str>, Rc<RefCell<Vec<i32>>>),
+}
+impl US0 {
+    fn tag(&self) -> i32 {
+        match self {
+            US0::US0_Empty => 0,
+            US0::US0_Item(..) => 1,
+        }
+    }
+}
+impl Default for US0 {
+    fn default() -> Self {
+        US0::US0_Empty
+    }
+}
+fn closure1(mut v0: US0) -> Rc<dyn Fn(i32) -> i32> {
+    Rc::new(move |mut v1: i32| -> i32 {
+        let mut v12: i32 = match &v0 {
+            US0::US0_Empty => {
+                3i32
+            }
+            US0::US0_Item(v2, v3) => {
+                let mut v2: Rc<str> = v2.clone();
+                let mut v3: Rc<RefCell<Vec<i32>>> = v3.clone();
+                let mut v4: i32 = (v2.clone().len() as i32);
+                let mut v5: i32 = (v3.clone().borrow().len() as i32);
+                let mut v6: i32 = v4.wrapping_add(v5);
+                let mut v7: i32 = v3.clone().borrow()[0i32 as usize].clone();
+                let mut v8: i32 = v6.wrapping_add(v7);
+                let mut v9: i32 = v3.clone().borrow()[1i32 as usize].clone();
+                let mut v10: i32 = v8.wrapping_add(v9);
+                v10
+            }
+        };
+        let mut v13: i32 = v12.wrapping_add(v1);
+        v13
+    })
+}
+fn closure0() -> Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> {
+    thread_local!{ static CLOSURE: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = Rc::new(move |mut v0: i32| -> Rc<dyn Fn(i32) -> i32> {
+        let mut v1: Rc<RefCell<Vec<i32>>> = Rc::new(RefCell::new(vec![<i32>::default(); 2i32 as usize]));
+        v1.clone().borrow_mut()[0i32 as usize] = v0;
+        let mut v2: i32 = v0.wrapping_add(1i32);
+        v1.clone().borrow_mut()[1i32 as usize] = v2;
+        let mut v3: bool = v0 == 0i32;
+        let mut v7: US0 = if v3 {
+            US0::US0_Empty
+        } else {
+            let mut v5: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+            US0::US0_Item(v5.clone(), v1.clone())
+        };
+        closure1(v7.clone())
+    }); } CLOSURE.with(|closure| closure.clone())
+}
+fn method0(mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>>) -> Rc<dyn Fn(i32) -> i32> {
+    v0(0i32)
+}
+fn method1(mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>>) -> Rc<dyn Fn(i32) -> i32> {
+    v0(4i32)
+}
+fn method4(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
+    let mut v1: i32 = v0(2i32);
+    let mut v2: i32 = v1.wrapping_add(5i32);
+    v2
+}
+fn method3(mut v0: Rc<dyn Fn(i32) -> i32>) -> i32 {
+    let mut v1: i32 = v0(1i32);
+    let mut v2: i32 = method4(v0.clone());
+    let mut v3: i32 = v1.wrapping_add(v2);
+    v3
+}
+fn method2(mut v0: Rc<dyn Fn(i32) -> i32>, mut v1: Rc<dyn Fn(i32) -> i32>) -> i32 {
+    let mut v2: i32 = v0(5i32);
+    let mut v3: i32 = method3(v1.clone());
+    let mut v4: i32 = v2.wrapping_add(v3);
+    v4
+}
+fn spiral_main() -> i32 {
+    let mut v0: Rc<dyn Fn(i32) -> Rc<dyn Fn(i32) -> i32>> = closure0();
+    let mut v1: Rc<dyn Fn(i32) -> i32> = method0(v0.clone());
+    let mut v2: Rc<dyn Fn(i32) -> i32> = method1(v0.clone());
+    method2(v1.clone(), v2.clone())
+}
+fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }
+    let main = std::thread::Builder::new().stack_size(1 << 30).spawn(spiral_main).unwrap();
+    std::process::exit(match main.join() { Ok(code) => code, Err(_) => 101 });
+}

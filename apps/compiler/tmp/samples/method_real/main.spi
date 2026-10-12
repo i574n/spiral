@@ -1,0 +1,7 @@
+inl pick (n : i32) : f64 =
+    if n =. 0i32 then 0.0f64 else 1.5f64
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl y = join pick n
+    if !!!!EQ(y, 1.5f64) then 0i32 else 1i32

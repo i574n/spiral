@@ -1,0 +1,36 @@
+nominal app_scope = ()
+nominal epoch7 = ()
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal sealed = ()
+nominal live = ()
+nominal hydrated = ()
+
+union callset_authority state sample build contig =
+    | CallsetAuthority :: forall state sample build contig. string -> callset_authority state sample build contig
+
+union resource scope epoch lifecycle sample build contig =
+    | Resource :: forall scope epoch lifecycle sample build contig. string -> resource scope epoch lifecycle sample build contig
+
+union view scope epoch hydration =
+    | View :: forall scope epoch hydration. string -> view scope epoch hydration
+
+inl publish forall scope epoch sample build contig.
+    (proof : callset_authority sealed sample build contig)
+    : resource scope epoch live sample build contig =
+    match proof with
+    | CallsetAuthority calls => Resource calls
+
+inl mount forall scope epoch sample build contig.
+    (resource : resource scope epoch live sample build contig)
+    (view : view scope epoch hydrated)
+    : string =
+    match resource, view with
+    | Resource _, View label => label
+
+inl main () : string =
+    inl proof : callset_authority sealed sample_a hg38 chr1 = CallsetAuthority "42-variants"
+    inl resource : resource app_scope epoch7 live sample_a hg38 chr1 = publish proof
+    inl dashboard : view app_scope epoch7 hydrated = View "sealed-genome-dashboard"
+    mount resource dashboard

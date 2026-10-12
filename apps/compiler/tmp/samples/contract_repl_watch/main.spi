@@ -1,0 +1,87 @@
+type singleton t = t
+
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+nominal cancelled = ()
+
+nominal nfe_draft = { id : string; issuer : string; recipient : string }
+nominal nfe_signed = { xml : string; digest : string }
+nominal nfe_authorized = { xml : string; protocol : string }
+nominal nfe_cancelled = { xml : string; reason : string }
+
+union document state =
+    | Draft :: nfe_draft -> document draft
+    | Signed :: nfe_signed -> document signed
+    | Authorized :: nfe_authorized -> document authorized
+    | Cancelled :: nfe_cancelled -> document cancelled
+
+union transition from to =
+    | SignTransition :: transition draft signed
+    | AuthorizeTransition :: transition signed authorized
+    | CancelTransition :: transition authorized cancelled
+
+inl execute forall from to. (transition : transition from to) (document : document from) : document to =
+    match transition, document with
+    | SignTransition, Draft _ => Signed (nfe_signed { xml = "nfe.xml"; digest = "sha256" })
+    | AuthorizeTransition, Signed payload => Authorized (nfe_authorized { xml = payload.xml; protocol = "135240000000005" })
+    | CancelTransition, Authorized payload => Cancelled (nfe_cancelled { xml = payload.xml; reason = "requested" })
+
+union rec workflow a c =
+    | Step :: forall a c. (a -> c) -> workflow a c
+    | Compose :: forall a c. (exists b. workflow a b * workflow b c) -> workflow a c
+
+inl rec run forall a c. (workflow : workflow a c) (input : a) : c =
+    match workflow with
+    | Step transform => transform input
+    | Compose pair =>
+        inl exists middle. first, second = pair
+        run second (run first input)
+
+inl issue () : workflow (document draft) (document authorized) =
+    inl sign_step (document : document draft) : document signed = execute SignTransition document
+    inl authorize_step (document : document signed) : document authorized = execute AuthorizeTransition document
+    Compose (exists (Step sign_step, Step authorize_step))
+
+inl with_policy forall state. (policy : forall t. t -> t) (document : document state) : document state =
+    match document with
+    | Draft payload => Draft (policy payload)
+    | Signed payload => Signed (policy payload)
+    | Authorized payload => Authorized (policy payload)
+    | Cancelled payload => Cancelled (policy payload)
+
+inl identity forall t. (value : t) : t = value
+
+nominal audited state = { payload : document state; trace : string }
+
+inl audit forall state. (document : document state) : audited state =
+    audited { payload = document; trace = "audit-ok" }
+
+union rec compound (f : * -> *) t =
+    | Singleton :: forall (f : * -> *) t. f t -> compound f (singleton t)
+    | Pair :: forall (f : * -> *) a b. compound f a * compound f b -> compound f (a * b)
+
+inl rec compound_map forall (f : * -> *) (g : * -> *) t.
+    (transform : forall state. f state -> g state)
+    (value : compound f t)
+    : compound g t =
+    match value with
+    | Singleton item => Singleton (transform item)
+    | Pair (left, right) => Pair (compound_map `$transform left, compound_map `$transform right)
+
+nominal proof state = { document : document state; label : string }
+
+inl pack_authorized (document : document authorized) : exists state. proof state =
+    exists (proof { document = document; label = "authorized-proof" })
+
+inl main () : string =
+    inl raw = Draft (nfe_draft { id = "5"; issuer = "A"; recipient = "B" })
+    inl governed = with_policy `$identity raw
+    inl authorized = run (issue ()) governed
+    inl documents = Pair (Singleton governed, Singleton authorized)
+    inl _ = compound_map `$audit documents
+    inl packed = pack_authorized authorized
+    inl exists state. witness = packed
+    inl (proof body) = witness
+    inl _ = body
+    "recovered"

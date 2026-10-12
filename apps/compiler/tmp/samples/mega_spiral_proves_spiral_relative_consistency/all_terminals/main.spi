@@ -1,0 +1,15 @@
+open main
+
+inl main () : string =
+    inl _ = exact_linear_all_membership_spine_terminal ()
+    inl _ = exact_linear_all_used_usage_vector_terminal ()
+    inl _ = exact_linear_context_indexed_lambda_terminal ()
+    inl _ = exact_linear_indexed_bool_negation_involution_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_variable_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_tensor_left_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_lambda_outer_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_tensor_right_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_application_argument_terminal ()
+    inl _ = exact_linear_indexed_recursive_open_typed_substitution_application_function_terminal ()
+    inl _ = exact_linear_indexed_context_strengthening_terminal ()
+    "all-terminals-green"

@@ -1,0 +1,22 @@
+nominal persisted = ()
+nominal published = ()
+nominal acknowledged = ()
+
+union event_box phase =
+    | EventBox :: forall phase. string -> event_box phase
+
+union outbox_op from to =
+    | Publish :: outbox_op persisted published
+    | Acknowledge :: outbox_op published acknowledged
+
+inl execute forall from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    match operation, box with
+    | Publish, EventBox trace => EventBox trace
+    | Acknowledge, EventBox _ => EventBox "acked"
+
+inl main () : string =
+    inl EventBox result = execute Acknowledge (EventBox "persisted" : event_box persisted)
+    result

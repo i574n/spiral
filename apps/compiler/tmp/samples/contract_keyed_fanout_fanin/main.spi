@@ -1,0 +1,54 @@
+nominal issuer = ()
+nominal total = ()
+nominal status = ()
+
+union shard key result =
+    | IssuerShard :: shard issuer string
+    | TotalShard :: shard total i32
+    | StatusShard :: shard status bool
+
+union completed key result =
+    | Completed :: forall key result. result -> completed key result
+
+union rec fanout result =
+    | Leaf :: forall key result.
+        shard key result -> fanout (completed key result)
+    | Zip :: forall a b. fanout a * fanout b -> fanout (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * fanout input)
+        -> fanout result
+
+inl run_shard forall key result.
+    (shard : shard key result)
+    : completed key result =
+    match shard with
+    | IssuerShard => Completed "ACME"
+    | TotalShard => Completed 4200
+    | StatusShard => Completed true
+
+inl rec run forall result. (program : fanout result) : result =
+    match program with
+    | Leaf shard => run_shard shard
+    | Zip (left, right) => run left, run right
+    | Map packed =>
+        inl exists input. mapping, source = packed
+        mapping (run source)
+
+inl reduce
+    (data :
+        (completed issuer string * completed total i32) *
+        completed status bool)
+    : string =
+    match data with
+    | (Completed _, Completed _), Completed _ => "keyed-fanout-fanin"
+
+inl plan () : fanout string =
+    Map (exists (
+        reduce,
+        Zip (
+            Zip (Leaf IssuerShard, Leaf TotalShard),
+            Leaf StatusShard
+        )
+    ))
+
+inl main () : string = run (plan ())

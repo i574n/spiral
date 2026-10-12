@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-runtime-policy"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/runtime_policy.rs"
+
+[dependencies]
+rayon.workspace = true

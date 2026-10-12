@@ -1,0 +1,36 @@
+nominal compiler_v2 = ()
+nominal source_hash_a = ()
+nominal source_hash_b = ()
+nominal publish_node = ()
+nominal validated = ()
+nominal authorized = ()
+nominal committed = ()
+nominal success = ()
+
+union plan compiler source id from to =
+    | PublishPlan :: plan compiler_v2 source_hash_a publish_node validated authorized
+
+union receipt compiler source id from to status =
+    | ReceiptA :: receipt compiler_v2 source_hash_a publish_node validated authorized committed
+    | ReceiptB :: receipt compiler_v2 source_hash_b publish_node validated authorized committed
+
+union runtime_event compiler source id from to outcome =
+    | PublishEvent :: runtime_event compiler_v2 source_hash_a publish_node validated authorized success
+
+union certificate compiler source id from to =
+    | Certificate :: forall compiler source id from to.
+        plan compiler source id from to *
+        receipt compiler source id from to committed *
+        runtime_event compiler source id from to success
+        -> certificate compiler source id from to
+
+inl certify forall compiler source id from to.
+    (plan : plan compiler source id from to)
+    (receipt : receipt compiler source id from to committed)
+    (event : runtime_event compiler source id from to success)
+    : certificate compiler source id from to =
+    Certificate (plan, receipt, event)
+
+inl main () : string =
+    inl _ = certify PublishPlan ReceiptB PublishEvent
+    "unreachable"

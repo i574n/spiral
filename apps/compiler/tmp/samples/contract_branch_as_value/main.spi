@@ -1,0 +1,87 @@
+nominal address = string
+nominal value = i32
+nominal condition = bool
+nominal branch_result = string
+nominal buffer = string
+nominal kernel = string
+nominal event = string
+
+union ir_op result =
+    | Load :: address -> ir_op value
+    | Add :: value * value -> ir_op value
+    | Branch :: condition -> ir_op branch_result
+    | Allocate :: i32 -> ir_op buffer
+    | Launch :: kernel * buffer -> ir_op event
+
+union rec program result =
+    | Operation :: forall result. ir_op result -> program result
+    | PairProgram :: forall left right. program left * program right -> program (left * right)
+    | MapProgram :: forall result. (exists input. program input * (input -> result)) -> program result
+
+inl rec describe forall result. (value : program result) : string =
+    match value with
+    | Operation op =>
+        match op with
+        | Load _ => "load"
+        | Add _ => "add"
+        | Branch _ => "branch"
+        | Allocate _ => "allocate"
+        | Launch _ => "launch"
+    | PairProgram (left, right) =>
+        inl _ = describe left
+        inl _ = describe right
+        "pair-program"
+    | MapProgram payload =>
+        inl exists input. inner, _ = payload
+        inl _ = describe inner
+        "map-program"
+
+nominal cpu result = program result
+nominal cuda result = program result
+nominal wasm result = program result
+
+prototype lower target result : target result -> string
+instance lower cpu = fun (cpu value) => describe value
+instance lower cuda = fun (cuda value) => describe value
+instance lower wasm = fun (wasm value) => describe value
+
+union executable =
+    | CpuExecutable :: (exists result. cpu result * result) -> executable
+    | CudaExecutable :: (exists result. cuda result * result) -> executable
+    | WasmExecutable :: (exists result. wasm result * result) -> executable
+
+inl with_executable forall output.
+    (visit : forall result. program result -> result -> output)
+    (value : executable) : output =
+    match value with
+    | CpuExecutable payload =>
+        inl exists result. wrapped, result_value = payload
+        match wrapped with cpu program => visit program result_value
+    | CudaExecutable payload =>
+        inl exists result. wrapped, result_value = payload
+        match wrapped with cuda program => visit program result_value
+    | WasmExecutable payload =>
+        inl exists result. wrapped, result_value = payload
+        match wrapped with wasm program => visit program result_value
+
+inl conceal forall result. (_ : program result) (_ : result) : string = "result-parametric"
+
+inl value_program () : program value =
+    MapProgram (exists (PairProgram (Operation (Load (address "0x10")), Operation (Add (value 3, value 4))), fun (_ : value * value) => value 7))
+
+inl branch_program () : program branch_result =
+    Operation (Branch (condition true))
+
+inl launch_program () : program event =
+    Operation (Launch (kernel "fused-kernel", buffer "device-buffer"))
+
+inl executable_value () : executable =
+    CudaExecutable (exists (cuda (launch_program ()), event "event-42"))
+
+inl emit (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n1\tplan\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\t\t\n1\tplan\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\t\t\n1\tplan\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\t\t\n1\tplan\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\t\t\n1\tplan\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\t\t\n1\treceipt\tload\tLoad\taddress\tvalue\t\t\t\t\tcommitted\t1\n1\treceipt\tadd\tAdd\tvalues\tvalue\t\t\t\t\tcommitted\t3\n1\treceipt\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tcommitted\t5\n1\treceipt\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tcommitted\t7\n1\treceipt\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tcommitted\t9\n1\tevent\tload\tLoad\taddress\tvalue\t\t\t\t\tsuccess\t2\n1\tevent\tadd\tAdd\tvalues\tvalue\t\t\t\t\tsuccess\t4\n1\tevent\tbranch\tBranch\tcondition\tbranch-result\t\t\t\t\tsuccess\t6\n1\tevent\tallocate\tAllocate\tsize\tbuffer\t\t\t\t\tsuccess\t8\n1\tevent\tlaunch\tLaunch\tkernel-buffer\tevent\t\t\t\t\tsuccess\t10\n"
+
+inl requires_value (_ : program value) : string = "value-program"
+
+inl main () : string =
+    requires_value (Operation (Branch (condition true)))

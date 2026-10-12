@@ -1,0 +1,18 @@
+nominal flow = ()
+nominal phrasing = ()
+
+union child parent =
+    | Text :: forall parent. string -> child parent
+    | Span :: forall parent. string -> child parent
+    | Div :: string -> child flow
+
+union rec children parent =
+    | ChildNil :: forall parent. children parent
+    | ChildCons :: forall parent. child parent * children parent -> children parent
+
+union element parent =
+    | Element :: forall parent. string * children parent -> element parent
+
+inl main () : string =
+    inl _ : element phrasing = Element ("p", ChildCons (Div "illegal", ChildNil))
+    "unreachable"

@@ -1,76 +1,65 @@
 param(
     $fast,
     $sequential,
-    $SkipFsx,
     $ScriptDir = $PSScriptRoot
 )
 Set-Location $ScriptDir
 $ErrorActionPreference = "Stop"
-. ../../deps/polyglot/scripts/core.ps1
+. ../../scripts/core.ps1
 
+$ResolvedScriptDir = ResolveLink $ScriptDir
+$ResolvedScriptDir | Set-Location
+
+Write-Output "spiral/lib/spiral/build.ps1 / ScriptDir: $ScriptDir / ResolvedScriptDir: $ResolvedScriptDir"
+
+$livebook = Join-Path $ResolvedScriptDir "../../apps/kino/spi/run_notebook.ps1"
+$notebooks = @(
+    "physics", "parsing", "sm'", "rust/rust", "rust/testing", "rust/near", "rust/near_workspaces", "testing", "guid",
+    "async", "runtime", "trace", "am'", "crypto", "common", "resultm", "console", "base", "convert", "date_time", "math",
+    "mapm", "optionm'", "listm'", "reflection", "iter", "wasm", "leptos/leptos", "lustre", "util", "platform", "stream",
+    "threading", "benchmark", "seq", "env", "file_system", "networking"
+)
+function Get-NotebookArgs([string] $Notebook) {
+    @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"))
+}
 
 if (!$fast) {
-    {
-        $spiralPath = "../../deps/spiral/workspace/target/release/spiral$(_exe)"
-
-        if ($sequential) {
-            . $spiralPath dib --path $ScriptDir/sm`'.dib --retries 3
+    $jobs = $notebooks | ForEach-Object { [pscustomobject]@{ Notebook = $_; Arguments = (Get-NotebookArgs $_) } }
+    $runs = $jobs | ForEach-Object -ThrottleLimit ($sequential ? 1 : 4) -Parallel {
+        $notebook = $_.Notebook
+        $arguments = $_.Arguments
+        $output = Join-Path $using:ResolvedScriptDir "$notebook.spi.ipynb"
+        $log = @()
+        $exitCode = 1
+        $started = Get-Date
+        foreach ($attempt in 1..3) {
+            Write-Host "spiral/lib/spiral/build.ps1 / $notebook / start / attempt $attempt / $(Get-Date -Format 'HH:mm:ss')"
+            $log = pwsh -NoProfile -File $using:livebook @arguments --output-path $output 2>&1 | ForEach-Object { "$_" }
+            $exitCode = $LASTEXITCODE
+            if ($exitCode -eq 0) { break }
         }
-
-        . ../../apps/spiral/dist/Supervisor$(_exe) `
-            --exit-on-error `
-            $(!$sequential ? @("--parallel") : @()) `
-            --execute-command "$spiralPath dib --path $ScriptDir/physics.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/parsing.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/sm'.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/rust/rust.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/rust/testing.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/rust/near.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/rust/near_workspaces.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/testing.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/guid.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/async.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/runtime.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/trace.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/am'.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/crypto.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/common.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/resultm.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/console.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/base.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/date_time.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/math.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/mapm.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/optionm'.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/listm'.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/reflection.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/iter.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/wasm.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/leptos/leptos.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/lustre.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/util.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/platform.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/stream.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/threading.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/benchmark.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/seq.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/env.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/python.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/typescript.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/file_system.dib --retries 3" `
-            --execute-command "$spiralPath dib --path $ScriptDir/networking.dib --retries 3" `
-    } | Invoke-Block -Location (GetFullPath "../../deps/polyglot/lib/fsharp")
+        $tests = @($log | Where-Object { $_ -like 'spiral-tests file *' } | ForEach-Object { $_.Substring('spiral-tests file '.Length) | ConvertFrom-Json })
+        $counts = ($tests | Measure-Object -Property passed, failed, skipped -Sum | ForEach-Object { "$($_.Property) $([int]$_.Sum)" }) -join ' / '
+        $availableMb = if ($IsLinux) { [int](((Get-Content /proc/meminfo | Where-Object { $_ -like 'MemAvailable:*' }) -split '\s+')[1] / 1024) } else { [int]((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1024) }
+        Write-Host "spiral/lib/spiral/build.ps1 / $notebook / done / exit $exitCode / attempts $attempt / $([int]((Get-Date) - $started).TotalSeconds) s / $counts / available $availableMb MB"
+        [pscustomobject]@{ Notebook = $notebook; ExitCode = $exitCode; Log = $log; Tests = $tests }
+    }
+    $runs | Sort-Object Notebook | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($_.Notebook) / exit $($_.ExitCode)" }
+    $all = @($runs | ForEach-Object { $_.Tests })
+    Write-Output ("spiral/lib/spiral/build.ps1 / tests / files $($all.Count) / " + (($all | Measure-Object -Property passed, failed, skipped, unsupported -Sum | ForEach-Object { "$($_.Property) $([int]$_.Sum)" }) -join ' / '))
+    $all | Where-Object { $_.failed -gt 0 } | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / failed tests / $($_.file) / $($_.failed_tests -join ', ')" }
+    $failed = @($runs | Where-Object ExitCode -ne 0)
+    foreach ($run in $failed) {
+        $run.Log | Select-String -Pattern "panicked at|^\*\* \(|error(\[E\d+\])?:|Exception" -Context 0, 1 | Select-Object -First 10 | ForEach-Object { @($_.Line) + @($_.Context.PostContext) } | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / cause / $_" }
+        $run.Log | Select-Object -Last 30 | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / $_" }
+    }
+    if ($failed) { throw "spiral/lib/spiral/build.ps1 / notebooks failed: $(($failed | ForEach-Object Notebook) -join ', ')" }
 }
-
-{ . ../../deps/polyglot/apps/parser/dist/DibParser$(_exe) testing.dib spi async.dib spi runtime.dib spi trace.dib spi threading.dib spi networking.dib spi crypto.dib spi common.dib spi base.dib spi resultm.dib spi iter.dib spi env.dib spi parsing.dib spi console.dib spi date_time.dib spi file_system.dib spi guid.dib spi math.dib spi mapm.dib spi "optionm'.dib" spi "am'.dib" spi "sm'.dib" spi "sm'.dib" spir "listm'.dib" spi reflection.dib spi python.dib spi typescript.dib spi benchmark.dib spi stream.dib spi seq.dib spi util.dib spi platform.dib spi rust/rust.dib spi rust/testing.dib spi rust/near.dib spi rust/near_workspaces.dib spi physics.dib spi leptos/leptos.dib spi lustre.dib spi wasm.dib spi } | Invoke-Block
-
-if (!$SkipFsx) {
-    { . ../../deps/polyglot/apps/spiral/dist/Supervisor$(_exe) --parallel --build-file async.spi async_.fsx --build-file runtime.spi runtime.fsx --build-file trace.spi trace.fsx --build-file threading.spi threading.fsx --build-file networking.spi networking.fsx --build-file crypto.spi crypto.fsx --build-file common.spi common.fsx --build-file date_time.spi date_time.fsx --build-file platform.spi platform.fsx --build-file file_system.spi file_system.fsx --build-file guid.spi guid.fsx --build-file "sm'.spi" sm.fsx } | Invoke-Block -Retries 3 -OnError Continue
-}
-
-Remove-Item "async.fsx" -Force -ErrorAction Ignore
-Remove-Item "sm'.fsx" -Force -ErrorAction Ignore
 
 if (!$fast) {
     { pwsh near/wallet/build.ps1 } | Invoke-Block
+}
+
+if ($env:CI) {
+    ClearCargoTarget "../../target/spiral/spiral"
 }

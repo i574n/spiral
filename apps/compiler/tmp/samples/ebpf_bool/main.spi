@@ -1,0 +1,14 @@
+inl pick ~a ~b =
+    if a && b then 1i32
+    elif a || b then 2i32
+    else 3i32
+
+inl main () : i32 =
+    inl ~yes = true
+    inl ~no = false
+    inl both = join pick yes yes
+    inl one = join pick yes no
+    inl none = join pick no no
+    inl differ = if yes =. no then false else true
+    if both =. 1i32 && one =. 2i32 && none =. 3i32 && differ then 0i32
+    else 1i32

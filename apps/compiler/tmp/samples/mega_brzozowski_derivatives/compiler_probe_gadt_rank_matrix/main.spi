@@ -1,0 +1,47 @@
+nominal raw_a = ()
+nominal decided_a = ()
+
+union state_a phase =
+    | RawA :: i32 -> state_a raw_a
+    | DecidedA :: i32 * bool -> state_a decided_a
+
+let decide_a (state : state_a raw_a) : state_a decided_a =
+    match state with
+    | RawA value => DecidedA (value, true)
+
+nominal raw_b = ()
+nominal decided_b = ()
+
+union state_b phase =
+    | DecidedB :: bool * i32 -> state_b decided_b
+    | RawB :: i32 -> state_b raw_b
+
+let decide_b (state : state_b raw_b) : state_b decided_b =
+    match state with
+    | RawB value => DecidedB (true, value)
+
+nominal raw_c = ()
+nominal decided_c = ()
+nominal final_c = ()
+
+union state_c phase =
+    | RawC :: i32 -> state_c raw_c
+    | DecidedC :: i32 * bool -> state_c decided_c
+    | FinalC :: bool -> state_c final_c
+
+let decide_c (state : state_c raw_c) : state_c decided_c =
+    match state with
+    | RawC value => DecidedC (value, true)
+
+let finalize_c (state : state_c decided_c) : state_c final_c =
+    match state with
+    | DecidedC (_, accepted) => FinalC accepted
+
+inl main () : bool =
+    inl a = decide_a (RawA 7i32)
+    inl b = decide_b (RawB 9i32)
+    inl c = finalize_c (decide_c (RawC 11i32))
+    inl a_ok = match a with | DecidedA (_, accepted) => accepted
+    inl b_ok = match b with | DecidedB (accepted, _) => accepted
+    inl c_ok = match c with | FinalC accepted => accepted
+    a_ok && b_ok && c_ok

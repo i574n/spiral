@@ -1,4 +1,6 @@
 /// # math
+test math static =
+    open testing
 
 /// ## math
 
@@ -10,28 +12,204 @@ inl e () =
 inl square x =
     x ** 2
 
+test square =
+    5f64
+    |> sqrt
+    |> square
+    |> _assert_approx_eq None 5
+
+test square_2 =
+    e () |> square
+    |> _assert_approx_eq None 7.3890560989306495
+
+test square_3 =
+    2 * 2 / 0.4f64 |> sqrt
+    |> _assert_approx_eq None 3.1622776601683795
+
+test square_4 =
+    2f64 / 3
+    |> _assert_approx_eq None 0.6666666666666666
+
+test square_5 =
+    2f64 |> log
+    |> _assert_approx_eq None 0.6931471805599453
+
+test square_6 =
+    pi
+    |> _assert_approx_eq None 3.141592653589793f64
+
+test square_7 =
+    pi |> cos
+    |> _assert_eq -1f64
+
+test square_8 =
+    pi
+    |> cos
+    |> fun n => n / 2f64
+    |> _assert_approx_eq None -0.5
+
+test square_9 =
+    pi / 2 |> cos
+    |> _assert_approx_eq None 0.00000000000000006123233995736766f64
+
 /// ## fsharp
 
 /// ### atan2
 inl atan2 (y : f64) (x : f64) : f64 =
-    $'System.Math.Atan2 (!y, !x)'
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam_community/maths"
+            $'maths.atan2(!y, !x)' : float
+        Lua = fun () => $'math.atan2(!y, !x)' : float
+        Fsharp = fun () => $'System.Math.Atan2 (!y, !x)' : float
+        Python = fun () => 
+            global "import math"
+            $'math.atan2(!y, !x)' : float
+        Rust = fun () => $'(!y).atan2(!x)' : float
+        Zig = fun () => $'std.math.atan2(!y, !x)' : float
+        Lean = fun () => $'Float.atan2 !y !x ' : float
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'atan2(!y, !x)' : float
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::atan2(!y, !x)' : float
+        Delphi = fun () => $'ArcTan2(!y, !x)' : float
+        Wasm = fun () => $'(call $math_atan2 !y !x)' : float
+        TypeScript = fun () => $'Math.atan2(!y, !x)' : float
+    }
+
+///> gleam -d gleam_community_maths=\">=2.0.0\"
+///> lua
+///> fsharp
+///> cuda
+test atan2 =
+    0 |> atan2 1
+    |> _assert_eq 1.5707963267948966
 
 /// ## floor
 inl floor forall t {float}. (n : t) : t =
-    n |> $'floor'
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/float"
+            n |> $'float.floor' : t
+        Lua = fun () => n |> $'math.floor' : t
+        Fsharp = fun () => n |> $'floor' : t
+        Python = fun () => 
+            global "import math"
+            $'math.floor(!n)' : t
+        Rust = fun () => $'!n.floor()' : t
+        Zig = fun () => $'\@floor(!n)' : t
+        Lean = fun () => $'(!n).floor' : t
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'floor(!n)' : t
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::floor(!n)' : t
+        Delphi = fun () => $'Int(!n) - Ord(Frac(!n) < 0)' : t
+        Wasm = fun () => $'(`t.floor !n)' : t
+        TypeScript = fun () => $'Math.floor(!n)' : t
+    }
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test floor =
+    0.6 |> floor
+    |> _assert_eq 0f64
 
 /// ## ceil
 inl ceil forall t {float}. (n : t) : t =
-    n |> $'ceil'
+    backend_switch {
+        Gleam = fun () =>
+            global "import gleam/float"
+            n |> $'float.ceiling' : t
+        Lua = fun () => n |> $'math.ceil' : t
+        Fsharp = fun () => n |> $'ceil' : t
+        Python = fun () =>
+            global "import math"
+            n |> $'math.ceil' : t
+        Rust = fun () => $'!n.ceil()' : t
+        Zig = fun () => $'\@ceil(!n)' : t
+        Lean = fun () => $'(!n).ceil' : t
+        C = fun () =>
+            global "#include <tgmath.h>"
+            $'ceil(!n)' : t
+        Cpp = fun () =>
+            global "#include <cmath>"
+            $'std::ceil(!n)' : t
+        Delphi = fun () => $'Int(!n) + Ord(Frac(!n) > 0)' : t
+        Wasm = fun () => $'(`t.ceil !n)' : t
+        TypeScript = fun () => $'Math.ceil(!n)' : t
+    }
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test ceil =
+    0.6 |> ceil
+    |> _assert_eq 1f64
 
 /// ## round
-inl round forall t {float}. (n : t) : t =
-    n |> $'round'
+inl round forall t {number; float}. (x : t) : t =
+    inl round_half_to_even () =
+        inl lower = floor x
+        inl difference = x - lower
+        if difference > 0.5 then lower + 1
+        elif difference < 0.5 then lower
+        elif floor (lower / 2) * 2 = lower then lower
+        else lower + 1
+    backend_switch {
+        Gleam = round_half_to_even
+        Lua = round_half_to_even
+        Fsharp = fun () => x |> $'round' : t
+        Python = fun () => x |> $'round' : t
+        Rust = fun () => $'(!x).round_ties_even()' : t
+        Zig = round_half_to_even
+        Lean = round_half_to_even
+        C = round_half_to_even
+        Cpp = round_half_to_even
+        Delphi = round_half_to_even
+        TypeScript = round_half_to_even
+        Wasm = fun () => $'(`t.nearest !x)' : t
+    }
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test round =
+    0.5 |> round
+    |> _assert_eq 0f64
+
+    0.6 |> round
+    |> _assert_eq 1f64
+
+    1.5 |> round
+    |> _assert_eq 2f64
+
+    2.5 |> round
+    |> _assert_eq 2f64
+
+    3.5 |> round
+    |> _assert_eq 4f64
 
 /// ## log_base
 inl log_base (new_base : f64) (a : f64) : f64 =
-    $'System.Math.Log (!a, !new_base)'
+    backend_switch {
+        Gleam = fun () => log a / log new_base
+        Lua = fun () => log a / log new_base
+        Fsharp = fun () => $'System.Math.Log (!a, !new_base)' : f64
+        Python = fun () => log a / log new_base
+        Rust = fun () => $'(!a).log(!new_base)' : f64
+        TypeScript = fun () => log a / log new_base
+        Zig = fun () => log a / log new_base
+        Lean = fun () => log a / log new_base
+    }
 
-/// ## round
-inl round forall t {float}. (x : t) : t =
-    x |> $'round'
+test log_base =
+    100 |> log_base 10
+    |> _assert_eq 2

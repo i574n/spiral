@@ -1,0 +1,5 @@
+inl is_answer ~x = join (x =. 42i32)
+
+inl main () : i32 =
+    inl ~x = 42i32
+    if join is_answer x then 0i32 else 1i32

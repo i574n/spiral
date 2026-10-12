@@ -1,0 +1,7 @@
+inl rec countdown ~n =
+    if n =. 0i32 then 0i32
+    else join countdown (n -. 1i32)
+
+inl main () : i32 =
+    inl ~n = 1000000i32
+    join countdown n

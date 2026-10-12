@@ -3,7 +3,6 @@ open leptos
 open rust
 
 inl render (class : () -> string) props : _ (_ svg) =
-    inl class = class |> rust.emit
     svg ([
         $'"xmlns=\\\"http://www.w3.org/2000/svg\\\""'
         $'"fill=\\\"none\\\""'
@@ -11,7 +10,7 @@ inl render (class : () -> string) props : _ (_ svg) =
         $'"viewBox=\\\"0 0 24 24\\\""'
         $'"stroke-width=\\\"1.5\\\""'
         $'"stroke=\\\"currentColor\\\""'
-        $'"class=move || \\\"text-gray-700 \\\".to_owned() + &!class(())"'
+        class_fn "text-gray-700 " class
         ] ++ props) fun () =>
         :>[
             path [

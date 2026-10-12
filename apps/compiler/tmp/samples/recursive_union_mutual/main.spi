@@ -1,0 +1,13 @@
+union rec a =
+    | A : b
+    | StopA
+and union b =
+    | B : a
+    | StopB
+
+inl main () : i32 =
+    inl ~flag = true
+    inl root = if flag then A (B StopA) else StopA
+    match root with
+    | StopA => 0i32
+    | A _ => 0i32

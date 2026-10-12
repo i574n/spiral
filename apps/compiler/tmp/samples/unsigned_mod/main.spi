@@ -1,0 +1,6 @@
+inl valid ~(x : u32) =
+    (x +. 5u32) %. 4u32 =. 0u32
+
+inl main () : i32 =
+    inl ~x = 7u32
+    if join valid x then 0i32 else 1i32

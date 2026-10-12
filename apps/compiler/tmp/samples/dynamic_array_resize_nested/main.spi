@@ -1,0 +1,29 @@
+inl resize_outer ~(xs : array (array i32)) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+inl capacity_outer ~(xs : array (array i32)) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+inl resize_inner ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize1(!xs,!new_length)'
+
+inl capacity_inner ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity1(!xs)'
+
+inl main () : i32 =
+    inl ~n = 1i32
+    inl ~inner : array i32 = create n
+    set inner 0i32 7i32
+    inl ~outer : array (array i32) = create n
+    set outer 0i32 inner
+    inl ~alias_inner = index outer 0i32
+    join resize_outer outer 0i32
+    join resize_outer outer 1i32
+    set outer 0i32 alias_inner
+    join resize_inner inner 0i32
+    join resize_inner alias_inner 1i32
+    set inner 0i32 9i32
+    inl ~view = index outer 0i32
+    inl ~score = index view 0i32 +. length view +. length outer
+    inl ~capacities = join capacity_outer outer +. join capacity_inner inner
+    score +. capacities -. 13i32

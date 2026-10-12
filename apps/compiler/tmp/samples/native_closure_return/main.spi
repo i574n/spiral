@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl make = (fun name => (fun z => sm.length name +. z) : i32 -> i32) : string -> i32 -> i32
+    inl ~maker = make
+    inl ~g = maker "abc"
+    join g 39i32

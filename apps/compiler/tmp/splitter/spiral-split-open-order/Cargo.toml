@@ -1,0 +1,13 @@
+[package]
+name = "spiral-split-open-order"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/open_order.rs"
+
+[dependencies]
+rayon.workspace = true
+spiral-split-model.workspace = true

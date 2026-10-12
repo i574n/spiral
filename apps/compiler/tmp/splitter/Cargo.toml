@@ -1,0 +1,172 @@
+[workspace]
+resolver = "2"
+members = [
+  "spiral-split-model",
+  "spiral-split-source",
+  "spiral-split-scan",
+  "spiral-split-symbols",
+  "spiral-split-plan",
+  "spiral-split-assembly-refs",
+  "spiral-split-emit",
+  "spiral-split-open-order",
+  "spiral-split-call-scope",
+  "spiral-split-call-contract",
+  "spiral-split-caller-projection",
+  "spiral-split-forwarded-type",
+  "spiral-split-forwarded-return",
+  "spiral-split-member-projection",
+  "spiral-split-pattern-contract",
+  "spiral-split-record-owner",
+  "spiral-split-record-return-owner",
+  "spiral-split-pattern-owner",
+  "spiral-split-union-context",
+  "spiral-split-lexical-open",
+  "spiral-split-metrics",
+  "spiral-split-build",
+  "spiral-split-build-gap",
+  "spiral-split-build-checkpoint",
+  "spiral-split-build-budget",
+  "spiral-split-gears",
+  "spiral-split-critical-path-witness",
+  "spiral-split-gear-order",
+  "spiral-split-generated-dependency",
+  "spiral-split-gear-identity",
+  "spiral-split-gear-scc",
+  "spiral-split-gear-objective",
+  "spiral-split-gear-policy-search",
+  "spiral-split-promotion-guard",
+  "spiral-split-bridge-index",
+  "spiral-split-text-rewrite",
+  "spiral-split-companion-resolve",
+  "spiral-split-visibility",
+  "spiral-split-gear-bridge",
+  "spiral-split-bridge-receipt",
+  "spiral-split-anonymous-boundary",
+  "spiral-split-contextual-constructor",
+  "spiral-split-union-forward-identity",
+  "spiral-split-gear-executor",
+  "spiral-split-gear-artifact-state",
+  "spiral-split-gear-hydration",
+  "spiral-split-gear-fingerprint",
+  "spiral-split-gear-execution-trace",
+  "spiral-split-gear-receipt",
+  "spiral-split-gear-restore",
+  "spiral-split-process-supervisor",
+  "spiral-split-dotnet-build-command",
+  "spiral-split-loc",
+  "spiral-split-lift",
+  "spiral-split-value-body",
+  "spiral-split-binding-header",
+  "spiral-split-lift-plan",
+  "spiral-split-deferred-ambient",
+  "spiral-split-eligible-resume",
+  "spiral-split-fsharp-lex",
+  "spiral-split-capture-parameter",
+  "spiral-split-recursive-header-stabilize",
+  "spiral-split-capture-closure",
+  "spiral-split-lift-rewrite",
+  "spiral-split-detached-call",
+  "spiral-split-cross-stage-relink",
+  "spiral-split-cross-stage-thread",
+  "spiral-split-lift-batch",
+  "spiral-split-lift-funnel",
+  "spiral-split-match-branch",
+  "spiral-split-match-owner",
+  "spiral-split-funnel-rollback",
+  "spiral-split-lift-probe",
+  "spiral-split-restore-seed",
+  "spiral-split-lift-transaction",
+  "spiral-split-render-bench",
+  "spiral-split-matrix",
+  "spiral-split-matrix-receipt",
+  "spiral-split-runtime-policy",
+  "spiral-split-recursive-scc",
+  "spiral-split-gear-plan-cli",
+  "spiral-split-cli",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT"
+
+[workspace.dependencies]
+rayon = "1.11"
+spiral-split-model = { path = "spiral-split-model" }
+spiral-split-source = { path = "spiral-split-source" }
+spiral-split-scan = { path = "spiral-split-scan" }
+spiral-split-symbols = { path = "spiral-split-symbols" }
+spiral-split-plan = { path = "spiral-split-plan" }
+spiral-split-assembly-refs = { path = "spiral-split-assembly-refs" }
+spiral-split-emit = { path = "spiral-split-emit" }
+spiral-split-open-order = { path = "spiral-split-open-order" }
+spiral-split-call-scope = { path = "spiral-split-call-scope" }
+spiral-split-call-contract = { path = "spiral-split-call-contract" }
+spiral-split-caller-projection = { path = "spiral-split-caller-projection" }
+spiral-split-forwarded-type = { path = "spiral-split-forwarded-type" }
+spiral-split-forwarded-return = { path = "spiral-split-forwarded-return" }
+spiral-split-member-projection = { path = "spiral-split-member-projection" }
+spiral-split-pattern-contract = { path = "spiral-split-pattern-contract" }
+spiral-split-record-owner = { path = "spiral-split-record-owner" }
+spiral-split-record-return-owner = { path = "spiral-split-record-return-owner" }
+spiral-split-pattern-owner = { path = "spiral-split-pattern-owner" }
+spiral-split-union-context = { path = "spiral-split-union-context" }
+spiral-split-lexical-open = { path = "spiral-split-lexical-open" }
+spiral-split-metrics = { path = "spiral-split-metrics" }
+spiral-split-build = { path = "spiral-split-build" }
+spiral-split-build-gap = { path = "spiral-split-build-gap" }
+spiral-split-build-checkpoint = { path = "spiral-split-build-checkpoint" }
+spiral-split-build-budget = { path = "spiral-split-build-budget" }
+spiral-split-gears = { path = "spiral-split-gears" }
+spiral-split-critical-path-witness = { path = "spiral-split-critical-path-witness" }
+spiral-split-gear-order = { path = "spiral-split-gear-order" }
+spiral-split-generated-dependency = { path = "spiral-split-generated-dependency" }
+spiral-split-gear-identity = { path = "spiral-split-gear-identity" }
+spiral-split-gear-scc = { path = "spiral-split-gear-scc" }
+spiral-split-gear-objective = { path = "spiral-split-gear-objective" }
+spiral-split-gear-policy-search = { path = "spiral-split-gear-policy-search" }
+spiral-split-bridge-index = { path = "spiral-split-bridge-index" }
+spiral-split-text-rewrite = { path = "spiral-split-text-rewrite" }
+spiral-split-companion-resolve = { path = "spiral-split-companion-resolve" }
+spiral-split-visibility = { path = "spiral-split-visibility" }
+spiral-split-gear-bridge = { path = "spiral-split-gear-bridge" }
+spiral-split-bridge-receipt = { path = "spiral-split-bridge-receipt" }
+spiral-split-anonymous-boundary = { path = "spiral-split-anonymous-boundary" }
+spiral-split-contextual-constructor = { path = "spiral-split-contextual-constructor" }
+spiral-split-union-forward-identity = { path = "spiral-split-union-forward-identity" }
+spiral-split-gear-executor = { path = "spiral-split-gear-executor" }
+spiral-split-gear-artifact-state = { path = "spiral-split-gear-artifact-state" }
+spiral-split-gear-hydration = { path = "spiral-split-gear-hydration" }
+spiral-split-gear-fingerprint = { path = "spiral-split-gear-fingerprint" }
+spiral-split-gear-execution-trace = { path = "spiral-split-gear-execution-trace" }
+spiral-split-gear-receipt = { path = "spiral-split-gear-receipt" }
+spiral-split-gear-restore = { path = "spiral-split-gear-restore" }
+spiral-split-process-supervisor = { path = "spiral-split-process-supervisor" }
+spiral-split-dotnet-build-command = { path = "spiral-split-dotnet-build-command" }
+spiral-split-loc = { path = "spiral-split-loc" }
+spiral-split-lift = { path = "spiral-split-lift" }
+spiral-split-value-body = { path = "spiral-split-value-body" }
+spiral-split-binding-header = { path = "spiral-split-binding-header" }
+spiral-split-lift-plan = { path = "spiral-split-lift-plan" }
+spiral-split-deferred-ambient = { path = "spiral-split-deferred-ambient" }
+spiral-split-eligible-resume = { path = "spiral-split-eligible-resume" }
+spiral-split-fsharp-lex = { path = "spiral-split-fsharp-lex" }
+spiral-split-capture-parameter = { path = "spiral-split-capture-parameter" }
+spiral-split-recursive-header-stabilize = { path = "spiral-split-recursive-header-stabilize" }
+spiral-split-capture-closure = { path = "spiral-split-capture-closure" }
+spiral-split-lift-rewrite = { path = "spiral-split-lift-rewrite" }
+spiral-split-detached-call = { path = "spiral-split-detached-call" }
+spiral-split-cross-stage-relink = { path = "spiral-split-cross-stage-relink" }
+spiral-split-cross-stage-thread = { path = "spiral-split-cross-stage-thread" }
+spiral-split-lift-batch = { path = "spiral-split-lift-batch" }
+spiral-split-lift-funnel = { path = "spiral-split-lift-funnel" }
+spiral-split-match-branch = { path = "spiral-split-match-branch" }
+spiral-split-match-owner = { path = "spiral-split-match-owner" }
+spiral-split-funnel-rollback = { path = "spiral-split-funnel-rollback" }
+spiral-split-restore-seed = { path = "spiral-split-restore-seed" }
+spiral-split-lift-transaction = { path = "spiral-split-lift-transaction" }
+spiral-split-render-bench = { path = "spiral-split-render-bench" }
+spiral-split-matrix-receipt = { path = "spiral-split-matrix-receipt" }
+spiral-split-runtime-policy = { path = "spiral-split-runtime-policy" }
+spiral-split-recursive-scc = { path = "spiral-split-recursive-scc" }

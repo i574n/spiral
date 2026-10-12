@@ -1,0 +1,20 @@
+nominal zero = ()
+nominal succ n = n
+nominal retryable = ()
+
+union rec budget n =
+    | ZeroBudget :: budget zero
+    | MoreBudget :: forall n. budget n -> budget (succ n)
+
+union request effect result =
+    | QueryStatus :: request retryable string
+
+inl retry_once forall n result.
+    (budget : budget (succ n))
+    (request : request retryable result)
+    : result =
+    match budget, request with
+    | MoreBudget _, QueryStatus => "ok"
+
+inl main () : string =
+    retry_once ZeroBudget QueryStatus

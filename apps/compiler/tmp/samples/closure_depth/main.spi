@@ -1,0 +1,14 @@
+inl main () : i32 =
+    inl ~n = 7i32
+    inl f (z : i32) : i32 -> i32 -> i32 =
+        inl g (y : i32) : i32 -> i32 =
+            inl h (x : i32) : i32 =
+                if z =. 0i32 then 0i32 else x +. n
+            h
+        g
+    inl ~a = f
+    inl b = a 1i32
+    inl ~c = b
+    inl d = c 0i32
+    inl ~e = d
+    if e 0i32 =. 7i32 then 0i32 else 1i32

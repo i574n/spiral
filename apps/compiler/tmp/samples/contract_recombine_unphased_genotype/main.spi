@@ -1,0 +1,15 @@
+nominal phased = ()
+nominal unphased = ()
+
+union genotype phase =
+    | PhasedGenotype :: string * string -> genotype phased
+    | UnphasedGenotype :: string * string -> genotype unphased
+
+union breakpoint =
+    | Breakpoint :: i32 -> breakpoint
+
+inl crossover (_ : breakpoint) (genotype : genotype phased) : genotype phased = genotype
+
+inl main () : string =
+    inl _ = crossover (Breakpoint 1) (UnphasedGenotype ("A/C", "G/T"))
+    "unreachable"

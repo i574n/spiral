@@ -1,0 +1,12 @@
+union slot =
+    | None
+    | Some : i32
+
+inl pick (z : i32) : slot =
+    if z =. 0i32 then None else Some z
+
+inl main () : i32 =
+    inl ~n = 7i32
+    match join pick n with
+    | Some value => if value =. 7i32 then 0i32 else 1i32
+    | None => 1i32

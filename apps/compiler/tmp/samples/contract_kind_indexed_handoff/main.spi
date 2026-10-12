@@ -1,0 +1,49 @@
+nominal term_kind = ()
+nominal ty_kind = ()
+nominal pending = ()
+nominal materialized = ()
+nominal filled = ()
+
+union replay_key kind =
+    | TermKey :: replay_key term_kind
+    | TypeKey :: replay_key ty_kind
+
+union witness kind stage =
+    | TermPending :: witness term_kind pending
+    | TypePending :: witness ty_kind pending
+    | TermMaterialized :: witness term_kind materialized
+    | TypeMaterialized :: witness ty_kind materialized
+
+union promise kind stage =
+    | TermFilled :: promise term_kind filled
+    | TypeFilled :: promise ty_kind filled
+
+union authority_handoff kind =
+    | AuthorityHandoff :: forall kind.
+        replay_key kind * witness kind materialized * promise kind filled
+        -> authority_handoff kind
+
+inl materialize forall kind. (witness : witness kind pending) : witness kind materialized =
+    match witness with
+    | TermPending => TermMaterialized
+    | TypePending => TypeMaterialized
+
+inl fill forall kind. (witness : witness kind materialized) : promise kind filled =
+    match witness with
+    | TermMaterialized => TermFilled
+    | TypeMaterialized => TypeFilled
+
+inl handoff forall kind.
+    (key : replay_key kind)
+    (witness : witness kind materialized)
+    (promise : promise kind filled)
+    : authority_handoff kind =
+    AuthorityHandoff (key, witness, promise)
+
+inl render (handoff : authority_handoff term_kind) : string =
+    match handoff with
+    | AuthorityHandoff _ => "kind-indexed-handoff"
+
+inl main () : string =
+    inl witness = materialize TermPending
+    render (handoff TermKey witness (fill witness))

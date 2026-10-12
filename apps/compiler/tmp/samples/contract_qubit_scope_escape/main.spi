@@ -1,0 +1,28 @@
+nominal region_a = ()
+nominal region_b = ()
+nominal coherent = ()
+
+union qubit region phase =
+    | QubitA :: string -> qubit region_a coherent
+    | QubitB :: string -> qubit region_b coherent
+
+union packed_qubit =
+    | PackedQubit :: (exists region. qubit region coherent) -> packed_qubit
+
+inl expect_region_b (qubit : qubit region_b coherent) : string =
+    match qubit with
+    | QubitB label => label
+
+inl force_region_b forall region. (qubit : qubit region coherent) : string =
+    expect_region_b qubit
+
+inl with_qubit forall result.
+    (visitor : forall region. qubit region coherent -> result)
+    : result =
+    inl packed = PackedQubit (exists (QubitA "psi"))
+    match packed with
+    | PackedQubit qubit =>
+        inl exists region. qubit = qubit
+        visitor qubit
+
+inl main () : string = with_qubit `$force_region_b

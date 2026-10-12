@@ -1,0 +1,12 @@
+inl main () : i32 =
+    inl ~x = 1.5f32
+    inl ~word = "hi"
+    inl f (z : i32) : f32 * string =
+        if z =. 0i32 then
+            0.0f32, "no"
+        else
+            x, word
+    inl ~g = f
+    inl pair = g 1i32
+    inl ~(left, right) = pair
+    if left =. 1.5f32 && !!!!EQ(right, "hi") then 0i32 else 1i32

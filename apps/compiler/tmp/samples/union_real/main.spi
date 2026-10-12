@@ -1,0 +1,19 @@
+union num =
+    | Real : f64
+    | Whole : i32
+
+let twice x : i32 =
+    inl scaled = x *. 2.0f64
+    !!!!Conv(`i32, scaled)
+
+let score x : i32 =
+    match x with
+    | Real value => twice value
+    | Whole value => value
+
+inl main () : i32 =
+    inl ~flag = true
+    inl ~x = 1.5f64
+    inl wide = if flag then Real x else Whole 1i32
+    inl whole = if flag then Whole 5i32 else Real x
+    if score wide =. 3i32 && score whole =. 5i32 then 0i32 else 1i32

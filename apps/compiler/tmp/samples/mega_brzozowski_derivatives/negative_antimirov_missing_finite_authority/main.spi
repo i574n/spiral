@@ -1,0 +1,11 @@
+open main
+
+union lone_symbol =
+    | Lone
+
+nominal lone_alphabet = lone_symbol
+
+instance symbol_compare lone_alphabet = fun _ _ => SymbolSame
+
+inl main () =
+    antimirov_certificate (RegexChar (lone_alphabet Lone))

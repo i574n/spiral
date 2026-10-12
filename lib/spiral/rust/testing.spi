@@ -1,21 +1,46 @@
 /// # rust/testing
+test rust_testing static =
+    open testing
+
 open rust.rust_operators
 
 /// ### run_tests'
 inl run_tests' tests =
-    (!\($'"true; () //"') : bool) |> ignore
-
     inl fields = reflection.get_record_fields tests
-
+    global "thread_local! { static SPIRAL_TEST: std::cell::RefCell<Option<&'static str>> = const { std::cell::RefCell::new(None) }; }"
     fields
     |> listm.iter fun name, (fn : string -> ()) =>
-        !\($'"} /* /*"')
-        (!\($'$"*/ \#[test] fn " + !name + "() { //"') : bool) |> ignore
-        fn name
+        inl (++) (a : string) (b : string) : string = !!!!StaticStringConcat(a, b)
+        global ("#[test] fn " ++ name ++ "() { std::thread::Builder::new().stack_size(1 << 30).spawn(|| { SPIRAL_TEST.with(|t| *t.borrow_mut() = Some(\"" ++ name ++ "\")); spiral_main() }).unwrap().join().unwrap(); }")
+        if $'SPIRAL_TEST.with(|t| t.borrow().map_or(false, |s| s == (&*!name)))' then
+            fn name
 
-    fields
-    |> listm.iter fun _ =>
-        !\($'"{ //"') : ()
+test run_tests static =
+    inl run test =
+        if env.get_environment_variable "TEST" = "1"
+        then
+            if is_rust () then test () else ()
+        else
+            runtime.execution_options fun x => { x with
+                command = "cargo +nightly-2025-11-01 test --timings -- --show-output"
+                working_directory = file_system.get_source_directory () |> Some |> optionm'.box
+                environment_variables = ;[ "TEST", "1" ]
+            }
+            |> runtime.execute_with_options
+            |> fun exit_code, result =>
+                exit_code |> _assert_eq 0i32
+                result |> _assert sm'.contains "test result: ok. 1 passed; 0 failed; 0 ignored;"
+
+        if is_rust () |> not then
+            $'let tests () = !test ()' : ()
+
+///> rust -d encoding_rs encoding_rs_io
+test run_tests_2 =
+    fun () =>
+        run_tests' {
+            a = _assert_eq "a"
+        }
+    |> run
 
 /// ### run_tests
 inl run_tests tests : () =
@@ -27,6 +52,14 @@ inl run_tests tests : () =
                 tests
         run_tests' `(`tests) tests
 
+///> rust -d encoding_rs encoding_rs_io
+test run_tests_3 =
+    fun () =>
+        run_tests {
+            a = fun () => "a" |> _assert_eq "a"
+        }
+    |> run
+
 /// ### run_tests_log
 inl run_tests_log tests : () =
     real
@@ -36,3 +69,11 @@ inl run_tests_log tests : () =
                     (fun _ => value false) : () -> ()
                 tests
         run_tests `(`tests) tests
+
+///> rust -d encoding_rs encoding_rs_io
+test run_tests_log =
+    fun () =>
+        run_tests_log {
+            a = _assert_eq false
+        }
+    |> run

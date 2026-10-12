@@ -1,0 +1,37 @@
+union shape =
+    | Circle : i32
+    | Square : i32
+    | Tri : i32
+    | Dot
+
+let measure (s : shape) (k : i32) : i32 =
+    match s with
+    | Circle r => r * 3
+    | _ =>
+        inl bonus = k * k
+        inl ~flag = bonus > 3
+        match s with
+        | Square a => if flag then a * a else a
+        | Tri b => if flag then b * 2 else b
+        | Dot => bonus
+
+let measure_tri (s : shape) (k : i32) : i32 =
+    match s with
+    | Circle r => r
+    | Square a => a
+    | Dot => 0
+    | _ =>
+        inl ~shift = k + 2
+        match s with
+        | Tri b => b * shift
+
+let pick (k : i32) : shape =
+    if k = 0 then Circle 5
+    elif k = 1 then Square 4
+    elif k = 2 then Tri 7
+    else Dot
+
+inl main () : i32 =
+    inl ~a = 0i32
+    inl narrowed = measure (pick a) a + measure (pick (a + 1)) (a + 1) + measure (pick (a + 2)) (a + 2) + measure (pick (a + 3)) (a + 3)
+    narrowed + measure_tri (pick (a + 2)) a + measure_tri (pick a) a

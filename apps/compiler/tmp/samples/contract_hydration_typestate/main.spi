@@ -1,0 +1,22 @@
+nominal server = ()
+nominal browser = ()
+nominal cold = ()
+nominal hydrated = ()
+
+union view target phase =
+    | ServerView :: string -> view server cold
+    | BrowserView :: string -> view browser hydrated
+
+union hydration_ticket =
+    | HydrationTicket :: hydration_ticket
+
+inl hydrate (_ : hydration_ticket) (view : view server cold) : view browser hydrated =
+    match view with
+    | ServerView html => BrowserView html
+
+inl bind_click (view : view browser hydrated) : string =
+    match view with
+    | BrowserView _ => "button:hydrated-click"
+
+inl main () : string =
+    bind_click (hydrate HydrationTicket (ServerView "button"))

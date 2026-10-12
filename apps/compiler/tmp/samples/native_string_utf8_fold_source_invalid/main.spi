@@ -1,0 +1,4 @@
+inl add_scalar (state : i32) (scalar : i32) : i32 = (+.) state scalar
+
+inl main () : i32 =
+    sm.utf8_fold_from_byte_offset add_scalar 0i32 "é" 1i32

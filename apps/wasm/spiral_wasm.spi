@@ -15,7 +15,7 @@ inl get_args () =
 
 /// ### get_command
 let get_command () =
-    ##"command"
+    ###"command"
     |> runtime.new_command
     |> runtime.command_args_override_self true
     |> runtime.command_init_arg (get_args () .exception) (
@@ -23,7 +23,7 @@ let get_command () =
             runtime.new_value_range
                 true
                 (am'.End eval)
-                (am'.End fun _ => (1i32 |> convert : unativeint))
+                (am'.End fun _ => (1i32 |> convert.convert : convert.unativeint))
         )
         >> runtime.arg_require_equals true
         >> runtime.arg_default_missing_value ""
@@ -86,14 +86,14 @@ let rec run
                 trace Verbose (fun () => "spiral_wasm.run") fun () => { result2 }
 
                 inl receipt_failures = result |> near_workspaces.receipt_failures
-                inl receipt_failures_len = receipt_failures |> am'.vec_len |> i32
+                inl receipt_failures_len = receipt_failures |> am'.vec_len |> convert.i32
 
                 trace Verbose
                     fun () => "spiral_wasm.run"
                     fun () => { receipt_failures_len receipt_failures }
 
                 inl receipt_outcomes = result |> near_workspaces.receipt_outcomes
-                inl receipt_outcomes_len = receipt_outcomes |> am'.vec_len |> i32
+                inl receipt_outcomes_len = receipt_outcomes |> am'.vec_len |> convert.i32
 
                 trace Verbose
                     fun () => "spiral_wasm.run"
@@ -107,7 +107,7 @@ let rec run
 
                 trace Verbose (fun () => "spiral_wasm.run") fun () => { borsh }
 
-                inl error = { receipt_outcomes_len retry receipt_failures } |> sm'.format
+                inl error = #?{ receipt_outcomes_len retry receipt_failures }
                 if receipt_failures_len > 0
                 then (Ok (Some error) : _ _ resultm.anyhow_error) |> resultm.box
                 elif receipt_outcomes_len > 1
@@ -154,14 +154,14 @@ let rec run
 
         match retries with
         | Ok { retry } => Ok retry |> resultm.box
-        | Error { retry error } => { retries error } |> sm'.format |> resultm.anyhow_error |> resultm.err
+        | Error { retry error } => #?{ retries error } |> resultm.anyhow_error |> resultm.err
 
     |> async.new_future_move
 
 /// ### main
-///! _
+///> _
 
-inl main (args : array_base string) =
+inl run_main (args : array_base string) : i32 =
     inl command = get_command ()
     inl arg_matches = command |> runtime.command_get_matches
 
@@ -194,7 +194,7 @@ inl main (args : array_base string) =
         |> async.block_on_tokio
         |> resultm.map_error' sm'.format'
 
-    match result |> resultm.unbox, exception with
+    match result |> rust.clone_rust |> resultm.unbox, exception with
     | Ok retries, Some exception =>
         ($'$"spiral_wasm.main / retries: {!retries} / exception: \'{!exception}\'"' : string)
         |> resultm.err |> resultm.unwrap'
@@ -212,5 +212,13 @@ inl main (args : array_base string) =
 
     0i32
 
+/// F#: `main` for the Fable build. Native Rust (`--backend Rust`, see build.ps1): runs `run_main` with the process args.
 inl main () =
-    $'let main args = !main args' : ()
+    backend_switch {
+        Fsharp = fun () => $'let main args = !run_main args' : ()
+        Rust = fun () =>
+            inl args =
+                $'Rc::new(RefCell::new(std::env::args().skip(1).map(|x| Rc::<str>::from(x)).collect::<Vec<Rc<str>>>()))'
+                : array_base string
+            run_main args |> ignore
+    } : ()

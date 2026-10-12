@@ -1,0 +1,8 @@
+packageDir: ../..
+packages:
+    mega_brzozowski_derivatives-
+modules:
+    main
+    positioned_bound
+    indexed_assignment
+    injective_bound

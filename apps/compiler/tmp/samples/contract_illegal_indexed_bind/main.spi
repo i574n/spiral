@@ -1,0 +1,24 @@
+nominal idle = ()
+nominal loaded = ()
+nominal validated = ()
+
+union document state =
+    | EmptyDocument :: document idle
+    | LoadedDocument :: string -> document loaded
+    | ValidatedDocument :: string -> document validated
+
+union command from to result =
+    | Load :: string -> command idle loaded string
+    | Validate :: command loaded validated i32
+
+inl run_command forall from to result.
+    (command : command from to result)
+    (document : document from)
+    : document to * result =
+    match command, document with
+    | Load xml, EmptyDocument => LoadedDocument xml, xml
+    | Validate, LoadedDocument xml => ValidatedDocument xml, 1
+
+inl main () : string =
+    inl _, _ = run_command Validate EmptyDocument
+    "unreachable"

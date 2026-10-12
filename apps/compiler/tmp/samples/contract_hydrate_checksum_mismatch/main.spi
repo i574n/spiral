@@ -1,0 +1,31 @@
+nominal app_tree = ()
+nominal checksum_a = ()
+nominal checksum_b = ()
+nominal ready = ()
+nominal app_scope = ()
+
+union serialized_view tree checksum =
+    | SerializedView :: forall tree checksum. string -> serialized_view tree checksum
+
+union client_checksum checksum =
+    | ClientChecksum :: forall checksum. string -> client_checksum checksum
+
+union resource scope state value =
+    | Resource :: forall scope state value. value -> resource scope state value
+
+union hydrated_view tree checksum scope state =
+    | HydratedView :: forall tree checksum scope state. string -> hydrated_view tree checksum scope state
+
+inl hydrate forall tree checksum scope value.
+    (serialized : serialized_view tree checksum)
+    (client : client_checksum checksum)
+    (resource : resource scope ready value)
+    : hydrated_view tree checksum scope ready =
+    match serialized, client, resource with
+    | SerializedView _, ClientChecksum _, Resource _ => HydratedView "hydrated"
+
+inl main () : hydrated_view app_tree checksum_a app_scope ready =
+    inl serialized : serialized_view app_tree checksum_a = SerializedView "server"
+    inl checksum : client_checksum checksum_b = ClientChecksum "client-b"
+    inl resource : resource app_scope ready i32 = Resource 42
+    hydrate serialized checksum resource

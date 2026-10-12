@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-capture-parameter"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/capture_parameter.rs"

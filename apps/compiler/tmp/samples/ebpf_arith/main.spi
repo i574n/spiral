@@ -1,0 +1,23 @@
+inl main () : i32 =
+    inl ~h = 7i32
+    inl ~k = 2i32
+    inl ~e = 4294967295u32
+    inl nh = 0i32 -. h
+    inl ~neg3 = 0i32 -. 3i32
+    inl ~neg12 = 0i32 -. 12i32
+    inl ~neg4 = 0i32 -. 4i32
+    inl ~neg1 = 0i32 -. 1i32
+    if (nh /. k) =. neg3 then
+        if (nh %. k) =. neg1 then
+            if !!!!ShiftRight(nh, 1i32) =. neg4 then
+                if !!!!ShiftLeft(neg3, 2i32) =. neg12 then
+                    if (e +. 1u32) =. 0u32 then
+                        if (e *. e) =. 1u32 then
+                            if !!!!ShiftRight(e, 28i32) =. 15u32 then 0i32
+                            else 7i32
+                        else 6i32
+                    else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

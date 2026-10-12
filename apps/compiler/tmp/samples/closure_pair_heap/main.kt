@@ -1,0 +1,47 @@
+class Heap0(val l0: Int)
+class SpiralTuple0(val v0: Heap0, val v1: Heap0)
+fun f_c0(v0: Heap0, v1: Heap0): (Int) -> SpiralTuple0 {
+    fun body(v2: Int): SpiralTuple0 {
+        var v3: Boolean = false
+        v3 = (v2 == 0)
+        if (v3) {
+            return SpiralTuple0(v1, v0)
+        } else {
+            return SpiralTuple0(v0, v1)
+        }
+    }
+    return { p0: Int -> body(p0) }
+}
+fun spiral_main(): Int {
+    var v0: Int = 0
+    v0 = 3
+    var v1: Int = 0
+    v1 = 4
+    var v2: Heap0 = Heap0(0)
+    v2 = Heap0(v0)
+    var v3: Heap0 = Heap0(0)
+    v3 = Heap0(v1)
+    var v4: (Int) -> SpiralTuple0 = { _: Int -> throw RuntimeException() }
+    v4 = f_c0(v2, v3)
+    var v5: Heap0 = Heap0(0)
+    var v6: Heap0 = Heap0(0)
+    val spiral_tuple351 = v4(1)
+    v5 = spiral_tuple351.v0
+    v6 = spiral_tuple351.v1
+    var v7: Int = 0
+    v7 = v5.l0
+    var v8: Int = 0
+    v8 = v6.l0
+    var v9: Int = 0
+    v9 = (v7 + v8)
+    var v10: Boolean = false
+    v10 = (v9 == 7)
+    if (v10) {
+        return 0
+    } else {
+        return 1
+    }
+}
+fun main() {
+    System.exit(spiral_main())
+}

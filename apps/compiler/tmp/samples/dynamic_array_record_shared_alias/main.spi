@@ -1,0 +1,14 @@
+inl make_state ~n =
+    inl ~xs : array i32 = create n
+    set xs 0i32 3i32
+    set xs 1i32 4i32
+    {items = xs; bias = 1i32}
+
+inl first ~{items bias} : i32 = index items 0i32 +. bias -. 1i32
+inl total ~{items bias} : i32 = index items 0i32 +. index items 1i32 +. bias
+
+inl main () : i32 =
+    inl state = join make_state 2i32
+    inl ~a = join first state
+    inl ~b = join total state
+    a +. b -. 11i32

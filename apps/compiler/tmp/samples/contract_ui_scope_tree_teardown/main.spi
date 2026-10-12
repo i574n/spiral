@@ -1,0 +1,66 @@
+nominal app_scope = ()
+nominal root_owner = ()
+nominal child_a = ()
+nominal child_b = ()
+nominal live = ()
+nominal draining = ()
+nominal disposed = ()
+
+union subtree scope root left right state =
+    | LiveSubtree :: forall scope root left right. string -> subtree scope root left right live
+    | DrainingSubtree :: forall scope root left right. string -> subtree scope root left right draining
+    | DisposedSubtree :: forall scope root left right. string -> subtree scope root left right disposed
+
+union disposal scope owner state =
+    | LiveOwner :: forall scope owner. string -> disposal scope owner live
+    | DisposedOwner :: forall scope owner. string -> disposal scope owner disposed
+
+union teardown_action scope root left right from to =
+    | BeginTeardown :: forall scope root left right.
+        teardown_action scope root left right live draining
+    | CommitTeardown :: forall scope root left right.
+        disposal scope left disposed * disposal scope right disposed
+        -> teardown_action scope root left right draining disposed
+
+union rec teardown_plan scope root left right from to =
+    | TeardownLeaf :: forall scope root left right from to.
+        teardown_action scope root left right from to
+        -> teardown_plan scope root left right from to
+    | TeardownThen :: forall scope root left right from to.
+        (exists middle.
+            teardown_plan scope root left right from middle
+            * teardown_action scope root left right middle to)
+        -> teardown_plan scope root left right from to
+
+inl apply_action forall scope root left right from to.
+    (action : teardown_action scope root left right from to)
+    (tree : subtree scope root left right from)
+    : subtree scope root left right to =
+    match action, tree with
+    | BeginTeardown, LiveSubtree _ => DrainingSubtree "scope-tree-draining"
+    | CommitTeardown (DisposedOwner _, DisposedOwner _), DrainingSubtree _ =>
+        DisposedSubtree "scope-tree-disposed"
+
+inl rec execute forall scope root left right from to.
+    (plan : teardown_plan scope root left right from to)
+    (tree : subtree scope root left right from)
+    : subtree scope root left right to =
+    match plan with
+    | TeardownLeaf action => apply_action action tree
+    | TeardownThen payload =>
+        inl exists middle. prefix, action = payload
+        apply_action action (execute prefix tree)
+
+inl label forall scope root left right.
+    (tree : subtree scope root left right disposed)
+    : string =
+    match tree with
+    | DisposedSubtree value => value
+
+inl main () : string =
+    inl tree : subtree app_scope root_owner child_a child_b live = LiveSubtree "root"
+    inl left : disposal app_scope child_a disposed = DisposedOwner "a"
+    inl right : disposal app_scope child_b disposed = DisposedOwner "b"
+    inl plan : teardown_plan app_scope root_owner child_a child_b live disposed =
+        TeardownThen (exists (TeardownLeaf BeginTeardown, CommitTeardown (left, right)))
+    label (execute plan tree)

@@ -1,0 +1,52 @@
+nominal epoch_one = ()
+nominal epoch_two = ()
+nominal unbound = ()
+nominal bound = ()
+nominal consumed = ()
+
+union authority epoch =
+    | AuthorityOne :: authority epoch_one
+    | AuthorityTwo :: authority epoch_two
+
+union lease epoch state =
+    | LeaseOneFresh :: lease epoch_one unbound
+    | LeaseTwoFresh :: lease epoch_two unbound
+    | LeaseOneBound :: lease epoch_one bound
+    | LeaseTwoBound :: lease epoch_two bound
+    | LeaseOneConsumed :: lease epoch_one consumed
+    | LeaseTwoConsumed :: lease epoch_two consumed
+
+inl bind forall epoch.
+    (lease : lease epoch unbound)
+    (authority : authority epoch)
+    : lease epoch bound =
+    match lease with
+    | LeaseOneFresh =>
+        match authority with
+        | AuthorityOne => LeaseOneBound
+    | LeaseTwoFresh =>
+        match authority with
+        | AuthorityTwo => LeaseTwoBound
+
+inl consume forall epoch. (lease : lease epoch bound) : lease epoch consumed =
+    match lease with
+    | LeaseOneBound => LeaseOneConsumed
+    | LeaseTwoBound => LeaseTwoConsumed
+
+union terminal_seal epoch =
+    | TerminalSeal :: forall epoch. lease epoch consumed * authority epoch -> terminal_seal epoch
+
+inl seal forall epoch.
+    (lease : lease epoch consumed)
+    (authority : authority epoch)
+    : terminal_seal epoch =
+    TerminalSeal (lease, authority)
+
+inl render (seal : terminal_seal epoch_two) : string =
+    match seal with
+    | TerminalSeal _ => "epoch-lease-terminal-seal"
+
+inl main () : string =
+    inl bound = bind LeaseTwoFresh AuthorityTwo
+    inl consumed = consume bound
+    render (seal consumed AuthorityTwo)

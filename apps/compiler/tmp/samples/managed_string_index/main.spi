@@ -1,0 +1,4 @@
+inl main () =
+    inl ~x = "qwe"
+    inl c = sm.index x 1i32
+    if (=.) c 'w' then 0i32 else 1i32

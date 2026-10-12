@@ -1,0 +1,53 @@
+nominal fresh = ()
+nominal persisted = ()
+nominal published = ()
+nominal acknowledged = ()
+
+union event_box phase =
+    | EventBox :: forall phase. string -> event_box phase
+
+union outbox_op from to =
+    | Persist :: outbox_op fresh persisted
+    | Publish :: outbox_op persisted published
+    | Acknowledge :: outbox_op published acknowledged
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl execute forall from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    match operation, box with
+    | Persist, EventBox _ => EventBox "persisted"
+    | Publish, EventBox _ => EventBox "published"
+    | Acknowledge, EventBox _ => EventBox "outbox-acked"
+
+inl rec fold_chain forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        inl exists middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl plan () : chain outbox_op fresh acknowledged =
+    ChainCompose (exists (
+        ChainStep Persist,
+        ChainCompose (exists (
+            ChainStep Publish,
+            ChainStep Acknowledge
+        ))
+    ))
+
+inl main () : string =
+    inl result = fold_chain `$execute (plan ()) (EventBox "event")
+    match result with
+    | EventBox trace => trace

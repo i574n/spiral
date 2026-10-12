@@ -1,0 +1,18 @@
+union outcome =
+    | Idle
+    | Hit : i32
+    | Flag : bool
+
+let score x : i32 =
+    match x with
+    | Idle => 3i32
+    | Hit value => value
+    | Flag value => if value then 11i32 else 5i32
+
+inl main () =
+    inl ~selector = 2i32
+    inl value =
+        if selector =. 0i32 then Idle
+        elif selector =. 1i32 then Hit 7i32
+        else Flag true
+    score value -. 11i32

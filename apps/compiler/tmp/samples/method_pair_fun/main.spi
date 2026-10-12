@@ -1,0 +1,15 @@
+inl make (n : i32) (m : i32) : (i32 -> i32) * (i32 -> i32) =
+    inl left (x : i32) : i32 =
+        if n =. 0i32 then 0i32 else x +. n
+    inl right (x : i32) : i32 =
+        if m =. 0i32 then 0i32 else x +. m
+    left, right
+
+inl main () : i32 =
+    inl ~n = 3i32
+    inl ~m = 4i32
+    inl pair = join make n m
+    inl ~(a, b) = pair
+    inl ~p = a
+    inl ~q = b
+    if p 0i32 +. q 0i32 =. 7i32 then 0i32 else 1i32

@@ -1,0 +1,15 @@
+union pair =
+    | One : i32
+    | Both : i32 * string
+
+let score x : i32 =
+    match x with
+    | One value => value
+    | Both (left, right) => if left =. 3i32 && !!!!EQ(right, "hi") then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~flag = true
+    inl ~n = 3i32
+    inl ~word = "hi"
+    inl both = if flag then Both (n, word) else One 1i32
+    score both

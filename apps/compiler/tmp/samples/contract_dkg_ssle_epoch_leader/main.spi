@@ -1,0 +1,184 @@
+nominal genesis = ()
+nominal dealers_registered = ()
+nominal shares_distributed = ()
+nominal complaints_resolved = ()
+nominal key_certified = ()
+nominal leader_elected = ()
+
+nominal epoch_22 = ()
+nominal committee_9 = ()
+nominal dealer_a = ()
+nominal dealer_b = ()
+nominal dealer_c = ()
+nominal validator_17 = ()
+
+union polynomial dealer epoch =
+    | PolynomialA22 :: string -> polynomial dealer_a epoch_22
+    | PolynomialB22 :: string -> polynomial dealer_b epoch_22
+    | PolynomialC22 :: string -> polynomial dealer_c epoch_22
+
+union encrypted_share dealer receiver epoch =
+    | ShareA17_22 :: string -> encrypted_share dealer_a validator_17 epoch_22
+    | ShareB17_22 :: string -> encrypted_share dealer_b validator_17 epoch_22
+    | ShareC17_22 :: string -> encrypted_share dealer_c validator_17 epoch_22
+
+union complaint dealer receiver epoch =
+    | ComplaintA17_22 :: string -> complaint dealer_a validator_17 epoch_22
+    | ComplaintB17_22 :: string -> complaint dealer_b validator_17 epoch_22
+
+union resolution dealer receiver epoch =
+    | ResolutionA17_22 :: string -> resolution dealer_a validator_17 epoch_22
+    | ResolutionB17_22 :: string -> resolution dealer_b validator_17 epoch_22
+
+union group_key committee epoch =
+    | GroupKey9_22 :: string -> group_key committee_9 epoch_22
+
+union ssle_ticket validator committee epoch =
+    | Ticket17_9_22 :: string -> ssle_ticket validator_17 committee_9 epoch_22
+
+union leader_certificate validator committee epoch =
+    | Leader17_9_22 ::
+        group_key committee_9 epoch_22 * ssle_ticket validator_17 committee_9 epoch_22 ->
+        leader_certificate validator_17 committee_9 epoch_22
+
+union distinct3 a b c =
+    | Distinct3 :: forall a b c. a * b * c -> distinct3 a b c
+
+union dealer_set a b c epoch =
+    | DealerSetABC22 ::
+        distinct3
+            (polynomial dealer_a epoch_22)
+            (polynomial dealer_b epoch_22)
+            (polynomial dealer_c epoch_22) ->
+        dealer_set dealer_a dealer_b dealer_c epoch_22
+
+union dkg_ssle_op from to result =
+    | RegisterDealers :: forall a b c epoch.
+        distinct3 (polynomial a epoch) (polynomial b epoch) (polynomial c epoch) ->
+        dkg_ssle_op genesis dealers_registered (dealer_set a b c epoch)
+    | DistributeShares :: forall dealer receiver epoch.
+        polynomial dealer epoch * encrypted_share dealer receiver epoch ->
+        dkg_ssle_op dealers_registered shares_distributed
+            (encrypted_share dealer receiver epoch)
+    | ResolveComplaint :: forall dealer receiver epoch.
+        complaint dealer receiver epoch * resolution dealer receiver epoch ->
+        dkg_ssle_op shares_distributed complaints_resolved
+            (resolution dealer receiver epoch)
+    | CertifyGroupKey :: forall committee epoch. string ->
+        dkg_ssle_op complaints_resolved key_certified (group_key committee epoch)
+    | ElectLeader :: forall validator committee epoch.
+        group_key committee epoch * ssle_ticket validator committee epoch ->
+        dkg_ssle_op key_certified leader_elected
+            (leader_certificate validator committee epoch)
+
+nominal transcript_interpreter from to result = dkg_ssle_op from to result
+nominal crypto_interpreter from to result = dkg_ssle_op from to result
+nominal consensus_interpreter from to result = dkg_ssle_op from to result
+
+prototype interpret interpreter from to result : interpreter from to result -> string
+
+instance interpret transcript_interpreter = fun (transcript_interpreter op) =>
+    match op with
+    | RegisterDealers _ => "transcript-register-dealers"
+    | DistributeShares _ => "transcript-encrypted-share"
+    | ResolveComplaint _ => "transcript-resolution"
+    | CertifyGroupKey _ => "transcript-group-key"
+    | ElectLeader _ => "transcript-leader-proof"
+
+instance interpret crypto_interpreter = fun (crypto_interpreter op) =>
+    match op with
+    | RegisterDealers _ => "verify-commitments"
+    | DistributeShares _ => "verify-share-ciphertext"
+    | ResolveComplaint _ => "verify-revealed-share"
+    | CertifyGroupKey _ => "aggregate-public-key"
+    | ElectLeader _ => "verify-vrf-threshold"
+
+instance interpret consensus_interpreter = fun (consensus_interpreter op) =>
+    match op with
+    | RegisterDealers _ => "admit-distinct-dealers"
+    | DistributeShares _ => "deliver-private-shares"
+    | ResolveComplaint _ => "exclude-invalid-dealer"
+    | CertifyGroupKey _ => "seal-committee-epoch"
+    | ElectLeader _ => "publish-single-leader"
+
+union rec epoch_plan from to =
+    | EpochStep :: forall from to.
+        (exists result. dkg_ssle_op from to result * result) -> epoch_plan from to
+    | EpochThen :: forall from to.
+        (exists middle. epoch_plan from middle * epoch_plan middle to) -> epoch_plan from to
+
+inl polynomial_a () = PolynomialA22 "poly-a"
+inl polynomial_b () = PolynomialB22 "poly-b"
+inl polynomial_c () = PolynomialC22 "poly-c"
+inl dealers () = Distinct3 (polynomial_a (), polynomial_b (), polynomial_c ())
+inl dealer_set_abc () = DealerSetABC22 (dealers ())
+inl share_a () = ShareA17_22 "share-a-17"
+inl complaint_a () = ComplaintA17_22 "complaint-a-17"
+inl resolution_a () = ResolutionA17_22 "resolved-a-17"
+inl group_key_9 () = GroupKey9_22 "group-key-9-22"
+inl ticket_17 () = Ticket17_9_22 "ticket-17"
+inl leader_17 () = Leader17_9_22 (group_key_9 (), ticket_17 ())
+
+inl rec terminal forall from to. (plan : epoch_plan from to) : string =
+    match plan with
+    | EpochStep payload =>
+        inl exists result. op, _ = payload
+        match op with
+        | RegisterDealers _ => "dealers-registered"
+        | DistributeShares _ => "shares-distributed"
+        | ResolveComplaint _ => "complaints-resolved"
+        | CertifyGroupKey _ => "key-certified"
+        | ElectLeader _ => "leader-elected"
+    | EpochThen payload =>
+        inl exists middle. _, right = payload
+        terminal right
+
+inl build_plan () : epoch_plan genesis leader_elected =
+    inl register : epoch_plan genesis dealers_registered =
+        EpochStep (exists (RegisterDealers (dealers ()), dealer_set_abc ()))
+    inl distribute : epoch_plan dealers_registered shares_distributed =
+        EpochStep (exists (DistributeShares (polynomial_a (), share_a ()), share_a ()))
+    inl resolve : epoch_plan shares_distributed complaints_resolved =
+        EpochStep (exists (ResolveComplaint (complaint_a (), resolution_a ()), resolution_a ()))
+    inl certify : epoch_plan complaints_resolved key_certified =
+        EpochStep (exists (CertifyGroupKey "committee-9", group_key_9 ()))
+    inl elect : epoch_plan key_certified leader_elected =
+        EpochStep (exists (ElectLeader (group_key_9 (), ticket_17 ()), leader_17 ()))
+    EpochThen (exists (register,
+        EpochThen (exists (distribute,
+            EpochThen (exists (resolve,
+                EpochThen (exists (certify, elect))))))))
+
+union sealed_epoch =
+    | SealedEpoch ::
+        (exists validator committee epoch.
+            leader_certificate validator committee epoch) -> sealed_epoch
+
+inl inspect_leader forall validator committee epoch.
+    (_ : leader_certificate validator committee epoch) : string =
+    "leader-bound-to-key-and-epoch"
+
+inl with_epoch forall output.
+    (visit : forall validator committee epoch.
+        leader_certificate validator committee epoch -> output)
+    (value : sealed_epoch) : output =
+    match value with
+    | SealedEpoch payload =>
+        inl exists validator committee epoch. certificate = payload
+        visit certificate
+
+inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tregister-dealers\tRegisterDealers\tgenesis\tdealers_registered\t\tnon_idempotent\tdkg-committee\t0\n1\tdistribute-shares\tDistributeShares\tdealers_registered\tshares_distributed\tregister-dealers\tidempotent\tencrypted-channel\t1\n1\tresolve-complaints\tResolveComplaint\tshares_distributed\tcomplaints_resolved\tdistribute-shares\tnon_idempotent\tcomplaint-board\t0\n1\tcertify-key\tCertifyGroupKey\tcomplaints_resolved\tkey_certified\tresolve-complaints\tnon_idempotent\tcommittee-9\t0\n1\telect-leader\tElectLeader\tkey_certified\tleader_elected\tcertify-key\tnon_idempotent\tssle\t0\n"
+
+inl main () : string =
+    inl certify_op : dkg_ssle_op complaints_resolved key_certified (group_key committee_9 epoch_22) =
+        CertifyGroupKey "committee-9"
+    inl elect_op : dkg_ssle_op key_certified leader_elected (leader_certificate validator_17 committee_9 epoch_22) =
+        ElectLeader (group_key_9 (), ticket_17 ())
+    inl register_op : dkg_ssle_op genesis dealers_registered (dealer_set dealer_a dealer_b dealer_c epoch_22) =
+        RegisterDealers (dealers ())
+    inl transcript = interpret (transcript_interpreter certify_op)
+    inl crypto = interpret (crypto_interpreter elect_op)
+    inl consensus = interpret (consensus_interpreter register_op)
+    inl sealed_label = with_epoch `$inspect_leader (SealedEpoch (exists (leader_17 ())))
+    serialize_authority transcript crypto consensus (terminal (build_plan ()))

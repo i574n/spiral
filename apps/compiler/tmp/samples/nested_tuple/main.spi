@@ -1,0 +1,12 @@
+inl make ~x =
+    (x, x +. 1i32), (x +. 2i32, x +. 3i32)
+
+inl score ~(left, right) : i32 =
+    inl a, b = left
+    inl c, d = right
+    a +. b +. c +. d -. 10i32
+
+inl main () : i32 =
+    inl ~x = 1i32
+    inl state = join make x
+    join score state

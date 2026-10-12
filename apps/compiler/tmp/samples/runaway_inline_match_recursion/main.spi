@@ -1,0 +1,15 @@
+union rec nat =
+    | Zero
+    | Succ : nat
+
+inl rec depth (value : nat) (acc : i32) : i32 =
+    match value with
+    | Zero => acc
+    | Succ rest => depth rest acc
+
+inl main () : i32 =
+    inl ~value = Succ (Succ Zero)
+    depth value 0i32
+
+inl expected_error_ejp0011_reentry_limit () = ()
+inl oracle_must_not_record_current_error () = ()

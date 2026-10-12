@@ -1,0 +1,6 @@
+open main
+
+inl main () : bool =
+    inl result = inventory_indexed_model.inventory_indexed_closed_dfa_runtime_probe ()
+    assert_true result
+    true

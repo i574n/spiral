@@ -1,0 +1,5 @@
+open main
+
+inl main () =
+    inl raw_inventory : symbol_list bit_alphabet = finite_alphabet_symbols (finite_alphabet ())
+    dfa_run_certified (ends_with_zero ()) raw_inventory (input_110 ())

@@ -1,0 +1,62 @@
+program SpiralGenerated;
+{$mode delphi}{$H+}
+{$MAXSTACKSIZE $10000000}
+uses SysUtils, Math;
+type
+  TFun0 = class;
+  TFun0 = class
+    function Invoke(a0: LongInt): LongInt; virtual; abstract;
+  end;
+  Ta_c0 = class(TFun0)  function Invoke(v0: LongInt): LongInt; override; end;
+  Tb_c1 = class(TFun0)  function Invoke(v0: LongInt): LongInt; override; end;
+function ClosureCreate0: TFun0; forward;
+function ClosureCreate1: TFun0; forward;
+function method0(v0: TFun0): LongInt; forward;
+function Ta_c0.Invoke(v0: LongInt): LongInt;
+var
+  v1: LongInt;
+begin
+  v1 := v0 + 2;
+  Result := v1;
+end;
+function ClosureCreate0: TFun0;
+var c: Ta_c0;
+begin
+  c := Ta_c0.Create; 
+  Result := c;
+end;
+function Tb_c1.Invoke(v0: LongInt): LongInt;
+var
+  v1: LongInt;
+begin
+  v1 := v0 + 3;
+  Result := v1;
+end;
+function ClosureCreate1: TFun0;
+var c: Tb_c1;
+begin
+  c := Tb_c1.Create; 
+  Result := c;
+end;
+function method0(v0: TFun0): LongInt;
+begin
+  Result := v0.Invoke(40);
+end;
+function SpiralMain: LongInt;
+var
+  v0: Boolean;
+  v3: TFun0;
+begin
+  v0 := True;
+  if v0 then begin
+      v3 := ClosureCreate0;
+  end else begin
+      v3 := ClosureCreate1;
+  end;
+  Result := method0(v3);
+end;
+var SpiralOutputBuffer: array[0..65535] of Char;
+begin
+  SetTextBuf(Output, SpiralOutputBuffer, SizeOf(SpiralOutputBuffer));
+  Halt(SpiralMain);
+end.

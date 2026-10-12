@@ -1,0 +1,7 @@
+open main
+open indexed_assignment
+
+inl main () : bool =
+    require_support_assignment_alignment
+        (one_bit_support_vector_for_control ())
+        (two_bit_slot_assignments_for_negative ())

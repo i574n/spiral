@@ -1,0 +1,58 @@
+const spiral_utf8_encoder = new TextEncoder();
+const spiral_utf8_decoder = new TextDecoder("utf-8");
+let spiral_utf8_last = "";
+let spiral_utf8_bytes: Uint8Array = new Uint8Array(0);
+function spiral_utf8(value: string): Uint8Array {
+    if (value !== spiral_utf8_last) {
+        spiral_utf8_bytes = spiral_utf8_encoder.encode(value);
+        spiral_utf8_last = value;
+    }
+    return spiral_utf8_bytes;
+}
+function spiral_string_length(value: string): number {
+    return spiral_utf8(value).length;
+}
+function spiral_string_index(value: string, index: number): number {
+    const bytes = spiral_utf8(value);
+    if (!(index >= 0 && index < bytes.length)) throw new RangeError("string index " + index + " out of bounds for length " + bytes.length);
+    return bytes[index];
+}
+function spiral_slice_abort(message: string): never {
+    console.error(message);
+    process.exit(3);
+}
+function spiral_string_slice(value: string, from: number, to: number): string {
+    const bytes = spiral_utf8(value);
+    const length = bytes.length;
+    if (from < 0 || from > length || to < from - 1 || to >= length) spiral_slice_abort("string slice " + from + ".." + to + " out of bounds for length " + length);
+    if (to < from) return "";
+    if ((bytes[from] & 0xc0) === 0x80 || (to + 1 < length && (bytes[to + 1] & 0xc0) === 0x80)) spiral_slice_abort("string slice " + from + ".." + to + " splits a code point");
+    return spiral_utf8_decoder.decode(bytes.subarray(from, to + 1));
+}
+function choose_0(v0: boolean): string {
+    if (v0) {
+        let v1: string = "alpha";
+        return v1;
+    } else {
+        let v2: string = "beta";
+        return v2;
+    }
+}
+function measure_1(v0: string): number {
+    let v1: number = spiral_string_length(v0);
+    return v1;
+}
+export function main(): number {
+    let v0: boolean = true;
+    let v1: string = choose_0(v0);
+    let v2: boolean = false;
+    let v3: string = choose_0(v2);
+    let v4: number = measure_1(v1);
+    let v5: number = measure_1(v1);
+    let v6: number = (v4 + v5) | 0;
+    let v7: number = measure_1(v3);
+    let v8: number = (v6 + v7) | 0;
+    let v9: number = (v8 - 14) | 0;
+    return v9;
+}
+process.exitCode = main();

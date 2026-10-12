@@ -1,4 +1,7 @@
 /// # am'
+test am static =
+    open testing
+
 open rust
 open rust_operators
 
@@ -12,8 +15,13 @@ inl length forall dim {int} el. (a : a dim el) : dim =
 inl index forall dim {int} el. (i : dim) (a : a dim el) : el =
     backend_switch {
         Gleam = fun () => index a i
+        Lua = fun () => index a i
         Fsharp = fun () => index a i
         Python = fun () => $'!a[!i]' : el
+        Rust = fun () => index a i
+        TypeScript = fun () => index a i
+        Zig = fun () => index a i
+        Lean = fun () => index a i
     }
 
 /// ### index_base
@@ -45,6 +53,9 @@ instance equable a dim {number; int} t = generic_equable
 /// ### append
 instance append a dim {int; number} t = am.append
 
+test append =
+    ()
+
 /// ### map_base
 inl map_base forall t u. (fn : t -> u) (x : array_base t) : array_base u =
     a x
@@ -57,10 +68,14 @@ inl collect forall t r. (fn : t -> a int r) (items : a int t) : a int r =
     |> am.map fn
     |> am.fold (++) (a ;[])
 
+/// ### init_base
+inl init_base n fn : array_base _ =
+    am.init n fn
+    |> fun (a x : _ int _) => x
+
 /// ### init
 inl init n : array_base _ =
-    am.init n id
-    |> fun (a x : _ int _) => x
+    init_base n id
 
 /// ### choose
 inl choose f l =
@@ -71,15 +86,47 @@ inl choose f l =
         | None => acc
     |> listm.toArray
 
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test choose =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> choose (fun x => if x % 2 = 0 then Some x else None)
+    |> _assert_eq (a' ;[ 0; 2; 4; 6; 8 ])
+
 /// ### sum
 inl sum a =
     a |> am.fold (+) 0
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test sum =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> sum
+    |> _assert_eq 45
 
 /// ### init_series
 inl init_series start end inc : array_base _ =
     inl total = conv ((end - start) / inc) + 1
     am.init total (conv >> (*) inc >> (+) start)
     |> fun (a x : _ int _) => x
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test init_series =
+    init_series 0i32 6 2
+    |> a
+    |> fun x => x : _ int _
+    |> _assert_eq (a ;[ 0i32; 2; 4; 6 ])
 
 /// ### head
 inl head (ar : a _ _) =
@@ -94,6 +141,17 @@ inl last (ar : a _ _) =
     then ar |> index (len - 1)
     else error_type "The length of the array should be greater than 0."
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test last =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> last
+    |> _assert_eq 9
+
 /// ### try_pick
 inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
     (array, None)
@@ -101,6 +159,17 @@ inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
         match acc with
         | Some _ => acc
         | None => x |> fn
+
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test try_pick =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> try_pick (fun x => if x = 5i32 then Some x else None)
+    |> _assert_eq (Some 5i32)
 
 /// ### indexed
 inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
@@ -110,9 +179,32 @@ inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
     |> snd
     |> fun (a x : _ int _) => x
 
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test indexed =
+    am.init 3i32 ((*) 2)
+    |> fun (a x : _ int _) => x
+    |> indexed
+    |> _assert_eq' ;[0i32, 0; 1, 2; 2, 4]
+
 /// ### slice
 inl slice forall dim {int; number} el. from nearTo s : a dim el =
     am.slice { from nearTo } s
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test slice =
+    inl x : _ i32 _ = a ;[ 1i32; 2; 3 ]
+    x |> slice 0 0 |> _assert_eq (a ;[])
+    x |> slice 0 1 |> _assert_eq (a ;[ 1 ])
+    x |> slice 1 1 |> _assert_eq (a ;[])
+    x |> slice 1 2 |> _assert_eq (a ;[ 2 ])
+    x |> slice 2 2 |> _assert_eq (a ;[])
+    x |> slice 0 2 |> _assert_eq (a ;[ 1; 2 ])
 
 /// ### range
 union range dim =
@@ -128,41 +220,52 @@ inl range start end s =
             start, fn len
         | End start_fn, End end_fn =>
             start_fn len, end_fn len
-    s |> slice (start |> unbox) (end |> unbox)
+    s |> slice (start |> convert.unbox) (end |> convert.unbox)
 
 /// ## rust
 
 /// ### vec
 nominal vec t =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"Vec<$0>\")>]\n#endif\ntype Vec<'T> = class end"
-                ) : () -> ()
-        }
-        $'' : $'Vec<`t>'
+        rust_type
+            `($'Vec<`t>')
+            `($'Vec<`t>')
+            "type Vec<'T> = class end"
     )
 
 /// ### from_vec
 inl from_vec forall dim el. (vec : vec el) : a dim el =
-    !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    backend_switch {
+        Rust = fun () =>
+            inl vec = join vec
+            $'Rc::new(RefCell::new(!vec))' : a dim el
+    }
 
 /// ### from_vec_base
 inl from_vec_base forall el. (vec : vec el) : array_base el =
-    !\\(vec, $'"fable_library_rust::NativeArray_::array_from($0.clone())"')
+    backend_switch {
+        Rust = fun () =>
+            inl vec = join vec
+            $'Rc::new(RefCell::new(!vec))' : array_base el
+    }
 
 /// ### to_vec
 inl to_vec forall t. (ab : array_base t) : vec t =
-    !\\(ab, $'"$0.to_vec()"')
+    backend_switch {
+        Rust = fun () => $'(!ab).borrow().clone()' : vec t
+    }
 
 /// ### to_vec'
 inl to_vec' forall (t : * -> * -> *) u v. (x : t u v) : vec u =
-    !\($'$"!x.to_vec()"')
+    backend_switch {
+        Rust = fun () => $'(!x).clone()' : vec u
+    }
 
 /// ### to_vec''
 inl to_vec'' forall (t : * -> *) (u : * -> *) v. (x : t (u v)) : vec v =
-    !\($'$"!x.to_vec()"')
+    backend_switch {
+        Rust = fun () => $'(!x).to_vec()' : vec v
+    }
 
 /// ### to_vec'''
 inl to_vec''' forall t. (ab : array_base t) : vec t =
@@ -173,7 +276,6 @@ inl vec_push forall el. (el : el) (vec : vec el) : vec el =
     inl el = join el
     inl vec = join vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.push(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
@@ -189,16 +291,15 @@ inl vec_retain forall el. (fn : el -> bool) (vec : vec el) : vec el =
     inl vec = join vec
     inl fn = join fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.retain(|x| !fn(x.clone()))"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_sort_by_key
 inl vec_sort_by_key forall el t. (fn : el -> t) (vec : vec el) : vec el =
     inl vec = join vec
+    inl fn = rust.one_param_fn fn
     inl fn = join fn
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.sort_by_key(|x| !fn(x.clone()))"') : bool) |> ignore
     !\($'"!vec"')
 
@@ -207,36 +308,25 @@ inl vec_extend forall el. (el : vec el) (vec : vec el) : vec el =
     inl el = join el
     inl vec = join vec
     (!\($'"true; let mut !vec = !vec"') : bool) |> ignore
-    // inl vec = vec |> rust.to_mut
     (!\($'"true; !vec.extend(!el)"') : bool) |> ignore
     !\($'"!vec"')
 
 /// ### vec_mapi
 inl vec_mapi forall dim t u. (fn : dim -> t -> u) (ar : vec t) : vec u =
+    inl fn i = rust.one_param_fn (fn i)
     inl fn = join fn
     inl ar = join ar
     !\($'"!ar.iter().enumerate().map(|(i, x)| !fn(i.try_into().unwrap())(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map
 inl vec_map forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    (!\\(ar, $'"true; let _vec_map : Vec<_> = $0.into_iter().map(|x| { //"') : bool) |> ignore
-    inl result = fn !\($'"x"')
-    inl is_unit =
-        real
-            typecase u with
-            | () => true
-            | _ => false
-    if is_unit
-    then (!\($'"true; }}).collect::<Vec<_>>()"') : bool) |> ignore
-    else (!\\(result, $'"true; $0 }).collect::<Vec<_>>()"') : bool) |> ignore
-    !\($'"_vec_map"')
+    inl fn = rust.one_param_fn fn
+    !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_map'
 inl vec_map' forall t u. (fn : t -> u) (ar : vec t) : vec u =
-    inl fn = fn |> rust.func1_from
-    inl fn x =
-        fn |> rust.func1_move x
-    !\\((ar, fn), $'"$0.into_iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
+    inl fn = rust.one_param_fn fn
+    !\\((ar, fn), $'"$0.iter().map(|x| $1(x.clone())).collect::<Vec<_>>()"')
 
 /// ### vec_fold'
 inl vec_fold' forall t u. (fn : u -> t -> u) (init : u) (ar : vec t) : u =
@@ -252,7 +342,7 @@ inl vec_for_each forall t. (fn : t -> ()) (ar : vec t) : () =
 inl vec_for_each' forall t. (fn : t -> ()) (ar : vec t) : () =
     (!\\(ar, $'"true; $0.into_iter().for_each(|x| { //"') : bool) |> ignore
     (!\\(fn !\($'"x"'), $'$"true"') : bool) |> ignore
-    (!\($'"true; }}); { //"') : bool) |> ignore
+    (!\($'"true; }}); //"') : bool) |> ignore
 
 /// ### vec_for_each''
 inl vec_for_each'' forall t. (fn : t -> ()) (ar : vec t) : () =
@@ -268,13 +358,14 @@ inl vec_for_each''' forall t. (fn : t -> ()) (ar : vec t) : () =
 
 /// ### vec_filter
 inl vec_filter forall t. (fn : t -> bool) (ar : vec t) : vec t =
-    inl fn = join fn
-    inl ar = join ar
-    !\($'"!ar.into_iter().filter(|x| !fn(x.clone().clone())).collect::<Vec<_>>()"')
+    inl fn = rust.one_param_fn fn
+    !\\((ar, fn), $'"$0.iter().filter(|x| $1((*x).clone())).cloned().collect::<Vec<_>>()"')
 
 /// ### vec_len
-inl vec_len forall t. (vec : vec t) : unativeint =
-    !\\(vec, $'"$0.len()"')
+inl vec_len forall t. (vec : vec t) : convert.unativeint =
+    backend_switch {
+        Rust = fun () => $'((!vec).len() as usize)' : convert.unativeint
+    }
 
 /// ### vec_chunks
 inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
@@ -283,32 +374,39 @@ inl vec_chunks forall t. (n : i32) (vec : vec t) : vec (vec t) =
 /// ### slice
 nominal slice t =
     `(
-        global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0]\")>]\n#endif\ntype Slice<'T> = class end"
-        $'' : $'Slice<`t>'
+        rust_type
+            `($'Slice<`t>')
+            `($'[`t]')
+            "type Slice<'T> = class end"
     )
 
 /// ### slice'
+type slice'_switch el =
+    {
+        Gleam : $'Slice\'<`el>'
+        Lua : $'Slice\'<`el>'
+        Fsharp : $'Slice\'<`el>'
+        Python : $'Slice\'<`el>'
+        TypeScript : $'Slice\'<`el>'
+        Cpp : $'Slice\'<`el>'
+        CppHost : $'Slice\'<`el>'
+        Delphi : $'Slice\'<`el>'
+        Cuda : $'Slice\'<`el>'
+        Rust : $'_'
+    }
 nominal slice' el dim =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"_\")>]\n#endif\ntype Slice'<'T> = class end"
-                ) : () -> ()
-        }
-        $'' : $'Slice\'<`el>'
+        fsharp_global "type Slice'<'T> = class end"
+        $'' : $'backend_switch `(slice'_switch el)'
     )
 
 /// ### slice''
 nominal slice'' el dim =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"[$0; 10]\")>]\n#endif\ntype Slice'_<'T> = class end"
-                ) : () -> ()
-        }
-        $'' : $'Slice\'_<`el>'
+        rust_type
+            `($'Slice\'_<`el>')
+            `($'[`el; 10]')
+            "type Slice'_<'T> = class end"
     )
 
 /// ### slice_singleton
@@ -317,28 +415,29 @@ inl slice_singleton forall dim el. (x : option el) : slice' el dim =
     | Some x => !\($'"[!x]"')
     | None =>
         !\($'"[\\\"\\\".to_string()]"') : slice' el dim
-            // emit_expr `(()) `(slice' el dim) () ($'"[@dim]"' : string) : slice' el 10
-            // !\( : string) : slice' el i32 // !\($'"[]"')
 
 /// ### slice_length
-inl slice_length forall t dim. (x : slice' t dim) : unativeint =
+inl slice_length forall t dim. (x : slice' t dim) : convert.unativeint =
     !\($'"!x.len()"')
 
 /// ### slice_range
-inl slice_range forall t dim. (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim) =
+inl slice_range forall t dim.
+    (start : range t) (end : range t) (s : slice' t dim) : rust.ref (slice' t dim)
+    =
     inl len () =
         s |> slice_length
-    inl start, (end : unativeint) =
+    inl start, (end : convert.unativeint) =
         match start, end with
-        | Start start, End fn => start, (len >> convert) |> fn |> convert
-        | End start_fn, End end_fn => (len >> convert) |> start_fn, (len >> convert) |> end_fn |> convert
+        | Start start, End fn => start, (len >> convert.convert) |> fn |> convert.convert
+        | End start_fn, End end_fn =>
+            (len >> convert.convert) |> start_fn, (len >> convert.convert) |> end_fn |> convert.convert
     match start, end with
-    | start, end when unbox end =. len () => !\($'"&!s[!start..]"')
+    | start, end when end |> convert.unbox =. len () => !\($'"&!s[!start..]"')
     | start, end => !\\((start, end), $'"&!s[$0..$1]"')
 
 /// ### new_slice
 inl new_slice forall el dim. (el : el) : slice' el dim =
-    !\\(el, $'"[$0; @dim]"')
+    !\\(el, $'"[$0; @dim as usize]"')
 
 /// ### as_slice
 inl as_slice forall t. (x : array_base t) : rust.ref (slice t) =
@@ -351,11 +450,15 @@ inl slice_to_vec forall t. (slice : rust.ref (slice t)) : vec t =
 
 /// ### to_le_bytes
 inl to_le_bytes forall t. (x : t) : slice' u8 8 =
-    !\($'$"!x.to_le_bytes()"')
+    backend_switch {
+        Rust = fun () => $'(!x).to_le_bytes().to_vec()' : slice' u8 8
+    }
 
 /// ### as_bytes
 inl as_bytes forall t. (x : t) : rust.ref (slice u8) =
-    !\($'$"!x.as_bytes()"')
+    backend_switch {
+        Rust = fun () => $'(!x).as_bytes()' : rust.ref (slice u8)
+    }
 
 /// ### any
 inl any forall t. (fn : t -> bool) (source : array_base t) : bool =
@@ -370,12 +473,20 @@ instance iter_collect'' vec = fun (iter : into_iterator (t (u v))) =>
 
 /// ### new_vec
 inl new_vec forall t. (items : list t) : vec t =
-    inl items =
-        (items, ("", 0i32))
-        ||> listm.foldBack fun (x : t) (acc, i) =>
-            $'"!x"' +. (if i = 0 then "" else ", ") +. acc, i + 1
-        |> fst
-    !\($'"vec\![" + !items + "]"')
+    backend_switch {
+        Rust = fun () =>
+            inl v : vec t = $'Vec::new()'
+            items |> listm.iter fun x => $'!v.push(!x)' : ()
+            v
+    }
+
+///> rust
+test new_vec =
+    [ 0i32; 1 ]
+    |> new_vec
+    |> sm'.format_debug'
+    |> sm'.from_std_string
+    |> _assert_eq "[0, 1]"
 
 /// ## fsharp
 
@@ -385,26 +496,58 @@ inl average forall el {number}. (a : a _ el) : el =
 
 /// ### distinct
 inl distinct forall dim el. (a : a dim el) : a dim el =
-    $'!a |> Array.distinct'
+    if is_rust ()
+    then
+        inl a = $'!a ' : a int el
+        inl r = $'Rc::new(RefCell::new(Vec::with_capacity(!a.borrow().len())))' : a int el
+        loopw.for' {from=0; nearTo=length a} fun i =>
+            inl x = index i a
+            inl n = length r
+            inl s = mut {j=0}
+            loopw.while (fun () => s.j < n && index s.j r <> x) fun () =>
+                s <- {j=s.j + 1}
+            if s.j = n then $'!r.borrow_mut().push(!x)' : ()
+        $'!r ' : a dim el
+    else $'!a |> Array.distinct'
 
 /// ### skip
 inl skip forall dim el. (n : dim) (a : a dim el) : a dim el =
-    $'!a |> Array.skip !n '
+    if is_rust ()
+    then $'Rc::new(RefCell::new((!a).borrow().iter().skip((!n) as usize).cloned().collect::<Vec<_>>()))'
+    else $'!a |> Array.skip !n '
 
 /// ### skip_while
 inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
-    $'!a |> Array.skipWhile !fn '
+    if is_rust ()
+    then $'Rc::new(RefCell::new((!a).borrow().iter().skip_while(|x| (!fn)((*x).clone())).cloned().collect::<Vec<_>>()))'
+    else $'!a |> Array.skipWhile !fn '
 
 /// ### to_list_base'
 inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
     backend_switch {
+        Gleam = fun () =>
+            global "import gary/array"
+            $'!items |> array.to_list' : listm'.list' t
+        Lua = fun () => items |> convert.to : listm'.list' t
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
-        Python = fun () => items |> to : listm'.list' t
+        Python = fun () => items |> convert.to : listm'.list' t
+        Rust = fun () => $'Rc::new((!items).borrow().clone())' : listm'.list' t
+        TypeScript = fun () => $'[...!items]' : listm'.list' t
     }
 
 /// ### to_list'
 inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =
     items |> base |> to_list_base'
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test to_list =
+    a' ;[ -3i32; 6 ]
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ -3; 6 ]
 
 /// ### vec_collect
 inl vec_collect fn vec =
@@ -440,8 +583,58 @@ inl map' forall dim el el'. (fn : el -> el') (a : a dim el) : a dim el' =
     $'!a |> Array.map !fn '
 
 /// ### sort_by
-inl sort_by forall dim el. (fn : el -> _) (a : a dim el) : a dim el =
-    $'!a |> Array.sortBy !fn '
+inl sort_by forall dim el key. (fn : el -> key) (a : a dim el) : a dim el =
+    inl fsharp () = $'!a |> Array.sortBy !fn ' : a dim el
+    inl insertion_sort () =
+        inl r = am.map id ($'!a ' : a int el)
+        inl keys = am.map fn ($'!a ' : a int el)
+        loopw.for' {from=1; nearTo=length r} fun i =>
+            inl x = index i r
+            inl k = index i keys
+            inl s = mut {j=i}
+            loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
+                inl j = s.j
+                set r j (index (j - 1) r)
+                set keys j (index (j - 1) keys)
+                s <- {j=j - 1}
+            set r s.j x
+            set keys s.j k
+        $'!r ' : a dim el
+    backend_switch {
+        Gleam = fun () => fsharp ()
+        Lua = fun () => fsharp ()
+        Fsharp = fun () => fsharp ()
+        Python = fun () =>
+            inl keys = am.map fn ($'!a ' : a int el)
+            $'!a[sorted(range(len(!a)), key=lambda __i: (lambda __k: (__k.tag, __k) if hasattr(__k, "tag") else __k)(!keys[__i]))]' : a dim el
+        TypeScript = fun () =>
+            inl keys = am.map fn ($'!a ' : a int el)
+            global "function spiral_compare(a: any, b: any): number { if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) { if (Array.isArray(a)) { for (let i = 0; i < Math.min(a.length, b.length); i++) { const c = spiral_compare(a[i], b[i]); if (c !== 0) return c; } return a.length - b.length; } if (a.tag !== b.tag) return a.tag - b.tag; for (const k of Object.keys(a)) { if (k === 'tag') continue; const c = spiral_compare(a[k], b[k]); if (c !== 0) return c; } return 0; } return a < b ? -1 : a > b ? 1 : 0; }"
+            $'!a.map((_x: any, i: number) => i).sort((i: number, j: number) => spiral_compare(!keys[i], !keys[j])).map((i: number) => !a[i])' : a dim el
+        Cpp = fun () => fsharp ()
+        CppHost = fun () => fsharp ()
+        Delphi = fun () => fsharp ()
+        Cuda = fun () => fsharp ()
+        Zig = insertion_sort
+        Lean = insertion_sort
+        Rust = fun () =>
+            inl a = $'!a ' : a int el
+            inl key_fn = join (rust.one_param_fn fn)
+            inl r = $'Rc::new(RefCell::new(!a.borrow().clone()))' : a int el
+            inl keys = $'Rc::new(RefCell::new(!a.borrow().iter().map(|x| !key_fn(x.clone())).collect::<Vec<_>>()))' : a int key
+            loopw.for' {from=1; nearTo=length a} fun i =>
+                inl x = index i r
+                inl k = index i keys
+                inl s = mut {j=i}
+                loopw.while (fun () => s.j > 0 && gt_is (comp (index (s.j - 1) keys) k)) fun () =>
+                    inl j = s.j
+                    set r j (index (j - 1) r)
+                    set keys j (index (j - 1) keys)
+                    s <- {j=j - 1}
+                set r s.j x
+                set keys s.j k
+            $'!r ' : a dim el
+    }
 
 /// ### sort
 inl sort forall dim el. (a : a dim el) : a dim el =
@@ -457,4 +650,23 @@ inl transpose forall el. (a : array_base (array_base el)) : array_base (array_ba
 
 /// ### try_item
 inl try_item forall dim el. (i : i32) (a : a dim el) : option el =
-    $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    inl fsharp () : option el = $'!a |> Array.tryItem !i ' |> optionm'.unbox
+    inl in_bounds_item () : option el =
+        inl a = $'!a ' : a i32 el
+        if i >= 0 && i < length a then Some (index i a) else None
+    backend_switch {
+        Gleam = fsharp
+        Lua = fsharp
+        Fsharp = fsharp
+        Python = fsharp
+        TypeScript = fsharp
+        Cpp = fsharp
+        CppHost = fsharp
+        Delphi = fsharp
+        Cuda = fsharp
+        Zig = in_bounds_item
+        Lean = in_bounds_item
+        Rust = fun () =>
+            inl x : optionm'.option' el = $'(if !i < 0 { None } else { !a.borrow().get(!i as usize).cloned() })'
+            x |> optionm'.unbox
+    }

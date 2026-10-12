@@ -1,0 +1,8 @@
+open sm'_operators
+
+/// A join whose body formats a union with `++#?`: apps/spiral's stall in miniature (pending join points at this
+/// join and at sm'_real.spir:276; FRONTIER.md fix 44). env.spi's catch-all target branch does exactly this.
+inl main () : i32 =
+    inl x = Some 1i32
+    inl s = join "x: " ++#? x
+    if s = "" then 1i32 else 0i32

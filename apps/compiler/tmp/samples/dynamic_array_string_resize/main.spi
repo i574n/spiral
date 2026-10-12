@@ -1,0 +1,28 @@
+inl reserve ~(xs : array string) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+inl resize ~(xs : array string) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+inl capacity ~(xs : array string) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+inl refcount ~(xs : array string) : i32 =
+    $'DynamicArrayRefCount0(!xs)'
+
+inl main () : i32 =
+    inl ~values : array string = create 4i32
+    join resize values 1i32
+    set values 0i32 "ab"
+    inl ~alias = values
+    join reserve values 8i32
+    join resize values 3i32
+    set values 1i32 "cde"
+    set values 2i32 "f"
+    inl first = index alias 0i32
+    inl second = index values 1i32
+    inl third = index values 2i32
+    inl ~refs = join refcount values
+    inl ~cap = join capacity values
+    join resize alias 1i32
+    sm.length first +. sm.length second +. sm.length third +. refs +. cap +. length values -. 17i32

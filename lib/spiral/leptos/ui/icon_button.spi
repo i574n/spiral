@@ -2,11 +2,10 @@ open sm'_operators
 open leptos
 open rust
 
-inl render icon (class : () -> sm'.std_string) props : _ (_ button) =
-    inl class = class |> rust.emit
+inl render icon (class : () -> string) props : _ (_ button) =
     button
         ([
-            $'"class=move || \\\"inline-flex shrink-0 items-center [justify-content:center] pb-[8px] pt-[8px] px-[12px] \\\".to_owned() + &!class(())"'
+            class_fn "inline-flex shrink-0 items-center [justify-content:center] pb-[8px] pt-[8px] px-[12px] " class
         ] ++ props)
         fun () =>
             :>[

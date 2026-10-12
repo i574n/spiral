@@ -1,0 +1,37 @@
+nominal cell_array = array_base (heap {value : heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string}})
+
+inl create (n : i32) : cell_array = cell_array !!!!ArrayCreate(`(heap {value : heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string}}), n)
+inl get (array : cell_array) (i : i32) : heap {value : heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string}} =
+    match array with
+    | cell_array values => !!!!ArrayIndex(values, i)
+inl set (array : cell_array) (i : i32) (value : heap {value : heap {value : i32 * string} * heap {value : i32 * string} * heap {value : i32 * string}}) : () =
+    match array with
+    | cell_array values => !!!!ArrayIndexSet(values, i, value)
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl left_pair = n, word
+    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl ~m = 4i32
+    inl ~other = "yo"
+    inl mid_pair = m, other
+    inl mid_heap = !!!!LayoutToHeap({value = mid_pair})
+    inl ~k = 9i32
+    inl ~tail = "ok"
+    inl right_pair = k, tail
+    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl trip = left_heap, mid_heap, right_heap
+    inl box = !!!!LayoutToHeap({value = trip})
+    inl a = create 1i32
+    set a 0i32 box
+    inl held = get a 0i32
+    inl opened = !!!!LayoutIndex(held)
+    inl ~(left, mid, right) = opened.value
+    inl left_opened = !!!!LayoutIndex(left)
+    inl ~(p, q) = left_opened.value
+    inl mid_opened = !!!!LayoutIndex(mid)
+    inl ~(r, s) = mid_opened.value
+    inl right_opened = !!!!LayoutIndex(right)
+    inl ~(t, u) = right_opened.value
+    if p =. 7i32 && !!!!EQ(q, "hi") && r =. 4i32 && !!!!EQ(s, "yo") && t =. 9i32 && !!!!EQ(u, "ok") then 0i32 else 1i32

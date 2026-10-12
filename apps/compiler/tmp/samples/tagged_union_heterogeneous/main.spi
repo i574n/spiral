@@ -1,0 +1,13 @@
+union outcome =
+    | Hit : i32
+    | Flag : bool
+
+let score x : i32 =
+    match x with
+    | Hit value => value
+    | Flag value => if value then 9i32 else 4i32
+
+inl main () =
+    inl ~choose_hit = false
+    inl value = if choose_hit then Hit 7i32 else Flag true
+    score value -. 9i32

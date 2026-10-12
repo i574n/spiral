@@ -1,0 +1,30 @@
+nominal missing = ()
+nominal present = ()
+nominal shard_a = ()
+nominal shard_b = ()
+nominal shard_c = ()
+
+union shard_result shard =
+    | ResultA :: string -> shard_result shard_a
+    | ResultB :: string -> shard_result shard_b
+    | ResultC :: string -> shard_result shard_c
+
+union rec barrier a_state b_state c_state =
+    | EmptyBarrier :: barrier missing missing missing
+    | AddA :: forall b_state c_state.
+        barrier missing b_state c_state * shard_result shard_a
+        -> barrier present b_state c_state
+    | AddB :: forall a_state c_state.
+        barrier a_state missing c_state * shard_result shard_b
+        -> barrier a_state present c_state
+    | AddC :: forall a_state b_state.
+        barrier a_state b_state missing * shard_result shard_c
+        -> barrier a_state b_state present
+
+inl complete_barrier (_ : barrier present present present) : string =
+    "joined"
+
+inl main () : string =
+    inl a = AddA (EmptyBarrier, ResultA "a")
+    inl b = AddB (a, ResultB "b")
+    complete_barrier b

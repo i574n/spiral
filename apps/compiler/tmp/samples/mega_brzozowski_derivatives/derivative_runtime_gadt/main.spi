@@ -1,0 +1,53 @@
+open main
+
+nominal derivative_runtime_raw = ()
+nominal derivative_runtime_checked = ()
+
+union derivative_runtime_state alphabet phase =
+    | DerivativeRuntimeRaw :: forall alphabet. regex alphabet * alphabet * linear_input alphabet -> derivative_runtime_state alphabet derivative_runtime_raw
+    | DerivativeRuntimeChecked :: forall alphabet. regex alphabet * alphabet * linear_input alphabet * bool -> derivative_runtime_state alphabet derivative_runtime_checked
+
+nominal derivative_runtime_check_capability alphabet =
+    regex alphabet -> alphabet -> linear_input alphabet -> bool
+
+inl derivative_runtime_check_capability_default forall alphabet {symbol_compare}.
+    : derivative_runtime_check_capability alphabet =
+    derivative_runtime_check_capability (
+        fun value symbol suffix =>
+            derivative_remainder_candidate_law
+                value
+                symbol
+                suffix
+                (canonical_derivative value symbol))
+
+inl derivative_runtime_check forall alphabet.
+    (capability : derivative_runtime_check_capability alphabet)
+    (state : derivative_runtime_state alphabet derivative_runtime_raw)
+    : derivative_runtime_state alphabet derivative_runtime_checked =
+    match capability, state with
+    | derivative_runtime_check_capability check, DerivativeRuntimeRaw (value, symbol, suffix) =>
+        DerivativeRuntimeChecked (value, symbol, suffix, check value symbol suffix)
+
+inl derivative_runtime_checked_value forall alphabet.
+    (state : derivative_runtime_state alphabet derivative_runtime_checked) : bool =
+    match state with
+    | DerivativeRuntimeChecked (_, _, _, valid) => valid
+
+inl main () : bool =
+    inl bit_capability : derivative_runtime_check_capability bit_alphabet = derivative_runtime_check_capability_default
+    inl tri_capability : derivative_runtime_check_capability tri_alphabet = derivative_runtime_check_capability_default
+    inl ~bit_value = ends_with_zero ()
+    inl ~bit_symbol = zero ()
+    inl ~bit_suffix = input_110 ()
+    inl ~tri_value = tri_ab_star_then_c ()
+    inl ~tri_symbol = tri_a ()
+    inl ~tri_suffix = InputCons (tri_b (), InputCons (tri_c (), InputEmpty))
+    inl bit_checked : derivative_runtime_state bit_alphabet derivative_runtime_checked =
+        derivative_runtime_check
+            bit_capability
+            (DerivativeRuntimeRaw (bit_value, bit_symbol, bit_suffix))
+    inl tri_checked : derivative_runtime_state tri_alphabet derivative_runtime_checked =
+        derivative_runtime_check
+            tri_capability
+            (DerivativeRuntimeRaw (tri_value, tri_symbol, tri_suffix))
+    derivative_runtime_checked_value bit_checked && derivative_runtime_checked_value tri_checked

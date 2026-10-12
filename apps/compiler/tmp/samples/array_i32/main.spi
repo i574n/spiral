@@ -1,0 +1,26 @@
+nominal i32_array = array_base i32
+
+inl create (n : i32) : i32_array = i32_array !!!!ArrayCreate(`i32, n)
+inl get (array : i32_array) (i : i32) : i32 =
+    match array with
+    | i32_array values => !!!!ArrayIndex(values, i)
+inl set (array : i32_array) (i : i32) (value : i32) : () =
+    match array with
+    | i32_array values => !!!!ArrayIndexSet(values, i, value)
+inl len (array : i32_array) : i32 =
+    match array with
+    | i32_array values => !!!!ArrayLength(`i32, values)
+
+inl main () : i32 =
+    inl ~n = 4i32
+    inl a = create n
+    set a 0i32 10i32
+    set a 1i32 20i32
+    set a 2i32 30i32
+    inl x = get a 0i32
+    inl y = get a 1i32
+    set a 3i32 (x +. y)
+    inl z = get a 2i32
+    inl w = get a 3i32
+    inl total = z +. w
+    if len a =. n && total =. 60i32 then 0i32 else 1i32

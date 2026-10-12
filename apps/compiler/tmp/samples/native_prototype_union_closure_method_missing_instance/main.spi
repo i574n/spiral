@@ -1,0 +1,6 @@
+nominal unknown = i32
+
+prototype score a : a -> i32
+
+inl main () : i32 =
+    score (unknown 42i32)

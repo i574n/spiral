@@ -1,4 +1,8 @@
 /// # reflection
+test reflection static =
+    open testing
+
+open sm'_operators
 
 /// ## reflection
 
@@ -16,20 +20,94 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                                 | () => $'' : value
                                 | _ =>
                                     backend_switch `value `({}) {
+                                        Gleam =
+                                            (fun () =>
+                                                $'Nil' : value
+                                            ) : () -> value
+                                        Lua =
+                                            (fun () =>
+                                                $'nil' : value
+                                            ) : () -> value
                                         Fsharp =
                                             (fun () =>
                                                 $'Unchecked.defaultof<_>' : value
                                             ) : () -> value
                                         Python =
                                             (fun () =>
-                                                $'None' : value
+                                                inl is_python =
+                                                    backend_switch `bool `({}) {
+                                                        Gleam = (fun () => false) : () -> bool
+                                                        Lua = (fun () => false) : () -> bool
+                                                        Fsharp = (fun () => false) : () -> bool
+                                                        Python = (fun () => true) : () -> bool
+                                                    }
+                                                if is_python
+                                                then
+                                                    typecase value with
+                                                    | i8 => 0i8
+                                                    | i16 => 0i16
+                                                    | i32 => 0i32
+                                                    | i64 => 0i64
+                                                    | u8 => 0u8
+                                                    | u16 => 0u16
+                                                    | u32 => 0u32
+                                                    | u64 => 0u64
+                                                    | f32 => 0.0f32
+                                                    | f64 => 0.0f64
+                                                    | bool => false
+                                                    | char => '\0'
+                                                    | _ => $'None' : value
+                                                else $'None' : value
+                                            ) : () -> value
+                                        Rust =
+                                            (fun () =>
+                                                $'Default::default()' : value
+                                            ) : () -> value
+                                        TypeScript =
+                                            (fun () =>
+                                                typecase value with
+                                                | i8 => 0i8
+                                                | i16 => 0i16
+                                                | i32 => 0i32
+                                                | i64 => 0i64
+                                                | u8 => 0u8
+                                                | u16 => 0u16
+                                                | u32 => 0u32
+                                                | u64 => 0u64
+                                                | f32 => 0.0f32
+                                                | f64 => 0.0f64
+                                                | bool => false
+                                                | char => '\0'
+                                                | _ => $'undefined' : value
                                             ) : () -> value
                                     }
                             inl item = real_core.nominal_create `union_type (key, value)
-                            inl key' = sm'_real.symbol_to_string `(`key)
+                            inl key' = sm'_real.symbol_to_string_real `(`key)
                             (::) `(string * union_type) (key', item) acc
                     (Nil `(string * union_type))
                     `union_record_type
+union reflection_test_target = Wasm | Contract
+
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test get_union_fields =
+    get_union_fields ()
+    |> listm'.box
+    |> listm'.to_array'
+    |> a
+    |> am'.sort_by snd
+    |> fun (a x : _ int _) => x
+    |> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
+
+    get_union_fields ()
+    |> listm'.box
+    |> listm'.to_array'
+    |> a
+    |> am'.sort_by snd
+    |> fun (a x : _ int _) => x
+    |> _assert_eq' ;[ "Some", Some 0i32; "None", None ]
 
 /// ### get_union_fields_untag
 inl get_union_fields_untag forall union_type. () : list (string * union_type) =
@@ -44,12 +122,20 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                 inl key, item : (string * union_type) =
                                     real_core.union_untag `union_type i
                                         (fun key => forall value. =>
-                                            inl key' = sm'_real.symbol_to_string `(`key)
+                                            inl key' = sm'_real.symbol_to_string_real `(`key)
                                             inl value =
                                                 typecase value with
                                                 | () => $'' : value
                                                 | _ =>
                                                     backend_switch `value `({}) {
+                                                        Gleam =
+                                                            (fun () =>
+                                                                $'Nil' : value
+                                                            ) : () -> value
+                                                        Lua =
+                                                            (fun () =>
+                                                                $'nil' : value
+                                                            ) : () -> value
                                                         Fsharp =
                                                             (fun () =>
                                                                 $'Unchecked.defaultof<_>' : value
@@ -57,6 +143,14 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                                                         Python =
                                                             (fun () =>
                                                                 $'None' : value
+                                                            ) : () -> value
+                                                        Rust =
+                                                            (fun () =>
+                                                                $'Default::default()' : value
+                                                            ) : () -> value
+                                                        TypeScript =
+                                                            (fun () =>
+                                                                $'undefined' : value
                                                             ) : () -> value
                                                     }
                                             inl item = real_core.nominal_create `union_type (key, value)
@@ -73,17 +167,79 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                 inl result = fst `(list (string * union_type)) `i32 result
                 listm.rev `(string * union_type) result
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test get_union_fields_untag =
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
+
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Some", Some (); "None", None ]
+
 /// ### union_try_pick
 inl union_try_pick forall t. (key : string) : option t =
-    real get_union_fields_untag `t ()
+    inl fields = real get_union_fields_untag `t ()
+    fields
     ++ (
-        real get_union_fields_untag `t ()
-        |> listm.map fun key, x => key |> sm'.to_lower, x
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
     )
-    |> listm'.try_pick fun key', x =>
-        if key' = key
+    |> listm'.box
+    |> listm'.to_array'
+    |> fun x => a x : _ int _
+    |> am'.try_pick fun key', x =>
+        if key' =. key
         then Some x
         else None
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_try_pick =
+    "wasm"
+    |> union_try_pick
+    |> _assert_eq (Some Wasm)
+
+    "Wasm"
+    |> union_try_pick
+    |> _assert_eq (Some Wasm)
+
+/// ### union_try_pick'
+inl union_try_pick' forall t. (key : string) : option t =
+    inl fields = real get_union_fields_untag `t ()
+    fields
+    ++ (
+        fields
+        |> listm.map fun key', x =>
+            key' |> sm'.to_lower, x
+    )
+    |> listm'.try_pick fun key', x =>
+        if key' =. key
+        then x |> Some
+        else None
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_try_pick_2 =
+    "wasm"
+    |> union_try_pick'
+    |> _assert_eq (Some Wasm)
+
+    "Wasm"
+    |> union_try_pick'
+    |> _assert_eq (Some Wasm)
 
 /// ### union_to_string
 inl union_to_string forall t. (x : t) : string =
@@ -113,17 +269,30 @@ inl union_to_string forall t. (x : t) : string =
             else
                 inl separator =
                     backend_switch {
+                        Gleam = fun () => "("
+                        Lua = fun () => "("
                         Fsharp = fun () =>
                             run_target function
-                                | Rust _ => fun () => join "("
+                                | Rust => fun () => join "("
                                 | _ => fun () => join " "
                         Python = fun () => "("
+                        Rust = fun () => "("
+                        TypeScript = fun () => "("
                     }
-                inl x' = x' |> sm'.format |> sm'.split separator |> am'.index_base 0
-                if x |> sm'.format |> sm'.starts_with x'
+                inl x' = #?x' |> sm'.split separator |> am'.index_base 0
+                if #?x |> sm'.starts_with x'
                 then Some key
                 else None
     |> optionm.value
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_to_string =
+    Some true
+    |> union_to_string
+    |> _assert_eq' "Some"
 
 /// ### nameof
 inl nameof forall t. (x : t) : string =
@@ -131,9 +300,14 @@ inl nameof forall t. (x : t) : string =
         real_core.record_type_fold_back
             fun key =>
                 forall value. _ =>
-                    sm'_real.symbol_to_string `(`key)
+                    sm'_real.symbol_to_string_real `(`key)
             `t
             ""
+
+test nameof =
+    { test1 = ""; test2 = "" }
+    |> nameof
+    |> _assert_eq' "test1"
 
 /// ### get_record_fields
 inl get_record_fields forall t u. (x : t) : list (string * u) =
@@ -141,11 +315,16 @@ inl get_record_fields forall t u. (x : t) : list (string * u) =
         real_core.record_type_fold_back
             fun key =>
                 forall u'. acc =>
-                    inl k = sm'_real.symbol_to_string `(`key)
+                    inl k = sm'_real.symbol_to_string_real `(`key)
                     inl v = x key
                     (::) `(string * u') (k, v) acc
             `t
             (Nil `(string * u))
+
+test get_record_fields =
+    { a = "1"; b = "2" }
+    |> get_record_fields
+    |> _assert_eq' [ "a", "1"; "b", "2" ]
 
 /// ### get_functions_types
 inl get_functions_types forall t {record}. (fns : t) =
@@ -155,7 +334,7 @@ inl get_functions_types forall t {record}. (fns : t) =
                 real_core.record_type_fold_back
                     fun key =>
                         forall v. acc =>
-                            inl k = sm'_real.symbol_to_string `(`key)
+                            inl k = sm'_real.symbol_to_string_real `(`key)
                             inl v = $'"`v"' : string
                             (::) `(string * string) (k, v) acc
                     `t
@@ -167,9 +346,32 @@ inl get_functions_types forall t {record}. (fns : t) =
         real_core.record_type_fold_back
             fun key =>
                 forall v. acc =>
-                    inl k = sm'_real.symbol_to_string `(`key)
+                    inl k = sm'_real.symbol_to_string_real `(`key)
                     inl args, result = get_function_type `v
                     (::) `(string * (list (string * string) * string)) (k, (args, result)) acc
             `(`fns)
             (Nil `(string * (list (string * string) * string)))
     |> fun x => x : list (string * (list (string * string) * string))
+
+///> fsharp
+test get_functions_types =
+    inl one ({ a } : { a : i32 }) : i32 = a + 1
+    inl two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
+    inl fns = { one two }
+
+    fns
+    |> get_functions_types
+    |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+    |> listm'.box
+    |> listm'.to_array'
+    |> sm'.format
+    |> _assert_eq' (
+        [
+            "one", ["a", "int32"], "int32"
+            "two", ["a", "int32"; "b", "int32"], "int32"
+        ]
+        |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+        |> listm'.box
+        |> listm'.to_array'
+        |> sm'.format
+    )

@@ -1,0 +1,14 @@
+union answer =
+    | No : bool
+    | Yes : i32
+
+let score x : i32 =
+    match x with
+    | No value => if value then 1i32 else 2i32
+    | Yes value => value
+
+inl main () : i32 =
+    inl ~flag = true
+    inl yes = if flag then Yes 7i32 else No false
+    inl no = if flag then No true else Yes 1i32
+    if score yes =. 7i32 && score no =. 1i32 then 0i32 else 1i32

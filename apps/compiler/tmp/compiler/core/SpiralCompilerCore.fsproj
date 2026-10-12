@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The compiler core as its own assembly, so host edits (Program.fs) never
+    recompile the monolith. Both cores are apps/compiler/spiral_compiler.fs: -p:SpiralCore=hopac
+    defines SPIRAL_CORE_HOPAC, which selects hopac's side of the file's `#if SPIRAL_CORE_HOPAC`
+    section pairs; -p:SpiralCore=single-flight leaves it undefined. -p:SpiralCoreSource=<path>
+    builds any other copy.
+  -->
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <AssemblyName>SpiralCompilerCore</AssemblyName>
+    <RootNamespace>Polyglot</RootNamespace>
+    <SpiralCoreSource Condition="'$(SpiralCoreSource)' == ''">../../../spiral_compiler.fs</SpiralCoreSource>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(SpiralCoreSource)" Link="spiral_compiler.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../runtime-compat/SpiralCompilerRuntimeCompat.fsproj" />
+  </ItemGroup>
+  <Import Project="../lib/References.props" />
+</Project>

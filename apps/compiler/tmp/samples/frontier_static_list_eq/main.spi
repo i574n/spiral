@@ -1,0 +1,7 @@
+/// A static list compared with `=` must fold at compile time (single-flight: the program is `0`). Hopac turns
+/// the comparison into a runtime join point, so `chars` becomes a runtime list and `sm'.char_contains` ->
+/// `listm'.exists'` -> `try_item` unrolls forever (EJP0011). apps/spiral hits it through `sm'.trim_end`.
+inl main () : i32 =
+    inl chars = [ ' '; '/' ]
+    inl chars = if chars = [] then [ 'x' ] else chars
+    if sm'.char_contains chars (dyn 'x') then 1i32 else 0i32

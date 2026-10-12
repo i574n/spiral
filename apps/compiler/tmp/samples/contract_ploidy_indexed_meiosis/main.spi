@@ -1,0 +1,17 @@
+nominal haploid = ()
+nominal diploid = ()
+
+union genome ploidy =
+    | Gamete :: string -> genome haploid
+    | HomologPair :: string * string -> genome diploid
+
+inl meiosis (genome : genome diploid) : genome haploid * genome haploid =
+    match genome with
+    | HomologPair (maternal, paternal) => Gamete maternal, Gamete paternal
+
+inl render_gametes (pair : genome haploid * genome haploid) : string =
+    match pair with
+    | Gamete _, Gamete _ => "maternal:paternal"
+
+inl main () : string =
+    render_gametes (meiosis (HomologPair ("maternal", "paternal")))

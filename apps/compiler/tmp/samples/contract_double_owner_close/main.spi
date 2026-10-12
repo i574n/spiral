@@ -1,0 +1,16 @@
+nominal term_kind = ()
+nominal owner_open = ()
+nominal owner_closed = ()
+
+union owner kind state =
+    | TermOpen :: owner term_kind owner_open
+    | TermClosed :: owner term_kind owner_closed
+
+inl close_owner forall kind. (owner : owner kind owner_open) : owner kind owner_closed =
+    match owner with
+    | TermOpen => TermClosed
+
+inl main () : string =
+    inl owner_closed = close_owner TermOpen
+    inl _ = close_owner owner_closed
+    "unreachable"

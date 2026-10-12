@@ -1,0 +1,9 @@
+inl main () : i32 =
+    inl ~a = 65536u32
+    inl ~b = 65536u32
+    inl ~all = 4294967295u32
+    inl ~c = 3u32
+    inl p = a *. b
+    inl q = all *. c
+    if p =. 0u32 && q =. 4294967293u32 then 0i32
+    else 1i32

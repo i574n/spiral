@@ -1,0 +1,34 @@
+nominal app_scope = ()
+nominal keys_before = ()
+nominal keys_after = ()
+nominal key_b = ()
+nominal key_c = ()
+nominal live = ()
+nominal disposed = ()
+nominal complete = ()
+
+union mounted scope keys state =
+    | Mounted :: forall scope keys state. string -> mounted scope keys state
+
+union patch scope old_keys new_keys first_removed second_removed state =
+    | Patch :: forall scope old_keys new_keys first_removed second_removed state. string -> patch scope old_keys new_keys first_removed second_removed state
+
+union disposal scope key state =
+    | Disposal :: forall scope key state. string -> disposal scope key state
+
+inl commit forall scope.
+    (mounted : mounted scope keys_before live)
+    (patch : patch scope keys_before keys_after key_b key_c complete)
+    (first : disposal scope key_b disposed)
+    (second : disposal scope key_c disposed)
+    : mounted scope keys_after live =
+    match mounted, patch, first, second with
+    | Mounted _, Patch _, Disposal _, Disposal _ => Mounted "multi-key-disposal-committed"
+
+inl main () : string =
+    inl mounted : mounted app_scope keys_before live = Mounted "a,b,c"
+    inl patch : patch app_scope keys_before keys_after key_b key_c complete = Patch "remove-b-c"
+    inl b : disposal app_scope key_b disposed = Disposal "b"
+    inl c : disposal app_scope key_c disposed = Disposal "c"
+    match commit mounted patch b c with
+    | Mounted label => label

@@ -1,0 +1,6 @@
+inl f (x : i32) : i32 =
+    match x with
+
+inl main () : i32 = f 1i32
+
+inl expected_parse_error_at_empty_match () = ()

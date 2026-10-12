@@ -1,0 +1,68 @@
+union slot =
+    | None
+    | Held : (heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32})
+
+union wrap =
+    | Absent
+    | Box : (heap {value : slot})
+    | Mark : i32
+
+let score x : i32 =
+    match x with
+    | Absent => 1i32
+    | Mark k => if k =. 0i32 then 1i32 else 1i32
+    | Box box =>
+        inl opened = !!!!LayoutIndex(box)
+        match opened.value with
+        | None => 1i32
+        | Held inner =>
+            inl inner_opened = !!!!LayoutIndex(inner)
+            inl ~(inner_held, flag) = inner_opened.value
+            inl deep_opened = !!!!LayoutIndex(inner_held)
+            inl ~(left, right) = deep_opened.value
+            inl left_opened = !!!!LayoutIndex(left)
+            inl ~(a, b) = left_opened.value
+            inl right_opened = !!!!LayoutIndex(right)
+            inl ~(c, d) = right_opened.value
+            if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl left_pair = n, word
+    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl ~m = 4i32
+    inl ~other = "yo"
+    inl right_pair = m, other
+    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl pair = left_heap, right_heap
+    inl inner = !!!!LayoutToHeap({value = pair})
+    inl ~mark = 2i32
+    inl outer_pair = inner, mark
+    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl ~on = true
+    inl held = if on then Held outer else None
+    inl box = !!!!LayoutToHeap({value = held})
+    inl ~use_box = true
+    inl wrapped = if use_box then Box box else Mark 1i32
+    inl ~tag = 3i32
+    inl marked = Mark tag
+    inl cover_box = !!!!LayoutToHeap({value = wrapped})
+    inl cover_mark = !!!!LayoutToHeap({value = marked})
+    inl f (z : i32) : heap {value : wrap} =
+        if z =. 0i32 then
+            cover_mark
+        else
+            cover_box
+    inl ~g = f
+    inl cell : mut {value : heap {value : wrap}} = !!!!LayoutToHeapMutable({value = g 1i32})
+    inl before = !!!!LayoutIndex(cell)
+    inl before_heap = before.value
+    inl before_opened = !!!!LayoutIndex(before_heap)
+    inl before_score = score before_opened.value
+    cell <- {value = g 0i32}
+    inl after = !!!!LayoutIndex(cell)
+    inl after_heap = after.value
+    inl after_opened = !!!!LayoutIndex(after_heap)
+    inl after_score = score after_opened.value
+    if before_score =. 0i32 && after_score =. 1i32 then 0i32 else 1i32

@@ -20,17 +20,22 @@ inl rec __expect
     : ()
     =
     inl result = fn a b
+    inl get_data () =
+        if result
+        then #?{ expected = b }
+        else #?{ actual = a; expected = b }
+    inl get_raw_text () =
+        inl data = get_data ()
+        name ++# " " ++# get_data ()
     inl result =
         result || join result
-    inl get_raw_text () =
-        { name expected = b } |> sm'.format
     match trace' with
     | Console =>
         inl text = get_raw_text ()
         text |> console.write_line
         text
     | Trace =>
-        trace Info (fun () => name) fun () => { expected = b }
+        trace Info (fun () => name) get_data
         get_raw_text ()
     | TraceRaw =>
         inl text = get_raw_text ()
@@ -51,6 +56,23 @@ inl rec __assert_approx_eq trace e b a =
 inl _assert_approx_eq e b a =
     __assert_approx_eq Console e b a
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test assert_approx_eq =
+    12.345f64
+    |> _assert_approx_eq (Some 0.0001f64) 12.345f64
+
+test assert_approx_eq_2 print_code =
+    1f64
+    |> __assert_approx_eq Console (Some 3) 2
+
+test assert_approx_eq_3 print_code =
+    (dyn 1f64)
+    |> _assert_approx_eq (Some 3) 2
+
 /// ### __assert_eq
 inl rec __assert_eq trace b a =
     __expect (=) trace (reflection.nameof { __assert_eq }) b a
@@ -59,11 +81,23 @@ inl _assert_eq b a =
     __assert_eq Console b a
 
 /// ### __assert_eq'
-inl rec __assert_eq' trace b a =
-    __expect (=.) trace (reflection.nameof { __assert_eq' }) b a
+inl rec __assert_eq' forall t. (trace : testing_trace) (b : t) (a : t) : () =
+    __expect
+        (fun a b => #?a = #?b)
+        trace
+        (reflection.nameof { __assert_eq' = __assert_eq' : _ -> t -> t -> () })
+        b
+        a
 
 inl _assert_eq' b a =
     __assert_eq' Console b a
+
+/// ### __assert_eq''
+inl rec __assert_eq'' trace b a =
+    __expect (=.) trace (reflection.nameof { __assert_eq'' }) b a
+
+inl _assert_eq'' b a =
+    __assert_eq'' Console b a
 
 /// ### __assert_ne
 inl rec __assert_ne trace b a =
@@ -135,9 +169,8 @@ inl rec _assert_fn fn list =
                     trace Verbose
                         fun () => name
                         fun () => { input }
-                    x
-                    |> sm'.format
-                    |> _assert_eq' (expected' |> sm'.format)
+                    #?x
+                    |> _assert_eq #?expected'
                     true
                 fun ex =>
                     trace Critical
@@ -148,7 +181,25 @@ inl rec _assert_fn fn list =
     |> listm'.filter not
     |> function
         | [] => ()
-        | x => x |> sm'.format_debug |> failwith
+        | x => #?*x |> failwith
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test assert_fn =
+    [
+        3i32,
+        2i32
+
+        2,
+        1
+    ]
+    |> _assert_fn fun x =>
+        x - 1
+        |> Ok
+        |> fun x => x : _ _ ()
 
 /// ### _assert_in
 inl _assert_in items x =
@@ -165,7 +216,7 @@ inl _assert_in items x =
     |> function
         | Some _ => ()
         | None =>
-            "_assert_in / " ++# ({ x items } |> sm'.format) |> failwith
+            "_assert_in / " ++#? { x items } |> failwith
 
 /// ## fsharp
 
@@ -173,17 +224,24 @@ inl _assert_in items x =
 inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : () =
     __expect
         fun a b =>
-            a
-            |> $'List.ofSeq'
-            |> fun x => x : listm'.list' t
-            |> $'List.tryFind' ((=) b)
-            |> optionm'.unbox
-            |> fun (x : option t) => x <> None
+            if is_rust ()
+            then
+                real
+                    typecase u with
+                    | string =>
+                        typecase t with
+                        | char => $'!a.contains(!b as char)' : bool
+                        | _ => $'!a.contains(&*!b)' : bool
+                    | array_base _ => $'!a.borrow().contains(&!b)' : bool
+                    | _ => $'!a.iter().any(|x| *x == !b)' : bool
+            else
+                a
+                |> $'List.ofSeq'
+                |> fun x => x : listm'.list' t
+                |> $'List.tryFind' ((=) b)
+                |> optionm'.unbox
+                |> fun (x : option t) => x <> None
         trace
-        // TODO: forall nameof (Cannot dyn a forall into a runtime var.)
-        // Metavars that are not part of the enclosing function's signature are not allowed. They need to be values.
-        // Got: {__assert_contains : testing_trace -> _ -> _ -> ()} -> string
-        // (reflection.nameof { __assert_contains })
         "__assert_contains"
         b
         a
@@ -191,25 +249,43 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
 inl _assert_contains b a =
     __assert_contains Console b a
 
+test assert_contains =
+    ;[ "a"; "b"; "c" ]
+    |> _assert_contains "b"
+
+test assert_contains_2 =
+    "abcd"
+    |> _assert_contains 'b'
+
 /// ### _throws
 inl _throws (fn : () -> ()) : option exn =
     inl none = None : option exn
     inl some (s : exn) = Some s
-    backend_switch {
-        Fsharp = fun () =>
-            $'try !fn (); !none with ex -> ex |> !some ' : option exn
-        Python = fun () =>
-            $'fn = !fn '
-            $'none = !none '
-            $'some = !some '
-            $'try: fn(); x = none '
-            $'except Exception as ex: x = some(ex)'
-            $'x' : option exn
-    }
+    if is_rust ()
+    then
+        catch_unwind_rust
+            fun () =>
+                fn ()
+                none
+            some
+    else
+        backend_switch {
+            Fsharp = fun () =>
+                $'try !fn (); !none with ex -> ex |> !some ' : option exn
+            Python = fun () =>
+                $'fn = !fn '
+                $'none = !none '
+                $'some = !some '
+                $'try: fn(); x = none '
+                $'except Exception as ex: x = some(ex)'
+                $'x' : option exn
+            TypeScript = fun () =>
+                $'(() => { try { !fn(); return !none; } catch (ex) { return !some(ex); } })()' : option exn
+        }
 
 /// ### print_and_return
 inl rec print_and_return x =
     inl name = reflection.nameof { print_and_return }
-    name ++# ({ x } |> sm'.format)
+    name ++#? { x }
     |> console.write_line
     x

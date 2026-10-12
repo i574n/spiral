@@ -1,0 +1,28 @@
+inl main () : i32 =
+    inl exact = sm.utf8_canonical_equal_bounded "plain" "plain"
+    inl empty = sm.utf8_canonical_equal_bounded "" ""
+    inl decomposed = sm.utf8_canonical_equal_bounded "éõç" "éõç"
+    inl consecutive = sm.utf8_canonical_equal_bounded "é̃" "é̃"
+    inl uppercase = sm.utf8_canonical_equal_bounded "À" "À"
+    inl unsupported = sm.utf8_canonical_equal_bounded "Ω" "Ω"
+    inl order_differs = sm.utf8_canonical_equal_bounded "é̃" "ẽ́"
+    inl base_differs = sm.utf8_canonical_equal_bounded "é" "á"
+    inl unsupported_differs = sm.utf8_canonical_equal_bounded "Ω" "ω"
+    inl exhausted_differs = sm.utf8_canonical_equal_bounded "é" "e"
+    if exact then
+        if empty then
+            if decomposed then
+                if consecutive then
+                    if uppercase then
+                        if unsupported then
+                            if order_differs then 7i32
+                            elif base_differs then 8i32
+                            elif unsupported_differs then 9i32
+                            elif exhausted_differs then 10i32
+                            else 0i32
+                        else 6i32
+                    else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

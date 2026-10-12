@@ -1,0 +1,19 @@
+inl fold_scalar (state : i32 * i32) (scalar : i32) : i32 * i32 =
+    inl count, hash = state
+    (+.) count 1i32, (+.) ((*.) hash 3i32) ((%.) scalar 17i32)
+
+inl main () : i32 =
+    inl count, hash = sm.utf8_fold fold_scalar (0i32,0i32) "Aéλ🙂Z"
+    inl empty_count, empty_hash = sm.utf8_fold fold_scalar (0i32,0i32) ""
+    inl resumed_count, resumed_hash = sm.utf8_fold_from_byte_offset fold_scalar (0i32,0i32) "Aéλ🙂Z" 5i32
+    if (=.) count 5i32 then
+        if (=.) hash 1511i32 then
+            if (=.) empty_count 0i32 then
+                if (=.) empty_hash 0i32 then
+                    if (=.) resumed_count 2i32 then
+                        if (=.) resumed_hash 26i32 then 0i32 else 6i32
+                    else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

@@ -1,0 +1,19 @@
+nominal zero = ()
+nominal succ n = n
+
+union rec qregister n =
+    | QOne :: qregister (succ zero)
+    | QSucc :: forall n. qregister n -> qregister (succ n)
+
+union qgate n =
+    | Hadamard :: qgate (succ zero)
+    | Cnot :: qgate (succ (succ zero))
+
+inl apply_gate forall n. (_ : qgate n) (register : qregister n) : qregister n = register
+
+inl render_two (register : qregister (succ (succ zero))) : string =
+    match register with
+    | QSucc _ => "quantum-two-qubit-gate"
+
+inl main () : string =
+    render_two (apply_gate Cnot (QSucc QOne))

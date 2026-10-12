@@ -1,0 +1,92 @@
+nominal missing = ()
+nominal present = ()
+nominal builder_state issuer recipient total = issuer * recipient * total
+nominal builder_payload = { issuer : string; recipient : string; total_cents : i64 }
+
+union nfe_builder index =
+    | Builder :: forall issuer recipient total.
+        builder_payload -> nfe_builder (builder_state issuer recipient total)
+
+union builder_op from to =
+    | SetIssuer :: forall recipient total.
+        string ->
+        builder_op
+            (builder_state missing recipient total)
+            (builder_state present recipient total)
+    | SetRecipient :: forall issuer total.
+        string ->
+        builder_op
+            (builder_state issuer missing total)
+            (builder_state issuer present total)
+    | SetTotal :: forall issuer recipient.
+        i64 ->
+        builder_op
+            (builder_state issuer recipient missing)
+            (builder_state issuer recipient present)
+
+inl apply_builder_op forall from to.
+    (operation : builder_op from to)
+    (builder : nfe_builder from)
+    : nfe_builder to =
+    match operation, builder with
+    | SetIssuer issuer, Builder payload =>
+        Builder (builder_payload {
+            issuer = issuer
+            recipient = payload.recipient
+            total_cents = payload.total_cents
+        })
+    | SetRecipient recipient, Builder payload =>
+        Builder (builder_payload {
+            issuer = payload.issuer
+            recipient = recipient
+            total_cents = payload.total_cents
+        })
+    | SetTotal total_cents, Builder payload =>
+        Builder (builder_payload {
+            issuer = payload.issuer
+            recipient = payload.recipient
+            total_cents = total_cents
+        })
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl rec fold_chain
+    forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl finalize
+    (builder : nfe_builder (builder_state present present present))
+    : string =
+    match builder with
+    | Builder _ => "builder-complete"
+
+inl builder_program () :
+    chain builder_op
+        (builder_state missing missing missing)
+        (builder_state present present present) =
+    ChainCompose (exists (
+        ChainStep (SetIssuer "ACME"),
+        ChainCompose (exists (
+            ChainStep (SetRecipient "CLIENT"),
+            ChainStep (SetTotal 4200i64)
+        ))
+    ))
+
+inl main () : string =
+    inl empty : nfe_builder (builder_state missing missing missing) =
+        Builder (builder_payload { issuer = ""; recipient = ""; total_cents = 0i64 })
+    inl complete = fold_chain `$apply_builder_op (builder_program ()) empty
+    finalize complete

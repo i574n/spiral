@@ -1,0 +1,26 @@
+nominal app_scope = ()
+nominal epoch1 = ()
+nominal idle = ()
+nominal effects_pending = ()
+nominal committed = ()
+nominal pending = ()
+nominal drained = ()
+
+union frame scope epoch phase = | Frame :: forall scope epoch phase. string -> frame scope epoch phase
+union effect_batch scope epoch state = | Effects :: forall scope epoch state. string -> effect_batch scope epoch state
+
+inl render forall scope epoch. (frame : frame scope epoch idle) : frame scope epoch effects_pending * effect_batch scope epoch pending =
+    Frame "rendered", Effects "effects"
+
+inl drain forall scope epoch. (effects : effect_batch scope epoch pending) : effect_batch scope epoch drained =
+    match effects with | Effects _ => Effects "drained"
+
+inl commit forall scope epoch. (frame : frame scope epoch effects_pending) (effects : effect_batch scope epoch drained) : frame scope epoch committed =
+    match frame, effects with | Frame _, Effects _ => Frame "effects-drained-before-commit"
+
+inl main () : string =
+    inl frame : frame app_scope epoch1 idle = Frame "idle"
+    match render frame with
+    | rendered, pending_effects =>
+        match commit rendered (drain pending_effects) with
+        | Frame label => label

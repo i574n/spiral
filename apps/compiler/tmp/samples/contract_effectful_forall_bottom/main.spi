@@ -1,0 +1,4 @@
+inl closed_bottom forall a. () : a =
+    $"failwith \"effectful-bottom\""
+
+inl main () : i64 = closed_bottom ()

@@ -1,0 +1,7 @@
+inl rec sum_down ~n ~acc =
+    if n =. 0i32 then acc
+    else join sum_down (n -. 1i32) (acc +. n)
+
+inl main () : i32 =
+    inl ~n = 10i32
+    join sum_down n 0i32 -. 55i32

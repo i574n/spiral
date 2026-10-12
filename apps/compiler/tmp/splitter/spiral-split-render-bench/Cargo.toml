@@ -1,0 +1,20 @@
+[package]
+name = "spiral-split-render-bench"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[dependencies]
+spiral-split-anonymous-boundary.workspace = true
+spiral-split-contextual-constructor.workspace = true
+spiral-split-emit.workspace = true
+spiral-split-gear-bridge.workspace = true
+spiral-split-gear-scc.workspace = true
+spiral-split-gears.workspace = true
+spiral-split-model.workspace = true
+spiral-split-plan.workspace = true
+spiral-split-scan.workspace = true
+spiral-split-source.workspace = true
+spiral-split-symbols.workspace = true
+spiral-split-union-context.workspace = true

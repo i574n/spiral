@@ -1,0 +1,15 @@
+union choice =
+    | Left
+    | Right
+
+inl pick (a : i32) (b : i32) : choice = Left
+
+inl main () : i32 =
+    inl x : i32 = 1i32
+    match pick
+        x
+        2i32 with
+    | Left => 0i32
+    | Right => 1i32
+
+inl oracle_must_not_record_current_error () = ()

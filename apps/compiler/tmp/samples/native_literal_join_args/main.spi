@@ -1,0 +1,4 @@
+let f (str : string) (i : i32) : i32 =
+    inl n = sm.length str : i32
+    (+.) n i
+inl main () : i32 = f "abc" 1i32

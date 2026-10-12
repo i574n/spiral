@@ -1,0 +1,16 @@
+inl main () : i32 =
+    inl ~n = 3i32
+    inl ~word = "no"
+    inl pair = n, word
+    inl box : mut {value : i32 * string} = !!!!LayoutToHeapMutable({value = pair})
+    inl f (z : i32) : mut {value : i32 * string} =
+        if z =. 0i32 then box else box
+    inl ~g = f
+    inl held : mut {value : i32 * string} = g 1i32
+    inl ~m = 7i32
+    inl ~next = "hi"
+    inl replaced = m, next
+    held <- {value = replaced}
+    inl opened = !!!!LayoutIndex(held)
+    inl ~(left, right) = opened.value
+    if left =. 7i32 && !!!!EQ(right, "hi") then 0i32 else 1i32

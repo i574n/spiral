@@ -1,0 +1,13 @@
+nominal app_scope = ()
+nominal root_owner = ()
+nominal child_a = ()
+nominal child_b = ()
+nominal live = ()
+nominal disposed = ()
+union subtree scope root left right state = | Subtree :: forall scope root left right state. string -> subtree scope root left right state
+union disposal scope owner state = | Disposal :: forall scope owner state. string -> disposal scope owner state
+inl commit_teardown forall scope root left right. (tree : subtree scope root left right live) (left_proof : disposal scope left disposed) (right_proof : disposal scope right disposed) : subtree scope root left right disposed = Subtree "disposed"
+inl main () =
+    inl tree : subtree app_scope root_owner child_a child_b live = Subtree "root"
+    inl left : disposal app_scope child_a disposed = Disposal "a"
+    commit_teardown tree left left

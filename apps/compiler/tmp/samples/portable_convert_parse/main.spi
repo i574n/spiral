@@ -1,0 +1,14 @@
+inl show (x : option i32) =
+    match x with
+    | Some v => console.write_line v
+    | None => console.write_line "none"
+
+inl main () : i32 =
+    console.write_line (convert.convert_i32_base 16 (dyn "ff") : i32)
+    console.write_line (convert.convert_i32_base 2 (dyn "1011") : i32)
+    console.write_line (convert.convert_i32 (dyn "-42") : i32)
+    show (convert.try_convert (dyn " 123 "))
+    show (convert.try_convert (dyn "12x"))
+    show (convert.try_convert (dyn ""))
+    show (convert.try_convert (dyn "+7"))
+    0i32

@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~left_bias = 2i32
+    inl ~right_bias = 3i32
+    inl a = (fun z => z +. left_bias) : i32 -> i32
+    inl b = (fun z => z +. right_bias) : i32 -> i32
+    inl ~flag = true
+    inl ~g = if flag then a else b
+    join g 40i32

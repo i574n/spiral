@@ -1,0 +1,23 @@
+union rec int_box =
+    | Empty
+    | Box : i32 * int_box
+
+inl rec keep ~n (left : int_box) (right : int_box) : int_box =
+    if n =. 0i32 then left
+    else join keep (n -. 1i32) right left
+
+inl main () : i32 =
+    inl empty = Empty
+    inl left = Box (7i32, empty)
+    inl right = Box (11i32, empty)
+    inl alias = left
+    inl result = join keep 1000000i32 left right
+    match result with
+    | Box (x, _) =>
+        match alias with
+        | Box (y, _) =>
+            match right with
+            | Box (z, _) => if x =. 7i32 && y =. 7i32 && z =. 11i32 then 0i32 else 3i32
+            | Empty => 4i32
+        | Empty => 2i32
+    | Empty => 1i32

@@ -1,0 +1,22 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal zero = ()
+nominal succ n = n
+
+union rec lt a b =
+    | LtZero :: forall n. lt zero (succ n)
+    | LtSucc :: forall a b. lt a b -> lt (succ a) (succ b)
+
+union interval build contig start finish =
+    | Interval :: forall build contig start finish. string * lt start finish -> interval build contig start finish
+
+inl create_interval forall build contig start finish.
+    (label : string)
+    (proof : lt start finish)
+    : interval build contig start finish =
+    Interval (label, proof)
+
+inl main () =
+    inl forward : lt zero (succ zero) = LtZero
+    inl reversed : interval hg38 chr1 (succ zero) zero = create_interval "reversed" forward
+    reversed

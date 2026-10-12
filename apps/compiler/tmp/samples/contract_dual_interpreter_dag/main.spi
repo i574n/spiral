@@ -1,0 +1,60 @@
+nominal parallel = ()
+nominal serial = ()
+
+union task effect result =
+    | ValidateIssuer :: task parallel string
+    | QueryStatus :: task parallel string
+    | Publish :: string -> task serial string
+
+union rec dag result =
+    | ParallelNode :: forall result. task parallel result -> dag result
+    | SerialNode :: forall result. task serial result -> dag result
+    | Zip :: forall a b. dag a * dag b -> dag (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * dag input)
+        -> dag result
+    | Then :: forall result.
+        (exists input. dag input * (input -> dag result))
+        -> dag result
+
+inl run_task forall effect result. (task : task effect result) : result =
+    match task with
+    | ValidateIssuer => "issuer-ok"
+    | QueryStatus => "committed"
+    | Publish _ => "authorized"
+
+inl rec run forall result. (program : dag result) : result =
+    match program with
+    | ParallelNode task => run_task task
+    | SerialNode task => run_task task
+    | Zip (left, right) => run left, run right
+    | Map packed =>
+        inl exists input. mapping, source = packed
+        mapping (run source)
+    | Then packed =>
+        inl exists input. source, next = packed
+        run (next (run source))
+
+inl describe forall result. (program : dag result) : string =
+    match program with
+    | Then _ => "dual-interpreter-dag"
+    | _ => "other-plan"
+
+inl summarize (_ : string * string) : string = "proof"
+
+inl plan () : dag string =
+    Then (exists (
+        Map (exists (
+            summarize,
+            Zip (
+                ParallelNode ValidateIssuer,
+                ParallelNode QueryStatus
+            )
+        )),
+        fun proof => SerialNode (Publish proof)
+    ))
+
+inl main () : string =
+    inl program = plan ()
+    inl _ = run program
+    describe program

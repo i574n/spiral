@@ -1,0 +1,23 @@
+nominal missing = ()
+nominal present = ()
+nominal builder_state issuer recipient total = issuer * recipient * total
+nominal builder_payload = { issuer : string; recipient : string; total_cents : i64 }
+
+union nfe_builder index =
+    | Builder :: forall issuer recipient total.
+        builder_payload -> nfe_builder (builder_state issuer recipient total)
+
+inl finalize
+    (builder : nfe_builder (builder_state present present present))
+    : string =
+    match builder with
+    | Builder _ => "complete"
+
+inl main () : string =
+    inl incomplete : nfe_builder (builder_state present missing present) =
+        Builder (builder_payload {
+            issuer = "ACME"
+            recipient = ""
+            total_cents = 4200i64
+        })
+    finalize incomplete

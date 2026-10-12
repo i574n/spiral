@@ -1,0 +1,235 @@
+nominal payload_a = ()
+nominal digest_a = ()
+nominal transfer_a = ()
+nominal manifest_a = ()
+nominal manifest_stale = ()
+nominal route_mesh = ()
+nominal peer_a = ()
+nominal peer_b = ()
+nominal peer_c = ()
+nominal chunk_0 = ()
+nominal chunk_1 = ()
+nominal chunk_2 = ()
+nominal inbox_a = ()
+nominal inbox_b = ()
+nominal inbox_c = ()
+
+nominal source_ready = ()
+nominal scheduled = ()
+nominal throttled = ()
+nominal delivered = ()
+nominal converged = ()
+nominal committed = ()
+nominal accepted = ()
+nominal rejected = ()
+nominal distinct = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+
+union payload artifact digest state =
+    | Payload :: forall artifact digest state. string -> payload artifact digest state
+
+union mesh_manifest transfer artifact digest route manifest state =
+    | MeshManifest :: forall transfer artifact digest route manifest state.
+        string -> mesh_manifest transfer artifact digest route manifest state
+
+union peer_identity peer state =
+    | PeerIdentity :: forall peer state. string -> peer_identity peer state
+
+union peer_distinct a b c state =
+    | PeerDistinct :: forall a b c state. string -> peer_distinct a b c state
+
+union chunk_delivery transfer manifest peer chunk inbox state =
+    | ChunkDelivery :: forall transfer manifest peer chunk inbox state.
+        string -> chunk_delivery transfer manifest peer chunk inbox state
+
+union duplicate_receipt transfer manifest peer chunk state =
+    | DuplicateReceipt :: forall transfer manifest peer chunk state.
+        string -> duplicate_receipt transfer manifest peer chunk state
+
+union corruption_rejection transfer manifest peer chunk state =
+    | CorruptionRejection :: forall transfer manifest peer chunk state.
+        string -> corruption_rejection transfer manifest peer chunk state
+
+union backpressure_receipt transfer manifest peer inbox state =
+    | BackpressureReceipt :: forall transfer manifest peer inbox state.
+        string -> backpressure_receipt transfer manifest peer inbox state
+
+union peer_output transfer manifest peer artifact digest state =
+    | PeerOutput :: forall transfer manifest peer artifact digest state.
+        string -> peer_output transfer manifest peer artifact digest state
+
+union mesh_commit transfer manifest route artifact digest state =
+    | MeshCommit :: forall transfer manifest route artifact digest state.
+        string -> mesh_commit transfer manifest route artifact digest state
+
+union mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to effect =
+    | ScheduleAdversarially :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        payload artifact digest source_ready *
+        mesh_manifest transfer artifact digest route manifest scheduled *
+        peer_identity pa accepted *
+        peer_identity pb accepted *
+        peer_identity pc accepted *
+        peer_distinct pa pb pc distinct ->
+        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready scheduled idempotent
+    | ApplyBackpressure :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        backpressure_receipt transfer manifest pa ia accepted *
+        backpressure_receipt transfer manifest pb ib accepted *
+        backpressure_receipt transfer manifest pc ic accepted ->
+        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic scheduled throttled non_idempotent
+    | DeliverOutOfOrder :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        chunk_delivery transfer manifest pa cc ia accepted *
+        chunk_delivery transfer manifest pa ca ia accepted *
+        chunk_delivery transfer manifest pb cb ib accepted *
+        chunk_delivery transfer manifest pb ca ib accepted *
+        chunk_delivery transfer manifest pc cc ic accepted *
+        chunk_delivery transfer manifest pc cb ic accepted ->
+        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic throttled delivered idempotent
+    | DeduplicateAndRejectCorruption :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        duplicate_receipt transfer manifest pb cb accepted *
+        duplicate_receipt transfer manifest pc cc accepted *
+        corruption_rejection transfer manifest pa cb rejected ->
+        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic delivered converged idempotent
+    | PublishConvergedMesh :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_manifest transfer artifact digest route manifest scheduled *
+        peer_output transfer manifest pa artifact digest accepted *
+        peer_output transfer manifest pb artifact digest accepted *
+        peer_output transfer manifest pc artifact digest accepted *
+        peer_distinct pa pb pc distinct *
+        mesh_commit transfer manifest route artifact digest committed ->
+        mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic converged committed non_idempotent
+
+union mesh_row transfer manifest from to effect =
+    | MeshRow :: forall transfer manifest from to effect. string -> mesh_row transfer manifest from to effect
+
+union mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to =
+    | MeshNode :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+        (exists effect.
+            mesh_op transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to effect *
+            mesh_row transfer manifest from to effect)
+        -> mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
+
+union rec mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to =
+    | MeshLeaf :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+        mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to ->
+        mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
+    | MeshThen :: forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+        (exists middle.
+            mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from middle *
+            mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic middle to)
+        -> mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to
+
+union packed_mesh transfer artifact digest =
+    | PackedMesh :: forall transfer artifact digest.
+        (exists route manifest pa pb pc ca cb cc ia ib ic.
+            mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready committed)
+        -> packed_mesh transfer artifact digest
+
+inl with_packed_mesh forall transfer artifact digest result.
+    (visit : forall route manifest pa pb pc ca cb cc ia ib ic.
+        mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic source_ready committed -> result)
+    (packed : packed_mesh transfer artifact digest) : result =
+    match packed with
+    | PackedMesh payload =>
+        inl exists route manifest pa pb pc ca cb cc ia ib ic. plan = payload
+        visit plan
+
+inl node_label forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+    (node : mesh_node transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to) : string =
+    match node with
+    | MeshNode payload =>
+        inl exists effect. _, MeshRow label = payload
+        label
+
+inl rec terminal_label forall transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to.
+    (plan : mesh_plan transfer artifact digest route manifest pa pb pc ca cb cc ia ib ic from to) : string =
+    match plan with
+    | MeshLeaf node => node_label node
+    | MeshThen payload =>
+        inl exists middle. _, node = payload
+        node_label node
+
+inl manifest () : mesh_manifest transfer_a payload_a digest_a route_mesh manifest_a scheduled = MeshManifest "mesh-manifest-a"
+inl distinct_peers () : peer_distinct peer_a peer_b peer_c distinct = PeerDistinct "a-ne-b-ne-c"
+
+inl schedule_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c source_ready scheduled =
+    MeshNode (exists (
+        ScheduleAdversarially (
+            Payload "checkpoint-payload",
+            manifest (),
+            PeerIdentity "peer-a",
+            PeerIdentity "peer-b",
+            PeerIdentity "peer-c",
+            distinct_peers ()
+        ),
+        MeshRow "schedule-reversed-duplicated-corrupted"
+    ))
+
+inl throttle_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c scheduled throttled =
+    MeshNode (exists (
+        ApplyBackpressure (
+            BackpressureReceipt "peer-a-limit-2",
+            BackpressureReceipt "peer-b-limit-2",
+            BackpressureReceipt "peer-c-limit-2"
+        ),
+        MeshRow "bounded-inbox-backpressure"
+    ))
+
+inl deliver_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c throttled delivered =
+    MeshNode (exists (
+        DeliverOutOfOrder (
+            ChunkDelivery "a-c2", ChunkDelivery "a-c0",
+            ChunkDelivery "b-c1", ChunkDelivery "b-c0",
+            ChunkDelivery "c-c2", ChunkDelivery "c-c1"
+        ),
+        MeshRow "out-of-order-content-addressed-delivery"
+    ))
+
+inl converge_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c delivered converged =
+    MeshNode (exists (
+        DeduplicateAndRejectCorruption (
+            DuplicateReceipt "b-c1-duplicate",
+            DuplicateReceipt "c-c2-duplicate",
+            CorruptionRejection "a-c1-corrupt-rejected"
+        ),
+        MeshRow "deduplicate-and-recover"
+    ))
+
+inl stale_peer_c_output () : peer_output transfer_a manifest_stale peer_c payload_a digest_a accepted =
+    PeerOutput "peer-c-stale-manifest"
+
+inl commit_node () : mesh_node transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c converged committed =
+    MeshNode (exists (
+        PublishConvergedMesh (
+            manifest (),
+            PeerOutput "peer-a-sha256-exact",
+            PeerOutput "peer-b-sha256-exact",
+            stale_peer_c_output (),
+            distinct_peers (),
+            MeshCommit "atomic-mesh-commit"
+        ),
+        MeshRow "adversarial-mesh-converged"
+    ))
+
+inl plan () : mesh_plan transfer_a payload_a digest_a route_mesh manifest_a peer_a peer_b peer_c chunk_0 chunk_1 chunk_2 inbox_a inbox_b inbox_c source_ready committed =
+    MeshThen (exists (
+        MeshThen (exists (
+            MeshThen (exists (
+                MeshThen (exists (
+                    MeshLeaf (schedule_node ()),
+                    throttle_node ()
+                )),
+                deliver_node ()
+            )),
+            converge_node ()
+        )),
+        commit_node ()
+    ))
+
+inl inspect forall route manifest pa pb pc ca cb cc ia ib ic.
+    (plan : mesh_plan transfer_a payload_a digest_a route manifest pa pb pc ca cb cc ia ib ic source_ready committed) : string =
+    terminal_label plan
+
+inl main () : string =
+    inl packed : packed_mesh transfer_a payload_a digest_a = PackedMesh (exists (plan ()))
+    with_packed_mesh `$inspect packed

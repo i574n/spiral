@@ -1,0 +1,59 @@
+nominal s0 = ()
+nominal s1 = ()
+nominal s2 = ()
+nominal s3 = ()
+
+union operation from to =
+    | Step01 :: operation s0 s1
+    | Step12 :: operation s1 s2
+    | Step23 :: operation s2 s3
+
+union node from to =
+    | Node :: forall from to. operation from to * string -> node from to
+
+union rec typed_plan from to =
+    | PlanLeaf :: forall from to. node from to -> typed_plan from to
+    | PlanThen :: forall from to.
+        (exists middle. typed_plan from middle * node middle to)
+        -> typed_plan from to
+
+union rec nat =
+    | Z
+    | S : nat
+
+inl rec fold_count forall from to. (plan : typed_plan from to) : nat =
+    match plan with
+    | PlanLeaf _ => S Z
+    | PlanThen pair =>
+        inl exists middle. prefix, _ = pair
+        S (fold_count prefix)
+
+inl rec last_label forall from to. (plan : typed_plan from to) : string =
+    match plan with
+    | PlanLeaf (Node (_, label)) => label
+    | PlanThen pair =>
+        inl exists middle. _, Node (_, label) = pair
+        label
+
+inl plan () : typed_plan s0 s3 =
+    PlanThen (exists (
+        PlanThen (exists (
+            PlanLeaf (Node (Step01, "step-1")),
+            Node (Step12, "step-2")
+        )),
+        Node (Step23, "generic-fold-3")
+    ))
+
+inl main () : string =
+    match fold_count (plan ()) with
+    | S rest =>
+        match rest with
+        | S rest' =>
+            match rest' with
+            | S final =>
+                match final with
+                | Z => last_label (plan ())
+                | _ => "invalid-count"
+            | _ => "invalid-count"
+        | _ => "invalid-count"
+    | _ => "invalid-count"

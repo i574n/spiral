@@ -1,0 +1,330 @@
+# Splitter lane
+
+`splitter/` is the `spiral-split` Rust workspace (82 small crates). It turns one
+monolithic compiler core into many small F# projects ("shards", grouped into "gears" and dependency
+layers) that `dotnet` can build in parallel and incrementally: after an edit only the affected gears and
+their dependents rebuild. It supports three source profiles: `pre-hopac`, `portable-fork`
+(single-flight) and `hopac`.
+
+## When to use it
+
+- **Locally (Windows/Linux):** not for clean builds. `scripts/build.ps1 -Mode hopac` compiles the 13 MB
+  core as one project in ~4-4.5 min, and host-only edits rebuild in ~35-50 s. No split layout measured
+  so far beats that on an 8-core machine (see "Build benchmarks" below). The remaining upside is
+  incremental rebuilds after a local edit, which needs incremental emission first (a re-emit takes
+  90-300 s and rewrites every part).
+- **Browser sandbox:** when a single tool call cannot run a 4 min build, split the core and build it
+  gear by gear across calls; every completed layer is checkpointed, so a timed-out call resumes instead
+  of restarting.
+
+## Parallelism metrics
+
+`spiral-split bench`, `chain` and `gear-bench` report the shape of a split without emitting it:
+
+| metric | meaning |
+|---|---|
+| `declaration_critical_path_lines` | floor: the heaviest dependency chain of individual declarations. No shard packing can beat it. |
+| `critical_path_lines` | the heaviest chain through the shard graph, counting `PROJECT_OVERHEAD_LINES` (2,400 lines, ~3 s of dotnet per project) per shard |
+| `work_parallelism` | total lines / critical path: the speedup with unlimited cores |
+| `speedup_vs_monolith_unbounded` (`gear-bench`) | monolith lines / gear critical path including per-project overhead |
+
+`chain` prints the declaration chain with the witness symbol of every link, then the shard chain. On
+the current hopac core (174k lines) the declaration floor is **35,016 lines**, 32 declarations: the HUD →
+`DiagJson.emit` → `EvalWorklist` (4,361) → `BigStack` (4,168) → `peval` (21,123) → `supervisor_server`
+(2,719).
+
+Measured 2026-09-27:
+- **Shard packing.** Module-aware packing is now a timeline greedy (`critical_path_module_groups`). A
+  declaration joins its module's open shard only if nothing depends on that shard yet and the shard's
+  finish stays within the declaration's latest finish. This took the shard critical path from 126,653
+  lines to **39,044**, within 12% of the floor.
+- **Gear packing.** `GearPacking::Timeline` is the new default; `SPIRAL_GEAR_PACKING=layer` restores the
+  old layer packing. The gear build is overhead-bound, though: with ~3 s of dotnet per project, the
+  modelled speedup of the 194-gear plan stays below 1x against the monolith.
+
+## Build benchmarks
+
+`pwsh scripts/bench-split.ps1` emits the core and builds it three ways: `monolith`, `parts` (every Part
+file in one F# project, topologically ordered) and `grouped` (parts concatenated into larger files). All
+three use the same flags (`--test:GraphBasedChecking --test:ParallelOptimization --test:ParallelIlxGen`),
+so graph-based checking can type-check independent files in parallel. `--times` output feeds the
+per-phase table; receipts go to `<cache>/split-bench/<mode>/bench.tsv`.
+
+Hopac core, 2026-09-27, 8 logical cores, wall seconds per `fsc` phase:
+
+| variant | files | parse | typecheck | optimize | IL gen | write | `dotnet build` | summed check CPU |
+|---|---|---|---|---|---|---|---|---|
+| monolith | 1 | 8 | 100 | 66 | 22 | 13 | **219** | 99 |
+| parts | 3,107 | 9 | 137 | 87 | 48 | 23 | 326 | 1,194 |
+| grouped (cap 12k) | 920 | 7 | 152 | 68 | 34 | 16 | 287 | 386 |
+
+An earlier ad-hoc run of the same three layouts gave 257 / 320 / 267 s of `fsc` time (typecheck 110 /
+151 / 118 s). Run-to-run noise on this machine is about ±30 s, but the ordering never changed.
+
+The split core now compiles as one project with **0 errors**, but it is not faster:
+- **Only typecheck parallelizes.** Optimization, IL generation and writing stay about 130-140 s whatever
+  the layout; optimization is dominated by the 21k-line `peval` files.
+- **Each file costs a fixed ~0.2 s of checking.** The 2,073 parts under 60 lines alone cost 594 s of
+  check CPU (median 23 `open`s each), and the file graph takes ~20 s to build before checking starts. So
+  splitting finer buys parallelism but multiplies name-resolution work. Grouping cuts check CPU about 3x,
+  but concatenating parts lengthens the dependency chain, so typecheck wall time never beat the monolith
+  in any run.
+
+What would change the verdict: emitting qualified references instead of `open`s (an emitter-wide
+change), splitting `peval` at the source level, or incremental emission so an edit rebuilds only the
+affected gears.
+
+## Incremental gear builds (2026-09-27)
+
+The multi-project build compiles end to end on the hopac core: 194 gears plus `GearRoot`, 0 errors, in
+~11 min. It needs the dependency directory (`SPIRAL_ASSEMBLY_ROOT`, from `Get-SpiralLibDir`) and
+`--assembly-overlay-root <cache>/bin/hopac/SpiralCompilerRuntimeCompat/Release/net11.0` for
+`Supervisor.dll`. Its one failure was a let-bound anonymous record passed to a union case declared in
+another gear: F# gives each assembly its own anonymous types. The core now builds that record in place.
+
+With `ProduceReferenceAssembly` on, an implementation-only edit inside `peval` rebuilds 7 of 195
+projects:
+
+| rebuild | time |
+|---|---|
+| `GearRoot`, nothing changed | 108 s (MSBuild evaluating and checking 195 projects) |
+| `GearRoot`, body edit in `peval` | 152 s |
+| only the edited gear (`-p:BuildProjectReferences=false`) | **60 s** |
+| the monolithic hopac core, for comparison | 250-400 s |
+
+`gears` on the hopac core took 139 s, of which 82 s were two
+analyses rescanning whole declarations per binding (`caller_contracts`, `higher_order_array_returns`;
+quadratic on the 1.7 MB `peval`). With per-declaration indexes (`BindingIndex`, `binding_scopes`) and
+per-(provider, symbol) caches it takes **39 s**, with byte-identical output.
+
+## The edit loop: `scripts/gear-dev.ps1` (2026-09-27)
+
+```powershell
+pwsh scripts/gear-dev.ps1                  # emit, rebuild changed gears, build the split host
+$env:SPIRAL_COMPILER_DLL = "<cache>/gear-dev/hopac/host/.out/bin/Debug/net11.0/SpiralCompiler.dll"
+pwsh scripts/test.ps1 -Mode hopac -Suite frontier,smoke -Native
+```
+
+It emits into `<cache>/gear-dev/<mode>/emit` and copies only the files whose content changed into
+`build/`, so MSBuild's timestamps stay meaningful. It then rebuilds the gears owning a changed part,
+following public-surface changes (below) to their dependents; past 8 dirty gears it hands the whole graph to
+MSBuild (`-MaxNodes`, default 2, since gear builds are memory heavy). Finally it builds a copy of
+`compiler/host` against the gears: `qualified-rewrites.tsv` moves dissolved nested-module paths, and
+`open spiral_compiler` becomes one `open` per part in source order.
+
+With the split compiler, frontier 8/8 and smoke 38/38 match the monolith's baseline. Native: 36 ran,
+0 build failures, 0 oracle disagreements.
+
+A body-only edit in `term_core` (the `peval` gear, the largest), measured on the earlier 168-gear plan
+(the current plan has 141 gears; `peval` is still one gear of its own):
+
+| step | time |
+|---|---|
+| emit (always from scratch) | 41 s |
+| the one owning gear | ~41 s |
+| script overhead (sync, discovery, surface hash) | ~8 s |
+| host (up to date, gears copied) | 1 s |
+| **total** | **92 s** |
+
+For comparison, the monolithic hopac build takes 206 s. Adding or removing declarations no longer
+renumbers anything (see "Stable gears across emissions"); only `-Full`, which re-plans from scratch,
+rebuilds most gears through MSBuild, roughly 15-30 min at `-MaxNodes 2`.
+
+F# reference assemblies are not stable across body edits: one changed string literal rewrote 1.67 MB of
+a 2.8 MB reference assembly, because the metadata heaps shift and the MVID follows the whole compilation.
+So gear-dev does not compare reference assemblies byte for byte. It hashes their IL surface (types,
+members, signature blobs, type and assembly references) and keeps a `surface/` copy that changes only
+when that hash does. Dependents rebuild only on a surface change, and the host compiles against the
+`surface/` copies, never against the gears' implementation assemblies.
+
+Three things differ between a split and a monolithic core, and gear-dev accounts for each:
+- **Module-level `do`s.** A library runs a file's initialization only once one of its values is read.
+  A `do` alone in a part, and the core has 24 of them (hook installations, the operator table), would
+  never run. Such parts get a `spiral_split_initialize` value, and `GearRoot.initialize ()` reads those
+  values in source order. The host copy calls it right after `configureHopacFromEnvironment ()`.
+  Verified directly: with the operator table filled by its original `do` (without it every `!!!!Op` is
+  "not found"), the split compiler passes frontier 8/8 and smoke 38/38.
+- **Resumed emission.** The gear passes rewrite `Part*.fs` in place, and they are not idempotent. An
+  output directory holding `gears.tsv` is therefore always re-emitted from the source, never resumed.
+- **Interrupted compiles.** A build killed mid-write (e.g. for low memory) leaves a 0-byte assembly that
+  MSBuild trusts as up to date, so gear-dev deletes it and rebuilds that gear. A graph build that stops
+  part way drops the full-build stamp, so the next run rebuilds the gears it never reached.
+
+**Plan stability.** Part numbers and gears are only worth caching if an ordinary edit leaves them
+alone. At first it didn't: a 6-line fix inside the replay worklist changed 3,373 files and rebuilt 133
+gears (911 s). Both planners bound a simulated, line-weighted critical path of the whole core. With
+exact line counts, lines added to one body on that path moved every later "latest finish", and with it
+groups and gears far downstream. Greedy capacity packing added to this, since it leaves many gears just
+under `max_lines`.
+
+The planners now weigh declarations and gear components with `planning_lines`: rounded up to a multiple
+of 64 up to 1,024 lines, then to buckets 12.5% apart. The shard planner uses these weights for its
+schedule and keeps exact counts for capacity; the gear planner uses them for both. Their slack is
+relative to the weighted critical path, a half for shards and a whole for gears, so rounding up does not
+fragment the plan. On the hopac core that gives 3,760 shards and 141 gears.
+
+Measured with 6 synthetic 5-line body edits (in `term_core`, the replay worklist, `EvalReplayValueStore`,
+the HUD near the top, the operator table and the JP CPU clock near the end): each changed exactly 1
+part and 0 gear projects. Before the change, the same edit in the worklist changed 3,373 files.
+
+The first build of the new plan exposed two latent problems that the old grouping had masked, both
+fixed:
+- `generated_dependency`'s code projection took the char literal `'"'` for the start of a string and
+  blanked the file up to the next quote. That hid a second `type NativeReplayKey`, so the name looked
+  unique and a reference was qualified to the wrong type. It now uses the shared lexer's
+  `character_literal_starts` (regression test included).
+- One core function (`terminalFlowFairnessReleaseBasisRef`) had its inline SRTP kind inferred only from a
+  later use in the same file; split into another part it defaulted to `obj` (FS0071). It is annotated.
+
+## Stable gears across emissions (2026-09-28)
+
+Adding a top-level declaration used to renumber every later part (a part number was the shard's position
+in source order) and, through the greedy timeline packing, reshape most gears downstream: between two
+plans of the hopac core, 1,211 of the 1,232 changed parts were only renumbered, and 93 of 138 gears would
+have rebuilt. Stable renaming alone would not have helped, since 86 gears had also changed membership.
+
+`spiral-split gears` now takes the previous emission's anchors (`SPIRAL_GEAR_ANCHORS=<anchors.tsv>`; gear-dev
+keeps them in `<cache>/gear-dev/<mode>/anchors.tsv`) and (`spiral-split-gears/src/gear_anchors.rs`):
+- **reuses the previous partition** instead of packing: each component returns to its previous gear, a new
+  component joins the gear of its source-order predecessor, and gears an edit made mutually dependent are
+  merged (so only those rebuild); identity and series fusion still run afterwards;
+- **keeps part and gear numbers**: a final pass renames `PartNNNN`/`GearNNNN` in every emitted file to the
+  previous numbers (fresh numbers above them for new shards and gears), and sorts `ProjectReference` runs
+  so an unchanged gear project stays byte-identical;
+- writes `anchors.tsv`: every declaration in source order with its final part and gear. A declaration's
+  key is its module, `/// ###` heading, defined names and occurrence; keying on module and heading alone
+  (most declarations have no heading) made one added declaration shift the key of every later one.
+
+Measured on the hopac core with one top-level declaration added: **2 of 138 gears** dirty (6 changed
+files), against 93 before. Part numbers no longer follow source order, so anything that needs the order
+reads `anchors.tsv` (gear-dev builds the host's `open` list from it). The numeric shard and gear columns
+of the TSV sidecars (`parts.tsv`, `gears.tsv`, ...) keep planning ids. The packing gets revisited by
+`gear-dev -Full`, which drops the anchors and re-plans from scratch, so run it when many edits have
+accumulated (new code piles into its neighbours' gears), and automatically when stale anchors would
+collapse the partition (see "Anchor collapse" below). `SPIRAL_GEAR_ANCHOR_DEBUG=1` prints the partition
+size and any cycle merges.
+
+gear-dev still stops past 8 dirty gears (print the estimate, `-Force` goes ahead); with anchors that now
+means a genuinely wide edit, or the first emission after `-Full`.
+
+**Surface changes.** A stable plan was not enough on its own: the first real run with one added `let`
+changed 6 files and 1 gear, but rebuilt **75 gears (1,039 s)**, because the gear's IL surface changed and
+gear-dev rebuilt every dependent. gear-dev now keeps each gear's surface description
+(`.out/surface/<gear>.surface`, one line per type and per type-qualified member) and classifies a change:
+- *grew* (every old line still present): dependents built against the old surface still bind to all they
+  use, so only the surface copy (for the host) is refreshed;
+- *changed*: the names it lost (removed or altered types and members) are checked against each
+  dependent's compiled assembly (`TypeReferences` by full name, `MemberReferences` by name); only
+  dependents that reference one rebuild. Name-only matching over-rebuilds on a collision, never under.
+
+Measured on the hopac core (2026-09-28), the whole `gear-dev` run including emission and host:
+
+| edit | gears built | total |
+|---|---:|---:|
+| add one top-level `let` (before the surface rules) | 75 | 1,056 s |
+| add one top-level `let` | 1 | **92 s** |
+| remove two top-level `let`s | 2 | **103 s** |
+| the monolith (`scripts/build.ps1 -Mode hopac`), for comparison | - | ~190 s |
+
+### Anchor collapse (2026-09-30)
+
+Two days of core edits (174.9k → 176.7k lines, the core merge, many section edits) later, `gear-dev -Force`
+emitted **9 gears instead of 137**, one of 169,541 lines (estimated parallelism 1.004), and one gear failed
+with FS2014. The core had no new cycle (`gear-metrics.tsv`: `cyclic_sccs 0`). The anchors had collapsed it:
+- the anchors keep gears, but shard packing is re-planned on every emission, and 145 of 3,813 new shards
+  straddled old gear boundaries;
+- `gear_anchors.rs` `previous_gear` gives a straddling shard the majority gear of its declarations. Shard 436
+  (DiagJson) packed old part 424 (gear 3: `WorkUnitId`, `GraphProgress*`, consumed nearly everywhere) with
+  old part 425 (`workUnitIdFor`, gear 24, which depends on `CompilerKernelV2`). Gear 3 then depended on
+  gears 10-24, and the cycle merge fused everything in between (`[anchored_partition] groups 137 -> 9`);
+- `-Force` skipped the only stop (the >8-dirty-gears check), and the run saved the collapsed `anchors.tsv`,
+  so every later anchored run would have stayed at 9 gears.
+
+A fresh plan of the same core gives 144 gears (max 21,431 lines, `peval` alone). gear-dev now refuses to
+sync or save anchors when an anchored plan drops below 70% of the previous gear count, even under `-Force`
+(exit 3; rerun with `-Full`).
+
+The splitter now catches it too: when the cycle merges collapse the anchored partition, `anchored_partition`
+gives up and `plan_gears` packs from scratch, printing `[anchored_partition] anchors stale: 137 -> 9 groups
+(largest merged cycle 129); falling back to a fresh plan` to stderr. Stale means the largest merged cycle
+holds more than `max(8, groups/10)` previous gears, or merging removed more than `max(8, 3*groups/10)` of
+them (the 70% rule; the floor keeps a small plan's legitimate merges). `SPIRAL_GEAR_ANCHOR_MAX_MERGE=<n>`
+replaces both bounds with `n`, `off` disables the fallback. The anchors still name the fresh plan's parts and
+gears (majority previous number where free), and the emitted `anchors.tsv` records the fresh partition, so
+the next emission anchors to it. Still open:
+- the root fix: make the shard planner (`spiral-split-plan`) keep a declaration out of an open shard whose
+  anchored gear differs from its own, so straddling shards never form. Changing the majority vote alone
+  just cascades the other way.
+
+**Same-source rerun after a renaming emission (2026-10-01).** The anchored numbers can exceed the plan's
+ids (a fresh number above every previous one), so after such an emission `Part3817.fsproj` exists for a
+3,817-shard plan (ids 0-3816). A second `gear-dev -Force` on the same core failed with `spiral-split error:
+Part3817 is outside the plan (3817 entries)`: `prepare_output_root` (`output_reset.rs`) resumed the
+`Part*.fsproj` files whenever the emission-input identity matched, but `apply_stable_names` had already
+renamed them, names and contents, so they were renamed a second time. Sources already had the rule (a
+`gears.tsv` in the directory means gear emission rewrote it, so emit afresh); projects now follow it too.
+gear-dev printed nothing: the splitter's output goes through `Out-Host`, so a redirected run shows only the
+`spiral-split gears failed` throw (capture with `*>&1`).
+
+The renumbered plan then failed to build, even with `-Full`: `FS0193 ... from compilation unit
+'SpiralCompilerGear0018' did not contain ... 'WorkItem`4'`. `-Full` deleted the anchors but kept `.out`, the
+outputs and surface copies of the previous plan's gears, whose names the new plan reuses for other contents,
+so consumers compiled against stale assemblies. `-Full` now starts from an empty `.out`: 141/141 gears and
+the host built (1,044 s).
+
+**FS2014 in Debug** (`duplicate entry '<index>__debug@21-12' in method table`): an F# compiler naming
+collision (SDK 11.0.100-rc.1). In Debug, calls to the SRTP inline `index` (`let inline index d =
+(^a : (member Index: ^b) d)`, ParserCombinators) are not inlined but emitted as `<name>__debug@<line>-<n>`
+helpers in the consuming type, named by source line only. Four combinators (`opt`, `optional`, `(<|>%)`,
+`choice`) call `index d` on line 21 of four different part files, and a consumer in the same assembly that
+uses two of them gets two helpers of the same name. The monolith never hits it (distinct lines); the
+144-gear plan avoids it only by placement (helpers and consumers land in different gears). A 4-file repro
+is in the job scratch (`splitdiag/repro`), unreported upstream as far as a search shows (related:
+dotnet/fsharp#20466). `<Optimize>true</Optimize>` in gear-dev's `Directory.Build.props` avoids it, at the
+cost of slower gear compiles.
+
+## Commands
+
+```powershell
+pwsh scripts/build-splitter.ps1                       # builds spiral-split into <cache>/splitter-target
+pwsh scripts/build-splitter.ps1 -Test                 # cargo test --workspace
+$split = "<cache>/splitter-target/release/spiral-split"
+. scripts/env.ps1; $core = Get-SpiralCoreProjection hopac "<cache>/hopac-core.fs"   # one core, no section pairs
+& $split analyze $core
+& $split gears $core <cache>/gears-hopac --threads 8
+& $split gear-build <cache>/gears-hopac --dotnet <dotnet> --threads 4
+& $split bench $core     # shard metrics, incl. critical paths
+& $split chain $core     # the heaviest declaration and shard chains
+& $split gear-bench $core  # gear plan shape, no emission
+pwsh scripts/bench-split.ps1                          # time monolith vs split single-project builds
+pwsh scripts/gear-dev.ps1 [-Mode hopac] [-Full] [-Force] [-MaxNodes 2]   # the edit loop, see above
+```
+
+Generated shards, gears and assemblies are disposable build products; the monolith stays the only
+source of truth, and it is never edited through the split tree.
+
+## Current numbers (Windows, 2026-09-26)
+
+`spiral-split analyze` on the alpha3006 Hopac core (13.0 MB, 174,899 lines), ~18 s: 10,728 declarations,
+2,152 shards, 70 dependency layers, widest layer 321, estimated parallelism ~31x, 92% of the dense
+reference edges removed. Ten groups exceed the 1,000-line cap; the largest is `peval` at 21,062 lines
+(1.6 MB) as one indivisible declaration group, which bounds any parallel build of this core. The next
+two are `EvalWorklist` (4,361 lines) and `BigStack` (4,154 lines).
+
+## Test status (2026-09-28)
+
+`pwsh scripts/build-splitter.ps1 -Test` (`cargo test --workspace --no-fail-fast`): Windows
+556 passed, 11 failed (all 11 pre-existing; the CLI tests that read the single-flight core now look
+declarations up by heading, since indices shift with every declaration added to the core); Linux (WSL Ubuntu, 2026-09-27) the same 4 logic failures only.
+
+- Both platforms, in the lift/annotation passes: `late_non_call_use_rolls_back_component_and_dependents`
+  (`spiral-split-lift-funnel`: the `alias = bad` component is not rolled back),
+  `hoists_single_captured_helper`, `annotates_untyped_header_from_recursive_group_witness`,
+  `leaves_untyped_function_parameter_without_group_witness`. These shipped failing in the source bundle.
+- Windows only, 7 process-capture tests (`kills_descendant_tree_without_waiting_for_pipe_close`,
+  `post_term_kill_is_bounded`, `concurrent_timeout_paths_are_bounded`, ...): they assume Unix process
+  groups and signals, so `gear-build` timeouts are only trustworthy on Linux for now.
+
+## Design
+
+`SPLITTER.md` describes the scan → link → plan → gears → emit pipeline.

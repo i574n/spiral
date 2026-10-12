@@ -1,0 +1,23 @@
+nominal zero = ()
+nominal succ n = n
+nominal dna = ()
+nominal rna = ()
+
+union nucleotide alphabet =
+    | A :: forall alphabet. nucleotide alphabet
+    | C :: forall alphabet. nucleotide alphabet
+    | G :: forall alphabet. nucleotide alphabet
+    | T :: nucleotide dna
+    | U :: nucleotide rna
+
+union rec strand alphabet n =
+    | SNil :: forall alphabet. strand alphabet zero
+    | SCons :: forall alphabet n. nucleotide alphabet * strand alphabet n -> strand alphabet (succ n)
+
+union codon alphabet =
+    | Codon :: forall alphabet. strand alphabet (succ (succ (succ zero))) -> codon alphabet
+
+inl translate_start (_ : codon dna) : string = "dna-codon-atg"
+
+inl main () : string =
+    translate_start (Codon (SCons (A, SCons (T, SCons (G, SNil)))))

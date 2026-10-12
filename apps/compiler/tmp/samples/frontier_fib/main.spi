@@ -1,0 +1,7 @@
+let rec fib (n : i32) : i32 =
+    if n <= 1 then n
+    else fib (n - 1) + fib (n - 2)
+
+inl main () : i32 =
+    inl ~n = 10i32
+    fib n - 55

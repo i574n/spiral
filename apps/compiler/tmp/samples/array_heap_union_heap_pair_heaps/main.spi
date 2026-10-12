@@ -1,0 +1,50 @@
+union slot =
+    | None
+    | Held : (heap {value : (heap {value : heap {value : i32 * string} * heap {value : i32 * string}}) * i32})
+
+nominal box_array = array_base (heap {value : slot})
+
+inl create (n : i32) : box_array = box_array !!!!ArrayCreate(`(heap {value : slot}), n)
+inl get (values : box_array) (i : i32) : heap {value : slot} =
+    match values with
+    | box_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : box_array) (i : i32) (value : heap {value : slot}) : () =
+    match values with
+    | box_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+let score x : i32 =
+    match x with
+    | None => 1i32
+    | Held box =>
+        inl opened = !!!!LayoutIndex(box)
+        inl ~(inner_held, flag) = opened.value
+        inl inner_opened = !!!!LayoutIndex(inner_held)
+        inl ~(left, right) = inner_opened.value
+        inl left_opened = !!!!LayoutIndex(left)
+        inl ~(a, b) = left_opened.value
+        inl right_opened = !!!!LayoutIndex(right)
+        inl ~(c, d) = right_opened.value
+        if a =. 7i32 && !!!!EQ(b, "hi") && c =. 4i32 && !!!!EQ(d, "yo") && flag =. 2i32 then 0i32 else 1i32
+
+inl main () : i32 =
+    inl ~n = 7i32
+    inl ~word = "hi"
+    inl left_pair = n, word
+    inl left_heap = !!!!LayoutToHeap({value = left_pair})
+    inl ~m = 4i32
+    inl ~other = "yo"
+    inl right_pair = m, other
+    inl right_heap = !!!!LayoutToHeap({value = right_pair})
+    inl pair = left_heap, right_heap
+    inl inner = !!!!LayoutToHeap({value = pair})
+    inl ~mark = 2i32
+    inl outer_pair = inner, mark
+    inl outer = !!!!LayoutToHeap({value = outer_pair})
+    inl ~on = true
+    inl held = if on then Held outer else None
+    inl box = !!!!LayoutToHeap({value = held})
+    inl values = create 1i32
+    set values 0i32 box
+    inl loaded = get values 0i32
+    inl opened = !!!!LayoutIndex(loaded)
+    score opened.value

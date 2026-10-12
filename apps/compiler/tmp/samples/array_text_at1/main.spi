@@ -1,0 +1,15 @@
+nominal text_array = array_base string
+
+inl create (n : i32) : text_array = text_array !!!!ArrayCreate(`string, n)
+inl get (values : text_array) (i : i32) : string =
+    match values with
+    | text_array raw => !!!!ArrayIndex(raw, i)
+inl set (values : text_array) (i : i32) (value : string) : () =
+    match values with
+    | text_array raw => !!!!ArrayIndexSet(raw, i, value)
+
+inl main () : i32 =
+    inl values = create 2i32
+    inl ~word = "hi"
+    set values 1i32 word
+    if !!!!EQ(get values 1i32, "hi") then 0i32 else 1i32

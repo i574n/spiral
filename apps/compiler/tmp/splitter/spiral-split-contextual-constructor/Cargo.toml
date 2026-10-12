@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-contextual-constructor"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/contextual_constructor.rs"
+
+[dependencies]
+rayon.workspace = true

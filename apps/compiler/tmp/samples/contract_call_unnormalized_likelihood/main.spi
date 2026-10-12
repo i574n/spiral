@@ -1,0 +1,15 @@
+nominal sample_a = ()
+nominal hg38 = ()
+nominal chr1 = ()
+nominal model_v2 = ()
+nominal raw = ()
+nominal normalized = ()
+nominal sums_to_one = ()
+union likelihoods sample build contig model state = | Likelihoods :: forall sample build contig model state. string -> likelihoods sample build contig model state
+union normalization_witness sample build contig model state = | Normalized :: forall sample build contig model state. string -> normalization_witness sample build contig model state
+union genotype_call sample build contig model = | Call :: forall sample build contig model. string -> genotype_call sample build contig model
+inl call forall sample build contig model. (values : likelihoods sample build contig model normalized) (proof : normalization_witness sample build contig model sums_to_one) : genotype_call sample build contig model = Call "call"
+inl main () =
+    inl values : likelihoods sample_a hg38 chr1 model_v2 raw = Likelihoods "raw"
+    inl proof : normalization_witness sample_a hg38 chr1 model_v2 sums_to_one = Normalized "fake"
+    call values proof

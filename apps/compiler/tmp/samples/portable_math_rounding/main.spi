@@ -1,0 +1,18 @@
+inl main () : i32 =
+    inl above_half = dyn 2.7f64
+    inl below_half = dyn 3.2f64
+    inl negative_tie = dyn (0f64 - 2.5f64)
+    inl odd_tie = dyn 3.5f64
+    inl zero_tie = dyn 0.5f64
+    inl one = dyn 1f64
+    inl single = dyn 2.7f32
+    if math.floor above_half <> 2f64 then 1i32
+    elif math.ceil above_half <> 3f64 then 2i32
+    elif math.round above_half <> 3f64 then 3i32
+    elif math.round below_half <> 3f64 then 4i32
+    elif math.round negative_tie <> 0f64 - 2f64 then 5i32
+    elif math.round odd_tie <> 4f64 then 6i32
+    elif math.round zero_tie <> 0f64 then 7i32
+    elif math.floor (math.atan2 one one * 1000f64) <> 785f64 then 8i32
+    elif math.floor single <> 2f32 then 9i32
+    else 0i32

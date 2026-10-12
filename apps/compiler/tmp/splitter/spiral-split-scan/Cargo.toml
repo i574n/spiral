@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-scan"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/declaration_scanner.rs"
+
+[dependencies]
+spiral-split-model.workspace = true

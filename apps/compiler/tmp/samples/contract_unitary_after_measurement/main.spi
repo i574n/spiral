@@ -1,0 +1,18 @@
+nominal zero = ()
+nominal succ n = n
+nominal coherent = ()
+nominal measured = ()
+
+union rec qregister n =
+    | QOne :: qregister (succ zero)
+
+union qstate phase n =
+    | CoherentState :: forall n. qregister n -> qstate coherent n
+    | MeasuredState :: forall n. i32 -> qstate measured n
+
+inl unitary forall n. (state : qstate coherent n) : qstate coherent n = state
+inl measure forall n. (_ : qstate coherent n) : qstate measured n = MeasuredState 0
+
+inl main () : string =
+    inl _ = unitary (measure (CoherentState QOne))
+    "unreachable"

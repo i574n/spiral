@@ -1,0 +1,92 @@
+open main
+
+nominal antimirov_positioned_regex alphabet shape =
+    antimirov_position_tree alphabet shape
+
+inl antimirov_positioned_regex_from_tree forall alphabet shape.
+    (tree : antimirov_position_tree alphabet shape)
+    : antimirov_positioned_regex alphabet shape =
+    antimirov_positioned_regex tree
+
+inl antimirov_positioned_regex_tree forall alphabet shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : antimirov_position_tree alphabet shape =
+    match positioned with
+    | antimirov_positioned_regex tree => tree
+
+inl antimirov_positioned_regex_value forall alphabet shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : regex alphabet =
+    antimirov_position_tree_regex (antimirov_positioned_regex_tree positioned)
+
+nominal antimirov_positioned_slot_bound alphabet shape =
+    antimirov_positioned_regex alphabet shape
+
+union antimirov_positioned_slot_bound_validation alphabet shape =
+    | AntimirovPositionedSlotBoundRejected :: forall alphabet shape.
+        antimirov_positioned_slot_bound_validation alphabet shape
+    | AntimirovPositionedSlotBoundCertified :: forall alphabet shape.
+        antimirov_positioned_slot_bound alphabet shape ->
+        antimirov_positioned_slot_bound_validation alphabet shape
+
+
+inl antimirov_positioned_slot_bound_passes forall alphabet {symbol_compare} shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : bool =
+    inl tree = antimirov_positioned_regex_tree positioned
+    inl normalized = normalize (antimirov_positioned_regex_value positioned)
+    inl support = antimirov_support normalized
+    inl cat_capability : antimirov_slot_cat_capability alphabet =
+        antimirov_slot_cat_capability_default
+    inl equal_capability : antimirov_slot_equal_capability alphabet =
+        antimirov_slot_equal_capability_default
+    regex_list_distinct support &&
+    antimirov_support_covered_by_typed_slots
+        cat_capability equal_capability normalized tree support
+
+
+inl certify_antimirov_positioned_slot_bound forall alphabet {symbol_compare} shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : antimirov_positioned_slot_bound_validation alphabet shape =
+    if antimirov_positioned_slot_bound_passes positioned then
+        inl certificate : antimirov_positioned_slot_bound alphabet shape =
+            antimirov_positioned_slot_bound positioned
+        AntimirovPositionedSlotBoundCertified certificate
+    else
+        AntimirovPositionedSlotBoundRejected
+
+inl antimirov_positioned_slot_bound_value forall alphabet {symbol_compare} shape.
+    (certificate : antimirov_positioned_slot_bound alphabet shape)
+    : regex alphabet =
+    match certificate with
+    | antimirov_positioned_slot_bound positioned =>
+        normalize (antimirov_positioned_regex_value positioned)
+
+
+inl antimirov_positioned_slot_bound_certified_is forall alphabet shape.
+    (validation : antimirov_positioned_slot_bound_validation alphabet shape)
+    : bool =
+    match validation with
+    | AntimirovPositionedSlotBoundRejected => false
+    | AntimirovPositionedSlotBoundCertified _ => true
+
+inl require_positioned_regex forall alphabet shape.
+    (positioned : antimirov_positioned_regex alphabet shape)
+    : bool = true
+
+inl main () : string =
+    inl bit_positioned :
+        antimirov_positioned_regex bit_alphabet bit_ends_with_zero_shape =
+        antimirov_positioned_regex_from_tree (bit_ends_with_zero_position_tree ())
+    assert_static
+        (antimirov_positioned_slot_bound_certified_is
+            (certify_antimirov_positioned_slot_bound bit_positioned))
+        "bit positioned regex must certify root-plus-position slot coverage"
+    inl tri_positioned :
+        antimirov_positioned_regex tri_alphabet tri_ab_star_then_c_shape =
+        antimirov_positioned_regex_from_tree (tri_ab_star_then_c_position_tree ())
+    assert_static
+        (antimirov_positioned_slot_bound_certified_is
+            (certify_antimirov_positioned_slot_bound tri_positioned))
+        "ternary positioned regex must certify root-plus-position slot coverage"
+    "brzozowski-antimirov-positioned-bound-green" 

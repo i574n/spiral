@@ -1,0 +1,98 @@
+nominal monoidal_x = ()
+nominal object_a = ()
+nominal object_b = ()
+nominal object_c = ()
+nominal vertex_1 = ()
+nominal vertex_2 = ()
+nominal vertex_3 = ()
+nominal vertex_4 = ()
+nominal vertex_5 = ()
+nominal vertex_6 = ()
+nominal edge_12 = ()
+nominal edge_23 = ()
+nominal edge_36 = ()
+nominal edge_14 = ()
+nominal edge_45 = ()
+nominal edge_56 = ()
+nominal hexagon_filler = ()
+
+union tensor_vertex space a b c vertex =
+    | TensorVertex :: forall space a b c vertex. string -> tensor_vertex space a b c vertex
+
+union associator_2cell space a b c from_vertex to_vertex witness =
+    | Associator2Cell :: forall space a b c from_vertex to_vertex witness.
+        tensor_vertex space a b c from_vertex *
+        tensor_vertex space a b c to_vertex *
+        string -> associator_2cell space a b c from_vertex to_vertex witness
+
+union braiding_2cell space a b c from_vertex to_vertex witness =
+    | Braiding2Cell :: forall space a b c from_vertex to_vertex witness.
+        tensor_vertex space a b c from_vertex *
+        tensor_vertex space a b c to_vertex *
+        string -> braiding_2cell space a b c from_vertex to_vertex witness
+
+union braided_hexagon_3cell space a b c v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler =
+    | BraidedHexagon3Cell :: forall space a b c v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler.
+        tensor_vertex space a b c v1 *
+        tensor_vertex space a b c v2 *
+        tensor_vertex space a b c v3 *
+        tensor_vertex space a b c v4 *
+        tensor_vertex space a b c v5 *
+        tensor_vertex space a b c v6 *
+        associator_2cell space a b c v1 v2 e12 *
+        braiding_2cell space a b c v2 v3 e23 *
+        associator_2cell space a b c v3 v6 e36 *
+        braiding_2cell space a b c v1 v4 e14 *
+        associator_2cell space a b c v4 v5 e45 *
+        braiding_2cell space a b c v5 v6 e56 *
+        string -> braided_hexagon_3cell space a b c v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler
+
+union packed_hexagon space a b c =
+    | PackedHexagon :: forall space a b c.
+        (exists v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler.
+            braided_hexagon_3cell space a b c v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler)
+        -> packed_hexagon space a b c
+
+inl with_packed_hexagon forall space a b c result.
+    (visit : forall v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler.
+        braided_hexagon_3cell space a b c v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler -> result)
+    (packed : packed_hexagon space a b c) : result =
+    match packed with
+    | PackedHexagon payload =>
+        inl exists v1 v2 v3 v4 v5 v6 e12 e23 e36 e14 e45 e56 filler. cell = payload
+        visit cell
+
+inl v1 () : tensor_vertex monoidal_x object_a object_b object_c vertex_1 = TensorVertex "((a.tensor.b).tensor.c)"
+inl v2 () : tensor_vertex monoidal_x object_a object_b object_c vertex_2 = TensorVertex "(a.tensor.(b.tensor.c))"
+inl v3 () : tensor_vertex monoidal_x object_a object_b object_c vertex_3 = TensorVertex "(a.tensor.(c.tensor.b))"
+inl v4 () : tensor_vertex monoidal_x object_a object_b object_c vertex_4 = TensorVertex "((b.tensor.a).tensor.c)"
+inl v5 () : tensor_vertex monoidal_x object_a object_b object_c vertex_5 = TensorVertex "(b.tensor.(a.tensor.c))"
+inl v6 () : tensor_vertex monoidal_x object_a object_b object_c vertex_6 = TensorVertex "((b.tensor.c).tensor.a)"
+
+inl a12 () : associator_2cell monoidal_x object_a object_b object_c vertex_1 vertex_2 edge_12 =
+    Associator2Cell (v1 (), v2 (), "alpha-a-b-c")
+inl b23 () : braiding_2cell monoidal_x object_a object_b object_c vertex_2 vertex_3 edge_23 =
+    Braiding2Cell (v2 (), v3 (), "id-a-tensor-beta-b-c")
+inl a36 () : associator_2cell monoidal_x object_a object_b object_c vertex_3 vertex_6 edge_36 =
+    Associator2Cell (v3 (), v6 (), "alpha-inverse-b-c-a")
+inl b14 () : braiding_2cell monoidal_x object_a object_b object_c vertex_1 vertex_4 edge_14 =
+    Braiding2Cell (v1 (), v4 (), "beta-a-b-tensor-id-c")
+inl a45 () : associator_2cell monoidal_x object_a object_b object_c vertex_4 vertex_5 edge_45 =
+    Associator2Cell (v4 (), v5 (), "alpha-b-a-c")
+inl b56 () : braiding_2cell monoidal_x object_a object_b object_c vertex_5 vertex_6 edge_56 =
+    Braiding2Cell (v5 (), v6 (), "id-b-tensor-beta-a-c")
+
+inl coherent_hexagon () : braided_hexagon_3cell monoidal_x object_a object_b object_c vertex_1 vertex_2 vertex_3 vertex_4 vertex_5 vertex_6 edge_12 edge_23 edge_36 edge_14 edge_45 edge_56 hexagon_filler =
+    BraidedHexagon3Cell (
+        v1 (), v2 (), v3 (), v4 (), v5 (), v6 (),
+        a12 (), b23 (), a36 (), b14 (), a45 (), b56 (),
+        "braided-monoidal-hexagon-filler"
+    )
+
+inl label forall v1' v2' v3' v4' v5' v6' e12' e23' e36' e14' e45' e56' filler.
+    (_ : braided_hexagon_3cell monoidal_x object_a object_b object_c v1' v2' v3' v4' v5' v6' e12' e23' e36' e14' e45' e56' filler) : string =
+    "hott-braided-hexagon-coherent"
+
+inl main () : string =
+    inl packed : packed_hexagon monoidal_x object_a object_b object_c = PackedHexagon (exists (coherent_hexagon ()))
+    with_packed_hexagon `$label packed

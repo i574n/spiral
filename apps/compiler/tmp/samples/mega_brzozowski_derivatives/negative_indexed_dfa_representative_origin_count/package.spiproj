@@ -1,0 +1,5 @@
+packageDir: ..
+packages:
+    indexed_dfa_state_cardinality-
+modules:
+    main

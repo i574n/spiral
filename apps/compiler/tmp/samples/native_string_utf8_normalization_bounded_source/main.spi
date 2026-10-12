@@ -1,0 +1,30 @@
+inl main () : i32 =
+    inl e_acute = sm.utf8_scalar_at_byte_offset "é" 0i32
+    inl o_tilde = sm.utf8_scalar_at_byte_offset "õ" 0i32
+    inl c_cedilla = sm.utf8_scalar_at_byte_offset "ç" 0i32
+    inl acute = sm.utf8_scalar_at_byte_offset "́" 0i32
+    inl tilde = sm.utf8_scalar_at_byte_offset "̃" 0i32
+    inl cedilla = sm.utf8_scalar_at_byte_offset "̧" 0i32
+    inl e_base, e_mark = sm.utf8_normalize_scalar_nfd_bounded e_acute
+    inl o_base, o_mark = sm.utf8_normalize_scalar_nfd_bounded o_tilde
+    inl c_base, c_mark = sm.utf8_normalize_scalar_nfd_bounded c_cedilla
+    inl e_nfc, e_tail = sm.utf8_normalize_pair_nfc_bounded 101i32 acute
+    inl o_nfc, o_tail = sm.utf8_normalize_pair_nfc_bounded 111i32 tilde
+    inl c_nfc, c_tail = sm.utf8_normalize_pair_nfc_bounded 99i32 cedilla
+    inl z_nfd, z_mark = sm.utf8_normalize_scalar_nfd_bounded 90i32
+    inl z_nfc, z_tail = sm.utf8_normalize_pair_nfc_bounded 90i32 acute
+    if (=.) e_base 101i32 && (=.) e_mark acute then
+        if (=.) o_base 111i32 && (=.) o_mark tilde then
+            if (=.) c_base 99i32 && (=.) c_mark cedilla then
+                if (=.) e_nfc e_acute && (=.) e_tail -1i32 then
+                    if (=.) o_nfc o_tilde && (=.) o_tail -1i32 then
+                        if (=.) c_nfc c_cedilla && (=.) c_tail -1i32 then
+                            if (=.) z_nfd 90i32 && (=.) z_mark -1i32 then
+                                if (=.) z_nfc 90i32 && (=.) z_tail acute then 0i32 else 8i32
+                            else 7i32
+                        else 6i32
+                    else 5i32
+                else 4i32
+            else 3i32
+        else 2i32
+    else 1i32

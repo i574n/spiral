@@ -1,0 +1,22 @@
+nominal nfe = { issuer : string; total_cents : i32 }
+
+union rule result =
+    | IssuerRule :: rule string
+    | TotalRule :: rule i32
+
+union rec validation result =
+    | Lift :: forall result. rule result -> validation result
+    | Zip :: forall a b. validation a * validation b -> validation (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * validation input)
+        -> validation result
+
+inl summarize_total (_ : i32) : string = "wrong"
+
+inl plan () : validation string =
+    Map (exists (
+        summarize_total,
+        Zip (Lift IssuerRule, Lift TotalRule)
+    ))
+
+inl main () : string = "unreachable"

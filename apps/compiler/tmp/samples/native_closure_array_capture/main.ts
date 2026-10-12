@@ -1,0 +1,13 @@
+function f_c0(v0: Array<number>): ((a0: number) => number) {
+    return (v1: number): number => {
+        let v2: number = v0.length;
+        let v3: number = (v2 + v1) | 0;
+        return v3;
+    };
+}
+export function main(): number {
+    let v0: Array<number> = new Array<number>(2).fill(0);
+    let v1: ((a0: number) => number) = f_c0(v0);
+    return v1(40);
+}
+process.exitCode = main();

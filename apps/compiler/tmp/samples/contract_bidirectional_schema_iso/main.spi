@@ -1,0 +1,36 @@
+nominal v5 = ()
+nominal v6 = ()
+
+union document schema =
+    | V5Document :: string -> document v5
+    | V6Document :: string -> document v6
+
+union migration from to =
+    | V5ToV6 :: migration v5 v6
+    | V6ToV5 :: migration v6 v5
+
+union schema_iso from to =
+    | SchemaIso :: forall from to.
+        migration from to * migration to from
+        -> schema_iso from to
+
+inl migrate forall from to.
+    (migration : migration from to)
+    (document : document from)
+    : document to =
+    match migration, document with
+    | V5ToV6, V5Document access_key => V6Document access_key
+    | V6ToV5, V6Document access_key => V5Document access_key
+
+inl roundtrip forall from to.
+    (iso : schema_iso from to)
+    (document : document from)
+    : document from =
+    match iso with
+    | SchemaIso (forward, backward) =>
+        migrate backward (migrate forward document)
+
+inl main () : string =
+    inl iso : schema_iso v5 v6 = SchemaIso (V5ToV6, V6ToV5)
+    match roundtrip iso (V5Document "NFe-69") with
+    | V5Document _ => "bidirectional-schema-iso"

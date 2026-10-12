@@ -1,0 +1,18 @@
+nominal phased = ()
+nominal unphased = ()
+
+union genotype phase =
+    | PhasedGenotype :: string * string -> genotype phased
+    | UnphasedGenotype :: string * string -> genotype unphased
+
+union breakpoint =
+    | Breakpoint :: i32 -> breakpoint
+
+inl crossover (_ : breakpoint) (genotype : genotype phased) : genotype phased = genotype
+
+inl render_phased (genotype : genotype phased) : string =
+    match genotype with
+    | PhasedGenotype _ => "A-C-G:T-G-C"
+
+inl main () : string =
+    render_phased (crossover (Breakpoint 2) (PhasedGenotype ("A-C-G", "T-G-C")))

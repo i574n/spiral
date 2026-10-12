@@ -1,0 +1,18 @@
+inl resize ~(xs : array i32) ~(new_length : i32) : () =
+    $'DynamicArrayResize0(!xs,!new_length)'
+
+inl capacity ~(xs : array i32) : i32 =
+    $'DynamicArrayCapacity0(!xs)'
+
+inl main () : i32 =
+    inl ~initial_length = 4i32
+    inl ~xs : array i32 = create initial_length
+    set xs 0i32 1i32
+    set xs 1i32 2i32
+    set xs 2i32 3i32
+    set xs 3i32 4i32
+    inl ~alias = xs
+    join resize xs 2i32
+    join resize alias 4i32
+    set alias 3i32 7i32
+    length xs +. index xs 3i32 +. join capacity xs -. 15i32

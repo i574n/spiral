@@ -1,0 +1,5 @@
+packageDir: ..
+packages:
+    inventory_indexed_model-
+modules:
+    main

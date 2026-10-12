@@ -1,0 +1,58 @@
+nominal production = ()
+nominal homologation = ()
+nominal schema_v4 = ()
+nominal draft = ()
+nominal signed = ()
+nominal authorized = ()
+
+nominal phase env schema state = env * schema * state
+
+union credential env =
+    | ProductionCertificate :: credential production
+    | HomologationCertificate :: credential homologation
+
+union endpoint env schema =
+    | ProductionV4Endpoint :: endpoint production schema_v4
+    | HomologationV4Endpoint :: endpoint homologation schema_v4
+
+nominal draft_payload = { id : string }
+nominal signed_payload = { xml : string }
+nominal authorized_payload = { protocol : string }
+
+union document index =
+    | DraftDocument :: forall env schema.
+        draft_payload -> document (phase env schema draft)
+    | SignedDocument :: forall env schema.
+        signed_payload -> document (phase env schema signed)
+    | AuthorizedDocument :: forall env schema.
+        authorized_payload -> document (phase env schema authorized)
+
+union operation from to =
+    | Sign :: forall env schema.
+        credential env ->
+        operation
+            (phase env schema draft)
+            (phase env schema signed)
+    | Authorize :: forall env schema.
+        endpoint env schema ->
+        operation
+            (phase env schema signed)
+            (phase env schema authorized)
+
+inl execute forall from to.
+    (operation : operation from to)
+    (document : document from)
+    : document to =
+    match operation, document with
+    | Sign _, DraftDocument payload =>
+        SignedDocument (signed_payload { xml = payload.id })
+    | Authorize _, SignedDocument _ =>
+        AuthorizedDocument (authorized_payload { protocol = "capability-authorized" })
+
+inl main () : string =
+    inl draft_document : document (phase production schema_v4 draft) =
+        DraftDocument (draft_payload { id = "NFE-20" })
+    inl signed_document = execute (Sign ProductionCertificate) draft_document
+    inl authorized_document = execute (Authorize ProductionV4Endpoint) signed_document
+    match authorized_document with
+    | AuthorizedDocument payload => payload.protocol

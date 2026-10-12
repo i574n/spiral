@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    The compiler executable. Build with -p:SpiralCore=single-flight (default) or -p:SpiralCore=hopac.
+    Program.fs talks to the core only through SupervisorReq (built by reflection), new_server and
+    startupParse, which both cores expose. The core is a separate assembly (../core), so editing the
+    host rebuilds in seconds even in hopac mode.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>SpiralCompiler</AssemblyName>
+    <RootNamespace>Polyglot</RootNamespace>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'single-flight'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_SINGLE_FLIGHT</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(SpiralCore)' == 'hopac'">
+    <DefineConstants>$(DefineConstants);SPIRAL_CORE_HOPAC</DefineConstants>
+    <!-- Hopac runs one compile per process: tier-0 PGO instrumentation costs more than it pays back (~7%). -->
+    <TieredPGO>false</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+    <!-- The C++/CUDA and Python backends' runtime (apps/compiler/runtime, upstream corelib + CPU-host deltas):
+         CodegenCpp/CodegenPython read it next to the compiler binary. -->
+    <None Include="..\..\..\runtime\corelib.cuh;..\..\..\runtime\corelib.py" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../runtime-compat/SpiralCompilerRuntimeCompat.fsproj" />
+    <ProjectReference Include="../core/SpiralCompilerCore.fsproj" />
+  </ItemGroup>
+  <Import Project="../lib/References.props" />
+</Project>

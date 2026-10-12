@@ -1,0 +1,8 @@
+inl main () : i32 =
+    inl ~a = 2147483647u32
+    inl ~b = 2u32
+    inl ~c = 1u32
+    inl s = a +. b
+    inl t = a +. c
+    if s =. 2147483649u32 && t =. 2147483648u32 then 0i32
+    else 1i32

@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl a = lib.extra.three ()
+    a - 3i32
+
+inl expected_error_lib_extra_is_ambiguous () = ()

@@ -1,0 +1,28 @@
+union rec phase =
+    | Empty
+    | Step : i32 * phase
+
+inl reserve ~(xs : array i32) ~(requested_capacity : i32) : () =
+    $'DynamicArrayReserve0(!xs,!requested_capacity)'
+
+inl rec keep ~n left right (xs : array i32) : i32 =
+    if n =. 0i32 then
+        match left with
+        | Step (x, _) => if x =. 7i32 then index xs 0i32 else 99i32
+        | Empty => 98i32
+    else join keep (n -. 1i32) right left xs
+
+inl main () : i32 =
+    inl empty = Empty
+    inl left = Step (7i32, empty)
+    inl right = Step (11i32, empty)
+    inl ~size = 1i32
+    inl ~xs : array i32 = create size
+    set xs 0i32 7i32
+    join reserve xs 4i32
+    inl alias = xs
+    inl result = join keep 1000000i32 left right xs
+    set xs 0i32 13i32
+    if result =. 7i32 then
+        if index alias 0i32 =. 13i32 then 0i32 else 2i32
+    else 1i32

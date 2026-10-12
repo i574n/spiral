@@ -1,0 +1,17 @@
+nominal admin = ()
+nominal publish_only = ()
+
+union capability scope =
+    | AdminCapability :: capability admin
+    | PublishCapability :: capability publish_only
+
+inl attenuate (capability : capability admin) : capability publish_only =
+    match capability with
+    | AdminCapability => PublishCapability
+
+inl rotate_keys (capability : capability admin) : string =
+    match capability with
+    | AdminCapability => "keys-rotated"
+
+inl main () : string =
+    rotate_keys (attenuate AdminCapability)

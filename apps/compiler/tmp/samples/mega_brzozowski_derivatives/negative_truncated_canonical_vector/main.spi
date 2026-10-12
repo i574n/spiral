@@ -1,0 +1,8 @@
+open main
+
+inl truncated_bit_vector () : finite_symbol_vector bit_alphabet bit_finite_length =
+    FiniteSymbolVectorCons (zero (), FiniteSymbolVectorNil)
+
+inl main () : string =
+    inl _ = truncated_bit_vector ()
+    "must-not-typecheck"

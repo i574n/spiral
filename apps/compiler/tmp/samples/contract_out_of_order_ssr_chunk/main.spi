@@ -1,0 +1,23 @@
+nominal app_scope = ()
+nominal i0 = ()
+nominal i1 = ()
+nominal i2 = ()
+nominal open_stream = ()
+
+union stream scope cursor state =
+    | Stream :: forall scope cursor state. string -> stream scope cursor state
+
+union chunk scope from to =
+    | Chunk :: forall scope from to. string -> chunk scope from to
+
+inl append forall scope from to.
+    (stream : stream scope from open_stream)
+    (chunk : chunk scope from to)
+    : stream scope to open_stream =
+    match stream, chunk with
+    | Stream _, Chunk label => Stream label
+
+inl main () =
+    inl stream0 : stream app_scope i0 open_stream = Stream "head"
+    inl chunk1 : chunk app_scope i1 i2 = Chunk "tail"
+    append stream0 chunk1

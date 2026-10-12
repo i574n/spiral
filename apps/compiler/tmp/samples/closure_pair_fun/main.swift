@@ -1,0 +1,73 @@
+import CRT
+func right_c1(_ v0: Int32, _ v1: Int32) -> (Int32) -> Int32 {
+    return { (v2: Int32) -> Int32 in
+        var v3: Bool = false
+        v3 = (v1 == 0)
+        if (v3) {
+            return 0
+        } else {
+            var v4: Int32 = 0
+            v4 = (v2 &+ v0)
+            return v4
+        }
+    }
+}
+func left_c2(_ v0: Int32, _ v1: Int32) -> (Int32) -> Int32 {
+    return { (v2: Int32) -> Int32 in
+        var v3: Bool = false
+        v3 = (v1 == 0)
+        if (v3) {
+            return 0
+        } else {
+            var v4: Int32 = 0
+            v4 = (v2 &+ v0)
+            return v4
+        }
+    }
+}
+func f_c0(_ v0: Int32, _ v1: Int32) -> (Int32) -> ((Int32) -> Int32, (Int32) -> Int32) {
+    return { (v2: Int32) -> ((Int32) -> Int32, (Int32) -> Int32) in
+        var v3: Bool = false
+        v3 = (v2 == 0)
+        if (v3) {
+            var v4: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+            v4 = right_c1(v1, v2)
+            var v5: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+            v5 = left_c2(v0, v2)
+            return (v4, v5)
+        } else {
+            var v6: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+            v6 = left_c2(v0, v2)
+            var v7: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+            v7 = right_c1(v1, v2)
+            return (v6, v7)
+        }
+    }
+}
+func spiral_main() -> Int32 {
+    var v0: Int32 = 0
+    v0 = 3
+    var v1: Int32 = 0
+    v1 = 4
+    var v2: (Int32) -> ((Int32) -> Int32, (Int32) -> Int32) = { (_: Int32) -> ((Int32) -> Int32, (Int32) -> Int32) in fatalError("unreachable closure") }
+    v2 = f_c0(v0, v1)
+    var v3: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+    var v4: (Int32) -> Int32 = { (_: Int32) -> Int32 in fatalError("unreachable closure") }
+    let spiral_tuple465 = v2(1)
+    v3 = spiral_tuple465.0
+    v4 = spiral_tuple465.1
+    var v5: Int32 = 0
+    v5 = v3(0)
+    var v6: Int32 = 0
+    v6 = v4(0)
+    var v7: Int32 = 0
+    v7 = (v5 &+ v6)
+    var v8: Bool = false
+    v8 = (v7 == 7)
+    if (v8) {
+        return 0
+    } else {
+        return 1
+    }
+}
+exit(spiral_main())

@@ -1,0 +1,129 @@
+nominal pending = ()
+nominal ready = ()
+nominal committed = ()
+nominal retryable = ()
+nominal fresh = ()
+nominal persisted = ()
+nominal published = ()
+
+nominal nfe = { issuer : string; recipient : string; total_cents : i32 }
+
+union rule result =
+    | IssuerRule :: rule string
+    | RecipientRule :: rule string
+    | TotalRule :: rule i32
+
+union rec validation result =
+    | Lift :: forall result. rule result -> validation result
+    | Zip :: forall a b. validation a * validation b -> validation (a * b)
+    | Map :: forall result.
+        (exists input. (input -> result) * validation input)
+        -> validation result
+
+union validation_evidence status =
+    | PendingEvidence :: validation_evidence pending
+    | ReadyEvidence :: string -> validation_evidence ready
+
+inl run_rule forall result.
+    (document : nfe)
+    (rule : rule result)
+    : result =
+    match rule with
+    | IssuerRule => document.issuer
+    | RecipientRule => document.recipient
+    | TotalRule => document.total_cents
+
+inl rec run_validation forall result.
+    (document : nfe)
+    (program : validation result)
+    : result =
+    match program with
+    | Lift rule => run_rule document rule
+    | Zip (left, right) =>
+        run_validation document left,
+        run_validation document right
+    | Map packed =>
+        inl exists input. mapping, source = packed
+        mapping (run_validation document source)
+
+inl evidence (_ : (string * string) * i32) : validation_evidence ready =
+    ReadyEvidence "validated"
+
+inl validation_plan () : validation (validation_evidence ready) =
+    Map (exists (
+        evidence,
+        Zip (Zip (Lift IssuerRule, Lift RecipientRule), Lift TotalRule)
+    ))
+
+union request effect result =
+    | QueryStatus :: string -> request retryable string
+
+union status_receipt phase =
+    | CommittedReceipt :: string -> status_receipt committed
+
+inl retry forall result.
+    (request : request retryable result)
+    : result =
+    match request with
+    | QueryStatus _ => "committed"
+
+inl reconcile (status : string) : status_receipt committed =
+    CommittedReceipt status
+
+union event_box phase =
+    | EventBox :: forall phase. string -> event_box phase
+
+union outbox_op from to =
+    | PersistValidated :: validation_evidence ready -> outbox_op fresh persisted
+    | PublishCommitted :: status_receipt committed -> outbox_op persisted published
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl execute forall from to.
+    (operation : outbox_op from to)
+    (box : event_box from)
+    : event_box to =
+    match operation, box with
+    | PersistValidated (ReadyEvidence _), EventBox _ =>
+        EventBox "persisted"
+    | PublishCommitted (CommittedReceipt _), EventBox _ =>
+        EventBox "typed-runtime-plan"
+
+inl rec fold_chain forall (step : * -> * -> *) (carrier : * -> *) from to.
+    (handler : forall a b. step a b -> carrier a -> carrier b)
+    (program : chain step from to)
+    (input : carrier from)
+    : carrier to =
+    match program with
+    | ChainStep atom => handler atom input
+    | ChainCompose packed =>
+        inl exists middle. first, second = packed
+        fold_chain `$handler second (fold_chain `$handler first input)
+
+inl publish_plan
+    (evidence : validation_evidence ready)
+    (receipt : status_receipt committed)
+    : chain outbox_op fresh published =
+    ChainCompose (exists (
+        ChainStep (PersistValidated evidence),
+        ChainStep (PublishCommitted receipt)
+    ))
+
+inl main () : string =
+    inl document = nfe {
+        issuer = "ACME"
+        recipient = "CLIENT"
+        total_cents = 4200
+    }
+    inl evidence = run_validation document (validation_plan ())
+    inl status = retry (QueryStatus "135")
+    inl receipt = reconcile status
+    inl result =
+        fold_chain `$execute (publish_plan evidence receipt) (EventBox "event")
+    match result with
+    | EventBox trace => trace

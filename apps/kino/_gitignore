@@ -1,0 +1,12 @@
+/_build/
+/build/
+/cover/
+/deps/
+/doc/
+/.fetch
+erl_crash.dump
+*.ez
+spiral_kino-*.tar
+/tmp/
+/gleam.lock
+/src/

@@ -1,0 +1,26 @@
+nominal source_a = ()
+nominal source_b = ()
+nominal draft = ()
+nominal validated = ()
+
+union step source from to =
+    | ValidateA :: step source_a draft validated
+    | ValidateB :: step source_b draft validated
+
+union audited source from to =
+    | Audited :: forall source from to.
+        step source from to -> audited source from to
+
+inl audit forall source from to.
+    (step : step source from to)
+    : audited source from to =
+    Audited step
+
+inl publish_a (step : audited source_a draft validated) : string =
+    match step with
+    | Audited step =>
+        match step with
+        | ValidateA => "published"
+
+inl main () : string =
+    publish_a (audit ValidateB)

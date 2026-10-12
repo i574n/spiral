@@ -1,0 +1,7 @@
+inl pick (n : i8) : i8 =
+    if n =. 0i8 then 1i8 else n
+
+inl main () : i32 =
+    inl ~n = 100i8
+    inl got = join pick n
+    if got =. 100i8 then 0i32 else 1i32

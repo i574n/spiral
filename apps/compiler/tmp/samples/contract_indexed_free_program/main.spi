@@ -1,0 +1,66 @@
+nominal idle = ()
+nominal loaded = ()
+nominal validated = ()
+nominal authorized = ()
+
+union document state =
+    | EmptyDocument :: document idle
+    | LoadedDocument :: string -> document loaded
+    | ValidatedDocument :: string -> document validated
+    | AuthorizedDocument :: string -> document authorized
+
+union command from to result =
+    | Load :: string -> command idle loaded string
+    | Validate :: command loaded validated i32
+    | Authorize :: command validated authorized string
+
+union rec program from to result =
+    | Done :: forall state result.
+        result -> program state state result
+    | Bind :: forall from to result.
+        (exists middle. exists input.
+            command from middle input *
+            (input -> program middle to result))
+        -> program from to result
+
+inl run_command forall from to result.
+    (command : command from to result)
+    (document : document from)
+    : document to * result =
+    match command, document with
+    | Load xml, EmptyDocument =>
+        LoadedDocument xml, xml
+    | Validate, LoadedDocument xml =>
+        ValidatedDocument xml, 3
+    | Authorize, ValidatedDocument _ =>
+        AuthorizedDocument "indexed-program", "indexed-program"
+
+inl rec run_program forall from to result.
+    (program : program from to result)
+    (document : document from)
+    : document to * result =
+    match program with
+    | Done result => document, result
+    | Bind packed =>
+        inl exists middle. packed = packed
+        inl exists input. command, next = packed
+        inl document, value = run_command command document
+        run_program (next value) document
+
+inl workflow () : program idle authorized string =
+    Bind (exists (exists (
+        Load "nfe.xml",
+        fun _ =>
+            Bind (exists (exists (
+                Validate,
+                fun _ =>
+                    Bind (exists (exists (
+                        Authorize,
+                        fun protocol => Done protocol
+                    )))
+            )))
+    )))
+
+inl main () : string =
+    inl _, result = run_program (workflow ()) EmptyDocument
+    result

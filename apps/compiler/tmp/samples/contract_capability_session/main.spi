@@ -1,0 +1,52 @@
+nominal missing = ()
+nominal present = ()
+
+union auth_session cert endpoint =
+    | AuthSession :: forall cert endpoint. string -> auth_session cert endpoint
+
+union action from to =
+    | AcquireCertificate :: forall endpoint.
+        action (auth_session missing endpoint) (auth_session present endpoint)
+    | SelectEndpoint :: forall cert.
+        action (auth_session cert missing) (auth_session cert present)
+    | Authorize :: action (auth_session present present) (auth_session present present)
+
+union rec chain (step : * -> * -> *) from to =
+    | ChainStep :: forall (step : * -> * -> *) from to.
+        step from to -> chain step from to
+    | ChainCompose :: forall (step : * -> * -> *) from to.
+        (exists middle. chain step from middle * chain step middle to)
+        -> chain step from to
+
+inl execute forall from to.
+    (operation : action from to)
+    (state : from)
+    : to =
+    match operation, state with
+    | AcquireCertificate, AuthSession _ => AuthSession "certificate-acquired"
+    | SelectEndpoint, AuthSession _ => AuthSession "endpoint-selected"
+    | Authorize, AuthSession _ => AuthSession "capability-session"
+
+inl rec run_chain forall from to.
+    (program : chain action from to)
+    (input : from)
+    : to =
+    match program with
+    | ChainStep atom => execute atom input
+    | ChainCompose pair =>
+        inl exists middle. first, second = pair
+        run_chain second (run_chain first input)
+
+inl plan () : chain action (auth_session missing missing) (auth_session present present) =
+    ChainCompose (exists (
+        ChainStep AcquireCertificate,
+        ChainCompose (exists (
+            ChainStep SelectEndpoint,
+            ChainStep Authorize
+        ))
+    ))
+
+inl main () : string =
+    inl result = run_chain (plan ()) (AuthSession "start")
+    match result with
+    | AuthSession trace => trace

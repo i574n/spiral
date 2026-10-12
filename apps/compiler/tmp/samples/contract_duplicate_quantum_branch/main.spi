@@ -1,0 +1,26 @@
+nominal lineage_a = ()
+nominal root_branch = ()
+nominal left_branch = ()
+nominal right_branch = ()
+
+union qtoken lineage branch =
+    | QToken :: forall lineage branch. string -> qtoken lineage branch
+
+inl split forall lineage.
+    (token : qtoken lineage root_branch)
+    : qtoken lineage left_branch * qtoken lineage right_branch =
+    match token with
+    | QToken label => QToken label, QToken label
+
+inl merge forall lineage.
+    (left : qtoken lineage left_branch)
+    (right : qtoken lineage right_branch)
+    : qtoken lineage root_branch =
+    match left, right with
+    | QToken _, QToken _ => QToken "branches-merged"
+
+inl main () : string =
+    inl root : qtoken lineage_a root_branch = QToken "root"
+    inl left, _ = split root
+    inl _ : qtoken lineage_a root_branch = merge left left
+    "unreachable"

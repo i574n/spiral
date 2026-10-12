@@ -1,0 +1,29 @@
+nominal approver_a = ()
+nominal approver_b = ()
+
+union approval approver =
+    | ApprovalA :: approval approver_a
+    | ApprovalB :: approval approver_b
+
+union distinct left right =
+    | DistinctAB :: distinct approver_a approver_b
+    | DistinctBA :: distinct approver_b approver_a
+
+union quorum left right =
+    | Quorum :: forall left right.
+        approval left * approval right * distinct left right
+        -> quorum left right
+
+inl combine forall left right.
+    (left : approval left)
+    (right : approval right)
+    (proof : distinct left right)
+    : quorum left right =
+    Quorum (left, right, proof)
+
+inl authorize forall left right. (quorum : quorum left right) : string =
+    match quorum with
+    | Quorum _ => "distinct-quorum"
+
+inl main () : string =
+    authorize (combine ApprovalA ApprovalB DistinctAB)

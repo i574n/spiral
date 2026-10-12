@@ -1,0 +1,2 @@
+inl main () : i32 =
+    sm.utf8_scalar_at_byte_offset "é" 1i32

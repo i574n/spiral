@@ -2,11 +2,6 @@ open sm'_operators
 open leptos
 
 inl render children : _ (_ span) =
-    inl children () =
-        children
-        |> move_to_fragment
-    // inl children : () -> fragment = join children
-
     span [
         $'"class=\\\"flex items-center pb-[6px]\\\""'
     ] fun () =>

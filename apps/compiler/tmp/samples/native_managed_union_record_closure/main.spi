@@ -1,0 +1,9 @@
+open support
+
+inl main () : i32 =
+    inl ~derive =
+        (fun seed =>
+            if seed =. 0i32 then Empty
+            else Item ("managed", 32i32)
+        ) : i32 -> payload
+    score (join derive 0i32) +. score (join derive 1i32)

@@ -1,105 +1,540 @@
 /// # sm'
+test sm static =
+    open testing
 
 /// ## rust
 
-/// ### std_string
-nominal std_string =
+/// ### std_string_real
+///- --real
+
+nominal std_string_real =
     `(
-        backend_switch `(()) `({}) {
-            Fsharp =
-                (fun () =>
-                    global "#if FABLE_COMPILER\n[<Fable.Core.Erase; Fable.Core.Emit(\"std::string::String\")>]\ntype std_string_String = class end\n\#else\ntype std_string_String = string\n#endif\n"
-                ) : () -> ()
-        }
-        $'' : $'std_string_String'
+        rust_type
+            `($'std_string_String')
+            `($'std::string::String')
+            "type std_string_String = string"
     )
+
+/// ### std_string
 
 /// ### to_string'
 
-/// ### from_std_string
-inl from_std_string (str : std_string) : string =
+/// ### from_std_string_real
+///- --real
+
+inl from_std_string_real (str : std_string_real) : string =
     open rust
-    rust.emit_expr `std_string `string str ($'"fable_library_rust::String_::fromString($0)"' : string)
+    rust.emit_expr `std_string_real `string str ($'"Rc::<str>::from($0)"' : string)
+
+/// ### from_std_string
 
 /// ## sm'
 
-/// ### symbol_to_string
-inl symbol_to_string forall t {symbol}. : string =
-    // inl x = real_core.type_lit_to_lit `t
-    // inl x = real_core.type_to_symbol `t
-    // inl x = real_core.type_lit_to_lit `t
-    // !!!!SymbolToString (`(`t))
+/// ### symbol_to_string_real
+///- --real
+
+inl symbol_to_string_real forall t {symbol}. : string =
     inl x = real_core.type_to_symbol `t
     !!!!SymbolToString (x)
+
+/// ### symbol_to_string
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test symbol_to_string =
+    open testing
+    inl x = .test
+    inl x = symbol_to_string_real `(`x)
+    _assert_eq `string "test" x
 
 /// ### index
 
 /// ### length
 
+/// ### (~##)
+
 /// ### to_char_list
+
+/// ### to_char_array
 
 /// ### is_empty
 
 /// ### to_option
 
-/// ### slice
+/// ### string_builder_real
+///- --real
+
+nominal string_builder_python =
+    `(
+        global "import io"
+        $'' : $'io.StringIO'
+    )
+type string_builder_switch =
+    {
+        Gleam : string
+        Fsharp : $'System.Text.StringBuilder'
+        Python : string_builder_python
+        Rust : $'String'
+        TypeScript : string
+    }
+nominal string_builder_real = $'backend_switch `(string_builder_switch)'
+
+/// ### string_builder
 
 /// ### append_real
+///- --real
+
 inl append_real (x : string) (s : string) : string =
     backend_switch `string `({}) {
         Gleam = (fun () => $'!s <> !x ' : string) : () -> string
-        Fsharp = (fun () => (+.) `string s x) : () -> string
-        Python = (fun () => (+.) `string s x) : () -> string
+        Lua = (fun () => $'!s .. !x ' : string) : () -> string
+        Fsharp = (fun () => $'!s + !x ' : string) : () -> string
+        Python = (fun () => $'!s + !x ' : string) : () -> string
+        Rust = (fun () => $'Rc::<str>::from(format\!("{}{}", !s, !x))' : string) : () -> string
+        TypeScript = (fun () => $'!s + !x ' : string) : () -> string
+        Zig = (fun () => $'spiralConcat(!s, !x)' : string) : () -> string
+        Lean = (fun () => $'(!s ++ !x)' : string) : () -> string
+        C = (fun () => !!!!StaticStringConcat(s, x)) : () -> string
     }
 
 /// ### append
 
-/// ### (++#)
-inl (++#) (a : string) (b : string) : string =
+/// ### (++#*)
+///- --real
+
+inl (++#*) (a : string) (b : string) : string =
     append_real b a
+
+/// ### (++#)
+
+/// ### (++\\\\#)
 
 /// ### (++\\#)
 
-/// ### (++\#)
+/// ### format_debug_real
+///- --real
 
-/// ### format_debug
-inl format_debug forall t. (x : t) : string =
+inl rec format_debug_real forall t. (x : t) : string =
     typecase t with
     | string => x
     | _ =>
         backend_switch `string `({}) {
-            Gleam = (fun () =>
-                typecase t with
-                | char => to `t `string x
-                | _ =>
-                    global "import gleam/string"
-                    inl x =
-                        typecase t with
-                        | array_base _ => $'!x |> array.to_list' : t
-                        | _ => x
-                    $'string.inspect(!x)' : string
+            Gleam =
+                (fun () =>
+                    typecase t with
+                    | char => convert.to `(`x) `string x
+                    | string_builder_real => convert.to `(`x) `string x
+                    | _ =>
+                        global "import gleam/string"
+                        inl x =
+                            typecase t with
+                            | array_base _ => $'!x |> array.to_list' : t
+                            | _ => x
+                        $'string.inspect(!x)' : string
                     ) : () -> string
+            Lua =
+                (fun () =>
+                    typecase t with
+                    | ~a * ~b =>
+                        inl a, b =
+                            if not (var_is `t x)
+                            then x
+                            else ($'__v[1]._1' : a), ($'__v[1]._2' : b)
+                        inl head_str = format_debug_real `a a
+                        inl tail_str = format_debug_real `b b
+                        (++#*) head_str ((++#*) ", " tail_str)
+                    | {} => $'table.concat(!x, ", ")   ' : string
+                    | array_base _ =>
+                        (++#*) ((++#*) "[" ($'table.concat(!x, ", ")' : string)) "]"
+                    | t =>
+                        if real_core.union_type_is `t
+                        then serialize_union `t x
+                        else $'tostring(!x)       ' : string
+                ) : () -> string
             Fsharp = (fun () => $'$"%A{!x}"' : string) : () -> string
-            Python = (fun () => $'f"{!x}"' : string) : () -> string
+            Python =
+                (fun () =>
+                    $'f"{!x}"' : string
+                ) : () -> string
+            Rust =
+                (fun () =>
+                    typecase t with
+                    | char => $'Rc::<str>::from(format\!("{:?}", !x as char))' : string
+                    | optionm'.option' ~a =>
+                        if real_core.prim_type_is `a
+                        then $'Rc::<str>::from(match &!x { Some(v) => format\!("Some {:?}", v), None => String::from("None") })' : string
+                        else
+                            inl x = $'Rc::new(RefCell::new(!x.clone().into_iter().collect::<Vec<_>>()))' : array_base a
+                            if !!!!EQ(!!!!ArrayLength(`u64, x), 0u64) then "None"
+                            else (++#*) "Some " (format_debug_element_rust `a !!!!ArrayIndex(x, 0u64))
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | array_base ~el =>
+                        if real_core.prim_type_is `el
+                        then $'Rc::<str>::from(format\!("{:?}", !x.borrow()))' : string
+                        else format_debug_elements_rust `el x
+                    | listm'.list' ~el =>
+                        if real_core.prim_type_is `el
+                        then format_debug_other_rust `t x
+                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                    | seq.seq' ~el =>
+                        if real_core.prim_type_is `el
+                        then format_debug_other_rust `t x
+                        else format_debug_elements_rust `el ($'Rc::new(RefCell::new((*!x).clone()))' : array_base el)
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ => format_debug_other_rust `t x
+                ) : () -> string
+            TypeScript =
+                (fun () =>
+                    typecase t with
+                    | char => $'"\'" + String.fromCharCode(!x) + "\'"' : string
+                    | optionm'.option' ~a =>
+                        if $'!x === undefined' : bool
+                        then "None"
+                        else (++#*) "Some " (format_debug_real `a ($'!x ' : a))
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | array_base ~el =>
+                        if (typecase el with char => true | _ => false)
+                        then $'"[" + !x.map((c: number) => "\'" + String.fromCharCode(c) + "\'").join(", ") + "]"' : string
+                        elif real_core.prim_type_is `el
+                        then $'"[" + !x.join(", ") + "]"' : string
+                        else $'String(!x)' : string
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
+                        else $'String(!x)' : string
+                ) : () -> string
+            Zig =
+                (fun () =>
+                    typecase t with
+                    | char => $'(std.fmt.allocPrint(spiral_gpa, "\'{c}\'", .{ !x }) catch \@panic("out of memory"))' : string
+                    | bool => $'(if (!x) "true" else "false")' : string
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
+                        elif real_core.prim_type_is `t
+                        then $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !x }) catch \@panic("out of memory"))' : string
+                        else $'(std.fmt.allocPrint(spiral_gpa, "{any}", .{ !x }) catch \@panic("out of memory"))' : string
+                ) : () -> string
+            Lean =
+                (fun () =>
+                    typecase t with
+                    | char => $'("\'" ++ toString !x ++ "\'")' : string
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
+                        else $'toString !x ' : string
+                ) : () -> string
+            C =
+                (fun () =>
+                    inl buffer () =
+                        global "#include <stdio.h>"
+                        global "#include <stdint.h>"
+                        global "#include <stdlib.h>"
+                        global "#include <string.h>"
+                        global "static char spiral_format_buffer[64];"
+                    inl signed x : string =
+                        buffer ()
+                        global "static inline uint32_t spiral_format_i64(long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%lld\", x) + 1u; }"
+                        $'StringLit(spiral_format_i64((long long)(!x)), spiral_format_buffer)' : string
+                    inl unsigned x : string =
+                        buffer ()
+                        global "static inline uint32_t spiral_format_u64(unsigned long long x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%llu\", x) + 1u; }"
+                        $'StringLit(spiral_format_u64((unsigned long long)(!x)), spiral_format_buffer)' : string
+                    inl decimal_point () =
+                        global "static inline uint32_t spiral_format_decimal_point(int n) { if (!strpbrk(spiral_format_buffer, \".eni\")) { spiral_format_buffer[n++] = '.'; spiral_format_buffer[n++] = '0'; spiral_format_buffer[n] = 0; } return (uint32_t)n + 1u; }"
+                    inl float64 (x : f64) : string =
+                        buffer ()
+                        decimal_point ()
+                        global "static inline uint32_t spiral_format_f64(double x) { int n = 0; for (int p = 1; p <= 17; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%.*g\", p, x); if (strtod(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"
+                        $'StringLit(spiral_format_f64(!x), spiral_format_buffer)' : string
+                    inl float32 (x : f32) : string =
+                        buffer ()
+                        decimal_point ()
+                        global "static inline uint32_t spiral_format_f32(float x) { int n = 0; for (int p = 1; p <= 9; p++) { n = snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%.*g\", p, (double)x); if (strtof(spiral_format_buffer, NULL) == x) break; } return spiral_format_decimal_point(n); }"
+                        $'StringLit(spiral_format_f32(!x), spiral_format_buffer)' : string
+                    typecase t with
+                    | char =>
+                        buffer ()
+                        global "static inline uint32_t spiral_format_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"'%c'\", (int)x) + 1u; }"
+                        $'StringLit(spiral_format_char(!x), spiral_format_buffer)' : string
+                    | bool => if x then "true" else "false"
+                    | f64 => float64 x
+                    | f32 => float32 x
+                    | i8 => signed x
+                    | i16 => signed x
+                    | i32 => signed x
+                    | i64 => signed x
+                    | u8 => unsigned x
+                    | u16 => unsigned x
+                    | u32 => unsigned x
+                    | u64 => unsigned x
+                    | array_base ~el => format_debug_elements_rust `el x
+                    | () * ~b =>
+                        inl _, b = x
+                        format_debug_real `b b
+                    | ~a * ~b =>
+                        inl a, b = x
+                        (++#*) (format_debug_real `a a) ((++#*) ", " (format_debug_real `b b))
+                    | {} =>
+                        inl _, fields =
+                            real_core.record_fold
+                                fun { state = separator, acc key value } =>
+                                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* format_debug_real `(`value) value
+                                ("", "") x
+                        "{ " ++#* fields ++#* " }"
+                    | _ =>
+                        if real_core.union_type_is `t
+                        then serialize_union_rust `t x
+                        elif real_core.nominal_type_is `t
+                        then
+                            inl y = real_core.nominal_strip x
+                            format_debug_real `(`y) y
+                        else $'StringLit(sizeof("<`t>"), "<`t>")' : string
+                ) : () -> string
         }
+and inl format_debug_other_rust forall t. (x : t) : string =
+    if real_core.prim_type_is `t
+    then $'Rc::<str>::from(format\!("{:?}", !x))' : string
+    elif real_core.union_type_is `t
+    then serialize_union_rust `t x
+    elif real_core.nominal_type_is `t
+    then
+        inl payload forall u. (y : u) : string =
+            typecase u with
+            | {} => format_debug_real `u y
+            | ~a -> ~b => $'Rc::<str>::from("<`t>")' : string
+            | ~a * ~b => format_debug_real `u y
+            | array_base _ => format_debug_real `u y
+            | _ =>
+                if real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
+                then format_debug_real `u y
+                else $'Rc::<str>::from({ struct W<T>(T); trait D { fn s(&self) -> String; } impl<T: std::fmt::Debug> D for &W<T> { fn s(&self) -> String { format\!("{:?}", self.0) } } trait P { fn s(&self) -> String; } impl<T> P for W<T> { fn s(&self) -> String { String::from("<`t>") } } (&&W(&!y)).s() })' : string
+        inl y = real_core.nominal_strip x
+        payload `(`y) y
+    else $'Rc::<str>::from("<`t>")' : string
+and inl format_debug_elements_rust forall el. (x : array_base el) : string =
+    join
+        inl n = !!!!ArrayLength(`u64, x)
+        inl i = mut `u64 (real_core.dyn 0u64)
+        inl s = mut `string (real_core.dyn "")
+        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+            inl j = !!!!LayoutIndex(i)
+            inl e = format_debug_element_rust `el !!!!ArrayIndex(x, j)
+            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
+            i <- !!!!Add(j, 1u64)
+        "[" ++#* !!!!LayoutIndex(s) ++#* "]"
+    : string
+and inl format_debug_element_rust forall el. (x : el) : string =
+    typecase el with
+    | ~a * ~b => "(" ++#* format_debug_real `el x ++#* ")"
+    | _ => format_debug_real `el x
+and inl serialize_union forall t. (x : t) : string =
+    join
+        $'if type(v0) ~= "table" then return tostring(v0) end' : ()
+        real_core.unbox x fun k, v =>
+            inl tag : string = $'__v[1].tag'
+            typecase `v with
+            | () => tag
+            | ~a * ~b =>
+                typecase a with
+                | ~c * ~d =>
+                    inl head_str = format_debug_real `c ($'__v[1]._1 ' : c)
+                    inl tail_str = format_debug_real `d ($'__v[1]._2  ' : d)
+                    inl x = format_debug_real `b ($'__v[1]._3   ' : b)
+                    tag ++#* "(" ++#* head_str ++#* ", " ++#* tail_str ++#* ", " ++#* x ++#* ")"
+                | _ =>
+                    inl head_str = format_debug_real `a ($'__v[1]._1    ' : a)
+                    inl tail_str = format_debug_real `b ($'__v[1]._2     ' : b)
+                    (++#*) tag ((++#*) "(" ((++#*) head_str ((++#*) ", " ((++#*) tail_str ")"))))
+            | ~a =>
+                inl arg_str = format_debug_real `a ($'__v[1]._1' : a)
+                (++#*) tag ((++#*) "(" ((++#*) arg_str ")"))
+    : string
+and inl serialize_union_rust forall t. (x : t) : string =
+    join
+        real_core.unbox x fun k, v =>
+            inl name = symbol_to_string_real `(`k)
+            typecase `v with
+            | () => name
+            | _ => (++#*) name ((++#*) "(" ((++#*) (format_debug_real `(`v) v) ")"))
+    : string
+
+inl obj_to_string_rust_inner_real forall t. (x : t) : string =
+    typecase t with
+    | {} => format_debug_real `t x
+    | ~a * ~b => format_debug_real `t x
+    | ~a -> ~b => format_debug_real `t x
+    | array_base _ => format_debug_real `t x
+    | ~f ~a => format_debug_real `t x
+    | _ =>
+        if real_core.prim_type_is `t || real_core.union_type_is `t || real_core.nominal_type_is `t
+        then format_debug_real `t x
+        else $'Rc::<str>::from(format\!("{}", !x))' : string
+
+inl obj_to_string_rust_real forall t. (x : t) : string =
+    typecase t with
+    | char => $'Rc::<str>::from((!x as char).encode_utf8(&mut [0u8; 4]) as &str)' : string
+    | string => x
+    | ~f ~a => format_debug_real `t x
+    | _ =>
+        if real_core.nominal_type_is `t
+        then
+            inl x = real_core.nominal_strip x
+            obj_to_string_rust_inner_real `(`x) x
+        else format_debug_real `t x
+
+/// ### format_debug
+
+/// ### (~#?*)
+
+/// ### unwrap_format
+
+/// ### obj_to_string
+
+/// ### (~#?**)
+
+/// ### concat_list
+
+/// ### slice
+
+/// ### format_pretty_real
+///- --real
+
+inl format_pretty_real forall t. (x : t) : string =
+    run_target_args `string `t (fun () => x) function
+        | Rust => fun x =>
+            inl rec structural forall u. () : bool =
+                typecase u with
+                | optionm'.option' ~a => if real_core.prim_type_is `a then false else true
+                | listm'.list' ~a => if real_core.prim_type_is `a then false else true
+                | seq.seq' ~a => if real_core.prim_type_is `a then false else true
+                | array_base ~a => if real_core.prim_type_is `a then false else true
+                | ~a * ~b => if structural `a () then true else structural `b ()
+                | {} => real_core.record_type_fold (fun acc key => forall v. => if acc then true else structural `v ()) false `u
+                | _ => real_core.union_type_is `u
+            if structural `t ()
+            then format_debug_real `t x
+            else
+                open rust
+                inl result = rust.emit_expr `t `std_string_real x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
+                from_std_string_real result
+        | _ => fun _ => format_debug_real `t x
 
 /// ### format_pretty
-inl format_pretty forall t. (x : t) : string =
-    run_target_args `string `t (fun () => x) function
-        | Rust _ => fun x =>
-            open rust
-            inl result = rust.emit_expr `t `std_string x ($'"format\!(\\\"{:\#?}\\\", $0)"' : string)
-            from_std_string result
-        | _ => fun _ => format_debug `t x
 
 /// ### prim
 
 /// ### printable
+///- --real
+
 prototype printable t : t -> ()
 
 /// ### format_real
+///- --real
+
 let format_real forall t. (x : t) : string =
-    inl result = mut `string (join "")
+    inl empty : string =
+        backend_switch `string `({}) {
+            Gleam =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Lua =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Fsharp =
+                (fun () =>
+                    join ""
+                ) : () -> string
+            Python =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Rust =
+                (fun () =>
+                    ""
+                ) : () -> string
+            TypeScript =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Zig =
+                (fun () =>
+                    ""
+                ) : () -> string
+            Lean =
+                (fun () =>
+                    ""
+                ) : () -> string
+            C =
+                (fun () =>
+                    ""
+                ) : () -> string
+        }
+    inl result = mut `string empty
     inl rec write x =
         inl p ((a : string), b) =
             inl s : string =
@@ -107,26 +542,133 @@ let format_real forall t. (x : t) : string =
                     Gleam =
                         (fun () =>
                             match b with
-                            | (_ : string) => $'!b ' : string
-                            // | (_ : f32) | (_ : f64) => format_debug `(`b) b
-                            | _ => format_debug `(`b) b
+                            | (_ : string) => b : string
+                            | _ => format_debug_real `(`b) b
+                        ) : () -> string
+                    Lua =
+                        (fun () =>
+                            match b with
+                            | (_ : string) => b : string
+                            | _ => format_debug_real `(`b) b
                         ) : () -> string
                     Fsharp =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'$"%+.6f{!b}"' : string
+                            | (_ : string) => b : string
                             | _ => $'$"{!b}"' : string
                         ) : () -> string
                     Python =
                         (fun () =>
                             match b with
                             | (_ : f32) | (_ : f64) => $'"{:.6f}".format(!b)' : string
+                            | (_ : string) => b : string
                             | _ => $'f"{!b}"' : string
                         ) : () -> string
+                    Rust =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) => $'Rc::<str>::from({ let v = !b; if v.is_finite() { format\!("{:+.6}", v) } else if v.is_nan() { String::from("NaN") } else if v > 0.0 { String::from("Infinity") } else { String::from("-Infinity") } })' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'Rc::<str>::from(format\!("{}", !b as char))' : string
+                            | _ => $'Rc::<str>::from(format\!("{}", !b))' : string
+                        ) : () -> string
+                    TypeScript =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) => $'(() => { const v = !b; return Number.isFinite(v) ? (v >= 0 ? "+" : "") + v.toFixed(6) : Number.isNaN(v) ? "NaN" : v > 0 ? "Infinity" : "-Infinity"; })()' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'String.fromCharCode(!b)' : string
+                            | _ => $'String(!b)' : string
+                        ) : () -> string
+                    Zig =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) => $'(if (std.math.isNan(!b)) "NaN" else if (std.math.isInf(!b)) (if (!b > 0) "Infinity" else "-Infinity") else (std.fmt.allocPrint(spiral_gpa, "{s}{d:.6}", .{ if (!b >= 0) "+" else "", !b }) catch \@panic("out of memory")))' : string
+                            | (_ : string) => b : string
+                            | (_ : char) => $'(std.fmt.allocPrint(spiral_gpa, "{c}", .{ !b }) catch \@panic("out of memory"))' : string
+                            | (_ : bool) => $'(if (!b) "true" else "false")' : string
+                            | _ => $'(std.fmt.allocPrint(spiral_gpa, "{d}", .{ !b }) catch \@panic("out of memory"))' : string
+                        ) : () -> string
+                    Lean =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) => $'(if (!b).isNaN then "NaN" else if (!b).isInf then (if !b > 0 then "Infinity" else "-Infinity") else (if !b >= 0 then "+" else "") ++ toString !b)' : string
+                            | (_ : string) => b : string
+                            | _ => $'toString !b ' : string
+                        ) : () -> string
+                    C =
+                        (fun () =>
+                            match b with
+                            | (_ : f32) | (_ : f64) =>
+                                global "#include <stdio.h>"
+                                global "#include <stdint.h>"
+                                global "#include <stdlib.h>"
+                                global "#include <string.h>"
+                                global "#include <math.h>"
+                                global "static char spiral_format_buffer[64];"
+                                global "static inline uint32_t spiral_format_fixed(double x) { int n = isnan(x) ? snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"NaN\") : isinf(x) ? snprintf(spiral_format_buffer, sizeof spiral_format_buffer, x > 0 ? \"Infinity\" : \"-Infinity\") : snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%+.6f\", x); return (uint32_t)n + 1u; }"
+                                $'StringLit(spiral_format_fixed((double)(!b)), spiral_format_buffer)' : string
+                            | (_ : string) => b : string
+                            | (_ : char) =>
+                                global "#include <stdio.h>"
+                                global "#include <stdint.h>"
+                                global "#include <stdlib.h>"
+                                global "#include <string.h>"
+                                global "static char spiral_format_buffer[64];"
+                                global "static inline uint32_t spiral_format_plain_char(int32_t x) { return (uint32_t)snprintf(spiral_format_buffer, sizeof spiral_format_buffer, \"%c\", (int)x) + 1u; }"
+                                $'StringLit(spiral_format_plain_char(!b), spiral_format_buffer)' : string
+                            | _ => format_debug_real `(`b) b
+                        ) : () -> string
                 }
-            exec_unit ((fun () => result <- (++#) ((~*) `string result) s) : () -> ())
+            backend_switch `(()) `({}) {
+                Gleam =
+                    (fun () =>
+                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
+                    ) : () -> ()
+                Lua =
+                    (fun () =>
+                        exec_unit ((fun () => result <- append_real s ((~*) `string result)) : () -> ())
+                    ) : () -> ()
+                Fsharp =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Python =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Rust =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                TypeScript =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Zig =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+                Lean =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
 
-        match x with // According to Bing it shouldn't matter whether these are %d or %lld in printf.
+                C =
+                    (fun () =>
+                        join
+                            result <- append_real s ((~*) `string result)
+                    ) : () -> ()
+            }
+
+        match x with
         | () => ()
         | (x : i8) | (x : i16) | (x : i32) | (x : i64) => p ("%d", x)
         | (x : u8) | (x : u16) | (x : u32) | (x : u64) => p ("%u", x)
@@ -141,37 +683,39 @@ let format_real forall t. (x : t) : string =
                 real_core.record_fold
                     fun { state = separator key value } =>
                         write separator
-                        write (symbol_to_string `(`key)) . write " = " . write value
+                        write (symbol_to_string_real `(`key)) . write " = " . write value
                         "; "
                     () x
             write " }"
-        | x when real_core.symbol_is x => write (symbol_to_string `(`x))
+        | x when real_core.symbol_is x => write (symbol_to_string_real `(`x))
         | x when real_core.function_is x => write (x ())
         | x when real_core.union_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
             else
-                write (format_debug `(`x) x)
-                // real_core.unbox x (fun (k, v) =>
-                //     write k
-                //     match v with
-                //     | () => ()
-                //     | _ => write "(" . write v . write ")"
-                //     )
+                inl temp () =
+                    real_core.unbox x (fun (k, v) =>
+                        write k
+                        match v with
+                        | () => ()
+                        | _ => (join write "(" . write v . write ")") : ()
+                        )
+                write (format_debug_real `(`x) x)
         | x when real_core.nominal_is x =>
             if real_core.prototype_has `(`x) printable then printable `(`x) x
-            // elif layout_is x then write *x // TODO: Deal with all the layout type cases.
-            else write (format_pretty `(`x) x)
-        | x => write (format_debug `(`x) x)
+            else write (format_pretty_real `(`x) x)
+        | x => write (format_debug_real `(`x) x)
     write x
     (~*) `string result
 
 /// ### format
 
+/// ### (~#?)
+
+/// ### (++#?)
+
 /// ### to_char_array
 
 /// ### concat_array
-
-/// ### concat_list
 
 /// ### ellipsis
 
@@ -179,13 +723,13 @@ let format_real forall t. (x : t) : string =
 
 /// ### last_index_of
 
+/// ### index_of_char
+
+/// ### index_of_char_from
+
 /// ### index_of
 
 /// ### replicate
-
-/// ### string_builder
-
-/// ### obj_to_string
 
 /// ### pad_left
 
@@ -217,6 +761,18 @@ let format_real forall t. (x : t) : string =
 
 /// ### builder_insert
 
+/// ### span_from
+
+/// ### char_contains
+
+/// ### trim_chars
+
+/// ### trim_start
+
+/// ### trim_end
+
+/// ### trim_with
+
 /// ### trim
 
 /// ### concat
@@ -224,8 +780,6 @@ let format_real forall t. (x : t) : string =
 /// ### length'
 
 /// ### to_string any
-
-/// ### (~$)
 
 /// ### replace
 
@@ -285,7 +839,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### (~#)
 
-/// ### (~##)
+/// ### (~###)
 
 /// ### include_str
 
@@ -341,8 +895,6 @@ let format_real forall t. (x : t) : string =
 
 /// ### regex_captures
 
-/// ### replace_regex'
-
 /// ### serialize
 
 /// ### deserialize
@@ -395,13 +947,7 @@ let format_real forall t. (x : t) : string =
 
 /// ### format_exception
 
-/// ### concat_list
-
 /// ### range
-
-/// ### trim_end
-
-/// ### trim_start
 
 /// ### ellipsis_end
 

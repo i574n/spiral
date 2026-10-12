@@ -1,0 +1,115 @@
+open main
+
+inl canonical_alt_atom forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => false
+    | RegexAlt _ => false
+    | _ => true
+
+let rec canonical_alt_ordered forall alphabet {symbol_compare}.
+    (head : regex alphabet) (tail : regex alphabet) : bool =
+    match tail with
+    | RegexEmpty => false
+    | RegexAlt (next, rest) =>
+        match regex_compare head next with
+        | SymbolLess => canonical_alt_ordered next rest
+        | _ => false
+    | value =>
+        match regex_compare head value with
+        | SymbolLess => true
+        | _ => false
+
+inl canonical_cat_left forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => false
+    | RegexEpsilon => false
+    | RegexCat _ => false
+    | _ => true
+
+inl canonical_cat_right forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => false
+    | RegexEpsilon => false
+    | _ => true
+
+inl canonical_cat_star_reduced forall alphabet {symbol_compare}.
+    (left : regex alphabet) (right : regex alphabet) : bool =
+    match left, right with
+    | RegexStar left_inner, RegexStar right_inner =>
+        if regex_equal left_inner right_inner then false else true
+    | _ => true
+
+inl canonical_star_inner forall alphabet. (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => false
+    | RegexEpsilon => false
+    | RegexStar _ => false
+    | _ => true
+
+let rec canonical_regex_form forall alphabet {symbol_compare}.
+    (value : regex alphabet) : bool =
+    match value with
+    | RegexEmpty => true
+    | RegexEpsilon => true
+    | RegexChar _ => true
+    | RegexAlt (head, tail) => canonical_alt_atom head && canonical_regex_form head && canonical_regex_form tail && canonical_alt_ordered head tail
+    | RegexCat (left, right) => canonical_cat_left left && canonical_cat_right right && canonical_cat_star_reduced left right && canonical_regex_form left && canonical_regex_form right
+    | RegexStar inner => canonical_star_inner inner && canonical_regex_form inner
+
+let rec normalized_corpus_is_canonical forall alphabet {symbol_compare}.
+    (values : regex_list alphabet) : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        if canonical_regex_form (normalize value) then normalized_corpus_is_canonical rest
+        else false
+
+let rec canonical_derivatives_are_canonical_symbols forall alphabet {symbol_compare}.
+    (value : regex alphabet)
+    (symbols : symbol_list alphabet) : bool =
+    match symbols with
+    | SymbolListNil => true
+    | SymbolListCons (symbol, rest) =>
+        if canonical_regex_form (canonical_derivative value symbol) then
+            canonical_derivatives_are_canonical_symbols value rest
+        else false
+
+let rec canonical_derivatives_are_canonical_corpus forall alphabet {symbol_compare}.
+    (values : regex_list alphabet)
+    (symbols : symbol_list alphabet) : bool =
+    match values with
+    | RegexListNil => true
+    | RegexListCons (value, rest) =>
+        if canonical_derivatives_are_canonical_symbols value symbols then
+            canonical_derivatives_are_canonical_corpus rest symbols
+        else false
+
+inl main () : string =
+    inl z = RegexChar (zero ())
+    inl o = RegexChar (one ())
+    inl zstar = RegexStar z
+    inl empty_star : regex bit_alphabet = RegexStar RegexEmpty
+    inl bit_descriptor : finite_alphabet_descriptor bit_alphabet = finite_alphabet ()
+    inl tri_descriptor : finite_alphabet_descriptor tri_alphabet = finite_alphabet ()
+    inl bit_symbols = finite_alphabet_symbols bit_descriptor
+    inl tri_symbols = finite_alphabet_symbols tri_descriptor
+    inl bit_corpus = regex_corpus_depth_one bit_symbols
+    inl tri_corpus = regex_corpus_depth_one tri_symbols
+    assert_static (normalized_corpus_is_canonical bit_corpus) "every normalized bit corpus term must satisfy structural canonical form"
+    assert_static (normalized_corpus_is_canonical tri_corpus) "every normalized ternary corpus term must satisfy structural canonical form"
+    assert_static (canonical_derivatives_are_canonical_corpus bit_corpus bit_symbols) "every canonical bit derivative must already satisfy structural canonical form"
+    assert_static (canonical_derivatives_are_canonical_corpus tri_corpus tri_symbols) "every canonical ternary derivative must already satisfy structural canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (o, z))) false) "unsorted alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (z, z))) false) "duplicate alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexAlt (RegexAlt (z, o), RegexEpsilon))) false) "left-nested alternation must not be canonical"
+    assert_static (bool_same (canonical_regex_form (RegexCat (RegexEpsilon, z))) false) "epsilon concatenation identity must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexCat (RegexCat (z, o), z))) false) "left-associated concatenation must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form empty_star) false) "star of empty must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexStar zstar)) false) "nested star must not remain in canonical form"
+    assert_static (bool_same (canonical_regex_form (RegexCat (zstar, zstar))) false) "duplicate adjacent stars must be reduced in canonical form"
+    assert_static (canonical_regex_form (normalize (RegexAlt (o, z)))) "normalization must repair unsorted alternation"
+    assert_static (canonical_regex_form (normalize (RegexAlt (z, z)))) "normalization must remove duplicate alternation"
+    assert_static (canonical_regex_form (normalize (RegexCat (RegexEpsilon, z)))) "normalization must remove concatenation identity"
+    assert_static (canonical_regex_form (normalize (RegexStar zstar))) "normalization must collapse nested star"
+    assert_static (canonical_regex_form (normalize (RegexCat (zstar, zstar)))) "normalization must collapse duplicate adjacent stars"
+    "brzozowski-canonical-form-certificate-green"

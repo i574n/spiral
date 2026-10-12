@@ -1,0 +1,8 @@
+open main
+
+inl impossible_physical_owner_payload_not_fence_scalar () : i64 =
+    inl _, _, _, _, _, _, _, _, _, _, physical_owner_sequence =
+        erp_p2p_recoverable_fenced_lock_runtime ()
+    physical_owner_sequence
+
+inl main () = ()

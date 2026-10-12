@@ -1,0 +1,3 @@
+inl main () : i32 =
+    inl ~x = 5i32
+    if x =. 5i32 then 0i32 else 1i32

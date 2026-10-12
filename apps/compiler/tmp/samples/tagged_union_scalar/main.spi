@@ -1,0 +1,13 @@
+union outcome =
+    | Hit : i32
+    | Miss : i32
+
+let score x : i32 =
+    match x with
+    | Hit value => value
+    | Miss value => 0i32 -. value
+
+inl main () =
+    inl ~flag = true
+    inl value = if flag then Hit 7i32 else Miss 3i32
+    score value -. 7i32

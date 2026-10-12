@@ -1,0 +1,16 @@
+union packed =
+    | Packed : (exists t. t * (t -> i32))
+
+inl make (flag : bool) : packed =
+    if flag then Packed (exists (1i32, fun (x : i32) => x))
+    else Packed (exists (2i32, fun (x : i32) => !!!!Sub(x, 2i32)))
+
+inl main () : i32 =
+    inl ~flag = true
+    match make flag with
+    | Packed p =>
+        inl exists t. value, project = p
+        inl result = project value
+        !!!!Sub(result, 1i32)
+
+inl oracle_must_not_record_current_error () = ()

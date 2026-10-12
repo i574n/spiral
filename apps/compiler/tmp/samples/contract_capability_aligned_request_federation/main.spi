@@ -1,0 +1,91 @@
+nominal reader = ()
+nominal writer = ()
+nominal administrator = ()
+nominal row = string
+nominal receipt = string
+nominal version = i32
+
+union rec capability_token capability =
+    | ReaderToken :: string -> capability_token reader
+    | WriterToken :: string -> capability_token writer
+    | AdministratorToken :: string -> capability_token administrator
+    | PairToken :: forall left right. capability_token left * capability_token right -> capability_token (left * right)
+
+union rec request capability result =
+    | Read :: string -> request reader row
+    | Write :: row -> request writer receipt
+    | CompareSwap :: row * version -> request administrator version
+    | Batch :: forall left_cap left_result right_cap right_result.
+        request left_cap left_result * request right_cap right_result ->
+        request (left_cap * right_cap) (left_result * right_result)
+    | MapRequest :: forall capability result.
+        (exists input. request capability input * (input -> result)) -> request capability result
+
+inl rec describe forall capability result. (value : request capability result) : string =
+    match value with
+    | Read _ => "read"
+    | Write _ => "write"
+    | CompareSwap _ => "compare-swap"
+    | Batch (left, right) =>
+        inl _ = describe left
+        inl _ = describe right
+        "batch"
+    | MapRequest payload =>
+        inl exists input. inner, _ = payload
+        inl _ = describe inner
+        "map-request"
+
+nominal strict capability = capability_token capability
+nominal emergency capability = capability_token capability
+
+prototype authorize policy capability : policy capability -> string
+instance authorize strict = fun (strict token) =>
+    match token with
+    | ReaderToken _ => "strict-reader"
+    | WriterToken _ => "strict-writer"
+    | AdministratorToken _ => "strict-administrator"
+    | PairToken _ => "strict-pair"
+instance authorize emergency = fun (emergency token) =>
+    match token with
+    | ReaderToken _ => "emergency-reader"
+    | WriterToken _ => "emergency-writer"
+    | AdministratorToken _ => "emergency-administrator"
+    | PairToken _ => "emergency-pair"
+
+union sealed_request =
+    | SealedRequest :: (exists capability result. request capability result * capability_token capability) -> sealed_request
+
+inl inspect forall capability result.
+    (request : request capability result)
+    (_ : capability_token capability) : string =
+    describe request
+
+inl with_sealed forall output.
+    (visit : forall capability result. request capability result -> capability_token capability -> output)
+    (value : sealed_request) : output =
+    match value with
+    | SealedRequest payload =>
+        inl exists capability result. request, token = payload
+        visit request token
+
+inl batch_request () : request (reader * writer) (row * receipt) =
+    Batch (Read "user-7", Write (row "row-7"))
+
+inl batch_token () : capability_token (reader * writer) =
+    PairToken (ReaderToken "reader-key", WriterToken "writer-key")
+
+inl mapped_request () : request administrator string =
+    MapRequest (exists (CompareSwap (row "row-7", version 41), fun (_ : version) => "version-advanced"))
+
+inl sealed_value () : sealed_request =
+    SealedRequest (exists (batch_request (), batch_token ()))
+
+inl serialize_authority (_ : string) (_ : string) (_ : string) (_ : string) : string =
+    "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tread\tRead\tkey\trow\t\tidempotent\treader\t2\n1\twrite\tWrite\trow\treceipt\tread\tnon_idempotent\twriter\t0\n1\tbatch\tBatch\trequests\tpaired-result\tread,write\tidempotent\treader-writer\t1\n1\tcompare\tCompareSwap\trow-version\tversion\tbatch\tnon_idempotent\tadministrator\t0\n1\tmap\tMapRequest\tversion\tmapped\tcompare\tidempotent\tmapper\t1\n"
+
+inl main () : string =
+    inl strict_label = authorize (strict (batch_token ()))
+    inl emergency_label = authorize (emergency (AdministratorToken "break-glass"))
+    inl sealed_label = with_sealed `$inspect (sealed_value ())
+    inl mapped_label = describe (mapped_request ())
+    serialize_authority strict_label emergency_label sealed_label mapped_label

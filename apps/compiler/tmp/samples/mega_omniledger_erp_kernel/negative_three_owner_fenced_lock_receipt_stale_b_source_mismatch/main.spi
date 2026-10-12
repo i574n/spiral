@@ -1,0 +1,10 @@
+open main
+
+inl impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch () : erp_p2p_cross_process_fence_restart_receipt nat_two nat_three =
+    inl restart = erp_p2p_persisted_fence_restart_from_history (erp_p2p_fence_history_two ()) "owner-c"
+    inl stale_b : erp_p2p_stale_fence nat_one nat_three = ErpP2PStaleLift ErpP2PStaleImmediate
+    ErpP2PCrossProcessFenceRestart
+        (restart, stale_b, "forged-stale-b-witness-starts-at-fence-one-instead-of-fence-two")
+
+inl main () =
+    impossible_three_owner_fenced_lock_receipt_stale_b_source_mismatch ()

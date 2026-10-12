@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-restore-seed"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/restore_seed.rs"
+
+[dependencies]
+rayon.workspace = true

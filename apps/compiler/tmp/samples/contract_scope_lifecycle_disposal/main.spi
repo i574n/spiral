@@ -1,0 +1,47 @@
+nominal component_scope = ()
+nominal live = ()
+nominal draining = ()
+nominal disposed = ()
+
+union resource scope state =
+    | LiveResource :: forall scope. string -> resource scope live
+    | DrainingResource :: forall scope. string -> resource scope draining
+    | DisposedResource :: forall scope. string -> resource scope disposed
+
+union cleanup_action scope from to =
+    | BeginDispose :: forall scope. string -> cleanup_action scope live draining
+    | SealDispose :: forall scope. string -> cleanup_action scope draining disposed
+
+union rec cleanup_plan scope from to =
+    | CleanupLeaf :: forall scope from to. cleanup_action scope from to -> cleanup_plan scope from to
+    | CleanupThen :: forall scope from to.
+        (exists middle. cleanup_plan scope from middle * cleanup_action scope middle to)
+        -> cleanup_plan scope from to
+
+inl apply_action forall scope from to.
+    (action : cleanup_action scope from to)
+    (resource : resource scope from)
+    : resource scope to =
+    match action, resource with
+    | BeginDispose label, LiveResource _ => DrainingResource label
+    | SealDispose label, DrainingResource _ => DisposedResource label
+
+inl rec execute forall scope from to.
+    (plan : cleanup_plan scope from to)
+    (resource : resource scope from)
+    : resource scope to =
+    match plan with
+    | CleanupLeaf action => apply_action action resource
+    | CleanupThen payload =>
+        inl exists middle. prefix, action = payload
+        apply_action action (execute prefix resource)
+
+inl disposed_label forall scope. (resource : resource scope disposed) : string =
+    match resource with
+    | DisposedResource value => value
+
+inl main () : string =
+    inl resource : resource component_scope live = LiveResource "live"
+    inl plan : cleanup_plan component_scope live disposed =
+        CleanupThen (exists (CleanupLeaf (BeginDispose "draining"), SealDispose "disposed"))
+    disposed_label (execute plan resource)

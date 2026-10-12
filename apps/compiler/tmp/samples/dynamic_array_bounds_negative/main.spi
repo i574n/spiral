@@ -1,0 +1,7 @@
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~xs : array i32 = create n
+    set xs 0i32 11i32
+    set xs 1i32 13i32
+    inl ~i = 2i32
+    index xs i

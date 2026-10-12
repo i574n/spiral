@@ -1,0 +1,10 @@
+inl read_first ~xs = index xs 0i32
+
+inl main () : i32 =
+    inl ~n = 2i32
+    inl ~xs : array i32 = create n
+    set xs 0i32 3i32
+    set xs 1i32 4i32
+    inl ~a = join read_first xs
+    inl ~b = join read_first xs
+    a +. b -. 6i32

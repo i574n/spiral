@@ -1,0 +1,13 @@
+inl classify ~x =
+    x >= 3.5f32, x, 7i32
+
+inl score ~(ok, value, bias) : i32 =
+    if ok then
+        if value >= 3.5f32 then bias -. 7i32 else 1i32
+    else
+        2i32
+
+inl main () : i32 =
+    inl ~x = 4.0f32
+    inl state = join classify x
+    join score state

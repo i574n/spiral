@@ -1,0 +1,10 @@
+inl negate ~value : i32 =
+    $'-!value '
+
+inl accepts ~x ~y =
+    negate x <= 0i32 && ((x +. y *. 2i32) >= 9i32 || y =. 0i32)
+
+inl main () : i32 =
+    inl ~x = 3i32
+    inl ~y = 3i32
+    if join accepts x y then 0i32 else 1i32

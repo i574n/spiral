@@ -1,0 +1,26 @@
+nominal state_proved = ()
+nominal finalized = ()
+nominal batch_700 = ()
+nominal epoch_31 = ()
+nominal root_poseidon_7 = ()
+nominal root_poseidon_8 = ()
+nominal availability_certificate batch epoch root = string
+nominal zk_proof batch epoch root = string
+nominal finality_receipt batch epoch root = string
+
+union rollup_op from to result =
+    | FinalizeBatch :: forall batch epoch root.
+        zk_proof batch epoch root * availability_certificate batch epoch root ->
+        rollup_op state_proved finalized (finality_receipt batch epoch root)
+
+inl finalize_root_7
+    (proof : zk_proof batch_700 epoch_31 root_poseidon_7)
+    (availability : availability_certificate batch_700 epoch_31 root_poseidon_7)
+    : finality_receipt batch_700 epoch_31 root_poseidon_7 =
+    match FinalizeBatch (proof, availability) with
+    | FinalizeBatch _ => finality_receipt "finalized-root-7"
+
+inl main () : finality_receipt batch_700 epoch_31 root_poseidon_7 =
+    inl proof : zk_proof batch_700 epoch_31 root_poseidon_7 = zk_proof "proof-root-7"
+    inl wrong : availability_certificate batch_700 epoch_31 root_poseidon_8 = availability_certificate "availability-root-8"
+    finalize_root_7 proof wrong

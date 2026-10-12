@@ -1,0 +1,13 @@
+inl sum_dynamic ~n =
+    inl ~xs : array i32 = create n
+    set xs 0i32 2i32
+    set xs 1i32 3i32
+    set xs 2i32 5i32
+    set xs 3i32 7i32
+    inl ~i = 2i32
+    inl ~result = index xs i +. length xs
+    result
+
+inl main () : i32 =
+    inl ~n = 4i32
+    join sum_dynamic n -. 9i32

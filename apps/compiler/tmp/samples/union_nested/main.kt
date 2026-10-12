@@ -1,0 +1,78 @@
+sealed interface US1 { val tag: Int }
+data class US1_A(val f0: Int) : US1 { override val tag: Int = 0 }
+data class US1_B(val f0: Int) : US1 { override val tag: Int = 1 }
+sealed interface US0 { val tag: Int }
+data class US0_Wrap(val f0: US1) : US0 { override val tag: Int = 0 }
+data class US0_Other(val f0: Int) : US0 { override val tag: Int = 1 }
+fun sp_score_inner_1(p0: US1): Int {
+    var v0: US1 = p0
+    when (v0.tag) {
+        0 -> {
+            var v1: Int = (v0 as US1_A).f0
+            return v1
+        }
+        1 -> {
+            var v2: Int = (v0 as US1_B).f0
+            var v3: Int = 0
+            v3 = (-(v2))
+            return v3
+        }
+        else -> throw RuntimeException()
+    }
+}
+fun sp_score_0(p0: US0): Int {
+    var v0: US0 = p0
+    when (v0.tag) {
+        1 -> {
+            var v3: Int = (v0 as US0_Other).f0
+            return v3
+        }
+        0 -> {
+            var v1: US1 = (v0 as US0_Wrap).f0
+            return sp_score_inner_1(v1)
+        }
+        else -> throw RuntimeException()
+    }
+}
+fun spiral_main(): Int {
+    var v0: Boolean = false
+    v0 = true
+    var v4: US0 = US0_Wrap(US1_A(0))
+    if (v0) {
+        var v1: US1 = US1_A(0)
+        v1 = US1_A(7)
+        v4 = US0_Wrap(v1)
+    } else {
+        v4 = US0_Other(1)
+    }
+    var v8: US0 = US0_Wrap(US1_A(0))
+    if (v0) {
+        v8 = US0_Other(4)
+    } else {
+        var v6: US1 = US1_A(0)
+        v6 = US1_B(2)
+        v8 = US0_Wrap(v6)
+    }
+    var v9: Int = 0
+    v9 = sp_score_0(v4)
+    var v10: Boolean = false
+    v10 = (v9 == 7)
+    var v13: Boolean = false
+    if (v10) {
+        var v11: Int = 0
+        v11 = sp_score_0(v8)
+        var v12: Boolean = false
+        v12 = (v11 == 4)
+        v13 = v12
+    } else {
+        v13 = false
+    }
+    if (v13) {
+        return 0
+    } else {
+        return 1
+    }
+}
+fun main() {
+    System.exit(spiral_main())
+}

@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-cross-stage-thread"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/cross_stage_thread.rs"
+
+[dependencies]
+spiral-split-capture-parameter = { path = "../spiral-split-capture-parameter" }

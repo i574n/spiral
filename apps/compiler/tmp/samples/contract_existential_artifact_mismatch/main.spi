@@ -1,0 +1,217 @@
+nominal tenant_orbit = ()
+nominal epoch_41 = ()
+nominal epoch_42 = ()
+nominal root_old = ()
+nominal root_new = ()
+nominal backend_cpu = ()
+nominal backend_gpu = ()
+nominal schema_v3 = ()
+nominal schema_v4 = ()
+nominal signer_alpha = ()
+nominal signer_beta = ()
+nominal signer_gamma = ()
+nominal dormant = ()
+nominal pinned = ()
+nominal quorum_ready = ()
+nominal artifact_compiled = ()
+nominal artifact_validated = ()
+nominal migration_staged = ()
+nominal migration_committed = ()
+nominal migration_observed = ()
+nominal available = ()
+nominal distinct = ()
+nominal idempotent = ()
+nominal non_idempotent = ()
+nominal registry_cap = ()
+nominal quorum_cap = ()
+nominal compiler_cap = ()
+nominal migration_cap = ()
+nominal observer_cap = ()
+
+union revision tenant epoch root state =
+    | Revision :: forall tenant epoch root state. string -> revision tenant epoch root state
+
+union successor tenant old_epoch old_root new_epoch new_root state =
+    | Successor :: forall tenant old_epoch old_root new_epoch new_root state. string -> successor tenant old_epoch old_root new_epoch new_root state
+
+union compiled tenant epoch root backend schema state =
+    | Compiled :: forall tenant epoch root backend schema state. string -> compiled tenant epoch root backend schema state
+
+union attestation tenant epoch root backend schema state =
+    | Attestation :: forall tenant epoch root backend schema state. string -> attestation tenant epoch root backend schema state
+
+union artifact tenant epoch root =
+    | Artifact :: forall tenant epoch root.
+        (exists backend schema.
+            compiled tenant epoch root backend schema artifact_compiled *
+            attestation tenant epoch root backend schema artifact_validated)
+        -> artifact tenant epoch root
+
+inl with_artifact forall tenant epoch root result.
+    (visit : forall backend schema.
+        compiled tenant epoch root backend schema artifact_compiled ->
+        attestation tenant epoch root backend schema artifact_validated -> result)
+    (value : artifact tenant epoch root) : result =
+    match value with
+    | Artifact payload =>
+        inl exists backend schema. binary, proof = payload
+        visit binary proof
+
+union share tenant epoch root signer state =
+    | Share :: forall tenant epoch root signer state. string -> share tenant epoch root signer state
+
+union distinct_signers first second third state =
+    | DistinctSigners :: forall first second third state. string -> distinct_signers first second third state
+
+union quorum tenant epoch root =
+    | Quorum :: forall tenant epoch root.
+        (exists first second third.
+            share tenant epoch root first quorum_ready *
+            share tenant epoch root second quorum_ready *
+            share tenant epoch root third quorum_ready *
+            distinct_signers first second third distinct)
+        -> quorum tenant epoch root
+
+inl with_quorum forall tenant epoch root result.
+    (visit : forall first second third.
+        share tenant epoch root first quorum_ready ->
+        share tenant epoch root second quorum_ready ->
+        share tenant epoch root third quorum_ready ->
+        distinct_signers first second third distinct -> result)
+    (value : quorum tenant epoch root) : result =
+    match value with
+    | Quorum payload =>
+        inl exists first second third. a, b, c, proof = payload
+        visit a b c proof
+
+union migration_op tenant old_epoch old_root new_epoch new_root from to effect capability =
+    | PinRevision :: forall tenant old_epoch old_root new_epoch new_root.
+        revision tenant old_epoch old_root dormant *
+        successor tenant old_epoch old_root new_epoch new_root pinned ->
+        migration_op tenant old_epoch old_root new_epoch new_root dormant pinned idempotent registry_cap
+    | FormQuorum :: forall tenant old_epoch old_root new_epoch new_root.
+        quorum tenant new_epoch new_root ->
+        migration_op tenant old_epoch old_root new_epoch new_root pinned quorum_ready idempotent quorum_cap
+    | CompileArtifact :: forall tenant old_epoch old_root new_epoch new_root.
+        artifact tenant new_epoch new_root ->
+        migration_op tenant old_epoch old_root new_epoch new_root quorum_ready artifact_compiled non_idempotent compiler_cap
+    | ValidateArtifact :: forall tenant old_epoch old_root new_epoch new_root.
+        artifact tenant new_epoch new_root ->
+        migration_op tenant old_epoch old_root new_epoch new_root artifact_compiled artifact_validated idempotent compiler_cap
+    | StageMigration :: forall tenant old_epoch old_root new_epoch new_root.
+        successor tenant old_epoch old_root new_epoch new_root pinned *
+        artifact tenant new_epoch new_root ->
+        migration_op tenant old_epoch old_root new_epoch new_root artifact_validated migration_staged idempotent migration_cap
+    | CommitMigration :: forall tenant old_epoch old_root new_epoch new_root.
+        quorum tenant new_epoch new_root *
+        artifact tenant new_epoch new_root ->
+        migration_op tenant old_epoch old_root new_epoch new_root migration_staged migration_committed non_idempotent migration_cap
+    | ObserveMigration :: forall tenant old_epoch old_root new_epoch new_root.
+        revision tenant new_epoch new_root migration_observed ->
+        migration_op tenant old_epoch old_root new_epoch new_root migration_committed migration_observed idempotent observer_cap
+
+union migration_row from to effect capability =
+    | MigrationRow :: forall from to effect capability. string -> migration_row from to effect capability
+
+union migration_node tenant old_epoch old_root new_epoch new_root from to =
+    | MigrationNode :: forall tenant old_epoch old_root new_epoch new_root from to.
+        (exists effect capability.
+            migration_op tenant old_epoch old_root new_epoch new_root from to effect capability *
+            migration_row from to effect capability)
+        -> migration_node tenant old_epoch old_root new_epoch new_root from to
+
+union rec migration_plan tenant old_epoch old_root new_epoch new_root from to =
+    | MigrationLeaf :: forall tenant old_epoch old_root new_epoch new_root from to.
+        migration_node tenant old_epoch old_root new_epoch new_root from to ->
+        migration_plan tenant old_epoch old_root new_epoch new_root from to
+    | MigrationThen :: forall tenant old_epoch old_root new_epoch new_root from to.
+        (exists middle.
+            migration_plan tenant old_epoch old_root new_epoch new_root from middle *
+            migration_node tenant old_epoch old_root new_epoch new_root middle to)
+        -> migration_plan tenant old_epoch old_root new_epoch new_root from to
+
+inl artifact_value () : artifact tenant_orbit epoch_42 root_new =
+    inl binary : compiled tenant_orbit epoch_42 root_new backend_gpu schema_v4 artifact_compiled = Compiled "gpu-schema-v4"
+    inl proof : attestation tenant_orbit epoch_42 root_new backend_cpu schema_v3 artifact_validated = Attestation "cpu-schema-v3-attested"
+    Artifact (exists (binary, proof))
+
+inl artifact_label forall backend schema.
+    (_ : compiled tenant_orbit epoch_42 root_new backend schema artifact_compiled)
+    (_ : attestation tenant_orbit epoch_42 root_new backend schema artifact_validated) : string =
+    "backend-and-schema-parametric"
+
+inl quorum_value () : quorum tenant_orbit epoch_42 root_new =
+    inl a : share tenant_orbit epoch_42 root_new signer_alpha quorum_ready = Share "alpha"
+    inl b : share tenant_orbit epoch_42 root_new signer_beta quorum_ready = Share "beta"
+    inl c : share tenant_orbit epoch_42 root_new signer_gamma quorum_ready = Share "gamma"
+    inl proof : distinct_signers signer_alpha signer_beta signer_gamma distinct = DistinctSigners "alpha-ne-beta-ne-gamma"
+    Quorum (exists (a, b, c, proof))
+
+inl quorum_label forall first second third.
+    (_ : share tenant_orbit epoch_42 root_new first quorum_ready)
+    (_ : share tenant_orbit epoch_42 root_new second quorum_ready)
+    (_ : share tenant_orbit epoch_42 root_new third quorum_ready)
+    (_ : distinct_signers first second third distinct) : string =
+    "three-distinct-signers"
+
+inl pin_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new dormant pinned =
+    MigrationNode (exists (PinRevision (Revision "epoch-41", Successor "41-to-42"), MigrationRow "pin-successor"))
+
+inl quorum_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new pinned quorum_ready =
+    MigrationNode (exists (FormQuorum (quorum_value ()), MigrationRow "form-quorum"))
+
+inl compile_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new quorum_ready artifact_compiled =
+    MigrationNode (exists (CompileArtifact (artifact_value ()), MigrationRow "compile-existential-artifact"))
+
+inl validate_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new artifact_compiled artifact_validated =
+    MigrationNode (exists (ValidateArtifact (artifact_value ()), MigrationRow "validate-same-hidden-backend-schema"))
+
+inl stage_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new artifact_validated migration_staged =
+    MigrationNode (exists (StageMigration (Successor "41-to-42", artifact_value ()), MigrationRow "stage-migration"))
+
+inl commit_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new migration_staged migration_committed =
+    MigrationNode (exists (CommitMigration (quorum_value (), artifact_value ()), MigrationRow "commit-migration"))
+
+inl observe_node () : migration_node tenant_orbit epoch_41 root_old epoch_42 root_new migration_committed migration_observed =
+    MigrationNode (exists (ObserveMigration (Revision "epoch-42-observed"), MigrationRow "observe-migration"))
+
+inl plan_value () : migration_plan tenant_orbit epoch_41 root_old epoch_42 root_new dormant migration_observed =
+    MigrationThen (exists (
+        MigrationThen (exists (
+            MigrationThen (exists (
+                MigrationThen (exists (
+                    MigrationThen (exists (
+                        MigrationThen (exists (
+                            MigrationLeaf (pin_node ()),
+                            quorum_node ()
+                        )),
+                        compile_node ()
+                    )),
+                    validate_node ()
+                )),
+                stage_node ()
+            )),
+            commit_node ()
+        )),
+        observe_node ()
+    ))
+
+inl rec terminal forall tenant old_epoch old_root new_epoch new_root from to.
+    (plan : migration_plan tenant old_epoch old_root new_epoch new_root from to) : string =
+    match plan with
+    | MigrationLeaf (MigrationNode payload) =>
+        inl exists effect capability. _, MigrationRow label = payload
+        label
+    | MigrationThen payload =>
+        inl exists middle. _, MigrationNode node_payload = payload
+        inl exists effect capability. _, MigrationRow label = node_payload
+        label
+
+inl emit (_ : string) (_ : string) (_ : string) : string =
+    "schema\tkind\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\tresult\tsequence\n1\tplan\tpin\tPinRevision\tdormant\tpinned\t\tidempotent\tregistry\t2\t\t\n1\tplan\tquorum\tFormQuorum\tpinned\tquorum-ready\tpin\tidempotent\tquorum\t2\t\t\n1\tplan\tcompile\tCompileArtifact\tquorum-ready\tartifact-compiled\tquorum\tnon_idempotent\tcompiler\t0\t\t\n1\tplan\tvalidate\tValidateArtifact\tartifact-compiled\tartifact-validated\tcompile\tidempotent\tcompiler\t1\t\t\n1\tplan\tstage\tStageMigration\tartifact-validated\tmigration-staged\tvalidate\tidempotent\tmigration\t1\t\t\n1\tplan\tcommit\tCommitMigration\tmigration-staged\tmigration-committed\tstage\tnon_idempotent\tmigration\t0\t\t\n1\tplan\tobserve\tObserveMigration\tmigration-committed\tmigration-observed\tcommit\tidempotent\tobserver\t1\t\t\n1\treceipt\tpin\tPinRevision\tdormant\tpinned\t\t\t\t\tcommitted\t1\n1\treceipt\tquorum\tFormQuorum\tpinned\tquorum-ready\t\t\t\t\tcommitted\t3\n1\treceipt\tcompile\tCompileArtifact\tquorum-ready\tartifact-compiled\t\t\t\t\tcommitted\t5\n1\treceipt\tvalidate\tValidateArtifact\tartifact-compiled\tartifact-validated\t\t\t\t\tcommitted\t7\n1\treceipt\tstage\tStageMigration\tartifact-validated\tmigration-staged\t\t\t\t\tcommitted\t9\n1\treceipt\tcommit\tCommitMigration\tmigration-staged\tmigration-committed\t\t\t\t\tcommitted\t11\n1\treceipt\tobserve\tObserveMigration\tmigration-committed\tmigration-observed\t\t\t\t\tcommitted\t13\n1\tevent\tpin\tPinRevision\tdormant\tpinned\t\t\t\t\tsuccess\t2\n1\tevent\tquorum\tFormQuorum\tpinned\tquorum-ready\t\t\t\t\tsuccess\t4\n1\tevent\tcompile\tCompileArtifact\tquorum-ready\tartifact-compiled\t\t\t\t\tsuccess\t6\n1\tevent\tvalidate\tValidateArtifact\tartifact-compiled\tartifact-validated\t\t\t\t\tsuccess\t8\n1\tevent\tstage\tStageMigration\tartifact-validated\tmigration-staged\t\t\t\t\tsuccess\t10\n1\tevent\tcommit\tCommitMigration\tmigration-staged\tmigration-committed\t\t\t\t\tsuccess\t12\n1\tevent\tobserve\tObserveMigration\tmigration-committed\tmigration-observed\t\t\t\t\tsuccess\t14\n"
+
+inl main () : string =
+    inl artifact = with_artifact `$artifact_label (artifact_value ())
+    inl quorum = with_quorum `$quorum_label (quorum_value ())
+    inl terminal_state = terminal (plan_value ())
+    emit artifact quorum terminal_state

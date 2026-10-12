@@ -1,0 +1,442 @@
+type [<Struct>] US0 =
+    | US0_BitZero
+    | US0_BitOne
+and UH0 =
+    | UH0_InputEmpty
+    | UH0_InputCons of US0 * UH0
+and UH1 =
+    | UH1_RegexEmpty
+    | UH1_RegexEpsilon
+    | UH1_RegexChar of US0
+    | UH1_RegexAlt of UH1 * UH1
+    | UH1_RegexCat of UH1 * UH1
+    | UH1_RegexStar of UH1
+and [<Struct>] US1 =
+    | US1_SymbolLess
+    | US1_SymbolSame
+    | US1_SymbolGreater
+and [<Struct>] US2 =
+    | US2_Nullable
+    | US2_NonNullable
+and [<Struct>] US3 =
+    | US3_BitMatcherRaw of f0_0 : UH1 * f0_1 : UH0
+and [<Struct>] US4 =
+    | US4_BitMatcherDecided of f0_0 : UH1 * f0_1 : UH0 * f0_2 : bool
+let rec regex_compare_5 (v0 : UH1, v1 : UH1) : US1 =
+    match v0 with
+    | UH1_RegexAlt(v53, v54) -> (* RegexAlt *)
+        match v1 with
+        | UH1_RegexAlt(v55, v56) -> (* RegexAlt *)
+            let v57 : US1 = regex_compare_5(v53, v55)
+            match v57 with
+            | US1_SymbolSame -> (* SymbolSame *)
+                regex_compare_5(v54, v56)
+            | _ ->
+                v57
+        | _ ->
+            US1_SymbolGreater
+    | UH1_RegexCat(v28, v29) -> (* RegexCat *)
+        match v1 with
+        | UH1_RegexCat(v34, v35) -> (* RegexCat *)
+            let v36 : US1 = regex_compare_5(v28, v34)
+            match v36 with
+            | US1_SymbolSame -> (* SymbolSame *)
+                regex_compare_5(v29, v35)
+            | _ ->
+                v36
+        | UH1_RegexChar(v32) -> (* RegexChar *)
+            US1_SymbolGreater
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            US1_SymbolGreater
+        | UH1_RegexEpsilon -> (* RegexEpsilon *)
+            US1_SymbolGreater
+        | _ ->
+            US1_SymbolLess
+    | UH1_RegexChar(v10) -> (* RegexChar *)
+        match v1 with
+        | UH1_RegexChar(v13) -> (* RegexChar *)
+            match v10 with
+            | US0_BitOne -> (* BitOne *)
+                match v13 with
+                | US0_BitOne -> (* BitOne *)
+                    US1_SymbolSame
+                | US0_BitZero -> (* BitZero *)
+                    US1_SymbolGreater
+            | US0_BitZero -> (* BitZero *)
+                match v13 with
+                | US0_BitOne -> (* BitOne *)
+                    US1_SymbolLess
+                | US0_BitZero -> (* BitZero *)
+                    US1_SymbolSame
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            US1_SymbolGreater
+        | UH1_RegexEpsilon -> (* RegexEpsilon *)
+            US1_SymbolGreater
+        | _ ->
+            US1_SymbolLess
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        match v1 with
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            US1_SymbolSame
+        | _ ->
+            US1_SymbolLess
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        match v1 with
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            US1_SymbolGreater
+        | UH1_RegexEpsilon -> (* RegexEpsilon *)
+            US1_SymbolSame
+        | _ ->
+            US1_SymbolLess
+    | UH1_RegexStar(v44) -> (* RegexStar *)
+        match v1 with
+        | UH1_RegexAlt(v45, v46) -> (* RegexAlt *)
+            US1_SymbolLess
+        | UH1_RegexStar(v48) -> (* RegexStar *)
+            regex_compare_5(v44, v48)
+        | _ ->
+            US1_SymbolGreater
+and alt_insert_sorted_4 (v0 : UH1, v1 : UH1) : UH1 =
+    match v1 with
+    | UH1_RegexAlt(v2, v3) -> (* RegexAlt *)
+        let v4 : US1 = regex_compare_5(v0, v2)
+        match v4 with
+        | US1_SymbolGreater -> (* SymbolGreater *)
+            let v6 : UH1 = alt_insert_sorted_4(v0, v3)
+            UH1_RegexAlt(v2, v6)
+        | US1_SymbolLess -> (* SymbolLess *)
+            UH1_RegexAlt(v0, v1)
+        | US1_SymbolSame -> (* SymbolSame *)
+            v1
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        v0
+    | _ ->
+        let v11 : US1 = regex_compare_5(v0, v1)
+        match v11 with
+        | US1_SymbolGreater -> (* SymbolGreater *)
+            UH1_RegexAlt(v1, v0)
+        | US1_SymbolLess -> (* SymbolLess *)
+            UH1_RegexAlt(v0, v1)
+        | US1_SymbolSame -> (* SymbolSame *)
+            v1
+and make_alt_3 (v0 : UH1, v1 : UH1) : UH1 =
+    match v0 with
+    | UH1_RegexAlt(v2, v3) -> (* RegexAlt *)
+        let v4 : UH1 = alt_insert_sorted_4(v2, v1)
+        make_alt_3(v3, v4)
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        v1
+    | _ ->
+        alt_insert_sorted_4(v0, v1)
+and regex_equal_7 (v0 : UH1, v1 : UH1) : bool =
+    match v0 with
+    | UH1_RegexAlt(v18, v19) -> (* RegexAlt *)
+        match v1 with
+        | UH1_RegexAlt(v20, v21) -> (* RegexAlt *)
+            let v22 : bool = regex_equal_7(v18, v20)
+            if v22 then
+                regex_equal_7(v19, v21)
+            else
+                false
+        | _ ->
+            false
+    | UH1_RegexCat(v26, v27) -> (* RegexCat *)
+        match v1 with
+        | UH1_RegexCat(v28, v29) -> (* RegexCat *)
+            let v30 : bool = regex_equal_7(v26, v28)
+            if v30 then
+                regex_equal_7(v27, v29)
+            else
+                false
+        | _ ->
+            false
+    | UH1_RegexChar(v4) -> (* RegexChar *)
+        match v1 with
+        | UH1_RegexChar(v5) -> (* RegexChar *)
+            let v15 : US1 =
+                match v4 with
+                | US0_BitOne -> (* BitOne *)
+                    match v5 with
+                    | US0_BitOne -> (* BitOne *)
+                        US1_SymbolSame
+                    | US0_BitZero -> (* BitZero *)
+                        US1_SymbolGreater
+                | US0_BitZero -> (* BitZero *)
+                    match v5 with
+                    | US0_BitOne -> (* BitOne *)
+                        US1_SymbolLess
+                    | US0_BitZero -> (* BitZero *)
+                        US1_SymbolSame
+            match v15 with
+            | US1_SymbolSame -> (* SymbolSame *)
+                true
+            | _ ->
+                false
+        | _ ->
+            false
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        match v1 with
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            true
+        | _ ->
+            false
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        match v1 with
+        | UH1_RegexEpsilon -> (* RegexEpsilon *)
+            true
+        | _ ->
+            false
+    | UH1_RegexStar(v34) -> (* RegexStar *)
+        match v1 with
+        | UH1_RegexStar(v35) -> (* RegexStar *)
+            regex_equal_7(v34, v35)
+        | _ ->
+            false
+and make_cat_6 (v0 : UH1, v1 : UH1) : UH1 =
+    match v0 with
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        UH1_RegexEmpty
+    | _ ->
+        match v1 with
+        | UH1_RegexEmpty -> (* RegexEmpty *)
+            UH1_RegexEmpty
+        | _ ->
+            match v0 with
+            | UH1_RegexEpsilon -> (* RegexEpsilon *)
+                v1
+            | _ ->
+                match v1 with
+                | UH1_RegexEpsilon -> (* RegexEpsilon *)
+                    v0
+                | _ ->
+                    match v0 with
+                    | UH1_RegexCat(v12, v13) -> (* RegexCat *)
+                        let v14 : UH1 = make_cat_6(v13, v1)
+                        UH1_RegexCat(v12, v14)
+                    | UH1_RegexStar(v4) -> (* RegexStar *)
+                        match v1 with
+                        | UH1_RegexStar(v5) -> (* RegexStar *)
+                            let v6 : bool = regex_equal_7(v4, v5)
+                            if v6 then
+                                UH1_RegexStar(v4)
+                            else
+                                UH1_RegexCat(v0, v1)
+                        | _ ->
+                            UH1_RegexCat(v0, v1)
+                    | _ ->
+                        UH1_RegexCat(v0, v1)
+and make_star_8 (v0 : UH1) : UH1 =
+    match v0 with
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        UH1_RegexEpsilon
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        UH1_RegexEpsilon
+    | UH1_RegexStar(v3) -> (* RegexStar *)
+        UH1_RegexStar(v3)
+    | _ ->
+        UH1_RegexStar(v0)
+and normalize_2 (v0 : UH1) : UH1 =
+    match v0 with
+    | UH1_RegexAlt(v5, v6) -> (* RegexAlt *)
+        let v7 : UH1 = normalize_2(v5)
+        let v8 : UH1 = normalize_2(v6)
+        make_alt_3(v7, v8)
+    | UH1_RegexCat(v10, v11) -> (* RegexCat *)
+        let v12 : UH1 = normalize_2(v10)
+        let v13 : UH1 = normalize_2(v11)
+        make_cat_6(v12, v13)
+    | UH1_RegexChar(v3) -> (* RegexChar *)
+        UH1_RegexChar(v3)
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        UH1_RegexEmpty
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        UH1_RegexEpsilon
+    | UH1_RegexStar(v15) -> (* RegexStar *)
+        let v16 : UH1 = normalize_2(v15)
+        make_star_8(v16)
+and nullable_10 (v0 : UH1) : US2 =
+    match v0 with
+    | UH1_RegexAlt(v5, v6) -> (* RegexAlt *)
+        let v7 : US2 = nullable_10(v5)
+        let v8 : US2 = nullable_10(v6)
+        match v7 with
+        | US2_Nullable -> (* Nullable *)
+            US2_Nullable
+        | _ ->
+            match v8 with
+            | US2_Nullable -> (* Nullable *)
+                US2_Nullable
+            | _ ->
+                match v7 with
+                | US2_NonNullable -> (* NonNullable *)
+                    match v8 with
+                    | US2_NonNullable -> (* NonNullable *)
+                        US2_NonNullable
+    | UH1_RegexCat(v16, v17) -> (* RegexCat *)
+        let v18 : US2 = nullable_10(v16)
+        let v19 : US2 = nullable_10(v17)
+        match v18 with
+        | US2_Nullable -> (* Nullable *)
+            match v19 with
+            | US2_Nullable -> (* Nullable *)
+                US2_Nullable
+            | _ ->
+                US2_NonNullable
+        | _ ->
+            US2_NonNullable
+    | UH1_RegexChar(v3) -> (* RegexChar *)
+        US2_NonNullable
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        US2_NonNullable
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        US2_Nullable
+    | UH1_RegexStar(v25) -> (* RegexStar *)
+        US2_Nullable
+and derivative_9 (v0 : UH1, v1 : US0) : UH1 =
+    match v0 with
+    | UH1_RegexAlt(v19, v20) -> (* RegexAlt *)
+        let v21 : UH1 = derivative_9(v19, v1)
+        let v22 : UH1 = derivative_9(v20, v1)
+        make_alt_3(v21, v22)
+    | UH1_RegexCat(v24, v25) -> (* RegexCat *)
+        let v26 : US2 = nullable_10(v24)
+        match v26 with
+        | US2_NonNullable -> (* NonNullable *)
+            let v31 : UH1 = derivative_9(v24, v1)
+            make_cat_6(v31, v25)
+        | US2_Nullable -> (* Nullable *)
+            let v27 : UH1 = derivative_9(v24, v1)
+            let v28 : UH1 = make_cat_6(v27, v25)
+            let v29 : UH1 = derivative_9(v25, v1)
+            make_alt_3(v28, v29)
+    | UH1_RegexChar(v4) -> (* RegexChar *)
+        let v14 : US1 =
+            match v4 with
+            | US0_BitOne -> (* BitOne *)
+                match v1 with
+                | US0_BitOne -> (* BitOne *)
+                    US1_SymbolSame
+                | US0_BitZero -> (* BitZero *)
+                    US1_SymbolGreater
+            | US0_BitZero -> (* BitZero *)
+                match v1 with
+                | US0_BitOne -> (* BitOne *)
+                    US1_SymbolLess
+                | US0_BitZero -> (* BitZero *)
+                    US1_SymbolSame
+        let v15 : bool =
+            match v14 with
+            | US1_SymbolSame -> (* SymbolSame *)
+                true
+            | _ ->
+                false
+        if v15 then
+            UH1_RegexEpsilon
+        else
+            UH1_RegexEmpty
+    | UH1_RegexEmpty -> (* RegexEmpty *)
+        UH1_RegexEmpty
+    | UH1_RegexEpsilon -> (* RegexEpsilon *)
+        UH1_RegexEmpty
+    | UH1_RegexStar(v35) -> (* RegexStar *)
+        let v36 : UH1 = derivative_9(v35, v1)
+        let v37 : UH1 = make_star_8(v35)
+        make_cat_6(v36, v37)
+and canonical_derivative_1 (v0 : UH1, v1 : US0) : UH1 =
+    let v2 : UH1 = normalize_2(v0)
+    let v3 : UH1 = derivative_9(v2, v1)
+    normalize_2(v3)
+and accepts_0 (v0 : UH1, v1 : UH0) : bool =
+    match v1 with
+    | UH0_InputCons(v6, v7) -> (* InputCons *)
+        let v8 : UH1 = canonical_derivative_1(v0, v6)
+        accepts_0(v8, v7)
+    | UH0_InputEmpty -> (* InputEmpty *)
+        let v2 : UH1 = normalize_2(v0)
+        let v3 : US2 = nullable_10(v2)
+        match v3 with
+        | US2_NonNullable -> (* NonNullable *)
+            false
+        | US2_Nullable -> (* Nullable *)
+            true
+and decide_bit_match_11 (v0 : US3) : US4 =
+    match v0 with
+    | US3_BitMatcherRaw(v1, v2) -> (* BitMatcherRaw *)
+        let v3 : bool = accepts_0(v1, v2)
+        US4_BitMatcherDecided(v1, v2, v3)
+and bit_match_value_12 (v0 : US4) : bool =
+    match v0 with
+    | US4_BitMatcherDecided(v1, v2, v3) -> (* BitMatcherDecided *)
+        v3
+let v0 : US0 = US0_BitOne
+let v1 : US0 = US0_BitOne
+let v2 : US0 = US0_BitZero
+let v3 : UH0 = UH0_InputEmpty
+let v4 : UH0 = UH0_InputCons(v2, v3)
+let v5 : UH0 = UH0_InputCons(v1, v4)
+let v6 : UH0 = UH0_InputCons(v0, v5)
+let v7 : US0 = US0_BitOne
+let v8 : US0 = US0_BitOne
+let v9 : US0 = US0_BitOne
+let v10 : UH0 = UH0_InputEmpty
+let v11 : UH0 = UH0_InputCons(v9, v10)
+let v12 : UH0 = UH0_InputCons(v8, v11)
+let v13 : UH0 = UH0_InputCons(v7, v12)
+let v14 : US0 = US0_BitZero
+let v15 : UH1 = UH1_RegexChar(v14)
+let v16 : US0 = US0_BitOne
+let v17 : UH1 = UH1_RegexChar(v16)
+let v18 : UH1 = UH1_RegexAlt(v15, v17)
+let v19 : UH1 = UH1_RegexStar(v18)
+let v20 : US0 = US0_BitZero
+let v21 : UH1 = UH1_RegexChar(v20)
+let v22 : UH1 = UH1_RegexCat(v19, v21)
+let v23 : bool = accepts_0(v22, v6)
+if v23 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
+let v24 : US0 = US0_BitZero
+let v25 : UH1 = UH1_RegexChar(v24)
+let v26 : US0 = US0_BitOne
+let v27 : UH1 = UH1_RegexChar(v26)
+let v28 : UH1 = UH1_RegexAlt(v25, v27)
+let v29 : UH1 = UH1_RegexStar(v28)
+let v30 : US0 = US0_BitZero
+let v31 : UH1 = UH1_RegexChar(v30)
+let v32 : UH1 = UH1_RegexCat(v29, v31)
+let v33 : bool = accepts_0(v32, v13)
+if v33 then
+    failwith<unit> "brzozowski-expected-false"
+let v34 : US0 = US0_BitZero
+let v35 : UH1 = UH1_RegexChar(v34)
+let v36 : US0 = US0_BitOne
+let v37 : UH1 = UH1_RegexChar(v36)
+let v38 : UH1 = UH1_RegexAlt(v35, v37)
+let v39 : UH1 = UH1_RegexStar(v38)
+let v40 : US0 = US0_BitZero
+let v41 : UH1 = UH1_RegexChar(v40)
+let v42 : UH1 = UH1_RegexCat(v39, v41)
+let v43 : US3 = US3_BitMatcherRaw(v42, v6)
+let v44 : US4 = decide_bit_match_11(v43)
+let v45 : US0 = US0_BitZero
+let v46 : UH1 = UH1_RegexChar(v45)
+let v47 : US0 = US0_BitOne
+let v48 : UH1 = UH1_RegexChar(v47)
+let v49 : UH1 = UH1_RegexAlt(v46, v48)
+let v50 : UH1 = UH1_RegexStar(v49)
+let v51 : US0 = US0_BitZero
+let v52 : UH1 = UH1_RegexChar(v51)
+let v53 : UH1 = UH1_RegexCat(v50, v52)
+let v54 : US3 = US3_BitMatcherRaw(v53, v13)
+let v55 : US4 = decide_bit_match_11(v54)
+let v56 : bool = bit_match_value_12(v44)
+if v56 then
+    ()
+else
+    failwith<unit> "brzozowski-expected-true"
+let v57 : bool = bit_match_value_12(v55)
+if v57 then
+    failwith<unit> "brzozowski-expected-false"
+let v58 : string = "brzozowski-runtime-smoke-green"
+v58

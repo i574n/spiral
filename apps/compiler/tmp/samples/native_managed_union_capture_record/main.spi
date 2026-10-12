@@ -1,0 +1,16 @@
+open support
+
+inl main () : i32 =
+    inl ~make =
+        (fun seed =>
+            inl values : array i32 = create 2i32
+            set values 0i32 seed
+            set values 1i32 (seed +. 1i32)
+            inl captured : payload =
+                if seed =. 0i32 then Empty
+                else Item { text = "hi"; values }
+            (fun bias => score captured +. bias) : i32 -> i32
+        ) : i32 -> (i32 -> i32)
+    inl empty_use = join make 0i32
+    inl item_use = join make 4i32
+    join empty_use 5i32 +. join item_use 1i32 +. join item_use 2i32 +. 5i32

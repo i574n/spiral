@@ -1,0 +1,13 @@
+[package]
+name = "spiral-split-process-supervisor"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/process_supervisor.rs"
+
+[[bin]]
+name = "spiral-split-process-probe"
+path = "src/process_probe.rs"

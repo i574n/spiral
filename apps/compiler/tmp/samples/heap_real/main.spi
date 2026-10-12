@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl ~x = 1.5f64
+    inl box = !!!!LayoutToHeap({value = x})
+    inl opened = !!!!LayoutIndex(box)
+    if !!!!EQ(opened.value, 1.5f64) then 0i32 else 1i32

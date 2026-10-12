@@ -1,0 +1,32 @@
+nominal term_kind = ()
+nominal ty_kind = ()
+nominal owner_open = ()
+nominal owner_closed = ()
+
+union owner kind state =
+    | TermOpen :: owner term_kind owner_open
+    | TypeOpen :: owner ty_kind owner_open
+    | TermClosed :: owner term_kind owner_closed
+    | TypeClosed :: owner ty_kind owner_closed
+
+union rec owner_ledger kind state =
+    | OwnerLeaf :: forall kind state. owner kind state -> owner_ledger kind state
+    | OwnerJoin :: forall kind state. owner_ledger kind state * owner_ledger kind state -> owner_ledger kind state
+
+inl close_owner forall kind. (owner : owner kind owner_open) : owner kind owner_closed =
+    match owner with
+    | TermOpen => TermClosed
+    | TypeOpen => TypeClosed
+
+inl rec close_ledger forall kind. (ledger : owner_ledger kind owner_open) : owner_ledger kind owner_closed =
+    match ledger with
+    | OwnerLeaf owner => OwnerLeaf (close_owner owner)
+    | OwnerJoin (left, right) => OwnerJoin (close_ledger left, close_ledger right)
+
+inl render forall kind. (ledger : owner_ledger kind owner_closed) : string =
+    match ledger with
+    | OwnerLeaf _ => "exact-once-owner-ledger"
+    | OwnerJoin _ => "exact-once-owner-ledger"
+
+inl main () : string =
+    render (close_ledger (OwnerJoin (OwnerLeaf TermOpen, OwnerLeaf TermOpen)))

@@ -1,0 +1,8 @@
+open main
+
+inl decided_only (state : bit_matcher_state matcher_decided) : bool =
+    bit_match_value state
+
+inl main () =
+    inl raw : bit_matcher_state matcher_raw = BitMatcherRaw (ends_with_zero (), input_110 ())
+    decided_only raw

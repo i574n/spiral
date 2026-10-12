@@ -13,35 +13,34 @@ jobs:
       matrix:
         os: [ubuntu-24.04, windows-2025]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: moonrepo/setup-rust@v1
         with:
-          channel: "nightly-2024-10-07"
+          channel: "nightly-2025-05-09"
           components: "clippy,rust-src,rustfmt"
           targets: "wasm32-unknown-unknown"
 
-      - uses: i574n/setup-beam-win25@v3
+      - uses: erlef/setup-beam@v1
         with:
           otp-version: "27"
-          gleam-version: "1.11.0"
+          elixir-version: "1.18"
+          gleam-version: "1.19.1"
           rebar3-version: '3.24.0'
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: "9.0.202"
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 21
+      - uses: oven-sh/setup-bun@v2
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12.10"
 
       - run: pwsh scripts/workflow.ps1
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         if: contains(matrix.os, 'ubuntu')
         with:
           name: gh-pages
@@ -55,9 +54,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v6
         with:
           name: gh-pages
           path: gh-pages

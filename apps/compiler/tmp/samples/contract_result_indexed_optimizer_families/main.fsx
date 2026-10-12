@@ -1,0 +1,2 @@
+let v0 : string = "schema\tnode_id\toperation\tfrom\tto\tdeps\teffect\tcapability\tretry_budget\n1\tload\tLoad\taddress\tvalue\t\tidempotent\tmemory\t2\n1\tadd\tAdd\tvalues\tvalue\tload\tidempotent\tcompute\t2\n1\tbranch\tBranch\tcondition\tbranch-result\tadd\tidempotent\tcontrol\t1\n1\tallocate\tAllocate\tsize\tbuffer\tbranch\tnon_idempotent\tmemory\t0\n1\tlaunch\tLaunch\tkernel-buffer\tevent\tallocate\tnon_idempotent\taccelerator\t0\n"
+v0

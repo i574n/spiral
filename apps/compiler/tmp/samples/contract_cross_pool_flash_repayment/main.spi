@@ -1,0 +1,31 @@
+nominal idle = ()
+nominal borrowed = ()
+nominal arbitraged = ()
+nominal repaid = ()
+nominal usdc = ()
+nominal pool_alpha = ()
+nominal pool_beta = ()
+nominal borrower_7 = ()
+nominal block_19000000 = ()
+nominal debt_note pool borrower asset block = string
+nominal profit_receipt borrower asset block = string
+nominal repayment_receipt pool borrower asset block = string
+
+union flash_op from to result =
+    | Borrow :: forall pool borrower asset block.
+        string -> flash_op idle borrowed (debt_note pool borrower asset block)
+    | Repay :: forall pool borrower asset block.
+        debt_note pool borrower asset block * profit_receipt borrower asset block ->
+        flash_op arbitraged repaid (repayment_receipt pool borrower asset block)
+
+inl repay_alpha
+    (debt : debt_note pool_alpha borrower_7 usdc block_19000000)
+    (profit : profit_receipt borrower_7 usdc block_19000000)
+    : repayment_receipt pool_alpha borrower_7 usdc block_19000000 =
+    match Repay (debt, profit) with
+    | Repay _ => repayment_receipt "alpha-repaid"
+
+inl main () : repayment_receipt pool_beta borrower_7 usdc block_19000000 =
+    inl debt : debt_note pool_alpha borrower_7 usdc block_19000000 = debt_note "alpha-debt"
+    inl profit : profit_receipt borrower_7 usdc block_19000000 = profit_receipt "profit"
+    repay_alpha debt profit

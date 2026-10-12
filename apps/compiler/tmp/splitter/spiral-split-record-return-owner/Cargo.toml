@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-record-return-owner"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/record_return_owner.rs"
+
+[dependencies]
+spiral-split-model.workspace = true

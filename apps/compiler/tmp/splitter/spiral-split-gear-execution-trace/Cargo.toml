@@ -1,0 +1,9 @@
+[package]
+name = "spiral-split-gear-execution-trace"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/execution_trace.rs"

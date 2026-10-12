@@ -1,0 +1,19 @@
+nominal constant = ()
+nominal balanced = ()
+
+union oracle promise =
+    | ConstantOracle :: oracle constant
+    | BalancedOracle :: oracle balanced
+
+union algorithm_result promise =
+    | ConstantWitness :: algorithm_result constant
+    | BalancedWitness :: algorithm_result balanced
+
+inl classify forall promise. (oracle : oracle promise) : algorithm_result promise =
+    match oracle with
+    | ConstantOracle => ConstantWitness
+    | BalancedOracle => BalancedWitness
+
+inl accept_constant (result : algorithm_result constant) : string = "unreachable"
+
+inl main () : string = accept_constant (classify BalancedOracle)

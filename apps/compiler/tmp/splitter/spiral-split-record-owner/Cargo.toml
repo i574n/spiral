@@ -1,0 +1,14 @@
+[package]
+name = "spiral-split-record-owner"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/record_owner.rs"
+
+[dependencies]
+spiral-split-call-contract.workspace = true
+spiral-split-model.workspace = true
+spiral-split-union-context.workspace = true

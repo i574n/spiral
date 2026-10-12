@@ -1,0 +1,12 @@
+[package]
+name = "spiral-split-recursive-header-stabilize"
+version.workspace = true
+edition.workspace = true
+publish.workspace = true
+license.workspace = true
+
+[lib]
+path = "src/recursive_header_stabilize.rs"
+
+[dependencies]
+spiral-split-capture-parameter.workspace = true

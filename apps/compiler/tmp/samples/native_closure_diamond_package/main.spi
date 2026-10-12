@@ -1,0 +1,5 @@
+inl main () : i32 =
+    inl ~name = "abc"
+    inl f (z : i32) : i32 = sm.length name +. z
+    inl ~g = f
+    left.use.add_left g 16i32 +. right.use.add_right g 17i32

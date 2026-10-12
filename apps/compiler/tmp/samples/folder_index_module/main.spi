@@ -1,0 +1,9 @@
+nominal held = `(lib.make_wrapped `(i32) 7i32)
+inl main () : i32 =
+    inl a = lib.seven ()
+    inl b = lib.extra.three ()
+    inl c = lib.lib.seven ()
+    inl d : i32 = real lib.seven ()
+    inl e : lib.wrapped = lib.wrapped 0i32
+    inl f : held = $'0'
+    a + b + c + d - 24i32

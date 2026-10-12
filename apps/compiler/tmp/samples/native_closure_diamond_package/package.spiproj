@@ -1,0 +1,7 @@
+packageDir: packages
+packages:
+    |core-
+    left
+    right
+modules:
+    main

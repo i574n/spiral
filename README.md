@@ -56,16 +56,13 @@ Samples
 <td>
 
 - Spiral CLI notebook  
-<https://i574n.github.io/spiral/apps/spiral/spiral.dib.html>
-
-- Spiral compiler notebook  
-<https://i574n.github.io/spiral/apps/compiler/spiral_compiler.dib.html>
+<https://i574n.github.io/spiral/apps/spiral/spiral.livemd.html>
 
 - Parsing library  
-<https://i574n.github.io/spiral/lib/spiral/parsing.dib.html>
+<https://i574n.github.io/spiral/lib/spiral/parsing.spi.html>
 
 - Physics notebook from the "Learn Physics with Functional Programming" book  
-<https://i574n.github.io/spiral/lib/spiral/physics.dib.html>
+<https://i574n.github.io/spiral/lib/spiral/physics.spi.html>
 
 </td>
 </tr>

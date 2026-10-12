@@ -1,0 +1,36 @@
+nominal validate_id = ()
+nominal publish_id = ()
+nominal draft = ()
+nominal validated = ()
+nominal authorized = ()
+
+union planned id from to =
+    | ValidatePlan :: planned validate_id draft validated
+    | PublishPlan :: planned publish_id validated authorized
+
+union receipt id from to =
+    | ValidateReceipt :: receipt validate_id draft validated
+    | PublishReceipt :: receipt publish_id validated authorized
+
+union event id from to =
+    | ValidateEvent :: event validate_id draft validated
+    | PublishEvent :: event publish_id validated authorized
+
+union authority id from to =
+    | Authority :: forall id from to.
+        planned id from to * receipt id from to * event id from to
+        -> authority id from to
+
+inl close forall id from to.
+    (plan : planned id from to)
+    (receipt : receipt id from to)
+    (event : event id from to)
+    : authority id from to =
+    Authority (plan, receipt, event)
+
+inl render (authority : authority publish_id validated authorized) : string =
+    match authority with
+    | Authority _ => "identity-closed-authority"
+
+inl main () : string =
+    render (close PublishPlan PublishReceipt PublishEvent)

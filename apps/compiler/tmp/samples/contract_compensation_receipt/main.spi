@@ -1,0 +1,42 @@
+nominal draft = ()
+nominal sent = ()
+nominal committed = ()
+nominal pending = ()
+
+union document phase =
+    | DraftDocument :: document draft
+    | SentDocument :: document sent
+
+union transition from to =
+    | Submit :: transition draft sent
+
+union compensation from to =
+    | UndoSubmit :: compensation sent draft
+
+union receipt from to status =
+    | PendingReceipt :: forall from to. receipt from to pending
+    | CommittedReceipt :: forall from to. receipt from to committed
+
+inl execute forall from to.
+    (transition : transition from to)
+    (document : document from)
+    : document to =
+    match transition, document with
+    | Submit, DraftDocument => SentDocument
+
+inl rollback forall from to.
+    (compensation : compensation to from)
+    (receipt : receipt from to committed)
+    (document : document to)
+    : document from =
+    match compensation, receipt, document with
+    | UndoSubmit, CommittedReceipt, SentDocument => DraftDocument
+
+inl render (document : document draft) : string =
+    match document with
+    | DraftDocument => "compensation-receipt"
+
+inl main () : string =
+    inl sent = execute Submit DraftDocument
+    inl restored = rollback UndoSubmit CommittedReceipt sent
+    render restored

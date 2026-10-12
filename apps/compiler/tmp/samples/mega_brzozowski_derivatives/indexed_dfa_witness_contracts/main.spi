@@ -1,0 +1,10 @@
+open semantic_witnesses
+open minimality_witnesses
+open exact_soundness_witnesses
+
+inl main () : string =
+    inl semantic = indexed_dfa_semantic_witnesses_contract ()
+    inl minimality = indexed_dfa_minimality_witnesses_contract ()
+    inl _ = semantic
+    inl _ = minimality
+    indexed_dfa_exact_soundness_contract ()

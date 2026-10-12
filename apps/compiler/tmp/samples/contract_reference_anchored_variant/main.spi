@@ -1,0 +1,18 @@
+nominal hg38 = ()
+nominal chr1 = ()
+nominal pos100 = ()
+nominal allele_a = ()
+nominal allele_t = ()
+nominal raw = ()
+nominal normalized = ()
+
+union reference build contig pos allele = | Reference :: forall build contig pos allele. string -> reference build contig pos allele
+union variant build contig pos ref alt state = | Variant :: forall build contig pos ref alt state. string -> variant build contig pos ref alt state
+
+inl normalize forall build contig pos ref alt. (reference : reference build contig pos ref) (variant : variant build contig pos ref alt raw) : variant build contig pos ref alt normalized =
+    match reference, variant with | Reference _, Variant _ => Variant "reference-anchored-variant"
+
+inl main () : string =
+    inl reference : reference hg38 chr1 pos100 allele_a = Reference "A"
+    inl variant : variant hg38 chr1 pos100 allele_a allele_t raw = Variant "A>T"
+    match normalize reference variant with | Variant label => label
