@@ -4,37 +4,37 @@ program SpiralGenerated;
 uses SysUtils, Math;
 function SpiralMain: LongInt;
 var
-  v4: Single;
-  v9: Double;
-  v10: Single;
-  v11: Double;
-  v12: Boolean;
-  v14: Boolean;
-  v13: Boolean;
-  v15: Boolean;
-  v17: Boolean;
-  v16: Boolean;
+  v0: Single;
+  v1: Double;
+  v2: Single;
+  v3: Double;
+  v4: Boolean;
+  v6: Boolean;
+  v5: Boolean;
+  v7: Boolean;
+  v9: Boolean;
+  v8: Boolean;
 begin
-  v4 := NaN;
-  v9 := NaN;
-  v10 := 1.0;
-  v11 := 1.0;
-  v12 := IsNan(v4);
-  if v12 then begin
-      v13 := IsNan(v9);
-      v14 := v13;
+  v0 := NaN;
+  v1 := NaN;
+  v2 := 1.0;
+  v3 := 1.0;
+  v4 := IsNan(v0);
+  if v4 then begin
+      v5 := IsNan(v1);
+      v6 := v5;
   end else begin
-      v14 := False;
+      v6 := False;
   end;
-  if v14 then begin
-      v15 := IsNan(v10);
-      if v15 then begin
-          v17 := True;
+  if v6 then begin
+      v7 := IsNan(v2);
+      if v7 then begin
+          v9 := True;
       end else begin
-          v16 := IsNan(v11);
-          v17 := v16;
+          v8 := IsNan(v3);
+          v9 := v8;
       end;
-      if v17 then begin
+      if v9 then begin
           Result := 2;
       end else begin
           Result := 0;

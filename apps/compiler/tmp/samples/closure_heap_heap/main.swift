@@ -17,8 +17,6 @@ class Heap1 {
 }
 func f_c0(_ v0: Heap1) -> (Int32) -> Heap1 {
     return { (v1: Int32) -> Heap1 in
-        var v2: Bool = false
-        v2 = (v1 == 0)
         return v0
     }
 }

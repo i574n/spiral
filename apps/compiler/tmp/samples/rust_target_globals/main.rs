@@ -2,7 +2,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn target_global_0(mut v0: Rc<str>) -> () {
-    let mut v1: i32 = (v0.clone().len() as i32);
     ()
 }
 fn spiral_main() -> i32 {

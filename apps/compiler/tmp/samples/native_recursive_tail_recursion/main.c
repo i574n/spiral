@@ -142,7 +142,7 @@ int32_t main(){
             }
             break;
         }
-        case 0: { // Empty
+        default: { // Empty
             
             
             UHDecref0(v0);

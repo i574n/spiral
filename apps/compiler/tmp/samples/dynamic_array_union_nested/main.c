@@ -118,7 +118,7 @@ int32_t score0(US0 v0){
             return 0l;
             break;
         }
-        case 1: { // Nested
+        default: { // Nested
             Array0 * v1 = v0.case1.v0;
             (v1)->refc++;
             USDecref0(&(v0));

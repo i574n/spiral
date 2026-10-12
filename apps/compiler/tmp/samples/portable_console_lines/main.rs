@@ -2,18 +2,18 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
-    let mut v9: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hello"); } LIT.with(|lit| lit.clone()) };
-    println!("{}", v9);
-    let mut v12: i32 = 42i32;
-    println!("{}", v12);
-    let mut v21: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("a"); } LIT.with(|lit| lit.clone()) };
-    { use std::io::Write; print!("{}", v21); std::io::stdout().flush().unwrap(); };
-    let mut v28: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("b"); } LIT.with(|lit| lit.clone()) };
-    { use std::io::Write; print!("{}", v28); std::io::stdout().flush().unwrap(); };
-    let mut v36: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
-    println!("{}", v36);
-    let mut v38: i64 = -7i64;
-    println!("{}", v38);
+    let mut v0: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hello"); } LIT.with(|lit| lit.clone()) };
+    println!("{}", v0);
+    let mut v1: i32 = 42i32;
+    println!("{}", v1);
+    let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("a"); } LIT.with(|lit| lit.clone()) };
+    { use std::io::Write; print!("{}", v2); std::io::stdout().flush().unwrap(); };
+    let mut v3: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("b"); } LIT.with(|lit| lit.clone()) };
+    { use std::io::Write; print!("{}", v3); std::io::stdout().flush().unwrap(); };
+    let mut v4: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from(""); } LIT.with(|lit| lit.clone()) };
+    println!("{}", v4);
+    let mut v5: i64 = -7i64;
+    println!("{}", v5);
     0i32
 }
 fn main() { #[cfg(target_arch = "wasm32")] { spiral_main(); return; }

@@ -120,7 +120,7 @@ int32_t score0(US0 v0){
             }
             break;
         }
-        case 0: { // One
+        default: { // One
             int32_t v1 = v0.case0.v0;
             
             USDecref0(&(v0));

@@ -300,7 +300,7 @@ int32_t score0(US0 v0){
             }
             break;
         }
-        case 0: { // None
+        default: { // None
             
             
             USDecref0(&(v0));

@@ -17,24 +17,24 @@ i8 = int; i16 = int; i32 = int; i64 = int; u8 = int; u16 = int; u32 = int; u64 =
 
 import sys
 def main():
-    v4 = "hello"
+    v0 = "hello"
+    print(v0)
+    del v0
+    v1 = 42
+    print(v1)
+    del v1
+    v2 = "a"
+    print(v2, end="")
+    del v2
+    v3 = "b"
+    print(v3, end="")
+    del v3
+    v4 = ""
     print(v4)
     del v4
-    v11 = 42
-    print(v11)
-    del v11
-    v18 = "a"
-    print(v18, end="")
-    del v18
-    v24 = "b"
-    print(v24, end="")
-    del v24
-    v31 = ""
-    print(v31)
-    del v31
-    v34 = -7
-    print(v34)
-    del v34
+    v5 = -7
+    print(v5)
+    del v5
     return 0
 
 if __name__ == '__main__': sys.exit(main())

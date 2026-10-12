@@ -10,19 +10,19 @@ int32_t method0(){
     v0 = 0l;
     
     
+    int32_t v1;
+    v1 = 7l;
+    
+    
     int32_t v2;
-    v2 = 7l;
+    v2 = v1 - 7l;
     
     
-    int32_t v4;
-    v4 = v2 - 7l;
+    int32_t v3;
+    v3 = v0 + v2;
     
     
-    int32_t v5;
-    v5 = v0 + v4;
-    
-    
-    return v5;
+    return v3;
 }
 int32_t main(){
     

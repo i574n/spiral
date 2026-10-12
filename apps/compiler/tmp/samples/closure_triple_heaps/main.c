@@ -86,10 +86,7 @@ Tuple0 f_c0(Closure0 * x, int32_t v3){
     Heap0 * v0 = x->v0; Heap0 * v1 = x->v1; Heap0 * v2 = x->v2;
     (v0)->refc++; (v1)->refc++; (v2)->refc++;
     ClosureDecref0(x);
-    
-    
-    bool v4;
-    v4 = v3 == 0l;
+    (void)v3;
     
     
     return TupleCreate0(v0, v1, v2);

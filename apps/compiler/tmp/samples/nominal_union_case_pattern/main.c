@@ -44,7 +44,7 @@ int32_t main(){
             v2 = false;
             break;
         }
-        case 0: { // Zero
+        default: { // Zero
             
             
             

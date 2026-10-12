@@ -28,21 +28,21 @@ static int32_t spiral_map_update(int32_t key, int32_t val) {
 static int32_t spiral_main(void) {
     int32_t v0 = 0;
     v0 = INT32_MIN;
+    int32_t v1 = 0;
+    v1 = spiral_map_update(v0, 3);
     int32_t v2 = 0;
-    v2 = spiral_map_update(v0, 3);
-    int32_t v4 = 0;
-    v4 = spiral_map_lookup(v0);
+    v2 = spiral_map_lookup(v0);
+    bool v3 = false;
+    v3 = (v1 == 0);
     bool v5 = false;
-    v5 = (v2 == 0);
-    bool v7 = false;
-    if (v5) {
-        bool v6 = false;
-        v6 = (v4 == 3);
-        v7 = v6;
+    if (v3) {
+        bool v4 = false;
+        v4 = (v2 == 3);
+        v5 = v4;
     } else {
-        v7 = false;
+        v5 = false;
     }
-    if (v7) {
+    if (v5) {
         return 0;
     } else {
         return 1;

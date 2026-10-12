@@ -99,7 +99,6 @@ var
   v22: Boolean;
   v21: Boolean;
   v1: LongInt;
-  v2: Boolean;
 begin
   case v0.tag of
       0: begin
@@ -157,7 +156,6 @@ begin
       end;
       2: begin
           v1 := v0.c2_0;
-          v2 := v1 = 0;
           Result := 1;
       end;
   end;

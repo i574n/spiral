@@ -51,7 +51,7 @@ int32_t sum0(UH0 * v0){
             return 0l;
             break;
         }
-        case 1: { // Node
+        default: { // Node
             int32_t v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
             (v2)->refc += 2; (v3)->refc++;
             UHDecref0(v0);

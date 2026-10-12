@@ -21,34 +21,34 @@ begin
 end;
 function format_real_0(v0: TUS0): AnsiString;
 var
-  v44: AnsiString;
-  v56: TMut0;
-  v70: AnsiString;
-  v77: AnsiString;
-  v105: AnsiString;
+  v1: AnsiString;
+  v2: TMut0;
+  v3: AnsiString;
+  v4: AnsiString;
+  v5: AnsiString;
 begin
-  v44 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v56 := MutCreate0(v44);
-  v70 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v77 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v1 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v2 := MutCreate0(v1);
+  v3 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v4 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
   ;
-  v105 := v56.l0;
-  Result := v105;
+  v5 := v2.l0;
+  Result := v5;
 end;
 function SpiralMain: LongInt;
 var
   v0: LongInt;
   v1: TUS0;
   v2: AnsiString;
-  v24: AnsiString;
-  v26: Boolean;
+  v3: AnsiString;
+  v4: Boolean;
 begin
   v0 := 1;
   v1 := US0_Some(v0);
   v2 := format_real_0(v1);
-  v24 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
-  v26 := v24 = '';
-  if v26 then begin
+  v3 := backend_switch_has_no_Delphi_arm_in_lib_spiral;
+  v4 := v3 = '';
+  if v4 then begin
       Result := 1;
   end else begin
       Result := 0;

@@ -197,7 +197,7 @@ int32_t main(){
             v12 = 3l;
             break;
         }
-        case 1: { // Item
+        default: { // Item
             String * v2 = v1.case1.v0; Array1 * v3 = v1.case1.v1;
             (v2)->refc++; (v3)->refc++;
             
@@ -248,7 +248,7 @@ int32_t main(){
             v24 = 3l;
             break;
         }
-        case 1: { // Item
+        default: { // Item
             String * v14 = v13.case1.v0; Array1 * v15 = v13.case1.v1;
             (v14)->refc++; (v15)->refc++;
             

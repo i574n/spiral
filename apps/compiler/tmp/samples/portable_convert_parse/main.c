@@ -73,43 +73,40 @@ int32_t main(){
     v0 = StringLit(3, "ff");
     
     
-    int32_t v59;
-    v59 = (int32_t)strtol((v0)->ptr, NULL, 16l);
+    int32_t v1;
+    v1 = (int32_t)strtol((v0)->ptr, NULL, 16l);
     
     StringDecref(v0);
     
-    printf("%d\n", v59);
+    printf("%d\n", v1);
     
     
-    String * v69;
-    v69 = StringLit(5, "1011");
+    String * v2;
+    v2 = StringLit(5, "1011");
     
     
-    int32_t v91;
-    v91 = (int32_t)strtol((v69)->ptr, NULL, 2l);
+    int32_t v3;
+    v3 = (int32_t)strtol((v2)->ptr, NULL, 2l);
     
-    StringDecref(v69);
+    StringDecref(v2);
     
-    printf("%d\n", v91);
-    
-    
-    String * v94;
-    v94 = StringLit(4, "-42");
+    printf("%d\n", v3);
     
     
-    int32_t v140;
-    v140 = (int32_t)strtol((v94)->ptr, NULL, 10l);
-    
-    StringDecref(v94);
-    
-    printf("%d\n", v140);
+    String * v4;
+    v4 = StringLit(4, "-42");
     
     
-    String * v143;
-    v143 = StringLit(6, " 123 ");
+    int32_t v5;
+    v5 = (int32_t)strtol((v4)->ptr, NULL, 10l);
+    
+    StringDecref(v4);
+    
+    printf("%d\n", v5);
     
     
-    
+    String * v6;
+    v6 = StringLit(6, " 123 ");
     
     
     
@@ -124,81 +121,84 @@ int32_t main(){
     
     
     
-    bool v765;
-    v765 = spiral_integer_text_ok((v143)->ptr);
     
     
-    int64_t v766;
-    v766 = strtoll((v143)->ptr, NULL, 10);
     
-    StringDecref(v143);
-    int32_t v767;
-    v767 = (int32_t)v766;
+    bool v7;
+    v7 = spiral_integer_text_ok((v6)->ptr);
     
     
-    bool v771;
-    if (v765){
+    int64_t v8;
+    v8 = strtoll((v6)->ptr, NULL, 10);
+    
+    StringDecref(v6);
+    int32_t v9;
+    v9 = (int32_t)v8;
+    
+    
+    bool v13;
+    if (v7){
         
         
-        bool v768;
-        v768 = v766 >= -2147483648ll;
+        bool v10;
+        v10 = v8 >= -2147483648ll;
         
         
-        if (v768){
+        if (v10){
             
             
-            bool v769;
-            v769 = v766 <= 2147483647ll;
+            bool v11;
+            v11 = v8 <= 2147483647ll;
             
             
-            v771 = v769;
+            v13 = v11;
         } else {
             
             
-            v771 = false;
+            v13 = false;
         }
     } else {
         
         
-        v771 = false;
+        v13 = false;
     }
     
     
-    US0 v774;
-    if (v771){
+    US0 v16;
+    if (v13){
         
         
-        v774 = US0_Some(v767);
+        v16 = US0_Some(v9);
     } else {
         
         
-        v774 = US0_None();
+        v16 = US0_None();
     }
     
     
     
-    switch (v774.tag) {
+    switch (v16.tag) {
         case 1: { // None
             
             
             
-            String * v807;
-            v807 = StringLit(5, "none");
+            String * v18;
+            v18 = StringLit(5, "none");
             
             
             
-            printf("%s\n", (v807)->ptr);
+            printf("%s\n", (v18)->ptr);
             
-            StringDecref(v807);
+            StringDecref(v18);
             
             break;
         }
-        case 0: { // Some
-            int32_t v795 = v774.case0.v0;
+        default: { // Some
+            int32_t v17 = v16.case0.v0;
             
             
             
-            printf("%d\n", v795);
+            printf("%d\n", v17);
             
             
             
@@ -206,9 +206,9 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v774));
-    String * v808;
-    v808 = StringLit(4, "12x");
+    USDecref0(&(v16));
+    String * v19;
+    v19 = StringLit(4, "12x");
     
     
     
@@ -226,81 +226,81 @@ int32_t main(){
     
     
     
-    bool v809;
-    v809 = spiral_integer_text_ok((v808)->ptr);
+    bool v20;
+    v20 = spiral_integer_text_ok((v19)->ptr);
     
     
-    int64_t v810;
-    v810 = strtoll((v808)->ptr, NULL, 10);
+    int64_t v21;
+    v21 = strtoll((v19)->ptr, NULL, 10);
     
-    StringDecref(v808);
-    int32_t v811;
-    v811 = (int32_t)v810;
+    StringDecref(v19);
+    int32_t v22;
+    v22 = (int32_t)v21;
     
     
-    bool v815;
-    if (v809){
+    bool v26;
+    if (v20){
         
         
-        bool v812;
-        v812 = v810 >= -2147483648ll;
+        bool v23;
+        v23 = v21 >= -2147483648ll;
         
         
-        if (v812){
+        if (v23){
             
             
-            bool v813;
-            v813 = v810 <= 2147483647ll;
+            bool v24;
+            v24 = v21 <= 2147483647ll;
             
             
-            v815 = v813;
+            v26 = v24;
         } else {
             
             
-            v815 = false;
+            v26 = false;
         }
     } else {
         
         
-        v815 = false;
+        v26 = false;
     }
     
     
-    US0 v818;
-    if (v815){
+    US0 v29;
+    if (v26){
         
         
-        v818 = US0_Some(v811);
+        v29 = US0_Some(v22);
     } else {
         
         
-        v818 = US0_None();
+        v29 = US0_None();
     }
     
     
     
-    switch (v818.tag) {
+    switch (v29.tag) {
         case 1: { // None
             
             
             
-            String * v820;
-            v820 = StringLit(5, "none");
+            String * v31;
+            v31 = StringLit(5, "none");
             
             
             
-            printf("%s\n", (v820)->ptr);
+            printf("%s\n", (v31)->ptr);
             
-            StringDecref(v820);
+            StringDecref(v31);
             
             break;
         }
-        case 0: { // Some
-            int32_t v819 = v818.case0.v0;
+        default: { // Some
+            int32_t v30 = v29.case0.v0;
             
             
             
-            printf("%d\n", v819);
+            printf("%d\n", v30);
             
             
             
@@ -308,9 +308,9 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v818));
-    String * v821;
-    v821 = StringLit(1, "");
+    USDecref0(&(v29));
+    String * v32;
+    v32 = StringLit(1, "");
     
     
     
@@ -328,81 +328,81 @@ int32_t main(){
     
     
     
-    bool v822;
-    v822 = spiral_integer_text_ok((v821)->ptr);
+    bool v33;
+    v33 = spiral_integer_text_ok((v32)->ptr);
     
     
-    int64_t v823;
-    v823 = strtoll((v821)->ptr, NULL, 10);
+    int64_t v34;
+    v34 = strtoll((v32)->ptr, NULL, 10);
     
-    StringDecref(v821);
-    int32_t v824;
-    v824 = (int32_t)v823;
+    StringDecref(v32);
+    int32_t v35;
+    v35 = (int32_t)v34;
     
     
-    bool v828;
-    if (v822){
+    bool v39;
+    if (v33){
         
         
-        bool v825;
-        v825 = v823 >= -2147483648ll;
+        bool v36;
+        v36 = v34 >= -2147483648ll;
         
         
-        if (v825){
+        if (v36){
             
             
-            bool v826;
-            v826 = v823 <= 2147483647ll;
+            bool v37;
+            v37 = v34 <= 2147483647ll;
             
             
-            v828 = v826;
+            v39 = v37;
         } else {
             
             
-            v828 = false;
+            v39 = false;
         }
     } else {
         
         
-        v828 = false;
+        v39 = false;
     }
     
     
-    US0 v831;
-    if (v828){
+    US0 v42;
+    if (v39){
         
         
-        v831 = US0_Some(v824);
+        v42 = US0_Some(v35);
     } else {
         
         
-        v831 = US0_None();
+        v42 = US0_None();
     }
     
     
     
-    switch (v831.tag) {
+    switch (v42.tag) {
         case 1: { // None
             
             
             
-            String * v833;
-            v833 = StringLit(5, "none");
+            String * v44;
+            v44 = StringLit(5, "none");
             
             
             
-            printf("%s\n", (v833)->ptr);
+            printf("%s\n", (v44)->ptr);
             
-            StringDecref(v833);
+            StringDecref(v44);
             
             break;
         }
-        case 0: { // Some
-            int32_t v832 = v831.case0.v0;
+        default: { // Some
+            int32_t v43 = v42.case0.v0;
             
             
             
-            printf("%d\n", v832);
+            printf("%d\n", v43);
             
             
             
@@ -410,9 +410,9 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v831));
-    String * v834;
-    v834 = StringLit(3, "+7");
+    USDecref0(&(v42));
+    String * v45;
+    v45 = StringLit(3, "+7");
     
     
     
@@ -430,81 +430,81 @@ int32_t main(){
     
     
     
-    bool v835;
-    v835 = spiral_integer_text_ok((v834)->ptr);
+    bool v46;
+    v46 = spiral_integer_text_ok((v45)->ptr);
     
     
-    int64_t v836;
-    v836 = strtoll((v834)->ptr, NULL, 10);
+    int64_t v47;
+    v47 = strtoll((v45)->ptr, NULL, 10);
     
-    StringDecref(v834);
-    int32_t v837;
-    v837 = (int32_t)v836;
+    StringDecref(v45);
+    int32_t v48;
+    v48 = (int32_t)v47;
     
     
-    bool v841;
-    if (v835){
+    bool v52;
+    if (v46){
         
         
-        bool v838;
-        v838 = v836 >= -2147483648ll;
+        bool v49;
+        v49 = v47 >= -2147483648ll;
         
         
-        if (v838){
+        if (v49){
             
             
-            bool v839;
-            v839 = v836 <= 2147483647ll;
+            bool v50;
+            v50 = v47 <= 2147483647ll;
             
             
-            v841 = v839;
+            v52 = v50;
         } else {
             
             
-            v841 = false;
+            v52 = false;
         }
     } else {
         
         
-        v841 = false;
+        v52 = false;
     }
     
     
-    US0 v844;
-    if (v841){
+    US0 v55;
+    if (v52){
         
         
-        v844 = US0_Some(v837);
+        v55 = US0_Some(v48);
     } else {
         
         
-        v844 = US0_None();
+        v55 = US0_None();
     }
     
     
     
-    switch (v844.tag) {
+    switch (v55.tag) {
         case 1: { // None
             
             
             
-            String * v846;
-            v846 = StringLit(5, "none");
+            String * v57;
+            v57 = StringLit(5, "none");
             
             
             
-            printf("%s\n", (v846)->ptr);
+            printf("%s\n", (v57)->ptr);
             
-            StringDecref(v846);
+            StringDecref(v57);
             
             break;
         }
-        case 0: { // Some
-            int32_t v845 = v844.case0.v0;
+        default: { // Some
+            int32_t v56 = v55.case0.v0;
             
             
             
-            printf("%d\n", v845);
+            printf("%d\n", v56);
             
             
             
@@ -512,6 +512,6 @@ int32_t main(){
         }
     }
     
-    USDecref0(&(v844));
+    USDecref0(&(v55));
     return 0l;
 }

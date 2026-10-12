@@ -22,12 +22,28 @@ int32_t main(){
     v3 = 0l;
     
     
-    int32_t v5;
-    v5 = 11l;
+    int32_t v4;
+    v4 = 11l;
+    
+    
+    bool v5;
+    v5 = v2 == 6l;
     
     
     bool v7;
-    v7 = v2 == 6l;
+    if (v5){
+        
+        
+        bool v6;
+        v6 = v3 == 0l;
+        
+        
+        v7 = v6;
+    } else {
+        
+        
+        v7 = false;
+    }
     
     
     bool v9;
@@ -35,7 +51,7 @@ int32_t main(){
         
         
         bool v8;
-        v8 = v3 == 0l;
+        v8 = v4 == 11l;
         
         
         v9 = v8;
@@ -46,23 +62,7 @@ int32_t main(){
     }
     
     
-    bool v11;
     if (v9){
-        
-        
-        bool v10;
-        v10 = v5 == 11l;
-        
-        
-        v11 = v10;
-    } else {
-        
-        
-        v11 = false;
-    }
-    
-    
-    if (v11){
         
         
         return 0l;

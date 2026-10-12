@@ -46503,8 +46503,11 @@ module spiral_compiler =
     
 
     /// ### blockParsingParse
+    let blockParsingIsTest (s : BlockParsingEnv) = match snd s.tokens.[0] with TokVar ("test", _) -> true | _ -> false
+
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
-        if 0 < s.tokens.Length then
+        if 0 < s.tokens.Length && blockParsingIsTest s then Error []
+        elif 0 < s.tokens.Length then
             match top_statement s with
             | Ok _ as x -> if s.Index = s.tokens.Length then x else Error [fst s.tokens.[s.Index], ExpectedEob]
             | Error [] ->
@@ -48427,8 +48430,11 @@ module spiral_compiler =
     type ParseResult = Result<TopStatement,ParserErrorsList>
 
     /// ### blockParsingParse
+    let blockParsingIsTest (s : BlockParsingEnv) = match snd s.tokens.[0] with TokVar ("test", _) -> true | _ -> false
+
     let blockParsingParse (s : BlockParsingEnv) : ParseResult =
-        if 0 < s.tokens.Length then
+        if 0 < s.tokens.Length && blockParsingIsTest s then Error []
+        elif 0 < s.tokens.Length then
             match top_statement s with
             | Ok _ as x -> if s.Index = s.tokens.Length then x else Error [fst s.tokens.[s.Index], ExpectedEob]
             | Error [] ->
@@ -167354,6 +167360,92 @@ module spiral_compiler =
         | Some name when uses.[name] = 1 -> prefix_tag + name
         | _ -> $"{prefix_tag}i{position}"
 
+    /// ### DeadPureLetElision
+    module DeadPureLetElision =
+        let pureOp op =
+            match op with
+            | Op.Add | Op.Sub | Op.Mult | Op.Pow | Op.LTE | Op.LT | Op.EQ | Op.NEQ | Op.GT | Op.GTE | Op.BoolAnd | Op.BoolOr
+            | Op.BitwiseAnd | Op.BitwiseOr | Op.BitwiseXor | Op.BitwiseComplement | Op.ShiftLeft | Op.ShiftRight
+            | Op.Neg | Op.Tanh | Op.Log | Op.Exp | Op.Sin | Op.Cos | Op.Sqrt | Op.NanIs | Op.UnionTag | Op.StringLength | Op.ArrayLength | Op.StaticStringConcat -> true
+            | _ -> false
+        let pureTypedOp op =
+            match op with
+            | TyOp(op, _) -> pureOp op
+            | TyUnionBox _ | TyToLayout _ | TyLayoutIndexAll _ | TyLayoutIndexByKey _ | TyArrayLength _ | TyStringLength _
+            | TySizeOf _ | TyConv _ | TyArrayLiteral _ -> true
+            | _ -> false
+        let tagOf (L(tag, _) : TyV) = tag
+        let markData (live : HashSet<int>) d = for v in data_free_vars d do live.Add (tagOf v) |> ignore
+        let markVar (live : HashSet<int>) (v : TyV) = live.Add (tagOf v) |> ignore
+        let rec markBlock live (block : TypedBind []) = for x in block do markBind live x
+        and markBind live x =
+            match x with
+            | TyLet(d, _, op) -> markData live d; markOp live op
+            | TyLocalReturnOp(_, op, d) -> markOp live op; markData live d
+            | TyLocalReturnData(d, _) -> markData live d
+        and markOp live op =
+            match op with
+            | TyMacro parts -> for part in parts do (match part with CMTerm(d, _) -> markData live d | _ -> ())
+            | TyOp(_, args) | TyArrayLiteral(_, args) -> for d in args do markData live d
+            | TyUnionBox(_, d, _) | TyToLayout(d, _) | TyFailwith(_, d) | TyConv(_, d)
+            | TyArrayCreate(_, d) | TyArrayLength(_, d) | TyStringLength(_, d) -> markData live d
+            | TyUnionUnbox(vs, _, on_succs, on_fail) ->
+                for v in vs do markVar live v
+                for KeyValue(_, (bound, block)) in on_succs do
+                    for d in bound do markData live d
+                    markBlock live block
+                on_fail |> Option.iter (markBlock live)
+            | TyIntSwitch(v, cases, on_fail) -> markVar live v; (for block in cases do markBlock live block); markBlock live on_fail
+            | TyLayoutIndexAll v | TyLayoutIndexByKey(v, _) -> markVar live v
+            | TyLayoutMutableSet(v, _, d) | TyApply(v, d) -> markVar live v; markData live d
+            | TyIf(cond, tr, fl) -> markData live cond; markBlock live tr; markBlock live fl
+            | TyWhile((_, args), block) -> (for v in args do markVar live v); markBlock live block
+            | TyDo block | TyIndent block -> markBlock live block
+            | TyJoinPoint(_, args) -> for v in args do markVar live v
+            | TySizeOf _ | TyBackend _ -> ()
+        let isDead (live : HashSet<int>) x =
+            match x with
+            | TyLet(d, _, op) -> pureTypedOp op && data_free_vars d |> Seq.forall (fun v -> live.Contains (tagOf v) |> not)
+            | _ -> false
+        let sameItems (a : 'a []) (b : 'a []) = a.Length = b.Length && Array.forall2 (fun x y -> obj.ReferenceEquals(x, y)) a b
+        let rec elide (block : TypedBind []) : TypedBind [] =
+            let live = HashSet<int>()
+            let kept = ResizeArray<TypedBind>()
+            for i = block.Length - 1 downto 0 do
+                let x = rewriteBind block.[i]
+                if isDead live x |> not then
+                    markBind live x
+                    kept.Add x
+            kept.Reverse()
+            let kept = kept.ToArray()
+            if sameItems kept block then block else kept
+        and rewriteBind x =
+            match x with
+            | TyLet(d, trace, op) -> let op' = rewriteOp op in if obj.ReferenceEquals(op', op) then x else TyLet(d, trace, op')
+            | TyLocalReturnOp(trace, op, d) -> let op' = rewriteOp op in if obj.ReferenceEquals(op', op) then x else TyLocalReturnOp(trace, op', d)
+            | TyLocalReturnData _ -> x
+        and rewriteOp op =
+            match op with
+            | TyIf(cond, tr, fl) ->
+                let tr', fl' = elide tr, elide fl
+                if obj.ReferenceEquals(tr', tr) && obj.ReferenceEquals(fl', fl) then op else TyIf(cond, tr', fl')
+            | TyUnionUnbox(vs, u, on_succs, on_fail) ->
+                let on_succs' = on_succs |> Map.map (fun _ (bound, block) -> bound, elide block)
+                let on_fail' = on_fail |> Option.map elide
+                let unchanged =
+                    Map.forall (fun k (_, block) -> obj.ReferenceEquals(snd on_succs'.[k], block)) on_succs
+                    && (match on_fail, on_fail' with Some a, Some b -> obj.ReferenceEquals(a, b) | _ -> true)
+                if unchanged then op else TyUnionUnbox(vs, u, on_succs', on_fail')
+            | TyIntSwitch(v, cases, on_fail) ->
+                let cases', on_fail' = Array.map elide cases, elide on_fail
+                if sameItems cases' cases && obj.ReferenceEquals(on_fail', on_fail) then op else TyIntSwitch(v, cases', on_fail')
+            | TyWhile(cond, block) -> let block' = elide block in if obj.ReferenceEquals(block', block) then op else TyWhile(cond, block')
+            | TyDo block -> let block' = elide block in if obj.ReferenceEquals(block', block) then op else TyDo block'
+            | TyIndent block -> let block' = elide block in if obj.ReferenceEquals(block', block) then op else TyIndent block'
+            | _ -> op
+        let elided = System.Runtime.CompilerServices.ConditionalWeakTable<TypedBind [], TypedBind []>()
+        let block (body : TypedBind []) : TypedBind [] = elided.GetValue(body, fun body -> elide body)
+
 #if SPIRAL_CORE_HOPAC
     /// ## CodegenFsharp
     
@@ -169095,11 +169187,12 @@ module spiral_compiler =
     let refcDecrAdd (table : RefcDecrTable) key value = table.TryAdd(key, value) |> ignore
     let codegenMethodBody (env : PartEvalResult) backend jp_body key =
         let jp_dict, _, _ = env.join_point_method.[jp_body]
-        jpBodyCellAwait jp_dict.[key] |> jpMethodBodyCellReadyForBackend backend
+        let body, bodyType, methodName = jpBodyCellAwait jp_dict.[key] |> jpMethodBodyCellReadyForBackend backend
+        DeadPureLetElision.block body, bodyType, methodName
     let codegenClosureBody (env : PartEvalResult) backend jp_body key =
         let jp_dict, _, _ = env.join_point_closure.[jp_body]
         let domain, body = jpBodyCellAwait jp_dict.[key] |> jpClosureBodyCellReadyForBackend backend
-        domain, body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
+        domain, DeadPureLetElision.block body, closureSourceName (JpBodyOwnerIdentity.body jp_body)
     let codegenOwnerBackendName (jp_body : JpBodyOwnerIdentity) = JpBodyOwnerIdentity.backendText jp_body
 
 #else
@@ -169115,11 +169208,11 @@ module spiral_compiler =
     let refcDecrAdd (table : RefcDecrTable) key value = table.Add(key, value)
     let codegenMethodBody (env : PartEvalResult) (_ : string) jp_body key =
         match (fst env.join_point_method.[jp_body]).[key] with
-        | Some body, Some range, name -> body, range, name
+        | Some body, Some range, name -> DeadPureLetElision.block body, range, name
         | _ -> raise_codegen_error "Compiler error: The method dictionary is malformed"
     let codegenClosureBody (env : PartEvalResult) (_ : string) jp_body key =
         match (fst env.join_point_closure.[jp_body]).[key] with
-        | Some(domain_args, body) -> domain_args, body, closureSourceName (snd jp_body)
+        | Some(domain_args, body) -> domain_args, DeadPureLetElision.block body, closureSourceName (snd jp_body)
         | _ -> raise_codegen_error "Compiler error: The closure dictionary is malformed"
     let codegenOwnerBackendName (jp_body : string ConsedNode * E) = (fst jp_body).node
 
@@ -174320,6 +174413,20 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         (local.set $i (i32.add (local.get $i) (i32.const 1)))
         (br $next)))
     (i32.const 1))
+  (func $str_cmp (param $a i32) (param $b i32) (result i32) (local $la i32) (local $lb i32) (local $n i32) (local $i i32) (local $x i32) (local $y i32)
+    (local.set $la (i32.load (local.get $a)))
+    (local.set $lb (i32.load (local.get $b)))
+    (local.set $n (select (local.get $la) (local.get $lb) (i32.lt_u (local.get $la) (local.get $lb))))
+    (block $done
+      (loop $next
+        (br_if $done (i32.ge_u (local.get $i) (local.get $n)))
+        (local.set $x (i32.load8_u (i32.add (i32.add (local.get $a) (i32.const 4)) (local.get $i))))
+        (local.set $y (i32.load8_u (i32.add (i32.add (local.get $b) (i32.const 4)) (local.get $i))))
+        (if (i32.ne (local.get $x) (local.get $y))
+          (then (return (select (i32.const -1) (i32.const 1) (i32.lt_u (local.get $x) (local.get $y))))))
+        (local.set $i (i32.add (local.get $i) (i32.const 1)))
+        (br $next)))
+    (select (i32.const -1) (select (i32.const 1) (i32.const 0) (i32.gt_u (local.get $la) (local.get $lb))) (i32.lt_u (local.get $la) (local.get $lb))))
 """
 
     /// ### BindsReturnWasm
@@ -174702,7 +174809,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 let typed (name : string) = match l with a :: _ -> $"{value_type a}.{name}" | [] -> raise_codegen_error "Compiler error: Expected arguments."
                 let arith name = match l with a :: _ -> bin (fun x y -> narrow a $"({typed name} {x} {y})") | [] -> raise_codegen_error "Compiler error: Expected arguments."
                 let signed_op name = match l with a :: _ -> (if is_float a then typed name else typed (name + (if is_unsigned a then "_u" else "_s"))) | [] -> raise_codegen_error "Compiler error: Expected arguments."
-                let compare name = match l with a :: _ when is_string a -> raise_codegen_error "The Wasm backend doesn't support ordering strings yet." | _ -> bin (fun x y -> $"({signed_op name} {x} {y})")
+                let compare name = match l with a :: _ when is_string a -> bin (fun x y -> $"(i32.{name}_s (call $str_cmp {x} {y}) (i32.const 0))") | _ -> bin (fun x y -> $"({signed_op name} {x} {y})")
                 let instruction name = bin (fun x y -> sprintf "(%s %s %s)" (typed name) x y)
                 let narrowed name = match l with a :: _ -> bin (fun x y -> narrow a (sprintf "(%s %s %s)" name x y)) | [] -> raise_codegen_error "Compiler error: Expected arguments."
                 let index32 b = if value_type b = "i64" then sprintf "(i32.wrap_i64 %s)" (tup b) else tup b
@@ -178981,12 +179088,17 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     |> String.concat " && "
                     |> function "" -> head | x -> $"{x} ? {head} : -1"
                     |> sprintf "switch (%s) {" |> line s
+                    let exhaustive_last_case =
+                        match on_fail, is with
+                        | None, [_] -> on_succs |> Map.toSeq |> Seq.tryLast |> Option.map fst
+                        | _ -> None
                     let _ =
                         let s = indent s
                         Map.iter (fun k (a,b) ->
                             let union_i = case_tags.[k]
                             let decr = get_default vars.g_decr (Array.head b) (fun () -> Set.empty)
-                            line s (sprintf "case %i: { // %s" union_i (UnionTagIdOps.text k))
+                            if exhaustive_last_case = Some k then line s (sprintf "default: { // %s" (UnionTagIdOps.text k))
+                            else line s (sprintf "case %i: { // %s" union_i (UnionTagIdOps.text k))
                             List.iter2 (fun (L(data_i,_)) a ->
                                 let a, s = data_free_vars a, indent s
                                 let qs = ResizeArray(a.Length)
@@ -183234,13 +183346,24 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
 
     open Microsoft.FSharp.Core
 
+    /// ### canonical_directory
+    let canonical_directory (path : string) =
+        let full = Path.GetFullPath path
+        let root = Path.GetPathRoot full
+        full.Substring(root.Length).Split([| Path.DirectorySeparatorChar; Path.AltDirectorySeparatorChar |], StringSplitOptions.RemoveEmptyEntries)
+        |> Array.fold (fun (resolved : string) part ->
+            let next = Path.Combine(resolved, part)
+            match (try Directory.ResolveLinkTarget(next, true) with _ -> null) with
+            | null -> next
+            | target -> target.FullName) root
+
     /// ### schema
     let schema (pdir,text) : SchemaResult = config text |> Result.bind (fun x ->
         try
             let combine a (r,b) =
                 try
                     Path.Combine(a,b)
-                    |> Path.GetFullPath
+                    |> canonical_directory
                     |> fun result ->
                         let result' = result |> SpiralFileSystem.standardize_path
                         // trace Verbose (fun () -> $"""SpiProj.schema.combine / a: {a} / b: {b} / result: {result |> SpiralSm.replace "\\" "|"} / result': {result'}""") _locals
@@ -183254,7 +183377,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let package_dir =
                 match x.packageDir with
                 | Some(r,_ as x) -> Some r, combine pdir x
-                | None -> None, Path.Combine(pdir,"..") |> Path.GetFullPath
+                | None -> None, Path.Combine(pdir,"..") |> canonical_directory
             // trace Verbose (fun () -> $"""SpiProj.schema / pdir: {pdir} / module_dir: {module_dir |> snd} / package_dir: {package_dir |> snd |> SpiralSm.replace "\\" "|"}""") _locals
             let modules =
                 let rec loop prefix = function
@@ -186133,7 +186256,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         emitBuildFileInitializationStage BuildFileCodegenCompleted
                                         BuildDraft.Provisional generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [{|code = codegen b a; file_extension = file_extension|}]) backend
+                                        build_many (fun file b a -> [{|code = codegen b (DeadPureLetElision.block a); file_extension = file_extension|}]) backend
     
 
                                     let do_build () =
@@ -188840,7 +188963,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         trace Verbose (fun () -> $"Supervisor.supervisor_server.BuildFile.file_build.codegen_ready / backend: {backend} / files: {List.length generated}") _locals
                                         BuildOk generated
                                     let build codegen backend file_extension =
-                                        build_many (fun file b a -> [generated_file (codegen b a) file_extension]) backend
+                                        build_many (fun file b a -> [generated_file (codegen b (DeadPureLetElision.block a)) file_extension]) backend
                                     match backend with
                                     | "Gleam" -> build codegenGleam "Gleam" ".gleam"
                                     | "Lua" -> build codegenLua "Lua" ".lua"

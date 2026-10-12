@@ -90,7 +90,7 @@ int32_t closure0(Closure0 * x, int32_t v1){
             v7 = v2;
             break;
         }
-        case 0: { // Idle
+        default: { // Idle
             
             
             

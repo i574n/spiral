@@ -1,8 +1,6 @@
 class Heap0(val l0: Float, val l1: String)
 fun f_c0(v0: Heap0): (Int) -> Heap0 {
     fun body(v1: Int): Heap0 {
-        var v2: Boolean = false
-        v2 = (v1 == 0)
         return v0
     }
     return { p0: Int -> body(p0) }

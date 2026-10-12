@@ -43,8 +43,6 @@ struct US1_Absent: US1 { var tag: Int32 { 0 } }
 struct US1_Box: US1 { var f0: Heap3; var tag: Int32 { 1 } }
 func f_c0(_ v0: Heap4) -> (Int32) -> Heap4 {
     return { (v1: Int32) -> Heap4 in
-        var v2: Bool = false
-        v2 = (v1 == 0)
         return v0
     }
 }

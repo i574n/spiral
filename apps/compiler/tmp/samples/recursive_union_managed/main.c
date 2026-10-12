@@ -86,7 +86,7 @@ int32_t sum0(UH0 * v0){
             return v5;
             break;
         }
-        case 0: { // Nil
+        default: { // Nil
             
             
             UHDecref0(v0);

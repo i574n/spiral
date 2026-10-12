@@ -9,7 +9,6 @@ impl Default for Mut0 {
 }
 fn f_c0(mut v0: Rc<RefCell<Mut0>>) -> Rc<dyn Fn(i32) -> Rc<RefCell<Mut0>>> {
     Rc::new(move |mut v1: i32| -> Rc<RefCell<Mut0>> {
-        let mut v2: bool = v1 == 0i32;
         v0.clone()
     })
 }

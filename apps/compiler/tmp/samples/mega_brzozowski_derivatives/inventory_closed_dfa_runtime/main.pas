@@ -1354,14 +1354,12 @@ var
   v33: Boolean;
   v46: LongInt;
   v34: Boolean;
-  v35: Boolean;
   v37: Boolean;
   v38: Boolean;
-  v39: Boolean;
   v41: Boolean;
   v42: Boolean;
-  tmp19: LongInt;
-  tmp20: TUH5;
+  tmp17: LongInt;
+  tmp18: TUH5;
   v2: Boolean;
   v4: Boolean;
   v3: Boolean;
@@ -1449,7 +1447,6 @@ begin
                       if v34 then begin
                           v46 := 0;
                       end else begin
-                          v35 := v30 = 1;
                           v46 := 0;
                       end;
                   end else begin
@@ -1459,7 +1456,6 @@ begin
                           if v38 then begin
                               v46 := 0;
                           end else begin
-                              v39 := v30 = 1;
                               v46 := 0;
                           end;
                       end else begin
@@ -1476,10 +1472,10 @@ begin
                           end;
                       end;
                   end;
-                  tmp19 := v46;
-                  tmp20 := v9;
-                  v0 := tmp19;
-                  v1 := tmp20;
+                  tmp17 := v46;
+                  tmp18 := v9;
+                  v0 := tmp17;
+                  v1 := tmp18;
                   Continue;
               end;
           end;
@@ -2424,10 +2420,9 @@ var
   v22: Boolean;
   v24: Boolean;
   v28: LongInt;
-  v25: Boolean;
   v26: Boolean;
-  tmp12: LongInt;
-  tmp13: TUH6;
+  tmp11: LongInt;
+  tmp12: TUH6;
   v2: Boolean;
   v3: Boolean;
 begin
@@ -2487,7 +2482,6 @@ begin
               end else begin
                   v24 := v0 = 0;
                   if v24 then begin
-                      v25 := v21 = 0;
                       v28 := 0;
                   end else begin
                       v26 := v21 = 0;
@@ -2497,10 +2491,10 @@ begin
                           v28 := 0;
                       end;
                   end;
-                  tmp12 := v28;
-                  tmp13 := v8;
-                  v0 := tmp12;
-                  v1 := tmp13;
+                  tmp11 := v28;
+                  tmp12 := v8;
+                  v0 := tmp11;
+                  v1 := tmp12;
                   Continue;
               end;
           end;

@@ -20,10 +20,7 @@ begin
   Result.f0 := f0; Result.f1 := f1; Result.f2 := f2;
 end;
 function Tf_c0.Invoke(v3: LongInt): TTuple0;
-var
-  v4: Boolean;
 begin
-  v4 := v3 = 0;
   Result := TupleCreate0(v0, v1, v2);
 end;
 function ClosureCreate0(v0: THeap0; v1: THeap0; v2: THeap0): TFun0;

@@ -37,52 +37,52 @@ static inline String * StringLit(uint32_t len, char * ptr){
 int32_t main(){
     
     
-    String * v15;
-    v15 = StringLit(6, "hello");
+    String * v0;
+    v0 = StringLit(6, "hello");
     
     
     
-    printf("%s\n", (v15)->ptr);
+    printf("%s\n", (v0)->ptr);
     
-    StringDecref(v15);
-    int32_t v16;
-    v16 = 42l;
-    
-    
-    
-    printf("%d\n", v16);
-    
-    
-    String * v30;
-    v30 = StringLit(2, "a");
+    StringDecref(v0);
+    int32_t v1;
+    v1 = 42l;
     
     
     
-    printf("%s", (v30)->ptr);
-    
-    StringDecref(v30);
-    String * v41;
-    v41 = StringLit(2, "b");
+    printf("%d\n", v1);
     
     
-    
-    printf("%s", (v41)->ptr);
-    
-    StringDecref(v41);
-    String * v53;
-    v53 = StringLit(1, "");
+    String * v2;
+    v2 = StringLit(2, "a");
     
     
     
-    printf("%s\n", (v53)->ptr);
+    printf("%s", (v2)->ptr);
     
-    StringDecref(v53);
-    int64_t v54;
-    v54 = -7ll;
+    StringDecref(v2);
+    String * v3;
+    v3 = StringLit(2, "b");
     
     
     
-    printf("%lld\n", (long long)(v54));
+    printf("%s", (v3)->ptr);
+    
+    StringDecref(v3);
+    String * v4;
+    v4 = StringLit(1, "");
+    
+    
+    
+    printf("%s\n", (v4)->ptr);
+    
+    StringDecref(v4);
+    int64_t v5;
+    v5 = -7ll;
+    
+    
+    
+    printf("%lld\n", (long long)(v5));
     
     
     return 0l;

@@ -138,7 +138,6 @@ fn score_0(mut v0: US1) -> i32 {
         }
         US1::US1_Mark(v1) => {
             let mut v1: i32 = *v1;
-            let mut v2: bool = v1 == 0i32;
             1i32
         }
     }

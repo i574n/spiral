@@ -55,7 +55,7 @@ int32_t score0(US0 v0){
             }
             break;
         }
-        case 1: { // Yes
+        default: { // Yes
             int32_t v3 = v0.case1.v0;
             
             USDecref0(&(v0));

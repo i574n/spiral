@@ -7,8 +7,6 @@ class US0_None : US0 { override val tag: Int = 0 }
 data class US0_Held(val f0: Heap2) : US0 { override val tag: Int = 1 }
 fun f_c0(v0: Heap3): (Int) -> Heap3 {
     fun body(v1: Int): Heap3 {
-        var v2: Boolean = false
-        v2 = (v1 == 0)
         return v0
     }
     return { p0: Int -> body(p0) }

@@ -82,7 +82,7 @@ int32_t score0(UH0 * v0){
             return 0l;
             break;
         }
-        case 1: { // Node
+        default: { // Node
             String * v1 = v0->case1.v0; UH0 * v2 = v0->case1.v1; UH0 * v3 = v0->case1.v2;
             (v1)->refc++; (v2)->refc++; (v3)->refc++;
             UHDecref0(v0);

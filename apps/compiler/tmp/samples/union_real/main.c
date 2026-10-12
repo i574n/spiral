@@ -60,7 +60,7 @@ int32_t score0(US0 v0){
             return twice1(v1);
             break;
         }
-        case 1: { // Whole
+        default: { // Whole
             int32_t v3 = v0.case1.v0;
             
             USDecref0(&(v0));

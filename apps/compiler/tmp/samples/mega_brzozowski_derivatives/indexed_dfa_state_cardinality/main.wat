@@ -1499,7 +1499,6 @@
     (local $v23 i32)
     (local $t23 i32)
     (local $v2 i32)
-    (local $v3 i32)
     (local.set $t0 (i32.load (local.get $v1)))
     (if (i32.eq (local.get $t0) (i32.const 1))
         (then
@@ -1615,7 +1614,6 @@
                     (return (i32.const 1))
                 )
                 (else
-                    (local.set $v3 (i32.eq (local.get $v0) (i32.const 1)))
                     (return (i32.const 0))
                 ))
         )

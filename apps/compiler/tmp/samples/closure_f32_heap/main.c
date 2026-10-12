@@ -74,10 +74,7 @@ Heap0 * f_c0(Closure0 * x, int32_t v1){
     Heap0 * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(x);
-    
-    
-    bool v2;
-    v2 = v1 == 0l;
+    (void)v1;
     
     
     return v0;

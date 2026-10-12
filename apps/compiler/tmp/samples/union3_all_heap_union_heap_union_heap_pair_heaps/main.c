@@ -303,7 +303,7 @@ int32_t score0(US1 v0){
                     }
                     break;
                 }
-                case 0: { // None
+                default: { // None
                     
                     
                     USDecref0(&(v4));
@@ -313,14 +313,10 @@ int32_t score0(US1 v0){
             }
             break;
         }
-        case 2: { // Mark
-            int32_t v1 = v0.case2.v0;
+        default: { // Mark
+            
             
             USDecref1(&(v0));
-            bool v2;
-            v2 = v1 == 0l;
-            
-            
             return 1l;
             break;
         }

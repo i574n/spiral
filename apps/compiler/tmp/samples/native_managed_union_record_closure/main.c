@@ -152,7 +152,7 @@ int32_t main(){
             v7 = 3l;
             break;
         }
-        case 1: { // Item
+        default: { // Item
             String * v2 = v1.case1.v0; int32_t v3 = v1.case1.v1;
             (v2)->refc++;
             
@@ -183,7 +183,7 @@ int32_t main(){
             v14 = 3l;
             break;
         }
-        case 1: { // Item
+        default: { // Item
             String * v9 = v8.case1.v0; int32_t v10 = v8.case1.v1;
             (v9)->refc++;
             

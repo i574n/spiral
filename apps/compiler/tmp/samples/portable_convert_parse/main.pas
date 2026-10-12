@@ -15,179 +15,179 @@ end;
 function SpiralMain: LongInt;
 var
   v0: AnsiString;
-  v60: LongInt;
-  v69: AnsiString;
-  v92: LongInt;
-  v94: AnsiString;
-  v141: LongInt;
-  v143: AnsiString;
-  v775: Boolean;
-  v776: Int64;
-  v777: LongInt;
-  v781: Boolean;
-  v778: Boolean;
-  v779: Boolean;
-  v784: TUS0;
-  v808: AnsiString;
-  v795: LongInt;
-  v809: AnsiString;
-  v810: Boolean;
-  v811: Int64;
-  v812: LongInt;
-  v816: Boolean;
-  v813: Boolean;
-  v814: Boolean;
-  v819: TUS0;
-  v821: AnsiString;
-  v820: LongInt;
-  v822: AnsiString;
-  v823: Boolean;
-  v824: Int64;
-  v825: LongInt;
-  v829: Boolean;
-  v826: Boolean;
-  v827: Boolean;
-  v832: TUS0;
-  v834: AnsiString;
-  v833: LongInt;
-  v835: AnsiString;
-  v836: Boolean;
-  v837: Int64;
-  v838: LongInt;
-  v842: Boolean;
-  v839: Boolean;
-  v840: Boolean;
-  v845: TUS0;
-  v847: AnsiString;
-  v846: LongInt;
+  v1: LongInt;
+  v2: AnsiString;
+  v3: LongInt;
+  v4: AnsiString;
+  v5: LongInt;
+  v6: AnsiString;
+  v7: Boolean;
+  v8: Int64;
+  v9: LongInt;
+  v13: Boolean;
+  v10: Boolean;
+  v11: Boolean;
+  v16: TUS0;
+  v18: AnsiString;
+  v17: LongInt;
+  v19: AnsiString;
+  v20: Boolean;
+  v21: Int64;
+  v22: LongInt;
+  v26: Boolean;
+  v23: Boolean;
+  v24: Boolean;
+  v29: TUS0;
+  v31: AnsiString;
+  v30: LongInt;
+  v32: AnsiString;
+  v33: Boolean;
+  v34: Int64;
+  v35: LongInt;
+  v39: Boolean;
+  v36: Boolean;
+  v37: Boolean;
+  v42: TUS0;
+  v44: AnsiString;
+  v43: LongInt;
+  v45: AnsiString;
+  v46: Boolean;
+  v47: Int64;
+  v48: LongInt;
+  v52: Boolean;
+  v49: Boolean;
+  v50: Boolean;
+  v55: TUS0;
+  v57: AnsiString;
+  v56: LongInt;
 begin
   v0 := 'ff';
-  v60 := StrToInt(#36 + v0);
-  Writeln(v60);
-  v69 := '1011';
-  v92 := StrToInt(#37 + v69);
-  Writeln(v92);
-  v94 := '-42';
-  v141 := StrToInt(v94);
-  Writeln(v141);
-  v143 := ' 123 ';
-  v775 := (StrToInt64Def(Trim(v143), 0) = StrToInt64Def(Trim(v143), 1));
-  v776 := StrToInt64Def(Trim(v143), 0);
-  v777 := LongInt(v776);
-  if v775 then begin
-      v778 := v776 >= (-2147483648);
-      if v778 then begin
-          v779 := v776 <= 2147483647;
-          v781 := v779;
+  v1 := StrToInt(#36 + v0);
+  Writeln(v1);
+  v2 := '1011';
+  v3 := StrToInt(#37 + v2);
+  Writeln(v3);
+  v4 := '-42';
+  v5 := StrToInt(v4);
+  Writeln(v5);
+  v6 := ' 123 ';
+  v7 := (StrToInt64Def(Trim(v6), 0) = StrToInt64Def(Trim(v6), 1));
+  v8 := StrToInt64Def(Trim(v6), 0);
+  v9 := LongInt(v8);
+  if v7 then begin
+      v10 := v8 >= (-2147483648);
+      if v10 then begin
+          v11 := v8 <= 2147483647;
+          v13 := v11;
       end else begin
-          v781 := False;
+          v13 := False;
       end;
   end else begin
-      v781 := False;
+      v13 := False;
   end;
-  if v781 then begin
-      v784 := US0_Some(v777);
+  if v13 then begin
+      v16 := US0_Some(v9);
   end else begin
-      v784 := US0_None;
+      v16 := US0_None;
   end;
-  case v784.tag of
+  case v16.tag of
       1: begin
-          v808 := 'none';
-          Writeln(v808);
+          v18 := 'none';
+          Writeln(v18);
       end;
       0: begin
-          v795 := v784.c0_0;
-          Writeln(v795);
+          v17 := v16.c0_0;
+          Writeln(v17);
       end;
   end;
-  v809 := '12x';
-  v810 := (StrToInt64Def(Trim(v809), 0) = StrToInt64Def(Trim(v809), 1));
-  v811 := StrToInt64Def(Trim(v809), 0);
-  v812 := LongInt(v811);
-  if v810 then begin
-      v813 := v811 >= (-2147483648);
-      if v813 then begin
-          v814 := v811 <= 2147483647;
-          v816 := v814;
+  v19 := '12x';
+  v20 := (StrToInt64Def(Trim(v19), 0) = StrToInt64Def(Trim(v19), 1));
+  v21 := StrToInt64Def(Trim(v19), 0);
+  v22 := LongInt(v21);
+  if v20 then begin
+      v23 := v21 >= (-2147483648);
+      if v23 then begin
+          v24 := v21 <= 2147483647;
+          v26 := v24;
       end else begin
-          v816 := False;
+          v26 := False;
       end;
   end else begin
-      v816 := False;
+      v26 := False;
   end;
-  if v816 then begin
-      v819 := US0_Some(v812);
+  if v26 then begin
+      v29 := US0_Some(v22);
   end else begin
-      v819 := US0_None;
+      v29 := US0_None;
   end;
-  case v819.tag of
+  case v29.tag of
       1: begin
-          v821 := 'none';
-          Writeln(v821);
+          v31 := 'none';
+          Writeln(v31);
       end;
       0: begin
-          v820 := v819.c0_0;
-          Writeln(v820);
+          v30 := v29.c0_0;
+          Writeln(v30);
       end;
   end;
-  v822 := '';
-  v823 := (StrToInt64Def(Trim(v822), 0) = StrToInt64Def(Trim(v822), 1));
-  v824 := StrToInt64Def(Trim(v822), 0);
-  v825 := LongInt(v824);
-  if v823 then begin
-      v826 := v824 >= (-2147483648);
-      if v826 then begin
-          v827 := v824 <= 2147483647;
-          v829 := v827;
+  v32 := '';
+  v33 := (StrToInt64Def(Trim(v32), 0) = StrToInt64Def(Trim(v32), 1));
+  v34 := StrToInt64Def(Trim(v32), 0);
+  v35 := LongInt(v34);
+  if v33 then begin
+      v36 := v34 >= (-2147483648);
+      if v36 then begin
+          v37 := v34 <= 2147483647;
+          v39 := v37;
       end else begin
-          v829 := False;
+          v39 := False;
       end;
   end else begin
-      v829 := False;
+      v39 := False;
   end;
-  if v829 then begin
-      v832 := US0_Some(v825);
+  if v39 then begin
+      v42 := US0_Some(v35);
   end else begin
-      v832 := US0_None;
+      v42 := US0_None;
   end;
-  case v832.tag of
+  case v42.tag of
       1: begin
-          v834 := 'none';
-          Writeln(v834);
+          v44 := 'none';
+          Writeln(v44);
       end;
       0: begin
-          v833 := v832.c0_0;
-          Writeln(v833);
+          v43 := v42.c0_0;
+          Writeln(v43);
       end;
   end;
-  v835 := '+7';
-  v836 := (StrToInt64Def(Trim(v835), 0) = StrToInt64Def(Trim(v835), 1));
-  v837 := StrToInt64Def(Trim(v835), 0);
-  v838 := LongInt(v837);
-  if v836 then begin
-      v839 := v837 >= (-2147483648);
-      if v839 then begin
-          v840 := v837 <= 2147483647;
-          v842 := v840;
+  v45 := '+7';
+  v46 := (StrToInt64Def(Trim(v45), 0) = StrToInt64Def(Trim(v45), 1));
+  v47 := StrToInt64Def(Trim(v45), 0);
+  v48 := LongInt(v47);
+  if v46 then begin
+      v49 := v47 >= (-2147483648);
+      if v49 then begin
+          v50 := v47 <= 2147483647;
+          v52 := v50;
       end else begin
-          v842 := False;
+          v52 := False;
       end;
   end else begin
-      v842 := False;
+      v52 := False;
   end;
-  if v842 then begin
-      v845 := US0_Some(v838);
+  if v52 then begin
+      v55 := US0_Some(v48);
   end else begin
-      v845 := US0_None;
+      v55 := US0_None;
   end;
-  case v845.tag of
+  case v55.tag of
       1: begin
-          v847 := 'none';
-          Writeln(v847);
+          v57 := 'none';
+          Writeln(v57);
       end;
       0: begin
-          v846 := v845.c0_0;
-          Writeln(v846);
+          v56 := v55.c0_0;
+          Writeln(v56);
       end;
   end;
   Result := 0;

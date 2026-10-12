@@ -11,85 +11,85 @@ var
   v4: Double;
   v5: Double;
   v6: Single;
-  v21: Double;
-  v23: Boolean;
-  v24: Boolean;
+  v7: Double;
+  v8: Boolean;
+  v9: Boolean;
+  v10: Double;
+  v11: Boolean;
+  v12: Boolean;
+  v13: Double;
+  v14: Double;
+  v15: Boolean;
+  v25: Double;
+  v16: Double;
+  v17: Boolean;
+  v18: Double;
+  v19: Double;
+  v20: Double;
+  v21: Boolean;
+  v22: Double;
+  v26: Boolean;
+  v27: Boolean;
+  v28: Double;
+  v29: Double;
+  v30: Boolean;
   v40: Double;
+  v31: Double;
+  v32: Boolean;
+  v33: Double;
+  v34: Double;
+  v35: Double;
+  v36: Boolean;
+  v37: Double;
+  v41: Boolean;
   v42: Boolean;
-  v43: Boolean;
-  v158: Double;
-  v159: Double;
-  v160: Boolean;
-  v170: Double;
-  v161: Double;
-  v162: Boolean;
-  v163: Double;
-  v164: Double;
-  v165: Double;
-  v166: Boolean;
-  v167: Double;
-  v172: Boolean;
-  v173: Boolean;
-  v174: Double;
-  v175: Double;
-  v176: Boolean;
-  v186: Double;
-  v177: Double;
-  v178: Boolean;
-  v179: Double;
-  v180: Double;
-  v181: Double;
-  v182: Boolean;
-  v183: Double;
-  v187: Boolean;
-  v188: Boolean;
-  v189: Double;
-  v190: Double;
-  v191: Boolean;
-  v201: Double;
-  v192: Double;
-  v193: Boolean;
-  v194: Double;
-  v195: Double;
-  v196: Double;
-  v197: Boolean;
-  v198: Double;
-  v202: Boolean;
-  v203: Boolean;
-  v204: Double;
-  v205: Double;
-  v206: Boolean;
-  v216: Double;
-  v207: Double;
-  v208: Boolean;
-  v209: Double;
-  v210: Double;
-  v211: Double;
-  v212: Boolean;
-  v213: Double;
-  v217: Boolean;
-  v218: Boolean;
-  v219: Double;
-  v220: Double;
-  v221: Boolean;
-  v231: Double;
-  v222: Double;
-  v223: Boolean;
-  v224: Double;
-  v225: Double;
-  v226: Double;
-  v227: Boolean;
-  v228: Double;
-  v232: Boolean;
-  v233: Boolean;
-  v245: Double;
-  v247: Double;
-  v248: Double;
-  v249: Boolean;
-  v250: Boolean;
-  v265: Single;
-  v267: Boolean;
-  v268: Boolean;
+  v43: Double;
+  v44: Double;
+  v45: Boolean;
+  v55: Double;
+  v46: Double;
+  v47: Boolean;
+  v48: Double;
+  v49: Double;
+  v50: Double;
+  v51: Boolean;
+  v52: Double;
+  v56: Boolean;
+  v57: Boolean;
+  v58: Double;
+  v59: Double;
+  v60: Boolean;
+  v70: Double;
+  v61: Double;
+  v62: Boolean;
+  v63: Double;
+  v64: Double;
+  v65: Double;
+  v66: Boolean;
+  v67: Double;
+  v71: Boolean;
+  v72: Boolean;
+  v73: Double;
+  v74: Double;
+  v75: Boolean;
+  v85: Double;
+  v76: Double;
+  v77: Boolean;
+  v78: Double;
+  v79: Double;
+  v80: Double;
+  v81: Boolean;
+  v82: Double;
+  v86: Boolean;
+  v87: Boolean;
+  v88: Double;
+  v89: Double;
+  v90: Double;
+  v91: Boolean;
+  v92: Boolean;
+  v93: Single;
+  v94: Boolean;
+  v95: Boolean;
 begin
   v0 := 2.7;
   v1 := 3.2;
@@ -98,170 +98,170 @@ begin
   v4 := 0.5;
   v5 := 1.0;
   v6 := 2.7;
-  v21 := Int(v0) - Ord(Frac(v0) < 0);
-  v23 := v21 = 2.0;
-  v24 := v23 <> True;
-  if v24 then begin
+  v7 := Int(v0) - Ord(Frac(v0) < 0);
+  v8 := v7 = 2.0;
+  v9 := v8 <> True;
+  if v9 then begin
       Result := 1;
   end else begin
-      v40 := Int(v0) + Ord(Frac(v0) > 0);
-      v42 := v40 = 3.0;
-      v43 := v42 <> True;
-      if v43 then begin
+      v10 := Int(v0) + Ord(Frac(v0) > 0);
+      v11 := v10 = 3.0;
+      v12 := v11 <> True;
+      if v12 then begin
           Result := 2;
       end else begin
-          v158 := Int(v0) - Ord(Frac(v0) < 0);
-          v159 := v0 - v158;
-          v160 := v159 > 0.5;
-          if v160 then begin
-              v161 := v158 + 1.0;
-              v170 := v161;
+          v13 := Int(v0) - Ord(Frac(v0) < 0);
+          v14 := v0 - v13;
+          v15 := v14 > 0.5;
+          if v15 then begin
+              v16 := v13 + 1.0;
+              v25 := v16;
           end else begin
-              v162 := v159 < 0.5;
-              if v162 then begin
-                  v170 := v158;
+              v17 := v14 < 0.5;
+              if v17 then begin
+                  v25 := v13;
               end else begin
-                  v163 := v158 / 2.0;
-                  v164 := Int(v163) - Ord(Frac(v163) < 0);
-                  v165 := v164 * 2.0;
-                  v166 := v165 = v158;
-                  if v166 then begin
-                      v170 := v158;
+                  v18 := v13 / 2.0;
+                  v19 := Int(v18) - Ord(Frac(v18) < 0);
+                  v20 := v19 * 2.0;
+                  v21 := v20 = v13;
+                  if v21 then begin
+                      v25 := v13;
                   end else begin
-                      v167 := v158 + 1.0;
-                      v170 := v167;
+                      v22 := v13 + 1.0;
+                      v25 := v22;
                   end;
               end;
           end;
-          v172 := v170 = 3.0;
-          v173 := v172 <> True;
-          if v173 then begin
+          v26 := v25 = 3.0;
+          v27 := v26 <> True;
+          if v27 then begin
               Result := 3;
           end else begin
-              v174 := Int(v1) - Ord(Frac(v1) < 0);
-              v175 := v1 - v174;
-              v176 := v175 > 0.5;
-              if v176 then begin
-                  v177 := v174 + 1.0;
-                  v186 := v177;
+              v28 := Int(v1) - Ord(Frac(v1) < 0);
+              v29 := v1 - v28;
+              v30 := v29 > 0.5;
+              if v30 then begin
+                  v31 := v28 + 1.0;
+                  v40 := v31;
               end else begin
-                  v178 := v175 < 0.5;
-                  if v178 then begin
-                      v186 := v174;
+                  v32 := v29 < 0.5;
+                  if v32 then begin
+                      v40 := v28;
                   end else begin
-                      v179 := v174 / 2.0;
-                      v180 := Int(v179) - Ord(Frac(v179) < 0);
-                      v181 := v180 * 2.0;
-                      v182 := v181 = v174;
-                      if v182 then begin
-                          v186 := v174;
+                      v33 := v28 / 2.0;
+                      v34 := Int(v33) - Ord(Frac(v33) < 0);
+                      v35 := v34 * 2.0;
+                      v36 := v35 = v28;
+                      if v36 then begin
+                          v40 := v28;
                       end else begin
-                          v183 := v174 + 1.0;
-                          v186 := v183;
+                          v37 := v28 + 1.0;
+                          v40 := v37;
                       end;
                   end;
               end;
-              v187 := v186 = 3.0;
-              v188 := v187 <> True;
-              if v188 then begin
+              v41 := v40 = 3.0;
+              v42 := v41 <> True;
+              if v42 then begin
                   Result := 4;
               end else begin
-                  v189 := Int(v2) - Ord(Frac(v2) < 0);
-                  v190 := v2 - v189;
-                  v191 := v190 > 0.5;
-                  if v191 then begin
-                      v192 := v189 + 1.0;
-                      v201 := v192;
+                  v43 := Int(v2) - Ord(Frac(v2) < 0);
+                  v44 := v2 - v43;
+                  v45 := v44 > 0.5;
+                  if v45 then begin
+                      v46 := v43 + 1.0;
+                      v55 := v46;
                   end else begin
-                      v193 := v190 < 0.5;
-                      if v193 then begin
-                          v201 := v189;
+                      v47 := v44 < 0.5;
+                      if v47 then begin
+                          v55 := v43;
                       end else begin
-                          v194 := v189 / 2.0;
-                          v195 := Int(v194) - Ord(Frac(v194) < 0);
-                          v196 := v195 * 2.0;
-                          v197 := v196 = v189;
-                          if v197 then begin
-                              v201 := v189;
+                          v48 := v43 / 2.0;
+                          v49 := Int(v48) - Ord(Frac(v48) < 0);
+                          v50 := v49 * 2.0;
+                          v51 := v50 = v43;
+                          if v51 then begin
+                              v55 := v43;
                           end else begin
-                              v198 := v189 + 1.0;
-                              v201 := v198;
+                              v52 := v43 + 1.0;
+                              v55 := v52;
                           end;
                       end;
                   end;
-                  v202 := v201 = (-2.0);
-                  v203 := v202 <> True;
-                  if v203 then begin
+                  v56 := v55 = (-2.0);
+                  v57 := v56 <> True;
+                  if v57 then begin
                       Result := 5;
                   end else begin
-                      v204 := Int(v3) - Ord(Frac(v3) < 0);
-                      v205 := v3 - v204;
-                      v206 := v205 > 0.5;
-                      if v206 then begin
-                          v207 := v204 + 1.0;
-                          v216 := v207;
+                      v58 := Int(v3) - Ord(Frac(v3) < 0);
+                      v59 := v3 - v58;
+                      v60 := v59 > 0.5;
+                      if v60 then begin
+                          v61 := v58 + 1.0;
+                          v70 := v61;
                       end else begin
-                          v208 := v205 < 0.5;
-                          if v208 then begin
-                              v216 := v204;
+                          v62 := v59 < 0.5;
+                          if v62 then begin
+                              v70 := v58;
                           end else begin
-                              v209 := v204 / 2.0;
-                              v210 := Int(v209) - Ord(Frac(v209) < 0);
-                              v211 := v210 * 2.0;
-                              v212 := v211 = v204;
-                              if v212 then begin
-                                  v216 := v204;
+                              v63 := v58 / 2.0;
+                              v64 := Int(v63) - Ord(Frac(v63) < 0);
+                              v65 := v64 * 2.0;
+                              v66 := v65 = v58;
+                              if v66 then begin
+                                  v70 := v58;
                               end else begin
-                                  v213 := v204 + 1.0;
-                                  v216 := v213;
+                                  v67 := v58 + 1.0;
+                                  v70 := v67;
                               end;
                           end;
                       end;
-                      v217 := v216 = 4.0;
-                      v218 := v217 <> True;
-                      if v218 then begin
+                      v71 := v70 = 4.0;
+                      v72 := v71 <> True;
+                      if v72 then begin
                           Result := 6;
                       end else begin
-                          v219 := Int(v4) - Ord(Frac(v4) < 0);
-                          v220 := v4 - v219;
-                          v221 := v220 > 0.5;
-                          if v221 then begin
-                              v222 := v219 + 1.0;
-                              v231 := v222;
+                          v73 := Int(v4) - Ord(Frac(v4) < 0);
+                          v74 := v4 - v73;
+                          v75 := v74 > 0.5;
+                          if v75 then begin
+                              v76 := v73 + 1.0;
+                              v85 := v76;
                           end else begin
-                              v223 := v220 < 0.5;
-                              if v223 then begin
-                                  v231 := v219;
+                              v77 := v74 < 0.5;
+                              if v77 then begin
+                                  v85 := v73;
                               end else begin
-                                  v224 := v219 / 2.0;
-                                  v225 := Int(v224) - Ord(Frac(v224) < 0);
-                                  v226 := v225 * 2.0;
-                                  v227 := v226 = v219;
-                                  if v227 then begin
-                                      v231 := v219;
+                                  v78 := v73 / 2.0;
+                                  v79 := Int(v78) - Ord(Frac(v78) < 0);
+                                  v80 := v79 * 2.0;
+                                  v81 := v80 = v73;
+                                  if v81 then begin
+                                      v85 := v73;
                                   end else begin
-                                      v228 := v219 + 1.0;
-                                      v231 := v228;
+                                      v82 := v73 + 1.0;
+                                      v85 := v82;
                                   end;
                               end;
                           end;
-                          v232 := v231 = 0.0;
-                          v233 := v232 <> True;
-                          if v233 then begin
+                          v86 := v85 = 0.0;
+                          v87 := v86 <> True;
+                          if v87 then begin
                               Result := 7;
                           end else begin
-                              v245 := ArcTan2(v5, v5);
-                              v247 := v245 * 1000.0;
-                              v248 := Int(v247) - Ord(Frac(v247) < 0);
-                              v249 := v248 = 785.0;
-                              v250 := v249 <> True;
-                              if v250 then begin
+                              v88 := ArcTan2(v5, v5);
+                              v89 := v88 * 1000.0;
+                              v90 := Int(v89) - Ord(Frac(v89) < 0);
+                              v91 := v90 = 785.0;
+                              v92 := v91 <> True;
+                              if v92 then begin
                                   Result := 8;
                               end else begin
-                                  v265 := Int(v6) - Ord(Frac(v6) < 0);
-                                  v267 := v265 = 2.0;
-                                  v268 := v267 <> True;
-                                  if v268 then begin
+                                  v93 := Int(v6) - Ord(Frac(v6) < 0);
+                                  v94 := v93 = 2.0;
+                                  v95 := v94 <> True;
+                                  if v95 then begin
                                       Result := 9;
                                   end else begin
                                       Result := 0;

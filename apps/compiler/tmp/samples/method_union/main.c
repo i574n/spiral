@@ -68,7 +68,7 @@ int32_t main(){
             return 1l;
             break;
         }
-        case 1: { // Some
+        default: { // Some
             int32_t v2 = v1.case1.v0;
             
             USDecref0(&(v1));

@@ -184,7 +184,6 @@ def spiral_array_depth(+wanted: U32) -> U32:
 @unsafe
 def target_global_0(+v0: String) -> IO(Unit):
   do IO<Unit>:
-    +v1 : U32 <- IO.pure(U32, spiral_string_bytes(v0))
     return Unit{}
 
 @unsafe

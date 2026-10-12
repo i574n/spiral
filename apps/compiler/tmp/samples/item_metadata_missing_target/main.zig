@@ -107,8 +107,6 @@ fn spiralCreate(comptime T: type, v: T) *T {
 }
 fn target_global_0(p0: []const u8) void {
     var v0: []const u8 = p0; _ = &v0;
-    var v1: i32 = undefined; _ = &v1;
-    v1 = @as(i32, @intCast(v0.len));
 }
 fn spiralMain() i32 {
     var v0: []const u8 = undefined; _ = &v0;

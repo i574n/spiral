@@ -67,7 +67,7 @@ int32_t score0(US0 v0){
             return v1;
             break;
         }
-        case 0: { // Idle
+        default: { // Idle
             
             
             USDecref0(&(v0));

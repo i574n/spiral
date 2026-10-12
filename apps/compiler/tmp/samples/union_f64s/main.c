@@ -124,7 +124,7 @@ int32_t main(){
             }
             break;
         }
-        case 0: { // Missing
+        default: { // Missing
             
             
             USDecref0(&(v5));

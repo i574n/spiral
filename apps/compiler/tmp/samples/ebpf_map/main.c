@@ -10,45 +10,45 @@ int32_t main(){
     v0 = 0;
     
     
+    int32_t v1;
+    v1 = 42l;
+    
+    
     int32_t v2;
-    v2 = 42l;
+    v2 = 0;
+    
+    
+    int32_t v3;
+    v3 = 9l;
     
     
     int32_t v4;
-    v4 = 0;
+    v4 = 0l;
+    
+    
+    int32_t v5;
+    v5 = v0 + v2;
     
     
     int32_t v6;
-    v6 = 9l;
+    v6 = v1 - 42l;
     
     
     int32_t v7;
-    v7 = 0l;
+    v7 = v5 + v6;
+    
+    
+    int32_t v8;
+    v8 = v3 - 9l;
     
     
     int32_t v9;
-    v9 = v0 + v4;
+    v9 = v7 + v8;
     
     
     int32_t v10;
-    v10 = v2 - 42l;
+    v10 = v9 + v4;
     
     
-    int32_t v11;
-    v11 = v9 + v10;
-    
-    
-    int32_t v12;
-    v12 = v6 - 9l;
-    
-    
-    int32_t v13;
-    v13 = v11 + v12;
-    
-    
-    int32_t v14;
-    v14 = v13 + v7;
-    
-    
-    return v14;
+    return v10;
 }

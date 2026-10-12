@@ -1211,7 +1211,6 @@ fn loop_22(mut v0: i32, mut v1: Rc<UH5>) -> US3 {
                         if v34 {
                             0i32
                         } else {
-                            let mut v35: bool = v30 == 1i32;
                             0i32
                         }
                     } else {
@@ -1221,7 +1220,6 @@ fn loop_22(mut v0: i32, mut v1: Rc<UH5>) -> US3 {
                             if v38 {
                                 0i32
                             } else {
-                                let mut v39: bool = v30 == 1i32;
                                 0i32
                             }
                         } else {
@@ -2026,7 +2024,6 @@ fn loop_34(mut v0: i32, mut v1: Rc<UH6>) -> US3 {
                 } else {
                     let mut v24: bool = v0 == 0i32;
                     let mut v28: i32 = if v24 {
-                        let mut v25: bool = v21 == 0i32;
                         0i32
                     } else {
                         let mut v26: bool = v21 == 0i32;

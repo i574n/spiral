@@ -26,8 +26,6 @@ def spiralStringSlice (s : String) (a b : Int) : IO String := do
 mutual
 partial def target_global_0 (p0 : String) : IO Unit := do
     let mut v0 : String := p0
-    let mut v1 : Int32 := default
-    v1 := (Int32.ofNat v0.utf8ByteSize)
     return ()
 partial def spiralMain : IO Int32 := do
     let mut v0 : String := default

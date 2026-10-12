@@ -119,7 +119,7 @@ uint64_t sum1(UH0 * v0, uint64_t v1){
             return sum1(v4, v5);
             break;
         }
-        case 1: { // Nil
+        default: { // Nil
             
             
             UHDecref0(v0);

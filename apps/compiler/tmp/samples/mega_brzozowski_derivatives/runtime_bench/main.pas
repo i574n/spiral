@@ -1392,14 +1392,12 @@ function run_19(v0: LongInt; v1: TUH1): Boolean;
 var
   v3: TUS0;
   v4: TUH1;
-  v8: Boolean;
   v9: LongInt;
-  tmp4: LongInt;
-  tmp5: TUH1;
-  v5: Boolean;
+  tmp3: LongInt;
+  tmp4: TUH1;
   v6: LongInt;
-  tmp8: LongInt;
-  tmp9: TUH1;
+  tmp6: LongInt;
+  tmp7: TUH1;
   v2: Boolean;
 begin
   while True do begin
@@ -1409,21 +1407,19 @@ begin
               v4 := v1.c1_1;
               case v3.tag of
                   1: begin
-                      v8 := v0 = 0;
                       v9 := 0;
-                      tmp4 := v9;
-                      tmp5 := v4;
-                      v0 := tmp4;
-                      v1 := tmp5;
+                      tmp3 := v9;
+                      tmp4 := v4;
+                      v0 := tmp3;
+                      v1 := tmp4;
                       Continue;
                   end;
                   0: begin
-                      v5 := v0 = 0;
                       v6 := 1;
-                      tmp8 := v6;
-                      tmp9 := v4;
-                      v0 := tmp8;
-                      v1 := tmp9;
+                      tmp6 := v6;
+                      tmp7 := v4;
+                      v0 := tmp6;
+                      v1 := tmp7;
                       Continue;
                   end;
               end;
@@ -1813,16 +1809,14 @@ var
   v19: LongInt;
   v14: Boolean;
   v15: Boolean;
-  v16: Boolean;
-  tmp7: LongInt;
-  tmp8: TUH1;
+  tmp6: LongInt;
+  tmp7: TUH1;
   v5: Boolean;
   v11: LongInt;
   v6: Boolean;
   v7: Boolean;
-  v8: Boolean;
-  tmp14: LongInt;
-  tmp15: TUH1;
+  tmp12: LongInt;
+  tmp13: TUH1;
   v2: Boolean;
 begin
   while True do begin
@@ -1844,15 +1838,14 @@ begin
                               if v15 then begin
                                   v19 := 3;
                               end else begin
-                                  v16 := v0 = 3;
                                   v19 := 4;
                               end;
                           end;
                       end;
-                      tmp7 := v19;
-                      tmp8 := v4;
-                      v0 := tmp7;
-                      v1 := tmp8;
+                      tmp6 := v19;
+                      tmp7 := v4;
+                      v0 := tmp6;
+                      v1 := tmp7;
                       Continue;
                   end;
                   0: begin
@@ -1868,15 +1861,14 @@ begin
                               if v7 then begin
                                   v11 := 2;
                               end else begin
-                                  v8 := v0 = 3;
                                   v11 := 4;
                               end;
                           end;
                       end;
-                      tmp14 := v11;
-                      tmp15 := v4;
-                      v0 := tmp14;
-                      v1 := tmp15;
+                      tmp12 := v11;
+                      tmp13 := v4;
+                      v0 := tmp12;
+                      v1 := tmp13;
                       Continue;
                   end;
               end;

@@ -2,8 +2,6 @@ class Heap0(val l0: Int, val l1: String)
 class SpiralTuple0(val v0: Heap0, val v1: Heap0, val v2: Heap0)
 fun f_c0(v0: Heap0, v1: Heap0, v2: Heap0): (Int) -> SpiralTuple0 {
     fun body(v3: Int): SpiralTuple0 {
-        var v4: Boolean = false
-        v4 = (v3 == 0)
         return SpiralTuple0(v0, v1, v2)
     }
     return { p0: Int -> body(p0) }

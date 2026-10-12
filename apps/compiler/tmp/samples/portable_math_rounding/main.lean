@@ -32,85 +32,85 @@ partial def spiralMain : IO Int32 := do
     let mut v4 : Float := default
     let mut v5 : Float := default
     let mut v6 : Float32 := default
+    let mut v7 : Float := default
+    let mut v8 : Bool := default
+    let mut v9 : Bool := default
+    let mut v10 : Float := default
+    let mut v11 : Bool := default
+    let mut v12 : Bool := default
+    let mut v13 : Float := default
+    let mut v14 : Float := default
+    let mut v15 : Bool := default
+    let mut v25 : Float := default
+    let mut v16 : Float := default
+    let mut v17 : Bool := default
+    let mut v18 : Float := default
     let mut v19 : Float := default
-    let mut v23 : Bool := default
-    let mut v24 : Bool := default
-    let mut v38 : Float := default
+    let mut v20 : Float := default
+    let mut v21 : Bool := default
+    let mut v22 : Float := default
+    let mut v26 : Bool := default
+    let mut v27 : Bool := default
+    let mut v28 : Float := default
+    let mut v29 : Float := default
+    let mut v30 : Bool := default
+    let mut v40 : Float := default
+    let mut v31 : Float := default
+    let mut v32 : Bool := default
+    let mut v33 : Float := default
+    let mut v34 : Float := default
+    let mut v35 : Float := default
+    let mut v36 : Bool := default
+    let mut v37 : Float := default
+    let mut v41 : Bool := default
     let mut v42 : Bool := default
-    let mut v43 : Bool := default
-    let mut v132 : Float := default
-    let mut v133 : Float := default
-    let mut v134 : Bool := default
-    let mut v144 : Float := default
-    let mut v135 : Float := default
-    let mut v136 : Bool := default
-    let mut v137 : Float := default
-    let mut v138 : Float := default
-    let mut v139 : Float := default
-    let mut v140 : Bool := default
-    let mut v141 : Float := default
-    let mut v172 : Bool := default
-    let mut v173 : Bool := default
-    let mut v174 : Float := default
-    let mut v175 : Float := default
-    let mut v176 : Bool := default
-    let mut v186 : Float := default
-    let mut v177 : Float := default
-    let mut v178 : Bool := default
-    let mut v179 : Float := default
-    let mut v180 : Float := default
-    let mut v181 : Float := default
-    let mut v182 : Bool := default
-    let mut v183 : Float := default
-    let mut v187 : Bool := default
-    let mut v188 : Bool := default
-    let mut v189 : Float := default
-    let mut v190 : Float := default
-    let mut v191 : Bool := default
-    let mut v201 : Float := default
-    let mut v192 : Float := default
-    let mut v193 : Bool := default
-    let mut v194 : Float := default
-    let mut v195 : Float := default
-    let mut v196 : Float := default
-    let mut v197 : Bool := default
-    let mut v198 : Float := default
-    let mut v202 : Bool := default
-    let mut v203 : Bool := default
-    let mut v204 : Float := default
-    let mut v205 : Float := default
-    let mut v206 : Bool := default
-    let mut v216 : Float := default
-    let mut v207 : Float := default
-    let mut v208 : Bool := default
-    let mut v209 : Float := default
-    let mut v210 : Float := default
-    let mut v211 : Float := default
-    let mut v212 : Bool := default
-    let mut v213 : Float := default
-    let mut v217 : Bool := default
-    let mut v218 : Bool := default
-    let mut v219 : Float := default
-    let mut v220 : Float := default
-    let mut v221 : Bool := default
-    let mut v231 : Float := default
-    let mut v222 : Float := default
-    let mut v223 : Bool := default
-    let mut v224 : Float := default
-    let mut v225 : Float := default
-    let mut v226 : Float := default
-    let mut v227 : Bool := default
-    let mut v228 : Float := default
-    let mut v232 : Bool := default
-    let mut v233 : Bool := default
-    let mut v243 : Float := default
-    let mut v247 : Float := default
-    let mut v248 : Float := default
-    let mut v249 : Bool := default
-    let mut v250 : Bool := default
-    let mut v263 : Float32 := default
-    let mut v267 : Bool := default
-    let mut v268 : Bool := default
+    let mut v43 : Float := default
+    let mut v44 : Float := default
+    let mut v45 : Bool := default
+    let mut v55 : Float := default
+    let mut v46 : Float := default
+    let mut v47 : Bool := default
+    let mut v48 : Float := default
+    let mut v49 : Float := default
+    let mut v50 : Float := default
+    let mut v51 : Bool := default
+    let mut v52 : Float := default
+    let mut v56 : Bool := default
+    let mut v57 : Bool := default
+    let mut v58 : Float := default
+    let mut v59 : Float := default
+    let mut v60 : Bool := default
+    let mut v70 : Float := default
+    let mut v61 : Float := default
+    let mut v62 : Bool := default
+    let mut v63 : Float := default
+    let mut v64 : Float := default
+    let mut v65 : Float := default
+    let mut v66 : Bool := default
+    let mut v67 : Float := default
+    let mut v71 : Bool := default
+    let mut v72 : Bool := default
+    let mut v73 : Float := default
+    let mut v74 : Float := default
+    let mut v75 : Bool := default
+    let mut v85 : Float := default
+    let mut v76 : Float := default
+    let mut v77 : Bool := default
+    let mut v78 : Float := default
+    let mut v79 : Float := default
+    let mut v80 : Float := default
+    let mut v81 : Bool := default
+    let mut v82 : Float := default
+    let mut v86 : Bool := default
+    let mut v87 : Bool := default
+    let mut v88 : Float := default
+    let mut v89 : Float := default
+    let mut v90 : Float := default
+    let mut v91 : Bool := default
+    let mut v92 : Bool := default
+    let mut v93 : Float32 := default
+    let mut v94 : Bool := default
+    let mut v95 : Bool := default
     v0 := (2.7 : Float)
     v1 := (3.2 : Float)
     v2 := (-2.5 : Float)
@@ -118,155 +118,155 @@ partial def spiralMain : IO Int32 := do
     v4 := (0.5 : Float)
     v5 := (1.0 : Float)
     v6 := (2.7 : Float32)
-    v19 := (v0).floor
-    v23 := (v19 == (2.0 : Float))
-    v24 := (v23 != true)
-    if v24 then
+    v7 := (v0).floor
+    v8 := (v7 == (2.0 : Float))
+    v9 := (v8 != true)
+    if v9 then
         return (1 : Int32)
     else
-        v38 := (v0).ceil
-        v42 := (v38 == (3.0 : Float))
-        v43 := (v42 != true)
-        if v43 then
+        v10 := (v0).ceil
+        v11 := (v10 == (3.0 : Float))
+        v12 := (v11 != true)
+        if v12 then
             return (2 : Int32)
         else
-            v132 := (v0).floor
-            v133 := (v0 - v132)
-            v134 := (decide (v133 > (0.5 : Float)))
-            if v134 then
-                v135 := (v132 + (1.0 : Float))
-                v144 := v135
+            v13 := (v0).floor
+            v14 := (v0 - v13)
+            v15 := (decide (v14 > (0.5 : Float)))
+            if v15 then
+                v16 := (v13 + (1.0 : Float))
+                v25 := v16
             else
-                v136 := (decide (v133 < (0.5 : Float)))
-                if v136 then
-                    v144 := v132
+                v17 := (decide (v14 < (0.5 : Float)))
+                if v17 then
+                    v25 := v13
                 else
-                    v137 := (v132 / (2.0 : Float))
-                    v138 := (v137).floor
-                    v139 := (v138 * (2.0 : Float))
-                    v140 := (v139 == v132)
-                    if v140 then
-                        v144 := v132
+                    v18 := (v13 / (2.0 : Float))
+                    v19 := (v18).floor
+                    v20 := (v19 * (2.0 : Float))
+                    v21 := (v20 == v13)
+                    if v21 then
+                        v25 := v13
                     else
-                        v141 := (v132 + (1.0 : Float))
-                        v144 := v141
-            v172 := (v144 == (3.0 : Float))
-            v173 := (v172 != true)
-            if v173 then
+                        v22 := (v13 + (1.0 : Float))
+                        v25 := v22
+            v26 := (v25 == (3.0 : Float))
+            v27 := (v26 != true)
+            if v27 then
                 return (3 : Int32)
             else
-                v174 := (v1).floor
-                v175 := (v1 - v174)
-                v176 := (decide (v175 > (0.5 : Float)))
-                if v176 then
-                    v177 := (v174 + (1.0 : Float))
-                    v186 := v177
+                v28 := (v1).floor
+                v29 := (v1 - v28)
+                v30 := (decide (v29 > (0.5 : Float)))
+                if v30 then
+                    v31 := (v28 + (1.0 : Float))
+                    v40 := v31
                 else
-                    v178 := (decide (v175 < (0.5 : Float)))
-                    if v178 then
-                        v186 := v174
+                    v32 := (decide (v29 < (0.5 : Float)))
+                    if v32 then
+                        v40 := v28
                     else
-                        v179 := (v174 / (2.0 : Float))
-                        v180 := (v179).floor
-                        v181 := (v180 * (2.0 : Float))
-                        v182 := (v181 == v174)
-                        if v182 then
-                            v186 := v174
+                        v33 := (v28 / (2.0 : Float))
+                        v34 := (v33).floor
+                        v35 := (v34 * (2.0 : Float))
+                        v36 := (v35 == v28)
+                        if v36 then
+                            v40 := v28
                         else
-                            v183 := (v174 + (1.0 : Float))
-                            v186 := v183
-                v187 := (v186 == (3.0 : Float))
-                v188 := (v187 != true)
-                if v188 then
+                            v37 := (v28 + (1.0 : Float))
+                            v40 := v37
+                v41 := (v40 == (3.0 : Float))
+                v42 := (v41 != true)
+                if v42 then
                     return (4 : Int32)
                 else
-                    v189 := (v2).floor
-                    v190 := (v2 - v189)
-                    v191 := (decide (v190 > (0.5 : Float)))
-                    if v191 then
-                        v192 := (v189 + (1.0 : Float))
-                        v201 := v192
+                    v43 := (v2).floor
+                    v44 := (v2 - v43)
+                    v45 := (decide (v44 > (0.5 : Float)))
+                    if v45 then
+                        v46 := (v43 + (1.0 : Float))
+                        v55 := v46
                     else
-                        v193 := (decide (v190 < (0.5 : Float)))
-                        if v193 then
-                            v201 := v189
+                        v47 := (decide (v44 < (0.5 : Float)))
+                        if v47 then
+                            v55 := v43
                         else
-                            v194 := (v189 / (2.0 : Float))
-                            v195 := (v194).floor
-                            v196 := (v195 * (2.0 : Float))
-                            v197 := (v196 == v189)
-                            if v197 then
-                                v201 := v189
+                            v48 := (v43 / (2.0 : Float))
+                            v49 := (v48).floor
+                            v50 := (v49 * (2.0 : Float))
+                            v51 := (v50 == v43)
+                            if v51 then
+                                v55 := v43
                             else
-                                v198 := (v189 + (1.0 : Float))
-                                v201 := v198
-                    v202 := (v201 == (-2.0 : Float))
-                    v203 := (v202 != true)
-                    if v203 then
+                                v52 := (v43 + (1.0 : Float))
+                                v55 := v52
+                    v56 := (v55 == (-2.0 : Float))
+                    v57 := (v56 != true)
+                    if v57 then
                         return (5 : Int32)
                     else
-                        v204 := (v3).floor
-                        v205 := (v3 - v204)
-                        v206 := (decide (v205 > (0.5 : Float)))
-                        if v206 then
-                            v207 := (v204 + (1.0 : Float))
-                            v216 := v207
+                        v58 := (v3).floor
+                        v59 := (v3 - v58)
+                        v60 := (decide (v59 > (0.5 : Float)))
+                        if v60 then
+                            v61 := (v58 + (1.0 : Float))
+                            v70 := v61
                         else
-                            v208 := (decide (v205 < (0.5 : Float)))
-                            if v208 then
-                                v216 := v204
+                            v62 := (decide (v59 < (0.5 : Float)))
+                            if v62 then
+                                v70 := v58
                             else
-                                v209 := (v204 / (2.0 : Float))
-                                v210 := (v209).floor
-                                v211 := (v210 * (2.0 : Float))
-                                v212 := (v211 == v204)
-                                if v212 then
-                                    v216 := v204
+                                v63 := (v58 / (2.0 : Float))
+                                v64 := (v63).floor
+                                v65 := (v64 * (2.0 : Float))
+                                v66 := (v65 == v58)
+                                if v66 then
+                                    v70 := v58
                                 else
-                                    v213 := (v204 + (1.0 : Float))
-                                    v216 := v213
-                        v217 := (v216 == (4.0 : Float))
-                        v218 := (v217 != true)
-                        if v218 then
+                                    v67 := (v58 + (1.0 : Float))
+                                    v70 := v67
+                        v71 := (v70 == (4.0 : Float))
+                        v72 := (v71 != true)
+                        if v72 then
                             return (6 : Int32)
                         else
-                            v219 := (v4).floor
-                            v220 := (v4 - v219)
-                            v221 := (decide (v220 > (0.5 : Float)))
-                            if v221 then
-                                v222 := (v219 + (1.0 : Float))
-                                v231 := v222
+                            v73 := (v4).floor
+                            v74 := (v4 - v73)
+                            v75 := (decide (v74 > (0.5 : Float)))
+                            if v75 then
+                                v76 := (v73 + (1.0 : Float))
+                                v85 := v76
                             else
-                                v223 := (decide (v220 < (0.5 : Float)))
-                                if v223 then
-                                    v231 := v219
+                                v77 := (decide (v74 < (0.5 : Float)))
+                                if v77 then
+                                    v85 := v73
                                 else
-                                    v224 := (v219 / (2.0 : Float))
-                                    v225 := (v224).floor
-                                    v226 := (v225 * (2.0 : Float))
-                                    v227 := (v226 == v219)
-                                    if v227 then
-                                        v231 := v219
+                                    v78 := (v73 / (2.0 : Float))
+                                    v79 := (v78).floor
+                                    v80 := (v79 * (2.0 : Float))
+                                    v81 := (v80 == v73)
+                                    if v81 then
+                                        v85 := v73
                                     else
-                                        v228 := (v219 + (1.0 : Float))
-                                        v231 := v228
-                            v232 := (v231 == (0.0 : Float))
-                            v233 := (v232 != true)
-                            if v233 then
+                                        v82 := (v73 + (1.0 : Float))
+                                        v85 := v82
+                            v86 := (v85 == (0.0 : Float))
+                            v87 := (v86 != true)
+                            if v87 then
                                 return (7 : Int32)
                             else
-                                v243 := Float.atan2 v5 v5 
-                                v247 := (v243 * (1000.0 : Float))
-                                v248 := (v247).floor
-                                v249 := (v248 == (785.0 : Float))
-                                v250 := (v249 != true)
-                                if v250 then
+                                v88 := Float.atan2 v5 v5 
+                                v89 := (v88 * (1000.0 : Float))
+                                v90 := (v89).floor
+                                v91 := (v90 == (785.0 : Float))
+                                v92 := (v91 != true)
+                                if v92 then
                                     return (8 : Int32)
                                 else
-                                    v263 := (v6).floor
-                                    v267 := (v263 == (2.0 : Float32))
-                                    v268 := (v267 != true)
-                                    if v268 then
+                                    v93 := (v6).floor
+                                    v94 := (v93 == (2.0 : Float32))
+                                    v95 := (v94 != true)
+                                    if v95 then
                                         return (9 : Int32)
                                     else
                                         return (0 : Int32)

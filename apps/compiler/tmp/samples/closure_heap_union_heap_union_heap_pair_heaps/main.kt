@@ -11,8 +11,6 @@ class US1_Absent : US1 { override val tag: Int = 0 }
 data class US1_Box(val f0: Heap3) : US1 { override val tag: Int = 1 }
 fun f_c0(v0: Heap4): (Int) -> Heap4 {
     fun body(v1: Int): Heap4 {
-        var v2: Boolean = false
-        v2 = (v1 == 0)
         return v0
     }
     return { p0: Int -> body(p0) }

@@ -179,7 +179,7 @@ int32_t main(){
             }
             break;
         }
-        case 0: { // One
+        default: { // One
             
             
             USDecref0(&(v3));

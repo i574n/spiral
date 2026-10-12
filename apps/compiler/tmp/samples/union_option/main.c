@@ -43,7 +43,7 @@ int32_t pick0(US0 v0){
             return 0l;
             break;
         }
-        case 1: { // Full
+        default: { // Full
             int32_t v1 = v0.case1.v0;
             
             USDecref0(&(v0));

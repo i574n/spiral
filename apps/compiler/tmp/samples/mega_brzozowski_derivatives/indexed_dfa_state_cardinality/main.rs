@@ -983,7 +983,6 @@ fn run_16(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 if v2 {
                     return true;
                 } else {
-                    let mut v3: bool = v0 == 1i32;
                     return false;
                 }
             }

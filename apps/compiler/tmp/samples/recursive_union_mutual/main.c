@@ -108,7 +108,7 @@ int32_t main(){
             return 0l;
             break;
         }
-        case 1: { // StopA
+        default: { // StopA
             
             
             UHDecref0(v5);

@@ -1,13 +1,13 @@
-local v1 = "hello"
+local v0 = "hello"
+print(v0)
+local v1 = 42
 print(v1)
-local v9 = 42
-print(v9)
-local v14 = "a"
-io.write(v14)
-local v18 = "b"
-io.write(v18)
-local v22 = ""
-print(v22)
-local v26 = -7
-print(v26)
+local v2 = "a"
+io.write(v2)
+local v3 = "b"
+io.write(v3)
+local v4 = ""
+print(v4)
+local v5 = -7
+print(v5)
 return 0

@@ -33,7 +33,6 @@ fn spiral_main() -> i32 {
     let mut v10: i64 = v9 + 1i64;
     let mut v11: i64 = v10 + 1i64;
     let mut v12: i64 = 0i64 + 1i64;
-    let mut v13: i64 = v2.wrapping_mul(v5);
     let mut v14: i64 = 0i64 + 1i64;
     let mut v15: i64 = v14 + 1i64;
     let mut v16: i64 = v15 + 1i64;
@@ -55,7 +54,6 @@ fn spiral_main() -> i32 {
     let mut v32: i64 = v31 + 1i64;
     let mut v33: i64 = v32 + 1i64;
     let mut v34: i64 = 0i64 + 1i64;
-    let mut v35: i64 = v24.wrapping_mul(v27);
     let mut v36: i64 = 0i64 + 1i64;
     let mut v37: i64 = v36 + 1i64;
     let mut v38: i64 = v37 + 1i64;
@@ -166,11 +164,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v112: i64 = v96.wrapping_add(v104);
-    let mut v113: i64 = v97.wrapping_add(v109);
     let mut v114: i64 = v99.wrapping_add(v111);
-    let mut v115: i64 = v89.wrapping_add(v112);
-    let mut v116: i64 = v93.wrapping_add(v113);
     let mut v117: i64 = v95.wrapping_add(v114);
     let mut v118: i64 = 0i64 + 1i64;
     let mut v119: i64 = v118 + 1i64;
@@ -210,11 +204,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v144: i64 = v128.wrapping_add(v136);
-    let mut v145: i64 = v129.wrapping_add(v141);
     let mut v146: i64 = v131.wrapping_add(v143);
-    let mut v147: i64 = v121.wrapping_add(v144);
-    let mut v148: i64 = v125.wrapping_add(v145);
     let mut v149: i64 = v127.wrapping_add(v146);
     let mut v150: i64 = v117.wrapping_add(v149);
     let mut v151: bool = v150 == 0i64;
@@ -261,11 +251,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v178: i64 = v162.wrapping_add(v170);
-    let mut v179: i64 = v163.wrapping_add(v175);
     let mut v180: i64 = v165.wrapping_add(v177);
-    let mut v181: i64 = v155.wrapping_add(v178);
-    let mut v182: i64 = v159.wrapping_add(v179);
     let mut v183: i64 = v161.wrapping_add(v180);
     let mut v184: i64 = 0i64 + 1i64;
     let mut v185: i64 = v184 + 1i64;
@@ -305,11 +291,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v210: i64 = v194.wrapping_add(v202);
-    let mut v211: i64 = v195.wrapping_add(v207);
     let mut v212: i64 = v197.wrapping_add(v209);
-    let mut v213: i64 = v187.wrapping_add(v210);
-    let mut v214: i64 = v191.wrapping_add(v211);
     let mut v215: i64 = v193.wrapping_add(v212);
     let mut v216: i64 = v183.wrapping_add(v215);
     let mut v217: i64 = 0i64 + 1i64;
@@ -350,11 +332,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v243: i64 = v227.wrapping_add(v235);
-    let mut v244: i64 = v228.wrapping_add(v240);
     let mut v245: i64 = v230.wrapping_add(v242);
-    let mut v246: i64 = v220.wrapping_add(v243);
-    let mut v247: i64 = v224.wrapping_add(v244);
     let mut v248: i64 = v226.wrapping_add(v245);
     let mut v249: i64 = v216.wrapping_add(v248);
     let mut v250: bool = v249 == 0i64;
@@ -401,11 +379,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v277: i64 = v261.wrapping_add(v269);
-    let mut v278: i64 = v262.wrapping_add(v274);
     let mut v279: i64 = v264.wrapping_add(v276);
-    let mut v280: i64 = v254.wrapping_add(v277);
-    let mut v281: i64 = v258.wrapping_add(v278);
     let mut v282: i64 = v260.wrapping_add(v279);
     let mut v283: i64 = 0i64 + 1i64;
     let mut v284: i64 = v283 + 1i64;
@@ -445,11 +419,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v309: i64 = v293.wrapping_add(v301);
-    let mut v310: i64 = v294.wrapping_add(v306);
     let mut v311: i64 = v296.wrapping_add(v308);
-    let mut v312: i64 = v286.wrapping_add(v309);
-    let mut v313: i64 = v290.wrapping_add(v310);
     let mut v314: i64 = v292.wrapping_add(v311);
     let mut v315: i64 = v282.wrapping_add(v314);
     let mut v316: i64 = 0i64 + 1i64;
@@ -490,11 +460,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v342: i64 = v326.wrapping_add(v334);
-    let mut v343: i64 = v327.wrapping_add(v339);
     let mut v344: i64 = v329.wrapping_add(v341);
-    let mut v345: i64 = v319.wrapping_add(v342);
-    let mut v346: i64 = v323.wrapping_add(v343);
     let mut v347: i64 = v325.wrapping_add(v344);
     let mut v348: i64 = 0i64 + 1i64;
     let mut v349: i64 = v348 + 1i64;
@@ -534,11 +500,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v374: i64 = v358.wrapping_add(v366);
-    let mut v375: i64 = v359.wrapping_add(v371);
     let mut v376: i64 = v361.wrapping_add(v373);
-    let mut v377: i64 = v351.wrapping_add(v374);
-    let mut v378: i64 = v355.wrapping_add(v375);
     let mut v379: i64 = v357.wrapping_add(v376);
     let mut v380: i64 = v347.wrapping_add(v379);
     let mut v381: i64 = v315.wrapping_add(v380);
@@ -586,11 +548,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v409: i64 = v393.wrapping_add(v401);
-    let mut v410: i64 = v394.wrapping_add(v406);
     let mut v411: i64 = v396.wrapping_add(v408);
-    let mut v412: i64 = v386.wrapping_add(v409);
-    let mut v413: i64 = v390.wrapping_add(v410);
     let mut v414: i64 = v392.wrapping_add(v411);
     let mut v415: i64 = 0i64 + 1i64;
     let mut v416: i64 = v415 + 1i64;
@@ -630,11 +588,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v441: i64 = v425.wrapping_add(v433);
-    let mut v442: i64 = v426.wrapping_add(v438);
     let mut v443: i64 = v428.wrapping_add(v440);
-    let mut v444: i64 = v418.wrapping_add(v441);
-    let mut v445: i64 = v422.wrapping_add(v442);
     let mut v446: i64 = v424.wrapping_add(v443);
     let mut v447: i64 = v414.wrapping_add(v446);
     let mut v448: i64 = 0i64 + 1i64;
@@ -675,11 +629,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v474: i64 = v458.wrapping_add(v466);
-    let mut v475: i64 = v459.wrapping_add(v471);
     let mut v476: i64 = v461.wrapping_add(v473);
-    let mut v477: i64 = v451.wrapping_add(v474);
-    let mut v478: i64 = v455.wrapping_add(v475);
     let mut v479: i64 = v457.wrapping_add(v476);
     let mut v480: i64 = 0i64 + 1i64;
     let mut v481: i64 = v480 + 1i64;
@@ -719,11 +669,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v506: i64 = v490.wrapping_add(v498);
-    let mut v507: i64 = v491.wrapping_add(v503);
     let mut v508: i64 = v493.wrapping_add(v505);
-    let mut v509: i64 = v483.wrapping_add(v506);
-    let mut v510: i64 = v487.wrapping_add(v507);
     let mut v511: i64 = v489.wrapping_add(v508);
     let mut v512: i64 = v479.wrapping_add(v511);
     let mut v513: i64 = v447.wrapping_add(v512);
@@ -950,11 +896,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v692: i64 = v676.wrapping_add(v684);
-    let mut v693: i64 = v677.wrapping_add(v689);
     let mut v694: i64 = v679.wrapping_add(v691);
-    let mut v695: i64 = v669.wrapping_add(v692);
-    let mut v696: i64 = v673.wrapping_add(v693);
     let mut v697: i64 = v675.wrapping_add(v694);
     let mut v698: i64 = 0i64 + 1i64;
     let mut v699: i64 = v698 + 1i64;
@@ -994,11 +936,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v724: i64 = v708.wrapping_add(v716);
-    let mut v725: i64 = v709.wrapping_add(v721);
     let mut v726: i64 = v711.wrapping_add(v723);
-    let mut v727: i64 = v701.wrapping_add(v724);
-    let mut v728: i64 = v705.wrapping_add(v725);
     let mut v729: i64 = v707.wrapping_add(v726);
     let mut v730: i64 = v697.wrapping_add(v729);
     let mut v731: i64 = 0i64 + 1i64;
@@ -1039,11 +977,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v757: i64 = v741.wrapping_add(v749);
-    let mut v758: i64 = v742.wrapping_add(v754);
     let mut v759: i64 = v744.wrapping_add(v756);
-    let mut v760: i64 = v734.wrapping_add(v757);
-    let mut v761: i64 = v738.wrapping_add(v758);
     let mut v762: i64 = v740.wrapping_add(v759);
     let mut v763: i64 = 0i64 + 1i64;
     let mut v764: i64 = v763 + 1i64;
@@ -1083,11 +1017,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v789: i64 = v773.wrapping_add(v781);
-    let mut v790: i64 = v774.wrapping_add(v786);
     let mut v791: i64 = v776.wrapping_add(v788);
-    let mut v792: i64 = v766.wrapping_add(v789);
-    let mut v793: i64 = v770.wrapping_add(v790);
     let mut v794: i64 = v772.wrapping_add(v791);
     let mut v795: i64 = v762.wrapping_add(v794);
     let mut v796: i64 = v730.wrapping_add(v795);
@@ -1292,11 +1222,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v958: i64 = v942.wrapping_add(v950);
-    let mut v959: i64 = v943.wrapping_add(v955);
     let mut v960: i64 = v945.wrapping_add(v957);
-    let mut v961: i64 = v935.wrapping_add(v958);
-    let mut v962: i64 = v939.wrapping_add(v959);
     let mut v963: i64 = v941.wrapping_add(v960);
     let mut v964: i64 = 0i64 + 1i64;
     let mut v965: i64 = v964 + 1i64;
@@ -1336,11 +1262,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v990: i64 = v974.wrapping_add(v982);
-    let mut v991: i64 = v975.wrapping_add(v987);
     let mut v992: i64 = v977.wrapping_add(v989);
-    let mut v993: i64 = v967.wrapping_add(v990);
-    let mut v994: i64 = v971.wrapping_add(v991);
     let mut v995: i64 = v973.wrapping_add(v992);
     let mut v996: i64 = v963.wrapping_add(v995);
     let mut v997: i64 = v931.wrapping_add(v924);
@@ -1394,11 +1316,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1031: i64 = v1015.wrapping_add(v1023);
-    let mut v1032: i64 = v1016.wrapping_add(v1028);
     let mut v1033: i64 = v1018.wrapping_add(v1030);
-    let mut v1034: i64 = v1008.wrapping_add(v1031);
-    let mut v1035: i64 = v1012.wrapping_add(v1032);
     let mut v1036: i64 = v1014.wrapping_add(v1033);
     let mut v1037: i64 = 0i64 + 1i64;
     let mut v1038: i64 = v1037 + 1i64;
@@ -1438,11 +1356,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1063: i64 = v1047.wrapping_add(v1055);
-    let mut v1064: i64 = v1048.wrapping_add(v1060);
     let mut v1065: i64 = v1050.wrapping_add(v1062);
-    let mut v1066: i64 = v1040.wrapping_add(v1063);
-    let mut v1067: i64 = v1044.wrapping_add(v1064);
     let mut v1068: i64 = v1046.wrapping_add(v1065);
     let mut v1069: i64 = v1036.wrapping_add(v1068);
     let mut v1070: i64 = 0i64 + 1i64;
@@ -1483,11 +1397,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1096: i64 = v1080.wrapping_add(v1088);
-    let mut v1097: i64 = v1081.wrapping_add(v1093);
     let mut v1098: i64 = v1083.wrapping_add(v1095);
-    let mut v1099: i64 = v1073.wrapping_add(v1096);
-    let mut v1100: i64 = v1077.wrapping_add(v1097);
     let mut v1101: i64 = v1079.wrapping_add(v1098);
     let mut v1102: i64 = 0i64 + 1i64;
     let mut v1103: i64 = v1102 + 1i64;
@@ -1527,11 +1437,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1128: i64 = v1112.wrapping_add(v1120);
-    let mut v1129: i64 = v1113.wrapping_add(v1125);
     let mut v1130: i64 = v1115.wrapping_add(v1127);
-    let mut v1131: i64 = v1105.wrapping_add(v1128);
-    let mut v1132: i64 = v1109.wrapping_add(v1129);
     let mut v1133: i64 = v1111.wrapping_add(v1130);
     let mut v1134: i64 = v1101.wrapping_add(v1133);
     let mut v1135: i64 = 0i64 + 1i64;
@@ -1572,11 +1478,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1161: i64 = v1145.wrapping_add(v1153);
-    let mut v1162: i64 = v1146.wrapping_add(v1158);
     let mut v1163: i64 = v1148.wrapping_add(v1160);
-    let mut v1164: i64 = v1138.wrapping_add(v1161);
-    let mut v1165: i64 = v1142.wrapping_add(v1162);
     let mut v1166: i64 = v1144.wrapping_add(v1163);
     let mut v1167: i64 = 0i64 + 1i64;
     let mut v1168: i64 = v1167 + 1i64;
@@ -1616,11 +1518,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1193: i64 = v1177.wrapping_add(v1185);
-    let mut v1194: i64 = v1178.wrapping_add(v1190);
     let mut v1195: i64 = v1180.wrapping_add(v1192);
-    let mut v1196: i64 = v1170.wrapping_add(v1193);
-    let mut v1197: i64 = v1174.wrapping_add(v1194);
     let mut v1198: i64 = v1176.wrapping_add(v1195);
     let mut v1199: i64 = 0i64 + 1i64;
     let mut v1200: i64 = v1199 + 1i64;
@@ -1660,11 +1558,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1225: i64 = v1209.wrapping_add(v1217);
-    let mut v1226: i64 = v1210.wrapping_add(v1222);
     let mut v1227: i64 = v1212.wrapping_add(v1224);
-    let mut v1228: i64 = v1202.wrapping_add(v1225);
-    let mut v1229: i64 = v1206.wrapping_add(v1226);
     let mut v1230: i64 = v1208.wrapping_add(v1227);
     let mut v1231: i64 = 0i64 + 1i64;
     let mut v1232: i64 = v1231 + 1i64;
@@ -1704,11 +1598,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1257: i64 = v1241.wrapping_add(v1249);
-    let mut v1258: i64 = v1242.wrapping_add(v1254);
     let mut v1259: i64 = v1244.wrapping_add(v1256);
-    let mut v1260: i64 = v1234.wrapping_add(v1257);
-    let mut v1261: i64 = v1238.wrapping_add(v1258);
     let mut v1262: i64 = v1240.wrapping_add(v1259);
     let mut v1263: i64 = v1230.wrapping_add(v1262);
     let mut v1264: i64 = v1198.wrapping_add(v1263);
@@ -1761,11 +1651,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1297: i64 = v1281.wrapping_add(v1289);
-    let mut v1298: i64 = v1282.wrapping_add(v1294);
     let mut v1299: i64 = v1284.wrapping_add(v1296);
-    let mut v1300: i64 = v1274.wrapping_add(v1297);
-    let mut v1301: i64 = v1278.wrapping_add(v1298);
     let mut v1302: i64 = v1280.wrapping_add(v1299);
     let mut v1303: i64 = 0i64 + 1i64;
     let mut v1304: i64 = v1303 + 1i64;
@@ -1805,11 +1691,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1329: i64 = v1313.wrapping_add(v1321);
-    let mut v1330: i64 = v1314.wrapping_add(v1326);
     let mut v1331: i64 = v1316.wrapping_add(v1328);
-    let mut v1332: i64 = v1306.wrapping_add(v1329);
-    let mut v1333: i64 = v1310.wrapping_add(v1330);
     let mut v1334: i64 = v1312.wrapping_add(v1331);
     let mut v1335: i64 = 0i64 + 1i64;
     let mut v1336: i64 = v1335 + 1i64;
@@ -1849,11 +1731,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1361: i64 = v1345.wrapping_add(v1353);
-    let mut v1362: i64 = v1346.wrapping_add(v1358);
     let mut v1363: i64 = v1348.wrapping_add(v1360);
-    let mut v1364: i64 = v1338.wrapping_add(v1361);
-    let mut v1365: i64 = v1342.wrapping_add(v1362);
     let mut v1366: i64 = v1344.wrapping_add(v1363);
     let mut v1367: i64 = 0i64 + 1i64;
     let mut v1368: i64 = v1367 + 1i64;
@@ -1893,11 +1771,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1393: i64 = v1377.wrapping_add(v1385);
-    let mut v1394: i64 = v1378.wrapping_add(v1390);
     let mut v1395: i64 = v1380.wrapping_add(v1392);
-    let mut v1396: i64 = v1370.wrapping_add(v1393);
-    let mut v1397: i64 = v1374.wrapping_add(v1394);
     let mut v1398: i64 = v1376.wrapping_add(v1395);
     let mut v1399: i64 = 0i64 + 1i64;
     let mut v1400: i64 = v1399 + 1i64;
@@ -1937,11 +1811,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1425: i64 = v1409.wrapping_add(v1417);
-    let mut v1426: i64 = v1410.wrapping_add(v1422);
     let mut v1427: i64 = v1412.wrapping_add(v1424);
-    let mut v1428: i64 = v1402.wrapping_add(v1425);
-    let mut v1429: i64 = v1406.wrapping_add(v1426);
     let mut v1430: i64 = v1408.wrapping_add(v1427);
     let mut v1431: i64 = 0i64 + 1i64;
     let mut v1432: i64 = v1431 + 1i64;
@@ -1981,11 +1851,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1457: i64 = v1441.wrapping_add(v1449);
-    let mut v1458: i64 = v1442.wrapping_add(v1454);
     let mut v1459: i64 = v1444.wrapping_add(v1456);
-    let mut v1460: i64 = v1434.wrapping_add(v1457);
-    let mut v1461: i64 = v1438.wrapping_add(v1458);
     let mut v1462: i64 = v1440.wrapping_add(v1459);
     let mut v1463: i64 = v1430.wrapping_add(v1462);
     let mut v1464: i64 = v1398.wrapping_add(v1463);
@@ -2030,11 +1896,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1494: i64 = v1478.wrapping_add(v1486);
-    let mut v1495: i64 = v1479.wrapping_add(v1491);
     let mut v1496: i64 = v1481.wrapping_add(v1493);
-    let mut v1497: i64 = v1471.wrapping_add(v1494);
-    let mut v1498: i64 = v1475.wrapping_add(v1495);
     let mut v1499: i64 = v1477.wrapping_add(v1496);
     let mut v1500: i64 = 0i64 + 1i64;
     let mut v1501: i64 = v1500 + 1i64;
@@ -2074,11 +1936,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1526: i64 = v1510.wrapping_add(v1518);
-    let mut v1527: i64 = v1511.wrapping_add(v1523);
     let mut v1528: i64 = v1513.wrapping_add(v1525);
-    let mut v1529: i64 = v1503.wrapping_add(v1526);
-    let mut v1530: i64 = v1507.wrapping_add(v1527);
     let mut v1531: i64 = v1509.wrapping_add(v1528);
     let mut v1532: i64 = 0i64 + 1i64;
     let mut v1533: i64 = v1532 + 1i64;
@@ -2118,11 +1976,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1558: i64 = v1542.wrapping_add(v1550);
-    let mut v1559: i64 = v1543.wrapping_add(v1555);
     let mut v1560: i64 = v1545.wrapping_add(v1557);
-    let mut v1561: i64 = v1535.wrapping_add(v1558);
-    let mut v1562: i64 = v1539.wrapping_add(v1559);
     let mut v1563: i64 = v1541.wrapping_add(v1560);
     let mut v1564: i64 = 0i64 + 1i64;
     let mut v1565: i64 = v1564 + 1i64;
@@ -2162,11 +2016,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1590: i64 = v1574.wrapping_add(v1582);
-    let mut v1591: i64 = v1575.wrapping_add(v1587);
     let mut v1592: i64 = v1577.wrapping_add(v1589);
-    let mut v1593: i64 = v1567.wrapping_add(v1590);
-    let mut v1594: i64 = v1571.wrapping_add(v1591);
     let mut v1595: i64 = v1573.wrapping_add(v1592);
     let mut v1596: i64 = 0i64 + 1i64;
     let mut v1597: i64 = v1596 + 1i64;
@@ -2206,11 +2056,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1622: i64 = v1606.wrapping_add(v1614);
-    let mut v1623: i64 = v1607.wrapping_add(v1619);
     let mut v1624: i64 = v1609.wrapping_add(v1621);
-    let mut v1625: i64 = v1599.wrapping_add(v1622);
-    let mut v1626: i64 = v1603.wrapping_add(v1623);
     let mut v1627: i64 = v1605.wrapping_add(v1624);
     let mut v1628: i64 = 0i64 + 1i64;
     let mut v1629: i64 = v1628 + 1i64;
@@ -2250,11 +2096,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1654: i64 = v1638.wrapping_add(v1646);
-    let mut v1655: i64 = v1639.wrapping_add(v1651);
     let mut v1656: i64 = v1641.wrapping_add(v1653);
-    let mut v1657: i64 = v1631.wrapping_add(v1654);
-    let mut v1658: i64 = v1635.wrapping_add(v1655);
     let mut v1659: i64 = v1637.wrapping_add(v1656);
     let mut v1660: i64 = v1627.wrapping_add(v1659);
     let mut v1661: i64 = v1595.wrapping_add(v1660);
@@ -2307,11 +2149,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1694: i64 = v1678.wrapping_add(v1686);
-    let mut v1695: i64 = v1679.wrapping_add(v1691);
     let mut v1696: i64 = v1681.wrapping_add(v1693);
-    let mut v1697: i64 = v1671.wrapping_add(v1694);
-    let mut v1698: i64 = v1675.wrapping_add(v1695);
     let mut v1699: i64 = v1677.wrapping_add(v1696);
     let mut v1700: i64 = 0i64 + 1i64;
     let mut v1701: i64 = v1700 + 1i64;
@@ -2351,11 +2189,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1726: i64 = v1710.wrapping_add(v1718);
-    let mut v1727: i64 = v1711.wrapping_add(v1723);
     let mut v1728: i64 = v1713.wrapping_add(v1725);
-    let mut v1729: i64 = v1703.wrapping_add(v1726);
-    let mut v1730: i64 = v1707.wrapping_add(v1727);
     let mut v1731: i64 = v1709.wrapping_add(v1728);
     let mut v1732: i64 = v1699.wrapping_add(v1731);
     let mut v1733: i64 = 0i64 + 1i64;
@@ -2396,11 +2230,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1759: i64 = v1743.wrapping_add(v1751);
-    let mut v1760: i64 = v1744.wrapping_add(v1756);
     let mut v1761: i64 = v1746.wrapping_add(v1758);
-    let mut v1762: i64 = v1736.wrapping_add(v1759);
-    let mut v1763: i64 = v1740.wrapping_add(v1760);
     let mut v1764: i64 = v1742.wrapping_add(v1761);
     let mut v1765: i64 = 0i64 + 1i64;
     let mut v1766: i64 = v1765 + 1i64;
@@ -2440,11 +2270,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1791: i64 = v1775.wrapping_add(v1783);
-    let mut v1792: i64 = v1776.wrapping_add(v1788);
     let mut v1793: i64 = v1778.wrapping_add(v1790);
-    let mut v1794: i64 = v1768.wrapping_add(v1791);
-    let mut v1795: i64 = v1772.wrapping_add(v1792);
     let mut v1796: i64 = v1774.wrapping_add(v1793);
     let mut v1797: i64 = 0i64 + 1i64;
     let mut v1798: i64 = v1797 + 1i64;
@@ -2484,11 +2310,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1823: i64 = v1807.wrapping_add(v1815);
-    let mut v1824: i64 = v1808.wrapping_add(v1820);
     let mut v1825: i64 = v1810.wrapping_add(v1822);
-    let mut v1826: i64 = v1800.wrapping_add(v1823);
-    let mut v1827: i64 = v1804.wrapping_add(v1824);
     let mut v1828: i64 = v1806.wrapping_add(v1825);
     let mut v1829: i64 = 0i64 + 1i64;
     let mut v1830: i64 = v1829 + 1i64;
@@ -2528,11 +2350,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v1855: i64 = v1839.wrapping_add(v1847);
-    let mut v1856: i64 = v1840.wrapping_add(v1852);
     let mut v1857: i64 = v1842.wrapping_add(v1854);
-    let mut v1858: i64 = v1832.wrapping_add(v1855);
-    let mut v1859: i64 = v1836.wrapping_add(v1856);
     let mut v1860: i64 = v1838.wrapping_add(v1857);
     let mut v1861: i64 = v1828.wrapping_add(v1860);
     let mut v1862: i64 = v1796.wrapping_add(v1861);
@@ -2739,11 +2557,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2026: i64 = v2010.wrapping_add(v2018);
-    let mut v2027: i64 = v2011.wrapping_add(v2023);
     let mut v2028: i64 = v2013.wrapping_add(v2025);
-    let mut v2029: i64 = v2003.wrapping_add(v2026);
-    let mut v2030: i64 = v2007.wrapping_add(v2027);
     let mut v2031: i64 = v2009.wrapping_add(v2028);
     let mut v2032: i64 = 0i64 + 1i64;
     let mut v2033: i64 = v2032 + 1i64;
@@ -2783,11 +2597,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2058: i64 = v2042.wrapping_add(v2050);
-    let mut v2059: i64 = v2043.wrapping_add(v2055);
     let mut v2060: i64 = v2045.wrapping_add(v2057);
-    let mut v2061: i64 = v2035.wrapping_add(v2058);
-    let mut v2062: i64 = v2039.wrapping_add(v2059);
     let mut v2063: i64 = v2041.wrapping_add(v2060);
     let mut v2064: i64 = 0i64 + 1i64;
     let mut v2065: i64 = v2064 + 1i64;
@@ -2827,11 +2637,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2090: i64 = v2074.wrapping_add(v2082);
-    let mut v2091: i64 = v2075.wrapping_add(v2087);
     let mut v2092: i64 = v2077.wrapping_add(v2089);
-    let mut v2093: i64 = v2067.wrapping_add(v2090);
-    let mut v2094: i64 = v2071.wrapping_add(v2091);
     let mut v2095: i64 = v2073.wrapping_add(v2092);
     let mut v2096: i64 = 0i64 + 1i64;
     let mut v2097: i64 = v2096 + 1i64;
@@ -2871,11 +2677,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2122: i64 = v2106.wrapping_add(v2114);
-    let mut v2123: i64 = v2107.wrapping_add(v2119);
     let mut v2124: i64 = v2109.wrapping_add(v2121);
-    let mut v2125: i64 = v2099.wrapping_add(v2122);
-    let mut v2126: i64 = v2103.wrapping_add(v2123);
     let mut v2127: i64 = v2105.wrapping_add(v2124);
     let mut v2128: i64 = v2095.wrapping_add(v2127);
     let mut v2129: i64 = v2063.wrapping_add(v2128);
@@ -2931,11 +2733,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2165: i64 = v2149.wrapping_add(v2157);
-    let mut v2166: i64 = v2150.wrapping_add(v2162);
     let mut v2167: i64 = v2152.wrapping_add(v2164);
-    let mut v2168: i64 = v2142.wrapping_add(v2165);
-    let mut v2169: i64 = v2146.wrapping_add(v2166);
     let mut v2170: i64 = v2148.wrapping_add(v2167);
     let mut v2171: i64 = 0i64 + 1i64;
     let mut v2172: i64 = v2171 + 1i64;
@@ -2975,11 +2773,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2197: i64 = v2181.wrapping_add(v2189);
-    let mut v2198: i64 = v2182.wrapping_add(v2194);
     let mut v2199: i64 = v2184.wrapping_add(v2196);
-    let mut v2200: i64 = v2174.wrapping_add(v2197);
-    let mut v2201: i64 = v2178.wrapping_add(v2198);
     let mut v2202: i64 = v2180.wrapping_add(v2199);
     let mut v2203: i64 = v2170.wrapping_add(v2202);
     let mut v2204: i64 = 0i64 + 1i64;
@@ -3020,11 +2814,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2230: i64 = v2214.wrapping_add(v2222);
-    let mut v2231: i64 = v2215.wrapping_add(v2227);
     let mut v2232: i64 = v2217.wrapping_add(v2229);
-    let mut v2233: i64 = v2207.wrapping_add(v2230);
-    let mut v2234: i64 = v2211.wrapping_add(v2231);
     let mut v2235: i64 = v2213.wrapping_add(v2232);
     let mut v2236: i64 = 0i64 + 1i64;
     let mut v2237: i64 = v2236 + 1i64;
@@ -3064,11 +2854,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2262: i64 = v2246.wrapping_add(v2254);
-    let mut v2263: i64 = v2247.wrapping_add(v2259);
     let mut v2264: i64 = v2249.wrapping_add(v2261);
-    let mut v2265: i64 = v2239.wrapping_add(v2262);
-    let mut v2266: i64 = v2243.wrapping_add(v2263);
     let mut v2267: i64 = v2245.wrapping_add(v2264);
     let mut v2268: i64 = v2235.wrapping_add(v2267);
     let mut v2269: i64 = v2203.wrapping_add(v2268);
@@ -3273,11 +3059,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2431: i64 = v2415.wrapping_add(v2423);
-    let mut v2432: i64 = v2416.wrapping_add(v2428);
     let mut v2433: i64 = v2418.wrapping_add(v2430);
-    let mut v2434: i64 = v2408.wrapping_add(v2431);
-    let mut v2435: i64 = v2412.wrapping_add(v2432);
     let mut v2436: i64 = v2414.wrapping_add(v2433);
     let mut v2437: i64 = 0i64 + 1i64;
     let mut v2438: i64 = v2437 + 1i64;
@@ -3317,11 +3099,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2463: i64 = v2447.wrapping_add(v2455);
-    let mut v2464: i64 = v2448.wrapping_add(v2460);
     let mut v2465: i64 = v2450.wrapping_add(v2462);
-    let mut v2466: i64 = v2440.wrapping_add(v2463);
-    let mut v2467: i64 = v2444.wrapping_add(v2464);
     let mut v2468: i64 = v2446.wrapping_add(v2465);
     let mut v2469: i64 = v2436.wrapping_add(v2468);
     let mut v2470: i64 = v2404.wrapping_add(v2397);
@@ -3373,11 +3151,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2502: i64 = v2486.wrapping_add(v2494);
-    let mut v2503: i64 = v2487.wrapping_add(v2499);
     let mut v2504: i64 = v2489.wrapping_add(v2501);
-    let mut v2505: i64 = v2479.wrapping_add(v2502);
-    let mut v2506: i64 = v2483.wrapping_add(v2503);
     let mut v2507: i64 = v2485.wrapping_add(v2504);
     let mut v2508: i64 = 0i64 + 1i64;
     let mut v2509: i64 = v2508 + 1i64;
@@ -3417,11 +3191,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2534: i64 = v2518.wrapping_add(v2526);
-    let mut v2535: i64 = v2519.wrapping_add(v2531);
     let mut v2536: i64 = v2521.wrapping_add(v2533);
-    let mut v2537: i64 = v2511.wrapping_add(v2534);
-    let mut v2538: i64 = v2515.wrapping_add(v2535);
     let mut v2539: i64 = v2517.wrapping_add(v2536);
     let mut v2540: i64 = v2507.wrapping_add(v2539);
     let mut v2541: i64 = 0i64 + 1i64;
@@ -3462,11 +3232,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2567: i64 = v2551.wrapping_add(v2559);
-    let mut v2568: i64 = v2552.wrapping_add(v2564);
     let mut v2569: i64 = v2554.wrapping_add(v2566);
-    let mut v2570: i64 = v2544.wrapping_add(v2567);
-    let mut v2571: i64 = v2548.wrapping_add(v2568);
     let mut v2572: i64 = v2550.wrapping_add(v2569);
     let mut v2573: i64 = 0i64 + 1i64;
     let mut v2574: i64 = v2573 + 1i64;
@@ -3506,11 +3272,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2599: i64 = v2583.wrapping_add(v2591);
-    let mut v2600: i64 = v2584.wrapping_add(v2596);
     let mut v2601: i64 = v2586.wrapping_add(v2598);
-    let mut v2602: i64 = v2576.wrapping_add(v2599);
-    let mut v2603: i64 = v2580.wrapping_add(v2600);
     let mut v2604: i64 = v2582.wrapping_add(v2601);
     let mut v2605: i64 = v2572.wrapping_add(v2604);
     let mut v2606: i64 = v2540.wrapping_add(v2605);
@@ -3715,11 +3477,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2768: i64 = v2752.wrapping_add(v2760);
-    let mut v2769: i64 = v2753.wrapping_add(v2765);
     let mut v2770: i64 = v2755.wrapping_add(v2767);
-    let mut v2771: i64 = v2745.wrapping_add(v2768);
-    let mut v2772: i64 = v2749.wrapping_add(v2769);
     let mut v2773: i64 = v2751.wrapping_add(v2770);
     let mut v2774: i64 = 0i64 + 1i64;
     let mut v2775: i64 = v2774 + 1i64;
@@ -3759,11 +3517,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2800: i64 = v2784.wrapping_add(v2792);
-    let mut v2801: i64 = v2785.wrapping_add(v2797);
     let mut v2802: i64 = v2787.wrapping_add(v2799);
-    let mut v2803: i64 = v2777.wrapping_add(v2800);
-    let mut v2804: i64 = v2781.wrapping_add(v2801);
     let mut v2805: i64 = v2783.wrapping_add(v2802);
     let mut v2806: i64 = v2773.wrapping_add(v2805);
     let mut v2807: i64 = v2741.wrapping_add(v2734);
@@ -4010,11 +3764,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v2981: i64 = v2965.wrapping_add(v2973);
-    let mut v2982: i64 = v2966.wrapping_add(v2978);
     let mut v2983: i64 = v2968.wrapping_add(v2980);
-    let mut v2984: i64 = v2958.wrapping_add(v2981);
-    let mut v2985: i64 = v2962.wrapping_add(v2982);
     let mut v2986: i64 = v2964.wrapping_add(v2983);
     let mut v2987: i64 = 0i64 + 1i64;
     let mut v2988: i64 = v2987 + 1i64;
@@ -4054,14 +3804,8 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v3013: i64 = v2997.wrapping_add(v3005);
-    let mut v3014: i64 = v2998.wrapping_add(v3010);
     let mut v3015: i64 = v3000.wrapping_add(v3012);
-    let mut v3016: i64 = v2990.wrapping_add(v3013);
-    let mut v3017: i64 = v2994.wrapping_add(v3014);
     let mut v3018: i64 = v2996.wrapping_add(v3015);
-    let mut v3019: i64 = v3016.wrapping_add(v2984);
-    let mut v3020: i64 = v3017.wrapping_add(v2985);
     let mut v3021: i64 = v3018.wrapping_add(v2986);
     let mut v3022: i64 = 0i64 + 1i64;
     let mut v3023: i64 = v3022 + 1i64;
@@ -4101,11 +3845,7 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v3048: i64 = v3032.wrapping_add(v3040);
-    let mut v3049: i64 = v3033.wrapping_add(v3045);
     let mut v3050: i64 = v3035.wrapping_add(v3047);
-    let mut v3051: i64 = v3025.wrapping_add(v3048);
-    let mut v3052: i64 = v3029.wrapping_add(v3049);
     let mut v3053: i64 = v3031.wrapping_add(v3050);
     let mut v3054: i64 = 0i64 + 1i64;
     let mut v3055: i64 = v3054 + 1i64;
@@ -4145,14 +3885,8 @@ fn spiral_main() -> i32 {
     } else {
         1i64
     };
-    let mut v3080: i64 = v3064.wrapping_add(v3072);
-    let mut v3081: i64 = v3065.wrapping_add(v3077);
     let mut v3082: i64 = v3067.wrapping_add(v3079);
-    let mut v3083: i64 = v3057.wrapping_add(v3080);
-    let mut v3084: i64 = v3061.wrapping_add(v3081);
     let mut v3085: i64 = v3063.wrapping_add(v3082);
-    let mut v3086: i64 = v3083.wrapping_add(v3051);
-    let mut v3087: i64 = v3084.wrapping_add(v3052);
     let mut v3088: i64 = v3085.wrapping_add(v3053);
     let mut v3089: i64 = v3021.wrapping_add(v3088);
     let mut v3090: bool = v3089 == 0i64;

@@ -843,7 +843,6 @@ function loop_22(v0, v1)
                     if v34 then
                         return 0
                     else
-                        local v35 = v30 == 1
                         return 0
                     end
                 else
@@ -853,7 +852,6 @@ function loop_22(v0, v1)
                         if v38 then
                             return 0
                         else
-                            local v39 = v30 == 1
                             return 0
                         end
                     else
@@ -1505,7 +1503,6 @@ function loop_34(v0, v1)
             local v24 = v0 == 0
             local getv28 = function()
                 if v24 then
-                    local v25 = v21 == 0
                     return 0
                 else
                     local v26 = v21 == 0

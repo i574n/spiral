@@ -29,139 +29,139 @@ let v10 =
         }
     }
 io.println(int.to_string(v10))
-let v69 = "1011"
-let #(v70, v71) = case int.base_parse(v69, 2) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v72 = v71 == 0
-let v75 =
-    case v72 {
+let v11 = "1011"
+let #(v12, v13) = case int.base_parse(v11, 2) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v14 = v13 == 0
+let v17 =
+    case v14 {
         True -> {
-            Us0Some(v70)
+            Us0Some(v12)
         }
         False -> {
             Us0None
         }
     }
-let v79 =
-    case v75  {
+let v21 =
+    case v17  {
         Us0None -> {
             panic as "Option does not have a value."
         }
-        Us0Some(v76) -> {
-            v76
+        Us0Some(v18) -> {
+            v18
         }
     }
-io.println(int.to_string(v79))
-let v94 = "-42"
-let #(v95, v96) = case int.base_parse(v94, 10) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v97 = v96 == 0
-let v100 =
-    case v97 {
+io.println(int.to_string(v21))
+let v22 = "-42"
+let #(v23, v24) = case int.base_parse(v22, 10) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v25 = v24 == 0
+let v28 =
+    case v25 {
         True -> {
-            Us0Some(v95)
+            Us0Some(v23)
         }
         False -> {
             Us0None
         }
     }
-let v104 =
-    case v100  {
+let v32 =
+    case v28  {
         Us0None -> {
             panic as "Option does not have a value."
         }
-        Us0Some(v101) -> {
-            v101
+        Us0Some(v29) -> {
+            v29
         }
     }
-io.println(int.to_string(v104))
-let v143 = " 123 "
-let #(v144, v145) = case int.parse(string.trim(v143)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v146 = v145 == 0
-let v179 =
-    case v146 {
+io.println(int.to_string(v32))
+let v33 = " 123 "
+let #(v34, v35) = case int.parse(string.trim(v33)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v36 = v35 == 0
+let v39 =
+    case v36 {
         True -> {
-            Us0Some(v144)
+            Us0Some(v34)
         }
         False -> {
             Us0None
         }
     }
-case v179  {
+case v39  {
     Us0None -> {
-        let v796 = "none"
-        io.println(v796)
+        let v41 = "none"
+        io.println(v41)
         Nil
     }
-    Us0Some(v795) -> {
-        io.println(int.to_string(v795))
+    Us0Some(v40) -> {
+        io.println(int.to_string(v40))
         Nil
     }
 }
-let v800 = "12x"
-let #(v801, v802) = case int.parse(string.trim(v800)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v803 = v802 == 0
-let v806 =
-    case v803 {
+let v42 = "12x"
+let #(v43, v44) = case int.parse(string.trim(v42)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v45 = v44 == 0
+let v48 =
+    case v45 {
         True -> {
-            Us0Some(v801)
+            Us0Some(v43)
         }
         False -> {
             Us0None
         }
     }
-case v806  {
+case v48  {
     Us0None -> {
-        let v808 = "none"
-        io.println(v808)
+        let v50 = "none"
+        io.println(v50)
         Nil
     }
-    Us0Some(v807) -> {
-        io.println(int.to_string(v807))
+    Us0Some(v49) -> {
+        io.println(int.to_string(v49))
         Nil
     }
 }
-let v809 = ""
-let #(v810, v811) = case int.parse(string.trim(v809)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v812 = v811 == 0
-let v815 =
-    case v812 {
+let v51 = ""
+let #(v52, v53) = case int.parse(string.trim(v51)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v54 = v53 == 0
+let v57 =
+    case v54 {
         True -> {
-            Us0Some(v810)
+            Us0Some(v52)
         }
         False -> {
             Us0None
         }
     }
-case v815  {
+case v57  {
     Us0None -> {
-        let v817 = "none"
-        io.println(v817)
+        let v59 = "none"
+        io.println(v59)
         Nil
     }
-    Us0Some(v816) -> {
-        io.println(int.to_string(v816))
+    Us0Some(v58) -> {
+        io.println(int.to_string(v58))
         Nil
     }
 }
-let v818 = "+7"
-let #(v819, v820) = case int.parse(string.trim(v818)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
-let v821 = v820 == 0
-let v824 =
-    case v821 {
+let v60 = "+7"
+let #(v61, v62) = case int.parse(string.trim(v60)) { Ok(n) -> #(n, 0) Error(Nil) -> #(0, 1) }
+let v63 = v62 == 0
+let v66 =
+    case v63 {
         True -> {
-            Us0Some(v819)
+            Us0Some(v61)
         }
         False -> {
             Us0None
         }
     }
-case v824  {
+case v66  {
     Us0None -> {
-        let v826 = "none"
-        io.println(v826)
+        let v68 = "none"
+        io.println(v68)
         Nil
     }
-    Us0Some(v825) -> {
-        io.println(int.to_string(v825))
+    Us0Some(v67) -> {
+        io.println(int.to_string(v67))
         Nil
     }
 }

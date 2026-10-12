@@ -86,7 +86,7 @@ int32_t score0(US0 v0){
             return v3;
             break;
         }
-        case 0: { // Text
+        default: { // Text
             String * v1 = v0.case0.v0;
             (v1)->refc++;
             USDecref0(&(v0));

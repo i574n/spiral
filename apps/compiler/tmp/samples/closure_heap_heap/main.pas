@@ -20,10 +20,7 @@ begin
   Result.l0 := a0; Result.l1 := a1;
 end;
 function Tf_c0.Invoke(v1: LongInt): THeap1;
-var
-  v2: Boolean;
 begin
-  v2 := v1 = 0;
   Result := v0;
 end;
 function ClosureCreate0(v0: THeap1): TFun0;

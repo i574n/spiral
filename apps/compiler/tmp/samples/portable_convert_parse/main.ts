@@ -5,150 +5,150 @@ function US0_Some(f0: number): US0 { return { tag: 0, f0: f0 }; }
 function US0_None(): US0 { return { tag: 1 }; }
 export function main(): number {
     let v0: string = "ff";
-    let v36: number = parseInt(v0, 16);
-    process.stdout.write(String(v36) + "\n");
-    let v69: string = "1011";
-    let v88: number = parseInt(v69, 2);
-    process.stdout.write(String(v88) + "\n");
-    let v94: string = "-42";
-    let v137: number = parseInt(v94, 10);
-    process.stdout.write(String(v137) + "\n");
-    let v143: string = " 123 ";
-    let v733: boolean = /^\s*[+-]?\d+\s*$/.test(v143);
-    let v734: bigint = (v733 ? BigInt(v143) : 0n);
-    let v735: number = Number(BigInt.asIntN(32, v734));
-    let v739: boolean;
-    if (v733) {
-        let v736: boolean = v734 >= (-2147483648n);
-        if (v736) {
-            let v737: boolean = v734 <= 2147483647n;
-            v739 = v737;
+    let v1: number = parseInt(v0, 16);
+    process.stdout.write(String(v1) + "\n");
+    let v2: string = "1011";
+    let v3: number = parseInt(v2, 2);
+    process.stdout.write(String(v3) + "\n");
+    let v4: string = "-42";
+    let v5: number = parseInt(v4, 10);
+    process.stdout.write(String(v5) + "\n");
+    let v6: string = " 123 ";
+    let v7: boolean = /^\s*[+-]?\d+\s*$/.test(v6);
+    let v8: bigint = (v7 ? BigInt(v6) : 0n);
+    let v9: number = Number(BigInt.asIntN(32, v8));
+    let v13: boolean;
+    if (v7) {
+        let v10: boolean = v8 >= (-2147483648n);
+        if (v10) {
+            let v11: boolean = v8 <= 2147483647n;
+            v13 = v11;
         } else {
-            v739 = false;
+            v13 = false;
         }
     } else {
-        v739 = false;
+        v13 = false;
     }
-    let v742: US0;
-    if (v739) {
-        v742 = US0_Some(v735);
+    let v16: US0;
+    if (v13) {
+        v16 = US0_Some(v9);
     } else {
-        v742 = US0_None();
+        v16 = US0_None();
     }
-    switch (v742.tag) {
+    switch (v16.tag) {
         case 1: {
-            let v804: string = "none";
-            process.stdout.write(String(v804) + "\n");
+            let v18: string = "none";
+            process.stdout.write(String(v18) + "\n");
             break;
         }
         case 0: {
-            let v795: number = v742.f0;
-            process.stdout.write(String(v795) + "\n");
+            let v17: number = v16.f0;
+            process.stdout.write(String(v17) + "\n");
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v805: string = "12x";
-    let v806: boolean = /^\s*[+-]?\d+\s*$/.test(v805);
-    let v807: bigint = (v806 ? BigInt(v805) : 0n);
-    let v808: number = Number(BigInt.asIntN(32, v807));
-    let v812: boolean;
-    if (v806) {
-        let v809: boolean = v807 >= (-2147483648n);
-        if (v809) {
-            let v810: boolean = v807 <= 2147483647n;
-            v812 = v810;
+    let v19: string = "12x";
+    let v20: boolean = /^\s*[+-]?\d+\s*$/.test(v19);
+    let v21: bigint = (v20 ? BigInt(v19) : 0n);
+    let v22: number = Number(BigInt.asIntN(32, v21));
+    let v26: boolean;
+    if (v20) {
+        let v23: boolean = v21 >= (-2147483648n);
+        if (v23) {
+            let v24: boolean = v21 <= 2147483647n;
+            v26 = v24;
         } else {
-            v812 = false;
+            v26 = false;
         }
     } else {
-        v812 = false;
+        v26 = false;
     }
-    let v815: US0;
-    if (v812) {
-        v815 = US0_Some(v808);
+    let v29: US0;
+    if (v26) {
+        v29 = US0_Some(v22);
     } else {
-        v815 = US0_None();
+        v29 = US0_None();
     }
-    switch (v815.tag) {
+    switch (v29.tag) {
         case 1: {
-            let v817: string = "none";
-            process.stdout.write(String(v817) + "\n");
+            let v31: string = "none";
+            process.stdout.write(String(v31) + "\n");
             break;
         }
         case 0: {
-            let v816: number = v815.f0;
-            process.stdout.write(String(v816) + "\n");
+            let v30: number = v29.f0;
+            process.stdout.write(String(v30) + "\n");
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v818: string = "";
-    let v819: boolean = /^\s*[+-]?\d+\s*$/.test(v818);
-    let v820: bigint = (v819 ? BigInt(v818) : 0n);
-    let v821: number = Number(BigInt.asIntN(32, v820));
-    let v825: boolean;
-    if (v819) {
-        let v822: boolean = v820 >= (-2147483648n);
-        if (v822) {
-            let v823: boolean = v820 <= 2147483647n;
-            v825 = v823;
+    let v32: string = "";
+    let v33: boolean = /^\s*[+-]?\d+\s*$/.test(v32);
+    let v34: bigint = (v33 ? BigInt(v32) : 0n);
+    let v35: number = Number(BigInt.asIntN(32, v34));
+    let v39: boolean;
+    if (v33) {
+        let v36: boolean = v34 >= (-2147483648n);
+        if (v36) {
+            let v37: boolean = v34 <= 2147483647n;
+            v39 = v37;
         } else {
-            v825 = false;
+            v39 = false;
         }
     } else {
-        v825 = false;
+        v39 = false;
     }
-    let v828: US0;
-    if (v825) {
-        v828 = US0_Some(v821);
+    let v42: US0;
+    if (v39) {
+        v42 = US0_Some(v35);
     } else {
-        v828 = US0_None();
+        v42 = US0_None();
     }
-    switch (v828.tag) {
+    switch (v42.tag) {
         case 1: {
-            let v830: string = "none";
-            process.stdout.write(String(v830) + "\n");
+            let v44: string = "none";
+            process.stdout.write(String(v44) + "\n");
             break;
         }
         case 0: {
-            let v829: number = v828.f0;
-            process.stdout.write(String(v829) + "\n");
+            let v43: number = v42.f0;
+            process.stdout.write(String(v43) + "\n");
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");
     }
-    let v831: string = "+7";
-    let v832: boolean = /^\s*[+-]?\d+\s*$/.test(v831);
-    let v833: bigint = (v832 ? BigInt(v831) : 0n);
-    let v834: number = Number(BigInt.asIntN(32, v833));
-    let v838: boolean;
-    if (v832) {
-        let v835: boolean = v833 >= (-2147483648n);
-        if (v835) {
-            let v836: boolean = v833 <= 2147483647n;
-            v838 = v836;
+    let v45: string = "+7";
+    let v46: boolean = /^\s*[+-]?\d+\s*$/.test(v45);
+    let v47: bigint = (v46 ? BigInt(v45) : 0n);
+    let v48: number = Number(BigInt.asIntN(32, v47));
+    let v52: boolean;
+    if (v46) {
+        let v49: boolean = v47 >= (-2147483648n);
+        if (v49) {
+            let v50: boolean = v47 <= 2147483647n;
+            v52 = v50;
         } else {
-            v838 = false;
+            v52 = false;
         }
     } else {
-        v838 = false;
+        v52 = false;
     }
-    let v841: US0;
-    if (v838) {
-        v841 = US0_Some(v834);
+    let v55: US0;
+    if (v52) {
+        v55 = US0_Some(v48);
     } else {
-        v841 = US0_None();
+        v55 = US0_None();
     }
-    switch (v841.tag) {
+    switch (v55.tag) {
         case 1: {
-            let v843: string = "none";
-            process.stdout.write(String(v843) + "\n");
+            let v57: string = "none";
+            process.stdout.write(String(v57) + "\n");
             break;
         }
         case 0: {
-            let v842: number = v841.f0;
-            process.stdout.write(String(v842) + "\n");
+            let v56: number = v55.f0;
+            process.stdout.write(String(v56) + "\n");
             break;
         }
         default: throw new Error("Compiler error: unreachable union case.");

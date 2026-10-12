@@ -88,7 +88,7 @@ int32_t score_inner1(US1 v0){
             return v1;
             break;
         }
-        case 1: { // B
+        default: { // B
             int32_t v2 = v0.case1.v0;
             
             USDecref1(&(v0));
@@ -112,7 +112,7 @@ int32_t score0(US0 v0){
             return v3;
             break;
         }
-        case 0: { // Wrap
+        default: { // Wrap
             US1 v1 = v0.case0.v0;
             USIncref1(&(v1));
             USDecref0(&(v0));

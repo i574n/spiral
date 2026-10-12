@@ -214,10 +214,7 @@ Heap4 * f_c0(Closure0 * x, int32_t v1){
     Heap4 * v0 = x->v0;
     (v0)->refc++;
     ClosureDecref0(x);
-    
-    
-    bool v2;
-    v2 = v1 == 0l;
+    (void)v1;
     
     
     return v0;
@@ -241,7 +238,7 @@ int32_t score0(US1 v0){
             return 1l;
             break;
         }
-        case 1: { // Box
+        default: { // Box
             Heap3 * v1 = v0.case1.v0;
             (v1)->refc++;
             USDecref1(&(v0));
@@ -349,7 +346,7 @@ int32_t score0(US1 v0){
                     }
                     break;
                 }
-                case 0: { // None
+                default: { // None
                     
                     
                     USDecref0(&(v2));

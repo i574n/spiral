@@ -1,17 +1,17 @@
-let v2 : (string -> unit) = System.Console.WriteLine
-let v3 : string = "hello"
-v2 v3
-let v10 : int32 = 42
-let v11 : (int32 -> unit) = System.Console.WriteLine
-v11 v10
-let v16 : string = "a"
-v16 |> System.Console.Write
-let v21 : string = "b"
-v21 |> System.Console.Write
-let v26 : (string -> unit) = System.Console.WriteLine
-let v27 : string = ""
-v26 v27
-let v30 : int64 = -7L
-let v31 : (int64 -> unit) = System.Console.WriteLine
-v31 v30
+let v0 : (string -> unit) = System.Console.WriteLine
+let v1 : string = "hello"
+v0 v1
+let v2 : int32 = 42
+let v3 : (int32 -> unit) = System.Console.WriteLine
+v3 v2
+let v4 : string = "a"
+v4 |> System.Console.Write
+let v5 : string = "b"
+v5 |> System.Console.Write
+let v6 : (string -> unit) = System.Console.WriteLine
+let v7 : string = ""
+v6 v7
+let v8 : int64 = -7L
+let v9 : (int64 -> unit) = System.Console.WriteLine
+v9 v8
 0

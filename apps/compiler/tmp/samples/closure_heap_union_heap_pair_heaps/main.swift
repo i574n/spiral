@@ -34,8 +34,6 @@ struct US0_None: US0 { var tag: Int32 { 0 } }
 struct US0_Held: US0 { var f0: Heap2; var tag: Int32 { 1 } }
 func f_c0(_ v0: Heap3) -> (Int32) -> Heap3 {
     return { (v1: Int32) -> Heap3 in
-        var v2: Bool = false
-        v2 = (v1 == 0)
         return v0
     }
 }

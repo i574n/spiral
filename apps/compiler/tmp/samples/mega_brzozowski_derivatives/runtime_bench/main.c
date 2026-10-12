@@ -400,7 +400,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                                     return US1_SymbolSame();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
@@ -410,7 +410,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                             }
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             USDecref0(&(v10));
@@ -422,7 +422,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
                                     return US1_SymbolLess();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
@@ -504,7 +504,7 @@ US1 regex_compare7(UH0 * v0, UH0 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH0 * v44 = v0->case5.v0;
             (v44)->refc++;
             UHDecref0(v0);
@@ -564,7 +564,7 @@ UH0 * alt_insert_sorted6(UH0 * v0, UH0 * v1){
                     return UH0_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref0(v0); UHDecref0(v2); UHDecref0(v3); USDecref1(&(v4));
@@ -603,7 +603,7 @@ UH0 * alt_insert_sorted6(UH0 * v0, UH0 * v1){
                     return UH0_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref0(v0); USDecref1(&(v11));
@@ -734,7 +734,7 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
                                     v15 = US1_SymbolSame();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     
@@ -744,7 +744,7 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
                             }
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -756,7 +756,7 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
                                     v15 = US1_SymbolLess();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     
@@ -833,7 +833,7 @@ bool regex_equal9(UH0 * v0, UH0 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH0 * v34 = v0->case5.v0;
             (v34)->refc++;
             UHDecref0(v0);
@@ -1048,7 +1048,7 @@ UH0 * normalize4(UH0 * v0){
             return UH0_RegexEpsilon();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH0 * v15 = v0->case5.v0;
             (v15)->refc += 2;
             UHDecref0(v0);
@@ -1120,12 +1120,12 @@ US2 nullable12(UH0 * v0){
                             
                             
                             switch (v7.tag) {
-                                case 1: { // NonNullable
+                                default: { // NonNullable
                                     
                                     
                                     USDecref2(&(v7));
                                     switch (v8.tag) {
-                                        case 1: { // NonNullable
+                                        default: { // NonNullable
                                             
                                             
                                             USDecref2(&(v8));
@@ -1204,7 +1204,7 @@ US2 nullable12(UH0 * v0){
             return US2_Nullable();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             
             
             UHDecref0(v0);
@@ -1252,7 +1252,7 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                     return make_cat8(v31, v25);
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     USIncref0(&(v1)); (v24)->refc++;
                     USDecref2(&(v26));
@@ -1292,7 +1292,7 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                             v14 = US1_SymbolSame();
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -1302,7 +1302,7 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                     }
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     
@@ -1314,7 +1314,7 @@ UH0 * derivative11(UH0 * v0, US0 v1){
                             v14 = US1_SymbolLess();
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -1369,7 +1369,7 @@ UH0 * derivative11(UH0 * v0, US0 v1){
             return UH0_RegexEmpty();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH0 * v35 = v0->case5.v0;
             USIncref0(&(v1)); (v35)->refc += 2;
             UHDecref0(v0);
@@ -1414,7 +1414,7 @@ bool accepts2(UH0 * v0, UH1 * v1){
             return accepts2(v8, v7);
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             (v0)->refc++;
             UHDecref1(v1);
@@ -1434,7 +1434,7 @@ bool accepts2(UH0 * v0, UH1 * v1){
                     return false;
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     
                     USDecref2(&(v3));
@@ -1708,7 +1708,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                                             v21 = US1_SymbolSame();
                                             break;
                                         }
-                                        case 0: { // BitZero
+                                        default: { // BitZero
                                             
                                             
                                             
@@ -1718,7 +1718,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                                     }
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     
@@ -1730,7 +1730,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                                             v21 = US1_SymbolLess();
                                             break;
                                         }
-                                        case 0: { // BitZero
+                                        default: { // BitZero
                                             
                                             
                                             
@@ -1771,7 +1771,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                             }
                             break;
                         }
-                        case 0: { // InputEmpty
+                        default: { // InputEmpty
                             
                             
                             UHDecref1(v1); UHDecref2(v7); USDecref0(&(v9));
@@ -1795,7 +1795,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                     return backtrack_stack16(v7, v1);
                     break;
                 }
-                case 5: { // RegexStar
+                default: { // RegexStar
                     UH0 * v39 = v6->case5.v0;
                     (v0)->refc++; (v39)->refc += 2;
                     UHDecref0(v6);
@@ -1821,7 +1821,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
             }
             break;
         }
-        case 0: { // RegexListNil
+        default: { // RegexListNil
             
             
             UHDecref2(v0);
@@ -1833,7 +1833,7 @@ bool backtrack_stack16(UH2 * v0, UH1 * v1){
                     return false;
                     break;
                 }
-                case 0: { // InputEmpty
+                default: { // InputEmpty
                     
                     
                     UHDecref1(v1);
@@ -2017,10 +2017,6 @@ bool run19(int32_t v0, UH1 * v1){
                     
                     
                     USDecref0(&(v3));
-                    bool v8;
-                    v8 = v0 == 0l;
-                    
-                    
                     int32_t v9;
                     v9 = 0l;
                     
@@ -2028,14 +2024,10 @@ bool run19(int32_t v0, UH1 * v1){
                     return run19(v9, v4);
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     USDecref0(&(v3));
-                    bool v5;
-                    v5 = v0 == 0l;
-                    
-                    
                     int32_t v6;
                     v6 = 1l;
                     
@@ -2046,7 +2038,7 @@ bool run19(int32_t v0, UH1 * v1){
             }
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             
             UHDecref1(v1);
@@ -2313,7 +2305,7 @@ bool run21(int32_t v0, UH1 * v1){
                     return run21(v79, v18);
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     USDecref0(&(v17));
@@ -2507,7 +2499,7 @@ bool run21(int32_t v0, UH1 * v1){
             }
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             
             UHDecref1(v1);
@@ -2705,10 +2697,6 @@ bool run23(int32_t v0, UH1 * v1){
                             } else {
                                 
                                 
-                                bool v16;
-                                v16 = v0 == 3l;
-                                
-                                
                                 v19 = 4l;
                             }
                         }
@@ -2718,7 +2706,7 @@ bool run23(int32_t v0, UH1 * v1){
                     return run23(v19, v4);
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     USDecref0(&(v3));
@@ -2756,10 +2744,6 @@ bool run23(int32_t v0, UH1 * v1){
                             } else {
                                 
                                 
-                                bool v8;
-                                v8 = v0 == 3l;
-                                
-                                
                                 v11 = 4l;
                             }
                         }
@@ -2772,7 +2756,7 @@ bool run23(int32_t v0, UH1 * v1){
             }
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             
             UHDecref1(v1);
@@ -3577,7 +3561,7 @@ int32_t interned_of_regex_raw28(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * 
                     v11 = 1l;
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     
@@ -3608,7 +3592,7 @@ int32_t interned_of_regex_raw28(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * 
             return 1l;
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH0 * v24 = v7->case5.v0;
             (v0)->refc++; (v1)->refc++; (v2)->refc++; (v3)->refc++; (v4)->refc++; (v5)->refc++; (v6)->refc++; (v24)->refc += 2;
             UHDecref0(v7);
@@ -3858,7 +3842,7 @@ bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Arr
                         v15 = 1l;
                         break;
                     }
-                    case 0: { // BitZero
+                    default: { // BitZero
                         
                         
                         
@@ -3875,7 +3859,7 @@ bool loop34(Array0 * v0, Array0 * v1, Array0 * v2, Array0 * v3, Array0 * v4, Arr
                 return loop34(v0, v1, v2, v3, v4, v5, v6, v16, v13);
                 break;
             }
-            case 0: { // InputEmpty
+            default: { // InputEmpty
                 
                 
                 ArrayDecref0(v0); ArrayDecref0(v1); ArrayDecref0(v2); ArrayDecref0(v4); ArrayDecref0(v5); ArrayDecref0(v6); UHDecref1(v8);

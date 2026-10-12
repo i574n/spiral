@@ -126,7 +126,6 @@ fn spiralMain() i32 {
     var v10: i64 = undefined; _ = &v10;
     var v11: i64 = undefined; _ = &v11;
     var v12: i64 = undefined; _ = &v12;
-    var v13: i64 = undefined; _ = &v13;
     var v14: i64 = undefined; _ = &v14;
     var v15: i64 = undefined; _ = &v15;
     var v16: i64 = undefined; _ = &v16;
@@ -148,7 +147,6 @@ fn spiralMain() i32 {
     var v32: i64 = undefined; _ = &v32;
     var v33: i64 = undefined; _ = &v33;
     var v34: i64 = undefined; _ = &v34;
-    var v35: i64 = undefined; _ = &v35;
     var v36: i64 = undefined; _ = &v36;
     var v37: i64 = undefined; _ = &v37;
     var v38: i64 = undefined; _ = &v38;
@@ -225,11 +223,7 @@ fn spiralMain() i32 {
     var v109: i64 = undefined; _ = &v109;
     var v110: bool = undefined; _ = &v110;
     var v111: i64 = undefined; _ = &v111;
-    var v112: i64 = undefined; _ = &v112;
-    var v113: i64 = undefined; _ = &v113;
     var v114: i64 = undefined; _ = &v114;
-    var v115: i64 = undefined; _ = &v115;
-    var v116: i64 = undefined; _ = &v116;
     var v117: i64 = undefined; _ = &v117;
     var v118: i64 = undefined; _ = &v118;
     var v119: i64 = undefined; _ = &v119;
@@ -257,11 +251,7 @@ fn spiralMain() i32 {
     var v141: i64 = undefined; _ = &v141;
     var v142: bool = undefined; _ = &v142;
     var v143: i64 = undefined; _ = &v143;
-    var v144: i64 = undefined; _ = &v144;
-    var v145: i64 = undefined; _ = &v145;
     var v146: i64 = undefined; _ = &v146;
-    var v147: i64 = undefined; _ = &v147;
-    var v148: i64 = undefined; _ = &v148;
     var v149: i64 = undefined; _ = &v149;
     var v150: i64 = undefined; _ = &v150;
     var v151: bool = undefined; _ = &v151;
@@ -291,11 +281,7 @@ fn spiralMain() i32 {
     var v175: i64 = undefined; _ = &v175;
     var v176: bool = undefined; _ = &v176;
     var v177: i64 = undefined; _ = &v177;
-    var v178: i64 = undefined; _ = &v178;
-    var v179: i64 = undefined; _ = &v179;
     var v180: i64 = undefined; _ = &v180;
-    var v181: i64 = undefined; _ = &v181;
-    var v182: i64 = undefined; _ = &v182;
     var v183: i64 = undefined; _ = &v183;
     var v184: i64 = undefined; _ = &v184;
     var v185: i64 = undefined; _ = &v185;
@@ -323,11 +309,7 @@ fn spiralMain() i32 {
     var v207: i64 = undefined; _ = &v207;
     var v208: bool = undefined; _ = &v208;
     var v209: i64 = undefined; _ = &v209;
-    var v210: i64 = undefined; _ = &v210;
-    var v211: i64 = undefined; _ = &v211;
     var v212: i64 = undefined; _ = &v212;
-    var v213: i64 = undefined; _ = &v213;
-    var v214: i64 = undefined; _ = &v214;
     var v215: i64 = undefined; _ = &v215;
     var v216: i64 = undefined; _ = &v216;
     var v217: i64 = undefined; _ = &v217;
@@ -356,11 +338,7 @@ fn spiralMain() i32 {
     var v240: i64 = undefined; _ = &v240;
     var v241: bool = undefined; _ = &v241;
     var v242: i64 = undefined; _ = &v242;
-    var v243: i64 = undefined; _ = &v243;
-    var v244: i64 = undefined; _ = &v244;
     var v245: i64 = undefined; _ = &v245;
-    var v246: i64 = undefined; _ = &v246;
-    var v247: i64 = undefined; _ = &v247;
     var v248: i64 = undefined; _ = &v248;
     var v249: i64 = undefined; _ = &v249;
     var v250: bool = undefined; _ = &v250;
@@ -390,11 +368,7 @@ fn spiralMain() i32 {
     var v274: i64 = undefined; _ = &v274;
     var v275: bool = undefined; _ = &v275;
     var v276: i64 = undefined; _ = &v276;
-    var v277: i64 = undefined; _ = &v277;
-    var v278: i64 = undefined; _ = &v278;
     var v279: i64 = undefined; _ = &v279;
-    var v280: i64 = undefined; _ = &v280;
-    var v281: i64 = undefined; _ = &v281;
     var v282: i64 = undefined; _ = &v282;
     var v283: i64 = undefined; _ = &v283;
     var v284: i64 = undefined; _ = &v284;
@@ -422,11 +396,7 @@ fn spiralMain() i32 {
     var v306: i64 = undefined; _ = &v306;
     var v307: bool = undefined; _ = &v307;
     var v308: i64 = undefined; _ = &v308;
-    var v309: i64 = undefined; _ = &v309;
-    var v310: i64 = undefined; _ = &v310;
     var v311: i64 = undefined; _ = &v311;
-    var v312: i64 = undefined; _ = &v312;
-    var v313: i64 = undefined; _ = &v313;
     var v314: i64 = undefined; _ = &v314;
     var v315: i64 = undefined; _ = &v315;
     var v316: i64 = undefined; _ = &v316;
@@ -455,11 +425,7 @@ fn spiralMain() i32 {
     var v339: i64 = undefined; _ = &v339;
     var v340: bool = undefined; _ = &v340;
     var v341: i64 = undefined; _ = &v341;
-    var v342: i64 = undefined; _ = &v342;
-    var v343: i64 = undefined; _ = &v343;
     var v344: i64 = undefined; _ = &v344;
-    var v345: i64 = undefined; _ = &v345;
-    var v346: i64 = undefined; _ = &v346;
     var v347: i64 = undefined; _ = &v347;
     var v348: i64 = undefined; _ = &v348;
     var v349: i64 = undefined; _ = &v349;
@@ -487,11 +453,7 @@ fn spiralMain() i32 {
     var v371: i64 = undefined; _ = &v371;
     var v372: bool = undefined; _ = &v372;
     var v373: i64 = undefined; _ = &v373;
-    var v374: i64 = undefined; _ = &v374;
-    var v375: i64 = undefined; _ = &v375;
     var v376: i64 = undefined; _ = &v376;
-    var v377: i64 = undefined; _ = &v377;
-    var v378: i64 = undefined; _ = &v378;
     var v379: i64 = undefined; _ = &v379;
     var v380: i64 = undefined; _ = &v380;
     var v381: i64 = undefined; _ = &v381;
@@ -522,11 +484,7 @@ fn spiralMain() i32 {
     var v406: i64 = undefined; _ = &v406;
     var v407: bool = undefined; _ = &v407;
     var v408: i64 = undefined; _ = &v408;
-    var v409: i64 = undefined; _ = &v409;
-    var v410: i64 = undefined; _ = &v410;
     var v411: i64 = undefined; _ = &v411;
-    var v412: i64 = undefined; _ = &v412;
-    var v413: i64 = undefined; _ = &v413;
     var v414: i64 = undefined; _ = &v414;
     var v415: i64 = undefined; _ = &v415;
     var v416: i64 = undefined; _ = &v416;
@@ -554,11 +512,7 @@ fn spiralMain() i32 {
     var v438: i64 = undefined; _ = &v438;
     var v439: bool = undefined; _ = &v439;
     var v440: i64 = undefined; _ = &v440;
-    var v441: i64 = undefined; _ = &v441;
-    var v442: i64 = undefined; _ = &v442;
     var v443: i64 = undefined; _ = &v443;
-    var v444: i64 = undefined; _ = &v444;
-    var v445: i64 = undefined; _ = &v445;
     var v446: i64 = undefined; _ = &v446;
     var v447: i64 = undefined; _ = &v447;
     var v448: i64 = undefined; _ = &v448;
@@ -587,11 +541,7 @@ fn spiralMain() i32 {
     var v471: i64 = undefined; _ = &v471;
     var v472: bool = undefined; _ = &v472;
     var v473: i64 = undefined; _ = &v473;
-    var v474: i64 = undefined; _ = &v474;
-    var v475: i64 = undefined; _ = &v475;
     var v476: i64 = undefined; _ = &v476;
-    var v477: i64 = undefined; _ = &v477;
-    var v478: i64 = undefined; _ = &v478;
     var v479: i64 = undefined; _ = &v479;
     var v480: i64 = undefined; _ = &v480;
     var v481: i64 = undefined; _ = &v481;
@@ -619,11 +569,7 @@ fn spiralMain() i32 {
     var v503: i64 = undefined; _ = &v503;
     var v504: bool = undefined; _ = &v504;
     var v505: i64 = undefined; _ = &v505;
-    var v506: i64 = undefined; _ = &v506;
-    var v507: i64 = undefined; _ = &v507;
     var v508: i64 = undefined; _ = &v508;
-    var v509: i64 = undefined; _ = &v509;
-    var v510: i64 = undefined; _ = &v510;
     var v511: i64 = undefined; _ = &v511;
     var v512: i64 = undefined; _ = &v512;
     var v513: i64 = undefined; _ = &v513;
@@ -794,11 +740,7 @@ fn spiralMain() i32 {
     var v689: i64 = undefined; _ = &v689;
     var v690: bool = undefined; _ = &v690;
     var v691: i64 = undefined; _ = &v691;
-    var v692: i64 = undefined; _ = &v692;
-    var v693: i64 = undefined; _ = &v693;
     var v694: i64 = undefined; _ = &v694;
-    var v695: i64 = undefined; _ = &v695;
-    var v696: i64 = undefined; _ = &v696;
     var v697: i64 = undefined; _ = &v697;
     var v698: i64 = undefined; _ = &v698;
     var v699: i64 = undefined; _ = &v699;
@@ -826,11 +768,7 @@ fn spiralMain() i32 {
     var v721: i64 = undefined; _ = &v721;
     var v722: bool = undefined; _ = &v722;
     var v723: i64 = undefined; _ = &v723;
-    var v724: i64 = undefined; _ = &v724;
-    var v725: i64 = undefined; _ = &v725;
     var v726: i64 = undefined; _ = &v726;
-    var v727: i64 = undefined; _ = &v727;
-    var v728: i64 = undefined; _ = &v728;
     var v729: i64 = undefined; _ = &v729;
     var v730: i64 = undefined; _ = &v730;
     var v731: i64 = undefined; _ = &v731;
@@ -859,11 +797,7 @@ fn spiralMain() i32 {
     var v754: i64 = undefined; _ = &v754;
     var v755: bool = undefined; _ = &v755;
     var v756: i64 = undefined; _ = &v756;
-    var v757: i64 = undefined; _ = &v757;
-    var v758: i64 = undefined; _ = &v758;
     var v759: i64 = undefined; _ = &v759;
-    var v760: i64 = undefined; _ = &v760;
-    var v761: i64 = undefined; _ = &v761;
     var v762: i64 = undefined; _ = &v762;
     var v763: i64 = undefined; _ = &v763;
     var v764: i64 = undefined; _ = &v764;
@@ -891,11 +825,7 @@ fn spiralMain() i32 {
     var v786: i64 = undefined; _ = &v786;
     var v787: bool = undefined; _ = &v787;
     var v788: i64 = undefined; _ = &v788;
-    var v789: i64 = undefined; _ = &v789;
-    var v790: i64 = undefined; _ = &v790;
     var v791: i64 = undefined; _ = &v791;
-    var v792: i64 = undefined; _ = &v792;
-    var v793: i64 = undefined; _ = &v793;
     var v794: i64 = undefined; _ = &v794;
     var v795: i64 = undefined; _ = &v795;
     var v796: i64 = undefined; _ = &v796;
@@ -1049,11 +979,7 @@ fn spiralMain() i32 {
     var v955: i64 = undefined; _ = &v955;
     var v956: bool = undefined; _ = &v956;
     var v957: i64 = undefined; _ = &v957;
-    var v958: i64 = undefined; _ = &v958;
-    var v959: i64 = undefined; _ = &v959;
     var v960: i64 = undefined; _ = &v960;
-    var v961: i64 = undefined; _ = &v961;
-    var v962: i64 = undefined; _ = &v962;
     var v963: i64 = undefined; _ = &v963;
     var v964: i64 = undefined; _ = &v964;
     var v965: i64 = undefined; _ = &v965;
@@ -1081,11 +1007,7 @@ fn spiralMain() i32 {
     var v987: i64 = undefined; _ = &v987;
     var v988: bool = undefined; _ = &v988;
     var v989: i64 = undefined; _ = &v989;
-    var v990: i64 = undefined; _ = &v990;
-    var v991: i64 = undefined; _ = &v991;
     var v992: i64 = undefined; _ = &v992;
-    var v993: i64 = undefined; _ = &v993;
-    var v994: i64 = undefined; _ = &v994;
     var v995: i64 = undefined; _ = &v995;
     var v996: i64 = undefined; _ = &v996;
     var v997: i64 = undefined; _ = &v997;
@@ -1122,11 +1044,7 @@ fn spiralMain() i32 {
     var v1028: i64 = undefined; _ = &v1028;
     var v1029: bool = undefined; _ = &v1029;
     var v1030: i64 = undefined; _ = &v1030;
-    var v1031: i64 = undefined; _ = &v1031;
-    var v1032: i64 = undefined; _ = &v1032;
     var v1033: i64 = undefined; _ = &v1033;
-    var v1034: i64 = undefined; _ = &v1034;
-    var v1035: i64 = undefined; _ = &v1035;
     var v1036: i64 = undefined; _ = &v1036;
     var v1037: i64 = undefined; _ = &v1037;
     var v1038: i64 = undefined; _ = &v1038;
@@ -1154,11 +1072,7 @@ fn spiralMain() i32 {
     var v1060: i64 = undefined; _ = &v1060;
     var v1061: bool = undefined; _ = &v1061;
     var v1062: i64 = undefined; _ = &v1062;
-    var v1063: i64 = undefined; _ = &v1063;
-    var v1064: i64 = undefined; _ = &v1064;
     var v1065: i64 = undefined; _ = &v1065;
-    var v1066: i64 = undefined; _ = &v1066;
-    var v1067: i64 = undefined; _ = &v1067;
     var v1068: i64 = undefined; _ = &v1068;
     var v1069: i64 = undefined; _ = &v1069;
     var v1070: i64 = undefined; _ = &v1070;
@@ -1187,11 +1101,7 @@ fn spiralMain() i32 {
     var v1093: i64 = undefined; _ = &v1093;
     var v1094: bool = undefined; _ = &v1094;
     var v1095: i64 = undefined; _ = &v1095;
-    var v1096: i64 = undefined; _ = &v1096;
-    var v1097: i64 = undefined; _ = &v1097;
     var v1098: i64 = undefined; _ = &v1098;
-    var v1099: i64 = undefined; _ = &v1099;
-    var v1100: i64 = undefined; _ = &v1100;
     var v1101: i64 = undefined; _ = &v1101;
     var v1102: i64 = undefined; _ = &v1102;
     var v1103: i64 = undefined; _ = &v1103;
@@ -1219,11 +1129,7 @@ fn spiralMain() i32 {
     var v1125: i64 = undefined; _ = &v1125;
     var v1126: bool = undefined; _ = &v1126;
     var v1127: i64 = undefined; _ = &v1127;
-    var v1128: i64 = undefined; _ = &v1128;
-    var v1129: i64 = undefined; _ = &v1129;
     var v1130: i64 = undefined; _ = &v1130;
-    var v1131: i64 = undefined; _ = &v1131;
-    var v1132: i64 = undefined; _ = &v1132;
     var v1133: i64 = undefined; _ = &v1133;
     var v1134: i64 = undefined; _ = &v1134;
     var v1135: i64 = undefined; _ = &v1135;
@@ -1252,11 +1158,7 @@ fn spiralMain() i32 {
     var v1158: i64 = undefined; _ = &v1158;
     var v1159: bool = undefined; _ = &v1159;
     var v1160: i64 = undefined; _ = &v1160;
-    var v1161: i64 = undefined; _ = &v1161;
-    var v1162: i64 = undefined; _ = &v1162;
     var v1163: i64 = undefined; _ = &v1163;
-    var v1164: i64 = undefined; _ = &v1164;
-    var v1165: i64 = undefined; _ = &v1165;
     var v1166: i64 = undefined; _ = &v1166;
     var v1167: i64 = undefined; _ = &v1167;
     var v1168: i64 = undefined; _ = &v1168;
@@ -1284,11 +1186,7 @@ fn spiralMain() i32 {
     var v1190: i64 = undefined; _ = &v1190;
     var v1191: bool = undefined; _ = &v1191;
     var v1192: i64 = undefined; _ = &v1192;
-    var v1193: i64 = undefined; _ = &v1193;
-    var v1194: i64 = undefined; _ = &v1194;
     var v1195: i64 = undefined; _ = &v1195;
-    var v1196: i64 = undefined; _ = &v1196;
-    var v1197: i64 = undefined; _ = &v1197;
     var v1198: i64 = undefined; _ = &v1198;
     var v1199: i64 = undefined; _ = &v1199;
     var v1200: i64 = undefined; _ = &v1200;
@@ -1316,11 +1214,7 @@ fn spiralMain() i32 {
     var v1222: i64 = undefined; _ = &v1222;
     var v1223: bool = undefined; _ = &v1223;
     var v1224: i64 = undefined; _ = &v1224;
-    var v1225: i64 = undefined; _ = &v1225;
-    var v1226: i64 = undefined; _ = &v1226;
     var v1227: i64 = undefined; _ = &v1227;
-    var v1228: i64 = undefined; _ = &v1228;
-    var v1229: i64 = undefined; _ = &v1229;
     var v1230: i64 = undefined; _ = &v1230;
     var v1231: i64 = undefined; _ = &v1231;
     var v1232: i64 = undefined; _ = &v1232;
@@ -1348,11 +1242,7 @@ fn spiralMain() i32 {
     var v1254: i64 = undefined; _ = &v1254;
     var v1255: bool = undefined; _ = &v1255;
     var v1256: i64 = undefined; _ = &v1256;
-    var v1257: i64 = undefined; _ = &v1257;
-    var v1258: i64 = undefined; _ = &v1258;
     var v1259: i64 = undefined; _ = &v1259;
-    var v1260: i64 = undefined; _ = &v1260;
-    var v1261: i64 = undefined; _ = &v1261;
     var v1262: i64 = undefined; _ = &v1262;
     var v1263: i64 = undefined; _ = &v1263;
     var v1264: i64 = undefined; _ = &v1264;
@@ -1388,11 +1278,7 @@ fn spiralMain() i32 {
     var v1294: i64 = undefined; _ = &v1294;
     var v1295: bool = undefined; _ = &v1295;
     var v1296: i64 = undefined; _ = &v1296;
-    var v1297: i64 = undefined; _ = &v1297;
-    var v1298: i64 = undefined; _ = &v1298;
     var v1299: i64 = undefined; _ = &v1299;
-    var v1300: i64 = undefined; _ = &v1300;
-    var v1301: i64 = undefined; _ = &v1301;
     var v1302: i64 = undefined; _ = &v1302;
     var v1303: i64 = undefined; _ = &v1303;
     var v1304: i64 = undefined; _ = &v1304;
@@ -1420,11 +1306,7 @@ fn spiralMain() i32 {
     var v1326: i64 = undefined; _ = &v1326;
     var v1327: bool = undefined; _ = &v1327;
     var v1328: i64 = undefined; _ = &v1328;
-    var v1329: i64 = undefined; _ = &v1329;
-    var v1330: i64 = undefined; _ = &v1330;
     var v1331: i64 = undefined; _ = &v1331;
-    var v1332: i64 = undefined; _ = &v1332;
-    var v1333: i64 = undefined; _ = &v1333;
     var v1334: i64 = undefined; _ = &v1334;
     var v1335: i64 = undefined; _ = &v1335;
     var v1336: i64 = undefined; _ = &v1336;
@@ -1452,11 +1334,7 @@ fn spiralMain() i32 {
     var v1358: i64 = undefined; _ = &v1358;
     var v1359: bool = undefined; _ = &v1359;
     var v1360: i64 = undefined; _ = &v1360;
-    var v1361: i64 = undefined; _ = &v1361;
-    var v1362: i64 = undefined; _ = &v1362;
     var v1363: i64 = undefined; _ = &v1363;
-    var v1364: i64 = undefined; _ = &v1364;
-    var v1365: i64 = undefined; _ = &v1365;
     var v1366: i64 = undefined; _ = &v1366;
     var v1367: i64 = undefined; _ = &v1367;
     var v1368: i64 = undefined; _ = &v1368;
@@ -1484,11 +1362,7 @@ fn spiralMain() i32 {
     var v1390: i64 = undefined; _ = &v1390;
     var v1391: bool = undefined; _ = &v1391;
     var v1392: i64 = undefined; _ = &v1392;
-    var v1393: i64 = undefined; _ = &v1393;
-    var v1394: i64 = undefined; _ = &v1394;
     var v1395: i64 = undefined; _ = &v1395;
-    var v1396: i64 = undefined; _ = &v1396;
-    var v1397: i64 = undefined; _ = &v1397;
     var v1398: i64 = undefined; _ = &v1398;
     var v1399: i64 = undefined; _ = &v1399;
     var v1400: i64 = undefined; _ = &v1400;
@@ -1516,11 +1390,7 @@ fn spiralMain() i32 {
     var v1422: i64 = undefined; _ = &v1422;
     var v1423: bool = undefined; _ = &v1423;
     var v1424: i64 = undefined; _ = &v1424;
-    var v1425: i64 = undefined; _ = &v1425;
-    var v1426: i64 = undefined; _ = &v1426;
     var v1427: i64 = undefined; _ = &v1427;
-    var v1428: i64 = undefined; _ = &v1428;
-    var v1429: i64 = undefined; _ = &v1429;
     var v1430: i64 = undefined; _ = &v1430;
     var v1431: i64 = undefined; _ = &v1431;
     var v1432: i64 = undefined; _ = &v1432;
@@ -1548,11 +1418,7 @@ fn spiralMain() i32 {
     var v1454: i64 = undefined; _ = &v1454;
     var v1455: bool = undefined; _ = &v1455;
     var v1456: i64 = undefined; _ = &v1456;
-    var v1457: i64 = undefined; _ = &v1457;
-    var v1458: i64 = undefined; _ = &v1458;
     var v1459: i64 = undefined; _ = &v1459;
-    var v1460: i64 = undefined; _ = &v1460;
-    var v1461: i64 = undefined; _ = &v1461;
     var v1462: i64 = undefined; _ = &v1462;
     var v1463: i64 = undefined; _ = &v1463;
     var v1464: i64 = undefined; _ = &v1464;
@@ -1585,11 +1451,7 @@ fn spiralMain() i32 {
     var v1491: i64 = undefined; _ = &v1491;
     var v1492: bool = undefined; _ = &v1492;
     var v1493: i64 = undefined; _ = &v1493;
-    var v1494: i64 = undefined; _ = &v1494;
-    var v1495: i64 = undefined; _ = &v1495;
     var v1496: i64 = undefined; _ = &v1496;
-    var v1497: i64 = undefined; _ = &v1497;
-    var v1498: i64 = undefined; _ = &v1498;
     var v1499: i64 = undefined; _ = &v1499;
     var v1500: i64 = undefined; _ = &v1500;
     var v1501: i64 = undefined; _ = &v1501;
@@ -1617,11 +1479,7 @@ fn spiralMain() i32 {
     var v1523: i64 = undefined; _ = &v1523;
     var v1524: bool = undefined; _ = &v1524;
     var v1525: i64 = undefined; _ = &v1525;
-    var v1526: i64 = undefined; _ = &v1526;
-    var v1527: i64 = undefined; _ = &v1527;
     var v1528: i64 = undefined; _ = &v1528;
-    var v1529: i64 = undefined; _ = &v1529;
-    var v1530: i64 = undefined; _ = &v1530;
     var v1531: i64 = undefined; _ = &v1531;
     var v1532: i64 = undefined; _ = &v1532;
     var v1533: i64 = undefined; _ = &v1533;
@@ -1649,11 +1507,7 @@ fn spiralMain() i32 {
     var v1555: i64 = undefined; _ = &v1555;
     var v1556: bool = undefined; _ = &v1556;
     var v1557: i64 = undefined; _ = &v1557;
-    var v1558: i64 = undefined; _ = &v1558;
-    var v1559: i64 = undefined; _ = &v1559;
     var v1560: i64 = undefined; _ = &v1560;
-    var v1561: i64 = undefined; _ = &v1561;
-    var v1562: i64 = undefined; _ = &v1562;
     var v1563: i64 = undefined; _ = &v1563;
     var v1564: i64 = undefined; _ = &v1564;
     var v1565: i64 = undefined; _ = &v1565;
@@ -1681,11 +1535,7 @@ fn spiralMain() i32 {
     var v1587: i64 = undefined; _ = &v1587;
     var v1588: bool = undefined; _ = &v1588;
     var v1589: i64 = undefined; _ = &v1589;
-    var v1590: i64 = undefined; _ = &v1590;
-    var v1591: i64 = undefined; _ = &v1591;
     var v1592: i64 = undefined; _ = &v1592;
-    var v1593: i64 = undefined; _ = &v1593;
-    var v1594: i64 = undefined; _ = &v1594;
     var v1595: i64 = undefined; _ = &v1595;
     var v1596: i64 = undefined; _ = &v1596;
     var v1597: i64 = undefined; _ = &v1597;
@@ -1713,11 +1563,7 @@ fn spiralMain() i32 {
     var v1619: i64 = undefined; _ = &v1619;
     var v1620: bool = undefined; _ = &v1620;
     var v1621: i64 = undefined; _ = &v1621;
-    var v1622: i64 = undefined; _ = &v1622;
-    var v1623: i64 = undefined; _ = &v1623;
     var v1624: i64 = undefined; _ = &v1624;
-    var v1625: i64 = undefined; _ = &v1625;
-    var v1626: i64 = undefined; _ = &v1626;
     var v1627: i64 = undefined; _ = &v1627;
     var v1628: i64 = undefined; _ = &v1628;
     var v1629: i64 = undefined; _ = &v1629;
@@ -1745,11 +1591,7 @@ fn spiralMain() i32 {
     var v1651: i64 = undefined; _ = &v1651;
     var v1652: bool = undefined; _ = &v1652;
     var v1653: i64 = undefined; _ = &v1653;
-    var v1654: i64 = undefined; _ = &v1654;
-    var v1655: i64 = undefined; _ = &v1655;
     var v1656: i64 = undefined; _ = &v1656;
-    var v1657: i64 = undefined; _ = &v1657;
-    var v1658: i64 = undefined; _ = &v1658;
     var v1659: i64 = undefined; _ = &v1659;
     var v1660: i64 = undefined; _ = &v1660;
     var v1661: i64 = undefined; _ = &v1661;
@@ -1785,11 +1627,7 @@ fn spiralMain() i32 {
     var v1691: i64 = undefined; _ = &v1691;
     var v1692: bool = undefined; _ = &v1692;
     var v1693: i64 = undefined; _ = &v1693;
-    var v1694: i64 = undefined; _ = &v1694;
-    var v1695: i64 = undefined; _ = &v1695;
     var v1696: i64 = undefined; _ = &v1696;
-    var v1697: i64 = undefined; _ = &v1697;
-    var v1698: i64 = undefined; _ = &v1698;
     var v1699: i64 = undefined; _ = &v1699;
     var v1700: i64 = undefined; _ = &v1700;
     var v1701: i64 = undefined; _ = &v1701;
@@ -1817,11 +1655,7 @@ fn spiralMain() i32 {
     var v1723: i64 = undefined; _ = &v1723;
     var v1724: bool = undefined; _ = &v1724;
     var v1725: i64 = undefined; _ = &v1725;
-    var v1726: i64 = undefined; _ = &v1726;
-    var v1727: i64 = undefined; _ = &v1727;
     var v1728: i64 = undefined; _ = &v1728;
-    var v1729: i64 = undefined; _ = &v1729;
-    var v1730: i64 = undefined; _ = &v1730;
     var v1731: i64 = undefined; _ = &v1731;
     var v1732: i64 = undefined; _ = &v1732;
     var v1733: i64 = undefined; _ = &v1733;
@@ -1850,11 +1684,7 @@ fn spiralMain() i32 {
     var v1756: i64 = undefined; _ = &v1756;
     var v1757: bool = undefined; _ = &v1757;
     var v1758: i64 = undefined; _ = &v1758;
-    var v1759: i64 = undefined; _ = &v1759;
-    var v1760: i64 = undefined; _ = &v1760;
     var v1761: i64 = undefined; _ = &v1761;
-    var v1762: i64 = undefined; _ = &v1762;
-    var v1763: i64 = undefined; _ = &v1763;
     var v1764: i64 = undefined; _ = &v1764;
     var v1765: i64 = undefined; _ = &v1765;
     var v1766: i64 = undefined; _ = &v1766;
@@ -1882,11 +1712,7 @@ fn spiralMain() i32 {
     var v1788: i64 = undefined; _ = &v1788;
     var v1789: bool = undefined; _ = &v1789;
     var v1790: i64 = undefined; _ = &v1790;
-    var v1791: i64 = undefined; _ = &v1791;
-    var v1792: i64 = undefined; _ = &v1792;
     var v1793: i64 = undefined; _ = &v1793;
-    var v1794: i64 = undefined; _ = &v1794;
-    var v1795: i64 = undefined; _ = &v1795;
     var v1796: i64 = undefined; _ = &v1796;
     var v1797: i64 = undefined; _ = &v1797;
     var v1798: i64 = undefined; _ = &v1798;
@@ -1914,11 +1740,7 @@ fn spiralMain() i32 {
     var v1820: i64 = undefined; _ = &v1820;
     var v1821: bool = undefined; _ = &v1821;
     var v1822: i64 = undefined; _ = &v1822;
-    var v1823: i64 = undefined; _ = &v1823;
-    var v1824: i64 = undefined; _ = &v1824;
     var v1825: i64 = undefined; _ = &v1825;
-    var v1826: i64 = undefined; _ = &v1826;
-    var v1827: i64 = undefined; _ = &v1827;
     var v1828: i64 = undefined; _ = &v1828;
     var v1829: i64 = undefined; _ = &v1829;
     var v1830: i64 = undefined; _ = &v1830;
@@ -1946,11 +1768,7 @@ fn spiralMain() i32 {
     var v1852: i64 = undefined; _ = &v1852;
     var v1853: bool = undefined; _ = &v1853;
     var v1854: i64 = undefined; _ = &v1854;
-    var v1855: i64 = undefined; _ = &v1855;
-    var v1856: i64 = undefined; _ = &v1856;
     var v1857: i64 = undefined; _ = &v1857;
-    var v1858: i64 = undefined; _ = &v1858;
-    var v1859: i64 = undefined; _ = &v1859;
     var v1860: i64 = undefined; _ = &v1860;
     var v1861: i64 = undefined; _ = &v1861;
     var v1862: i64 = undefined; _ = &v1862;
@@ -2106,11 +1924,7 @@ fn spiralMain() i32 {
     var v2023: i64 = undefined; _ = &v2023;
     var v2024: bool = undefined; _ = &v2024;
     var v2025: i64 = undefined; _ = &v2025;
-    var v2026: i64 = undefined; _ = &v2026;
-    var v2027: i64 = undefined; _ = &v2027;
     var v2028: i64 = undefined; _ = &v2028;
-    var v2029: i64 = undefined; _ = &v2029;
-    var v2030: i64 = undefined; _ = &v2030;
     var v2031: i64 = undefined; _ = &v2031;
     var v2032: i64 = undefined; _ = &v2032;
     var v2033: i64 = undefined; _ = &v2033;
@@ -2138,11 +1952,7 @@ fn spiralMain() i32 {
     var v2055: i64 = undefined; _ = &v2055;
     var v2056: bool = undefined; _ = &v2056;
     var v2057: i64 = undefined; _ = &v2057;
-    var v2058: i64 = undefined; _ = &v2058;
-    var v2059: i64 = undefined; _ = &v2059;
     var v2060: i64 = undefined; _ = &v2060;
-    var v2061: i64 = undefined; _ = &v2061;
-    var v2062: i64 = undefined; _ = &v2062;
     var v2063: i64 = undefined; _ = &v2063;
     var v2064: i64 = undefined; _ = &v2064;
     var v2065: i64 = undefined; _ = &v2065;
@@ -2170,11 +1980,7 @@ fn spiralMain() i32 {
     var v2087: i64 = undefined; _ = &v2087;
     var v2088: bool = undefined; _ = &v2088;
     var v2089: i64 = undefined; _ = &v2089;
-    var v2090: i64 = undefined; _ = &v2090;
-    var v2091: i64 = undefined; _ = &v2091;
     var v2092: i64 = undefined; _ = &v2092;
-    var v2093: i64 = undefined; _ = &v2093;
-    var v2094: i64 = undefined; _ = &v2094;
     var v2095: i64 = undefined; _ = &v2095;
     var v2096: i64 = undefined; _ = &v2096;
     var v2097: i64 = undefined; _ = &v2097;
@@ -2202,11 +2008,7 @@ fn spiralMain() i32 {
     var v2119: i64 = undefined; _ = &v2119;
     var v2120: bool = undefined; _ = &v2120;
     var v2121: i64 = undefined; _ = &v2121;
-    var v2122: i64 = undefined; _ = &v2122;
-    var v2123: i64 = undefined; _ = &v2123;
     var v2124: i64 = undefined; _ = &v2124;
-    var v2125: i64 = undefined; _ = &v2125;
-    var v2126: i64 = undefined; _ = &v2126;
     var v2127: i64 = undefined; _ = &v2127;
     var v2128: i64 = undefined; _ = &v2128;
     var v2129: i64 = undefined; _ = &v2129;
@@ -2245,11 +2047,7 @@ fn spiralMain() i32 {
     var v2162: i64 = undefined; _ = &v2162;
     var v2163: bool = undefined; _ = &v2163;
     var v2164: i64 = undefined; _ = &v2164;
-    var v2165: i64 = undefined; _ = &v2165;
-    var v2166: i64 = undefined; _ = &v2166;
     var v2167: i64 = undefined; _ = &v2167;
-    var v2168: i64 = undefined; _ = &v2168;
-    var v2169: i64 = undefined; _ = &v2169;
     var v2170: i64 = undefined; _ = &v2170;
     var v2171: i64 = undefined; _ = &v2171;
     var v2172: i64 = undefined; _ = &v2172;
@@ -2277,11 +2075,7 @@ fn spiralMain() i32 {
     var v2194: i64 = undefined; _ = &v2194;
     var v2195: bool = undefined; _ = &v2195;
     var v2196: i64 = undefined; _ = &v2196;
-    var v2197: i64 = undefined; _ = &v2197;
-    var v2198: i64 = undefined; _ = &v2198;
     var v2199: i64 = undefined; _ = &v2199;
-    var v2200: i64 = undefined; _ = &v2200;
-    var v2201: i64 = undefined; _ = &v2201;
     var v2202: i64 = undefined; _ = &v2202;
     var v2203: i64 = undefined; _ = &v2203;
     var v2204: i64 = undefined; _ = &v2204;
@@ -2310,11 +2104,7 @@ fn spiralMain() i32 {
     var v2227: i64 = undefined; _ = &v2227;
     var v2228: bool = undefined; _ = &v2228;
     var v2229: i64 = undefined; _ = &v2229;
-    var v2230: i64 = undefined; _ = &v2230;
-    var v2231: i64 = undefined; _ = &v2231;
     var v2232: i64 = undefined; _ = &v2232;
-    var v2233: i64 = undefined; _ = &v2233;
-    var v2234: i64 = undefined; _ = &v2234;
     var v2235: i64 = undefined; _ = &v2235;
     var v2236: i64 = undefined; _ = &v2236;
     var v2237: i64 = undefined; _ = &v2237;
@@ -2342,11 +2132,7 @@ fn spiralMain() i32 {
     var v2259: i64 = undefined; _ = &v2259;
     var v2260: bool = undefined; _ = &v2260;
     var v2261: i64 = undefined; _ = &v2261;
-    var v2262: i64 = undefined; _ = &v2262;
-    var v2263: i64 = undefined; _ = &v2263;
     var v2264: i64 = undefined; _ = &v2264;
-    var v2265: i64 = undefined; _ = &v2265;
-    var v2266: i64 = undefined; _ = &v2266;
     var v2267: i64 = undefined; _ = &v2267;
     var v2268: i64 = undefined; _ = &v2268;
     var v2269: i64 = undefined; _ = &v2269;
@@ -2500,11 +2286,7 @@ fn spiralMain() i32 {
     var v2428: i64 = undefined; _ = &v2428;
     var v2429: bool = undefined; _ = &v2429;
     var v2430: i64 = undefined; _ = &v2430;
-    var v2431: i64 = undefined; _ = &v2431;
-    var v2432: i64 = undefined; _ = &v2432;
     var v2433: i64 = undefined; _ = &v2433;
-    var v2434: i64 = undefined; _ = &v2434;
-    var v2435: i64 = undefined; _ = &v2435;
     var v2436: i64 = undefined; _ = &v2436;
     var v2437: i64 = undefined; _ = &v2437;
     var v2438: i64 = undefined; _ = &v2438;
@@ -2532,11 +2314,7 @@ fn spiralMain() i32 {
     var v2460: i64 = undefined; _ = &v2460;
     var v2461: bool = undefined; _ = &v2461;
     var v2462: i64 = undefined; _ = &v2462;
-    var v2463: i64 = undefined; _ = &v2463;
-    var v2464: i64 = undefined; _ = &v2464;
     var v2465: i64 = undefined; _ = &v2465;
-    var v2466: i64 = undefined; _ = &v2466;
-    var v2467: i64 = undefined; _ = &v2467;
     var v2468: i64 = undefined; _ = &v2468;
     var v2469: i64 = undefined; _ = &v2469;
     var v2470: i64 = undefined; _ = &v2470;
@@ -2571,11 +2349,7 @@ fn spiralMain() i32 {
     var v2499: i64 = undefined; _ = &v2499;
     var v2500: bool = undefined; _ = &v2500;
     var v2501: i64 = undefined; _ = &v2501;
-    var v2502: i64 = undefined; _ = &v2502;
-    var v2503: i64 = undefined; _ = &v2503;
     var v2504: i64 = undefined; _ = &v2504;
-    var v2505: i64 = undefined; _ = &v2505;
-    var v2506: i64 = undefined; _ = &v2506;
     var v2507: i64 = undefined; _ = &v2507;
     var v2508: i64 = undefined; _ = &v2508;
     var v2509: i64 = undefined; _ = &v2509;
@@ -2603,11 +2377,7 @@ fn spiralMain() i32 {
     var v2531: i64 = undefined; _ = &v2531;
     var v2532: bool = undefined; _ = &v2532;
     var v2533: i64 = undefined; _ = &v2533;
-    var v2534: i64 = undefined; _ = &v2534;
-    var v2535: i64 = undefined; _ = &v2535;
     var v2536: i64 = undefined; _ = &v2536;
-    var v2537: i64 = undefined; _ = &v2537;
-    var v2538: i64 = undefined; _ = &v2538;
     var v2539: i64 = undefined; _ = &v2539;
     var v2540: i64 = undefined; _ = &v2540;
     var v2541: i64 = undefined; _ = &v2541;
@@ -2636,11 +2406,7 @@ fn spiralMain() i32 {
     var v2564: i64 = undefined; _ = &v2564;
     var v2565: bool = undefined; _ = &v2565;
     var v2566: i64 = undefined; _ = &v2566;
-    var v2567: i64 = undefined; _ = &v2567;
-    var v2568: i64 = undefined; _ = &v2568;
     var v2569: i64 = undefined; _ = &v2569;
-    var v2570: i64 = undefined; _ = &v2570;
-    var v2571: i64 = undefined; _ = &v2571;
     var v2572: i64 = undefined; _ = &v2572;
     var v2573: i64 = undefined; _ = &v2573;
     var v2574: i64 = undefined; _ = &v2574;
@@ -2668,11 +2434,7 @@ fn spiralMain() i32 {
     var v2596: i64 = undefined; _ = &v2596;
     var v2597: bool = undefined; _ = &v2597;
     var v2598: i64 = undefined; _ = &v2598;
-    var v2599: i64 = undefined; _ = &v2599;
-    var v2600: i64 = undefined; _ = &v2600;
     var v2601: i64 = undefined; _ = &v2601;
-    var v2602: i64 = undefined; _ = &v2602;
-    var v2603: i64 = undefined; _ = &v2603;
     var v2604: i64 = undefined; _ = &v2604;
     var v2605: i64 = undefined; _ = &v2605;
     var v2606: i64 = undefined; _ = &v2606;
@@ -2826,11 +2588,7 @@ fn spiralMain() i32 {
     var v2765: i64 = undefined; _ = &v2765;
     var v2766: bool = undefined; _ = &v2766;
     var v2767: i64 = undefined; _ = &v2767;
-    var v2768: i64 = undefined; _ = &v2768;
-    var v2769: i64 = undefined; _ = &v2769;
     var v2770: i64 = undefined; _ = &v2770;
-    var v2771: i64 = undefined; _ = &v2771;
-    var v2772: i64 = undefined; _ = &v2772;
     var v2773: i64 = undefined; _ = &v2773;
     var v2774: i64 = undefined; _ = &v2774;
     var v2775: i64 = undefined; _ = &v2775;
@@ -2858,11 +2616,7 @@ fn spiralMain() i32 {
     var v2797: i64 = undefined; _ = &v2797;
     var v2798: bool = undefined; _ = &v2798;
     var v2799: i64 = undefined; _ = &v2799;
-    var v2800: i64 = undefined; _ = &v2800;
-    var v2801: i64 = undefined; _ = &v2801;
     var v2802: i64 = undefined; _ = &v2802;
-    var v2803: i64 = undefined; _ = &v2803;
-    var v2804: i64 = undefined; _ = &v2804;
     var v2805: i64 = undefined; _ = &v2805;
     var v2806: i64 = undefined; _ = &v2806;
     var v2807: i64 = undefined; _ = &v2807;
@@ -3039,11 +2793,7 @@ fn spiralMain() i32 {
     var v2978: i64 = undefined; _ = &v2978;
     var v2979: bool = undefined; _ = &v2979;
     var v2980: i64 = undefined; _ = &v2980;
-    var v2981: i64 = undefined; _ = &v2981;
-    var v2982: i64 = undefined; _ = &v2982;
     var v2983: i64 = undefined; _ = &v2983;
-    var v2984: i64 = undefined; _ = &v2984;
-    var v2985: i64 = undefined; _ = &v2985;
     var v2986: i64 = undefined; _ = &v2986;
     var v2987: i64 = undefined; _ = &v2987;
     var v2988: i64 = undefined; _ = &v2988;
@@ -3071,14 +2821,8 @@ fn spiralMain() i32 {
     var v3010: i64 = undefined; _ = &v3010;
     var v3011: bool = undefined; _ = &v3011;
     var v3012: i64 = undefined; _ = &v3012;
-    var v3013: i64 = undefined; _ = &v3013;
-    var v3014: i64 = undefined; _ = &v3014;
     var v3015: i64 = undefined; _ = &v3015;
-    var v3016: i64 = undefined; _ = &v3016;
-    var v3017: i64 = undefined; _ = &v3017;
     var v3018: i64 = undefined; _ = &v3018;
-    var v3019: i64 = undefined; _ = &v3019;
-    var v3020: i64 = undefined; _ = &v3020;
     var v3021: i64 = undefined; _ = &v3021;
     var v3022: i64 = undefined; _ = &v3022;
     var v3023: i64 = undefined; _ = &v3023;
@@ -3106,11 +2850,7 @@ fn spiralMain() i32 {
     var v3045: i64 = undefined; _ = &v3045;
     var v3046: bool = undefined; _ = &v3046;
     var v3047: i64 = undefined; _ = &v3047;
-    var v3048: i64 = undefined; _ = &v3048;
-    var v3049: i64 = undefined; _ = &v3049;
     var v3050: i64 = undefined; _ = &v3050;
-    var v3051: i64 = undefined; _ = &v3051;
-    var v3052: i64 = undefined; _ = &v3052;
     var v3053: i64 = undefined; _ = &v3053;
     var v3054: i64 = undefined; _ = &v3054;
     var v3055: i64 = undefined; _ = &v3055;
@@ -3138,14 +2878,8 @@ fn spiralMain() i32 {
     var v3077: i64 = undefined; _ = &v3077;
     var v3078: bool = undefined; _ = &v3078;
     var v3079: i64 = undefined; _ = &v3079;
-    var v3080: i64 = undefined; _ = &v3080;
-    var v3081: i64 = undefined; _ = &v3081;
     var v3082: i64 = undefined; _ = &v3082;
-    var v3083: i64 = undefined; _ = &v3083;
-    var v3084: i64 = undefined; _ = &v3084;
     var v3085: i64 = undefined; _ = &v3085;
-    var v3086: i64 = undefined; _ = &v3086;
-    var v3087: i64 = undefined; _ = &v3087;
     var v3088: i64 = undefined; _ = &v3088;
     var v3089: i64 = undefined; _ = &v3089;
     var v3090: bool = undefined; _ = &v3090;
@@ -3695,7 +3429,6 @@ fn spiralMain() i32 {
     v10 = v9 + @as(i64, 1);
     v11 = v10 + @as(i64, 1);
     v12 = @as(i64, 0) + @as(i64, 1);
-    v13 = v2 *% v5;
     v14 = @as(i64, 0) + @as(i64, 1);
     v15 = v14 + @as(i64, 1);
     v16 = v15 + @as(i64, 1);
@@ -3717,7 +3450,6 @@ fn spiralMain() i32 {
     v32 = v31 + @as(i64, 1);
     v33 = v32 + @as(i64, 1);
     v34 = @as(i64, 0) + @as(i64, 1);
-    v35 = v24 *% v27;
     v36 = @as(i64, 0) + @as(i64, 1);
     v37 = v36 + @as(i64, 1);
     v38 = v37 + @as(i64, 1);
@@ -3826,11 +3558,7 @@ fn spiralMain() i32 {
     } else {
         v111 = @as(i64, 1);
     }
-    v112 = v96 +% v104;
-    v113 = v97 +% v109;
     v114 = v99 +% v111;
-    v115 = v89 +% v112;
-    v116 = v93 +% v113;
     v117 = v95 +% v114;
     v118 = @as(i64, 0) + @as(i64, 1);
     v119 = v118 + @as(i64, 1);
@@ -3870,11 +3598,7 @@ fn spiralMain() i32 {
     } else {
         v143 = @as(i64, 1);
     }
-    v144 = v128 +% v136;
-    v145 = v129 +% v141;
     v146 = v131 +% v143;
-    v147 = v121 +% v144;
-    v148 = v125 +% v145;
     v149 = v127 +% v146;
     v150 = v117 +% v149;
     v151 = v150 == @as(i64, 0);
@@ -3920,11 +3644,7 @@ fn spiralMain() i32 {
     } else {
         v177 = @as(i64, 1);
     }
-    v178 = v162 +% v170;
-    v179 = v163 +% v175;
     v180 = v165 +% v177;
-    v181 = v155 +% v178;
-    v182 = v159 +% v179;
     v183 = v161 +% v180;
     v184 = @as(i64, 0) + @as(i64, 1);
     v185 = v184 + @as(i64, 1);
@@ -3964,11 +3684,7 @@ fn spiralMain() i32 {
     } else {
         v209 = @as(i64, 1);
     }
-    v210 = v194 +% v202;
-    v211 = v195 +% v207;
     v212 = v197 +% v209;
-    v213 = v187 +% v210;
-    v214 = v191 +% v211;
     v215 = v193 +% v212;
     v216 = v183 +% v215;
     v217 = @as(i64, 0) + @as(i64, 1);
@@ -4009,11 +3725,7 @@ fn spiralMain() i32 {
     } else {
         v242 = @as(i64, 1);
     }
-    v243 = v227 +% v235;
-    v244 = v228 +% v240;
     v245 = v230 +% v242;
-    v246 = v220 +% v243;
-    v247 = v224 +% v244;
     v248 = v226 +% v245;
     v249 = v216 +% v248;
     v250 = v249 == @as(i64, 0);
@@ -4059,11 +3771,7 @@ fn spiralMain() i32 {
     } else {
         v276 = @as(i64, 1);
     }
-    v277 = v261 +% v269;
-    v278 = v262 +% v274;
     v279 = v264 +% v276;
-    v280 = v254 +% v277;
-    v281 = v258 +% v278;
     v282 = v260 +% v279;
     v283 = @as(i64, 0) + @as(i64, 1);
     v284 = v283 + @as(i64, 1);
@@ -4103,11 +3811,7 @@ fn spiralMain() i32 {
     } else {
         v308 = @as(i64, 1);
     }
-    v309 = v293 +% v301;
-    v310 = v294 +% v306;
     v311 = v296 +% v308;
-    v312 = v286 +% v309;
-    v313 = v290 +% v310;
     v314 = v292 +% v311;
     v315 = v282 +% v314;
     v316 = @as(i64, 0) + @as(i64, 1);
@@ -4148,11 +3852,7 @@ fn spiralMain() i32 {
     } else {
         v341 = @as(i64, 1);
     }
-    v342 = v326 +% v334;
-    v343 = v327 +% v339;
     v344 = v329 +% v341;
-    v345 = v319 +% v342;
-    v346 = v323 +% v343;
     v347 = v325 +% v344;
     v348 = @as(i64, 0) + @as(i64, 1);
     v349 = v348 + @as(i64, 1);
@@ -4192,11 +3892,7 @@ fn spiralMain() i32 {
     } else {
         v373 = @as(i64, 1);
     }
-    v374 = v358 +% v366;
-    v375 = v359 +% v371;
     v376 = v361 +% v373;
-    v377 = v351 +% v374;
-    v378 = v355 +% v375;
     v379 = v357 +% v376;
     v380 = v347 +% v379;
     v381 = v315 +% v380;
@@ -4243,11 +3939,7 @@ fn spiralMain() i32 {
     } else {
         v408 = @as(i64, 1);
     }
-    v409 = v393 +% v401;
-    v410 = v394 +% v406;
     v411 = v396 +% v408;
-    v412 = v386 +% v409;
-    v413 = v390 +% v410;
     v414 = v392 +% v411;
     v415 = @as(i64, 0) + @as(i64, 1);
     v416 = v415 + @as(i64, 1);
@@ -4287,11 +3979,7 @@ fn spiralMain() i32 {
     } else {
         v440 = @as(i64, 1);
     }
-    v441 = v425 +% v433;
-    v442 = v426 +% v438;
     v443 = v428 +% v440;
-    v444 = v418 +% v441;
-    v445 = v422 +% v442;
     v446 = v424 +% v443;
     v447 = v414 +% v446;
     v448 = @as(i64, 0) + @as(i64, 1);
@@ -4332,11 +4020,7 @@ fn spiralMain() i32 {
     } else {
         v473 = @as(i64, 1);
     }
-    v474 = v458 +% v466;
-    v475 = v459 +% v471;
     v476 = v461 +% v473;
-    v477 = v451 +% v474;
-    v478 = v455 +% v475;
     v479 = v457 +% v476;
     v480 = @as(i64, 0) + @as(i64, 1);
     v481 = v480 + @as(i64, 1);
@@ -4376,11 +4060,7 @@ fn spiralMain() i32 {
     } else {
         v505 = @as(i64, 1);
     }
-    v506 = v490 +% v498;
-    v507 = v491 +% v503;
     v508 = v493 +% v505;
-    v509 = v483 +% v506;
-    v510 = v487 +% v507;
     v511 = v489 +% v508;
     v512 = v479 +% v511;
     v513 = v447 +% v512;
@@ -4623,11 +4303,7 @@ fn spiralMain() i32 {
     } else {
         v691 = @as(i64, 1);
     }
-    v692 = v676 +% v684;
-    v693 = v677 +% v689;
     v694 = v679 +% v691;
-    v695 = v669 +% v692;
-    v696 = v673 +% v693;
     v697 = v675 +% v694;
     v698 = @as(i64, 0) + @as(i64, 1);
     v699 = v698 + @as(i64, 1);
@@ -4667,11 +4343,7 @@ fn spiralMain() i32 {
     } else {
         v723 = @as(i64, 1);
     }
-    v724 = v708 +% v716;
-    v725 = v709 +% v721;
     v726 = v711 +% v723;
-    v727 = v701 +% v724;
-    v728 = v705 +% v725;
     v729 = v707 +% v726;
     v730 = v697 +% v729;
     v731 = @as(i64, 0) + @as(i64, 1);
@@ -4712,11 +4384,7 @@ fn spiralMain() i32 {
     } else {
         v756 = @as(i64, 1);
     }
-    v757 = v741 +% v749;
-    v758 = v742 +% v754;
     v759 = v744 +% v756;
-    v760 = v734 +% v757;
-    v761 = v738 +% v758;
     v762 = v740 +% v759;
     v763 = @as(i64, 0) + @as(i64, 1);
     v764 = v763 + @as(i64, 1);
@@ -4756,11 +4424,7 @@ fn spiralMain() i32 {
     } else {
         v788 = @as(i64, 1);
     }
-    v789 = v773 +% v781;
-    v790 = v774 +% v786;
     v791 = v776 +% v788;
-    v792 = v766 +% v789;
-    v793 = v770 +% v790;
     v794 = v772 +% v791;
     v795 = v762 +% v794;
     v796 = v730 +% v795;
@@ -4982,11 +4646,7 @@ fn spiralMain() i32 {
     } else {
         v957 = @as(i64, 1);
     }
-    v958 = v942 +% v950;
-    v959 = v943 +% v955;
     v960 = v945 +% v957;
-    v961 = v935 +% v958;
-    v962 = v939 +% v959;
     v963 = v941 +% v960;
     v964 = @as(i64, 0) + @as(i64, 1);
     v965 = v964 + @as(i64, 1);
@@ -5026,11 +4686,7 @@ fn spiralMain() i32 {
     } else {
         v989 = @as(i64, 1);
     }
-    v990 = v974 +% v982;
-    v991 = v975 +% v987;
     v992 = v977 +% v989;
-    v993 = v967 +% v990;
-    v994 = v971 +% v991;
     v995 = v973 +% v992;
     v996 = v963 +% v995;
     v997 = v931 +% v924;
@@ -5083,11 +4739,7 @@ fn spiralMain() i32 {
     } else {
         v1030 = @as(i64, 1);
     }
-    v1031 = v1015 +% v1023;
-    v1032 = v1016 +% v1028;
     v1033 = v1018 +% v1030;
-    v1034 = v1008 +% v1031;
-    v1035 = v1012 +% v1032;
     v1036 = v1014 +% v1033;
     v1037 = @as(i64, 0) + @as(i64, 1);
     v1038 = v1037 + @as(i64, 1);
@@ -5127,11 +4779,7 @@ fn spiralMain() i32 {
     } else {
         v1062 = @as(i64, 1);
     }
-    v1063 = v1047 +% v1055;
-    v1064 = v1048 +% v1060;
     v1065 = v1050 +% v1062;
-    v1066 = v1040 +% v1063;
-    v1067 = v1044 +% v1064;
     v1068 = v1046 +% v1065;
     v1069 = v1036 +% v1068;
     v1070 = @as(i64, 0) + @as(i64, 1);
@@ -5172,11 +4820,7 @@ fn spiralMain() i32 {
     } else {
         v1095 = @as(i64, 1);
     }
-    v1096 = v1080 +% v1088;
-    v1097 = v1081 +% v1093;
     v1098 = v1083 +% v1095;
-    v1099 = v1073 +% v1096;
-    v1100 = v1077 +% v1097;
     v1101 = v1079 +% v1098;
     v1102 = @as(i64, 0) + @as(i64, 1);
     v1103 = v1102 + @as(i64, 1);
@@ -5216,11 +4860,7 @@ fn spiralMain() i32 {
     } else {
         v1127 = @as(i64, 1);
     }
-    v1128 = v1112 +% v1120;
-    v1129 = v1113 +% v1125;
     v1130 = v1115 +% v1127;
-    v1131 = v1105 +% v1128;
-    v1132 = v1109 +% v1129;
     v1133 = v1111 +% v1130;
     v1134 = v1101 +% v1133;
     v1135 = @as(i64, 0) + @as(i64, 1);
@@ -5261,11 +4901,7 @@ fn spiralMain() i32 {
     } else {
         v1160 = @as(i64, 1);
     }
-    v1161 = v1145 +% v1153;
-    v1162 = v1146 +% v1158;
     v1163 = v1148 +% v1160;
-    v1164 = v1138 +% v1161;
-    v1165 = v1142 +% v1162;
     v1166 = v1144 +% v1163;
     v1167 = @as(i64, 0) + @as(i64, 1);
     v1168 = v1167 + @as(i64, 1);
@@ -5305,11 +4941,7 @@ fn spiralMain() i32 {
     } else {
         v1192 = @as(i64, 1);
     }
-    v1193 = v1177 +% v1185;
-    v1194 = v1178 +% v1190;
     v1195 = v1180 +% v1192;
-    v1196 = v1170 +% v1193;
-    v1197 = v1174 +% v1194;
     v1198 = v1176 +% v1195;
     v1199 = @as(i64, 0) + @as(i64, 1);
     v1200 = v1199 + @as(i64, 1);
@@ -5349,11 +4981,7 @@ fn spiralMain() i32 {
     } else {
         v1224 = @as(i64, 1);
     }
-    v1225 = v1209 +% v1217;
-    v1226 = v1210 +% v1222;
     v1227 = v1212 +% v1224;
-    v1228 = v1202 +% v1225;
-    v1229 = v1206 +% v1226;
     v1230 = v1208 +% v1227;
     v1231 = @as(i64, 0) + @as(i64, 1);
     v1232 = v1231 + @as(i64, 1);
@@ -5393,11 +5021,7 @@ fn spiralMain() i32 {
     } else {
         v1256 = @as(i64, 1);
     }
-    v1257 = v1241 +% v1249;
-    v1258 = v1242 +% v1254;
     v1259 = v1244 +% v1256;
-    v1260 = v1234 +% v1257;
-    v1261 = v1238 +% v1258;
     v1262 = v1240 +% v1259;
     v1263 = v1230 +% v1262;
     v1264 = v1198 +% v1263;
@@ -5449,11 +5073,7 @@ fn spiralMain() i32 {
     } else {
         v1296 = @as(i64, 1);
     }
-    v1297 = v1281 +% v1289;
-    v1298 = v1282 +% v1294;
     v1299 = v1284 +% v1296;
-    v1300 = v1274 +% v1297;
-    v1301 = v1278 +% v1298;
     v1302 = v1280 +% v1299;
     v1303 = @as(i64, 0) + @as(i64, 1);
     v1304 = v1303 + @as(i64, 1);
@@ -5493,11 +5113,7 @@ fn spiralMain() i32 {
     } else {
         v1328 = @as(i64, 1);
     }
-    v1329 = v1313 +% v1321;
-    v1330 = v1314 +% v1326;
     v1331 = v1316 +% v1328;
-    v1332 = v1306 +% v1329;
-    v1333 = v1310 +% v1330;
     v1334 = v1312 +% v1331;
     v1335 = @as(i64, 0) + @as(i64, 1);
     v1336 = v1335 + @as(i64, 1);
@@ -5537,11 +5153,7 @@ fn spiralMain() i32 {
     } else {
         v1360 = @as(i64, 1);
     }
-    v1361 = v1345 +% v1353;
-    v1362 = v1346 +% v1358;
     v1363 = v1348 +% v1360;
-    v1364 = v1338 +% v1361;
-    v1365 = v1342 +% v1362;
     v1366 = v1344 +% v1363;
     v1367 = @as(i64, 0) + @as(i64, 1);
     v1368 = v1367 + @as(i64, 1);
@@ -5581,11 +5193,7 @@ fn spiralMain() i32 {
     } else {
         v1392 = @as(i64, 1);
     }
-    v1393 = v1377 +% v1385;
-    v1394 = v1378 +% v1390;
     v1395 = v1380 +% v1392;
-    v1396 = v1370 +% v1393;
-    v1397 = v1374 +% v1394;
     v1398 = v1376 +% v1395;
     v1399 = @as(i64, 0) + @as(i64, 1);
     v1400 = v1399 + @as(i64, 1);
@@ -5625,11 +5233,7 @@ fn spiralMain() i32 {
     } else {
         v1424 = @as(i64, 1);
     }
-    v1425 = v1409 +% v1417;
-    v1426 = v1410 +% v1422;
     v1427 = v1412 +% v1424;
-    v1428 = v1402 +% v1425;
-    v1429 = v1406 +% v1426;
     v1430 = v1408 +% v1427;
     v1431 = @as(i64, 0) + @as(i64, 1);
     v1432 = v1431 + @as(i64, 1);
@@ -5669,11 +5273,7 @@ fn spiralMain() i32 {
     } else {
         v1456 = @as(i64, 1);
     }
-    v1457 = v1441 +% v1449;
-    v1458 = v1442 +% v1454;
     v1459 = v1444 +% v1456;
-    v1460 = v1434 +% v1457;
-    v1461 = v1438 +% v1458;
     v1462 = v1440 +% v1459;
     v1463 = v1430 +% v1462;
     v1464 = v1398 +% v1463;
@@ -5718,11 +5318,7 @@ fn spiralMain() i32 {
     } else {
         v1493 = @as(i64, 1);
     }
-    v1494 = v1478 +% v1486;
-    v1495 = v1479 +% v1491;
     v1496 = v1481 +% v1493;
-    v1497 = v1471 +% v1494;
-    v1498 = v1475 +% v1495;
     v1499 = v1477 +% v1496;
     v1500 = @as(i64, 0) + @as(i64, 1);
     v1501 = v1500 + @as(i64, 1);
@@ -5762,11 +5358,7 @@ fn spiralMain() i32 {
     } else {
         v1525 = @as(i64, 1);
     }
-    v1526 = v1510 +% v1518;
-    v1527 = v1511 +% v1523;
     v1528 = v1513 +% v1525;
-    v1529 = v1503 +% v1526;
-    v1530 = v1507 +% v1527;
     v1531 = v1509 +% v1528;
     v1532 = @as(i64, 0) + @as(i64, 1);
     v1533 = v1532 + @as(i64, 1);
@@ -5806,11 +5398,7 @@ fn spiralMain() i32 {
     } else {
         v1557 = @as(i64, 1);
     }
-    v1558 = v1542 +% v1550;
-    v1559 = v1543 +% v1555;
     v1560 = v1545 +% v1557;
-    v1561 = v1535 +% v1558;
-    v1562 = v1539 +% v1559;
     v1563 = v1541 +% v1560;
     v1564 = @as(i64, 0) + @as(i64, 1);
     v1565 = v1564 + @as(i64, 1);
@@ -5850,11 +5438,7 @@ fn spiralMain() i32 {
     } else {
         v1589 = @as(i64, 1);
     }
-    v1590 = v1574 +% v1582;
-    v1591 = v1575 +% v1587;
     v1592 = v1577 +% v1589;
-    v1593 = v1567 +% v1590;
-    v1594 = v1571 +% v1591;
     v1595 = v1573 +% v1592;
     v1596 = @as(i64, 0) + @as(i64, 1);
     v1597 = v1596 + @as(i64, 1);
@@ -5894,11 +5478,7 @@ fn spiralMain() i32 {
     } else {
         v1621 = @as(i64, 1);
     }
-    v1622 = v1606 +% v1614;
-    v1623 = v1607 +% v1619;
     v1624 = v1609 +% v1621;
-    v1625 = v1599 +% v1622;
-    v1626 = v1603 +% v1623;
     v1627 = v1605 +% v1624;
     v1628 = @as(i64, 0) + @as(i64, 1);
     v1629 = v1628 + @as(i64, 1);
@@ -5938,11 +5518,7 @@ fn spiralMain() i32 {
     } else {
         v1653 = @as(i64, 1);
     }
-    v1654 = v1638 +% v1646;
-    v1655 = v1639 +% v1651;
     v1656 = v1641 +% v1653;
-    v1657 = v1631 +% v1654;
-    v1658 = v1635 +% v1655;
     v1659 = v1637 +% v1656;
     v1660 = v1627 +% v1659;
     v1661 = v1595 +% v1660;
@@ -5994,11 +5570,7 @@ fn spiralMain() i32 {
     } else {
         v1693 = @as(i64, 1);
     }
-    v1694 = v1678 +% v1686;
-    v1695 = v1679 +% v1691;
     v1696 = v1681 +% v1693;
-    v1697 = v1671 +% v1694;
-    v1698 = v1675 +% v1695;
     v1699 = v1677 +% v1696;
     v1700 = @as(i64, 0) + @as(i64, 1);
     v1701 = v1700 + @as(i64, 1);
@@ -6038,11 +5610,7 @@ fn spiralMain() i32 {
     } else {
         v1725 = @as(i64, 1);
     }
-    v1726 = v1710 +% v1718;
-    v1727 = v1711 +% v1723;
     v1728 = v1713 +% v1725;
-    v1729 = v1703 +% v1726;
-    v1730 = v1707 +% v1727;
     v1731 = v1709 +% v1728;
     v1732 = v1699 +% v1731;
     v1733 = @as(i64, 0) + @as(i64, 1);
@@ -6083,11 +5651,7 @@ fn spiralMain() i32 {
     } else {
         v1758 = @as(i64, 1);
     }
-    v1759 = v1743 +% v1751;
-    v1760 = v1744 +% v1756;
     v1761 = v1746 +% v1758;
-    v1762 = v1736 +% v1759;
-    v1763 = v1740 +% v1760;
     v1764 = v1742 +% v1761;
     v1765 = @as(i64, 0) + @as(i64, 1);
     v1766 = v1765 + @as(i64, 1);
@@ -6127,11 +5691,7 @@ fn spiralMain() i32 {
     } else {
         v1790 = @as(i64, 1);
     }
-    v1791 = v1775 +% v1783;
-    v1792 = v1776 +% v1788;
     v1793 = v1778 +% v1790;
-    v1794 = v1768 +% v1791;
-    v1795 = v1772 +% v1792;
     v1796 = v1774 +% v1793;
     v1797 = @as(i64, 0) + @as(i64, 1);
     v1798 = v1797 + @as(i64, 1);
@@ -6171,11 +5731,7 @@ fn spiralMain() i32 {
     } else {
         v1822 = @as(i64, 1);
     }
-    v1823 = v1807 +% v1815;
-    v1824 = v1808 +% v1820;
     v1825 = v1810 +% v1822;
-    v1826 = v1800 +% v1823;
-    v1827 = v1804 +% v1824;
     v1828 = v1806 +% v1825;
     v1829 = @as(i64, 0) + @as(i64, 1);
     v1830 = v1829 + @as(i64, 1);
@@ -6215,11 +5771,7 @@ fn spiralMain() i32 {
     } else {
         v1854 = @as(i64, 1);
     }
-    v1855 = v1839 +% v1847;
-    v1856 = v1840 +% v1852;
     v1857 = v1842 +% v1854;
-    v1858 = v1832 +% v1855;
-    v1859 = v1836 +% v1856;
     v1860 = v1838 +% v1857;
     v1861 = v1828 +% v1860;
     v1862 = v1796 +% v1861;
@@ -6443,11 +5995,7 @@ fn spiralMain() i32 {
     } else {
         v2025 = @as(i64, 1);
     }
-    v2026 = v2010 +% v2018;
-    v2027 = v2011 +% v2023;
     v2028 = v2013 +% v2025;
-    v2029 = v2003 +% v2026;
-    v2030 = v2007 +% v2027;
     v2031 = v2009 +% v2028;
     v2032 = @as(i64, 0) + @as(i64, 1);
     v2033 = v2032 + @as(i64, 1);
@@ -6487,11 +6035,7 @@ fn spiralMain() i32 {
     } else {
         v2057 = @as(i64, 1);
     }
-    v2058 = v2042 +% v2050;
-    v2059 = v2043 +% v2055;
     v2060 = v2045 +% v2057;
-    v2061 = v2035 +% v2058;
-    v2062 = v2039 +% v2059;
     v2063 = v2041 +% v2060;
     v2064 = @as(i64, 0) + @as(i64, 1);
     v2065 = v2064 + @as(i64, 1);
@@ -6531,11 +6075,7 @@ fn spiralMain() i32 {
     } else {
         v2089 = @as(i64, 1);
     }
-    v2090 = v2074 +% v2082;
-    v2091 = v2075 +% v2087;
     v2092 = v2077 +% v2089;
-    v2093 = v2067 +% v2090;
-    v2094 = v2071 +% v2091;
     v2095 = v2073 +% v2092;
     v2096 = @as(i64, 0) + @as(i64, 1);
     v2097 = v2096 + @as(i64, 1);
@@ -6575,11 +6115,7 @@ fn spiralMain() i32 {
     } else {
         v2121 = @as(i64, 1);
     }
-    v2122 = v2106 +% v2114;
-    v2123 = v2107 +% v2119;
     v2124 = v2109 +% v2121;
-    v2125 = v2099 +% v2122;
-    v2126 = v2103 +% v2123;
     v2127 = v2105 +% v2124;
     v2128 = v2095 +% v2127;
     v2129 = v2063 +% v2128;
@@ -6634,11 +6170,7 @@ fn spiralMain() i32 {
     } else {
         v2164 = @as(i64, 1);
     }
-    v2165 = v2149 +% v2157;
-    v2166 = v2150 +% v2162;
     v2167 = v2152 +% v2164;
-    v2168 = v2142 +% v2165;
-    v2169 = v2146 +% v2166;
     v2170 = v2148 +% v2167;
     v2171 = @as(i64, 0) + @as(i64, 1);
     v2172 = v2171 + @as(i64, 1);
@@ -6678,11 +6210,7 @@ fn spiralMain() i32 {
     } else {
         v2196 = @as(i64, 1);
     }
-    v2197 = v2181 +% v2189;
-    v2198 = v2182 +% v2194;
     v2199 = v2184 +% v2196;
-    v2200 = v2174 +% v2197;
-    v2201 = v2178 +% v2198;
     v2202 = v2180 +% v2199;
     v2203 = v2170 +% v2202;
     v2204 = @as(i64, 0) + @as(i64, 1);
@@ -6723,11 +6251,7 @@ fn spiralMain() i32 {
     } else {
         v2229 = @as(i64, 1);
     }
-    v2230 = v2214 +% v2222;
-    v2231 = v2215 +% v2227;
     v2232 = v2217 +% v2229;
-    v2233 = v2207 +% v2230;
-    v2234 = v2211 +% v2231;
     v2235 = v2213 +% v2232;
     v2236 = @as(i64, 0) + @as(i64, 1);
     v2237 = v2236 + @as(i64, 1);
@@ -6767,11 +6291,7 @@ fn spiralMain() i32 {
     } else {
         v2261 = @as(i64, 1);
     }
-    v2262 = v2246 +% v2254;
-    v2263 = v2247 +% v2259;
     v2264 = v2249 +% v2261;
-    v2265 = v2239 +% v2262;
-    v2266 = v2243 +% v2263;
     v2267 = v2245 +% v2264;
     v2268 = v2235 +% v2267;
     v2269 = v2203 +% v2268;
@@ -6993,11 +6513,7 @@ fn spiralMain() i32 {
     } else {
         v2430 = @as(i64, 1);
     }
-    v2431 = v2415 +% v2423;
-    v2432 = v2416 +% v2428;
     v2433 = v2418 +% v2430;
-    v2434 = v2408 +% v2431;
-    v2435 = v2412 +% v2432;
     v2436 = v2414 +% v2433;
     v2437 = @as(i64, 0) + @as(i64, 1);
     v2438 = v2437 + @as(i64, 1);
@@ -7037,11 +6553,7 @@ fn spiralMain() i32 {
     } else {
         v2462 = @as(i64, 1);
     }
-    v2463 = v2447 +% v2455;
-    v2464 = v2448 +% v2460;
     v2465 = v2450 +% v2462;
-    v2466 = v2440 +% v2463;
-    v2467 = v2444 +% v2464;
     v2468 = v2446 +% v2465;
     v2469 = v2436 +% v2468;
     v2470 = v2404 +% v2397;
@@ -7092,11 +6604,7 @@ fn spiralMain() i32 {
     } else {
         v2501 = @as(i64, 1);
     }
-    v2502 = v2486 +% v2494;
-    v2503 = v2487 +% v2499;
     v2504 = v2489 +% v2501;
-    v2505 = v2479 +% v2502;
-    v2506 = v2483 +% v2503;
     v2507 = v2485 +% v2504;
     v2508 = @as(i64, 0) + @as(i64, 1);
     v2509 = v2508 + @as(i64, 1);
@@ -7136,11 +6644,7 @@ fn spiralMain() i32 {
     } else {
         v2533 = @as(i64, 1);
     }
-    v2534 = v2518 +% v2526;
-    v2535 = v2519 +% v2531;
     v2536 = v2521 +% v2533;
-    v2537 = v2511 +% v2534;
-    v2538 = v2515 +% v2535;
     v2539 = v2517 +% v2536;
     v2540 = v2507 +% v2539;
     v2541 = @as(i64, 0) + @as(i64, 1);
@@ -7181,11 +6685,7 @@ fn spiralMain() i32 {
     } else {
         v2566 = @as(i64, 1);
     }
-    v2567 = v2551 +% v2559;
-    v2568 = v2552 +% v2564;
     v2569 = v2554 +% v2566;
-    v2570 = v2544 +% v2567;
-    v2571 = v2548 +% v2568;
     v2572 = v2550 +% v2569;
     v2573 = @as(i64, 0) + @as(i64, 1);
     v2574 = v2573 + @as(i64, 1);
@@ -7225,11 +6725,7 @@ fn spiralMain() i32 {
     } else {
         v2598 = @as(i64, 1);
     }
-    v2599 = v2583 +% v2591;
-    v2600 = v2584 +% v2596;
     v2601 = v2586 +% v2598;
-    v2602 = v2576 +% v2599;
-    v2603 = v2580 +% v2600;
     v2604 = v2582 +% v2601;
     v2605 = v2572 +% v2604;
     v2606 = v2540 +% v2605;
@@ -7451,11 +6947,7 @@ fn spiralMain() i32 {
     } else {
         v2767 = @as(i64, 1);
     }
-    v2768 = v2752 +% v2760;
-    v2769 = v2753 +% v2765;
     v2770 = v2755 +% v2767;
-    v2771 = v2745 +% v2768;
-    v2772 = v2749 +% v2769;
     v2773 = v2751 +% v2770;
     v2774 = @as(i64, 0) + @as(i64, 1);
     v2775 = v2774 + @as(i64, 1);
@@ -7495,11 +6987,7 @@ fn spiralMain() i32 {
     } else {
         v2799 = @as(i64, 1);
     }
-    v2800 = v2784 +% v2792;
-    v2801 = v2785 +% v2797;
     v2802 = v2787 +% v2799;
-    v2803 = v2777 +% v2800;
-    v2804 = v2781 +% v2801;
     v2805 = v2783 +% v2802;
     v2806 = v2773 +% v2805;
     v2807 = v2741 +% v2734;
@@ -7744,11 +7232,7 @@ fn spiralMain() i32 {
     } else {
         v2980 = @as(i64, 1);
     }
-    v2981 = v2965 +% v2973;
-    v2982 = v2966 +% v2978;
     v2983 = v2968 +% v2980;
-    v2984 = v2958 +% v2981;
-    v2985 = v2962 +% v2982;
     v2986 = v2964 +% v2983;
     v2987 = @as(i64, 0) + @as(i64, 1);
     v2988 = v2987 + @as(i64, 1);
@@ -7788,14 +7272,8 @@ fn spiralMain() i32 {
     } else {
         v3012 = @as(i64, 1);
     }
-    v3013 = v2997 +% v3005;
-    v3014 = v2998 +% v3010;
     v3015 = v3000 +% v3012;
-    v3016 = v2990 +% v3013;
-    v3017 = v2994 +% v3014;
     v3018 = v2996 +% v3015;
-    v3019 = v3016 +% v2984;
-    v3020 = v3017 +% v2985;
     v3021 = v3018 +% v2986;
     v3022 = @as(i64, 0) + @as(i64, 1);
     v3023 = v3022 + @as(i64, 1);
@@ -7835,11 +7313,7 @@ fn spiralMain() i32 {
     } else {
         v3047 = @as(i64, 1);
     }
-    v3048 = v3032 +% v3040;
-    v3049 = v3033 +% v3045;
     v3050 = v3035 +% v3047;
-    v3051 = v3025 +% v3048;
-    v3052 = v3029 +% v3049;
     v3053 = v3031 +% v3050;
     v3054 = @as(i64, 0) + @as(i64, 1);
     v3055 = v3054 + @as(i64, 1);
@@ -7879,14 +7353,8 @@ fn spiralMain() i32 {
     } else {
         v3079 = @as(i64, 1);
     }
-    v3080 = v3064 +% v3072;
-    v3081 = v3065 +% v3077;
     v3082 = v3067 +% v3079;
-    v3083 = v3057 +% v3080;
-    v3084 = v3061 +% v3081;
     v3085 = v3063 +% v3082;
-    v3086 = v3083 +% v3051;
-    v3087 = v3084 +% v3052;
     v3088 = v3085 +% v3053;
     v3089 = v3021 +% v3088;
     v3090 = v3089 == @as(i64, 0);

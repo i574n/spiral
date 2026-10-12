@@ -340,29 +340,16 @@ function Build-And-Run($job) {
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]([int]$raw); Stdout = $sha; Detail = '' }
     }
     if ($job.Backend -eq 'Kotlin') {
-        if (-not $tools.Kotlinc -or -not $tools.Java) { return 'no-toolchain' }
-        $kotlinHome = Split-Path (Split-Path $tools.Kotlinc)
-        $preloader = Join-Path $kotlinHome 'lib/kotlin-preloader.jar'
-        $compilerJar = Join-Path $kotlinHome 'lib/kotlin-compiler.jar'
-        if (-not (Test-Path -LiteralPath $preloader) -or -not (Test-Path -LiteralPath $compilerJar)) { return 'no-toolchain' }
-        $jar = Join-Path $binDir 'spiral-kotlin.jar'
-        Remove-Item -LiteralPath $jar -ErrorAction SilentlyContinue
-        # kotlinc.bat cannot be a ProcessStartInfo target. JDK 25 rejects -noverify; 2.4.21 does not need it.
-        $build = Invoke-Native $tools.Java @(
-            '-Xmx512M', '-Xms128M',
-            '--add-opens', 'java.base/java.util=ALL-UNNAMED',
-            '-cp', $preloader,
-            'org.jetbrains.kotlin.preloading.Preloader',
-            '-cp', $compilerJar,
-            'org.jetbrains.kotlin.cli.jvm.K2JVMCompiler',
-            $job.Output, '-include-runtime', '-d', $jar
-        ) $binDir 180
-        if ("$($build.Exit)" -ne '0' -or -not (Test-Path -LiteralPath $jar)) {
-            $msg = ((($build.Err + "`n" + $build.Out) -split "`n" | Where-Object { $_.Trim() } | Select-Object -First 4) -join ' / ') -replace '\s+', ' '
-            if (-not $msg) { $msg = "kotlinc exit $($build.Exit)" }
+        if (-not $tools.Java) { return 'no-toolchain' }
+        $built = $kotlinBuilds[$job.Output]
+        if (-not $built) { return 'no-toolchain' }
+        if ($built.Exit -ne 'OK') {
+            $msg = ($built.Messages -replace '\s+', ' ').Trim()
+            if (-not $msg) { $msg = "kotlinc $($built.Exit)" }
             return [pscustomobject]@{ Status = 'build-fail'; Exit = ''; Stdout = ''; Detail = $msg.Substring(0, [Math]::Min(300, $msg.Length)) }
         }
-        $run = Invoke-Native $tools.Java @('-jar', $jar) $binDir 60
+        $classes = Join-Path $job.Native 'classes'
+        $run = Invoke-Native $tools.Java @('-cp', "$kotlinStdlib$([IO.Path]::PathSeparator)$classes", 'MainKt') $binDir 60
         $stdout = ($run.Out -replace "`r`n", "`n").TrimEnd()
         $sha = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($stdout))).ToLowerInvariant().Substring(0, 16)
         return [pscustomobject]@{ Status = 'ran'; Exit = [string]$run.Exit; Stdout = $sha; Detail = '' }
@@ -522,6 +509,34 @@ if ($Native) {
         $chunk = @(for ($k = $i; $k -lt $nativeJobs.Count; $k += $laneCount) { $nativeJobs[$k] })
         if ($chunk.Count) { $lanes.Add([pscustomobject]@{ Lane = $i; Jobs = $chunk }) }
     }
+    $kotlinBuilds = @{}
+    $kotlinStdlib = ''
+    $kotlinJobs = @($nativeJobs | Where-Object Backend -eq 'Kotlin')
+    if ($kotlinJobs.Count -and $tools.Kotlinc -and $tools.Java) {
+        $kotlinWatch = [Diagnostics.Stopwatch]::StartNew()
+        $kotlinLib = Join-Path (Split-Path (Split-Path $tools.Kotlinc)) 'lib'
+        $kotlinStdlib = Join-Path $kotlinLib 'kotlin-stdlib.jar'
+        $kotlinClasspath = (Get-ChildItem $kotlinLib -Filter *.jar | Where-Object Name -notmatch 'sources|-js|wasm' | ForEach-Object FullName) -join [IO.Path]::PathSeparator
+        $kotlinServer = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../tests/native-shims/kotlin-server/KotlinServer.java'))
+        $kotlinRequests = foreach ($job in $kotlinJobs) {
+            $classes = Join-Path $job.Native 'classes'
+            Remove-Item -LiteralPath $classes -Recurse -Force -ErrorAction SilentlyContinue
+            "$($job.Output)`t$classes"
+        }
+        $serverStart = [Diagnostics.ProcessStartInfo]::new($tools.Java)
+        foreach ($argument in @('-Xmx1g', '--add-opens', 'java.base/java.util=ALL-UNNAMED', '-cp', $kotlinClasspath, $kotlinServer, $kotlinStdlib)) { $serverStart.ArgumentList.Add($argument) }
+        $serverStart.RedirectStandardInput = $true; $serverStart.RedirectStandardOutput = $true; $serverStart.RedirectStandardError = $true; $serverStart.UseShellExecute = $false
+        $server = [Diagnostics.Process]::Start($serverStart)
+        $serverErrors = $server.StandardError.ReadToEndAsync()
+        $serverReplies = $server.StandardOutput.ReadToEndAsync()
+        foreach ($request in $kotlinRequests) { $server.StandardInput.WriteLine($request) }
+        $server.StandardInput.Close()
+        if (-not $server.WaitForExit(60000 + 20000 * $kotlinJobs.Count)) { $server.Kill($true) }
+        foreach ($reply in ($serverReplies.Result -split "`r?`n")) {
+            if ($reply.StartsWith("DONE`t")) { $f = $reply -split "`t", 5; $kotlinBuilds[$f[1]] = [pscustomobject]@{ Exit = $f[2]; Ms = [int]$f[3]; Messages = $f[4] } }
+        }
+        Write-Host ("== kotlin server: {0} of {1} compiled in {2:N1}s" -f @($kotlinBuilds.Values | Where-Object Exit -eq 'OK').Count, $kotlinJobs.Count, $kotlinWatch.Elapsed.TotalSeconds)
+    }
     $laneFunctions = @{ 'Build-And-Run' = ${function:Build-And-Run}.ToString(); 'Invoke-Native' = ${function:Invoke-Native}.ToString(); 'Get-CFlags' = ${function:Get-CFlags}.ToString() }
     if (-not ('Spiral.NativeErrorMode' -as [type])) {
         Add-Type -Namespace Spiral -Name NativeErrorMode -MemberDefinition @'
@@ -534,6 +549,7 @@ public static extern uint SetErrorMode(uint mode);
     $laneResults = $lanes | ForEach-Object -ThrottleLimit ([Math]::Max(1, $lanes.Count)) -Parallel {
         foreach ($f in ($using:laneFunctions).GetEnumerator()) { Set-Item "function:$($f.Key)" -Value ([scriptblock]::Create($f.Value)) }
         $nativeLane = $_.Lane
+        $kotlinBuilds = $using:kotlinBuilds; $kotlinStdlib = $using:kotlinStdlib
         $tools = $using:tools; $zigExe = $using:zigExe; $zigCacheGen = 0; $zigCache = "$($using:zigCache)-lane$nativeLane"
         $scratch = $using:scratch; $shimDir = $using:shimDir; $cFlagRules = $using:cFlagRules; $stamp = $using:stamp
         $laneResult = @{}

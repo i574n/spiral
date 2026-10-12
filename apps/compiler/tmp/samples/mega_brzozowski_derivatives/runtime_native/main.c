@@ -412,7 +412,7 @@ US2 regex_compare5(UH2 * v0, UH2 * v1){
                                     return US2_SymbolSame();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
@@ -422,7 +422,7 @@ US2 regex_compare5(UH2 * v0, UH2 * v1){
                             }
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             USDecref0(&(v10));
@@ -434,7 +434,7 @@ US2 regex_compare5(UH2 * v0, UH2 * v1){
                                     return US2_SymbolLess();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     USDecref0(&(v13));
@@ -516,7 +516,7 @@ US2 regex_compare5(UH2 * v0, UH2 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH2 * v44 = v0->case5.v0;
             (v44)->refc++;
             UHDecref2(v0);
@@ -576,7 +576,7 @@ UH2 * alt_insert_sorted4(UH2 * v0, UH2 * v1){
                     return UH2_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref2(v0); UHDecref2(v2); UHDecref2(v3); USDecref2(&(v4));
@@ -615,7 +615,7 @@ UH2 * alt_insert_sorted4(UH2 * v0, UH2 * v1){
                     return UH2_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref2(v0); USDecref2(&(v11));
@@ -746,7 +746,7 @@ bool regex_equal7(UH2 * v0, UH2 * v1){
                                     v15 = US2_SymbolSame();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     
@@ -756,7 +756,7 @@ bool regex_equal7(UH2 * v0, UH2 * v1){
                             }
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -768,7 +768,7 @@ bool regex_equal7(UH2 * v0, UH2 * v1){
                                     v15 = US2_SymbolLess();
                                     break;
                                 }
-                                case 0: { // BitZero
+                                default: { // BitZero
                                     
                                     
                                     
@@ -845,7 +845,7 @@ bool regex_equal7(UH2 * v0, UH2 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH2 * v34 = v0->case5.v0;
             (v34)->refc++;
             UHDecref2(v0);
@@ -1060,7 +1060,7 @@ UH2 * normalize2(UH2 * v0){
             return UH2_RegexEpsilon();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH2 * v15 = v0->case5.v0;
             (v15)->refc += 2;
             UHDecref2(v0);
@@ -1132,12 +1132,12 @@ US3 nullable10(UH2 * v0){
                             
                             
                             switch (v7.tag) {
-                                case 1: { // NonNullable
+                                default: { // NonNullable
                                     
                                     
                                     USDecref3(&(v7));
                                     switch (v8.tag) {
-                                        case 1: { // NonNullable
+                                        default: { // NonNullable
                                             
                                             
                                             USDecref3(&(v8));
@@ -1216,7 +1216,7 @@ US3 nullable10(UH2 * v0){
             return US3_Nullable();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             
             
             UHDecref2(v0);
@@ -1264,7 +1264,7 @@ UH2 * derivative9(UH2 * v0, US0 v1){
                     return make_cat6(v31, v25);
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     USIncref0(&(v1)); (v24)->refc++;
                     USDecref3(&(v26));
@@ -1304,7 +1304,7 @@ UH2 * derivative9(UH2 * v0, US0 v1){
                             v14 = US2_SymbolSame();
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -1314,7 +1314,7 @@ UH2 * derivative9(UH2 * v0, US0 v1){
                     }
                     break;
                 }
-                case 0: { // BitZero
+                default: { // BitZero
                     
                     
                     
@@ -1326,7 +1326,7 @@ UH2 * derivative9(UH2 * v0, US0 v1){
                             v14 = US2_SymbolLess();
                             break;
                         }
-                        case 0: { // BitZero
+                        default: { // BitZero
                             
                             
                             
@@ -1381,7 +1381,7 @@ UH2 * derivative9(UH2 * v0, US0 v1){
             return UH2_RegexEmpty();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH2 * v35 = v0->case5.v0;
             USIncref0(&(v1)); (v35)->refc += 2;
             UHDecref2(v0);
@@ -1426,7 +1426,7 @@ bool accepts0(UH2 * v0, UH0 * v1){
             return accepts0(v8, v7);
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             (v0)->refc++;
             UHDecref0(v1);
@@ -1446,7 +1446,7 @@ bool accepts0(UH2 * v0, UH0 * v1){
                     return false;
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     
                     USDecref3(&(v3));
@@ -1677,7 +1677,7 @@ US2 regex_compare16(UH3 * v0, UH3 * v1){
                                                     return US2_SymbolSame();
                                                     break;
                                                 }
-                                                case 2: { // TriC
+                                                default: { // TriC
                                                     
                                                     
                                                     USDecref1(&(v13));
@@ -1687,7 +1687,7 @@ US2 regex_compare16(UH3 * v0, UH3 * v1){
                                             }
                                             break;
                                         }
-                                        case 2: { // TriC
+                                        default: { // TriC
                                             
                                             
                                             USDecref1(&(v10));
@@ -1699,7 +1699,7 @@ US2 regex_compare16(UH3 * v0, UH3 * v1){
                                                     return US2_SymbolGreater();
                                                     break;
                                                 }
-                                                case 2: { // TriC
+                                                default: { // TriC
                                                     
                                                     
                                                     USDecref1(&(v13));
@@ -1785,7 +1785,7 @@ US2 regex_compare16(UH3 * v0, UH3 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH3 * v50 = v0->case5.v0;
             (v50)->refc++;
             UHDecref3(v0);
@@ -1845,7 +1845,7 @@ UH3 * alt_insert_sorted15(UH3 * v0, UH3 * v1){
                     return UH3_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref3(v0); UHDecref3(v2); UHDecref3(v3); USDecref2(&(v4));
@@ -1884,7 +1884,7 @@ UH3 * alt_insert_sorted15(UH3 * v0, UH3 * v1){
                     return UH3_RegexAlt(v0, v1);
                     break;
                 }
-                case 1: { // SymbolSame
+                default: { // SymbolSame
                     
                     
                     UHDecref3(v0); USDecref2(&(v11));
@@ -2050,7 +2050,7 @@ bool regex_equal18(UH3 * v0, UH3 * v1){
                                                     v21 = US2_SymbolSame();
                                                     break;
                                                 }
-                                                case 2: { // TriC
+                                                default: { // TriC
                                                     
                                                     
                                                     
@@ -2060,7 +2060,7 @@ bool regex_equal18(UH3 * v0, UH3 * v1){
                                             }
                                             break;
                                         }
-                                        case 2: { // TriC
+                                        default: { // TriC
                                             
                                             
                                             
@@ -2072,7 +2072,7 @@ bool regex_equal18(UH3 * v0, UH3 * v1){
                                                     v21 = US2_SymbolGreater();
                                                     break;
                                                 }
-                                                case 2: { // TriC
+                                                default: { // TriC
                                                     
                                                     
                                                     
@@ -2153,7 +2153,7 @@ bool regex_equal18(UH3 * v0, UH3 * v1){
             }
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH3 * v40 = v0->case5.v0;
             (v40)->refc++;
             UHDecref3(v0);
@@ -2368,7 +2368,7 @@ UH3 * normalize13(UH3 * v0){
             return UH3_RegexEpsilon();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH3 * v15 = v0->case5.v0;
             (v15)->refc += 2;
             UHDecref3(v0);
@@ -2420,12 +2420,12 @@ US3 nullable21(UH3 * v0){
                             
                             
                             switch (v7.tag) {
-                                case 1: { // NonNullable
+                                default: { // NonNullable
                                     
                                     
                                     USDecref3(&(v7));
                                     switch (v8.tag) {
-                                        case 1: { // NonNullable
+                                        default: { // NonNullable
                                             
                                             
                                             USDecref3(&(v8));
@@ -2504,7 +2504,7 @@ US3 nullable21(UH3 * v0){
             return US3_Nullable();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             
             
             UHDecref3(v0);
@@ -2552,7 +2552,7 @@ UH3 * derivative20(UH3 * v0, US1 v1){
                     return make_cat17(v37, v31);
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     USIncref1(&(v1)); (v30)->refc++;
                     USDecref3(&(v32));
@@ -2627,7 +2627,7 @@ UH3 * derivative20(UH3 * v0, US1 v1){
                                             v20 = US2_SymbolSame();
                                             break;
                                         }
-                                        case 2: { // TriC
+                                        default: { // TriC
                                             
                                             
                                             
@@ -2637,7 +2637,7 @@ UH3 * derivative20(UH3 * v0, US1 v1){
                                     }
                                     break;
                                 }
-                                case 2: { // TriC
+                                default: { // TriC
                                     
                                     
                                     
@@ -2649,7 +2649,7 @@ UH3 * derivative20(UH3 * v0, US1 v1){
                                             v20 = US2_SymbolGreater();
                                             break;
                                         }
-                                        case 2: { // TriC
+                                        default: { // TriC
                                             
                                             
                                             
@@ -2708,7 +2708,7 @@ UH3 * derivative20(UH3 * v0, US1 v1){
             return UH3_RegexEmpty();
             break;
         }
-        case 5: { // RegexStar
+        default: { // RegexStar
             UH3 * v41 = v0->case5.v0;
             USIncref1(&(v1)); (v41)->refc += 2;
             UHDecref3(v0);
@@ -2753,7 +2753,7 @@ bool accepts11(UH3 * v0, UH1 * v1){
             return accepts11(v8, v7);
             break;
         }
-        case 0: { // InputEmpty
+        default: { // InputEmpty
             
             (v0)->refc++;
             UHDecref1(v1);
@@ -2773,7 +2773,7 @@ bool accepts11(UH3 * v0, UH1 * v1){
                     return false;
                     break;
                 }
-                case 0: { // Nullable
+                default: { // Nullable
                     
                     
                     USDecref3(&(v3));
@@ -2837,7 +2837,7 @@ US5 decide_bit_match22(US4 v0){
     
     
     switch (v0.tag) {
-        case 0: { // BitMatcherRaw
+        default: { // BitMatcherRaw
             UH2 * v1 = v0.case0.v0; UH0 * v2 = v0.case0.v1;
             (v1)->refc += 2; (v2)->refc += 2;
             USDecref4(&(v0));
@@ -2854,7 +2854,7 @@ bool bit_match_value23(US5 v0){
     
     
     switch (v0.tag) {
-        case 1: { // BitMatcherDecided
+        default: { // BitMatcherDecided
             bool v3 = v0.case1.v2;
             
             USDecref5(&(v0));

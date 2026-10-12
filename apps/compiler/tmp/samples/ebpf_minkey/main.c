@@ -14,31 +14,31 @@ int32_t main(){
     v1 = 0l;
     
     
-    int32_t v3;
-    v3 = 3l;
+    int32_t v2;
+    v2 = 3l;
+    
+    
+    bool v3;
+    v3 = v1 == 0l;
     
     
     bool v5;
-    v5 = v1 == 0l;
-    
-    
-    bool v7;
-    if (v5){
+    if (v3){
         
         
-        bool v6;
-        v6 = v3 == 3l;
+        bool v4;
+        v4 = v2 == 3l;
         
         
-        v7 = v6;
+        v5 = v4;
     } else {
         
         
-        v7 = false;
+        v5 = false;
     }
     
     
-    if (v7){
+    if (v5){
         
         
         return 0l;

@@ -1175,7 +1175,6 @@ fn run_16(p0: i32, p1: *UH1) bool {
     var tmp11: i32 = undefined; _ = &tmp11;
     var tmp12: *UH1 = undefined; _ = &tmp12;
     var v2: bool = undefined; _ = &v2;
-    var v3: bool = undefined; _ = &v3;
     while (true) {
         switch (v1.tag) {
             1 => {
@@ -1258,7 +1257,6 @@ fn run_16(p0: i32, p1: *UH1) bool {
                 if (v2) {
                     return true;
                 } else {
-                    v3 = v0 == @as(i32, 1);
                     return false;
                 }
             },

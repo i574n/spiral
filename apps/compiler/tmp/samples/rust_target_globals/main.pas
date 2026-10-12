@@ -4,10 +4,7 @@ program SpiralGenerated;
 uses SysUtils, Math;
 procedure target_global_0(v0: AnsiString); forward;
 procedure target_global_0(v0: AnsiString);
-var
-  v1: LongInt;
 begin
-  v1 := LongInt(Length(v0));
 end;
 function SpiralMain: LongInt;
 var

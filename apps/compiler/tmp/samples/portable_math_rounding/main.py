@@ -25,114 +25,114 @@ def main():
     v4 = 0.5
     v5 = 1.0
     v6 = 2.7
-    v13 = math.floor(v0)
-    v23 = v13 == 2.0
-    del v13
-    v24 = v23 != True
-    del v23
-    if v24:
-        del v0, v1, v2, v3, v4, v5, v6, v24
+    v7 = math.floor(v0)
+    v8 = v7 == 2.0
+    del v7
+    v9 = v8 != True
+    del v8
+    if v9:
+        del v0, v1, v2, v3, v4, v5, v6, v9
         return 1
     else:
-        del v24
-        v31 = math.ceil
-        v32 = v31(v0)
-        del v31
-        v42 = v32 == 3.0
-        del v32
-        v43 = v42 != True
-        del v42
-        if v43:
-            del v0, v1, v2, v3, v4, v5, v6, v43
+        del v9
+        v10 = math.ceil
+        v11 = v10(v0)
+        del v10
+        v12 = v11 == 3.0
+        del v11
+        v13 = v12 != True
+        del v12
+        if v13:
+            del v0, v1, v2, v3, v4, v5, v6, v13
             return 2
         else:
-            del v43
-            v77 = round
-            v78 = v77(v0)
-            del v0, v77
-            v172 = v78 == 3.0
-            del v78
-            v173 = v172 != True
-            del v172
-            if v173:
-                del v1, v2, v3, v4, v5, v6, v173
+            del v13
+            v14 = round
+            v15 = v14(v0)
+            del v0, v14
+            v16 = v15 == 3.0
+            del v15
+            v17 = v16 != True
+            del v16
+            if v17:
+                del v1, v2, v3, v4, v5, v6, v17
                 return 3
             else:
-                del v173
-                v174 = round
-                v175 = v174(v1)
-                del v1, v174
-                v176 = v175 == 3.0
-                del v175
-                v177 = v176 != True
-                del v176
-                if v177:
-                    del v2, v3, v4, v5, v6, v177
+                del v17
+                v18 = round
+                v19 = v18(v1)
+                del v1, v18
+                v20 = v19 == 3.0
+                del v19
+                v21 = v20 != True
+                del v20
+                if v21:
+                    del v2, v3, v4, v5, v6, v21
                     return 4
                 else:
-                    del v177
-                    v178 = round
-                    v179 = v178(v2)
-                    del v2, v178
-                    v180 = v179 == -2.0
-                    del v179
-                    v181 = v180 != True
-                    del v180
-                    if v181:
-                        del v3, v4, v5, v6, v181
+                    del v21
+                    v22 = round
+                    v23 = v22(v2)
+                    del v2, v22
+                    v24 = v23 == -2.0
+                    del v23
+                    v25 = v24 != True
+                    del v24
+                    if v25:
+                        del v3, v4, v5, v6, v25
                         return 5
                     else:
-                        del v181
-                        v182 = round
-                        v183 = v182(v3)
-                        del v3, v182
-                        v184 = v183 == 4.0
-                        del v183
-                        v185 = v184 != True
-                        del v184
-                        if v185:
-                            del v4, v5, v6, v185
+                        del v25
+                        v26 = round
+                        v27 = v26(v3)
+                        del v3, v26
+                        v28 = v27 == 4.0
+                        del v27
+                        v29 = v28 != True
+                        del v28
+                        if v29:
+                            del v4, v5, v6, v29
                             return 6
                         else:
-                            del v185
-                            v186 = round
-                            v187 = v186(v4)
-                            del v4, v186
-                            v188 = v187 == 0.0
-                            del v187
-                            v189 = v188 != True
-                            del v188
-                            if v189:
-                                del v5, v6, v189
+                            del v29
+                            v30 = round
+                            v31 = v30(v4)
+                            del v4, v30
+                            v32 = v31 == 0.0
+                            del v31
+                            v33 = v32 != True
+                            del v32
+                            if v33:
+                                del v5, v6, v33
                                 return 7
                             else:
-                                del v189
-                                v193 = math.atan2(v5, v5)
+                                del v33
+                                v34 = math.atan2(v5, v5)
                                 del v5
-                                v203 = v193 * 1000.0
-                                del v193
-                                v204 = math.floor(v203)
-                                del v203
-                                v205 = v204 == 785.0
-                                del v204
-                                v206 = v205 != True
-                                del v205
-                                if v206:
-                                    del v6, v206
+                                v35 = v34 * 1000.0
+                                del v34
+                                v36 = math.floor(v35)
+                                del v35
+                                v37 = v36 == 785.0
+                                del v36
+                                v38 = v37 != True
+                                del v37
+                                if v38:
+                                    del v6, v38
                                     return 8
                                 else:
-                                    del v206
-                                    v213 = math.floor(v6)
+                                    del v38
+                                    v39 = math.floor(v6)
                                     del v6
-                                    v223 = v213 == 2.0
-                                    del v213
-                                    v224 = v223 != True
-                                    del v223
-                                    if v224:
-                                        del v224
+                                    v40 = v39 == 2.0
+                                    del v39
+                                    v41 = v40 != True
+                                    del v40
+                                    if v41:
+                                        del v41
                                         return 9
                                     else:
-                                        del v224
+                                        del v41
                                         return 0
 
 if __name__ == '__main__': sys.exit(main())

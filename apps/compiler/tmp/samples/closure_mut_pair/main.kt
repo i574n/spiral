@@ -1,8 +1,6 @@
 class Mut0(var l0: Int, var l1: String)
 fun f_c0(v0: Mut0): (Int) -> Mut0 {
     fun body(v1: Int): Mut0 {
-        var v2: Boolean = false
-        v2 = (v1 == 0)
         return v0
     }
     return { p0: Int -> body(p0) }

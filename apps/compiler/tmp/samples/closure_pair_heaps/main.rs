@@ -9,7 +9,6 @@ impl Default for Heap0 {
 }
 fn f_c0(mut v0: Rc<Heap0>, mut v1: Rc<Heap0>) -> Rc<dyn Fn(i32) -> (Rc<Heap0>, Rc<Heap0>)> {
     Rc::new(move |mut v2: i32| -> (Rc<Heap0>, Rc<Heap0>) {
-        let mut v3: bool = v2 == 0i32;
         (v0.clone(), v1.clone())
     })
 }

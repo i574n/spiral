@@ -1820,9 +1820,7 @@
     (local $v3 i32)
     (local $v4 i32)
     (local $t3 i32)
-    (local $v8 i32)
     (local $v9 i32)
-    (local $v5 i32)
     (local $v6 i32)
     (local $v2 i32)
     (local.set $t0 (i32.load (local.get $v1)))
@@ -1833,14 +1831,12 @@
             (local.set $t3 (i32.load (local.get $v3)))
             (if (i32.eq (local.get $t3) (i32.const 1))
                 (then
-                    (local.set $v8 (i32.eq (local.get $v0) (i32.const 0)))
                     (local.set $v9 (i32.const 0))
                     (return (call $run_19 (local.get $v9) (local.get $v4)))
                 )
                 (else
             (if (i32.eq (local.get $t3) (i32.const 0))
                 (then
-                    (local.set $v5 (i32.eq (local.get $v0) (i32.const 0)))
                     (local.set $v6 (i32.const 1))
                     (return (call $run_19 (local.get $v6) (local.get $v4)))
                 )
@@ -2312,12 +2308,10 @@
     (local $v19 i32)
     (local $v14 i32)
     (local $v15 i32)
-    (local $v16 i32)
     (local $v5 i32)
     (local $v11 i32)
     (local $v6 i32)
     (local $v7 i32)
-    (local $v8 i32)
     (local $v2 i32)
     (local.set $t0 (i32.load (local.get $v1)))
     (if (i32.eq (local.get $t0) (i32.const 1))
@@ -2345,7 +2339,6 @@
                                             (local.set $v19 (i32.const 3))
                                         )
                                         (else
-                                            (local.set $v16 (i32.eq (local.get $v0) (i32.const 3)))
                                             (local.set $v19 (i32.const 4))
                                         ))
                                 ))
@@ -2373,7 +2366,6 @@
                                             (local.set $v11 (i32.const 2))
                                         )
                                         (else
-                                            (local.set $v8 (i32.eq (local.get $v0) (i32.const 3)))
                                             (local.set $v11 (i32.const 4))
                                         ))
                                 ))

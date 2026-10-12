@@ -63,7 +63,7 @@ int32_t score0(US0 v0){
             return 3l;
             break;
         }
-        case 1: { // Warm
+        default: { // Warm
             
             
             USDecref0(&(v0));

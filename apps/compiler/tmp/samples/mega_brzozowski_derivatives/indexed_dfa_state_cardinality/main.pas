@@ -1140,7 +1140,6 @@ var
   tmp11: LongInt;
   tmp12: TUH1;
   v2: Boolean;
-  v3: Boolean;
 begin
   while True do begin
       case v1.tag of
@@ -1222,7 +1221,6 @@ begin
                   Result := True;
                   Exit;
               end else begin
-                  v3 := v0 = 1;
                   Result := False;
                   Exit;
               end;

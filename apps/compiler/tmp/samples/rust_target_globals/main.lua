@@ -1,6 +1,5 @@
 local target_global_0
 function target_global_0(v0)
-    local v1 = string.len(v0)
     return nil
 end
 

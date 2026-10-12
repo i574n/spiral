@@ -9,8 +9,6 @@ class Heap0 {
 }
 func f_c0(_ v0: Heap0, _ v1: Heap0, _ v2: Heap0) -> (Int32) -> (Heap0, Heap0, Heap0) {
     return { (v3: Int32) -> (Heap0, Heap0, Heap0) in
-        var v4: Bool = false
-        v4 = (v3 == 0)
         return (v0, v1, v2)
     }
 }

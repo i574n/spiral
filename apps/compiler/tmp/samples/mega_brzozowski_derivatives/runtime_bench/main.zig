@@ -1419,14 +1419,12 @@ fn run_19(p0: i32, p1: *UH1) bool {
     var v1: *UH1 = p1; _ = &v1;
     var v3: US0 = undefined; _ = &v3;
     var v4: *UH1 = undefined; _ = &v4;
-    var v8: bool = undefined; _ = &v8;
     var v9: i32 = undefined; _ = &v9;
-    var tmp4: i32 = undefined; _ = &tmp4;
-    var tmp5: *UH1 = undefined; _ = &tmp5;
-    var v5: bool = undefined; _ = &v5;
+    var tmp3: i32 = undefined; _ = &tmp3;
+    var tmp4: *UH1 = undefined; _ = &tmp4;
     var v6: i32 = undefined; _ = &v6;
-    var tmp8: i32 = undefined; _ = &tmp8;
-    var tmp9: *UH1 = undefined; _ = &tmp9;
+    var tmp6: i32 = undefined; _ = &tmp6;
+    var tmp7: *UH1 = undefined; _ = &tmp7;
     var v2: bool = undefined; _ = &v2;
     while (true) {
         switch (v1.tag) {
@@ -1435,21 +1433,19 @@ fn run_19(p0: i32, p1: *UH1) bool {
                 v4 = v1.c1_1;
                 switch (v3.tag) {
                     1 => {
-                        v8 = v0 == @as(i32, 0);
                         v9 = @as(i32, 0);
-                        tmp4 = v9;
-                        tmp5 = v4;
-                        v0 = tmp4;
-                        v1 = tmp5;
+                        tmp3 = v9;
+                        tmp4 = v4;
+                        v0 = tmp3;
+                        v1 = tmp4;
                         continue;
                     },
                     0 => {
-                        v5 = v0 == @as(i32, 0);
                         v6 = @as(i32, 1);
-                        tmp8 = v6;
-                        tmp9 = v4;
-                        v0 = tmp8;
-                        v1 = tmp9;
+                        tmp6 = v6;
+                        tmp7 = v4;
+                        v0 = tmp6;
+                        v1 = tmp7;
                         continue;
                     },
                     else => unreachable,
@@ -1837,16 +1833,14 @@ fn run_23(p0: i32, p1: *UH1) bool {
     var v19: i32 = undefined; _ = &v19;
     var v14: bool = undefined; _ = &v14;
     var v15: bool = undefined; _ = &v15;
-    var v16: bool = undefined; _ = &v16;
-    var tmp7: i32 = undefined; _ = &tmp7;
-    var tmp8: *UH1 = undefined; _ = &tmp8;
+    var tmp6: i32 = undefined; _ = &tmp6;
+    var tmp7: *UH1 = undefined; _ = &tmp7;
     var v5: bool = undefined; _ = &v5;
     var v11: i32 = undefined; _ = &v11;
     var v6: bool = undefined; _ = &v6;
     var v7: bool = undefined; _ = &v7;
-    var v8: bool = undefined; _ = &v8;
-    var tmp14: i32 = undefined; _ = &tmp14;
-    var tmp15: *UH1 = undefined; _ = &tmp15;
+    var tmp12: i32 = undefined; _ = &tmp12;
+    var tmp13: *UH1 = undefined; _ = &tmp13;
     var v2: bool = undefined; _ = &v2;
     while (true) {
         switch (v1.tag) {
@@ -1867,15 +1861,14 @@ fn run_23(p0: i32, p1: *UH1) bool {
                                 if (v15) {
                                     v19 = @as(i32, 3);
                                 } else {
-                                    v16 = v0 == @as(i32, 3);
                                     v19 = @as(i32, 4);
                                 }
                             }
                         }
-                        tmp7 = v19;
-                        tmp8 = v4;
-                        v0 = tmp7;
-                        v1 = tmp8;
+                        tmp6 = v19;
+                        tmp7 = v4;
+                        v0 = tmp6;
+                        v1 = tmp7;
                         continue;
                     },
                     0 => {
@@ -1891,15 +1884,14 @@ fn run_23(p0: i32, p1: *UH1) bool {
                                 if (v7) {
                                     v11 = @as(i32, 2);
                                 } else {
-                                    v8 = v0 == @as(i32, 3);
                                     v11 = @as(i32, 4);
                                 }
                             }
                         }
-                        tmp14 = v11;
-                        tmp15 = v4;
-                        v0 = tmp14;
-                        v1 = tmp15;
+                        tmp12 = v11;
+                        tmp13 = v4;
+                        v0 = tmp12;
+                        v1 = tmp13;
                         continue;
                     },
                     else => unreachable,

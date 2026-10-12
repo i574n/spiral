@@ -105,8 +105,6 @@ fun sp_score_0(p0: US1): Int {
         }
         2 -> {
             var v1: Int = (v0 as US1_Mark).f0
-            var v2: Boolean = false
-            v2 = (v1 == 0)
             return 1
         }
         else -> throw RuntimeException()

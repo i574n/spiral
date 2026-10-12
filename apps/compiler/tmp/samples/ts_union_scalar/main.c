@@ -47,7 +47,7 @@ int32_t score0(US0 v0){
             return v1;
             break;
         }
-        case 1: { // Miss
+        default: { // Miss
             int32_t v2 = v0.case1.v0;
             
             USDecref0(&(v0));

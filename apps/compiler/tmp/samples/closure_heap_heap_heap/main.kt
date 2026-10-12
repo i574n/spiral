@@ -3,8 +3,6 @@ class Heap1(val l0: Heap0, val l1: Int)
 class Heap2(val l0: Heap1, val l1: Int)
 fun f_c0(v0: Heap2): (Int) -> Heap2 {
     fun body(v1: Int): Heap2 {
-        var v2: Boolean = false
-        v2 = (v1 == 0)
         return v0
     }
     return { p0: Int -> body(p0) }

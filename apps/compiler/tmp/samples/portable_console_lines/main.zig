@@ -106,24 +106,24 @@ fn spiralCreate(comptime T: type, v: T) *T {
     return p;
 }
 fn spiralMain() i32 {
-    var v13: []const u8 = undefined; _ = &v13;
-    var v14: i32 = undefined; _ = &v14;
-    var v26: []const u8 = undefined; _ = &v26;
-    var v35: []const u8 = undefined; _ = &v35;
-    var v45: []const u8 = undefined; _ = &v45;
-    var v46: i64 = undefined; _ = &v46;
-    v13 = "hello";
-    _ = { spiralPrintAny(v13); spiralPrint(&[_]u8{10}); };
-    v14 = @as(i32, 42);
-    _ = { spiralPrintAny(v14); spiralPrint(&[_]u8{10}); };
-    v26 = "a";
-    _ = spiralPrintAny(v26);
-    v35 = "b";
-    _ = spiralPrintAny(v35);
-    v45 = "";
-    _ = { spiralPrintAny(v45); spiralPrint(&[_]u8{10}); };
-    v46 = @as(i64, -7);
-    _ = { spiralPrintAny(v46); spiralPrint(&[_]u8{10}); };
+    var v0: []const u8 = undefined; _ = &v0;
+    var v1: i32 = undefined; _ = &v1;
+    var v2: []const u8 = undefined; _ = &v2;
+    var v3: []const u8 = undefined; _ = &v3;
+    var v4: []const u8 = undefined; _ = &v4;
+    var v5: i64 = undefined; _ = &v5;
+    v0 = "hello";
+    _ = { spiralPrintAny(v0); spiralPrint(&[_]u8{10}); };
+    v1 = @as(i32, 42);
+    _ = { spiralPrintAny(v1); spiralPrint(&[_]u8{10}); };
+    v2 = "a";
+    _ = spiralPrintAny(v2);
+    v3 = "b";
+    _ = spiralPrintAny(v3);
+    v4 = "";
+    _ = { spiralPrintAny(v4); spiralPrint(&[_]u8{10}); };
+    v5 = @as(i64, -7);
+    _ = { spiralPrintAny(v5); spiralPrint(&[_]u8{10}); };
     return @as(i32, 0);
 }
 pub fn main() void {

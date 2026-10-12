@@ -54,10 +54,7 @@ begin
   Result.l0 := a0;
 end;
 function Tf_c0.Invoke(v1: LongInt): THeap4;
-var
-  v2: Boolean;
 begin
-  v2 := v1 = 0;
   Result := v0;
 end;
 function ClosureCreate0(v0: THeap4): TFun0;

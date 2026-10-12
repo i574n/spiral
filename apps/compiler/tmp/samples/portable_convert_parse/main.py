@@ -51,146 +51,146 @@ class US1_None(NamedTuple): # None
 US1 = Union[US1_Some, US1_None]
 def main():
     v0 = "ff"
-    v13 = int (v0, 16)
+    v1 = int (v0, 16)
     del v0
-    print(v13)
-    del v13
-    v69 = "1011"
-    v82 = int (v69, 2)
-    del v69
-    print(v82)
-    del v82
-    v94 = "-42"
-    v131 = int (v94, 10)
-    del v94
-    print(v131)
-    del v131
-    v143 = " 123 "
-    v313 = closure0(v143)
-    del v143
-    fn = v313 
-    del v313
-    v314 = ok_c1()
-    ok = v314 
-    v315 = error_c2()
-    error = v315 
-    v316 = closure3()
-    ex_fn = v316 
+    print(v1)
+    del v1
+    v2 = "1011"
+    v3 = int (v2, 2)
+    del v2
+    print(v3)
+    del v3
+    v4 = "-42"
+    v5 = int (v4, 10)
+    del v4
+    print(v5)
+    del v5
+    v6 = " 123 "
+    v7 = closure0(v6)
+    del v6
+    fn = v7 
+    del v7
+    v8 = ok_c1()
+    ok = v8 
+    v9 = error_c2()
+    error = v9 
+    v10 = closure3()
+    ex_fn = v10 
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
-    v317 = x
-    match v317:
+    v11 = x
+    match v11:
         case US0_Error(_): # Error
-            v338 = US1_None()
-        case US0_Ok(v333): # Ok
-            v338 = US1_Some(v333)
+            v17 = US1_None()
+        case US0_Ok(v12): # Ok
+            v17 = US1_Some(v12)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v317
-    match v338:
+    del v11
+    match v17:
         case US1_None(): # None
-            v800 = "none"
-            print(v800)
-            del v800
-        case US1_Some(v795): # Some
-            print(v795)
-            del v795
+            v19 = "none"
+            print(v19)
+            del v19
+        case US1_Some(v18): # Some
+            print(v18)
+            del v18
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v338
-    v803 = "12x"
-    v804 = closure0(v803)
-    del v803
-    fn = v804 
-    del v804
-    ok = v314 
-    error = v315 
-    ex_fn = v316 
+    del v17
+    v20 = "12x"
+    v21 = closure0(v20)
+    del v20
+    fn = v21 
+    del v21
+    ok = v8 
+    error = v9 
+    ex_fn = v10 
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
-    v805 = x
-    match v805:
+    v22 = x
+    match v22:
         case US0_Error(_): # Error
-            v811 = US1_None()
-        case US0_Ok(v806): # Ok
-            v811 = US1_Some(v806)
+            v28 = US1_None()
+        case US0_Ok(v23): # Ok
+            v28 = US1_Some(v23)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v805
-    match v811:
+    del v22
+    match v28:
         case US1_None(): # None
-            v813 = "none"
-            print(v813)
-            del v813
-        case US1_Some(v812): # Some
-            print(v812)
-            del v812
+            v30 = "none"
+            print(v30)
+            del v30
+        case US1_Some(v29): # Some
+            print(v29)
+            del v29
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v811
-    v814 = ""
-    v815 = closure0(v814)
-    del v814
-    fn = v815 
-    del v815
-    ok = v314 
-    error = v315 
-    ex_fn = v316 
+    del v28
+    v31 = ""
+    v32 = closure0(v31)
+    del v31
+    fn = v32 
+    del v32
+    ok = v8 
+    error = v9 
+    ex_fn = v10 
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
-    v816 = x
-    match v816:
+    v33 = x
+    match v33:
         case US0_Error(_): # Error
-            v822 = US1_None()
-        case US0_Ok(v817): # Ok
-            v822 = US1_Some(v817)
+            v39 = US1_None()
+        case US0_Ok(v34): # Ok
+            v39 = US1_Some(v34)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v816
-    match v822:
+    del v33
+    match v39:
         case US1_None(): # None
-            v824 = "none"
-            print(v824)
-            del v824
-        case US1_Some(v823): # Some
-            print(v823)
-            del v823
+            v41 = "none"
+            print(v41)
+            del v41
+        case US1_Some(v40): # Some
+            print(v40)
+            del v40
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v822
-    v825 = "+7"
-    v826 = closure0(v825)
-    del v825
-    fn = v826 
-    del v826
-    ok = v314 
-    del v314
-    error = v315 
-    del v315
-    ex_fn = v316 
-    del v316
+    del v39
+    v42 = "+7"
+    v43 = closure0(v42)
+    del v42
+    fn = v43 
+    del v43
+    ok = v8 
+    del v8
+    error = v9 
+    del v9
+    ex_fn = v10 
+    del v10
     try: x = ok(fn()) 
     except Exception as ex: x = error(ex_fn(lambda: ex))
-    v827 = x
-    match v827:
+    v44 = x
+    match v44:
         case US0_Error(_): # Error
-            v833 = US1_None()
-        case US0_Ok(v828): # Ok
-            v833 = US1_Some(v828)
+            v50 = US1_None()
+        case US0_Ok(v45): # Ok
+            v50 = US1_Some(v45)
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v827
-    match v833:
+    del v44
+    match v50:
         case US1_None(): # None
-            v835 = "none"
-            print(v835)
-            del v835
-        case US1_Some(v834): # Some
-            print(v834)
-            del v834
+            v52 = "none"
+            print(v52)
+            del v52
+        case US1_Some(v51): # Some
+            print(v51)
+            del v51
         case t:
             raise Exception(f'Pattern matching miss. Got: {t}')
-    del v833
+    del v50
     return 0
 
 if __name__ == '__main__': sys.exit(main())

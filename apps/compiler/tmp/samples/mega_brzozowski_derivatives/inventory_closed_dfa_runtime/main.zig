@@ -1358,14 +1358,12 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
     var v33: bool = undefined; _ = &v33;
     var v46: i32 = undefined; _ = &v46;
     var v34: bool = undefined; _ = &v34;
-    var v35: bool = undefined; _ = &v35;
     var v37: bool = undefined; _ = &v37;
     var v38: bool = undefined; _ = &v38;
-    var v39: bool = undefined; _ = &v39;
     var v41: bool = undefined; _ = &v41;
     var v42: bool = undefined; _ = &v42;
-    var tmp19: i32 = undefined; _ = &tmp19;
-    var tmp20: *UH5 = undefined; _ = &tmp20;
+    var tmp17: i32 = undefined; _ = &tmp17;
+    var tmp18: *UH5 = undefined; _ = &tmp18;
     var v2: bool = undefined; _ = &v2;
     var v4: bool = undefined; _ = &v4;
     var v3: bool = undefined; _ = &v3;
@@ -1453,7 +1451,6 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                         if (v34) {
                             v46 = @as(i32, 0);
                         } else {
-                            v35 = v30 == @as(i32, 1);
                             v46 = @as(i32, 0);
                         }
                     } else {
@@ -1463,7 +1460,6 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                             if (v38) {
                                 v46 = @as(i32, 0);
                             } else {
-                                v39 = v30 == @as(i32, 1);
                                 v46 = @as(i32, 0);
                             }
                         } else {
@@ -1480,10 +1476,10 @@ fn loop_22(p0: i32, p1: *UH5) US3 {
                             }
                         }
                     }
-                    tmp19 = v46;
-                    tmp20 = v9;
-                    v0 = tmp19;
-                    v1 = tmp20;
+                    tmp17 = v46;
+                    tmp18 = v9;
+                    v0 = tmp17;
+                    v1 = tmp18;
                     continue;
                 }
             },
@@ -2406,10 +2402,9 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
     var v22: bool = undefined; _ = &v22;
     var v24: bool = undefined; _ = &v24;
     var v28: i32 = undefined; _ = &v28;
-    var v25: bool = undefined; _ = &v25;
     var v26: bool = undefined; _ = &v26;
-    var tmp12: i32 = undefined; _ = &tmp12;
-    var tmp13: *UH6 = undefined; _ = &tmp13;
+    var tmp11: i32 = undefined; _ = &tmp11;
+    var tmp12: *UH6 = undefined; _ = &tmp12;
     var v2: bool = undefined; _ = &v2;
     var v3: bool = undefined; _ = &v3;
     while (true) {
@@ -2468,7 +2463,6 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                 } else {
                     v24 = v0 == @as(i32, 0);
                     if (v24) {
-                        v25 = v21 == @as(i32, 0);
                         v28 = @as(i32, 0);
                     } else {
                         v26 = v21 == @as(i32, 0);
@@ -2478,10 +2472,10 @@ fn loop_34(p0: i32, p1: *UH6) US3 {
                             v28 = @as(i32, 0);
                         }
                     }
-                    tmp12 = v28;
-                    tmp13 = v8;
-                    v0 = tmp12;
-                    v1 = tmp13;
+                    tmp11 = v28;
+                    tmp12 = v8;
+                    v0 = tmp11;
+                    v1 = tmp12;
                     continue;
                 }
             },

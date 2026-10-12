@@ -995,13 +995,11 @@ fn run_19(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                 let mut v4: Rc<UH1> = v4.clone();
                 match &v3 {
                     US0::US0_BitOne => {
-                        let mut v8: bool = v0 == 0i32;
                         let mut v9: i32 = 0i32;
                         (v0, v1) = (v9, v4.clone());
                         continue;
                     }
                     US0::US0_BitZero => {
-                        let mut v5: bool = v0 == 0i32;
                         let mut v6: i32 = 1i32;
                         (v0, v1) = (v6, v4.clone());
                         continue;
@@ -1290,7 +1288,6 @@ fn run_23(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                                 if v15 {
                                     3i32
                                 } else {
-                                    let mut v16: bool = v0 == 3i32;
                                     4i32
                                 }
                             }
@@ -1311,7 +1308,6 @@ fn run_23(mut v0: i32, mut v1: Rc<UH1>) -> bool {
                                 if v7 {
                                     2i32
                                 } else {
-                                    let mut v8: bool = v0 == 3i32;
                                     4i32
                                 }
                             }

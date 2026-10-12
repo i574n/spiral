@@ -7,8 +7,6 @@
   (memory (export "memory") 2)
   (global $hp (mut i32) (i32.const 304))
   (func $target_global_0 (param $v0 i32)
-    (local $v1 i32)
-    (local.set $v1 (i32.load (local.get $v0)))
   )
   (func $spiralMain (result i32)
     (local $v0 i32)

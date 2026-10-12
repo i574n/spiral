@@ -147,7 +147,7 @@ int32_t closure1(Closure1 * x, int32_t v1){
             v12 = 3l;
             break;
         }
-        case 1: { // Item
+        default: { // Item
             String * v2 = v0.case1.v0; Array0 * v3 = v0.case1.v1;
             (v2)->refc++; (v3)->refc++;
             

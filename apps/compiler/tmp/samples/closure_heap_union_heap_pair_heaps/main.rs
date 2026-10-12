@@ -45,7 +45,6 @@ impl Default for Heap3 {
 }
 fn f_c0(mut v0: Rc<Heap3>) -> Rc<dyn Fn(i32) -> Rc<Heap3>> {
     Rc::new(move |mut v1: i32| -> Rc<Heap3> {
-        let mut v2: bool = v1 == 0i32;
         v0.clone()
     })
 }

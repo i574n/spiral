@@ -181,7 +181,7 @@ int32_t mutate1(US0 v0){
             return 90l;
             break;
         }
-        case 1: { // Values
+        default: { // Values
             Array0 * v1 = v0.case1.v0;
             (v1)->refc += 2;
             USDecref0(&(v0));
@@ -229,7 +229,7 @@ int32_t observe6(US0 v0){
             return 91l;
             break;
         }
-        case 1: { // Values
+        default: { // Values
             Array0 * v1 = v0.case1.v0;
             (v1)->refc++;
             USDecref0(&(v0));

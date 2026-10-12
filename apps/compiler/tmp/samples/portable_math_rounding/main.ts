@@ -6,175 +6,175 @@ export function main(): number {
     let v4: number = 0.5;
     let v5: number = 1;
     let v6: number = 2.700000047683716;
-    let v17: number = Math.floor(v0);
-    let v23: boolean = v17 === 2;
-    let v24: boolean = v23 !== true;
-    if (v24) {
+    let v7: number = Math.floor(v0);
+    let v8: boolean = v7 === 2;
+    let v9: boolean = v8 !== true;
+    if (v9) {
         return 1;
     } else {
-        let v36: number = Math.ceil(v0);
-        let v42: boolean = v36 === 3;
-        let v43: boolean = v42 !== true;
-        if (v43) {
+        let v10: number = Math.ceil(v0);
+        let v11: boolean = v10 === 3;
+        let v12: boolean = v11 !== true;
+        if (v12) {
             return 2;
         } else {
-            let v106: number = Math.floor(v0);
-            let v107: number = v0 - v106;
-            let v108: boolean = v107 > 0.5;
-            let v118: number;
-            if (v108) {
-                let v109: number = v106 + 1;
-                v118 = v109;
+            let v13: number = Math.floor(v0);
+            let v14: number = v0 - v13;
+            let v15: boolean = v14 > 0.5;
+            let v25: number;
+            if (v15) {
+                let v16: number = v13 + 1;
+                v25 = v16;
             } else {
-                let v110: boolean = v107 < 0.5;
-                if (v110) {
-                    v118 = v106;
+                let v17: boolean = v14 < 0.5;
+                if (v17) {
+                    v25 = v13;
                 } else {
-                    let v111: number = v106 / 2;
-                    let v112: number = Math.floor(v111);
-                    let v113: number = v112 * 2;
-                    let v114: boolean = v113 === v106;
-                    if (v114) {
-                        v118 = v106;
+                    let v18: number = v13 / 2;
+                    let v19: number = Math.floor(v18);
+                    let v20: number = v19 * 2;
+                    let v21: boolean = v20 === v13;
+                    if (v21) {
+                        v25 = v13;
                     } else {
-                        let v115: number = v106 + 1;
-                        v118 = v115;
+                        let v22: number = v13 + 1;
+                        v25 = v22;
                     }
                 }
             }
-            let v172: boolean = v118 === 3;
-            let v173: boolean = v172 !== true;
-            if (v173) {
+            let v26: boolean = v25 === 3;
+            let v27: boolean = v26 !== true;
+            if (v27) {
                 return 3;
             } else {
-                let v174: number = Math.floor(v1);
-                let v175: number = v1 - v174;
-                let v176: boolean = v175 > 0.5;
-                let v186: number;
-                if (v176) {
-                    let v177: number = v174 + 1;
-                    v186 = v177;
+                let v28: number = Math.floor(v1);
+                let v29: number = v1 - v28;
+                let v30: boolean = v29 > 0.5;
+                let v40: number;
+                if (v30) {
+                    let v31: number = v28 + 1;
+                    v40 = v31;
                 } else {
-                    let v178: boolean = v175 < 0.5;
-                    if (v178) {
-                        v186 = v174;
+                    let v32: boolean = v29 < 0.5;
+                    if (v32) {
+                        v40 = v28;
                     } else {
-                        let v179: number = v174 / 2;
-                        let v180: number = Math.floor(v179);
-                        let v181: number = v180 * 2;
-                        let v182: boolean = v181 === v174;
-                        if (v182) {
-                            v186 = v174;
+                        let v33: number = v28 / 2;
+                        let v34: number = Math.floor(v33);
+                        let v35: number = v34 * 2;
+                        let v36: boolean = v35 === v28;
+                        if (v36) {
+                            v40 = v28;
                         } else {
-                            let v183: number = v174 + 1;
-                            v186 = v183;
+                            let v37: number = v28 + 1;
+                            v40 = v37;
                         }
                     }
                 }
-                let v187: boolean = v186 === 3;
-                let v188: boolean = v187 !== true;
-                if (v188) {
+                let v41: boolean = v40 === 3;
+                let v42: boolean = v41 !== true;
+                if (v42) {
                     return 4;
                 } else {
-                    let v189: number = Math.floor(v2);
-                    let v190: number = v2 - v189;
-                    let v191: boolean = v190 > 0.5;
-                    let v201: number;
-                    if (v191) {
-                        let v192: number = v189 + 1;
-                        v201 = v192;
+                    let v43: number = Math.floor(v2);
+                    let v44: number = v2 - v43;
+                    let v45: boolean = v44 > 0.5;
+                    let v55: number;
+                    if (v45) {
+                        let v46: number = v43 + 1;
+                        v55 = v46;
                     } else {
-                        let v193: boolean = v190 < 0.5;
-                        if (v193) {
-                            v201 = v189;
+                        let v47: boolean = v44 < 0.5;
+                        if (v47) {
+                            v55 = v43;
                         } else {
-                            let v194: number = v189 / 2;
-                            let v195: number = Math.floor(v194);
-                            let v196: number = v195 * 2;
-                            let v197: boolean = v196 === v189;
-                            if (v197) {
-                                v201 = v189;
+                            let v48: number = v43 / 2;
+                            let v49: number = Math.floor(v48);
+                            let v50: number = v49 * 2;
+                            let v51: boolean = v50 === v43;
+                            if (v51) {
+                                v55 = v43;
                             } else {
-                                let v198: number = v189 + 1;
-                                v201 = v198;
+                                let v52: number = v43 + 1;
+                                v55 = v52;
                             }
                         }
                     }
-                    let v202: boolean = v201 === (-2);
-                    let v203: boolean = v202 !== true;
-                    if (v203) {
+                    let v56: boolean = v55 === (-2);
+                    let v57: boolean = v56 !== true;
+                    if (v57) {
                         return 5;
                     } else {
-                        let v204: number = Math.floor(v3);
-                        let v205: number = v3 - v204;
-                        let v206: boolean = v205 > 0.5;
-                        let v216: number;
-                        if (v206) {
-                            let v207: number = v204 + 1;
-                            v216 = v207;
+                        let v58: number = Math.floor(v3);
+                        let v59: number = v3 - v58;
+                        let v60: boolean = v59 > 0.5;
+                        let v70: number;
+                        if (v60) {
+                            let v61: number = v58 + 1;
+                            v70 = v61;
                         } else {
-                            let v208: boolean = v205 < 0.5;
-                            if (v208) {
-                                v216 = v204;
+                            let v62: boolean = v59 < 0.5;
+                            if (v62) {
+                                v70 = v58;
                             } else {
-                                let v209: number = v204 / 2;
-                                let v210: number = Math.floor(v209);
-                                let v211: number = v210 * 2;
-                                let v212: boolean = v211 === v204;
-                                if (v212) {
-                                    v216 = v204;
+                                let v63: number = v58 / 2;
+                                let v64: number = Math.floor(v63);
+                                let v65: number = v64 * 2;
+                                let v66: boolean = v65 === v58;
+                                if (v66) {
+                                    v70 = v58;
                                 } else {
-                                    let v213: number = v204 + 1;
-                                    v216 = v213;
+                                    let v67: number = v58 + 1;
+                                    v70 = v67;
                                 }
                             }
                         }
-                        let v217: boolean = v216 === 4;
-                        let v218: boolean = v217 !== true;
-                        if (v218) {
+                        let v71: boolean = v70 === 4;
+                        let v72: boolean = v71 !== true;
+                        if (v72) {
                             return 6;
                         } else {
-                            let v219: number = Math.floor(v4);
-                            let v220: number = v4 - v219;
-                            let v221: boolean = v220 > 0.5;
-                            let v231: number;
-                            if (v221) {
-                                let v222: number = v219 + 1;
-                                v231 = v222;
+                            let v73: number = Math.floor(v4);
+                            let v74: number = v4 - v73;
+                            let v75: boolean = v74 > 0.5;
+                            let v85: number;
+                            if (v75) {
+                                let v76: number = v73 + 1;
+                                v85 = v76;
                             } else {
-                                let v223: boolean = v220 < 0.5;
-                                if (v223) {
-                                    v231 = v219;
+                                let v77: boolean = v74 < 0.5;
+                                if (v77) {
+                                    v85 = v73;
                                 } else {
-                                    let v224: number = v219 / 2;
-                                    let v225: number = Math.floor(v224);
-                                    let v226: number = v225 * 2;
-                                    let v227: boolean = v226 === v219;
-                                    if (v227) {
-                                        v231 = v219;
+                                    let v78: number = v73 / 2;
+                                    let v79: number = Math.floor(v78);
+                                    let v80: number = v79 * 2;
+                                    let v81: boolean = v80 === v73;
+                                    if (v81) {
+                                        v85 = v73;
                                     } else {
-                                        let v228: number = v219 + 1;
-                                        v231 = v228;
+                                        let v82: number = v73 + 1;
+                                        v85 = v82;
                                     }
                                 }
                             }
-                            let v232: boolean = v231 === 0;
-                            let v233: boolean = v232 !== true;
-                            if (v233) {
+                            let v86: boolean = v85 === 0;
+                            let v87: boolean = v86 !== true;
+                            if (v87) {
                                 return 7;
                             } else {
-                                let v241: number = Math.atan2(v5, v5);
-                                let v247: number = v241 * 1000;
-                                let v248: number = Math.floor(v247);
-                                let v249: boolean = v248 === 785;
-                                let v250: boolean = v249 !== true;
-                                if (v250) {
+                                let v88: number = Math.atan2(v5, v5);
+                                let v89: number = v88 * 1000;
+                                let v90: number = Math.floor(v89);
+                                let v91: boolean = v90 === 785;
+                                let v92: boolean = v91 !== true;
+                                if (v92) {
                                     return 8;
                                 } else {
-                                    let v261: number = Math.floor(v6);
-                                    let v267: boolean = v261 === 2;
-                                    let v268: boolean = v267 !== true;
-                                    if (v268) {
+                                    let v93: number = Math.floor(v6);
+                                    let v94: boolean = v93 === 2;
+                                    let v95: boolean = v94 !== true;
+                                    if (v95) {
                                         return 9;
                                     } else {
                                         return 0;

@@ -3,16 +3,16 @@ use std::cell::RefCell;
 use std::rc::Rc;
 fn spiral_main() -> i32 {
     let mut v0: i32 = 41i32;
-    let mut v69: Rc<str> = Rc::<str>::from(format!("{:?}", v0));
-    println!("{}", v69);
-    let mut v91: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
-    println!("{}", v91);
-    let mut v93: bool = true;
-    let mut v115: Rc<str> = Rc::<str>::from(format!("{:?}", v93));
-    println!("{}", v115);
-    let mut v124: i32 = v0.wrapping_add(1i32);
-    let mut v125: bool = v124 == 42i32;
-    if v125 {
+    let mut v1: Rc<str> = Rc::<str>::from(format!("{:?}", v0));
+    println!("{}", v1);
+    let mut v2: Rc<str> = { thread_local!{ static LIT: Rc<str> = Rc::<str>::from("hi"); } LIT.with(|lit| lit.clone()) };
+    println!("{}", v2);
+    let mut v3: bool = true;
+    let mut v4: Rc<str> = Rc::<str>::from(format!("{:?}", v3));
+    println!("{}", v4);
+    let mut v5: i32 = v0.wrapping_add(1i32);
+    let mut v6: bool = v5 == 42i32;
+    if v6 {
         0i32
     } else {
         1i32

@@ -36,10 +36,6 @@ static inline String * StringLit(uint32_t len, char * ptr){
 }
 void target_global0(String * v0){
     
-    
-    int32_t v1;
-    v1 = v0->len-1;
-    
     StringDecref(v0);
     return ;
 }

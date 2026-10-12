@@ -121,8 +121,6 @@ func sp_score_0(_ p0: US1) -> Int32 {
             }
         case 2:
             var v1: Int32 = (v0 as! US1_Mark).f0
-            var v2: Bool = false
-            v2 = (v1 == 0)
             return 1
         default:
             fatalError("unreachable union case")

@@ -5,69 +5,69 @@ let v3 : float = 3.5
 let v4 : float = 0.5
 let v5 : float = 1.0
 let v6 : float32 = 2.7f
-let v11 : (float -> float) = floor
-let v12 : float = v11 v0
-let v23 : bool = v12 = 2.0
-let v24 : bool = v23 <> true
-if v24 then
+let v7 : (float -> float) = floor
+let v8 : float = v7 v0
+let v9 : bool = v8 = 2.0
+let v10 : bool = v9 <> true
+if v10 then
     1
 else
-    let v29 : (float -> float) = ceil
-    let v30 : float = v29 v0
-    let v42 : bool = v30 = 3.0
-    let v43 : bool = v42 <> true
-    if v43 then
+    let v11 : (float -> float) = ceil
+    let v12 : float = v11 v0
+    let v13 : bool = v12 = 3.0
+    let v14 : bool = v13 <> true
+    if v14 then
         2
     else
-        let v76 : (float -> float) = round
-        let v77 : float = v76 v0
-        let v173 : bool = v77 = 3.0
-        let v174 : bool = v173 <> true
-        if v174 then
+        let v15 : (float -> float) = round
+        let v16 : float = v15 v0
+        let v17 : bool = v16 = 3.0
+        let v18 : bool = v17 <> true
+        if v18 then
             3
         else
-            let v175 : (float -> float) = round
-            let v176 : float = v175 v1
-            let v177 : bool = v176 = 3.0
-            let v178 : bool = v177 <> true
-            if v178 then
+            let v19 : (float -> float) = round
+            let v20 : float = v19 v1
+            let v21 : bool = v20 = 3.0
+            let v22 : bool = v21 <> true
+            if v22 then
                 4
             else
-                let v179 : (float -> float) = round
-                let v180 : float = v179 v2
-                let v181 : bool = v180 = -2.0
-                let v182 : bool = v181 <> true
-                if v182 then
+                let v23 : (float -> float) = round
+                let v24 : float = v23 v2
+                let v25 : bool = v24 = -2.0
+                let v26 : bool = v25 <> true
+                if v26 then
                     5
                 else
-                    let v183 : (float -> float) = round
-                    let v184 : float = v183 v3
-                    let v185 : bool = v184 = 4.0
-                    let v186 : bool = v185 <> true
-                    if v186 then
+                    let v27 : (float -> float) = round
+                    let v28 : float = v27 v3
+                    let v29 : bool = v28 = 4.0
+                    let v30 : bool = v29 <> true
+                    if v30 then
                         6
                     else
-                        let v187 : (float -> float) = round
-                        let v188 : float = v187 v4
-                        let v189 : bool = v188 = 0.0
-                        let v190 : bool = v189 <> true
-                        if v190 then
+                        let v31 : (float -> float) = round
+                        let v32 : float = v31 v4
+                        let v33 : bool = v32 = 0.0
+                        let v34 : bool = v33 <> true
+                        if v34 then
                             7
                         else
-                            let v193 : float = System.Math.Atan2 (v5, v5)
-                            let v204 : float = v193 * 1000.0
-                            let v205 : (float -> float) = floor
-                            let v206 : float = v205 v204
-                            let v207 : bool = v206 = 785.0
-                            let v208 : bool = v207 <> true
-                            if v208 then
+                            let v35 : float = System.Math.Atan2 (v5, v5)
+                            let v36 : float = v35 * 1000.0
+                            let v37 : (float -> float) = floor
+                            let v38 : float = v37 v36
+                            let v39 : bool = v38 = 785.0
+                            let v40 : bool = v39 <> true
+                            if v40 then
                                 8
                             else
-                                let v213 : (float32 -> float32) = floor
-                                let v214 : float32 = v213 v6
-                                let v225 : bool = v214 = 2.0f
-                                let v226 : bool = v225 <> true
-                                if v226 then
+                                let v41 : (float32 -> float32) = floor
+                                let v42 : float32 = v41 v6
+                                let v43 : bool = v42 = 2.0f
+                                let v44 : bool = v43 <> true
+                                if v44 then
                                     9
                                 else
                                     0

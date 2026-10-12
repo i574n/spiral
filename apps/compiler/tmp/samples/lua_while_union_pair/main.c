@@ -171,10 +171,6 @@ int32_t main(){
         v3 = v1->v0;
         
         
-        
-        
-        
-        
         int32_t v4;
         v4 = v3 * 5l;
         
@@ -193,10 +189,6 @@ int32_t main(){
         
         
     }
-    
-    
-    
-    
     
     MutDecref0(v1);
     Mut1 * v6;
