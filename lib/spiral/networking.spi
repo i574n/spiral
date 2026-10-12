@@ -1,4 +1,7 @@
 /// # networking
+test networking static =
+    open testing
+
 open rust.rust_operators
 
 /// ## rust

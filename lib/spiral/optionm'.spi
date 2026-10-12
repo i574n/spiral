@@ -2,20 +2,37 @@
 open rust
 open rust_operators
 
+test optionm static =
+    open testing
+
 /// ## optionm'
 
 /// ### default_value
 inl default_value d =
     optionm.defaultWith d
 
+test default_value =
+    None
+    |> default_value 3i32
+    |> _assert_eq 3i32
+
 /// ### (/??)
 inl (/??) a b =
     a |> default_value b
+
+test default_value_2 =
+    None /?? 3i32
+    |> _assert_eq 3i32
 
 /// ### default_with
 inl default_with fn = function
     | Some x => x
     | None => fn ()
+
+test default_with =
+    None
+    |> default_with fun () => 3i32
+    |> _assert_eq 3i32
 
 /// ### choose
 inl choose fn a b =
@@ -23,10 +40,25 @@ inl choose fn a b =
     | Some x, Some y => fn x y |> Some
     | _ => None
 
+test choose =
+    (Some 2i32, Some 3)
+    ||> choose (+)
+    |> _assert_eq (Some 5)
+
 /// ### iter
 inl iter fn = function
     | Some x => fn x
     | None => ()
+
+test iter =
+    inl n = mut 1i32
+    inl fn =
+        fun n' =>
+            n <- *n + n'
+    Some 1i32 |> iter fn
+    None |> iter fn
+    *n
+    |> _assert_eq 2i32
 
 /// ### flatten
 inl flatten x =
@@ -162,6 +194,18 @@ inl map'' forall t u. (fn : t -> u) (x : option' t) : option' u =
 inl unbox forall t. (x : option' t) : option t =
     x |> map'' Some |> default_value' None
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test unbox =
+    inl x = Some 3i32
+    inl y : option i32 = None
+    inl x' = x |> box |> unbox
+    inl y' = y |> box |> map id |> unbox
+    (x', y') |> _assert_eq' (x, y)
+
 /// ### of_obj
 inl of_obj forall t. (x : t) : option' t =
     backend_switch {
@@ -176,6 +220,27 @@ inl of_obj forall t. (x : t) : option' t =
         Rust = fun () => $'Some(!x.clone())' : option' t
         TypeScript = fun () => $'(!x ?? undefined)' : option' t
     }
+
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test of_obj =
+    null ()
+    |> of_obj
+    |> unbox
+    |> _assert_eq (None : option string)
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test of_obj_2 =
+    ""
+    |> of_obj
+    |> unbox
+    |> _assert_eq' (Some "")
 
 /// ## rust
 
@@ -235,3 +300,10 @@ inl rc_upgrade forall t. (x : rust.weak_rc t) : option' (rust.rc t) =
 /// ### rc_into_inner
 inl rc_into_inner forall t. (x : rust.rc t) : option' t =
     !\\(x, $'"std::rc::Rc::into_inner($0)"')
+
+///> rust
+test rc_into_inner =
+    rust.new_rc 0i32
+    |> rc_into_inner
+    |> unbox
+    |> _assert_eq' (Some 0i32)

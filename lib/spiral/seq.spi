@@ -1,4 +1,6 @@
 /// # seq
+test seq static =
+    open testing
 
 /// ## seq
 
@@ -15,6 +17,12 @@ inl from_list list =
         list
         |> listm'.try_item n
 
+test from_list =
+    listm.init 10i32 print_and_return
+    |> from_list
+    |> try_item 5i32
+    |> _assert_eq (Some 5i32)
+
 /// ### map
 inl map fn s =
     fun n =>
@@ -22,12 +30,26 @@ inl map fn s =
         |> s
         |> optionm.map fn
 
+test map =
+    listm.init 10i32 id
+    |> from_list
+    |> map ((*) 2)
+    |> try_item 5i32
+    |> _assert_eq (Some 10i32)
+
 /// ### mapi
 inl mapi fn s =
     fun n =>
         n
         |> s
         |> optionm.map (fn n)
+
+test mapi =
+    listm.init 10i32 print_and_return
+    |> from_list
+    |> mapi fun i x => i + x
+    |> try_item 5i32
+    |> _assert_eq (Some 10i32)
 
 /// ### choose
 inl choose forall dim {number} t u. (fn : t -> option u) (s : seq dim t) : seq dim u =
@@ -49,20 +71,45 @@ inl choose forall dim {number} t u. (fn : t -> option u) (s : seq dim t) : seq d
                 join body fn s i i'
         루프 0 0
 
+test choose =
+    listm.init 10i32 print_and_return
+    |> from_list
+    |> choose (fun x => if x % 2 = 0 then Some x else None)
+    |> try_item 1i32
+    |> _assert_eq (Some 2i32)
+
 /// ### indexed
 inl indexed s =
     s
     |> mapi fun i x =>
         i, x
 
+test indexed =
+    listm.init 10i32 ((*) 2)
+    |> from_list
+    |> indexed
+    |> try_item 5i32
+    |> _assert_eq (Some (5i32, 10i32))
+
 /// ### zip
 inl zip n seq1 seq2 =
     seq1 n, seq2 n
+
+test zip =
+    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+    ||> zip 5i32
+    |> _assert_eq (Some 5, Some 10)
 
 /// ### zip_with
 inl zip_with fn seq1 seq2 =
     fun n =>
         fn (seq1 n) (seq2 n)
+
+test zip_with =
+    ((listm.init 10i32 id |> from_list), (listm.init 10i32 ((*) 2) |> from_list))
+    ||> zip_with (optionm'.choose (+))
+    |> try_item 2i32
+    |> _assert_eq (Some 6)
 
 /// ### fold
 inl fold fn init seq =
@@ -86,6 +133,13 @@ inl sum seq =
 inl sum_ seq =
     seq |> fold_ (+) 0
 
+test sum =
+    listm.init 10i32 id
+    |> from_list
+    |> fun f (n : i32) => f n
+    |> sum
+    |> _assert_eq 45
+
 /// ### to_list
 inl to_list seq =
     seq
@@ -97,12 +151,25 @@ inl to_list_ seq =
     |> fold_ (fun acc x => x :: acc) []
     |> listm.rev
 
+test to_list =
+    listm.init 10i32 id
+    |> from_list
+    |> fun f (n : i32) => f n
+    |> to_list
+    |> _assert_eq (listm.init 10i32 id)
+
 /// ### from_array
 inl from_array forall dim {number; int} el. (array : a dim el) : seq dim el =
     fun n =>
         if n >= length array
         then None
         else index array n |> Some
+
+test from_array =
+    a ;[ 1; 2; 3 ]
+    |> from_array
+    |> try_item 1i32
+    |> _assert_eq (Some 2i32)
 
 /// ### to_array
 inl to_array seq =
@@ -119,6 +186,13 @@ inl to_array_ seq =
         ar <- *ar ++ a ;[x]
     *ar
 
+test to_array =
+    listm.init 10i32 id
+    |> from_list
+    |> fun (x : i32 -> _) => x
+    |> to_array
+    |> _assert_eq (a ;[ 0; 1; 2; 3; 4; 5; 6; 7; 8; 9 ] : _ i32 _)
+
 /// ### take_while
 inl take_while cond seq =
     inl rec 루프 acc i =
@@ -127,6 +201,20 @@ inl take_while cond seq =
         | _ => acc |> listm.rev
     루프 [] 0
 
+test take_while =
+    listm.init 10i32 id
+    |> from_list
+    |> take_while (fun n (_ : i32) => n < 5)
+    |> listm'.sum
+    |> _assert_eq 10
+
+test take_while_2 =
+    stream.new_finite_stream print_and_return 10i32
+    |> flip stream.try_item
+    |> take_while (fun n (_ : i32) => n < 5)
+    |> listm'.sum
+    |> _assert_eq 10
+
 /// ### take_while_
 inl take_while_ cond seq =
     let rec 루프 acc i =
@@ -134,6 +222,35 @@ inl take_while_ cond seq =
         | Some st when cond st i => 루프 (st :: acc) (i + 1)
         | _ => acc |> listm.rev
     루프 [] 0
+
+test take_while_3 =
+    stream.new_infinite_stream_ print_and_return
+    |> flip stream.try_item
+    |> take_while_ (fun n (_ : i32) => n < 5i32)
+    |> listm'.sum
+    |> _assert_eq 10
+
+test take_while_4 =
+    stream.new_infinite_stream_ print_and_return
+    |> stream.memoize
+    |> fun list =>
+        inl list = list ()
+        fun n =>
+            list |> stream.try_item n
+    |> take_while_ (fun n (_ : i32) => n < 5i32)
+    |> listm'.sum
+    |> _assert_eq 10
+
+test take_while_5 =
+    stream.new_finite_stream print_and_return 10i32
+    |> stream.memoize
+    |> fun list =>
+        inl list = list ()
+        fun n =>
+            list |> stream.try_item n
+    |> take_while_ (fun n (_ : i32) => n < 5)
+    |> listm'.sum
+    |> _assert_eq 10
 
 /// ### memoize
 inl memoize seq =
@@ -156,6 +273,22 @@ inl memoize_ seq =
             state <- (n, new_state) :: *state
             new_state
 
+test memoize =
+    inl seq =
+        fun n =>
+            n |> print_and_return |> Some
+        |> memoize_
+
+    seq
+    |> take_while_ (fun n (_ : i32) => n < 5)
+    |> listm'.sum
+    |> _assert_eq 10
+
+    seq
+    |> take_while_ (fun n _ => n < 5)
+    |> listm'.sum
+    |> _assert_eq 10
+
 /// ### iterate
 inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
     inl rec 루프 forall c {number}. (x : a) (n : c) : a =
@@ -164,6 +297,10 @@ inl iterate forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
         else 루프 (f x) (n - 1)
     루프 x0 num_steps
 
+test iterate =
+    10i32 |> iterate ((*) 2) 1i32
+    |> _assert_eq 1024
+
 inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
     let rec 루프 forall c {number}. (x : a) (n : c) : a =
         if n <= 0
@@ -171,9 +308,17 @@ inl iterate_ forall a b {number}. (f : a -> a) (x0 : a) (num_steps : b) : a =
         else 루프 (f x) (n - 1)
     루프 x0 num_steps
 
+test iterate_2 =
+    10i32 |> iterate_ ((*) 2) 1i32
+    |> _assert_eq 1024
+
 inl iterate' f x0 num_steps =
     listm.init num_steps id
     |> listm.fold (fun x _ => f x) x0
+
+test iterate_3 =
+    10i32 |> iterate' ((*) 2) 1i32
+    |> _assert_eq 1024
 
 /// ### find_last
 inl find_last forall item result. fold_fn fn target : option result =
@@ -240,6 +385,17 @@ inl new_seq forall t. fn : seq' t =
             $'list(!fn())' : seq' t
     }
 
+///> fsharp
+///> cuda
+test new_seq =
+    fun () =>
+        "a" |> yield
+        "b" |> yield
+    |> new_seq
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "a"; "b" ]
+
 /// ### of_array'
 inl of_array' forall dim t. (items : a dim t) : seq' t =
     backend_switch {
@@ -256,6 +412,17 @@ inl of_array' forall dim t. (items : a dim t) : seq' t =
         TypeScript = fun () => $'[...!items]' : seq' t
     }
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test of_array =
+    (a ;[ "a"; "b" ] : _ int _)
+    |> of_array'
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "a"; "b" ]
+
 /// ### of_array
 inl of_array forall dim t. (items : a dim t) : seq' t =
     backend_switch {
@@ -268,11 +435,33 @@ inl of_array forall dim t. (items : a dim t) : seq' t =
         TypeScript = fun () => $'[...!items]' : seq' t
     }
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test of_array_2 =
+    (a ;[ "a"; "b" ] : _ int _)
+    |> of_array
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "a"; "b" ]
+
 /// ### of_array_base
 inl of_array_base forall t. (items : array_base t) : seq' t =
     a items
     |> fun x => x : _ int _
     |> of_array
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test of_array_base =
+    ;[ "a"; "b" ]
+    |> of_array_base
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "a"; "b" ]
 
 /// ### to_array'
 inl to_array' forall dim t. (items : seq' t) : a dim t =
@@ -287,6 +476,19 @@ inl to_array' forall dim t. (items : seq' t) : a dim t =
         Rust = fun () => $'Rc::new(RefCell::new((*!items).clone()))' : a dim t
         TypeScript = fun () => $'[...!items]' : a dim t
     }
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test to_array_2 =
+    ;[ "a"; "b" ]
+    |> of_array_base
+    |> to_array'
+    |> fun x => x : _ int _
+    |> am'.to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "a"; "b" ]
 
 /// ### of_list'
 inl of_list' forall t. (items : listm'.list' t) : seq' t =
@@ -332,6 +534,19 @@ inl rev'' forall t. (items : seq' t) : seq' t =
         Rust = fun () => $'Rc::new({ let mut v = (!items).as_ref().clone(); v.reverse(); v })' : seq' t
         TypeScript = fun () => $'[...!items].reverse()' : seq' t
     }
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test rev =
+    [ "a"; "b" ]
+    |> listm'.box
+    |> of_list'
+    |> rev''
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ "b"; "a" ]
 
 /// ## rust
 

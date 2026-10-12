@@ -1,4 +1,6 @@
 /// # common
+test common static =
+    open testing
 
 /// ## common
 
@@ -96,6 +98,33 @@ inl retry_fn forall t. retries (fn : () -> t) : option t =
             | None => 루프 (retry + 1)
     루프 0
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test retry_fn =
+    inl retry_fn_test = mut 0i32
+    fun () =>
+        retry_fn_test <- *retry_fn_test + 1
+        *retry_fn_test
+    |> retry_fn 3i32
+    |> _assert_eq' (Some 1i32)
+
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test retry_fn_2 =
+    inl retry_fn_test = mut 0i32
+    fun () =>
+        if *retry_fn_test >= 2
+        then *retry_fn_test
+        else
+            retry_fn_test <- *retry_fn_test + 1
+            failwith "test"
+    |> retry_fn 3i32
+    |> _assert_eq' (Some 2i32)
+
 /// ## common
 
 /// ### random'
@@ -133,6 +162,44 @@ inl new_disposable (fn : () -> ()) : disposable _ =
             $'        return False'
             $'Disposable(!fn)'
         | _ => fun () => null ()
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test new_disposable =
+    inl new_disposable_test = mut 0i32
+    new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+    |> fun x => x : disposable ()
+    |> dispose
+    *new_disposable_test |> _assert_eq 1
+
+///> fsharp
+test new_disposable_2 =
+    inl new_disposable_test = mut 0i32
+    fun () =>
+        new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+        |> fun x => x : disposable ()
+        |> use
+        |> ignore
+        |> return
+    |> async.new_task
+    |> async.await_task
+    |> async.run_synchronously
+    *new_disposable_test |> _assert_eq 1
+
+///> fsharp
+test new_disposable_3 =
+    inl new_disposable_test = mut 0i32
+    fun () =>
+        new_disposable fun () => new_disposable_test <- *new_disposable_test + 1
+        |> fun x => x : disposable ()
+        |> ignore
+        |> return
+    |> async.new_task
+    |> async.await_task
+    |> async.run_synchronously
+    *new_disposable_test |> _assert_eq 0
 
 /// ## main
 ///> fsharp

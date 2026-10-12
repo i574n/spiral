@@ -1,4 +1,7 @@
 /// # async
+test async static =
+    open testing
+
 open rust
 open rust_operators
 

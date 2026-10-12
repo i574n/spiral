@@ -1,4 +1,7 @@
 /// # platform
+test platform static =
+    open testing
+
 open rust.rust_operators
 
 /// ## fsharp
@@ -66,6 +69,9 @@ inl get_executable_suffix () =
     if is_windows ()
     then ".exe"
     else ""
+
+test get_executable_suffix =
+    get_executable_suffix ()
 
 /// ## main
 ///> fsharp

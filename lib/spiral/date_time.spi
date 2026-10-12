@@ -1,4 +1,7 @@
 /// # date_time
+test date_time static =
+    open testing
+
 open rust.rust_operators
 open sm'_operators
 
@@ -46,6 +49,9 @@ type timestamp_guid = guid.guid
 type date_time_guid = guid.guid
 
 /// ### test_guid
+test test_guid static =
+    inl test_guid () =
+        "6543210F-EDCB-A987-6543-210FEDCBA987" |> guid.new_guid
 
 /// ## day_of_week
 union day_of_week =
@@ -250,6 +256,13 @@ inl min_value () : date_time =
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
     }
 
+///> fsharp
+///> cuda
+test min_value =
+    min_value ()
+    |> format ""
+    |> _assert_eq "1-1-1 12:00:00 AM"
+
 /// ### max_value
 inl max_value () : date_time =
     backend_switch {
@@ -267,6 +280,13 @@ inl max_value () : date_time =
             $'datetime.datetime.max' : date_time
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(9999, 12, 31).unwrap().and_hms_nano_opt(23, 59, 59, 999999900).unwrap()' : date_time
     }
+
+///> fsharp
+///> cuda
+test max_value =
+    max_value ()
+    |> format ""
+    |> _assert_eq "12-31-99 11:59:59 PM"
 
 /// ### to_calendar_utc
 inl to_calendar_utc (timestamp : timestamp) : date_time =
@@ -305,6 +325,15 @@ inl unix_epoch () : date_time =
         Rust = fun () => $'chrono::NaiveDate::from_ymd_opt(1970, 1, 1).unwrap().and_hms_opt(0, 0, 0).unwrap()' : date_time
     }
 
+///> lua
+///> fsharp
+///> gleam
+///> cuda
+test unix_epoch =
+    unix_epoch ()
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
+
 /// ### date_time_milliseconds
 inl date_time_milliseconds
     (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int) (millisecond : int)
@@ -338,6 +367,15 @@ inl date_time_milliseconds
         TypeScript = fun () => $'new Date(!year, !month - 1, !day, !hour, !minute, !second, !millisecond)' : date_time
     }
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test date_time_milliseconds =
+    date_time_milliseconds 1970 1 1 0 0 0 0
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
+
 /// ### date_time_utc
 inl date_time_utc
     (year : int) (month : int) (day : int) (hour : int) (minute : int) (second : int)
@@ -368,6 +406,14 @@ inl date_time_utc
         Rust = fun () =>
             $'chrono::NaiveDate::from_ymd_opt(!year, !month as u32, !day as u32).unwrap().and_hms_opt(!hour as u32, !minute as u32, !second as u32).unwrap()' : date_time
     }
+
+///> lua
+///> fsharp
+///> cuda
+test date_time_utc =
+    date_time_utc 1970 1 1 0 0 0
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### date_time_kind
 union date_time_kind =
@@ -402,6 +448,43 @@ inl to_universal_time (date_time : date_time) : date_time =
             $'!date_time.replace(tzinfo=datetime.timezone.utc)' : date_time
         Rust = fun () => date_time
     }
+
+///> lua
+///> fsharp
+///> cuda
+test to_universal_time =
+    date_time_milliseconds 1970 1 1 0 0 0 0
+    |> specify_date_kind Utc
+    |> to_universal_time
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
+
+///> lua
+///> fsharp
+///> cuda
+test to_universal_time_2 =
+    date_time_utc 1970 1 1 0 0 0
+    |> specify_date_kind Utc
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
+
+///> lua
+///> fsharp
+///> cuda
+test to_universal_time_3 =
+    date_time_utc 1970 1 1 0 0 0
+    |> specify_date_kind Local
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
+
+///> lua
+///> fsharp
+///> cuda
+test to_universal_time_4 =
+    date_time_utc 1970 1 1 0 0 0
+    |> specify_date_kind Unspecified
+    |> format ""
+    |> _assert_eq "1-1-70 12:00:00 AM"
 
 /// ### time_span
 nominal time_span_python =
@@ -531,6 +614,16 @@ inl ticks (date_time : date_time) : timestamp =
             : timestamp
     }
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust -d chrono
+test ticks =
+    unix_epoch ()
+    |> ticks
+    |> _assert_eq' (621355968000000000i64 |> timestamp)
+
 /// ### hours
 inl hours (time_span : time_span) : i32 =
     backend_switch {
@@ -545,6 +638,18 @@ inl hours (time_span : time_span) : i32 =
         Rust = fun () => $'(!time_span.num_hours() % 24) as i32' : i32
         TypeScript = fun () => $'(Math.trunc(!time_span / 3600000) % 24)' : i32
     }
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test hours =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+    |> hours
+    |> _assert_eq 10
 
 /// ### minutes
 inl minutes (time_span : time_span) : i32 =
@@ -561,6 +666,18 @@ inl minutes (time_span : time_span) : i32 =
         TypeScript = fun () => $'(Math.trunc(!time_span / 60000) % 60)' : i32
     }
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test minutes =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+    |> minutes
+    |> _assert_eq 11
+
 /// ### seconds
 inl seconds (time_span : time_span) : i32 =
     backend_switch {
@@ -576,6 +693,18 @@ inl seconds (time_span : time_span) : i32 =
         TypeScript = fun () => $'(Math.trunc(!time_span / 1000) % 60)' : i32
     }
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test seconds =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+    |> seconds
+    |> _assert_eq 12
+
 /// ### milliseconds
 inl milliseconds (time_span : time_span) : i32 =
     backend_switch {
@@ -590,6 +719,16 @@ inl milliseconds (time_span : time_span) : i32 =
         Rust = fun () => $'(!time_span.num_milliseconds() % 1000) as i32' : i32
         TypeScript = fun () => $'(Math.trunc(!time_span) % 1000)' : i32
     }
+
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test milliseconds =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+    |> milliseconds
+    |> _assert_eq 13
 
 /// ### time_span_format
 inl time_span_format (format : string) (time_span : time_span) : string =
@@ -651,6 +790,46 @@ inl time_span_format (format : string) (time_span : time_span) : string =
                             |> sm'.pad_right 7 '0'
                         result ++# ms
             }
+
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test time_span_format =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2001 1 1 10 11 12 13)
+    |> time_span_format "c"
+    |> _assert_eq (backend_switch {
+        Fsharp = fun () => "397.10:11:12.0130000"
+        Python = fun () => "39710:11:120130000"
+        Rust = fun () => "397.10:11:12.0130000"
+        TypeScript = fun () => "397.10:11:12.0130000"
+    })
+
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test time_span_format_2 =
+    (join date_time_milliseconds 2002 2 2 20 22 24 26)
+    |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 26)
+    |> time_span_format "c"
+    |> _assert_eq "10:11:12"
+
+///> fsharp
+///> cuda
+///> rust -d chrono
+///> typescript
+test time_span_format_3 =
+    (join date_time_milliseconds 2002 2 2 20 22 24 999)
+    |> new_time_span (date_time_milliseconds 2002 2 2 10 11 12 0)
+    |> time_span_format "c"
+    |> _assert_eq (backend_switch {
+        Fsharp = fun () => "10:11:12.9990000"
+        Python = fun () => "10:11:129990000"
+        Rust = fun () => "10:11:12.9990000"
+        TypeScript = fun () => "10:11:12.9990000"
+    })
 
 /// ### time_zone_info
 type time_zone_info_switch =
@@ -910,6 +1089,49 @@ let date_time_guid_from_date_time (guid' : guid.guid) (date_time : date_time) =
             inl time_zone = #?time_zone_signal ++# time_zone_value
             create prefix time_zone
 
+///> fsharp
+///> rust -d chrono
+test date_time_guid_from_date_time =
+    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    unix_epoch ()
+    |> specify_date_kind Utc
+    |> to_universal_time
+    |> date_time_guid_from_date_time (test_guid ())
+    |> sm'.obj_to_string
+    |> fun s => s |> _assert_eq' ((s |> sm'.slice 0i32 29) ++# suffix)
+
+///> fsharp
+///> rust -d chrono
+test date_time_guid_from_date_time_2 =
+    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    min_value ()
+    |> specify_date_kind Local
+    |> date_time_guid_from_date_time (test_guid ())
+    |> sm'.obj_to_string
+    |> fun s => s |> _assert_eq' $'$"00010101-0000-0000-0000-0{!(s |> sm'.slice 25i32 29)}{!suffix}"'
+
+///> fsharp
+///> rust -d chrono
+test date_time_guid_from_date_time_3 =
+    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    max_value ()
+    |> specify_date_kind Utc
+    |> add_days -1
+    |> date_time_guid_from_date_time (test_guid ())
+    |> sm'.obj_to_string
+    |> fun s => s |> _assert_eq ("99991230-2359-5999-9999-9" ++# (s |> sm'.slice 25i32 29) ++# suffix)
+
+///> fsharp
+///> rust -d chrono
+test date_time_guid_from_date_time_4 =
+    inl suffix = test_guid () |> sm'.obj_to_string |> sm'.range (am'.End fun x => x () - 6i32) (am'.End eval)
+    unix_epoch ()
+    |> specify_date_kind Utc
+    |> add_days 1
+    |> date_time_guid_from_date_time (test_guid ())
+    |> sm'.obj_to_string
+    |> fun s => s |> _assert_eq ("19700102-0000-0000-0000-0" ++# (s |> sm'.slice 25i32 29) ++# suffix)
+
 /// ### date_time_from_guid
 inl date_time_from_guid (date_time_guid : date_time_guid) =
     inl date_time_guid = date_time_guid |> sm'.obj_to_string
@@ -921,6 +1143,21 @@ inl date_time_from_guid (date_time_guid : date_time_guid) =
             $'System.DateTime.Parse (!date_time_guid.[..24] |> !sm_replace)' : date_time
         | _ => fun sm_replace => $'System.DateTime.ParseExact (!date_time_guid.[..24] |> !sm_replace, "yyyyMMddHHmmssfffffff", null)' : date_time
 
+///> fsharp
+test date_time_from_guid =
+    date_time_from_guid (guid.new_guid "00010101-0000-0000-0000-0a9876543210")
+    |> _assert_eq' (min_value ())
+
+///> fsharp
+test date_time_from_guid_2 =
+    date_time_from_guid (guid.new_guid $'$"99991231-2359-5999-9999-9{(!test_guid () |> string |> fun s -> s.Substring (s.Length - 11))}"')
+    |> _assert_eq' (max_value ())
+
+///> fsharp
+test date_time_from_guid_3 =
+    date_time_from_guid (guid.new_guid $'$"19700101-0000-0000-0000-0{(!test_guid () |> string |> fun s -> s.Substring (s.Length - 11))}"')
+    |> _assert_eq' $'System.DateTime.UnixEpoch'
+
 /// ### timestamp_guid_from_timestamp
 inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : timestamp_guid =
     inl guid = guid |> sm'.obj_to_string
@@ -929,6 +1166,15 @@ inl timestamp_guid_from_timestamp (guid : guid.guid) (timestamp : timestamp) : t
     then $'Rc::<str>::from(format\!("{}-{}-{}-{}{}", &!timestamp[0..8], &!timestamp[8..12], &!timestamp[12..16], &!timestamp[16..18], &!guid[21..]))'
     else $'`timestamp_guid $"{!timestamp.[0..7]}-{!timestamp.[8..11]}-{!timestamp.[12..15]}-{!timestamp.[16..17]}{!guid.[21..]}"'
 
+test timestamp_guid_from_timestamp =
+    timestamp_guid_from_timestamp (test_guid ()) (0i64 |> timestamp)
+    |> _assert_eq' (guid.new_guid "00000000-0000-0000-0043-210fedcba987")
+
+///> fsharp
+test timestamp_guid_from_timestamp_2 =
+    timestamp_guid_from_timestamp (test_guid ()) (999999999999999999i64 |> timestamp)
+    |> _assert_eq' (guid.new_guid $'$"99999999-9999-9999-9943-2{(!test_guid () |> string |> fun s -> s.Substring (s.Length - 11))}"')
+
 /// ### timestamp_from_guid
 inl timestamp_from_guid (guid : date_time_guid) : timestamp =
     inl guid = guid |> sm'.obj_to_string
@@ -936,15 +1182,42 @@ inl timestamp_from_guid (guid : date_time_guid) : timestamp =
     then $'format\!("{}{}{}{}", &!guid[0..8], &!guid[9..13], &!guid[14..18], &!guid[19..21]).parse::<i64>().unwrap()'
     else $'`i64 $"{!guid.[0..7]}{!guid.[9..12]}{!guid.[14..17]}{!guid.[19..20]}"'
 
+test timestamp_from_guid =
+    timestamp_from_guid (guid.new_guid "00000000-0000-0000-00dc-ba9876543210")
+    |> _assert_eq' (0i64 |> timestamp)
+
+///> fsharp
+test timestamp_from_guid_2 =
+    timestamp_from_guid (guid.new_guid $'$"99999999-9999-9999-99{(!test_guid () |> string |> fun s -> s.Substring (s.Length - 15))}"')
+    |> _assert_eq' (999999999999999999i64 |> timestamp)
+
 /// ### new_guid_from_date_time
 inl new_guid_from_date_time (date_time : date_time) =
     inl guid = guid.new_raw_guid ()
     date_time |> date_time_guid_from_date_time guid
 
+///> fsharp
+test new_guid_from_date_time =
+    utc_now ()
+    |> new_guid_from_date_time
+    |> date_time_from_guid
+    |> fun date_time => new_time_span date_time (utc_now ()) |> total_seconds |> convert.i32
+    |> _assert_eq 0
+
 /// ### new_guid_from_timestamp
 inl new_guid_from_timestamp (timestamp : timestamp) =
     inl guid = guid.new_raw_guid ()
     timestamp |> timestamp_guid_from_timestamp guid
+
+///> fsharp
+test new_guid_from_timestamp =
+    utc_now ()
+    |> ticks
+    |> new_guid_from_timestamp
+    |> timestamp_from_guid
+    |> fun (timestamp t) =>
+        (convert.convert t - (utc_now () |> ticks |> fun (timestamp x) => convert.convert x)) / 100000i64
+    |> _assert_eq 0i64
 
 /// ## main
 ///> fsharp

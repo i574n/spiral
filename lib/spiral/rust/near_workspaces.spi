@@ -1,4 +1,7 @@
 /// # near_workspaces
+test near_workspaces static =
+    open testing
+
 open rust
 open rust.rust_operators
 

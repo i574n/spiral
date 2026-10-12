@@ -1,4 +1,7 @@
 /// # sm'
+test sm static =
+    open testing
+
 open rust
 open rust_operators
 
@@ -33,6 +36,15 @@ inl from_std_string (str : std_string) : string =
 inl symbol_to_string forall t {symbol}. (x : t) : string =
     real symbol_to_string_real `t
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test symbol_to_string =
+    .test
+    |> symbol_to_string
+    |> _assert_eq "test"
+
 /// ### index
 inl index i (str : string) : char =
     i |> sm.index str
@@ -40,6 +52,14 @@ inl index i (str : string) : char =
 /// ### length
 inl length forall dim {int}. (input : string) : dim =
     input |> sm.length
+
+///> gleam
+///> fsharp
+///> cuda
+test length =
+    "abc"
+    |> length
+    |> _assert_eq 3i32
 
 /// ### (~##)
 inl (~##) s : int =
@@ -49,9 +69,29 @@ inl (~##) s : int =
 inl to_char_list (str : string) : list char =
     listm.init (str |> length) (fun (i : i64) => str |> index i)
 
+///> gleam
+///> fsharp
+///> cuda
+test to_char_list =
+    "abc"
+    |> to_char_list
+    |> _assert_eq [ 'a'; 'b'; 'c' ]
+
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
     am'.init_base (str |> length) (fun i => str |> index i)
+
+///> lua
+///> gleam
+///> fsharp
+///> cuda
+test to_char_array =
+    "abc"
+    |> to_char_array
+    |> fun x => a x : _ int _
+    |> am'.to_list'
+    |> listm'.unbox
+    |> _assert_eq [ 'a'; 'b'; 'c' ]
 
 /// ### is_empty
 inl is_empty (input : string) : bool =
@@ -139,6 +179,36 @@ inl obj_to_string_zig forall t. (x : t) : string =
 inl (~#?*) s =
     s |> format_debug
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test format_debug =
+    #?*("1", "2", "3")
+    |> _assert_eq (
+        backend_switch {
+            Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+            Lua = fun () => "1, 2, 3" : string
+            Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
+            Python = fun () => "('1', '2', '3')" : string
+        }
+    )
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test format_debug_2 =
+    #?*{ c = "1"; a = "2"; b = "3" }
+    |> _assert_eq (
+        backend_switch {
+            Gleam = fun () => "#(\"1\", \"2\", \"3\")" : string
+            Lua = fun () => "1, 2, 3" : string
+            Fsharp = fun () => "struct (\"1\", \"2\", \"3\")" : string
+            Python = fun () => "('1', '2', '3')" : string
+        }
+    )
+
 /// ### unwrap_format
 instance unwrap_format option t = fun x =>
     x
@@ -177,6 +247,22 @@ inl concat_list separator input =
     }
     |> fun { acc } => acc
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test concat_list print_code =
+    [
+        "1"
+        "2"
+        "3"
+    ]
+    |> fun x =>
+        inl code = (x : _) |> concat_list "\n"
+        code
+        |> _assert_eq "1\n2\n3"
+
 /// ### slice
 inl slice forall t {number; int}. (from : t) (to : t) s : string =
     inl to_py () =
@@ -205,6 +291,72 @@ inl slice forall t {number; int}. (from : t) (to : t) s : string =
         Lean = fun () => sm.slice s { from to } : string
     }
 
+///> fsharp
+test slice print_code =
+    "abcdef"
+    |> slice 3i32 3i32
+    |> _assert_eq "d"
+
+    "abcdef"
+    |> slice 1i32 3i32
+    |> slice 2i32 2i32
+    |> _assert_eq "d"
+
+    "abcdef"
+    |> slice 1i32 4i32
+    |> slice 2i32 3i32
+    |> slice 1i32 1i32
+    |> _assert_eq "e"
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test slice_2 =
+    "abcdef"
+    |> slice 1i32 3i32
+    |> _assert_eq "bcd"
+
+    (join "fghij")
+    |> slice 1i32 3i32
+    |> _assert_eq "ghi"
+
+    "klmno"
+    |> slice 1i32 (join 3i32)
+    |> _assert_eq "lmn"
+
+    (join "pqrst")
+    |> slice 1i32 (join 3i32)
+    |> _assert_eq "qrs"
+
+    "uvwxy"
+    |> slice (join 1i32) 3i32
+    |> _assert_eq "vwx"
+
+    (join "zabcd")
+    |> slice (join 1i32) 3i32
+    |> _assert_eq "abc"
+
+    "efghi"
+    |> slice (join 1i32) (join 3i32)
+    |> _assert_eq "fgh"
+
+    (join "efghi")
+    |> slice (join 1i32) (join 3i32)
+    |> _assert_eq "fgh"
+
+    "abcdef"
+    |> slice 3i32 4i32
+    |> _assert_eq "de"
+
+    (join "efghi")
+    |> slice (join 3i32) (join 4i32)
+    |> _assert_eq "hi"
+
+    "bcde"
+    |> slice (join 0i32) 0i32
+    |> _assert_eq "b"
+
 /// ### format_pretty_real
 
 /// ### format_pretty
@@ -228,6 +380,31 @@ inl prim x = real
 inl format forall t. (x : t) : string =
     real format_real `t x
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+///> c
+test format =
+    ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
+    |> format
+    |> _assert_eq (
+        backend_switch {
+            Gleam = fun () => "1, 2, Uh0Cons(\"3\", Uh0Cons(\"4\", Uh0Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+            Lua = fun () => "1, 2, Uh0_Cons(3, Uh0_Cons(4, Uh0_Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+            Fsharp = fun () =>
+                run_target function
+                    | _ => fun () => join "1, 2, UH0_Cons (\"3\", UH0_Cons (\"4\", UH0_Nil)), { b = 5; c = 6; a = 7 }, [|8|]"
+                : string
+            Python = fun () => "1, 2, UH0_Cons(v0='3', v1=UH0_Cons(v0='4', v1=UH0_Nil())), { b = 5; c = 6; a = 7 }, [8]" : string
+            Rust = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+            TypeScript = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+            C = fun () => "1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = 6; a = 7 }, [8]" : string
+        }
+    )
+
 /// ### (~#?)
 inl (~#?) s =
     s |> format
@@ -241,6 +418,14 @@ inl to_char_array (str : string) : array_base char =
     am.init (str |> length) (fun i => str |> index i)
     |> fun (a x : _ int _) => x
 
+///> fsharp
+///> cuda
+test to_char_array_2 =
+    "abc"
+    |> to_char_array
+    |> format
+    |> _assert_eq #?(;[ 'a'; 'b'; 'c' ])
+
 /// ### concat_array
 inl concat_array (separator : string) (input : a int string) =
     (input, { acc = ""; sep = "" })
@@ -248,11 +433,40 @@ inl concat_array (separator : string) (input : a int string) =
             { acc = x ++# sep ++# acc; sep = separator }
     |> fun { acc } => acc
 
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test concat_array print_code =
+    ;[
+        "1"
+        "2"
+        "3"
+    ]
+    |> fun x =>
+        inl code = (a x : _ int _) |> concat_array "\n"
+        code
+        |> _assert_eq "1\n2\n3"
+
 /// ### ellipsis
 inl ellipsis (max : i32) (s : string) =
     if sm.length s <= max
     then s
     else s |> slice 0 (max - 1) |> append "..."
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test ellipsis =
+    "12345"
+    |> ellipsis 2
+    |> _assert_eq "12..."
+
+    "12345"
+    |> ellipsis 4
+    |> _assert_eq "1234..."
 
 /// ## fsharp
 
@@ -278,6 +492,11 @@ inl index_of_char_from (from : i32) (c : char) (s : string) : i32 =
         else 루프 (i + 1i32)
     and inl 루프 i = join_body_unit body (if var_is i then i else len) i
     from |> 루프
+
+test index_of_char_from =
+    "abcdefabc"
+    |> index_of_char_from 2i32 'a'
+    |> _assert_eq 4i32
 
 /// ### index_of
 inl index_of (search : string) (s : string) : int =
@@ -305,6 +524,16 @@ inl index_of (search : string) (s : string) : int =
         Lean = fun () => $'(if (!search).isEmpty then 0 else match (!s).splitOn !search with | [_] => -1 | p :: _ => `int.ofNat p.utf8ByteSize | [] => -1)' : int
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test index_of =
+    "123"
+    |> index_of "2"
+    |> _assert_eq 1
+
 /// ### replicate
 inl replicate (n : int) (s : string) : string =
     inl rec body i acc =
@@ -313,6 +542,30 @@ inl replicate (n : int) (s : string) : string =
         else 루프 (i + 1) (acc ++# s)
     and inl 루프 i = join_body_unit body n i
     루프 0 ""
+
+///> gleam
+///> fsharp
+test replicate =
+    "12"
+    |> replicate (join 3)
+    |> _assert_eq "121212"
+
+///> gleam
+///> fsharp
+test replicate_2 print_code =
+    "12"
+    |> replicate 3
+    |> _assert_eq "121212"
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test replicate_3 =
+    "12"
+    |> replicate 3
+    |> _assert_eq "121212"
 
 /// ### pad_left
 inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
@@ -323,6 +576,16 @@ inl pad_left (total_width : int) (padding_char : char) (s : string) : string =
 inl pad_right (total_width : int) (padding_char : char) (s : string) : string =
     inl padding = padding_char |> obj_to_string |> replicate (total_width - length s)
     s ++# padding
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test pad_right =
+    "123"
+    |> pad_right 6 ' '
+    |> _assert_eq "123   "
 
 /// ### convert_to_utf32
 inl convert_to_utf32 (c : char) : int =
@@ -440,6 +703,19 @@ inl builder_append (item : string) (sb : string_builder) : string_builder =
         TypeScript = fun () => $'!sb + !item ' : string_builder
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test builder_append =
+    "ab"
+    |> string_builder
+    |> builder_append "cd"
+    |> builder_append "ef"
+    |> obj_to_string
+    |> _assert_eq "abcdef"
+
 /// ### builder_append_line
 inl builder_append_line (sb : string_builder) : string_builder =
     backend_switch {
@@ -475,6 +751,20 @@ inl builder_replace (old : string) (new : string) (sb : string_builder) : string
         TypeScript = fun () => $'!sb.split(!old).join(!new)' : string_builder
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test builder_replace =
+    "ab"
+    |> string_builder
+    |> builder_append "cd"
+    |> builder_replace "cd" "ef"
+    |> builder_append "gh"
+    |> obj_to_string
+    |> _assert_eq "abefgh"
+
 /// ### builder_clear
 inl builder_clear (sb : string_builder) : string_builder =
     backend_switch {
@@ -494,6 +784,20 @@ inl builder_clear (sb : string_builder) : string_builder =
         Rust = fun () => $'String::new()' : string_builder
         TypeScript = fun () => $'""' : string_builder
     }
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test builder_clear =
+    "ab"
+    |> string_builder
+    |> builder_append "cd"
+    |> builder_clear
+    |> builder_append "gh"
+    |> obj_to_string
+    |> _assert_eq "gh"
 
 /// ### builder_insert
 inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder =
@@ -516,6 +820,16 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
             $'"".join([!sb[:!i], !s, !sb[!i:]])' |> string_builder
         Rust = fun () => $'{ let mut r = !sb.clone(); let at = r.char_indices().nth(!i as usize).map(|(b, _)| b).unwrap_or(r.len()); r.insert_str(at, &*!s); r }' : string_builder
     }
+
+///> gleam
+///> fsharp
+///> cuda
+test builder_insert =
+    "ab"
+    |> string_builder
+    |> builder_insert 1 "gh"
+    |> obj_to_string
+    |> _assert_eq "aghb"
 
 /// ### span_from
 inl span_from pred str i0 =
@@ -549,6 +863,30 @@ inl trim_start (chars : list char) (input : string) : string =
         else i
     input |> slice (루프 0) (len - 1)
 
+///> gleam
+///> fsharp
+///> cuda
+test trim_start =
+    "  abc  "
+    |> trim_start []
+    |> _assert_eq "abc  "
+
+    "abcde"
+    |> trim_start []
+    |> _assert_eq "abcde"
+
+    "abcde"
+    |> trim_start [ 'a' ]
+    |> _assert_eq "bcde"
+
+    "abcde"
+    |> trim_start [ 'b'; 'a' ]
+    |> _assert_eq "cde"
+
+    "abcde"
+    |> trim_start [ 'c'; 'b'; 'a' ]
+    |> _assert_eq "de"
+
 /// ### trim_end
 inl trim_end (chars : list char) (input : string) : string =
     inl chars = if chars = [] then trim_chars () else chars
@@ -561,15 +899,49 @@ inl trim_end (chars : list char) (input : string) : string =
         else i - 1
     input |> slice 0 (루프 len)
 
+///> gleam
+///> fsharp
+///> cuda
+test trim_end =
+    "  def  "
+    |> trim_end []
+    |> _assert_eq "  def"
+
+    "abcde"
+    |> trim_end []
+    |> _assert_eq "abcde"
+
+    "abcde"
+    |> trim_end [ 'e' ]
+    |> _assert_eq "abcd"
+
+    "abcde"
+    |> trim_end [ 'e'; 'd' ]
+    |> _assert_eq "abc"
+
+    "abcde"
+    |> trim_end [ 'e'; 'd'; 'c' ]
+    |> _assert_eq "ab"
+
 /// ### trim_with
 inl trim_with (chars : list char) (input : string) : string =
     input
     |> trim_start chars
     |> trim_end chars
 
+test trim_with =
+    "  jkl  "
+    |> trim_with [ ' '; '\t'; '\n' ]
+    |> _assert_eq "jkl"
+
 /// ### trim
 inl trim (input : string) : string =
     input |> trim_with []
+
+test trim =
+    "  ghi  "
+    |> trim
+    |> _assert_eq "ghi"
 
 /// ### concat
 inl concat (a : string) (b : seq.seq' string) : string =
@@ -603,6 +975,13 @@ inl length' forall dim. (input : string) : dim =
         Zig = fun () => $'\@as(`dim, \@intCast(!input.len))' : dim
         Lean = fun () => $'(`dim.ofNat (!input).utf8ByteSize)' : dim
     }
+
+///> fsharp
+///> cuda
+test length_2 =
+    "abc"
+    |> length'
+    |> _assert_eq 3i32
 
 /// ### to_string any
 instance to_string any =
@@ -1029,6 +1408,23 @@ let regex_captures (s : string) (regex : regex) : am'.vec (mapm.hash_map string 
 
     |> rust.capture_move
 
+///> rust -d regex
+test regex_captures =
+    "fable-library-ts\\.(?<a>[\\d.]+)$"
+    |> new_regex
+    |> resultm.unwrap'
+    |> regex_captures "fable_modules/fable-library-ts.4.17.0"
+    |> am'.vec_map (mapm.to_vec >> am'.vec_sort_by_key id)
+    |> format_debug
+    |> _assert_eq (
+        ;[
+            ;[ "", ""; "a", "4.17.0" ]
+            |> am'.to_vec
+        ]
+        |> am'.to_vec
+        |> format_debug
+    )
+
 /// ### serialize
 inl serialize forall t. (x : t) : resultm.result' std_string json_error =
     !\($'"serde_json::to_string(&!x)"')
@@ -1214,6 +1610,23 @@ inl format_exception (ex : exn) : string =
         | TypeScript => fun () => $'String(!ex)' : string
         | _ => fun () => ex |> format_debug
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test format_exception =
+    fun () => failwith "test"
+    |> _throws
+    |> optionm.value
+    |> format_exception
+    |> _assert_eq (run_target function
+        | Fsharp _ => fun () => join "System.Exception: test"
+        | Cuda _ => fun () => "test"
+        | Rust => fun () => "test"
+        | TypeScript _ => fun () => "Error: test"
+        | _ => fun () => null ()
+    )
+
 /// ### range
 inl range forall t. (start : am'.range t) (end : am'.range t) s =
     inl is_start, start, end =
@@ -1254,6 +1667,76 @@ inl range forall t. (start : am'.range t) (end : am'.range t) s =
     }
     s |> slice start' (end' - (if is_start && (same_fixed || start_var_s_fixed) then 0 else 1))
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test range =
+    "abcde"
+    |> range (am'.Start 0i32) (am'.End eval)
+    |> _assert_eq "abcde"
+
+    (join "fghij")
+    |> range (am'.Start 1i32) (am'.End eval)
+    |> _assert_eq "ghij"
+
+    (join "klmno")
+    |> range (am'.Start 1i32) (am'.End fun _ => 1)
+    |> _assert_eq "l"
+
+    "pqrst"
+    |> range (am'.Start 1i32) (am'.End fun _ => 1)
+    |> _assert_eq "q"
+
+    "uvwxy"
+    |> range (am'.Start (join 1i32)) (am'.End fun _ => 1)
+    |> _assert_eq "v"
+
+    "zabcd"
+    |> range (am'.Start (join 1i32)) (am'.End fun _ => join 1)
+    |> _assert_eq "a"
+
+    (join "efghi")
+    |> range (am'.Start 1i32) (am'.End fun _ => 5)
+    |> _assert_eq "fghi"
+
+    "jklmn"
+    |> range (am'.End fun x => 1i32) (am'.End fun _ => join 5)
+    |> _assert_eq "klmn"
+
+    "opqrs"
+    |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1i32)
+    |> _assert_eq "pqr"
+
+    (join "stuvw")
+    |> range (am'.End fun x => x () - 4i32) (am'.End fun x => x () - 1)
+    |> _assert_eq "tuv"
+
+    (join "wxyza")
+    |> range (am'.Start (join 2i32)) (am'.End fun x => x () - 2)
+    |> _assert_eq "y"
+
+    (join "bcdef")
+    |> range (am'.Start (join 2i32)) (am'.End fun x => x () - 3)
+    |> _assert_eq ""
+
+    (join "ghijk")
+    |> range (am'.Start (join 1i32)) (am'.End fun x => x () - 3)
+    |> _assert_eq "h"
+
+    (join "lmnop")
+    |> range (am'.Start (join 1i32)) (am'.End fun x => x () - 4)
+    |> _assert_eq ""
+
+    (join "qrstu")
+    |> range (am'.End fun x => x () - 4i32) (am'.End fun _ => 4)
+    |> _assert_eq "rst"
+
+    "vwxyz"
+    |> range (am'.End fun x => join x () - 4i32) (am'.End fun _ => 4)
+    |> _assert_eq "wxy"
+
 /// ### ellipsis_end
 let ellipsis_end (max : i64) (s : string) =
     inl len = s |> length
@@ -1267,6 +1750,22 @@ let ellipsis_end (max : i64) (s : string) =
         inl end = s |> slice (len - end_half) (len - 1)
         [ start; "..."; end ]
         |> concat_list ""
+
+///> gleam
+///> lua
+///> fsharp
+test ellipsis_end =
+    "12345"
+    |> ellipsis_end 2
+    |> _assert_eq "1...5"
+
+    "12345"
+    |> ellipsis_end 3
+    |> _assert_eq "12...5"
+
+    "1234567"
+    |> ellipsis_end 4
+    |> _assert_eq "12...67"
 
 /// ### format_ellipsis
 inl format_ellipsis s =
@@ -1290,6 +1789,20 @@ let replace_regex (pattern : string) (replacement : string) (s : string) : strin
             $'let assert Ok(re) = !pattern |> regexp.from_string'
             $'re |> regexp.replace(!s, !replacement)' : string
         | _ => fun _ => join ""
+
+///> fsharp
+///> gleam
+///> rust -d regex
+test replace_regex =
+    " 123"
+    |> replace_regex "\\s\\w2" ""
+    |> _assert_eq "3"
+
+///> rust -d regex
+test replace_regex_2 =
+    "    let main args =\n        ()\n"
+    |> replace_regex "(?P<a> *)(?P<b>let\\s+main\\s+.*?\\s*=)" "$a[<EntryPoint>]\n$a$b"
+    |> _assert_eq "    [<EntryPoint>]\n    let main args =\n        ()\n"
 
 /// ## main
 ///> fsharp

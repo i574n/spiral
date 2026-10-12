@@ -1,4 +1,7 @@
 /// # trace
+test trace static =
+    open testing
+
 open sm'_operators
 
 /// ## trace
@@ -176,6 +179,20 @@ inl test_trace_level level : bool =
     then false
     else a >= b
 
+///> lua
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test test_trace_level =
+    test_trace_level Critical |> _assert_eq true
+    test_trace_level Verbose |> _assert_eq true
+    Debug |> set_trace_level
+    test_trace_level Verbose |> _assert_eq false
+    Verbose |> set_trace_level
+    test_trace_level Verbose |> _assert_eq true
+
 /// ### trace_raw
 inl trace_raw level fn =
     fun () =>
@@ -304,6 +321,19 @@ inl trace (level : trace_level) (text_fn : () -> string) (locals : () -> _) =
                         |> sm'.trim_start []
                         |> sm'.trim_end [ ' '; '/' ]
     |> trace_raw level
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test trace_2 =
+    trace Debug (fun () => "test1") id
+    trace Debug (fun () => "test2") id
+    get_trace_state_or_init None .count
+    |> fun x => *x
+    |> _assert_eq 3
 
 /// ### trace_format
 inl trace_format level fn obj =

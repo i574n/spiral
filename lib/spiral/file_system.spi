@@ -3,6 +3,9 @@ open sm'_operators
 open rust
 open rust_operators
 
+test file_system static =
+    open testing
+
 /// ## fsharp
 
 /// ### file_mode
@@ -175,6 +178,13 @@ inl get_source_directory () =
     run_target function
         | Rust => fun () => $'Rc::<str>::from(env\!("CARGO_MANIFEST_DIR"))' : string
         | _ => fun () => $'__SOURCE_DIRECTORY__' : string
+
+///> fsharp
+test get_source_directory =
+    get_source_directory ()
+    |> directory_info
+    |> directory_info_name
+    |> _assert_in [ "spiral"; "fsharp" ]
 
 /// ## rust
 
@@ -503,6 +513,10 @@ let get_current_directory () : string =
             $'spiral_node_fs.realpathSync(".")' : string
         | _ => fun () => null ()
 
+test get_current_directory =
+    get_current_directory ()
+    |> _assert_contains (directory_separator_char ())
+
 /// ### directory_exists
 let directory_exists (path : string) : bool =
     run_target_args' path function
@@ -547,6 +561,13 @@ let create_temp_path' (guid : guid.guid) =
             </> join "!create_temp_path_"
             </> (env.get_entry_assembly_name ())
             </> (guid |> sm'.obj_to_string)
+
+///> fsharp
+///> rust -d chrono
+test create_temp_path =
+    guid.hash_guid ""
+    |> create_temp_path'
+    |> _assert_contains (directory_separator_char ())
 
 /// ### create_temp_path
 let create_temp_path () =
@@ -675,6 +696,42 @@ let find_parent file_type name root_dir =
                 |> fun x => x : string
                 |> Error
     root_dir |> 루프
+
+///> fsharp
+test find_parent =
+    a ;[ Directory, "workspace"; File, "README.md" ]
+    |> am.map fun file_type, file =>
+        get_source_directory ()
+        |> find_parent file_type file
+        |> resultm.get
+        |> directory_info
+        |> directory_info_name
+    |> am'.distinct
+    |> fun (a x : _ int _) => x
+    |> _assert_in [ ;[ "spiral" ]; ;[ "polyglot" ] ]
+
+///> rust
+test find_parent_2 =
+    a ;[ Directory, "workspace"; File, "README.md" ]
+    |> am.map fun file_type, file =>
+        fun () =>
+            join
+                get_current_directory ()
+                |> find_parent file_type file
+                |> resultm.get
+                |> sm'.to_std_string
+                |> new_path_buf
+                |> path_buf_file_name
+                |> optionm'.try'
+                |> sm'.from_os_str_ref
+                |> Some
+                |> optionm'.box
+        |> fun x => x () |> optionm'.unbox
+        |> optionm'.default_value ""
+    |> am'.distinct
+    |> fun result =>
+        result |> am'.length |> _assert_eq 1i32
+        index result 0i32 |> _assert_eq "spiral"
 
 /// ### file_delete
 inl file_delete (path : string) : () =
@@ -834,6 +891,14 @@ inl get_workspace_root_external () =
     then Error workspace_root
     else Ok workspace_root
 
+///> rust -d regex
+test get_workspace_root_external =
+    match get_workspace_root_external () with
+    | Ok root => root
+    | Error root => root
+    |> get_file_name
+    |> _assert_eq "spiral"
+
 /// ### get_full_path
 let get_full_path (path : string) : string =
     run_target_args (fun () => path) function
@@ -868,6 +933,41 @@ let get_full_path (path : string) : string =
                 |> sm'.from_std_string
         | _ => fun _ => null ()
 
+///> fsharp
+test get_full_path =
+    "."
+    |> get_full_path
+    |> directory_info
+    |> directory_info_name
+    |> _assert_in [ "spiral"; "fsharp" ]
+
+///> rust -d regex
+test get_full_path_2 =
+    "dir/.././._file"
+    |> get_full_path
+    |> _assert_eq (get_current_directory () </> "._file")
+
+///> rust -d regex
+test get_full_path_3 =
+    inl directory_name path =
+        path
+        |> sm'.to_std_string
+        |> new_path_buf
+        |> path_buf_file_name
+        |> optionm'.unwrap
+        |> sm'.from_os_str_ref
+    "."
+    |> get_full_path
+    |> directory_name
+    |> _assert_eq (get_current_directory () |> directory_name)
+
+///> rust -d regex
+test get_full_path_4 =
+    "dir/.././._file"
+    |> get_full_path
+    |> normalize_path
+    |> _assert_eq (get_current_directory () </> "._file" |> normalize_path)
+
 /// ### standardize_path
 let standardize_path path =
     path |> get_full_path |> normalize_path
@@ -881,6 +981,20 @@ let absolute_path path =
 inl new_file_uri (path : string) : string =
     inl path = path |> sm'.trim_start [ '/' ]
     $'$"file:///{!path}"'
+
+///> rust -d regex
+test new_file_uri =
+    @"\\?\C:\test"
+    |> normalize_path
+    |> new_file_uri
+    |> _assert_eq "file:///c:/test"
+
+///> rust -d regex
+test new_file_uri_2 =
+    @"\\?\C:\test"
+    |> normalize_path
+    |> new_file_uri
+    |> _assert_eq "file:///c:/test"
 
 /// ## fsharp
 
@@ -907,6 +1021,22 @@ let rec trace_file text : () =
                 ex
         |> resultm.get
     | _ => fun () => ()
+
+///> fsharp
+test trace_file =
+    inl get_count dir : i64 =
+        inl files = dir |> directory_get_files
+        a files |> am'.length
+
+    inl trace_dir = get_workspace_root () </> "target/trace"
+    trace_dir |> create_directory |> ignore
+
+    inl count = get_count trace_dir
+
+    trace_file "test"
+
+    get_count trace_dir
+    |> _assert_eq (count + 1)
 
 /// ### init_trace_file
 inl init_trace_file enabled =
@@ -939,6 +1069,21 @@ inl create_temp_dir () =
     inl dir = create_temp_path ()
     dir, dir |> create_dir
 
+///> rust -d chrono
+test create_temp_dir =
+    inl path, disposable = create_temp_dir ()
+    join
+        path
+        |> directory_exists
+        |> _assert_eq true
+        disposable |> use |> ignore
+        path
+        |> directory_exists
+        |> _assert_eq true
+    path
+    |> directory_exists
+    |> _assert_eq false
+
 /// ### create_temp_dir'
 inl create_temp_dir' (hash : string) =
     inl dir = hash |> guid.hash_guid |> create_temp_path'
@@ -968,6 +1113,81 @@ let link_file target_path path =
 
     if path |> file_exists |> not
     then path |> file_create_symbolic_link target_path
+
+///> rust -d sha2 regex
+test link_file =
+    inl file_name = "LICENSE"
+    inl text = file_name
+
+    inl test_hash =
+        #?*(file_name, text)
+        |> crypto.hash_text
+
+    inl workspace_root = get_workspace_root ()
+    inl test_dir = workspace_root </> "target/test/file_system" </> test_hash
+
+    inl disposable = test_dir |> create_dir
+    disposable |> use |> ignore
+
+    inl dir_path = test_dir </> "dir1"
+
+    if dir_path |> directory_exists
+    then dir_path |> directory_delete true
+
+    dir_path |> create_dir |> ignore
+
+    inl path = dir_path </> file_name
+    text |> write_all_text path
+
+    inl dir_link_path = test_dir </> "link1"
+
+    dir_link_path |> link_directory dir_path
+
+    inl link_path = dir_link_path </> file_name
+
+    link_path
+    |> read_all_text
+    |> _assert_eq text
+
+    dir_link_path
+    |> read_link
+    |> resultm.unwrap'
+    |> path_buf_display
+    |> convert.convert
+    |> _assert sm'.ends_with "dir1"
+
+    link_path
+    |> read_link
+    |> resultm.unwrap'
+    |> path_buf_display
+    |> convert.convert
+    |> _assert sm'.ends_with "LICENSE"
+
+    inl link_name = "LICENSE_"
+
+    inl link_path = dir_path </> link_name
+
+    link_path |> link_file path
+
+    inl link_path' = dir_link_path </> link_name
+
+    link_path'
+    |> read_all_text
+    |> _assert_eq text
+
+    link_path
+    |> read_link
+    |> resultm.unwrap'
+    |> path_buf_display
+    |> convert.convert
+    |> _assert sm'.ends_with "LICENSE"
+
+    link_path'
+    |> read_link
+    |> resultm.unwrap'
+    |> path_buf_display
+    |> convert.convert
+    |> _assert sm'.ends_with "LICENSE"
 
 /// ## rust
 

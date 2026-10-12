@@ -1,4 +1,7 @@
 /// # reflection
+test reflection static =
+    open testing
+
 open sm'_operators
 
 /// ## reflection
@@ -85,6 +88,27 @@ inl get_union_fields forall union_type. () : list (string * union_type) =
                     `union_record_type
 union reflection_test_target = Wasm | Contract
 
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test get_union_fields =
+    get_union_fields ()
+    |> listm'.box
+    |> listm'.to_array'
+    |> a
+    |> am'.sort_by snd
+    |> fun (a x : _ int _) => x
+    |> _assert_eq' ;[ "Wasm", Wasm; "Contract", Contract ]
+
+    get_union_fields ()
+    |> listm'.box
+    |> listm'.to_array'
+    |> a
+    |> am'.sort_by snd
+    |> fun (a x : _ int _) => x
+    |> _assert_eq' ;[ "Some", Some 0i32; "None", None ]
+
 /// ### get_union_fields_untag
 inl get_union_fields_untag forall union_type. () : list (string * union_type) =
     real
@@ -143,6 +167,19 @@ inl get_union_fields_untag forall union_type. () : list (string * union_type) =
                 inl result = fst `(list (string * union_type)) `i32 result
                 listm.rev `(string * union_type) result
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test get_union_fields_untag =
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Wasm", Wasm; "Contract", Contract ]
+
+    get_union_fields_untag ()
+    |> _assert_eq' [ "Some", Some (); "None", None ]
+
 /// ### union_try_pick
 inl union_try_pick forall t. (key : string) : option t =
     inl fields = real get_union_fields_untag `t ()
@@ -160,6 +197,21 @@ inl union_try_pick forall t. (key : string) : option t =
         then Some x
         else None
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_try_pick =
+    "wasm"
+    |> union_try_pick
+    |> _assert_eq (Some Wasm)
+
+    "Wasm"
+    |> union_try_pick
+    |> _assert_eq (Some Wasm)
+
 /// ### union_try_pick'
 inl union_try_pick' forall t. (key : string) : option t =
     inl fields = real get_union_fields_untag `t ()
@@ -173,6 +225,21 @@ inl union_try_pick' forall t. (key : string) : option t =
         if key' =. key
         then x |> Some
         else None
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_try_pick_2 =
+    "wasm"
+    |> union_try_pick'
+    |> _assert_eq (Some Wasm)
+
+    "Wasm"
+    |> union_try_pick'
+    |> _assert_eq (Some Wasm)
 
 /// ### union_to_string
 inl union_to_string forall t. (x : t) : string =
@@ -218,6 +285,15 @@ inl union_to_string forall t. (x : t) : string =
                 else None
     |> optionm.value
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test union_to_string =
+    Some true
+    |> union_to_string
+    |> _assert_eq' "Some"
+
 /// ### nameof
 inl nameof forall t. (x : t) : string =
     real
@@ -227,6 +303,11 @@ inl nameof forall t. (x : t) : string =
                     sm'_real.symbol_to_string_real `(`key)
             `t
             ""
+
+test nameof =
+    { test1 = ""; test2 = "" }
+    |> nameof
+    |> _assert_eq' "test1"
 
 /// ### get_record_fields
 inl get_record_fields forall t u. (x : t) : list (string * u) =
@@ -239,6 +320,11 @@ inl get_record_fields forall t u. (x : t) : list (string * u) =
                     (::) `(string * u') (k, v) acc
             `t
             (Nil `(string * u))
+
+test get_record_fields =
+    { a = "1"; b = "2" }
+    |> get_record_fields
+    |> _assert_eq' [ "a", "1"; "b", "2" ]
 
 /// ### get_functions_types
 inl get_functions_types forall t {record}. (fns : t) =
@@ -266,3 +352,26 @@ inl get_functions_types forall t {record}. (fns : t) =
             `(`fns)
             (Nil `(string * (list (string * string) * string)))
     |> fun x => x : list (string * (list (string * string) * string))
+
+///> fsharp
+test get_functions_types =
+    inl one ({ a } : { a : i32 }) : i32 = a + 1
+    inl two ({ a b } : { a : i32; b : i32 }) : i32 = a + b + 2
+    inl fns = { one two }
+
+    fns
+    |> get_functions_types
+    |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+    |> listm'.box
+    |> listm'.to_array'
+    |> sm'.format
+    |> _assert_eq' (
+        [
+            "one", ["a", "int32"], "int32"
+            "two", ["a", "int32"; "b", "int32"], "int32"
+        ]
+        |> listm.map fun (name, args, result) => name, (args |> listm'.box |> listm'.to_array', result)
+        |> listm'.box
+        |> listm'.to_array'
+        |> sm'.format
+    )

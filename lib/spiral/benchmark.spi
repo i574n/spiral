@@ -1,4 +1,7 @@
 /// ## benchmark
+test benchmark static =
+    open testing
+
 open sm'_operators
 
 /// ## fsharp
@@ -197,6 +200,10 @@ inl sort_result_list results =
             fun () => { i = i + 1; avg }
     console.write_line "```"
 
+test sort_result_list static =
+    inl is_fast () =
+        false
+
 /// ### empty2Tests
 
 /// Test: Empty2
@@ -239,6 +246,37 @@ inl sort_result_list results =
 /// 01:12:04 [90mverbose[0m #9 benchmark.sort_result_list / averages.iter / {avg = 121; i = 1}
 /// ```
 /// `
+///> fsharp
+test empty2tests =
+    inl get_solutions () =
+        [
+            "A",
+            fun (a, _b) =>
+                a
+
+            "B",
+            fun (_a, b) =>
+                b
+        ]
+
+    inl rec empty_2_tests () =
+        inl test_cases = [
+            ("a", "a"), "a"
+            ("b", "b"), "b"
+        ]
+
+        inl solutions = get_solutions ()
+
+
+        inl count =
+            if is_fast ()
+            then 1000i32
+            else 2000000i32
+
+        run_all (reflection.nameof { empty_2_tests }) count solutions test_cases
+        |> sort_result_list
+
+    empty_2_tests ()
 
 /// ### emptyTests
 
@@ -284,3 +322,31 @@ inl sort_result_list results =
 /// ```
 /// 01:21:25 [90mverbose[0m #8 benchmark.sort_result_list / averages.iter / {avg = 26; i = 0}
 /// ```
+///> fsharp
+test emptytests =
+    inl get_solutions () =
+        [
+            "A",
+            fun n =>
+                n + 1f64
+        ]
+
+    inl rec empty_1_tests () =
+        inl test_cases = [
+            0, 1
+            2, 3
+            5, 6
+        ]
+
+        inl solutions = get_solutions ()
+
+
+        inl count =
+            if is_fast ()
+            then 1000i32
+            else 2000000i32
+
+        run_all (reflection.nameof { empty_1_tests }) count solutions test_cases
+        |> sort_result_list
+
+    empty_1_tests ()

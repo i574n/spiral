@@ -1084,6 +1084,7 @@
             'samples/rust_static_closure_chain'
             'samples/rust_target_globals'
             'samples/static_string'
+            'samples/string_ord'
             'samples/tagged_union_enum'
             'samples/tagged_union_heterogeneous'
             'samples/tagged_union_scalar'

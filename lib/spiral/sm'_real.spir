@@ -1,4 +1,6 @@
 /// # sm'
+test sm static =
+    open testing
 
 /// ## rust
 
@@ -36,6 +38,15 @@ inl symbol_to_string_real forall t {symbol}. : string =
     !!!!SymbolToString (x)
 
 /// ### symbol_to_string
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+test symbol_to_string =
+    open testing
+    inl x = .test
+    inl x = symbol_to_string_real `(`x)
+    _assert_eq `string "test" x
 
 /// ### index
 

@@ -1,4 +1,7 @@
 /// # am'
+test am static =
+    open testing
+
 open rust
 open rust_operators
 
@@ -50,6 +53,9 @@ instance equable a dim {number; int} t = generic_equable
 /// ### append
 instance append a dim {int; number} t = am.append
 
+test append =
+    ()
+
 /// ### map_base
 inl map_base forall t u. (fn : t -> u) (x : array_base t) : array_base u =
     a x
@@ -80,15 +86,47 @@ inl choose f l =
         | None => acc
     |> listm.toArray
 
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test choose =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> choose (fun x => if x % 2 = 0 then Some x else None)
+    |> _assert_eq (a' ;[ 0; 2; 4; 6; 8 ])
+
 /// ### sum
 inl sum a =
     a |> am.fold (+) 0
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test sum =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> sum
+    |> _assert_eq 45
 
 /// ### init_series
 inl init_series start end inc : array_base _ =
     inl total = conv ((end - start) / inc) + 1
     am.init total (conv >> (*) inc >> (+) start)
     |> fun (a x : _ int _) => x
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test init_series =
+    init_series 0i32 6 2
+    |> a
+    |> fun x => x : _ int _
+    |> _assert_eq (a ;[ 0i32; 2; 4; 6 ])
 
 /// ### head
 inl head (ar : a _ _) =
@@ -103,6 +141,17 @@ inl last (ar : a _ _) =
     then ar |> index (len - 1)
     else error_type "The length of the array should be greater than 0."
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test last =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> last
+    |> _assert_eq 9
+
 /// ### try_pick
 inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
     (array, None)
@@ -110,6 +159,17 @@ inl try_pick forall t u. (fn : t -> option u) (array : a _ t) : option u =
         match acc with
         | Some _ => acc
         | None => x |> fn
+
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test try_pick =
+    10
+    |> init
+    |> fun x => a x : _ int _
+    |> try_pick (fun x => if x = 5i32 then Some x else None)
+    |> _assert_eq (Some 5i32)
 
 /// ### indexed
 inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
@@ -119,9 +179,32 @@ inl indexed forall t u {number}. (ar : array_base t) : array_base (u * t) =
     |> snd
     |> fun (a x : _ int _) => x
 
+///> fsharp
+///> rust
+///> typescript
+///> cuda
+test indexed =
+    am.init 3i32 ((*) 2)
+    |> fun (a x : _ int _) => x
+    |> indexed
+    |> _assert_eq' ;[0i32, 0; 1, 2; 2, 4]
+
 /// ### slice
 inl slice forall dim {int; number} el. from nearTo s : a dim el =
     am.slice { from nearTo } s
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test slice =
+    inl x : _ i32 _ = a ;[ 1i32; 2; 3 ]
+    x |> slice 0 0 |> _assert_eq (a ;[])
+    x |> slice 0 1 |> _assert_eq (a ;[ 1 ])
+    x |> slice 1 1 |> _assert_eq (a ;[])
+    x |> slice 1 2 |> _assert_eq (a ;[ 2 ])
+    x |> slice 2 2 |> _assert_eq (a ;[])
+    x |> slice 0 2 |> _assert_eq (a ;[ 1; 2 ])
 
 /// ### range
 union range dim =
@@ -397,6 +480,14 @@ inl new_vec forall t. (items : list t) : vec t =
             v
     }
 
+///> rust
+test new_vec =
+    [ 0i32; 1 ]
+    |> new_vec
+    |> sm'.format_debug'
+    |> sm'.from_std_string
+    |> _assert_eq "[0, 1]"
+
 /// ## fsharp
 
 /// ### average
@@ -447,6 +538,16 @@ inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
 /// ### to_list'
 inl to_list' forall dim {int} t. (items : a dim t) : listm'.list' t =
     items |> base |> to_list_base'
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test to_list =
+    a' ;[ -3i32; 6 ]
+    |> to_list'
+    |> listm'.unbox
+    |> _assert_eq [ -3; 6 ]
 
 /// ### vec_collect
 inl vec_collect fn vec =

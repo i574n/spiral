@@ -17,15 +17,9 @@ Write-Output "spiral/lib/spiral/near/wallet/build.ps1 / ScriptDir: $ScriptDir / 
 
 $projectName = "near_wallet"
 
-if (!$SkipPreBuild) {
+if (!$SkipPreBuild -and !$SkipNotebook) {
     $livebook = Join-Path $ResolvedScriptDir "../../../../apps/kino/spi/run_notebook.ps1"
-    $notebook = @("--path", "$ResolvedScriptDir/src/$projectName.livemd", "--spi-path", "$ResolvedScriptDir/src/$projectName.spi")
-    if (!$SkipNotebook) {
-        { pwsh -NoProfile -File $livebook @notebook --output-path "$ResolvedScriptDir/src/$projectName.livemd.ipynb" } | Invoke-Block -Retries 3
-    }
-    else {
-        { pwsh -NoProfile -File $livebook @notebook --export-only } | Invoke-Block
-    }
+    { pwsh -NoProfile -File $livebook --path "$ResolvedScriptDir/src/$projectName.spi" --output-path "$ResolvedScriptDir/src/$projectName.spi.ipynb" } | Invoke-Block -Retries 3
 }
 
 if (!$SkipGleam) {

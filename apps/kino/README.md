@@ -127,9 +127,17 @@ Livebook's editor has no Spiral mode. JavaScript highlights `//` comments, strin
 and `let`. Primes in identifiers (`am'.vec`) are read as string starts. `nil` turns highlighting off.
 
 Each cell is a fresh process. Definitions are not shared between cells. `Spiral.Kino.Document` reads and
-writes notebooks (`parse_livemd/1`, `to_livemd/1`, `to_cell_text/1`, `to_spi/1`).
+writes notebooks (`parse_livemd/1`, `to_livemd/1`, `to_cell_text/1`, `to_spi/1`, `to_spi_tested/1`, `parse_spi/2`).
 `to_spi/1` keeps definitions, `open` lines, and the first `--package` directive, and it
 drops `--test` cells. `parse_livemd/1` reads the smart cells `to_livemd/1` writes.
+`to_spi_tested/1` keeps each `--test` cell as a `test <name> [static] [print_code] [ignore] =` block
+(its `///>` targets above it, its body indented), named after the nearest heading; the compiler skips
+these blocks. `parse_spi/2` reads a `.spi` and its `_real.spir` back into cells, one test cell per block,
+so `run_notebook.ps1 --path x.spi` runs a source file as a notebook without writing over it.
+`///` doc runs come back as markdown cells, and a `#### name (test)` heading is added only where a test's
+name would not follow from the heading above it, so `--path x.spi --livemd-path x.livemd --export-only`
+writes a Livebook view of the file and `--path x.livemd --export-only --with-tests --spi-path x.spi`
+writes it back byte for byte.
 
 On Windows, if another Erlang comes first on `PATH` (Chocolatey's `erl` does), the VM can
 fail at boot with "corrupt atom table". Put the OTP that matches this Elixir first.

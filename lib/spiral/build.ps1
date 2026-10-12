@@ -20,10 +20,7 @@ $notebooks = @(
     "threading", "benchmark", "seq", "env", "file_system", "networking"
 )
 function Get-NotebookArgs([string] $Notebook) {
-    $path = Join-Path $ResolvedScriptDir "$Notebook.livemd"
-    $exports = @("--path", $path, "--spi-path", (Join-Path $ResolvedScriptDir "$Notebook.spi"))
-    if ($Notebook -eq "sm'") { $exports += @("--spir-path", (Join-Path $ResolvedScriptDir "sm'_real.spir")) }
-    $exports
+    @("--path", (Join-Path $ResolvedScriptDir "$Notebook.spi"))
 }
 
 if (!$fast) {
@@ -31,7 +28,7 @@ if (!$fast) {
     $runs = $jobs | ForEach-Object -ThrottleLimit ($sequential ? 1 : 4) -Parallel {
         $notebook = $_.Notebook
         $arguments = $_.Arguments
-        $output = Join-Path $using:ResolvedScriptDir "$notebook.livemd.ipynb"
+        $output = Join-Path $using:ResolvedScriptDir "$notebook.spi.ipynb"
         $log = @()
         $exitCode = 1
         foreach ($attempt in 1..3) {
@@ -48,11 +45,6 @@ if (!$fast) {
         $run.Log | Select-Object -Last 30 | ForEach-Object { Write-Output "spiral/lib/spiral/build.ps1 / $($run.Notebook) / $_" }
     }
     if ($failed) { throw "spiral/lib/spiral/build.ps1 / notebooks failed: $(($failed | ForEach-Object Notebook) -join ', ')" }
-}
-
-foreach ($notebook in $notebooks) {
-    $arguments = Get-NotebookArgs $notebook
-    { pwsh -NoProfile -File $livebook @arguments --export-only } | Invoke-Block
 }
 
 if (!$fast) {

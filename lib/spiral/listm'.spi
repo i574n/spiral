@@ -1,10 +1,21 @@
 /// # listm'
+test listm static =
+    open testing
 
 /// ## listm'
 
 /// ### append
 instance append list t =
     listm.append
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test append print_code =
+    [ "a"; "b" ] ++ [ "c"; "d" ]
+    |> _assert_eq [ "a"; "b"; "c"; "d" ]
 
 /// ### collect
 inl collect forall t r. (fn : t -> list r) (items : list t) : list r =
@@ -30,15 +41,44 @@ inl init_series start end inc =
     inl total : f64 = conv ((end - start) / inc) + 1
     listm.init total (conv >> (*) inc >> (+) start)
 
+test init_series =
+    init_series 0 1 0.5
+    |> _assert_eq [ 0f64; 0.5; 1 ]
+
 /// ### try_item
 inl rec try_item i = function
     | Cons (x, _) when i = 0 => Some x
     | Cons (_, xs) => try_item (i - 1) xs
     | Nil => None
 
+test try_item =
+    listm.init 10i32 id
+    |> try_item 9i32
+    |> _assert_eq (Some 9)
+
+test try_item_2 =
+    listm.init 10i32 id
+    |> try_item 10i32
+    |> _assert_eq None
+
 /// ### item
 inl item i =
     try_item i >> optionm.value
+
+test item =
+    listm.init 10i32 id
+    |> item 9i32
+    |> _assert_eq 9
+
+///> fsharp
+test item_2 =
+    fun () =>
+        listm.init 10i32 id
+        |> item 10i32
+        |> ignore
+    |> _throws
+    |> optionm.map sm'.format_exception
+    |> _assert_eq (Some "System.Exception: Option does not have a value.")
 
 /// ### try_item_
 let rec try_item_ i = function
@@ -54,6 +94,11 @@ inl item_ i =
 inl sum list =
     list |> listm.fold (+) 0
 
+test sum =
+    listm.init 10i32 id
+    |> sum
+    |> _assert_eq 45
+
 /// ### unzip
 inl unzip list =
     (([], []), list)
@@ -61,6 +106,17 @@ inl unzip list =
         x :: acc_x, y :: acc_y
     |> fun x, y =>
         x |> listm.rev, y |> listm.rev
+
+test unzip =
+    listm.init 10i32 id
+    |> listm.map (fun x => x, x)
+    |> unzip
+    |> fun x, y =>
+        x |> sum
+        |> _assert_eq 45
+
+        y |> sum
+        |> _assert_eq 45
 
 /// ### try_index_of
 inl try_index_of forall b c {number}. (item : b) (list : list b) : option c =
@@ -107,6 +163,16 @@ inl try_index_of__ item list =
 inl index_of__ item =
     try_index_of__ item >> optionm.value
 
+test try_index_of =
+    listm.init 10i32 id
+    |> index_of 5i32
+    |> _assert_eq 5i32
+
+test try_index_of_2 =
+    listm.init 10i32 id
+    |> try_index_of 10i32
+    |> _assert_eq (None : option i32)
+
 /// ### try_find
 inl try_find fn list =
     inl rec 루프 = function
@@ -126,11 +192,21 @@ inl try_find_ fn list =
             else 루프 xs
     루프 list
 
+test try_find =
+    listm.init 10i32 id
+    |> try_find ((=) 5i32)
+    |> _assert_eq (Some 5i32)
+
 inl find x =
     try_find x >> optionm.value
 
 inl find_ x =
     try_find_ x >> optionm.value
+
+test try_find_2 =
+    listm.init 10i32 id
+    |> find ((=) 5i32)
+    |> _assert_eq 5i32
 
 /// ### choose
 inl choose f l =
@@ -139,6 +215,11 @@ inl choose f l =
         match f x with
         | Some y => y :: acc
         | None => acc
+
+test choose =
+    listm.init 10i32 id
+    |> choose (fun x => if x % 2 = 0 then Some x else None)
+    |> _assert_eq [ 0; 2; 4; 6; 8 ]
 
 /// ### filter
 inl filter forall t. (fn : t -> bool) (list : list t) : list t =
@@ -163,12 +244,22 @@ inl zip_with_ fn xs ys =
         | _ => listm.rev acc
     루프 [] xs ys
 
+test zip_with =
+    ([ 1i32; 2; 3 ], [ 4; 5; 6 ])
+    ||> zip_with (+)
+    |> _assert_eq [ 5; 7; 9 ]
+
 /// ### zip
 inl zip xs ys =
     zip_with pair xs ys
 
 inl zip_ xs ys =
     zip_with_ pair xs ys
+
+test zip =
+    ([ 1i32; 2; 3 ], [ 4i32; 5; 6 ])
+    ||> zip
+    |> _assert_eq [ 1, 4; 2, 5; 3, 6 ]
 
 /// ### indexed
 inl indexed list =
@@ -177,6 +268,11 @@ inl indexed list =
         (i, x) :: acc, i + 1
     |> fst
     |> listm.rev
+
+test indexed =
+    listm.init 5i32 ((*) 2)
+    |> indexed
+    |> _assert_eq [ 0i32, 0; 1, 2; 2, 4; 3, 6; 4, 8 ]
 
 /// ### group_by
 inl group_by fn list =
@@ -193,17 +289,32 @@ inl group_by fn list =
         then new_acc
         else (xk, [ x ]) :: new_acc
 
+test group_by =
+    listm.init 10i32 id
+    |> group_by (fun x => x % 2 = 0)
+    |> _assert_eq [ true, [ 0; 2; 4; 6; 8 ]; false, [ 1; 3; 5; 7; 9 ] ]
+
 /// ### forall'
 inl forall' fn (head :: tail) =
     (true, tail)
     ||> listm.fold fun acc x =>
         acc && x = head
 
+test forall =
+    [ 1i32; 1; 1; 1; 1 ]
+    |> forall' ((=) 1i32)
+    |> _assert_eq true
+
 /// ### last
 inl last list =
     list
     |> listm.rev
     |> item 0i32
+
+test last =
+    listm.init 10i32 id
+    |> last
+    |> _assert_eq 9
 
 /// ### try_pick
 inl try_pick fn list =
@@ -222,6 +333,11 @@ inl try_pick fn list =
             join body fn list
     루프 list
 
+test try_pick =
+    listm.init 10i32 id
+    |> try_pick (fun x => if x = 5i32 then Some x else None)
+    |> _assert_eq (Some 5i32)
+
 /// ### exists'
 inl exists' f x =
     inl rec body f = function
@@ -238,6 +354,24 @@ inl exists' f x =
             inl list = dyn list
             join body f list
     루프 x
+
+///> gleam
+///> fsharp
+///> cuda
+///> typescript
+///> cuda
+test exists print_code =
+    [ 'a'; 'b'; 'c' ]
+    |> exists' fun x => x = 'b'
+    |> _assert_eq true
+
+    [ 'a'; 'b' ]
+    |> exists' fun x => x = 'c'
+    |> _assert_eq false
+
+    []
+    |> exists' fun x => x = 'a'
+    |> _assert_eq false
 
 /// ## fsharp
 
@@ -510,6 +644,18 @@ inl distinct' forall t. (list : list' t) : list' t =
                     루프 (i + 1i32) (if exists' (fun x => x = item) seen then seen else Cons (item, seen))
             루프 0i32 Nil |> box |> rev'
     }
+
+///> gleam
+///> fsharp
+///> rust
+///> cuda
+///> typescript
+test distinct =
+    [ "1"; "2"; "2"; "3" ]
+    |> box
+    |> distinct'
+    |> unbox
+    |> _assert_eq [ "1"; "2"; "3" ]
 
 /// ### to_array'
 inl to_array' forall t. (items : list' t) : array_base t =

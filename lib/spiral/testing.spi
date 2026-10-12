@@ -56,6 +56,23 @@ inl rec __assert_approx_eq trace e b a =
 inl _assert_approx_eq e b a =
     __assert_approx_eq Console e b a
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test assert_approx_eq =
+    12.345f64
+    |> _assert_approx_eq (Some 0.0001f64) 12.345f64
+
+test assert_approx_eq_2 print_code =
+    1f64
+    |> __assert_approx_eq Console (Some 3) 2
+
+test assert_approx_eq_3 print_code =
+    (dyn 1f64)
+    |> _assert_approx_eq (Some 3) 2
+
 /// ### __assert_eq
 inl rec __assert_eq trace b a =
     __expect (=) trace (reflection.nameof { __assert_eq }) b a
@@ -166,6 +183,24 @@ inl rec _assert_fn fn list =
         | [] => ()
         | x => #?*x |> failwith
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test assert_fn =
+    [
+        3i32,
+        2i32
+
+        2,
+        1
+    ]
+    |> _assert_fn fun x =>
+        x - 1
+        |> Ok
+        |> fun x => x : _ _ ()
+
 /// ### _assert_in
 inl _assert_in items x =
     (None, items)
@@ -213,6 +248,14 @@ inl rec __assert_contains forall t u. (trace : testing_trace) (b : t) (a : u) : 
 
 inl _assert_contains b a =
     __assert_contains Console b a
+
+test assert_contains =
+    ;[ "a"; "b"; "c" ]
+    |> _assert_contains "b"
+
+test assert_contains_2 =
+    "abcd"
+    |> _assert_contains 'b'
 
 /// ### _throws
 inl _throws (fn : () -> ()) : option exn =

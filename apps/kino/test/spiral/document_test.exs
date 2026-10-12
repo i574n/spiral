@@ -346,27 +346,52 @@ defmodule Spiral.Kino.DocumentTest do
     end
   end
 
-  test "the spiral library notebooks round-trip through livemd and export their committed .spi" do
+  test "test cells export as test blocks that load back as the same test cells" do
+    doc = %{
+      cells: [
+        %{kind: :markdown, source: "## add"},
+        %{kind: :spiral, source: "inl add a b = a + b"},
+        %{kind: :markdown, source: "### add (test)"},
+        %{kind: :spiral, source: "///- --test\n///> c\n\nadd 1 2 |> _assert_eq 3"},
+        %{kind: :spiral, source: "///- --test static --print-code\n\nadd 2 2 |> _assert_eq 4"}
+      ]
+    }
+
+    spi = Document.to_spi_tested(doc)
+
+    assert spi ==
+             "/// ## add\ninl add a b = a + b\n\n///> c\ntest add =\n    add 1 2 |> _assert_eq 3\n\n" <>
+               "test add_2 static print_code =\n    add 2 2 |> _assert_eq 4\n"
+
+    assert Document.to_spi(doc) == "/// ## add\ninl add a b = a + b\n"
+
+    assert Enum.map(Document.parse_spi(spi, "").cells, &{&1.kind, &1.source}) == [
+             spiral: "/// ## add\ninl add a b = a + b",
+             spiral: "///- --test\n///> c\n\nadd 1 2 |> _assert_eq 3",
+             spiral: "///- --test static --print-code\n\nadd 2 2 |> _assert_eq 4"
+           ]
+  end
+
+  test "the spiral library .spi files load as notebooks, one test cell per test block" do
     lib = Path.expand("../../../../lib/spiral", __DIR__)
-    notebooks = Path.wildcard(Path.join(lib, "**/*.livemd"))
-    assert length(notebooks) >= 39, "#{lib} has #{length(notebooks)} notebooks"
+    sources = Enum.reject(Path.wildcard(Path.join(lib, "**/*.spi")), &String.contains?(&1, "/target/"))
+    assert length(sources) >= 39, "#{lib} has #{length(sources)} .spi files"
+    assert Path.wildcard(Path.join(lib, "**/*.livemd")) == []
 
-    for path <- notebooks do
-      doc = assert_livemd_round_trip(path, false)
-      assert File.regular?(Path.rootname(path) <> ".spi"), path
-
-      if Path.basename(path) == "sm'.livemd" do
-        assert Document.to_spir(doc) == File.read!(Path.join(lib, "sm'_real.spir"))
+    blocks =
+      for path <- sources, reduce: 0 do
+        total ->
+          spir = Path.rootname(path) <> "_real.spir"
+          spi_text = File.read!(path)
+          spir_text = if File.regular?(spir), do: File.read!(spir), else: ""
+          doc = Document.parse_spi(spi_text, spir_text)
+          expected = length(Regex.scan(~r/^test \w+/m, spi_text <> spir_text))
+          found = Enum.count(doc.cells, &(&1.kind == :spiral and &1.source =~ ~r/\A\/\/\/- (--real )?--(test|ignore)/))
+          assert found == expected, path
+          total + expected
       end
-    end
 
-    stale =
-      for path <- notebooks,
-          spi = Path.rootname(path) <> ".spi",
-          Document.to_spi(Document.parse_livemd(File.read!(path))) != File.read!(spi),
-          do: Path.relative_to(spi, lib)
-
-    assert stale == [], "these .spi differ from their .livemd's export: #{Enum.join(stale, ", ")}"
+    assert blocks >= 370
   end
 
   test "dice notebooks round-trip through livemd" do

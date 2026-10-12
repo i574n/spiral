@@ -1,4 +1,6 @@
 /// # base
+test base static =
+    open testing
 
 /// ## base
 
@@ -27,6 +29,23 @@ inl use forall t. (x : t) : t =
 
 /// ### unit
 nominal unit = $'unit'
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test run_target =
+    run_target function
+        | Gleam => fun () => $'1 + 1'
+        | Lua => fun () => $'1 + 1'
+        | Fsharp => fun () => $'1uy + 1uy'
+        | Cuda => fun () => $'1 + 1'
+        | Rust => fun () => $'1u8 + 1u8'
+        | TypeScript => fun () => $'1 + 1'
+        | _ => fun () => $'2uy + 2uy'
+    |> _assert_eq 2u8
 
 /// ### eval
 inl eval fn =
@@ -102,6 +121,25 @@ inl memoize forall t. (fn : () -> t) : () -> t =
         Lean = fun () => body ()
     }
 
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test memoize =
+    inl count = mut 0i32
+    inl add =
+        fun () =>
+            count <- *count + 1
+            count
+        |> memoize
+
+    add () |> ignore
+    add () |> ignore
+    add () |> ignore
+
+    *count
+    |> _assert_eq 1
+
 /// ### capture
 inl capture forall t. (fn : () -> t) : t =
     backend_switch {
@@ -143,6 +181,32 @@ inl join_body body acc x =
         inl acc = dyn acc
         join body acc x
 
+test join_body static =
+    inl rec fold_list f s = function
+        | Cons (x, x') => fold_list f (f s x) x'
+        | Nil => s
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_2 print_code =
+    [ 5i32; 4; join 3; 2; 1 ]
+    |> fold_list (+) 0
+    |> _assert_eq 15
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_3 print_code =
+    [ 5i32; 4; join 3; 2; 1 ]
+    |> fold_list (join_body (+)) 0
+    |> _assert_eq 15
+
 /// ### join_body_unit
 inl join_body_unit body d x =
     if var_is d |> not
@@ -151,21 +215,67 @@ inl join_body_unit body d x =
         inl x = dyn x
         join body x
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit print_code =
+    [ 5i32; 4; join 3; 2; 1 ]
+    |> fold_list (fun acc n => join_body_unit ((+) acc) n n) 0
+    |> _assert_eq 15
+
 /// ### (+.)
 inl (+.) forall t. (a : t) (b : t) : t =
     !!!!Add(a,b)
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_2 =
+    ($'3' : i32) +. ($'-6' : i32)
+    |> _assert_eq -3i32
 
 /// ### (-.)
 inl (-.) forall t. (a : t) (b : t) : t =
     !!!!Sub(a,b)
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_3 =
+    ($'3' : i32) -. ($'6' : i32)
+    |> _assert_eq -3i32
+
 /// ### (*.)
 inl (*.) forall t. (a : t) (b : t) : t =
     !!!!Mult(a,b)
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_4 =
+    ($'3' : i32) *. ($'-1' : i32)
+    |> _assert_eq -3i32
+
 /// ### (/.)
 inl (/.) forall t. (a : t) (b : t) : t =
     !!!!Div(a,b)
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_5 =
+    ($'-3' : i32) /. ($'1' : i32)
+    |> _assert_eq -3i32
 
 /// ### (=.)
 inl (=.) forall t. (a : t) (b : t) : bool =
@@ -183,6 +293,15 @@ inl (=.) forall t. (a : t) (b : t) : bool =
         Lean = fun () => $'(!a == !b)' : bool
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_6 =
+    (($'-3' : i32) =. ($'-3' : i32))
+    |> _assert_eq true
+
 /// ### (<>.)
 inl (<>.) forall t. (a : t) (b : t) : bool =
     backend_switch {
@@ -199,12 +318,30 @@ inl (<>.) forall t. (a : t) (b : t) : bool =
         Lean = fun () => $'(!a \!= !b)' : bool
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_7 =
+    (($'-3' : i32) <>. ($'3' : i32))
+    |> _assert_eq true
+
 /// ### (<>..)
 inl (<>..) a b =
     fun () => a = b
     |> dyn
     |> eval
     |> not
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test join_body_unit_8 =
+    (($'-3' : i32) <>.. ($'3' : i32))
+    |> _assert_eq true
 
 /// ### append
 prototype append t : t -> t -> t
@@ -227,6 +364,15 @@ nominal pair a b = $'backend_switch `(pair_switch a b)'
 
 inl pair x y =
     x, y
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test pair =
+    pair 1i32 2i32
+    |> _assert_eq (1, 2)
 
 /// ### new_pair
 inl new_pair forall a b. (a : a) (b : b) : pair a b =
@@ -264,11 +410,40 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
         TypeScript = fun () => ($'!pair[0]' : a), ($'!pair[1]' : b)
     }
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test from_pair =
+    new_pair "a" (new_pair 1i32 "b")
+    |> from_pair
+    |> _assert_eq' ("a", (new_pair 1i32 "b"))
+
 /// ### (||>)
 inl (||>) (arg1, arg2) fn =
     arg2 |> fn arg1
 
 /// ### (||>)
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test from_pair_2 =
+    (3i32, 2i32)
+    ||> fun a b => a - b
+    |> _assert_eq 1
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test from_pair_3 =
+    (1i32, 2i32)
+    ||> flip pair
+    |> _assert_eq (2, 1)
 
 /// ### infer
 nominal infer = $'_'
@@ -330,6 +505,18 @@ inl rec defaultof forall t. (() : ()) : t =
         Zig = fun () => run (fun () => $'std.mem.zeroes(`t)' : t) : t
         Lean = fun () => run (fun () => $'(default : `t)' : t) : t
     }
+
+///> gleam
+///> fsharp
+test defaultof =
+    real defaultof `string ()
+    |> _assert_eq ""
+
+    real defaultof `i32 ()
+    |> _assert_eq 0i32
+
+    real defaultof `(option string) ()
+    |> _assert_eq (None : option string)
 
 /// ### choice2'
 type choice2_switch a b =
@@ -416,6 +603,37 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
         TypeScript = fun () =>
             $'(() => { try { return !some(!fn()); } catch (ex) { return !ex_fn(ex); } })()' : option t
     }
+
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test try =
+    try
+        fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
+        (fun ex => $'!ex ' |> sm'.format_exception |> Some)
+    |> optionm.value
+    |> _assert_eq (run_target function
+        | Gleam => fun () => null ()
+        | Lua => fun () => null ()
+        | Fsharp => fun () => join "System.IndexOutOfRangeException: Index was outside the bounds of the array."
+        | Cuda => fun () => "index 1 is out of bounds for axis 0 with size 1"
+        | Cpp => fun () => null ()
+        | Rust => fun () => "index out of bounds: the len is 1 but the index is 1"
+        | TypeScript => fun () => "RangeError: array index 1 out of bounds for length 1"
+    )
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test try_2 =
+    try
+        fun () => a ;[ 0i32 ] |> am'.index 0i32 |> sm'.format
+        (fun ex => $'!ex ' |> sm'.format_exception |> Some)
+    |> optionm.value
+    |> _assert_eq "0"
 
 /// ### try_unit
 inl try_unit_fsharp_python () : bool =

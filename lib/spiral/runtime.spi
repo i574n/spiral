@@ -3,6 +3,10 @@ open rust
 open rust_operators
 open sm'_operators
 
+test runtime static =
+    open testing
+    open file_system_operators
+
 /// ## runtime
 
 /// ### split_args
@@ -53,6 +57,54 @@ let split_args (args : string) : result (array_base string) _ =
     )
     |> resultm.map_error eval
 
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test split_args =
+    Debug |> set_trace_level
+    [
+        "a b c",
+        ;[ "a"; "b"; "c" ]
+
+        "e f \"g h\" i",
+        ;[ "e"; "f"; "g h"; "i" ]
+
+        "\"j k\" \"l\" \"m\"",
+        ;[ "j k"; "l"; "m" ]
+
+        "s -t \"u \`\"v\`\" w\"",
+        ;[ "s"; "-t"; "u \`\"v\`\" w" ]
+
+        "n -o \"p \\\"q\\\" r\"",
+        ;[ "n"; "-o"; "p \\\"q\\\" r" ]
+
+        "r -s \"t \\\"u\\\"\"",
+        ;[ "r"; "-s"; "t \\\"u\\\"" ]
+
+        $'"x -y \\\"$z -a \'(b=\\\\\\"c-id=)[a-fA-F0-9]{8}\', { \`$_[1] + \`$d++ }\\\""',
+        ;[ "x"; "-y"; "$z -a '(b=\\\"c-id=)[a-fA-F0-9]{8}', { `$_[1] + `$d++ }" ]
+
+        "e -f \"$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }\"",
+        ;[ "e"; "-f"; "$g -h '(i=`\"j-id=)[a-fA-F0-9]{8}', { `$_[1] + `$k++ }" ]
+
+        $'"--l \\\\\\"\'\'\' m \'\'\'\\\\\\" "',
+        ;[ "--l"; "''' m '''" ]
+
+        $'"n --o --p q --r \\\"s:/t u/v.w\\\" --x \\\"y:/z.a\\\" --b c.d \\\"\\\\e{f-g}\\\" h.i \\\"j (k)\\\""',
+        ;[
+            "n"; "--o"; "--p"; "q"; "--r"; "s:/t u/v.w"; "--x"; "y:/z.a"; "--b"; "c.d"; "\\e{f-g}"; "h.i"; "j (k)"
+        ]
+
+        $'"l \\\"m n:\\\\o.p\\\""',
+        ;[ "l"; "m n:\\o.p" ]
+
+        $'"--r s \\\\\\"\' t \'\\\\\\" u v w \\\\\\"x y\\\\\\""',
+        ;[ "--r"; "s"; "' t '"; "u"; "v"; "w"; "x y" ]
+    ]
+    |> _assert_fn split_args
+
 /// ### split_command
 let split_command (command : string) : result (string * option string) _ =
     open parsing
@@ -68,6 +120,40 @@ let split_command (command : string) : result (string * option string) _ =
     |> run_parser p_command
     |> resultm.map (fst >> fun path, args => path (), args () |> optionm.map eval)
     |> resultm.map_error eval
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test split_command =
+    Debug |> set_trace_level
+    [
+        "",
+        ("", None)
+
+        "/a/b/c",
+        ("/a/b/c", None)
+
+        "d e.f",
+        ("d", "e.f" |> Some)
+
+        "..\\..\\g.h i.j k.l",
+        ("../../g.h", "i.j k.l" |> Some)
+
+        "m:\\n\\o.p \"q.r s.t\"",
+        ("m:/n/o.p", "\"q.r s.t\"" |> Some)
+
+        "\"..\\..\\u v\\w.x\" \"y z.a\" b.c",
+        ("../../u v/w.x", "\"y z.a\" b.c" |> Some)
+
+        "\"..\\..\\d e.f\" -g \\\\\"h i\\\\\"",
+        ("../../d e.f", "-g \\\\\"h i\\\\\"" |> Some)
+
+        "..\\..\\j k.l -m \\\\\"n o\\\\\"",
+        ("../../j", "k.l -m \\\\\"n o\\\\\"" |> Some)
+    ]
+    |> _assert_fn split_command
 
 /// ### execution_line
 type execution_line =
@@ -387,6 +473,13 @@ nominal command =
 inl new_command (s : rust.static_ref sm'.str) : command =
     !\\(s, $'"clap::Command::new($0)"')
 
+///> rust -d clap
+test new_command =
+    ###"command"
+    |> new_command
+    |> sm'.format_pretty
+    |> _assert sm'.contains "\"command\""
+
 /// ### arg
 nominal arg =
     `(
@@ -399,6 +492,13 @@ nominal arg =
 /// ### new_arg
 inl new_arg (s : rust.static_ref sm'.str) : arg =
     !\\(s, $'"clap::Arg::new($0)"')
+
+///> rust -d clap
+test new_arg =
+    ###"arg"
+    |> new_arg
+    |> sm'.format_pretty
+    |> _assert sm'.contains "\"arg\""
 
 /// ### command_arg
 inl command_arg (arg : arg) (command : command) : command =
@@ -652,6 +752,21 @@ inl arg_union forall union_type. (fn : union_type -> ()) (arg : arg) : arg =
         |> listm'.to_array'
         |> value_parser_possible_values
     )
+
+///> rust -d clap
+test arg_union =
+    ###"command"
+    |> new_command
+    |> command_init_arg ("trace-level", 't') (
+        real arg_union `trace_level ignore
+    )
+    |> command_get_matches_from ;[ "_"; "--trace-level"; "critical" ]
+    |> matches_get_one "trace-level"
+    |> optionm'.unwrap
+    |> sm'.from_std_string
+    |> reflection.union_try_pick
+    |> optionm.value
+    |> _assert_eq Critical
 
 /// ### command_debug_assert
 inl command_debug_assert (command : command) : () =
@@ -1050,6 +1165,43 @@ let execute command =
     |> execute_with_options
 
 /// #### tests
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+test tests =
+    inl content = "╭─[ 你好，世界！こんにちは世界！ ]─╮"
+
+    inl file_name = join "test.txt"
+    inl temp_dir, disposable =
+        #?*(file_name, content)
+        |> crypto.hash_text
+        |> file_system.create_temp_dir'
+    disposable |> use |> ignore
+    inl path = temp_dir </> file_name |> file_system.normalize_path
+    inl exit_code, result =
+        execute ("pwsh -c \"[IO.File]::ReadAllText('" ++# path ++# "')\"")
+    exit_code |> _assert_eq 1
+    result |> _assert sm'.contains "not find file"
+
+    content |> file_system.write_all_text path
+
+    inl exit_code, output =
+        execution_options fun x => { x with
+            command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; [IO.File]::ReadAllText('" ++# file_name ++# "')\""
+            working_directory = Some temp_dir |> optionm'.box
+        }
+        |> execute_with_options
+
+    exit_code |> _assert_eq 0i32
+    output |> _assert_eq content
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+test tests_2 =
+    inl exit_code, output =
+        execution_options fun x => { x with
+            command = "pwsh -c \"[System.Console]::OutputEncoding = [System.Text.Encoding]::UTF8; for ($i = 0; $i -lt 5; $i++) { Write-Output `\"Line$i`\"; Start-Sleep -Milliseconds 200 }\""
+        }
+        |> execute_with_options
+    exit_code |> _assert_eq 0i32
+    output |> _assert sm'.contains "Line4"
 
 /// ### execute_retry
 let execute_retry retries options =

@@ -1,4 +1,8 @@
 /// # crypto
+test crypto static =
+    open testing
+    open file_system_operators
+
 open rust
 open rust_operators
 open sm'_operators
@@ -28,6 +32,23 @@ inl get_file_hash' (path : string) : result string string =
     if exit_code = 0
     then result |> sm'.to_lower |> Ok
     else result |> Error
+
+///> rust -d chrono encoding_rs encoding_rs_io regex sha2
+test get_file_hash =
+    inl file_name = "test.txt"
+    inl text = "\n"
+
+    inl temp_dir, disposable =
+        #?*(file_name, text)
+        |> crypto.hash_text
+        |> file_system.create_temp_dir'
+    disposable |> use |> ignore
+    inl path = temp_dir </> file_name
+    text |> file_system.write_all_text path
+    path
+    |> get_file_hash'
+    |> resultm.get
+    |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
 
 /// ### sha256'
 nominal sha256' =
@@ -96,6 +117,43 @@ inl get_file_hash (path : string) =
     inl reader = file |> stream.new_buf_reader
     reader
     |> hash_read
+
+///> rust -d chrono regex sha2
+test get_file_hash_2 =
+    inl file_name = join "test.txt"
+    inl text = "\n"
+
+    inl temp_dir, disposable =
+        #?*(file_name, text)
+        |> crypto.hash_text
+        |> file_system.create_temp_dir'
+    disposable |> use |> ignore
+
+    inl path = temp_dir </> file_name
+    text |> file_system.write_all_text path
+
+    path
+    |> get_file_hash
+    |> resultm.unwrap'
+    |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+///> rust -d chrono regex sha2
+test get_file_hash_3 =
+    inl file_name = join "test.txt"
+    inl text = ""
+
+    inl temp_dir, disposable =
+        #?*(file_name, text)
+        |> crypto.hash_text
+        |> file_system.create_temp_dir'
+    disposable |> use |> ignore
+
+    inl path = temp_dir </> file_name
+    text |> file_system.write_all_text path
+    path
+    |> get_file_hash
+    |> resultm.unwrap'
+    |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 
 /// ## typescript
 
@@ -171,6 +229,19 @@ let hash_text (~input : string) =
             |> sha256_hexdigest
         | _ => fun () => null ()
 
+///> fsharp
+///> cuda
+///> rust -d sha2
+///> typescript
+test hash_text =
+    "\n"
+    |> hash_text
+    |> _assert_eq "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+    ""
+    |> hash_text
+    |> _assert_eq "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
 /// ### hash_to_port
 inl hash_to_port (text : string) : u16 =
     inl first_letter_code = text |> sm'.index 0i32 |> sm'.convert_to_utf32
@@ -180,6 +251,16 @@ inl hash_to_port (text : string) : u16 =
         fun () => "crypto.hash_to_port"
         fun () => { first_letter_code hash_part combined_value }
     combined_value % 48128 + 1024
+
+///> fsharp
+///> cuda
+///> rust -d sha2
+///> typescript
+test hash_to_port =
+    "\n"
+    |> hash_text
+    |> hash_to_port
+    |> _assert_eq 19273
 
 /// ## main
 ///> fsharp

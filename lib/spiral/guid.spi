@@ -1,6 +1,9 @@
 /// # guid
 open sm'_operators
 
+test guid static =
+    open testing
+
 /// ## guid
 
 /// ### guid
@@ -63,6 +66,20 @@ let hash_guid (hash : string) : hash_guid =
                 inl e = hash |> sm'.range (am'.Start 20i32) (am'.End fun _ => 32)
                 a ++# dash ++# b ++# dash ++# c ++# dash ++# d ++# dash ++# e
                 |> new_guid
+
+///> gleam
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test hash_guid =
+    ""
+    |> hash_guid
+    |> _assert_eq' ("00000000-0000-0000-0000-000000000000" |> new_guid)
+
+    "123456789012345678901234567890123"
+    |> hash_guid
+    |> _assert_eq' ("12345678-9012-3456-7890-123456789012" |> new_guid)
 
 /// ## main
 ///> fsharp

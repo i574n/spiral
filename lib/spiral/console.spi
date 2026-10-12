@@ -1,4 +1,6 @@
 /// # console
+test console static =
+    open testing
 
 /// ## fsharp
 

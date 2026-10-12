@@ -136,3 +136,12 @@ inl view model =
     ]
 
 /// ## tests
+///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+test tests =
+    simple init (update 1) view
+    |> start "#app_"
+
+///> gleam -t javascript -d lustre=\">=4.6.0\" lustre_ui=\"1.0.0-rc.1\" gleam_json=\">=2.0.0\"
+test tests_2 =
+    simple init (update 2) view
+    |> start "#app_"

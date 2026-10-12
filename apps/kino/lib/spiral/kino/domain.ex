@@ -54,6 +54,21 @@ defmodule Spiral.Kino.Domain do
     :spiral_kino@domain.to_spir(text)
   end
 
+  def to_spi_tested(text) do
+    ensure!()
+    :spiral_kino@domain.to_spi_tested(text)
+  end
+
+  def to_spir_tested(text) do
+    ensure!()
+    :spiral_kino@domain.to_spir_tested(text)
+  end
+
+  def from_spi(spi, spir) do
+    ensure!()
+    :spiral_kino@domain.from_spi(spi, spir)
+  end
+
   def plan(wire) do
     ensure!()
     :spiral_kino@domain.plan(wire)

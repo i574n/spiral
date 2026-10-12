@@ -1,4 +1,7 @@
 /// # resultm
+test resultm static =
+    open testing
+
 open rust
 open rust_operators
 
@@ -229,6 +232,19 @@ inl box forall t u. (x : result t u) : result' t u =
 inl map''' forall t u e. (fn : t -> u) (x : result' t e) : result' u e =
     x |> unbox |> map fn |> box
 
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test map =
+    inl x : _ _ string = Ok 3i32
+    inl y : _ i32 _ = Error "error1"
+    inl x' = x |> box |> unbox
+    inl y' = y |> box |> map''' id |> unbox
+    (x', y') |> _assert_eq' (x, y)
+
 /// ## rust
 
 /// ### anyhow_result
@@ -453,3 +469,10 @@ inl transpose forall t u. (x : optionm'.option' (result' t u)) : result' (option
 /// ### rc_try_unwrap
 inl rc_try_unwrap forall t. (x : rust.rc t) : result' t (rust.rc t) =
     !\\(x, $'"std::rc::Rc::try_unwrap($0)"')
+
+///> rust
+test rc_try_unwrap =
+    rust.new_rc true
+    |> rc_try_unwrap
+    |> unbox
+    |> _assert_eq (Ok true)

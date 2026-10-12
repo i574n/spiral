@@ -1,4 +1,7 @@
 /// # near
+test near static =
+    open testing
+
 open rust
 open rust.rust_operators
 

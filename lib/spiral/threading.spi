@@ -1,4 +1,7 @@
 /// # threading
+test threading static =
+    open testing
+
 open rust
 open rust_operators
 
@@ -409,6 +412,33 @@ inl new_disposable_token (merge_token : optionm'.option' cancellation_token) =
                 cts |> cancellation_source_cancel
             cts |> cancellation_source_token, disposable
         | _ => fun () => null ()
+
+///> fsharp
+test new_disposable_token =
+    inl run fn =
+        inl token, disposable = new_disposable_token (None |> optionm'.box)
+        fn token
+        $'!disposable.Dispose()'
+        fun () =>
+            fn token
+        |> async.new_task
+        |> async.await_task
+        |> async.start
+
+    fun () =>
+        inl counter = mut 0i32
+
+        inl fn (token : cancellation_token) =
+            counter <- *counter + (if token |> token_cancellation_requested then 10 else 1)
+
+        join run fn
+        async.sleep 10 |> async.do
+        return_in *counter
+    |> async.new_task
+    |> fun x => x : _ int
+    |> async.await_task
+    |> async.run_synchronously
+    |> _assert_eq 11i32
 
 /// ## main
 ///> fsharp

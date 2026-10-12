@@ -38,6 +38,7 @@ defmodule Spiral.Kino.Notebook do
   def run(path, opts \\ []) when is_binary(path) do
     path = Path.expand(path)
     opts = Keyword.put(opts, :path, path)
+    opts = if Path.extname(path) == ".spi", do: Keyword.put(opts, :spi, false), else: opts
     text = File.read!(path)
     doc = path |> parse(text) |> expand_lisp(opts)
 
@@ -164,9 +165,16 @@ defmodule Spiral.Kino.Notebook do
   end
 
   defp parse(path, text) do
-    if Path.extname(path) == ".livemd",
-      do: Document.parse_livemd(text),
-      else: Document.parse_dib(text)
+    case Path.extname(path) do
+      ".livemd" -> Document.parse_livemd(text)
+      ".spi" -> Document.parse_spi(text, real_sibling(path))
+      _ -> Document.parse_dib(text)
+    end
+  end
+
+  defp real_sibling(spi) do
+    spir = Path.rootname(spi) <> "_real.spir"
+    if File.regular?(spir), do: File.read!(spir), else: ""
   end
 
   defp runnable?(%{kind: :spiral}), do: true

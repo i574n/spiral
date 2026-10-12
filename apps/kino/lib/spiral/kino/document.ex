@@ -8,6 +8,11 @@ defmodule Spiral.Kino.Document do
     %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.parse_dib(text))}
   end
 
+  @spec parse_spi(String.t(), String.t()) :: %{cells: [map()]}
+  def parse_spi(spi, spir) when is_binary(spi) and is_binary(spir) do
+    %{cells: Spiral.Kino.Domain.decode_cells(Spiral.Kino.Domain.from_spi(spi, spir))}
+  end
+
   @spec parse_livemd(String.t()) :: %{cells: [map()]}
   def parse_livemd(text) when is_binary(text) do
     text = String.replace(text, "\r\n", "\n")
@@ -62,6 +67,16 @@ defmodule Spiral.Kino.Document do
   @spec to_spi(%{cells: [map()]}) :: String.t()
   def to_spi(%{cells: cells}) do
     Spiral.Kino.Domain.to_spi(Spiral.Kino.Domain.encode_cells(cells))
+  end
+
+  @spec to_spi_tested(%{cells: [map()]}) :: String.t()
+  def to_spi_tested(%{cells: cells}) do
+    Spiral.Kino.Domain.to_spi_tested(Spiral.Kino.Domain.encode_cells(cells))
+  end
+
+  @spec to_spir_tested(%{cells: [map()]}) :: String.t()
+  def to_spir_tested(%{cells: cells}) do
+    Spiral.Kino.Domain.to_spir_tested(Spiral.Kino.Domain.encode_cells(cells))
   end
 
   defp livemd_part(part) do
