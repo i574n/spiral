@@ -135,6 +135,16 @@ defmodule XsimTest do
     assert map_size(state.results) > length(@cells)
   end
 
+  test "a false-pass executor is caught by the breaking-edit oracle" do
+    scenario = Scenario.from_cells(@cells, seed: 13, users: 4, edits: 0, breaking: 3)
+    assert MapSet.size(scenario.broken) > 0
+    honest = fn sources -> if MapSet.member?(scenario.broken, List.last(sources)), do: %{status: :error, out: "failed"}, else: Executors.fake().(sources) end
+    lenient = fn sources -> Executors.fake().(sources) end
+    deliveries = Scenario.deliveries(scenario, duplicates: 0.0)
+    assert Invariants.breaking_edits_fail(Runner.run(deliveries, honest), scenario.broken) == :ok
+    assert match?({:violations, _}, Invariants.breaking_edits_fail(Runner.run(deliveries, lenient), scenario.broken))
+  end
+
   test "replies and edits that arrive before their post wait for it" do
     deliveries = [{2, {:edit, "p1", "inl b = 2\n"}}, {3, {:like, "p1", "u1"}}, {1, {:post, "p1", "p0", "inl b = 2"}}, {0, {:post, "p0", nil, "inl a = 1"}}]
     state = Runner.run(deliveries, Executors.fake())

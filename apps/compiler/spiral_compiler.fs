@@ -7233,8 +7233,12 @@ module spiral_compiler =
     let startupParse args =
         let parser = ArgumentParser.Create<CliArguments>(programName = "spiral.exe")
         let results = parser.ParseCommandLine(args)
+        let environmentDefault (name : string) (fallback : string) =
+            match System.Environment.GetEnvironmentVariable name with
+            | null | "" -> fallback
+            | value -> value
         let int =
-            match results.GetResult(Default_Int,"i32") with
+            match results.GetResult(Default_Int, environmentDefault "SPIRAL_DEFAULT_INT" "i32") with
             | "i8" -> Int8T
             | "i16" -> Int16T
             | "i32" -> Int32T
@@ -7257,7 +7261,7 @@ module spiral_compiler =
         default_int = int
         default_uint = uint
         default_float =
-            match results.GetResult(Default_Float,"f64") with
+            match results.GetResult(Default_Float, environmentDefault "SPIRAL_DEFAULT_FLOAT" "f64") with
             | "f32" -> Float32T
             | "f64" -> Float64T
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"

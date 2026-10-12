@@ -109,7 +109,8 @@ defmodule Spiral.Kino.CompilerDaemon do
            compile: opts[:compile],
            compiler: nil,
            log: "",
-           toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir])
+           toolchain: Keyword.take(opts, [:dotnet, :compiler_dll, :workspace, :package_dir]),
+           limits: Keyword.get(opts, :limits) || limits()
          }}
 
       {:error, reason} ->
@@ -141,7 +142,7 @@ defmodule Spiral.Kino.CompilerDaemon do
     ms = if Process.delete(:spiral_kino_cold), do: 0, else: System.monotonic_time(:millisecond) - started
     result = normalize(result)
     log_compile(req, ms, result)
-    state = %{state | last_used: System.monotonic_time(:millisecond)}
+    state = recycle_heavy(%{state | last_used: System.monotonic_time(:millisecond)})
     retire_when_idle({:reply, {:compiled, result, ms}, state})
   end
 
@@ -209,6 +210,93 @@ defmodule Spiral.Kino.CompilerDaemon do
   def terminate(_reason, state) do
     safe_stop_compiler(state)
     :ok
+  end
+
+  @default_max_mb 2_500
+
+  @spec limits() :: %{max_mb: non_neg_integer(), max_compiles: non_neg_integer()}
+  def limits do
+    %{
+      max_mb: env_count("SPIRAL_KINO_DAEMON_MAX_MB", @default_max_mb),
+      max_compiles: env_count("SPIRAL_KINO_DAEMON_MAX_COMPILES", 0)
+    }
+  end
+
+  defp env_count(name, default) do
+    case Integer.parse(System.get_env(name) || "") do
+      {n, ""} when n >= 0 -> n
+      _ -> default
+    end
+  end
+
+  @doc false
+  def recycle_reason(compiles, mb, %{max_mb: max_mb, max_compiles: max_compiles}) do
+    cond do
+      max_compiles > 0 and compiles >= max_compiles -> "#{compiles} compiles"
+      max_mb > 0 and is_integer(mb) and mb >= max_mb -> "reaching #{mb} MB"
+      true -> nil
+    end
+  end
+
+  defp recycle_heavy(%{compiler: %{} = compiler, limits: limits} = state) do
+    mb = if limits.max_mb > 0, do: compiler_mb(compiler), else: nil
+
+    case recycle_reason(Map.get(compiler, :compiles, 0), mb, limits) do
+      nil ->
+        state
+
+      reason ->
+        IO.puts("#{clock()} compiler recycled after #{reason}; the next compile starts a fresh one")
+        stop_compiler(state)
+    end
+  end
+
+  defp recycle_heavy(state), do: state
+
+  defp compiler_mb(compiler) do
+    with {:ok, text} <- File.read(compiler.socket <> ".pid"),
+         {pid, ""} <- Integer.parse(String.trim(text)) do
+      working_set_mb(pid)
+    else
+      _ -> nil
+    end
+  end
+
+  @doc false
+  def working_set_mb(os_pid) when is_integer(os_pid) do
+    case :os.type() do
+      {:win32, _} ->
+        case System.cmd("tasklist", ["/FI", "PID eq #{os_pid}", "/FO", "CSV", "/NH"], stderr_to_stdout: true) do
+          {out, 0} ->
+            case Regex.run(~r/"#{os_pid}".*,"([^"]+)"\s*$/m, out) do
+              [_, memory] ->
+                case Integer.parse(String.replace(memory, ~r/\D/, "")) do
+                  {kb, ""} -> div(kb, 1024)
+                  _ -> nil
+                end
+
+              _ ->
+                nil
+            end
+
+          _ ->
+            nil
+        end
+
+      _ ->
+        case File.read("/proc/#{os_pid}/status") do
+          {:ok, status} ->
+            case Regex.run(~r/^VmRSS:\s+(\d+)\s+kB/m, status) do
+              [_, kb] -> div(String.to_integer(kb), 1024)
+              _ -> nil
+            end
+
+          _ ->
+            nil
+        end
+    end
+  rescue
+    _ -> nil
   end
 
   @retire_grace_ms 2_000
@@ -312,7 +400,9 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp warm(%{compiler: %{} = compiler} = state), do: %{state | compiler: Map.put(compiler, :warm, true)}
+  defp warm(%{compiler: %{} = compiler} = state) do
+    %{state | compiler: compiler |> Map.put(:warm, true) |> Map.update(:compiles, 1, &(&1 + 1))}
+  end
   defp warm(state), do: state
 
   defp prepare_compiler(state, mtime) do

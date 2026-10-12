@@ -35,6 +35,7 @@ defmodule Mix.Tasks.Xsim.Run do
         state = Xsim.Runner.run(deliveries, executor, max_concurrency: opts[:max_concurrency] || 4)
         ms = System.monotonic_time(:millisecond) - started
         verdicts = Xsim.Invariants.check(state, baseline)
+        verdicts = if opts[:executor] == "kino", do: verdicts ++ [{:breaking_edits_fail, Xsim.Invariants.breaking_edits_fail(state, scenario.broken)}], else: verdicts
         IO.puts(summary(scenario, deliveries, state, verdicts, schedule, ms))
         explain(state, verdicts, baseline)
         {state, verdicts}

@@ -1,0 +1,82 @@
+test geometry static =
+    open testing
+
+union direction =
+    | North
+    | NorthEast
+    | East
+    | SouthEast
+    | South
+    | SouthWest
+    | West
+    | NorthWest
+
+type position = {x : i32; y : i32; z : i32}
+
+inl position x y z : position = {x y z}
+
+inl offset (heading : direction) : i32 * i32 =
+    match heading with
+    | North => 0, -1
+    | NorthEast => 1, -1
+    | East => 1, 0
+    | SouthEast => 1, 1
+    | South => 0, 1
+    | SouthWest => -1, 1
+    | West => -1, 0
+    | NorthWest => -1, -1
+
+inl is_diagonal (heading : direction) : bool =
+    match heading with
+    | NorthEast | SouthEast | SouthWest | NorthWest => true
+    | _ => false
+
+inl step (heading : direction) (from : position) : position =
+    inl dx, dy = offset heading
+    {from with x = from.x + dx; y = from.y + dy}
+
+inl magnitude (n : i32) : i32 =
+    if n < 0 then -n else n
+
+inl larger (a : i32) (b : i32) : i32 =
+    if a < b then b else a
+
+inl same_floor (a : position) (b : position) : bool =
+    a.z = b.z
+
+inl chebyshev_distance (a : position) (b : position) : i32 =
+    larger (magnitude (a.x - b.x)) (magnitude (a.y - b.y))
+
+inl within_range (reach : i32) (a : position) (b : position) : bool =
+    same_floor a b && chebyshev_distance a b <= reach
+
+test step_north_decrements_y =
+    inl moved = position 100 100 7 |> step North
+    moved.y |> _assert_eq 99i32
+
+test step_south_east_moves_both_axes =
+    inl moved = position 100 100 7 |> step SouthEast
+    moved.x |> _assert_eq 101i32
+    moved.y |> _assert_eq 101i32
+
+test step_keeps_floor =
+    inl moved = position 100 100 7 |> step West
+    moved.z |> _assert_eq 7i32
+
+test diagonal_headings =
+    is_diagonal NorthWest |> _assert_eq true
+    is_diagonal East |> _assert_eq false
+
+test chebyshev_counts_diagonals_as_one =
+    chebyshev_distance (position 0 0 7) (position 3 2 7) |> _assert_eq 3i32
+
+test opposite_steps_cancel =
+    inl start = position 50 60 7
+    inl back = start |> step NorthEast |> step SouthWest
+    back.x |> _assert_eq start.x
+    back.y |> _assert_eq start.y
+
+test range_needs_same_floor =
+    within_range 7 (position 0 0 7) (position 1 1 6) |> _assert_eq false
+    within_range 7 (position 0 0 7) (position 7 7 7) |> _assert_eq true
+    within_range 7 (position 0 0 7) (position 8 0 7) |> _assert_eq false

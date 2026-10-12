@@ -1,5 +1,5 @@
 defmodule Xsim.Scenario do
-  defstruct seed: 1, posts: [], events: []
+  defstruct seed: 1, posts: [], events: [], broken: MapSet.new()
 
   @type event ::
           {:post, String.t(), String.t() | nil, String.t()}
@@ -15,7 +15,8 @@ defmodule Xsim.Scenario do
       |> Enum.map(fn {cells, k} -> from_cells(cells, Keyword.merge(opts, prefix: "f#{k}", seed: Keyword.get(opts, :seed, 1) + k)) end)
 
     events = scenarios |> Enum.map(& &1.events) |> interleave([])
-    %__MODULE__{seed: Keyword.get(opts, :seed, 1), posts: Enum.flat_map(scenarios, & &1.posts), events: events}
+    broken = scenarios |> Enum.map(& &1.broken) |> Enum.reduce(MapSet.new(), &MapSet.union/2)
+    %__MODULE__{seed: Keyword.get(opts, :seed, 1), posts: Enum.flat_map(scenarios, & &1.posts), events: events, broken: broken}
   end
 
   defp interleave(lists, acc) do
@@ -48,7 +49,8 @@ defmodule Xsim.Scenario do
     {breaking, _rand} = breaking_edits(posts, Keyword.get(opts, :breaking, 0), rand)
     churn = churn(posts, Keyword.get(opts, :churn, 0))
     interactions = weave(likes ++ edit_events ++ breaking ++ unlikes, churn)
-    %__MODULE__{seed: seed, posts: posts, events: posts ++ interactions}
+    broken = MapSet.new(for {:edit, _, source} <- breaking, do: source)
+    %__MODULE__{seed: seed, posts: posts, events: posts ++ interactions, broken: broken}
   end
 
   defp churn(_posts, 0), do: []

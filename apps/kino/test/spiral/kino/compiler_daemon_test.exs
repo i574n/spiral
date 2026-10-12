@@ -210,6 +210,21 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert md5 == CompilerDaemon.module_info(:md5)
   end
 
+  test "the compiler is recycled past its memory cap or compile count, never before" do
+    limits = %{max_mb: 2_500, max_compiles: 0}
+    assert CompilerDaemon.recycle_reason(10_000, 2_499, limits) == nil
+    assert CompilerDaemon.recycle_reason(1, 2_500, limits) == "reaching 2500 MB"
+    assert CompilerDaemon.recycle_reason(1, nil, limits) == nil
+    assert CompilerDaemon.recycle_reason(50, 100, %{max_mb: 0, max_compiles: 50}) == "50 compiles"
+    assert CompilerDaemon.recycle_reason(49, 9_000, %{max_mb: 0, max_compiles: 50}) == nil
+    assert CompilerDaemon.limits().max_mb > 0
+  end
+
+  test "the working set of a live process is read in MB" do
+    mb = CompilerDaemon.working_set_mb(String.to_integer(System.pid()))
+    assert is_integer(mb) and mb > 0
+    assert CompilerDaemon.working_set_mb(999_999_999) == nil
+  end
   test "an exit signal from a linked process does not stop the daemon" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("daemon-exit")
 

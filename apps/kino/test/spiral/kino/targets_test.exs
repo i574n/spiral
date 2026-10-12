@@ -83,15 +83,6 @@ defmodule Spiral.Kino.TargetsTest do
     assert {:ok, %{stdout: "1w spiral.process_lua / note / kept"}} = run_target(outer)
   end
 
-  test "a c cell's process exit is the value" do
-    dir = Spiral.Kino.TestHelpers.tmp_dir!("c-cell")
-    path = Path.join(dir, "main.c")
-    File.write!(path, "int main(void) { return 7; }\n")
-
-    assert {:ok, %{stdout: "", value: "7"}} =
-             Targets.run(%{tool: :c}, path, [], 30_000, deadline())
-  end
-
   test "an empty spiral result with an error trace fails the cell" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("spiral-error")
 
@@ -115,15 +106,38 @@ defmodule Spiral.Kino.TargetsTest do
     refute message =~ "extension"
   end
 
-  test "a cpp executable's exit code is the value" do
+  test "a cpp executable that exits non-zero fails the cell; exit 0 passes it" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("cpp-cell")
     path = Path.join(dir, "main.cpp")
     File.write!(path, "int main() { return 7; }\n")
     _built = cc!(dir, "main.cpp.out", "int main(void) { return 7; }\n")
     fake = cc!(dir, "spiral-fake", "int main(void) { return 0; }\n")
 
-    assert {:ok, %{stdout: "", value: "7"}} =
+    assert {:error, %ProcessError{exit_status: 7}} =
              Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
+
+    _built = cc!(dir, "main.cpp.out", "int main(void) { return 0; }\n")
+    assert {:ok, %{stdout: ""} = ran} = Targets.run(%{tool: :cpp}, path, [spiral: fake], 30_000, deadline())
+    refute Map.has_key?(ran, :value)
+  end
+
+  test "a C cell whose assertion fails is a failure, not a value" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("c-cell")
+    failing = Path.join(dir, "failing.c")
+
+    File.write!(failing, """
+    #include <stdio.h>
+    int main(void) { printf("__assert_eq { actual = 7; expected = 8 }\\n"); return 1; }
+    """)
+
+    assert {:error, %ProcessError{exit_status: 1, message: message}} =
+             Targets.run(%{tool: :c}, failing, [], 60_000, deadline())
+
+    assert message =~ "actual = 7; expected = 8"
+
+    passing = Path.join(dir, "passing.c")
+    File.write!(passing, "#include <stdio.h>\nint main(void) { printf(\"ok\\n\"); return 0; }\n")
+    assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :c}, passing, [], 60_000, deadline())
   end
 
   test "a spiral rust builder waits for the spiral rust lock" do

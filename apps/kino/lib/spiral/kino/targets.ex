@@ -328,11 +328,7 @@ defmodule Spiral.Kino.Targets do
   end
 
   defp cell_exit(compiled, ran) do
-    %{
-      exit_status: 0,
-      output: join_output(compiled, %{output: ran.output}),
-      value: Integer.to_string(ran.exit_status)
-    }
+    %{exit_status: ran.exit_status, output: join_output(compiled, %{output: ran.output})}
   end
 
   defp normalize({:ok, %{exit_status: 0, output: output} = ran}, present?) do

@@ -1,0 +1,59 @@
+test rng static =
+    open testing
+
+inl mix32 (value : u32) : u32 =
+    inl a = value ^^^ (value >>> 16)
+    inl b = a * 2146121005u32
+    inl c = b ^^^ (b >>> 15)
+    inl d = c * 2221713035u32
+    d ^^^ (d >>> 16)
+
+type roll_key = {seed : u32; tick : u32; entity : u32; purpose : u32}
+
+inl roll_key seed tick entity purpose : roll_key = {seed tick entity purpose}
+
+inl draw (key : roll_key) : u32 =
+    inl by_purpose = mix32 key.purpose
+    inl by_entity = mix32 (key.entity + by_purpose)
+    inl by_tick = mix32 (key.tick + by_entity)
+    mix32 (key.seed + by_tick)
+
+inl roll_between (low : u32) (high : u32) (key : roll_key) : u32 =
+    low + draw key % (high - low + 1u32)
+
+///> rust
+///> c
+test mix32_zero_is_fixed_point =
+    inl ~value = 0u32
+    mix32 value |> _assert_eq 0u32
+
+///> rust
+///> c
+test mix32_reference_values =
+    inl ~one = 1u32
+    inl ~sample = 12345u32
+    inl ~top = 4294967295u32
+    mix32 one |> _assert_eq 1753845952u32
+    mix32 sample |> _assert_eq 2435775735u32
+    mix32 top |> _assert_eq 1734902346u32
+
+///> rust
+///> c
+test draw_reference_value =
+    inl ~tick = 1000u32
+    roll_key 42 tick 7 3 |> draw |> _assert_eq 3892101606u32
+
+///> rust
+///> c
+test roll_reference_values =
+    inl ~tick = 1000u32
+    roll_key 42 tick 7 3 |> roll_between 10 50 |> _assert_eq 29u32
+    roll_key 42 (tick + 1) 7 3 |> roll_between 10 50 |> _assert_eq 39u32
+
+///> rust
+///> c
+test draw_is_a_pure_function_of_its_key =
+    inl ~tick = 77u32
+    inl first = roll_key 1 tick 2 3 |> draw
+    inl second = roll_key 1 tick 2 3 |> draw
+    first |> _assert_eq second

@@ -1,0 +1,8 @@
+packages: |core-
+modules:
+    geometry
+    vitality
+    coins
+    rng
+    cooldowns
+    damage

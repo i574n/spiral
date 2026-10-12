@@ -12,7 +12,19 @@ defmodule Xsim.Invariants do
     ]
   end
 
+  def breaking_edits_fail(state, broken) do
+    bad =
+      for {id, {_key, result}} <- state.visible,
+          post = state.world.posts[id],
+          MapSet.member?(broken, World.current_source(post)),
+          comparable(result) |> elem(0) == :ok,
+          do: id
+
+    verdict(bad)
+  end
+
   def commute(a, b) do
+
     va = Map.new(a.visible, fn {id, {_key, result}} -> {id, comparable(result)} end)
     vb = Map.new(b.visible, fn {id, {_key, result}} -> {id, comparable(result)} end)
     if va == vb, do: :ok, else: {:violations, Enum.take(for({id, r} <- va, vb[id] != r, do: id), 5)}

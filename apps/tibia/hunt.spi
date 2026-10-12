@@ -1,0 +1,30 @@
+///- --package .
+test hunt static =
+    open testing
+
+inl melee_reach () : i32 = 1
+
+inl attack (damage : i32) (hunter : geometry.position) (prey_at : geometry.position) (prey : vitality.vitality vitality.alive) : vitality.struck =
+    open vitality
+    if geometry.within_range (melee_reach ()) hunter prey_at then strike damage prey else Survived prey
+
+inl loot (outcome : vitality.struck) (bounty : i32) (held : coins.purse) : coins.purse =
+    open vitality
+    match outcome with
+    | Slain _ => coins.fewest_coins (coins.total_gold held + bounty)
+    | Survived _ => held
+
+test adjacent_attack_lands =
+    inl ~damage = 40i32
+    attack damage (geometry.position 100 100 7) (geometry.position 101 101 7) (vitality.spawn 100)
+    |> vitality.survivor_health |> _assert_eq 60i32
+
+test distant_attack_misses =
+    inl ~damage = 40i32
+    attack damage (geometry.position 100 100 7) (geometry.position 103 100 7) (vitality.spawn 100)
+    |> vitality.survivor_health |> _assert_eq 100i32
+
+test kill_pays_bounty =
+    inl ~damage = 150i32
+    inl outcome = attack damage (geometry.position 100 100 7) (geometry.position 100 99 7) (vitality.spawn 100)
+    loot outcome 250 (coins.purse 80 0 0) |> coins.total_gold |> _assert_eq 330i32

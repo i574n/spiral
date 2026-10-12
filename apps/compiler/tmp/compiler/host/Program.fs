@@ -948,11 +948,36 @@ module Program =
             eprintfn "build-file timed out after %d ms" timeoutMs
             exit 3
 
+    let private defaultTypeFlags =
+        [ "--default-int", "SPIRAL_DEFAULT_INT", [ "i8"; "i16"; "i32"; "i64"; "u8"; "u16"; "u32"; "u64" ]
+          "--default-float", "SPIRAL_DEFAULT_FLOAT", [ "f32"; "f64" ] ]
+
+    let private takeDefaultTypeFlags (argv : string []) : Result<string [], string> =
+        let flagOf (text : string) = defaultTypeFlags |> List.tryFind (fun (name, _, _) -> name = text)
+        let rec go (rest : string list) (kept : string list) =
+            match rest with
+            | flag :: value :: tail when (flagOf flag).IsSome ->
+                let name, variable, allowed = (flagOf flag).Value
+                if List.contains value allowed then
+                    Environment.SetEnvironmentVariable(variable, value)
+                    go tail kept
+                else Error $"""{name} expects one of {String.concat ", " allowed}, got '{value}'"""
+            | [ flag ] when (flagOf flag).IsSome -> Error $"{flag} needs a value"
+            | head :: tail -> go tail (head :: kept)
+            | [] -> Ok (List.rev kept |> Array.ofList)
+        go (List.ofArray argv) []
+
     [<EntryPoint>]
-    let main argv =
+    let main rawArgv =
+        let defaultTypeFlagsResult = takeDefaultTypeFlags rawArgv
+        let argv = match defaultTypeFlagsResult with Ok kept -> kept | Error _ -> rawArgv
         configureHopacFromEnvironment ()
         if isNull (Environment.GetEnvironmentVariable "SPIRAL_HOVERS") then Environment.SetEnvironmentVariable("SPIRAL_HOVERS", "0")
-        if argv.Length = 1 && argv.[0] = "--version" then
+        let defaultTypeFlagsError = match defaultTypeFlagsResult with Error message -> Some message | Ok _ -> None
+        if defaultTypeFlagsError.IsSome then
+            eprintfn "%s" defaultTypeFlagsError.Value
+            2
+        elif argv.Length = 1 && argv.[0] = "--version" then
             printfn "SpiralCompiler alpha418"
             0
         elif argv.Length = 3 && argv.[0] = "--server" then
@@ -1000,5 +1025,5 @@ module Program =
                 eprintfn "%s" message
                 5
         else
-            eprintfn "usage: SpiralCompiler [--backend Fsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
+            eprintfn "usage: SpiralCompiler [--default-int i8|i16|i32|i64|u8|u16|u32|u64] [--default-float f32|f64] [--backendFsharp|C|Rust|Delphi|Zig|TypeScript|Lua|Gleam|\"Cpp + Cuda\"|\"Python + Cuda\"] <input.spi> <output.fsx|.c|.rs|.pas|.zig|.ts|.lua|.gleam|.cpp|.py> | --check INPUT.spi | --plan-ir [--timeout-ms N] INPUT.spi OUTPUT.ir | --batch JOBS.tsv RESULTS.tsv [--timeout-ms N] | --server SOCKET INPUT.spi | build-file IN OUT [IN OUT ...] [--timeout MS] [--exit-on-error] | fsharp IN.spi [--timeout MS]"
             2

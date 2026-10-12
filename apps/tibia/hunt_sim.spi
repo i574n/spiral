@@ -1,0 +1,128 @@
+///- --package .
+test hunt_sim static =
+    open testing
+
+inl tick_ms () : i32 = 100
+inl spawn_health () : i32 = 100
+inl creature_strike_ms () : i32 = 2000
+inl heal_below () : i32 = 60
+
+inl purpose_player_hit () : u32 = 1
+inl purpose_player_heal () : u32 = 2
+inl purpose_creature_hit () : u32 = 3
+inl purpose_loot () : u32 = 4
+
+type hunt =
+    {
+        player_at : geometry.position
+        player_health : i32
+        timers : cooldowns.timers
+        creature_at : geometry.position
+        creature : vitality.vitality vitality.alive
+        creature_strikes_at : i32
+        kills : i32
+        gold : i32
+    }
+
+inl start () : hunt =
+    {
+        player_at = geometry.position 100 100 7
+        player_health = 150
+        timers = cooldowns.idle_timers ()
+        creature_at = geometry.position 106 103 7
+        creature = vitality.spawn (spawn_health ())
+        creature_strikes_at = 0
+        kills = 0
+        gold = 0
+    }
+
+inl key (seed : u32) (tick : i32) (purpose : u32) : rng.roll_key =
+    rng.roll_key seed (conv tick) 1 purpose
+
+inl toward (from : i32) (target : i32) : i32 =
+    if from < target then from + 1 elif target < from then from - 1 else from
+
+inl approach (target : geometry.position) (from : geometry.position) : geometry.position =
+    {from with x = toward from.x target.x; y = toward from.y target.y}
+
+inl adjacent (s : hunt) : bool =
+    geometry.within_range 1 s.player_at s.creature_at
+
+inl creature_moves (s : hunt) : hunt =
+    if adjacent s then s else {s with creature_at = approach s.player_at s.creature_at}
+
+inl creature_strikes (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
+    if adjacent s && s.creature_strikes_at <= now then
+        inl damage : i32 = conv (rng.roll_between 5 15 (key seed tick (purpose_creature_hit ())))
+        {s with player_health = s.player_health - damage; creature_strikes_at = now + creature_strike_ms ()}
+    else s
+
+inl player_heals (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
+    inl spell = cooldowns.light_healing ()
+    if s.player_health < heal_below () && cooldowns.can_cast now spell s.timers then
+        inl amount : i32 = conv (rng.roll_between 30 60 (key seed tick (purpose_player_heal ())))
+        {s with player_health = s.player_health + amount; timers = cooldowns.after_cast now spell s.timers}
+    else s
+
+inl player_strikes (seed : u32) (tick : i32) (now : i32) (s : hunt) : hunt =
+    open vitality
+    inl spell = cooldowns.strike_spell ()
+    if adjacent s && cooldowns.can_cast now spell s.timers then
+        inl damage : i32 = conv (rng.roll_between 20 40 (key seed tick (purpose_player_hit ())))
+        inl timers = cooldowns.after_cast now spell s.timers
+        match strike damage s.creature with
+        | Survived wounded => {s with creature = wounded; timers = timers}
+        | Slain _ =>
+            inl bounty : i32 = conv (rng.roll_between 10 30 (key seed tick (purpose_loot ())))
+            {s with
+                creature = spawn (spawn_health ())
+                creature_at = geometry.position 106 103 7
+                timers = timers
+                kills = s.kills + 1
+                gold = s.gold + bounty
+            }
+    else s
+
+inl advance (seed : u32) (tick : i32) (s : hunt) : hunt =
+    inl now = tick * tick_ms ()
+    if s.player_health <= 0 then s
+    else
+        s
+        |> creature_moves
+        |> creature_strikes seed tick now
+        |> player_heals seed tick now
+        |> player_strikes seed tick now
+
+inl simulate (seed : u32) (ticks : i32) : hunt =
+    let rec loop (tick : i32) (s : hunt) : hunt =
+        if tick >= ticks then s else loop (tick + 1) (advance seed tick s)
+    loop 0 (start ())
+
+test same_seed_same_hunt =
+    inl ~seed = 7u32
+    inl a = simulate seed 600
+    inl b = simulate seed 600
+    a.kills |> _assert_eq b.kills
+    a.gold |> _assert_eq b.gold
+    a.player_health |> _assert_eq b.player_health
+
+test hunter_survives_and_kills =
+    inl ~seed = 7u32
+    inl outcome = simulate seed 600
+    (outcome.kills > 0) |> _assert_eq true
+    (outcome.player_health > 0) |> _assert_eq true
+
+test loot_stays_within_bounty_range =
+    inl ~seed = 7u32
+    inl outcome = simulate seed 600
+    (outcome.gold >= outcome.kills * 10) |> _assert_eq true
+    (outcome.gold <= outcome.kills * 30) |> _assert_eq true
+
+///> rust
+///> c
+test golden_seed_7 =
+    inl ~seed = 7u32
+    inl outcome = simulate seed 600
+    outcome.kills |> _assert_eq 7i32
+    outcome.gold |> _assert_eq 140i32
+    outcome.player_health |> _assert_eq 69i32

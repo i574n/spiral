@@ -1,0 +1,68 @@
+test cooldowns static =
+    open testing
+
+union spell_group =
+    | AttackGroup
+    | HealingGroup
+    | SupportGroup
+
+type spell = {group : spell_group; own_ms : i32; group_ms : i32}
+
+type timers = {attack_ready_at : i32; healing_ready_at : i32; support_ready_at : i32; spell_ready_at : i32}
+
+inl idle_timers () : timers =
+    {attack_ready_at = 0; healing_ready_at = 0; support_ready_at = 0; spell_ready_at = 0}
+
+inl group_ready_at (group : spell_group) (held : timers) : i32 =
+    match group with
+    | AttackGroup => held.attack_ready_at
+    | HealingGroup => held.healing_ready_at
+    | SupportGroup => held.support_ready_at
+
+inl later (a : i32) (b : i32) : i32 =
+    if a < b then b else a
+
+inl ready_at (cast : spell) (held : timers) : i32 =
+    later (group_ready_at cast.group held) held.spell_ready_at
+
+inl can_cast (now : i32) (cast : spell) (held : timers) : bool =
+    ready_at cast held <= now
+
+inl after_cast (now : i32) (cast : spell) (held : timers) : timers =
+    inl group_until = now + cast.group_ms
+    inl with_spell = {held with spell_ready_at = later held.spell_ready_at (now + cast.own_ms)}
+    match cast.group with
+    | AttackGroup => {with_spell with attack_ready_at = group_until}
+    | HealingGroup => {with_spell with healing_ready_at = group_until}
+    | SupportGroup => {with_spell with support_ready_at = group_until}
+
+inl strike_spell () : spell = {group = AttackGroup; own_ms = 2000; group_ms = 2000}
+inl light_healing () : spell = {group = HealingGroup; own_ms = 1000; group_ms = 1000}
+inl haste () : spell = {group = SupportGroup; own_ms = 2000; group_ms = 2000}
+
+test fresh_timers_allow_any_spell =
+    inl ~now = 0i32
+    can_cast now (strike_spell ()) (idle_timers ()) |> _assert_eq true
+
+test attack_blocks_its_group_until_it_expires =
+    inl ~now = 1000i32
+    inl held = idle_timers () |> after_cast now (strike_spell ())
+    can_cast (now + 1999) (strike_spell ()) held |> _assert_eq false
+    can_cast (now + 2000) (strike_spell ()) held |> _assert_eq true
+
+test attack_does_not_block_healing_group =
+    inl ~now = 1000i32
+    inl held = idle_timers () |> after_cast now (strike_spell ())
+    group_ready_at HealingGroup held |> _assert_eq 0i32
+
+test own_cooldown_gates_every_group =
+    inl ~now = 1000i32
+    inl held = idle_timers () |> after_cast now (strike_spell ())
+    can_cast (now + 500) (light_healing ()) held |> _assert_eq false
+    can_cast (now + 2000) (light_healing ()) held |> _assert_eq true
+
+test support_sets_only_support_group =
+    inl ~now = 0i32
+    inl held = idle_timers () |> after_cast now (haste ())
+    held.support_ready_at |> _assert_eq 2000i32
+    held.attack_ready_at |> _assert_eq 0i32

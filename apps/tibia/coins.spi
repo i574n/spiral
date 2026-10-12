@@ -1,0 +1,68 @@
+test coins static =
+    open testing
+
+union coin =
+    | GoldCoin
+    | PlatinumCoin
+    | CrystalCoin
+
+inl worth (kind : coin) : i32 =
+    match kind with
+    | GoldCoin => 1
+    | PlatinumCoin => 100
+    | CrystalCoin => 10000
+
+type purse = {gold : i32; platinum : i32; crystal : i32}
+
+inl purse gold platinum crystal : purse = {gold platinum crystal}
+
+inl total_gold (held : purse) : i32 =
+    held.gold * worth GoldCoin + held.platinum * worth PlatinumCoin + held.crystal * worth CrystalCoin
+
+inl fewest_coins (amount : i32) : purse =
+    inl crystal = amount / worth CrystalCoin
+    inl after_crystal = amount - crystal * worth CrystalCoin
+    inl platinum = after_crystal / worth PlatinumCoin
+    purse (after_crystal - platinum * worth PlatinumCoin) platinum crystal
+
+union payment =
+    | Paid : purse
+    | ShortBy : i32
+
+inl pay (price : i32) (held : purse) : payment =
+    inl available = total_gold held
+    if available < price then ShortBy (price - available) else Paid (fewest_coins (available - price))
+
+inl remaining_gold (outcome : payment) : i32 =
+    match outcome with
+    | Paid held => total_gold held
+    | ShortBy _ => -1
+
+///> rust
+///> c
+test fewest_coins_conserves_value =
+    inl ~amount = 1234567i32
+    fewest_coins amount |> total_gold |> _assert_eq amount
+
+///> rust
+///> c
+test fewest_coins_breakdown =
+    inl ~amount = 123456i32
+    inl held = fewest_coins amount
+    held.crystal |> _assert_eq 12i32
+    held.platinum |> _assert_eq 34i32
+    held.gold |> _assert_eq 56i32
+
+///> rust
+///> c
+test paying_conserves_value =
+    inl ~price = 2750i32
+    purse 50 30 1 |> pay price |> remaining_gold |> _assert_eq 10300i32
+
+///> rust
+///> c
+test paying_too_much_reports_shortfall =
+    inl ~price = 20000i32
+    match purse 0 0 1 |> pay price with
+    | ShortBy missing => missing |> _assert_eq 10000i32
+    | Paid _ => _assert_eq 0i32 1i32

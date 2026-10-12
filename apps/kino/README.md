@@ -114,6 +114,8 @@ Resolved in this order for each setting: the `run/2` option, then the environmen
 | Core package directory | `:package_dir` | `SPIRAL_COMPILER_PACKAGE_DIR` | `spiral/deps/The-Spiral-Language/VS Code Plugin`, else `polyglot/deps/...` next to it |
 | Package fallback root (a cell's `--package` path not found beside the notebook) | `:workspace_root` (`:polyglot_root`) | `SPIRAL_KINO_WORKSPACE_ROOT` (`SPIRAL_KINO_POLYGLOT_ROOT`), or `config :spiral_kino, workspace_root: ...` | this `spiral` checkout |
 | Compiler daemon port | - | `SPIRAL_KINO_COMPILER_PORT` | `13905` |
+| Compiler server memory cap (MB; 0: none) | - | `SPIRAL_KINO_DAEMON_MAX_MB` | `2500` |
+| Compiles per compiler server (0: no limit) | - | `SPIRAL_KINO_DAEMON_MAX_COMPILES` | `0` |
 
 By default a cell compiles through one shared, warm compiler: the first cell starts a detached
 `mix spiral.compiler_daemon` on `127.0.0.1:13905` (or `SPIRAL_KINO_COMPILER_PORT`), and it keeps running after the
@@ -121,6 +123,10 @@ Livebook session ends so later sessions reuse it. `SPIRAL_KINO_COMPILER=process`
 own compiler process, and no daemon is started. Passing any of `:compiler_dll`, `:dotnet`, `:package_dir`,
 `:workspace` or `:env` also compiles in a separate process. `SPIRAL_KINO_BRIDGE_TRACE=1` makes the daemon's socket
 bridge log every request and response to `<socket>.trace` (off by default).
+After each compile the daemon checks its .NET compiler server: past the memory cap (working set) or the compile
+count it stops it, logs `compiler recycled after ...`, and the next compile starts a fresh one (a cold compile).
+The daemon itself, its port and its queue stay up. Its code stamp is the md5 of the daemon module's code, so every
+build of the same code (this app, an app that depends on it) shares one daemon instead of replacing it.
 
 Editor highlighting is `config :spiral_kino, editor_language: "javascript"` (the default).
 Livebook's editor has no Spiral mode. JavaScript highlights `//` comments, strings, numbers,
@@ -184,6 +190,8 @@ safe for any backend or shell: the identity when that is ASCII, otherwise `test_
 A test's verdict is its cell's own evaluation result: it passed when every target it ran succeeded (compile, build, exit 0),
 failed on a compile error, a non-zero exit or a timeout, and is unsupported when none of its `///>` targets has its tool on
 this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
+A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0: the exit code is no value channel,
+so an assertion that exits 1 fails the test. A cell's `///>` lines are its whole target list (no Rust run beside them).
 A target whose tool is missing is skipped and listed in the test's `unavailable` while the others still run.
 `--ignore` cells are skipped: not compiled, and not a definition of later cells.
 
