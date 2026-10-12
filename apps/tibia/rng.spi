@@ -57,3 +57,9 @@ test draw_is_a_pure_function_of_its_key =
     inl first = roll_key 1 tick 2 3 |> draw
     inl second = roll_key 1 tick 2 3 |> draw
     first |> _assert_eq second
+
+///> wgsl
+test mix32_reference_values_on_gpu =
+    inl ~one = 1u32
+    inl ~sample = 12345u32
+    if mix32 one = 1753845952u32 && mix32 sample = 2435775735u32 && mix32 0 = 0u32 then 0i32 else 1i32

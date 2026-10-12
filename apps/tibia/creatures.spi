@@ -1,0 +1,53 @@
+test creatures static =
+    open testing
+
+union arena_creature =
+    | CaveRat
+    | Troll
+    | Wolf
+    | Skeleton
+    | Goblin
+    | Cyclops
+
+type creature_stats = {experience : i32; max_health : i32; speed : i32; target_distance : i32; melee_max : i32; combat_spells : i32}
+
+inl stats_of (kind : arena_creature) : creature_stats =
+    match kind with
+    | CaveRat => {experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10; combat_spells = 0}
+    | Troll => {experience = 20; max_health = 50; speed = 63; target_distance = 1; melee_max = 15; combat_spells = 0}
+    | Wolf => {experience = 18; max_health = 25; speed = 82; target_distance = 1; melee_max = 20; combat_spells = 0}
+    | Skeleton => {experience = 35; max_health = 50; speed = 77; target_distance = 1; melee_max = 20; combat_spells = 1}
+    | Goblin => {experience = 25; max_health = 50; speed = 60; target_distance = 1; melee_max = 10; combat_spells = 1}
+    | Cyclops => {experience = 150; max_health = 260; speed = 95; target_distance = 1; melee_max = 105; combat_spells = 0}
+
+inl experience_per_health (kind : arena_creature) : i32 =
+    inl s = stats_of kind
+    s.experience * 1000 / s.max_health
+
+///> rust
+///> c
+test stats_match_canary_data_canary_lua_2026_10_12 =
+    inl ~marker = 0i32
+    (stats_of Troll).max_health + marker |> _assert_eq 50i32
+    (stats_of Troll).melee_max + marker |> _assert_eq 15i32
+    (stats_of CaveRat).experience + marker |> _assert_eq 10i32
+    (stats_of Cyclops).max_health + marker |> _assert_eq 260i32
+    (stats_of Wolf).speed + marker |> _assert_eq 82i32
+
+///> rust
+///> c
+test every_arena_creature_fights_in_melee_range =
+    inl ~marker = 0i32
+    (stats_of CaveRat).target_distance + marker |> _assert_eq 1i32
+    (stats_of Troll).target_distance + marker |> _assert_eq 1i32
+    (stats_of Wolf).target_distance + marker |> _assert_eq 1i32
+    (stats_of Skeleton).target_distance + marker |> _assert_eq 1i32
+    (stats_of Goblin).target_distance + marker |> _assert_eq 1i32
+    (stats_of Cyclops).target_distance + marker |> _assert_eq 1i32
+
+///> rust
+///> c
+test experience_per_health_ranks_skeleton_above_troll =
+    inl ~marker = 0i32
+    experience_per_health Skeleton + marker |> _assert_eq 700i32
+    experience_per_health Troll + marker |> _assert_eq 400i32

@@ -1,5 +1,5 @@
 defmodule Spiral.Kino.Notebook do
-  alias Spiral.Kino.{Builders, Document, ProcessError, Result, Targets}
+  alias Spiral.Kino.{Builders, Document, Memo, ProcessError, Result, Targets}
 
   @default_timeout 300_000
   @run_keys [
@@ -70,37 +70,49 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
+  @spec test_names(String.t()) :: [String.t()]
+  def test_names(path) do
+    path = Path.expand(path)
+
+    path
+    |> parse(File.read!(path))
+    |> Document.tests()
+    |> Enum.flat_map(&[&1.name, &1.symbol])
+    |> Enum.uniq()
+  end
+
   @spec evaluate(%{cells: [map()]}, keyword()) :: evaluation()
   def evaluate(%{cells: cells} = doc, opts \\ []) do
     root = opts[:root] || if(opts[:path], do: Path.dirname(opts[:path]), else: File.cwd!())
     tests = Document.tests(doc)
 
-    {status, outputs, durations, verdicts, unavailable} =
+    ran =
       case select_tests(tests, opts[:tests]) do
         {:error, message} ->
-          {{:error, message}, %{}, %{}, %{}, %{}}
+          %{no_runs() | status: {:error, message}}
 
         {:ok, selected} ->
           if Enum.any?(cells, &runnable?/1) do
             try do
               execute(doc, opts, root, selected)
             rescue
-              error -> {{:error, Exception.message(error)}, %{}, %{}, %{}, %{}}
+              error -> %{no_runs() | status: {:error, Exception.message(error)}}
             end
           else
-            {{:error, empty_message(opts[:path] || "the notebook")}, %{}, %{}, %{}, %{}}
+            %{no_runs() | status: {:error, empty_message(opts[:path] || "the notebook")}}
           end
       end
 
     selected = selected_indices(tests, opts[:tests])
 
     %{
-      status: status,
-      outputs: outputs,
-      durations: durations,
-      verdicts: verdicts,
-      unavailable: unavailable,
-      report: report(tests, selected, verdicts, unavailable)
+      status: ran.status,
+      outputs: ran.outputs,
+      durations: ran.durations,
+      verdicts: ran.verdicts,
+      unavailable: ran.unavailable,
+      memo: ran.memo,
+      report: report(tests, selected, ran)
     }
   end
 
@@ -129,9 +141,9 @@ defmodule Spiral.Kino.Notebook do
     tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
   end
 
-  @report_counts ~w(discovered executed passed failed skipped unsupported filtered not_run)
+  @report_counts ~w(discovered executed passed failed skipped unsupported filtered not_run memo_hits)
 
-  defp report(tests, selected, verdicts, unavailable) do
+  defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo}) do
     rows =
       Enum.map(tests, fn test ->
         {state, message} = test_state(test, selected, Map.get(verdicts, test.index))
@@ -146,6 +158,7 @@ defmodule Spiral.Kino.Notebook do
           "status" => state,
           "unavailable" => Map.get(unavailable, test.index, [])
         }
+        |> then(&if(memo[test.index], do: Map.put(&1, "memo", Atom.to_string(memo[test.index])), else: &1))
         |> then(&if(message, do: Map.put(&1, "message", message), else: &1))
       end)
 
@@ -165,7 +178,8 @@ defmodule Spiral.Kino.Notebook do
       "skipped" => count.("skipped"),
       "unsupported" => count.("unsupported"),
       "filtered" => count.("filtered"),
-      "not_run" => count.("not_run")
+      "not_run" => count.("not_run"),
+      "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit"))
     }
   end
 
@@ -365,6 +379,9 @@ defmodule Spiral.Kino.Notebook do
       |> Enum.map(&attach_source(&1, cells))
       |> only_selected(selected)
 
+    memo = Memo.context(opts, spiral)
+    {spiral, recalled} = recall(spiral, memo)
+
     fsi? = fsi_session?(opts)
 
     hosts =
@@ -381,12 +398,56 @@ defmodule Spiral.Kino.Notebook do
             run_parallel(steps, opts, root)
           end
 
-        {ran.status, ran.outputs, ran.durations, ran.verdicts, ran.unavailable}
+        flags =
+          Map.new(recalled, &{elem(&1, 0), :hit})
+          |> Map.merge(for(%{memo: _} = step <- spiral, into: %{}, do: {step.index, :miss}))
+
+        %{collect(recalled, ran) | memo: flags}
 
       {:error, message} ->
-        {{:error, message}, %{}, %{}, %{}, %{}}
+        %{no_runs() | status: {:error, message}}
     end
   end
+
+  defp recall(steps, nil), do: {steps, []}
+
+  defp recall(steps, memo) do
+    Enum.reduce(steps, {[], []}, fn step, {left, recalled} ->
+      case memo_key(memo, step) do
+        nil ->
+          {left ++ [step], recalled}
+
+        key ->
+          started = System.monotonic_time(:millisecond)
+
+          case Memo.fetch(memo, key) do
+            {:ok, %{result: result}} ->
+              ms = {System.monotonic_time(:millisecond) - started, %{}}
+              {left, recalled ++ [{step.index, result, ms}]}
+
+            _ ->
+              {left ++ [Map.put(step, :memo, {memo, key})], recalled}
+          end
+      end
+    end)
+  end
+
+  defp memo_key(memo, step) do
+    lines =
+      case Map.fetch(step, :builders) do
+        {:ok, builders} -> builders
+        :error -> Builders.commands(step.cell_source)
+      end
+      |> Enum.map(& &1.raw)
+
+    Memo.key(memo, step, lines)
+  rescue
+    _ -> nil
+  end
+
+  defp remember(%{memo: {memo, key}}, {:ok, _outputs, _unavailable} = result), do: Memo.store(memo, key, %{result: result})
+  defp remember(%{memo: {memo, key}}, {:ok, _outputs} = result), do: Memo.store(memo, key, %{result: result})
+  defp remember(_step, _result), do: :ok
 
   defp plan(wire, :tests), do: Spiral.Kino.Domain.plan_tests(wire)
   defp plan(wire, _cells), do: Spiral.Kino.Domain.plan(wire)
@@ -411,7 +472,7 @@ defmodule Spiral.Kino.Notebook do
       opts[:workspace] == nil and opts[:env] == nil
   end
 
-  defp no_runs, do: %{outputs: %{}, durations: %{}, status: :ok, verdicts: %{}, unavailable: %{}}
+  defp no_runs, do: %{outputs: %{}, durations: %{}, status: :ok, verdicts: %{}, unavailable: %{}, memo: %{}}
 
   defp run_serial(steps, opts, root) do
     Enum.reduce_while(steps, no_runs(), fn step, acc ->
@@ -504,6 +565,7 @@ defmodule Spiral.Kino.Notebook do
     started = System.monotonic_time(:millisecond)
     Process.delete(:spiral_kino_last_phases)
     result = dispatch_step(step, opts, root)
+    remember(step, result)
 
     [
       {step.index, result,

@@ -140,6 +140,34 @@ defmodule Spiral.Kino.TargetsTest do
     assert {:ok, %{stdout: "ok"}} = Targets.run(%{tool: :c}, passing, [], 60_000, deadline())
   end
 
+  test "zig runs its program; wgsl runs the shader: exit 0 passes, 3 (no adapter) or no runner is unsupported, others fail" do
+    assert [%{tool: :zig}, %{tool: :wgsl}] = Spiral.Kino.Builders.commands("///> zig\n///> wgsl\nx")
+    assert Spiral.Kino.Builders.backend(%{tool: :zig}) == "Zig"
+    assert Spiral.Kino.Builders.backend(%{tool: :wgsl}) == "Wgsl"
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("zig-wgsl")
+    missing = Path.join(dir, "no-tool.exe")
+
+    assert {:error, %ProcessError{reason: :tool_missing}} =
+             Targets.run(%{tool: :zig}, Path.join(dir, "main.zig"), [zig: missing], 30_000, deadline())
+
+    runner =
+      cc!(dir, "spiral-wgsl-stub", """
+      #include <stdio.h>
+      int main(int argc, char **argv) { FILE *f = fopen(argv[1], "r"); int c = fgetc(f); fclose(f); printf("ran\\n"); return c - '0'; }
+      """)
+
+    shader = fn status ->
+      path = Path.join(dir, "shader#{status}.wgsl")
+      File.write!(path, "#{status}")
+      path
+    end
+
+    assert {:ok, %{stdout: "ran"}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 1, reason: nil}} = Targets.run(%{tool: :wgsl}, shader.(1), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 2, reason: nil}} = Targets.run(%{tool: :wgsl}, shader.(2), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{exit_status: 3, reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(3), [wgsl_run: runner, naga: nil], 30_000, deadline())
+    assert {:error, %ProcessError{reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: missing, naga: nil], 30_000, deadline())
+  end
   test "a spiral rust builder waits for the spiral rust lock" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("rust-lock")
     lock = Path.join(dir, "rust.lock")

@@ -66,3 +66,9 @@ test paying_too_much_reports_shortfall =
     match purse 0 0 1 |> pay price with
     | ShortBy missing => missing |> _assert_eq 10000i32
     | Paid _ => _assert_eq 0i32 1i32
+
+///> wgsl
+test fewest_coins_breakdown_on_gpu =
+    inl ~amount = 123456i32
+    inl held = fewest_coins amount
+    if held.crystal = 12i32 && held.platinum = 34i32 && held.gold = 56i32 && total_gold held = amount then 0i32 else 1i32

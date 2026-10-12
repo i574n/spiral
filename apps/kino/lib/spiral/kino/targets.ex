@@ -77,6 +77,12 @@ defmodule Spiral.Kino.Targets do
 
       {:dcc, path} ->
         run_dcc(path, opts, timeout, deadline)
+
+      {:zig, path} ->
+        run_program(Toolchain.zig(opts), "zig", ["run", path], opts, timeout, deadline, false)
+
+      {:wgsl, path} ->
+        run_wgsl(path, opts, timeout, deadline)
     end
   end
 
@@ -272,6 +278,59 @@ defmodule Spiral.Kino.Targets do
       end
     else
       {:error, %ProcessError{message: "`dcc32` was not found", reason: :tool_missing}}
+    end
+  end
+
+  @wgsl_no_adapter 3
+
+  defp run_wgsl(path, opts, timeout, deadline) do
+    with :ok <- naga_check(path, opts, timeout, deadline) do
+      case Toolchain.wgsl_run(opts) do
+        nil ->
+          {:error, %ProcessError{message: "`spiral-wgsl` was not found", reason: :tool_missing}}
+
+        runner ->
+          case run_status(runner, "spiral-wgsl", [path], opts, timeout, deadline, false) do
+            {:ok, %{exit_status: 0} = ran} ->
+              {:ok, ran}
+
+            {:ok, %{exit_status: @wgsl_no_adapter, output: output}} ->
+              {:error,
+               %ProcessError{
+                 message: "`spiral-wgsl` found no GPU adapter\n\n#{output}",
+                 exit_status: @wgsl_no_adapter,
+                 output: output,
+                 reason: :tool_missing
+               }}
+
+            {:ok, %{exit_status: status, output: output}} ->
+              {:error,
+               %ProcessError{
+                 message: "`spiral-wgsl` failed (exit #{status})\n\n#{output}",
+                 exit_status: status,
+                 output: output
+               }}
+
+            {:error, %ProcessError{reason: :not_found} = error} ->
+              {:error, %ProcessError{error | reason: :tool_missing}}
+
+            other ->
+              other
+          end
+      end
+    end
+  end
+
+  defp naga_check(path, opts, timeout, deadline) do
+    case Toolchain.naga(opts) do
+      nil ->
+        :ok
+
+      naga ->
+        case run_program(naga, "naga", [path], opts, timeout, deadline, false) do
+          {:ok, _} -> :ok
+          error -> error
+        end
     end
   end
 

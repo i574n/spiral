@@ -10,7 +10,7 @@ $fixed = New-Object System.Collections.Generic.List[string]
 $key = $null
 foreach ($item in $args) {
     $arg = if ($item -is [array]) { $item -join "," } else { "$item" }
-    if ($arg -in @("--path", "--output-path", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
+    if ($arg -in @("--path", "--output-path", "--output-dir", "--spi-path", "--spir-path", "--fs-path", "--livemd-path")) {
         $key = $arg
         $fixed.Add($arg)
     }

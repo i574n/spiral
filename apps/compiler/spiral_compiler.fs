@@ -45056,6 +45056,7 @@ module spiral_compiler =
         i : int ref
         is_top_down : bool
         default_env : DefaultEnv
+        continuation_column : int option
         } with
     
 
@@ -46053,7 +46054,10 @@ module spiral_compiler =
     
 
                 (blockParsingRange (skip_keyword SpecFunction >>. clauses) |>> RawFun)
-                <|> (blockParsingRange ((skip_keyword SpecMatch >>. next .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c))
+                <|> (fun d ->
+                        let match_column = col d
+                        let scrutinee d = next {d with continuation_column = Some match_column}
+                        (blockParsingRange ((skip_keyword SpecMatch >>. scrutinee .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c)) d)
     
 
             let case_typecase d =
@@ -46190,7 +46194,9 @@ module spiral_compiler =
 
         and application (d: BlockParsingEnv) =
             let next = unary_op
-            pipe2 next (many (blockParsingIndent (col d) (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
+            let column = match d.continuation_column with Some floor -> min floor (col d) | None -> col d
+            let d = {d with continuation_column = None}
+            pipe2 next (many (blockParsingIndent column (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
     
 
         and operators d =
@@ -47151,6 +47157,7 @@ module spiral_compiler =
         i : int ref
         is_top_down : bool
         default_env : DefaultEnv
+        continuation_column : int option
         } with
 
         member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
@@ -48112,7 +48119,10 @@ module spiral_compiler =
                         ) d
 
                 (blockParsingRange (skip_keyword SpecFunction >>. clauses) |>> RawFun)
-                <|> (blockParsingRange ((skip_keyword SpecMatch >>. next .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c))
+                <|> (fun d ->
+                        let match_column = col d
+                        let scrutinee d = next {d with continuation_column = Some match_column}
+                        (blockParsingRange ((skip_keyword SpecMatch >>. scrutinee .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c)) d)
 
             let case_typecase d =
                 let clauses d =
@@ -48237,7 +48247,9 @@ module spiral_compiler =
 
         and application (d: BlockParsingEnv) =
             let next = unary_op
-            pipe2 next (many (blockParsingIndent (col d) (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
+            let column = match d.continuation_column with Some floor -> min floor (col d) | None -> col d
+            let d = {d with continuation_column = None}
+            pipe2 next (many (blockParsingIndent column (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
 
         and operators d =
             let term = application
@@ -181789,6 +181801,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             tokens_cords = cords; semantic_updates = semantic_updates
             comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
             default_env = default_env
+            continuation_column = None
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
         let result = blockParsingParse env
@@ -182428,6 +182441,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             tokens_cords = cords; semantic_updates = semantic_updates
             comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
             default_env = default_env
+            continuation_column = None
             }
         assert (env.tokens_cords.Length = env.tokens.Length)
         {result=blockParsingParse env; semantic_tokens=semantic_updates_apply block semantic_updates}

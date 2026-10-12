@@ -40,27 +40,37 @@ inl strike_spell () : spell = {group = AttackGroup; own_ms = 2000; group_ms = 20
 inl light_healing () : spell = {group = HealingGroup; own_ms = 1000; group_ms = 1000}
 inl haste () : spell = {group = SupportGroup; own_ms = 2000; group_ms = 2000}
 
+///> rust
+///> c
 test fresh_timers_allow_any_spell =
     inl ~now = 0i32
     can_cast now (strike_spell ()) (idle_timers ()) |> _assert_eq true
 
+///> rust
+///> c
 test attack_blocks_its_group_until_it_expires =
     inl ~now = 1000i32
     inl held = idle_timers () |> after_cast now (strike_spell ())
     can_cast (now + 1999) (strike_spell ()) held |> _assert_eq false
     can_cast (now + 2000) (strike_spell ()) held |> _assert_eq true
 
+///> rust
+///> c
 test attack_does_not_block_healing_group =
     inl ~now = 1000i32
     inl held = idle_timers () |> after_cast now (strike_spell ())
     group_ready_at HealingGroup held |> _assert_eq 0i32
 
+///> rust
+///> c
 test own_cooldown_gates_every_group =
     inl ~now = 1000i32
     inl held = idle_timers () |> after_cast now (strike_spell ())
     can_cast (now + 500) (light_healing ()) held |> _assert_eq false
     can_cast (now + 2000) (light_healing ()) held |> _assert_eq true
 
+///> rust
+///> c
 test support_sets_only_support_group =
     inl ~now = 0i32
     inl held = idle_timers () |> after_cast now (haste ())

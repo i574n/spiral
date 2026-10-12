@@ -60,6 +60,27 @@ defmodule Spiral.Kino.Toolchain do
     opts[:lua] || System.get_env("SPIRAL_LUA") || System.find_executable("lua")
   end
 
+  @spec zig(keyword()) :: String.t() | nil
+  def zig(opts) do
+    opts[:zig] || System.get_env("SPIRAL_ZIG") || System.find_executable("zig")
+  end
+
+  @spec wgsl_run(keyword()) :: String.t() | nil
+  def wgsl_run(opts) do
+    cache =
+      System.get_env("SPIRAL_BIN_CACHE_DIR") ||
+        Path.join(System.get_env("LOCALAPPDATA") || Path.join(System.user_home!(), ".cache"), "spiral-bin")
+
+    built = Path.join(cache, "toolchains/wgsl-run/release")
+
+    opts[:wgsl_run] || System.get_env("SPIRAL_WGSL_RUN") ||
+      Enum.find([Path.join(built, "spiral-wgsl.exe"), Path.join(built, "spiral-wgsl")], &File.regular?/1)
+  end
+  @spec naga(keyword()) :: String.t() | nil
+  def naga(opts) do
+    opts[:naga] || System.get_env("SPIRAL_NAGA") || System.find_executable("naga")
+  end
+
   @spec bun(keyword()) :: String.t() | nil
   def bun(opts) do
     opts[:bun] || System.get_env("SPIRAL_BUN") || System.find_executable("bun")

@@ -256,7 +256,12 @@ defmodule Spiral.Kino.CompilerDaemon do
   defp compiler_mb(compiler) do
     with {:ok, text} <- File.read(compiler.socket <> ".pid"),
          {pid, ""} <- Integer.parse(String.trim(text)) do
-      working_set_mb(pid)
+      task = Task.async(fn -> working_set_mb(pid) end)
+
+      case Task.yield(task, 5_000) || Task.shutdown(task, :brutal_kill) do
+        {:ok, mb} -> mb
+        _ -> nil
+      end
     else
       _ -> nil
     end

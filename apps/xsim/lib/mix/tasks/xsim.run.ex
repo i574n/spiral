@@ -9,7 +9,7 @@ defmodule Mix.Tasks.Xsim.Run do
 
     {opts, _} =
       OptionParser.parse!(args,
-        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float]
+        strict: [spi: :string, spi_file: :string, cells: :integer, breaking: :integer, frames: :boolean, churn: :integer, save: :string, replay: :string, seed: :integer, users: :integer, edits: :integer, schedules: :integer, executor: :string, max_concurrency: :integer, duplicates: :float, memo: :boolean]
       )
 
     files =
@@ -20,8 +20,9 @@ defmodule Mix.Tasks.Xsim.Run do
     threads = Enum.map(files, &cells_of(&1, opts[:cells]))
     scenario = Xsim.Scenario.from_corpus(threads, seed: opts[:seed] || 1, users: opts[:users] || 8, edits: opts[:edits] || 3, breaking: opts[:breaking] || 0, churn: opts[:churn] || 0)
     scenario = if opts[:frames], do: %{scenario | events: Xsim.Frames.explode_posts(scenario.events)}, else: scenario
-    executor = executor(opts[:executor] || "fake", spi)
-    baseline = executor(opts[:executor] || "fake", spi)
+    tally = Xsim.Executors.memo_tally()
+    executor = executor(opts[:executor] || "fake", spi, memo: Keyword.get(opts, :memo, false), memo_tally: tally)
+    baseline = executor(opts[:executor] || "fake", spi, memo: false)
 
     runs =
       for schedule <- 1..(opts[:schedules] || 2) do
@@ -36,7 +37,9 @@ defmodule Mix.Tasks.Xsim.Run do
         ms = System.monotonic_time(:millisecond) - started
         verdicts = Xsim.Invariants.check(state, baseline)
         verdicts = if opts[:executor] == "kino", do: verdicts ++ [{:breaking_edits_fail, Xsim.Invariants.breaking_edits_fail(state, scenario.broken)}], else: verdicts
+        memo = Xsim.Executors.memo_counts(tally)
         IO.puts(summary(scenario, deliveries, state, verdicts, schedule, ms))
+        if opts[:memo], do: IO.puts("  memo hits=#{memo.hit} misses=#{memo.miss} cumulative_after_schedule=#{schedule}")
         explain(state, verdicts, baseline)
         {state, verdicts}
       end
@@ -60,9 +63,9 @@ defmodule Mix.Tasks.Xsim.Run do
     if limit, do: Enum.take(cells, limit), else: cells
   end
 
-  defp executor("fake", _spi), do: Xsim.Executors.fake()
-  defp executor("fake-leak", _spi), do: Xsim.Executors.fake(:leak)
-  defp executor("kino", spi), do: Xsim.Executors.kino(root: Path.dirname(Path.expand(spi)), spiral_lib: Path.dirname(Path.expand(spi)))
+  defp executor("fake", _spi, _memo), do: Xsim.Executors.fake()
+  defp executor("fake-leak", _spi, _memo), do: Xsim.Executors.fake(:leak)
+  defp executor("kino", spi, memo), do: Xsim.Executors.kino([root: Path.dirname(Path.expand(spi)), spiral_lib: Path.dirname(Path.expand(spi))] ++ memo)
 
   defp summary(scenario, deliveries, state, verdicts, schedule, ms) do
     fields = [

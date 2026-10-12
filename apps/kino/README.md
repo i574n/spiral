@@ -165,7 +165,7 @@ The runner tests use real process trees.
 
 ## Running a notebook from the command line
 
-`pwsh spi/run_notebook.ps1 --path <nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi] [--test <name>[,<name>]]`
+`pwsh spi/run_notebook.ps1 --path <nb.livemd> [--output-path <ipynb>] [--spi-path <spi>] [--export-only] [--no-html] [--no-spi] [--test <name>[,<name>]] [--output-dir <dir>]`
 (`mix spiral.notebook` behind it) runs every cell. It writes `<nb>.livemd.ipynb` (or `--output-path`); on success it also writes
 the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ipynb stem>.html` through
 `jupyter nbconvert --to html --HTMLExporter.theme=dark` with LF endings and cell ids renumbered 1..n (`<nb>.livemd.html`).
@@ -192,6 +192,11 @@ failed on a compile error, a non-zero exit or a timeout, and is unsupported when
 this machine (`` `lua` was not found``, `gleam`, `gcc`, ...; a missing compiler, `dotnet` or core package is a failure).
 A native target (`///> c`, `cpp`, `delphi`) passes only when its program exits 0: the exit code is no value channel,
 so an assertion that exits 1 fails the test. A cell's `///>` lines are its whole target list (no Rust run beside them).
+`///> zig` compiles the Zig backend and runs it with `zig run` (`SPIRAL_ZIG`, else `zig` on `PATH`). `///> wgsl` compiles
+the WGSL backend, validates it with `naga` when found (`SPIRAL_NAGA`), and runs it with `spiral-wgsl <file>`:
+`SPIRAL_WGSL_RUN`, else `<spiral-bin>/toolchains/wgsl-run/release/spiral-wgsl[.exe]`. The runner exits with the shader's
+`main` status: 0 passes, 3 (no GPU adapter) is unsupported, any other code fails; no runner is unsupported, never a pass.
+WGSL test bodies cannot print, so they end in an `i32` status expression.
 A target whose tool is missing is skipped and listed in the test's `unavailable` while the others still run.
 `--ignore` cells are skipped: not compiled, and not a definition of later cells.
 
@@ -200,12 +205,30 @@ stdout gets one `spiral-tests file {json}` line per source file (a `.spi` run co
 `failed`, `skipped`, `unsupported`, `filtered` (not selected by `--test`) and `not_run` (stopped before it ran); the file
 lines also list `failed_tests`. The ipynb metadata holds the same counts and every test (`spiral_tests`), and each test
 cell's metadata its own entry (`spiral_test`). A failed test fails the run (non-zero exit, no exports written); the plain
-compile of the same `.spi` is unaffected because the compiler skips test blocks. `--path` may be repeated.
+compile of the same `.spi` is unaffected because the compiler skips test blocks. `--path` may be repeated; with several,
+`--output-dir <dir>` writes each notebook's `<name>.ipynb` there (`--output-path` takes a single `--path`). With several
+`--path`, each `--test` name runs in the files that have it, files with none of them are skipped, and only a name no
+file has is an error.
 
 A `.spi` run plans one compile per test block plus one for the whole file (all definitions and real cells, its
 output on the last definition cell), not one per definition cell: a `.spi` top level holds only definitions, so the
 per-cell compiles showed nothing and cost a compile of the growing prefix each. `evaluate/2` takes `plan: :tests` for
 that and defaults to `plan: :cells` (one compile per cell, each cell's output shown).
+
+### Result memo
+
+A step that succeeded is remembered on disk (`%LOCALAPPDATA%/spiral-bin/kino-results`, or `SPIRAL_KINO_MEMO_DIR`;
+the newest 5000 entries are kept), keyed by everything that decides its result: the step's whole program (definitions
+before it and its body) and real module, its `///>` targets, the compiler DLL (path, size, mtime), the core package and
+every `--package` the program mounts (the sha256 of each `package.spiproj` and of the modules it lists, folders and path
+dependencies included; files a project does not list are left out), the md5 of the Kino modules on the compile, run
+and verdict path (not the editor or report ones), and the tool options (`print_code`, tool paths). A re-run recalls such a step
+with its outputs instead of compiling, and the daemon is not even started when every step is recalled; failures,
+timeouts and unsupported steps always run again. Editing one test changes only that test's program, so only it runs;
+editing a definition reruns the steps after it. The report marks each run test `memo: hit|miss` and the
+`spiral-tests` lines count `memo_hits`. `SPIRAL_KINO_MEMO=0` (or `memo: false`) turns it off; it is off when compile
+or run stages are faked (`compile:`, `execute:`, ...) unless `memo: true` is passed. Target toolchains (rustc, gleam,
+lua, ...) are not part of the key: after upgrading one, clear the directory.
 
 `--test <name>` (repeatable, or a comma list; a name or a symbol) runs only those test cells. Each cell's program already holds the
 definitions of the cells above it (packages, opens, definitions, static tests, real cells), so one compile per test

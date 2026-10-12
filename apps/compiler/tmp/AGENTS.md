@@ -158,6 +158,10 @@ The 118 changed residuals:
 - `mega_brzozowski_derivatives/indexed_dfa_state_cardinality` (5): dead pure unboxes dropped on C, Rust, Delphi, Zig and Wasm, with backend temporaries renumbered.
 - `mega_omniledger_erp_kernel` F# (2): dead pure unboxes dropped.
 
+Not blessed. The first `-Bless` attempt ran while other jobs held all but 1 GB of memory, and every compile timed out, so it was stopped before it recorded anything. The second timed out on `union_i8_text|Swift` and so no longer reproduced the ladder. `EXPECTED.tsv` is unchanged. A compile that times out leaves its output file empty (`abi_external/main.c`), so restore outputs after a stopped run.
+
+The host takes `--default-int i8|i16|i32|i64|u8|u16|u32|u64` and `--default-float f32|f64` anywhere on its command line, in every mode (`--backend`, `--batch`, `--server`, `build-file`). They set `SPIRAL_DEFAULT_INT` / `SPIRAL_DEFAULT_FLOAT` for the process. `startupParse` (shared section, both cores) takes its defaults from those variables before falling back to `i32` and `f64`, so every `DefaultEnv` the host creates sees the same defaults. The defaults decide the `int`/`float`/`uint` type names and unsuffixed literals: with `--default-int i64 --default-float f32`, `inl ~x : float = 1.5` and `inl ~n : int = 3` emit `float32 = 1.5f` and `int64 = 3L`. An unknown value exits 2 with the allowed list.
+
 The Zig backend (`codegenZig`, `--backend Zig` / `.zig`, 2026-10-06) is being brought up toward the hub role: a sample
 gets a Zig row when `tests/harness.psd1`'s `Zig` list names it (C is its oracle, like Rust's and Delphi's). The native
 tier builds it with `zig build-exe -O ReleaseFast --stack 1073741824` (~2 s; Zig's self-hosted `-fno-llvm` linker ignores `--stack` and leaves 16 MB, ReleaseSafe takes ~16 s) since the prelude writes through the OS directly and replaces the default panic handler (std.Io.Threaded and the debug-info readers were 302 of 307 LLVM functions; cube: 0.15 s run vs C 1.34 s). Not

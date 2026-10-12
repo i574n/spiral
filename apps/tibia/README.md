@@ -3,9 +3,10 @@
 A typed Tibia-rules simulator in Spiral, compiled to Rust (CPU) and WGSL (GPU) from one source, used to train agents
 that are measured against the best open-source Tibia bots on a public, reproducible benchmark: the **OT Agent Arena**.
 
-Status 2026-10-12: the `apps/tibia` package has seven `.spi` modules with test blocks (geometry, vitality, coins, rng,
-cooldowns, hunt, hunt_sim), run through `apps/kino/spi/run_notebook.ps1`; a local Canary 3.6.1 world is being brought up
-outside the repos in `C:\Users\i574n\tibia-local`.
+Status 2026-10-12: ten `.spi` modules with 58 test blocks (geometry, vitality, coins, rng, cooldowns, damage,
+creatures, wire, hunt, hunt_sim), Rust + C on every rules test, WGSL and Zig status tests where the backend allows; all
+pass through `apps/kino/spi/run_notebook.ps1` (full run 248 s, unchanged re-run 7 s with Kino's result memo). Local
+Canary 3.6.1 world and scripted off-screen OTClient probes in `C:\Users\i574n\tibia-local` (`world.ps1`, `run-probe.ps1`).
 
 ## Decisions
 

@@ -6,3 +6,4 @@ modules:
     rng
     cooldowns
     damage
+    creatures

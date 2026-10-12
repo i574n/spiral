@@ -40,19 +40,27 @@ inl survivor_health (outcome : struck) : i32 =
     | Survived target => health target
     | Slain _ => 0
 
+///> rust
+///> c
 test strike_reduces_health =
     inl ~damage = 30i32
     spawn 100 |> strike damage |> survivor_health |> _assert_eq 70i32
 
+///> rust
+///> c
 test lethal_strike_slays =
     inl ~damage = 100i32
     spawn 100 |> strike damage |> survivor_health |> _assert_eq 0i32
 
+///> rust
+///> c
 test heal_caps_at_maximum =
     inl ~amount = 500i32
     inl healed = spawn 100 |> heal amount
     health healed |> _assert_eq (maximum_health healed)
 
+///> rust
+///> c
 test strike_then_heal =
     inl ~damage = 60i32
     match spawn 100 |> strike damage with

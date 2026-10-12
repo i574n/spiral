@@ -164,6 +164,63 @@ defmodule Spiral.Kino.NotebookReportTest do
     assert [%{"name" => "add_one", "title" => "add one", "status" => "failed"}] = report["tests"]
   end
 
+  test "passing steps are recalled on an unchanged re-run; an edit re-runs only what it changed", %{dir: dir} do
+    path = Path.join(dir, "memo.spi")
+    File.write!(path, @spi)
+    {:ok, agent} = Agent.start_link(fn -> [] end)
+
+    run = fn ->
+      Agent.update(agent, fn _ -> [] end)
+
+      {status, report} =
+        Notebook.run_report(path,
+          compile: compile(agent),
+          rustc: fn _ -> :ok end,
+          execute: exit_when("_assert_eq 3i32", 1),
+          memo: true,
+          memo_dir: Path.join(dir, "memo")
+        )
+
+      ipynb = JSON.decode!(File.read!(path <> ".ipynb"))
+      outputs = Enum.map(ipynb["cells"], &(&1["outputs"] || []))
+      {status, report, outputs, length(Agent.get(agent, & &1))}
+    end
+
+    {{:error, _}, first, outputs, 4} = run.()
+    assert first["memo_hits"] == 0
+    assert Enum.map(first["tests"], &{&1["name"], &1["memo"]}) == [{"one", "miss"}, {"broken", "miss"}, {"later", nil}, {"two", "miss"}]
+
+    {{:error, _}, second, ^outputs, 1} = run.()
+    assert second["memo_hits"] == 2
+    assert Enum.map(second["tests"], &{&1["name"], &1["status"], &1["memo"]}) ==
+             [{"one", "passed", "hit"}, {"broken", "failed", "miss"}, {"later", "skipped", nil}, {"two", "passed", "hit"}]
+
+    File.write!(path, String.replace(@spi, "two () |> _assert_eq 2i32", "two () + 0i32 |> _assert_eq 2i32"))
+    {{:error, _}, third, _, 2} = run.()
+    assert Enum.map(third["tests"], &{&1["name"], &1["memo"]}) == [{"one", "hit"}, {"broken", "miss"}, {"later", nil}, {"two", "miss"}]
+  end
+
+  test "--output-dir gives each --path its own ipynb; --output-path still wins" do
+    alias Mix.Tasks.Spiral.Notebook, as: NotebookTask
+    assert NotebookTask.output_path("C:/x/geometry.spi", output_dir: "C:/out") == Path.join("C:/out", "geometry.spi.ipynb")
+    assert NotebookTask.output_path("C:/x/a.spi", output_dir: "C:/out", output_path: "C:/o.ipynb") == "C:/o.ipynb"
+    assert NotebookTask.output_path("C:/x/a.spi", []) == nil
+  end
+  test "with several --path, --test names are matched per file and fail only when no file has them" do
+    alias Mix.Tasks.Spiral.Notebook, as: NotebookTask
+    names = fn
+      "a.spi" -> ["one", "two"]
+      "b.spi" -> ["three"]
+    end
+
+    assert NotebookTask.tests_by_path(["a.spi", "b.spi"], ["two", "three"], names) ==
+             {:ok, %{"a.spi" => ["two"], "b.spi" => ["three"]}}
+
+    assert NotebookTask.tests_by_path(["a.spi", "b.spi"], ["one"], names) == {:ok, %{"a.spi" => ["one"], "b.spi" => []}}
+    assert {:error, message} = NotebookTask.tests_by_path(["a.spi", "b.spi"], ["one", "nope"], names)
+    assert message =~ "unknown test nope"
+    assert NotebookTask.tests_by_path(["a.spi"], ["nope"], names) == {:ok, %{"a.spi" => ["nope"]}}
+  end
   test "an ignored cell is neither run nor a definition of later cells", %{dir: dir} do
     path = Path.join(dir, "ignored.dib")
 

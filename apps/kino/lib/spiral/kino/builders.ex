@@ -13,10 +13,12 @@ defmodule Spiral.Kino.Builders do
     "lua" => :lua,
     "c" => :c,
     "delphi" => :delphi,
+    "zig" => :zig,
+    "wgsl" => :wgsl,
     "_" => :skip
   }
 
-  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, or delphi"
+  @expected "rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi, zig, or wgsl"
 
   @rust_flags %{
     long: %{
@@ -97,6 +99,8 @@ defmodule Spiral.Kino.Builders do
       :lua -> "Lua"
       :c -> "C"
       :delphi -> "Delphi"
+      :zig -> "Zig"
+      :wgsl -> "Wgsl"
     end
   end
 
@@ -113,6 +117,8 @@ defmodule Spiral.Kino.Builders do
       :lua -> ".lua"
       :c -> ".c"
       :delphi -> ".pas"
+      :zig -> ".zig"
+      :wgsl -> ".wgsl"
     end
   end
 
@@ -123,6 +129,8 @@ defmodule Spiral.Kino.Builders do
           | {:bun, String.t()}
           | {:cc, String.t()}
           | {:dcc, String.t()}
+          | {:zig, String.t()}
+          | {:wgsl, String.t()}
   def dispatch(%{tool: :fsharp}, path), do: {:fsi, path}
 
   def dispatch(%{tool: :python, deps: [], env: nil}, path), do: {:python, path}
@@ -132,6 +140,10 @@ defmodule Spiral.Kino.Builders do
   def dispatch(%{tool: :c}, path), do: {:cc, path}
 
   def dispatch(%{tool: :delphi}, path), do: {:dcc, path}
+
+  def dispatch(%{tool: :zig}, path), do: {:zig, path}
+
+  def dispatch(%{tool: :wgsl}, path), do: {:wgsl, path}
 
   def dispatch(builder, path), do: {:spiral, argv(builder, path)}
 

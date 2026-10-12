@@ -31,5 +31,5 @@ where the road is clean. Every friction found becomes an eoie backlog item befor
 | Inline expected output | TEST-EXPECT-PERSIST | Otherwise every Tibia test is rewritten once it lands |
 | Compiler owns test-block boundaries | SOURCE-BOUNDARY-AUTHORITY | Kino's line heuristics are the parser Tibia would depend on |
 | Typed planning fields | EOIE-AGILE-TYPED-FIELDS | Tibia's backlog is written once, with typed estimates |
-| Kino `wgsl` target | to be added | `///> wgsl` must run on the spiral-wgsl runner; Kino's targets today: rust, fsharp, typescript, python, cuda, cpp, gleam, lua, c, delphi |
+| Kino `wgsl` target | KINO-WGSL-TARGET (done 2026-10-12) | `///> wgsl` runs spiral-wgsl and fails on a non-zero exit; `///> zig` runs `zig run`; WGSL/Zig tests end in an i32 status because lib `testing` prints strings |
 | WGSL arrays and unions | WGSL-BACKEND | PLAN.md P0; dogfood work, can start while the gates above close |
