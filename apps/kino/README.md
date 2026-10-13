@@ -171,6 +171,13 @@ the `.spi` export (`--no-spi`: none, for a notebook whose export is F#) and `<ip
 `jupyter nbconvert --to html --HTMLExporter.theme=dark` with LF endings and cell ids renumbered 1..n (`<nb>.livemd.html`).
 Without `jupyter` on `PATH` the html is skipped with a note.
 
+`run_notebook.ps1` first tries the warm daemon (`SPIRAL_KINO_COMPILER_PORT`, else 13905): it sends its arguments as a
+`notebook` request and prints the daemon's `spiral-tests` lines and exit code, so no `mix` or BEAM starts. The daemon
+refuses (`stale`) when it serves another Kino checkout, or when Kino's sources or beams changed since it started (then
+it retires itself after the reply); the script then runs `mix spiral.notebook` as before, which afterwards launches a
+daemon in the background when none listens, for the next run. `SPIRAL_KINO_WARM=0` skips the warm daemon;
+`SPIRAL_KINO_MEMO=0` is passed on as `--no-memo`.
+
 On a fresh machine the script first provides what the route needs, each step only when its output is missing: the
 .NET 11 SDK (`apps/compiler/tmp/scripts/install-dotnet.ps1`, into the spiral-bin cache) and the single-flight
 `SpiralCompiler.dll` (`scripts/build.ps1 -Mode single-flight`), then `mix local.hex`/`local.rebar --if-missing` and
@@ -203,7 +210,9 @@ A target whose tool is missing is skipped and listed in the test's `unavailable`
 stdout gets one `spiral-tests file {json}` line per source file (a `.spi` run covers `x.spi` and, for `--real` tests,
 `x_real.spir`) and one `spiral-tests total {json}` line, each with `discovered`, `executed` (passed + failed), `passed`,
 `failed`, `skipped`, `unsupported`, `filtered` (not selected by `--test`) and `not_run` (stopped before it ran); the file
-lines also list `failed_tests`. The ipynb metadata holds the same counts and every test (`spiral_tests`), and each test
+lines also list `failed_tests`. Each test row lists its `targets`: one `{target, status, ms}` per `///>` line (`rust` for the
+default host), `status` being `passed`, `failed`, `unsupported` or `not_run` (after an earlier target failed), `ms` the
+target's compile plus run time; a recalled test shows the targets of the run it was recalled from. The ipynb metadata holds the same counts and every test (`spiral_tests`), and each test
 cell's metadata its own entry (`spiral_test`). A failed test fails the run (non-zero exit, no exports written); the plain
 compile of the same `.spi` is unaffected because the compiler skips test blocks. `--path` may be repeated; with several,
 `--output-dir <dir>` writes each notebook's `<name>.ipynb` there (`--output-path` takes a single `--path`). With several
@@ -214,6 +223,31 @@ A `.spi` run plans one compile per test block plus one for the whole file (all d
 output on the last definition cell), not one per definition cell: a `.spi` top level holds only definitions, so the
 per-cell compiles showed nothing and cost a compile of the growing prefix each. `evaluate/2` takes `plan: :tests` for
 that and defaults to `plan: :cells` (one compile per cell, each cell's output shown).
+
+### Expected compile errors
+
+`test rejects_mixed_units fails EJP0040 "Unification failure" =` (the code is optional: `fails "Unification failure"`)
+passes only when compiling the definitions before it plus its body fails with a diagnostic that contains the message and,
+when given, the code. A program that compiles, a different diagnostic, or a failure after compiling fails the test; a
+matching message without any `E...` code fails too and says so. In a notebook the cell carries
+`///- --test --fails EJP0040 "Unification failure"`; the report's `mode` is `fails`. The type checker's diagnostics
+(`Unification failure`, `Unbound variable`) carry no code yet, so write those tests without one.
+
+### Agreeing targets
+
+A test with several `///>` targets passes only when every target passes and prints the same as the first one (stdout
+with line ends and trailing spaces normalized, plus the value): otherwise it fails with `targets disagree: lua printed
+"1", gleam printed "1.0"` and the differing target's row says `disagrees`. `test name no_agree =` (a cell's
+`///- --no-agree`) keeps only the pass rule. Cells that are not tests, and `print_code` tests, are not compared.
+
+### Accepting actual values
+
+`--accept` (`.spi` only) rewrites the expected literal of each failed test whose output holds
+`__assert_eq { actual = A; expected = E }`: inside that test's block, the one `_assert_eq E` literal becomes `A`, its type suffix kept
+(`_assert_eq 5i32` -> `_assert_eq 4i32`), under a `<file>.accept.lock`. Such tests report `accepted` (counted in
+`executed` and `accepted`), and the run passes when nothing else failed. A test is left alone, with `accept_refused` saying
+why, when its block has no or several matching literals or the actual value is not a plain literal. Without the flag a
+mismatch fails and the file is not touched.
 
 ### Result memo
 

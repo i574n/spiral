@@ -1,5 +1,5 @@
 defmodule Spiral.Kino.Notebook do
-  alias Spiral.Kino.{Builders, Document, Memo, ProcessError, Result, Targets}
+  alias Spiral.Kino.{Builders, Document, Memo, ProcessError, Result, SpiralError, Targets}
 
   @default_timeout 300_000
   @run_keys [
@@ -112,6 +112,7 @@ defmodule Spiral.Kino.Notebook do
       verdicts: ran.verdicts,
       unavailable: ran.unavailable,
       memo: ran.memo,
+      targets: ran.targets,
       report: report(tests, selected, ran)
     }
   end
@@ -141,9 +142,11 @@ defmodule Spiral.Kino.Notebook do
     tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
   end
 
-  @report_counts ~w(discovered executed passed failed skipped unsupported filtered not_run memo_hits)
+  @report_counts ~w(discovered executed passed failed accepted skipped unsupported filtered not_run memo_hits)
 
-  defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo}) do
+  defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo} = ran) do
+    targets = Map.get(ran, :targets, %{})
+
     rows =
       Enum.map(tests, fn test ->
         {state, message} = test_state(test, selected, Map.get(verdicts, test.index))
@@ -156,9 +159,11 @@ defmodule Spiral.Kino.Notebook do
           "mode" => test.mode,
           "realm" => test.realm,
           "status" => state,
-          "unavailable" => Map.get(unavailable, test.index, [])
+          "unavailable" => Map.get(unavailable, test.index, []),
+          "targets" => target_rows(Map.get(targets, test.index, []))
         }
         |> then(&if(memo[test.index], do: Map.put(&1, "memo", Atom.to_string(memo[test.index])), else: &1))
+        |> then(&if(state == "not_run", do: Map.put(&1, "reason", not_run_reason(ran.status)), else: &1))
         |> then(&if(message, do: Map.put(&1, "message", message), else: &1))
       end)
 
@@ -172,7 +177,8 @@ defmodule Spiral.Kino.Notebook do
 
     %{
       "discovered" => length(rows),
-      "executed" => count.("passed") + count.("failed"),
+      "executed" => count.("passed") + count.("failed") + count.("accepted"),
+      "accepted" => count.("accepted"),
       "passed" => count.("passed"),
       "failed" => count.("failed"),
       "skipped" => count.("skipped"),
@@ -181,6 +187,13 @@ defmodule Spiral.Kino.Notebook do
       "not_run" => count.("not_run"),
       "memo_hits" => Enum.count(rows, &(&1["memo"] == "hit"))
     }
+  end
+
+  defp not_run_reason({:error, message}), do: "the run stopped before this test: " <> first_line(message)
+  defp not_run_reason(_status), do: "no step ran for this cell"
+
+  defp target_rows(targets) do
+    Enum.map(targets, fn row -> %{"target" => row.target, "status" => row.status, "ms" => row.ms} end)
   end
 
   defp test_state(%{mode: "ignore"}, _selected, _verdict), do: {"skipped", nil}
@@ -282,7 +295,7 @@ defmodule Spiral.Kino.Notebook do
   defp run_cells(path, doc, opts) do
     output_path = opts[:output_path] || path <> ".ipynb"
     root = opts[:root] || Path.dirname(path)
-    evaluation = evaluate(doc, Keyword.put(opts, :root, root))
+    evaluation = evaluate(doc, Keyword.put(opts, :root, root)) |> accept_mismatches(path, opts)
     %{status: status, outputs: outputs, durations: durations, report: report} = evaluation
 
     outputs =
@@ -309,6 +322,41 @@ defmodule Spiral.Kino.Notebook do
       end
 
     {result, report}
+  end
+
+  defp accept_mismatches(evaluation, path, opts) do
+    failures =
+      for %{"status" => "failed", "index" => index, "name" => name} <- evaluation.report["tests"],
+          {:failed, message} <- [Map.get(evaluation.verdicts, index)],
+          do: {name, message}
+
+    if opts[:accept] && Path.extname(path) == ".spi" && failures != [] do
+      case Spiral.Kino.Accept.accept(path, failures) do
+        results when is_list(results) -> mark_accepted(evaluation, results)
+        _ -> evaluation
+      end
+    else
+      evaluation
+    end
+  end
+
+  defp mark_accepted(evaluation, results) do
+    accepted = for {name, :ok} <- results, do: name
+    refused = Map.new(for {name, {:error, reason}} <- results, do: {name, reason})
+
+    rows =
+      Enum.map(evaluation.report["tests"], fn row ->
+        cond do
+          row["name"] in accepted and row["status"] == "failed" -> Map.put(row, "status", "accepted")
+          Map.has_key?(refused, row["name"]) -> Map.put(row, "accept_refused", refused[row["name"]])
+          true -> row
+        end
+      end)
+
+    accepted_indices = for %{"status" => "accepted", "index" => index} <- rows, do: index
+    remaining = for {index, {:failed, _}} <- evaluation.verdicts, index not in accepted_indices, do: index
+    status = if accepted_indices != [] and remaining == [], do: :ok, else: evaluation.status
+    %{evaluation | status: status, report: Map.merge(evaluation.report, counts(rows)) |> Map.put("tests", rows)}
   end
 
   @spec write_html(String.t()) :: :ok | {:error, String.t()}
@@ -421,8 +469,8 @@ defmodule Spiral.Kino.Notebook do
           started = System.monotonic_time(:millisecond)
 
           case Memo.fetch(memo, key) do
-            {:ok, %{result: result}} ->
-              ms = {System.monotonic_time(:millisecond) - started, %{}}
+            {:ok, %{result: result} = value} ->
+              ms = {System.monotonic_time(:millisecond) - started, %{}, Map.get(value, :targets, [])}
               {left, recalled ++ [{step.index, result, ms}]}
 
             _ ->
@@ -445,9 +493,9 @@ defmodule Spiral.Kino.Notebook do
     _ -> nil
   end
 
-  defp remember(%{memo: {memo, key}}, {:ok, _outputs, _unavailable} = result), do: Memo.store(memo, key, %{result: result})
-  defp remember(%{memo: {memo, key}}, {:ok, _outputs} = result), do: Memo.store(memo, key, %{result: result})
-  defp remember(_step, _result), do: :ok
+  defp remember(%{memo: {memo, key}}, {:ok, _outputs, _unavailable} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
+  defp remember(%{memo: {memo, key}}, {:ok, _outputs} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
+  defp remember(_step, _result, _targets), do: :ok
 
   defp plan(wire, :tests), do: Spiral.Kino.Domain.plan_tests(wire)
   defp plan(wire, _cells), do: Spiral.Kino.Domain.plan(wire)
@@ -472,7 +520,7 @@ defmodule Spiral.Kino.Notebook do
       opts[:workspace] == nil and opts[:env] == nil
   end
 
-  defp no_runs, do: %{outputs: %{}, durations: %{}, status: :ok, verdicts: %{}, unavailable: %{}, memo: %{}}
+  defp no_runs, do: %{outputs: %{}, durations: %{}, status: :ok, verdicts: %{}, unavailable: %{}, memo: %{}, targets: %{}}
 
   defp run_serial(steps, opts, root) do
     Enum.reduce_while(steps, no_runs(), fn step, acc ->
@@ -510,7 +558,20 @@ defmodule Spiral.Kino.Notebook do
 
   defp collect(entries, acc) do
     Enum.reduce(entries, acc, fn {index, result, ms}, acc ->
-      acc = if ms, do: put_in(acc, [:durations, index], ms), else: acc
+      acc =
+        case ms do
+          {elapsed, phases, [_ | _] = targets} ->
+            acc |> put_in([:durations, index], {elapsed, phases}) |> put_in([:targets, index], targets)
+
+          {elapsed, phases, []} ->
+            put_in(acc, [:durations, index], {elapsed, phases})
+
+          nil ->
+            acc
+
+          ms ->
+            put_in(acc, [:durations, index], ms)
+        end
 
       case result do
         {:ok, outputs} ->
@@ -564,12 +625,14 @@ defmodule Spiral.Kino.Notebook do
   defp run_step(step, opts, root) do
     started = System.monotonic_time(:millisecond)
     Process.delete(:spiral_kino_last_phases)
+    Process.delete(:spiral_kino_last_targets)
     result = dispatch_step(step, opts, root)
-    remember(step, result)
+    targets = Spiral.Kino.last_targets()
+    remember(step, result, targets)
 
     [
       {step.index, result,
-       {System.monotonic_time(:millisecond) - started, Spiral.Kino.last_phases()}}
+       {System.monotonic_time(:millisecond) - started, Spiral.Kino.last_phases(), targets}}
     ]
   end
 
@@ -647,21 +710,13 @@ defmodule Spiral.Kino.Notebook do
         |> run_opts(root, timeout)
         |> Keyword.put(:builders, Builders.commands(step.cell_source))
         |> Keyword.put(:real, Map.get(step, :real, ""))
+        |> Keyword.put(:agree, agreement?(step.cell_source))
 
-      case Spiral.Kino.run(step.program, opts) do
-        {:ok, %Result{exit_status: status} = result} when status in [nil, 0] ->
-          {:ok, success_output(result), result.unavailable}
+      ran = Spiral.Kino.run(step.program, opts)
 
-        {:error, %ProcessError{reason: :tool_missing} = error} ->
-          unsupported(error)
-
-        {:ok, %Result{} = result} ->
-          text = "cell exited #{result.exit_status}\n#{result.stdout}"
-          {:error, error_output(text), text}
-
-        {:error, error} ->
-          text = error_text(error)
-          {:error, error_output(text), text}
+      case expectation(step.cell_source) do
+        nil -> verdict(ran)
+        expected -> expected_compile_error(expected, ran)
       end
     rescue
       error ->
@@ -670,8 +725,75 @@ defmodule Spiral.Kino.Notebook do
     end
   end
 
-  defp unsupported(error) do
-    text = "unsupported on this machine: " <> error_text(error)
+  defp agreement?(source) do
+    Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, source) and not Regex.match?(~r/^\/\/\/- [^\n]*--no-agree\b/m, source)
+  end
+
+  defp verdict(ran) do
+    case ran do
+      {:ok, %Result{exit_status: status} = result} when status in [nil, 0] ->
+        {:ok, success_output(result), result.unavailable}
+
+      {:error, %ProcessError{reason: :tool_missing} = error} ->
+        unsupported(error)
+
+      {:ok, %Result{} = result} ->
+        text = "cell exited #{result.exit_status}\n#{result.stdout}"
+        {:error, error_output(text), text}
+
+      {:error, error} ->
+        text = error_text(error)
+        {:error, error_output(text), text}
+    end
+  end
+
+  @doc false
+  def expectation(source) do
+    with [_, clause] <- Regex.run(~r/^\/\/\/- [^\n]*--fails\s+(.*?)\s*$/m, source),
+         [_, code, substring] <- Regex.run(~r/\A(?:(\S+)\s+)?"(.*)"\z/, clause) do
+      %{code: if(code == "", do: nil, else: code), substring: substring}
+    else
+      _ -> nil
+    end
+  end
+
+  defp expected_label(%{code: nil, substring: substring}), do: inspect(substring)
+  defp expected_label(%{code: code, substring: substring}), do: "#{code} #{inspect(substring)}"
+
+  @diagnostic_code ~r/\bE[A-Z]{2,4}\d{4}\b/
+
+  defp expected_compile_error(expected, {:error, %SpiralError{message: message}}) do
+    has_text = String.contains?(message, expected.substring)
+    has_code = expected.code == nil or String.contains?(message, expected.code)
+
+    cond do
+      has_text and has_code ->
+        text = "failed to compile as expected (#{expected_label(expected)}): #{first_line(message)}\n"
+        {:ok, [stream("stdout", text)], []}
+
+      has_text and not Regex.match?(@diagnostic_code, message) ->
+        text = "the diagnostic matches #{inspect(expected.substring)} but carries no error code (expected #{expected.code}):\n#{message}"
+        {:error, error_output(text), text}
+
+      true ->
+        text = "expected a compile error #{expected_label(expected)}, got a different one:\n#{message}"
+        {:error, error_output(text), text}
+    end
+  end
+
+  defp expected_compile_error(_expected, {:error, %ProcessError{reason: :tool_missing} = error}), do: unsupported(error)
+
+  defp expected_compile_error(expected, {:ok, %Result{}}) do
+    text = "expected a compile error #{expected_label(expected)}, but the program compiled"
+    {:error, error_output(text), text}
+  end
+
+  defp expected_compile_error(expected, {:error, error}) do
+    text = "expected a compile error #{expected_label(expected)}, but it failed past compiling:\n#{error_text(error)}"
+    {:error, error_output(text), text}
+  end
+
+  defp unsupported(error) do    text = "unsupported on this machine: " <> error_text(error)
     {:unsupported, [stream("stderr", text)], text}
   end
 
@@ -870,7 +992,7 @@ defmodule Spiral.Kino.Notebook do
   defp test_metadata(json, nil), do: json
 
   defp test_metadata(json, test) do
-    put_in(json, ["metadata", "spiral_test"], Map.take(test, ["name", "symbol", "title", "status", "mode", "realm"]))
+    put_in(json, ["metadata", "spiral_test"], Map.take(test, ["name", "symbol", "title", "status", "mode", "realm", "targets"]))
   end
 
   defp cell_json(%{kind: :markdown, source: source}, _outputs, _count, _duration) do

@@ -1139,6 +1139,15 @@
         'samples/tuple_mixed'
         'samples/nested_tuple'
         'samples/ts_tuple_mixed'
+        'samples/wgsl_nullary_union'
+        'samples/wgsl_payload_union'
+        'samples/gleam_match_single_case'
+        'samples/gleam_match_narrowed'
+        'samples/wgsl_array_scalar'
+        'samples/fixed_array_scalar'
+        'samples/fixed_array_runtime_index'
+        'samples/fixed_array_runtime_update'
+        'samples/array_union'
     )
     Calyx = @(
         'samples/backend_smoke'

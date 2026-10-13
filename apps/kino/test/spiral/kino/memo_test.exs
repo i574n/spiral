@@ -66,6 +66,14 @@ defmodule Spiral.Kino.MemoTest do
     assert Enum.reject(entries, &(&1 in resolved)) == []
   end
 
+  test "the compiler path keys the same however it is spelled (wrapper env vs default)", %{package: package} do
+    dll = Path.join(package, "SpiralCompiler.dll")
+    File.write!(dll, "dll")
+    step = %{program: "inl main () = 0i32\n", real: ""}
+    key = fn spelled -> Memo.key(Memo.context([memo: true, compiler_dll: spelled], [step]), step, []) end
+    windows = String.replace(dll, "/", "\\")
+    assert key.(dll) == key.(if(match?({:win32, _}, :os.type()), do: String.upcase(windows), else: dll))
+  end
   test "Kino's identity covers the modules that shape a result, not the editor or report ones" do
     modules = Memo.result_path_modules()
     assert Spiral.Kino.Targets in modules

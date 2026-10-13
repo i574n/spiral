@@ -129,3 +129,9 @@ test range_needs_same_floor =
     within_range 7 (position 0 0 7) (position 1 1 6) |> _assert_eq false
     within_range 7 (position 0 0 7) (position 7 7 7) |> _assert_eq true
     within_range 7 (position 0 0 7) (position 8 0 7) |> _assert_eq false
+
+///> wgsl
+test distance_and_steps_on_gpu =
+    inl ~x = 1942i32
+    inl moved = position x 1346 7 |> step NorthEast
+    if moved.x = 1943i32 && moved.y = 1345i32 && chebyshev_distance (position 0 0 7) (position x 2 7) = 1942i32 && within_range 1 (position x 0 7) (position (x + 1) 1 7) then 0i32 else 1i32

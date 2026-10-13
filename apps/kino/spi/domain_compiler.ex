@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
     out = Path.join(root, "src/spiral_kino/domain.gleam")
     File.mkdir_p!(Path.dirname(out))
     if stale?(spi, out), do: compile_spiral(Path.join(spi, "main.spi"), out, root)
-    gleam_build(root)
+    if gleam_stale?(root), do: gleam_build(root)
     {:ok, []}
   end
 
@@ -19,6 +19,19 @@ defmodule Mix.Tasks.Compile.SpiralDomain do
       Enum.any?(sources, fn path -> File.stat!(path).mtime > File.stat!(out).mtime end)
   end
 
+  defp gleam_stale?(root) do
+    beams = Path.wildcard(Path.join(root, "build/dev/erlang/spiral_kino/ebin/*.beam"))
+    sources = Path.wildcard(Path.join(root, "src/**/*.gleam")) ++ Enum.map(["gleam.toml", "manifest.toml"], &Path.join(root, &1))
+
+    case beams do
+      [] ->
+        true
+
+      _ ->
+        built = beams |> Enum.map(&File.stat!(&1, time: :posix).mtime) |> Enum.min()
+        Enum.any?(sources, fn path -> File.exists?(path) and File.stat!(path, time: :posix).mtime > built end)
+    end
+  end
   defp compile_spiral(entry, out, root) do
     dotnet = dotnet()
     dll = System.get_env("SPIRAL_COMPILER_DLL") || Path.join(cache(), "bin/single-flight/SpiralCompiler/Release/net11.0/SpiralCompiler.dll")

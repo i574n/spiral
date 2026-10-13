@@ -5,6 +5,11 @@ param(
 )
 . $PSScriptRoot/env.ps1
 
+if (-not $CoreSource) {
+    pwsh -NoProfile -File (Join-Path $PSScriptRoot 'pair-drift.ps1')
+    if ($LASTEXITCODE -ne 0) { throw 'pair-drift: a SPIRAL_CORE_HOPAC pair changed on one side only; change both sides or unify the pair' }
+}
+
 $dotnet = Resolve-SpiralDotnet
 $cache = Get-SpiralCacheDir
 $project = Join-Path $BundleRoot 'compiler/host/SpiralCompiler.fsproj'

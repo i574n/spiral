@@ -128,11 +128,11 @@ defmodule XsimTest do
 
   test "heavy churn on the root re-keys everything repeatedly and still keeps every invariant" do
     scenario = Scenario.from_cells(@cells, seed: 11, users: 4, edits: 0, churn: 12)
-    root_edits = for {:edit, "p0", _} <- scenario.events, do: :edit
+    root_edits = for {:edit, "p0", source} <- scenario.events, do: source
     assert length(root_edits) == 12
     state = Runner.run(Scenario.deliveries(scenario, duplicates: 0.2), Executors.fake(), max_concurrency: 2)
     assert Enum.all?(verdicts(state), fn {_, v} -> v == :ok end)
-    assert map_size(state.results) > length(@cells)
+    assert hd(Xsim.World.sources(state.world, "p0")) == List.last(root_edits)
   end
 
   test "a false-pass executor is caught by the breaking-edit oracle" do

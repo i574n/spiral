@@ -47,6 +47,9 @@ defmodule Spiral.Kino.NotebookReportTest do
     assert Enum.map(report["tests"], &{&1["name"], &1["status"]}) ==
              [{"one", "passed"}, {"broken", "failed"}, {"later", "skipped"}, {"two", "passed"}]
 
+    assert Enum.map(report["tests"], &Enum.map(&1["targets"], fn row -> {row["target"], row["status"]} end)) ==
+             [[{"rust", "passed"}], [{"rust", "failed"}], [], [{"rust", "passed"}]]
+
     refute Enum.any?(Agent.get(agent, & &1), &(&1 =~ "never_compiled"))
 
     ipynb = JSON.decode!(File.read!(path <> ".ipynb"))
@@ -201,13 +204,13 @@ defmodule Spiral.Kino.NotebookReportTest do
   end
 
   test "--output-dir gives each --path its own ipynb; --output-path still wins" do
-    alias Mix.Tasks.Spiral.Notebook, as: NotebookTask
+    alias Spiral.Kino.NotebookCli, as: NotebookTask
     assert NotebookTask.output_path("C:/x/geometry.spi", output_dir: "C:/out") == Path.join("C:/out", "geometry.spi.ipynb")
     assert NotebookTask.output_path("C:/x/a.spi", output_dir: "C:/out", output_path: "C:/o.ipynb") == "C:/o.ipynb"
     assert NotebookTask.output_path("C:/x/a.spi", []) == nil
   end
   test "with several --path, --test names are matched per file and fail only when no file has them" do
-    alias Mix.Tasks.Spiral.Notebook, as: NotebookTask
+    alias Spiral.Kino.NotebookCli, as: NotebookTask
     names = fn
       "a.spi" -> ["one", "two"]
       "b.spi" -> ["three"]
@@ -220,6 +223,106 @@ defmodule Spiral.Kino.NotebookReportTest do
     assert {:error, message} = NotebookTask.tests_by_path(["a.spi", "b.spi"], ["one", "nope"], names)
     assert message =~ "unknown test nope"
     assert NotebookTask.tests_by_path(["a.spi"], ["nope"], names) == {:ok, %{"a.spi" => ["nope"]}}
+  end
+  test "a `fails` test passes only when the compile fails with its code and message", %{dir: dir} do
+    spi = """
+    inl one () = 1i32
+
+    test rejects_mixed fails EJP0040 "Unification failure" =
+        one () + 1f64
+
+    test rejects_any fails "Unification failure" =
+        one () + 2f64
+
+    test wrong_message fails EJP0040 "Unbound variable" =
+        one () + 3f64
+
+    test compiles_anyway fails EJP0040 "Unification failure" =
+        one ()
+    """
+
+    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    path = Path.join(dir, "fails.spi")
+    File.write!(path, spi)
+
+    compile = fn %{source: source} ->
+      if source =~ "f64",
+        do: {:error, "EJP0040 main.spi:3:5: Unification failure. Got: f64 Expected: i32"},
+        else: {:ok, "fn main() {}\n"}
+    end
+
+    {_, report} = Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: exit_when("never", 0))
+
+    assert Enum.map(report["tests"], &{&1["name"], &1["mode"], &1["status"]}) == [
+             {"rejects_mixed", "fails", "passed"},
+             {"rejects_any", "fails", "passed"},
+             {"wrong_message", "fails", "failed"},
+             {"compiles_anyway", "fails", "failed"}
+           ]
+
+    codeless = fn %{source: source} ->
+      if source =~ "f64", do: {:error, "main.spi:3:5: Unification failure."}, else: {:ok, "fn main() {}\n"}
+    end
+
+    {_, report} = Notebook.run_report(path, compile: codeless, rustc: fn _ -> :ok end, execute: exit_when("never", 0), tests: ["rejects_mixed", "rejects_any"])
+    assert [%{"status" => "failed", "message" => message}, %{"status" => "passed"}] = Enum.filter(report["tests"], &(&1["status"] != "filtered"))
+    assert message =~ "carries no error code"
+  end
+  test "every target of a test must agree with the first one unless the test says no_agree", %{dir: dir} do
+    spi = """
+    inl one () = 1i32
+
+    ///> lua
+    ///> gleam
+    test same =
+        one ()
+
+    ///> lua
+    ///> gleam
+    test differ =
+        one () + 0i32
+
+    ///> lua
+    ///> gleam
+    test differ_allowed no_agree =
+        one () + 0i32
+    """
+
+    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    path = Path.join(dir, "agree.spi")
+    File.write!(path, spi)
+
+    target = fn %{builder: builder, source: source} ->
+      printed = if source =~ "differ" and builder.tool == :gleam, do: "1.0\n", else: "1\n"
+      {:ok, %{exit_status: 0, output: printed}}
+    end
+
+    compile = fn %{source: source} -> {:ok, if(source =~ "+ 0i32", do: "differ\n", else: "same\n")} end
+    {_, report} = Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: exit_when("never", 0), target: target)
+
+    assert Enum.map(report["tests"], &{&1["name"], &1["status"]}) == [{"same", "passed"}, {"differ", "failed"}, {"differ_allowed", "passed"}]
+    differ = Enum.find(report["tests"], &(&1["name"] == "differ"))
+    assert differ["message"] =~ "targets disagree: lua printed \"1\", gleam printed \"1.0\""
+    assert [%{"target" => "lua", "status" => "passed"}, %{"target" => "gleam", "status" => "disagrees"}] = differ["targets"]
+  end
+  test "a test that never ran says why", %{dir: dir} do
+    path = Path.join(dir, "stopped.spi")
+    File.write!(path, "inl one () = 1i32\n\ntest one =\n    one ()\n")
+    previous = System.get_env("SPIRAL_KINO_CELLS")
+    System.put_env("SPIRAL_KINO_CELLS", "serial")
+
+    try do
+      compile = fn %{source: source} ->
+        if source =~ "inl main () : i32 = 0i32", do: {:error, "main.spi:1:1: broken prefix"}, else: {:ok, "fn main() {}\n"}
+      end
+
+      {{:error, _}, report} = Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: exit_when("never", 0), plan: :cells)
+      assert [%{"status" => "not_run", "reason" => reason}] = report["tests"]
+      assert reason =~ "the run stopped before this test: "
+      assert reason =~ "broken prefix"
+    after
+      if previous, do: System.put_env("SPIRAL_KINO_CELLS", previous), else: System.delete_env("SPIRAL_KINO_CELLS")
+    end
   end
   test "an ignored cell is neither run nor a definition of later cells", %{dir: dir} do
     path = Path.join(dir, "ignored.dib")
@@ -287,6 +390,11 @@ defmodule Spiral.Kino.NotebookReportTest do
              [{"both", "passed", ["gleam"]}, {"gleam_only", "unsupported", []}]
 
     assert %{"executed" => 1, "unsupported" => 1, "failed" => 0} = report
+
+    assert [both, gleam_only] = report["tests"]
+    assert [%{"target" => "lua", "status" => "passed", "ms" => ms}, %{"target" => "gleam", "status" => "unsupported"}] = both["targets"]
+    assert is_integer(ms)
+    assert [%{"target" => "gleam", "status" => "unsupported"}] = gleam_only["targets"]
     assert :lua in Agent.get(ran, & &1)
   end
 

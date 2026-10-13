@@ -76,6 +76,7 @@ defmodule Spiral.Kino.CompilerDaemon do
   @impl true
   def init(opts) do
     Process.flag(:trap_exit, true)
+    :persistent_term.put({__MODULE__, :source_stamp}, source_stamp())
     port = Keyword.get(opts, :port, port())
 
     case :gen_tcp.listen(port, listen_opts()) do
@@ -696,6 +697,16 @@ defmodule Spiral.Kino.CompilerDaemon do
             :gen_tcp.send(sock, banner() <> "\n")
             handle(sock, server, listen)
 
+          "notebook\t" <> request ->
+            {lines, after_reply} = notebook_reply(request)
+            Enum.each(lines, &:gen_tcp.send(sock, &1 <> "\n"))
+            :gen_tcp.close(sock)
+
+            if after_reply == :retire do
+              :gen_tcp.close(listen)
+              send(server, :retire)
+            end
+
           "retire" ->
             :gen_tcp.close(listen)
             send(server, :retire)
@@ -735,8 +746,72 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  defp parse_request(rest) do
-    [backend, input, output, timeout, mtime] = String.split(String.trim(rest), "\t")
+  @kino_root Path.expand("../../..", __DIR__)
+
+  @doc false
+  def source_stamp do
+    ["lib/**/*.ex", "spi/*.spi", "spi/*.ex", "mix.exs", "priv/**/*"]
+    |> Enum.flat_map(&Path.wildcard(Path.join(@kino_root, &1)))
+    |> Enum.map(fn path ->
+      case File.stat(path, time: :posix) do
+        {:ok, %{mtime: mtime}} -> mtime
+        _ -> 0
+      end
+    end)
+    |> Enum.max(fn -> 0 end)
+  end
+
+  @doc false
+  def stale_code do
+    modified = Enum.filter(:code.modified_modules(), &kino_module?/1)
+    booted = :persistent_term.get({__MODULE__, :source_stamp}, nil)
+
+    cond do
+      modified != [] -> "reloaded beams: #{inspect(modified)}"
+      booted == nil -> nil
+      source_stamp() > booted -> "Kino sources changed since the daemon started"
+      true -> nil
+    end
+  end
+
+  defp kino_module?(module) do
+    name = Atom.to_string(module)
+    String.starts_with?(name, "Elixir.Spiral.Kino") or String.starts_with?(name, "spiral_kino@")
+  end
+
+  @doc false
+  def notebook_reply(request) do
+    with {:ok, %{"args" => args, "root" => root}} when is_list(args) and is_binary(root) <- JSON.decode(request),
+         true <- Enum.all?(args, &is_binary/1) do
+      cond do
+        same_root(root) != same_root(@kino_root) -> {["stale\tthe daemon serves another Kino checkout: #{@kino_root}"], :keep}
+        reason = stale_code() -> {["stale\t" <> reason <> "; retiring"], :retire}
+        true -> {run_notebook(args), :keep}
+      end
+    else
+      _ -> {["error\t" <> JSON.encode!("notebook request is not {\"args\": [...], \"root\": ...}"), "end\t1"], :keep}
+    end
+  end
+
+  defp same_root(path) do
+    expanded = path |> Path.expand() |> String.trim_trailing("/")
+    if match?({:win32, _}, :os.type()), do: String.downcase(expanded), else: expanded
+  end
+
+  defp run_notebook(args) do
+    Spiral.Kino.Domain.ensure!()
+    {status, lines} = Spiral.Kino.NotebookCli.execute(args)
+    shown = Enum.map(lines, &("line\t" <> &1))
+
+    case status do
+      :ok -> shown ++ ["end\t0"]
+      {:error, message} -> shown ++ ["error\t" <> JSON.encode!(message), "end\t1"]
+    end
+  rescue
+    error -> ["error\t" <> JSON.encode!(Exception.message(error)), "end\t1"]
+  end
+
+  defp parse_request(rest) do    [backend, input, output, timeout, mtime] = String.split(String.trim(rest), "\t")
 
     %{
       backend: backend,

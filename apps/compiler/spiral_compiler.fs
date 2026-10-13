@@ -42855,757 +42855,6 @@ module spiral_compiler =
     /// ### SpiEdit
     type SpiEdit = {|from: int; nearTo: int; lines: string []|}
 
-#if SPIRAL_CORE_HOPAC
-    /// ## Tokenize
-    // open System
-    // open System.Text
-    // open FSharpx.Collections
-    
-
-    /// ### TokenKeyword
-    type TokenKeyword =
-        | SpecIn
-        | SpecAnd
-        | SpecFun
-        | SpecMatch
-        | SpecTypecase
-        | SpecFunction
-        | SpecWith
-        | SpecWithout
-        | SpecAs
-        | SpecWhen
-        | SpecInl
-        | SpecForall
-        | SpecExists
-        | SpecLet
-        | SpecInm
-        | SpecInb
-        | SpecRec
-        | SpecIf
-        | SpecThen
-        | SpecElif
-        | SpecElse
-        | SpecJoin
-        | SpecJoinBackend
-        | SpecType
-        | SpecNominal
-        | SpecReal
-        | SpecUnion
-        | SpecOpen
-        | SpecWildcard
-        | SpecPrototype
-        | SpecInstance
-    
-
-    /// ### ParenthesisState
-    type ParenthesisState = Open | Close
-    
-
-    /// ### Parenthesis
-    type Parenthesis = Round | Square | Curly
-    
-
-    /// ### MacroEnum
-    type MacroEnum = MTerm | MType | MTypeLit | MTermInline
-    
-
-    /// ### Literal
-    type Literal =
-        | LitUInt8 of uint8
-        | LitUInt16 of uint16
-        | LitUInt32 of uint32
-        | LitUInt64 of uint64
-        | LitInt8 of int8
-        | LitInt16 of int16
-        | LitInt32 of int32
-        | LitInt64 of int64
-        | LitFloat32 of float32
-        | LitFloat64 of float
-        | LitBool of bool
-        | LitString of string
-        | LitChar of char
-    
-
-        // Converts the literal back to their string representation. Doesn't override the default printer.
-        member l.LitToString() =
-            match l with
-            | LitUInt8 x -> x.ToString("R")
-            | LitUInt16 x -> x.ToString("R")
-            | LitUInt32 x -> x.ToString("R")
-            | LitUInt64 x -> x.ToString("R")
-            | LitInt8 x -> x.ToString("R")
-            | LitInt16 x -> x.ToString("R")
-            | LitInt32 x -> x.ToString("R")
-            | LitInt64 x -> x.ToString("R")
-            | LitFloat32 x -> x.ToString("R")
-            | LitFloat64 x -> x.ToString("R")
-            | LitBool x -> x.ToString()
-            | LitString x -> x
-            | LitChar x -> x.ToString()
-    
-
-    /// ### SemanticTokenLegend
-    type SemanticTokenLegend =
-        | variable = 0
-        | symbol = 1
-        | string = 2
-        | number = 3
-        | operator = 4
-        | unary_operator = 5
-        | comment = 6
-        | keyword = 7
-        | parenthesis = 8
-        | type_variable = 9
-        | escaped_char = 10
-        | unescaped_char = 11
-        | number_suffix = 12
-        | escaped_var = 13
-    
-
-    /// ### SpiralToken
-    type SpiralToken =
-        | TokVar of string * SemanticTokenLegend
-        | TokSymbol of string * SemanticTokenLegend
-        | TokOperator of string * SemanticTokenLegend
-        | TokUnaryOperator of string * SemanticTokenLegend
-        | TokValue of Literal
-        | TokValueSuffix
-        | TokDefaultValue of string
-        | TokComment of string
-        | TokKeyword of TokenKeyword
-        | TokParenthesis of Parenthesis * ParenthesisState
-        | TokStringOpen | TokStringClose
-        | TokText of string
-        | TokEscapedChar of char
-        | TokEscapedVar
-        | TokUnescapedChar of char
-        | TokMacroOpen | TokMacroClose
-        | TokMacroTermVar of string * is_inline : bool
-        | TokMacroTypeVar of string
-        | TokMacroTypeLitVar of string
-        | TokMacroExpression of MacroEnum * ParenthesisState
-    
-
-    /// ### token_groups
-    let token_groups = function
-        | TokUnaryOperator(_,r) | TokOperator(_,r) | TokVar(_,r) | TokSymbol(_,r) -> r
-        | TokValue (LitChar _) | TokStringOpen | TokStringClose | TokText _ | TokMacroOpen | TokMacroClose | TokValue(LitString _) -> SemanticTokenLegend.string
-        | TokComment _ -> SemanticTokenLegend.comment
-        | TokKeyword _ -> SemanticTokenLegend.keyword
-        | TokParenthesis _ -> SemanticTokenLegend.parenthesis
-        | TokMacroTypeVar _ -> SemanticTokenLegend.type_variable
-        | TokMacroTypeLitVar _ -> SemanticTokenLegend.type_variable
-        | TokMacroTermVar _ -> SemanticTokenLegend.variable
-        | TokMacroExpression _ -> SemanticTokenLegend.parenthesis
-        | TokEscapedChar _ -> SemanticTokenLegend.escaped_char
-        | TokEscapedVar -> SemanticTokenLegend.escaped_var
-        | TokUnescapedChar _ -> SemanticTokenLegend.unescaped_char
-        | TokValue _ | TokDefaultValue _ -> SemanticTokenLegend.number
-        | TokValueSuffix -> SemanticTokenLegend.number_suffix
-    
-
-    /// ### show_lit
-    let show_lit = function
-        | LitUInt8 x -> sprintf "%iu8" x
-        | LitUInt16 x -> sprintf "%iu16" x
-        | LitUInt32 x -> sprintf "%iu32" x
-        | LitUInt64 x -> sprintf "%iu64" x
-        | LitInt8 x -> sprintf "%ii8" x
-        | LitInt16 x -> sprintf "%ii16" x
-        | LitInt32 x -> sprintf "%ii32" x
-        | LitInt64 x -> sprintf "%ii64" x
-        | LitFloat32 x -> sprintf "%ff32" x
-        | LitFloat64 x -> sprintf "%ff64" x
-        | LitBool x -> sprintf "%b" x
-        | LitString x -> sprintf "%s" x
-        | LitChar x -> sprintf "%c" x
-    
-
-    /// ### is_small_var_char_starting
-    let is_small_var_char_starting c = Char.IsLower c || c = '_'
-    
-
-    /// ### is_var_char
-    let is_var_char c = Char.IsLetterOrDigit c || c = '_' || c = char 39
-    
-
-    /// ### is_big_var_char_starting
-    let is_big_var_char_starting c = Char.IsUpper c
-    
-
-    /// ### is_parenth_open
-    let is_var_char_starting c = Char.IsLetter c || c = '_'
-    
-
-    /// ### is_parenth_open
-    let is_parenth_open c =
-        let f x = c = x
-        f '(' || f '[' || f '{'
-    
-
-    /// ### is_parenth_close
-    let is_parenth_close c =
-        let f x = c = x
-        f ')' || f ']' || f '}'
-    
-
-    /// ### is_operator_char
-    // http://www.asciitable.com/
-    let is_operator_char c =
-        let f x = c = x
-        '!' <= c && c <= '~' && (is_var_char c || f '"' || is_parenth_open c || is_parenth_close c) = false
-    
-
-    /// ### is_prefix_separator_char
-    let is_prefix_separator_char c =
-        let f x = c = x
-        f ' ' || f lineParsersEol || is_parenth_open c
-    
-
-    /// ### is_postfix_separator_char
-    let is_postfix_separator_char c =
-        let f x = c = x
-        f ' ' || f lineParsersEol || is_parenth_close c
-    
-
-    /// ### is_separator_char
-    let is_separator_char c = is_prefix_separator_char c || is_parenth_close c
-    
-
-    /// ### var
-    let var (s: Tokenizer) =
-        let from = s.from
-        let ok x = Ok ({from=from; nearTo=s.from}, x)
-        let body x _ =
-            if skip ':' s then error_char from ": is not allowed directly after a var."
-            else
-                let f x = TokKeyword(x)
-                match x with
-                | "in" -> f SpecIn
-                | "and" -> f SpecAnd | "fun" -> f SpecFun
-                | "match" -> f SpecMatch | "typecase" -> f SpecTypecase
-                | "function" -> f SpecFunction
-                | "with" -> f SpecWith | "without" -> f SpecWithout
-                | "as" -> f SpecAs | "when" -> f SpecWhen
-                | "inl" -> f SpecInl | "forall" -> f SpecForall
-                | "let" -> f SpecLet | "inm" -> f SpecInm
-                | "inb" -> f SpecInb | "rec" -> f SpecRec
-                | "if" -> f SpecIf | "then" -> f SpecThen
-                | "elif" -> f SpecElif | "else" -> f SpecElse
-                | "join" -> f SpecJoin | "join_backend" -> f SpecJoinBackend
-                | "type" -> f SpecType | "nominal" -> f SpecNominal
-                | "real" -> f SpecReal | "union" -> f SpecUnion
-                | "open" -> f SpecOpen | "_" -> f SpecWildcard
-                | "prototype" -> f SpecPrototype | "instance" -> f SpecInstance
-                | "true" -> TokValue(LitBool true) | "false" -> TokValue(LitBool false)
-                | "exists" -> f SpecExists
-                | x -> TokVar(x,SemanticTokenLegend.variable)
-                |> ok
-    
-
-        (many1Satisfy2L is_var_char_starting is_var_char "variable" >>= body .>> spaces) s
-    
-
-    /// ### isHexDigit
-    let isHexDigit c =
-        ('0' <= c && c <= '9') || ('a' <= c && c <= 'f') || ('A' <= c && c <= 'F')
-    
-
-    /// ### hexNumberLineParser
-    let hexNumberLineParser (s : Tokenizer) =
-        let from = s.from
-        if peek s = '0' && (let x = peek' s 1 in x = 'x' || x = 'X') then
-            inc' 2 s
-            let res = many1SatisfyL isHexDigit "hexadecimal digit" s
-            if Result.isError res then error_char from "hexadecimal digit"
-            else res
-        else
-            let i = s.from
-            error_char i "0x prefix"
-    
-
-    /// ### hexNumber
-    let hexNumber (s: Tokenizer) : Result<_,_> =
-        let from = s.from
-        let p s =
-            match hexNumberLineParser s with
-            | Ok hexStr ->
-                let value = System.Convert.ToInt32(hexStr, 16)
-                Ok ([{from=from; nearTo=s.from}, TokValue(LitInt32 value)])
-            | Error e -> Error e
-    
-
-        (p .>> spaces) s
-    
-
-    /// ### tokenizeNumber
-    let tokenizeNumber (s: Tokenizer) =
-        let from = s.from
-    
-
-        let parser (s: Tokenizer) =
-            if peek s = '-' && Char.IsDigit (peek' s 1) && is_prefix_separator_char (peek' s -1) then
-                inc s
-                number_fractional s |> Result.map (function
-                    | (a,Some b) -> sprintf "-%s.%s" a b
-                    | (a,None) -> "-"+a)
-            else number_fractional s |> Result.map (function
-                    | (a,Some b) -> sprintf "%s.%s" a b
-                    | (a,None) -> a)
-    
-
-        let followedBySuffix x (s: Tokenizer) =
-            let from' = s.from
-            let inline safe_parse string_to_val val_to_lit val_dsc =
-                if (let x = peek s in is_separator_char x || is_operator_char x) then
-                    match string_to_val x with
-                    | true, x -> Ok [{from=from; nearTo=from'}, TokValue(val_to_lit x); {from=from'; nearTo=s.from}, TokValueSuffix]
-                    | false, _ -> Error [{from=from; nearTo=s.from}, (sprintf "The string %s cannot be safely parsed as %s." x val_dsc)]
-                else error_char s.from "separator"
-            let skip c = skip c s
-            if skip 'i' then
-                if skip '8' then safe_parse SByte.TryParse LitInt8 "i8"
-                elif skip '1' && skip '6' then safe_parse Int16.TryParse LitInt16 "i16"
-                elif skip '3' && skip '2' then safe_parse Int32.TryParse LitInt32 "i32"
-                elif skip '6' && skip '4' then safe_parse Int64.TryParse LitInt64 "i64"
-                else error_char s.from "8,16,32 or 64"
-            elif skip 'u' then
-                if skip '8' then safe_parse Byte.TryParse LitUInt8 "uint8"
-                elif skip '1' && skip '6' then safe_parse UInt16.TryParse LitUInt16 "u16"
-                elif skip '3' && skip '2' then safe_parse UInt32.TryParse LitUInt32 "u32"
-                elif skip '6' && skip '4' then safe_parse UInt64.TryParse LitUInt64 "u64"
-                else error_char s.from "8,16,32 or 64"
-            elif skip 'f' then
-                if skip '3' && skip '2' then safe_parse Single.TryParse LitFloat32 "f32"
-                elif skip '6' && skip '4' then safe_parse Double.TryParse LitFloat64 "f64"
-                else error_char s.from "32 or 64"
-            else Ok [{from=from; nearTo=s.from}, TokDefaultValue x]
-    
-
-        (parser >>= followedBySuffix .>> spaces) s
-    
-
-    /// ### symbol
-    let symbol s =
-        let from = s.from
-        let f x = ({from=from; nearTo=s.from}, x)
-    
-
-        let symbol x = TokSymbol(x,SemanticTokenLegend.symbol)
-        let x = peek s
-        let x' = peek' s 1
-        if x = '.' && x' = '(' then inc' 2 s; ((many1SatisfyL is_operator_char "operator") .>> skip_char ')' |>> (symbol >> f) .>> spaces) s
-        elif x = '.' && is_var_char_starting x' then inc s; ((many1SatisfyL is_var_char "variable") |>> (symbol >> f) .>> spaces) s
-        else error_char from "symbol"
-    
-
-    /// ### LexState
-    /// The lexical state a line starts in: inside a `"""` string, or inside `comment_depth` nested `(* *)`
-    /// comments. Both go on across lines. Callers thread it from line to line (`tokenize_line`; WDiff keeps the
-    /// state every line ends in), never through a global, so files tokenized at the same time (the language
-    /// server, hopac, parallel module loads), a file that ends inside a string or comment, and a re-tokenized
-    /// edit can't leak it into each other.
-    [<Struct>]
-    type LexState = { in_triple : bool; comment_depth : int }
-    
-
-    /// ### lex_state_init
-    let lex_state_init = { in_triple = false; comment_depth = 0 }
-    
-
-    /// ### LexCell
-    /// The lexical state while one line is being tokenized.
-    type LexCell(state : LexState) =
-        member val InTriple = state.in_triple with get, set
-        member val CommentDepth = state.comment_depth with get, set
-        member x.State = { in_triple = x.InTriple; comment_depth = x.CommentDepth }
-    
-
-    /// ### lex_state_error
-    /// The error for text that ends in `state`: inside a string or comment that never closes.
-    let lex_state_error (state : LexState) =
-        if state.in_triple then Some "Unterminated triple-quoted string. Expected '\"\"\"'."
-        elif 0 < state.comment_depth then Some "Unterminated multiline comment. Expected '*)'."
-        else None
-    
-
-    /// ### comment_scan
-    /// Scans the text of `depth` open `(* *)` comments from `i`: `(*` nests, `*)` closes, and `(*)` (the
-    /// multiplication operator) does neither. Returns where the outermost comment closed (just past its `*)`),
-    /// or the end of the line, and the depth still open there.
-    let comment_scan (text : string) (i : int) (depth : int) =
-        let len = text.Length
-        let mutable i = i
-        let mutable depth = depth
-        while i < len && 0 < depth do
-            if text.[i] = '(' && i + 1 < len && text.[i+1] = '*' then
-                if i + 2 < len && text.[i+2] = ')' then
-                    i <- i + 3
-                else
-                    depth <- depth + 1
-                    i <- i + 2
-            elif text.[i] = '*' && i + 1 < len && text.[i+1] = ')' then
-                depth <- depth - 1
-                i <- i + 2
-            else
-                i <- i + 1
-        struct (i, depth)
-    
-
-    /// ### comment
-    let comment (lx : LexCell) (s : Tokenizer) =
-        if peek s = '/' && peek' s 1 = '/' then
-            let from = s.from
-            inc' 2 s
-            while peek s = '/' || ((peek s = '!' || peek s = '-' || peek s = '>') && peek' s 1 = ' ') do
-                inc s
-            if skip ' ' s then
-                let com = s.text.[s.from..]
-                s.from <- s.text.Length
-                Ok ({from=from; nearTo=s.from}, TokComment com)
-            else error_char s.from "whitespace"
-        elif peek s = '(' && peek' s 1 = '*' && (peek' s 2 = ' ' || peek' s 2 = lineParsersEol) then
-            // `(* `, or a `(*` that ends the line, opens a comment. One still open at the end of the line goes on
-            // in the next (`tokenize_line`).
-            let from = s.from
-            let struct (i, depth) = comment_scan s.text (from + 2) 1
-            s.from <- i
-            lx.CommentDepth <- depth
-            Ok ({from=from; nearTo=i}, TokComment (s.text.Substring(from, i - from)))
-        else
-            error_char s.from "comment"
-    
-
-    /// ### operator
-    let operator (s : Tokenizer) =
-        let from = s.from
-        let ok x = ({from=from; nearTo=s.from}, x) |> Ok
-        let is_separator_prev = is_prefix_separator_char (peek' s -1)
-        let f name (s: Tokenizer) =
-            if is_separator_prev && (is_postfix_separator_char (peek s) = false) then TokUnaryOperator(name,SemanticTokenLegend.unary_operator) |> ok
-            else TokOperator(name,SemanticTokenLegend.operator) |> ok
-        (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
-    
-
-    /// ### string_raw
-    let string_raw s =
-        let from = s.from
-        let f x = {from=from; nearTo=s.from}, TokValue(LitString x)
-        (skip_string "@\"" >>. chars_till_string "\"" |>> f .>> spaces) s
-    
-
-    /// ### char_quoted
-    let char_quoted s =
-        let char_quoted_body (s: Tokenizer) =
-            let inline read on_succ =
-                let x = peek s
-                if x <> lineParsersEol then inc s; on_succ x
-                else error_char s.from "character or '"
-            read (function
-                | '\\' ->
-                    read (Ok << function
-                        | 'n' -> '\n' | 'r' -> '\r' | 't' -> '\t' | 'b' -> '\b'
-                        | x -> x
-                        )
-                | x -> Ok x
-                )
-        let from = s.from
-        let f _ x _ = {from=from; nearTo=s.from}, TokValue(LitChar x)
-        (pipe3 (skip_char '\'') char_quoted_body (skip_char '\'') f .>> spaces) s
-    
-
-    /// ### special_char
-    let inline special_char l text s =
-        let inline f from x = {from=from; nearTo=s.from}, x
-        let f = f s.from
-        inc s
-        let esc x = inc s; text (f (TokEscapedChar x) :: l)
-        let unesc x = inc s; text (f (TokUnescapedChar x) :: l)
-        match peek s with
-        | x when x = lineParsersEol -> error_char s.from "character"
-        | 'n' -> esc '\n' | 'r' -> esc '\r'  | 't' -> esc '\t'  | 'b' -> esc '\b'
-        | x -> unesc x
-    
-
-    let private findOrdinalTextFrom (text:string) startIndex (needle:string) =
-        if String.IsNullOrEmpty needle then max 0 startIndex
-        else
-            let mutable found = -1
-            let mutable i = max 0 startIndex
-            let last = text.Length - needle.Length
-            while found < 0 && i <= last do
-                if String.CompareOrdinal(text, i, needle, 0, needle.Length) = 0 then
-                    found <- i
-                else
-                    i <- i + 1
-            found
-
-    /// ### string_triple_body
-    /// The text of a `"""` string from `s.from` to its closing `"""`, or to the end of the line, whose newline it
-    /// keeps; the string then goes on in the next line. The text is raw: no escapes, no interpolation.
-    let string_triple_body (lx : LexCell) (s : Tokenizer) =
-        let text = s.text
-        let len = text.Length
-        let body_from = s.from
-        let idx = text.IndexOf("\"\"\"", body_from, StringComparison.Ordinal)
-        if 0 <= idx then
-            s.from <- idx + 3
-            lx.InTriple <- false
-            let close = {from=idx; nearTo=idx+3}, TokStringClose
-            if body_from < idx then [({from=body_from; nearTo=idx}, TokText (text.Substring(body_from, idx - body_from))); close]
-            else [close]
-        else
-            s.from <- len
-            lx.InTriple <- true
-            [({from=body_from; nearTo=len}, TokText (text.Substring(body_from) + "\n"))]
-    
-
-    /// ### string_triple_line
-    let string_triple_line (lx : LexCell) (s : Tokenizer) =
-        if peek s = '"' && peek' s 1 = '"' && peek' s 2 = '"' then
-            let from = s.from
-            inc' 3 s
-            Ok (({from=from; nearTo=from+3}, TokStringOpen) :: string_triple_body lx s)
-        else
-            Error [{from=s.from; nearTo=s.from}, "triple-string: not a triple opener nor continuation"]
-    
-
-    /// ### string_quoted'
-    let string_quoted' s =
-        let inline f from x = {from=from; nearTo=s.from}, x
-        let close l = let f = f s.from in inc s; List.rev (f TokStringClose :: l) |> Ok
-        let rec text l =
-            let f = f s.from
-            let rec loop (str : StringBuilder) =
-                let l () = if 0 < str.Length then f (TokText(str.ToString())) :: l else l
-                match peek s with
-                | x when x = lineParsersEol -> error_char s.from "character or \""
-                | '\\' -> special_char (l ()) text s
-                | '"' -> close (l ())
-                | x -> inc s; loop (str.Append(x))
-            loop (StringBuilder())
-    
-
-        match peek s with
-        | '"' -> let f = f s.from in inc s; text [f TokStringOpen]
-        | _ -> error_char s.from "\""
-    
-
-    /// ### string_quoted
-    let string_quoted s = (string_quoted' .>> spaces) s
-    
-
-    /// ### TokenizerMacro
-    type TokenizerMacro =
-        | TokenizerText of TokenizerRange * string
-        | EscapedChar of TokenizerRange * char
-        | EscapedVar of TokenizerRange
-        | UnescapedChar of TokenizerRange * char
-        | Expression of TokenizerRange * string * MacroEnum
-        | Var of TokenizerRange * string * MacroEnum
-    
-
-    /// ### range
-    let inline range p s =
-        let from = s.from
-        match p s with
-        | Ok x -> Ok({from=from; nearTo=s.from}, x)
-        | Error l -> Error l
-    
-
-    /// ### brackets
-    let brackets s =
-        let from = s.from
-        let f spec = inc s; (spaces >>% ({from=from; nearTo=s.from}, TokParenthesis(spec))) s
-        match peek s with
-        | '(' -> f (Round,Open) | '[' -> f (Square,Open) | '{' -> f (Curly,Open)
-        | ')' -> f (Round,Close) | ']' -> f (Square,Close) | '}' -> f (Curly,Close)
-        | _ -> error_char s.from "`(`,`[`,`{`,`}`,`]` or `)`"
-    
-
-    /// ### tab
-    let tab s = if peek s = '\t' then Error [range_char (index s), "Tabs are not allowed."] else Error []
-    
-
-    /// ### tokenizeEol
-    let tokenizeEol s = if peek s = lineParsersEol then Ok [] else Error [range_char (index s), "end of line"]
-    
-
-    let inline with_advance (p: Tokenizer -> Result<'a,(TokenizerRange * string) list>) : Tokenizer -> Result<'a,(TokenizerRange * string) list> =
-        fun s ->
-            let i0 = s.from
-            match p s with
-            | Ok x when s.from > i0 -> Ok x
-            | Ok _ ->
-                Error [{from=i0; nearTo=i0}, "tokenizer: zero-length token"]
-            | Error e -> Error e
-    
-
-    /// ### token
-    let rec token (lx : LexCell) s =
-        let i = s.from
-        let inline (+) a b = alt i a b
-        let individual_tokens =
-            (string_triple_line lx .>> spaces)
-            + string_quoted
-            + hexNumber + tokenizeNumber
-            + ((var + symbol + string_raw + char_quoted + (comment lx .>> spaces) + brackets + operator)
-                |>> function
-                    | (_, TokComment _) -> []
-                    | t -> [t])
-            |>> fun x -> x, []
-        ((macro + individual_tokens) |> with_advance) s
-    // Tokenizes one line that starts in lexical state `state`: its tokens, its errors, and the state the next
-    // line starts in. A line that starts inside a `(* *)` comment or a `"""` string continues it first.
-    and tokenize_line (state : LexState) (text : string) =
-        let lx = LexCell(state)
-        // ws: tokens collect in a ResizeArray and become the line's PersistentVector once at the end; a conj per token
-        // copied the vector's tail array each time (over half of the tokenizer's time on lib/spiral).
-        let ar = ResizeArray()
-        let mutable er = []
-        let add (x : (TokenizerRange * SpiralToken) list, er' : (TokenizerRange * string) list) =
-            List.iter ar.Add x
-            er <- List.append er' er
-        let s = {from=0; text=text}
-        if 0 < lx.CommentDepth then
-            let struct (i, depth) = comment_scan text 0 lx.CommentDepth
-            s.from <- i
-            lx.CommentDepth <- depth
-        elif lx.InTriple then
-            add (string_triple_body lx s, [])
-        let parser = spaces >>. many_iter add (token lx) .>> (tokenizeEol <|> tab)
-        let er = match parser s with Ok() -> er | Error er' -> List.append er' er
-        PersistentVector.ofSeq ar, er, lx.State
-    // Tokenizes one line on its own (a macro's expression): a string or comment it leaves open is an error.
-    and tokenize text =
-        let ar, er, state = tokenize_line lex_state_init text
-        match lex_state_error state with
-        | Some message -> ar, List.append er [({from=0; nearTo=max 1 text.Length}, message)]
-        | None -> ar, er
-    and macro s =
-        let char_to_macro_expr = function
-            | '`' -> MType
-            | '!' -> MTerm
-            | '@' -> MTypeLit
-            | '#' -> MTermInline
-            | _ -> failwith "Compiler error: Unknown char in the tokenizer."
-    
-
-        let p_special_char s =
-            match peek' s 0, peek' s 1 with
-            | '\\', ('n' | 'r' | 't' | 'b' as c) ->
-                let r = {from=s.from; nearTo=s.from+2}
-                inc' 2 s
-                Ok(EscapedChar(r, c))
-            | '\\', ('v' as c) ->
-                let r = {from=s.from; nearTo=s.from+2}
-                inc' 2 s
-                Ok(EscapedVar(r))
-            | '\\', c ->
-                let r = {from=s.from; nearTo=s.from+2}
-                inc' 2 s
-                Ok(UnescapedChar(r, c))
-            | _ -> error_char s.from "\\"
-    
-
-        let p_var s = (many1Satisfy2L is_var_char_starting is_var_char "variable") s
-        let p_text closing_char s = (range (many1SatisfyL (fun c -> c <> closing_char && c <> '`' && c <> '!' && c <> '@' && c <> '#' && c <> '\\') "macro text") |>> TokenizerText) s
-        let p_expr s =
-            let start = anyOf ['`'; '!'; '@'; '#']
-            let case_paren start_char =
-                let mutable c = 1 // number of open parens.
-                between (skip_char '(') (skip_char ')') (many1SatisfyL (fun x -> // Stops when the number of open parens is 0.
-                    c <- c + (match x with '(' -> 1 | ')' -> -1 | _ -> 0)
-                    c > 0
-                    ) "not )")
-                |>> fun (body) range -> Expression(range,body,char_to_macro_expr start_char)
-            let case_var start_char =
-                (skip_char start_char |>> fun () range -> UnescapedChar(range,start_char))
-                <|> (p_var |>> fun body range -> Var(range,body,char_to_macro_expr start_char))
-            (range (start >>= fun start_char -> (case_paren start_char <|> case_var start_char))
-            |>> fun (range, f) -> f range) s
-        let p_macro_inner closing_char s = (many (p_special_char <|> p_text closing_char <|> p_expr) <|>% []) s
-        let p_macro s =
-            let body a b = range (between (skip_string a) (skip_char b) (p_macro_inner b))
-            (body "$\"" '"' <|> body "$'" '\'') s
-    
-
-        match (p_macro .>> spaces) s with
-        | Ok(r, x) ->
-            let start =
-                let r = {from=r.from; nearTo=r.from+2}
-                r, TokMacroOpen
-            let end_ =
-                let r = {from=r.nearTo-1; nearTo=r.nearTo}
-                r, TokMacroClose
-    
-
-            let mutable er = []
-            x |> List.collect (function
-                | TokenizerText(r,x) -> [r, TokText x]
-                | EscapedChar(r,x) ->
-                    let x = match x with 'n' -> '\n' | 'r' -> '\r' | 't' -> '\t' | 'b' -> '\b' | x -> x
-                    [r, TokEscapedChar x]
-                | EscapedVar(r) -> [r, TokEscapedVar]
-                | UnescapedChar(r,x) -> [r, TokUnescapedChar x]
-                | Var(r,x,MType) -> [r, TokMacroTypeVar x]
-                | Var(r,x,MTypeLit) -> [r, TokMacroTypeLitVar x]
-                | Var(r,x,(MTerm | MTermInline as u)) -> [r, TokMacroTermVar(x, u = MTermInline)]
-                | Expression(r,x,t) ->
-                    let start =
-                        let r = {from=r.from; nearTo=r.from+2}
-                        r, TokMacroExpression(t,Open)
-                    let end_ =
-                        let r = {from=r.nearTo-1; nearTo=r.nearTo}
-                        r, TokMacroExpression(t,Close)
-                    let middle,er' =
-                        let adjust_range (r : TokenizerRange,x) = {from=r.from + (fst start).nearTo; nearTo=r.nearTo + (fst start).nearTo}, x
-                        let middle,er' = tokenize x
-                        PersistentVector.map adjust_range middle,
-                        List.map adjust_range er'
-                    er <- List.append er' er
-                    List.concat [[start]; List.ofSeq middle; [end_]]
-                )
-            |> fun l -> Ok(List.concat [[start]; l; [end_]], er)
-        | Error er -> Error er
-    
-
-    /// ### LineToken
-    type LineToken = TokenizerRange * SpiralToken
-    
-
-    /// ### LineComment
-    type LineComment = TokenizerRange * string
-    
-
-    /// ### LineTokenErrors
-    type LineTokenErrors = (TokenizerRange * TokenizerError) list
-    
-
-    /// ### vscode_tokens
-    let vscode_tokens ((a,b) : VSCRange) (lines : LineToken PersistentVector PersistentVector) =
-        let in_range x = min lines.Length x
-        let from, near_to = in_range a.line, in_range (b.line+1)
-        let toks = ResizeArray()
-        let rec loop i line_delta =
-            if i < near_to then
-                lines.[i] |> PersistentVector.fold (fun (line_delta,from_prev) (r,x) ->
-                    toks.AddRange [|line_delta; r.from-from_prev; r.nearTo-r.from; int (token_groups x); 0|]
-                    0, r.from
-                    ) (line_delta, 0)
-                |> fst |> ((+) 1) |> loop (i+1)
-    
-
-        loop from from
-        toks.ToArray()
-    
-
-    module Tokenize =
-        let show_lit x =
-            show_lit x
-    
-
-#else
     /// ## Tokenize
     // open System
     // open System.Text
@@ -43987,14 +43236,40 @@ module spiral_compiler =
         else
             error_char s.from "comment"
 
+    /// ### edition3_symbol_token
+    let edition3_symbol_token = function
+        | ":=" -> Some (TokKeyword SpecInl) | ":~" -> Some (TokKeyword SpecLet)
+        | "^" -> Some (TokKeyword SpecRec) | ":&" -> Some (TokKeyword SpecAnd)
+        | ";;" -> Some (TokKeyword SpecIn) | "\\" -> Some (TokKeyword SpecFun)
+        | "\\|" -> Some (TokKeyword SpecFunction) | "\\*" -> Some (TokKeyword SpecForall)
+        | "\\?" -> Some (TokKeyword SpecExists) | "?" -> Some (TokKeyword SpecIf)
+        | "?>" -> Some (TokKeyword SpecThen) | "|?" -> Some (TokKeyword SpecElif)
+        | "|:" -> Some (TokKeyword SpecElse) | "?=" -> Some (TokKeyword SpecMatch)
+        | "?:" -> Some (TokKeyword SpecTypecase) | "?|" -> Some (TokKeyword SpecWith)
+        | "-|" -> Some (TokKeyword SpecWithout) | "&=" -> Some (TokKeyword SpecAs)
+        | "?&" -> Some (TokKeyword SpecWhen) | ":==" -> Some (TokKeyword SpecType)
+        | ":!" -> Some (TokKeyword SpecNominal) | ":|" -> Some (TokKeyword SpecUnion)
+        | ":?" -> Some (TokKeyword SpecPrototype) | ":+" -> Some (TokKeyword SpecInstance)
+        | ":<" -> Some (TokKeyword SpecOpen) | "~>" -> Some (TokKeyword SpecReal)
+        | "~~" -> Some (TokKeyword SpecJoin) | "~~>" -> Some (TokKeyword SpecJoinBackend)
+        | "!+" -> Some (TokValue (LitBool true)) | "!-" -> Some (TokValue (LitBool false))
+        | _ -> None
+
     /// ### operator
     let operator (s : Tokenizer) =
         let from = s.from
         let ok x = ({from=from; nearTo=s.from}, x) |> Ok
         let is_separator_prev = is_prefix_separator_char (peek' s -1)
-        let f name (s: Tokenizer) =
-            if is_separator_prev && (is_postfix_separator_char (peek s) = false) then TokUnaryOperator(name,SemanticTokenLegend.unary_operator) |> ok
-            else TokOperator(name,SemanticTokenLegend.operator) |> ok
+        let f (name : string) (s: Tokenizer) =
+            let symbol_before_commas = name.TrimEnd ','
+            match edition3_symbol_token name with
+            | Some keyword -> ok keyword
+            | None when symbol_before_commas.Length > 0 && symbol_before_commas.Length < name.Length && (edition3_symbol_token symbol_before_commas).IsSome ->
+                s.from <- s.from - (name.Length - symbol_before_commas.Length)
+                ok (edition3_symbol_token symbol_before_commas).Value
+            | None ->
+                if is_separator_prev && (is_postfix_separator_char (peek s) = false) then TokUnaryOperator(name,SemanticTokenLegend.unary_operator) |> ok
+                else TokOperator(name,SemanticTokenLegend.operator) |> ok
         (many1SatisfyL is_operator_char "operator"  >>= f .>> spaces) s
 
     /// ### string_raw
@@ -44277,7 +43552,6 @@ module spiral_compiler =
         let show_lit x =
             show_lit x
 
-#endif
     /// ## BlockSplitting
     // open FSharpx.Collections
 
@@ -44352,2294 +43626,6 @@ module spiral_compiler =
             else []
         loop blocks 0
 
-#if SPIRAL_CORE_HOPAC
-    /// ## BlockParsing
-    // open System
-    // open FParsec
-    // open FSharp.Core
-    
-
-    /// ### SymbolString
-    type SymbolString = string
-    
-
-    /// ### VarString
-    type VarString = string
-    
-
-    /// ### NominalString
-    type NominalString = string
-    
-
-    /// ### Layout
-    type Layout = Heap | HeapMutable | StackMutable | HeapRefs | StackRefs
-    
-
-    /// ### FunType
-    type FunType = FT_Vanilla | FT_Pointer | FT_Closure // The closure and the pointer are specific to the C++ backend.
-    
-
-    /// ### Op
-    type Op =
-        // Converts the function to a specialized type specific to the C++ backend.
-        | ToFunPtr
-        | ToFunClosure
-    
-
-        // Compile time hash set
-        | HashSetCreate
-        | HashSetAdd
-        | HashSetContains
-        | HashSetRemove
-        | HashSetCount
-    
-
-        // Compile time hash map
-        | HashMapCreate
-        | HashMapSetImmutable
-        | HashMapSet
-        | HashMapAdd
-        | HashMapTryAdd
-        | HashMapContains
-        | HashMapRemove
-        | HashMapCount
-        | HashMapTryGet
-    
-
-        // Pragma
-        | PragmaUnrollPush
-        | PragmaUnrollPop
-    
-
-        // Backend branching
-        | UnsafeBackendSwitch
-        | BackendSwitch
-    
-
-        // Reordering check
-        | UsesOriginalTermVars
-        | UsesOriginalNominals
-    
-
-        // Imports
-        | Global
-    
-
-        // Python
-        | ToPythonRecord
-        | ToPythonNamedTuple
-    
-
-        // Branching
-        | While
-        | Do
-        | Indent
-    
-
-        // Layout
-        | LayoutToHeap
-        | LayoutToHeapMutable
-        | LayoutToStackMutable
-        | LayoutToStackRefs
-        | LayoutToHeapRefs
-        | LayoutIndex
-    
-
-        // Type
-        | TypeToVar
-        | TypeToSymbol
-        | TypeLitToLit
-        | LitToTypeLit
-        | LitToSymbol
-    
-
-        // Closure conversion
-        | Dyn
-        | Export // Library entry point: a name and a function without runtime captures
-    
-
-        // Nominal
-        | NominalCreate // In addition to regular nominals, it can also creates unions
-        | NominalStrip
-        | NominalTypeApply
-    
-
-        // Union
-        | Unbox
-        | Unbox2
-        | UnionTag
-        | UnionUntag
-        | UnionToRecord
-    
-
-        // String
-        | StringLength
-        | StringIndex
-        | StringSlice
-        | StaticStringConcat
-        | Printf // Cuda specific
-        | StdoutFlush // Portable explicit stdout flush
-        | MonotonicDelayMs // Portable bounded monotonic delay in milliseconds
-    
-
-        // Array
-        | ArrayCreate
-        | ArrayLength
-        | ArrayIndex
-        | ArrayIndexSet
-    
-
-        // Record
-        | RecordMap
-        | RecordIter
-        | RecordFilter
-        | RecordFold
-        | RecordFoldBack
-        | RecordLength
-    
-
-        // Record Type
-        | RecordTypeMap
-        | RecordTypeIter
-        | RecordTypeFold
-        | RecordTypeFoldBack
-        | RecordTypeLength
-        | RecordTypeTryFind
-    
-
-        // BinOps
-        | Add
-        | Sub
-        | Mult
-        | Div
-        | Mod
-        | Pow
-        | LTE
-        | LT
-        | EQ
-        | TypeEq
-        | NEQ
-        | GT
-        | GTE
-        | BoolAnd
-        | BoolOr
-        | BitwiseAnd
-        | BitwiseOr
-        | BitwiseXor
-        | BitwiseComplement
-        | ShiftLeft
-        | ShiftRight
-    
-
-        // Unary math ops
-        | Neg
-        | Tanh
-        | Log
-        | Exp
-        | Sin
-        | Cos
-        | Sqrt
-        | NanIs
-        | Conv
-    
-
-        // Infinity
-        | Infinity
-        | Pi
-    
-
-        // Static Is
-        | LitIs
-        | PrimIs
-        | SymbolIs
-        | VarIs
-        | UnionIs
-        | HeapUnionIs
-        | LayoutIs
-        | NominalIs
-        | FunctionIs
-        | ExistsIs
-        | PrototypeHas
-    
-
-        // Static Type Is
-        | PrimTypeIs
-        | SymbolTypeIs
-        | UnionTypeIs
-        | HeapUnionTypeIs
-        | LayoutTypeIs
-        | ExistsTypeIs
-        | NominalTypeIs
-    
-
-        // Panic
-        | FailWith
-    
-
-        // Static unary operations
-        | PrintStatic
-        | PrintRaw
-        | ErrorType
-        | ExistsStrip
-        | StringLitToSymbol
-        | SymbolToString
-    
-
-        // Serialization helpers
-        | VarTag
-        | TagToSymbol
-        | FunctionTermSlotsGet
-        | FunctionTermSlotsSet
-        | FreeVars
-        | FreeVarsReplace
-        | SizeOf
-
-    let opStableText = function
-        | ToFunPtr -> "ToFunPtr"
-        | ToFunClosure -> "ToFunClosure"
-        | HashSetCreate -> "HashSetCreate"
-        | HashSetAdd -> "HashSetAdd"
-        | HashSetContains -> "HashSetContains"
-        | HashSetRemove -> "HashSetRemove"
-        | HashSetCount -> "HashSetCount"
-        | HashMapCreate -> "HashMapCreate"
-        | HashMapSetImmutable -> "HashMapSetImmutable"
-        | HashMapSet -> "HashMapSet"
-        | HashMapAdd -> "HashMapAdd"
-        | HashMapTryAdd -> "HashMapTryAdd"
-        | HashMapContains -> "HashMapContains"
-        | HashMapRemove -> "HashMapRemove"
-        | HashMapCount -> "HashMapCount"
-        | HashMapTryGet -> "HashMapTryGet"
-        | PragmaUnrollPush -> "PragmaUnrollPush"
-        | PragmaUnrollPop -> "PragmaUnrollPop"
-        | UnsafeBackendSwitch -> "UnsafeBackendSwitch"
-        | BackendSwitch -> "BackendSwitch"
-        | UsesOriginalTermVars -> "UsesOriginalTermVars"
-        | UsesOriginalNominals -> "UsesOriginalNominals"
-        | Global -> "Global"
-        | ToPythonRecord -> "ToPythonRecord"
-        | ToPythonNamedTuple -> "ToPythonNamedTuple"
-        | While -> "While"
-        | Do -> "Do"
-        | Indent -> "Indent"
-        | LayoutToHeap -> "LayoutToHeap"
-        | LayoutToHeapMutable -> "LayoutToHeapMutable"
-        | LayoutToStackMutable -> "LayoutToStackMutable"
-        | LayoutToStackRefs -> "LayoutToStackRefs"
-        | LayoutToHeapRefs -> "LayoutToHeapRefs"
-        | LayoutIndex -> "LayoutIndex"
-        | TypeToVar -> "TypeToVar"
-        | TypeToSymbol -> "TypeToSymbol"
-        | TypeLitToLit -> "TypeLitToLit"
-        | LitToTypeLit -> "LitToTypeLit"
-        | LitToSymbol -> "LitToSymbol"
-        | Dyn -> "Dyn"
-        | NominalCreate -> "NominalCreate"
-        | NominalStrip -> "NominalStrip"
-        | NominalTypeApply -> "NominalTypeApply"
-        | Unbox -> "Unbox"
-        | Unbox2 -> "Unbox2"
-        | UnionTag -> "UnionTag"
-        | UnionUntag -> "UnionUntag"
-        | UnionToRecord -> "UnionToRecord"
-        | StringLength -> "StringLength"
-        | StringIndex -> "StringIndex"
-        | StringSlice -> "StringSlice"
-        | StaticStringConcat -> "StaticStringConcat"
-        | Printf -> "Printf"
-        | StdoutFlush -> "StdoutFlush"
-        | MonotonicDelayMs -> "MonotonicDelayMs"
-        | ArrayCreate -> "ArrayCreate"
-        | ArrayLength -> "ArrayLength"
-        | ArrayIndex -> "ArrayIndex"
-        | ArrayIndexSet -> "ArrayIndexSet"
-        | RecordMap -> "RecordMap"
-        | RecordIter -> "RecordIter"
-        | RecordFilter -> "RecordFilter"
-        | RecordFold -> "RecordFold"
-        | RecordFoldBack -> "RecordFoldBack"
-        | RecordLength -> "RecordLength"
-        | RecordTypeMap -> "RecordTypeMap"
-        | RecordTypeIter -> "RecordTypeIter"
-        | RecordTypeFold -> "RecordTypeFold"
-        | RecordTypeFoldBack -> "RecordTypeFoldBack"
-        | RecordTypeLength -> "RecordTypeLength"
-        | RecordTypeTryFind -> "RecordTypeTryFind"
-        | Add -> "Add"
-        | Sub -> "Sub"
-        | Mult -> "Mult"
-        | Div -> "Div"
-        | Mod -> "Mod"
-        | Pow -> "Pow"
-        | LTE -> "LTE"
-        | LT -> "LT"
-        | EQ -> "EQ"
-        | TypeEq -> "TypeEq"
-        | NEQ -> "NEQ"
-        | GT -> "GT"
-        | GTE -> "GTE"
-        | BoolAnd -> "BoolAnd"
-        | BoolOr -> "BoolOr"
-        | BitwiseAnd -> "BitwiseAnd"
-        | BitwiseOr -> "BitwiseOr"
-        | BitwiseXor -> "BitwiseXor"
-        | BitwiseComplement -> "BitwiseComplement"
-        | ShiftLeft -> "ShiftLeft"
-        | ShiftRight -> "ShiftRight"
-        | Neg -> "Neg"
-        | Tanh -> "Tanh"
-        | Log -> "Log"
-        | Exp -> "Exp"
-        | Sin -> "Sin"
-        | Cos -> "Cos"
-        | Sqrt -> "Sqrt"
-        | NanIs -> "NanIs"
-        | Conv -> "Conv"
-        | Infinity -> "Infinity"
-        | Pi -> "Pi"
-        | LitIs -> "LitIs"
-        | PrimIs -> "PrimIs"
-        | SymbolIs -> "SymbolIs"
-        | VarIs -> "VarIs"
-        | UnionIs -> "UnionIs"
-        | HeapUnionIs -> "HeapUnionIs"
-        | LayoutIs -> "LayoutIs"
-        | NominalIs -> "NominalIs"
-        | FunctionIs -> "FunctionIs"
-        | ExistsIs -> "ExistsIs"
-        | PrototypeHas -> "PrototypeHas"
-        | PrimTypeIs -> "PrimTypeIs"
-        | SymbolTypeIs -> "SymbolTypeIs"
-        | UnionTypeIs -> "UnionTypeIs"
-        | HeapUnionTypeIs -> "HeapUnionTypeIs"
-        | LayoutTypeIs -> "LayoutTypeIs"
-        | ExistsTypeIs -> "ExistsTypeIs"
-        | NominalTypeIs -> "NominalTypeIs"
-        | FailWith -> "FailWith"
-        | PrintStatic -> "PrintStatic"
-        | PrintRaw -> "PrintRaw"
-        | ErrorType -> "ErrorType"
-        | ExistsStrip -> "ExistsStrip"
-        | StringLitToSymbol -> "StringLitToSymbol"
-        | SymbolToString -> "SymbolToString"
-        | VarTag -> "VarTag"
-        | TagToSymbol -> "TagToSymbol"
-        | FunctionTermSlotsGet -> "FunctionTermSlotsGet"
-        | FunctionTermSlotsSet -> "FunctionTermSlotsSet"
-        | FreeVars -> "FreeVars"
-        | FreeVarsReplace -> "FreeVarsReplace"
-        | SizeOf -> "SizeOf"
-    
-
-    /// ### PatternCompilationErrors
-    type PatternCompilationErrors =
-        | DisjointOrPatternVar
-        | DuplicateTermVar
-        | DuplicateTypeVar
-        | ShadowedVar
-        | DuplicateRecordSymbol
-        | DuplicateRecordInjection
-    
-
-    /// ### ParserErrors
-    type ParserErrors =
-        | TypeVarsNeedToBeExplicitForExists
-        | InvalidPattern of PatternCompilationErrors
-        | ExpectedKeyword of TokenKeyword
-        | ExpectedStringOpen | ExpectedStringClose
-        | ExpectedMacroOpen | ExpectedMacroClose
-        | ExpectedMacroVar | ExpectedMacroTypeVar | ExpectedMacroTypeLitVar
-        | ExpectedEscapedChar of is_term_macro : bool
-        | ExpectedText | ExpectedUnescapedChar
-        | ExpectedOperator'
-        | ExpectedOperator of string
-        | ExpectedUnaryOperator'
-        | ExpectedUnaryOperator of string
-        | ExpectedUnit
-        | ExpectedVar
-        | ExpectedVarOrOpAsNameOfRecStatement
-        | ExpectedVarOrOpAsNameOfGlobalStatement
-        | ExpectedSmallVar
-        | ExpectedBigVar
-        | ExpectedLit
-        | ExpectedSymbolPaired
-        | SymbolPairedShouldStartWithUppercaseInTypeScope
-        | ExpectedSymbol
-        | ExpectedParenthesis of Parenthesis * ParenthesisState
-        | ExpectedMacroExpression of MacroEnum * ParenthesisState
-        | ExpectedOpenParenthesis
-        | ExpectedStatement
-        | ExpectedEob
-        | ExpectedFunctionAsBodyOfRecStatement
-        | ExpectedSinglePatternWhenStatementNameIsNorVarOrOp
-        | ExpectedGlobalFunction
-        | ExpectedExpression
-        | InbuiltOpNotFound
-        | UnknownOperator
-        | UnexpectedEob
-        | UnexpectedAndInlRec
-        | ForallNotAllowed
-        | TypecaseNotAllowed
-        | MetavarNotAllowed
-        | TermNotAllowed
-        | UnknownError
-        | DuplicateRecordTypeVar
-        | DuplicateForallVar
-        | DuplicateExistsVar
-        | DuplicateConstraint
-        | DuplicateTermRecordSymbol
-        | DuplicateTermRecordInjection
-        | DuplicateRecFunctionName
-        | BottomUpNumberParseError of string * string
-        | ExpectedPairedSymbolInUnion
-        | DuplicateUnionKey
-        | MetavarShadowedByVar
-        | VarShadowedByMetavar
-        | ListLiteralsNotAllowedInBottomUp
-        | ArrayLiteralsNotAllowedInBottomUp
-        | ForallNotAllowedInTypecase
-        | ExistsNotAllowedInTypecase
-    
-
-    /// ### RawKindExpr
-    type RawKindExpr =
-        | RawKindWildcard
-        | RawKindStar
-        | RawKindFun of RawKindExpr * RawKindExpr
-    
-
-    /// ### UnionLayout
-    type UnionLayout = UStack | UHeap
-    
-
-    /// ### HoVar
-    type HoVar = VSCRange * (VarString * RawKindExpr)
-    
-
-    /// ### TypeVar
-    type TypeVar = HoVar * (VSCRange * VarString) list
-    
-
-    /// ### RawMacro
-    type RawMacro =
-        | RawMacroText of VSCRange * string
-        | RawMacroTerm of VSCRange * RawExpr * is_inline : bool
-        | RawMacroType of VSCRange * RawTExpr
-        | RawMacroTypeLit of VSCRange * RawTExpr
-    and RawRecordWith =
-        | RawRecordWithSymbol of (VSCRange * SymbolString) * RawExpr
-        | RawRecordWithSymbolModify of (VSCRange * SymbolString) * RawExpr
-        | RawRecordWithInjectVar of (VSCRange * VarString) * RawExpr
-        | RawRecordWithInjectVarModify of (VSCRange * VarString) * RawExpr
-    and RawRecordWithout =
-        | RawRecordWithoutSymbol of VSCRange * SymbolString
-        | RawRecordWithoutInjectVar of VSCRange * VarString
-    and PatRecordMember =
-        | PatRecordMembersSymbol of (VSCRange * SymbolString) * name: Pattern
-        | PatRecordMembersInjectVar of (VSCRange * VarString) * name: Pattern
-    and Pattern =
-        | PatB of VSCRange
-        | PatE of VSCRange
-        | PatVar of VSCRange * VarString
-        | PatDyn of VSCRange * Pattern
-        | PatUnbox of VSCRange * symbol: string * Pattern
-        | PatExists of VSCRange * (VSCRange * VarString) list * Pattern
-        | PatAnnot of VSCRange * Pattern * RawTExpr
-        | PatPair of VSCRange * Pattern * Pattern
-        | PatSymbol of VSCRange * string
-        | PatRecordMembers of VSCRange * PatRecordMember list
-        | PatOr of VSCRange * Pattern * Pattern
-        | PatAnd of VSCRange * Pattern * Pattern
-        | PatValue of VSCRange * Literal
-        | PatDefaultValue of VSCRange * VarString
-        | PatWhen of VSCRange * Pattern * RawExpr
-        | PatNominal of VSCRange * (VSCRange * VarString) *  (VSCRange * VarString) list * Pattern
-        | PatArray of VSCRange * Pattern list
-        | PatFilledDefaultValue of VSCRange * VarString * RawTExpr // Filled in by the inferencer.
-    and RawExpr =
-        | RawB of VSCRange
-        | RawV of VSCRange * VarString * is_tvar_applied : bool
-        | RawLit of VSCRange * Literal
-        | RawDefaultLit of VSCRange * string
-        | RawSymbol of VSCRange * SymbolString
-        | RawType of VSCRange * RawTExpr
-        | RawMatch of VSCRange * body: RawExpr * (Pattern * RawExpr) list
-        | RawFun of VSCRange * (Pattern * RawExpr) list
-        | RawForall of VSCRange * TypeVar * RawExpr
-        | RawExists of VSCRange * (VSCRange * RawTExpr list option) * RawExpr
-        | RawRecBlock of VSCRange * ((VSCRange * VarString) * RawExpr) list * on_succ: RawExpr // The bodies of a block must be RawFun or RawForall.
-        | RawRecordWith of VSCRange * RawExpr list * RawRecordWith list * RawRecordWithout list
-        | RawOp of VSCRange * Op * RawExpr list
-        | RawJoinPoint of VSCRange * backend: (VSCRange * string) option * RawExpr * name: string option
-        | RawAnnot of VSCRange * RawExpr * RawTExpr
-        | RawTypecase of VSCRange * RawTExpr * (RawTExpr * RawExpr) list
-        | RawOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list * on_succ: RawExpr
-        | RawApply of VSCRange * RawExpr * RawExpr
-        | RawIfThenElse of VSCRange * RawExpr * RawExpr * RawExpr
-        | RawIfThen of VSCRange * RawExpr * RawExpr
-        | RawPair of VSCRange * RawExpr * RawExpr
-        | RawSeq of VSCRange * RawExpr * RawExpr
-        | RawHeapMutableSet of VSCRange * RawExpr * RawExpr list * RawExpr
-        | RawReal of VSCRange * RawExpr
-        | RawMacro of VSCRange * RawMacro list
-        | RawArray of VSCRange * RawExpr list
-        | RawMissingBody of VSCRange
-        | RawFilledForall of VSCRange * string * RawExpr // Filled in by the inferencer.
-    and RawTExpr =
-        | RawTWildcard of VSCRange
-        | RawTB of VSCRange
-        | RawTMetaVar of VSCRange * VarString
-        | RawTLit of VSCRange * Literal
-        | RawTVar of VSCRange * VarString
-        | RawTPair of VSCRange * RawTExpr * RawTExpr
-        | RawTFun of VSCRange * RawTExpr * RawTExpr * FunType
-        | RawTArray of VSCRange * RawTExpr
-        | RawTRecord of VSCRange * Map<int * string,RawTExpr>
-        | RawTSymbol of VSCRange * SymbolString
-        | RawTApply of VSCRange * RawTExpr * RawTExpr
-        | RawTForall of VSCRange * TypeVar * RawTExpr
-        | RawTExists of VSCRange * TypeVar list * RawTExpr
-        | RawTPrim of VSCRange * PrimitiveType
-        | RawTTerm of VSCRange * RawExpr
-        | RawTMacro of VSCRange * RawMacro list
-        | RawTUnion of VSCRange * Map<int * string,bool * RawTExpr> * UnionLayout * this: RawTExpr  // The boolean arg determines whether the union case is generalized. `this` is the self type.
-        | RawTLayout of VSCRange * RawTExpr * Layout
-        | RawTTypecase of VSCRange * RawTExpr * (RawTExpr * RawTExpr) list
-        | RawTFilledNominal of VSCRange * GlobalId // Filled in by the inferencer.
-    
-
-    /// ### (+.)
-    let (+.) (a,_) (_,b) = a,b
-    
-
-    /// ### range_of_hovar
-    let range_of_hovar ((r,_) : HoVar) = r
-    
-
-    /// ### range_of_typevar
-    let range_of_typevar ((x,_) : TypeVar) = range_of_hovar x
-    
-
-    /// ### hovar_name
-    let hovar_name ((_,(name,_)) : HoVar) = name
-    
-
-    /// ### typevar_name
-    let typevar_name ((h,_) : TypeVar) = hovar_name h
-    
-
-    /// ### range_of_record_with
-    let range_of_record_with = function
-        | RawRecordWithSymbol((r,_),_)
-        | RawRecordWithSymbolModify((r,_),_)
-        | RawRecordWithInjectVar((r,_),_)
-        | RawRecordWithInjectVarModify((r,_),_) -> r
-    
-
-    /// ### range_of_record_without
-    let range_of_record_without = function
-        | RawRecordWithoutSymbol(r,_)
-        | RawRecordWithoutInjectVar(r,_) -> r
-    
-
-    /// ### range_of_pattern
-    let range_of_pattern = function
-        | PatB r
-        | PatE r
-        | PatVar(r,_)
-        | PatDyn(r,_)
-        | PatUnbox(r,_,_)
-        | PatExists(r,_,_)
-        | PatSymbol(r,_)
-        | PatValue(r,_)
-        | PatDefaultValue(r,_)
-        | PatRecordMembers(r,_)
-        | PatArray(r,_)
-        | PatAnnot(r,_,_)
-        | PatPair(r,_,_)
-        | PatOr(r,_,_)
-        | PatAnd(r,_,_)
-        | PatWhen(r,_,_)
-        | PatFilledDefaultValue(r,_,_)
-        | PatNominal(r,_,_,_) -> r
-    
-
-    /// ### range_of_pat_record_member
-    let range_of_pat_record_member = function
-        | PatRecordMembersSymbol((r,_),x)
-        | PatRecordMembersInjectVar((r,_),x) -> r +. range_of_pattern x
-    
-
-    /// ### range_of_expr
-    let range_of_expr = function
-        | RawB r
-        | RawMissingBody r
-        | RawMacro(r,_)
-        | RawV(r,_,_)
-        | RawLit(r,_)
-        | RawDefaultLit(r,_)
-        | RawSymbol(r,_)
-        | RawType(r,_)
-        | RawJoinPoint(r,_,_,_)
-        | RawArray(r,_)
-        | RawMatch(r,_,_)
-        | RawFun(r,_)
-        | RawReal(r,_)
-        | RawRecBlock(r,_,_)
-        | RawOp(r,_,_)
-        | RawAnnot(r,_,_)
-        | RawTypecase(r,_,_)
-        | RawForall(r,_,_)
-        | RawExists(r,_,_)
-        | RawFilledForall(r,_,_)
-        | RawApply(r,_,_)
-        | RawPair(r,_,_)
-        | RawIfThen(r,_,_)
-        | RawSeq(r,_,_)
-        | RawHeapMutableSet(r,_,_,_)
-        | RawRecordWith(r,_,_,_)
-        | RawIfThenElse(r,_,_,_)
-        | RawOpen(r,_,_,_) -> r
-    
-
-    /// ### rawv
-    let rawv (r,x) = RawV(r,x,true)
-    
-
-    /// ### range_of_texpr
-    let range_of_texpr = function
-        | RawTWildcard r
-        | RawTB r
-        | RawTLit(r,_)
-        | RawTMacro(r,_)
-        | RawTMetaVar(r,_)
-        | RawTVar(r,_)
-        | RawTArray(r,_)
-        | RawTRecord(r,_)
-        | RawTUnion(r,_,_,_)
-        | RawTSymbol(r,_)
-        | RawTPrim(r,_)
-        | RawTTerm(r,_)
-        | RawTFilledNominal(r,_)
-        | RawTPair(r,_,_)
-        | RawTFun(r,_,_,_)
-        | RawTApply(r,_,_)
-        | RawTLayout(r,_,_)
-        | RawTExists(r,_,_)
-        | RawTTypecase(r,_,_)
-        | RawTForall(r,_,_) -> r
-    
-
-    /// ### range_of_texpr_gadt_constructor
-    let rec range_of_texpr_gadt_constructor = function
-        | RawTForall(_,_,x) -> range_of_texpr_gadt_constructor x
-        | RawTFun(_,_,x,_) | x -> range_of_texpr x
-    
-
-    /// ### range_of_texpr_gadt_body
-    let rec range_of_texpr_gadt_body = function
-        | RawTForall(_,_,x) -> range_of_texpr_gadt_body x
-        | RawTFun(_,x,_,_) | x -> range_of_texpr x
-    
-
-    /// ### VectorCord
-    type VectorCord = {|row : int; col : int|}
-    
-
-    /// ### BlockParsingEnv
-    type BlockParsingEnv = {
-        semantic_updates : (VectorCord * SemanticTokenLegend) ResizeArray
-        tokens_cords : VectorCord []
-        tokens : (VSCRange * SpiralToken) []
-        comments : LineComment option []
-        i : int ref
-        is_top_down : bool
-        default_env : DefaultEnv
-        continuation_column : int option
-        } with
-    
-
-        member d.Index with get() = d.i.contents and set(i) = d.i.Value <- i
-    
-
-    /// ### try_current_template
-    let inline try_current_template (d : BlockParsingEnv) on_succ on_fail =
-        let i = d.Index
-        if i < d.tokens.Length then on_succ d.tokens.[i]
-        else on_fail()
-    
-
-    /// ### try_current
-    let inline try_current d f = try_current_template d (fun (p,t) -> f (p, t)) (fun () -> Error [])
-    
-
-    /// ### print_current
-    let print_current d = try_current d (fun x -> printfn "%A" x; Ok()) // For parser debugging purposes.
-    
-
-    /// ### line_template
-    let inline line_template d f = try_current_template d (fst >> f) (fun _ -> -1)
-    
-
-    /// ### col
-    let col d = line_template d (fun (r,_) -> r.character)
-    
-
-    /// ### lineBlockParsing
-    let lineBlockParsing d = line_template d (fun (r,_) -> r.line)
-    
-
-    /// ### skip'
-    let skip' (d : BlockParsingEnv) i = d.i.Value <- d.i.contents+i
-    
-
-    /// ### blockParsingSkip
-    let blockParsingSkip d = skip' d 1
-    
-
-    /// ### skip_string_open
-    let skip_string_open d =
-        try_current d <| function
-            | p,TokStringOpen -> blockParsingSkip d; Ok(p)
-            | p, _ -> Error [p, ExpectedStringOpen]
-    
-
-    /// ### skip_string_close
-    let skip_string_close d =
-        try_current d <| function
-            | p,TokStringClose -> blockParsingSkip d; Ok(p)
-            | p, _ -> Error [p, ExpectedStringClose]
-    
-
-    /// ### skip_macro_open
-    let skip_macro_open d =
-        try_current d <| function
-            | p,TokMacroOpen -> blockParsingSkip d; Ok(p)
-            | p, _ -> Error [p, ExpectedMacroOpen]
-    
-
-    /// ### skip_macro_close
-    let skip_macro_close d =
-        try_current d <| function
-            | p,TokMacroClose -> blockParsingSkip d; Ok(p)
-            | p, _ -> Error [p, ExpectedMacroClose]
-    
-
-    /// ### read_text
-    let read_text is_term_macro d =
-        let (+.) a b =
-            match a with
-            | Some a -> Some (a +. b)
-            | None -> Some b
-        let rec loop (a : VSCRange option) (str : Text.StringBuilder) =
-            try_current d <| function
-                | b,TokText x -> blockParsingSkip d; loop (a +. b) (str.Append(x))
-                | b,TokEscapedVar when is_term_macro -> blockParsingSkip d; loop (a +. b) (str.Append("\\v"))
-                | b,(TokEscapedChar x | TokUnescapedChar x) -> blockParsingSkip d; loop (a +. b) (str.Append(x))
-                | b, _ ->
-                    if Option.isNone a then Error [b, ExpectedText; b, ExpectedEscapedChar is_term_macro; b, ExpectedUnescapedChar]
-                    else Ok(Option.get a, str.ToString())
-        loop None (Text.StringBuilder())
-    
-
-    /// ### read_macro_var
-    let read_macro_var d =
-        try_current d <| function
-            | p, TokMacroTermVar (x, is_inline) -> blockParsingSkip d; Ok(RawMacroTerm(p,rawv(p,x),is_inline))
-            | p, TokMacroTypeVar x -> blockParsingSkip d; Ok(RawMacroType(p,RawTVar(p,x)))
-            | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
-            | p,_ -> Error [p, ExpectedMacroVar]
-    
-
-    /// ### read_macro_type_var
-    let read_macro_type_var d =
-        try_current d <| function
-            | p, TokMacroTypeVar x -> blockParsingSkip d; Ok(RawMacroType(p,RawTVar(p,x)))
-            | p, TokMacroTypeLitVar x -> blockParsingSkip d; Ok(RawMacroTypeLit(p,RawTVar(p,x)))
-            | p,_ -> Error [p, ExpectedMacroTypeVar]
-    
-
-    /// ### skip_keyword
-    let skip_keyword t d =
-        try_current d <| function
-            | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedKeyword t]
-    
-
-    /// ### skip_keyword'
-    let skip_keyword' t d =
-        try_current d <| function
-            | p,TokKeyword t' when t = t' -> blockParsingSkip d; Ok p
-            | p, _ -> Error [p, ExpectedKeyword t]
-    
-
-    /// ### read_unary_op
-    let read_unary_op d =
-        try_current d <| function
-            | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedUnaryOperator']
-    
-
-    /// ### read_unary_op'
-    let read_unary_op' d =
-        try_current d <| function
-            | p, TokUnaryOperator(t',_) -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedUnaryOperator']
-    
-
-    /// ### read_op
-    let read_op d =
-        try_current d <| function
-            | p, TokOperator(t',_) -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedOperator']
-    
-
-    /// ### read_op'
-    let read_op' d =
-        try_current d <| function
-            | p, TokOperator(t',_) -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedOperator']
-    
-
-    /// ### update_semantic
-    let update_semantic (d : BlockParsingEnv) = let i = d.Index in fun x -> d.semantic_updates.Add(d.tokens_cords.[i], x)
-    
-
-    /// ### read_op_type
-    let read_op_type d =
-        try_current d <| function
-            | p, TokOperator(t',r) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedOperator']
-    
-
-    /// ### skip_op
-    let skip_op t d =
-        try_current d <| function
-            | p, TokOperator(t',_) when t' = t -> blockParsingSkip d; Ok p
-            | p, _ -> Error [p, ExpectedOperator t]
-    
-
-    /// ### skip_unary_op
-    let skip_unary_op t d =
-        try_current d <| function
-            | p, TokUnaryOperator(t',_) when t' = t -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedUnaryOperator t]
-    
-
-    /// ### read_var
-    let read_var d =
-        try_current d <| function
-            | p, TokVar(t',_) -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedVar]
-    
-
-    /// ### read_var'
-    let read_var' d =
-        try_current d <| function
-            | p, TokVar(t',_) -> let r = update_semantic d in blockParsingSkip d; Ok(p,t',r)
-            | p, _ -> Error [p, ExpectedVar]
-    
-
-    /// ### read_var''
-    let read_var'' d =
-        try_current d <| function
-            | p, TokVar(t',_) -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedVar]
-    
-
-    /// ### read_big_var
-    let read_big_var d =
-        try_current d <| function
-            | p, TokVar(t',_) when Char.IsUpper(t',0) -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedBigVar]
-    
-
-    /// ### read_var_as_symbol
-    let read_var_as_symbol d =
-        try_current d <| function
-            | p, TokVar(t',_) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedVar]
-    
-
-    /// ### read_big_var_as_symbol
-    let read_big_var_as_symbol d =
-        try_current d <| function
-            | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.symbol; blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedBigVar]
-    
-
-    /// ### read_big_var_as_keyword
-    let read_big_var_as_keyword d =
-        try_current d <| function
-            | p, TokVar(t',_) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.keyword; blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedBigVar]
-    
-
-    /// ### read_small_var
-    let read_small_var d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok t'
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_small_var'
-    let read_small_var' d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_big_type_var
-    let read_big_type_var d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_big_type_var'
-    let read_big_type_var' d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_small_type_var
-    let read_small_type_var d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(t')
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_small_type_var'
-    let read_small_type_var' d =
-        try_current d <| function
-            | p, TokVar(t',r) when Char.IsUpper(t',0) = false -> update_semantic d SemanticTokenLegend.type_variable; blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedSmallVar]
-    
-
-    /// ### read_value
-    let read_value d =
-        try_current d <| function
-            | p, TokValue t' ->
-                blockParsingSkip d
-                if d.Index < d.tokens.Length then
-                    match snd d.tokens.[d.Index] with
-                    | TokValueSuffix -> blockParsingSkip d
-                    | _ -> ()
-                Ok(p,t')
-            | p, _ -> Error [p, ExpectedLit]
-    
-
-    /// ### read_symbol
-    let read_symbol d =
-        try_current d <| function
-            | p, TokSymbol(t',r) -> blockParsingSkip d; Ok(p,t')
-            | p, _ -> Error [p, ExpectedSymbol]
-    
-
-    /// ### skip_parenthesis
-    let skip_parenthesis a b d =
-        try_current d <| function
-            | p, TokParenthesis(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
-            | p, _ -> Error [p, ExpectedParenthesis(a,b)]
-    
-
-    /// ### skip_macro_expression
-    let skip_macro_expression a b d =
-        try_current d <| function
-            | p, TokMacroExpression(a',b') when a = a' && b = b' -> blockParsingSkip d; Ok()
-            | p, _ -> Error [p, ExpectedMacroExpression(a,b)]
-    
-
-    /// ### on_succ
-    let on_succ x _ = Ok x
-    
-
-    /// ### macro_expression
-    // open FParsec
-    let macro_expression ty a d = (skip_macro_expression ty Open >>. a .>> skip_macro_expression ty Close) d
-    
-
-    /// ### rounds
-    let rounds a d = (skip_parenthesis Round Open >>. a .>> skip_parenthesis Round Close) d
-    
-
-    /// ### curlies
-    let curlies a d = (skip_parenthesis Curly Open >>. a .>> skip_parenthesis Curly Close) d
-    
-
-    /// ### squares
-    let squares a d = (skip_parenthesis Square Open >>. a .>> skip_parenthesis Square Close) d
-    
-
-    /// ### blockParsingIndex
-    let blockParsingIndex (t : BlockParsingEnv) = t.Index
-    
-
-    /// ### blockParsingIndex_set
-    let blockParsingIndex_set v (t : BlockParsingEnv) = t.Index <- v
-    
-
-    /// ### blockParsingRange
-    let inline blockParsingRange exp s =
-        let i = blockParsingIndex s
-        exp s |> Result.map (fun x ->
-            let i' = blockParsingIndex s
-            if i < i' then fst s.tokens.[i] +. fst s.tokens.[i'-1], x : VSCRange * _
-            else
-                failwith "Compiler error: The parser passed into `range` has to consume at least one token for it to work."
-            )
-    
-
-    /// ### kind
-    let rec kind d = (sepBy1 ((skip_op "*" >>% RawKindStar) <|> rounds kind) (skip_op "->") |>> List.reduceBack (fun a b -> RawKindFun (a,b))) d
-    
-
-    /// ### duplicates
-    let duplicates er x =
-        let h = Collections.Generic.HashSet()
-        x |> List.choose (fun (r : VSCRange,n : string) -> if h.Add n = false then Some(r,er) else None)
-    
-
-    /// ### blockParsingIndent
-    let inline blockParsingIndent i op next d = if op i (col d) then next d else Error []
-    
-
-    /// ### record_var
-    let record_var d = (read_var_as_symbol <|> rounds read_op) d
-    
-
-    /// ### patterns_validate
-    let patterns_validate pats =
-        let pos = Collections.Generic.Dictionary(HashIdentity.Reference)
-        let errors = ResizeArray()
-        let rec loop is_type pat =
-            let loop = loop is_type
-            let duplicate_var() = InvalidPattern (if is_type then DuplicateTypeVar else DuplicateTermVar)
-            match pat with
-            | PatFilledDefaultValue _ | PatDefaultValue _ | PatValue _ | PatSymbol _ | PatE _ | PatB _ -> Set.empty
-            | PatArray(_,x) ->
-                List.fold (fun s x ->
-                    let x = loop x
-                    let inters = Set.intersect s x
-                    if Set.isEmpty inters = false then inters |> Set.iter (fun x -> errors.Add(pos.[x], duplicate_var()))
-                    s + x
-                    ) Set.empty x
-            | PatExists(r,l,p) ->
-                if is_type then
-                    let s = List.fold (fun s (r,x) -> pos.Add(x,r); Set.add x s) Set.empty l
-                    let x = loop p
-                    let inters = Set.intersect s x
-                    if Set.isEmpty inters = false then inters |> Set.iter (fun x -> errors.Add(pos.[x], duplicate_var()))
-                    s + x
-                else
-                    loop p
-            | PatVar(r,x) ->
-                if is_type then
-                    Set.empty
-                else
-                    pos.Add(x,r)
-                    Set.singleton x
-            | PatDyn(_,p) | PatAnnot (_,p,_) | PatNominal(_,_,_,p) | PatUnbox(_,_,p) | PatWhen(_,p,_) -> loop p
-            | PatRecordMembers(_,items) ->
-                let symbols = Collections.Generic.HashSet()
-                let injects = Collections.Generic.HashSet()
-                let vars = Collections.Generic.HashSet()
-                List.iter (fun item ->
-                    match item with
-                    | PatRecordMembersSymbol((r,keyword),name) ->
-                        if symbols.Add(keyword) = false then errors.Add (r, InvalidPattern DuplicateRecordSymbol); Set.empty else loop name
-                    | PatRecordMembersInjectVar((r,var),name) ->
-                        if injects.Add(var) = false then errors.Add (r, InvalidPattern DuplicateRecordInjection); Set.empty else loop name
-                    |> Set.iter (fun x -> if vars.Add x = false then errors.Add (pos.[x], duplicate_var()))
-                    ) items
-                Set vars
-            | PatPair(_,a,b) | PatAnd(_,a,b) ->
-                let a, b = loop a, loop b
-                Set.intersect b a |> Set.iter (fun x -> errors.Add (pos.[x], duplicate_var()))
-                a + b
-            | PatOr(_,a,b) ->
-                let a, b = loop a, loop b
-                let f = Set.iter (fun x -> errors.Add (pos.[x], InvalidPattern DisjointOrPatternVar))
-                f (a-b); f (b-a)
-                a
-    
-
-        let validate is_type =
-            List.fold (fun s x ->
-                let s' = loop is_type x
-                Set.intersect s' s |> Set.iter (fun x -> errors.Add(pos.[x],InvalidPattern ShadowedVar))
-                s + s'
-                ) Set.empty pats |> ignore
-        validate true; validate false
-        errors |> Seq.toList
-    
-
-    /// ### join_point
-    let join_point is_let name = function // Has the effect of removing nested join points due to not duplicating them.
-        | RawJoinPoint(a,b,c,_) -> RawJoinPoint(a,b,c,name)
-        | x -> if is_let then RawJoinPoint(range_of_expr x, None, x, name) else x
-    
-
-    /// ### join_point_backend
-    let join_point_backend (a,b) = RawJoinPoint(range_of_expr b, Some a, b, None)
-    
-
-    /// ### unintern
-    /// Some places need unique string refs, so this is to keep the compiler from interning static strings.
-    let unintern (x : string) = Text.StringBuilder(x).ToString()
-    
-
-    /// ### adjust_join_point
-    let rec adjust_join_point is_let name x =
-        let dyn_if_let a = if is_let then PatDyn(range_of_pattern a, a) else a
-        match x with
-        | RawForall(r,a,b) -> RawForall(r,a,adjust_join_point is_let name b)
-        | RawFun(r,[a,b]) -> RawFun(r,[dyn_if_let a, adjust_join_point is_let name b])
-        | RawFun(r,l) ->
-            let empty = fst r, fst r
-            let n = unintern " arg"
-            let a = PatVar(empty,n) |> dyn_if_let
-            let b = RawMatch(empty,rawv(empty,n),l)
-            RawFun(r,[a,join_point is_let name b])
-        | x -> join_point is_let name x
-    
-
-    /// ### adjust_join_point'
-    let adjust_join_point' is_let name = function
-        | RawForall _ | RawFun _ as x -> adjust_join_point is_let name x
-        | x -> x
-    
-
-    /// ### inl_or_let_process
-    let inl_or_let_process (r, (is_let, is_rec, name, foralls, pats, body)) _ =
-        match is_rec, name, foralls, pats with
-        | false, _, [], [] ->
-            match patterns_validate [name] with
-            | [] -> Ok((r,name,adjust_join_point' is_let (match name with PatVar(_,name) -> Some name | _ -> None) body),is_rec)
-            | ers -> Error ers
-        | _, PatVar(_,name'), _, _ ->
-            match patterns_validate (if is_rec then name :: pats else pats) with
-            | [] ->
-                let body =
-                    let dyn_if_let x = if is_let then PatDyn(range_of_pattern x, x) else x
-                    adjust_join_point is_let (Some name') body
-                    |> List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[dyn_if_let pat,body])) pats
-                    |> List.foldBack (fun typevar body -> RawForall(range_of_typevar typevar +. range_of_expr body,typevar,body)) foralls
-                match is_rec, body with
-                | false, _ | true, (RawFun _ | RawForall _) -> Ok((r,name,body),is_rec)
-                | true, _ -> Error [r, ExpectedFunctionAsBodyOfRecStatement]
-            | ers -> Error ers
-        | true, _, _, _ -> Error [range_of_pattern name, ExpectedVarOrOpAsNameOfRecStatement]
-        | false, _, _, _ -> Error [range_of_pattern name, ExpectedSinglePatternWhenStatementNameIsNorVarOrOp]
-    
-
-    /// ### ho_var
-    let ho_var d : Result<HoVar,_> = blockParsingRange ((read_small_type_var |>> fun x -> x, RawKindWildcard) <|> rounds ((read_small_type_var .>> skip_op ":") .>>. kind)) d
-    
-
-    /// ### forall_var
-    let forall_var d : Result<TypeVar,_> = (ho_var .>>. (curlies (sepBy (read_small_type_var' <|> rounds read_op_type) (skip_op ";")) <|>% [])) d
-    
-
-    /// ### forall
-    let forall d =
-        (skip_keyword SpecForall >>. many1 forall_var .>> skip_op "."
-        >>= fun q _ ->
-            let x' = q |> List.collect (fun (_,l) -> duplicates DuplicateConstraint l)
-            let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateForallVar
-            match List.append x x' with [] -> Ok q | er -> Error er
-            ) d
-    
-
-    /// ### pat_exists'
-    let pat_exists' d =
-        (skip_keyword SpecExists >>. many (blockParsingRange read_small_type_var) .>> skip_op "."
-        >>= fun q _ ->
-            match duplicates DuplicateExistsVar q with [] -> Ok q | er -> Error er
-            ) d
-    
-
-    /// ### exists
-    let exists d =
-        (skip_keyword SpecExists >>. many forall_var .>> skip_op "."
-        >>= fun q _ ->
-            let x' = q |> List.collect (fun (_,l) -> duplicates DuplicateConstraint l)
-            let x = q |> List.map (fun ((r,(a,_)),_) -> r,a) |> duplicates DuplicateExistsVar
-            match List.append x x' with [] -> Ok q | er -> Error er
-            ) d
-    
-
-    /// ### annotated_body
-    let inline annotated_body sep exp ty =
-        pipe2 (opt (skip_op ":" >>. ty))
-            (skip_op sep .>>. opt exp)
-            (fun a (r,b) ->
-                let b = match b with Some b -> b | None -> RawMissingBody r
-                match a with
-                | Some a -> RawAnnot(range_of_expr b +. range_of_texpr a,b,a)
-                | None -> b)
-    
-
-    /// ### inl_or_let
-    let inline inl_or_let exp pattern ty =
-        blockParsingRange (tuple6 ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true))
-                ((skip_keyword SpecRec >>% true) <|>% false) pattern
-                (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
-        >>= inl_or_let_process
-    
-
-    /// ### and_inl_or_let
-    let inline and_inl_or_let exp pattern ty =
-        blockParsingRange (tuple6 (skip_keyword SpecAnd >>. ((skip_keyword SpecInl >>% false) <|> (skip_keyword SpecLet >>% true)))
-                (fun _ -> Ok true) pattern
-                (forall <|>% []) (many pattern) (annotated_body "=" exp ty))
-        >>= inl_or_let_process
-    
-
-    /// ### Associativity
-    type Associativity = FParsec.Associativity
-    
-
-    /// ### inbuilt_operators
-    let inbuilt_operators x =
-        match x with
-        | "+" -> ValueSome(60, Associativity.Left)
-        | "-" -> ValueSome(60, Associativity.Left)
-        | "*" -> ValueSome(70, Associativity.Left)
-        | "/" -> ValueSome(70, Associativity.Left)
-        | "%" -> ValueSome(70, Associativity.Left)
-        | "</>" -> ValueSome(43, Associativity.Left)
-        | "<|>" -> ValueSome(42, Associativity.Left)
-        | "|>" -> ValueSome(41, Associativity.Left)
-        | "||>" -> ValueSome(41, Associativity.Left)
-        | "|||>" -> ValueSome(41, Associativity.Left)
-        | ">>" -> ValueSome(45, Associativity.Left)
-        | "<-" -> ValueSome(4, Associativity.Left)
-    
-
-        | "<=" -> ValueSome(40, Associativity.None)
-        | "<" -> ValueSome(40, Associativity.None)
-        | "=" -> ValueSome(40, Associativity.None)
-        | "`=" -> ValueSome(40, Associativity.None)
-        | ">" -> ValueSome(40, Associativity.None)
-        | ">=" -> ValueSome(40, Associativity.None)
-        | "<>" -> ValueSome(40, Associativity.None)
-        | "<<<" -> ValueSome(40, Associativity.None)
-        | ">>>" -> ValueSome(40, Associativity.None)
-        | "&&&" -> ValueSome(40, Associativity.None)
-        | "|||" -> ValueSome(40, Associativity.None)
-    
-
-        | "||" -> ValueSome(20, Associativity.Left)
-        | "&&" -> ValueSome(30, Associativity.Left)
-        | "::" -> ValueSome(50, Associativity.Right)
-        | "^" -> ValueSome(45, Associativity.Right)
-        | "<|" -> ValueSome(41, Associativity.Right)
-        | "<<" -> ValueSome(45, Associativity.Left)
-        | "." -> ValueSome(2, Associativity.Right)
-        | "," -> ValueSome(6, Associativity.Right)
-        | ":>" -> ValueSome(35, Associativity.Right)
-        | ":?>" -> ValueSome(35, Associativity.Right)
-        | "**" -> ValueSome(80, Associativity.Right)
-        | _ -> ValueNone
-    
-
-    /// ### precedence_associativity
-    // The `.` operator has special behavior similar to F#.
-    let rec precedence_associativity name =
-        if 0 < String.length name then
-            if 1 < String.length name && name.[0] = '.' then precedence_associativity name.[1..]
-            else
-                match inbuilt_operators name with
-                | ValueNone -> precedence_associativity (name.[0..name.Length-2])
-                | v -> v
-        else ValueNone
-    
-
-    /// ### op
-    let op (d : BlockParsingEnv) =
-        blockParsingRange read_op d |> Result.bind (fun (o,x) ->
-            match x with
-            | "=>" | "|" | ":" | ";" -> skip' d -1; Error [] // Separators get special handling for sake of better error messages.
-            | _ ->
-                match precedence_associativity x with // TODO: Might be good to memoize this.
-                | ValueNone -> Error [o, UnknownOperator]
-                | ValueSome(p,a) ->
-                    let inline f on_succ = Ok(p,a,fun (a,b) ->
-                        let ra, rb = range_of_expr a, range_of_expr b
-                        let r = ra +. rb
-                        on_succ(r,a,b)
-                        )
-                    match x with
-                    | "." -> f RawSeq
-                    | "&&" -> f (fun (r,a,b) -> RawIfThenElse(r,a,b,RawLit(o,LitBool false)))
-                    | "||" -> f (fun (r,a,b) -> RawIfThenElse(r,a,RawLit(o,LitBool true),b))
-                    | "," -> f RawPair
-                    | "<-" -> f (fun (r,a,c) ->
-                        let rec loop l = function
-                            | RawApply(_,a,b) -> loop (b :: l) a
-                            | a -> a, l
-                        let a,b = loop [] a
-                        RawHeapMutableSet(r,a,b,c)
-                        )
-                    | x -> f (fun (r,a,b) -> RawApply(r,RawApply(r +. o,rawv(o,x),a),b))
-            )
-    
-
-    type OperatorCaseNameId = private OperatorCaseNameId of string
-
-    module OperatorCaseNameId =
-        let create value = OperatorCaseNameId value
-
-    /// Reflection names are admitted once at the parser boundary; lookup authority
-    /// is the nominal DU rather than a raw string-keyed dictionary.
-    let operator_case_dict : Dictionary<OperatorCaseNameId,Op> = Collections.Generic.Dictionary(HashIdentity.Structural)
-
-
-    // Op's cases are nullary: each is a static property of the union type, marked as a union case. Reading those is
-    // linear; FSharpValue.MakeUnion and UnionCaseInfo.Name rebuild the union's tag-name map on every call (quadratic in
-    // the number of cases, ~0.5 s of every process's startup). The reflection fill stays as the fallback.
-    do
-        let caseProperties =
-            typeof<Op>.GetProperties(System.Reflection.BindingFlags.Public ||| System.Reflection.BindingFlags.Static)
-            |> Array.filter (fun p ->
-                match System.Attribute.GetCustomAttribute(p, typeof<CompilationMappingAttribute>) with
-                | :? CompilationMappingAttribute as mapping -> mapping.SourceConstructFlags = SourceConstructFlags.UnionCase
-                | _ -> false)
-        if caseProperties.Length = Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>).Length then
-            for p in caseProperties do
-                operator_case_dict.[OperatorCaseNameId.create p.Name] <- p.GetValue(null) :?> Op
-        else
-            Microsoft.FSharp.Reflection.FSharpType.GetUnionCases(typeof<Op>) |> Array.iter (fun x -> operator_case_dict.[OperatorCaseNameId.create x.Name] <- Microsoft.FSharp.Reflection.FSharpValue.MakeUnion(x,[||]) :?> Op)
-
-
-    /// ### string_to_op
-    let string_to_op x = operator_case_dict.TryGetValue (OperatorCaseNameId.create x)
-    
-
-    /// ### symbol_paired_concat
-    let symbol_paired_concat k =
-        let b = Text.StringBuilder()
-        List.iter (fun (_, x : string) -> b.Append(x).Append('_') |> ignore) k
-        b.ToString()
-    
-
-    /// ### blockParsingModule_open
-    let blockParsingModule_open = blockParsingRange ((skip_keyword SpecOpen >>. read_small_var') .>>. (many read_symbol))
-    
-
-    /// ### bar
-    let bar i d = blockParsingIndent i (<=) (skip_op "|") d
-    
-
-    /// ### pat_pair
-    let inline pat_pair next =
-        sepBy1 next (skip_op ",")
-        |>> List.reduceBack (fun a b -> PatPair(range_of_pattern a +. range_of_pattern b,a,b))
-    
-
-    /// ### RootTypeFlags
-    type RootTypeFlags = {
-        allow_typecase_metavars : bool
-        allow_term : bool
-        allow_wildcard : bool
-        }
-    
-
-    /// ### root_type_defaults
-    let root_type_defaults = {
-        allow_typecase_metavars = false
-        allow_term = false
-        allow_wildcard = false
-        }
-    
-
-    /// ### bottom_up_number
-    let bottom_up_number (default_env : DefaultEnv) (r : VSCRange,x : string) =
-        let inline f string_to_val val_to_lit val_dsc =
-            match string_to_val x with
-            | true, x -> Ok(r, val_to_lit x)
-            | false, _ -> Error [r, BottomUpNumberParseError(x,val_dsc)]
-        if x.Contains '.' then
-            match default_env.default_float with
-            | Float32T -> f Single.TryParse LitFloat32 "f32"
-            | Float64T -> f Double.TryParse LitFloat64 "f64"
-            | x -> failwithf "Compiler error: Invalid default float type. Got: %A" x
-        else
-            match default_env.default_int with
-            | Int8T -> f SByte.TryParse LitInt8 "i8"
-            | Int16T -> f Int16.TryParse LitInt16 "i16"
-            | Int32T -> f Int32.TryParse LitInt32 "i32"
-            | Int64T -> f Int64.TryParse LitInt64 "i64"
-            | UInt8T -> f Byte.TryParse LitUInt8 "u8"
-            | UInt16T -> f UInt16.TryParse LitUInt16 "u16"
-            | UInt32T -> f UInt32.TryParse LitUInt32 "u32"
-            | UInt64T -> f UInt64.TryParse LitUInt64 "u64"
-            | x -> failwithf "Compiler error: Invalid default int type. Got: %A" x
-    
-
-    /// ### typecase_validate
-    let typecase_validate x _ =
-        let metavars = Collections.Generic.HashSet()
-        let vars = Collections.Generic.HashSet()
-        let errors = ResizeArray()
-        let rec f = function
-            | RawTFilledNominal _ | RawTTerm _ | RawTTypecase _ -> failwith "Compiler error: This case is not supposed to appear in typecase."
-            | RawTForall(r,_,_) -> errors.Add(r,ForallNotAllowedInTypecase)
-            | RawTExists(r,_,_) -> errors.Add(r,ExistsNotAllowedInTypecase)
-            | RawTLit _ | RawTPrim _ | RawTSymbol _ | RawTB _ | RawTWildcard _ -> ()
-            | RawTMetaVar(r,a) -> if vars.Contains(a) then errors.Add(r,MetavarShadowedByVar) else metavars.Add(a) |> ignore
-            | RawTVar(r,a) -> if metavars.Contains(a) then errors.Add(r,VarShadowedByMetavar) else vars.Add(a) |> ignore
-            | RawTApply(_,a,b) | RawTFun(_,a,b,_) | RawTPair(_,a,b) -> f a; f b
-            | RawTLayout(_,a,_) | RawTArray(_,a) -> f a
-            | RawTUnion(_,a,_,_) -> Map.iter (fun _ x -> f (snd x)) a
-            | RawTRecord(_,a) -> Map.iter (fun _ -> f) a
-            | RawTMacro(_,a) -> a |> List.iter (function RawMacroType(_,a) -> f a | _ -> ())
-        f x
-        if 0 < errors.Count then Error (Seq.toList errors) else Ok(x)
-    
-
-    /// ### expr_tight
-    // Parses an expression only if it is directly next to the previous one.
-    let inline expr_tight next (d: BlockParsingEnv) =
-        let i = blockParsingIndex d
-        if 0 < i && i < d.tokens.Length then
-            let r,r' = snd (fst d.tokens.[i-1]), fst (fst d.tokens.[i])
-            if r.line = r'.line && r.character = r'.character then next d else Error []
-        else Error []
-    
-
-    /// ### read_default_value'
-    let inline read_default_value' f d =
-        try_current d <| function
-            | p, TokDefaultValue t' -> blockParsingSkip d; f (p,t')
-            | p, _ -> Error [p, ExpectedLit]
-    
-
-    /// ### read_default_value
-    let inline read_default_value on_top on_bot d =
-        read_default_value' (fun (p,t') ->
-            if d.is_top_down then Ok(on_top (p,t'))
-            else bottom_up_number d.default_env (p,t') |> Result.map on_bot
-            ) d
-    
-
-    /// ### read_string
-    let read_string = tuple3 skip_string_open ((read_text false |>> snd) <|>% "") skip_string_close
-    
-
-    /// ### pat_var
-    let pat_var d = (read_small_var' |>> PatVar) d
-    
-
-    /// ### pat_list_pair
-    let pat_list_pair r a b = PatUnbox(r,"Cons",PatPair(r,a,b))
-    
-
-    /// ### root_pattern_var_nominal_union
-    let rec root_pattern_var_nominal_union s =
-        (read_var' >>= fun (r,a,re) s ->
-            if Char.IsUpper(a,0) then
-                (opt root_pattern_var |>> fun b ->
-                    re SemanticTokenLegend.symbol
-                    let b = match b with Some b -> b | None -> PatE r
-                    PatUnbox(r,a,b)
-                    ) s
-            else
-                (many (expr_tight read_symbol) >>= fun syms s ->
-                    match syms with
-                    | [] ->
-                        // The nominal's pattern may be a union case without a payload (`| wrapped Zero =>`); one with a
-                        // payload takes parentheses (`| wrapped (Some x) =>`).
-                        (opt (root_pattern_var <|> (read_big_var |>> fun (r,a) -> PatUnbox(r,a,PatE r))) |>> fun b ->
-                            match b with
-                            | Some b ->
-                                re SemanticTokenLegend.type_variable
-                                PatNominal(r +. range_of_pattern b,(r,a),syms,b)
-                            | None ->
-                                PatVar(r,a)
-                            ) s
-                    | _ ->
-                        (root_pattern_var |>> fun b ->
-                            re SemanticTokenLegend.type_variable
-                            PatNominal(r +. range_of_pattern b,(r,a),syms,b)
-                            ) s
-                    ) s
-            ) s
-    and root_pattern_wildcard d = (skip_keyword' SpecWildcard |>> PatE) d
-    and root_pattern_dyn d = (blockParsingRange (skip_unary_op "~" >>. root_pattern_var) |>> PatDyn) d
-    and root_pattern_record d =
-        let pat_record_item =
-            let inj = skip_unary_op "$" >>. read_small_var' |>> fun a -> PatRecordMembersInjectVar,a
-            let var = blockParsingRange record_var |>> fun a -> PatRecordMembersSymbol,a
-            ((inj <|> var) .>>. (opt (skip_op "=" >>. root_pattern_pair)))
-            |>> fun ((f,a),b) -> f (a, defaultArg b (PatVar a))
-        (blockParsingRange (curlies (many pat_record_item)) |>> PatRecordMembers) d
-    and root_pattern_type s =
-        pipe2 root_pattern (opt (skip_op ":" >>. root_type_annot))
-            (fun a -> function Some b -> PatAnnot(range_of_pattern a +. range_of_texpr b,a,b) | None -> a) s
-    and root_pattern_rounds d =
-        (blockParsingRange (rounds ((((read_op' |>> PatVar) <|> root_pattern_type) |>> fun x _ -> x) <|>% PatB))
-        |>> fun (r,x) -> x r) d
-    and pat_array s = (skip_unary_op ";" >>. blockParsingRange (squares (sepBy root_pattern_type (skip_op ";"))) |>> fun (r,x) -> PatArray(r,x)) s
-    and pat_list s =
-        (blockParsingRange (squares (sepBy root_pattern_type (skip_op ";")))
-        |>> fun ((r,_),x) -> let r = r,r in List.foldBack (pat_list_pair r) x (PatUnbox(r,"Nil",PatB r))) s
-    and pat_exists s = (blockParsingRange (pat_exists' .>>. root_pattern) |>> fun (r,(l,b)) -> PatExists(r,l,b)) s
-    and root_pattern s =
-        let body s =
-            let pat_value = (read_value |>> PatValue) <|> (read_default_value PatDefaultValue PatValue)
-            let pat_string = read_string |>> (fun (a,x,b) -> PatValue(a +. b,LitString x))
-            let pat_symbol = read_symbol |>> PatSymbol
-            let (+) = alt (blockParsingIndex s)
-            (root_pattern_rounds + root_pattern_var_nominal_union + root_pattern_wildcard + root_pattern_dyn + pat_value + pat_string
-            + root_pattern_record + pat_symbol + pat_array + pat_list + pat_exists) s
-        let pat_and =
-            sepBy1 body (skip_op "&")
-            |>> List.reduce (fun a b -> PatAnd(range_of_pattern a +. range_of_pattern b, a, b))
-        let pat_cons =
-            blockParsingRange (sepBy1 (pat_pair pat_and) (skip_op "::"))
-            |>> fun (r,x) -> List.reduceBack (pat_list_pair r) x
-        let pat_or =
-            sepBy1 pat_cons (skip_op "|")
-            |>> List.reduce (fun a b -> PatOr(range_of_pattern a +. range_of_pattern b, a, b))
-        let pat_as =
-            pat_or .>>. (opt (skip_keyword SpecAs >>. read_small_var'))
-            |>> function
-                | a, Some (rv,x) -> PatAnd(range_of_pattern a +. rv, a, PatVar(rv,x))
-                | a, None        -> a
-        let pat_pair = pat_pair pat_as
-        pat_pair s
-    and root_pattern_when d = (root_pattern .>>. (opt (skip_keyword SpecWhen >>. root_term)) |>> function a, Some b -> PatWhen(range_of_pattern a +. range_of_expr b,a,b) | a, None -> a) d
-    and root_pattern_var d =
-        let (+) = alt (blockParsingIndex d)
-        (pat_var + root_pattern_wildcard + root_pattern_dyn + root_pattern_rounds + root_pattern_record + pat_array + pat_list + pat_exists) d
-    and root_pattern_pair d = pat_pair root_pattern_var d
-    and root_type_annot d = root_type {root_type_defaults with allow_term=d.is_top_down=false; allow_wildcard=d.is_top_down} d
-    and root_type_record (flags : RootTypeFlags) d =
-        (blockParsingRange (curlies (sepBy ((blockParsingRange record_var .>> skip_op ":") .>>. root_type flags) (optional (skip_op ";"))))
-        >>= fun (r,x) _ ->
-            x |> List.map fst |> duplicates DuplicateRecordTypeVar
-            |> function [] -> Ok(RawTRecord(r,x |> List.mapi (fun i ((_,n),x) -> (i,n),x) |> Map.ofList)) | er -> Error er
-            ) d
-    and root_type_union (flags : RootTypeFlags) d =
-        let bar = bar (col d)
-        let vanilla = skip_op ":" >>. root_type flags |>> fun x -> Some (false, x)
-        let gadt =
-            skip_op "::"
-            >>. pipe2 (opt forall) (root_type flags) (Option.foldBack (List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b))))
-            |>> fun x -> Some (true, x)
-    
-
-        let body = vanilla <|> gadt <|>% None
-        (blockParsingRange (optional bar >>. sepBy1 (blockParsingRange read_big_var_as_symbol .>>. body) bar)
-        >>= fun (r,x) _ ->
-            x |> List.map fst |> duplicates DuplicateUnionKey
-            |> function
-                | [] -> Ok(r,x |> List.mapi (fun i ((r,n),x) -> (i,n), match x with Some x -> x | None -> false, RawTB r) |> Map.ofList)
-                | er -> Error er
-            ) d
-    and root_type (flags : RootTypeFlags) d =
-        let next = root_type flags
-        let cases d =
-            let wildcard d = if flags.allow_wildcard then (skip_keyword' SpecWildcard |>> RawTWildcard) d else Error []
-            // This metavar case only occurs in typecase during the bottom-up segment. It should not be confused with metavars during top-down type inference.
-            let metavar d = if flags.allow_typecase_metavars then (skip_unary_op "~" >>. read_var' |>> fun (a,b,r) -> r SemanticTokenLegend.type_variable; RawTMetaVar(a,b)) d else Error []
-            let term d = if flags.allow_term then (blockParsingRange (skip_unary_op "`" >>. ((read_var'' |>> rawv) <|> rounds root_term)) |>> RawTTerm) {d with is_top_down=false} else Error []
-            let symbol = read_symbol |>> RawTSymbol
-            let record = root_type_record flags
-            let lit = (read_value |>> RawTLit) <|> (read_string |>> fun (a,b,c) -> RawTLit(a +. c, LitString b))
-            let lit_default = read_default_value' (bottom_up_number d.default_env >> Result.map RawTLit)
-            let var = read_var' |>> fun (o,x,r) ->
-                r SemanticTokenLegend.type_variable
-                RawTVar(o, x)
-            let rounds =
-                blockParsingRange (rounds ((next |>> fun x _ -> x) <|>% RawTB))
-                |>> fun (r,x) -> x r
-            let macro =
-                let read_macro_expression s =
-                    (macro_expression MType (root_type root_type_defaults |>> fun x -> RawMacroType(range_of_texpr x,x))
-                    <|> macro_expression MTypeLit (root_type root_type_defaults |>> fun x -> RawMacroTypeLit(range_of_texpr x,x))) s
-                let body = many ((read_text false |>> RawMacroText) <|> read_macro_type_var <|> read_macro_expression)
-                pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawTMacro(a +. b, l))
-            let exists = blockParsingRange (exists .>>. root_type flags) |>> fun (r,(l,b)) -> RawTExists(r,l,b)
-            let foralls = blockParsingRange (forall .>>. root_type flags) |>> (fun (r,(l,b)) -> List.foldBack (fun a b -> RawTForall(range_of_typevar a +. range_of_texpr b,a,b)) l b)
-            let (+) = alt (blockParsingIndex d)
-            (rounds + lit + lit_default + wildcard + term + metavar + var + record + symbol + macro + exists + foralls) d
-    
-
-        let fold_applies a b = List.fold (fun a b -> RawTApply(range_of_texpr a +. range_of_texpr b,a,b)) a b
-        let apply_tight d = pipe2 cases (many (expr_tight cases)) fold_applies d
-        let apply d = pipe2 apply_tight (many (blockParsingIndent (col d) (<) apply_tight)) fold_applies d
-    
-
-        let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
-        let functions = sepBy1 pairs (skip_op "->") |>> List.reduceBack (fun a b -> RawTFun(range_of_texpr a +. range_of_texpr b,a,b,FT_Vanilla))
-    
-
-        functions d
-    
-
-    and root_term d =
-        let rec expressions d =
-            let next = root_term
-            let case_var = read_var'' |>> rawv
-            let case_value = read_value |>> RawLit
-            let case_exists =
-                let sequence_type d = (many (blockParsingIndent (col d) (=) (sepBy1 (root_type root_type_defaults)  (skip_op ";"))) |>> List.concat) d
-                ((skip_keyword' SpecExists) .>>. (opt (squares sequence_type)) .>>. next)
-                    >>= fun ((r,type_vars),body) d ->
-                            if d.is_top_down || Option.isSome type_vars
-                            then Ok(RawExists(r +. range_of_expr body, (r, type_vars), body))
-                            else Error [r, TypeVarsNeedToBeExplicitForExists]
-            let case_rounds =
-                let mk_tuple xs =
-                    match xs with
-                    | []      -> fun r -> RawB r
-                    | [x]     -> fun _ -> x
-                    | x :: xr ->
-                        fun _ ->
-                            List.fold (fun a b -> RawPair(range_of_expr a +. range_of_expr b, a, b)) x xr
-                blockParsingRange (
-                    rounds (
-                        sepBy (((read_op' |>> rawv) <|> next)) (skip_op ",")
-                        |>> mk_tuple
-                    )
-                )
-                |>> fun (r, build) -> build r
-            let case_fun =
-                (skip_keyword SpecFun >>. many1 root_pattern_pair .>>. (annotated_body "=>" next root_type_annot))
-                >>= fun (pats, body) _ ->
-                    match patterns_validate pats with
-                    | [] -> List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[pat,body])) pats body |> Ok
-                    | ers -> Error ers
-    
-
-            let case_forall d =
-                if d.is_top_down then Error [] else
-                    (tuple3 forall (many root_pattern_pair) (annotated_body "=>" next root_type_annot)
-                    >>= fun (foralls : TypeVar list, pats, body) _ ->
-                        match patterns_validate pats with
-                        | [] ->
-                            List.foldBack (fun pat body -> RawFun(range_of_pattern pat +. range_of_expr body,[pat,body])) pats body
-                            |> List.foldBack (fun a body -> RawForall(range_of_typevar a +. range_of_expr body,a,body)) foralls |> Ok
-                        | ers -> Error ers) d
-    
-
-            let case_default_value = read_default_value RawDefaultLit RawLit
-            let case_if_then_else d =
-                let i = col d
-                let inline f' keyword = blockParsingRange (skip_keyword keyword >>. next)
-                let inline f keyword = blockParsingIndent i (<=) (f' keyword)
-                (pipe4 (f' SpecIf) (f SpecThen) (many (f SpecElif .>>. f SpecThen)) (opt (f SpecElse))
-                    (fun cond tr elifs fl ->
-                        let f cond tr = function
-                            | Some fl -> fst fl, RawIfThenElse(fst cond +. fst fl,snd cond,snd tr,snd fl)
-                            | None -> fst tr, RawIfThen(fst cond +. fst tr,snd cond,snd tr)
-                        let fl = List.foldBack (fun (cond,tr) fl -> f cond tr fl |> Some) elifs fl
-                        f cond tr fl |> snd)) d
-    
-
-            let case_match =
-                let clauses d =
-                    let bar = bar (col d)
-                    (optional bar >>. sepBy1 (root_pattern_when .>>. (skip_op "=>" >>. next)) bar
-                    >>= fun l _ ->
-                        match l |> List.collect (fun (a,_) -> patterns_validate [a]) with
-                        | [] -> Ok l
-                        | e -> Error e
-                        ) d
-    
-
-                (blockParsingRange (skip_keyword SpecFunction >>. clauses) |>> RawFun)
-                <|> (fun d ->
-                        let match_column = col d
-                        let scrutinee d = next {d with continuation_column = Some match_column}
-                        (blockParsingRange ((skip_keyword SpecMatch >>. scrutinee .>> skip_keyword SpecWith) .>>. clauses) |>> fun (a,(b,c)) -> RawMatch(a,b,c)) d)
-    
-
-            let case_typecase d =
-                let clauses d =
-                    let bar = bar (col d)
-                    let typecase = root_type {root_type_defaults with allow_typecase_metavars=true; allow_wildcard=true} >>= typecase_validate
-                    (optional bar >>. sepBy1 (typecase .>>. (skip_op "=>" >>. next)) bar) d
-    
-
-                if d.is_top_down then Error [] else
-                    (blockParsingRange ((skip_keyword SpecTypecase >>. root_type {root_type_defaults with allow_term=true} .>> skip_keyword SpecWith) .>>. clauses)
-                    |>> fun (r, (a, b)) -> RawTypecase(r,a,b)) d
-    
-
-            let case_record =
-                let create = skip_op "=" >>. next
-                let modify = skip_op "#=" >>. next
-                let var = blockParsingRange record_var
-                let inject = skip_unary_op "$" >>. blockParsingRange read_small_var
-                let record_create_body =
-                    (var .>>. opt create |>> function (a,Some b) -> RawRecordWithSymbol(a,b) | (a,None) -> RawRecordWithSymbol(a,rawv a))
-                    <|> (inject .>>. create |>> RawRecordWithInjectVar)
-                let record_create = blockParsingRange (curlies (sepBy record_create_body (optional (skip_op ";")))) |>> fun (r,withs) -> (r,[],withs,[])
-                let record_with_bodies =
-                    (var >>= fun a ->
-                        ((modify |>> fun b -> RawRecordWithSymbolModify(a,b))
-                        <|> (opt create |>> function Some b -> RawRecordWithSymbol(a,b) | None -> RawRecordWithSymbol(a,rawv a))))
-                    <|> (inject >>= fun a ->
-                        ((modify |>> fun b -> RawRecordWithInjectVarModify(a,b))
-                        <|> (create |>> fun b -> RawRecordWithInjectVar(a,b))))
-                let record_without_bodies = (var |>> RawRecordWithoutSymbol) <|> (inject |>> RawRecordWithoutInjectVar)
-                let record_with =
-                    blockParsingRange
-                        (curlies
-                            (tuple4 read_small_var'
-                                (many ((read_symbol |>> RawSymbol) <|> (skip_op "$" >>. read_small_var' |>> rawv)))
-                                ((skip_keyword SpecWith >>. sepBy record_with_bodies (optional (skip_op ";"))) <|>% [])
-                                ((skip_keyword SpecWithout >>. many record_without_bodies) <|>% [])))
-                    |>> fun (r,(name, acs, withs, withouts)) -> (r,rawv name :: acs,withs,withouts)
-    
-
-                restore 2 record_create <|> record_with
-                >>= fun (_,_,withs,withouts as x) _ ->
-                    [
-                    withs |> List.choose (function RawRecordWithSymbol(a,_) | RawRecordWithSymbolModify(a,_) -> Some a | _ -> None) |> duplicates DuplicateTermRecordSymbol
-                    withs |> List.choose (function RawRecordWithInjectVar(a,_) | RawRecordWithInjectVarModify(a,_) -> Some a | _ -> None) |> duplicates DuplicateTermRecordInjection
-                    withouts |> List.choose (function RawRecordWithoutSymbol(a,b) -> Some(a,b) | _ -> None) |> duplicates DuplicateTermRecordSymbol
-                    withouts |> List.choose (function RawRecordWithoutInjectVar(a,b) -> Some(a,b) | _ -> None) |> duplicates DuplicateTermRecordInjection
-                    ] |> List.concat |> function [] -> Ok(RawRecordWith x) | er -> Error er
-    
-
-            let case_join_point = skip_keyword SpecJoin >>. next |>> join_point true None
-            let case_join_point_backend = skip_keyword SpecJoinBackend >>. (read_big_var_as_keyword .>>. next) |>> join_point_backend
-            let case_real = skip_keyword SpecReal >>. (fun d -> next {d with is_top_down=false}) |>> fun x -> RawReal(range_of_expr x,x)
-            let case_symbol = read_symbol |>> RawSymbol
-            let case_list = blockParsingRange (squares sequence_body) >>= fun (r,l) d ->
-                if d.is_top_down then
-                    let r = fst r, fst r
-                    List.foldBack (fun a b ->
-                        RawApply(r,rawv(r,unintern "Cons"),RawPair(r,a,b))
-                        ) l (rawv(r,unintern "Nil")) |> Ok
-                else
-                    Error [r, ListLiteralsNotAllowedInBottomUp]
-    
-
-            let case_string = read_string |>> fun (a, x, b) -> RawLit(a +. b,LitString x)
-    
-
-            let case_macro =
-                let read_macro_expression s =
-                    (macro_expression MTerm (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,false))
-                    <|> macro_expression MTermInline (root_term |>> fun x -> RawMacroTerm(range_of_expr x,x,true))
-                    <|> macro_expression MType (root_type root_type_defaults |>> fun x -> RawMacroType(range_of_texpr x,x))
-                    <|> macro_expression MTypeLit (root_type root_type_defaults |>> fun x -> RawMacroTypeLit(range_of_texpr x,x))) s
-                let body = many ((read_text true |>> RawMacroText) <|> read_macro_var <|> read_macro_expression)
-                pipe3 skip_macro_open body skip_macro_close (fun a l b -> RawMacro(a +. b, l))
-    
-
-            let (+) = alt (blockParsingIndex d)
-    
-
-            (case_value + case_default_value + case_var + case_join_point + case_join_point_backend + case_real + case_symbol
-            + case_typecase + case_match + case_typecase + case_rounds + case_list + case_record
-            + case_if_then_else + case_fun + case_forall + case_string + case_macro + case_exists) d
-    
-
-        and application_tight d =
-            let next = expressions
-            pipe2 next (many (expr_tight next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
-    
-
-        and sequence_body d = (many (blockParsingIndent (col d) (=) (sepBy1 operators (skip_op ";"))) |>> List.concat) d
-        and unary_op d =
-            let next = application_tight
-            let f =
-                read_unary_op' >>= fun (o,a) d ->
-                    let type_expr d =
-                        choice [|
-                            read_small_type_var' |>> RawTVar
-                            read_value |>> RawTLit
-                            read_string |>> fun (a,b,c) -> RawTLit(a +. c, LitString b)
-                            rounds (root_type {root_type_defaults with allow_term=true})
-                            |] d
-                    let term_expr d =
-                        choice [|
-                            read_var'' |>> rawv
-                            read_value |>> RawLit
-                            read_default_value RawDefaultLit RawLit
-                            read_string |>> fun (a,b,c) -> RawLit(a +. c, LitString b)
-                            rounds root_term
-                            |] d
-                    match a with
-                    | ";" ->
-                        if d.is_top_down then (blockParsingRange (squares sequence_body) |>> fun (r,x) -> RawApply(o,RawV(o,unintern "array",true), RawArray(o,x))) d
-                        else Error [o, ArrayLiteralsNotAllowedInBottomUp]
-                    | "!!!!" ->
-                        (blockParsingRange (read_big_var .>>. (rounds (sepBy (fun d -> application {d with is_top_down=false}) (skip_op ","))))
-                        >>= fun (r,((ra,a), b)) _ ->
-                            match string_to_op a with
-                            | true, op' -> Ok(RawOp(r,op',b))
-                            | false, _ -> Error [ra,InbuiltOpNotFound]) d
-                    | "`" -> if d.is_top_down then Error [] else (blockParsingRange type_expr |>> RawType) d
-                    | "`@" ->
-                        if d.is_top_down then Error [] else
-                            (blockParsingRange term_expr |>> fun (r,x) ->
-                                let r' = o +. r
-                                RawType(r', RawTTerm(r',RawOp(r',LitToTypeLit,[x])))
-                                ) d
-                    | "``" -> if d.is_top_down then Error [] else (blockParsingRange type_expr |>> fun (r,x) -> RawOp(o +. r,TypeToVar,[RawType(r,x)])) d
-                    | "`$" -> (read_var'' |>> fun (r,x) -> RawV(r,x,false)) d
-                    | _ -> (next |>> fun b -> RawApply(o +. range_of_expr b,rawv(o, "~" + a),b)) d
-            (f <|> next) d
-    
-
-        and application (d: BlockParsingEnv) =
-            let next = unary_op
-            let column = match d.continuation_column with Some floor -> min floor (col d) | None -> col d
-            let d = {d with continuation_column = None}
-            pipe2 next (many (blockParsingIndent column (<) next)) (List.fold (fun a b -> RawApply(range_of_expr a +. range_of_expr b,a,b))) d
-    
-
-        and operators d =
-            let term = application
-            let i = col d
-            let op = blockParsingIndent i (<=) op
-    
-
-            /// Pratt parser
-            let rec led left (prec,asoc,m) d =
-                match asoc with
-                | Associativity.Right -> (tdop (prec-1) |>> fun right -> m (left, right)) d
-                | _ -> (tdop prec |>> fun right -> m (left, right)) d
-    
-
-            and tdop rbp d =
-                let rec loop left d =
-                    ((op >>= fun (prec,_,_ as v) d ->
-                        if rbp < prec then (led left v >>= loop) d
-                        else skip' d -1; Error []) <|>% left) d
-                (term >>= loop) d
-    
-
-            pipe2 (tdop Int32.MinValue)
-                (opt (blockParsingIndent i (<=) (skip_op ":" >>. root_type_annot)))
-                (fun a -> function Some b -> RawAnnot(range_of_expr a +. range_of_texpr b,a,b) | _ -> a)
-                d
-    
-
-        let statements d =
-            let next = operators
-            let inl_or_let =
-                (inl_or_let root_term root_pattern_pair root_type_annot .>>. many (and_inl_or_let root_term root_pattern_pair root_type_annot))
-                >>= fun x _ ->
-                    match x with
-                    | ((r,name,body),false), [] -> Ok(fun on_succ -> RawMatch(r,body,[name,on_succ]))
-                    | ((_,_,_),false), l -> l |> List.map (fun ((r,_,_),_) -> r, UnexpectedAndInlRec) |> Error
-                    | x, xs ->
-                        let l = x :: xs |> List.map (function
-                            | (r,PatVar(o,name),body),true -> r, ((o,name), body)
-                            | _ -> failwith "Compiler error: Recursive inl/let statements should always have PatVar for names and should always be recursive."
-                            )
-                        let r = l |> List.map fst |> List.reduce (+.)
-                        l |> List.map (snd >> fst)
-                        |> duplicates DuplicateRecFunctionName
-                        |> function [] -> Ok(fun on_succ -> RawRecBlock(r, List.map snd l, on_succ)) | er -> Error er
-            let module_open = blockParsingModule_open |>> fun (r,(name,acs)) on_succ -> RawOpen(r,name,acs,on_succ)
-            let statement_parsers d =
-                let (+) = alt (blockParsingIndex d)
-                (inl_or_let + module_open) d
-    
-
-            let i = col d
-            let inline if_ x = blockParsingIndent i x
-            let stmts =
-                many1 (if_ (=) (blockParsingRange statement_parsers))
-                .>>. opt ((if_ (<=) (skip_keyword SpecIn) >>. root_term) <|> if_ (=) next)
-                >>= fun (a,b) _ ->
-                    match b with
-                    | Some b -> Ok(a,b)
-                    | None ->
-                        let r = List.last a |> fst
-                        Ok (a, RawB r)
-            let expr = if_ (=) next |>> fun x -> [],x
-            (many1 (stmts <|> expr)
-            |>> fun x ->
-                List.foldBack (fun (stmts,expr) s ->
-                    let process_statements s = List.foldBack (fun (_,a) b -> a b) stmts s
-                    match s with
-                    | ValueNone -> ValueSome (process_statements expr)
-                    | ValueSome expr' -> ValueSome (process_statements (RawSeq(range_of_expr expr +. range_of_expr expr',expr,expr')))
-                    ) x ValueNone |> ValueOption.get
-                ) d
-    
-
-        statements d
-    
-
-    /// ### comments
-    let comments (s : BlockParsingEnv) =
-        let line_near_to = lineBlockParsing s
-        let rec loop line d =
-            if 0 <= line then
-                match s.comments.[line] with
-                | Some(r,text) ->
-                    let text = text.TrimEnd()
-                    loop (line-1) ((if text = "" then "\n" else text + " ") :: d)
-                | _ -> d
-            else d
-        loop (line_near_to-1) []
-        |> String.concat ""
-        |> fun x -> Ok(x.TrimEnd())
-    
-
-    /// ### Comments
-    type Comments = string
-    
-
-    /// ### TopStatement
-    type [<ReferenceEquality>] TopStatement =
-        | TopAnd of VSCRange * TopStatement
-        | TopInl of Comments * VSCRange * (VSCRange * VarString) * RawExpr * is_top_down: bool
-        | TopRecInl of Comments * VSCRange * (VSCRange * VarString) * RawExpr * is_top_down: bool
-        | TopNominal of VSCRange * (VSCRange * VarString) * HoVar list * RawTExpr
-        | TopNominalRec of VSCRange * (VSCRange * VarString) * HoVar list * RawTExpr
-        | TopType of VSCRange * (VSCRange * VarString) * HoVar list * RawTExpr
-        | TopPrototype of Comments * VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawTExpr
-        | TopInstance of VSCRange * (VSCRange * VarString) * (VSCRange * VarString) * TypeVar list * RawExpr
-        | TopOpen of VSCRange * (VSCRange * VarString) * (VSCRange * SymbolString) list
-    
-
-    let private parsedAstSeedZero : DiagJson.ParsedAstStructuralSeedBreakdown =
-        DiagJson.parsedAstStructuralSeedZero
-
-    let private parsedAstSeedAdd
-        (left:DiagJson.ParsedAstStructuralSeedBreakdown)
-        (right:DiagJson.ParsedAstStructuralSeedBreakdown)
-        : DiagJson.ParsedAstStructuralSeedBreakdown =
-        DiagJson.parsedAstStructuralSeedAdd left right
-
-    let private parsedAstSeedMany
-        (values:seq<DiagJson.ParsedAstStructuralSeedBreakdown>)
-        : DiagJson.ParsedAstStructuralSeedBreakdown =
-        values |> Seq.fold parsedAstSeedAdd parsedAstSeedZero
-
-    let rec private parsedAstSeedOfRawExpr (expr:RawExpr) : DiagJson.ParsedAstStructuralSeedBreakdown =
-        match expr with
-        | RawJoinPoint(_, _, body, _) ->
-            parsedAstSeedOfRawExpr body
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedJoinPoint
-        | RawReal(_, body) ->
-            parsedAstSeedOfRawExpr body
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedRealBlock
-        | RawMatch(_, body, clauses) ->
-            parsedAstSeedAdd
-                (parsedAstSeedOfRawExpr body)
-                (clauses |> Seq.map (snd >> parsedAstSeedOfRawExpr) |> parsedAstSeedMany)
-        | RawFun(_, clauses) ->
-            clauses
-            |> Seq.map (snd >> parsedAstSeedOfRawExpr)
-            |> parsedAstSeedMany
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedFunctionDefinition
-        | RawForall(_, _, body)
-        | RawExists(_, _, body)
-        | RawAnnot(_, body, _)
-        | RawFilledForall(_, _, body) -> parsedAstSeedOfRawExpr body
-        | RawRecBlock(_, bindings, onSucc) ->
-            let recursiveBindings =
-                bindings
-                |> Seq.map (snd >> parsedAstSeedOfRawExpr)
-                |> parsedAstSeedMany
-                |> DiagJson.parsedAstStructuralSeedIncrementBy
-                    (bindings |> List.length |> int64)
-                    DiagJson.ParsedAstSeedFunctionDefinition
-            parsedAstSeedAdd recursiveBindings (parsedAstSeedOfRawExpr onSucc)
-        | RawRecordWith(_, bases, members, _) ->
-            let memberExpr = function
-                | RawRecordWithSymbol(_, value)
-                | RawRecordWithSymbolModify(_, value)
-                | RawRecordWithInjectVar(_, value)
-                | RawRecordWithInjectVarModify(_, value) -> parsedAstSeedOfRawExpr value
-            parsedAstSeedAdd
-                (bases |> Seq.map parsedAstSeedOfRawExpr |> parsedAstSeedMany)
-                (members |> Seq.map memberExpr |> parsedAstSeedMany)
-        | RawOp(_, _, values)
-        | RawArray(_, values) -> values |> Seq.map parsedAstSeedOfRawExpr |> parsedAstSeedMany
-        | RawTypecase(_, _, clauses) -> clauses |> Seq.map (snd >> parsedAstSeedOfRawExpr) |> parsedAstSeedMany
-        | RawOpen(_, _, _, onSucc) ->
-            parsedAstSeedOfRawExpr onSucc
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedImport
-        | RawApply(_, left, right)
-        | RawPair(_, left, right)
-        | RawSeq(_, left, right)
-        | RawIfThen(_, left, right) ->
-            parsedAstSeedAdd (parsedAstSeedOfRawExpr left) (parsedAstSeedOfRawExpr right)
-        | RawIfThenElse(_, condition, ifTrue, ifFalse) ->
-            parsedAstSeedMany [ parsedAstSeedOfRawExpr condition; parsedAstSeedOfRawExpr ifTrue; parsedAstSeedOfRawExpr ifFalse ]
-        | RawHeapMutableSet(_, target, indexes, value) ->
-            parsedAstSeedMany
-                (seq {
-                    yield parsedAstSeedOfRawExpr target
-                    yield! indexes |> Seq.map parsedAstSeedOfRawExpr
-                    yield parsedAstSeedOfRawExpr value
-                })
-        | RawMacro(_, macros) ->
-            macros
-            |> Seq.choose (function
-                | RawMacroTerm(_, body, _) -> Some (parsedAstSeedOfRawExpr body)
-                | _ -> None)
-            |> parsedAstSeedMany
-        | RawB _
-        | RawV _
-        | RawLit _
-        | RawDefaultLit _
-        | RawSymbol _
-        | RawType _
-        | RawMissingBody _ -> parsedAstSeedZero
-
-    let rec private parsedAstSeedOfTopStatement (statement:TopStatement) : DiagJson.ParsedAstStructuralSeedBreakdown =
-        match statement with
-        | TopAnd(_, statement) -> parsedAstSeedOfTopStatement statement
-        | TopInl(_, _, _, body, _)
-        | TopRecInl(_, _, _, body, _) ->
-            parsedAstSeedOfRawExpr body
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTopLevelBinding
-        | TopNominal _
-        | TopNominalRec _
-        | TopType _
-        | TopPrototype _ ->
-            parsedAstSeedZero
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTypeDefinition
-        | TopInstance(_, _, _, _, body) ->
-            parsedAstSeedOfRawExpr body
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTopLevelBinding
-        | TopOpen _ ->
-            parsedAstSeedZero
-            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedImport
-
-    /// ### top_inl_or_let_process
-    let top_inl_or_let_process comments is_top_down = function
-        | (r,PatVar(r',name),body),is_rec ->
-            let rec loop = function
-                | RawAnnot(r,body,t) -> loop body
-                | RawForall _ | RawFun _ ->
-                    if is_rec then Ok(TopRecInl(comments,r,(r',name),body,is_top_down))
-                    else Ok(TopInl(comments,r,(r',name),body,is_top_down))
-                | _ -> Error [r, ExpectedGlobalFunction]
-            loop body
-        | (_,x,_),_ -> Error [range_of_pattern x, ExpectedVarOrOpAsNameOfGlobalStatement]
-    
-
-    /// ### top_inl_or_let
-    let top_inl_or_let d = ((comments .>>. inl_or_let root_term root_pattern_pair root_type_annot) >>= fun (comments,x) d -> top_inl_or_let_process comments d.is_top_down x) d
-    
-
-    /// ### process_union
-    let process_union (r,(layout,n,a,(r',b))) _ =
-        let this = (RawTVar n,a) ||> List.fold (fun s x -> RawTApply(r',s,RawTVar(r',hovar_name x)))
-        match layout with
-        | UHeap -> Ok(TopNominalRec(r,n,a,RawTUnion(r',b,layout,this)))
-        | UStack -> Ok(TopNominal(r,n,a,RawTUnion(r',b,layout,this)))
-    
-
-    /// ### union_clauses
-    let union_clauses d = root_type_union root_type_defaults d
-    
-
-    /// ### top_union
-    let top_union d = ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>. ((skip_keyword SpecRec >>% UHeap) <|>% UStack)) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
-    
-
-    /// ### top_nominal
-    let top_nominal d =
-        (blockParsingRange (tuple3 (skip_keyword SpecNominal >>. read_small_type_var') (many ho_var .>> skip_op "=") (root_type {root_type_defaults with allow_term=true}))
-        |>> fun (r,(n,a,b)) -> TopNominal(r,n,a,b)) d
-    
-
-    /// ### type_forall
-    let inline type_forall next d = (pipe2 (forall <|>% []) next (List.foldBack (fun x s -> RawTForall(range_of_typevar x +. range_of_texpr s,x,s)))) d
-    
-
-    /// ### top_prototype
-    let top_prototype d =
-        (blockParsingRange
-            (tuple5 comments
-                (skip_keyword SpecPrototype >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var)
-                (skip_op ":" >>. type_forall (root_type root_type_defaults)))
-        |>> fun (r,(com,a,b,c,d)) -> TopPrototype(com,r,a,b,c,d)) d
-    
-
-    /// ### top_instance
-    let top_instance d =
-        (blockParsingRange
-            (tuple4 (skip_keyword SpecInstance >>. (read_small_var' <|> rounds read_op')) read_small_type_var' (many forall_var) (skip_op "=" >>. root_term))
-        >>= fun (r,(prototype_name, nominal_name, nominal_foralls, body)) _ ->
-                Ok(TopInstance(r,prototype_name,nominal_name,nominal_foralls,body))
-                ) d
-    
-
-    /// ### top_type
-    let top_type d = (blockParsingRange (tuple3 (skip_keyword SpecType >>. read_small_type_var') (many ho_var) (skip_op "=" >>. root_type root_type_defaults)) |>> fun (r,(a,b,c)) -> TopType(r,a,b,c)) d
-    
-
-    /// ### top_and_inl_or_let
-    let top_and_inl_or_let d =
-        (comments .>>. restore 1 (blockParsingRange (and_inl_or_let root_term root_pattern_pair root_type_annot))
-        >>= fun (comments,(r,x)) d -> top_inl_or_let_process comments d.is_top_down x |> Result.map (fun x -> TopAnd(r,x))) d
-    
-
-    /// ### top_and
-    let inline top_and f = restore 1 (blockParsingRange (skip_keyword SpecAnd >>. f)) |>> TopAnd
-    
-
-    /// ### top_and_union
-    let top_and_union d = top_and ((blockParsingRange (tuple4 (skip_keyword SpecUnion >>% UHeap) read_small_type_var' (many ho_var .>> skip_op "=") union_clauses)) >>= process_union) d
-    
-
-    /// ### top_open
-    let top_open d = (blockParsingModule_open |>> fun (r,(name,acs)) -> TopOpen(r,name,acs)) d
-    
-
-    /// ### top_statement
-    let top_statement s =
-        let (+) = alt (blockParsingIndex s)
-        (top_inl_or_let + top_union + top_nominal + top_prototype + top_type + top_instance + top_and_inl_or_let + top_and_union + top_open) s
-    
-
-    /// ### ParserErrorsList
-    type ParserErrorsList = (VSCRange * ParserErrors) list
-    
-
-    /// ### ParseResult
-    type ParseResult = Result<TopStatement,ParserErrorsList>
-    
-
-    /// ### blockParsingParse
-    let blockParsingIsTest (s : BlockParsingEnv) = match snd s.tokens.[0] with TokVar ("test", _) -> true | _ -> false
-
-    let blockParsingParse (s : BlockParsingEnv) : ParseResult =
-        if 0 < s.tokens.Length && blockParsingIsTest s then Error []
-        elif 0 < s.tokens.Length then
-            match top_statement s with
-            | Ok _ as x -> if s.Index = s.tokens.Length then x else Error [fst s.tokens.[s.Index], ExpectedEob]
-            | Error [] ->
-                if s.Index = s.tokens.Length then Error [fst (Array.last s.tokens), UnexpectedEob]
-                else Error [fst s.tokens.[s.Index], ExpectedEob]
-            | Error _ as l -> l
-        else
-            Error []
-    
-
-    /// ### show_parser_error
-    let show_parser_error = function
-        | TypeVarsNeedToBeExplicitForExists -> "The type vars for the exists body have to be specified up front in the bottom-up segment."
-        | DuplicateExistsVar -> "Duplicate variable in the exists type."
-        | ExistsNotAllowedInTypecase -> "The existential type is not allowed in typecase."
-        | ForallNotAllowedInTypecase -> "The type lambda is not allowed in typecase."
-        | MetavarShadowedByVar -> "The metavariable is shadowed by a variable."
-        | VarShadowedByMetavar -> "The variable is shadowed by a metavariable."
-        | ExpectedPairedSymbolInUnion -> "The union clause should be pair whose left side is a symbol."
-        | ExpectedEscapedChar false -> "escaped character"
-        | ExpectedEscapedChar true -> "escaped character or the escaped variable (\\v)"
-        | ExpectedUnescapedChar -> "unescaped character"
-        | ExpectedMacroVar -> "variable"
-        | ExpectedMacroTypeVar -> "type variable"
-        | ExpectedMacroTypeLitVar -> "type literal variable"
-        | ExpectedText -> "text"
-        | ExpectedMacroOpen -> "$\""
-        | ExpectedStringOpen -> "\""
-        | ExpectedMacroClose | ExpectedStringClose -> "\""
-        | ExpectedKeyword x ->
-            match x with
-            | SpecExists -> "exists"
-            | SpecIn -> "in"
-            | SpecAnd -> "and"
-            | SpecFun -> "fun"
-            | SpecMatch -> "match"
-            | SpecTypecase -> "typecase"
-            | SpecFunction -> "function"
-            | SpecWith -> "with"
-            | SpecWithout -> "without"
-            | SpecAs -> "as"
-            | SpecWhen -> "when"
-            | SpecInl -> "inl"
-            | SpecLet -> "let"
-            | SpecForall -> "forall"
-            | SpecInm -> "inm"
-            | SpecInb -> "inb"
-            | SpecRec -> "rec"
-            | SpecIf -> "if"
-            | SpecThen -> "then"
-            | SpecElif -> "elif"
-            | SpecElse -> "else"
-            | SpecJoin -> "join"
-            | SpecJoinBackend -> "join_backend"
-            | SpecType -> "type"
-            | SpecNominal -> "nominal"
-            | SpecReal -> "real"
-            | SpecUnion -> "union"
-            | SpecOpen -> "open"
-            | SpecWildcard -> "_"
-            | SpecInstance -> "instance"
-            | SpecPrototype -> "prototype"
-        | ExpectedParenthesis(Round,Open) -> "("
-        | ExpectedParenthesis(Curly,Open) -> "{"
-        | ExpectedParenthesis(Square,Open) -> "["
-        | ExpectedParenthesis(Round,Close) -> ")"
-        | ExpectedParenthesis(Curly,Close) -> "}"
-        | ExpectedParenthesis(Square,Close) -> "]"
-        | ExpectedMacroExpression(MTerm,Open) -> "`("
-        | ExpectedMacroExpression(MType,Open) -> "!("
-        | ExpectedMacroExpression(MTypeLit,Open) -> "@("
-        | ExpectedMacroExpression(MTermInline,Open) -> "#("
-        | ExpectedMacroExpression((MTerm | MTermInline | MType | MTypeLit),Close) -> ")"
-        | ExpectedOpenParenthesis -> "(, { or ["
-        | ExpectedOperator' -> "operator"
-        | ExpectedOperator x -> x
-        | ExpectedUnaryOperator' -> "unary operator"
-        | ExpectedUnaryOperator x -> x
-        | ExpectedUnit -> "()"
-        | ExpectedSmallVar -> "lowercase variable"
-        | ExpectedBigVar -> "uppercase variable"
-        | ExpectedVar -> "variable"
-        | ExpectedLit -> "literal"
-        | ExpectedSymbol -> "symbol"
-        | ExpectedSymbolPaired -> "paired symbol"
-        | ExpectedStatement -> "statement"
-        | ExpectedFunctionAsBodyOfRecStatement -> "Rec statements should all return functions known at parse time."
-        | ExpectedGlobalFunction -> "Global inl/let statements should all return functions known at parse time."
-        | ExpectedSinglePatternWhenStatementNameIsNorVarOrOp -> "Unexpected pattern."
-        | ExpectedVarOrOpAsNameOfGlobalStatement -> "The first pattern of a global statement should either be a variable or compile down to it."
-        | ExpectedVarOrOpAsNameOfRecStatement -> "The first pattern of a recursive statement should either be a variable or compile down to it."
-        | ExpectedExpression -> "A sequence of statements should end in an expression."
-        | InbuiltOpNotFound -> "Not found among the inbuilt operations."
-        | UnknownOperator -> "Operator does not have known precedence and associativity."
-        | ForallNotAllowed -> "Forall not allowed here."
-        | InvalidPattern DisjointOrPatternVar -> "Both branches of an or pattern need to have the same variables. This one is disjoint."
-        | InvalidPattern DuplicateTermVar -> "Duplicate term variable in pattern."
-        | InvalidPattern DuplicateTypeVar -> "Duplicate type variable in pattern."
-        | InvalidPattern ShadowedVar -> "Shadowed pattern variable."
-        | MetavarNotAllowed -> "Metavariable is not allowed here."
-        | SymbolPairedShouldStartWithUppercaseInTypeScope -> "Paired symbol should start with uppercase in type scope."
-        | TermNotAllowed -> "The term is not allowed here."
-        | TypecaseNotAllowed -> "Typecase is not allowed here."
-        | UnexpectedAndInlRec -> "The first statement of a recursive block has to be marked as recursive."
-        | ExpectedEob -> "Failed to parse this token."
-        | UnexpectedEob -> "Unexpected end of block past this token."
-        | UnknownError -> "Compiler error: Parsing failed at this position with no error message and without consuming all the tokens in a block."
-        | DuplicateRecordTypeVar -> "Duplicate record type variable."
-        | DuplicateForallVar -> "Duplicate forall variable."
-        | DuplicateConstraint -> "Duplicate constraint."
-        | InvalidPattern DuplicateRecordSymbol
-        | DuplicateTermRecordSymbol -> "Duplicate record symbol."
-        | InvalidPattern DuplicateRecordInjection
-        | DuplicateTermRecordInjection -> "Duplicate record injection."
-        | DuplicateRecFunctionName -> "Shadowing of functions by the members of the same mutually recursive block is not allowed."
-        | BottomUpNumberParseError (x, val_dsc) -> sprintf "The string %s cannot be safely parsed as %s." x val_dsc
-        | DuplicateUnionKey -> "Duplicate union keys are not allowed."
-        | ListLiteralsNotAllowedInBottomUp -> "List literals are not allowed in the bottom-up segment."
-        | ArrayLiteralsNotAllowedInBottomUp -> "Array literals are not allowed in the bottom-up segment."
-    
-
-#else
     /// ## BlockParsing
     // open System
     // open FParsec
@@ -48044,7 +45030,16 @@ module spiral_compiler =
 
         let fold_applies a b = List.fold (fun a b -> RawTApply(range_of_texpr a +. range_of_texpr b,a,b)) a b
         let apply_tight d = pipe2 cases (many (expr_tight cases)) fold_applies d
-        let apply d = pipe2 apply_tight (many (blockParsingIndent (col d) (<) apply_tight)) fold_applies d
+        let apply (d : BlockParsingEnv) =
+            let line_start_column =
+                let i = min d.Index (d.tokens.Length - 1)
+                if i < 0 then col d
+                else
+                    let row = (fst (fst d.tokens.[i])).line
+                    let mutable first = i
+                    while first > 0 && (fst (fst d.tokens.[first - 1])).line = row do first <- first - 1
+                    min (col d) (fst (fst d.tokens.[first])).character
+            pipe2 apply_tight (many (blockParsingIndent line_start_column (<) apply_tight)) fold_applies d
 
         let pairs = sepBy1 apply (skip_op "*") |>> List.reduceBack (fun a b -> RawTPair(range_of_texpr a +. range_of_texpr b,a,b))
         let functions = sepBy1 pairs (skip_op "->") |>> List.reduceBack (fun a b -> RawTFun(range_of_texpr a +. range_of_texpr b,a,b,FT_Vanilla))
@@ -48569,6 +45564,256 @@ module spiral_compiler =
         | DuplicateUnionKey -> "Duplicate union keys are not allowed."
         | ListLiteralsNotAllowedInBottomUp -> "List literals are not allowed in the bottom-up segment."
         | ArrayLiteralsNotAllowedInBottomUp -> "Array literals are not allowed in the bottom-up segment."
+
+#if SPIRAL_CORE_HOPAC
+/// ## BlockParsingHopac
+    let opStableText = function
+        | ToFunPtr -> "ToFunPtr"
+        | ToFunClosure -> "ToFunClosure"
+        | HashSetCreate -> "HashSetCreate"
+        | HashSetAdd -> "HashSetAdd"
+        | HashSetContains -> "HashSetContains"
+        | HashSetRemove -> "HashSetRemove"
+        | HashSetCount -> "HashSetCount"
+        | HashMapCreate -> "HashMapCreate"
+        | HashMapSetImmutable -> "HashMapSetImmutable"
+        | HashMapSet -> "HashMapSet"
+        | HashMapAdd -> "HashMapAdd"
+        | HashMapTryAdd -> "HashMapTryAdd"
+        | HashMapContains -> "HashMapContains"
+        | HashMapRemove -> "HashMapRemove"
+        | HashMapCount -> "HashMapCount"
+        | HashMapTryGet -> "HashMapTryGet"
+        | PragmaUnrollPush -> "PragmaUnrollPush"
+        | PragmaUnrollPop -> "PragmaUnrollPop"
+        | UnsafeBackendSwitch -> "UnsafeBackendSwitch"
+        | BackendSwitch -> "BackendSwitch"
+        | UsesOriginalTermVars -> "UsesOriginalTermVars"
+        | UsesOriginalNominals -> "UsesOriginalNominals"
+        | Global -> "Global"
+        | ToPythonRecord -> "ToPythonRecord"
+        | ToPythonNamedTuple -> "ToPythonNamedTuple"
+        | While -> "While"
+        | Do -> "Do"
+        | Indent -> "Indent"
+        | LayoutToHeap -> "LayoutToHeap"
+        | LayoutToHeapMutable -> "LayoutToHeapMutable"
+        | LayoutToStackMutable -> "LayoutToStackMutable"
+        | LayoutToStackRefs -> "LayoutToStackRefs"
+        | LayoutToHeapRefs -> "LayoutToHeapRefs"
+        | LayoutIndex -> "LayoutIndex"
+        | TypeToVar -> "TypeToVar"
+        | TypeToSymbol -> "TypeToSymbol"
+        | TypeLitToLit -> "TypeLitToLit"
+        | LitToTypeLit -> "LitToTypeLit"
+        | LitToSymbol -> "LitToSymbol"
+        | Dyn -> "Dyn"
+        | NominalCreate -> "NominalCreate"
+        | NominalStrip -> "NominalStrip"
+        | NominalTypeApply -> "NominalTypeApply"
+        | Unbox -> "Unbox"
+        | Unbox2 -> "Unbox2"
+        | UnionTag -> "UnionTag"
+        | UnionUntag -> "UnionUntag"
+        | UnionToRecord -> "UnionToRecord"
+        | StringLength -> "StringLength"
+        | StringIndex -> "StringIndex"
+        | StringSlice -> "StringSlice"
+        | StaticStringConcat -> "StaticStringConcat"
+        | Printf -> "Printf"
+        | StdoutFlush -> "StdoutFlush"
+        | MonotonicDelayMs -> "MonotonicDelayMs"
+        | ArrayCreate -> "ArrayCreate"
+        | ArrayLength -> "ArrayLength"
+        | ArrayIndex -> "ArrayIndex"
+        | ArrayIndexSet -> "ArrayIndexSet"
+        | RecordMap -> "RecordMap"
+        | RecordIter -> "RecordIter"
+        | RecordFilter -> "RecordFilter"
+        | RecordFold -> "RecordFold"
+        | RecordFoldBack -> "RecordFoldBack"
+        | RecordLength -> "RecordLength"
+        | RecordTypeMap -> "RecordTypeMap"
+        | RecordTypeIter -> "RecordTypeIter"
+        | RecordTypeFold -> "RecordTypeFold"
+        | RecordTypeFoldBack -> "RecordTypeFoldBack"
+        | RecordTypeLength -> "RecordTypeLength"
+        | RecordTypeTryFind -> "RecordTypeTryFind"
+        | Add -> "Add"
+        | Sub -> "Sub"
+        | Mult -> "Mult"
+        | Div -> "Div"
+        | Mod -> "Mod"
+        | Pow -> "Pow"
+        | LTE -> "LTE"
+        | LT -> "LT"
+        | EQ -> "EQ"
+        | TypeEq -> "TypeEq"
+        | NEQ -> "NEQ"
+        | GT -> "GT"
+        | GTE -> "GTE"
+        | BoolAnd -> "BoolAnd"
+        | BoolOr -> "BoolOr"
+        | BitwiseAnd -> "BitwiseAnd"
+        | BitwiseOr -> "BitwiseOr"
+        | BitwiseXor -> "BitwiseXor"
+        | BitwiseComplement -> "BitwiseComplement"
+        | ShiftLeft -> "ShiftLeft"
+        | ShiftRight -> "ShiftRight"
+        | Neg -> "Neg"
+        | Tanh -> "Tanh"
+        | Log -> "Log"
+        | Exp -> "Exp"
+        | Sin -> "Sin"
+        | Cos -> "Cos"
+        | Sqrt -> "Sqrt"
+        | NanIs -> "NanIs"
+        | Conv -> "Conv"
+        | Infinity -> "Infinity"
+        | Pi -> "Pi"
+        | LitIs -> "LitIs"
+        | PrimIs -> "PrimIs"
+        | SymbolIs -> "SymbolIs"
+        | VarIs -> "VarIs"
+        | UnionIs -> "UnionIs"
+        | HeapUnionIs -> "HeapUnionIs"
+        | LayoutIs -> "LayoutIs"
+        | NominalIs -> "NominalIs"
+        | FunctionIs -> "FunctionIs"
+        | ExistsIs -> "ExistsIs"
+        | PrototypeHas -> "PrototypeHas"
+        | PrimTypeIs -> "PrimTypeIs"
+        | SymbolTypeIs -> "SymbolTypeIs"
+        | UnionTypeIs -> "UnionTypeIs"
+        | HeapUnionTypeIs -> "HeapUnionTypeIs"
+        | LayoutTypeIs -> "LayoutTypeIs"
+        | ExistsTypeIs -> "ExistsTypeIs"
+        | NominalTypeIs -> "NominalTypeIs"
+        | FailWith -> "FailWith"
+        | PrintStatic -> "PrintStatic"
+        | PrintRaw -> "PrintRaw"
+        | ErrorType -> "ErrorType"
+        | ExistsStrip -> "ExistsStrip"
+        | StringLitToSymbol -> "StringLitToSymbol"
+        | SymbolToString -> "SymbolToString"
+        | VarTag -> "VarTag"
+        | TagToSymbol -> "TagToSymbol"
+        | FunctionTermSlotsGet -> "FunctionTermSlotsGet"
+        | FunctionTermSlotsSet -> "FunctionTermSlotsSet"
+        | FreeVars -> "FreeVars"
+        | FreeVarsReplace -> "FreeVarsReplace"
+        | SizeOf -> "SizeOf"
+    
+
+
+    
+
+    let private parsedAstSeedZero : DiagJson.ParsedAstStructuralSeedBreakdown =
+        DiagJson.parsedAstStructuralSeedZero
+
+    let private parsedAstSeedAdd
+        (left:DiagJson.ParsedAstStructuralSeedBreakdown)
+        (right:DiagJson.ParsedAstStructuralSeedBreakdown)
+        : DiagJson.ParsedAstStructuralSeedBreakdown =
+        DiagJson.parsedAstStructuralSeedAdd left right
+
+    let private parsedAstSeedMany
+        (values:seq<DiagJson.ParsedAstStructuralSeedBreakdown>)
+        : DiagJson.ParsedAstStructuralSeedBreakdown =
+        values |> Seq.fold parsedAstSeedAdd parsedAstSeedZero
+
+    let rec private parsedAstSeedOfRawExpr (expr:RawExpr) : DiagJson.ParsedAstStructuralSeedBreakdown =
+        match expr with
+        | RawJoinPoint(_, _, body, _) ->
+            parsedAstSeedOfRawExpr body
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedJoinPoint
+        | RawReal(_, body) ->
+            parsedAstSeedOfRawExpr body
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedRealBlock
+        | RawMatch(_, body, clauses) ->
+            parsedAstSeedAdd
+                (parsedAstSeedOfRawExpr body)
+                (clauses |> Seq.map (snd >> parsedAstSeedOfRawExpr) |> parsedAstSeedMany)
+        | RawFun(_, clauses) ->
+            clauses
+            |> Seq.map (snd >> parsedAstSeedOfRawExpr)
+            |> parsedAstSeedMany
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedFunctionDefinition
+        | RawForall(_, _, body)
+        | RawExists(_, _, body)
+        | RawAnnot(_, body, _)
+        | RawFilledForall(_, _, body) -> parsedAstSeedOfRawExpr body
+        | RawRecBlock(_, bindings, onSucc) ->
+            let recursiveBindings =
+                bindings
+                |> Seq.map (snd >> parsedAstSeedOfRawExpr)
+                |> parsedAstSeedMany
+                |> DiagJson.parsedAstStructuralSeedIncrementBy
+                    (bindings |> List.length |> int64)
+                    DiagJson.ParsedAstSeedFunctionDefinition
+            parsedAstSeedAdd recursiveBindings (parsedAstSeedOfRawExpr onSucc)
+        | RawRecordWith(_, bases, members, _) ->
+            let memberExpr = function
+                | RawRecordWithSymbol(_, value)
+                | RawRecordWithSymbolModify(_, value)
+                | RawRecordWithInjectVar(_, value)
+                | RawRecordWithInjectVarModify(_, value) -> parsedAstSeedOfRawExpr value
+            parsedAstSeedAdd
+                (bases |> Seq.map parsedAstSeedOfRawExpr |> parsedAstSeedMany)
+                (members |> Seq.map memberExpr |> parsedAstSeedMany)
+        | RawOp(_, _, values)
+        | RawArray(_, values) -> values |> Seq.map parsedAstSeedOfRawExpr |> parsedAstSeedMany
+        | RawTypecase(_, _, clauses) -> clauses |> Seq.map (snd >> parsedAstSeedOfRawExpr) |> parsedAstSeedMany
+        | RawOpen(_, _, _, onSucc) ->
+            parsedAstSeedOfRawExpr onSucc
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedImport
+        | RawApply(_, left, right)
+        | RawPair(_, left, right)
+        | RawSeq(_, left, right)
+        | RawIfThen(_, left, right) ->
+            parsedAstSeedAdd (parsedAstSeedOfRawExpr left) (parsedAstSeedOfRawExpr right)
+        | RawIfThenElse(_, condition, ifTrue, ifFalse) ->
+            parsedAstSeedMany [ parsedAstSeedOfRawExpr condition; parsedAstSeedOfRawExpr ifTrue; parsedAstSeedOfRawExpr ifFalse ]
+        | RawHeapMutableSet(_, target, indexes, value) ->
+            parsedAstSeedMany
+                (seq {
+                    yield parsedAstSeedOfRawExpr target
+                    yield! indexes |> Seq.map parsedAstSeedOfRawExpr
+                    yield parsedAstSeedOfRawExpr value
+                })
+        | RawMacro(_, macros) ->
+            macros
+            |> Seq.choose (function
+                | RawMacroTerm(_, body, _) -> Some (parsedAstSeedOfRawExpr body)
+                | _ -> None)
+            |> parsedAstSeedMany
+        | RawB _
+        | RawV _
+        | RawLit _
+        | RawDefaultLit _
+        | RawSymbol _
+        | RawType _
+        | RawMissingBody _ -> parsedAstSeedZero
+
+    let rec private parsedAstSeedOfTopStatement (statement:TopStatement) : DiagJson.ParsedAstStructuralSeedBreakdown =
+        match statement with
+        | TopAnd(_, statement) -> parsedAstSeedOfTopStatement statement
+        | TopInl(_, _, _, body, _)
+        | TopRecInl(_, _, _, body, _) ->
+            parsedAstSeedOfRawExpr body
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTopLevelBinding
+        | TopNominal _
+        | TopNominalRec _
+        | TopType _
+        | TopPrototype _ ->
+            parsedAstSeedZero
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTypeDefinition
+        | TopInstance(_, _, _, _, body) ->
+            parsedAstSeedOfRawExpr body
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedTopLevelBinding
+        | TopOpen _ ->
+            parsedAstSeedZero
+            |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedImport
 
 #endif
     /// ## HopacExtensions
@@ -175039,7 +172284,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let next_id = ref 0
         let fresh_id () = next_id.Value <- next_id.Value + 1; next_id.Value
         let is_unit_ty = function YB -> true | _ -> false
-        let tyv = function
+        let is_tag_only_union (h : Union) = h.Item.tag_cases |> Array.forall (snd >> is_unit_ty)
+        let union_layouts = Dictionary<obj, string * string [] []>(HashIdentity.Reference)
+        let unions_being_laid_out = HashSet<obj>(HashIdentity.Reference)
+        let uses_heap = ref false
+        let rec tyv = function
             | YPrim Int32T | YPrim CharT -> "i32"
             | YPrim UInt32T -> "u32"
             | YPrim BoolT -> "bool"
@@ -175047,13 +172296,79 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YPrim Float64T -> unsupported "f64 (WGSL has no 64-bit float)"
             | YPrim (Int64T | UInt64T) -> unsupported "64-bit integers (WGSL has no i64)"
             | YPrim t -> unsupported $"the primitive {t}"
-            | t -> unsupported $"the type {show_ty t}"
+            | YUnion h when is_tag_only_union h -> "u32"
+            | YUnion h -> fst (union_layout h)
+            | YArray _ -> "u32"
+            | YNominal _ | YApply _ as t -> tyv (env.nominal_apply t)
+            | t -> unsupported $"""the type {show_ty t} ({(sprintf "%A" t).Split([|' '; '('|]).[0]})"""
+        and union_layout (h : Union) : string * string [] [] =
+            let key = box h.Item
+            match union_layouts.TryGetValue key with
+            | true, layout -> layout
+            | _ ->
+                if not (unions_being_laid_out.Add key) then unsupported "recursive unions (WGSL has no pointers)"
+                let case_fields = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t))
+                let name = $"SpiralUnion{union_layouts.Count}"
+                let fields = case_fields |> Array.mapi (fun case tys -> tys |> Array.mapi (fun field t -> $"  c{case}f{field}: {t},")) |> Array.concat
+                tuple_bodies.Add($"""struct {name} {{{"\n"}{String.concat "\n" (Array.append [|"  tag: u32,"|] fields)}{"\n"}}}{"\n"}""")
+                unions_being_laid_out.Remove key |> ignore
+                union_layouts.[key] <- (name, case_fields)
+                name, case_fields
         let zero = function
             | "i32" -> "0i"
             | "u32" -> "0u"
             | "bool" -> "false"
             | "f32" -> "0.0f"
+            | other when other.StartsWith "Spiral" -> $"{other}()"
             | other -> unsupported $"a zero value of {other}"
+        let array_element_ty = function
+            | YArray element ->
+                match env.ty_to_data element |> data_free_vars with
+                | [|L(_, t)|] -> t
+                | _ -> unsupported "arrays whose element is more than one value"
+            | _ -> raise_codegen_error "Compiler error: Expected an array type."
+        let array_ty_of = function
+            | DV(L(_, t)) -> t
+            | _ -> raise_codegen_error "Compiler error: Expected an array variable."
+        let to_heap_word scalar value =
+            match scalar with
+            | "i32" | "f32" -> $"bitcast<u32>({value})"
+            | "u32" -> value
+            | "bool" -> $"select(0u, 1u, {value})"
+            | other -> unsupported $"array elements of type {other}"
+        let from_heap_word scalar word =
+            match scalar with
+            | "i32" -> $"bitcast<i32>({word})"
+            | "f32" -> $"bitcast<f32>({word})"
+            | "u32" -> word
+            | "bool" -> $"({word} != 0u)"
+            | other -> unsupported $"array elements of type {other}"
+        let rec element_words (t : Ty) : (string * string) list =
+            match t with
+            | YUnion h when not (is_tag_only_union h) ->
+                let _, case_fields = union_layout h
+                let field_tys = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
+                ("tag", "u32") :: [ for case in 0 .. case_fields.Length - 1 do
+                                        for field in 0 .. field_tys.[case].Length - 1 do
+                                            for path, scalar in element_words field_tys.[case].[field] do
+                                                yield (if path = "" then $"c{case}f{field}" else $"c{case}f{field}.{path}"), scalar ]
+            | YNominal _ | YApply _ -> element_words (env.nominal_apply t)
+            | t -> [("", tyv t)]
+        let rec element_value (t : Ty) (word_at : int -> string) (offset : int) : string * int =
+            match t with
+            | YUnion h when not (is_tag_only_union h) ->
+                let name, _ = union_layout h
+                let field_tys = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
+                let next = ref (offset + 1)
+                let fields = [ for tys in field_tys do
+                                for ft in tys do
+                                    let value, after = element_value ft word_at next.Value
+                                    next.Value <- after
+                                    yield value ]
+                $"""{name}({String.concat ", " (from_heap_word "u32" (word_at offset) :: fields)})""", next.Value
+            | YNominal _ | YApply _ -> element_value (env.nominal_apply t) word_at offset
+            | t -> from_heap_word (tyv t) (word_at offset), offset + 1
+        let heap_word_at array index stride k = $"spiral_heap[{array} + 1u + bitcast<u32>({index}) * {stride}u + {k}u]"
         let lit = function
             | LitInt32 x when x = Int32.MinValue -> "bitcast<i32>(0x80000000u)"
             | LitInt32 x -> $"{x}i"
@@ -175220,6 +172535,38 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 binds (indent s) (WgslLocal [||]) body
                 line s "}"
             | TyDo body | TyIndent body -> binds s ret body
+            | TyUnionBox(tag_id, _, h) when is_tag_only_union h -> return' $"{h.Item.tags.[tag_id]}u"
+            | TyUnionBox(tag_id, payload, h) ->
+                let name, case_fields = union_layout h
+                let case = h.Item.tags.[tag_id]
+                let values = data_term_vars payload |> Array.map show_w
+                if values.Length <> case_fields.[case].Length then raise_codegen_error "Compiler error: A union payload has the wrong number of values."
+                let fields = case_fields |> Array.mapi (fun other tys -> if other = case then values else Array.map zero tys) |> Array.concat
+                return' $"""{name}({String.concat ", " (Array.append [|$"{case}u"|] fields)})"""
+            | TyUnionUnbox(scrutinees, h, on_succs, on_fail) when not scrutinees.IsEmpty ->
+                let tag_only = is_tag_only_union h
+                let tag_of (L(i,_)) = if tag_only then $"v{i}" else $"v{i}.tag"
+                let arm s' (case, payloads, body) =
+                    if not tag_only then
+                        List.iter2 (fun (L(i,_)) payload ->
+                            data_free_vars payload |> Array.iteri (fun field (L(vi, t)) -> line s' $"var v{vi}: {tyv t} = v{i}.c{case}f{field};")) scrutinees payloads
+                    binds s' ret body
+                let arms = on_succs |> Map.toArray |> Array.map (fun (tag_id, (payloads, body)) -> h.Item.tags.[tag_id], payloads, body) |> Array.sortBy (fun (case, _, _) -> case)
+                let guarded, last_branch =
+                    match on_fail with
+                    | Some fallback -> arms, (fun s' -> binds s' ret fallback)
+                    | None when arms.Length > 0 -> Array.take (arms.Length - 1) arms, (fun s' -> arm s' (Array.last arms))
+                    | None -> raise_codegen_error "Compiler error: A union unbox has no cases and no fallback."
+                if guarded.Length = 0 then last_branch s
+                else
+                    guarded |> Array.iteri (fun n (case, payloads, body) ->
+                        let keyword = if n = 0 then "if" else "} else if"
+                        let condition = scrutinees |> List.map (fun v -> $"{tag_of v} == {case}u") |> String.concat " && "
+                        line s $"{keyword} ({condition}) {{"
+                        arm (indent s) (case, payloads, body))
+                    line s "} else {"
+                    last_branch (indent s)
+                    line s "}"
             | TyConv(YPrim target, b) ->
                 let source = prim_of b
                 let text = tup b
@@ -175283,8 +172630,25 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | Neg, [a] -> $"(-{tup a})"
                     | NanIs, [a] -> $"({tup a} != {tup a})"
                     | StdoutFlush, [] -> ""
+                    | ArrayIndex, [a;b] ->
+                        let element = array_element_ty (array_ty_of a)
+                        let stride = (element_words element).Length
+                        fst (element_value element (heap_word_at (tup a) (tup b) stride) 0)
+                    | ArrayIndexSet, [a;b;c] ->
+                        let element = array_element_ty (array_ty_of a)
+                        let words = element_words element
+                        let value = tup c
+                        words |> List.mapi (fun k (path, scalar) ->
+                            let field = if path = "" then value else $"{value}.{path}"
+                            $"{heap_word_at (tup a) (tup b) words.Length k} = {to_heap_word scalar field}")
+                        |> String.concat "; "
                     | _ -> unsupported $"the operation %A{operation}"
                 return' expr
+            | TyArrayCreate(element, size) ->
+                let stride = (element_words (array_element_ty (YArray element))).Length
+                uses_heap.Value <- true
+                return' $"spiral_array_create({tup size}, {stride}u)"
+            | TyArrayLength(_, a) -> return' $"bitcast<i32>(spiral_heap[{tup a}])"
             | other ->
                 let construct = (sprintf "%A" other).Split('(').[0]
                 unsupported construct
@@ -175321,6 +172685,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         program.AppendLine("  pad2: u32,") |> ignore
         program.AppendLine("}") |> ignore
         program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
+        if uses_heap.Value then
+            program.AppendLine("var<private> spiral_heap: array<u32, 16384>;") |> ignore
+            program.AppendLine("var<private> spiral_heap_top: u32 = 0u;") |> ignore
+            program.AppendLine("fn spiral_array_create(length: i32, stride: u32) -> u32 {") |> ignore
+            program.AppendLine("  let base = spiral_heap_top;") |> ignore
+            program.AppendLine("  spiral_heap[base] = bitcast<u32>(length);") |> ignore
+            program.AppendLine("  spiral_heap_top = base + 1u + bitcast<u32>(length) * stride;") |> ignore
+            program.AppendLine("  return base;") |> ignore
+            program.AppendLine("}") |> ignore
         tuple_bodies |> Seq.iter (fun text -> program.Append(text) |> ignore)
         functions |> Seq.iter (fun fn -> program.Append(fn) |> ignore)
         if unit_main then
@@ -183689,6 +181062,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         order, circular_nodes
 
 #endif
+    /// ## OutputFiles
+
+    /// ### write_output_atomically_async
+    let write_output_atomically_async (path : string) (text : string) = async {
+        let staged = path + ".tmp"
+        do! System.IO.File.WriteAllTextAsync(staged, text) |> Async.AwaitTask
+        System.IO.File.Move(staged, path, true)
+        }
+
 #if SPIRAL_CORE_HOPAC
     /// ## ServerUtils
     // open System
@@ -185815,28 +183197,11 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                         aborts.Add(FastRuntimeFormat.format "%s (%d bytes): %s%s" [| box (System.IO.Path.GetFileName outPath); box newBytes; box why; box kept |])
                                         skipped <- skipped + 1
                                     else
-                                        let tmpPath = outPath + ".tmp"
-                                        do! System.IO.File.WriteAllTextAsync(tmpPath, codeSafe) |> Async.AwaitTask
-                                        let mutable persisted = false
-                                        try
-                                            if System.IO.File.Exists(outPath) then
-                                                // MIGRATION: no persistent backups. Atomic replace with ephemeral temp-old file.
-                                                let oldTmp = outPath + ".replace_old.tmp"
-                                                try
-                                                    System.IO.File.Replace(tmpPath, outPath, oldTmp, true)
-                                                    persisted <- true
-                                                finally
-                                                    try System.IO.File.Delete(oldTmp) with _ -> ()
-                                            else
-                                                System.IO.File.Move(tmpPath, outPath)
-                                                persisted <- true
-                                        with _ ->
-                                            // fallback: copy + delete is accepted only when the copy actually completed.
+                                        let! persisted = async {
                                             try
-                                                System.IO.File.Copy(tmpPath, outPath, true)
-                                                System.IO.File.Delete(tmpPath)
-                                                persisted <- true
-                                            with _ -> persisted <- false
+                                                do! write_output_atomically_async outPath codeSafe
+                                                return true
+                                            with _ -> return false }
                                         if persisted then
                                             wrote <- wrote + 1
                                             persistedBytes <- persistedBytes + newBytes
@@ -188794,7 +186159,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                                 try
                                     for x in l do
                                         let file = Path.ChangeExtension(file,null) // null removes the extension from path.
-                                        do! System.IO.File.WriteAllTextAsync(file + x.file_extension, x.code) |> Async.AwaitTask
+                                        do! write_output_atomically_async (file + x.file_extension) x.code
                                 with ex ->
                                     trace Critical (fun () -> $"Supervisor.supervisor_server.BuildFile.handle_build_result / write: {ex |> SpiralSm.format_exception}") _locals
                             })

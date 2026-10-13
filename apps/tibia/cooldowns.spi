@@ -76,3 +76,9 @@ test support_sets_only_support_group =
     inl held = idle_timers () |> after_cast now (haste ())
     held.support_ready_at |> _assert_eq 2000i32
     held.attack_ready_at |> _assert_eq 0i32
+
+///> wgsl
+test attack_cooldown_on_gpu =
+    inl ~now = 1000i32
+    inl held = idle_timers () |> after_cast now (strike_spell ())
+    if can_cast (now + 1999) (strike_spell ()) held = false && can_cast (now + 2000) (strike_spell ()) held && held.healing_ready_at = 0i32 then 0i32 else 1i32

@@ -82,6 +82,20 @@ defmodule Spiral.Kino.CompilerClient do
   end
 
   @doc """
+  Launches the daemon on the base port when nothing listens there, without waiting for it: a notebook run whose steps
+  were all recalled never needs a compiler, but the next run's thin client (`run_notebook.ps1`) wants a warm daemon.
+  """
+  @spec prestart() :: :ok
+  def prestart do
+    port = base_port()
+
+    if ping(port) == :down do
+      _ = spawn_daemon(port)
+    end
+
+    :ok
+  end
+  @doc """
   Retires the compiler daemons on this client's ports, if they are up: each finishes the compiles already queued and
   exits (killed if it is still up after 10 s). The test suite calls this when it ends, so no test daemon outlives `mix test`.
   """

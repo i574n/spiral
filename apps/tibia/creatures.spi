@@ -51,3 +51,8 @@ test experience_per_health_ranks_skeleton_above_troll =
     inl ~marker = 0i32
     experience_per_health Skeleton + marker |> _assert_eq 700i32
     experience_per_health Troll + marker |> _assert_eq 400i32
+
+///> wgsl
+test stats_on_gpu =
+    inl ~marker = 0i32
+    if (stats_of Troll).max_health + marker = 50i32 && experience_per_health Skeleton + marker = 700i32 then 0i32 else 1i32

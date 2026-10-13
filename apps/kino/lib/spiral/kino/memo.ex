@@ -112,7 +112,7 @@ defmodule Spiral.Kino.Memo do
 
   defp compiler_identity(opts) do
     dll = Toolchain.compiler_dll(opts)
-    {dll, file_print(dll), Toolchain.package_dir(opts) |> Path.join("core") |> tree_print()}
+    {same_path(dll), file_print(dll), Toolchain.package_dir(opts) |> Path.join("core") |> tree_print()}
   end
 
   @result_path_modules [
@@ -134,6 +134,11 @@ defmodule Spiral.Kino.Memo do
 
   @doc false
   def result_path_modules, do: @result_path_modules
+
+  defp same_path(path) do
+    expanded = Path.expand(path)
+    if match?({:win32, _}, :os.type()), do: String.downcase(expanded), else: expanded
+  end
 
   defp kino_identity do
     case :persistent_term.get({__MODULE__, :kino}, nil) do

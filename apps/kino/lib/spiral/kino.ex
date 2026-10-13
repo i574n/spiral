@@ -20,6 +20,8 @@ defmodule Spiral.Kino do
 
   @spec run(String.t(), keyword()) :: {:ok, Result.t()} | {:error, Exception.t()}
   def run(code, opts \\ []) when is_binary(code) do
+    Process.put(:spiral_kino_last_targets, [])
+
     if String.trim(code) == "" do
       {:ok, %Result{}}
     else
@@ -49,6 +51,7 @@ defmodule Spiral.Kino do
         dir = tmp_dir()
         Process.put(:spiral_kino_deadline, deadline)
         Process.put(:spiral_kino_phases, %{})
+        Process.put(:spiral_kino_targets, [])
 
         try do
           spi = Path.join(dir, "main.spi")
@@ -61,6 +64,7 @@ defmodule Spiral.Kino do
           end
         after
           Process.put(:spiral_kino_last_phases, phases())
+          Process.put(:spiral_kino_last_targets, target_rows(builders, Process.delete(:spiral_kino_targets) || []))
           Process.delete(:spiral_kino_deadline)
           Process.delete(:spiral_kino_queue_ms)
           Process.delete(:spiral_kino_phases)
@@ -88,6 +92,29 @@ defmodule Spiral.Kino do
           raise error
       end
     end
+  end
+
+  @spec last_targets() :: [%{target: String.t(), status: String.t(), ms: non_neg_integer() | nil}]
+  def last_targets, do: Process.get(:spiral_kino_last_targets) || []
+
+  defp target_rows(builders, ran) do
+    Enum.map(builders, fn builder ->
+      Enum.find(ran, &(&1.target == builder.raw)) || %{target: builder.raw, status: "not_run", ms: nil}
+    end)
+  end
+
+  defp record_target(builder, result, ms) do
+    status =
+      case result do
+        {:ok, %{exit_status: status}} when status not in [nil, 0] -> "failed"
+        {:ok, _} -> "passed"
+        {:error, %ProcessError{reason: :tool_missing}} -> "unsupported"
+        {:error, _} -> "failed"
+      end
+
+    row = %{target: builder.raw, status: status, ms: ms}
+    Process.put(:spiral_kino_targets, (Process.get(:spiral_kino_targets) || []) ++ [row])
+    result
   end
 
   @spec last_phases() :: map()
@@ -136,7 +163,9 @@ defmodule Spiral.Kino do
   defp run_builders(builders, dir, spi, exe, prepared, opts, timeout, deadline, started) do
     builders
     |> Enum.reduce_while({:ok, [], []}, fn builder, {:ok, acc, missing} ->
-      case run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
+      begun = System.monotonic_time(:millisecond)
+
+      case record_target(builder, run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline), System.monotonic_time(:millisecond) - begun) do
         {:ok, %{exit_status: status} = chunk} when status not in [nil, 0] ->
           {:halt, {:done, acc ++ [chunk], missing}}
 
@@ -152,10 +181,58 @@ defmodule Spiral.Kino do
     end)
     |> case do
       {_, [], [{_builder, error} | _]} -> {:error, error}
-      {:ok, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
+      {:ok, chunks, missing} -> agreed(chunks, prepared, opts, fn -> {:ok, assemble(chunks, missing, spi, started)} end)
       {:done, chunks, missing} -> {:ok, assemble(chunks, missing, spi, started)}
       {:error, error} -> {:error, error}
     end
+  end
+
+  defp agreed(chunks, prepared, opts, assembled) do
+    case disagreement(chunks, prepared, opts) do
+      nil ->
+        assembled.()
+
+      {first, other} ->
+        Process.put(
+          :spiral_kino_targets,
+          Enum.map(Process.get(:spiral_kino_targets) || [], fn row ->
+            if row.target == other.target, do: %{row | status: "disagrees"}, else: row
+          end)
+        )
+
+        {:error,
+         %ProcessError{
+           reason: :disagree,
+           message:
+             "targets disagree: #{first.target} printed #{inspect(shown(first))}, #{other.target} printed #{inspect(shown(other))}"
+         }}
+    end
+  end
+
+  defp disagreement([_one], _prepared, _opts), do: nil
+
+  defp disagreement([first | rest], prepared, opts) do
+    if opts[:agree] != true or prepared.print_code do
+      nil
+    else
+      case Enum.find(rest, &(shown(&1) != shown(first))) do
+        nil -> nil
+        other -> {first, other}
+      end
+    end
+  end
+
+  @doc false
+  def shown(chunk) do
+    lines =
+      chunk.stdout
+      |> String.replace("\r\n", "\n")
+      |> String.split("\n")
+      |> Enum.map(&String.trim_trailing/1)
+      |> Enum.join("\n")
+      |> String.trim()
+
+    if chunk.value in [nil, ""], do: lines, else: lines <> "\n=> " <> String.trim(chunk.value)
   end
 
   defp run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
@@ -263,6 +340,7 @@ defmodule Spiral.Kino do
 
   defp chunk(builder, stdout, value, status, displays) do
     %{
+      target: builder.raw,
       ext: String.trim_leading(Builders.ext(builder), "."),
       tool: builder.tool,
       stdout: stdout,
