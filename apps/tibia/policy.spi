@@ -1,0 +1,87 @@
+test policy static =
+    open testing
+
+type thresholds = {heal_below : i32; strike_above : i32}
+
+union reach =
+    | InReach
+    | OutOfReach
+    | NoTarget
+
+type observation = {health : i32; heal_ready : bool; strike_ready : bool; target : reach}
+
+union engagement =
+    | Strike
+    | Approach
+    | Hold
+
+type candidate = {is_current : bool; distance : i32; health_percent : i32}
+
+inl evolved_against_cyclops () : thresholds = {heal_below = 124; strike_above = 23}
+
+inl heals (t : thresholds) (o : observation) : bool =
+    o.heal_ready && o.health < t.heal_below
+
+inl engages (t : thresholds) (o : observation) : engagement =
+    match o.target with
+    | InReach => if o.strike_ready && o.health >= t.strike_above then Strike else Hold
+    | OutOfReach => if o.health >= t.strike_above then Approach else Hold
+    | NoTarget => Hold
+
+inl in_reach (c : candidate) : bool = c.distance <= 1
+
+inl prefers (a : candidate) (b : candidate) : bool =
+    if in_reach a <> in_reach b then in_reach a
+    elif a.is_current <> b.is_current then a.is_current
+    elif a.health_percent <> b.health_percent then a.health_percent < b.health_percent
+    else a.distance < b.distance
+
+inl engagement_code (e : engagement) : i32 =
+    match e with
+    | Strike => 1
+    | Approach => 2
+    | Hold => 0
+
+///> rust
+///> c
+///> lua
+test heals_only_below_threshold_when_ready =
+    inl ~health = 100i32
+    inl t = evolved_against_cyclops ()
+    heals t {health = health; heal_ready = true; strike_ready = true; target = InReach} |> _assert_eq true
+    heals t {health = health; heal_ready = false; strike_ready = true; target = InReach} |> _assert_eq false
+    heals t {health = health + 24; heal_ready = true; strike_ready = true; target = InReach} |> _assert_eq false
+
+///> rust
+///> c
+///> lua
+test strikes_only_in_reach_ready_and_healthy_enough =
+    inl ~health = 23i32
+    inl t = evolved_against_cyclops ()
+    engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = InReach}) |> _assert_eq 1i32
+    engagement_code (engages t {health = health - 1; heal_ready = true; strike_ready = true; target = InReach}) |> _assert_eq 0i32
+    engagement_code (engages t {health = health; heal_ready = true; strike_ready = false; target = InReach}) |> _assert_eq 0i32
+    engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = OutOfReach}) |> _assert_eq 2i32
+    engagement_code (engages t {health = health - 1; heal_ready = true; strike_ready = true; target = OutOfReach}) |> _assert_eq 0i32
+    engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = NoTarget}) |> _assert_eq 0i32
+
+test strike_is_not_a_bool fails "Unification failure" =
+    engages (evolved_against_cyclops ()) {health = 50; heal_ready = true; strike_ready = true; target = InReach} |> _assert_eq true
+
+///> rust
+///> c
+///> lua
+test prefers_reach_then_current_then_weakest_then_nearest =
+    inl ~far = 3i32
+    prefers {is_current = false; distance = 1; health_percent = 90} {is_current = true; distance = far; health_percent = 10} |> _assert_eq true
+    prefers {is_current = true; distance = 1; health_percent = 90} {is_current = false; distance = 1; health_percent = 10} |> _assert_eq true
+    prefers {is_current = false; distance = 1; health_percent = 40} {is_current = false; distance = 1; health_percent = 60} |> _assert_eq true
+    prefers {is_current = false; distance = far; health_percent = 50} {is_current = false; distance = far - 1; health_percent = 50} |> _assert_eq false
+
+///> wgsl
+test decisions_on_gpu =
+    inl ~health = 23i32
+    inl t = evolved_against_cyclops ()
+    inl strike = engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = InReach})
+    inl approach = engagement_code (engages t {health = health; heal_ready = true; strike_ready = true; target = OutOfReach})
+    if strike = 1i32 && approach = 2i32 && heals t {health = health; heal_ready = true; strike_ready = true; target = InReach} then 0i32 else 1i32

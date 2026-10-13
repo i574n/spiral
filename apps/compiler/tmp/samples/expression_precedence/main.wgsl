@@ -22,9 +22,7 @@ fn sp_method0(p0: i32, p1: i32) -> bool {
         if (v6) {
             return true;
         } else {
-            var v7: bool = false;
-            v7 = (v1 == 0i);
-            return v7;
+            return (v1 == 0i);
         }
     } else {
         return false;

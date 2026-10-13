@@ -129,7 +129,7 @@ inl rec format_debug_real forall t. (x : t) : string =
                         global "import gleam/string"
                         inl x =
                             typecase t with
-                            | array_base _ => $'!x |> array.to_list' : t
+                            | array_base _ => $'!x |> spiral_array_to_list' : t
                             | _ => x
                         $'string.inspect(!x)' : string
                     ) : () -> string
@@ -712,6 +712,75 @@ let format_real forall t. (x : t) : string =
 /// ### (~#?)
 
 /// ### (++#?)
+
+/// ### show_real
+///- --real
+
+inl rec show_real forall t. (x : t) : string =
+    typecase t with
+    | string => x
+    | ~a * ~b => "(" ++#* show_items_real `t x ++#* ")"
+    | {} =>
+        inl _, fields =
+            real_core.record_fold
+                fun { state = separator, acc key value } =>
+                    "; ", acc ++#* separator ++#* symbol_to_string_real `(`key) ++#* " = " ++#* show_real `(`value) value
+                ("", "") x
+        "{ " ++#* fields ++#* " }"
+    | array_base ~el => show_elements_real `el x
+    | _ =>
+        if real_core.union_type_is `t
+        then show_union_real `t x
+        elif real_core.nominal_type_is `t
+        then show_nominal_real `t x
+        else format_real `t x
+and inl show_items_real forall t. (x : t) : string =
+    typecase t with
+    | () * ~b =>
+        inl _, b = x
+        show_items_real `b b
+    | ~a * ~b =>
+        inl a, b = x
+        show_real `a a ++#* ", " ++#* show_items_real `b b
+    | _ => show_real `t x
+and inl show_union_real forall t. (x : t) : string =
+    join
+        real_core.unbox x fun k, v =>
+            inl name = symbol_to_string_real `(`k)
+            typecase `v with
+            | () => name
+            | _ => name ++#* "(" ++#* show_items_real `(`v) v ++#* ")"
+    : string
+and inl show_nominal_real forall t. (x : t) : string =
+    inl y = real_core.nominal_strip x
+    if real_core.prototype_has `t show_as
+    then show_as `t x
+    elif real_core.prototype_has `t printable
+    then format_real `t x
+    elif show_structural_real `(`y) ()
+    then show_real `(`y) y
+    else format_debug_real `t x
+and inl show_structural_real forall u. () : bool =
+    typecase u with
+    | string => true
+    | ~a * ~b => true
+    | {} => true
+    | array_base _ => true
+    | _ => real_core.prim_type_is `u || real_core.union_type_is `u || real_core.nominal_type_is `u
+and inl show_elements_real forall el. (x : array_base el) : string =
+    join
+        inl n = !!!!ArrayLength(`u64, x)
+        inl i = mut `u64 (real_core.dyn 0u64)
+        inl s = mut `string (real_core.dyn "")
+        loopw.while (fun () => !!!!LT(!!!!LayoutIndex(i), n)) fun () =>
+            inl j = !!!!LayoutIndex(i)
+            inl e = show_real `el !!!!ArrayIndex(x, j)
+            s <- (if !!!!EQ(j, 0u64) then e else !!!!LayoutIndex(s) ++#* ", " ++#* e)
+            i <- !!!!Add(j, 1u64)
+        "[" ++#* !!!!LayoutIndex(s) ++#* "]"
+    : string
+
+/// ### show
 
 /// ### to_char_array
 

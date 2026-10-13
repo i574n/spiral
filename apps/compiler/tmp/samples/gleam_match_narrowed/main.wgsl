@@ -38,9 +38,7 @@ fn sp_measure_1(p0: SpiralUnion0, p1: i32) -> i32 {
     var v1: i32 = p1;
     if (v0.tag == 0u) {
         var v2: i32 = v0.c0f0;
-        var v3: i32 = 0i;
-        v3 = (v2 * 3i);
-        return v3;
+        return (v2 * 3i);
     } else {
         var v4: i32 = 0i;
         v4 = (v1 * v1);
@@ -49,18 +47,14 @@ fn sp_measure_1(p0: SpiralUnion0, p1: i32) -> i32 {
         if (v0.tag == 1u) {
             var v6: i32 = v0.c1f0;
             if (v5) {
-                var v7: i32 = 0i;
-                v7 = (v6 * v6);
-                return v7;
+                return (v6 * v6);
             } else {
                 return v6;
             }
         } else if (v0.tag == 2u) {
             var v9: i32 = v0.c2f0;
             if (v5) {
-                var v10: i32 = 0i;
-                v10 = (v9 * 2i);
-                return v10;
+                return (v9 * 2i);
             } else {
                 return v9;
             }
@@ -84,9 +78,7 @@ fn sp_measure_tri_2(p0: SpiralUnion0, p1: i32) -> i32 {
         var v4: i32 = 0i;
         v4 = (v1 + 2i);
         var v5: i32 = v0.c2f0;
-        var v6: i32 = 0i;
-        v6 = (v5 * v4);
-        return v6;
+        return (v5 * v4);
     }
 }
 fn spiral_main() -> i32 {
@@ -130,9 +122,7 @@ fn spiral_main() -> i32 {
     v18 = sp_pick_0(v0);
     var v19: i32 = 0i;
     v19 = sp_measure_tri_2(v18, v0);
-    var v20: i32 = 0i;
-    v20 = (v17 + v19);
-    return v20;
+    return (v17 + v19);
 }
 @compute @workgroup_size(1)
 fn main() {

@@ -142,7 +142,7 @@ defmodule Spiral.Kino.Notebook do
     tests |> Enum.filter(&(&1.name in names or &1.symbol in names)) |> MapSet.new(& &1.index)
   end
 
-  @report_counts ~w(discovered executed passed failed accepted skipped unsupported filtered not_run memo_hits)
+  @report_counts ~w(discovered executed passed failed accepted built skipped unsupported filtered not_run memo_hits)
 
   defp report(tests, selected, %{verdicts: verdicts, unavailable: unavailable, memo: memo} = ran) do
     targets = Map.get(ran, :targets, %{})
@@ -177,7 +177,8 @@ defmodule Spiral.Kino.Notebook do
 
     %{
       "discovered" => length(rows),
-      "executed" => count.("passed") + count.("failed") + count.("accepted"),
+      "executed" => count.("passed") + count.("failed") + count.("accepted") + count.("built"),
+      "built" => count.("built"),
       "accepted" => count.("accepted"),
       "passed" => count.("passed"),
       "failed" => count.("failed"),
@@ -202,6 +203,7 @@ defmodule Spiral.Kino.Notebook do
     cond do
       selected != nil and not MapSet.member?(selected, test.index) -> {"filtered", nil}
       verdict == :passed -> {"passed", nil}
+      verdict == :built -> {"built", nil}
       match?({:failed, _}, verdict) -> {"failed", first_line(elem(verdict, 1))}
       match?({:unsupported, _}, verdict) -> {"unsupported", first_line(elem(verdict, 1))}
       true -> {"not_run", nil}
@@ -495,6 +497,7 @@ defmodule Spiral.Kino.Notebook do
 
   defp remember(%{memo: {memo, key}}, {:ok, _outputs, _unavailable} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
   defp remember(%{memo: {memo, key}}, {:ok, _outputs} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
+  defp remember(%{memo: {memo, key}}, {:built, _outputs} = result, targets), do: Memo.store(memo, key, %{result: result, targets: targets})
   defp remember(_step, _result, _targets), do: :ok
 
   defp plan(wire, :tests), do: Spiral.Kino.Domain.plan_tests(wire)
@@ -576,6 +579,9 @@ defmodule Spiral.Kino.Notebook do
       case result do
         {:ok, outputs} ->
           acc |> put_in([:outputs, index], outputs) |> put_in([:verdicts, index], :passed)
+
+        {:built, outputs} ->
+          acc |> put_in([:outputs, index], outputs) |> put_in([:verdicts, index], :built)
 
         {:ok, outputs, []} ->
           acc |> put_in([:outputs, index], outputs) |> put_in([:verdicts, index], :passed)
@@ -711,12 +717,15 @@ defmodule Spiral.Kino.Notebook do
         |> Keyword.put(:builders, Builders.commands(step.cell_source))
         |> Keyword.put(:real, Map.get(step, :real, ""))
         |> Keyword.put(:agree, agreement?(step.cell_source))
+        |> Keyword.put(:test_cell, Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, step.cell_source))
+        |> Keyword.put(:build_only, build_only?(step.cell_source))
 
       ran = Spiral.Kino.run(step.program, opts)
 
-      case expectation(step.cell_source) do
-        nil -> verdict(ran)
-        expected -> expected_compile_error(expected, ran)
+      cond do
+        build_only?(step.cell_source) -> built(ran)
+        expected = expectation(step.cell_source) -> expected_compile_error(expected, ran)
+        true -> verdict(ran)
       end
     rescue
       error ->
@@ -728,6 +737,14 @@ defmodule Spiral.Kino.Notebook do
   defp agreement?(source) do
     Regex.match?(~r/^\/\/\/- [^\n]*--test\b/m, source) and not Regex.match?(~r/^\/\/\/- [^\n]*--no-agree\b/m, source)
   end
+
+  defp build_only?(source), do: Regex.match?(~r/^\/\/\/- [^\n]*--build-only\b/m, source)
+
+  defp built({:ok, %Result{exit_status: status}}) when status in [nil, 0] do
+    {:built, [stream("stdout", "built every target; not run (build_only)\n")]}
+  end
+
+  defp built(ran), do: verdict(ran)
 
   defp verdict(ran) do
     case ran do

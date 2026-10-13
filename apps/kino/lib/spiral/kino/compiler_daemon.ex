@@ -413,8 +413,10 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   defp prepare_compiler(state, mtime) do
     case state.compiler do
-      %{booted: booted} when mtime <= booted ->
-        {:ok, state}
+      %{booted: booted} = compiler when mtime <= booted ->
+        if compiler_current?(compiler, dll_stamp(Toolchain.compiler_dll(state.toolchain))),
+          do: {:ok, state},
+          else: start_compiler(stop_compiler(state))
 
       nil ->
         start_compiler(state)
@@ -426,7 +428,8 @@ defmodule Spiral.Kino.CompilerDaemon do
 
   defp start_compiler(state) do
     dotnet = Toolchain.dotnet(state.toolchain)
-    dll = Toolchain.compiler_dll(state.toolchain)
+    source_dll = Toolchain.compiler_dll(state.toolchain)
+    dll = shadow_dll(source_dll)
     pwsh = pwsh_exe()
     script = bridge_script()
     socket = socket_path()
@@ -495,7 +498,8 @@ defmodule Spiral.Kino.CompilerDaemon do
               bridge_port: bridge_port,
               os_pid: os_pid,
               token: token,
-              booted: System.os_time(:second)
+              booted: System.os_time(:second),
+              dll_stamp: dll_stamp(source_dll)
             }
 
             {:ok, %{state | compiler: compiler}}
@@ -509,8 +513,72 @@ defmodule Spiral.Kino.CompilerDaemon do
     end
   end
 
-  @cold_compile_ms 1_200_000
+  @doc false
+  def dll_stamp(dll) do
+    case File.stat(dll, time: :posix) do
+      {:ok, %{mtime: mtime, size: size}} -> {mtime, size}
+      _ -> nil
+    end
+  end
 
+  @doc false
+  def compiler_current?(compiler, source_stamp), do: Map.get(compiler, :dll_stamp) == source_stamp
+
+  defp shadow_root, do: Path.join(System.tmp_dir!(), "spiral-kino-compiler")
+
+  @doc false
+  def shadow_dll(dll, root \\ shadow_root()) do
+    case dll_stamp(dll) do
+      nil ->
+        dll
+
+      {mtime, size} ->
+        dir = Path.join(root, "#{mtime}-#{size}")
+        target = Path.join(dir, Path.basename(dll))
+
+        unless File.regular?(Path.join(dir, ".complete")) do
+          copy_shadow(dll, root, dir, {mtime, size})
+        end
+
+        if File.regular?(Path.join(dir, ".complete")) do
+          prune_shadows(root, dir)
+          target
+        else
+          dll
+        end
+    end
+  rescue
+    _ -> dll
+  end
+
+  defp copy_shadow(dll, root, dir, stamp) do
+    staging = dir <> ".#{System.unique_integer([:positive])}"
+    _ = File.mkdir_p(root)
+
+    with {:ok, _} <- File.cp_r(Path.dirname(dll), staging),
+         true <- dll_stamp(dll) == stamp,
+         :ok <- File.write(Path.join(staging, ".complete"), ""),
+         :ok <- File.rename(staging, dir) do
+      :ok
+    else
+      _ -> File.rm_rf(staging)
+    end
+  rescue
+    _ -> :error
+  end
+
+  defp prune_shadows(root, keep) do
+    for old <- Path.wildcard(Path.join(String.replace(root, "\\", "/"), "*")),
+        Path.basename(old) != Path.basename(keep),
+        Regex.match?(~r/^\d+-\d+$/, Path.basename(old)) do
+      trash = old <> ".trash#{System.unique_integer([:positive])}"
+      if File.rename(old, trash) == :ok, do: File.rm_rf(trash)
+    end
+
+    :ok
+  end
+
+  @cold_compile_ms 1_200_000
   defp session(state, req) do
     cold = not Map.get(state.compiler, :warm, false)
     if cold, do: Process.put(:spiral_kino_cold, true)

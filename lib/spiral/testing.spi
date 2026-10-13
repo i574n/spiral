@@ -22,8 +22,8 @@ inl rec __expect
     inl result = fn a b
     inl get_data () =
         if result
-        then #?{ expected = b }
-        else #?{ actual = a; expected = b }
+        then sm'.show { expected = b }
+        else sm'.show { actual = a; expected = b }
     inl get_raw_text () =
         inl data = get_data ()
         name ++# " " ++# get_data ()
@@ -169,8 +169,8 @@ inl rec _assert_fn fn list =
                     trace Verbose
                         fun () => name
                         fun () => { input }
-                    #?x
-                    |> _assert_eq #?expected'
+                    sm'.show x
+                    |> _assert_eq (sm'.show expected')
                     true
                 fun ex =>
                     trace Critical

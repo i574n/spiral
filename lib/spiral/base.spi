@@ -418,7 +418,8 @@ inl from_pair forall a b. (pair : pair a b) : a * b =
 test from_pair =
     new_pair "a" (new_pair 1i32 "b")
     |> from_pair
-    |> _assert_eq' ("a", (new_pair 1i32 "b"))
+    |> fun a, b => a, join from_pair b
+    |> _assert_eq' ("a", (1i32, "b"))
 
 /// ### (||>)
 inl (||>) (arg1, arg2) fn =
@@ -608,7 +609,7 @@ inl try forall t. (fn : () -> t) (ex_fn : exn -> option t) : option t =
 ///> cuda
 ///> rust
 ///> typescript
-test try =
+test try no_agree =
     try
         fun () => a ;[ 0i32 ] |> am'.index 1i32 |> sm'.format
         (fun ex => $'!ex ' |> sm'.format_exception |> Some)

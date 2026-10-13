@@ -7,9 +7,7 @@ struct SpiralIo {
 @group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;
 fn sp_is_answer_1(p0: i32) -> bool {
     var v0: i32 = p0;
-    var v1: bool = false;
-    v1 = (v0 == 42i);
-    return v1;
+    return (v0 == 42i);
 }
 fn sp_method0(p0: i32) -> bool {
     var v0: i32 = p0;

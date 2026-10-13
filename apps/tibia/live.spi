@@ -1,0 +1,15 @@
+inl reach_of_code (code : i32) : policy.reach =
+    open policy
+    if code = 1 then InReach elif code = 2 then OutOfReach else NoTarget
+
+inl observation_of (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : policy.observation =
+    {health = health; heal_ready = heal_ready; strike_ready = strike_ready; target = reach_of_code target_code}
+
+inl main () =
+    inl heals (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : bool =
+        policy.heals {heal_below = heal_below; strike_above = strike_above} (observation_of health heal_ready strike_ready target_code)
+    inl engagement (heal_below : i32) (strike_above : i32) (health : i32) (heal_ready : bool) (strike_ready : bool) (target_code : i32) : i32 =
+        policy.engagement_code (policy.engages {heal_below = heal_below; strike_above = strike_above} (observation_of health heal_ready strike_ready target_code))
+    inl prefers (a_current : bool) (a_distance : i32) (a_health : i32) (b_current : bool) (b_distance : i32) (b_health : i32) : bool =
+        policy.prefers {is_current = a_current; distance = a_distance; health_percent = a_health} {is_current = b_current; distance = b_distance; health_percent = b_health}
+    heals, engagement, prefers

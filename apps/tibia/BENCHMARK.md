@@ -30,7 +30,10 @@ Bot authors may submit configs; the best submitted config per scenario becomes t
 Every competitor, ours included, plays under the same conditions, so a win cannot come from speed or extra sight:
 
 - Same information: the client screen (15x11 tiles), even though the protocol sends 18x14; no server-side state.
-- Same action-rate cap, enforced by the harness at the protocol level, for bots and agents alike.
+- Same client: OTClient Redemption 4.1 for every competitor. The bots only run inside it, so our agent runs inside it too,
+  as Lua compiled from the same Spiral source as the simulator.
+- Same action-rate cap and the same 15x11 view, enforced by one harness layer inside OTClient that wraps every `g_game`
+  action and observation, for bots and agents alike.
 - Same character, equipment, supplies, scenario and seeds.
 - Same server build and tick timing; no client-side speed hacks.
 
@@ -81,6 +84,13 @@ the laptop becomes the bottleneck.
 
 From TritCritNet's control panel: an agent is promoted only when it beats the best baseline, the random policy stays at
 its level (no luck), and the result reproduces on independent seed windows, all under a declared compute budget.
+
+Tuning rules, from the first simulator runs (2026-10-13, `apps/tibia/hunt_sim.spi`):
+- The agent and every baseline are tuned on the same training seeds and scored on held-out seeds.
+- Use at least 20 training seeds. An evolution search on 6 seeds overfit: it scored 31 on held-out seeds where a
+  cavebot scored 34.
+- Never compare against hand-picked baseline settings. A hand-picked cavebot "lost" 34 to 90; the same cavebot,
+  tuned on the training seeds, tied at 90.
 
 ## Publication
 

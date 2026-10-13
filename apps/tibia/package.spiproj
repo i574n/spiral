@@ -6,4 +6,7 @@ modules:
     rng
     cooldowns
     damage
+    combat
     creatures
+    policy
+    live

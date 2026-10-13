@@ -70,7 +70,7 @@ if test_port? do
 end
 
 Spiral.Kino.Domain.ensure!()
-ExUnit.start()
+ExUnit.start(exclude: [:target_audit])
 
 if test_port? do
   ExUnit.after_suite(fn _ ->

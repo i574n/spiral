@@ -46,9 +46,7 @@ fn spiral_main() -> i32 {
     v18 = (v16 + v17);
     var v19: i32 = 0i;
     v19 = (v9 - 32i);
-    var v20: i32 = 0i;
-    v20 = (v18 + v19);
-    return v20;
+    return (v18 + v19);
 }
 @compute @workgroup_size(1)
 fn main() {

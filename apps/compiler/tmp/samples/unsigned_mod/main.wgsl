@@ -11,9 +11,7 @@ fn sp_method0(p0: u32) -> bool {
     v1 = (v0 + 5u);
     var v2: u32 = 0u;
     v2 = (v1 % 4u);
-    var v3: bool = false;
-    v3 = (v2 == 0u);
-    return v3;
+    return (v2 == 0u);
 }
 fn spiral_main() -> i32 {
     var v0: u32 = 0u;

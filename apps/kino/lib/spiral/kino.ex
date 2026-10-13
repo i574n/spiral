@@ -211,32 +211,105 @@ defmodule Spiral.Kino do
 
   defp disagreement([_one], _prepared, _opts), do: nil
 
-  defp disagreement([first | rest], prepared, opts) do
+  defp disagreement(chunks, prepared, opts) do
     if opts[:agree] != true or prepared.print_code do
       nil
     else
-      case Enum.find(rest, &(shown(&1) != shown(first))) do
-        nil -> nil
-        other -> {first, other}
+      case Enum.reject(chunks, &(shown(&1) == "")) do
+        [first | rest] ->
+          case Enum.find(rest, &(shown(&1) != shown(first))) do
+            nil -> nil
+            other -> {first, other}
+          end
+
+        [] ->
+          nil
       end
     end
   end
 
+  @number ~r/(?<![\w.])[+-]?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?(?:un|uy|us|ul|UL|L|l|y|s|u|n|f|m)?(?![\w])/
+  @union_name "U[SsHh]\\d+_?([A-Z]\\w*)"
+
   @doc false
   def shown(chunk) do
-    lines =
-      chunk.stdout
-      |> String.replace("\r\n", "\n")
-      |> String.split("\n")
-      |> Enum.map(&String.trim_trailing/1)
-      |> Enum.join("\n")
-      |> String.trim()
-
-    if chunk.value in [nil, ""], do: lines, else: lines <> "\n=> " <> String.trim(chunk.value)
+    chunk.stdout
+    |> String.replace("\r\n", "\n")
+    |> String.split("\n")
+    |> Enum.map(&(&1 |> String.replace(~r/\e\[[0-9;]*m/, "") |> String.trim() |> unwrap_string()))
+    |> Enum.reject(&(&1 == "" or trace_line?(&1)))
+    |> drop_trailing_status()
+    |> Enum.map(&(&1 |> String.replace("\\\"", "") |> String.replace("\"", "")))
+    |> Enum.map(&(&1 |> canonical_unions() |> canonical_collections()))
+    |> Enum.map(&Regex.replace(@number, &1, fn number -> same_number(number) end))
+    |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
+    |> Enum.join("\n")
   end
 
+  @doc false
+  def canonical_unions(line) do
+    line
+    |> then(&Regex.replace(~r/(?<=\(|, |,)v\d+=/, &1, ""))
+    |> then(&Regex.replace(~r/(?<=\(|, |,)'([^']*)'/, &1, "\\1"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> "\\(\\)"), &1, "\\1"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " \\("), &1, "\\1("))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name <> " ([^\\s(),{}]+)"), &1, "\\1(\\2)"))
+    |> then(&Regex.replace(Regex.compile!("\\b" <> @union_name), &1, "\\1"))
+    |> then(&Regex.replace(~r/\b([A-Z]\w*)\(\)/, &1, "\\1"))
+  end
+
+  @doc false
+  def canonical_collections(line) do
+    line
+    |> then(&Regex.replace(~r/\bstruct \(|#\(/, &1, "("))
+    |> then(&Regex.replace(~r/\[\|\s*\|\]/, &1, "[]"))
+    |> then(&Regex.replace(~r/\[\|(.*?)\|\]/, &1, fn _, inner -> "[" <> semicolon_items(inner) <> "]" end))
+    |> then(&Regex.replace(~r/\[([^\[\],();|]*)\]/, &1, fn _, inner -> "[" <> numpy_items(inner) <> "]" end))
+  end
+
+  defp semicolon_items(inner), do: inner |> String.split(";") |> Enum.map_join(", ", &String.trim/1)
+
+  defp numpy_items(inner) do
+    if String.contains?(inner, ",") do
+      inner |> String.split(",") |> Enum.map_join(", ", &String.trim/1)
+    else
+      inner |> String.split(~r/\s+/, trim: true) |> Enum.join(", ")
+    end
+  end
+
+  defp trace_line?(line) do
+    Regex.match?(~r/^\d{2}:\d{2}:\d{2} \d+[a-zA-Z] /, line) or String.starts_with?(line, "at ") or
+      Regex.match?(~r/\.fsx?\(\d+,\d+\): warning FS\d+:/, line)
+  end
+
+  defp unwrap_string(line) do
+    case Regex.run(~r/\AString\("(.*)"\)\z/, line) do
+      [_, inner] -> inner |> String.replace("\\\"", "\"") |> String.replace("\\\\", "\\")
+      _ -> line
+    end
+  end
+
+  defp drop_trailing_status(lines) do
+    if List.last(lines) == "0", do: Enum.drop(lines, -1), else: lines
+  end
+
+  defp same_number(number) do
+    case Float.parse(String.replace(number, ~r/[a-zA-Z]+\z/, "")) do
+      {value, _} -> :erlang.float_to_binary(value, [{:decimals, 6}, :compact])
+      :error -> number
+    end
+  end
+  @doc false
+  def target_output(dir, %{tool: :gleam} = builder) do
+    source_dir = Path.join([dir, "gleam", "src"])
+    File.mkdir_p!(source_dir)
+    Path.join(source_dir, "main" <> Builders.ext(builder))
+  end
+
+  def target_output(dir, builder), do: Path.join(dir, "main" <> Builders.ext(builder))
+
   defp run_builder(builder, dir, spi, exe, prepared, opts, timeout, deadline) do
-    output = Path.join(dir, "main" <> Builders.ext(builder))
+    output = target_output(dir, builder)
     backend = Builders.backend(builder)
     host = Builders.host_rust?(builder)
     File.write!(spi, prepared.code)
@@ -245,40 +318,63 @@ defmodule Spiral.Kino do
            timed(:compile_ms, fn ->
              compile(dir, spi, output, backend, host, builder, prepared, opts, timeout, deadline)
            end) do
-      if host do
-        in_slot(fn ->
-          run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
-        end)
-      else
-        File.write!(
-          output,
-          if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text)
-        )
+      cond do
+        opts[:build_only] == true ->
+          in_slot(fn -> build_target(builder, host, text, show_value, output, exe, opts, timeout, deadline) end)
 
-        case in_slot(fn ->
-               timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
-             end) do
-          {:ok, %{stdout: stdout} = ran} ->
-            {displays, stdout} = Display.extract(stdout)
+        host ->
+          in_slot(fn ->
+            run_host_rust(text, show_value, output, exe, prepared, opts, timeout, deadline)
+          end)
 
-            {:ok,
-             chunk(
-               builder,
-               shown_stdout(prepared, text, stdout),
-               Map.get(ran, :value),
-               0,
-               displays
-             )}
+        true ->
+          File.write!(
+            output,
+            if(backend == "Python + Cuda", do: Cell.patch_python(text), else: text)
+          )
 
-          other ->
-            other
-        end
+          case in_slot(fn ->
+                 timed(:target_ms, fn -> Targets.run(builder, output, opts, timeout, deadline) end)
+               end) do
+            {:ok, %{stdout: stdout} = ran} ->
+              {displays, stdout} = Display.extract(stdout)
+
+              {:ok,
+               chunk(
+                 builder,
+                 shown_stdout(prepared, text, stdout),
+                 Map.get(ran, :value),
+                 0,
+                 displays
+               )}
+
+            other ->
+              other
+          end
       end
     end
   end
 
-  defp in_slot(fun) do
-    {result, _waited} = Spiral.Kino.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
+  defp build_target(builder, true, text, show_value, rs, exe, opts, timeout, deadline) do
+    rust = Cell.patch_rust(text, show_value)
+
+    with :ok <- reject_unpatched(rust),
+         :ok <- File.write(rs, rust),
+         :ok <- timed(:rustc_ms, fn -> rustc(rs, exe, opts, timeout, deadline) end) do
+      {:ok, chunk(builder, "built", nil, 0, [])}
+    end
+  end
+
+  defp build_target(builder, false, text, _show_value, output, _exe, opts, timeout, deadline) do
+    File.write!(output, text)
+
+    case timed(:target_ms, fn -> Targets.build(builder, output, opts, timeout, deadline) end) do
+      {:ok, _} -> {:ok, chunk(builder, "built", nil, 0, [])}
+      error -> error
+    end
+  end
+
+  defp in_slot(fun) do    {result, _waited} = Spiral.Kino.Slots.run(fun, on_wait: &add_phase(:slot_wait_ms, &1))
     result
   end
 
@@ -560,7 +656,7 @@ defmodule Spiral.Kino do
         head = code |> binary_part(0, at) |> String.split("\n") |> length()
         last = code |> String.trim_trailing() |> String.split("\n") |> length()
 
-        case Regex.scan(~r/main\.spi:(\d+):(\d+): (Unification failure\.)?/, output) do
+        case Regex.scan(~r/main\.spi:(\d+):(\d+): (?:E[A-Z]+\d+: )?(Unification failure\.)?/, output) do
           [[_, line, column, "Unification failure."]] ->
             line = String.to_integer(line)
 

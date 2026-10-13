@@ -1,0 +1,18 @@
+nominal alive = ()
+nominal dead = ()
+
+union vitality phase =
+    | Living :: i32 * i32 -> vitality alive
+    | Fallen :: i32 -> vitality dead
+
+union struck =
+    | Survived : vitality alive
+    | Slain : vitality dead
+
+inl main () : i32 =
+    inl ~h = 60i32
+    inl s = if h > 0 then Survived (Living (h, 100)) else Slain (Fallen 100)
+    match s with
+    | Survived (Living (a, _)) => if a = 60i32 then 0i32 else 1i32
+    | Slain _ => 2i32
+

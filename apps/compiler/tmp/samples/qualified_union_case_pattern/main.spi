@@ -1,0 +1,4 @@
+inl main () : i32 =
+    match vitality.Slain 5i32 with
+    | vitality.Survived x => x
+    | vitality.Slain x => !!!!Add(x, 1i32)

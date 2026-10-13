@@ -125,7 +125,9 @@ own compiler process, and no daemon is started. Passing any of `:compiler_dll`, 
 bridge log every request and response to `<socket>.trace` (off by default).
 After each compile the daemon checks its .NET compiler server: past the memory cap (working set) or the compile
 count it stops it, logs `compiler recycled after ...`, and the next compile starts a fresh one (a cold compile).
-The daemon itself, its port and its queue stay up. Its code stamp is the md5 of the daemon module's code, so every
+The daemon itself, its port and its queue stay up. The compiler server runs from a shadow copy of the compiler's directory
+(`%TEMP%/spiral-kino-compiler/<mtime>-<size>`), so rebuilding the compiler never fails on a locked DLL; before each compile
+the daemon compares the DLL's mtime and size with the copy it runs and restarts the server on a new build. Its code stamp is the md5 of the daemon module's code, so every
 build of the same code (this app, an app that depends on it) shares one daemon instead of replacing it.
 
 Editor highlighting is `config :spiral_kino, editor_language: "javascript"` (the default).
@@ -231,14 +233,31 @@ passes only when compiling the definitions before it plus its body fails with a 
 when given, the code. A program that compiles, a different diagnostic, or a failure after compiling fails the test; a
 matching message without any `E...` code fails too and says so. In a notebook the cell carries
 `///- --test --fails EJP0040 "Unification failure"`; the report's `mode` is `fails`. The type checker's diagnostics
-(`Unification failure`, `Unbound variable`) carry no code yet, so write those tests without one.
+carry `ETY` codes (`ETY0009` Unification failure, `ETY0005` Unbound variable, ...), so
+`test rejects_mixed_units fails ETY0009 "Unification failure" =` pins both.
+
+### Build-only tests
+
+`test x build_only =` (a cell's `///- --build-only`) compiles and builds every listed target but never runs it: the Rust
+host is built with `rustc`, Gleam targets with `gleam build`, `c` with the C compiler, the others are compiled only. Such a
+test reports `built` (its own count, inside `executed` but not `passed`); a compile or build failure fails it. It is for
+tests that cannot run headless yet (the Lustre UI tests, which need a DOM).
 
 ### Agreeing targets
 
-A test with several `///>` targets passes only when every target passes and prints the same as the first one (stdout
-with line ends and trailing spaces normalized, plus the value): otherwise it fails with `targets disagree: lua printed
+A test with several `///>` targets passes only when every target passes and prints the same as the first one that
+printed anything. Before comparing, each target's stdout is normalized: blank lines and outer spaces dropped, the Lua
+runner's `String("...")` wrapping undone, double quotes dropped (string quoting differs per backend), ANSI colors, Gleam compile warnings, F# `main.fsx(L,C): warning FSnnnn:` lines, trace lines (`hh:mm:ss
+Nx module / ...`) and `at ...` stack frames dropped, union constructors written one way (`US0_Some(v0=1)`,
+`US1_Some 1`, `Us0Some(1)` all become `Some(1)`; `US0_None()`, `US0_None` and `None()` become `None`), arrays and tuples written one way (`[|0; 2|]`, numpy's
+`[0 2]` and `[0, 2]` all become `[0, 2]`; `[||]` becomes `[]`; `struct (a, b)` becomes `(a, b)`), F# numeric suffixes (`3un`) and
+whitespace runs folded, a last line `0` (the main status some runners print) dropped, and every
+number written with at most 6 decimals (`+1.570796`, `1.5707963267949` and `1.570796` agree). A target that printed
+nothing is not compared. Otherwise it fails with `targets disagree: lua printed
 "1", gleam printed "1.0"` and the differing target's row says `disagrees`. `test name no_agree =` (a cell's
 `///- --no-agree`) keeps only the pass rule. Cells that are not tests, and `print_code` tests, are not compared.
+The lib's `_assert_*` helpers print through `sm'.show`, which already writes records, tuples, unions and arrays the same
+way on every backend, so for them the union and collection rules only matter for values printed natively (`#?`, `#?*`).
 
 ### Accepting actual values
 
@@ -248,6 +267,16 @@ with line ends and trailing spaces normalized, plus the value): otherwise it fai
 `executed` and `accepted`), and the run passes when nothing else failed. A test is left alone, with `accept_refused` saying
 why, when its block has no or several matching literals or the actual value is not a plain literal. Without the flag a
 mismatch fails and the file is not touched.
+
+### Target audit
+
+`mix test --only target_audit` (left out of the default run; it compiles and runs for real, so run it inside the heavy
+gate) gives every runner a deliberately failing test and a passing twin: the Rust host, `c`, `cpp`, `delphi`, `fsharp`,
+`python`, `cuda`, `typescript`, `lua`, `gleam`, `gleam -t javascript`, `zig` and `wgsl`. The failing one must fail with
+its assertion text and the twin pass, or both be unsupported (a missing tool); a failing test that passes fails the audit.
+Erlang Gleam targets are built and run by Kino itself: `gleam build` in the cell's own `gleam/` package with the CLI's
+dependencies, then the built `main:main()` under `erl` (so Gleam's own warnings never mix into the program output); `-t
+javascript` test cells the same way, run with `bun`; other `-t javascript` cells only build through the CLI.
 
 ### Result memo
 

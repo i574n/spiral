@@ -96,12 +96,14 @@ try {
 
     $env:SPIRAL_JSON, $spiralJson = "1", $env:SPIRAL_JSON
     try {
-        New-Item -ItemType Directory -Force "$checkDir/rust", "$checkDir/cuda" | Out-Null
+        New-Item -ItemType Directory -Force "$checkDir/rust", "$checkDir/cuda", "$checkDir/lua" | Out-Null
+        "print('spiral-check-lua', 6 * 7)`n" | Set-Content "$checkDir/lua/main.lua" -NoNewline
         "fn main() { println!(`"spiral-check-rust {}`", 6 * 7); }`n" | Set-Content "$checkDir/rust/main.rs" -NoNewline
         "print('spiral-check-cuda', 6 * 7)`n" | Set-Content "$checkDir/cuda/main.py" -NoNewline
         foreach ($case in @(
                 @{ name = "rust"; args = @("rust", "--rs-path", (GetFullPath "$checkDir/rust/main.rs")); expect = "spiral-check-rust 42" },
-                @{ name = "cuda"; args = @("cuda", "--py-path", (GetFullPath "$checkDir/cuda/main.py")); expect = "spiral-check-cuda 42" })) {
+                @{ name = "cuda"; args = @("cuda", "--py-path", (GetFullPath "$checkDir/cuda/main.py")); expect = "spiral-check-cuda 42" },
+                @{ name = "lua"; args = @("lua", "--lua-path", (GetFullPath "$checkDir/lua/main.lua")); expect = "spiral-check-lua`t42" })) {
             $json = & $newExe @($case.args) 2> "$checkDir/$($case.name).err" | ForEach-Object { "$_" }
             $caseExit = $LASTEXITCODE
             $output = try {

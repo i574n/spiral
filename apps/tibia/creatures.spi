@@ -9,16 +9,27 @@ union arena_creature =
     | Goblin
     | Cyclops
 
-type creature_stats = {experience : i32; max_health : i32; speed : i32; target_distance : i32; melee_max : i32; combat_spells : i32}
+type creature_stats = {experience : i32; max_health : i32; speed : i32; target_distance : i32; melee_max : i32; combat_spells : i32; armor : i32; defense : i32; run_health : i32; step_ms : i32}
 
 inl stats_of (kind : arena_creature) : creature_stats =
     match kind with
-    | CaveRat => {experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10; combat_spells = 0}
-    | Troll => {experience = 20; max_health = 50; speed = 63; target_distance = 1; melee_max = 15; combat_spells = 0}
-    | Wolf => {experience = 18; max_health = 25; speed = 82; target_distance = 1; melee_max = 20; combat_spells = 0}
-    | Skeleton => {experience = 35; max_health = 50; speed = 77; target_distance = 1; melee_max = 20; combat_spells = 1}
-    | Goblin => {experience = 25; max_health = 50; speed = 60; target_distance = 1; melee_max = 10; combat_spells = 1}
-    | Cyclops => {experience = 150; max_health = 260; speed = 95; target_distance = 1; melee_max = 105; combat_spells = 0}
+    | CaveRat => {experience = 10; max_health = 30; speed = 75; target_distance = 1; melee_max = 10; combat_spells = 0; armor = 5; defense = 5; run_health = 3; step_ms = 800}
+    | Troll => {experience = 20; max_health = 50; speed = 63; target_distance = 1; melee_max = 15; combat_spells = 0; armor = 10; defense = 10; run_health = 15; step_ms = 950}
+    | Wolf => {experience = 18; max_health = 25; speed = 82; target_distance = 1; melee_max = 20; combat_spells = 0; armor = 5; defense = 5; run_health = 8; step_ms = 750}
+    | Skeleton => {experience = 35; max_health = 50; speed = 77; target_distance = 1; melee_max = 20; combat_spells = 1; armor = 10; defense = 10; run_health = 0; step_ms = 800}
+    | Goblin => {experience = 25; max_health = 50; speed = 60; target_distance = 1; melee_max = 10; combat_spells = 1; armor = 10; defense = 10; run_health = 15; step_ms = 1000}
+    | Cyclops => {experience = 150; max_health = 260; speed = 95; target_distance = 1; melee_max = 105; combat_spells = 0; armor = 20; defense = 20; run_health = 0; step_ms = 650}
+
+inl server_beat_ms () : i32 = 50
+inl grass_ground_speed () : i32 = 150
+
+inl step_ms_from_canary_formula (speed : i32) (ground_speed : i32) : i32 =
+    inl rounded : i32 = conv (857.36 * log (conv speed + 261.29 : f64) - 4795.01 + 0.5)
+    inl effective : i32 = if rounded < 1 then 1 else rounded
+    inl duration = 1000 * ground_speed / effective
+    (duration + server_beat_ms () - 1) / server_beat_ms () * server_beat_ms ()
+
+inl player_step_ms (level : i32) : i32 = step_ms_from_canary_formula (110 + level - 1) (grass_ground_speed ())
 
 inl experience_per_health (kind : arena_creature) : i32 =
     inl s = stats_of kind
@@ -51,6 +62,25 @@ test experience_per_health_ranks_skeleton_above_troll =
     inl ~marker = 0i32
     experience_per_health Skeleton + marker |> _assert_eq 700i32
     experience_per_health Troll + marker |> _assert_eq 400i32
+
+///> rust
+///> c
+test armor_defense_and_flee_match_data_canary_2026_10_13 =
+    inl ~marker = 0i32
+    (stats_of Troll).armor + marker |> _assert_eq 10i32
+    (stats_of Cyclops).defense + marker |> _assert_eq 20i32
+    (stats_of Troll).run_health + marker |> _assert_eq 15i32
+    (stats_of Skeleton).run_health + marker |> _assert_eq 0i32
+    (stats_of Wolf).armor + marker |> _assert_eq 5i32
+
+///> rust
+///> c
+test step_ms_matches_canary_step_formula_on_grass =
+    inl check kind = (stats_of kind).step_ms = step_ms_from_canary_formula (stats_of kind).speed (grass_ground_speed ())
+    (check CaveRat && check Troll && check Wolf && check Skeleton && check Goblin && check Cyclops) |> _assert_eq true
+    inl ~level = 8i32
+    player_step_ms level |> _assert_eq 550i32
+    player_step_ms (level + 22) |> _assert_eq 450i32
 
 ///> wgsl
 test stats_on_gpu =

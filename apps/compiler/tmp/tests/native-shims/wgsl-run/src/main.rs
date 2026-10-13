@@ -53,18 +53,19 @@ async fn execute(source: &str) -> Result<i32, Fail> {
         label: Some("spiral.wgsl"),
         source: wgpu::ShaderSource::Wgsl(source.into()),
     });
+    let storage_entry = |binding| wgpu::BindGroupLayoutEntry {
+        binding,
+        visibility: wgpu::ShaderStages::COMPUTE,
+        ty: wgpu::BindingType::Buffer {
+            ty: wgpu::BufferBindingType::Storage { read_only: false },
+            has_dynamic_offset: false,
+            min_binding_size: None,
+        },
+        count: None,
+    };
     let bind_layout = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("spiral-io"),
-        entries: &[wgpu::BindGroupLayoutEntry {
-            binding: 0,
-            visibility: wgpu::ShaderStages::COMPUTE,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Storage { read_only: false },
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            count: None,
-        }],
+        entries: &[storage_entry(0), storage_entry(1)],
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("spiral"),
@@ -97,13 +98,21 @@ async fn execute(source: &str) -> Result<i32, Fail> {
         mapped_at_creation: false,
     });
     queue.write_buffer(&storage, 0, &vec![0u8; size as usize]);
+    let heap_megabytes = std::env::var("SPIRAL_WGSL_HEAP_MB").ok().and_then(|text| text.parse::<u64>().ok()).unwrap_or(64);
+    let heap_bytes = (heap_megabytes * 1024 * 1024).min(device.limits().max_storage_buffer_binding_size as u64);
+    let heap = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("spiral-heap"),
+        size: heap_bytes,
+        usage: wgpu::BufferUsages::STORAGE,
+        mapped_at_creation: false,
+    });
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("spiral-io"),
         layout: &bind_layout,
-        entries: &[wgpu::BindGroupEntry {
-            binding: 0,
-            resource: storage.as_entire_binding(),
-        }],
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: storage.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: heap.as_entire_binding() },
+        ],
     });
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());

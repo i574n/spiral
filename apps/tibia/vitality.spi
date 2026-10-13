@@ -66,3 +66,13 @@ test strike_then_heal =
     match spawn 100 |> strike damage with
     | Survived wounded => wounded |> heal 25 |> health |> _assert_eq 65i32
     | Slain _ => _assert_eq 0i32 1i32
+
+test healing_the_fallen_does_not_compile fails "Unification failure" =
+    heal 10 (Fallen 100)
+
+///> wgsl
+test strike_then_heal_on_gpu =
+    inl ~damage = 60i32
+    match spawn 100 |> strike damage with
+    | Survived wounded => if (wounded |> heal 25 |> health) = 65i32 then 0i32 else 1i32
+    | Slain _ => 2i32

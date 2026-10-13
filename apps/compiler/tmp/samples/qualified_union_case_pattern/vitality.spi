@@ -1,0 +1,3 @@
+union struck =
+    | Survived : i32
+    | Slain : i32

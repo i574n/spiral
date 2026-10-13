@@ -168,6 +168,31 @@ defmodule Spiral.Kino.TargetsTest do
     assert {:error, %ProcessError{exit_status: 3, reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(3), [wgsl_run: runner, naga: nil], 30_000, deadline())
     assert {:error, %ProcessError{reason: :tool_missing}} = Targets.run(%{tool: :wgsl}, shader.(0), [wgsl_run: missing, naga: nil], 30_000, deadline())
   end
+  test "an erlang gleam target is run by Kino in its own package with the CLI's dependencies" do
+    [builder] = Spiral.Kino.Builders.commands("///> gleam -d gleam_community_maths=\\\">=2.0.0\\\"")
+    assert {:gleam, "x/gleam/src/main.gleam", [%{name: "gleam_community_maths"}]} = Spiral.Kino.Builders.dispatch(builder, "x/gleam/src/main.gleam")
+    manifest = Targets.gleam_manifest("x/gleam/src/main.gleam", builder.deps)
+    assert manifest =~ ~s(name = "main"\ntarget = "erlang")
+    assert manifest =~ ~s(gleam_stdlib = "0.57.0")
+    assert manifest =~ ~s(gleam_community_maths = ">=2.0.0")
+    [js] = Spiral.Kino.Builders.commands("///> gleam -t javascript")
+    assert {:spiral, _} = Spiral.Kino.Builders.dispatch(js, "main.gleam")
+  end
+  test "gleam compile warnings are not program output" do
+    output = """
+    warning: Unused function argument
+       ┌─ C:\\x\\gleam\\src\\main.gleam:88:17
+       │
+    88 │ pub fn closure0(capt: Nil) -> fn(Int) -> Us0 {
+       │                 ^^^^ This argument is never used
+
+    Hint: You can ignore it with an underscore: `_capt`.
+
+    __assert_eq { expected = 2 }
+    """
+
+    assert Targets.strip_gleam_warnings(output) == "__assert_eq { expected = 2 }\n"
+  end
   test "a spiral rust builder waits for the spiral rust lock" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("rust-lock")
     lock = Path.join(dir, "rust.lock")

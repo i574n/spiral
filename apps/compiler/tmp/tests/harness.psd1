@@ -42,6 +42,7 @@
     )
 
     Timeouts = @{
+        'samples/runaway_inline_match_recursion' = 120
         'samples/mega_brzozowski_derivatives/runtime_bench' = 180
         'samples/mega_brzozowski_derivatives/proof_suite' = 180
         'samples/mega_brzozowski_derivatives/bench_derivative' = 180
@@ -1141,6 +1142,8 @@
         'samples/ts_tuple_mixed'
         'samples/wgsl_nullary_union'
         'samples/wgsl_payload_union'
+        'samples/wgsl_gadt_payload_union'
+        'samples/wgsl_record_loop'
         'samples/gleam_match_single_case'
         'samples/gleam_match_narrowed'
         'samples/wgsl_array_scalar'
@@ -1148,6 +1151,7 @@
         'samples/fixed_array_runtime_index'
         'samples/fixed_array_runtime_update'
         'samples/array_union'
+        'samples/wgsl_array_tuple'
     )
     Calyx = @(
         'samples/backend_smoke'

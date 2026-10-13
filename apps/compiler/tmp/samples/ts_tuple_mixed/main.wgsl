@@ -24,9 +24,7 @@ fn sp_method1(p0: bool, p1: f32, p2: i32) -> i32 {
         var v3: bool = false;
         v3 = (v1 >= 3.5f);
         if (v3) {
-            var v4: i32 = 0i;
-            v4 = (v2 - 7i);
-            return v4;
+            return (v2 - 7i);
         } else {
             return 1i;
         }

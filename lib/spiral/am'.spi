@@ -525,9 +525,7 @@ inl skip_while forall dim el. (fn : el -> bool) (a : a dim el) : a dim el =
 /// ### to_list_base'
 inl to_list_base' forall t. (items : array_base t) : listm'.list' t =
     backend_switch {
-        Gleam = fun () =>
-            global "import gary/array"
-            $'!items |> array.to_list' : listm'.list' t
+        Gleam = fun () => $'!items |> spiral_array_to_list' : listm'.list' t
         Lua = fun () => items |> convert.to : listm'.list' t
         Fsharp = fun () => $'!items |> Array.toList' : listm'.list' t
         Python = fun () => items |> convert.to : listm'.list' t

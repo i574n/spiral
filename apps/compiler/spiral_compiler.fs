@@ -6146,6 +6146,39 @@ module spiral_compiler =
                 ReducerHudSnapshotRejectedObserverOnly
 
 #endif
+#if !SPIRAL_CORE_HOPAC
+    /// ## IdentityAdapter
+    type TermNameId = string
+    type TypeNameId = string
+    type ConstraintNameId = string
+    type NominalNameId = string
+    type PrototypeNameId = string
+    type ModuleMemberNameId = string
+    type RecordFieldNameId = string
+    module TermNameIdOps =
+        let create (value : string) : TermNameId = value
+        let text (value : TermNameId) : string = value
+    module TypeNameIdOps =
+        let create (value : string) : TypeNameId = value
+        let text (value : TypeNameId) : string = value
+    module ConstraintNameIdOps =
+        let create (value : string) : ConstraintNameId = value
+        let text (value : ConstraintNameId) : string = value
+    module NominalNameIdOps =
+        let create (value : string) : NominalNameId = value
+        let text (value : NominalNameId) : string = value
+    module PrototypeNameIdOps =
+        let create (value : string) : PrototypeNameId = value
+        let text (value : PrototypeNameId) : string = value
+    module ModuleMemberNameIdOps =
+        let create (value : string) : ModuleMemberNameId = value
+        let text (value : ModuleMemberNameId) : string = value
+    module RecordFieldNameIdOps =
+        let create (value : string) : RecordFieldNameId = value
+        let text (value : RecordFieldNameId) : string = value
+    let termMapToModuleMembers (source : Map<TermNameId,'a>) : Map<ModuleMemberNameId,'a> = source
+    let typeMapToModuleMembers (source : Map<TypeNameId,'a>) : Map<ModuleMemberNameId,'a> = source
+#endif
 #if SPIRAL_CORE_HOPAC
     /// ## HopacProgress
     module Progress88 =
@@ -7267,124 +7300,56 @@ module spiral_compiler =
             | x -> failwith $"Invalid default float.\nGot: %s{x}\nExpected one of: f32, f64"
         }
 
-#if SPIRAL_CORE_HOPAC
     /// ## Utils
     open System.Collections.Generic
     open System.Runtime.CompilerServices
-    // open Common
     open Lib
-    
 
     /// ### list_try_zip
     let list_try_zip a b = try Some (List.zip a b) with _ -> None
-    
 
     /// ### get_default
     let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
         let mutable v = Unchecked.defaultof<^V>
         if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
         else def()
-    
-    
-
 
     /// ### memoize'
     let memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
         match memo_dict.TryGetValue k with
         | true, v -> v
         | false, _ -> let v = f k in memo_dict.Add(k,v); v
-    
 
     /// ### memoize
-    let memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
-        match memo_dict.TryGetValue k with
-        | true, v -> v
-        | false, _ ->
-            let v = f k
-            if memo_dict.TryAdd(k,v) then v
-            else memo_dict.[k]
-    
+    let inline memoize (memo_dict: ^D) (f: ^K -> ^V) (k: ^K) : ^V =
+        let mutable v = Unchecked.defaultof<^V>
+        if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
+        else
+            let created = f k
+            if (^D : (member TryAdd : ^K * ^V -> bool) (memo_dict, k, created)) then created
+            else get_default memo_dict k (fun () -> created)
 
     /// ### lines
     let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
-    
 
     /// ### remove
     let remove (dict : Dictionary<_,_>) x on_succ on_fail =
         let mutable q = Unchecked.defaultof<_>
         if dict.Remove(x, &q) then on_succ q else on_fail ()
-    
 
     /// ### file_uri
     let file_uri (x : string) =
         let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
         trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
         result
-    
-
-#else
-    /// ## Utils
-    open System.Collections.Generic
-    open System.Runtime.CompilerServices
-    // open Common
-#if !INTERACTIVE
-    open Lib
-#endif
-
-    /// ### list_try_zip
-    let list_try_zip a b = try Some (List.zip a b) with _ -> None
-
-    /// ### get_default
-    let inline get_default (memo_dict: Dictionary<_,_>) k def =
-        match memo_dict.TryGetValue k with
-        | true, v -> v
-        | false, _ -> def()
-
-    /// ### memoize'
-    let inline memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
-        match memo_dict.TryGetValue k with
-        | true, v -> v
-        | false, _ -> let v = f k in memo_dict.Add(k,v); v
-
-    /// ### memoize
-    let inline memoize (memo_dict: Dictionary<_,_>) f k =
-        match memo_dict.TryGetValue k with
-        | true, v -> v
-        | false, _ -> let v = f k in memo_dict.Add(k,v); v
-
-    /// ### lines
-    let lines (str : string) = str.Split([|"\r\n";"\r";"\n"|],System.StringSplitOptions.None)
-
-    /// ### remove
-    let inline remove (dict : Dictionary<_,_>) x on_succ on_fail =
-        let mutable q = Unchecked.defaultof<_>
-        if dict.Remove(x, &q) then on_succ q else on_fail ()
-
-    /// ### file_uri
-    let file_uri (x : string) =
-        let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
-        trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
-        result
-
-    //open Hopac
-    //open Hopac.Infixes
-    //open Hopac.Extensions
-    //open Hopac.Stream
-
-    //let print_ch = Ch<string>()
-    //let pr x = Hopac.run (Ch.send print_ch (x.ToString()))
 
     module Utils =
-        let memoize x =
-            memoize x
+        let inline memoize memo_dict f k = memoize memo_dict f k
+        let inline get_default memo_dict k def = get_default memo_dict k def
+        let list_try_zip a b = list_try_zip a b
+        let memoize' memo_dict f k = memoize' memo_dict f k
+        let file_uri x = file_uri x
 
-        let get_default x =
-            get_default x
-
-        let list_try_zip x =
-            list_try_zip x
-
-#endif
 #if SPIRAL_CORE_HOPAC
     open Hopac
     //open Hopac.Infixes
@@ -42319,52 +42284,6 @@ module spiral_compiler =
             else fallbackReason
 
 
-    module Utils =
-        open System
-        open System.Collections.Generic
-        open System.Collections.Concurrent
-        open System.Runtime.CompilerServices
-    
-
-        /// ### list_try_zip
-        let list_try_zip a b =
-            try Some (List.zip a b) with _ -> None
-    
-
-        /// ### get_default
-        let inline get_default (memo_dict: ^D) (k: ^K) (def: unit -> ^V) : ^V =
-            let mutable v = Unchecked.defaultof<^V>
-            if (^D : (member TryGetValue : ^K * byref<^V> -> bool) (memo_dict, k, &v)) then v
-            else def()
-    
-
-        /// ### memoize'
-        let memoize' (memo_dict: ConditionalWeakTable<_,_>) f k =
-            match memo_dict.TryGetValue k with
-            | true, v -> v
-            | false, _ ->
-                let v = f k
-                memo_dict.Add(k,v)
-                v
-    
-
-        /// ### memoize
-        let memoize (memo_dict: System.Collections.Concurrent.ConcurrentDictionary<_,_>) f k =
-            match memo_dict.TryGetValue k with
-            | true, v -> v
-            | false, _ ->
-                let v = f k
-                if memo_dict.TryAdd(k,v) then v
-                else memo_dict.[k]
-    
-
-        /// ### file_uri
-        let file_uri (x : string) =
-            let result = x |> SpiralFileSystem.standardize_path |> SpiralFileSystem.new_file_uri
-            trace Verbose (fun () -> $"Utils.file_uri / x: {x} / result: {result}") _locals
-            result
-    
-
 #endif
     /// ## ParserCombinators
 
@@ -45815,6 +45734,12 @@ module spiral_compiler =
             parsedAstSeedZero
             |> DiagJson.parsedAstStructuralSeedIncrement DiagJson.ParsedAstSeedImport
 
+
+    let observeParsedStatement blockKey (statement : TopStatement) =
+        statement |> parsedAstSeedOfTopStatement |> DiagJson.noteParsedAstStructuralSeed blockKey |> ignore
+#else
+/// ## BlockParsingHopac
+    let observeParsedStatement (_ : 'blockKey) (_ : TopStatement) = ()
 #endif
     /// ## HopacExtensions
     open Hopac
@@ -48982,6 +48907,29 @@ module spiral_compiler =
     
 
 #endif
+#if !SPIRAL_CORE_HOPAC
+    module HopacExtensions =
+        let start (job : Hopac.Job<unit>) : unit = Hopac.queueIgnore job
+        let queueAsTask (job : Hopac.Job<'a>) = Hopac.queueAsTask job
+        let sleepMs (ms : int) : Hopac.Job<unit> = Hopac.timeOutMillis ms :> Hopac.Job<unit>
+        let server (job : #Hopac.Job<'a>) : unit = Hopac.start (Hopac.Job.Ignore (job :> Hopac.Job<'a>))
+        module A =
+            let map f xs = Array.map f xs
+            let mapi f xs = Array.mapi f xs
+            let map2 f xs ys = Array.map2 f xs ys
+            let iter f xs = Array.iter f xs
+            let iteri f xs = Array.iteri f xs
+            let choose f xs = Array.choose f xs
+            let collect f xs = Array.collect f xs
+        module S =
+            let map f xs = Array.map f xs
+            let mapi f xs = Array.mapi f xs
+            let map2 f xs ys = Array.map2 f xs ys
+            let iter f xs = Array.iter f xs
+            let iteri f xs = Array.iteri f xs
+            let choose f xs = Array.choose f xs
+            let collect f xs = Array.collect f xs
+#endif
 #if SPIRAL_CORE_HOPAC
     open HopacExtensions
     open Hopac
@@ -49267,6 +49215,126 @@ module spiral_compiler =
             | (_,x) :: xs -> x.block >>** fun x -> loop (PersistentVector.append s x.semantic_tokens) xs
             | [] -> Promise.Now.withValue s
         loop PersistentVector.empty l.blocks
+
+    /// ## InlineDepth
+
+    /// ### InlineDepth
+    type InlineDepth = InlineDepth of int
+
+    /// ### InlineStackPolicy
+    type InlineStackPolicy =
+        | StopBeforeStackExhaustion
+        | StackManagedByBigStack
+
+    /// ### InlineRecursionStop
+    type InlineRecursionStop =
+        | DepthLimitReached
+        | StackNearlyExhausted
+
+    /// ### InlineDepthOps
+    module InlineDepthOps =
+        let root = InlineDepth 0
+        let limit = 10000
+        let private stop_message reason depth =
+            let cause =
+                match reason with
+                | DepthLimitReached -> $"the limit is {limit}"
+                | StackNearlyExhausted -> "the evaluator's stack is nearly exhausted"
+            $"EJP0011: inline recursion stopped after {depth} nested applications ({cause}), so it does not end during partial evaluation; recur through a join point or a runtime loop when the recursion depends on runtime values."
+        let ensure_stack policy (InlineDepth depth) =
+            match policy with
+            | StopBeforeStackExhaustion when not (System.Runtime.CompilerServices.RuntimeHelpers.TryEnsureSufficientExecutionStack()) -> Error (stop_message StackNearlyExhausted depth)
+            | StopBeforeStackExhaustion | StackManagedByBigStack -> Ok ()
+        let enter policy (InlineDepth depth as current) =
+            if depth >= limit then Error (stop_message DepthLimitReached depth)
+            else ensure_stack policy current |> Result.map (fun () -> InlineDepth (depth + 1))
+
+    /// ## TypeErrorCodes
+
+    /// ### type_error_codes
+    let type_error_codes =
+        Map [
+            "KindError", "ETY0001"
+            "KindErrorInConstraint", "ETY0002"
+            "ExpectedSymbolAsRecordKey", "ETY0003"
+            "ExpectedSymbolAsModuleKey", "ETY0004"
+            "UnboundVariable", "ETY0005"
+            "UnboundModule", "ETY0006"
+            "ModuleIndexFailedInOpen", "ETY0007"
+            "ModuleIndexWouldShadowLocalVars", "ETY0008"
+            "TermError", "ETY0009"
+            "TypeVarScopeError", "ETY0010"
+            "RecursiveMetavarsNotAllowed", "ETY0011"
+            "RecursiveTypevarsNotAllowed", "ETY0012"
+            "ForallVarConstraintError", "ETY0013"
+            "MetavarsNotAllowedInRecordWith", "ETY0014"
+            "ExpectedRecord", "ETY0015"
+            "ExpectedExistentialInTerm", "ETY0016"
+            "ExpectedExistentialInPattern", "ETY0017"
+            "UnexpectedNumberOfArgumentsInExistsPattern", "ETY0018"
+            "UnexpectedNumberOfArgumentsInExistsBody", "ETY0019"
+            "ExistsShouldntHaveMetavars", "ETY0020"
+            "ExpectedRecordInsideALayout", "ETY0021"
+            "UnionsCannotBeApplied", "ETY0022"
+            "ExpectedNominalInApply", "ETY0023"
+            "MalformedNominal", "ETY0024"
+            "LayoutSetMustBeAnnotated", "ETY0025"
+            "ExpectedMutableLayout", "ETY0026"
+            "ExpectedRecordAsResultOfIndex", "ETY0027"
+            "RecordIndexFailed", "ETY0028"
+            "ModuleIndexFailed", "ETY0029"
+            "ModuleIndexAmbiguous", "ETY0030"
+            "ExpectedModule", "ETY0031"
+            "ExpectedSymbol", "ETY0032"
+            "ExpectedSymbolInRecordWith", "ETY0033"
+            "RealFunctionInTopDown", "ETY0034"
+            "ModuleMustBeImmediatelyApplied", "ETY0035"
+            "MissingRecordFieldsInPattern", "ETY0036"
+            "CasePatternNotFoundForType", "ETY0037"
+            "CasePatternNotFound", "ETY0038"
+            "CannotInferCasePatternFromTermInEnv", "ETY0039"
+            "NominalInPatternUnbox", "ETY0040"
+            "TypeInEnvIsNotNominal", "ETY0041"
+            "UnionInPatternNominal", "ETY0042"
+            "ConstraintError", "ETY0043"
+            "PrototypeConstraintCannotPropagateToMetavar", "ETY0044"
+            "PrototypeConstraintCannotPropagateToVar", "ETY0045"
+            "ExpectedAnnotation", "ETY0046"
+            "ExpectedSinglePattern", "ETY0047"
+            "RecursiveAnnotationHasMetavars", "ETY0048"
+            "ValueRestriction", "ETY0049"
+            "DuplicateRecInlName", "ETY0050"
+            "DuplicateKeyInRecUnion", "ETY0051"
+            "ExpectedConstraintInsteadOfModule", "ETY0052"
+            "InstanceNotFound", "ETY0053"
+            "ExpectedPrototypeConstraint", "ETY0054"
+            "ExpectedPrototypeInsteadOfModule", "ETY0055"
+            "ExpectedHigherOrder", "ETY0056"
+            "InstanceArityError", "ETY0057"
+            "InstanceCoreVarsShouldMatchTheArityDifference", "ETY0058"
+            "InstanceKindError", "ETY0059"
+            "KindNotAllowedInInstanceForall", "ETY0060"
+            "InstanceVarShouldNotMatchAnyOfPrototypes", "ETY0061"
+            "MissingBody", "ETY0062"
+            "MacroIsMissingAnnotation", "ETY0063"
+            "ArrayIsMissingAnnotation", "ETY0064"
+            "ExistsIsMissingAnnotation", "ETY0065"
+            "ShadowedForall", "ETY0066"
+            "ShadowedExists", "ETY0067"
+            "UnionTypesMustHaveTheSameLayout", "ETY0068"
+            "OrphanInstance", "ETY0069"
+            "ShadowedInstance", "ETY0070"
+            "UnusedTypeVariable", "ETY0071"
+            "CompilerError", "ETY0072"
+            "IncorrectGADTConstructorType", "ETY0073"
+            "IncorrectRecursiveNominal", "ETY0074"
+        ]
+
+    /// ### type_error_report
+    let type_error_report (message : string) (error : obj) =
+        let case, _ = Microsoft.FSharp.Reflection.FSharpValue.GetUnionFields(error, error.GetType())
+        let code = type_error_codes |> Map.tryFind case.Name |> Option.defaultValue "ETY0000"
+        $"{code}: {message}"
 
 #if SPIRAL_CORE_HOPAC
     /// ## Infer
@@ -50274,6 +50342,7 @@ module spiral_compiler =
         let generalized_statements = Dictionary(HashIdentity.Reference)
         let type_apply_args = Dictionary(HashIdentity.Reference)
         let module_type_apply_args = Dictionary(HashIdentity.Reference)
+        let qualified_union_case_patterns = Dictionary<Pattern, VSCRange * VarString>(HashIdentity.Reference)
         let annotations = Dictionary<obj,_>(HashIdentity.Reference)
         let exists_vars = Dictionary<obj,_>(HashIdentity.Reference)
         let gadt_typecases = Dictionary<obj,_>(HashIdentity.Reference)
@@ -50410,7 +50479,10 @@ module spiral_compiler =
                     | PatAnd(r,a,b) -> PatAnd(r,f a,f b)
                     | PatDefaultValue(r,a) as x -> PatFilledDefaultValue(r,a,annot r x)
                     | PatWhen(r,a,b) -> PatWhen(r,f a,term rec_term b)
-                    | PatNominal(r,a,b,c) -> PatNominal(r,a,b,f c)
+                    | PatNominal(r,a,b,c) as nominal_pattern ->
+                        match qualified_union_case_patterns.TryGetValue nominal_pattern with
+                        | true, (case_range, case) -> PatUnbox(case_range, case, f c)
+                        | _ -> PatNominal(r,a,b,f c)
                     | PatArray(r,a) -> PatArray(r,List.map f a)
                 rec_term, f x'
     
@@ -50604,6 +50676,18 @@ module spiral_compiler =
                     | [] -> link.Value <- Some b
                     | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyVar (a,_), TyVar (b,_) when a = b -> ()
+                | TyVar (va,la), TyVar (vb,lb) when gadt_links.IsSome && va.scope <> vb.scope ->
+                    let ta, tb = visit_t a'', visit_t b''
+                    let inner_var, inner_link, outer_ty, outer_var, outer_link, inner_ty =
+                        if va.scope > vb.scope then va, la, tb, vb, lb, ta else vb, lb, ta, va, la, tb
+                    validate_tvar_unification inner_var outer_ty
+                    unify_kind inner_var.kind (tt top_env outer_ty)
+                    match constraint_process inner_var.constraints outer_ty with
+                    | [] -> inner_link.Value <- Some outer_ty; gadt_links.Value.Add(inner_link)
+                    | _ ->
+                        match constraint_process outer_var.constraints inner_ty with
+                        | [] -> outer_link.Value <- Some inner_ty; gadt_links.Value.Add(outer_link)
+                        | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyVar (a,link), b | b, TyVar (a,link) when gadt_links.IsSome ->
                     validate_tvar_unification a b
                     unify_kind a.kind (tt top_env b)
@@ -51289,28 +51373,54 @@ module spiral_compiler =
                             | ValueSome i -> assume i
                             | ValueNone -> errors.Add(r,CannotInferCasePatternFromTermInEnv x); f (fresh_var scope) a
                         | None -> errors.Add(r,CasePatternNotFound (TermNameIdOps.create name)); f (fresh_var scope) a
-                | PatNominal(_,(r,name),l,a) ->
-                    match v_ty env name with
-                    | Some x ->
-                        let rec loop r x = function
-                            | (r,name) :: l ->
-                                match x with
-                                | TyModule x ->
-                                    match Map.tryFind (ModuleMemberNameIdOps.create name) x with
-                                    | Some x -> loop r x l
-                                    | None -> errors.Add(r,ModuleIndexFailed (ModuleMemberNameIdOps.create name)); f (fresh_var scope) a
-                                | _ ->
-                                    errors.Add(r,ExpectedModule x); f (fresh_var scope) a
-                            | [] ->
-                                match ho_index x with
+                | PatNominal(_,(r,name),l,a) as nominal_pattern ->
+                    let qualified_union_case =
+                        match v_term env name, List.rev l with
+                        | Some (_, TyModule members), (case_range, case) :: path_rev ->
+                            let rec walk members = function
+                                | (_, key) :: rest ->
+                                    match Map.tryFind (ModuleMemberNameIdOps.create key) members with
+                                    | Some (TyModule members) -> walk members rest
+                                    | _ -> None
+                                | [] -> Some members
+                            walk members (List.rev path_rev)
+                            |> Option.bind (fun members -> Map.tryFind (ModuleMemberNameIdOps.create case) members)
+                            |> Option.bind (fun constructor ->
+                                match ho_fun constructor with
                                 | ValueSome i ->
-                                    let n = top_env.nominals.[i]
-                                    match n.body with
-                                    | TyUnion _ -> errors.Add(r,UnionInPatternNominal i); f (fresh_var scope) a
-                                    | _ -> let x,m = ho_make i n.vars in unify r s x; f (subst m n.body) a
-                                | ValueNone -> errors.Add(r,TypeInEnvIsNotNominal x); f (fresh_var scope) a
-                        loop r x l
-                    | _ -> errors.Add(r,UnboundVariable (UnboundTypeName (TypeNameIdOps.create name))); f (fresh_var scope) a
+                                    match top_env.nominals.[i].body with
+                                    | TyUnion _ -> Some (case_range, case, i)
+                                    | _ -> None
+                                | ValueNone -> None)
+                        | _ -> None
+                    match qualified_union_case with
+                    | Some (case_range, case, i) ->
+                        let x,_ = ho_make i top_env.nominals.[i].vars
+                        unify r s x
+                        qualified_union_case_patterns.[nominal_pattern] <- (case_range, case)
+                        loop s (PatUnbox(case_range, case, a))
+                    | None ->
+                        match v_ty env name with
+                        | Some x ->
+                            let rec loop r x = function
+                                | (r,name) :: l ->
+                                    match x with
+                                    | TyModule x ->
+                                        match Map.tryFind (ModuleMemberNameIdOps.create name) x with
+                                        | Some x -> loop r x l
+                                        | None -> errors.Add(r,ModuleIndexFailed (ModuleMemberNameIdOps.create name)); f (fresh_var scope) a
+                                    | _ ->
+                                        errors.Add(r,ExpectedModule x); f (fresh_var scope) a
+                                | [] ->
+                                    match ho_index x with
+                                    | ValueSome i ->
+                                        let n = top_env.nominals.[i]
+                                        match n.body with
+                                        | TyUnion _ -> errors.Add(r,UnionInPatternNominal i); f (fresh_var scope) a
+                                        | _ -> let x,m = ho_make i n.vars in unify r s x; f (subst m n.body) a
+                                    | ValueNone -> errors.Add(r,TypeInEnvIsNotNominal x); f (fresh_var scope) a
+                            loop r x l
+                        | _ -> errors.Add(r,UnboundVariable (UnboundTypeName (TypeNameIdOps.create name))); f (fresh_var scope) a
                 | PatArray(r,a) ->
                     let v = fresh_var scope
                     unify r s (TyArray v)
@@ -51549,7 +51659,7 @@ module spiral_compiler =
             offset = bundle_range expr |> fst |> fun x -> x.line
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
             hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> HopacExtensions.A.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
-            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
+            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, type_error_report (show_type_error top_env b) (box b))
             }
     
 
@@ -52527,6 +52637,7 @@ module spiral_compiler =
         let generalized_statements = Dictionary(HashIdentity.Reference)
         let type_apply_args = Dictionary(HashIdentity.Reference)
         let module_type_apply_args = Dictionary(HashIdentity.Reference)
+        let qualified_union_case_patterns = Dictionary<Pattern, VSCRange * VarString>(HashIdentity.Reference)
         let annotations = Dictionary<obj,_>(HashIdentity.Reference)
         let exists_vars = Dictionary<obj,_>(HashIdentity.Reference)
         let gadt_typecases = Dictionary<obj,_>(HashIdentity.Reference)
@@ -52662,7 +52773,10 @@ module spiral_compiler =
                     | PatAnd(r,a,b) -> PatAnd(r,f a,f b)
                     | PatDefaultValue(r,a) as x -> PatFilledDefaultValue(r,a,annot r x)
                     | PatWhen(r,a,b) -> PatWhen(r,f a,term rec_term b)
-                    | PatNominal(r,a,b,c) -> PatNominal(r,a,b,f c)
+                    | PatNominal(r,a,b,c) as nominal_pattern ->
+                        match qualified_union_case_patterns.TryGetValue nominal_pattern with
+                        | true, (case_range, case) -> PatUnbox(case_range, case, f c)
+                        | _ -> PatNominal(r,a,b,f c)
                     | PatArray(r,a) -> PatArray(r,List.map f a)
                 rec_term, f x'
 
@@ -52843,6 +52957,18 @@ module spiral_compiler =
                     | [] -> link.Value <- Some b
                     | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyVar (a,_), TyVar (b,_) when a = b -> ()
+                | TyVar (va,la), TyVar (vb,lb) when gadt_links.IsSome && va.scope <> vb.scope ->
+                    let ta, tb = visit_t a'', visit_t b''
+                    let inner_var, inner_link, outer_ty, outer_var, outer_link, inner_ty =
+                        if va.scope > vb.scope then va, la, tb, vb, lb, ta else vb, lb, ta, va, la, tb
+                    validate_tvar_unification inner_var outer_ty
+                    unify_kind inner_var.kind (tt top_env outer_ty)
+                    match constraint_process inner_var.constraints outer_ty with
+                    | [] -> inner_link.Value <- Some outer_ty; gadt_links.Value.Add(inner_link)
+                    | _ ->
+                        match constraint_process outer_var.constraints inner_ty with
+                        | [] -> outer_link.Value <- Some inner_ty; gadt_links.Value.Add(outer_link)
+                        | constraint_errors -> raise (InferTypeErrorException (List.map (fun x -> r,x) constraint_errors))
                 | TyVar (a,link), b | b, TyVar (a,link) when gadt_links.IsSome ->
                     validate_tvar_unification a b
                     unify_kind a.kind (tt top_env b)
@@ -53505,28 +53631,54 @@ module spiral_compiler =
                             | ValueSome i -> assume i
                             | ValueNone -> errors.Add(r,CannotInferCasePatternFromTermInEnv x); f (fresh_var scope) a
                         | None -> errors.Add(r,CasePatternNotFound name); f (fresh_var scope) a
-                | PatNominal(_,(r,name),l,a) ->
-                    match v_ty env name with
-                    | Some x ->
-                        let rec loop r x = function
-                            | (r,name) :: l ->
-                                match x with
-                                | TyModule x ->
-                                    match Map.tryFind name x with
-                                    | Some x -> loop r x l
-                                    | None -> errors.Add(r,ModuleIndexFailed name); f (fresh_var scope) a
-                                | _ ->
-                                    errors.Add(r,ExpectedModule x); f (fresh_var scope) a
-                            | [] ->
-                                match ho_index x with
+                | PatNominal(_,(r,name),l,a) as nominal_pattern ->
+                    let qualified_union_case =
+                        match v_term env name, List.rev l with
+                        | Some (_, TyModule members), (case_range, case) :: path_rev ->
+                            let rec walk members = function
+                                | (_, key) :: rest ->
+                                    match Map.tryFind (ModuleMemberNameIdOps.create key) members with
+                                    | Some (TyModule members) -> walk members rest
+                                    | _ -> None
+                                | [] -> Some members
+                            walk members (List.rev path_rev)
+                            |> Option.bind (fun members -> Map.tryFind (ModuleMemberNameIdOps.create case) members)
+                            |> Option.bind (fun constructor ->
+                                match ho_fun constructor with
                                 | ValueSome i ->
-                                    let n = top_env.nominals.[i]
-                                    match n.body with
-                                    | TyUnion _ -> errors.Add(r,UnionInPatternNominal i); f (fresh_var scope) a
-                                    | _ -> let x,m = ho_make i n.vars in unify r s x; f (subst m n.body) a
-                                | ValueNone -> errors.Add(r,TypeInEnvIsNotNominal x); f (fresh_var scope) a
-                        loop r x l
-                    | _ -> errors.Add(r,UnboundVariable name); f (fresh_var scope) a
+                                    match top_env.nominals.[i].body with
+                                    | TyUnion _ -> Some (case_range, case, i)
+                                    | _ -> None
+                                | ValueNone -> None)
+                        | _ -> None
+                    match qualified_union_case with
+                    | Some (case_range, case, i) ->
+                        let x,_ = ho_make i top_env.nominals.[i].vars
+                        unify r s x
+                        qualified_union_case_patterns.[nominal_pattern] <- (case_range, case)
+                        loop s (PatUnbox(case_range, case, a))
+                    | None ->
+                        match v_ty env name with
+                        | Some x ->
+                            let rec loop r x = function
+                                | (r,name) :: l ->
+                                    match x with
+                                    | TyModule x ->
+                                        match Map.tryFind name x with
+                                        | Some x -> loop r x l
+                                        | None -> errors.Add(r,ModuleIndexFailed name); f (fresh_var scope) a
+                                    | _ ->
+                                        errors.Add(r,ExpectedModule x); f (fresh_var scope) a
+                                | [] ->
+                                    match ho_index x with
+                                    | ValueSome i ->
+                                        let n = top_env.nominals.[i]
+                                        match n.body with
+                                        | TyUnion _ -> errors.Add(r,UnionInPatternNominal i); f (fresh_var scope) a
+                                        | _ -> let x,m = ho_make i n.vars in unify r s x; f (subst m n.body) a
+                                    | ValueNone -> errors.Add(r,TypeInEnvIsNotNominal x); f (fresh_var scope) a
+                            loop r x l
+                        | _ -> errors.Add(r,UnboundVariable name); f (fresh_var scope) a
                 | PatArray(r,a) ->
                     let v = fresh_var scope
                     unify r s (TyArray v)
@@ -53753,7 +53905,7 @@ module spiral_compiler =
             offset = bundle_range expr |> fst |> fun x -> x.line
             // ws: SPIRAL_HOVERS=0 (set by the CLI host, which never serves hovers) skips rendering every hover type to text.
             hovers = if System.Environment.GetEnvironmentVariable "SPIRAL_HOVERS" = "0" then [||] else hover_types.ToArray() |> Array.map (fun ((a:VSCRange),(b,(com : string))) -> a, let b = show_t top_env b in if com <> "" then sprintf "%s\n---\n%s" b com else b)
-            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, show_type_error top_env b)
+            errors = errors |> Seq.toList |> List.map (fun (a,b) -> a, type_error_report (show_type_error top_env b) (box b))
             }
 
     /// ### base_types
@@ -55189,45 +55341,46 @@ module spiral_compiler =
                     let r = p r
                     let at_tag_i = at_tag i
                     let nom = TNominal at_tag_i
-                    let bodyt = eval_type' env l (fun env -> TJoinPoint(p (range_of_texpr body), ty env body))
+                    let bodyUnlowered = List.foldBack eval_type l (fun env -> TJoinPoint(p (range_of_texpr body), ty env body)) env
+                    let bodyt = process_ty bodyUnlowered
                     let term =
                         match body with
                         | RawTUnion(_,l,_,_) ->
                             Map.fold (fun term (_,name) (is_gadt,_) ->
                                 if is_gadt then
                                     let rec loop_outer = function
-                                        | TArrow'(_,_,t) -> loop_outer t // GADTs have the foralls in their cases' type, not here.
-                                        | TJoinPoint'(r,_,TUnion(_,(l,_))) ->
+                                        | TArrow(_,t) -> loop_outer t // GADTs have the foralls in their cases' type, not here.
+                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
                                             let rec loop vars = function
-                                                | TForall'(r,scope,id,t) -> EForall(r,id,loop (id :: vars) t)
+                                                | TForall(r,id,t) -> EForall(r,id,loop (id :: vars) t)
                                                 | TFun(t,t',_) -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
                                                 | t' -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             loop [] t
                                         | _ -> failwith "error[EJPX002]: internal compiler error\n  |\n  = expected: join point with GADT union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                                    Map.add (TermNameIdOps.create name) (loop_outer bodyt |> process_term) term
+                                    Map.add (TermNameIdOps.create name) (loop_outer bodyUnlowered |> process_term) term
                                 else
                                     let rec loop vars = function
-                                        | TArrow'(scope,id,t) -> EForall(r,id,loop (id :: vars) t)
-                                        | TJoinPoint'(r,_,TUnion(_,(l,_))) ->
+                                        | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
+                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
                                             match t with
                                             | TB _ -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             | _ -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
                                         | _ -> failwith "error[EJPX001]: internal compiler error\n  |\n  = expected: join point with union\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                                    Map.add (TermNameIdOps.create name) (loop [] bodyt |> process_term) term
+                                    Map.add (TermNameIdOps.create name) (loop [] bodyUnlowered |> process_term) term
                                 ) term l
                         | _ ->
                             let rec loop vars = function
-                                | TArrow'(scope,id,t) -> EForall(r,id,loop (id :: vars) t)
-                                | TJoinPoint'(r,_,t) ->
+                                | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
+                                | TJoinPoint(r,t) ->
                                     let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
                                     match t with
                                     | TB _ -> ENominal(r,EB r,t')
                                     | _ -> EFun(r,0,ENominal(r,EV 0,t'),Some(TFun(t,t',FT_Vanilla)))
                                 | _ -> failwith "error[EJPX000]: internal compiler error\n  |\n  = expected: join point\n  help: this is a compiler invariant failure; capture the stack trace and the surrounding IR/AST snippet to reproduce.\n"
-                            Map.add (TermNameIdOps.create name) (loop [] bodyt |> process_term) term
+                            Map.add (TermNameIdOps.create name) (loop [] bodyUnlowered |> process_term) term
                     term,Map.add (TypeNameIdOps.create name) nom ty', Map.add at_tag_i {|body=bodyt; name=name|} nominals, i+1
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
             match x with
@@ -56575,45 +56728,46 @@ module spiral_compiler =
                     let r = p r
                     let at_tag_i = at_tag i
                     let nom = TNominal at_tag_i
-                    let bodyt = eval_type' env l (fun env -> TJoinPoint(p (range_of_texpr body), ty env body))
+                    let bodyUnlowered = List.foldBack eval_type l (fun env -> TJoinPoint(p (range_of_texpr body), ty env body)) env
+                    let bodyt = process_ty bodyUnlowered
                     let term =
                         match body with
                         | RawTUnion(_,l,_,_) ->
                             Map.fold (fun term (_,name) (is_gadt,_) ->
                                 if is_gadt then
                                     let rec loop_outer = function
-                                        | TArrow'(_,_,t) -> loop_outer t // GADTs have the foralls in their cases' type, not here.
-                                        | TJoinPoint'(r,_,TUnion(_,(l,_))) ->
+                                        | TArrow(_,t) -> loop_outer t // GADTs have the foralls in their cases' type, not here.
+                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
                                             let rec loop vars = function
-                                                | TForall'(r,scope,id,t) -> EForall(r,id,loop (id :: vars) t)
+                                                | TForall(r,id,t) -> EForall(r,id,loop (id :: vars) t)
                                                 | TFun(t,t',_) -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
                                                 | t' -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             loop [] t
                                         | _ -> failwith "Compiler error: Expected a join point with a gadt union."
-                                    Map.add name (loop_outer bodyt |> process_term) term
+                                    Map.add name (loop_outer bodyUnlowered |> process_term) term
                                 else
                                     let rec loop vars = function
-                                        | TArrow'(scope,id,t) -> EForall(r,id,loop (id :: vars) t)
-                                        | TJoinPoint'(r,_,TUnion(_,(l,_))) ->
+                                        | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
+                                        | TJoinPoint(r,TUnion(_,(l,_))) ->
                                             let t = l |> Map.pick (fun (_, k) v -> if k = name then Some v else None) |> fst
                                             let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
                                             match t with
                                             | TB _ -> ENominal(r,EPair(r,ESymbol(r,name),EB r),t')
                                             | _ -> EFun(r,0,ENominal(r,EPair(r,ESymbol(r,name),EV 0),t'),Some(TFun(t,t',FT_Vanilla)))
                                         | _ -> failwith "Compiler error: Expected a join point with an union."
-                                    Map.add name (loop [] bodyt |> process_term) term
+                                    Map.add name (loop [] bodyUnlowered |> process_term) term
                                 ) term l
                         | _ ->
                             let rec loop vars = function
-                                | TArrow'(scope,id,t) -> EForall(r,id,loop (id :: vars) t)
-                                | TJoinPoint'(r,_,t) ->
+                                | TArrow(id,t) -> EForall(r,id,loop (id :: vars) t)
+                                | TJoinPoint(r,t) ->
                                     let t' = List.foldBack (fun id nom -> TApply(r,nom,TV id)) vars nom
                                     match t with
                                     | TB _ -> ENominal(r,EB r,t')
                                     | _ -> EFun(r,0,ENominal(r,EV 0,t'),Some(TFun(t,t',FT_Vanilla)))
                                 | _ -> failwith "Compiler error: Expected a join point."
-                            Map.add name (loop [] bodyt |> process_term) term
+                            Map.add name (loop [] bodyUnlowered |> process_term) term
                     term,Map.add name nom ty', Map.add at_tag_i (nominal_prepass bodyt name) nominals, i+1
                     ) (Map.empty, Map.empty, Map.empty, top_env.nominals_next_tag) l
             match x with
@@ -85595,6 +85749,7 @@ module spiral_compiler =
     /// ### LangEnv
     type LangEnv = {
         trace : Trace
+        inline_depth : InlineDepth
         traceBudget : TraceBudgetState
         /// Dynamic `if` branches enclosing this evaluation. In the environment, not on the thread: a declared
         /// application suspends and resumes as a new work unit, so the native stack restarts every few levels.
@@ -149756,6 +149911,7 @@ module spiral_compiler =
             trace = s.trace
             traceBudget = s.traceBudget
             dynamicIfDepth = s.dynamicIfDepth
+            inline_depth = s.inline_depth
             recursion = s.recursion
             bigStack = s.bigStack
             evalNodePath = s.evalNodePath
@@ -152199,6 +152355,7 @@ module spiral_compiler =
                                     trace = r :: s.trace
                                     traceBudget = s.traceBudget
                                     dynamicIfDepth = s.dynamicIfDepth
+                                    inline_depth = s.inline_depth
                                     recursion = s.recursion
                                     bigStack = s.bigStack
                                     evalNodePath = s.evalNodePath
@@ -153750,6 +153907,7 @@ module spiral_compiler =
                                 trace = r :: s.trace
                                 traceBudget = s.traceBudget
                                 dynamicIfDepth = s.dynamicIfDepth
+                                inline_depth = s.inline_depth
                                 recursion = s.recursion
                                 bigStack = s.bigStack
                                 evalNodePath = s.evalNodePath
@@ -153824,6 +153982,7 @@ module spiral_compiler =
                                             trace = r :: s.trace
                                             traceBudget = s.traceBudget
                                             dynamicIfDepth = s.dynamicIfDepth
+                                            inline_depth = s.inline_depth
                                             recursion = s.recursion
                                             bigStack = s.bigStack
                                             evalNodePath = s.evalNodePath
@@ -153909,6 +154068,7 @@ module spiral_compiler =
                                     trace = r :: s.trace
                                     traceBudget = s.traceBudget
                                     dynamicIfDepth = s.dynamicIfDepth
+                                    inline_depth = s.inline_depth
                                     recursion = s.recursion
                                     bigStack = s.bigStack
                                     evalNodePath = s.evalNodePath
@@ -154783,7 +154943,8 @@ module spiral_compiler =
                         | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record. Its keys: %s." b (a |> Map.toList |> List.map (fst >> snd) |> String.concat ", ")
                     | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
                         jpRecordCurrentWorkPhase JpOperationPhaseApplyFunctionBody
-                        let s : LangEnv = { s with env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
+                        let inline_depth = match InlineDepthOps.enter StackManagedByBigStack s.inline_depth with Ok depth -> depth | Error message -> raise_type_error s message
+                        let s : LangEnv = { s with inline_depth = inline_depth; env_global_type = gl_ty; env_global_term = gl_term; env_stack_type = Array.zeroCreate<_> sz_ty; env_stack_term = Array.zeroCreate<_> sz_term }
                         s.env_stack_term.[0] <- b
                         // The DFunction body is the semantic result of the already-installed
                         // ApplyDispatch continuation. The typed tail-result bridge re-anchors
@@ -156131,7 +156292,9 @@ module spiral_compiler =
                                             let r = apply sFail (onFail, DB) |> dyn false sFail
                                             seq_apply sFail r, data_to_ty sFail r
                                         let onSuccCases =
-                                            HopacExtensions.S.mapi (fun i (k, v) ->
+                                            HopacExtensions.S.mapi (fun i case ->
+                                                if isNull (box case) then onFailValue else
+                                                let k, v = case
                                                 let cse = System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural)
                                                 cse.TryAdd(key, DLit (LitInt32 i)) |> ignore
                                                 let sCase = {s with cse = cse :: s.cse; seq = ResizeArray()}
@@ -157798,7 +157961,9 @@ module spiral_compiler =
                                     let r = apply s (on_fail, DB) |> dyn false s
                                     seq_apply s r, data_to_ty s r
                                 let on_succ =
-                                    HopacExtensions.S.mapi (fun i (k,v) ->
+                                    HopacExtensions.S.mapi (fun i case ->
+                                        if isNull (box case) then on_fail else
+                                        let k, v = case
                                         let cse = System.Collections.Concurrent.ConcurrentDictionary(HashIdentity.Structural)
                                         cse.TryAdd(key,DLit(LitInt32 i)) |> ignore
                                         let s = {s with cse = cse :: s.cse; seq = ResizeArray()}
@@ -161270,6 +161435,7 @@ module spiral_compiler =
             trace = []
             traceBudget = TraceBudgetState.create trace_budget_default
             dynamicIfDepth = 0
+            inline_depth = InlineDepthOps.root
             recursion = RecursionTracker.root
             bigStack = BigStack.rootContext
             evalNodePath = EvalCycleGuard.empty
@@ -161590,6 +161756,7 @@ module spiral_compiler =
     /// ### LangEnv
     type LangEnv = {
         trace : Trace
+        inline_depth : InlineDepth
         seq : ResizeArray<TypedBind>
         cse : Dictionary<TypedOp, Data> list
         unions : Map<TyV, UnionRewrite>
@@ -162193,6 +162360,7 @@ module spiral_compiler =
         and push_triop d op (a,b,c) ret_ty = push_op' d op [a;b;c] ret_ty
         and closure_env s (body,annot,gl_term,gl_ty,sz_term,sz_ty) = {
             trace = s.trace
+            inline_depth = s.inline_depth
             seq = ResizeArray()
             cse = [Dictionary(HashIdentity.Structural)]
             unions = Map.empty
@@ -162377,6 +162545,7 @@ module spiral_compiler =
                     assert (0 = scope.term.free_vars.Length)
                     let s : LangEnv = {
                         trace = r :: s.trace
+                        inline_depth = s.inline_depth
                         seq = ResizeArray()
                         cse = [Dictionary(HashIdentity.Structural)]
                         unions = Map.empty
@@ -162467,6 +162636,9 @@ module spiral_compiler =
             | TArray a -> YArray(ty s a)
             | TLayout(a,b) -> YLayout(ty s a,b)
         and term (s : LangEnv) x =
+            match InlineDepthOps.ensure_stack StopBeforeStackExhaustion s.inline_depth with
+            | Ok () -> ()
+            | Error message -> raise_type_error s message
 
             let global' =
                 // ws: one index per globals list, built once (copying the list into a fresh HashSet on every `term`
@@ -162504,8 +162676,10 @@ module spiral_compiler =
                     | Some a -> a
                     | None -> raise_type_error s <| sprintf "Cannot find the key %s inside the record. Its keys: %s." b (a |> Map.toList |> List.map (fst >> snd) |> String.concat ", ")
                 | DFunction(body,_,gl_term,gl_ty,sz_term,sz_ty), b ->
+                    let inline_depth = match InlineDepthOps.enter StopBeforeStackExhaustion s.inline_depth with Ok depth -> depth | Error message -> raise_type_error s message
                     let s : LangEnv =
                         {s with
+                            inline_depth = inline_depth
                             env_global_type = gl_ty
                             env_global_term = gl_term
                             env_stack_type = Array.zeroCreate<_> sz_ty
@@ -162779,6 +162953,7 @@ module spiral_compiler =
                     | false, _ ->
                         let s : LangEnv = {
                             trace = r :: s.trace
+                            inline_depth = s.inline_depth
                             seq = ResizeArray()
                             cse = [Dictionary(HashIdentity.Structural)]
                             unions = Map.empty
@@ -163099,7 +163274,9 @@ module spiral_compiler =
                                 let r = apply s (on_fail, DB) |> dyn false s
                                 seq_apply s r, data_to_ty s r
                             let on_succ =
-                                Array.mapi (fun i (k,v) ->
+                                Array.mapi (fun i case ->
+                                    if isNull (box case) then on_fail else
+                                    let k, v = case
                                     let cse = Dictionary(HashIdentity.Structural)
                                     cse.Add(key,DLit(LitInt32 i))
                                     let s = {s with cse = cse :: s.cse; seq = ResizeArray()}
@@ -164344,6 +164521,7 @@ module spiral_compiler =
 
         let s : LangEnv = {
             trace = []
+            inline_depth = InlineDepthOps.root
             seq = null
             cse = []
             unions = Map.empty
@@ -167929,6 +168107,7 @@ module spiral_compiler =
                 | _ -> raise_codegen_error $"Compiler error: Unexpected type in Conv. Got: {show_ty a}"
             | TyApply(L(i,_),b) -> return' (match args' b with "" -> $"v{i}.Invoke" | x -> $"v{i}.Invoke({x})")
             | TyOp(Global, [DLit (LitString x)]) -> global' x
+            | TyOp(ArrayIndexSet, [DV(L(_,YArray element)) as a;b;c]) -> line s $"{tup a}[{tup b}] := {tup_as element c};"
             | TyOp(ArrayIndexSet, [a;b;c]) -> line s $"{tup a}[{tup b}] := {tup c};"
             | TyOp(op,l) ->
                 let bin f = match l with [a;b] -> f (tup a) (tup b) | _ -> raise_codegen_error "Compiler error: Expected two arguments."
@@ -170022,7 +170201,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             global' "import gary/array"
             global' "import gleam/list"
             global' "import gleam/option"
-            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
+            let decl = "pub type SpiralArrayKey\n\npub type SpiralArray(a) {\n  SpiralArray(key: SpiralArrayKey, size: Int)\n}\n\n@external(erlang, \"erlang\", \"make_ref\")\npub fn spiral_array_new_key() -> SpiralArrayKey\n\n@external(erlang, \"erlang\", \"put\")\npub fn spiral_array_store(key: SpiralArrayKey, storage: gary.ErlangArray(option.Option(a))) -> b\n\n@external(erlang, \"erlang\", \"get\")\npub fn spiral_array_load(key: SpiralArrayKey) -> gary.ErlangArray(option.Option(a))\n\npub fn spiral_array_from_storage(storage: gary.ErlangArray(option.Option(a)), size: Int) -> SpiralArray(a) {\n  let key = spiral_array_new_key()\n  let _ = spiral_array_store(key, storage)\n  SpiralArray(key: key, size: size)\n}\n\npub fn spiral_array_create(size: Int) -> SpiralArray(a) {\n  list.repeat(option.None, size) |> array.from_list(option.None) |> spiral_array_from_storage(size)\n}\n\npub fn spiral_array_from_list(values: List(a)) -> SpiralArray(a) {\n  values |> list.map(option.Some) |> array.from_list(option.None) |> spiral_array_from_storage(list.length(values))\n}\n\npub fn spiral_array_to_list(xs: SpiralArray(a)) -> List(a) {\n  list.repeat(Nil, xs.size) |> list.index_map(fn(_, i) { spiral_array_get(xs, i) })\n}\n\npub fn spiral_array_get(xs: SpiralArray(a), i: Int) -> a {\n  case i >= 0 && i < xs.size {\n    True ->\n      case spiral_array_load(xs.key) |> array.get(i) {\n        Ok(option.Some(x)) -> x\n        _ -> panic as \"spiral array: read of an element that was never set\"\n      }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}\n\npub fn spiral_array_set(xs: SpiralArray(a), i: Int, value: a) -> Nil {\n  case i >= 0 && i < xs.size {\n    True -> {\n      let assert Ok(storage) = spiral_array_load(xs.key) |> array.set(i, option.Some(value))\n      let _ = spiral_array_store(xs.key, storage)\n      Nil\n    }\n    False -> panic as \"spiral array: index out of bounds\"\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let spiralRefs () =
             spiralArrays ()
@@ -170060,7 +170239,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             if not (externals.Contains decl) then externals.Add decl
         let spiralStringSlicing () =
             spiralStrings ()
-            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> spiral_halt(3)\n      }\n    _ -> spiral_halt(3)\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> spiral_halt(3)\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> spiral_halt(3)\n              }\n            Error(_) -> spiral_halt(3)\n          }\n      }\n  }\n}"
+            let decl = "@external(erlang, \"erlang\", \"halt\")\npub fn spiral_halt(code: Int) -> a\n\npub fn spiral_string_index(text: String, index: Int) -> String {\n  case bit_array.slice(bit_array.from_string(text), index, 1) {\n    Ok(<<byte>>) ->\n      case string.utf_codepoint(byte) {\n        Ok(codepoint) -> string.from_utf_codepoints([codepoint])\n        Error(_) -> panic as \"spiral string index: not a single-byte character\"\n      }\n    _ -> panic as \"spiral string index: out of range\"\n  }\n}\n\npub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {\n  let bytes = bit_array.from_string(text)\n  let length = bit_array.byte_size(bytes)\n  case from < 0 || from > length || to < from - 1 || to >= length {\n    True -> panic as \"spiral string slice: out of range\"\n    False ->\n      case to < from {\n        True -> \"\"\n        False ->\n          case bit_array.slice(bytes, from, to - from + 1) {\n            Ok(part) ->\n              case bit_array.to_string(part) {\n                Ok(slice) -> slice\n                Error(_) -> panic as \"spiral string slice: splits a character\"\n              }\n            Error(_) -> panic as \"spiral string slice: out of range\"\n          }\n      }\n  }\n}"
             if not (externals.Contains decl) then externals.Add decl
         let rec tyv x =
             match x with
@@ -172284,7 +172463,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let next_id = ref 0
         let fresh_id () = next_id.Value <- next_id.Value + 1; next_id.Value
         let is_unit_ty = function YB -> true | _ -> false
-        let is_tag_only_union (h : Union) = h.Item.tag_cases |> Array.forall (snd >> is_unit_ty)
+        let case_payloads (h : Union) = h.Item.tag_cases |> Array.map (fun case -> match box case with null -> YB | _ -> snd case)
+        let is_tag_only_union (h : Union) = case_payloads h |> Array.forall is_unit_ty
         let union_layouts = Dictionary<obj, string * string [] []>(HashIdentity.Reference)
         let unions_being_laid_out = HashSet<obj>(HashIdentity.Reference)
         let uses_heap = ref false
@@ -172307,7 +172487,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | true, layout -> layout
             | _ ->
                 if not (unions_being_laid_out.Add key) then unsupported "recursive unions (WGSL has no pointers)"
-                let case_fields = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t))
+                let case_fields = case_payloads h |> Array.map (fun payload -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> tyv t))
                 let name = $"SpiralUnion{union_layouts.Count}"
                 let fields = case_fields |> Array.mapi (fun case tys -> tys |> Array.mapi (fun field t -> $"  c{case}f{field}: {t},")) |> Array.concat
                 tuple_bodies.Add($"""struct {name} {{{"\n"}{String.concat "\n" (Array.append [|"  tag: u32,"|] fields)}{"\n"}}}{"\n"}""")
@@ -172321,12 +172501,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | "f32" -> "0.0f"
             | other when other.StartsWith "Spiral" -> $"{other}()"
             | other -> unsupported $"a zero value of {other}"
-        let array_element_ty = function
-            | YArray element ->
-                match env.ty_to_data element |> data_free_vars with
-                | [|L(_, t)|] -> t
-                | _ -> unsupported "arrays whose element is more than one value"
+        let array_element_tys = function
+            | YArray element -> env.ty_to_data element |> data_free_vars |> Array.map (fun (L(_, t)) -> t)
             | _ -> raise_codegen_error "Compiler error: Expected an array type."
+        let array_element_ty array_ty =
+            match array_element_tys array_ty with
+            | [|t|] -> t
+            | _ -> unsupported "arrays whose element is more than one value here"
         let array_ty_of = function
             | DV(L(_, t)) -> t
             | _ -> raise_codegen_error "Compiler error: Expected an array variable."
@@ -172347,7 +172528,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             match t with
             | YUnion h when not (is_tag_only_union h) ->
                 let _, case_fields = union_layout h
-                let field_tys = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
+                let field_tys = case_payloads h |> Array.map (fun payload -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                 ("tag", "u32") :: [ for case in 0 .. case_fields.Length - 1 do
                                         for field in 0 .. field_tys.[case].Length - 1 do
                                             for path, scalar in element_words field_tys.[case].[field] do
@@ -172358,7 +172539,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             match t with
             | YUnion h when not (is_tag_only_union h) ->
                 let name, _ = union_layout h
-                let field_tys = h.Item.tag_cases |> Array.map (fun (_, payload) -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
+                let field_tys = case_payloads h |> Array.map (fun payload -> env.ty_to_data payload |> data_free_vars |> Array.map (fun (L(_,t)) -> t))
                 let next = ref (offset + 1)
                 let fields = [ for tys in field_tys do
                                 for ft in tys do
@@ -172369,6 +172550,22 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | YNominal _ | YApply _ -> element_value (env.nominal_apply t) word_at offset
             | t -> from_heap_word (tyv t) (word_at offset), offset + 1
         let heap_word_at array index stride k = $"spiral_heap[{array} + 1u + bitcast<u32>({index}) * {stride}u + {k}u]"
+        let element_stride (tys : Ty []) = tys |> Array.sumBy (fun t -> (element_words t).Length)
+        let element_reads (tys : Ty []) (word_at : int -> string) =
+            let next = ref 0
+            tys |> Array.map (fun t ->
+                let value, after = element_value t word_at next.Value
+                next.Value <- after
+                value)
+        let element_writes (tys : Ty []) (values : string []) (word_at : int -> string) =
+            let next = ref 0
+            Array.map2 (fun t (value : string) ->
+                element_words t |> List.map (fun (path, scalar) ->
+                    let field = if path = "" then value else $"{value}.{path}"
+                    let k = next.Value
+                    next.Value <- k + 1
+                    $"{word_at k} = {to_heap_word scalar field}")) tys values
+            |> List.concat |> String.concat "; "
         let lit = function
             | LitInt32 x when x = Int32.MinValue -> "bitcast<i32>(0x80000000u)"
             | LitInt32 x -> $"{x}i"
@@ -172397,11 +172594,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | [|w|] -> show_w w
             | [||] -> ""
             | _ -> unsupported "tuple values"
-        let rec flatten_ty t =
-            match t with
-            | YB -> [||]
-            | YPair(a, b) -> Array.append (flatten_ty a) (flatten_ty b)
-            | _ -> [|t|]
+        let flatten_ty t = env.ty_to_data t |> data_free_vars |> Array.map (fun (L(_,t)) -> t)
         let tuple_name (tys : string []) =
             let key = String.concat "," tys
             match tuple_names.TryGetValue key with
@@ -172449,7 +172642,19 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 functions.Add(text.ToString())
             finally
                 self_loop.Value <- saved
+        and returned_call_as_tail (body : TypedBind []) =
+            let n = body.Length
+            if n < 2 then body else
+            match body.[n - 2], body.[n - 1] with
+            | TyLet(bound, trace, call), TyLocalReturnData(returned, _) ->
+                let bound_ids = data_free_vars bound |> Array.map (fun (L(i,_)) -> i)
+                let returned_ids = data_term_vars returned |> Array.choose (function WV(L(i,_)) -> Some i | WLit _ -> None)
+                if bound_ids.Length = (data_term_vars returned).Length && bound_ids = returned_ids
+                then Array.append body.[.. n - 3] [| TyLocalReturnOp(trace, call, bound) |]
+                else body
+            | _ -> body
         and self_tail tag (body : TypedBind []) =
+            let body = returned_call_as_tail body
             body.Length > 0 &&
             match Array.last body with
             | TyLocalReturnOp(_, TyJoinPoint(JPMethod(a,c),_), _) -> (method (a,c)).tag = tag
@@ -172458,6 +172663,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             | TyLocalReturnOp(_, (TyDo b | TyIndent b), _) -> self_tail tag b
             | _ -> false
         and binds (s : CodegenEnv) (ret : WgslRet) (stmts : TypedBind []) =
+            let stmts = match ret with WgslTail _ -> returned_call_as_tail stmts | WgslLocal _ -> stmts
             Array.iter (function
                 | TyLet(d,trace,a) ->
                     try
@@ -172598,6 +172804,15 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     | CMTypeLit _ -> unsupported "a macro type literal"
                 return' (parts |> List.map piece |> String.concat "")
             | TyOp(Global, _) -> unsupported "globals"
+            | TyOp(ArrayIndex, [a;b]) when (array_element_tys (array_ty_of a)).Length > 1 ->
+                let tys = array_element_tys (array_ty_of a)
+                let values = element_reads tys (heap_word_at (tup a) (tup b) (element_stride tys))
+                match ret with
+                | WgslLocal targets when targets.Length = values.Length ->
+                    Array.iter2 (fun (L(i,_)) value -> line s $"v{i} = {value};") targets values
+                | WgslTail range ->
+                    line s $"""return {ret_ty range}({String.concat ", " values});"""
+                | _ -> raise_codegen_error "Compiler error: An array read has the wrong number of targets."
             | TyOp(operation, l) ->
                 let binary symbol a b = $"({tup a} {symbol} {tup b})"
                 // WGSL shifts take a u32 count. Signed `>>` stays arithmetic.
@@ -172635,17 +172850,14 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                         let stride = (element_words element).Length
                         fst (element_value element (heap_word_at (tup a) (tup b) stride) 0)
                     | ArrayIndexSet, [a;b;c] ->
-                        let element = array_element_ty (array_ty_of a)
-                        let words = element_words element
-                        let value = tup c
-                        words |> List.mapi (fun k (path, scalar) ->
-                            let field = if path = "" then value else $"{value}.{path}"
-                            $"{heap_word_at (tup a) (tup b) words.Length k} = {to_heap_word scalar field}")
-                        |> String.concat "; "
+                        let tys = array_element_tys (array_ty_of a)
+                        let values = data_term_vars c |> Array.map show_w
+                        if values.Length <> tys.Length then raise_codegen_error "Compiler error: An array element has the wrong number of values."
+                        element_writes tys values (heap_word_at (tup a) (tup b) (element_stride tys))
                     | _ -> unsupported $"the operation %A{operation}"
                 return' expr
             | TyArrayCreate(element, size) ->
-                let stride = (element_words (array_element_ty (YArray element))).Length
+                let stride = element_stride (array_element_tys (YArray element))
                 uses_heap.Value <- true
                 return' $"spiral_array_create({tup size}, {stride}u)"
             | TyArrayLength(_, a) -> return' $"bitcast<i32>(spiral_heap[{tup a}])"
@@ -172686,7 +172898,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         program.AppendLine("}") |> ignore
         program.AppendLine("@group(0) @binding(0) var<storage, read_write> spiral_io: SpiralIo;") |> ignore
         if uses_heap.Value then
-            program.AppendLine("var<private> spiral_heap: array<u32, 16384>;") |> ignore
+            program.AppendLine("@group(0) @binding(1) var<storage, read_write> spiral_heap: array<u32>;") |> ignore
             program.AppendLine("var<private> spiral_heap_top: u32 = 0u;") |> ignore
             program.AppendLine("fn spiral_array_create(length: i32, stride: u32) -> u32 {") |> ignore
             program.AppendLine("  let base = spiral_heap_top;") |> ignore
@@ -176073,7 +176285,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let rec is_heap f x =
             Array.exists (fun (L(i,t)) ->
                 match t with
-                | YUnion a when a.Item.layout = UStack -> Array.exists (snd >> f >> is_heap f) a.Item.tag_cases
+                | YUnion a when a.Item.layout = UStack -> a.Item.tag_cases |> Array.exists (fun case -> not (isNull (box case)) && (case |> snd |> f |> is_heap f))
                 | YPrim StringT -> true
                 | YPrim _ -> false
                 | _ -> true
@@ -177668,7 +177880,10 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 | TyArrayLiteral(a,b') -> raise_codegen_error "Compiler error: TyArrayLiteral should have been taken care of in TyLet."
                 | TyArrayCreate(a,b) ->  raise_codegen_error "Compiler error: TyArrayCreate should have been taken care of in TyLet."
                 | TyFailwith(a,b) ->
-                    let string_in_op = function DLit (LitString b) -> lit_string b | b -> raise_codegen_error "In the Cuda backend, the exception string must be a literal."
+                    let string_in_op = function
+                        | DLit (LitString b) -> lit_string b
+                        | DV(L(_, YPrim StringT)) as b -> tup_data b
+                        | _ -> raise_codegen_error "In the Cuda backend, the exception message must be a string."
                     let fmt = @"%s\n"
                     line s $"printf(\"{fmt}\", {string_in_op b});"
                     match backend() with
@@ -178854,7 +179069,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                 {|code = aux_library_code; file_extension = "_auto.py"|}
                 {|code = code_main; file_extension = ".py"|}
             ]
-#if SPIRAL_CORE_HOPAC
     /// ## WDiff
     // open System
     open System.IO
@@ -179180,13 +179394,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let result = blockParsingParse env
         match result with
         | Ok statement ->
-            // Content-keyed identity prevents incremental reparses from double-counting
-            // a structurally unchanged block merely because it arrived as a new object.
-            let blockKey = lineTokensStableIdentity block
-            statement
-            |> parsedAstSeedOfTopStatement
-            |> DiagJson.noteParsedAstStructuralSeed blockKey
-            |> ignore
+            observeParsedStatement (lineTokensStableIdentity block) statement
         | Error _ -> ()
         {result=result; semantic_tokens=semantic_updates_apply block semantic_updates}
     
@@ -179627,584 +179835,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             ) s l
     
 
-#else
-    /// ## WDiff
-    // open System
-    open System.IO
-    open System.Collections.Generic
-
-    // Full name: Microsoft.FSharp.Core.Result<_,_>.Ok
-
-    open FSharp.Core
-
-    open Hopac
-    open Hopac.Infixes
-    open Hopac.Extensions
-    open Hopac.Stream
-
-    /// ### process_errors
-    let process_errors line (ers : LineTokenErrors list) : RString list =
-        ers |> List.mapi (fun i l ->
-            let i = line + i
-            l |> List.map (fun (r,x) -> x, (vscpos i r.from, vscpos i r.nearTo))
-            )
-        |> List.concat
-        |> List.groupBy snd
-        |> List.map (fun (k,v) -> k, process_error (List.map fst v))
-
-    type [<ReferenceEquality>] TokenizerState = {
-        lines_text : string PersistentVector
-        lines_token : LineTokens
-        // The lexical state each line ends in, which the next one starts in (`tokenize_line`).
-        lines_state : LexState PersistentVector
-        blocks : LineTokens Block list
-        // The error for a `"""` string or `(* *)` comment the file ends inside; `errors` starts with it.
-        eof_errors : RString list
-        errors : RString list
-        }
-
-    /// ### wdiff_tokenizer_init
-    let wdiff_tokenizer_init = { lines_text = PersistentVector.empty; lines_token = PersistentVector.empty; lines_state = PersistentVector.empty; blocks = []; eof_errors = []; errors = [] }
-
-    /// ### triple_balance
-    let triple_balance (blk : LineTokens) =
-        let count_in_line acc (line : LineToken PersistentVector) =
-            PersistentVector.fold (fun acc (_, tok) ->
-                match tok with
-                | TokStringOpen -> acc + 1
-                | TokStringClose -> acc - 1
-                | _ -> acc) acc line
-        PersistentVector.fold count_in_line 0 blk
-
-    /// ### append_lines
-    let append_lines (a : LineTokens) (b : LineTokens) : LineTokens =
-        PersistentVector.fold (fun acc line -> PersistentVector.conj line acc) a b
-
-    /// ### merge_triple_blocks
-    let merge_triple_blocks (blocks : LineTokens Block list) : LineTokens Block list =
-        let rec loop acc pending pendingBal rest =
-            match pending, rest with
-            | None, [] -> List.rev acc
-            | Some p, [] -> List.rev (p :: acc)
-            | None, x :: xs ->
-                let bal = triple_balance x.block
-                if bal = 0 then loop (x :: acc) None 0 xs
-                else loop acc (Some x) bal xs
-            | Some p, x :: xs ->
-                let merged =
-                    {   block  = append_lines p.block x.block
-                        offset = p.offset }
-                let bal = pendingBal + triple_balance x.block
-                if bal = 0 then loop (merged :: acc) None 0 xs
-                else loop acc (Some merged) bal xs
-        loop [] None 0 blocks
-
-    /// ### lex_state_at
-    /// The lexical state line `i` starts in.
-    let lex_state_at (state : TokenizerState) i = if i = 0 then lex_state_init else state.lines_state.[i-1]
-
-    /// ### replace'
-    /// Immutably updates the state based on the request. Does diffing to make the operation efficient.
-    /// It is possible for the server to go out of sync, in which case an error is returned.
-    /// The edited lines are tokenized in the lexical state the line before them ends in, and the edit grows over
-    /// the lines after it for as long as their start state changed (an edit that opens or closes a `"""` string
-    /// or a `(* *)` comment re-tokenizes the lines it captures or releases, and only those).
-    let replace' (state : TokenizerState) (edit : SpiEdit) =
-        let old_length = state.lines_text.Length
-        let toks = ResizeArray()
-        let ers = ResizeArray()
-        let states = ResizeArray()
-        let lines = ResizeArray(edit.lines)
-        let tokenize_next lex text =
-            let a, b, lex = tokenize_line lex text
-            toks.Add a; ers.Add b; states.Add lex
-            lex
-        let mutable lex = Array.fold tokenize_next (lex_state_at state edit.from) edit.lines
-        let mutable nearTo = edit.nearTo
-        while nearTo < old_length && lex <> lex_state_at state nearTo do
-            let text = state.lines_text.[nearTo]
-            lines.Add text
-            lex <- tokenize_next lex text
-            nearTo <- nearTo + 1
-        let edit : SpiEdit = {|from=edit.from; nearTo=nearTo; lines=lines.ToArray()|}
-        let lines_text = replace edit.from edit.nearTo edit.lines state.lines_text
-        let lines_token = replace edit.from edit.nearTo toks state.lines_token
-        let lines_state = replace edit.from edit.nearTo states state.lines_state
-        let errors =
-            let adj = edit.lines.Length - (edit.nearTo - edit.from)
-            List.skip state.eof_errors.Length state.errors |> List.choose (fun ((a : VSCPos,b),c as x) ->
-                if edit.from <= a.line && a.line < edit.nearTo then None
-                elif edit.nearTo <= a.line && adj <> 0 then Some (add_line_to_range adj (a,b),c)
-                else Some x
-                )
-        let errors = List.append errors (process_errors edit.from (List.ofSeq ers))
-        let eof_errors =
-            let last = lines_state.Length - 1
-            match lex_state_error (if last < 0 then lex_state_init else lines_state.[last]) with
-            | Some message ->
-                // Reported on the line the unterminated string or comment opens in.
-                let mutable i = last
-                while 0 < i && lines_state.[i-1] <> lex_state_init do i <- i - 1
-                process_errors i [[({from=0; nearTo=max 1 lines_text.[i].Length}, message)]]
-            | None -> []
-        let blocks =
-            wdiff_block_all state.blocks (lines_token, edit.lines.Length, edit.from, edit.nearTo)
-            |> merge_triple_blocks
-        {lines_text=lines_text; lines_token=lines_token; lines_state=lines_state; blocks=blocks; eof_errors=eof_errors; errors=List.append eof_errors errors}
-
-    /// ### wdiff_tokenizer_all
-    let wdiff_tokenizer_all (state : TokenizerState) text =
-        let text = (*Utils.*)lines text
-        let text' = state.lines_text |> Seq.toArray
-        // The edit is the text between the longest common prefix and the longest common suffix that doesn't
-        // overlap it.
-        let common = min text.Length text'.Length
-        let mutable from = 0
-        while from < common && text.[from] = text'.[from] do from <- from + 1
-        if from = text.Length && text.Length = text'.Length then state else
-        let mutable fromRev = 0
-        while fromRev < common - from && text.[text.Length-1-fromRev] = text'.[text'.Length-1-fromRev] do fromRev <- fromRev + 1
-        replace' state {|from=from; nearTo=text'.Length-fromRev; lines=text.[from..text.Length-1-fromRev]|}
-
-    /// ### wdiff_tokenizer_edit
-    let wdiff_tokenizer_edit (state : TokenizerState) (edit : SpiEdit) =
-        if edit.nearTo <= state.lines_text.Length then
-            Ok (replace' state edit)
-        else
-            Error "The edit is out of bounds and cannot be applied. The language server and the editor are out of sync. Try reopening the file being edited."
-
-    /// ### semantic_updates_apply
-    let semantic_updates_apply (block : LineTokens) updates =
-        Seq.fold (fun (block : LineTokens) (c : VectorCord, l) ->
-            if c.row < block.Length then
-                let line = block.[c.row]
-                if c.col < line.Length then
-                    let r, tok = line.[c.col]
-                    let tok' =
-                        match tok with
-                        | TokVar(a,_) -> TokVar(a,l)
-                        | TokSymbol(a,_) -> TokSymbol(a,l)
-                        | TokOperator(a,_) -> TokOperator(a,l)
-                        | TokUnaryOperator(a,_) -> TokUnaryOperator(a,l)
-                        | x -> x
-                    PersistentVector.updateNth c.row c.col (r, tok') block
-                else block
-            else block) block updates
-
-    /// ### parse_block
-    let parse_block default_env is_top_down (block : LineTokens) =
-        let comments, cords_tokens =
-            Array.init block.Length (fun line ->
-                let x = block.[line]
-                let comment, len =
-                    match PersistentVector.tryLast x with
-                    | Some (r, TokComment c) -> Some (r, c), x.Length - 1
-                    | _ -> None, x.Length
-                let tokens = Array.init len (fun i ->
-                    let r, t = x.[i]
-                    vector_cord line i,
-                    ((vscpos line r.from, vscpos line r.nearTo), t))
-                comment, tokens
-                )
-            |> Array.unzip
-        let cords, tokens = Array.unzip (Array.concat cords_tokens)
-
-        let semantic_updates = ResizeArray()
-        let env = {
-            tokens_cords = cords; semantic_updates = semantic_updates
-            comments = comments; tokens = tokens; i = ref 0; is_top_down = is_top_down
-            default_env = default_env
-            continuation_column = None
-            }
-        assert (env.tokens_cords.Length = env.tokens.Length)
-        {result=blockParsingParse env; semantic_tokens=semantic_updates_apply block semantic_updates}
-
-    /// ### wdiff_parse_init
-    let wdiff_parse_init is_top_down : ParserState = {is_top_down=is_top_down; blocks=[]}
-
-    /// ### wdiff_parse
-    let wdiff_parse default_env (state : ParserState) (unparsed_blocks : LineTokens Block list) =
-        let dict = Dictionary(HashIdentity.Reference)
-        // Offset should be ignored when memoizing the results of parsing.
-        List.iter (fun (a,b) -> dict.Add(a,b.block)) state.blocks
-        let blocks = unparsed_blocks |> List.map (fun x ->
-            x.block, {block=memoize dict (fun a -> Hopac.memo(Job.thunk <| fun () -> (parse_block default_env state.is_top_down) a)) x.block; offset=x.offset}
-            )
-        {state with blocks = blocks }
-
-    /// ### ModuleState
-    type ModuleState = { tokenizer : TokenizerState; bundler : BlockBundleState; parser : ParserState }
-
-    /// ### wdiff_module_init
-    let wdiff_module_init is_top_down = {tokenizer = wdiff_tokenizer_init; bundler = wdiff_block_bundle_init; parser = wdiff_parse_init is_top_down}
-
-    /// ### wdiff_module_body
-    let wdiff_module_body default_env state tokenizer =
-        if state.tokenizer = tokenizer then state else
-        let parser = wdiff_parse default_env state.parser tokenizer.blocks
-        let bundler = wdiff_block_bundle state.bundler parser
-        {tokenizer=tokenizer; parser=parser; bundler=bundler}
-
-    /// ### wdiff_module_edit
-    let wdiff_module_edit default_env (state : ModuleState) x = wdiff_tokenizer_edit state.tokenizer x |> Result.map (wdiff_module_body default_env state)
-
-    /// ### wdiff_module_all
-    let wdiff_module_all default_env state x = wdiff_tokenizer_all state.tokenizer x |> wdiff_module_body default_env state
-
-    /// ### wdiff_module_init_all
-    let wdiff_module_init_all default_env is_top_down x = wdiff_module_all default_env (wdiff_module_init is_top_down) x
-
-    /// ### FileState<'input,'result,'state>
-    type [<ReferenceEquality>] FileState<'input,'result,'state> = { input : 'input; result : 'result; state : 'state }
-
-    /// ### FileFuns<'a,'b,'state>
-    type FileFuns<'a,'b,'state> =
-        abstract member eval : 'state * 'a -> 'b
-        abstract member diff : 'state * 'b * 'a -> 'b
-        abstract member init : 'a -> FileState<'a,'b,'state>
-
-    /// ### TypecheckerStateValue
-    type TypecheckerStateValue = Bundle option * InferResult * TopEnv
-
-    /// ### TypecheckerStatePropagated
-    type TypecheckerStatePropagated = (bool * TopEnv) Promise
-
-    /// ### TypecheckerState
-    type TypecheckerState = FileState<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated>
-
-    /// ### typecheck
-    let rec typecheck (package_id,module_id,env : TopEnv) x = x >>=* function
-        | Cons((_,b : BlockBundleValue), ls) ->
-            match b.bundle with
-            | Some bundle ->
-                let x = infer package_id module_id env bundle
-                let adds = match x.top_env_additions with AOpen x | AInclude x -> x
-                let env = inferUnion adds env
-                Job.result (Cons((b.bundle,x,env),typecheck (package_id,module_id,env) ls))
-            | None ->
-                typecheck (package_id,module_id,env) ls :> _ Job
-        | Nil ->
-            Job.result Nil
-
-    /// ### diff
-    let rec diff (package_id,module_id,env) (result,input : BlockBundleState) =
-        let tc () = typecheck (package_id,module_id,env) input
-        if Promise.Now.isFulfilled result then
-            input >>** fun input ->
-            match Promise.Now.get result,input with
-            | Cons((b',_,env as x),next), Cons((_,b),bs) when b' = b.bundle -> Promise.Now.withValue (Cons(x,diff (package_id,module_id,env) (next,bs)))
-            | _ -> tc()
-        else tc()
-
-    /// ### funs_file_tc
-    let funs_file_tc = {new FileFuns<PackageId * ModuleId * BlockBundleState, TypecheckerStateValue Stream, TypecheckerStatePropagated> with
-        member _.eval(state,(pid,mid,x)) =
-            state >>=* fun (_,env) ->
-            typecheck (pid,mid,env) x
-        member _.diff(state,b,(pid,mid,a)) =
-            state >>=* fun (_,env) -> diff (pid,mid,env) (b,a)
-        member _.init x = {
-            input = x
-            result = Promise.Now.never()
-            state = Promise.Now.never()
-            }
-        }
-
-    /// ### wdiff_file_update_state
-    let wdiff_file_update_state (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'state) =
-        if state.state = x then state else {state with state=x; result=funs.eval(x,state.input)}
-
-    /// ### wdiff_file_update_input
-    let wdiff_file_update_input (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (x : 'a) =
-        if state.input = x then state else {state with input=x; result=funs.diff(state.state,state.result,x)}
-
-    /// ### wdiff_file
-    let wdiff_file (funs : FileFuns<'a,'b,'state>) (state : FileState<'a,'b,'state>) (a,b) =
-        if state.state = a then wdiff_file_update_input funs state b else {state=a; input=b; result=funs.eval(a,b)}
-
-    /// ### ProjFilesTree
-    type ProjFilesTree =
-        | File of module_id: ModuleId * path: string * name: string option
-        | Directory of dir_id: DirId * name: string * ProjFilesTree list
-
-    /// ### ProjFiles
-    type ProjFiles = { tree : ProjFilesTree list; num_dirs : int; num_files : int }
-
-    /// ### ProjFileFuns<'a,'state>
-    type ProjFileFuns<'a,'state> =
-        abstract member file : string option * 'state * 'a -> 'a * 'state
-        abstract member union : 'state * 'state -> 'state
-        abstract member in_module : string * 'state -> 'state
-        abstract member default' : DefaultEnv -> 'state
-        abstract member empty : 'state
-
-    /// ### ProjFilesState<'a,'state>
-    type [<ReferenceEquality>] ProjFilesState<'a,'state> = {
-        init : 'state
-        uids_file : ('a * 'state) []
-        uids_directory : 'state []
-        files : ProjFiles
-        result : 'state
-        }
-
-    /// ### proj_files_diff
-    let proj_files_diff (uids_file : ('a * 'b) [], uids_directory : 'b [], files) (uids, files') =
-        let uids_file' = Array.zeroCreate (Array.length uids)
-        let uids_directory' = Array.zeroCreate files'.num_dirs
-        // Ref equality is done first for performance. Most of the time the strings will be the same.
-        let eq a b = System.Object.ReferenceEquals(a,b) || a = b
-        let rec loop = function
-            | File(mid,path,name), File(mid',path',name') when mid = mid' && eq path path' && eq name name' ->
-                let x = uids_file.[mid]
-                if uids.[mid] = fst x then uids_file'.[mid] <- x; true else false
-            | Directory(uid,name,l), Directory(uid',name',l') when uid = uid' && eq name name' && list (l,l') ->
-                uids_directory'.[uid] <- uids_directory.[uid]; true
-            | _ -> false
-        and list = function
-            | x :: xs, y :: ys -> loop (x,y) && list (xs,ys)
-            | _ -> false
-        if list (files.tree, files'.tree) then None else Some (uids_file',uids_directory')
-
-    /// ### proj_files
-    let proj_files (funs : ProjFileFuns<'a,'state>) uids_file uids_directory uids s l =
-        let inline memo (uids : _ []) uid f =
-            let x = uids.[uid]
-            if isNull (box x) then let x = f() in uids.[uid] <- x; x
-            else x
-        let rec loop state = function
-            | File(mid,_,name) -> memo uids_file mid (fun () -> funs.file(name,state,Array.get uids mid)) |> snd
-            | Directory(uid,name,l) -> memo uids_directory uid (fun () -> funs.in_module(name,list state l))
-        and list s l =
-            List.fold (fun (empty,big) x ->
-                let small = loop big x
-                funs.union(small,empty), funs.union(small,big)
-                ) (funs.empty, s) l |> fst
-        list s l.tree
-
-    /// ### wdiff_proj_files_update_files
-    let wdiff_proj_files_update_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (uids,files : ProjFiles) =
-        match proj_files_diff (state.uids_file,state.uids_directory,state.files) (uids,files) with
-        | Some (uids_file, uids_directory) -> {state with files=files; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids state.init files}
-        | None -> state
-
-    /// ### wdiff_proj_files_update_packages
-    let wdiff_proj_files_update_packages (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init : 'state) =
-        if state.init = init then state else
-        let uids_file, uids_directory = Array.zeroCreate state.uids_file.Length, Array.zeroCreate state.uids_directory.Length
-        let uids = Array.map fst state.uids_file
-        {state with init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init state.files}
-
-    /// ### wdiff_proj_files
-    let wdiff_proj_files (funs : ProjFileFuns<'a,'state>) (state : ProjFilesState<'a,'state >) (init,(uids,files)) =
-        if state.init = init then wdiff_proj_files_update_files funs state (uids,files)
-        else
-            let uids_file, uids_directory = Array.zeroCreate files.num_files, Array.zeroCreate files.num_dirs
-            {files=files; init=init; uids_file=uids_file; uids_directory=uids_directory; result=proj_files funs uids_file uids_directory uids init files}
-
-    /// ### typechecker_results_summary
-    let typechecker_results_summary l =
-        Stream.foldFun (fun (has_error,big) (_,x : InferResult,_) ->
-            has_error || List.isEmpty x.errors = false,
-            match x.top_env_additions with
-            | AOpen _ -> big
-            | AInclude small -> inferUnion small big
-            ) (false,inferTop_env_empty) l
-
-    /// ### funs_proj_file_tc
-    let funs_proj_file_tc = {new ProjFileFuns<TypecheckerState,TypecheckerStatePropagated> with
-        member _.file(name,state,x) =
-            let x = wdiff_file_update_state funs_file_tc x state
-            let env =
-                typechecker_results_summary x.result >>-* fun (has_error,env) ->
-                has_error, match name with None -> env | Some name -> inferIn_module name env
-            x,env
-        member _.union(small,big) = small >>=* fun small -> big >>- fun big -> fst small || fst big, inferUnion (snd small) (snd big)
-        member _.in_module(name,small) = small >>-* fun (has_error,env) -> has_error, inferIn_module name env
-        member _.default' default_env = Promise.Now.withValue (false,inferTop_env_default default_env)
-        member _.empty = Promise.Now.withValue (false,inferTop_env_empty)
-        }
-
-    /// ### PackageEnv
-    type PackageEnv = {
-        nominals_aux : Map<PackageId,Map<GlobalId,NominalAux>>
-        nominals : Map<PackageId,Map<GlobalId,NominalDef>>
-        prototypes_instances : Map<PackageId,Map<GlobalId * GlobalId, Constraint Set list>>
-        prototypes : Map<PackageId,Map<GlobalId,PrototypeDef>>
-        ty : Map<string,T>
-        term : Map<string,T>
-        constraints : Map<string,ConstraintOrModule>
-        }
-
-    /// ### union
-    let union small big = {
-        nominals_aux = Map.foldBack Map.add small.nominals_aux big.nominals_aux
-        nominals = Map.foldBack Map.add small.nominals big.nominals
-        prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
-        prototypes = Map.foldBack Map.add small.prototypes big.prototypes
-        ty = Map.foldBack Map.add small.ty big.ty
-        term = Map.foldBack Map.add small.term big.term
-        constraints = Map.foldBack Map.add small.constraints big.constraints
-        }
-
-    /// ### in_moduleWDiff
-    let in_moduleWDiff m (a : PackageEnv) =
-        {a with
-            ty = Map.add m (TyModule a.ty) Map.empty
-            term = Map.add m (TyModule a.term) Map.empty
-            constraints = Map.add m (M a.constraints) Map.empty
-            }
-
-    /// ### package_to_file
-    let package_to_file (x : PackageEnv) = {
-        nominals_next_tag = 0
-        nominals_aux = Map.foldBack (fun _ -> Map.foldBack Map.add) x.nominals_aux Map.empty
-        nominals = Map.foldBack (fun _ -> Map.foldBack Map.add) x.nominals Map.empty
-        prototypes_next_tag = 0
-        prototypes_instances = Map.foldBack (fun _ -> Map.foldBack Map.add) x.prototypes_instances Map.empty
-        prototypes = Map.foldBack (fun _ -> Map.foldBack Map.add) x.prototypes Map.empty
-        ty = x.ty
-        term = x.term
-        constraints = x.constraints
-        }
-
-    /// ### add_file_to_package
-    let add_file_to_package package_id (small : TopEnv) (big : PackageEnv): PackageEnv = {
-        nominals_aux = Map.add package_id small.nominals_aux big.nominals_aux
-        nominals = Map.add package_id small.nominals big.nominals
-        prototypes_instances = Map.add package_id small.prototypes_instances big.prototypes_instances
-        prototypes = Map.add package_id small.prototypes big.prototypes
-        ty = small.ty
-        term = small.term
-        constraints = small.constraints
-        }
-
-    /// ### package_env_empty
-    let package_env_empty = {
-        nominals_aux = Map.empty
-        nominals = Map.empty
-        prototypes_instances = Map.empty
-        prototypes = Map.empty
-        ty = Map.empty
-        term = Map.empty
-        constraints = Map.empty
-        }
-
-    /// ### package_env_default
-    let package_env_default default_env =
-        let x = inferTop_env_default default_env
-        {package_env_empty with ty = x.ty; term = x.term; constraints = x.constraints}
-
-    /// ### ProjPackagesState<'a>
-    type ProjPackagesState<'a> = {
-        packages : (string option * 'a) list
-        result : 'a
-        }
-
-    /// ### ProjState<'file_inputs,'files,'packages>
-    type ProjState<'file_inputs,'files,'packages> = {
-        package_id : PackageId
-        packages : 'packages ProjPackagesState
-        files : ProjFilesState<'file_inputs,'files>
-        result : 'packages
-        }
-
-    /// ### TypecheckerStateTop
-    type TypecheckerStateTop = (bool * PackageEnv) Promise
-
-    /// ### ProjStateTC
-    type ProjStateTC = ProjState<TypecheckerState,TypecheckerStatePropagated,TypecheckerStateTop>
-
-    /// ### ProjEnvTC
-    type ProjEnvTC = Map<PackageId,ProjStateTC>
-
-    /// ### ProjPackageFuns<'file,'package>
-    type ProjPackageFuns<'file,'package> =
-        abstract member unions : DefaultEnv -> (string option * 'package) list -> 'package
-        abstract member union : 'package * 'package -> 'package
-        abstract member in_module : string * 'package -> 'package
-        abstract member package_to_file : 'package -> 'file
-        abstract member add_file_to_package : PackageId * 'file * 'package -> 'package
-        abstract member default' : DefaultEnv -> 'package
-        abstract member empty : 'package
-
-    /// ### funs_proj_package_tc
-    let funs_proj_package_tc = {new ProjPackageFuns<TypecheckerStatePropagated,TypecheckerStateTop> with
-        member funs.unions default_env l =
-            let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
-            List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
-        member _.union(small,big) =
-            Job.delay <| fun () ->
-                Hopac.queueIgnore big
-                small >>=* fun a ->
-                big >>- fun b ->
-                fst a || fst b, union (snd a) (snd b)
-            |> Hopac.memo
-        member _.in_module(name,x) = x >>-* fun (has_error,env) -> has_error, in_moduleWDiff name env
-        member _.package_to_file(x) = x >>-* fun (has_error,env) -> has_error, package_to_file env
-        member _.add_file_to_package(pid,a,b) =
-            a >>=* fun (has_error,env) ->
-            b >>-* fun (has_error',env') ->
-            has_error || has_error', add_file_to_package pid env env'
-        member _.default' default_env = Promise.Now.withValue (false, package_env_default default_env)
-        member _.empty = Promise.Now.withValue (false, package_env_empty)
-        }
-
-    /// ### wdiff_proj_init
-    let wdiff_proj_init default_env (funs_packages : ProjPackageFuns<'file,'package>) (funs_files : ProjFileFuns<'file_input,'file>) package_id : ProjState<'file_input,'file,'package> =
-        let packages = { packages = []; result = funs_packages.default' default_env}
-        let files = {
-            files={tree=[]; num_dirs=0; num_files=0}
-            uids_file=[||]; uids_directory=[||]
-            init=funs_files.default' default_env; result=funs_files.empty
-            }
-        let result = funs_packages.empty
-        { package_id = package_id; packages = packages; files = files; result = result}
-
-    /// ### wdiff_proj_packages
-    let wdiff_proj_packages default_env (funs : ProjPackageFuns<_,'a>) (state : 'a ProjPackagesState) x =
-        if state.packages = x then state else {packages = x; result = funs.unions default_env x }
-
-    /// ### wdiff_proj_update_packages
-    let wdiff_proj_update_packages default_env funs_packages funs_files (state : ProjState<'a,'b,'state>) x =
-        let packages = wdiff_proj_packages default_env funs_packages state.packages x
-        if state.packages = packages then state else
-        let files = wdiff_proj_files_update_packages funs_files state.files (funs_packages.package_to_file(packages.result))
-        let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
-        {state with packages=packages; files=files; result=result}
-
-    /// ### wdiff_proj_update_files
-    let wdiff_proj_update_files (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'a,'b,'state>) x =
-        let files = wdiff_proj_files_update_files funs_files state.files x
-        if state.files = files then state else
-        let result = funs_packages.add_file_to_package(state.package_id,files.result,state.packages.result)
-        {state with files=files; result=result}
-
-    /// ### wdiff_proj
-    let wdiff_proj default_env (funs_packages : ProjPackageFuns<_,_>) funs_files (state : ProjState<'file_input,'file,'state>) (packages,files) =
-        let packages = wdiff_proj_packages default_env funs_packages state.packages packages
-        if state.packages = packages then wdiff_proj_update_files funs_packages funs_files state files
-        else
-            let files = wdiff_proj_files funs_files state.files (funs_packages.package_to_file(packages.result),files)
-            let result = funs_packages.add_file_to_package(state.package_id,files.result,packages.result)
-            {state with packages=packages; files=files; result=result}
-
-    /// ### ProjEnvUpdate<'a>
-    type ProjEnvUpdate<'a> =
-        | UpdatePackageModule of PackageId * (string option * PackageId) list * ('a [] * ProjFiles)
-        | UpdatePackage of PackageId * (string option * PackageId) list
-
-    /// ### map_packages
-    let map_packages s packages = packages |> List.map (fun (a,b) -> a, (Map.find b s).result)
-
-    /// ### wdiff_projenv
-    let wdiff_projenv default_env funs_packages funs_files (s : Map<PackageId,ProjState<'a,'b,'state>>) l =
-        List.fold (fun s -> function
-            | UpdatePackageModule(uid,packages,files) -> Map.add uid (wdiff_proj default_env funs_packages funs_files s.[uid] (map_packages s packages,files)) s
-            | UpdatePackage(uid,packages) -> Map.add uid (wdiff_proj_update_packages default_env funs_packages funs_files s.[uid] (map_packages s packages)) s
-            ) s l
-
-#endif
-#if SPIRAL_CORE_HOPAC
     /// ## WDiffPrepass
     open Hopac
     open Hopac.Infixes
@@ -180369,154 +179999,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         }
     
 
-#else
-    /// ## WDiffPrepass
-    open Hopac
-    open Hopac.Infixes
-    open Hopac.Extensions
-    open Hopac.Stream
-
-    /// ### PrepassStateValue
-    type PrepassStateValue = InferResult * PrepassTopEnv AdditionType * PrepassTopEnv
-
-    /// ### PrepassStatePropagated
-    type PrepassStatePropagated = PrepassTopEnv Promise
-
-    /// ### PrepassState
-    type PrepassState = FileState<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated>
-
-    /// ### prepass
-    let rec prepass (package_id,module_id,path,env) = function
-        | Cons((_,r,_) : TypecheckerStateValue, ls) ->
-            r.filled_top >>- fun filled_top ->
-            let x = (prepassPrepass package_id module_id path env).filled_top filled_top
-            let adds = match x with AOpen x | AInclude x -> x
-            let env = prepassUnion adds env
-            Cons((r,x,env),ls >>=* prepass (package_id,module_id,path,env))
-        | Nil ->
-            Job.result Nil
-
-    /// ### diffWDiffPrepass
-    let rec diffWDiffPrepass (package_id,module_id,path,env) (result,input : TypecheckerStateValue Stream) =
-        input >>** fun input ->
-        let tc () = prepass (package_id,module_id,path,env) input |> Hopac.memo
-        if Promise.Now.isFulfilled result then
-            match Promise.Now.get result,input with
-            | Cons((b',_,env as x),next), Cons((_,b,_),bs) when b' = b -> Cons(x,diffWDiffPrepass (package_id,module_id,path,env) (next,bs)) |> Promise.Now.withValue
-            | _ -> tc()
-        else tc()
-
-    /// ### funs_file_prepass
-    let funs_file_prepass = {new FileFuns<PackageId * ModuleId * string * TypecheckerStateValue Stream, PrepassStateValue Stream, PrepassStatePropagated> with
-        member _.eval(state,(pid,mid,path,x)) =
-            state >>=* fun env ->
-            x >>= prepass (pid,mid,path,env)
-        member _.diff(state,b,(pid,mid,path,a)) =
-            state >>=* fun env -> diffWDiffPrepass (pid,mid,path,env) (b,a)
-        member _.init x = {
-            input = x
-            result = Promise.Now.never()
-            state = Promise.Now.never()
-            }
-        }
-
-    /// ### prepass_results_summary
-    let prepass_results_summary l =
-        Stream.foldFun (fun big (_,x,_) ->
-            match x with
-            | AOpen _ -> big
-            | AInclude small -> prepassUnion small big
-            ) (prepassTop_env_empty) l
-
-    /// ### funs_proj_file_prepass
-    let funs_proj_file_prepass = {new ProjFileFuns<PrepassState,PrepassStatePropagated> with
-        member _.file(name,state,x) =
-            let x = wdiff_file_update_state funs_file_prepass x state
-            let env =
-                prepass_results_summary x.result >>-* fun env ->
-                match name with None -> env | Some name -> in_modulePrepass name env
-            x,env
-        member _.union(small,big) = small >>=* fun small -> big >>- fun big -> prepassUnion small big
-        member _.in_module(name,small) = small >>-* in_modulePrepass name
-        member _.default' default_env = Promise.Now.withValue (prepassTop_env_default default_env)
-        member _.empty = Promise.Now.withValue prepassTop_env_empty
-        }
-
-    /// ### PrepassPackageEnv
-    type PrepassPackageEnv = {
-        prototypes_instances : Map<int, Map<GlobalId * GlobalId,E>>
-        nominals : Map<int, Map<GlobalId,PrepassNominal>>
-        term : Map<string,E>
-        ty : Map<string,TPrepass>
-        }
-
-    /// ### unionWDiffPrepass
-    let unionWDiffPrepass small big = {
-        prototypes_instances = Map.foldBack Map.add small.prototypes_instances big.prototypes_instances
-        nominals = Map.foldBack Map.add small.nominals big.nominals
-        term = Map.foldBack Map.add small.term big.term
-        ty = Map.foldBack Map.add small.ty big.ty
-        }
-
-    /// ### in_module
-    let in_module m (a : PrepassPackageEnv) =
-        {a with
-            ty = Map.add m (TModule a.ty) Map.empty
-            term = Map.add m (EModule a.term) Map.empty
-            }
-
-    /// ### package_env_emptyWDiffPrepass
-    let package_env_emptyWDiffPrepass = {
-        prototypes_instances = Map.empty
-        nominals = Map.empty
-        term = Map.empty
-        ty = Map.empty
-        }
-
-    /// ### package_to_fileWDiffPrepass
-    let package_to_fileWDiffPrepass (x : PrepassPackageEnv) = {
-        nominals_next_tag = 0
-        nominals = Map.foldBack (fun _ -> Map.foldBack Map.add) x.nominals Map.empty
-        prototypes_next_tag = 0
-        prototypes_instances = Map.foldBack (fun _ -> Map.foldBack Map.add) x.prototypes_instances Map.empty
-        ty = x.ty
-        term = x.term
-        }
-
-    /// ### add_file_to_packageWDiffPrepass
-    let add_file_to_packageWDiffPrepass package_id (small : PrepassTopEnv) (big : PrepassPackageEnv): PrepassPackageEnv = {
-        nominals = Map.add package_id small.nominals big.nominals
-        prototypes_instances = Map.add package_id small.prototypes_instances big.prototypes_instances
-        ty = small.ty
-        term = small.term
-        }
-
-    /// ### package_env_defaultWDiffPrepass
-    let package_env_defaultWDiffPrepass default_env = { package_env_emptyWDiffPrepass with ty = (prepassTop_env_default default_env).ty }
-
-    /// ### ProjStatePrepass
-    type ProjStatePrepass = ProjState<PrepassState,PrepassStatePropagated,PrepassPackageEnv Promise>
-
-    /// ### funs_proj_package_prepass
-    let funs_proj_package_prepass = {new ProjPackageFuns<PrepassStatePropagated,PrepassPackageEnv Promise> with
-        member funs.unions default_env l =
-            let f = function Some name, small -> funs.in_module(name,small) | None, small -> small
-            List.fold (fun big x -> funs.union(f x,big)) (funs.default' default_env) l
-        member _.union(small,big) =
-            Job.delay <| fun () ->
-                Hopac.queueIgnore big
-                small >>=* fun a -> big >>- unionWDiffPrepass a
-            |> Hopac.memo
-        member _.in_module(name,x) = x >>-* fun env -> in_module name env
-        member _.package_to_file(x) = x >>-* package_to_fileWDiffPrepass
-        member _.add_file_to_package(pid,a,b) =
-            a >>=* fun env ->
-            b >>-* add_file_to_packageWDiffPrepass pid env
-        member _.default' default_env = Promise.Now.withValue (package_env_defaultWDiffPrepass default_env)
-        member _.empty = Promise.Now.withValue package_env_emptyWDiffPrepass
-        }
-
-#endif
     /// ## SpiProj
     // Everything that deals with Spiral project files themselves goes here
     open FParsec
@@ -180831,10 +180313,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         )
 
 #if SPIRAL_CORE_HOPAC
-    /// ## Graph
-    open System.Collections.Generic
-    
-
+    /// ## GraphIdentity
     type GraphPathKind private () =
         static member InternedKindTag () = 0x180001u
     type GraphPathId = CompilerIdentityKernel.InternedTextId<GraphPathKind>
@@ -180843,6 +180322,59 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let create value : GraphPathId =
             CompilerIdentityKernel.InternedTextId.create<GraphPathKind> value
         let text (value:GraphPathId) = CompilerIdentityKernel.InternedTextIdOps.text value
+    type SchemaPathKind private () =
+        static member InternedKindTag () = 0x180002u
+    type SchemaPathId = CompilerIdentityKernel.InternedTextId<SchemaPathKind>
+
+    module SchemaPathIdOps =
+        let create value : SchemaPathId =
+            CompilerIdentityKernel.InternedTextId.create<SchemaPathKind> value
+        let text (value:SchemaPathId) = CompilerIdentityKernel.InternedTextIdOps.text value
+    type ModulePathKind private () =
+        static member InternedKindTag () = 0x180003u
+    type ModulePathId = CompilerIdentityKernel.InternedTextId<ModulePathKind>
+
+    module ModulePathIdOps =
+        let create value : ModulePathId =
+            CompilerIdentityKernel.InternedTextId.create<ModulePathKind> value
+        let text (value:ModulePathId) = CompilerIdentityKernel.InternedTextIdOps.text value
+    type PackagePathIndex = Map<SchemaPathId,PackageId>
+    type PackagePathReverseIndex = Map<PackageId,SchemaPathId>
+    type PackagePathBiIndex = PackagePathIndex * PackagePathReverseIndex
+    type ProjectionPathKind private () =
+        static member InternedKindTag () = 0x180004u
+    type ProjectionPathId = CompilerIdentityKernel.InternedTextId<ProjectionPathKind>
+
+    module ProjectionPathIdOps =
+        let create value : ProjectionPathId =
+            CompilerIdentityKernel.InternedTextId.create<ProjectionPathKind> value
+        let text (value:ProjectionPathId) = CompilerIdentityKernel.InternedTextIdOps.text value
+#else
+    /// ## GraphIdentity
+    type GraphPathId = string
+    module GraphPathIdOps =
+        let create (value : string) : GraphPathId = value
+        let text (value : GraphPathId) : string = value
+    type SchemaPathId = string
+    module SchemaPathIdOps =
+        let create (value : string) : SchemaPathId = value
+        let text (value : SchemaPathId) : string = value
+    type ModulePathId = string
+    module ModulePathIdOps =
+        let create (value : string) : ModulePathId = value
+        let text (value : ModulePathId) : string = value
+    type ProjectionPathId = string
+    module ProjectionPathIdOps =
+        let create (value : string) : ProjectionPathId = value
+        let text (value : ProjectionPathId) : string = value
+    type PackagePathIndex = Map<SchemaPathId,PackageId>
+    type PackagePathReverseIndex = Map<PackageId,SchemaPathId>
+    type PackagePathBiIndex = PackagePathIndex * PackagePathReverseIndex
+#endif
+    /// ## Graph
+    open System.Collections.Generic
+    
+
 
     /// ### Graph
     type Graph = Map<GraphPathId,GraphPathId Set>
@@ -180902,36 +180434,9 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### link_exists
     let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
 
-    type SchemaPathKind private () =
-        static member InternedKindTag () = 0x180002u
-    type SchemaPathId = CompilerIdentityKernel.InternedTextId<SchemaPathKind>
 
-    module SchemaPathIdOps =
-        let create value : SchemaPathId =
-            CompilerIdentityKernel.InternedTextId.create<SchemaPathKind> value
-        let text (value:SchemaPathId) = CompilerIdentityKernel.InternedTextIdOps.text value
 
-    type ModulePathKind private () =
-        static member InternedKindTag () = 0x180003u
-    type ModulePathId = CompilerIdentityKernel.InternedTextId<ModulePathKind>
 
-    module ModulePathIdOps =
-        let create value : ModulePathId =
-            CompilerIdentityKernel.InternedTextId.create<ModulePathKind> value
-        let text (value:ModulePathId) = CompilerIdentityKernel.InternedTextIdOps.text value
-
-    type PackagePathIndex = Map<SchemaPathId,PackageId>
-    type PackagePathReverseIndex = Map<PackageId,SchemaPathId>
-    type PackagePathBiIndex = PackagePathIndex * PackagePathReverseIndex
-
-    type ProjectionPathKind private () =
-        static member InternedKindTag () = 0x180004u
-    type ProjectionPathId = CompilerIdentityKernel.InternedTextId<ProjectionPathKind>
-
-    module ProjectionPathIdOps =
-        let create value : ProjectionPathId =
-            CompilerIdentityKernel.InternedTextId.create<ProjectionPathKind> value
-        let text (value:ProjectionPathId) = CompilerIdentityKernel.InternedTextIdOps.text value
     
 
     /// ### topological_sort_template
@@ -180977,91 +180482,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         orderIds |> Array.map GraphPathIdOps.text, circularNodes
     
 
-#else
-    /// ## Graph
-    open System.Collections.Generic
-
-    /// ### Graph
-    type Graph = Map<string,string Set>
-
-    /// ### MirroredGraph
-    type MirroredGraph = Graph * Graph
-
-    /// ### mirrored_graph_empty
-    let mirrored_graph_empty : MirroredGraph = Map.empty, Map.empty
-
-    /// ### link_add'
-    let link_add' (abs : Graph) a b: Graph =
-        match Map.tryFind a abs with
-        | Some bs -> Map.add a (Set.add b bs) abs
-        | None -> Map.add a (Set.singleton b) abs
-
-    /// ### link_add
-    let link_add (s : MirroredGraph) a b: MirroredGraph = link_add' (fst s) a b, link_add' (snd s) b a
-
-    /// ### link_remove'
-    let link_remove' (abs : Graph) a b =
-        match Map.tryFind a abs with
-        | Some bs ->
-            let bs = Set.remove b bs
-            if Set.isEmpty bs then Map.remove a abs else Map.add a bs abs
-        | None -> abs
-
-    /// ### link_remove
-    let link_remove (s : MirroredGraph) a b: MirroredGraph = link_remove' (fst s) a b, link_remove' (snd s) b a
-
-    /// ### links_remove
-    let links_remove ((abs,bas as s) : MirroredGraph) a: MirroredGraph =
-        match Map.tryFind a abs with
-        | Some bs -> Map.remove a abs, Set.fold (fun bas b -> link_remove' bas b a) bas bs
-        | None -> s
-
-    /// ### links_add
-    let links_add s a bs = List.fold (fun s b -> link_add s a b) s bs
-
-    /// ### links_replace
-    let links_replace (s : MirroredGraph) a bs = links_add (links_remove s a) a bs
-
-    /// ### links_get
-    let links_get (abs : Graph) a = Map.tryFind a abs |> Option.defaultValue Set.empty
-
-    /// ### link_exists
-    let link_exists ((abs,bas) : MirroredGraph) x = Map.containsKey x abs || Map.containsKey x bas
-
-    /// ### topological_sort_template
-    let inline topological_sort_template add bas dirty_nodes =
-        let sort_visited = HashSet()
-        let rec dfs_rev a = if sort_visited.Add(a) then Seq.iter dfs_rev (links_get bas a); add a
-        Seq.iter dfs_rev dirty_nodes
-        sort_visited
-
-    /// ### topological_sort'
-    // Returns the order end -> mid -> start.
-    let topological_sort' bas start_nodes = let sort_order = Queue() in sort_order, topological_sort_template sort_order.Enqueue bas start_nodes
-
-    /// ### topological_sort
-    // Returns the order start -> mid -> end.
-    let topological_sort bas start_nodes = let sort_order = Stack() in sort_order, topological_sort_template sort_order.Push bas start_nodes
-
-    /// ### circular_nodes
-    let circular_nodes ((abs,bas) : MirroredGraph) dirty_nodes =
-        let sort_order, sort_visited = topological_sort bas dirty_nodes
-        let order = sort_order.ToArray()
-        let visited = HashSet()
-        let circular_nodes = Dictionary()
-        Array.fold (fun i a ->
-            let sc = ResizeArray() // This array stores the strongly connected components.
-            let rec dfs a = if sort_visited.Contains(a) && visited.Add(a) then Seq.iter dfs (links_get abs a); sc.Add a
-            dfs a
-            if 1 < sc.Count then
-                sc |> Seq.iter (fun x -> circular_nodes.Add(x,i) |> ignore)
-                i+1
-            else
-                i
-            ) 0 order |> ignore
-        order, circular_nodes
-
-#endif
     /// ## OutputFiles
 
     /// ### write_output_atomically_async
@@ -181071,7 +180491,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         System.IO.File.Move(staged, path, true)
         }
 
-#if SPIRAL_CORE_HOPAC
     /// ## ServerUtils
     // open System
     open System.IO
@@ -181551,396 +180970,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
     
 
-#else
-    /// ## ServerUtils
-    // open System
-    open System.IO
-    open System.Collections.Generic
-
-    open Microsoft.FSharp.Core
-
-    // open Common
-
-    /// ### ProjectCodeAction
-    type ProjectCodeAction =
-        | CreateFile of {|filePath : string|}
-        | DeleteFile of {|range: VSCRange; filePath : string|} // The range here includes the postfix operators.
-        | RenameFile of {|filePath : string; target : string|}
-        | CreateDirectory of {|dirPath : string|}
-        | DeleteDirectory of {|range: VSCRange; dirPath : string|} // The range here is for the whole tree, not just the code action activation.
-        | RenameDirectory of {|dirPath : string; target : string; validate_as_file : bool|}
-
-    /// ### code_action_execute
-    let code_action_execute a =
-        try match a with
-            | CreateDirectory a -> Directory.CreateDirectory(a.dirPath) |> ignore; Ok null
-            | DeleteDirectory a -> Directory.Delete(a.dirPath,true); Ok a.dirPath
-            | RenameDirectory a ->
-                if a.validate_as_file then
-                    match FParsec.CharParsers.run file_verify a.target with
-                    | FParsec.CharParsers.ParserResult.Success _ -> Directory.Move(a.dirPath,Path.Combine(a.dirPath,"..",a.target)); Ok a.dirPath
-                    | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Error er
-                else
-                    Directory.Move(a.dirPath,Path.Combine(a.dirPath,"..",a.target)); Ok a.dirPath
-            | CreateFile a ->
-                if File.Exists(a.filePath) then Error "File already exists."
-                else
-                    Directory.GetParent(a.filePath).Create()
-                    File.Create(a.filePath).Dispose()
-                    Ok null
-            | DeleteFile a -> File.Delete(a.filePath); Ok a.filePath
-            | RenameFile a ->
-                match FParsec.CharParsers.run file_verify a.target with
-                | FParsec.CharParsers.ParserResult.Success _ -> File.Move(a.filePath,Path.Combine(a.filePath,"..",a.target+Path.GetExtension(a.filePath)),false); Ok a.filePath
-                | FParsec.CharParsers.ParserResult.Failure(er,_,_) -> Error er
-        with e -> Error e.Message
-
-    /// ### RAction
-    type RAction = VSCRange * ProjectCodeAction
-
-    /// ### SchemaState
-    type SchemaState = { schema : Schema; errors_parse : RString list; errors_modules : RString list; errors_packages : RString list}
-
-    /// ### SchemaEnv
-    type SchemaEnv = Map<string,SchemaState>
-
-    /// ### ModuleEnv
-    type ModuleEnv = Map<string,ModuleState>
-
-    /// ### ss_empty
-    let ss_empty = {
-        schema = {moduleDir = None, null; modules = []; packageDir = None, null; packages = []}
-        errors_parse = []; errors_modules = []; errors_packages = []
-        }
-
-    /// ### ss_from_result
-    let ss_from_result = function
-        | Ok schema -> {ss_empty with schema = schema}
-        | Error ers -> {ss_empty with errors_parse = ers}
-
-    /// ### ss_validate_module
-    let ss_validate_module (packages : SchemaEnv) (modules : ModuleEnv) (x : SchemaState) =
-        let errors = ResizeArray()
-        let rec loop = function
-            | FileHierarchy.Directory(_,(r,path),_,l) ->
-                trace Verbose (fun () -> $"ss_validate_module / dir path: {path}") _locals
-                if Map.containsKey path packages then errors.Add(r,"Module directory has a package file in it.")
-                list l
-            | FileHierarchy.File(_,(r,path),_) ->
-                let path' = path |> SpiralFileSystem.standardize_path
-                trace Verbose (fun () -> $"ss_validate_module / file / path: {path} / path': {path'}") _locals
-                if Map.containsKey path' modules = false then errors.Add(r,"Module not loaded.")
-        and list l = List.iter loop l
-        list x.schema.modules
-        Seq.toList errors
-
-    /// ### ss_validate_modules
-    let ss_validate_modules (packages : SchemaEnv) modules order =
-        Array.fold (fun s x ->
-            match Map.tryFind x s with
-            | Some v -> Map.add x ({v with errors_modules = ss_validate_module packages modules v} : SchemaState) s
-            | None -> s
-            ) packages order
-
-    /// ### ss_has_error
-    let ss_has_error x =
-        (List.isEmpty x.errors_parse && List.isEmpty x.errors_modules && List.isEmpty x.errors_packages) = false
-
-    /// ### ss_validate_packages
-    let ss_validate_packages (packages : SchemaEnv) (order : string [], socs : Dictionary<string,int>) : SchemaEnv =
-        Array.fold (fun s path ->
-            match Map.tryFind path s with
-            | Some (x : SchemaState) ->
-                let c p = match socs.TryGetValue(p) with true,b -> b | false,_ -> -1
-                let is_circular x = x <> -1
-                let are_in_same_strong_component a b = is_circular a && is_circular b && a = b
-                let ers =
-                    let cpath = c path
-                    (x.schema.packages, []) ||> List.foldBack (fun {dir=r,p} ers ->
-                        let cp = c p
-                        if are_in_same_strong_component cpath cp then (r,"Package is circular and loops through the current one.") :: ers
-                        elif path = p then (r,"Self referential links are not allowed.") :: ers
-                        else
-                            match Map.tryFind p s with
-                            | Some s' when ss_has_error s' -> (r,"Package has an error.") :: ers
-                            | Some _ -> ers
-                            | None -> (r,"Package not loaded.") :: ers
-                        )
-                Map.add path {x with errors_packages=ers} s
-            | _ -> s
-            ) packages order
-
-    /// ### ss_validate
-    let ss_validate packages modules (order,socs) =
-        let packages = ss_validate_modules packages modules order
-        ss_validate_packages packages (order,socs)
-
-    /// ### ResultMap<'a,'b>
-    type ResultMap<'a,'b> when 'a : comparison = {ok : Map<'a,'b>; error: Map<'a,'b>}
-
-    /// ### ProjEnvTCResult
-    type ProjEnvTCResult = ResultMap<PackageId,ProjStateTC>
-
-    /// ### wdiff_projenvr_sync_schema
-    let wdiff_projenvr_sync_schema default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
-            (state : ResultMap<PackageId,ProjState<'file_input,'file,'package>>) order =
-        Array.fold (fun (s : ResultMap<_,_>) x ->
-            let x' = x |> SpiralFileSystem.standardize_path
-            trace Verbose (fun () -> $"ServerUtils.wdiff_projenvr_sync_schema / x: {x} / x': {x'}") _locals
-            match Map.tryFind x' ids with
-            | Some pid ->
-                match Map.tryFind x' packages with
-                | Some schema ->
-                    match Map.tryFind pid s.ok, Map.tryFind pid s.error, ss_has_error schema with
-                    | Some _, Some _,_ -> failwith "Compiler error: The ok and error maps should be disjoint."
-                    | Some x, None, true -> {ok=Map.remove pid s.ok; error=Map.add pid x s.error}
-                    | None, Some x, false -> {ok=Map.add pid x s.ok; error=Map.remove pid s.error}
-                    | None, None, c ->
-                        let x = wdiff_proj_init default_env funs_packages funs_files pid
-                        if c then {s with error=Map.add pid x s.error} else {s with ok=Map.add pid x s.ok}
-                    | _ -> s
-                | None -> {ok=Map.remove pid s.ok; error=Map.remove pid s.error}
-            | None -> s
-            ) state order
-
-    /// ### projenv_update_packages
-    let projenv_update_packages default_env funs_packages funs_files (ids : Map<string, PackageId>) (packages : SchemaEnv)
-            (state : Map<PackageId,ProjState<'a,'b,'state>>)  (dirty_packages : Dictionary<_,_>, order : string []) =
-        Array.foldBack (fun x l ->
-            let x' = x |> SpiralFileSystem.standardize_path
-            trace Verbose (fun () -> $"ServerUtils.projenv_update_packages / x: {x} / x': {x'}") _locals
-            match Map.tryFind x' packages with
-            | None -> l
-            | Some schema when ss_has_error schema -> l
-            | Some schema ->
-                let pid = ids.[x']
-                let packages = schema.schema.packages |> List.map (fun x -> x.name, ids.[snd x.dir])
-                match dirty_packages.TryGetValue(x') with
-                | true, x -> UpdatePackageModule(pid,packages,x) :: l
-                | false, _ -> UpdatePackage(pid,packages) :: l
-            ) order []
-        |> wdiff_projenv default_env funs_packages funs_files state
-
-    /// ### proj_file_iter_file
-    let inline proj_file_iter_file f (files : ProjFiles) =
-        let rec loop = function
-            | ProjFilesTree.File(module_id,path,_) -> f module_id path
-            | ProjFilesTree.Directory(_,_,l) -> list l
-        and list l = List.iter loop l
-        list files.tree
-
-    /// ### proj_file_get_input
-    let proj_file_get_input uids_file (x : ProjFiles) =
-        let d = Dictionary(Array.length uids_file)
-        proj_file_iter_file (fun mid path -> d.Add(path, Array.get uids_file mid |> fst)) x
-        d
-
-    /// ### proj_file_from_schema
-    let proj_file_from_schema (x : Schema) : ProjFiles =
-        let mutable num_files = 0
-        let mutable num_dirs = 0
-        let rec loop = function
-            | FileHierarchy.File(_,(_,path),name) ->
-                let uid = num_files
-                num_files <- num_files + 1
-                let path' = path |> SpiralFileSystem.standardize_path
-                trace Verbose (fun () -> $"ServerUtils.proj_file_from_schema / path: {path} / path': {path'}") _locals
-                ProjFilesTree.File(uid,path',name)
-            | FileHierarchy.Directory(_,_,name,l) ->
-                let uid = num_dirs
-                num_dirs <- num_dirs + 1
-                ProjFilesTree.Directory(uid,name,list l)
-        and list l = List.map loop l
-        let tree = list x.modules
-        { tree = tree; num_files = num_files; num_dirs = num_dirs }
-
-    /// ### proj_file_make_input
-    let inline proj_file_make_input f (files : ProjFiles) =
-        let ar = Array.zeroCreate files.num_files
-        proj_file_iter_file (fun mid path -> ar.[mid] <- f mid path) files
-        ar
-
-    /// ### dirty_nodes_template
-    let inline dirty_nodes_template funs (ids : Map<string, PackageId>) (packages : SchemaEnv) modules
-            (state : Map<PackageId,_>) (dirty_packages : string HashSet) =
-        let d = Dictionary<string,_ [] * ProjFiles>()
-        dirty_packages |> Seq.iter (fun path ->
-            let path' = path |> SpiralFileSystem.standardize_path
-            trace Verbose (fun () -> $"ServerUtils.dirty_nodes_template / path: {path} / path': {path'}") _locals
-            match Map.tryFind path' ids with
-            | Some pid ->
-                match Map.tryFind pid state with
-                | Some x ->
-                    let modules = modules pid
-                    let files = proj_file_from_schema packages.[path'].schema
-                    let state =
-                        let state = proj_file_get_input x.files.uids_file x.files.files
-                        proj_file_make_input (fun mid path ->
-                            trace Verbose (fun () -> $"ServerUtils.dirty_nodes_template / proj_file_make_input / path: {path} / path': {path'}") _locals
-                            match state.TryGetValue(path) with
-                            | true, x -> wdiff_file_update_input funs x (modules mid path)
-                            | false, _ -> funs.init (modules mid path)
-                            ) files
-                    d.Add(path',(state,files))
-                | None -> ()
-            | None -> ()
-            )
-        d
-
-    /// ### dirty_nodes_tc
-    let dirty_nodes_tc (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : ModuleEnv)
-            (state : Map<PackageId,ProjStateTC>) (dirty_packages : string HashSet) =
-        dirty_nodes_template funs_file_tc ids packages (fun pid mid path -> pid, mid, modules.[path].bundler) state dirty_packages
-
-    /// ### dirty_nodes_prepass
-    let dirty_nodes_prepass (ids : Map<string, PackageId>) (packages : SchemaEnv) (modules : Map<PackageId,ProjStateTC>)
-            (state : Map<PackageId,ProjStatePrepass>) (dirty_packages : string HashSet) =
-        let modules pid =
-            let x = modules.[pid]
-            let state = proj_file_get_input x.files.uids_file x.files.files
-            fun (mid : ModuleId) path -> pid, mid, path, state.[path].result
-        dirty_nodes_template funs_file_prepass ids packages modules state dirty_packages
-
-    /// ### wdiff_projenvr
-    let wdiff_projenvr default_env dirty_nodes funs_proj_package funs_proj_file
-            ids packages modules (state : ResultMap<PackageId,_>) (dirty_packages, order) =
-        let state = wdiff_projenvr_sync_schema default_env funs_proj_package funs_proj_file ids packages state order
-        let dirty_packages = dirty_nodes ids packages modules state.ok dirty_packages
-        {state with ok=projenv_update_packages default_env funs_proj_package funs_proj_file ids packages state.ok (dirty_packages, order)}
-
-    /// ### wdiff_projenvr_tc
-    let wdiff_projenvr_tc default_env ids packages modules state (dirty_packages, order) =
-        wdiff_projenvr default_env dirty_nodes_tc funs_proj_package_tc funs_proj_file_tc
-            ids packages modules state (dirty_packages, order)
-
-    /// ### wdiff_projenvr_prepass
-    let wdiff_projenvr_prepass default_env ids packages modules state (dirty_packages, order) =
-        wdiff_projenvr default_env dirty_nodes_prepass funs_proj_package_prepass funs_proj_file_prepass
-            ids packages modules state (dirty_packages, order)
-
-    /// ### LoadResult
-    type LoadResult =
-        | LoadModule of path: string * ModuleState option
-        | LoadPackage of package_dir: string * SchemaState option
-
-    /// ### is_top_down
-    open System.Threading.Tasks
-
-    let is_top_down (x : string) = Path.GetExtension x = ".spi"
-
-    /// ### spiproj_suffix
-    let spiproj_suffix x = Path.Combine(x,"package.spiproj")
-
-    /// ### loader_package
-    let loader_package default_env (packages : SchemaEnv) (modules : ModuleEnv) (pdir, text) =
-        let pdir' = pdir |> SpiralFileSystem.standardize_path
-        trace Verbose (fun () -> $"ServerUtils.loader_package / pdir: {pdir} / pdir': {pdir'}") _locals
-        let pdir = pdir'
-        let queue = Queue()
-        let load_module modules path =
-            match Map.tryFind path modules with
-            | Some _ -> ()
-            | None ->
-                task {
-                    if File.Exists path then
-                        try let! x = File.ReadAllTextAsync(path)
-                            return LoadModule(path,wdiff_module_init_all default_env (is_top_down path) x |> Some)
-                        with _ -> return LoadModule(path,None)
-                    else return LoadModule(path,None) // Note: We need this case otherwise 'con' might cause the file read to deadlock. https://superuser.com/questions/86999/why-cant-i-name-a-folder-or-file-con-in-windows
-                } |> queue.Enqueue
-
-        let schema (pdir,text) = schema (pdir,text) |> fun x -> LoadPackage(pdir,Some (ss_from_result x))
-        let load_package_from_disk packages pdir =
-            trace Verbose (fun () -> $"ServerUtils.loader_package.load_package_from_disk / pdir: {pdir}") _locals
-            task {
-                if Directory.Exists pdir then
-                    try
-                        let! x = File.ReadAllTextAsync(spiproj_suffix pdir)
-                        return schema (pdir,x)
-                    with _ ->
-                        return LoadPackage(pdir,None)
-                else return LoadPackage(pdir,None) // Ditto.
-            } |> queue.Enqueue
-        let load_package_some (pdir,text) =
-            trace Verbose (fun () -> $"ServerUtils.loader_package.load_package_some / pdir: {pdir}") _locals
-            schema (pdir,text) |> Task.FromResult |> queue.Enqueue
-        let load_package_none packages pdir =
-            let pdir' = pdir |> SpiralFileSystem.standardize_path
-            trace Verbose (fun () -> $"ServerUtils.loader_package.load_package_none / pdir: {pdir} / pdir': {pdir'}") _locals
-            let pdir = pdir'
-            match Map.tryFind pdir packages with
-            | Some _ -> ()
-            | None -> load_package_from_disk packages pdir
-
-        let dirty_packages = HashSet()
-        let rec invalidate_parent packages (x : DirectoryInfo) =
-            if x <> null then
-                let x' = x.FullName |> SpiralFileSystem.standardize_path
-                // trace Verbose (fun () -> $"""ServerUtils.loader_package.invalidate_parent / x.FullName: {x.FullName |> SpiralSm.replace "\\" "|"} / x': {x'} / packages: %A{packages |> Map.keys} / pdir: {pdir}""") _locals
-                let x_ = x
-                let x = {| FullName = x' |}
-                if Map.containsKey x.FullName packages then dirty_packages.Add(x.FullName) |> ignore
-                else invalidate_parent packages x_.Parent
-
-        let mutable packages = packages
-        let mutable modules = modules
-
-        match text with
-        | Some text -> load_package_some (pdir,text)
-        | None ->
-            // trace Verbose (fun () -> $"ServerUtils.loader_package / pdir: {pdir}") _locals
-            match Map.tryFind pdir packages with
-            | Some x -> LoadPackage(pdir,Some x) |> Task.FromResult |> queue.Enqueue
-            | None -> load_package_from_disk packages pdir
-
-        while 0 < queue.Count do
-            match queue.Dequeue().Result with
-            | LoadPackage(pdir,Some x) ->
-                let pdir' = pdir |> SpiralFileSystem.standardize_path
-                // trace Verbose (fun () -> $"ServerUtils.loader_package.LoadPackage / pdir: {pdir} / pdir': {pdir'}") _locals
-                packages <- Map.add pdir' x packages; dirty_packages.Add(pdir') |> ignore; invalidate_parent packages (Directory.GetParent(pdir'))
-                x.schema.packages |> List.iter (fun x -> load_package_none packages (snd x.dir))
-                let rec loop = function
-                    | FileHierarchy.Directory(_,_,_,l) -> list l
-                    | FileHierarchy.File(_,(_,path),_) ->
-                        let path' = path |> SpiralFileSystem.standardize_path
-                        trace Verbose (fun () -> $"ServerUtils.loader_package.LoadPackage | FileHierarchy.File(_,(_,path),_) / path: {path} / path': {path'}") _locals
-                        load_module modules path'
-                and list l = List.iter loop l
-                list x.schema.modules
-            | LoadPackage(pdir,None) -> packages <- Map.remove pdir packages; dirty_packages.Add(pdir) |> ignore; invalidate_parent packages (Directory.GetParent(pdir))
-            | LoadModule(mdir,Some x) ->
-                let mdir' = mdir |> SpiralFileSystem.standardize_path
-                trace Verbose (fun () -> $"ServerUtils.loader_package.LoadModule / mdir: {mdir} / mdir': {mdir'}") _locals
-                modules <- Map.add mdir' x modules
-            | LoadModule(mdir,None) -> modules <- Map.remove mdir modules
-        packages, dirty_packages, modules
-
-    /// ### graph_update
-    let graph_update (packages : SchemaEnv) (g : MirroredGraph) (dirty_packages : string HashSet) =
-        Seq.fold (fun g x ->
-            match Map.tryFind x packages with
-            | Some v -> links_replace g x (v.schema.packages |> List.map (fun x -> snd x.dir))
-            | None -> links_remove g x
-            ) g dirty_packages
-
-    /// ### package_ids_update
-    let package_ids_update (packages : SchemaEnv) package_ids (dirty_packages : string HashSet) =
-        let adds,removals = dirty_packages |> Seq.toArray |> Array.partition (fun x -> Map.containsKey x packages)
-        let adds = adds |> Array.filter (fun x -> Map.containsKey x (fst package_ids) = false) |> Array.mapi (fun i x -> (i,x))
-        let package_ids, removed_pids = removals |> Array.fold (fun ((a,b),l as s) x -> match Map.tryFind x a with Some x' -> (Map.remove x a, Map.remove x' b), x' :: l | None -> s) (package_ids,[])
-        removed_pids,
-        if Array.isEmpty adds then package_ids else
-        Map.fold (fun s x _ ->
-            Array.mapFold (fun s x -> if s = fst x then (s+1, snd x),s+1 else x,s) x s |> fst
-            ) adds (snd package_ids)
-        |> Array.fold (fun (a,b) (k,v) -> Map.add v k a, Map.add k v b) package_ids
-
-    /// ### package_ids_remove
-    let package_ids_remove (s : ResultMap<PackageId,_>) l =
-        List.fold (fun s x -> {ok=Map.remove x s.ok; error=Map.remove x s.error}) s l
-
-#endif
 #if SPIRAL_CORE_HOPAC
     /// ## SignalRSupervisor
     // open System
@@ -182123,7 +181152,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let push path (s,o) = Set.add path s, path :: o
         let add (s,o) l = Array.foldBack (fun x (s,o as z) -> if Set.contains x s then z else Set.add x s, x :: o) l (s,o)
         let update (s : AttentionState) (modules,packages,supervisor) = {modules = add s.modules modules; packages = add s.packages packages; supervisor = supervisor; old_packages = s.supervisor.packages}
-        let rec loop (s : AttentionState) =
+        let rec loop (s : AttentionState) : Job<unit> =
             let clear uri =
                 HopacExtensions.start (Ch.send errors.tokenizer {|uri=uri; errors=[]|})
                 HopacExtensions.start (Ch.send errors.parser {|uri=uri; errors=[]|})
@@ -185810,7 +184839,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
         let push path (s,o) = Set.add path s, path :: o
         let add (s,o) l = Array.foldBack (fun x (s,o as z) -> if Set.contains x s then z else Set.add x s, x :: o) l (s,o)
         let update (s : AttentionState) (modules,packages,supervisor) = {modules = add s.modules modules; packages = add s.packages packages; supervisor = supervisor; old_packages = s.supervisor.packages}
-        let rec loop (s : AttentionState) =
+        let rec loop (s : AttentionState) : Promise<Void> =
             let clear uri =
                 Hopac.start (Ch.send errors.tokenizer {|uri=uri; errors=[]|})
                 Hopac.start (Ch.send errors.parser {|uri=uri; errors=[]|})
@@ -186508,6 +185537,21 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
 
 #endif
 #if SPIRAL_CORE_HOPAC
+    /// ## ServerHooks
+    let serverTraceFilesEnabled = diag_save_enabled
+    let exitAfterParentProcessGone () = DiagJson.forceProcessExitDirect 1 DiagJson.LegacyExitParentObserverAfterNativeRootComplete
+    let noteClientErrorsDelivered x = BuildDiagnosticsLedger.note ("delivered_" + clientErrorsResKindText x)
+    let exitClientAfterShutdown () =
+        match BigStack.terminalFlowGlobalReconcileHostReturnThroughReducer() with
+        | Some exitCode -> DiagJson.forceProcessExitDirect exitCode DiagJson.LegacyExitClientAfterReducerOwnedTotalOrder
+        | None -> DiagJson.forceProcessExitDirect 227 DiagJson.LegacyExitClientWithoutReducerOwnedPhysicalReceipt
+#else
+    /// ## ServerHooks
+    let serverTraceFilesEnabled = true
+    let exitAfterParentProcessGone () = System.Environment.Exit 1
+    let noteClientErrorsDelivered (_ : ClientErrorsRes) = ()
+    let exitClientAfterShutdown () = System.Diagnostics.Process.GetCurrentProcess().Kill ()
+#endif
     /// ## new_server
     
 
@@ -186572,8 +185616,8 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     Hopac.Job.awaitUnitTask (
                         task {
                             publish x
-                            BuildDiagnosticsLedger.note ("delivered_" + clientErrorsResKindText x)
-                            trace Verbose (fun () -> $"spiral_compiler.new_server / error_ch_create / kind={clientErrorsResKindText x}") (fun () -> "")
+                            noteClientErrorsDelivered x
+                            trace Verbose (fun () -> $"spiral_compiler.new_server / error_ch_create / x: %A{x}") (fun () -> "")
                             ()
                         }
                         |> (fun (x : System.Threading.Tasks.Task<unit>) -> x :> System.Threading.Tasks.Task)
@@ -186638,135 +185682,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ### tests
     
 
-#else
-    /// ## new_server
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-#if _LINUX
-#else
-#endif
-
-    open Hopac
-    open Hopac.Infixes
-
-    let inline new_server<'a, 'b, 'c, 'd, 'e when 'd :> Job<'e> and 'a :> Job<unit> and 'b : null> ()
-        :
-        {|
-            errors: FSharp.Control.AsyncSeq<ClientErrorsRes>
-            job_null: 'a -> Task<'b>
-            job_val: (IVar<'c> -> 'd) -> Task<string>
-            supervisor: Ch<SupervisorReq>
-        |} =
-        let subscribers = System.Collections.Concurrent.ConcurrentDictionary<System.Threading.Channels.Channel<ClientErrorsRes>, unit>()
-        let publish (x : ClientErrorsRes) =
-            for KeyValue (subscriber, ()) in subscribers do
-                subscriber.Writer.TryWrite x |> ignore
-        let stream =
-            { new FSharp.Control.IAsyncEnumerable<ClientErrorsRes> with
-                member _.GetEnumerator () =
-                    let pending = System.Threading.Channels.Channel.CreateUnbounded<ClientErrorsRes>()
-                    subscribers.TryAdd (pending, ()) |> ignore
-                    { new FSharp.Control.IAsyncEnumerator<ClientErrorsRes> with
-                        member _.MoveNext () = async {
-                            let! ct = Async.CancellationToken
-                            let! msg = pending.Reader.ReadAsync(ct).AsTask() |> Async.AwaitTask
-                            return Some msg
-                        }
-                        member _.Dispose () =
-                            subscribers.TryRemove pending |> ignore
-                    }
-            }
-
-        let error_ch_create msg =
-            let x = Ch()
-            Hopac.server (Job.forever (Ch.take x >>= (
-                msg >> fun (x : ClientErrorsRes) ->
-                    Hopac.Job.awaitUnitTask (
-                        task {
-                            publish x
-                            trace Verbose (fun () -> $"spiral_compiler.new_server / error_ch_create / x: %A{x}") (fun () -> "")
-                            ()
-                        }
-                        |> (fun (x : System.Threading.Tasks.Task<unit>) -> x :> System.Threading.Tasks.Task)
-                    )
-            )))
-            x
-
-        let errors : SupervisorErrorSources = {
-            fatal = error_ch_create FatalError
-            package = error_ch_create PackageErrors
-            tokenizer = error_ch_create TokenizerErrors
-            parser = error_ch_create ParserErrors
-            typer = error_ch_create TypeErrors
-            traced = error_ch_create TracedError
-            }
-        let supervisor = Ch()
-        let atten = Ch()
-
-        if System.Environment.GetEnvironmentVariable "SPIRAL_ATTENTION_SERVER" = "0" then
-            Hopac.server (Job.forever (Ch.take atten |> Job.Ignore))
-        else
-            Hopac.server (attention_server errors atten)
-
-        let args = [| "--port"; "0" |]
-        let env = startupParse args
-        do Hopac.start (supervisor_server env atten errors supervisor)
-
-        let job_null job =
-            job
-            |> Hopac.start
-            task { return null }
-        let serialize (x : obj) =
-            match x with
-            | null -> null
-            | :? Option<string> as x -> x.Value
-            | _ -> FSharp.Json.Json.serialize x
-        let job_val job =
-            let res = IVar()
-            let job' =
-                job res
-            Hopac.queueAsTask (job' >>=. IVar.read res >>- serialize)
-        {|
-            job_null = job_null
-            job_val = job_val
-            errors = stream
-            supervisor = supervisor
-        |}
-
-    /// ### tests
-
-#endif
     /// ## getParentProcessId
     let getParentProcessId () =
         if SpiralPlatform.is_windows () |> not
@@ -186784,7 +185699,6 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
     /// ## assemblyName
     let assemblyName = System.Reflection.Assembly.GetEntryAssembly().GetName().Name
 
-#if SPIRAL_CORE_HOPAC
     /// ## startParentWatcher
     let startParentWatcher () =
         let parentAsyncChild = async {
@@ -186801,36 +185715,13 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
                     (fun () -> $"{_locals ()}")
                 do! Async.Sleep 1000
-                DiagJson.forceProcessExitDirect 1 DiagJson.LegacyExitParentObserverAfterNativeRootComplete
+                exitAfterParentProcessGone ()
         }
     
 
         HopacExtensions.start (Job.fromAsync parentAsyncChild)
     
 
-#else
-    /// ## startParentWatcher
-    let inline startParentWatcher () =
-        let parentAsyncChild = async {
-            let parentProcessId = getParentProcessId ()
-            trace Verbose
-                (fun () -> "spiral_compiler.startParentWatcher")
-                (fun () -> $"parentProcessId: {parentProcessId} / {_locals ()}")
-
-            if parentProcessId > 0u then
-                let parentProcess = parentProcessId |> int |> System.Diagnostics.Process.GetProcessById
-                do! parentProcess.WaitForExitAsync () |> Async.AwaitTask
-                trace Debug
-                    (fun () -> "spiral_compiler.startParentWatcher / Parent process has exited. Performing cleanup...")
-                    (fun () -> $"{_locals ()}")
-                System.Threading.Thread.Sleep 1000
-                System.Environment.Exit 1
-        }
-
-        parentAsyncChild |> Async.Start
-
-#endif
-#if SPIRAL_CORE_HOPAC
     /// ## SpiralHub
     open System.IO
     open System.Collections.Generic
@@ -186871,7 +185762,7 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
             let client_req = FSharp.Json.Json.deserialize x
     
 
-            if diag_save_enabled && Directory.Exists traceDir then
+            if serverTraceFilesEnabled && Directory.Exists traceDir then
                 match client_req with
                 | Ping _ -> ()
                 | _ ->
@@ -186907,91 +185798,12 @@ def spiral_array_set__K__(+arr: Chan(Array<__T__>) & U32, +i: U32, +v: __T__) ->
                     trace Debug (fun () -> "Supervisor.SpiralHub.ClientToServerMsg / exiting...") _locals
                     HopacExtensions.start (job {
                         do! HopacExtensions.sleepMs 300
-                        match BigStack.terminalFlowGlobalReconcileHostReturnThroughReducer() with
-                        | Some exitCode ->
-                            DiagJson.forceProcessExitDirect exitCode DiagJson.LegacyExitClientAfterReducerOwnedTotalOrder
-                        | None ->
-                            DiagJson.forceProcessExitDirect 227 DiagJson.LegacyExitClientWithoutReducerOwnedPhysicalReceipt
+                        exitClientAfterShutdown ()
                     })
                     return null
                 }
     
 
-#else
-    /// ## SpiralHub
-    open System.IO
-    open System.Collections.Generic
-
-    open Hopac
-    open Hopac.Infixes
-    open Hopac.Extensions
-    open Hopac.Stream
-
-    open SpiralFileSystem.Operators
-
-    open Microsoft.AspNetCore.SignalR
-    open Microsoft.AspNetCore.SignalR.Client
-
-    type SpiralHub(supervisor : Supervisor) =
-        inherit Hub()
-
-        member _.ClientToServerMsg (x : string) =
-            let job_null job = Hopac.start job; task { return null }
-
-            let serialize (x : obj) =
-                match x with
-                | null -> null
-                | :? Option<string> as x -> x.Value
-                | _ -> FSharp.Json.Json.serialize x
-
-            let job_val job = let res = IVar() in Hopac.queueAsTask (job res >>=. IVar.read res >>- serialize)
-            let supervisor = supervisor.supervisor_ch
-
-            let client_req = FSharp.Json.Json.deserialize x
-
-            if Directory.Exists traceDir then
-                match client_req with
-                | Ping _ -> ()
-                | _ ->
-                    let req_name = client_req.GetType().Name
-                    let guid = System.DateTime.Now |> SpiralDateTime.new_guid_from_date_time
-                    let trace_file = traceDir </> $"{guid}_{req_name}.json"
-
-                    async {
-                        do! Async.Sleep 500
-                        try
-                            do! x |> SpiralFileSystem.write_all_text_async trace_file
-                        with ex ->
-                            trace Critical (fun () -> $"SpiralHub.ClientToServerMsg / ex: {ex |> SpiralSm.format_exception}") _locals
-                    }
-                    |> Async.Start
-
-            match client_req with
-            | ProjectFileOpen x -> job_null (supervisor *<+ SupervisorReq.ProjectFileOpen x)
-            | ProjectFileChange x -> job_null (supervisor *<+ SupervisorReq.ProjectFileChange x)
-            | ProjectCodeActionExecute x -> job_val (fun res -> supervisor *<+ SupervisorReq.ProjectCodeActionExecute(x,res))
-            | ProjectFileLinks x -> job_val (fun res -> supervisor *<+ SupervisorReq.ProjectFileLinks(x,res))
-            | ProjectCodeActions x -> job_val (fun res -> supervisor *<+ SupervisorReq.ProjectCodeActions(x,res))
-            | FileOpen x -> job_null (supervisor *<+ SupervisorReq.FileOpen x)
-            | FileChange x -> job_null (supervisor *<+ SupervisorReq.FileChange x)
-            | FileDelete x -> job_null (supervisor *<+ SupervisorReq.FileDelete x)
-            | FileTokenRange x -> job_val (fun res -> supervisor *<+ SupervisorReq.FileTokenRange(x,res))
-            | HoverAt x -> job_val (fun res -> supervisor *<+ SupervisorReq.HoverAt(x,res))
-            | BuildFile x -> job_val (fun res -> supervisor *<+ SupervisorReq.BuildFile(x,res))
-            | Ping _ -> task { return null }
-            | Exit _ ->
-                async {
-                    trace Debug (fun () -> "Supervisor.SpiralHub.ClientToServerMsg / exiting...") _locals
-                    async {
-                        do! Async.Sleep 300
-                        System.Diagnostics.Process.GetCurrentProcess().Kill ()
-                    }
-                    |> Async.Start
-                    return null
-                }
-                |> Async.StartAsTask
-
-#endif
 #if SPIRAL_CORE_HOPAC
     /// ## main
     open Microsoft.AspNetCore.Builder

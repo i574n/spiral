@@ -17,9 +17,7 @@ fn sp_method0(p0: i32, p1: i32) -> SpiralTuple0 {
 fn sp_method1(p0: i32, p1: i32) -> i32 {
     var v0: i32 = p0;
     var v1: i32 = p1;
-    var v2: i32 = 0i;
-    v2 = (v0 + v1);
-    return v2;
+    return (v0 + v1);
 }
 fn spiral_main() -> i32 {
     var v0: i32 = 0i;
@@ -33,9 +31,7 @@ fn spiral_main() -> i32 {
     v3 = spiral_tuple1.v1;
     var v4: i32 = 0i;
     v4 = sp_method1(v2, v3);
-    var v5: i32 = 0i;
-    v5 = (v4 - 42i);
-    return v5;
+    return (v4 - 42i);
 }
 @compute @workgroup_size(1)
 fn main() {

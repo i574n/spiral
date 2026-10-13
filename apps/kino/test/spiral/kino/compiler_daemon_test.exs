@@ -225,6 +225,36 @@ defmodule Spiral.Kino.CompilerDaemonTest do
     assert is_integer(mb) and mb > 0
     assert CompilerDaemon.working_set_mb(999_999_999) == nil
   end
+  test "the compiler runs from a shadow copy keyed by the DLL stamp; a rebuilt DLL gets a fresh copy and restarts it" do
+    dir = Spiral.Kino.TestHelpers.tmp_dir!("shadow")
+    build = Path.join(dir, "net11.0")
+    File.mkdir_p!(build)
+    dll = Path.join(build, "SpiralCompiler.dll")
+    File.write!(dll, "v1")
+    File.write!(Path.join(build, "SpiralCompiler.deps.json"), "{}")
+    root = Path.join(dir, "shadows")
+
+    first = CompilerDaemon.shadow_dll(dll, root)
+    refute first == dll
+    assert File.read!(first) == "v1"
+    assert File.regular?(Path.join(Path.dirname(first), "SpiralCompiler.deps.json"))
+    assert CompilerDaemon.shadow_dll(dll, root) == first
+
+    stamp = CompilerDaemon.dll_stamp(dll)
+    assert CompilerDaemon.compiler_current?(%{dll_stamp: stamp}, stamp)
+
+    File.write!(dll, "v2 rebuilt")
+    {:ok, %{mtime: mtime}} = File.stat(dll, time: :posix)
+    File.touch!(dll, mtime + 5)
+    refute CompilerDaemon.compiler_current?(%{dll_stamp: stamp}, CompilerDaemon.dll_stamp(dll))
+
+    second = CompilerDaemon.shadow_dll(dll, root)
+    refute second == first
+    assert File.read!(second) == "v2 rebuilt"
+    refute File.exists?(first)
+    assert CompilerDaemon.shadow_dll(Path.join(dir, "missing.dll"), root) == Path.join(dir, "missing.dll")
+    assert CompilerDaemon.shadow_dll(dll, Path.join(dir, "shadows") <> "\u0000") == dll
+  end
   test "an exit signal from a linked process does not stop the daemon" do
     dir = Spiral.Kino.TestHelpers.tmp_dir!("daemon-exit")
 

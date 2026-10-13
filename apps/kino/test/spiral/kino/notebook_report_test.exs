@@ -293,7 +293,7 @@ defmodule Spiral.Kino.NotebookReportTest do
     File.write!(path, spi)
 
     target = fn %{builder: builder, source: source} ->
-      printed = if source =~ "differ" and builder.tool == :gleam, do: "1.0\n", else: "1\n"
+      printed = if source =~ "differ" and builder.tool == :gleam, do: "2\n", else: "String(\"__assert_eq { expected = 1.5707963267949 }\")\n"
       {:ok, %{exit_status: 0, output: printed}}
     end
 
@@ -302,7 +302,7 @@ defmodule Spiral.Kino.NotebookReportTest do
 
     assert Enum.map(report["tests"], &{&1["name"], &1["status"]}) == [{"same", "passed"}, {"differ", "failed"}, {"differ_allowed", "passed"}]
     differ = Enum.find(report["tests"], &(&1["name"] == "differ"))
-    assert differ["message"] =~ "targets disagree: lua printed \"1\", gleam printed \"1.0\""
+    assert differ["message"] =~ "targets disagree: lua printed \"__assert_eq { expected = 1.570796 }\", gleam printed \"2.0\""
     assert [%{"target" => "lua", "status" => "passed"}, %{"target" => "gleam", "status" => "disagrees"}] = differ["targets"]
   end
   test "a test that never ran says why", %{dir: dir} do
@@ -323,6 +323,48 @@ defmodule Spiral.Kino.NotebookReportTest do
     after
       if previous, do: System.put_env("SPIRAL_KINO_CELLS", previous), else: System.delete_env("SPIRAL_KINO_CELLS")
     end
+  end
+  test "a build_only test builds every target, never runs, and reports built, not passed", %{dir: dir} do
+    spi = """
+    inl one () = 1i32
+
+    test host_ui build_only =
+        one ()
+
+    ///> lua
+    test lua_ui build_only =
+        one ()
+
+    test broken_ui build_only =
+        does_not_compile ()
+
+    test plain =
+        one ()
+    """
+
+    assert Document.to_spi_tested(Document.parse_spi(spi, "")) == spi
+    path = Path.join(dir, "build_only.spi")
+    File.write!(path, spi)
+
+    compile = fn %{source: source} ->
+      if source =~ "does_not_compile", do: {:error, "main.spi:1:1: Unbound variable: does_not_compile."}, else: {:ok, "fn main() {}\n"}
+    end
+
+    execute = fn %{exe_path: exe} ->
+      if File.read!(Path.join(Path.dirname(exe), "main.spi")) =~ "_ui", do: raise("a build_only test ran"), else: {:ok, %{exit_status: 0, output: "", duration_ms: 1}}
+    end
+
+    {_, report} =
+      Notebook.run_report(path, compile: compile, rustc: fn _ -> :ok end, execute: execute, target: fn _ -> raise "a build_only target ran" end)
+
+    assert Enum.map(report["tests"], &{&1["name"], &1["mode"], &1["status"]}) == [
+             {"host_ui", "build_only", "built"},
+             {"lua_ui", "build_only", "built"},
+             {"broken_ui", "build_only", "failed"},
+             {"plain", "test", "passed"}
+           ]
+
+    assert %{"built" => 2, "passed" => 1, "failed" => 1} = report
   end
   test "an ignored cell is neither run nor a definition of later cells", %{dir: dir} do
     path = Path.join(dir, "ignored.dib")

@@ -10,9 +10,7 @@ fn sp_method0(p0: i32, p1: i32) -> i32 {
     var v1: i32 = p1;
     var v2: i32 = 0i;
     v2 = (v0 + v1);
-    var v3: i32 = 0i;
-    v3 = (v2 - 42i);
-    return v3;
+    return (v2 - 42i);
 }
 fn spiral_main() -> i32 {
     var v0: i32 = 0i;

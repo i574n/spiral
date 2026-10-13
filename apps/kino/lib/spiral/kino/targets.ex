@@ -34,6 +34,22 @@ defmodule Spiral.Kino.Targets do
     |> normalize(true)
   end
 
+  @spec build(map(), String.t(), keyword(), timeout(), integer() | :infinity) ::
+          {:ok, map()} | {:error, Exception.t()}
+  def build(%{tool: :gleam} = builder, output_path, opts, timeout, deadline) do
+    package = output_path |> Path.dirname() |> Path.dirname()
+    File.write!(Path.join(package, "gleam.toml"), gleam_manifest(output_path, builder.deps, builder.target || "erlang"))
+    run_program(Toolchain.gleam(opts), "gleam build", ["build", "--no-print-progress"], Keyword.put(opts, :cwd, package), timeout, deadline, false)
+  end
+
+  def build(%{tool: :c}, output_path, opts, timeout, deadline) do
+    cc = Toolchain.cc(opts)
+    exe = Path.join(Path.dirname(output_path), exe_name())
+    args = if cl?(cc || ""), do: ["/nologo", "/Fe:#{exe}", output_path], else: ["-o", exe, output_path]
+    run_program(cc, Path.basename(cc || "gcc"), args, opts, timeout, deadline, false)
+  end
+
+  def build(_builder, _output_path, _opts, _timeout, _deadline), do: {:ok, %{stdout: ""}}
   @spec host(String.t(), String.t(), keyword(), timeout(), integer() | :infinity) ::
           {:ok, %{stdout: String.t()}} | {:error, Exception.t()}
   def host(language, source, opts, timeout, deadline) do
@@ -51,7 +67,16 @@ defmodule Spiral.Kino.Targets do
     |> normalize(false)
   end
 
-  defp run_default(builder, output_path, opts, timeout, deadline) do
+  defp run_default(%{tool: :gleam, target: "javascript"} = builder, output_path, opts, timeout, deadline)
+       when is_list(opts) do
+    if opts[:test_cell] == true,
+      do: run_gleam(output_path, builder.deps, "javascript", opts, timeout, deadline),
+      else: dispatch_default(builder, output_path, opts, timeout, deadline)
+  end
+
+  defp run_default(builder, output_path, opts, timeout, deadline), do: dispatch_default(builder, output_path, opts, timeout, deadline)
+
+  defp dispatch_default(builder, output_path, opts, timeout, deadline) do
     case Builders.dispatch(builder, output_path) do
       {:spiral, ["rust" | _] = args} ->
         one_spiral_rust(opts, timeout, deadline, fn deadline ->
@@ -77,6 +102,10 @@ defmodule Spiral.Kino.Targets do
 
       {:dcc, path} ->
         run_dcc(path, opts, timeout, deadline)
+
+      {:gleam, path, deps} ->
+        run_gleam(path, deps, "erlang", opts, timeout, deadline)
+
 
       {:zig, path} ->
         run_program(Toolchain.zig(opts), "zig", ["run", path], opts, timeout, deadline, false)
@@ -281,8 +310,71 @@ defmodule Spiral.Kino.Targets do
     end
   end
 
-  @wgsl_no_adapter 3
+  @gleam_deps [
+    {"gleam_stdlib", "0.57.0"},
+    {"gleam_time", ">=1.0.0 and <2.0.0"},
+    {"gleam_erlang", ">=0.34.0 and <1.0.0"},
+    {"envoy", ">=1.0.0 and <2.0.0"},
+    {"gary", ">=1.1.0 and <2.0.0"},
+    {"gtempo", ">=7.1.0 and <8.0.0"}
+  ]
 
+  @doc false
+  def gleam_manifest(path, deps, target \\ "erlang") do
+    name = if String.contains?(Path.basename(path), "_real"), do: "main_real", else: "main"
+
+    extra =
+      for %{name: dep, version: version} <- deps, not List.keymember?(@gleam_deps, dep, 0) do
+        {dep, (version || "*") |> String.replace("\\", "") |> String.trim("\"")}
+      end
+
+    lines = Enum.map(@gleam_deps ++ extra, fn {dep, version} -> "#{dep} = #{inspect(version)}" end)
+    Enum.join(["name = #{inspect(name)}", "target = #{inspect(target)}", "", "[dependencies]" | lines], "\n") <> "\n"
+  end
+
+  defp run_gleam(path, deps, target, opts, timeout, deadline) do
+    package = path |> Path.dirname() |> Path.dirname()
+    File.write!(Path.join(package, "gleam.toml"), gleam_manifest(path, deps, target))
+    gleam = Toolchain.gleam(opts)
+    quiet = Keyword.put(opts, :cwd, package)
+
+    with {:ok, _built} <- run_program(gleam, "gleam build", ["build", "--no-print-progress"], quiet, timeout, deadline, false) do
+      run_gleam_program(package, target, opts, quiet, timeout, deadline)
+    end
+  end
+
+  defp run_gleam_program(package, "javascript", opts, quiet, timeout, deadline) do
+    entry = Path.join(package, "kino_entry.mjs")
+    File.write!(entry, ~s|import { main } from "./build/dev/javascript/main/main.mjs";\nmain();\n|)
+    run_program(Toolchain.bun(opts), "bun", [entry], quiet, timeout, deadline, false)
+  end
+
+  defp run_gleam_program(package, _erlang, opts, quiet, timeout, deadline) do
+    paths = Path.wildcard(Path.join(package, "build/dev/erlang/*/ebin"))
+    entry = "try main:main(), halt(0) catch Class:Reason -> io:format(\"~p: ~p~n\", [Class, Reason]), halt(1) end."
+    run_program(Toolchain.erl(opts), "erl", ["-noshell", "-pa" | paths] ++ ["-eval", entry], quiet, timeout, deadline, false)
+  end
+  @doc false
+  def strip_gleam_warnings(text) do
+    text
+    |> String.replace("\r\n", "\n")
+    |> String.split("\n")
+    |> Enum.reduce({[], false}, fn line, {kept, skipping} ->
+      cond do
+        String.starts_with?(line, "warning: ") -> {kept, true}
+        skipping and gleam_warning_line?(line) -> {kept, true}
+        true -> {[line | kept], false}
+      end
+    end)
+    |> elem(0)
+    |> Enum.reverse()
+    |> Enum.join("\n")
+  end
+
+  defp gleam_warning_line?(line) do
+    line == "" or String.starts_with?(line, [" ", "\t", "Hint:", "│", "┌"]) or Regex.match?(~r/^\d+ │/, line)
+  end
+  @wgsl_no_adapter 3
   defp run_wgsl(path, opts, timeout, deadline) do
     with :ok <- naga_check(path, opts, timeout, deadline) do
       case Toolchain.wgsl_run(opts) do

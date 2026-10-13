@@ -60,6 +60,16 @@ defmodule Spiral.Kino.Toolchain do
     opts[:lua] || System.get_env("SPIRAL_LUA") || System.find_executable("lua")
   end
 
+  @spec erl(keyword()) :: String.t() | nil
+  def erl(opts) do
+    opts[:erl] || System.get_env("SPIRAL_ERL") || System.find_executable("erl")
+  end
+
+  @spec gleam(keyword()) :: String.t() | nil
+  def gleam(opts) do
+    opts[:gleam] || System.get_env("SPIRAL_GLEAM") || System.find_executable("gleam")
+  end
+
   @spec zig(keyword()) :: String.t() | nil
   def zig(opts) do
     opts[:zig] || System.get_env("SPIRAL_ZIG") || System.find_executable("zig")

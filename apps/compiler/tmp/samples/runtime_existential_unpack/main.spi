@@ -13,4 +13,4 @@ inl main () : i32 =
         inl result = project value
         !!!!Sub(result, 1i32)
 
-inl oracle_must_not_record_current_error () = ()
+inl expected_error_runtime_existentials_are_compile_time_only () = ()

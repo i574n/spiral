@@ -317,7 +317,7 @@ let rec test_block_go (src : string) (i : i32) (targets : rows) (options : strin
     match text.next_line src i with
     | LineDone =>
         inl head = cut_before options " --fails "
-        inl header = "test " ++ name ++ test_mode head "static" "static" ++ test_mode head "--print-code" "print_code" ++ test_mode head "--ignore" "ignore" ++ test_mode head "--no-agree" "no_agree" ++ clause_after options " --fails " " fails " ++ " ="
+        inl header = "test " ++ name ++ test_mode head "static" "static" ++ test_mode head "--print-code" "print_code" ++ test_mode head "--ignore" "ignore" ++ test_mode head "--no-agree" "no_agree" ++ test_mode head "--build-only" "build_only" ++ clause_after options " --fails " " fails " ++ " ="
         inl lines = rev_rows (drop_blank_rows body) NoRow
         join_rows (append_rows (rev_rows targets NoRow) (Row (header, lines)))
     | LineGot (line, next) =>
@@ -354,6 +354,7 @@ inl test_mode_of (source : string) : string =
     inl head = " " ++ first_line source ++ " "
     if text.contains head " --ignore " then "ignore"
     elif text.contains head " --fails " then "fails"
+    elif text.contains head " --build-only " then "build_only"
     elif text.contains head " --test static " then "static"
     else "test"
 
@@ -409,6 +410,7 @@ let rec flags_valid (s : string) : bool =
     elif text.starts_with s " print_code" then flags_valid (text.drop s 11i32)
     elif text.starts_with s " ignore" then flags_valid (text.drop s 7i32)
     elif text.starts_with s " no_agree" then flags_valid (text.drop s 9i32)
+    elif text.starts_with s " build_only" then flags_valid (text.drop s 11i32)
     else false
 
 inl expectation_valid (clause : string) : bool =
@@ -443,7 +445,8 @@ inl test_options (real_mode : bool) (modes : string) : string =
     inl stat = if text.contains padded " static " then " static" else ""
     inl show = if text.contains padded " print_code " then " --print-code" else ""
     inl agree = if text.contains padded " no_agree " then " --no-agree" else ""
-    base ++ stat ++ show ++ agree ++ clause_after modes " fails " " --fails "
+    inl build = if text.contains padded " build_only " then " --build-only" else ""
+    base ++ stat ++ show ++ agree ++ build ++ clause_after modes " fails " " --fails "
 
 inl test_cell_source (real_mode : bool) (modes : string) (targets : rows) (body : rows) : string =
     join_rows (Row ("///- " ++ test_options real_mode modes, append_rows targets (Row ("", body))))

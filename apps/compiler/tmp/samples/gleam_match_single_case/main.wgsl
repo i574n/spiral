@@ -30,9 +30,7 @@ fn sp_walk_0(p0: i32) -> i32 {
     var v9: i32 = v6.c0f2;
     var v10: i32 = 0i;
     v10 = (v8 * v9);
-    var v11: i32 = 0i;
-    v11 = (v7 + v10);
-    return v11;
+    return (v7 + v10);
 }
 fn spiral_main() -> i32 {
     var v0: i32 = 0i;
@@ -43,9 +41,7 @@ fn spiral_main() -> i32 {
     v2 = (v0 - 4i);
     var v3: i32 = 0i;
     v3 = sp_walk_0(v2);
-    var v4: i32 = 0i;
-    v4 = (v1 + v3);
-    return v4;
+    return (v1 + v3);
 }
 @compute @workgroup_size(1)
 fn main() {

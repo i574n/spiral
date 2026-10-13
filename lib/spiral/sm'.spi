@@ -183,7 +183,7 @@ inl (~#?*) s =
 ///> lua
 ///> fsharp
 ///> cuda
-test format_debug =
+test format_debug no_agree =
     #?*("1", "2", "3")
     |> _assert_eq (
         backend_switch {
@@ -198,7 +198,7 @@ test format_debug =
 ///> lua
 ///> fsharp
 ///> cuda
-test format_debug_2 =
+test format_debug_2 no_agree =
     #?*{ c = "1"; a = "2"; b = "3" }
     |> _assert_eq (
         backend_switch {
@@ -387,7 +387,7 @@ inl format forall t. (x : t) : string =
 ///> rust
 ///> typescript
 ///> c
-test format =
+test format no_agree =
     ("1", "2", ["3"; "4"], { b = "5"; c = "6"; a = fun () => "7" }, ;[ 8i32 ])
     |> format
     |> _assert_eq (
@@ -412,6 +412,22 @@ inl (~#?) s =
 /// ### (++#?)
 inl (++#?) (a : string) (b : _) : string =
     a ++# #?b
+
+/// ### show_real
+
+/// ### show
+inl show forall t. (x : t) : string =
+    real show_real `t x
+
+///> gleam
+///> lua
+///> fsharp
+///> cuda
+///> rust
+///> typescript
+test show =
+    show ("1", 2i32, ["3"; "4"], { b = "5"; c = (6i32, Some 'x') }, ;[ ("7", 8i32) ])
+    |> _assert_eq "(1, 2, Cons(3, Cons(4, Nil)), { b = 5; c = (6, Some(x)) }, [(7, 8)])"
 
 /// ### to_char_array
 inl to_char_array (str : string) : array_base char =
@@ -805,12 +821,12 @@ inl builder_insert (i : int) (s : string) (sb : string_builder) : string_builder
         Gleam = fun () =>
             inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
-            inl b = sb |> slice i (length sb)
+            inl b = sb |> slice i (length sb - 1)
             [ a; s; b ] |> concat_list "" |> string_builder
         Lua = fun () =>
             inl sb = #?sb
             inl a = sb |> slice 0 (i - 1)
-            inl b = sb |> slice i (length sb)
+            inl b = sb |> slice i (length sb - 1)
             [ a; s; b ] |> concat_list "" |> string_builder
         Fsharp = fun () =>
             ($'!sb.Insert (!i, !s)' : string_builder) |> ignore
@@ -1614,7 +1630,7 @@ inl format_exception (ex : exn) : string =
 ///> cuda
 ///> rust
 ///> typescript
-test format_exception =
+test format_exception no_agree =
     fun () => failwith "test"
     |> _throws
     |> optionm.value

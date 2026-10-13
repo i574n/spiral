@@ -660,9 +660,7 @@ test distinct =
 /// ### to_array'
 inl to_array' forall t. (items : list' t) : array_base t =
     backend_switch {
-        Gleam = fun () =>
-            inl d = real defaultof `t ()
-            $'!items |> array.from_list(default: !d)' : array_base t
+        Gleam = fun () => $'!items |> spiral_array_from_list' : array_base t
         Lua = fun () =>
             inl len = $'##(!items)' : i32
             inl d = real defaultof `t ()

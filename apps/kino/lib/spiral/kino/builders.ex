@@ -129,6 +129,7 @@ defmodule Spiral.Kino.Builders do
           | {:bun, String.t()}
           | {:cc, String.t()}
           | {:dcc, String.t()}
+          | {:gleam, String.t(), [map()]}
           | {:zig, String.t()}
           | {:wgsl, String.t()}
   def dispatch(%{tool: :fsharp}, path), do: {:fsi, path}
@@ -140,6 +141,9 @@ defmodule Spiral.Kino.Builders do
   def dispatch(%{tool: :c}, path), do: {:cc, path}
 
   def dispatch(%{tool: :delphi}, path), do: {:dcc, path}
+
+  def dispatch(%{tool: :gleam, target: target} = builder, path) when target in [nil, "erlang"],
+    do: {:gleam, path, builder.deps}
 
   def dispatch(%{tool: :zig}, path), do: {:zig, path}
 

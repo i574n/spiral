@@ -176,6 +176,7 @@ defmodule Spiral.KinoTest do
              code
            )
 
+    assert Spiral.Kino.value_result?("main.spi:4:5: ETY0009: Unification failure. Got: i32 Expected: i32 * i32", code)
     refute Spiral.Kino.value_result?("main.spi:4:5: Unbound variable: g.", code)
 
     piped = "inl main () : i32 =\n    \"[a\"\n    |> parse\n    |> sm'.format_debug\n"
@@ -486,6 +487,54 @@ defmodule Spiral.KinoTest do
              )
   end
 
+  test "target outputs compare after harness wrappers and number formatting are normalized" do
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    lua = chunk.("String(\"__assert_eq { expected = 1.5707963267949 }\")\n")
+    fsharp = chunk.("__assert_eq { expected = +1.570796 }\n")
+    cuda = chunk.("__assert_eq { expected = 1.570796 }\n0\n")
+    assert Spiral.Kino.shown(lua) == Spiral.Kino.shown(fsharp)
+    assert Spiral.Kino.shown(fsharp) == Spiral.Kino.shown(cuda)
+    refute Spiral.Kino.shown(chunk.("__assert_eq { expected = 1.6 }")) == Spiral.Kino.shown(fsharp)
+    assert Spiral.Kino.shown(chunk.("\n")) == ""
+    traced = chunk.("22:18:21 1w common.retry_fn / { retry = 0 }\nat FSI_1.closure1(x)\n\e[90mvalue\e[0m\n")
+    assert Spiral.Kino.shown(traced) == "value"
+    assert Spiral.Kino.shown(chunk.("c:\\x\\main.fsx(436,54): warning FS3884: This expression is a function value.\nvalue")) == "value"
+    assert Spiral.Kino.shown(chunk.(~s(__assert_eq' { expected = "0.0-1.0" }))) == Spiral.Kino.shown(chunk.("__assert_eq' { expected = 0.0-1.0 }"))
+  end
+  test "union constructors compare in one canonical form, payload values still count" do
+    canonical = &Spiral.Kino.canonical_unions/1
+    python = "__assert_eq { expected = UH0_Cons(v0='a', v1=UH0_Cons(v0='b', v1=UH0_Nil())) }"
+    fsharp = "__assert_eq { expected = UH0_Cons (a, UH0_Cons (b, UH0_Nil)) }"
+    assert canonical.(python) == canonical.(fsharp)
+    assert canonical.(fsharp) == "__assert_eq { expected = Cons(a, Cons(b, Nil)) }"
+    assert canonical.("US0_Some(v0=1.0)") == canonical.("US1_Some 1.0")
+    assert canonical.("US1_Some 1.0") == canonical.("Us0Some(1.0)")
+    assert canonical.("US0_None()") == canonical.("US0_None")
+    assert canonical.("Us0None") == "None"
+    assert canonical.("US0_Some(v0='')") == canonical.("Us0Some()")
+    assert canonical.("Some()") == "Some"
+    refute canonical.("US0_Some(v0=1.0)") == canonical.("US1_Some 2.0")
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    refute Spiral.Kino.shown(chunk.("US0_Some(v0=1)")) == Spiral.Kino.shown(chunk.("US1_Some 2"))
+    assert Spiral.Kino.shown(chunk.("US0_Some(v0=1)")) == Spiral.Kino.shown(chunk.("Us0Some(1)"))
+    assert Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 3.0 }"))
+    assert Spiral.Kino.shown(chunk.("{ expected = Some  }")) == Spiral.Kino.shown(chunk.("{ expected = Some }"))
+    refute Spiral.Kino.shown(chunk.("{ expected = 3un }")) == Spiral.Kino.shown(chunk.("{ expected = 4 }"))
+  end
+  test "arrays and tuples compare in one canonical form; values and lengths still count" do
+    canonical = &Spiral.Kino.canonical_collections/1
+    assert canonical.("[|0; 2; 4|]") == "[0, 2, 4]"
+    assert canonical.("[0 2 4]") == "[0, 2, 4]"
+    assert canonical.("[0, 2, 4]") == "[0, 2, 4]"
+    assert canonical.("[||]") == "[]"
+    assert canonical.("[1 -2]") == "[1, -2]"
+    assert canonical.("a, #(1, b)") == canonical.("a, (1, b)")
+    assert canonical.("[|struct (0, 0); struct (1, 2)|]") == canonical.("[(0, 0), (1, 2)]")
+    refute canonical.("[|0; 2|]") == canonical.("[0 3]")
+    refute canonical.("[|0; 2|]") == canonical.("[0 2 4]")
+    chunk = fn stdout -> %{stdout: stdout, value: nil} end
+    assert Spiral.Kino.shown(chunk.("__assert_eq { expected = [|0.0; 2.0|] }")) == Spiral.Kino.shown(chunk.("__assert_eq { expected = [0. 2.] }"))
+  end
   test "each builder compiles once and the outputs are labeled" do
     {:ok, agent} = Agent.start_link(fn -> [] end)
 

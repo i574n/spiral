@@ -34,9 +34,7 @@ fn spiral_main() -> i32 {
             }
         }
     }
-    var v7: i32 = 0i;
-    v7 = (v1 - 12i);
-    return v7;
+    return (v1 - 12i);
 }
 @compute @workgroup_size(1)
 fn main() {

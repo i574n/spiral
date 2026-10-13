@@ -12,9 +12,9 @@ pub fn spiral_string_index(text: String, index: Int) -> String {
     Ok(<<byte>>) ->
       case string.utf_codepoint(byte) {
         Ok(codepoint) -> string.from_utf_codepoints([codepoint])
-        Error(_) -> spiral_halt(3)
+        Error(_) -> panic as "spiral string index: not a single-byte character"
       }
-    _ -> spiral_halt(3)
+    _ -> panic as "spiral string index: out of range"
   }
 }
 
@@ -22,7 +22,7 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
   let bytes = bit_array.from_string(text)
   let length = bit_array.byte_size(bytes)
   case from < 0 || from > length || to < from - 1 || to >= length {
-    True -> spiral_halt(3)
+    True -> panic as "spiral string slice: out of range"
     False ->
       case to < from {
         True -> ""
@@ -31,9 +31,9 @@ pub fn spiral_string_slice(text: String, from: Int, to: Int) -> String {
             Ok(part) ->
               case bit_array.to_string(part) {
                 Ok(slice) -> slice
-                Error(_) -> spiral_halt(3)
+                Error(_) -> panic as "spiral string slice: splits a character"
               }
-            Error(_) -> spiral_halt(3)
+            Error(_) -> panic as "spiral string slice: out of range"
           }
       }
   }
